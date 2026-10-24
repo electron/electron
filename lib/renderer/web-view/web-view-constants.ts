@@ -1,5 +1,4 @@
 export const enum WEB_VIEW_ATTRIBUTES {
-  NAME = 'name',
   PARTITION = 'partition',
   SRC = 'src',
   HTTPREFERRER = 'httpreferrer',

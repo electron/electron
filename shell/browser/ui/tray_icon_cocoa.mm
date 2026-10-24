@@ -18,8 +18,8 @@
 #include "ui/gfx/mac/coordinate_conversion.h"
 
 @interface StatusItemView : NSView {
-  raw_ptr<electron::TrayIconCocoa> trayIcon_;  // weak
-  ElectronMenuController* menuController_;     // weak
+  raw_ptr<electron::TrayIconCocoa, DanglingUntriaged> trayIcon_;  // weak
+  ElectronMenuController* menuController_;                        // weak
   BOOL ignoreDoubleClickEvents_;
   NSStatusItem* __strong statusItem_;
   NSTrackingArea* __strong trackingArea_;

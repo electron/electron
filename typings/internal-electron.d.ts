@@ -6,22 +6,10 @@
  */
 
 declare namespace Electron {
-  enum ProcessType {
-    browser = 'browser',
-    renderer = 'renderer',
-    worker = 'worker',
-    utility = 'utility'
-  }
-
   interface App {
     setVersion(version: string): void;
     setDesktopName(name: string): void;
     setAppPath(path: string | null): void;
-    _clientCertRequestPasswordHandler: ((params: ClientCertRequestParams) => Promise<string>) | null;
-    on(
-      event: '-client-certificate-request-password',
-      listener: (event: Event<ClientCertRequestParams>, callback: (password: string) => void) => Promise<void>
-    ): this;
   }
 
   interface AutoUpdater {
@@ -80,9 +68,6 @@ declare namespace Electron {
   }
 
   interface ServiceWorkerMain {
-    _send(internal: boolean, channel: string, args: any): void;
-    _startExternalRequest(hasTimeout: boolean): { id: string; ok: boolean };
-    _finishExternalRequest(uuid: string): void;
     _countExternalRequests(): number;
   }
 
@@ -95,12 +80,10 @@ declare namespace Electron {
   }
 
   interface WebContents {
-    _awaitNextLoad(expectedUrl: string): Promise<void>;
     _setConsoleMessageObserved(observed: boolean): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
     _getProcessMemoryInfo(processId?: number): Electron.ProcessMemoryInfo;
-    _getPreloadScript(): Electron.PreloadScript | null;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
     _callWindowOpenHandler(
@@ -115,7 +98,6 @@ declare namespace Electron {
       prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> &
         Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>
     ): void;
-    _send(internal: boolean, channel: string, args: any): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
     _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _init(): void;
@@ -143,14 +125,11 @@ declare namespace Electron {
   }
 
   interface WebFrameMain {
-    _send(internal: boolean, channel: string, args: any): void;
-    _sendInternal(channel: string, ...args: any[]): void;
     _transferSharedTexture(transfer: any, textureId: string, args: any[]): Promise<Electron.SharedTextureSyncToken>;
     _lifecycleStateForTesting: string;
   }
 
   interface WebFrame extends NodeJS.EventEmitter {
-    _isEvalAllowed(): boolean;
     getIsolatedWorlds(): number[];
     on(event: 'isolated-world-created', listener: (worldId: number) => void): this;
     once(event: 'isolated-world-created', listener: (worldId: number) => void): this;
@@ -159,7 +138,6 @@ declare namespace Electron {
   interface WebPreferences {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
-    openerSandboxFlags?: number;
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
@@ -187,26 +165,12 @@ declare namespace Electron {
     getDefaultRoleAccelerator(): Accelerator | undefined;
   }
 
-  interface ReplyChannel {
-    sendReply(value: any): void;
-  }
-
   interface IpcMainEvent {
-    _replyChannel: ReplyChannel;
     frameTreeNodeId?: number;
   }
 
   interface IpcMainInvokeEvent {
-    _replyChannel: ReplyChannel;
     frameTreeNodeId?: number;
-  }
-
-  interface IpcMainServiceWorkerEvent {
-    _replyChannel: ReplyChannel;
-  }
-
-  interface IpcMainServiceWorkerInvokeEvent {
-    _replyChannel: ReplyChannel;
   }
 
   // Deprecated / undocumented BrowserWindow methods
@@ -231,20 +195,6 @@ declare namespace Electron {
   }
 
   interface WebContents {
-    on(
-      event: '-new-window',
-      listener: (
-        event: Electron.Event,
-        url: string,
-        frameName: string,
-        disposition: Electron.HandlerDetails['disposition'],
-        rawFeatures: string,
-        referrer: Electron.Referrer,
-        postData: LoadURLOptions['postData'],
-        inheritedSandboxFlags: number,
-        navigate: (webContents: Electron.WebContents) => void
-      ) => void
-    ): this;
     on(
       event: '-add-new-contents',
       listener: (
@@ -276,22 +226,6 @@ declare namespace Electron {
       ) => void
     ): this;
     on(
-      event: '-ipc-message',
-      listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) => void
-    ): this;
-    on(
-      event: '-ipc-message-sync',
-      listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) => void
-    ): this;
-    on(
-      event: '-ipc-invoke',
-      listener: (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) => void
-    ): this;
-    on(
-      event: '-ipc-ports',
-      listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) => void
-    ): this;
-    on(
       event: '-run-dialog',
       listener: (
         info: {
@@ -306,9 +240,6 @@ declare namespace Electron {
     on(event: '-cancel-dialogs', listener: () => void): this;
     on(event: 'ready-to-show', listener: () => void): this;
     on(event: '-before-unload-fired', listener: (event: Electron.Event, proceed: boolean) => void): this;
-
-    on(event: '-window-visibility-change', listener: (visibilityState: 'hidden' | 'visible') => void): this;
-    removeListener(event: '-window-visibility-change', listener: (visibilityState: 'hidden' | 'visible') => void): this;
 
     once(event: 'destroyed', listener: (event: Electron.Event) => void): this;
   }
@@ -325,7 +256,9 @@ declare namespace ElectronInternal {
       captureWindow: boolean,
       captureScreen: boolean,
       thumbnailSize: Electron.Size,
-      fetchWindowIcons: boolean
+      fetchWindowIcons: boolean,
+      persistent: boolean,
+      restoreToken: string
     ): void;
     _onerror?: (error: string) => void;
     _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
@@ -336,6 +269,8 @@ declare namespace ElectronInternal {
     captureScreen: boolean;
     thumbnailSize: Electron.Size;
     fetchWindowIcons: boolean;
+    persistent: boolean;
+    restoreToken: string;
   }
 
   interface GetSourcesResult {
@@ -343,6 +278,7 @@ declare namespace ElectronInternal {
     name: string;
     thumbnail: Electron.NativeImage;
     display_id: string;
+    restoreToken: string;
     appIcon: Electron.NativeImage | null;
   }
 
@@ -358,10 +294,6 @@ declare namespace ElectronInternal {
     handle(channel: string, listener: (event: IpcMainInternalInvokeEvent, ...args: any[]) => Promise<any> | any): void;
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
-  }
-
-  interface LoadURLOptions extends Electron.LoadURLOptions {
-    reloadIgnoringCache?: boolean;
   }
 
   type PageSize = {
@@ -405,45 +337,4 @@ declare namespace ElectronInternal {
   class WebContents extends Electron.WebContents {
     static create(opts?: Electron.WebPreferences): Electron.WebContents;
   }
-
-  interface PreloadScript extends Electron.PreloadScript {
-    /**
-     * Whether the preload file's contents were read successfully. The actual
-     * contents stay on the C++ side (mojo-cached startup data) and are looked
-     * up by id from createPreloadScript() — they never become a V8 string.
-     */
-    hasContents?: boolean;
-    error?: Error;
-  }
-}
-
-declare namespace Chrome {
-  namespace Tabs {
-    // https://developer.chrome.com/docs/extensions/tabs#method-executeScript
-    interface ExecuteScriptDetails {
-      code?: string;
-      file?: string;
-      allFrames?: boolean;
-      frameId?: number;
-      matchAboutBlank?: boolean;
-      runAt?: 'document-start' | 'document-end' | 'document_idle';
-      cssOrigin: 'author' | 'user';
-    }
-
-    type ExecuteScriptCallback = (result: Array<any>) => void;
-
-    // https://developer.chrome.com/docs/extensions/tabs#method-sendMessage
-    interface SendMessageDetails {
-      frameId?: number;
-    }
-
-    type SendMessageCallback = (result: any) => void;
-  }
-}
-
-interface Global extends NodeJS.Global {
-  require: NodeRequire;
-  module: NodeModule;
-  __filename: string;
-  __dirname: string;
 }

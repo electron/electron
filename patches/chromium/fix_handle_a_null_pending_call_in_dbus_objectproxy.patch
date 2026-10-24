@@ -1,0 +1,177 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 23 Oct 2026 00:59:29 +0000
+Subject: fix: handle a null pending call in dbus::ObjectProxy
+
+dbus_connection_send_with_reply() can return TRUE and still leave the
+DBusPendingCall null. libdbus does this when the connection is already
+disconnected, and when the message carries Unix file descriptors that
+the connection cannot pass. ObjectProxy::StartAsyncMethodCall() only
+checks that bus_->Connect() succeeds, and Connect() returns true for a
+connection that exists but has since been disconnected. So a method
+call made after the bus has gone away passes the null pending call to
+dbus_pending_call_set_notify(). That fails a libdbus argument check,
+which aborts the process by default.
+
+This shows up on desktop Linux when the session bus daemon exits under
+a running app: the app is asked to quit, and a D-Bus method call made
+while it shuts down crashes it with SIGABRT instead of letting it exit.
+
+Handle the null pending call the same way as the existing failures in
+this function: run the callback with a null response and a null error
+response, and release the request message.
+
+ObjectProxyMockBusTest.NullPendingCallRunsCallbackWithNull covers this
+without a real bus: a MockBus makes SendWithReply() leave the pending
+call null, and the test checks that the callback runs asynchronously,
+exactly once, with a null response and a null error response.
+
+This patch should be upstreamed.
+
+diff --git a/dbus/object_proxy.cc b/dbus/object_proxy.cc
+index a29cccd304cde400d7f926a36cc3b36dab944f71..75abd132786dae524b8266907bd9f26addf291a8 100644
+--- a/dbus/object_proxy.cc
++++ b/dbus/object_proxy.cc
+@@ -324,6 +324,23 @@ void ObjectProxy::StartAsyncMethodCall(int timeout_ms,
+   DBusPendingCall* dbus_pending_call = nullptr;
+   bus_->SendWithReply(request_message, &dbus_pending_call, timeout_ms);
+ 
++  // dbus_connection_send_with_reply() succeeds without creating a pending
++  // call when the connection is already disconnected, or when the message
++  // carries Unix file descriptors the connection cannot pass. Passing that
++  // null pending call to dbus_pending_call_set_notify() fails a libdbus
++  // argument check, which aborts the process by default. Run the error
++  // callback with nullptr instead, as for the failures above.
++  if (!dbus_pending_call) {
++    base::OnceClosure task =
++        base::BindOnce(&ObjectProxy::RunResponseOrErrorCallback, this,
++                       std::move(callback_holder), nullptr /* response */,
++                       nullptr /* error_response */);
++    bus_->GetOriginTaskRunner()->PostTask(FROM_HERE, std::move(task));
++
++    dbus_message_unref(request_message);
++    return;
++  }
++
+   using PendingCallback =
+       base::OnceCallback<void(DBusPendingCall * pending_call)>;
+   // This returns false only when unable to allocate memory.
+diff --git a/dbus/object_proxy_unittest.cc b/dbus/object_proxy_unittest.cc
+index 4725ccd5ec97eedb932661770a065235f41abf4e..c96057532a709b25bdfcb6c087a8d858cee73feb 100644
+--- a/dbus/object_proxy_unittest.cc
++++ b/dbus/object_proxy_unittest.cc
+@@ -9,11 +9,20 @@
+ #include "base/functional/bind.h"
+ #include "base/memory/ref_counted.h"
+ #include "base/run_loop.h"
++#include "base/task/sequenced_task_runner.h"
+ #include "base/test/task_environment.h"
+ #include "dbus/bus.h"
++#include "dbus/message.h"
++#include "dbus/mock_bus.h"
++#include "dbus/object_path.h"
+ #include "dbus/test_service.h"
++#include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
++using ::testing::_;
++using ::testing::Return;
++using ::testing::SetArgPointee;
++
+ namespace dbus {
+ namespace {
+ 
+@@ -36,6 +45,54 @@ class ObjectProxyTest : public testing::Test {
+   scoped_refptr<Bus> bus_;
+ };
+ 
++// Runs ObjectProxy on a MockBus, so a test can control what the bus returns
++// without a real D-Bus connection.
++class ObjectProxyMockBusTest : public testing::Test {
++ protected:
++  ObjectProxyMockBusTest() {}
++
++  void SetUp() override {
++    Bus::Options bus_options;
++    bus_options.bus_type = Bus::SESSION;
++    bus_options.connection_type = Bus::PRIVATE;
++    mock_bus_ = new MockBus(std::move(bus_options));
++
++    // Run both the origin and the D-Bus side of ObjectProxy on the test's
++    // main thread.
++    scoped_refptr<base::SequencedTaskRunner> task_runner =
++        base::SequencedTaskRunner::GetCurrentDefault();
++    EXPECT_CALL(*mock_bus_, GetOriginTaskRunner())
++        .WillRepeatedly(Return(task_runner.get()));
++    EXPECT_CALL(*mock_bus_, GetDBusTaskRunner())
++        .WillRepeatedly(Return(task_runner.get()));
++    EXPECT_CALL(*mock_bus_, AssertOnOriginThread()).WillRepeatedly(Return());
++    EXPECT_CALL(*mock_bus_, AssertOnDBusThread()).WillRepeatedly(Return());
++    EXPECT_CALL(*mock_bus_, IsConnected()).WillRepeatedly(Return(false));
++
++    object_proxy_ = new ObjectProxy(mock_bus_.get(), "org.chromium.TestService",
++                                    ObjectPath("/org/chromium/TestObject"),
++                                    ObjectProxy::DEFAULT_OPTIONS);
++  }
++
++  void TearDown() override { object_proxy_->Detach(); }
++
++  base::test::TaskEnvironment task_environment_;
++
++  scoped_refptr<MockBus> mock_bus_;
++  scoped_refptr<ObjectProxy> object_proxy_;
++};
++
++// Used as a ResponseOrErrorCallback. Records whether each pointer was set.
++void OnResponseOrError(int* num_calls,
++                       bool* has_response,
++                       bool* has_error_response,
++                       Response* response,
++                       ErrorResponse* error_response) {
++  *has_response = response != nullptr;
++  *has_error_response = error_response != nullptr;
++  (*num_calls)++;
++}
++
+ // Used as a WaitForServiceToBeAvailableCallback.
+ void OnServiceIsAvailable(bool* dest_service_is_available,
+                           int* num_calls,
+@@ -143,5 +200,38 @@ TEST_F(ObjectProxyTest, WaitForServiceToBeAvailableMultipleCallbacks) {
+   EXPECT_TRUE(service_is_available_2);
+ }
+ 
++// dbus_connection_send_with_reply() succeeds without creating a pending call
++// when the connection is already disconnected. The method call must then fail
++// through the callback instead of passing the null pending call to libdbus,
++// which aborts the process.
++TEST_F(ObjectProxyMockBusTest, NullPendingCallRunsCallbackWithNull) {
++  EXPECT_CALL(*mock_bus_, Connect()).WillOnce(Return(true));
++  EXPECT_CALL(*mock_bus_, SetUpAsyncOperations()).WillOnce(Return(true));
++  EXPECT_CALL(*mock_bus_, SendWithReply(_, _, _))
++      .WillOnce(SetArgPointee<1>(static_cast<DBusPendingCall*>(nullptr)));
++
++  MethodCall method_call("org.chromium.TestInterface", "Echo");
++  int num_calls = 0;
++  bool has_response = true;
++  bool has_error_response = true;
++  object_proxy_->CallMethodWithErrorResponse(
++      &method_call, ObjectProxy::TIMEOUT_USE_DEFAULT,
++      base::BindOnce(&OnResponseOrError, &num_calls, &has_response,
++                     &has_error_response));
++
++  // The callback is invoked asynchronously, not from within
++  // CallMethodWithErrorResponse().
++  EXPECT_EQ(0, num_calls);
++
++  base::RunLoop().RunUntilIdle();
++  EXPECT_EQ(1, num_calls);
++  EXPECT_FALSE(has_response);
++  EXPECT_FALSE(has_error_response);
++
++  // The callback is not invoked again.
++  base::RunLoop().RunUntilIdle();
++  EXPECT_EQ(1, num_calls);
++}
++
+ }  // namespace
+ }  // namespace dbus

@@ -1,0 +1,111 @@
+import { inAppPurchase } from 'electron/main';
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+import * as childProcess from 'node:child_process';
+
+import { ifdescribe, waitUntil } from './lib/spec-helpers.ts';
+
+// pid -> executable for every process that owns an on-screen window. Owner
+// pids, unlike window titles, need no screen-recording permission.
+function windowOwners(): Map<number, string> {
+  const script = `ObjC.import('CoreGraphics');
+    const all = ObjC.castRefToObject($.CGWindowListCopyWindowInfo($.kCGWindowListOptionOnScreenOnly, $.kCGNullWindowID));
+    const pids = [];
+    for (let i = 0; i < all.count; i++) pids.push(ObjC.unwrap(all.objectAtIndex(i).objectForKey('kCGWindowOwnerPID')));
+    JSON.stringify(pids);`;
+  const pids: number[] = JSON.parse(
+    childProcess.execFileSync('osascript', ['-l', 'JavaScript', '-e', script]).toString()
+  );
+  const ps = childProcess.execFileSync('ps', ['-o', 'pid=,comm=', '-p', [...new Set(pids)].join(',')]).toString();
+  const owners = new Map<number, string>();
+  for (const line of ps.split('\n')) {
+    const match = line.trim().match(/^(\d+)\s+(.*)$/);
+    if (match) owners.set(Number(match[1]), match[2]);
+  }
+  return owners;
+}
+
+describe('inAppPurchase module', { tags: ['serial'], timeout: 3 * 60 * 1000 }, () => {
+  if (process.platform !== 'darwin') return;
+
+  // Without an App Store session StoreKit answers restoreCompletedTransactions()
+  // with an Apple Account sign-in dialog, shown by a system agent, that nothing
+  // dismisses; left up, it covers every later screen capture in the run. Close
+  // whatever system UI this suite brought on screen.
+  let ownersBefore: Set<number>;
+  const summoned = () =>
+    [...windowOwners()].filter(
+      ([pid, executable]) => !ownersBefore.has(pid) && /^\/(System|usr\/libexec)\//.test(executable)
+    );
+  beforeAll(
+    () => {
+      ownersBefore = new Set(windowOwners().keys());
+    },
+    3 * 60 * 1000
+  );
+  afterAll(
+    async () => {
+      // The dialog trails the call that caused it, so give it a moment to show.
+      await waitUntil(() => summoned().length > 0, { timeout: 3000 }).catch(() => {});
+      await waitUntil(() => {
+        const left = summoned();
+        for (const [pid] of left) process.kill(pid);
+        return left.length === 0;
+      });
+    },
+    3 * 60 * 1000
+  );
+
+  it('canMakePayments() returns a boolean', () => {
+    const canMakePayments = inAppPurchase.canMakePayments();
+    expect(canMakePayments).toBeTypeOf('boolean');
+  });
+
+  it('restoreCompletedTransactions() does not throw', () => {
+    expect(() => {
+      inAppPurchase.restoreCompletedTransactions();
+    }).not.toThrow();
+  });
+
+  it('finishAllTransactions() does not throw', () => {
+    expect(() => {
+      inAppPurchase.finishAllTransactions();
+    }).not.toThrow();
+  });
+
+  it('finishTransactionByDate() does not throw', () => {
+    expect(() => {
+      inAppPurchase.finishTransactionByDate(new Date().toISOString());
+    }).not.toThrow();
+  });
+
+  it('getReceiptURL() returns receipt URL', () => {
+    expect(inAppPurchase.getReceiptURL()).toMatch(/_MASReceipt\/receipt$/);
+  });
+
+  // This fails on x64 in CI - likely owing to some weirdness with the machines.
+  // We should look into fixing it there but at least run it on arm6 machines.
+  ifdescribe(process.arch !== 'x64')('handles product purchases', () => {
+    it('purchaseProduct() fails when buying invalid product', async () => {
+      const success = await inAppPurchase.purchaseProduct('non-exist');
+      expect(success, 'failed to purchase non-existent product').toBe(false);
+    });
+
+    it('purchaseProduct() accepts optional (Integer) argument', async () => {
+      const success = await inAppPurchase.purchaseProduct('non-exist', 1);
+      expect(success, 'failed to purchase non-existent product').toBe(false);
+    });
+
+    it('purchaseProduct() accepts optional (Object) argument', async () => {
+      const success = await inAppPurchase.purchaseProduct('non-exist', { quantity: 1, username: 'username' });
+      expect(success, 'failed to purchase non-existent product').toBe(false);
+    });
+
+    it('getProducts() returns an empty list when getting invalid product', async () => {
+      const products = await inAppPurchase.getProducts(['non-exist']);
+      expect(products).toBeInstanceOf(Array);
+      expect(products).toHaveLength(0);
+    });
+  });
+});

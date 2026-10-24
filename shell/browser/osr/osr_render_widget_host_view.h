@@ -129,13 +129,14 @@ class OffScreenRenderWidgetHostView
   void ImeCancelComposition() override {}
   void RenderProcessGone() override;
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
-  void Destroy() override;
+  void DestroyImpl() override;
   void UpdateTooltipUnderCursor(const std::u16string&) override {}
   void OnUnconfirmedTapConvertedToTap() override {}
   input::CursorManager* GetCursorManager() override;
-  void CopyFromSurface(
+  void CopyFromSurfaceImpl(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
+      bool is_copy_request_secure,
       base::TimeDelta timeout,
       base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback)
       override;
@@ -189,10 +190,7 @@ class OffScreenRenderWidgetHostView
   bool InstallTransparency();
 
   void CancelWidget();
-  void AddGuestHostView(OffScreenRenderWidgetHostView* guest_host);
-  void RemoveGuestHostView(OffScreenRenderWidgetHostView* guest_host);
   void AddViewProxy(OffscreenViewProxy* proxy);
-  void RemoveViewProxy(OffscreenViewProxy* proxy);
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
   void OnPaint(const gfx::Rect& damage_rect,
@@ -256,6 +254,9 @@ class OffScreenRenderWidgetHostView
   }
 
  private:
+  // content::RenderWidgetHostViewBase:
+  void CleanUpHostObservers() override;
+
   void ReleaseCompositor();
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
@@ -272,7 +273,6 @@ class OffScreenRenderWidgetHostView
   raw_ptr<OffScreenRenderWidgetHostView> parent_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> popup_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> child_host_view_ = nullptr;
-  absl::flat_hash_set<OffScreenRenderWidgetHostView*> guest_host_views_;
   absl::flat_hash_set<OffscreenViewProxy*> proxy_views_;
 
   const bool transparent_;

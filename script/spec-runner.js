@@ -2,7 +2,6 @@
 
 const { ElectronVersions, Installer } = require('@electron/fiddle-core');
 
-const { DOMParser } = require('@xmldom/xmldom');
 const { hashElement } = require('folder-hash');
 const minimist = require('minimist');
 
@@ -20,14 +19,18 @@ const pass = styleText('green', '✓');
 const fail = styleText('red', '✗');
 const warn = styleText('yellow', '⚠');
 
-const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
-
 const args = minimist(process.argv, {
   boolean: ['skipYarnInstall'],
   string: ['runners', 'target', 'electronVersion'],
-  number: ['enableRerun'],
   unknown: (arg) => unknownFlags.push(arg)
 });
+
+// Reject a leftover --enableRerun rather than forward it to Electron as an unknown switch,
+// where it would silently do nothing.
+if ('enableRerun' in args) {
+  console.log(`${fail} --enableRerun was removed; failing tests are no longer re-run individually`);
+  process.exit(1);
+}
 
 const unknownArgs = [];
 for (const flag of unknownFlags) {
@@ -335,7 +338,7 @@ async function runElectronTests() {
     try {
       console.info('\nRunning:', description);
       if (testResultsDir) {
-        process.env.MOCHA_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`);
+        process.env.ELECTRON_SPEC_JUNIT_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`);
       }
       await run();
     } catch (err) {
@@ -353,193 +356,91 @@ async function runElectronTests() {
   }
 }
 
-async function asyncSpawn(exe, runnerArgs) {
+async function asyncSpawn(exe, runnerArgs, env = process.env) {
   return new Promise((resolve, reject) => {
-    let forceExitResult = 0;
     const child = childProcess.spawn(exe, runnerArgs, {
-      cwd: path.resolve(__dirname, '../..')
+      cwd: path.resolve(__dirname, '../..'),
+      env
     });
     if (process.env.ELECTRON_TEST_PID_DUMP_PATH && child.pid) {
       fs.writeFileSync(process.env.ELECTRON_TEST_PID_DUMP_PATH, child.pid.toString());
     }
     child.stdout.pipe(process.stdout);
     child.stderr.pipe(process.stderr);
-    if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
-      child.stdout.on('data', (data) => {
-        const failureRE = RegExp(`${FAILURE_STATUS_KEY}: (\\d.*)`);
-        const failures = data.toString().match(failureRE);
-        if (failures) {
-          forceExitResult = parseInt(failures[1], 10);
-        }
-      });
-    }
     child.on('error', (error) => reject(error));
     child.on('close', (status, signal) => {
-      let returnStatus = 0;
-      if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
-        returnStatus = forceExitResult;
-      } else {
-        returnStatus = status;
-      }
-      resolve({ status: returnStatus, signal });
+      resolve({ status, signal });
     });
   });
 }
 
-function parseJUnitXML(specDir) {
-  if (!fs.existsSync(process.env.MOCHA_FILE)) {
-    console.error('JUnit XML file not found:', process.env.MOCHA_FILE);
-    return [];
-  }
-
-  const xmlContent = fs.readFileSync(process.env.MOCHA_FILE, 'utf8');
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-
-  const failedTests = [];
-  // find failed tests by looking for all testsuite nodes with failure > 0
-  const testSuites = xmlDoc.getElementsByTagName('testsuite');
-  for (let i = 0; i < testSuites.length; i++) {
-    const testSuite = testSuites[i];
-    const failures = testSuite.getAttribute('failures');
-    if (failures > 0) {
-      const testcases = testSuite.getElementsByTagName('testcase');
-
-      for (let i = 0; i < testcases.length; i++) {
-        const testcase = testcases[i];
-        const failures = testcase.getElementsByTagName('failure');
-        const errors = testcase.getElementsByTagName('error');
-
-        if (failures.length > 0 || errors.length > 0) {
-          const testName = testcase.getAttribute('name');
-          const filePath = testSuite.getAttribute('file');
-          const fileName = filePath ? path.relative(specDir, filePath) : 'unknown file';
-          const failureInfo = {
-            name: testName,
-            file: fileName,
-            filePath
-          };
-          if (failures.length > 0) {
-            failureInfo.failure = failures[0].textContent || failures[0].nodeValue || 'No failure message';
-          }
-
-          if (errors.length > 0) {
-            failureInfo.error = errors[0].textContent || errors[0].nodeValue || 'No error message';
-          }
-
-          failedTests.push(failureInfo);
-        }
+// Launches the vitest CLI, which starts the Electron processes itself
+// (spec/vitest/electron-pool.ts). The runner's own arguments are translated:
+// `--files` becomes vitest's file filters, `-g`/`--grep` (and `-i`/`--invert`)
+// its test name pattern, and anything else is treated as a command line
+// switch for the Electron workers.
+function toVitestInvocation(exe, specDir, runnerArgs) {
+  const specRoot = path.resolve(__dirname, '..', specDir);
+  const files = [];
+  const electronArgs = [];
+  let grep = null;
+  let invert = false;
+  for (let i = 0; i < runnerArgs.length; i++) {
+    const arg = String(runnerArgs[i]);
+    const takeValue = () => (arg.includes('=') ? arg.slice(arg.indexOf('=') + 1) : String(runnerArgs[++i]));
+    if (arg === '--files') {
+      while (i + 1 < runnerArgs.length && !String(runnerArgs[i + 1]).startsWith('-')) {
+        files.push(String(runnerArgs[++i]));
       }
+    } else if (arg === '-g' || arg === '--grep' || arg.startsWith('--grep=') || arg.startsWith('-g=')) {
+      grep = takeValue();
+    } else if (arg === '-i' || arg === '--invert') {
+      invert = true;
+    } else {
+      electronArgs.push(arg);
     }
   }
 
-  return failedTests;
-}
-
-async function rerunFailedTest(specDir, testName, testInfo) {
-  console.log('\n========================================');
-  console.log(`Rerunning failed test: ${testInfo.name} (${testInfo.file})`);
-  console.log('========================================');
-
-  let grepPattern = testInfo.name;
-
-  // Escape special regex characters in test name
-  grepPattern = grepPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  const args = [];
-  if (testInfo.filePath) {
-    args.push('--files', testInfo.filePath);
+  const vitestArgs = [
+    path.join(specRoot, 'node_modules', 'vitest', 'vitest.mjs'),
+    'run',
+    '--config',
+    path.join(specRoot, 'vitest.config.ts')
+  ];
+  if (grep) {
+    vitestArgs.push('--testNamePattern', invert ? `^(?!.*(?:${grep}))` : grep);
   }
-  args.push('-g', grepPattern);
-
-  const success = await runTestUsingElectron(specDir, testName, false, args);
-
-  if (success) {
-    console.log(`✅ Test passed: ${testInfo.name}`);
-    return true;
-  } else {
-    console.log(`❌ Test failed again: ${testInfo.name}`);
-    return false;
+  const missing = [];
+  for (const file of files) {
+    // vitest filters are matched against paths relative to its root (spec/).
+    const absolute = path.isAbsolute(file) ? file : path.resolve(__dirname, '..', file);
+    if (!fs.existsSync(absolute)) missing.push(file);
+    vitestArgs.push(path.relative(specRoot, absolute));
   }
-}
-
-async function rerunFailedTests(specDir, testName) {
-  console.log('\n📋 Parsing JUnit XML for failed tests...');
-  const failedTests = parseJUnitXML(specDir);
-
-  if (failedTests.length === 0) {
-    console.log('No failed tests could be found.');
+  if (missing.length > 0) {
+    console.error(
+      `${fail} Test files were provided, but these do not exist (relative to electron/): ${missing.join(', ')}`
+    );
     process.exit(1);
-    return;
   }
 
-  // Save off the original junit xml file
-  if (fs.existsSync(process.env.MOCHA_FILE)) {
-    fs.copyFileSync(process.env.MOCHA_FILE, `${process.env.MOCHA_FILE}.save`);
-  }
-
-  console.log(`\n📊 Found ${failedTests.length} failed test(s):`);
-  failedTests.forEach((test, index) => {
-    console.log(`  ${index + 1}. ${test.name} (${test.file})`);
-  });
-
-  // Step 3: Rerun each failed test individually
-  console.log('\n🔄 Rerunning failed tests individually...\n');
-
-  const results = {
-    total: failedTests.length,
-    passed: 0,
-    failed: 0
+  const env = {
+    ...process.env,
+    ELECTRON_SPEC_ELECTRON_PATH: exe,
+    ELECTRON_SPEC_WORKER_ARGS: electronArgs.join(' ')
   };
-
-  let index = 0;
-  for (const testInfo of failedTests) {
-    let runCount = 0;
-    let success = false;
-    let retryTest = false;
-    while (!success && runCount < args.enableRerun) {
-      success = await rerunFailedTest(specDir, testName, testInfo);
-      if (success) {
-        results.passed++;
-      } else {
-        if (runCount === args.enableRerun - 1) {
-          results.failed++;
-        } else {
-          retryTest = true;
-          console.log(`Retrying test (${runCount + 1}/${args.enableRerun})...`);
-        }
-      }
-
-      // Add a small delay between tests
-      if (retryTest || index < failedTests.length - 1) {
-        console.log('\nWaiting 2 seconds before next test...');
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      }
-      runCount++;
-    }
-    index++;
+  let command = process.execPath;
+  let commandArgs = vitestArgs;
+  if (process.platform === 'linux') {
+    // The mock D-Bus services are started once around the whole run; every
+    // Electron worker inherits the bus addresses from the CLI's environment.
+    commandArgs = [path.resolve(__dirname, 'dbus_mock.py'), command, ...commandArgs];
+    command = 'python3';
   }
-
-  // Step 4: Summary
-  console.log('\n📈 Summary:');
-  console.log(`Total failed tests: ${results.total}`);
-  console.log(`Passed on rerun: ${results.passed}`);
-  console.log(`Still failing: ${results.failed}`);
-
-  // Restore the original junit xml file
-  if (fs.existsSync(`${process.env.MOCHA_FILE}.save`)) {
-    fs.renameSync(`${process.env.MOCHA_FILE}.save`, process.env.MOCHA_FILE);
-  }
-
-  if (results.failed === 0) {
-    console.log('🎉 All previously failed tests now pass!');
-  } else {
-    console.log(`⚠️  ${results.failed} test(s) are still failing`);
-    process.exit(1);
-  }
+  return { command, commandArgs, env };
 }
 
-async function runTestUsingElectron(specDir, testName, shouldRerun, additionalArgs = []) {
+async function runTestUsingElectron(specDir, testName) {
   let exe;
   if (args.electronVersion) {
     const installer = new Installer();
@@ -547,19 +448,10 @@ async function runTestUsingElectron(specDir, testName, shouldRerun, additionalAr
   } else {
     exe = path.resolve(BASE, utils.getElectronExec());
   }
-  let argsToPass = unknownArgs.slice(2);
-  if (additionalArgs.includes('--files')) {
-    argsToPass = argsToPass.filter(
-      (arg) => arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1
-    );
-  }
-  const runnerArgs = [`electron/${specDir}`, ...argsToPass, ...additionalArgs];
-  if (process.platform === 'linux') {
-    runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
-    exe = 'python3';
-  }
-  console.log(`Running: ${exe} ${runnerArgs.join(' ')}`);
-  const { status, signal } = await asyncSpawn(exe, runnerArgs);
+  const argsToPass = unknownArgs.slice(2);
+  const { command, commandArgs, env } = toVitestInvocation(exe, specDir, argsToPass);
+  console.log(`Running: ${command} ${commandArgs.join(' ')}`);
+  const { status, signal } = await asyncSpawn(command, commandArgs, env);
   if (status !== 0) {
     if (status) {
       const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString();
@@ -567,22 +459,13 @@ async function runTestUsingElectron(specDir, testName, shouldRerun, additionalAr
     } else {
       console.log(`${fail} Electron tests failed with kill signal ${signal}.`);
     }
-    if (shouldRerun) {
-      await rerunFailedTests(specDir, testName);
-    } else {
-      process.exit(1);
-    }
+    process.exit(1);
   }
   console.log(`${pass} Electron ${testName} process tests passed.`);
-  return true;
 }
 
 async function runMainProcessElectronTests() {
-  let shouldRerun = false;
-  if (args.enableRerun && args.enableRerun > 0) {
-    shouldRerun = true;
-  }
-  await runTestUsingElectron('spec', 'main', shouldRerun);
+  await runTestUsingElectron('spec', 'main');
 }
 
 async function installSpecModules(dir) {
@@ -657,7 +540,7 @@ async function installSpecModules(dir) {
     }
     if (toolchainEnv === null) {
       // Not silent: the specs covering these fixtures are gated on this
-      // variable and report as skipped, see spec/node-spec.ts.
+      // variable and report as skipped, see spec/node.spec.ts.
       console.log(
         `${warn} No compiler on this host can build Electron's headers, not rebuilding native addon '${addon}'; its specs will be skipped`
       );

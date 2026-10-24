@@ -12,10 +12,7 @@
 
 namespace electron::api::crash_reporter {
 
-bool IsCrashReporterEnabled();
-
 #if BUILDFLAG(IS_LINUX)
-const std::map<std::string, std::string>& GetGlobalCrashKeys();
 std::string GetClientId();
 #endif
 

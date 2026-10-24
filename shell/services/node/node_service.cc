@@ -125,6 +125,7 @@ NodeService::~NodeService() {
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
     GetRemote().reset();
   }
+  node_bindings_->set_uv_env(nullptr);
 }
 
 void NodeService::Initialize(

@@ -34,11 +34,11 @@
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/network/public/mojom/web_sandbox_flags.mojom-forward.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
 #include "shell/browser/osr/osr_paint_event.h"
-#include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/api/api.mojom-forward.h"
@@ -192,6 +192,10 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void Trace(cppgc::Visitor* visitor) const override;
 
   void Destroy();
+  // Like Destroy(), but disposes before returning. Only call it from a task of
+  // its own, where no Chromium callback for this WebContents can be on the
+  // stack. Destroy() defers disposal for that reason.
+  void DestroyNow();
   void Close(std::optional<gin_helper::Dictionary> options);
   bool IsDestroyed() const { return destroyed_; }
   cppgc::Persistent<gin::WeakCell<WebContents>> WeakRef();
@@ -373,17 +377,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
       const blink::mojom::FullscreenOptions& options,
       bool allowed);
 
-  // Create window with the given disposition.
-  void OnCreateWindow(const GURL& target_url,
-                      const content::Referrer& referrer,
-                      const std::string& frame_name,
-                      WindowOpenDisposition disposition,
-                      const std::string& features,
-                      const scoped_refptr<network::ResourceRequestBody>& body);
-
-  // Returns the preload script of current WebContents.
-  std::optional<PreloadScript> GetPreloadScript() const;
-
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
@@ -392,6 +385,17 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
+
+  // webContents.send(): resolves the primary main frame here rather than
+  // via the mainFrame accessor, so a send crosses into C++ once.
+  // send(channel, ...args) to the main frame.
+  void Send(gin::Arguments* args);
+  void SendInternal(gin::Arguments* args);
+  void PostMessage(v8::Isolate* isolate,
+                   const std::string& channel,
+                   v8::Local<v8::Value> message,
+                   std::optional<v8::Local<v8::Value>> transfer);
+  void SendImpl(bool internal, gin::Arguments* args);
 
   // The main frame's renderer-side API, or null with |promise| rejected when
   // there is no live render frame.
@@ -509,6 +513,10 @@ class WebContents final : public gin::Wrappable<WebContents>,
                              DialogClosedCallback callback) override;
   void CancelDialogs(content::WebContents* web_contents,
                      bool reset_state) override;
+  DialogClosedCallback ResyncFocusAfterDialog(DialogClosedCallback callback);
+#if defined(USE_AURA)
+  void ResyncViewFocus();
+#endif
 
   void SetBackgroundColor(std::optional<SkColor> color);
 
@@ -581,6 +589,20 @@ class WebContents final : public gin::Wrappable<WebContents>,
       const content::OpenURLParams& params,
       base::OnceCallback<void(content::NavigationHandle&)>
           navigation_handle_callback) override;
+  // Opens |params| in a new WebContents created in |source|'s browser context,
+  // going through the same app hooks as a renderer-created popup.
+  void OpenURLInNewWebContents(content::WebContents* source,
+                               const content::OpenURLParams& params,
+                               network::mojom::WebSandboxFlags sandbox_flags);
+  // Records what a child WebContents was opened with and attaches the
+  // webPreferences the app's window-open handler left for it.
+  void AdoptChildWebContents(
+      content::WebContents* new_contents,
+      const GURL& url,
+      const std::string& frame_name,
+      const content::Referrer& referrer,
+      const std::string& raw_features,
+      const scoped_refptr<network::ResourceRequestBody>& body);
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
@@ -611,12 +633,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
-  void FindReply(content::WebContents* web_contents,
-                 int request_id,
-                 int number_of_matches,
-                 const gfx::Rect& selection_rect,
-                 int active_match_ordinal,
-                 bool final_update) override;
   void OnRequestPointerLock(content::WebContents* web_contents,
                             bool user_gesture,
                             bool last_unlocked_by_target,
@@ -625,8 +641,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
   void LostPointerLock() override;
-  bool IsWaitingForPointerLockPrompt(
-      content::WebContents* web_contents) override;
   void OnRequestKeyboardLock(content::WebContents* web_contents,
                              bool esc_key_locked,
                              bool allowed);
@@ -682,8 +696,17 @@ class WebContents final : public gin::Wrappable<WebContents>,
   // CommitNavigation, for documents that will run preloads.
   void MaybeSendRendererStartupData(
       content::NavigationHandle* navigation_handle);
-  void SendRendererStartupData(content::RenderFrameHost* rfh);
+  // |url| and |origin| are those of the document the preloads will run in,
+  // matched against each session preload's URL filters.
+  void SendRendererStartupData(content::RenderFrameHost* rfh,
+                               const GURL& url,
+                               const url::Origin& origin);
   void DidFinishNavigation(content::NavigationHandle* navigation_handle);
+  void DidReceiveFindReply(int request_id,
+                           int number_of_matches,
+                           const gfx::Rect& selection_rect,
+                           int active_match_ordinal,
+                           bool final_update);
   void WebContentsDestroyed();
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details);
@@ -691,7 +714,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void DidUpdateFaviconURL(content::RenderFrameHost* render_frame_host,
                            const std::vector<blink::mojom::FaviconURLPtr>& urls,
                            blink::mojom::FaviconUpdateReason reason);
-  void NotifyPageTitleUpdated(content::NavigationEntry* entry,
+  void NotifyPageTitleUpdated(const content::NavigationEntry* entry,
                               bool from_same_document_history_navigation);
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const content::MediaPlayerId& id);
@@ -726,8 +749,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void Dispose();
   void DetachNativeCallbacks();
 
-  void OnElectronBrowserConnectionError();
-
   // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
   void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
 
@@ -737,11 +758,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
-
-  // Called when received a synchronous message from renderer to
-  // get the zoom level.
-  void OnGetZoomLevel(content::RenderFrameHost* frame_host,
-                      IPC::Message* reply_msg);
 
   void InitZoomController(content::WebContents* web_contents,
                           const gin_helper::Dictionary& options);
@@ -860,9 +876,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   bool guest_transparent_ = true;
 
   int32_t id_;
-
-  // Request id used for findInPage request.
-  uint32_t find_in_page_request_id_ = 0;
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;

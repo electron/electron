@@ -24,3 +24,7 @@
   application that owns the window or null if the source has a type screen.
   The size of the icon is not known in advance and depends on what
   the application provides.
+* `restoreToken` string _Linux_ _Experimental_ - A token that lets a later
+  `desktopCapturer.getSources` call reopen this source without showing the
+  system picker, or an empty string if the system did not issue one. See
+  [Restoring a source on Wayland](../desktop-capturer.md#restoring-a-source-on-wayland).

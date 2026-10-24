@@ -6,15 +6,19 @@
 
 #include <windows.h>
 
+#include <algorithm>
+
+#include "base/command_line.h"
 #include "base/logging.h"
 #include "base/process/launch.h"
 #include "base/process/process_handle.h"
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_number_conversions_win.h"
+#include "base/win/elevation_util.h"
+#include "base/win/scoped_com_initializer.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
-#include "shell/common/command_line_util_win.h"
 
 namespace relauncher::internal {
 
@@ -63,7 +67,7 @@ StringType ArgvToCommandLineString(const StringVector& argv) {
   for (const StringType& arg : argv) {
     if (!command_line.empty())
       command_line += L' ';
-    command_line += electron::AddQuoteForArg(arg);
+    command_line += base::CommandLine::QuoteForCommandLineToArgvW(arg);
   }
   return command_line;
 }
@@ -85,6 +89,16 @@ void RelauncherSynchronizeWithParent() {
 
 int LaunchProgram(const StringVector& relauncher_args,
                   const StringVector& argv) {
+  if (std::ranges::find(relauncher_args, kRelauncherDeElevateArg) !=
+      relauncher_args.end()) {
+    // Goes through the desktop's IShellDispatch2, which starts the app with
+    // the shell's token and this process's current directory.
+    base::win::ScopedCOMInitializer com;
+    return SUCCEEDED(base::win::RunDeElevatedNoWait(
+               base::CommandLine::FromString(ArgvToCommandLineString(argv))))
+               ? 0
+               : 1;
+  }
   base::LaunchOptions options;
   base::Process process =
       base::LaunchProcess(ArgvToCommandLineString(argv), options);

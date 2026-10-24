@@ -138,6 +138,19 @@ class Dictionary : public gin::Dictionary {
         .ToChecked();
   }
 
+  // Naming the target as a template argument lets the call go straight from
+  // V8 to it, with no callback object in between. See
+  // CreateFunctionTemplate<kTarget>().
+  template <auto kTarget>
+  bool SetMethod(std::string_view key) {
+    auto context = isolate()->GetCurrentContext();
+    auto templ = CreateFunctionTemplate<kTarget>(isolate());
+    return GetHandle()
+        ->Set(context, MakeKey(key),
+              templ->GetFunction(context).ToLocalChecked())
+        .ToChecked();
+  }
+
   template <typename K, typename V>
   bool SetGetter(const K& key,
                  const V& val,
@@ -157,7 +170,8 @@ class Dictionary : public gin::Dictionary {
             [](v8::Local<v8::Name> property_name,
                const v8::PropertyCallbackInfo<v8::Value>& info) {
               AccessorValue<V> acc_value;
-              if (!gin::ConvertFromV8(info.GetIsolate(), info.Data(),
+              if (!gin::ConvertFromV8(info.GetIsolate(),
+                                      info.DataV2().As<v8::Value>(),
                                       &acc_value))
                 return;
 

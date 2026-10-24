@@ -12,6 +12,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/client_certificate_delegate.h"
+#include "content/public/common/child_process_id.h"
 #include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
@@ -97,9 +98,9 @@ class ClientCertificateResponderDelegate
     mojo::MakeSelfOwnedReceiver(
         std::make_unique<SSLPrivateKeyImpl>(private_key),
         ssl_private_key.InitWithNewPipeAndPassReceiver());
-    responder_->ContinueWithCertificate(
-        std::move(cert), private_key->GetProviderName(),
-        private_key->GetAlgorithmPreferences(), std::move(ssl_private_key));
+    responder_->ContinueWithCertificate(cert, private_key->GetProviderName(),
+                                        private_key->GetAlgorithmPreferences(),
+                                        std::move(ssl_private_key));
   }
 
  private:
@@ -118,8 +119,9 @@ void OnGotClientCerts(
   // ElectronBrowserClient handles both the empty-list case (continue without a
   // certificate) and routing to the `select-client-certificate` app event.
   ElectronBrowserClient::Get()->SelectClientCertificate(
-      browser_context, /*process_id=*/0, /*web_contents=*/nullptr,
-      cert_info.get(), std::move(identities), std::move(delegate));
+      browser_context, /*process_id=*/content::ChildProcessId(),
+      /*web_contents=*/nullptr, cert_info.get(), std::move(identities),
+      std::move(delegate));
 }
 
 }  // namespace

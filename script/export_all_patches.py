@@ -10,7 +10,8 @@ from lib import git
 
 def export_patches(target, dry_run):
   repo = target.get('repo')
-  if not os.path.exists(repo):
+  # An unfetched gitlink leaves an empty dir, and git would resolve it to the parent repo.
+  if not os.path.exists(os.path.join(repo, '.git')):
     warnings.warn(f'repo not found: {repo}')
     return
   git.export_patches(

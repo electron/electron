@@ -14,6 +14,7 @@
 #include "base/process/process_handle.h"
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/service_process_host.h"
+#include "content/public/common/child_process_id.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
@@ -71,6 +72,9 @@ class UtilityProcessWrapper final
 
   static UtilityProcessWrapper* Create(gin::Arguments* args);
   static UtilityProcessWrapper* FromProcessId(base::ProcessId pid);
+  // Shuts down every wrapper that has not terminated, including ones whose
+  // child is still launching. Called before Node.js stops at browser shutdown.
+  static void ShutdownAll();
 
 #if BUILDFLAG(ENABLE_PROMPT_API)
   void BindAIManager(std::optional<int32_t> web_contents_id,
@@ -98,6 +102,7 @@ class UtilityProcessWrapper final
  private:
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
+  void DispatchPendingMessages();
   void CloseStdioReadFds();
 
   void HandleTermination(uint32_t exit_code);
@@ -135,6 +140,9 @@ class UtilityProcessWrapper final
   node::mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParams();
 
   base::ProcessId pid_ = base::kNullProcessId;
+  // Identifies the utility process in BrowserChildProcessObserver callbacks,
+  // whose ChildProcessData no longer carries the process.
+  content::ChildProcessId child_process_id_;
 #if BUILDFLAG(IS_WIN)
   // Non-owning handles, these will be closed when the
   // corresponding FD are closed via _close.

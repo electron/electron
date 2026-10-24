@@ -111,11 +111,17 @@ jobs:
       # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
       DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
+        sudo dscacheutil -flushcache
+        sudo killall -HUP mDNSResponder
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
-      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
       with:
-        node-version: 22.21.x
+        node-version: 22.23.4
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
@@ -304,6 +310,20 @@ jobs:
             fi
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    # The real mouse input specs (spec/fixtures/native-addon/mouse-input) load
+    # libXtst at runtime. The x64 build image ships it; the arm64 test image
+    # does not. Runs after the parallel group so it cannot race the CUPS
+    # step's apt-get for the dpkg lock.
+    - name: Install libXtst runtime (linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: |
+        if ldconfig -p | grep -q 'libXtst\.so\.6'; then
+          echo "libXtst.so.6 already present"
+        else
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y --no-install-recommends libxtst6
+        fi
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist (win)
@@ -342,12 +362,55 @@ jobs:
         /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
           -f src/out/Default/Electron.app
 
+    # Some hosted macOS VMs deny screen capture and synthetic input to the job
+    # even though the image and the TCC step above grant them. Print what TCC
+    # needs to explain why (process chain, TCC.db rows, tccd attribution) and
+    # warn; this step never changes TCC state or fails the job.
+    - name: Check TCC access on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      timeout-minutes: 5
+      continue-on-error: true
+      run: src/electron/script/actions/check-macos-tcc.sh
+
+    # On GitHub-hosted Windows runners the agent's terminal window sits in the
+    # foreground and covers most of the desktop. Windows' native occlusion
+    # tracking then marks test windows beneath it as hidden, so they stop
+    # producing frames. Minimize it before the specs run.
+    - name: Minimize Runner Terminal Window (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: pwsh
+      run: |
+        Add-Type -Namespace ElectronCI -Name User32 -MemberDefinition @'
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string cls, string title);
+        '@
+        foreach ($cls in 'ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS') {
+          $h = [IntPtr]::Zero
+          while (($h = [ElectronCI.User32]::FindWindowEx([IntPtr]::Zero, $h, $cls, [NullString]::Value)) -ne [IntPtr]::Zero) {
+            if ([ElectronCI.User32]::IsWindowVisible($h) -and -not [ElectronCI.User32]::IsIconic($h)) {
+              # 6 = SW_MINIMIZE
+              [void][ElectronCI.User32]::ShowWindow($h, 6)
+              Write-Host ("Minimized {0} window 0x{1:X}" -f $cls, $h.ToInt64())
+            }
+          }
+        }
+
+    - name: Dismiss first sign-in windows (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      timeout-minutes: 5
+      # Best effort: if the window stays up, the specs report what covers
+      # them (describeWindowAtPoint) rather than failing here.
+      continue-on-error: true
+      uses: ./src/electron/.github/actions/dismiss-windows-first-sign-in
+      with:
+        minimizer-seconds: 3600
+
     - name: Run Electron Tests
       shell: bash
       timeout-minutes: 60
       env:
-        MOCHA_REPORTER: mocha-multi-reporters
-        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
@@ -396,18 +459,21 @@ jobs:
         # Run tests
         if [ "$TARGET_PLATFORM" != "linux" ]; then
           echo "About to start tests"
+          LOGGING_ARGS=--enable-logging
           if [ "$TARGET_PLATFORM" = "win" ]; then
-            if [ "$TARGET_ARCH" = "arm64" ]; then
-              export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
-            fi
+            # Child processes can't write to our stderr pipe on Windows, and
+            # with plain --enable-logging each one opens a console window that
+            # can cover the test windows. Log to a file (uploaded with the test
+            # artifacts) and mirror the main process to stderr.
+            export ELECTRON_ALSO_LOG_TO_STDERR=1
+            mkdir -p spec/artifacts
+            LOGGING_ARGS="--enable-logging=file --log-file=$(pwd -W)/spec/artifacts/electron_debug.log"
           fi
           if [ "$IS_UBSAN" = "true" ]; then
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
-            export MOCHA_TIMEOUT=180000
-            node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
-          else
-            node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+            export ELECTRON_SPEC_TIMEOUT=180000
           fi
+          node script/yarn.js test --runners=main --trace-uncaught $LOGGING_ARGS --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
@@ -426,24 +492,33 @@ jobs:
             export NSS_DISABLE_ARENA_FREE_LIST=1
             export NSS_DISABLE_UNLOAD=1
             export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
-            export MOCHA_TIMEOUT=180000
+            export ELECTRON_SPEC_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           elif [ "$IS_UBSAN" == "true" ]; then
             cd ..
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
-            export MOCHA_TIMEOUT=180000
+            export ELECTRON_SPEC_TIMEOUT=180000
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else
             if [ "$DISPLAY_SERVER" = "wayland" ]; then
-              runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+              runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
             else
-              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
             fi
           fi
         fi
+    - name: Print minimized WSL terminals (Windows)
+      if: ${{ always() && inputs.target-platform == 'win' }}
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $log = Join-Path $env:RUNNER_TEMP 'minimize-wsl-terminals.log'
+        foreach ($f in "$log.err", "$log.out", $log) {
+          if (Test-Path $f) { Write-Host "--- $f"; Get-Content $f | Write-Host }
+        }
     - name: Verify custom mksnapshot blobs reach the main process
       # electron-mksnapshot / LoadBrowserProcessSpecificV8Snapshot users replace
       # the V8 snapshot blobs; check on one native leg that a build's own
@@ -488,7 +563,7 @@ jobs:
       if: always() && !cancelled()
     - name: Upload Test Artifacts
       if: always()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
       with:
         name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}
         path: src/electron/spec/artifacts

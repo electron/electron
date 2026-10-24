@@ -496,8 +496,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
   TRACE_EVENT0("electron", "ContextBridge::ProxyFunctionWrapper");
-  CHECK(info.Data()->IsArray());
-  v8::Local<v8::Array> state = info.Data().As<v8::Array>();
+  v8::Local<v8::Value> data = info.DataV2().As<v8::Value>();
+  CHECK(data->IsArray());
+  v8::Local<v8::Array> state = data.As<v8::Array>();
   gin::Arguments args{info};
   v8::Isolate* const isolate = args.isolate();
   // Context the proxy function was called from
@@ -861,7 +862,7 @@ void OverrideGlobalValueFromIsolatedWorld(
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   gin_helper::Dictionary global(isolate, main_context->Global());
 
-  const std::string final_key = key_path[key_path.size() - 1];
+  const std::string& final_key = key_path[key_path.size() - 1];
   auto maybe_target_object =
       TraceKeyPath(global, key_path, allow_silent_failure);
   if (!maybe_target_object.has_value())
@@ -898,7 +899,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   gin_helper::Dictionary global(isolate, main_context->Global());
 
-  const std::string final_key = key_path[key_path.size() - 1];
+  const std::string& final_key = key_path[key_path.size() - 1];
   auto target_dict = TraceKeyPath(global, key_path, false);
   v8::Local<v8::Object> target_object = target_dict.value().GetHandle();
 
@@ -1220,23 +1221,21 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("executeInWorld", &electron::api::ExecuteInWorld);
-  dict.SetMethod("exposeAPIInWorld", &electron::api::ExposeAPIInWorld);
 
   // The `contextBridge` module of 'electron'.
   auto context_bridge = gin_helper::Dictionary::CreateEmpty(isolate);
-  context_bridge.SetMethod("exposeInMainWorld", &ExposeInMainWorld);
-  context_bridge.SetMethod("exposeInIsolatedWorld", &ExposeInIsolatedWorld);
-  context_bridge.SetMethod("executeInMainWorld", &ExecuteInMainWorld);
+  context_bridge.SetMethod<&ExposeInMainWorld>("exposeInMainWorld");
+  context_bridge.SetMethod<&ExposeInIsolatedWorld>("exposeInIsolatedWorld");
+  context_bridge.SetMethod<&ExecuteInMainWorld>("executeInMainWorld");
 #if DCHECK_IS_ON()
   // Test-only access to the main-world override helpers.
   auto internal = gin_helper::Dictionary::CreateEmpty(isolate);
-  internal.SetMethod("overrideGlobalValueFromIsolatedWorld",
-                     &OverrideGlobalValueFromIsolatedWorld);
-  internal.SetMethod("overrideGlobalValueWithDynamicPropsFromIsolatedWorld",
-                     &OverrideGlobalValueWithDynamicPropsFromIsolatedWorld);
-  internal.SetMethod("overrideGlobalPropertyFromIsolatedWorld",
-                     &OverrideGlobalPropertyFromIsolatedWorld);
+  internal.SetMethod<&OverrideGlobalValueFromIsolatedWorld>(
+      "overrideGlobalValueFromIsolatedWorld");
+  internal.SetMethod<&OverrideGlobalValueWithDynamicPropsFromIsolatedWorld>(
+      "overrideGlobalValueWithDynamicPropsFromIsolatedWorld");
+  internal.SetMethod<&OverrideGlobalPropertyFromIsolatedWorld>(
+      "overrideGlobalPropertyFromIsolatedWorld");
   context_bridge.Set("internalContextBridge", internal);
 #endif
   dict.Set("contextBridge", context_bridge);

@@ -147,8 +147,6 @@
   visible to users.
 * `spellcheck` boolean (optional) - Whether to enable the builtin spellchecker.
   Default is `true`.
-* `enableWebSQL` boolean (optional) - Whether to enable the [WebSQL api](https://www.w3.org/TR/webdatabase/).
-  Default is `true`.
 * `v8CacheOptions` string (optional) - Enforces the v8 code caching policy
   used by blink. Accepted values are
   * `none` - Disables code caching

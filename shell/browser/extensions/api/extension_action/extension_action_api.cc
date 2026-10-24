@@ -7,47 +7,9 @@
 #include <utility>
 
 #include "base/logging.h"
-#include "base/no_destructor.h"
-#include "extensions/browser/event_router.h"
-#include "extensions/browser/extension_prefs.h"
-#include "extensions/browser/extension_util.h"
-#include "extensions/common/mojom/view_type.mojom.h"
-
-using content::WebContents;
+#include "base/values.h"
 
 namespace extensions {
-
-//
-// ExtensionActionAPI::Observer
-//
-
-void ExtensionActionAPI::Observer::OnExtensionActionUpdated(
-    ExtensionAction* extension_action,
-    content::WebContents* web_contents,
-    content::BrowserContext* browser_context) {}
-
-void ExtensionActionAPI::Observer::OnExtensionActionAPIShuttingDown() {}
-
-//
-// ExtensionActionAPI
-//
-
-ExtensionActionAPI::ExtensionActionAPI(content::BrowserContext*) {}
-
-// static
-BrowserContextKeyedAPIFactory<ExtensionActionAPI>*
-ExtensionActionAPI::GetFactoryInstance() {
-  static base::NoDestructor<BrowserContextKeyedAPIFactory<ExtensionActionAPI>>
-      instance;
-  return instance.get();
-}
-
-// static
-ExtensionActionAPI* ExtensionActionAPI::Get(content::BrowserContext* context) {
-  return BrowserContextKeyedAPIFactory<ExtensionActionAPI>::Get(context);
-}
-
-void ExtensionActionAPI::Shutdown() {}
 
 //
 // ExtensionActionFunction
@@ -85,13 +47,6 @@ ExtensionActionSetIconFunction::RunExtensionAction() {
   LOG(INFO) << "chrome.action.setIcon is not supported in Electron";
 
   return RespondNow(NoArguments());
-}
-
-ExtensionFunction::ResponseAction
-ExtensionActionOpenPopupFunction::RunExtensionAction() {
-  LOG(INFO) << "chrome.action.openPopup is not supported in Electron";
-
-  return RespondNow(WithArguments(""));
 }
 
 ExtensionFunction::ResponseAction

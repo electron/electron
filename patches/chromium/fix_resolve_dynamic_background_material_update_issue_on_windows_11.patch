@@ -8,10 +8,10 @@ such as the background turning black when maximizing the window and
 dynamic background material settings not taking effect.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 50f5557384eb36618f983229617098e938c37bc7..d967500524dcaf1c962a39c11b917f46d89bbb66 100644
+index 0f0b0853410ec111f7fde3b991681bcf4046af8b..d7a65783e0afddf49c216f670f37cef1ed747459 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -244,6 +244,10 @@ bool DesktopWindowTreeHostWin::IsInNativeMoveResizeLoop() const {
+@@ -247,6 +247,10 @@ bool DesktopWindowTreeHostWin::IsInNativeMoveResizeLoop() const {
                                message_handler_->IsInNativeMenuLoop());
  }
  
@@ -23,10 +23,10 @@ index 50f5557384eb36618f983229617098e938c37bc7..d967500524dcaf1c962a39c11b917f46
  
  void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 12edd2db9b88af65892cd5c183271258eaccf63d..b9ee5824e422b75ad37536c8848ef825a5d1fd6e 100644
+index bb4c968427e2b97ef8a7d29b4ab91326085b5930..60dc1b13a67bb0e2d0ab04b14ae0d7886fb81a19 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -96,6 +96,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -107,6 +107,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    // Returns true if any window is in a move/resize loop.
    bool IsInNativeMoveResizeLoop() const;
  

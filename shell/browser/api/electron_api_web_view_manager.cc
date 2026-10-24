@@ -42,8 +42,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("addGuest", &AddGuest);
-  dict.SetMethod("removeGuest", &RemoveGuest);
+  dict.SetMethod<&AddGuest>("addGuest");
+  dict.SetMethod<&RemoveGuest>("removeGuest");
 }
 
 }  // namespace

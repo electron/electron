@@ -20,10 +20,8 @@ declare namespace NodeJS {
   interface FeaturesBinding {
     isBuiltinSpellCheckerEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
-    isFakeLocationProviderEnabled(): boolean;
     isPrintingEnabled(): boolean;
     isPromptAPIEnabled(): boolean;
-    isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
     isRunAsNodeEnabled(): boolean;
   }
@@ -42,25 +40,6 @@ declare namespace NodeJS {
     runUntilIdle(): void;
     triggerFatalErrorForTesting(): void;
     exitImmediately(code: number): never;
-  }
-
-  type CrashReporterBinding = Omit<Electron.CrashReporter, 'start'> & {
-    start(
-      submitUrl: string,
-      uploadToServer: boolean,
-      ignoreSystemCrashHandler: boolean,
-      rateLimit: boolean,
-      compress: boolean,
-      globalExtra: Record<string, string>,
-      extra: Record<string, string>,
-      isNodeProcess: boolean
-    ): void;
-  };
-
-  interface EnvironmentBinding {
-    getVar(name: string): string | null;
-    hasVar(name: string): boolean;
-    setVar(name: string, value: string): boolean;
   }
 
   type AsarFileInfo = {
@@ -107,8 +86,6 @@ declare namespace NodeJS {
     isValidHeaderName: (headerName: string) => boolean;
     isValidHeaderValue: (headerValue: string) => boolean;
     fileURLToFilePath: (url: string) => string;
-    Net: any;
-    net: any;
     createURLLoader(options: CreateURLLoaderOptions): URLLoader;
     createWebSocket(options: CreateWebSocketOptions): WebSocketWrapper;
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
@@ -133,25 +110,6 @@ declare namespace NodeJS {
     on(eventName: 'closing', listener: (event: any) => void): this;
     on(eventName: 'close', listener: (event: any, wasClean: boolean, code: number, reason: string) => void): this;
     on(eventName: 'error', listener: (event: any) => void): this;
-  }
-
-  interface ActivationArgumentsInternal {
-    type: string;
-    arguments: string;
-    actionIndex?: number;
-    reply?: string;
-    userInputs?: Record<string, string>;
-  }
-
-  interface NotificationBinding {
-    isSupported(): boolean;
-    getHistory(): Promise<Electron.Notification[]>;
-    remove(id: string | string[]): void;
-    removeAll(): void;
-    removeGroup(groupId: string): void;
-    Notification: typeof Electron.Notification;
-    // Windows-only callback for cold-start notification activation
-    handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;
   }
 
   interface PowerMonitorBinding extends Electron.PowerMonitor {
@@ -183,8 +141,6 @@ declare namespace NodeJS {
     WebFrameMain: typeof Electron.WebFrameMain;
     fromId(processId: number, routingId: number): Electron.WebFrameMain | undefined;
     fromFrameToken(processId: number, frameToken: string): Electron.WebFrameMain | null;
-    _fromIdIfExists(processId: number, routingId: number): Electron.WebFrameMain | null;
-    _fromFtnIdIfExists(frameTreeNodeId: number): Electron.WebFrameMain | null;
   }
 
   interface InternalWebPreferences {
@@ -282,7 +238,6 @@ declare namespace NodeJS {
       getCrashdumpSignalFD(): number;
       getCrashpadHandlerPID(): number;
     };
-    _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_events'): { EventEmitter: typeof import('events').EventEmitter };
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
@@ -294,16 +249,16 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
     _linkedBinding(name: 'electron_browser_app'): {
       app: Electron.App;
-      App: Function;
       defaultDesktopName(name: string | undefined): string;
     };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
     _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_clipboard_item'): Electron.ClipboardItem;
-    _linkedBinding(name: 'electron_browser_crash_reporter'): CrashReporterBinding;
+    _linkedBinding(name: 'electron_browser_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
       isDisplayMediaSystemPickerAvailable(): boolean;
+      getRestoreToken(sourceId: string): string;
     };
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
     _linkedBinding(name: 'electron_browser_ipc_dispatch'): {
@@ -313,11 +268,9 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
     _linkedBinding(name: 'electron_browser_menu'): { Menu: typeof Electron.Menu; MenuItem: typeof Electron.MenuItem };
-    _linkedBinding(name: 'electron_browser_message_port'): {
-      createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
-    };
+    _linkedBinding(name: 'electron_browser_message_port'): { MessageChannelMain: typeof Electron.MessageChannelMain };
     _linkedBinding(name: 'electron_browser_native_theme'): { nativeTheme: Electron.NativeTheme };
-    _linkedBinding(name: 'electron_browser_notification'): NotificationBinding;
+    _linkedBinding(name: 'electron_browser_notification'): { Notification: typeof Electron.Notification };
     _linkedBinding(name: 'electron_browser_power_monitor'): PowerMonitorBinding;
     _linkedBinding(name: 'electron_browser_power_save_blocker'): { powerSaveBlocker: Electron.PowerSaveBlocker };
     _linkedBinding(name: 'electron_browser_push_notifications'): { pushNotifications: Electron.PushNotifications };
@@ -332,43 +285,21 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
     _linkedBinding(name: 'electron_renderer_context_bridge'): {
-      executeInWorld(worldId: number, script: { func: Function; args?: any[] }): any;
-      exposeAPIInWorld(worldId: number, key: string, api: any): void;
       contextBridge: Electron.ContextBridge;
     };
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     _linkedBinding(name: 'electron_utility_parent_port'): { createParentPort(): ElectronInternal.ParentPort };
-    log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
-    // Additional events
-    once(event: 'document-start', listener: () => any): this;
-    once(event: 'document-end', listener: () => any): this;
-
-    // Additional properties
-    _serviceStartupScript: string;
-
     helperExecPath: string;
-    mainModule?: NodeJS.Module | undefined;
 
     appCodeLoaded?: () => void;
   }
 }
 
-declare namespace NodeJS {
-  interface Global {
-    require: NodeRequire;
-    module: NodeModule;
-    __filename: string;
-    __dirname: string;
-  }
-}
-
 declare interface Window {
-  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
-  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
   WebView: typeof ElectronInternal.WebViewElement;
   trustedTypes: TrustedTypePolicyFactory;
 }

@@ -21,11 +21,11 @@
 #include "content/public/browser/browser_thread.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
-#include "extensions/browser/extension_registry.h"
 #include "extensions/browser/management_policy.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/quota_service.h"
 #include "extensions/browser/service_worker_manager.h"
+#include "extensions/browser/state_store.h"
 #include "extensions/browser/user_script_manager.h"
 #include "extensions/common/constants.h"
 #include "shell/browser/extensions/electron_extension_loader.h"
@@ -43,7 +43,23 @@ ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
       store_factory_(base::MakeRefCounted<value_store::ValueStoreFactoryImpl>(
-          browser_context->GetPath())) {}
+          browser_context->GetPath())) {
+  // Extensions cannot be loaded in in-memory sessions, which must not write
+  // to disk either.
+  if (browser_context->IsOffTheRecord())
+    return;
+
+  // Created here rather than in InitForRegularProfile() because keyed
+  // services built with the browser context, such as AlarmManager, look the
+  // stores up when they are constructed. The rules and scripts stores load
+  // immediately so their contents are ready before the first network request.
+  state_store_ = std::make_unique<StateStore>(
+      browser_context, store_factory_, StateStore::BackendType::STATE, true);
+  rules_store_ = std::make_unique<StateStore>(
+      browser_context, store_factory_, StateStore::BackendType::RULES, false);
+  dynamic_user_scripts_store_ = std::make_unique<StateStore>(
+      browser_context, store_factory_, StateStore::BackendType::SCRIPTS, false);
+}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
 
@@ -142,15 +158,15 @@ UserScriptManager* ElectronExtensionSystem::user_script_manager() {
 }
 
 StateStore* ElectronExtensionSystem::state_store() {
-  return nullptr;
+  return state_store_.get();
 }
 
 StateStore* ElectronExtensionSystem::rules_store() {
-  return nullptr;
+  return rules_store_.get();
 }
 
 StateStore* ElectronExtensionSystem::dynamic_user_scripts_store() {
-  return nullptr;
+  return dynamic_user_scripts_store_.get();
 }
 
 scoped_refptr<value_store::ValueStoreFactory>
@@ -191,13 +207,6 @@ void ElectronExtensionSystem::PerformActionBasedOnOmahaAttributes(
     const std::string& extension_id,
     const base::DictValue& attributes) {
   NOTREACHED();
-}
-
-void ElectronExtensionSystem::OnExtensionRegisteredWithRequestContexts(
-    scoped_refptr<Extension> extension) {
-  ExtensionRegistry* registry = ExtensionRegistry::Get(browser_context_);
-  registry->AddReady(extension);
-  registry->TriggerOnReady(extension.get());
 }
 
 }  // namespace extensions

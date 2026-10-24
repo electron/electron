@@ -147,8 +147,6 @@ void ToDictionary(gin_helper::Dictionary* details,
 void ToDictionary(gin_helper::Dictionary* details,
                   const network::ResourceRequest& request) {
   details->Set("referrer", request.referrer);
-  if (request.request_body)
-    details->Set("uploadData", *request.request_body);
 }
 
 void ToDictionary(gin_helper::Dictionary* details,
@@ -226,14 +224,12 @@ WebRequest* ForObservedRequest(
 const gin::WrapperInfo WebRequest::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronWebRequest);
 
-WebRequest::RequestFilter::RequestFilter(
-    std::set<URLPattern> include_url_patterns,
-    std::set<URLPattern> exclude_url_patterns,
-    std::set<extensions::WebRequestResourceType> types)
-    : include_url_patterns_(std::move(include_url_patterns)),
-      exclude_url_patterns_(std::move(exclude_url_patterns)),
-      types_(std::move(types)) {}
 WebRequest::RequestFilter::RequestFilter(const RequestFilter&) = default;
+WebRequest::RequestFilter::RequestFilter(RequestFilter&&) = default;
+WebRequest::RequestFilter& WebRequest::RequestFilter::operator=(
+    const RequestFilter&) = default;
+WebRequest::RequestFilter& WebRequest::RequestFilter::operator=(
+    RequestFilter&&) = default;
 WebRequest::RequestFilter::RequestFilter() = default;
 WebRequest::RequestFilter::~RequestFilter() = default;
 
@@ -419,6 +415,8 @@ int WebRequest::HandleOnBeforeRequestResponseEvent(
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, request, *new_url);
+  if (request.request_body)
+    details.Set("uploadData", *request.request_body);
 
   auto& allocation_handle = isolate->GetCppHeap()->GetAllocationHandle();
   ResponseCallback response = base::BindOnce(
@@ -486,6 +484,8 @@ int WebRequest::HandleOnBeforeSendHeadersResponseEvent(
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, request, *headers);
+  if (request.request_body)
+    details.Set("uploadData", *request.request_body);
 
   ResponseCallback response =
       base::BindOnce(&WebRequest::OnBeforeSendHeadersListenerResult,
@@ -954,7 +954,7 @@ WebRequest* WebRequest::Create(
     base::PassKey<Session> passkey,
     base::WeakPtr<ElectronBrowserContext> browser_context) {
   return cppgc::MakeGarbageCollected<WebRequest>(
-      isolate->GetCppHeap()->GetAllocationHandle(), std::move(passkey),
+      isolate->GetCppHeap()->GetAllocationHandle(), passkey,
       std::move(browser_context));
 }
 

@@ -1,52 +1,34 @@
-import * as cp from 'node:child_process';
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
-
-import { ciGpuArgs, defer } from './spec-helpers.ts';
-
-const pdfReaderPath = path.resolve(import.meta.dirname, '..', 'fixtures', 'api', 'pdf-reader.mjs');
-
-// Parses a printToPDF result buffer with pdf.js in a subprocess and returns
-// info about the document and its first page.
-export const readPDF = async (data: any) => {
-  const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-printtopdf-'));
-  const pdfPath = path.resolve(tmpDir, 'test.pdf');
-  await fs.promises.writeFile(pdfPath, data);
-
-  const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath, ...ciGpuArgs], {
-    stdio: 'pipe'
-  });
-  // Register cleanup right away so a hung PDF read doesn't leak the child
-  // into the in-job retry when mocha times out.
-  defer(() => {
-    if (result.exitCode === null && result.signalCode === null) {
-      result.kill();
+// Parses printToPDF result buffers with pdf.js and returns info about each
+// document and its first page, as plain JSON data. pdf.js runs in this
+// process: starting a separate Electron for it took longer than the printing
+// itself and pushed tests that check several PDFs past their timeout on slow
+// CI hosts.
+export const readPDFs = async (datas: Uint8Array[]) => {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const pdfInfos = [];
+  for (const data of datas) {
+    // pdf.js takes ownership of (detaches) the buffer it is given, so give it
+    // a copy.
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(data) }).promise;
+    try {
+      const page = await doc.getPage(1);
+      const { items } = await page.getTextContent();
+      pdfInfos.push({
+        numPages: doc.numPages,
+        view: page.view,
+        textContent: items,
+        markInfo: await doc.getMarkInfo()
+      });
+    } finally {
+      await doc.destroy();
     }
-  });
-
-  const stdout: Buffer[] = [];
-  const stderr: Buffer[] = [];
-  result.stdout.on('data', (chunk) => stdout.push(chunk));
-  result.stderr.on('data', (chunk) => stderr.push(chunk));
-
-  const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
-    result.on('close', (code, signal) => {
-      resolve([code, signal]);
-    });
-  });
-  await fs.promises.rm(tmpDir, { force: true, recursive: true });
-  if (code !== 0) {
-    const errMsg = Buffer.concat(stderr).toString().trim();
-    console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
   }
-  try {
-    return JSON.parse(Buffer.concat(stdout).toString().trim());
-  } catch (err) {
-    console.error('Error parsing PDF file:', err);
-    console.error('Raw output:', Buffer.concat(stdout).toString().trim());
-    throw err;
-  }
+  return JSON.parse(JSON.stringify(pdfInfos)) as any[];
+};
+
+export const readPDF = async (data: Uint8Array) => {
+  const [pdfInfo] = await readPDFs([data]);
+  return pdfInfo;
 };
 
 export const containsText = (items: any[], text: RegExp) => {

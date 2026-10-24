@@ -6,8 +6,8 @@
 
 #include <array>
 #include <map>
-#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "base/functional/bind.h"
 #include "base/location.h"
@@ -17,6 +17,7 @@
 #include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/browser_child_process_host_iterator.h"
 #include "content/public/browser/child_process_data.h"
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/child_process_termination_info.h"
@@ -27,6 +28,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -69,21 +71,24 @@ namespace electron {
 
 namespace {
 
-// Maps process IDs to their UtilityProcessWrapper instances.
+// Tracks every UtilityProcessWrapper from construction until termination,
+// including ones whose child has not launched yet and so has no pid.
 struct UtilityProcessRegistry {
-  void Add(base::ProcessId pid, api::UtilityProcessWrapper* wrapper) {
-    map_.emplace(pid, wrapper);
+  using Entries =
+      std::vector<cppgc::WeakPersistent<api::UtilityProcessWrapper>>;
+
+  void Add(api::UtilityProcessWrapper* wrapper) {
+    wrappers_.emplace_back(wrapper);
   }
-  void Remove(base::ProcessId pid) { map_.erase(pid); }
-  api::UtilityProcessWrapper* Lookup(base::ProcessId pid) {
-    auto it = map_.find(pid);
-    return it != map_.end() ? it->second.Get() : nullptr;
+  void Remove(api::UtilityProcessWrapper* wrapper) {
+    std::erase_if(wrappers_, [wrapper](const auto& entry) {
+      return !entry || entry.Get() == wrapper;
+    });
   }
+  const Entries& wrappers() const { return wrappers_; }
 
  private:
-  std::unordered_map<base::ProcessId,
-                     cppgc::WeakPersistent<api::UtilityProcessWrapper>>
-      map_;
+  Entries wrappers_;
 };
 
 UtilityProcessRegistry& GetAllUtilityProcessWrappers() {
@@ -111,6 +116,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     bool disclaim_responsibility,
     Session* session)
     : create_network_observer_(create_network_observer), session_(session) {
+  // Registered before anything can fail, so that browser shutdown also reaches
+  // a wrapper whose child is still launching. HandleTermination() removes it.
+  GetAllUtilityProcessWrappers().Add(this);
   auto& allocation_handle =
       JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
 #if BUILDFLAG(IS_WIN)
@@ -270,9 +278,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       mojo::Connector::SINGLE_THREADED_SEND,
       base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->set_incoming_receiver(this);
+  // |connector_| is owned by this wrapper and only ever reset, never moved, so
+  // destroying it cancels the handler.
   connector_->set_connection_error_handler(base::BindOnce(
-      &UtilityProcessWrapper::CloseConnectorPort,
-      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+      &UtilityProcessWrapper::CloseConnectorPort, base::Unretained(this)));
 
   params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),
@@ -288,6 +297,12 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 UtilityProcessWrapper::~UtilityProcessWrapper() {
   content::ServiceProcessHost::RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
+  // A wrapper that never reached HandleTermination(), e.g. one still alive at
+  // heap teardown, still owns its port and stdio read ends. Both are native,
+  // non-GC members. A port destroyed while still lent to |connector_| fails a
+  // DCHECK in MessagePortDescriptor::Reset().
+  CloseConnectorPort();
+  CloseStdioReadFds();
 }
 
 void UtilityProcessWrapper::OnServiceProcessLaunch(
@@ -296,7 +311,17 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
     return;
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
-  GetAllUtilityProcessWrappers().Add(pid_, this);
+  // Remember the child process id: the process has already gone from the
+  // ChildProcessData that BrowserChildProcessCrashed/Killed receive.
+  for (content::BrowserChildProcessHostIterator it(
+           content::PROCESS_TYPE_UTILITY);
+       !it.Done(); ++it) {
+    const base::Process& host_process = it.GetProcess();
+    if (host_process.IsValid() && host_process.Pid() == pid_) {
+      child_process_id_ = it.GetData().GetChildProcessId();
+      break;
+    }
+  }
   // JS wraps these in net.Socket and owns them from here on.
   if (stdout_read_fd_ != -1)
     EmitWithoutEvent("stdout", std::exchange(stdout_read_fd_, -1));
@@ -315,12 +340,13 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     return;
   terminated_ = true;
 
-  if (pid_ != base::kNullProcessId)
-    GetAllUtilityProcessWrappers().Remove(pid_);
+  GetAllUtilityProcessWrappers().Remove(this);
 
   pid_ = base::kNullProcessId;
+  child_process_id_ = content::ChildProcessId();
   content::ServiceProcessHost::RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
+  DispatchPendingMessages();
   CloseConnectorPort();
   CloseStdioReadFds();
   if (killed_) {
@@ -368,10 +394,10 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
 
 bool UtilityProcessWrapper::IsThisProcess(
     const content::ChildProcessData& data) const {
-  return pid_ != base::kNullProcessId &&
+  return !child_process_id_.is_null() &&
          data.process_type == content::PROCESS_TYPE_UTILITY &&
          data.metrics_name == node::mojom::NodeService::Name_ &&
-         data.GetProcess().Pid() == pid_;
+         data.GetChildProcessId() == child_process_id_;
 }
 
 void UtilityProcessWrapper::BrowserChildProcessCrashed(
@@ -403,7 +429,9 @@ void UtilityProcessWrapper::CloseStdioReadFds() {
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
-  if (!connector_closed_ && connector_ && connector_->is_valid()) {
+  // GiveDisentangledHandle() replaces an invalid handle with a dangling one, so
+  // the port is always reset, even if the connector's pipe is gone.
+  if (!connector_closed_ && connector_) {
     host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
     connector_ = nullptr;
     host_port_.Reset();
@@ -411,8 +439,26 @@ void UtilityProcessWrapper::CloseConnectorPort() {
   }
 }
 
+void UtilityProcessWrapper::DispatchPendingMessages() {
+  // Messages the child posted before it exited can still be queued on the
+  // port when its exit is observed: the connector dispatches them one per
+  // task, and the exit notification may already be ahead of those tasks.
+  // Dispatch whatever is already queued so it is emitted before 'exit'
+  // instead of being dropped with the port. A readable pipe never blocks
+  // WaitForIncomingMessage(). If dispatch fails, the connector's error
+  // handler closes the port and the loop ends.
+  while (!connector_closed_ && connector_ && connector_->is_valid() &&
+         connector_->handle().QuerySignalsState().readable()) {
+    if (!connector_->WaitForIncomingMessage())
+      break;
+  }
+}
+
 void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
   node_service_remote_.reset();
+  // The child is still running during browser shutdown; drop its messages
+  // rather than dispatching them.
+  CloseConnectorPort();
   HandleTermination(exit_code);
 }
 
@@ -571,8 +617,27 @@ void UtilityProcessWrapper::BindAIManager(
 // static
 UtilityProcessWrapper* UtilityProcessWrapper::FromProcessId(
     base::ProcessId pid) {
-  auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
-  return utility_process_wrapper ? utility_process_wrapper : nullptr;
+  // Wrappers whose child has not launched yet have no pid.
+  if (pid == base::kNullProcessId)
+    return nullptr;
+  for (const auto& wrapper : GetAllUtilityProcessWrappers().wrappers()) {
+    if (wrapper && wrapper->pid_ == pid)
+      return wrapper.Get();
+  }
+  return nullptr;
+}
+
+// static
+void UtilityProcessWrapper::ShutdownAll() {
+  // Shutdown() removes each wrapper from the registry and runs 'exit'
+  // listeners, so iterate over a copy that keeps the wrappers alive.
+  std::vector<cppgc::Persistent<UtilityProcessWrapper>> wrappers;
+  for (const auto& wrapper : GetAllUtilityProcessWrappers().wrappers()) {
+    if (wrapper)
+      wrappers.emplace_back(wrapper.Get());
+  }
+  for (const auto& wrapper : wrappers)
+    wrapper->Shutdown(0 /* exit_code */);
 }
 
 // static
@@ -696,7 +761,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);
+  dict.SetMethod<&electron::api::UtilityProcessWrapper::Create>("_fork");
 }
 
 }  // namespace

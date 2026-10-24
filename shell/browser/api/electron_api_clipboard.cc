@@ -274,7 +274,7 @@ v8::Local<v8::Promise> Clipboard::ReadText(ui::ClipboardBuffer buffer,
               return;
             }
 #endif
-            promise.Resolve(std::move(result));
+            promise.Resolve(result);
           },
           std::move(promise), buffer));
 
@@ -394,9 +394,6 @@ void Clipboard::Clear(ui::ClipboardBuffer buffer) {
 #if !BUILDFLAG(IS_MAC)
 // Mac impls live in `electron_api_clipboard_mac.mm`.
 void Clipboard::WriteFindText(const std::u16string& text) {}
-std::u16string Clipboard::ReadFindText() {
-  return {};
-}
 #endif
 
 }  // namespace electron::api

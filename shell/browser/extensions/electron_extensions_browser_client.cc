@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <utility>
 
+#include "base/feature_list.h"
 #include "base/functional/bind.h"
-#include "base/path_service.h"
+#include "base/memory/scoped_refptr.h"
 #include "chrome/browser/extensions/chrome_url_request_util.h"
-#include "chrome/common/chrome_paths.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
@@ -26,8 +26,9 @@
 #include "extensions/browser/safe_browsing_delegate.h"
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
+#include "extensions/common/event_args.h"
+#include "extensions/common/extension_features.h"
 #include "extensions/common/features/feature_channel.h"
-#include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
 #include "extensions/common/manifest_handlers/devtools_page_handler.h"
@@ -171,33 +172,18 @@ bool ElectronExtensionsBrowserClient::CanExtensionCrossIncognito(
   return false;
 }
 
+extensions::BrowserContextLifetimeTracker*
+ElectronExtensionsBrowserClient::GetBrowserContextLifetimeTracker() {
+  // Electron sessions have no off-the-record sibling to track.
+  return nullptr;
+}
+
 base::FilePath ElectronExtensionsBrowserClient::GetBundleResourcePath(
     const network::ResourceRequest& request,
     const base::FilePath& extension_resources_path,
     int* resource_id) const {
-  *resource_id = 0;
-  base::FilePath chrome_resources_path;
-  if (!base::PathService::Get(chrome::DIR_RESOURCES, &chrome_resources_path))
-    return {};
-
-  // Since component extension resources are included in
-  // component_extension_resources.pak file in |chrome_resources_path|,
-  // calculate the extension |request_relative_path| against
-  // |chrome_resources_path|.
-  if (!chrome_resources_path.IsParent(extension_resources_path))
-    return {};
-
-  base::FilePath request_relative_path =
-      extensions::file_util::ExtensionURLToRelativeFilePath(request.url);
-  if (!ExtensionsBrowserClient::Get()
-           ->GetComponentExtensionResourceManager()
-           ->IsComponentExtensionResource(extension_resources_path,
-                                          request_relative_path, resource_id)) {
-    return {};
-  }
-  DCHECK_NE(0, *resource_id);
-
-  return request_relative_path;
+  return extensions::chrome_url_request_util::GetBundleResourcePath(
+      request, extension_resources_path, resource_id);
 }
 
 void ElectronExtensionsBrowserClient::LoadResourceFromResourceBundle(
@@ -338,7 +324,7 @@ ElectronExtensionsBrowserClient::GetComponentExtensionResourceManager() {
 void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     extensions::events::HistogramValue histogram_value,
     const std::string& event_name,
-    base::ListValue args,
+    scoped_refptr<const extensions::EventArgs> args,
     bool dispatch_to_off_the_record_profiles) {
   if (!BrowserThread::CurrentlyOn(BrowserThread::UI)) {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -353,7 +339,12 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
   for (auto* browser_context : ElectronBrowserContext::BrowserContexts()) {
     extensions::EventRouter::Get(browser_context)
         ->BroadcastEvent(std::make_unique<extensions::Event>(
-            histogram_value, event_name, args.Clone()));
+            histogram_value, event_name,
+            base::FeatureList::IsEnabled(
+                extensions_features::kShareEventArgsOnDispatch)
+                ? args
+                : base::MakeRefCounted<extensions::EventArgs>(
+                      args->data.Clone())));
   }
 }
 
@@ -369,11 +360,6 @@ bool ElectronExtensionsBrowserClient::IsBackgroundUpdateAllowed() {
 bool ElectronExtensionsBrowserClient::IsMinBrowserVersionSupported(
     const std::string& min_version) {
   return true;
-}
-
-void ElectronExtensionsBrowserClient::SetAPIClientForTest(
-    extensions::ExtensionsAPIClient* api_client) {
-  api_client_.reset(api_client);
 }
 
 void ElectronExtensionsBrowserClient::CreateExtensionWebContentsObserver(
@@ -409,6 +395,18 @@ ElectronExtensionsBrowserClient::GetScriptExecutorForTab(
     content::WebContents& web_contents) {
   auto* contents = electron::api::WebContents::From(&web_contents);
   return contents ? contents->script_executor() : nullptr;
+}
+
+void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
+    content::WebContents* web_contents,
+    int* tab_id,
+    int* window_id) {
+  // Tab ids are WebContents ids, the same ids chrome.tabs hands out. Electron
+  // has no window concept for extensions.
+  auto* contents =
+      web_contents ? electron::api::WebContents::From(web_contents) : nullptr;
+  *tab_id = contents ? contents->ID() : -1;
+  *window_id = -1;
 }
 
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {

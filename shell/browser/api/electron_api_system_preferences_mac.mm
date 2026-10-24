@@ -29,6 +29,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 
@@ -178,11 +179,10 @@ void SystemPreferences::PostNotification(const std::string& name,
 
   NSDistributedNotificationCenter* center =
       [NSDistributedNotificationCenter defaultCenter];
-  [center
-      postNotificationName:base::SysUTF8ToNSString(name)
-                    object:nil
-                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))
-        deliverImmediately:immediate];
+  [center postNotificationName:base::SysUTF8ToNSString(name)
+                        object:nil
+                      userInfo:DictionaryValueToNSDictionary(user_info)
+            deliverImmediately:immediate];
 }
 
 int SystemPreferences::SubscribeNotification(
@@ -201,10 +201,9 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
 void SystemPreferences::PostLocalNotification(const std::string& name,
                                               base::DictValue user_info) {
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
-  [center
-      postNotificationName:base::SysUTF8ToNSString(name)
-                    object:nil
-                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))];
+  [center postNotificationName:base::SysUTF8ToNSString(name)
+                        object:nil
+                      userInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
 int SystemPreferences::SubscribeLocalNotification(
@@ -223,10 +222,9 @@ void SystemPreferences::PostWorkspaceNotification(const std::string& name,
                                                   base::DictValue user_info) {
   NSNotificationCenter* center =
       [[NSWorkspace sharedWorkspace] notificationCenter];
-  [center
-      postNotificationName:base::SysUTF8ToNSString(name)
-                    object:nil
-                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))];
+  [center postNotificationName:base::SysUTF8ToNSString(name)
+                        object:nil
+                      userInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
 int SystemPreferences::SubscribeWorkspaceNotification(
@@ -247,6 +245,8 @@ int SystemPreferences::DoSubscribeNotification(
     const NotificationCallback& callback,
     NotificationCenterKind kind) {
   int request_id = g_next_id++;
+  // A copy is needed: the block below would capture a reference by reference.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   __block NotificationCallback copied_callback = callback;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -345,7 +345,7 @@ void SystemPreferences::RegisterDefaults(gin::Arguments* args) {
     return;
   }
   @try {
-    NSDictionary* dict = DictionaryValueToNSDictionary(std::move(dict_value));
+    NSDictionary* dict = DictionaryValueToNSDictionary(dict_value);
     for (id key in dict) {
       id value = [dict objectForKey:key];
       if ([value isKindOfClass:[NSNull class]] || value == nil) {
@@ -662,6 +662,14 @@ v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
 }
 
 bool SystemPreferences::AccessibilityDisplayShouldReduceTransparency() {
+  static bool warned = false;
+  if (!warned) {
+    warned = true;
+    util::EmitDeprecationWarning(
+        "'systemPreferences.accessibilityDisplayShouldReduceTransparency' is "
+        "deprecated and will be removed. Please use "
+        "'nativeTheme.prefersReducedTransparency' instead.");
+  }
   return [[NSWorkspace sharedWorkspace]
       accessibilityDisplayShouldReduceTransparency];
 }

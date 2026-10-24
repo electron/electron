@@ -46,7 +46,7 @@ class Environment;
 
 namespace ui {
 class LinuxUiGetter;
-class DarkModeManagerLinux;
+class PortalSettingsLinux;
 }  // namespace ui
 
 namespace views {
@@ -149,7 +149,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   base::PlatformThreadHandle system_fontconfig_thread_;
 
-  std::unique_ptr<ui::DarkModeManagerLinux> dark_mode_manager_;
+  std::unique_ptr<ui::PortalSettingsLinux> portal_settings_;
   std::unique_ptr<ui::LinuxUiGetter> linux_ui_getter_;
 #endif
 

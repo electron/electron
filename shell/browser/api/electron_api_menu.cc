@@ -14,7 +14,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/dictionary.h"
-#include "gin/per_context_data.h"
+#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_menu_item.h"
 #include "shell/browser/api/electron_api_menu_roles.h"
@@ -441,7 +441,7 @@ void Menu::InstallDefaultApplicationMenu(v8::Isolate* isolate) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   // Nothing need have touched electron.Menu yet; the wrappers created below
   // get their templates from the constructors.
-  gin::PerContextData* data = gin::PerContextData::From(context);
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   if (!data)
     return;
   if (data->GetObjectTemplate(&kWrapperInfo).IsEmpty())
@@ -525,7 +525,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_menuWillShow", &Menu::MenuWillShowForTesting)
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
 #if BUILDFLAG(IS_MAC)
-      .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
       .SetMethod("_simulateSubmenuCloseSequenceForTesting",
                  &Menu::SimulateSubmenuCloseSequenceForTesting)
 #endif
@@ -574,13 +573,13 @@ void Initialize(v8::Local<v8::Object> exports,
            electron::api::MenuItem::GetConstructor(
                isolate, context, &electron::api::MenuItem::kWrapperInfo));
   gin_helper::Dictionary statics(isolate, menu);
-  statics.SetMethod("buildFromTemplate", &Menu::BuildFromTemplate);
-  statics.SetMethod("setApplicationMenu", &Menu::SetApplicationMenuFromJS);
-  statics.SetMethod("getApplicationMenu", &Menu::GetApplicationMenu);
-  statics.SetMethod("_roleDefaults", &electron::api::menu_roles::Defaults);
+  statics.SetMethod<&Menu::BuildFromTemplate>("buildFromTemplate");
+  statics.SetMethod<&Menu::SetApplicationMenuFromJS>("setApplicationMenu");
+  statics.SetMethod<&Menu::GetApplicationMenu>("getApplicationMenu");
+  statics.SetMethod<&electron::api::menu_roles::Defaults>("_roleDefaults");
 #if BUILDFLAG(IS_MAC)
-  statics.SetMethod("sendActionToFirstResponder",
-                    &Menu::SendActionToFirstResponder);
+  statics.SetMethod<&Menu::SendActionToFirstResponder>(
+      "sendActionToFirstResponder");
 #endif
 }
 

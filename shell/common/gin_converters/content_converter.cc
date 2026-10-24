@@ -67,25 +67,6 @@ bool Converter<ui::mojom::MenuSourceType>::FromV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
-    v8::Isolate* isolate,
-    const blink::mojom::MenuItem::Type& val) {
-  switch (val) {
-    case blink::mojom::MenuItem::Type::kCheckableOption:
-      return StringToV8(isolate, "checkbox");
-    case blink::mojom::MenuItem::Type::kGroup:
-      return StringToV8(isolate, "radio");
-    case blink::mojom::MenuItem::Type::kSeparator:
-      return StringToV8(isolate, "separator");
-    case blink::mojom::MenuItem::Type::kSubMenu:
-      return StringToV8(isolate, "submenu");
-    case blink::mojom::MenuItem::Type::kOption:
-    default:
-      return StringToV8(isolate, "normal");
-  }
-}
-
-// static
 v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
     const ContextMenuParamsWithRenderFrameHost& val) {

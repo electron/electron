@@ -110,6 +110,18 @@ std::string ThemeDataSource::GetMimeType(const GURL& url) {
   return GetMimeTypeForUrl(url);
 }
 
+bool ThemeDataSource::ShouldServiceRequest(
+    const GURL& url,
+    content::BrowserContext* browser_context,
+    int render_process_id) {
+  // DevTools needs colors.css, but no other theme resource should be reachable
+  // from devtools://.
+  if (url.SchemeIs(content::kChromeDevToolsScheme))
+    return url.path() == "/colors.css";
+  return content::URLDataSource::ShouldServiceRequest(url, browser_context,
+                                                      render_process_id);
+}
+
 void ThemeDataSource::SendColorsCss(
     const GURL& url,
     const content::WebContents::Getter& wc_getter,

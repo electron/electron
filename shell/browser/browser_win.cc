@@ -7,6 +7,8 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 
+#include <utility>
+
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/file_version_info.h"
@@ -21,6 +23,7 @@
 #include "base/win/atl.h"
 #include "base/win/registry.h"
 #include "base/win/shlwapi.h"
+#include "base/win/shortcut.h"
 #include "base/win/windows_version.h"
 #include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
@@ -32,7 +35,6 @@
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
-#include "shell/common/command_line_util_win.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
@@ -71,27 +73,32 @@ bool GetProcessExecPath(std::wstring* exe) {
   return true;
 }
 
+// Callers may pass an executable path either bare or wrapped in double quotes.
+void StripSurroundingQuotes(std::wstring* path) {
+  if (path->size() >= 2 && path->front() == L'"' && path->back() == L'"') {
+    *path = path->substr(1, path->size() - 2);
+  }
+}
+
 bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
     return false;
   }
 
-  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
-  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
-    *exe = exe->substr(1, exe->size() - 2);
-  }
+  StripSurroundingQuotes(exe);
 
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty()) {
-    std::wstring result = electron::AddQuoteForArg(*exe);
+    std::wstring result = base::CommandLine::QuoteForCommandLineToArgvW(*exe);
     for (const auto& arg : launch_args) {
       result += L' ';
-      result += electron::AddQuoteForArg(arg);
+      result += base::CommandLine::QuoteForCommandLineToArgvW(arg);
     }
     *exe = base::StrCat({result, L" \"%1\""});
   } else {
-    *exe = base::StrCat({electron::AddQuoteForArg(*exe), L" \"%1\""});
+    *exe = base::StrCat(
+        {base::CommandLine::QuoteForCommandLineToArgvW(*exe), L" \"%1\""});
   }
 
   return true;
@@ -159,17 +166,14 @@ bool FormatCommandLineString(std::wstring* exe,
     return false;
   }
 
-  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
-  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
-    *exe = exe->substr(1, exe->size() - 2);
-  }
-
-  *exe = electron::AddQuoteForArg(*exe);
+  StripSurroundingQuotes(exe);
+  *exe = base::CommandLine::QuoteForCommandLineToArgvW(*exe);
 
   if (!launch_args.empty()) {
     for (const auto& arg : launch_args) {
       *exe += L' ';
-      *exe += electron::AddQuoteForArg(std::wstring(base::AsWStringView(arg)));
+      *exe += base::CommandLine::QuoteForCommandLineToArgvW(
+          std::wstring(base::AsWStringView(arg)));
     }
   }
 
@@ -188,17 +192,10 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
     const LoginItemSettings& options) {
   std::vector<LaunchItem> launch_items;
 
-  base::FilePath lookup_exe_path;
-  if (options.path.empty()) {
-    std::wstring process_exe_path;
-    GetProcessExecPath(&process_exe_path);
-    lookup_exe_path =
-        base::CommandLine::FromString(process_exe_path).GetProgram();
-  } else {
-    lookup_exe_path =
-        base::CommandLine::FromString(base::as_wcstr(options.path))
-            .GetProgram();
-  }
+  std::wstring lookup_exe_path = base::UTF16ToWide(options.path);
+  if (lookup_exe_path.empty())
+    GetProcessExecPath(&lookup_exe_path);
+  StripSurroundingQuotes(&lookup_exe_path);
 
   if (!lookup_exe_path.empty()) {
     while (it->Valid()) {
@@ -206,7 +203,7 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
           base::CommandLine::FromString(it->Value());
       base::FilePath registry_launch_path = registry_launch_cmd.GetProgram();
       bool exe_match = base::FilePath::CompareEqualIgnoreCase(
-          lookup_exe_path.value(), registry_launch_path.value());
+          lookup_exe_path, registry_launch_path.value());
 
       // add launch item to vector if it has a matching path (case-insensitive)
       if (exe_match) {
@@ -332,27 +329,6 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
               app_display_name, std::move(promise));
 }
 
-std::string ResolveShortcut(const base::FilePath& lnk_path) {
-  std::string target_path;
-
-  CComPtr<IShellLink> shell_link;
-  if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
-                                 IID_PPV_ARGS(&shell_link)))) {
-    CComPtr<IPersistFile> persist_file;
-    if (SUCCEEDED(shell_link->QueryInterface(IID_PPV_ARGS(&persist_file)))) {
-      if (SUCCEEDED(persist_file->Load(lnk_path.value().c_str(), STGM_READ))) {
-        WCHAR resolved_path[MAX_PATH];
-        if (SUCCEEDED(
-                shell_link->GetPath(resolved_path, MAX_PATH, nullptr, 0))) {
-          target_path = base::FilePath(resolved_path).MaybeAsASCII();
-        }
-      }
-    }
-  }
-
-  return target_path;
-}
-
 void Browser::AddRecentDocument(const base::FilePath& path) {
   CComPtr<IShellItem> item;
   HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), nullptr,
@@ -384,9 +360,10 @@ std::vector<std::string> Browser::GetRecentDocuments() {
 
     for (base::FilePath file = enumerator.Next(); !file.empty();
          file = enumerator.Next()) {
-      std::string resolved_path = ResolveShortcut(file);
-      if (!resolved_path.empty()) {
-        docs.push_back(resolved_path);
+      base::FilePath target;
+      if (base::win::ResolveShortcut(file, &target, nullptr) &&
+          !target.empty()) {
+        docs.push_back(target.AsUTF8Unsafe());
       }
     }
   }
@@ -630,7 +607,7 @@ void Browser::UpdateBadgeContents(
     const std::string& badge_alt_string) {
   SkBitmap badge;
   if (badge_content) {
-    std::string content = badge_content.value();
+    const std::string& content = badge_content.value();
     constexpr int kOverlayIconSize = 16;
     // This is the color used by the Windows 10 Badge API, for platform
     // consistency.
@@ -747,7 +724,7 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
                       launch_items_hklm.end());
 
   settings.executable_will_launch_at_login = executable_will_launch_at_login;
-  settings.launch_items = launch_items;
+  settings.launch_items = std::move(launch_items);
   return gin::ConvertToV8(JavascriptEnvironment::GetIsolate(), settings);
 }
 
