@@ -371,10 +371,10 @@ index 0000000000000000000000000000000000000000..7cec4f2dd24f5c376293b62aad51994c
 +  return block_path_rules;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index be365904e397c972227978334b56098f4a4f4d59..cbea2087039c79d4eda12388fc6462c7df1d9d47 100644
+index b32c79be552991c5414e5f7317edaee10a2e5193..1a5135f1a06d8f3f4db8477b3e9f25ea0c86ea73 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -342,308 +342,8 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -361,308 +361,8 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -683,7 +683,7 @@ index be365904e397c972227978334b56098f4a4f4d59..cbea2087039c79d4eda12388fc6462c7
  // Checks if `path` should be blocked by the `rules`.
  // The BlockType of the nearest ancestor of a path to check is what
  // ultimately determines if a path is blocked or not. If a blocked path is a
-@@ -663,12 +363,15 @@ bool ShouldBlockAccessToPath(
+@@ -682,12 +382,15 @@ bool ShouldBlockAccessToPath(
    CHECK(!path.empty(), base::NotFatalUntil::M161);
    CHECK(path.IsAbsolute(), base::NotFatalUntil::M161);
  
