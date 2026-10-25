@@ -39,6 +39,7 @@ static_library("chrome") {
     "//chrome/browser/devtools/features.h",
     "//chrome/browser/devtools/visual_logging.cc",
     "//chrome/browser/devtools/visual_logging.h",
+    "//chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc",
     "//chrome/browser/file_system_access/file_system_access_features.cc",
     "//chrome/browser/file_system_access/file_system_access_features.h",
     "//chrome/browser/hid/hid_system_tray_icon.h",
