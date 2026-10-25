@@ -316,10 +316,19 @@ void View::UpdateChildlessAccessibilityState() {
   if (!view)
     return;
 
-  // A container without children is an empty pane for assistive technology.
-  // Hiding it while it is empty keeps it out of the tree; as soon as it gets
-  // a child, it becomes visible again.
-  view->GetViewAccessibility().SetIsIgnored(view->children().empty());
+  // A container without a visible child is an empty pane for assistive
+  // technology. Hiding it while it is empty keeps it out of the tree; as soon
+  // as it gets a visible child, it becomes visible again. Invisible children
+  // do not count, the same way the hit-test transparency of the content view
+  // ignores them.
+  bool has_visible_child = false;
+  for (const views::View* child : view->children()) {
+    if (child->GetVisible()) {
+      has_visible_child = true;
+      break;
+    }
+  }
+  view->GetViewAccessibility().SetIsIgnored(!has_visible_child);
 }
 
 size_t View::GetChildCount() const {
