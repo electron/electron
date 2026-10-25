@@ -826,10 +826,10 @@ describe('BrowserWindow module', () => {
         expect(firstWindow.webContents.isCrashed()).toBe(false);
         expect(await isLineWrapEnabled(firstWindow)).toBe(true);
 
-        await waitUntil(async () => {
-          await firstWindow.reload();
-          return isLineWrapEnabled(firstWindow);
-        });
+        const firstReload = once(firstWindow.webContents, 'did-finish-load');
+        firstWindow.reload();
+        await firstReload;
+        expect(await isLineWrapEnabled(firstWindow)).toBe(true);
 
         const secondWindow = new BrowserWindow({
           show: false,
@@ -840,10 +840,10 @@ describe('BrowserWindow module', () => {
         expect(await isLineWrapEnabled(secondWindow)).toBe(true);
 
         await clickLineWrap(secondWindow);
-        await waitUntil(async () => {
-          await firstWindow.reload();
-          return !(await isLineWrapEnabled(firstWindow));
-        });
+        const secondReload = once(firstWindow.webContents, 'did-finish-load');
+        firstWindow.reload();
+        await secondReload;
+        expect(await isLineWrapEnabled(firstWindow)).toBe(false);
       } finally {
         for (const contents of debuggedWebContents) {
           if (!contents.isDestroyed() && contents.debugger.isAttached()) contents.debugger.detach();
