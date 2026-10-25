@@ -1,11 +1,18 @@
-# Controleur UIA (Windows) du hit-test d'accessibilite d'Electron.
+# Controleur du hit-test d'accessibilite d'une fenetre Electron sous Windows.
 #
-# Objectif : mesurer ce que voit un lecteur d'ecran au point de la souris.
-# On interroge l'API Windows UI Automation (la meme couche qu'utilise NVDA
-# pour le suivi de souris et qu'inspecte Inspect.exe), exactement comme le
-# rapport du bug electron/electron#42945 le decrit.
+# Deux chemins sont interroges, parce qu'ils ne se comportent pas de la meme
+# facon et que le bug electron/electron#42945 ne concerne que le second :
 #
-# Usage : powershell.exe -ExecutionPolicy Bypass -File uia_check.ps1 -Json <chemin>\window.json [-Arbre]
+# 1. UIA  : AutomationElement.FromPoint (API Windows UI Automation).
+# 2. MSAA : AccessibleObjectFromPoint (oleacc.dll), c'est-a-dire le chemin
+#            herite qu'utilise NVDA pour les applications Electron et que
+#            Inspect.exe affiche en mode MSAA.
+#
+# Usage : powershell.exe -ExecutionPolicy Bypass -File uia_check.ps1 -Json <fichier>
+#
+# Le fichier de mesures est produit par app.js. Les coordonnees y sont en
+# pixels logiques (DIP) : le facteur d'echelle de l'ecran est applique ici,
+# car l'API d'accessibilite travaille en pixels physiques.
 #
 # Sortie : texte simple, une ligne par resultat, lisible au lecteur d'ecran.
 
@@ -17,7 +24,33 @@ param(
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes
-Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName Accessibility
+
+# Appel direct de oleacc.dll pour la chaine MSAA.
+if (-not ("OleAccNative" -as [type])) {
+  Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public static class OleAccNative {
+  [StructLayout(LayoutKind.Sequential)]
+  public struct POINT { public int x; public int y; }
+
+  [DllImport("oleacc.dll")]
+  private static extern int AccessibleObjectFromPoint(POINT pt,
+      [MarshalAs(UnmanagedType.Interface)] out Accessibility.IAccessible ppaccessible);
+
+  // Retourne l'objet accessible sous le point donne, et le code HRESULT.
+  public static Accessibility.IAccessible ObjectAt(int x, int y, out int code) {
+    POINT pt = new POINT();
+    pt.x = x;
+    pt.y = y;
+    Accessibility.IAccessible result;
+    code = AccessibleObjectFromPoint(pt, out result);
+    return result;
+  }
+}
+"@ -ReferencedAssemblies Accessibility
+}
 
 $AE = [System.Windows.Automation.AutomationElement]
 $TS = [System.Windows.Automation.TreeScope]
@@ -31,19 +64,45 @@ if ($handle -eq 0) { Write-Output "ERREUR: aucune fenetre pour le processus $($i
 
 $fenetre = $AE::FromHandle($handle)
 $rect = $fenetre.Current.BoundingRectangle
+$echelle = [double]$info.echelle
 
-Write-Output ("FENETRE pid={0} titre=""{1}"" rect={2},{3} {4}x{5}" -f `
-  $info.pid, $fenetre.Current.Name, [int]$rect.X, [int]$rect.Y, [int]$rect.Width, [int]$rect.Height)
+Write-Output ("FENETRE pid={0} titre=""{1}"" rect={2},{3} {4}x{5} echelle={6}" -f `
+  $info.pid, $fenetre.Current.Name, [int]$rect.X, [int]$rect.Y, [int]$rect.Width, [int]$rect.Height, $echelle)
 Write-Output ''
 
-function Describe($element) {
+function DescribeMsaa($accessible) {
+  if ($null -eq $accessible) { return 'AUCUN OBJET' }
+  try {
+    $nom = $accessible.accName(0)
+    $role = $accessible.accRole(0)
+    $enfants = $accessible.accChildCount
+  } catch {
+    return "ERREUR DE LECTURE: " + $_.Exception.Message
+  }
+  if ([string]::IsNullOrEmpty($nom)) { $nom = '(sans nom)' }
+  $texte = ("nom=""{0}"" role={1} enfants={2}" -f $nom, $role, $enfants)
+  # Detail du premier enfant : sans lui, on ne voit pas ce que contient
+  # realmente la pane vide.
+  try {
+    if ($enfants -gt 0) {
+      $enfant = $accessible.get_accChild(1)
+      $nomEnfant = $enfant.accName(0)
+      $roleEnfant = $enfant.accRole(0)
+      if ([string]::IsNullOrEmpty($nomEnfant)) { $nomEnfant = '(sans nom)' }
+      $texte += (" | enfant 1 : nom=""{0}"" role={1}" -f $nomEnfant, $roleEnfant)
+    }
+  } catch {
+    $texte += ' | enfant 1 : illisible'
+  }
+  return $texte
+}
+
+function DescribeUia($element) {
   if ($null -eq $element) { return 'AUCUN ELEMENT' }
   $nom = $element.Current.Name
   if ([string]::IsNullOrEmpty($nom)) { $nom = '(sans nom)' }
   $type = $element.Current.ControlType.ProgrammaticName -replace '^ControlType\.', ''
-  $classe = $element.Current.ClassName
-  $aid = $element.Current.AutomationId
-  return ("nom=""{0}"" type={1} classe={2} automationId={3}" -f $nom, $type, $classe, $aid)
+  return ("nom=""{0}"" type={1} classe={2}" -f $nom, $type, $element.Current.ClassName)
 }
 
 function ChaineDesAncestres($element) {
@@ -51,21 +110,21 @@ function ChaineDesAncestres($element) {
   $courant = $element
   $garde = 0
   while ($null -ne $courant -and $garde -lt 12) {
-    $morceaux += (Describe $courant)
+    $morceaux += (DescribeUia $courant)
     $courant = [System.Windows.Automation.TreeWalker]::ControlViewWalker.GetParent($courant)
     $garde++
   }
   return $morceaux
 }
 
-Write-Output '=== HIT-TEST (ElementFromPoint) ==='
+Write-Output '=== HIT-TEST UIA (AutomationElement.FromPoint) ==='
 foreach ($point in $info.points) {
-  $x = [int]$rect.X + [int]$point.x
-  $y = [int]$rect.Y + [int]$point.y
+  $x = [int][math]::Round(([double]$info.bornes.x + [double]$point.x) * $echelle)
+  $y = [int][math]::Round(([double]$info.bornes.y + [double]$point.y) * $echelle)
   $hit = $AE::FromPoint((New-Object System.Windows.Point $x, $y))
   Write-Output ''
   Write-Output ("-- point {0} (relatif {1},{2} / ecran {3},{4})" -f $point.nom, $point.x, $point.y, $x, $y)
-  Write-Output ("   ATTEINT : " + (Describe $hit))
+  Write-Output ("   ATTEINT : " + (DescribeUia $hit))
   $chain = ChaineDesAncestres $hit
   $i = 0
   foreach ($maillon in $chain) {
@@ -74,24 +133,28 @@ foreach ($point in $info.points) {
   }
 }
 
+Write-Output ''
+Write-Output '=== HIT-TEST MSAA (AccessibleObjectFromPoint) ==='
+foreach ($point in $info.points) {
+  $x = [int][math]::Round(([double]$info.bornes.x + [double]$point.x) * $echelle)
+  $y = [int][math]::Round(([double]$info.bornes.y + [double]$point.y) * $echelle)
+  $code = 0
+  $accessible = [OleAccNative]::ObjectAt($x, $y, [ref]$code)
+  Write-Output ''
+  Write-Output ("-- point {0} (relatif {1},{2} / ecran {3},{4})" -f $point.nom, $point.x, $point.y, $x, $y)
+  Write-Output ("   code retour : {0}" -f $code)
+  Write-Output ("   ATTEINT : " + (DescribeMsaa $accessible))
+}
+
 if ($Arbre) {
   Write-Output ''
-  Write-Output '=== ARBRE D ACCESSIBILITE DE LA FENETRE (profondeur 8) ==='
+  Write-Output '=== ARBRE D ACCESSIBILITE DE LA FENETRE (UIA, profondeur 6) ==='
   function AfficherArbre($element, $profondeur) {
-    if ($profondeur -gt 8) { return }
-    $condition = New-Object System.Windows.Automation.PropertyCondition `
-      ([System.Windows.Automation.AutomationElement]::ControlTypeProperty), `
-      ([System.Windows.Automation.ControlType]::Group)
-    $condition2 = New-Object System.Windows.Automation.PropertyCondition `
-      ([System.Windows.Automation.AutomationElement]::ControlTypeProperty), `
-      ([System.Windows.Automation.ControlType]::Pane)
-    $condition3 = New-Object System.Windows.Automation.PropertyCondition `
-      ([System.Windows.Automation.AutomationElement]::ControlTypeProperty), `
-      ([System.Windows.Automation.ControlType]::Document)
+    if ($profondeur -gt 6) { return }
     $enfants = $element.FindAll($TS::Children, [System.Windows.Automation.Condition]::TrueCondition)
     foreach ($enfant in $enfants) {
       $indent = ' ' * ($profondeur * 2)
-      Write-Output ("{0}{1}" -f $indent, (Describe $enfant))
+      Write-Output ("{0}{1}" -f $indent, (DescribeUia $enfant))
       AfficherArbre $enfant ($profondeur + 1)
     }
   }
