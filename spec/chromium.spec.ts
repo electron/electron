@@ -575,10 +575,9 @@ describe('command line switches', () => {
     }
   });
   describe('--lang switch', () => {
-    const currentLocale = app.getLocale();
     const currentSystemLocale = app.getSystemLocale();
     const currentPreferredLanguages = JSON.stringify(app.getPreferredSystemLanguages());
-    const testLocale = async (locale: string, result: string, printEnv: boolean = false) => {
+    const getLocaleOutput = async (locale: string, printEnv: boolean = false) => {
       const appPath = path.join(fixturesPath, 'api', 'locale-check');
       const args = [appPath, `--set-lang=${locale}`];
       if (printEnv) {
@@ -601,8 +600,10 @@ describe('command line switches', () => {
         throw new Error(`Process exited with code "${code}" signal "${signal}" output "${output}" stderr "${stderr}"`);
       }
 
-      output = output.replaceAll(/(\r\n|\n|\r)/gm, '');
-      expect(output).toBe(result);
+      return output.replaceAll(/(\r\n|\n|\r)/gm, '');
+    };
+    const testLocale = async (locale: string, result: string, printEnv: boolean = false) => {
+      expect(await getLocaleOutput(locale, printEnv)).toBe(result);
     };
 
     it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}|${currentPreferredLanguages}`));
@@ -610,8 +611,11 @@ describe('command line switches', () => {
       testLocale('zh-CN', `zh-CN|${currentSystemLocale}|${currentPreferredLanguages}`));
     it('should resolve a locale whose country code is not shipped', async () =>
       testLocale('de-DE', `de|${currentSystemLocale}|${currentPreferredLanguages}`));
-    it('should not set an invalid locale', async () =>
-      testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}|${currentPreferredLanguages}`));
+    it('should not set an invalid locale', async () => {
+      // Child processes do not inherit the test runner's --lang switch.
+      const defaultOutput = await getLocaleOutput('');
+      await testLocale('asdfkl', defaultOutput);
+    });
 
     const lcAll = String(process.env.LC_ALL);
     ifit(process.platform === 'linux')('current process has a valid LC_ALL env', async () => {
