@@ -20,6 +20,7 @@ For guides on Electron app development, see
 * [V8 Development](v8-development.md)
 * [Testing](testing.md)
 * [Debugging](debugging.md)
+* [Accessibility hit-test verification (Windows)](a11y-hit-test-verification/README.md)
 * [Patches](patches.md)
 
 ## Getting Started
