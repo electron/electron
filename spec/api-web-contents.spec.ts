@@ -1741,8 +1741,10 @@ describe('webContents module', () => {
     });
 
     it('falls back to the right dock when given an invalid mode', async () => {
-      // DevTools preferences live in the session, so keep the dock state this
-      // leaves behind away from the default one.
+      // Keep the dock state this test leaves behind out of the default session,
+      // which later tests keep using. It only isolates in that direction: an
+      // in-memory partition starts from the default session's saved
+      // Preferences, so it is not guaranteed a clean dock state of its own.
       const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-dock-state' } });
       await w.loadURL('about:blank');
 
@@ -1759,10 +1761,11 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'koala', activate: false });
       await opened;
 
-      // Ask the frontend which side it settled on. The inspected page cannot answer
-      // this: 'left' and 'right' shrink the same axis by the same amount, and
-      // window.screenX reports the root window's position, not the page's offset
-      // inside it. Quotes are stripped the same way the browser side does it.
+      // Read the dock side Electron resolved and handed to the frontend, which
+      // docks to it on load. The inspected page cannot answer this: 'left' and
+      // 'right' shrink the same axis by the same amount, and window.screenX
+      // reports the root window's position, not the page's offset inside it.
+      // Quotes are stripped the same way the browser side does it.
       const readDockState = async () => (await getDevToolsPreferences(w)).currentDockState?.replaceAll('"', '');
       await waitUntil(async () => (await readDockState()) !== 'left');
 
@@ -1819,6 +1822,110 @@ describe('webContents module', () => {
       const destroyed = once(view.webContents, 'destroyed');
       view.webContents.destroy(); // closeAllWindows() won't reach this one
       await destroyed;
+    });
+
+    it('does not let a reused webPreferences object mark other contents as owned by a window', async () => {
+      // BrowserWindow marks the contents it creates through the webPreferences
+      // object it is handed, which is the caller's own. The mark must stay with
+      // the window's contents and not ride along into the next one built from it.
+      const webPreferences = {};
+      const w = new BrowserWindow({ show: false, webPreferences });
+      const view = new WebContentsView({ webPreferences });
+      await view.webContents.loadURL('about:blank');
+
+      const viewOpened = once(view.webContents, 'devtools-opened');
+      view.webContents.openDevTools();
+      // A leaked mark would leave this waiting for an owner that never comes.
+      await viewOpened;
+      expect(await devToolsCanDock(view.webContents)).toBe(false);
+
+      const windowOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools();
+      await windowOpened;
+      expect(await devToolsCanDock(w.webContents)).toBe(true);
+
+      const destroyed = once(view.webContents, 'destroyed');
+      view.webContents.destroy(); // closeAllWindows() won't reach this one
+      await destroyed;
+    });
+
+    // The dock side Electron resolved for the open DevTools. Whenever DevTools may
+    // dock, GetPreferences() hands the frontend that resolved side as
+    // currentDockState, JSON-encoded like every DevTools setting.
+    async function devToolsDockState(w: BrowserWindow) {
+      return (await getDevToolsPreferences(w)).currentDockState?.replaceAll('"', '');
+    }
+
+    // Opens a window whose contents get openDevTools() calls from
+    // 'web-contents-created', i.e. before the window owns them.
+    //
+    // The tests below always pass an explicit mode. A mode-less open resolves to
+    // the last-used dock state, and that cannot be isolated per test: in-memory
+    // partitions all load and save the default session's Preferences file, so a
+    // dock state left behind by an earlier test would leak in.
+    async function openDevToolsWhileCreating(
+      options: Electron.BrowserWindowConstructorOptions,
+      onCreated: (contents: Electron.WebContents) => void
+    ) {
+      let opened: Promise<unknown> | undefined;
+      app.once('web-contents-created', (_e, contents) => {
+        opened = once(contents, 'devtools-opened');
+        onCreated(contents);
+      });
+      const w = new BrowserWindow({ show: false, ...options });
+      await opened;
+      return w;
+    }
+
+    describe('with Window Controls Overlay', () => {
+      // 'right' is where the overlay's window controls sit, so DevTools have to
+      // be moved off it. Asked for explicitly: see openDevToolsWhileCreating().
+      const overlayOptions = { titleBarStyle: 'hidden', titleBarOverlay: true } as const;
+
+      ifit(process.platform === 'win32' || process.platform === 'linux')(
+        'undocks when openDevTools() is called from web-contents-created',
+        async () => {
+          const w = await openDevToolsWhileCreating(overlayOptions, (contents) =>
+            contents.openDevTools({ mode: 'right' })
+          );
+          expect(await devToolsDockState(w)).toBe('undocked');
+        }
+      );
+
+      ifit(process.platform === 'win32' || process.platform === 'linux')(
+        'undocks when openDevTools() is called from dom-ready',
+        async () => {
+          const w = new BrowserWindow({ show: false, ...overlayOptions });
+          await w.loadURL('about:blank');
+
+          const opened = once(w.webContents, 'devtools-opened');
+          w.webContents.once('dom-ready', () => w.webContents.openDevTools({ mode: 'right' }));
+          await w.loadURL('about:blank'); // reload triggers a fresh dom-ready
+          await opened;
+
+          expect(await devToolsDockState(w)).toBe('undocked');
+        }
+      );
+    });
+
+    it('cancels a deferred open when closeDevTools() is called before the window owns its contents', async () => {
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'left' });
+        contents.closeDevTools();
+        // Had the first request survived the close, it would have won over this one.
+        contents.openDevTools({ mode: 'bottom' });
+      });
+      expect(await devToolsDockState(w)).toBe('bottom');
+    });
+
+    it('keeps the first openDevTools() request made before the window owns its contents', async () => {
+      // Once DevTools are open a second openDevTools() does not re-dock them, so
+      // the deferred path keeps the first request too.
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'bottom' });
+        contents.openDevTools({ mode: 'left' });
+      });
+      expect(await devToolsDockState(w)).toBe('bottom');
     });
   });
 
