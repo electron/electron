@@ -25,6 +25,7 @@
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/compositor/layer.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
@@ -251,10 +252,18 @@ void View::Host::OnViewBoundsChanged(views::View* observed_view) {
     api_view->OnBoundsChanged();
 }
 
+void View::Host::OnChildViewAdded(views::View* observed_view,
+                                  views::View* child) {
+  if (auto api_view = wrapper())
+    api_view->UpdateChildlessAccessibilityState();
+}
+
 void View::Host::OnChildViewRemoved(views::View* observed_view,
                                     views::View* child) {
-  if (auto api_view = wrapper())
+  if (auto api_view = wrapper()) {
     api_view->OnChildViewRemoved(child);
+    api_view->UpdateChildlessAccessibilityState();
+  }
 }
 
 View::ChildEntry::ChildEntry(View* view, ChildEntry* next)
@@ -292,6 +301,25 @@ bool View::IsUsable() const {
 
 views::View* View::live_view() const {
   return host_ && host_->is_active() && IsUsable() ? host_->view() : nullptr;
+}
+
+void View::SetHideFromAccessibilityWhenChildless(bool hide) {
+  hide_from_accessibility_when_childless_ = hide;
+  UpdateChildlessAccessibilityState();
+}
+
+void View::UpdateChildlessAccessibilityState() {
+  if (!hide_from_accessibility_when_childless_)
+    return;
+
+  views::View* view = live_view();
+  if (!view)
+    return;
+
+  // A container without children is an empty pane for assistive technology.
+  // Hiding it while it is empty keeps it out of the tree; as soon as it gets
+  // a child, it becomes visible again.
+  view->GetViewAccessibility().SetIsIgnored(view->children().empty());
 }
 
 size_t View::GetChildCount() const {
