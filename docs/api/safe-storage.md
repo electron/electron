@@ -64,9 +64,37 @@ Returns `Promise<Buffer>` -  An array of bytes representing the encrypted string
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
 
-* `shouldReEncrypt` boolean - whether data that has just been returned from the decrypt operation should be
-  re-encrypted, as the key has been rotated or a new  key is available that provides a different security level. If `true`, you should call `decryptStringAsync` again to receive the new decrypted string.
+* `shouldReEncrypt` boolean - whether the decrypted data should be re-encrypted because
+  the key has been rotated or a new key is available that provides a different security level.
+  If `true`, pass `result` to `encryptStringAsync` and replace the stored ciphertext with
+  the returned `Buffer`.
 * `result` string - the decrypted string.
+
+Re-encryption uses the currently preferred key. Calling `decryptStringAsync` again does not
+update the stored ciphertext. If you do not re-encrypt and save the new ciphertext, the
+stored data continues to depend on the old key. If that key is permanently lost,
+the old ciphertext can no longer be decrypted. `shouldReEncrypt` does not mean that the
+current decryption failed or that the old key is already unavailable.
+
+For example, this main-process function reads an encrypted file, re-encrypts its contents
+when requested, and returns the plaintext. Call it after the app is ready:
+
+```js
+const { safeStorage } = require('electron')
+const { readFile, writeFile } = require('node:fs/promises')
+
+async function readEncryptedString(filePath) {
+  const encrypted = await readFile(filePath)
+  const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(encrypted)
+
+  if (shouldReEncrypt) {
+    const reEncrypted = await safeStorage.encryptStringAsync(result)
+    await writeFile(filePath, reEncrypted)
+  }
+
+  return result
+}
+```
 
 ### `safeStorage.setUsePlainTextEncryption(usePlainText)`
 
