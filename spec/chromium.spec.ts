@@ -1990,6 +1990,41 @@ describe('chromium features', () => {
       expect(await wa.webContents.executeJavaScript('window.handle')).toBe(null);
     });
 
+    it('does not block reading .git/hooks, whose blocklist rule only applies to the save picker', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('deny');
+      });
+
+      // On Windows the temp dir lives under %LOCALAPPDATA%, which the blocklist
+      // blocks entirely, so use a directory the blocklist leaves alone there.
+      const base = process.platform === 'win32' ? path.join(fixturesPath, 'file-system') : os.tmpdir();
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(base, 'fsa-git-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const hooks = path.join(dir, '.git', 'hooks');
+      fs.mkdirSync(hooks, { recursive: true });
+      const sample = path.join(hooks, 'pre-commit.sample');
+      fs.writeFileSync(sample, 'sample');
+
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+
+      // Matches Chrome at this version: */.git/hooks is a kBlockWrite suffix
+      // rule (Windows only) that is enforced for UserAction::kSave alone, so
+      // dropping or pasting the directory or a file inside it is not blocked.
+      await pasteHandle(w, frame, hooks);
+      await waitForHandle(frame);
+      expect(await frame.executeJavaScript('window.handle && window.handle.kind')).toBe('directory');
+      await pasteHandle(w, frame, sample);
+      await waitForHandle(frame);
+      expect(await frame.executeJavaScript('window.handle && window.handle.kind')).toBe('file');
+      expect(await frame.executeJavaScript('window.handle.getFile().then((f) => f.text())')).toBe('sample');
+      expect(restricted).toEqual([]);
+    });
+
     it('revokes active grants once no top-level document of the origin remains', { timeout: 60000 }, async () => {
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
       ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
