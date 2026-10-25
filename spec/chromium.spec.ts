@@ -2018,6 +2018,63 @@ describe('chromium features', () => {
       expect(restricted).toHaveLength(2);
     });
 
+    it('blocks writes to .git/hooks but still allows reading it', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('deny');
+      });
+
+      // On Windows the temp dir lives under %LOCALAPPDATA%, which the blocklist
+      // blocks entirely, so use a directory the blocklist leaves alone there.
+      const base = process.platform === 'win32' ? path.join(fixturesPath, 'file-system') : os.tmpdir();
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(base, 'fsa-git-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const hooks = path.join(dir, '.git', 'hooks');
+      fs.mkdirSync(hooks, { recursive: true });
+      fs.writeFileSync(path.join(hooks, 'pre-commit.sample'), 'sample');
+
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+      await pasteHandle(w, frame, dir);
+      await waitForHandle(frame);
+      expect(await frame.executeJavaScript('window.handle && window.handle.kind')).toBe('directory');
+      expect(await frame.executeJavaScript("window.handle.requestPermission({ mode: 'readwrite' })", true)).toBe(
+        'granted'
+      );
+
+      // Matches Chrome: */.git/hooks is a case-insensitive kBlockWrite suffix
+      // rule, so reads are allowed and only operations that write are rejected.
+      const result = await frame.executeJavaScript(`(async () => {
+        const attempt = (p) => p.then(() => 'ok', (e) => e.name);
+        const git = await window.handle.getDirectoryHandle('.git');
+        const hooks = await git.getDirectoryHandle('hooks');
+        const sample = await hooks.getFileHandle('pre-commit.sample');
+        return {
+          readHook: await (await sample.getFile()).text(),
+          createHook: await attempt(hooks.getFileHandle('post-checkout', { create: true })),
+          writeHook: await attempt(sample.createWritable()),
+          createHooksUpperCase: await attempt(git.getDirectoryHandle('HOOKS', { create: true })),
+          createAllowed: await attempt(window.handle.getFileHandle('allowed.txt', { create: true }))
+        };
+      })()`);
+      expect(result).toEqual({
+        readHook: 'sample',
+        createHook: 'SecurityError',
+        writeHook: 'SecurityError',
+        createHooksUpperCase: 'SecurityError',
+        createAllowed: 'ok'
+      });
+      expect(fs.existsSync(path.join(hooks, 'post-checkout'))).toBe(false);
+      expect(fs.readFileSync(path.join(hooks, 'pre-commit.sample'), 'utf8')).toBe('sample');
+      expect(fs.existsSync(path.join(dir, 'allowed.txt'))).toBe(true);
+      // Programmatic writes are rejected outright rather than asking the app.
+      expect(restricted).toEqual([]);
+    });
+
     it('revokes active grants once no top-level document of the origin remains', { timeout: 60000 }, async () => {
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
       ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));

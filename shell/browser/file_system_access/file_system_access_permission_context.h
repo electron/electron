@@ -141,6 +141,7 @@ class FileSystemAccessPermissionContext
   void CheckShouldBlockAccessToPathAndReply(
       base::FilePath path,
       HandleType handle_type,
+      AccessTrigger access_trigger,
       std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
           extra_rules,
       base::OnceCallback<void(bool)> callback,
@@ -148,6 +149,7 @@ class FileSystemAccessPermissionContext
 
   void CheckPathAgainstBlocklist(const content::PathInfo& path,
                                  HandleType handle_type,
+                                 AccessTrigger access_trigger,
                                  base::OnceCallback<void(bool)> callback);
   void DidCheckPathAgainstBlocklist(int request_id,
                                     const url::Origin& origin,
