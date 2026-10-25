@@ -133,10 +133,10 @@ index af06c8edfad9f6c4dcb098f7f00be14edcc5bba2..b4968491945d9f4d7f26b41ae3be4fe9
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index aa6daa9b29e98a8b4f9e68cb0a4f9753f9824bac..37d172f1b4b2fdaf294e5edf32861afb48fa4246 100644
+index cf1b546b34bec9165831b378edaa861553039788..5b48bf07a1b1ea9ca8fc8a2e6cc8906f8c557961 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4275,6 +4275,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4231,6 +4231,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -153,10 +153,10 @@ index aa6daa9b29e98a8b4f9e68cb0a4f9753f9824bac..37d172f1b4b2fdaf294e5edf32861afb
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index 3ffc4fc86d7af9f8a0d2b12109759164f24eae0a..9e680f0ff181f08ecac15d469e92ef4e6fecc3e9 100644
+index 6f0f82a3b102293ec5eb426dce27a4820578f4c2..967b73ff46a72b049aa0799a5457da9839e3c596 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -477,6 +477,7 @@ class StyleBuilderConverter {
+@@ -465,6 +465,7 @@ class StyleBuilderConverter {
        StyleResolverState&,
        const CSSValue&,
        bool allow_any_keyword_in_position_area = false);
@@ -204,10 +204,10 @@ index 2976bcc89a26701aeb829c0fe0a205defe1e4997..85642753239137de0e4e8c8f4654f131
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 046674a5eebaf52be9d85e82647fd821e1b6809e..bdfa4851b362832b7620f64a024083f378123cd5 100644
+index 872194865b78779be5675dcc895b9856aa5c1bf4..7cafc2c0cb2da2e391e19c41197e4c9834aa48e7 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1745,6 +1745,8 @@ component("platform") {
+@@ -1743,6 +1743,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -315,7 +315,7 @@ index 9d125de843259dae40e6b08eaf65ea3650435295..428219fb35d7a967dcaee91aa1c3628e
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index b307ae877f3220fa2ffab61574bcf8438231003e..40bf6411988cce117037cd23f07f6f2fdcc8476c 100644
+index 53f686eae990df14c20a5290e2749d1428d877e2..d84bc117d6810df9b75f4a69dee4af121e75686d 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@
