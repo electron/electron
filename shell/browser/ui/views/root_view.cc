@@ -91,6 +91,8 @@ void RootView::SetMenuBarVisibility(bool visible) {
   }
 
   InvalidateLayout();
+  // The content area moved; anything laid out relative to it must be redone.
+  window_->OnMenuBarVisibilityChanged();
 }
 
 void RootView::HandleKeyEvent(const input::NativeWebKeyboardEvent& event) {

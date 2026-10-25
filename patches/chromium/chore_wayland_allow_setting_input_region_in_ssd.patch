@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: LuoRain <luotianyi@luotianyi.me>
+Date: Sat, 17 Oct 2026 22:16:21 +0800
+Subject: chore(wayland): allow setting input region in SSD
+
+Upstream drops the window shape's input region on the root surface of a
+toplevel that uses server-side decorations, where the compositor owns the
+shape. The same early return also dropped regions an embedder sets through
+PlatformWindow::SetInputRegion(), so Electron's setInputRegion() and
+setIgnoreMouseEvents() had no effect, and their resets could not restore
+input.
+
+Guard only the shape path instead, so explicit regions and resets are
+applied while the compositor keeps ownership of the decoration area.
+
+Kept downstream rather than sent upstream: the early return exists so that
+Chromium's own frame-derived region is not applied under server-side
+decorations, where the compositor owns the frame; deleting it would clip
+input against a shape the client does not own. Guarding the shape path keeps
+that behaviour and only lets explicit regions through, which Chromium itself
+never sets on such a toplevel. The change is behaviour-preserving for
+Chromium, so it could be proposed as a contract fix for embedders, but with
+no in-tree caller its only motivation is Electron's setInputRegion(), and it
+stays a patch until upstream has a reason of its own.
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+index ddd0ea13df37a4db1d024bb0c1fe0aebe26354ef..e669f2e9199fa001bb3c7593c744a82246eacc08 100644
+--- a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+@@ -1054,8 +1054,14 @@ void WaylandToplevelWindow::UpdateWindowMask() {
+           ? opaque_region_px_
+           : (IsOpaqueWindow() ? std::optional<std::vector<gfx::Rect>>(region)
+                               : std::nullopt));
+-  root_surface()->set_input_region(input_region_px_ ? input_region_px_
+-                                                    : region);
++  // With server-side decorations the compositor draws the frame, so it also
++  // owns the window shape; clipping input against one here would fight it.
++  // The explicit regions set through SetInputRegion() are applied directly and
++  // are not affected.
++  if (!ShouldUseNativeFrame()) {
++    root_surface()->set_input_region(input_region_px_ ? input_region_px_
++                                                      : region);
++  }
+ }
+ 
+ void WaylandToplevelWindow::UpdateSessionStateIfNeeded() {
