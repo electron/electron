@@ -70,8 +70,15 @@ accessibility tree.
 
 - **Before the fix**: the MSAA path returns the `contentView` itself at every
   point, including the ones that are over the web content.
-- **After the fix**: the MSAA path returns the application view where it
-  covers the pointer, and the node that carries the web document elsewhere.
+- **After the fix**: the `contentView` keeps the hit-test where one of its
+  children covers the pointer, and the hit-test goes through to the web
+  content elsewhere.
+
+The objects returned by the MSAA path are the same before and after the fix
+in that configuration: the `contentView` and the node that carries the web
+content have the same bounds and the same number of accessible children, so
+the two cannot be told apart from the returned object alone. The first case is
+the discriminating one.
 
 ### UIA path
 
