@@ -1,26 +1,34 @@
-// Application de test Electron pour verifier le hit-test d'accessibilite.
+// Test Electron application for the accessibility hit-test.
 //
-// But : reproduire le bug electron/electron#42945, c'est-a-dire le cas ou la
-// fenetre expose une « pane » vide a la place du contenu web sur le chemin
-// MSAA (AccessibleObjectFromPoint), celui qu'utilise le mode herite de NVDA.
+// Purpose: reproduce electron/electron#42945, that is the case where the
+// window exposes an empty "pane" instead of the web content on the MSAA path
+// (AccessibleObjectFromPoint), the path NVDA uses in its legacy mode.
 //
-// Lancement : electron.exe <dossier de ce fichier>
-// Le controleur (uia_check.ps1) lit ensuite le fichier de mesures ecrit dans
-// le repertoire temporaire.
+// Usage: electron.exe <folder of this file> [--avec-enfant]
+// The checker (uia_check.ps1) then reads the measurements file written in the
+// temporary directory.
 //
-// La page positionne ses elements de façon absolue : chaque point de controle
-// tombe donc exactement sur un element de texte connu.
+// Without the --avec-enfant option the contentView stays empty: that is the
+// real case of a BrowserWindow that adds no view. With the option, a 40 x 40
+// view is added in the corner of the contentView: the contentView is not
+// empty any more, so it has to stay in the accessibility tree.
+//
+// The page positions its elements absolutely: every control point therefore
+// lands exactly on a known text element.
 
 const { app, BrowserWindow, View, screen } = require('electron');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-// Active l'accessibilite dans les deux processus, comme le demande le
-// rapport du bug (#42945) : l'arbre d'accessibilite doit etre publie.
+// Enables accessibility in both processes, as the bug report asks for
+// (#42945): the accessibility tree has to be published.
 app.commandLine.appendSwitch('force-renderer-accessibility');
 
 const sortie = path.join(os.tmpdir(), 'electron-a11y-hit-test.json');
+
+// Command line option: adds a child view to the contentView.
+const avecEnfant = process.argv.includes('--avec-enfant');
 
 const PAGE = `<!DOCTYPE html>
 <html lang="fr">
@@ -54,28 +62,31 @@ app.whenReady().then(() => {
 
   win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(PAGE));
 
-  // Une vue enfant de 40x40 dans le coin superieur gauche de la contentView.
-  // Elle rend la contentView « non vide » : c'est le second cas du tableau de
-  // verification de la PR d'origine, ou la contentView a des enfants.
-  const enfant = new View();
-  enfant.setBounds({ x: 10, y: 10, width: 40, height: 40 });
-  enfant.setBackgroundColor('#ff0000');
-  win.contentView.addChildView(enfant);
+  // A 40 x 40 child view in the top left corner of the contentView. It makes
+  // the contentView "not empty": that is the second case of the verification
+  // table of the original PR, where the contentView has children.
+  if (avecEnfant) {
+    const enfant = new View();
+    enfant.setBounds({ x: 10, y: 10, width: 40, height: 40 });
+    enfant.setBackgroundColor('#ff0000');
+    win.contentView.addChildView(enfant);
+  }
 
-  // Le fichier de mesures est ecrit des que la fenetre existe : le
-  // chargement de la page n'est pas necessaire pour interroger le hit-test.
+  // The measurements file is written as soon as the window exists: loading
+  // the page is not needed to query the hit-test.
   let ecrit = false;
   const ecrireSiNecesaire = () => {
     if (ecrit) return;
     ecrit = true;
-    // Bornes de la zone de contenu, en pixels logiques (DIP) et relatives a
-    // l'ecran, ainsi que le facteur d'echelle de l'ecran : le controleur
-    // convertit en pixels physiques, ceux que renvoie l'API d'accessibilite.
+    // Bounds of the content area, in logical pixels (DIP) and relative to the
+    // screen, plus the screen scale factor: the checker converts them to
+    // physical pixels, the ones the accessibility API returns.
     const bornes = win.getContentBounds();
     const echelle = screen.getDisplayMatching(bornes).scaleFactor;
     ecrire({
       pid: process.pid,
       titre: win.getTitle(),
+      avec_enfant: avecEnfant,
       echelle: echelle,
       bornes: {
         x: bornes.x,
@@ -89,7 +100,7 @@ app.whenReady().then(() => {
         { nom: 'paragraphe', x: 60, y: 160 },
         { nom: 'liste', x: 60, y: 260 },
         { nom: 'bouton', x: 60, y: 360 },
-        { nom: 'enfant-coin', x: 30, y: 30 }
+        { nom: 'coin', x: 30, y: 30 }
       ]
     });
     console.log('FENETRE_PRET');
