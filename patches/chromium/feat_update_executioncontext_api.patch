@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 21 Oct 2026 22:35:04 +0900
+Subject: feat: add ExecutionContext::GetRootExecutionContext()
+
+Electron runs service worker preload scripts in a PreloadRealmGlobalScope
+context on the worker thread. Because a preload realm is a secondary
+ExecutionContext attached to an initiator WorkerOrWorkletGlobalScope
+rather than a WorkerOrWorkletGlobalScope itself, Blink code on the
+worker thread that downcasts ExecutionContext::From(script_state) via
+To<WorkerOrWorkletGlobalScope>() will fail a DowncastTraits DCHECK.
+
+Specifically, three worker thread paths need the root worker
+ExecutionContext rather than the child realm's ExecutionContext:
+1. PromiseRejectHandlerInWorker (v8_initializer.cc), which looks up the
+   worker's WorkerOrWorkletScriptController::GetRejectedPromises() queue
+   when an unhandled promise rejection occurs in the preload realm.
+2. WorkerThreadDebugger::ReportConsoleMessage (worker_thread_debugger.cc),
+   which forwards console messages (including unhandled promise rejection
+   errors) to the worker thread's WorkerReportingProxy.
+3. WorkerThreadDebugger::ContextGroupId (worker_thread_debugger.cc),
+   which resolves the WorkerThread's DevTools context group ID when
+   DevTools Command Line APIs such as getEventListeners() are evaluated
+   in the preload realm (or in a ShadowRealm).
+
+Previously, (1) and (2) hardcoded an IsShadowRealmGlobalScope() check
+and downcast to ShadowRealmGlobalScope::GetRootInitiatorExecutionContext(),
+while (3) did not unwrap child realms at all.
+
+Add a virtual ExecutionContext::GetRootExecutionContext() method (and
+overridden by ShadowRealmGlobalScope and Electron's PreloadRealmGlobalScope to
+return the root initiator ExecutionContext).
+
+Pending upstream crbug.
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
+index 41a5db4e019084d47763a43bd548b29faa070660..49206eb36d5d4dff4e2c26691f39ecb6db6f0f09 100644
+--- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
++++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
+@@ -450,10 +450,7 @@ static void PromiseRejectHandlerInWorker(v8::PromiseRejectMessage data) {
+     return;
+ 
+   ExecutionContext* root_worker_context =
+-      execution_context->IsShadowRealmGlobalScope()
+-          ? To<ShadowRealmGlobalScope>(execution_context)
+-                ->GetRootInitiatorExecutionContext()
+-          : execution_context;
++      execution_context->GetRootExecutionContext();
+   DCHECK(root_worker_context->IsWorkerOrWorkletGlobalScope());
+ 
+   auto* script_controller =
+diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
+index 07c9dd9c4ffa9b0b805187acce4f0eef4b641ceb..158a1b496753c192d5fe4525234e94dc5f413571 100644
+--- a/third_party/blink/renderer/core/execution_context/execution_context.h
++++ b/third_party/blink/renderer/core/execution_context/execution_context.h
+@@ -164,6 +164,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+   virtual bool IsShadowRealmGlobalScope() const { return false; }
+   virtual bool IsJSExecutionForbidden() const { return false; }
+ 
++  virtual ExecutionContext* GetRootExecutionContext() { return this; }
++
+   // Notifies the execution context that new web socket activity (such as
+   // sending or receiving a message) has happened.
+   virtual void NotifyWebSocketActivity() {}
+diff --git a/third_party/blink/renderer/core/inspector/worker_thread_debugger.cc b/third_party/blink/renderer/core/inspector/worker_thread_debugger.cc
+index 3a52d94a105bcc34c2319940eb10ff381fe975ba..5f0e35a3c07edd04750f3898fc73c79aff0224a9 100644
+--- a/third_party/blink/renderer/core/inspector/worker_thread_debugger.cc
++++ b/third_party/blink/renderer/core/inspector/worker_thread_debugger.cc
+@@ -82,11 +82,7 @@ void WorkerThreadDebugger::ReportConsoleMessage(
+   if (!context)
+     return;
+ 
+-  ExecutionContext* root_worker_context =
+-      context->IsShadowRealmGlobalScope()
+-          ? To<ShadowRealmGlobalScope>(context)
+-                ->GetRootInitiatorExecutionContext()
+-          : context;
++  ExecutionContext* root_worker_context = context->GetRootExecutionContext();
+ 
+   To<WorkerOrWorkletGlobalScope>(root_worker_context)
+       ->GetThread()
+@@ -168,7 +164,9 @@ void WorkerThreadDebugger::ExceptionThrown(WorkerThread* worker_thread,
+ }
+ 
+ int WorkerThreadDebugger::ContextGroupId(ExecutionContext* context) {
+-  return ContextGroupId(To<WorkerOrWorkletGlobalScope>(context)->GetThread());
++  return ContextGroupId(
++      To<WorkerOrWorkletGlobalScope>(context->GetRootExecutionContext())
++          ->GetThread());
+ }
+ 
+ void WorkerThreadDebugger::PauseWorkerOnStart(WorkerThread* worker_thread) {
+diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
+index 7b77d51ca3ca41a187021a13c213bbd723e997da..06620d26be43508a0c2e3e163ec0f049edf946b8 100644
+--- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
++++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
+@@ -20,10 +20,7 @@ ShadowRealmGlobalScope::ShadowRealmGlobalScope(
+ 
+ ExecutionContext* ShadowRealmGlobalScope::GetRootInitiatorExecutionContext()
+     const {
+-  return initiator_execution_context_->IsShadowRealmGlobalScope()
+-             ? To<ShadowRealmGlobalScope>(initiator_execution_context_.Get())
+-                   ->GetRootInitiatorExecutionContext()
+-             : initiator_execution_context_.Get();
++  return initiator_execution_context_->GetRootExecutionContext();
+ }
+ 
+ void ShadowRealmGlobalScope::Trace(Visitor* visitor) const {
+@@ -63,6 +60,10 @@ bool ShadowRealmGlobalScope::IsShadowRealmGlobalScope() const {
+   return true;
+ }
+ 
++ExecutionContext* ShadowRealmGlobalScope::GetRootExecutionContext() {
++  return GetRootInitiatorExecutionContext();
++}
++
+ const KURL& ShadowRealmGlobalScope::Url() const {
+   return GetRootInitiatorExecutionContext()->Url();
+ }
+diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
+index 956049a3e86cba9bfd1ee15a92a49f13d105ee30..fabf4706ad2eedd4a0d00562b842276443840903 100644
+--- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
++++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
+@@ -45,6 +45,7 @@ class CORE_EXPORT ShadowRealmGlobalScope final : public EventTarget,
+ 
+   // ExecutionContext:
+   bool IsShadowRealmGlobalScope() const override;
++  ExecutionContext* GetRootExecutionContext() override;
+   const KURL& Url() const override;
+   const KURL& BaseURL() const override;
+   KURL CompleteURL(const String& url) const override;
