@@ -3421,14 +3421,23 @@ describe('webContents module', () => {
       return async () => {
         // Windows and Linux hand accelerators only to the active window
         // (View::CanHandleAccelerators), and page or DevTools focus can be set
-        // inside a window that isn't active. So focus the window itself.
-        if (!window.isFocused()) window.focus();
+        // inside a window that isn't active. So focus the window itself. On
+        // macOS, window.focus() can't activate the app while another app is
+        // frontmost, so take activation first.
+        if (!window.isFocused()) {
+          if (process.platform === 'darwin') app.focus({ steal: true });
+          window.focus();
+        }
         await waitUntil(() => window.isFocused());
+        // Keys from a hidden widget never reach the menu. Windows marks a
+        // covered window hidden and shows it again only some time after it is
+        // raised, hence alwaysOnTop there.
+        await waitUntil(async () => (await contents.executeJavaScript('document.visibilityState')) === 'visible');
         const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
         // CDP keeps key events that lack a native key code away from the
         // browser's unhandled-key handling, where menu shortcuts run. Only
-        // macOS turns the code into a native event; its menu needs kVK_F13
-        // and NSF13FunctionKey.
+        // macOS turns the code into a native event, and its menu needs
+        // kVK_F13 and NSF13FunctionKey; elsewhere any non-zero code works.
         await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
           ...base,
           type: 'rawKeyDown',
@@ -3456,6 +3465,7 @@ describe('webContents module', () => {
     it('honors the initial ignoreMenuShortcuts preference', async () => {
       const window = new BrowserWindow({
         show: true,
+        alwaysOnTop: process.platform === 'win32',
         webPreferences: { ignoreMenuShortcuts: true } as Electron.WebPreferences
       });
       await window.loadURL('about:blank');
@@ -3481,7 +3491,11 @@ describe('webContents module', () => {
 
     for (const target of ['webview', 'docked DevTools'] as const) {
       it(`uses the source settings for ${target}`, async () => {
-        const window = new BrowserWindow({ show: true, webPreferences: { webviewTag: true } });
+        const window = new BrowserWindow({
+          show: true,
+          alwaysOnTop: process.platform === 'win32',
+          webPreferences: { webviewTag: true }
+        });
         let source: WebContents;
         if (target === 'webview') {
           const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
@@ -3506,6 +3520,7 @@ describe('webContents module', () => {
         let expectedInvocations = 0;
         for (const ignore of [true, false, true, false]) {
           if (target === 'webview') {
+            if (process.platform === 'darwin') app.focus({ steal: true });
             window.focus();
             await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
             // CDP sends key events to the focused frame, so focus must be in the guest.
