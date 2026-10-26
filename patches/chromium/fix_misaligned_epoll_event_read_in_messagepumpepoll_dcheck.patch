@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 09:30:00 +0000
+Subject: fix: misaligned epoll_event read in MessagePumpEpoll DCHECK
+
+epoll_event is packed on x86-64, so its 8-byte `data` member sits at
+offset 4. In the array that epoll_wait() fills, every other element's
+`data.ptr` is therefore misaligned. ~EpollEventEntry() checks
+`DCHECK_EQ(this, active_event->data.ptr)`, and DCHECK_EQ() takes its
+operands by const reference, so this binds a reference to a misaligned
+pointer, which is undefined behavior.
+
+This destructor runs with `active_event` set when a handler for one
+ready descriptor unregisters another descriptor from the same
+epoll_wait() batch, which is common while sockets and IPC channels are
+torn down at shutdown. Builds with the UBSan alignment check and
+DCHECKs on report it (and abort with halt_on_error=1), for example from
+net::UDPSocketPosix::Close() and net::SpdySession::~SpdySession() in
+the network service.
+
+Compare a copy of the pointer instead.
+
+This patch should be upstreamed.
+
+diff --git a/base/message_loop/message_pump_epoll.cc b/base/message_loop/message_pump_epoll.cc
+index eb45299d036d8b974177b4fe5b1d43ba2ca6fdcd..bd87e79ce13f625d8988ec1baf2cd15c38a04216 100644
+--- a/base/message_loop/message_pump_epoll.cc
++++ b/base/message_loop/message_pump_epoll.cc
+@@ -680,7 +680,10 @@ MessagePumpEpoll::EpollEventEntry::EpollEventEntry(int fd) : fd(fd) {}
+ 
+ MessagePumpEpoll::EpollEventEntry::~EpollEventEntry() {
+   if (active_event) {
+-    DCHECK_EQ(this, active_event->data.ptr);
++    // epoll_event is packed on x86-64, so `data.ptr` is not always 8-byte
++    // aligned. DCHECK_EQ() takes its operands by reference, so compare a copy:
++    // binding a reference to a misaligned pointer is undefined behavior.
++    DCHECK_EQ(this, static_cast<void*>(active_event->data.ptr));
+     active_event->data.ptr = nullptr;
+   }
+ }
