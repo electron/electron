@@ -244,7 +244,7 @@ index 693b2e78ee0e9dfb68bd0b08565ea76ce6711620..504f48fb2e3816686b75bb14798e51e7
      [CallWith=ScriptState] constructor(DOMString type, PromiseRejectionEventInit eventInitDict);
      [CallWith=ScriptState] readonly attribute object promise;
 diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
-index 6c16b298502d3711ada242ad5d05aac10f1397a1..fed787a8c5bb16cd25055dfbbe89817eba71c163 100644
+index 07c9dd9c4ffa9b0b805187acce4f0eef4b641ceb..c73a5b68cc3d0b0a813779b1a11812e144a767c5 100644
 --- a/third_party/blink/renderer/core/execution_context/execution_context.h
 +++ b/third_party/blink/renderer/core/execution_context/execution_context.h
 @@ -160,6 +160,7 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
