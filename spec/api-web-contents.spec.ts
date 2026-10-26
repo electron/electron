@@ -4114,6 +4114,10 @@ describe('webContents module', () => {
   describe('setIgnoreMenuShortcuts(ignore)', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
+    // Windows marks a covered window hidden and shows it again only some time
+    // after it is raised, so keep the windows above everything there.
+    const alwaysOnTop = process.platform === 'win32';
+
     const trackShortcutInvocations = (window: BrowserWindow, contents: WebContents) => {
       const previousMenu = Menu.getApplicationMenu();
       let invocations = 0;
@@ -4144,9 +4148,12 @@ describe('webContents module', () => {
           window.focus();
         }
         await waitUntil(() => window.isFocused());
-        // Keys from a hidden widget never reach the menu. Windows marks a
-        // covered window hidden and shows it again only some time after it is
-        // raised, hence alwaysOnTop there.
+        if (contents.getType() === 'webview') {
+          // CDP sends key events to the focused frame, so focus must be in the guest.
+          await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
+          await waitUntil(() => contents.executeJavaScript('document.hasFocus()'));
+        }
+        // Keys from a hidden widget never reach the menu.
         await waitUntil(async () => (await contents.executeJavaScript('document.visibilityState')) === 'visible');
         const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
         // CDP keeps key events that lack a native key code away from the
@@ -4180,7 +4187,7 @@ describe('webContents module', () => {
     it('honors the initial ignoreMenuShortcuts preference', async () => {
       const window = new BrowserWindow({
         show: true,
-        alwaysOnTop: process.platform === 'win32',
+        alwaysOnTop,
         webPreferences: { ignoreMenuShortcuts: true } as Electron.WebPreferences
       });
       await window.loadURL('about:blank');
@@ -4206,11 +4213,7 @@ describe('webContents module', () => {
 
     for (const target of ['webview', 'docked DevTools'] as const) {
       it(`uses the source settings for ${target}`, async () => {
-        const window = new BrowserWindow({
-          show: true,
-          alwaysOnTop: process.platform === 'win32',
-          webPreferences: { webviewTag: true }
-        });
+        const window = new BrowserWindow({ show: true, alwaysOnTop, webPreferences: { webviewTag: true } });
         let source: WebContents;
         if (target === 'webview') {
           const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
@@ -4223,9 +4226,8 @@ describe('webContents module', () => {
         } else {
           await window.loadURL('about:blank');
           const devToolsOpened = once(window.webContents, 'devtools-opened');
-          const devToolsFocused = once(window.webContents, 'devtools-focused');
-          window.webContents.openDevTools({ mode: 'right', activate: true });
-          await Promise.all([devToolsOpened, devToolsFocused]);
+          window.webContents.openDevTools({ mode: 'right' });
+          await devToolsOpened;
           source = window.webContents.devToolsWebContents!;
           expect(source.getLastWebPreferences()).toBe(null);
           source.setIgnoreMenuShortcuts(false);
@@ -4234,13 +4236,6 @@ describe('webContents module', () => {
         const sendShortcut = trackShortcutInvocations(window, source);
         let expectedInvocations = 0;
         for (const ignore of [true, false, true, false]) {
-          if (target === 'webview') {
-            if (process.platform === 'darwin') app.focus({ steal: true });
-            window.focus();
-            await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
-            // CDP sends key events to the focused frame, so focus must be in the guest.
-            await waitUntil(() => source.executeJavaScript('document.hasFocus()'));
-          }
           window.webContents.setIgnoreMenuShortcuts(!ignore);
           source.setIgnoreMenuShortcuts(ignore);
           if (!ignore) expectedInvocations++;
