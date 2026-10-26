@@ -10,7 +10,11 @@ import { defer } from './spec-helpers.ts';
 const fixturesPath = path.resolve(import.meta.dirname, '..', 'fixtures', 'api', 'autoupdater', 'msix');
 const manifestFixturePath = path.resolve(fixturesPath, 'ElectronDevAppxManifest.xml');
 const installCertScriptPath = path.resolve(fixturesPath, 'install_test_cert.ps1');
-const powershellTimeout = 30_000;
+// On many windows-arm64 CI hosts each AppX cmdlet the tests run
+// (Add-AppxPackage, Get-AppxPackage, Remove-AppxPackage) takes 20-30s,
+// against about 1s elsewhere, and now and then a little over 30s.
+// This limit is only there to stop a call that hangs.
+const powershellTimeout = 60_000;
 // Installing the test certificate and registering the sparse package run in the
 // suite's beforeAll hook, and unregistering it in its afterAll hook,
 // while other spec files keep the CI host busy.
