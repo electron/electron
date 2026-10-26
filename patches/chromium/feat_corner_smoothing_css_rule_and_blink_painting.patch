@@ -46,10 +46,10 @@ index 5e751bb0e254b6cd67b05c6bd2e677c074717099..c567a09c696413371ed732cc2f81d9b9
                  'internal-forced-visited-'
              ):
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index abe43ce2114077a8bab9a763fa516bf2fd4bc505..b9b84c8a2b6bc960d525349a3fb1cbf295104b4a 100644
+index 40d1f0c081980b9a8b11ba01b444edb158dde5ef..8ecf42f338df7f808c8b0f371286284fac647aaa 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -10396,6 +10396,27 @@
+@@ -10397,6 +10397,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -133,10 +133,10 @@ index af06c8edfad9f6c4dcb098f7f00be14edcc5bba2..b4968491945d9f4d7f26b41ae3be4fe9
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index aa6daa9b29e98a8b4f9e68cb0a4f9753f9824bac..37d172f1b4b2fdaf294e5edf32861afb48fa4246 100644
+index cf1b546b34bec9165831b378edaa861553039788..5b48bf07a1b1ea9ca8fc8a2e6cc8906f8c557961 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4275,6 +4275,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4231,6 +4231,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -153,10 +153,10 @@ index aa6daa9b29e98a8b4f9e68cb0a4f9753f9824bac..37d172f1b4b2fdaf294e5edf32861afb
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index 3ffc4fc86d7af9f8a0d2b12109759164f24eae0a..9e680f0ff181f08ecac15d469e92ef4e6fecc3e9 100644
+index 6f0f82a3b102293ec5eb426dce27a4820578f4c2..967b73ff46a72b049aa0799a5457da9839e3c596 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -477,6 +477,7 @@ class StyleBuilderConverter {
+@@ -465,6 +465,7 @@ class StyleBuilderConverter {
        StyleResolverState&,
        const CSSValue&,
        bool allow_any_keyword_in_position_area = false);
@@ -165,10 +165,10 @@ index 3ffc4fc86d7af9f8a0d2b12109759164f24eae0a..9e680f0ff181f08ecac15d469e92ef4e
    static TextOverflowData ConvertTextOverflow(StyleResolverState&,
                                                const CSSValue&);
 diff --git a/third_party/blink/renderer/core/paint/contoured_border_geometry.cc b/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
-index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d3271e96afa8 100644
+index 2976bcc89a26701aeb829c0fe0a205defe1e4997..85642753239137de0e4e8c8f4654f131e7de5df7 100644
 --- a/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
 +++ b/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
-@@ -53,6 +53,24 @@ float EffectiveCurvature(Superellipse superellipse, const gfx::SizeF& radius) {
+@@ -54,6 +54,24 @@ float EffectiveCurvature(Superellipse superellipse, const gfx::SizeF& radius) {
                            : superellipse.Exponent();
  }
  
@@ -193,7 +193,7 @@ index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d327
  gfx::QuadF ComputeHullQuad(const ContouredRect::Corner& corner) {
    const gfx::PointF half_corner = corner.HalfCorner();
    const gfx::PointF perpendicular_line =
-@@ -164,7 +182,8 @@ ContouredRect ComputeContouredBorderFromStyle(
+@@ -165,7 +183,8 @@ ContouredRect ComputeContouredBorderFromStyle(
        EffectiveCurvature(style.CornerTopLeftShape(), radii.TopLeft()),
        EffectiveCurvature(style.CornerTopRightShape(), radii.TopRight()),
        EffectiveCurvature(style.CornerBottomRightShape(), radii.BottomRight()),
@@ -204,10 +204,10 @@ index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d327
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 8f77de143b1b49daeb36896548c1a859e5ddac07..573d54fa3409c33a7f298e0e442dd646f2e18689 100644
+index 872194865b78779be5675dcc895b9856aa5c1bf4..7cafc2c0cb2da2e391e19c41197e4c9834aa48e7 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1745,6 +1745,8 @@ component("platform") {
+@@ -1743,6 +1743,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -315,7 +315,7 @@ index 9d125de843259dae40e6b08eaf65ea3650435295..428219fb35d7a967dcaee91aa1c3628e
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 925ff90128278e73bb5118371eaef9609b57b2f5..56c5c4707e5acb88260093fe3206db09126b6d80 100644
+index c105616d3f7306618e8bc89cfc7414354e337d9b..e6afd4ea5751378d306100b176877d7a7ebbfe9b 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@
