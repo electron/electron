@@ -736,21 +736,50 @@ spinning, and the `onload` event is dispatched.
 
 ### Event: 'did-fail-load'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frameToken`."
+```
+-->
+
 Returns:
 
 * `errorCode` Integer
 * `errorDescription` string
 * `validatedURL` string
 * `isMainFrame` boolean
+* `frameProcessId` Integer (optional) - Not set if the load failed without
+  reaching a frame.
+* `frameRoutingId` Integer (optional) - Not set if the load failed without
+  reaching a frame.
+* `frameToken` string (optional) - The [frame token](web-frame-main.md#frameframetoken-readonly)
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
+  Not set if the load failed without reaching a frame.
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
 
 ### Event: 'did-frame-finish-load'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frameToken`."
+```
+-->
+
 Returns:
 
 * `isMainFrame` boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+* `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
 
 Fired when a frame has done navigation.
 
@@ -861,12 +890,23 @@ Calling `event.preventDefault()` does **NOT** have any effect.
 
 ### Event: 'will-frame-navigate'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frameToken`."
+```
+-->
+
 Returns:
 
 * `url` string
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
+* `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
 
 Emitted when a user or the page wants to start navigation anywhere in the `<webview>`
 or any frames embedded within. It can happen when the `window.location` object is
@@ -883,6 +923,14 @@ Calling `event.preventDefault()` does **NOT** have any effect.
 
 ### Event: 'did-start-navigation'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frameToken`."
+```
+-->
+
 Returns:
 
 * `url` string
@@ -890,12 +938,23 @@ Returns:
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
+* `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
 
 Emitted when any frame (including main) starts navigating. `isInPlace` will be
 `true` for in-page navigations.
 
 ### Event: 'did-redirect-navigation'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frameToken`."
+```
+-->
+
 Returns:
 
 * `url` string
@@ -903,6 +962,9 @@ Returns:
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
+* `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
 
 Emitted after a server side redirect occurs during navigation. For example a 302
 redirect.
@@ -921,6 +983,14 @@ this purpose.
 
 ### Event: 'did-frame-navigate'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frameToken`."
+```
+-->
+
 Returns:
 
 * `url` string
@@ -929,6 +999,9 @@ Returns:
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
+* `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
 
 Emitted when any frame navigation is done.
 
@@ -938,10 +1011,23 @@ this purpose.
 
 ### Event: 'did-navigate-in-page'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55388
+    description: "Added `frameToken`."
+```
+-->
+
 Returns:
 
 * `isMainFrame` boolean
 * `url` string
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+* `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
 
 Emitted when an in-page navigation happened.
 

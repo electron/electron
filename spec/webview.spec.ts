@@ -1,4 +1,4 @@
-import { BrowserWindow, session, ipcMain, app, type WebContents } from 'electron/main';
+import { BrowserWindow, session, ipcMain, app, webFrameMain, type WebContents } from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -1877,6 +1877,7 @@ describe('<webview> tag', () => {
         expect(event.isMainFrame).toBe(true);
         expect(event.frameProcessId).toBeTypeOf('number');
         expect(event.frameRoutingId).toBeTypeOf('number');
+        expect(event.frameToken).toBeTypeOf('string');
       });
     });
 
@@ -1896,7 +1897,7 @@ describe('<webview> tag', () => {
 
     describe('will-frame-navigate event', () => {
       it('emits when a link that leads to outside of the page is loaded', async () => {
-        const { url, isMainFrame } = await loadWebViewAndWaitForEvent(
+        const { url, isMainFrame, frameToken } = await loadWebViewAndWaitForEvent(
           w,
           {
             src: `file://${fixtures}/pages/webview-will-navigate.html`
@@ -1905,6 +1906,7 @@ describe('<webview> tag', () => {
         );
         expect(url).toBe('http://host/');
         expect(isMainFrame).toBe(true);
+        expect(frameToken).toBeTypeOf('string');
       });
 
       it('emits when a link within an iframe, which leads to outside of the page, is loaded', async () => {
@@ -1913,17 +1915,18 @@ describe('<webview> tag', () => {
           nodeIntegration: ''
         });
 
-        const { url, frameProcessId, frameRoutingId } = await w.executeJavaScript(`
+        const { url, frameProcessId, frameRoutingId, frameToken } = await w.executeJavaScript(`
           new Promise((resolve, reject) => {
             let hasFrameNavigatedOnce = false;
             const webview = document.getElementById('webview');
-            webview.addEventListener('will-frame-navigate', ({url, isMainFrame, frameProcessId, frameRoutingId}) => {
+            webview.addEventListener('will-frame-navigate', ({url, isMainFrame, frameProcessId, frameRoutingId, frameToken}) => {
               if (isMainFrame) return;
               if (hasFrameNavigatedOnce) resolve({
                 url,
                 isMainFrame,
                 frameProcessId,
                 frameRoutingId,
+                frameToken,
               });
 
               // First navigation is the initial iframe load within the <webview>
@@ -1936,6 +1939,20 @@ describe('<webview> tag', () => {
         expect(url).toBe('http://host/');
         expect(frameProcessId).toBeTypeOf('number');
         expect(frameRoutingId).toBeTypeOf('number');
+        expect(frameToken).toBeTypeOf('string');
+      });
+    });
+
+    describe('did-frame-finish-load event', () => {
+      it('includes the frame token', async () => {
+        const event = await loadWebViewAndWaitForEvent(
+          w,
+          { src: `file://${fixtures}/pages/a.html` },
+          'did-frame-finish-load'
+        );
+        expect(event.frameProcessId).toBeTypeOf('number');
+        expect(event.frameRoutingId).toBeTypeOf('number');
+        expect(event.frameToken).toBeTypeOf('string');
       });
     });
 
@@ -1952,6 +1969,11 @@ describe('<webview> tag', () => {
         const pageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-did-navigate-in-page.html')).toString();
         const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate-in-page');
         expect(event.url).toBe(`${pageUrl}#test_content`);
+        expect(event.isMainFrame).toBe(true);
+        expect(event.frameToken).toBeTypeOf('string');
+        const frame = webFrameMain.fromFrameToken(event.frameProcessId, event.frameToken);
+        expect(frame).not.toBeNull();
+        expect(frame!.routingId).toBe(event.frameRoutingId);
       });
 
       it('emits when window.history.replaceState is called', async () => {

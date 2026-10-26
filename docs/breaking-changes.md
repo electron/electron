@@ -125,6 +125,35 @@ header. To temporarily restore the old behavior for your whole app, disable the
 app.commandLine.appendSwitch('disable-features', 'DeprecateUnload')
 ```
 
+### Deprecated: arguments in `did-fail-load`, `did-fail-provisional-load`, `did-frame-finish-load`, `did-frame-navigate` and `did-navigate-in-page` events on `WebContents`
+
+These `WebContents` events now provide their details on the `Event` argument,
+including the `frame` the event is about. The positional arguments, including
+`frameProcessId` and `frameRoutingId`, are deprecated.
+
+```js
+// Deprecated
+webContents.on(
+  'did-fail-load',
+  (event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId) => {}
+)
+webContents.on('did-frame-finish-load', (event, isMainFrame, frameProcessId, frameRoutingId) => {})
+webContents.on('did-navigate-in-page', (event, url, isMainFrame, frameProcessId, frameRoutingId) => {})
+
+// Replace with:
+webContents.on('did-fail-load', ({ errorCode, errorDescription, url, isMainFrame, frame }) => {})
+webContents.on('did-frame-finish-load', ({ isMainFrame, frame }) => {})
+webContents.on('did-navigate-in-page', ({ url, isMainFrame, frame }) => {})
+```
+
+`did-fail-provisional-load` provides the same properties as `did-fail-load`,
+and `did-frame-navigate` provides `url`, `httpResponseCode`, `httpStatusText`,
+`isMainFrame` and `frame`. The `frame` property is a
+[`WebFrameMain`](api/web-frame-main.md), which exposes the frame's
+`processId`, `routingId` and `frameToken`. It is `null` when the event has no
+frame, such as a `did-fail-load` for an invalid URL passed to
+`webContents.loadURL()`.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: Node.js module shims and `Buffer`, `setImmediate`, `clearImmediate` globals in sandboxed preload scripts

@@ -247,6 +247,7 @@ declare namespace Electron {
   interface WebContentsWillFrameNavigateEventParams {
     processId: number;
     routingId: number;
+    frameToken?: string;
   }
 }
 
