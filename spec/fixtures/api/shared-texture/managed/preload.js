@@ -15,8 +15,14 @@ contextBridge.exposeInMainWorld('textures', {
       imported.release();
     });
   },
+  webGpuReady: () => {
+    ipcRenderer.send('webgpu-ready');
+  },
   webGpuUnavailable: () => {
     ipcRenderer.send('webgpu-unavailable');
+  },
+  renderFailed: (message) => {
+    ipcRenderer.send('render-failed', message);
   },
   verifyCapturedImage: (verify) => {
     ipcRenderer.on('verify-captured-image', (e, images) => {

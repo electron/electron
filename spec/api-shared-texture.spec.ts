@@ -147,124 +147,176 @@ ifdescribe(!skip)('sharedTexture module', () => {
       });
     });
 
-    const runSharedTextureManagedTest = (iframe: boolean): Promise<void> => {
+    const runSharedTextureManagedTest = async (iframe: boolean, signal: AbortSignal): Promise<void> => {
       const preloadPath = path.join(dirPath, 'managed', 'preload.js');
       const htmlPath = path.join(dirPath, 'managed', iframe ? 'frame.html' : 'index.html');
 
-      return new Promise<void>((resolve, reject) => {
-        const createWindow = () => {
-          const win = new BrowserWindow({
-            width: 256,
-            height: 256,
-            show: debugSpec,
-            webPreferences: {
-              preload: preloadPath,
-              nodeIntegrationInSubFrames: iframe
-            }
-          });
+      // A timeout only says the test ran out of time, so log which step it
+      // was waiting on.
+      let step = 'creating windows';
+      signal.addEventListener('abort', () => {
+        console.error(`sharedTexture managed api test (iframe: ${iframe}) timed out while ${step}`);
+      });
 
-          const osr = new BrowserWindow({
-            width: 128,
-            height: 128,
-            show: debugSpec,
-            webPreferences: {
-              offscreen: {
-                useSharedTexture: true
-              }
-            }
-          });
+      const win = new BrowserWindow({
+        width: 256,
+        height: 256,
+        show: debugSpec,
+        webPreferences: {
+          preload: preloadPath,
+          nodeIntegrationInSubFrames: iframe
+        }
+      });
 
-          osr.webContents.setFrameRate(1);
-          osr.webContents.on('paint', async (event: any) => {
-            const targetFrame = iframe ? win.webContents.mainFrame.frames[0] : win.webContents.mainFrame;
-            if (!targetFrame) {
-              reject(new Error('Target frame not found'));
-              return;
-            }
+      const osr = new BrowserWindow({
+        width: 128,
+        height: 128,
+        show: debugSpec,
+        webPreferences: {
+          offscreen: {
+            useSharedTexture: true
+          }
+        }
+      });
 
-            // Step 1: Input source of shared texture handle.
-            const texture = event.texture;
+      // The receiving page registers its shared texture receiver and then
+      // initializes WebGPU asynchronously. A texture sent before it reports
+      // ready is either delivered to no receiver (and never released) or
+      // reaches a page that cannot render it yet, so don't produce any OSR
+      // frame until then.
+      step = 'waiting for the receiving page to initialize WebGPU';
+      const receiverReady = new Promise<boolean>((resolve) => {
+        win.webContents.ipc.once('webgpu-ready', () => resolve(true));
+        win.webContents.ipc.once('webgpu-unavailable', () => resolve(false));
+      });
+      await win.loadFile(htmlPath);
 
-            if (!texture) {
-              console.error('No texture, GPU may be unavailable, skipping.');
-              resolve();
-              return;
-            }
+      const targetFrame = iframe ? win.webContents.mainFrame.frames[0] : win.webContents.mainFrame;
+      expect(targetFrame, 'target frame').toBeDefined();
+      // Without the preload API the page can never report ready.
+      expect(
+        await targetFrame.executeJavaScript("typeof window.textures === 'object'"),
+        'preload API exposed in the receiving frame'
+      ).toBe(true);
 
-            // Step 2: Import as SharedTextureImported
-            const imported = sharedTexture.importSharedTexture({
-              textureInfo: texture.textureInfo,
-              allReferencesReleased: () => {
-                // Release the shared texture source once GPU is done.
-                // Will be called when all processes have finished using the shared texture.
-                texture.release();
+      if (!(await receiverReady)) {
+        console.error('WebGPU is not available, skipping.');
+        return;
+      }
 
-                // Slightly timeout and capture the node screenshot
-                setTimeout(async () => {
-                  // Compare the captured image with the target image
-                  const captured = await win.webContents.capturePage({
-                    x: 16,
-                    y: 16,
-                    width: 128,
-                    height: 128
-                  });
-
-                  // Resize the target image to match the captured image size, in case dpr != 1
-                  const target = targetImage.resize({ ...captured.getSize() });
-
-                  // nativeImage have error comparing pixel data when color space is different,
-                  // send to browser for comparison using canvas.
-                  targetFrame.send('verify-captured-image', {
-                    captured: captured.toDataURL(),
-                    target: target.toDataURL()
-                  });
-                }, 300);
-              }
-            });
-
-            // Step 3: Transfer to another process (win's renderer)
-            await sharedTexture.sendSharedTexture({
-              frame: iframe ? targetFrame : win.webContents.mainFrame,
-              importedSharedTexture: imported
-            });
-
-            // Step 4: Release the imported and wait for signal to release the source
-            imported.release();
-          });
-
-          ipcMain.on('verify-captured-image-done', (event: any, result: { difference: number; total: number }) => {
-            // Verify the result from renderer process
-            try {
-              // macOS may have tiny color difference after the whole rendering process,
-              // and the color may change slightly when resizing at device pixel ratio != 1.
-              // Limit error should not be different more than 1% of the whole image.
-              const ratio = result.difference / result.total;
-              expect(ratio).toBeLessThan(0.01);
-              resolve();
-            } catch (e) {
-              setTimeout(() => reject(e), 1000000);
-            }
-          });
-
-          ipcMain.on('webgpu-unavailable', () => {
-            console.error('WebGPU is not available, skipping.');
-            resolve();
-          });
-
-          win.loadFile(htmlPath);
-          osr.loadFile(osrPath);
-        };
-
-        app.whenReady().then(() => {
-          createWindow();
+      const renderFailed = new Promise<never>((resolve, reject) => {
+        win.webContents.ipc.once('render-failed', (event, message: string) => {
+          reject(new Error(`The receiving page failed to render the shared texture: ${message}`));
         });
       });
+      renderFailed.catch(() => {});
+
+      // Hand out one OSR frame at a time. Frames nobody is waiting for are
+      // released right away so they don't drain the OSR frame pool.
+      let paintWaiter: ((texture: Electron.OffscreenSharedTexture | null) => void) | null = null;
+      osr.webContents.on('paint', (event: any) => {
+        const texture: Electron.OffscreenSharedTexture | undefined = event.texture;
+        if (paintWaiter) {
+          const waiter = paintWaiter;
+          paintWaiter = null;
+          waiter(texture ?? null);
+        } else {
+          texture?.release();
+        }
+      });
+      const nextPaint = () =>
+        new Promise<Electron.OffscreenSharedTexture | null>((resolve) => {
+          paintWaiter = resolve;
+        });
+
+      const renderAndCompare = async (texture: Electron.OffscreenSharedTexture) => {
+        // Import the texture, transfer it to the receiving frame, which draws
+        // it with WebGPU and releases it once the result has been presented.
+        let imported!: Electron.SharedTextureImported;
+        const allReferencesReleased = new Promise<void>((resolve) => {
+          imported = sharedTexture.importSharedTexture({
+            textureInfo: texture.textureInfo,
+            allReferencesReleased: () => {
+              // Release the shared texture source once every process is done with it.
+              texture.release();
+              resolve();
+            }
+          });
+        });
+        step = 'transferring the shared texture';
+        try {
+          await sharedTexture.sendSharedTexture({ frame: targetFrame, importedSharedTexture: imported });
+        } finally {
+          imported.release();
+        }
+        step = 'waiting for the receiving page to render and release the shared texture';
+        await Promise.race([allReferencesReleased, renderFailed]);
+
+        step = 'capturing the receiving window';
+        const captured = await win.webContents.capturePage({
+          x: 16,
+          y: 16,
+          width: 128,
+          height: 128
+        });
+
+        // Resize the target image to match the captured image size, in case dpr != 1
+        const target = targetImage.resize({ ...captured.getSize() });
+
+        // nativeImage have error comparing pixel data when color space is different,
+        // send to browser for comparison using canvas.
+        step = 'comparing the captured image in the receiving page';
+        const result = await new Promise<{ difference: number; total: number }>((resolve) => {
+          win.webContents.ipc.once('verify-captured-image-done', (event, result) => resolve(result));
+          targetFrame.send('verify-captured-image', {
+            captured: captured.toDataURL(),
+            target: target.toDataURL()
+          });
+        });
+        return result.difference / result.total;
+      };
+
+      osr.webContents.setFrameRate(1);
+      step = 'waiting for the first OSR paint';
+      let paint = nextPaint();
+      await osr.loadFile(osrPath);
+
+      // osr.html is static, so OSR usually paints it only once or twice. A
+      // frame painted before its image is drawn doesn't match the target
+      // image, so compare a few OSR frames until one matches. Mismatching
+      // every one of them is a real failure and is reported as such.
+      // macOS may have tiny color difference after the whole rendering process,
+      // and the color may change slightly when resizing at device pixel ratio != 1.
+      // Limit error should not be different more than 1% of the whole image.
+      const maxFrames = 3;
+      const ratios: number[] = [];
+      for (let i = 0; i < maxFrames; i++) {
+        const texture = await paint;
+        if (!texture) {
+          console.error('No texture, GPU may be unavailable, skipping.');
+          return;
+        }
+        const ratio = await renderAndCompare(texture);
+        if (ratio < 0.01) return;
+        ratios.push(ratio);
+
+        // A static page is only painted again when it changes, and
+        // invalidate() doesn't produce a shared texture, so restart painting
+        // to have the capturer deliver a fresh frame of the current content.
+        step = `waiting for OSR paint ${i + 2}`;
+        paint = nextPaint();
+        osr.webContents.stopPainting();
+        osr.webContents.startPainting();
+      }
+      throw new Error(
+        `None of ${maxFrames} OSR frames rendered as the target image, difference ratios: ${ratios.join(', ')}`
+      );
     };
 
     it(
       'successfully imported and rendered with managed api, without iframe',
       { timeout: debugSpec ? 100000 : 10000 },
-      () => runSharedTextureManagedTest(false)
+      ({ signal }) => runSharedTextureManagedTest(false, signal)
     );
 
     it(
@@ -322,7 +374,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
     it(
       'successfully imported and rendered with managed api, with iframe',
       { timeout: debugSpec ? 100000 : 10000 },
-      () => runSharedTextureManagedTest(true)
+      ({ signal }) => runSharedTextureManagedTest(true, signal)
     );
   });
 });

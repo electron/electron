@@ -163,6 +163,14 @@ window.initWebGpu = async () => {
       device.queue.submit([commandEncoder.finish()]);
     } catch (error) {
       console.error('Rendering error:', error);
+      throw error;
     }
+  };
+
+  // Resolves once the GPU has finished the submitted work and a frame
+  // containing the updated canvas has been produced.
+  window.waitForPresentation = async () => {
+    await device.queue.onSubmittedWorkDone();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   };
 };
