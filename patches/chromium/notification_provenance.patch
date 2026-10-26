@@ -92,7 +92,7 @@ index 6f405c9b8c2a34ac071cc4c2b3bdc953c7f5ea1a..9346ccc6249672f133975386cc8c44fa
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 3c200766a4b26e415b74b14ba04e7e199685fe00..693695165ddaf095210a5d1f8a2f7da5ac344617 100644
+index 1d32b9f1478a3e387546d0aed03ee2dcd0da536c..65208aee94be271c9dc20d0504a67e693a8d2eaf 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -289,6 +289,7 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -113,7 +113,7 @@ index 3c200766a4b26e415b74b14ba04e7e199685fe00..693695165ddaf095210a5d1f8a2f7da5
  }
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 9bf238e64af483294ae3c3f18a4e9aed49a8658d..b9b2a4c8c387b8e8b4eb1f02fc0f891ceaa105a0 100644
+index 3af870df8b7b8afc9edc1881bfaf07772656df86..520463a291fb58268f2c411b0325cc798f90db2f 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -47,6 +47,7 @@ class PlatformNotificationServiceProxy;
@@ -133,7 +133,7 @@ index 9bf238e64af483294ae3c3f18a4e9aed49a8658d..b9b2a4c8c387b8e8b4eb1f02fc0f891c
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 5dbe1126f62679855efa307af388427b9e28c747..a0fb47c198354ce3b15db402c801897ab0f8cd56 100644
+index 232d1c239df5c63ab02e7cf1f40c7ce02b710d23..f1d5908cdc666e215cc4ccf6e8fe6ad335bf9213 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2558,7 +2558,7 @@ void RenderProcessHostImpl::CreateNotificationService(
