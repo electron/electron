@@ -1784,7 +1784,6 @@ describe('cpp heap', () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
       const result = await remotely(async () => {
         const { Menu } = require('electron');
-        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
         const { getCppHeapStatistics } = require('node:v8');
 
         function buildLargeMenu() {
@@ -1799,15 +1798,63 @@ describe('cpp heap', () => {
           );
         }
 
-        async function rebuildAndMeasure(n: number) {
+        // Every menu built so far; the last one is the application menu.
+        const builtMenus: WeakRef<object>[] = [];
+
+        // Only synchronous functions such as this one hold the menus themselves.
+        // A suspended async function keeps its registers,
+        // so a menu left in one would stay reachable after being replaced.
+        function rebuild(n: number) {
           for (let i = 0; i < n; i++) {
-            Menu.setApplicationMenu(buildLargeMenu());
+            const menu = buildLargeMenu();
+            builtMenus.push(new WeakRef(menu));
+            Menu.setApplicationMenu(menu);
           }
-          for (let i = 0; i < 10; i++) {
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            v8Util.requestGarbageCollectionForTesting();
+        }
+
+        const countAlive = (refs: WeakRef<object>[]) => refs.filter((ref) => ref.deref() !== undefined).length;
+
+        // Collect from a fresh task without scanning the native stack,
+        // so a stale pointer cannot keep a replaced menu alive.
+        // Several rounds also reclaim objects that only become unreachable
+        // after an earlier round's weak callbacks have run.
+        const gc = async () => {
+          for (let i = 0; i < 3; i++) {
+            await globalThis.gc!({ type: 'major', execution: 'async' });
           }
-          return getCppHeapStatistics('brief').used_size_bytes;
+        };
+
+        // The per-type counts include garbage too, so this runs right after gc().
+        function measure() {
+          const {
+            type_names: typeNames,
+            space_statistics: spaces,
+            used_size_bytes: usedSize
+          } = getCppHeapStatistics('detailed');
+          const count = (typeName: string) => {
+            let n = 0;
+            for (const space of spaces) {
+              for (const page of space.page_stats) {
+                page.object_statistics.forEach((entry: any, index: number) => {
+                  if (typeNames[index] === typeName) n += entry.object_count;
+                });
+              }
+            }
+            return n;
+          };
+          return {
+            menus: count('Electron / Menu'),
+            items: count('Electron / MenuItem'),
+            usedSize,
+            replacedAlive: countAlive(builtMenus.slice(0, -1)),
+            currentAlive: countAlive(builtMenus.slice(-1))
+          };
+        }
+
+        async function rebuildAndMeasure(n: number) {
+          rebuild(n);
+          await gc();
+          return measure();
         }
 
         await rebuildAndMeasure(50);
@@ -1816,11 +1863,29 @@ describe('cpp heap', () => {
         return { after1, after2 };
       });
 
-      const growth = result.after2 - result.after1;
+      const { after1, after2 } = result;
+      // The live application menu is a root menu and 10 submenus with 210 items in all,
+      // so lower counts would mean the type names no longer match.
+      expect(after1.menus).toBeGreaterThanOrEqual(11);
+      expect(after1.items).toBeGreaterThanOrEqual(210);
+      for (const after of [after1, after2]) {
+        expect(after.currentAlive, 'the application menu should stay alive').toBe(1);
+        expect(after.replacedAlive, 'replaced application menus should be collected').toBe(0);
+      }
+      expect(
+        after2.menus,
+        'live Menu count changed between two identical rounds of 50 menu rebuilds — likely a leak'
+      ).toBe(after1.menus);
+      expect(
+        after2.items,
+        'live MenuItem count changed between two identical rounds of 50 menu rebuilds — likely a leak'
+      ).toBe(after1.items);
+      // The whole heap also covers objects of other types that a rebuild might leave behind.
+      const growth = after2.usedSize - after1.usedSize;
       expect(
         growth,
-        `C++ heap grew by ${growth} bytes between two identical rounds of 100 menu rebuilds — likely a leak`
-      ).toBeLessThanOrEqual(result.after1 * 0.1);
+        `C++ heap grew by ${growth} bytes between two identical rounds of 50 menu rebuilds — likely a leak`
+      ).toBeLessThanOrEqual(after1.usedSize * 0.1);
     });
   });
 
