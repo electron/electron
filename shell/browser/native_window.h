@@ -36,6 +36,7 @@ struct NativeWebKeyboardEvent;
 
 namespace gfx {
 class Image;
+class Insets;
 class Point;
 class Rect;
 enum class ResizeEdge;
@@ -103,6 +104,7 @@ class NativeWindow : public views::WidgetDelegate {
   virtual bool IsMinimized() const = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
+  virtual bool IsTiled() const;
 
   virtual void SetBounds(const gfx::Rect& bounds, bool animate) = 0;
   virtual gfx::Rect GetBounds() const = 0;
@@ -190,6 +192,7 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void SetBackgroundColor(SkColor color) = 0;
   virtual SkColor GetBackgroundColor() const = 0;
   virtual void InvalidateShadow() {}
+  virtual bool SetDecorationInsets(const gfx::Insets& insets);
 
   virtual void SetHasShadow(bool has_shadow) = 0;
   virtual bool HasShadow() const = 0;
@@ -325,6 +328,7 @@ class NativeWindow : public views::WidgetDelegate {
   void NotifyWindowUnmaximize();
   void NotifyWindowMinimize();
   void NotifyWindowRestore();
+  void NotifyWindowTiledStateChanged(bool is_tiled);
   void NotifyWindowMove();
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
                               gfx::ResizeEdge edge,

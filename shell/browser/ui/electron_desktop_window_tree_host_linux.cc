@@ -16,6 +16,7 @@
 #include "ui/aura/window_delegate.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/ozone/public/ozone_platform.h"
@@ -24,6 +25,7 @@
 #include "ui/platform_window/platform_window_init_properties.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
+#include "ui/views/window/frame_view_layout_linux.h"
 #include "ui/views/window/frame_view_linux.h"
 #include "ui/views/window/frame_view_utils_linux.h"
 
@@ -83,10 +85,7 @@ void ElectronDesktopWindowTreeHostLinux::Show(
 
 gfx::Insets ElectronDesktopWindowTreeHostLinux::GetRestoredFrameBorderInsets()
     const {
-  if (auto* fvl = native_window_view_->GetFrameViewLinux())
-    return fvl->GetRestoredFrameBorderInsets();
-
-  return gfx::Insets();
+  return native_window_view_->GetRestoredFrameBorderInsets();
 }
 
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
@@ -156,6 +155,8 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
   bool tiled = new_tiled_edges.top || new_tiled_edges.left ||
                new_tiled_edges.bottom || new_tiled_edges.right;
   bool is_tiled = tiled && !maximized;
+  bool changed = is_tiled_ != is_tiled;
+  is_tiled_ = is_tiled;
 
   if (auto* fvl = native_window_view_->GetFrameViewLinux())
     fvl->SetTiled(is_tiled);
@@ -164,6 +165,8 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
   if (GetWidget()->non_client_view()) {
     GetWidget()->non_client_view()->SchedulePaint();
   }
+  if (changed)
+    native_window_view_->NotifyWindowTiledStateChanged(is_tiled);
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
@@ -225,7 +228,21 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
 
   auto* fvl = native_window_view_->GetFrameViewLinux();
   if (!fvl || !fvl->ShouldDrawRestoredFrameShadow()) {
-    platform_window()->SetInputRegion(std::nullopt);
+    // Like the frame's own shadow, decorations the page draws only take input
+    // in the resize band, so clicks further out reach the window below.
+    gfx::Insets insets =
+        CalculateInsetsInDIP(platform_window()->GetPlatformWindowState());
+    if (insets.IsEmpty()) {
+      platform_window()->SetInputRegion(std::nullopt);
+    } else {
+      gfx::Rect widget_bounds(GetWidget()->GetWindowBoundsInScreen().size());
+      gfx::Rect input_bounds(widget_bounds);
+      input_bounds.Inset(insets);
+      input_bounds.Inset(-views::FrameViewLayoutLinux::kResizeBorder);
+      input_bounds.Intersect(widget_bounds);
+      platform_window()->SetInputRegion(std::vector<gfx::Rect>{
+          gfx::ScaleToEnclosingRect(input_bounds, device_scale_factor())});
+    }
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
       if (is_non_opaque) {
         platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});

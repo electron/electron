@@ -7168,6 +7168,56 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('BrowserWindow.setDecorationInsets(insets)', () => {
+    afterEach(closeAllWindows);
+
+    const insets = { top: 10, left: 10, bottom: 10, right: 10 };
+
+    it('rejects insets that are not non-negative integers', () => {
+      const w = new BrowserWindow({ show: false, frame: false, transparent: true });
+      for (const value of [-1, 1.5, NaN, Infinity, 2 ** 31, '10', undefined]) {
+        expect(() => {
+          w.setDecorationInsets({ ...insets, left: value as any });
+        }).toThrow('insets.left must be a non-negative integer');
+      }
+    });
+
+    it('returns false for a window that is not transparent', () => {
+      const w = new BrowserWindow({ show: false, frame: false });
+      expect(w.setDecorationInsets(insets)).toBe(false);
+    });
+
+    ifit(process.platform !== 'linux')('returns false on platforms other than Linux', () => {
+      const w = new BrowserWindow({ show: false, frame: false, transparent: true });
+      expect(w.setDecorationInsets(insets)).toBe(false);
+    });
+
+    ifit(process.platform === 'linux')('keeps the bounds of the visible window', () => {
+      const w = new BrowserWindow({ show: false, frame: false, transparent: true, width: 400, height: 300 });
+      const bounds = w.getBounds();
+      for (const next of [insets, { top: 5, left: 10, bottom: 15, right: 20 }, { top: 0, left: 0, bottom: 0, right: 0 }]) {
+        w.setDecorationInsets(next);
+        expect(w.getBounds()).toEqual(bounds);
+      }
+    });
+
+    ifit(process.platform === 'linux')('sizes the visible window, not the decorations', () => {
+      const w = new BrowserWindow({ show: false, frame: false, transparent: true, width: 400, height: 300 });
+      w.setDecorationInsets(insets);
+      w.setSize(500, 400);
+      expect(w.getSize()).toEqual([500, 400]);
+    });
+  });
+
+  describe('BrowserWindow.isTiled()', () => {
+    afterEach(closeAllWindows);
+
+    it('returns false for a new window', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.isTiled()).toBe(false);
+    });
+  });
+
   ifdescribe(process.platform !== 'linux')('window states (excluding Linux)', () => {
     // Not implemented on Linux.
     afterEach(closeAllWindows);

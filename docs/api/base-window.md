@@ -216,6 +216,23 @@ Emitted when the window is minimized.
 
 Emitted when the window is restored from a minimized state.
 
+#### Event: 'tiled-state-changed' _Linux_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51569
+```
+-->
+
+Returns:
+
+* `event` Event
+* `isTiled` boolean
+
+Emitted when the window manager tiles the window, e.g. snaps it to half of the
+screen, or stops tiling it.
+
 #### Event: 'will-resize' _macOS_ _Windows_
 
 Returns:
@@ -664,6 +681,18 @@ Sets whether the window should be in fullscreen mode.
 #### `win.isFullScreen()`
 
 Returns `boolean` - Whether the window is in fullscreen mode.
+
+#### `win.isTiled()` _Linux_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51569
+```
+-->
+
+Returns `boolean` - Whether the window manager has tiled the window, e.g.
+snapped it to half of the screen. A maximized window is not tiled.
 
 #### `win.setSimpleFullScreen(flag)` _macOS_
 
@@ -1194,6 +1223,44 @@ Invalidates the window shadow so that it is recomputed based on the current wind
 
 `BaseWindow`s that are transparent can sometimes leave behind visual artifacts on macOS.
 This method can be used to clear these artifacts when, for example, performing an animation.
+
+#### `win.setDecorationInsets(insets)` _Linux_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51569
+```
+-->
+
+* `insets` Object
+  * `top` Integer - Must not be negative.
+  * `left` Integer - Must not be negative.
+  * `bottom` Integer - Must not be negative.
+  * `right` Integer - Must not be negative.
+
+Returns `boolean` - Whether the insets take effect.
+
+Sets how far the decorations the page draws itself, such as a window shadow,
+extend past each edge of the visible window. The window manager then only
+treats the visible window as the window when snapping, tiling and maximizing
+it. The 10 pixels of decorations nearest the window resize it, and clicks
+further out reach the window behind, as with the shadow Electron draws for
+frameless windows. `getBounds()` and the other bounds methods keep describing
+the visible window, so the window grows by the insets.
+
+Insets only take effect in a window created with `transparent: true` and
+`frame: false`, under a compositing window manager that supports them (Wayland,
+or X11 with `_GTK_FRAME_EXTENTS`). Otherwise this method returns `false`, and
+the page should not draw decorations the window manager would treat as part of
+the window.
+
+Insets don't apply while the window is maximized or fullscreen, and the window
+can't be resized from them while it is tiled, so pages usually stop drawing
+decorations in those states, e.g. on the
+['tiled-state-changed'](base-window.md#event-tiled-state-changed-linux) event.
+Moving insets between edges without changing their total may not reach the
+window manager until the window is next resized.
 
 #### `win.setHasShadow(hasShadow)`
 
