@@ -648,7 +648,6 @@ describe('cpp heap', () => {
         const os = require('node:os');
         const path = require('node:path');
         const { getCppHeapStatistics } = require('node:v8');
-        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
         const payload = Buffer.alloc(1024);
         const server = http.createServer((_req: any, res: any) => {
@@ -665,25 +664,60 @@ describe('cpp heap', () => {
         const ses = session.fromPartition('cppheap-download-leak');
         const savePath = path.join(os.tmpdir(), 'cppheap-download-leak.bin');
 
-        async function downloadOnce() {
-          await new Promise<void>((resolve) => {
+        // The per-type counts include garbage too,
+        // so this runs right after gc() or while an item is still in use.
+        const countItems = () => {
+          const { type_names: typeNames, space_statistics: spaces } = getCppHeapStatistics('detailed');
+          let n = 0;
+          for (const space of spaces) {
+            for (const page of space.page_stats) {
+              page.object_statistics.forEach((entry: any, index: number) => {
+                if (typeNames[index] === 'Electron / DownloadItem') n += entry.object_count;
+              });
+            }
+          }
+          return n;
+        };
+
+        // Every download item so far.
+        const items: WeakRef<object>[] = [];
+
+        // Only the download itself holds the item, and the promise resolves with a number,
+        // so no suspended async frame keeps an item alive.
+        // The count is taken while the item is in use, so it must include the item.
+        function downloadOnce() {
+          return new Promise<number>((resolve) => {
             ses.once('will-download', (_e: any, item: any) => {
+              items.push(new WeakRef(item));
               item.savePath = savePath;
-              item.once('done', () => resolve());
+              item.once('done', () => resolve(countItems()));
             });
             ses.downloadURL(`http://127.0.0.1:${port}`);
           });
         }
 
+        // Collect from a fresh task without scanning the native stack,
+        // so a stale pointer cannot keep a finished item alive.
+        // Several rounds also reclaim objects that only become unreachable
+        // after an earlier round's weak callbacks have run.
+        const gc = async () => {
+          for (let i = 0; i < 3; i++) {
+            await globalThis.gc!({ type: 'major', execution: 'async' });
+          }
+        };
+
         async function measure(n: number) {
+          let liveInUse = 0;
           for (let i = 0; i < n; i++) {
-            await downloadOnce();
+            liveInUse = await downloadOnce();
           }
-          for (let i = 0; i < 10; i++) {
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            v8Util.requestGarbageCollectionForTesting();
-          }
-          return getCppHeapStatistics('brief').used_size_bytes;
+          await gc();
+          return {
+            liveInUse,
+            live: countItems(),
+            itemsAlive: items.filter((ref) => ref.deref() !== undefined).length,
+            usedSize: getCppHeapStatistics('brief').used_size_bytes
+          };
         }
 
         await measure(5);
@@ -693,11 +727,18 @@ describe('cpp heap', () => {
         return { after1, after2 };
       });
 
-      const growth = result.after2 - result.after1;
+      const { after1, after2 } = result;
+      expect(after1.liveInUse, 'a download item in use should be counted').toBeGreaterThanOrEqual(1);
+      for (const after of [after1, after2]) {
+        expect(after.itemsAlive, 'finished download items should be collected').toBe(0);
+        expect(after.live, 'no DownloadItem should outlive its download').toBe(0);
+      }
+      // The whole heap also covers objects of other types that a download might leave behind.
+      const growth = after2.usedSize - after1.usedSize;
       expect(
         growth,
-        `C++ heap grew by ${growth} bytes between two identical rounds of downloads — likely a leak`
-      ).toBeLessThanOrEqual(result.after1 * 0.1);
+        `C++ heap grew by ${growth} bytes between two identical rounds of 10 downloads — likely a leak`
+      ).toBeLessThanOrEqual(after1.usedSize * 0.1);
     });
 
     ifit(isTestingBindingAvailable())(
@@ -1323,7 +1364,6 @@ describe('cpp heap', () => {
         const { net, app } = require('electron');
         const http = require('node:http');
         const { getCppHeapStatistics } = require('node:v8');
-        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
         const server = http.createServer((req: any, res: any) => {
           req.on('data', () => {});
           req.on('end', () => res.end('ok'));
@@ -1331,16 +1371,40 @@ describe('cpp heap', () => {
         await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
         const { port } = server.address();
 
+        // The per-type counts include garbage too,
+        // so this runs right after gc() or while a request is still in flight.
+        const count = () => {
+          const { type_names: typeNames, space_statistics: spaces } = getCppHeapStatistics('detailed');
+          const counts = { loaders: 0, pipeGetters: 0 };
+          for (const space of spaces) {
+            for (const page of space.page_stats) {
+              page.object_statistics.forEach((entry: any, index: number) => {
+                if (typeNames[index] === 'Electron / SimpleURLLoaderWrapper') counts.loaders += entry.object_count;
+                if (typeNames[index] === 'Electron / JSChunkedDataPipeGetter') counts.pipeGetters += entry.object_count;
+              });
+            }
+          }
+          return counts;
+        };
+
+        // Every request so far.
+        const requests: WeakRef<object>[] = [];
+
+        // Only the request's native loader holds it, and the promise resolves with counts,
+        // so no suspended async frame keeps a request alive.
+        // The counts are taken while the request is in flight, so they must include its objects.
         function uploadOnce() {
-          return new Promise<void>((resolve, reject) => {
+          return new Promise<{ loaders: number; pipeGetters: number }>((resolve, reject) => {
             const request = net.request({
               method: 'POST',
               url: `http://127.0.0.1:${port}`
             });
+            requests.push(new WeakRef(request));
             request.chunkedEncoding = true;
             request.on('response', (response: any) => {
+              const inFlight = count();
               response.on('data', () => {});
-              response.on('end', () => resolve());
+              response.on('end', () => resolve(inFlight));
             });
             request.on('error', reject);
             for (let i = 0; i < 4; i++) {
@@ -1350,15 +1414,28 @@ describe('cpp heap', () => {
           });
         }
 
+        // Collect from a fresh task without scanning the native stack,
+        // so a stale pointer cannot keep a finished request alive.
+        // Several rounds also reclaim objects that only become unreachable
+        // after an earlier round's weak callbacks have run.
+        const gc = async () => {
+          for (let i = 0; i < 3; i++) {
+            await globalThis.gc!({ type: 'major', execution: 'async' });
+          }
+        };
+
         async function measure(n: number) {
+          let inFlight = { loaders: 0, pipeGetters: 0 };
           for (let i = 0; i < n; i++) {
-            await uploadOnce();
+            inFlight = await uploadOnce();
           }
-          for (let i = 0; i < 10; i++) {
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            v8Util.requestGarbageCollectionForTesting();
-          }
-          return getCppHeapStatistics('brief').used_size_bytes;
+          await gc();
+          return {
+            inFlight,
+            live: count(),
+            requestsAlive: requests.filter((ref) => ref.deref() !== undefined).length,
+            usedSize: getCppHeapStatistics('brief').used_size_bytes
+          };
         }
 
         await measure(5);
@@ -1372,11 +1449,19 @@ describe('cpp heap', () => {
       const [code] = await exited;
       expect(code).toBe(0);
 
-      const growth = result.after2 - result.after1;
+      const { after1, after2 } = result;
+      expect(after1.inFlight.loaders, 'a request in flight should be counted').toBeGreaterThanOrEqual(1);
+      expect(after1.inFlight.pipeGetters, 'a chunked upload in flight should be counted').toBeGreaterThanOrEqual(1);
+      for (const after of [after1, after2]) {
+        expect(after.requestsAlive, 'finished requests should be collected').toBe(0);
+        expect(after.live, 'no URL loader object should outlive its request').toEqual({ loaders: 0, pipeGetters: 0 });
+      }
+      // The whole heap also covers objects of other types that an upload might leave behind.
+      const growth = after2.usedSize - after1.usedSize;
       expect(
         growth,
-        `C++ heap grew by ${growth} bytes between two identical rounds of chunked uploads — likely a leak`
-      ).toBeLessThanOrEqual(result.after1 * 0.1);
+        `C++ heap grew by ${growth} bytes between two identical rounds of 5 chunked uploads — likely a leak`
+      ).toBeLessThanOrEqual(after1.usedSize * 0.1);
     });
 
     it('completes request after JS drops reference but listeners are registered', async () => {
@@ -2915,22 +3000,57 @@ describe('cpp heap', () => {
           const { utilityProcess } = require('electron');
           const { once } = require('node:events');
           const { getCppHeapStatistics } = require('node:v8');
-          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
-          async function forkAndWait() {
+          // The per-type counts include garbage too,
+          // so this runs right after gc() or while a child is still running.
+          const countWrappers = () => {
+            const { type_names: typeNames, space_statistics: spaces } = getCppHeapStatistics('detailed');
+            let n = 0;
+            for (const space of spaces) {
+              for (const page of space.page_stats) {
+                page.object_statistics.forEach((entry: any, index: number) => {
+                  if (typeNames[index] === 'Electron / UtilityProcess') n += entry.object_count;
+                });
+              }
+            }
+            return n;
+          };
+
+          // Every child so far.
+          const children: WeakRef<object>[] = [];
+
+          // Once this returns, only the running process's native wrapper holds the child,
+          // and the promise resolves with a number, so no suspended async frame keeps a child alive.
+          // The count is taken while the child runs, so it must include its wrapper.
+          function forkOnce() {
             const child = utilityProcess.fork(fixturePath);
-            await once(child, 'exit');
+            children.push(new WeakRef(child));
+            const whileRunning = countWrappers();
+            return once(child, 'exit').then(() => whileRunning);
           }
 
+          // Collect from a fresh task without scanning the native stack,
+          // so a stale pointer cannot keep an exited child alive.
+          // Several rounds also reclaim objects that only become unreachable
+          // after an earlier round's weak callbacks have run.
+          const gc = async () => {
+            for (let i = 0; i < 3; i++) {
+              await globalThis.gc!({ type: 'major', execution: 'async' });
+            }
+          };
+
           async function measure(n: number) {
+            let whileRunning = 0;
             for (let i = 0; i < n; i++) {
-              await forkAndWait();
+              whileRunning = await forkOnce();
             }
-            for (let i = 0; i < 10; i++) {
-              await new Promise((resolve) => setTimeout(resolve, 0));
-              v8Util.requestGarbageCollectionForTesting();
-            }
-            return getCppHeapStatistics('brief').used_size_bytes;
+            await gc();
+            return {
+              whileRunning,
+              live: countWrappers(),
+              childrenAlive: children.filter((ref) => ref.deref() !== undefined).length,
+              usedSize: getCppHeapStatistics('brief').used_size_bytes
+            };
           }
 
           await measure(5);
@@ -2941,10 +3061,18 @@ describe('cpp heap', () => {
         path.join(import.meta.dirname, 'fixtures/api/utility-process/empty.js')
       );
 
-      const growth = result.after2 - result.after1;
-      expect(growth, `C++ heap grew by ${growth} bytes between rounds — likely a leak`).toBeLessThanOrEqual(
-        result.after1 * 0.1
-      );
+      const { after1, after2 } = result;
+      expect(after1.whileRunning, 'a running child should be counted').toBeGreaterThanOrEqual(1);
+      for (const after of [after1, after2]) {
+        expect(after.childrenAlive, 'exited children should be collected').toBe(0);
+        expect(after.live, 'no UtilityProcess wrapper should outlive its process').toBe(0);
+      }
+      // The whole heap also covers objects of other types that a fork might leave behind.
+      const growth = after2.usedSize - after1.usedSize;
+      expect(
+        growth,
+        `C++ heap grew by ${growth} bytes between two identical rounds of 10 forks — likely a leak`
+      ).toBeLessThanOrEqual(after1.usedSize * 0.1);
     });
   });
 
