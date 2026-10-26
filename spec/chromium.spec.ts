@@ -2087,6 +2087,100 @@ describe('chromium features', () => {
       expect(restricted).toEqual([]);
     });
 
+    // A pasted directory only reaches the blocklist if it exists, so this
+    // shares a fixture directory over loopback SMB and reaches it under
+    // different UNC server and share names. Creating a share needs an
+    // elevated administrator.
+    ifit(process.platform === 'win32')("applies Chrome's local UNC path rules", { timeout: 120000 }, async (ctx) => {
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(fixturesPath, 'file-system', 'fsa-unc-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      // At most 12 characters, including the hidden share's '$', or net share
+      // asks whether MS-DOS clients matter.
+      const share = `efsa${Math.floor(Math.random() * 0x1000000)
+        .toString(16)
+        .padStart(6, '0')}`;
+      const hiddenShare = `${share}$`;
+      try {
+        for (const name of [share, hiddenShare]) {
+          ChildProcess.execFileSync('net', ['share', `${name}=${dir}`], { stdio: 'pipe', input: 'y\r\n' });
+          defer(() => {
+            try {
+              ChildProcess.execFileSync('net', ['share', name, '/delete', '/y'], { stdio: 'pipe' });
+            } catch {}
+          });
+        }
+      } catch (error) {
+        // On CI this must not turn into a silent skip.
+        if (process.env.CI) throw error;
+        console.warn(`Skipping UNC blocklist spec, could not create an SMB share: ${error}`);
+        return ctx.skip();
+      }
+
+      const host = os.hostname();
+      const unc = (server: string, ...rest: string[]) => `\\\\${server}\\${rest.join('\\')}`;
+      const isReachable = (p: string) =>
+        Promise.race([
+          fs.promises.stat(p).then(
+            (s) => s.isDirectory(),
+            () => false
+          ),
+          setTimeout(20000, false, { ref: false })
+        ]);
+
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('deny');
+      });
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+      const classify = async (p: string) => {
+        // Also opens the SMB session up front, which can be slow.
+        expect(await isReachable(p), `${p} should be reachable`).toBe(true);
+        const before = restricted.length;
+        await frame.executeJavaScript('window.handle = null; true');
+        await pasteHandle(w, frame, p);
+        await waitForHandle(frame);
+        const kind = await frame.executeJavaScript('window.handle && window.handle.kind');
+        if (restricted.length === before) {
+          expect(kind, p).toBe('directory');
+          return 'allowed';
+        }
+        // File URLs lowercase the server name.
+        expect(restricted.slice(before).map((r) => r.toLowerCase())).toEqual([p.toLowerCase()]);
+        expect(kind, p).toBe(null);
+        return 'blocked';
+      };
+
+      // A server name that isn't known to be local is treated as remote,
+      // unless it has characters a DNS name can't, which are blocked.
+      const hostIsDNSName = /^[A-Za-z0-9.-]+$/.test(host);
+      if (!hostIsDNSName) console.warn(`${host} is not a plain DNS name, so it is expected to be blocked`);
+      expect(await classify(unc(host, share))).toBe(hostIsDNSName ? 'allowed' : 'blocked');
+      // Electron blocks every share ending in '$', not only the drive (X$)
+      // and ADMIN$/IPC$/PRINT$/FAX$ ones, so a plain hidden share is too.
+      expect(await classify(unc(host, hiddenShare))).toBe('blocked');
+      // Drive admin shares are blocked whatever the server is called.
+      const [drive, ...dirComponents] = dir.split(path.sep);
+      expect(await classify(unc(host, `${drive.replace(/:$/, '')}$`, ...dirComponents))).toBe('blocked');
+      // Local server names are blocked whatever the share is. A bare
+      // "localhost" can't be pasted: file URLs drop that host, so it would
+      // arrive as a path with no server.
+      expect(await classify(unc('127.0.0.1', share))).toBe('blocked');
+
+      // Intentional change: a trailing dot no longer hides a local server name.
+      // Electron used to allow this. It needs "localhost." to resolve, so it is
+      // skipped where it doesn't.
+      const trailingDot = unc('localhost.', share);
+      if (await isReachable(trailingDot)) {
+        expect(await classify(trailingDot)).toBe('blocked');
+      } else {
+        console.warn(`Skipping ${trailingDot}, it does not resolve here`);
+      }
+    });
+
     it('revokes active grants once no top-level document of the origin remains', { timeout: 60000 }, async () => {
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
       ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
