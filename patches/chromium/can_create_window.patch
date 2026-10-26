@@ -12,7 +12,7 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 50d1b7fd48571418e42fd5efb9178400fdf43adb..4f22b4b1618b5b435c85e3653e9425f575587b01 100644
+index 13ce537faeae2621ea89150af6a4584cf30c1d9d..d40577f4f1b90fb8c91711bc4852d08b05aace55 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -10903,6 +10903,7 @@ void RenderFrameHostImpl::CreateNewWindow(

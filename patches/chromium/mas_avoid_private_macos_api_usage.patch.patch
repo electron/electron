@@ -1013,7 +1013,7 @@ index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d2a371b16710a87556002ccf47f0aef3fc423a89..17e695e7792830666a01a34078f6c63aa78b54d4 100644
+index 8cc4642c45004cc0c8de4d952c78c2aa7f8e0f83..bb6e40d969682613ac459b6d1699aa208caa5685 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -384,6 +384,7 @@ source_set("browser") {
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 548c38484004b9b69803d26a1f0aeef88856217d..464a2b286a155566827272fafed8ad57ffda1a4d 100644
+index e93880ca23768d298e5aadcd12e0eb4f3a174170..93d5ae942fe314d0f4b37fe689beb32ba7612c9b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 548c38484004b9b69803d26a1f0aeef88856217d..464a2b286a155566827272fafed8ad57
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2059,6 +2062,7 @@ test("content_browsertests") {
+@@ -2060,6 +2063,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1256,7 +1256,7 @@ index 548c38484004b9b69803d26a1f0aeef88856217d..464a2b286a155566827272fafed8ad57
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3454,6 +3458,7 @@ test("content_unittests") {
+@@ -3455,6 +3459,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
