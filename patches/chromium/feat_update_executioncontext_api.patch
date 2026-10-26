@@ -50,7 +50,7 @@ index 41a5db4e019084d47763a43bd548b29faa070660..49206eb36d5d4dff4e2c26691f39ecb6
  
    auto* script_controller =
 diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
-index 6c16b298502d3711ada242ad5d05aac10f1397a1..fc8a556a58182c992d61b2df7dc15fb8c011fd42 100644
+index 07c9dd9c4ffa9b0b805187acce4f0eef4b641ceb..158a1b496753c192d5fe4525234e94dc5f413571 100644
 --- a/third_party/blink/renderer/core/execution_context/execution_context.h
 +++ b/third_party/blink/renderer/core/execution_context/execution_context.h
 @@ -164,6 +164,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
