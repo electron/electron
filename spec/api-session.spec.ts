@@ -2392,6 +2392,13 @@ describe('session module', () => {
 
     // NOTE: This API clears more than localStorage, but localStorage is a
     // convenient test target for this API
+    //
+    // The page keeps its own copy of localStorage. clearData() resolves once the
+    // storage backend has deleted the data, and the backend tells the page
+    // separately, so the page can still answer from its old copy for a moment.
+    const waitForEmptyLocalStorage = (w: BrowserWindow) =>
+      waitUntil(async () => (await w.webContents.executeJavaScript('localStorage.length')) === 0);
+
     it('clears all data when no options supplied', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
@@ -2400,7 +2407,7 @@ describe('session module', () => {
 
       await w.webContents.session.clearData();
 
-      expect(await w.webContents.executeJavaScript('localStorage.length')).toBe(0);
+      await waitForEmptyLocalStorage(w);
     });
 
     it('clears all data when no options supplied, called twice in parallel', async () => {
@@ -2413,7 +2420,7 @@ describe('session module', () => {
       const clearDataPromise = w.webContents.session.clearData();
       await w.webContents.session.clearData();
 
-      expect(await w.webContents.executeJavaScript('localStorage.length')).toBe(0);
+      await waitForEmptyLocalStorage(w);
 
       // Await the first promise so it doesn't creep into another test
       await clearDataPromise;
