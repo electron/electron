@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0d2c2150a281f6008fdae7a54448ca779d702600..f46aa572c5b97b12d687fba9d0d165ca8a616478 100644
+index 1dbe04fa17f42006afac37d062912ed1ef709957..4f4d61594aee602b9217eee43defe5b5e29dde3b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1154,6 +1154,7 @@ component("base") {
@@ -2415,10 +2415,10 @@ index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e704027
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index c50d748fb83207ff46e5d46a8979ebea1d5c30f7..e4c4a8cdb71bc872e8dbf998b6bfa7a0ff053d25 100644
+index 24bc26eb55c2e611cfd3834bbd2e7abfb40d0077..b1d0c90041ac9ba06e34bf24a6200f2379500294 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -284,6 +284,8 @@ component("gfx") {
+@@ -285,6 +285,8 @@ component("gfx") {
        "CoreGraphics.framework",
        "CoreText.framework",
      ]
