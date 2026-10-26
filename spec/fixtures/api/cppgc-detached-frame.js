@@ -21,13 +21,16 @@ module.exports = async (page, child, snapshotHelper, mode) => {
     }
   });
   const evaluate = (source) => window.webContents.executeJavaScript(source);
+  // Collect from fresh tasks with no native stack. A synchronous collection
+  // scans the stack conservatively, so a stale pointer left by an earlier
+  // native frame (common under ASan's fake stacks) can keep a callback holder
+  // and its realm alive and make the counts below off by one.
   const collect = () =>
     evaluate(`
     (async () => {
       const v8Util = process._linkedBinding('electron_common_v8_util');
       for (let i = 0; i < 3; ++i) {
-        await new Promise(resolve => setTimeout(resolve, 0));
-        v8Util.requestGarbageCollectionForTesting();
+        await v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
       }
       return process._linkedBinding('electron_common_testing')
         .getLiveCallbackHolderProbeCountForTesting();
@@ -74,14 +77,9 @@ module.exports = async (page, child, snapshotHelper, mode) => {
       return ${count};
     })()
   `);
-  const detach = async () => {
-    await evaluate(`
-      (async () => {
-        document.querySelector('iframe').remove();
-        await new Promise(resolve => setTimeout(resolve, 200));
-      })()
-    `);
-  };
+  // Removing the iframe detaches the child frame and releases its script
+  // context synchronously; the collections that follow run from later tasks.
+  const detach = () => evaluate(`document.querySelector('iframe').remove()`);
   const verifyRelease = async (baselineProbes) => {
     await evaluate(`
       globalThis.detachedFrameState.nativeImage = null;
