@@ -1,0 +1,1830 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 01:46:19 +0000
+Subject: Update tzdata to 2026e
+
+Brings ICU's time zone data up to tzdata 2026e, matching upstream ICU's
+19dfb44a6 ("Update tzdata to 2026e"). Among other changes, 2026e maps
+Europe/London and Europe/Dublin to the GMT metazone. With 2026d they map
+only to the British and Irish metazones, which have no English winter
+name, so after daylight saving time ends ICU formats their long time zone
+name as "GMT+00:00" instead of "Greenwich Mean Time".
+
+This applies on top of update_tzdata_to_2026d.patch and follows the same
+approach: the source/data/misc text files are upstream's at 19dfb44a6, and
+only the metaZones.res and zoneinfo64.res items of common/icudtl.dat are
+replaced with upstream's, keeping every other item and the existing layout.
+Making the same replacement in upstream 5aa52620, the parent of the tzdata
+roll, reproduces upstream 19dfb44a6's common/icudtl.dat byte for byte.
+
+This patch can be removed once Chromium's DEPS pins ICU at or after
+19dfb44a6.
+
+diff --git a/README.chromium b/README.chromium
+index 152c0a507bb1b18a030a5590ac49595de36dd25e..4960cc3dff45044c38b687ed54bd22b21e01cb63 100644
+--- a/README.chromium
++++ b/README.chromium
+@@ -208,7 +208,7 @@ D. Local Modifications
+     bug: https://crbug.com/381620359
+     (scripts/update_tz.sh offers to perform this patch automatically)
+ 
+-  As of Sep 24, 2026, the latest version is 2026d
++  As of Oct 6, 2026, the latest version is 2026e
+   and the above files are available at the ICU github repos.
+   Compare: https://lists.iana.org/hyperkitty/list/tz-announce@iana.org/thread/L4IGHJRBUQR53F7RTEHM5IS7ZMBR3YXP/
+ 
+diff --git a/common/icudtl.dat b/common/icudtl.dat
+index 16aa0d23f81afc2dfc99aa10a5539d7950961fb9..fb1642f664b4feb4ccbd0620ffd1f6f57fc06e03 100644
+GIT binary patch
+delta 34238
+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
+
+delta 32239
+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
+No}J>=ge!XE{{d!n0y_Wz
+
+diff --git a/source/data/misc/metaZones.txt b/source/data/misc/metaZones.txt
+index 13e6ff878eed448bb61cbbcfa1b3986c5e080ed2..8fbf7f934050596861a982ac97ca6554177758b4 100644
+--- a/source/data/misc/metaZones.txt
++++ b/source/data/misc/metaZones.txt
+@@ -31,6 +31,9 @@ metaZones:table(nofallback){
+             UG{"Africa/Kampala"}
+             YT{"Indian/Mayotte"}
+         }
++        Africa_FarWestern{
++            001{"Africa/El_Aaiun"}
++        }
+         Africa_Southern{
+             001{"Africa/Johannesburg"}
+             LS{"Africa/Maseru"}
+@@ -49,9 +52,18 @@ metaZones:table(nofallback){
+             NE{"Africa/Niamey"}
+             TD{"Africa/Ndjamena"}
+         }
++        Aktyubinsk{
++            001{"Asia/Aqtobe"}
++        }
+         Alaska{
+             001{"America/Juneau"}
+         }
++        Alaska_Hawaii{
++            001{"America/Anchorage"}
++        }
++        Almaty{
++            001{"Asia/Almaty"}
++        }
+         Amazon{
+             001{"America/Manaus"}
+         }
+@@ -89,6 +101,12 @@ metaZones:table(nofallback){
+         Apia{
+             001{"Pacific/Apia"}
+         }
++        Aqtau{
++            001{"Asia/Aqtau"}
++        }
++        Aqtobe{
++            001{"Asia/Aqtobe"}
++        }
+         Arabian{
+             001{"Asia/Riyadh"}
+             BH{"Asia/Bahrain"}
+@@ -106,6 +124,9 @@ metaZones:table(nofallback){
+         Armenia{
+             001{"Asia/Yerevan"}
+         }
++        Ashkhabad{
++            001{"Asia/Ashgabat"}
++        }
+         Atlantic{
+             001{"America/Halifax"}
+             AG{"America/Antigua"}
+@@ -149,15 +170,24 @@ metaZones:table(nofallback){
+         Azores{
+             001{"Atlantic/Azores"}
+         }
++        Baku{
++            001{"Asia/Baku"}
++        }
+         Bangladesh{
+             001{"Asia/Dhaka"}
+         }
++        Bering{
++            001{"America/Adak"}
++        }
+         Bhutan{
+             001{"Asia/Thimphu"}
+         }
+         Bolivia{
+             001{"America/La_Paz"}
+         }
++        Borneo{
++            001{"Asia/Kuching"}
++        }
+         Brasilia{
+             001{"America/Sao_Paulo"}
+         }
+@@ -175,6 +205,7 @@ metaZones:table(nofallback){
+         }
+         Chamorro{
+             001{"Pacific/Saipan"}
++            GU{"Pacific/Guam"}
+         }
+         Chatham{
+             001{"Pacific/Chatham"}
+@@ -200,12 +231,24 @@ metaZones:table(nofallback){
+         Cuba{
+             001{"America/Havana"}
+         }
++        Dacca{
++            001{"Asia/Dhaka"}
++        }
+         Davis{
+             001{"Antarctica/Davis"}
+         }
++        Dominican{
++            001{"America/Santo_Domingo"}
++        }
+         DumontDUrville{
+             001{"Antarctica/DumontDUrville"}
+         }
++        Dushanbe{
++            001{"Asia/Dushanbe"}
++        }
++        Dutch_Guiana{
++            001{"America/Paramaribo"}
++        }
+         East_Timor{
+             001{"Asia/Dili"}
+         }
+@@ -280,13 +323,18 @@ metaZones:table(nofallback){
+         French_Southern{
+             001{"Indian/Kerguelen"}
+         }
++        Frunze{
++            001{"Asia/Bishkek"}
++        }
+         GMT{
+             001{"Atlantic/Reykjavik"}
+             BF{"Africa/Ouagadougou"}
+             CI{"Africa/Abidjan"}
++            GB{"Europe/London"}
+             GH{"Africa/Accra"}
+             GM{"Africa/Banjul"}
+             GN{"Africa/Conakry"}
++            IE{"Europe/Dublin"}
+             ML{"Africa/Bamako"}
+             MR{"Africa/Nouakchott"}
+             SH{"Atlantic/St_Helena"}
+@@ -306,15 +354,24 @@ metaZones:table(nofallback){
+         Gilbert_Islands{
+             001{"Pacific/Tarawa"}
+         }
++        Goose_Bay{
++            001{"America/Goose_Bay"}
++        }
+         Greenland{
+             001{"America/Godthab"}
+         }
++        Greenland_Central{
++            001{"America/Scoresbysund"}
++        }
+         Greenland_Eastern{
+             001{"America/Scoresbysund"}
+         }
+         Greenland_Western{
+             001{"America/Godthab"}
+         }
++        Guam{
++            001{"Pacific/Guam"}
++        }
+         Gulf{
+             001{"Asia/Dubai"}
+             OM{"Asia/Muscat"}
+@@ -373,6 +430,9 @@ metaZones:table(nofallback){
+         Kamchatka{
+             001{"Asia/Kamchatka"}
+         }
++        Karachi{
++            001{"Asia/Karachi"}
++        }
+         Kazakhstan{
+             001{"Asia/Almaty"}
+         }
+@@ -382,6 +442,9 @@ metaZones:table(nofallback){
+         Kazakhstan_Western{
+             001{"Asia/Aqtobe"}
+         }
++        Kizilorda{
++            001{"Asia/Qyzylorda"}
++        }
+         Korea{
+             001{"Asia/Seoul"}
+         }
+@@ -391,18 +454,36 @@ metaZones:table(nofallback){
+         Krasnoyarsk{
+             001{"Asia/Krasnoyarsk"}
+         }
++        Kuybyshev{
++            001{"Europe/Samara"}
++        }
++        Kwajalein{
++            001{"Pacific/Kwajalein"}
++        }
+         Kyrgystan{
+             001{"Asia/Bishkek"}
+         }
++        Lanka{
++            001{"Asia/Colombo"}
++        }
++        Liberia{
++            001{"Africa/Monrovia"}
++        }
+         Line_Islands{
+             001{"Pacific/Kiritimati"}
+         }
+         Lord_Howe{
+             001{"Australia/Lord_Howe"}
+         }
++        Macau{
++            001{"Asia/Macau"}
++        }
+         Magadan{
+             001{"Asia/Magadan"}
+         }
++        Malaya{
++            001{"Asia/Kuala_Lumpur"}
++        }
+         Malaysia{
+             001{"Asia/Kuching"}
+         }
+@@ -458,12 +539,18 @@ metaZones:table(nofallback){
+         Noronha{
+             001{"America/Noronha"}
+         }
++        North_Mariana{
++            001{"Pacific/Saipan"}
++        }
+         Novosibirsk{
+             001{"Asia/Novosibirsk"}
+         }
+         Omsk{
+             001{"Asia/Omsk"}
+         }
++        Oral{
++            001{"Asia/Oral"}
++        }
+         Pakistan{
+             001{"Asia/Karachi"}
+         }
+@@ -497,6 +584,9 @@ metaZones:table(nofallback){
+         Pyongyang{
+             001{"Asia/Pyongyang"}
+         }
++        Qyzylorda{
++            001{"Asia/Qyzylorda"}
++        }
+         Reunion{
+             001{"Indian/Reunion"}
+         }
+@@ -509,12 +599,18 @@ metaZones:table(nofallback){
+         Samara{
+             001{"Europe/Samara"}
+         }
++        Samarkand{
++            001{"Asia/Samarkand"}
++        }
+         Samoa{
+             001{"Pacific/Pago_Pago"}
+         }
+         Seychelles{
+             001{"Indian/Mahe"}
+         }
++        Shevchenko{
++            001{"Asia/Aqtau"}
++        }
+         Singapore{
+             001{"Asia/Singapore"}
+         }
+@@ -527,6 +623,9 @@ metaZones:table(nofallback){
+         Suriname{
+             001{"America/Paramaribo"}
+         }
++        Sverdlovsk{
++            001{"Asia/Yekaterinburg"}
++        }
+         Syowa{
+             001{"Antarctica/Syowa"}
+         }
+@@ -539,6 +638,12 @@ metaZones:table(nofallback){
+         Tajikistan{
+             001{"Asia/Dushanbe"}
+         }
++        Tashkent{
++            001{"Asia/Tashkent"}
++        }
++        Tbilisi{
++            001{"Asia/Tbilisi"}
++        }
+         Tokelau{
+             001{"Pacific/Fakaofo"}
+         }
+@@ -557,6 +662,9 @@ metaZones:table(nofallback){
+         Tuvalu{
+             001{"Pacific/Funafuti"}
+         }
++        Uralsk{
++            001{"Asia/Oral"}
++        }
+         Uruguay{
+             001{"America/Montevideo"}
+         }
+@@ -593,6 +701,9 @@ metaZones:table(nofallback){
+         Yekaterinburg{
+             001{"Asia/Yekaterinburg"}
+         }
++        Yerevan{
++            001{"Asia/Yerevan"}
++        }
+         Yukon{
+             001{"America/Whitehorse"}
+         }
+@@ -604,6 +715,7 @@ metaZones:table(nofallback){
+         afgh{"Afghanistan"}
+         afso{"Africa_Southern"}
+         afwe{"Africa_Western"}
++        alam{"Almaty"}
+         alas{"Alaska"}
+         amaz{"Amazon"}
+         amce{"America_Central"}
+@@ -612,6 +724,8 @@ metaZones:table(nofallback){
+         ampa{"America_Pacific"}
+         anad{"Anadyr"}
+         apia{"Apia"}
++        aqta{"Aqtau"}
++        aqto{"Aqtobe"}
+         arab{"Arabian"}
+         arge{"Argentina"}
+         arme{"Armenia"}
+@@ -627,7 +741,6 @@ metaZones:table(nofallback){
+         bhut{"Bhutan"}
+         boli{"Bolivia"}
+         bras{"Brasilia"}
+-        brit{"British"}
+         brun{"Brunei"}
+         case{"Casey"}
+         cave{"Cape_Verde"}
+@@ -645,7 +758,6 @@ metaZones:table(nofallback){
+         east{"Easter"}
+         eati{"East_Timor"}
+         ecua{"Ecuador"}
+-        eire{"Irish"}
+         euce{"Europe_Central"}
+         euea{"Europe_Eastern"}
+         eufe{"Europe_Further_Eastern"}
+@@ -661,6 +773,7 @@ metaZones:table(nofallback){
+         grea{"Greenland_Eastern"}
+         gree{"Greenland"}
+         grwe{"Greenland_Western"}
++        guam{"Guam"}
+         gulf{"Gulf"}
+         guya{"Guyana"}
+         haal{"Hawaii_Aleutian"}
+@@ -685,8 +798,10 @@ metaZones:table(nofallback){
+         kosr{"Kosrae"}
+         kras{"Krasnoyarsk"}
+         kyrg{"Kyrgystan"}
++        lank{"Lanka"}
+         liis{"Line_Islands"}
+         loho{"Lord_Howe"}
++        maca{"Macau"}
+         maga{"Magadan"}
+         mais{"Marshall_Islands"}
+         mala{"Malaysia"}
+@@ -705,6 +820,7 @@ metaZones:table(nofallback){
+         newf{"Newfoundland"}
+         neze{"New_Zealand"}
+         niue{"Niue"}
++        noma{"North_Mariana"}
+         norf{"Norfolk"}
+         noro{"Noronha"}
+         novo{"Novosibirsk"}
+@@ -720,6 +836,7 @@ metaZones:table(nofallback){
+         pitc{"Pitcairn"}
+         pona{"Ponape"}
+         pyon{"Pyongyang"}
++        qyzy{"Qyzylorda"}
+         reun{"Reunion"}
+         roth{"Rothera"}
+         sakh{"Sakhalin"}
+@@ -736,11 +853,9 @@ metaZones:table(nofallback){
+         taji{"Tajikistan"}
+         toke{"Tokelau"}
+         tong{"Tonga"}
+-        trky{"Turkey"}
+         truk{"Truk"}
+         turk{"Turkmenistan"}
+         tuva{"Tuvalu"}
+-        urqi{"Urumqi"}
+         urug{"Uruguay"}
+         uzbe{"Uzbekistan"}
+         vanu{"Vanuatu"}
+@@ -813,6 +928,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Africa:Bissau"{
++            {
++                "Africa_FarWestern",
++                "1970-01-01 00:00",
++                "1975-01-01 01:00",
++            }
+             {
+                 "GMT",
+                 "1975-01-01 01:00",
+@@ -899,6 +1019,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Africa:El_Aaiun"{
++            {
++                "Africa_FarWestern",
++                "1970-01-01 00:00",
++                "1976-04-14 01:00",
++            }
+             {
+                 "Europe_Western",
+                 "1976-04-14 01:00",
+@@ -1035,6 +1160,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Africa:Monrovia"{
++            {
++                "Liberia",
++                "1970-01-01 00:00",
++                "1972-01-07 00:45",
++            }
+             {
+                 "GMT",
+                 "1972-01-07 00:45",
+@@ -1153,6 +1283,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "America:Adak"{
++            {
++                "Bering",
++                "1970-01-01 00:00",
++                "1983-10-30 12:00",
++            }
+             {
+                 "Hawaii_Aleutian",
+                 "1983-11-30 10:00",
+@@ -1160,6 +1295,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "America:Anchorage"{
++            {
++                "Alaska_Hawaii",
++                "1970-01-01 00:00",
++                "1983-10-30 11:00",
++            }
+             {
+                 "Alaska",
+                 "1983-11-30 09:00",
+@@ -1582,6 +1722,8 @@ metaZones:table(nofallback){
+         "America:Coyhaique"{
+             {
+                 "Chile",
++                "1970-01-01 00:00",
++                "2025-03-20 03:00",
+             }
+         }
+         "America:Creston"{
+@@ -1717,6 +1859,11 @@ metaZones:table(nofallback){
+                 "1970-01-01 00:00",
+                 "1988-04-03 04:01",
+             }
++            {
++                "Goose_Bay",
++                "1988-04-03 04:01",
++                "1988-10-30 02:01",
++            }
+             {
+                 "Atlantic",
+                 "1988-10-30 02:01",
+@@ -2192,6 +2339,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "America:Nome"{
++            {
++                "Bering",
++                "1970-01-01 00:00",
++                "1983-10-30 12:00",
++            }
+             {
+                 "Alaska",
+                 "1983-11-30 09:00",
+@@ -2262,6 +2414,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "America:Paramaribo"{
++            {
++                "Dutch_Guiana",
++                "1970-01-01 00:00",
++                "1975-11-20 03:30",
++            }
+             {
+                 "Suriname",
+                 "1975-11-20 03:30",
+@@ -2296,6 +2453,8 @@ metaZones:table(nofallback){
+         "America:Punta_Arenas"{
+             {
+                 "Chile",
++                "1970-01-01 00:00",
++                "2016-12-03 23:00",
+             }
+         }
+         "America:Rankin_Inlet"{
+@@ -2387,6 +2546,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "America:Santo_Domingo"{
++            {
++                "Dominican",
++                "1970-01-01 00:00",
++                "1974-10-27 05:00",
++            }
+             {
+                 "Atlantic",
+                 "1974-10-27 05:00",
+@@ -2409,6 +2573,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "America:Scoresbysund"{
++            {
++                "Greenland_Central",
++                "1970-01-01 00:00",
++                "1981-03-29 02:00",
++            }
+             {
+                 "Greenland_Eastern",
+                 "1981-03-29 02:00",
+@@ -2683,6 +2852,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Almaty"{
++            {
++                "Almaty",
++                "1970-01-01 00:00",
++                "2004-10-30 20:00",
++            }
+             {
+                 "Kazakhstan_Eastern",
+                 "2004-10-30 20:00",
+@@ -2719,6 +2893,16 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Aqtau"{
++            {
++                "Shevchenko",
++                "1970-01-01 00:00",
++                "1991-12-15 19:00",
++            }
++            {
++                "Aqtau",
++                "1991-12-15 19:00",
++                "2004-10-30 22:00",
++            }
+             {
+                 "Kazakhstan_Western",
+                 "2004-10-30 22:00",
+@@ -2731,6 +2915,16 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Aqtobe"{
++            {
++                "Aktyubinsk",
++                "1970-01-01 00:00",
++                "1991-12-15 19:00",
++            }
++            {
++                "Aqtobe",
++                "1991-12-15 19:00",
++                "2004-10-30 21:00",
++            }
+             {
+                 "Kazakhstan_Western",
+                 "2004-10-30 21:00",
+@@ -2743,6 +2937,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Ashgabat"{
++            {
++                "Ashkhabad",
++                "1970-01-01 00:00",
++                "1992-01-18 22:00",
++            }
+             {
+                 "Turkmenistan",
+                 "1992-01-18 22:00",
+@@ -2779,6 +2978,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Baku"{
++            {
++                "Baku",
++                "1970-01-01 00:00",
++                "1991-03-30 22:00",
++            }
+             {
+                 "Azerbaijan",
+                 "1991-03-30 22:00",
+@@ -2803,6 +3007,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Bishkek"{
++            {
++                "Frunze",
++                "1970-01-01 00:00",
++                "1991-03-30 20:00",
++            }
+             {
+                 "Kyrgystan",
+                 "1991-03-30 20:00",
+@@ -2842,6 +3051,11 @@ metaZones:table(nofallback){
+                 "1970-01-01 00:00",
+                 "1996-05-24 18:30",
+             }
++            {
++                "Lanka",
++                "1996-05-24 18:30",
++                "2006-04-14 18:30",
++            }
+             {
+                 "India",
+                 "2006-04-14 18:30",
+@@ -2856,6 +3070,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Dhaka"{
++            {
++                "Dacca",
++                "1970-01-01 00:00",
++                "1971-03-25 18:00",
++            }
+             {
+                 "Bangladesh",
+                 "1971-03-25 18:00",
+@@ -2885,6 +3104,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Dushanbe"{
++            {
++                "Dushanbe",
++                "1970-01-01 00:00",
++                "1991-09-08 21:00",
++            }
+             {
+                 "Tajikistan",
+                 "1991-09-08 21:00",
+@@ -2968,6 +3192,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Karachi"{
++            {
++                "Karachi",
++                "1970-01-01 00:00",
++                "1971-03-25 19:00",
++            }
+             {
+                 "Pakistan",
+                 "1971-03-25 19:00",
+@@ -3002,6 +3231,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Kuala_Lumpur"{
++            {
++                "Malaya",
++                "1970-01-01 00:00",
++                "1981-12-31 16:00",
++            }
+             {
+                 "Malaysia",
+                 "1981-12-31 16:00",
+@@ -3009,6 +3243,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Kuching"{
++            {
++                "Borneo",
++                "1970-01-01 00:00",
++                "1981-12-31 16:00",
++            }
+             {
+                 "Malaysia",
+                 "1981-12-31 16:00",
+@@ -3021,6 +3260,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Macau"{
++            {
++                "Macau",
++                "1970-01-01 00:00",
++                "1999-12-19 16:00",
++            }
+             {
+                 "China",
+                 "1999-12-19 16:00",
+@@ -3087,6 +3331,16 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Oral"{
++            {
++                "Uralsk",
++                "1970-01-01 00:00",
++                "1991-12-15 20:00",
++            }
++            {
++                "Oral",
++                "1991-12-15 20:00",
++                "2004-10-30 22:00",
++            }
+             {
+                 "Kazakhstan_Western",
+                 "2004-10-30 22:00",
+@@ -3157,6 +3411,16 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Qyzylorda"{
++            {
++                "Kizilorda",
++                "1970-01-01 00:00",
++                "1991-12-15 19:00",
++            }
++            {
++                "Qyzylorda",
++                "1991-12-15 19:00",
++                "2004-10-30 21:00",
++            }
+             {
+                 "Kazakhstan_Eastern",
+                 "2004-10-30 21:00",
+@@ -3208,6 +3472,21 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Samarkand"{
++            {
++                "Samarkand",
++                "1970-01-01 00:00",
++                "1981-09-30 18:00",
++            }
++            {
++                "Tashkent",
++                "1981-09-30 18:00",
++                "1982-03-31 18:00",
++            }
++            {
++                "Samarkand",
++                "1982-03-31 18:00",
++                "1991-08-31 18:00",
++            }
+             {
+                 "Uzbekistan",
+                 "1991-08-31 18:00",
+@@ -3247,6 +3526,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Tashkent"{
++            {
++                "Tashkent",
++                "1970-01-01 00:00",
++                "1991-03-30 20:00",
++            }
+             {
+                 "Uzbekistan",
+                 "1991-03-30 20:00",
+@@ -3254,6 +3538,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Tbilisi"{
++            {
++                "Tbilisi",
++                "1970-01-01 00:00",
++                "1991-03-30 22:00",
++            }
+             {
+                 "Georgia",
+                 "1991-03-30 22:00",
+@@ -3332,6 +3621,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Yekaterinburg"{
++            {
++                "Sverdlovsk",
++                "1970-01-01 00:00",
++                "1992-01-18 22:00",
++            }
+             {
+                 "Yekaterinburg",
+                 "1992-01-18 22:00",
+@@ -3339,6 +3633,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Asia:Yerevan"{
++            {
++                "Yerevan",
++                "1970-01-01 00:00",
++                "1991-03-30 22:00",
++            }
+             {
+                 "Armenia",
+                 "1991-03-30 22:00",
+@@ -3556,6 +3855,11 @@ metaZones:table(nofallback){
+         "Europe:Dublin"{
+             {
+                 "Irish",
++                "1970-01-01 00:00",
++                "1971-10-31 02:00",
++            }
++            {
++                "GMT",
+                 "1971-10-31 02:00",
+                 "9999-12-31 23:59",
+             }
+@@ -3568,6 +3872,11 @@ metaZones:table(nofallback){
+         "Europe:Guernsey"{
+             {
+                 "British",
++                "1970-01-01 00:00",
++                "1971-10-31 02:00",
++            }
++            {
++                "GMT",
+                 "1971-10-31 02:00",
+                 "9999-12-31 23:59",
+             }
+@@ -3580,6 +3889,11 @@ metaZones:table(nofallback){
+         "Europe:Isle_of_Man"{
+             {
+                 "British",
++                "1970-01-01 00:00",
++                "1971-10-31 02:00",
++            }
++            {
++                "GMT",
+                 "1971-10-31 02:00",
+                 "9999-12-31 23:59",
+             }
+@@ -3609,6 +3923,11 @@ metaZones:table(nofallback){
+         "Europe:Jersey"{
+             {
+                 "British",
++                "1970-01-01 00:00",
++                "1971-10-31 02:00",
++            }
++            {
++                "GMT",
+                 "1971-10-31 02:00",
+                 "9999-12-31 23:59",
+             }
+@@ -3684,6 +4003,11 @@ metaZones:table(nofallback){
+         "Europe:London"{
+             {
+                 "British",
++                "1970-01-01 00:00",
++                "1971-10-31 02:00",
++            }
++            {
++                "GMT",
+                 "1971-10-31 02:00",
+                 "9999-12-31 23:59",
+             }
+@@ -3790,6 +4114,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Europe:Samara"{
++            {
++                "Kuybyshev",
++                "1970-01-01 00:00",
++                "1989-03-25 22:00",
++            }
+             {
+                 "Moscow",
+                 "1989-03-25 22:00",
+@@ -4093,6 +4422,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Pacific:Guam"{
++            {
++                "Guam",
++                "1970-01-01 00:00",
++                "2000-12-22 14:00",
++            }
+             {
+                 "Chamorro",
+                 "2000-12-22 14:00",
+@@ -4115,6 +4449,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Pacific:Kwajalein"{
++            {
++                "Kwajalein",
++                "1970-01-01 00:00",
++                "1993-08-21 12:00",
++            }
+             {
+                 "Marshall_Islands",
+                 "1993-08-21 12:00",
+@@ -4132,6 +4471,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Pacific:Midway"{
++            {
++                "Bering",
++                "1970-01-01 00:00",
++                "1983-10-30 12:00",
++            }
+             {
+                 "Samoa",
+                 "1983-10-30 12:00",
+@@ -4159,6 +4503,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Pacific:Pago_Pago"{
++            {
++                "Bering",
++                "1970-01-01 00:00",
++                "1983-10-30 12:00",
++            }
+             {
+                 "Samoa",
+                 "1983-10-30 12:00",
+@@ -4191,6 +4540,11 @@ metaZones:table(nofallback){
+             }
+         }
+         "Pacific:Saipan"{
++            {
++                "North_Mariana",
++                "1970-01-01 00:00",
++                "2000-12-22 14:00",
++            }
+             {
+                 "Chamorro",
+                 "2000-12-22 14:00",
+diff --git a/source/data/misc/zoneinfo64.txt b/source/data/misc/zoneinfo64.txt
+index 0b6f68274bfe5e278bae0d23ce0f67a0f3981527..1ce9a01867d2b2bab7dec0bd0b045bd5da1116b3 100644
+--- a/source/data/misc/zoneinfo64.txt
++++ b/source/data/misc/zoneinfo64.txt
+@@ -3,17 +3,17 @@
+ // License & terms of use: http://www.unicode.org/copyright.html
+ //---------------------------------------------------------
+ // Build tool:  tz2icu
+-// Build date:  Mon Sep 14 16:20:24 2026
++// Build date:  Wed Sep 30 15:17:54 2026
+ // tz database: ftp://ftp.iana.org/tz/
+-// tz version:  2026d
+-// ICU version: 79.1
++// tz version:  2026e
++// ICU version: 78.3
+ //---------------------------------------------------------
+ // >> !!! >>   THIS IS A MACHINE-GENERATED FILE   << !!! <<
+ // >> !!! >>>            DO NOT EDIT             <<< !!! <<
+ //---------------------------------------------------------
+ 
+ zoneinfo64:table(nofallback) {
+- TZVersion { "2026d" }
++ TZVersion { "2026e" }
+  Zones:array { 
+   /* ACT */ :int { 358 } //Z#0
+   /* AET */ :int { 370 } //Z#1
+@@ -391,9 +391,9 @@ zoneinfo64:table(nofallback) {
+   } //Z#103
+   /* America/Coyhaique */ :table {
+     transPre32:intvector { -1, 1770462992 }
+-    trans:intvector { -1892661435, -1688410800, -1619205435, -1593806400, -1335986235, -1317585600, -1304362800, -1286049600, -1272826800, -1254513600, -1241290800, -1222977600, -1209754800, -1191355200, -1178132400, -870552000, -865278000, -736632000, -718056000, -713649600, -36619200, -23922000, -3355200, 7527600, 24465600, 37767600, 55915200, 69217200, 87969600, 100666800, 118209600, 132116400, 150868800, 163566000, 182318400, 195620400, 213768000, 227070000, 245217600, 258519600, 277272000, 289969200, 308721600, 321418800, 340171200, 353473200, 371620800, 384922800, 403070400, 416372400, 434520000, 447822000, 466574400, 479271600, 498024000, 510721200, 529473600, 545194800, 560923200, 574225200, 592372800, 605674800, 624427200, 637124400, 653457600, 668574000, 687326400, 700628400, 718776000, 732078000, 750225600, 763527600, 781675200, 794977200, 813729600, 826426800, 845179200, 859690800, 876628800, 889930800, 906868800, 923194800, 939528000, 952830000, 971582400, 984279600, 1003032000, 1015729200, 1034481600, 1047178800, 1065931200, 1079233200, 1097380800, 1110682800, 1128830400, 1142132400, 1160884800, 1173582000, 1192334400, 1206846000, 1223784000, 1237086000, 1255233600, 1270350000, 1286683200, 1304823600, 1313899200, 1335668400, 1346558400, 1367118000, 1378612800, 1398567600, 1410062400, 1463281200, 1471147200, 1494730800, 1502596800, 1526180400, 1534046400, 1554606000, 1567915200, 1586055600, 1599364800, 1617505200, 1630814400, 1648954800, 1662868800, 1680404400, 1693713600, 1712458800, 1725768000 }
+-    typeOffsets:intvector { -17296, 0, -18000, 0, -18000, 3600, -16965, 0, -14400, 0, -14400, 3600 }
+-    typeMap:bin { "030103040302010201020102010201040104020104050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405" }
++    trans:intvector { -1892661435, -1688410800, -1619205435, -1593806400, -1335986235, -1317585600, -1304362800, -1286049600, -1272826800, -1254513600, -1241290800, -1222977600, -1209754800, -1191355200, -1178132400, -870552000, -865278000, -736632000, -718056000, -713649600, -36619200, -23922000, -3355200, 7527600, 24465600, 37767600, 55915200, 69217200, 87969600, 100666800, 118209600, 132116400, 150868800, 163566000, 182318400, 195620400, 213768000, 227070000, 245217600, 258519600, 277272000, 289969200, 308721600, 321418800, 340171200, 353473200, 371620800, 384922800, 403070400, 416372400, 434520000, 447822000, 466574400, 479271600, 498024000, 510721200, 529473600, 545194800, 560923200, 574225200, 592372800, 605674800, 624427200, 637124400, 653457600, 668574000, 687326400, 700628400, 718776000, 732078000, 750225600, 763527600, 781675200, 794977200, 813729600, 826426800, 845179200, 859690800, 876628800, 889930800, 906868800, 923194800, 939528000, 952830000, 971582400, 984279600, 1003032000, 1015729200, 1034481600, 1047178800, 1065931200, 1079233200, 1097380800, 1110682800, 1128830400, 1142132400, 1160884800, 1173582000, 1192334400, 1206846000, 1223784000, 1237086000, 1255233600, 1270350000, 1286683200, 1304823600, 1313899200, 1335668400, 1346558400, 1367118000, 1378612800, 1398567600, 1410062400, 1463281200, 1471147200, 1494730800, 1502596800, 1526180400, 1534046400, 1554606000, 1567915200, 1586055600, 1599364800, 1617505200, 1630814400, 1648954800, 1662868800, 1680404400, 1693713600, 1712458800, 1725768000, 1742439600 }
++    typeOffsets:intvector { -17296, 0, -18000, 0, -18000, 3600, -16965, 0, -14400, 0, -14400, 3600, -10800, 0 }
++    typeMap:bin { "03010304030201020102010201020104010402010405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040506" }
+   } //Z#104
+   /* America/Creston */ :int { 187 } //Z#105
+   /* America/Cuiaba */ :table {
+@@ -898,9 +898,9 @@ zoneinfo64:table(nofallback) {
+   } //Z#192
+   /* America/Punta_Arenas */ :table {
+     transPre32:intvector { -1, 1770462716 }
+-    trans:intvector { -1892661435, -1688410800, -1619205435, -1593806400, -1335986235, -1317585600, -1304362800, -1286049600, -1272826800, -1254513600, -1241290800, -1222977600, -1209754800, -1191355200, -1178132400, -870552000, -865278000, -736632000, -718056000, -713649600, -36619200, -23922000, -3355200, 7527600, 24465600, 37767600, 55915200, 69217200, 87969600, 100666800, 118209600, 132116400, 150868800, 163566000, 182318400, 195620400, 213768000, 227070000, 245217600, 258519600, 277272000, 289969200, 308721600, 321418800, 340171200, 353473200, 371620800, 384922800, 403070400, 416372400, 434520000, 447822000, 466574400, 479271600, 498024000, 510721200, 529473600, 545194800, 560923200, 574225200, 592372800, 605674800, 624427200, 637124400, 653457600, 668574000, 687326400, 700628400, 718776000, 732078000, 750225600, 763527600, 781675200, 794977200, 813729600, 826426800, 845179200, 859690800, 876628800, 889930800, 906868800, 923194800, 939528000, 952830000, 971582400, 984279600, 1003032000, 1015729200, 1034481600, 1047178800, 1065931200, 1079233200, 1097380800, 1110682800, 1128830400, 1142132400, 1160884800, 1173582000, 1192334400, 1206846000, 1223784000, 1237086000, 1255233600, 1270350000, 1286683200, 1304823600, 1313899200, 1335668400, 1346558400, 1367118000, 1378612800, 1398567600, 1410062400, 1463281200, 1471147200 }
+-    typeOffsets:intvector { -17020, 0, -18000, 0, -18000, 3600, -16965, 0, -14400, 0, -14400, 3600 }
+-    typeMap:bin { "0301030403020102010201020102010401040201040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405" }
++    trans:intvector { -1892661435, -1688410800, -1619205435, -1593806400, -1335986235, -1317585600, -1304362800, -1286049600, -1272826800, -1254513600, -1241290800, -1222977600, -1209754800, -1191355200, -1178132400, -870552000, -865278000, -736632000, -718056000, -713649600, -36619200, -23922000, -3355200, 7527600, 24465600, 37767600, 55915200, 69217200, 87969600, 100666800, 118209600, 132116400, 150868800, 163566000, 182318400, 195620400, 213768000, 227070000, 245217600, 258519600, 277272000, 289969200, 308721600, 321418800, 340171200, 353473200, 371620800, 384922800, 403070400, 416372400, 434520000, 447822000, 466574400, 479271600, 498024000, 510721200, 529473600, 545194800, 560923200, 574225200, 592372800, 605674800, 624427200, 637124400, 653457600, 668574000, 687326400, 700628400, 718776000, 732078000, 750225600, 763527600, 781675200, 794977200, 813729600, 826426800, 845179200, 859690800, 876628800, 889930800, 906868800, 923194800, 939528000, 952830000, 971582400, 984279600, 1003032000, 1015729200, 1034481600, 1047178800, 1065931200, 1079233200, 1097380800, 1110682800, 1128830400, 1142132400, 1160884800, 1173582000, 1192334400, 1206846000, 1223784000, 1237086000, 1255233600, 1270350000, 1286683200, 1304823600, 1313899200, 1335668400, 1346558400, 1367118000, 1378612800, 1398567600, 1410062400, 1463281200, 1471147200, 1480820400 }
++    typeOffsets:intvector { -17020, 0, -18000, 0, -18000, 3600, -16965, 0, -14400, 0, -14400, 3600, -10800, 0 }
++    typeMap:bin { "030103040302010201020102010201040104020104050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040504050405040506" }
+   } //Z#193
+   /* America/Rainy_River */ :int { 225 } //Z#194
+   /* America/Rankin_Inlet */ :table {
+@@ -1052,12 +1052,9 @@ zoneinfo64:table(nofallback) {
+   } //Z#224
+   /* America/Winnipeg */ :table {
+     transPre32:intvector { -1, 1692709012 }
+-    trans:intvector { -1694368800, -1681671600, -1632067200, -1615136400, -1029686400, -1018198800, -880214400, -765392400, -746035200, -732733200, -715795200, -702493200, -684345600, -671043600, -652896000, -639594000, -620755200, -607626000, -589392000, -576090000, -557942400, -544640400, -526492800, -513190800, -495043200, -481741200, -463593600, -450291600, -431539200, -418237200, -400089600, -386787600, -368640000, -355338000, -337190400, -321469200, -305740800, -292438800, -210787200, -198090000, -116438400, -100108800, -84384000, -68659200, -52934400, -37209600, -21484800, -5760000, 9964800, 25689600, 41414400, 57744000, 73468800, 89193600, 104918400, 120643200, 136368000, 152092800, 167817600, 183542400, 199267200, 215596800, 230716800, 247046400, 262771200, 278496000, 294220800, 309945600, 325670400, 341395200, 357120000, 372844800, 388569600, 404899200, 420019200, 436348800, 452073600, 467798400, 483523200, 499248000, 514972800, 530697600, 544608000, 562147200, 576057600, 594201600, 607507200, 625651200, 638956800, 657100800, 671011200, 688550400, 702460800, 720000000, 733910400, 752054400, 765360000, 783504000, 796809600, 814953600, 828864000, 846403200, 860313600, 877852800, 891763200, 909302400, 923212800, 941356800, 954662400, 972806400, 986112000, 1004256000, 1018166400, 1035705600, 1049616000, 1067155200, 1081065600, 1099209600, 1112515200, 1130659200, 1143964800, 1162105200, 1173600000, 1194159600 }
++    trans:intvector { -1694368800, -1681671600, -1632067200, -1615136400, -1029686400, -1018198800, -880214400, -765392400, -746035200, -732733200, -715795200, -702493200, -684345600, -671043600, -652896000, -639594000, -620755200, -607626000, -589392000, -576090000, -557942400, -544640400, -526492800, -513190800, -495043200, -481741200, -463593600, -450291600, -431539200, -418237200, -400089600, -386787600, -368640000, -355338000, -337190400, -321469200, -305740800, -292438800, -210787200, -198090000, -116438400, -100108800, -84384000, -68659200, -52934400, -37209600, -21484800, -5760000, 9964800, 25689600, 41414400, 57744000, 73468800, 89193600, 104918400, 120643200, 136368000, 152092800, 167817600, 183542400, 199267200, 215596800, 230716800, 247046400, 262771200, 278496000, 294220800, 309945600, 325670400, 341395200, 357120000, 372844800, 388569600, 404899200, 420019200, 436348800, 452073600, 467798400, 483523200, 499248000, 514972800, 530697600, 544608000, 562147200, 576057600, 594201600, 607507200, 625651200, 638956800, 657100800, 671011200, 688550400, 702460800, 720000000, 733910400, 752054400, 765360000, 783504000, 796809600, 814953600, 828864000, 846403200, 860313600, 877852800, 891763200, 909302400, 923212800, 941356800, 954662400, 972806400, 986112000, 1004256000, 1018166400, 1035705600, 1049616000, 1067155200, 1081065600, 1099209600, 1112515200, 1130659200, 1143964800, 1162105200, 1173600000, 1194159600, 1205049600, 1225609200, 1236499200, 1257058800, 1268553600, 1289113200, 1300003200, 1320562800, 1331452800, 1352012400, 1362902400, 1383462000, 1394352000, 1414911600, 1425801600, 1446361200, 1457856000, 1478415600, 1489305600, 1509865200, 1520755200, 1541314800, 1552204800, 1572764400, 1583654400, 1604214000, 1615708800, 1636268400, 1647158400, 1667718000, 1678608000, 1699167600, 1710057600, 1730617200, 1741507200, 1762066800, 1772956800 }
+     typeOffsets:intvector { -23316, 0, -21600, 0, -21600, 3600 }
+-    typeMap:bin { "0102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201" }
+-    finalRule { "Canada" }
+-    finalRaw:int { -21600 }
+-    finalYear:int { 2008 }
++    typeMap:bin { "010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102010201020102" }
+     links:intvector { 194, 225, 388 }
+   } //Z#225
+   /* America/Yakutat */ :table {
+@@ -1970,7 +1967,7 @@ zoneinfo64:table(nofallback) {
+   } //Z#454
+   /* Europe/Copenhagen */ :int { 448 } //Z#455
+   /* Europe/Dublin */ :table {
+-    trans:intvector { -1691962479, -1680471279, -1664143200, -1650146400, -1633903200, -1617487200, -1601848800, -1586037600, -1570399200, -1552168800, -1538344800, -1522533600, -1507500000, -1490565600, -1473631200, -1460930400, -1442786400, -1428876000, -1410732000, -1396216800, -1379282400, -1364767200, -1348437600, -1333317600, -1315778400, -1301263200, -1284328800, -1269813600, -1253484000, -1238364000, -1221429600, -1206914400, -1189980000, -1175464800, -1159135200, -1143410400, -1126476000, -1111960800, -1095631200, -1080511200, -1063576800, -1049061600, -1032127200, -1017612000, -1001282400, -986162400, -969228000, -950479200, -942012000, -733356000, -719445600, -699487200, -684972000, -668037600, -654732000, -636588000, -622072800, -605743200, -590623200, -574293600, -558568800, -542239200, -527119200, -512604000, -496274400, -481154400, -464220000, -449704800, -432165600, -417650400, -401320800, -386200800, -369266400, -354751200, -337816800, -323301600, -306972000, -291852000, -276732000, -257983200, -245282400, -226533600, -213228000, -195084000, -182383200, -163634400, -150933600, -132184800, -119484000, -100735200, -88034400, -68680800, -59004000, -37242000, 57722400, 69818400, 89172000, 101268000, 120621600, 132717600, 152071200, 164167200, 183520800, 196221600, 214970400, 227671200, 246420000, 259120800, 278474400, 290570400, 309924000, 322020000, 341373600, 354675600, 372819600, 386125200, 404269200, 417574800, 435718800, 449024400, 467773200, 481078800, 499222800, 512528400, 530672400, 543978000, 562122000, 575427600, 593571600, 606877200, 625626000, 638326800, 657075600, 670381200, 688525200, 701830800, 719974800, 733280400, 751424400, 764730000, 782874000, 796179600, 814323600, 828234000, 846378000 }
++    trans:intvector { -1691962479, -1680471279, -1664143200, -1650146400, -1633903200, -1617487200, -1601848800, -1586037600, -1570399200, -1552168800, -1538344800, -1522533600, -1507500000, -1490565600, -1473631200, -1460930400, -1442786400, -1428876000, -1410732000, -1397426400, -1379282400, -1364767200, -1348437600, -1333317600, -1315778400, -1301263200, -1284328800, -1269813600, -1253484000, -1238364000, -1221429600, -1206914400, -1189980000, -1175464800, -1159135200, -1143410400, -1126476000, -1111960800, -1095631200, -1080511200, -1063576800, -1049061600, -1032127200, -1017612000, -1001282400, -986162400, -969228000, -950479200, -942012000, -733356000, -719445600, -699487200, -684972000, -668037600, -654732000, -636588000, -622072800, -605743200, -590623200, -574293600, -558568800, -542239200, -527119200, -512604000, -496274400, -481154400, -464220000, -449704800, -432165600, -417650400, -401320800, -386200800, -369266400, -354751200, -337816800, -323301600, -306972000, -291852000, -276732000, -257983200, -245282400, -226533600, -213228000, -195084000, -182383200, -163634400, -150933600, -132184800, -119484000, -100735200, -88034400, -68680800, -59004000, -37242000, 57722400, 69818400, 89172000, 101268000, 120621600, 132717600, 152071200, 164167200, 183520800, 196221600, 214970400, 227671200, 246420000, 259120800, 278474400, 290570400, 309924000, 322020000, 341373600, 354675600, 372819600, 386125200, 404269200, 417574800, 435718800, 449024400, 467773200, 481078800, 499222800, 512528400, 530672400, 543978000, 562122000, 575427600, 593571600, 606877200, 625626000, 638326800, 657075600, 670381200, 688525200, 701830800, 719974800, 733280400, 751424400, 764730000, 782874000, 796179600, 814323600, 828234000, 846378000 }
+     typeOffsets:intvector { -1521, 0, -1521, 3600, 0, 0, 0, 3600, 3600, 0 }
+     typeMap:bin { "01020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020304020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302030203020302" }
+     finalRule { "EU" }
