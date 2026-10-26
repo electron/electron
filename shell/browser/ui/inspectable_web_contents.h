@@ -225,8 +225,6 @@ class InspectableWebContents
       content::RenderWidgetHost* render_widget_host) override;
   void ReadyToCommitNavigation(
       content::NavigationHandle* navigation_handle) override;
-  void DidFinishNavigation(
-      content::NavigationHandle* navigation_handle) override;
 
   // content::WebContentsDelegate:
   bool HandleKeyboardEvent(content::WebContents*,
