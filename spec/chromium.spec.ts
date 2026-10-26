@@ -2091,11 +2091,15 @@ describe('chromium features', () => {
     ifit(process.platform === 'win32')("applies Chrome's local UNC path rules", { timeout: 120000 }, async (ctx) => {
       const dir = fs.realpathSync(fs.mkdtempSync(path.join(fixturesPath, 'file-system', 'fsa-unc-')));
       defer(() => fs.rmSync(dir, { recursive: true, force: true }));
-      const share = `electron-fsa-${process.pid}-${Math.floor(Math.random() * 1e6)}`;
+      // At most 12 characters, including the hidden share's '$', or net share
+      // asks whether MS-DOS clients matter.
+      const share = `efsa${Math.floor(Math.random() * 0x1000000)
+        .toString(16)
+        .padStart(6, '0')}`;
       const hiddenShare = `${share}$`;
       try {
         for (const name of [share, hiddenShare]) {
-          ChildProcess.execFileSync('net', ['share', `${name}=${dir}`], { stdio: 'pipe' });
+          ChildProcess.execFileSync('net', ['share', `${name}=${dir}`], { stdio: 'pipe', input: 'y\r\n' });
           defer(() => {
             try {
               ChildProcess.execFileSync('net', ['share', name, '/delete', '/y'], { stdio: 'pipe' });
@@ -2155,8 +2159,9 @@ describe('chromium features', () => {
       // Drive admin shares are blocked whatever the server is called.
       const [drive, ...dirComponents] = dir.split(path.sep);
       expect(await classify(unc(host, `${drive.replace(/:$/, '')}$`, ...dirComponents))).toBe('blocked');
-      // Local server names are blocked whatever the share is.
-      expect(await classify(unc('localhost', share))).toBe('blocked');
+      // Local server names are blocked whatever the share is. A bare
+      // "localhost" can't be pasted: file URLs drop that host, so it would
+      // arrive as a path with no server.
       expect(await classify(unc('127.0.0.1', share))).toBe('blocked');
 
       // Intentional change: a trailing dot no longer hides a local server name.
