@@ -9,10 +9,10 @@ Adds MenuDelegate::SwitchToSiblingMenu, invoked from MenuController when the use
 Left/Right at the top level with nothing to open or close in that direction.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 2bc4a7e943a128d6db75f0314f0d741c92d3983e..02db564be8c28d4bd8ed31b2aa9c2d9bd8156dee 100644
+index 7a99f59896795a0f593b080403b8410063f75b18..49ed46846297b28eec99d82d8ebecc965c2f0748 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -2149,9 +2149,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -2159,9 +2159,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -24,7 +24,7 @@ index 2bc4a7e943a128d6db75f0314f0d741c92d3983e..02db564be8c28d4bd8ed31b2aa9c2d9b
        }
        break;
  
-@@ -2160,9 +2160,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -2170,9 +2170,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -36,7 +36,7 @@ index 2bc4a7e943a128d6db75f0314f0d741c92d3983e..02db564be8c28d4bd8ed31b2aa9c2d9b
        }
        break;
  
-@@ -3645,6 +3645,54 @@ void MenuController::CloseSubmenu() {
+@@ -3662,6 +3662,54 @@ void MenuController::CloseSubmenu() {
    SetSelection(item_to_select, SELECTION_UPDATE_IMMEDIATELY);
  }
  
