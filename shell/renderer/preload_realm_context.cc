@@ -9,32 +9,27 @@
 #include "base/process/process_metrics.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/gin_embedders.h"
 #include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_environment.h"
+#include "shell/renderer/preload_realm_global_scope.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_state_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/inspector/worker_thread_debugger.h"  // nogncheck
-#include "third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_or_worklet_global_scope.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/script_state.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/v8_per_context_data.h"  // nogncheck
 #include "third_party/blink/renderer/platform/context_lifecycle_observer.h"  // nogncheck
+#include "third_party/blink/renderer/platform/supplementable.h"  // nogncheck
 #include "v8/include/v8-context.h"
 
 namespace electron::preload_realm {
 
 namespace {
-
-static constexpr int kElectronContextEmbedderDataIndex =
-    static_cast<int>(gin::kPerContextDataStartIndex) +
-    static_cast<int>(electron::kEmbedderElectron);
 
 // This is a helper class to make the initiator ExecutionContext the owner
 // of a PreloadRealmGlobalScope and its ScriptState. When the initiator
@@ -42,65 +37,66 @@ static constexpr int kElectronContextEmbedderDataIndex =
 // too.
 class PreloadRealmLifetimeController
     : public blink::GarbageCollected<PreloadRealmLifetimeController>,
+      public blink::Supplement<blink::ExecutionContext>,
       public blink::ContextLifecycleObserver {
  public:
+  static const char kSupplementName[];
+
   explicit PreloadRealmLifetimeController(
       blink::ExecutionContext* initiator_execution_context,
       blink::ScriptState* initiator_script_state,
       blink::PreloadRealmGlobalScope* preload_realm_global_scope,
       blink::ScriptState* preload_realm_script_state,
       electron::ServiceWorkerData* service_worker_data)
-      : initiator_script_state_(initiator_script_state),
+      : blink::Supplement<blink::ExecutionContext>(*preload_realm_global_scope),
+        initiator_script_state_(initiator_script_state),
         is_initiator_worker_or_worklet_(
             initiator_execution_context->IsWorkerOrWorkletGlobalScope()),
         preload_realm_global_scope_(preload_realm_global_scope),
         preload_realm_script_state_(preload_realm_script_state),
         service_worker_data_(service_worker_data) {
-    // Align lifetime of this controller to that of the initiator's context.
-    self_ = this;
-
     SetContextLifecycleNotifier(initiator_execution_context);
     RegisterDebugger(initiator_execution_context);
 
-    initiator_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, static_cast<void*>(this),
-        v8::kEmbedderDataTypeTagDefault);
-    realm_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, static_cast<void*>(this),
-        v8::kEmbedderDataTypeTagDefault);
+    blink::Supplement<blink::ExecutionContext>::ProvideTo(
+        *initiator_execution_context, this);
+    blink::Supplement<blink::ExecutionContext>::ProvideTo(
+        *preload_realm_global_scope, this);
 
     metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
     RunInitScript();
   }
 
   static PreloadRealmLifetimeController* From(v8::Local<v8::Context> context) {
-    if (context->GetNumberOfEmbedderDataFields() <=
-        kElectronContextEmbedderDataIndex) {
+    if (context.IsEmpty())
       return nullptr;
-    }
-    auto* controller = static_cast<PreloadRealmLifetimeController*>(
-        context->GetAlignedPointerFromEmbedderData(
-            kElectronContextEmbedderDataIndex,
-            v8::kEmbedderDataTypeTagDefault));
-    CHECK(controller);
-    return controller;
+    return blink::Supplement<blink::ExecutionContext>::From<
+        PreloadRealmLifetimeController>(blink::ExecutionContext::From(context));
   }
 
   void Trace(blink::Visitor* visitor) const override {
     visitor->Trace(initiator_script_state_);
     visitor->Trace(preload_realm_global_scope_);
     visitor->Trace(preload_realm_script_state_);
+    blink::Supplement<blink::ExecutionContext>::Trace(visitor);
     ContextLifecycleObserver::Trace(visitor);
   }
 
+  bool IsPreloadRealmContext(v8::Local<v8::Context> context) const {
+    return preload_realm_script_state_ &&
+           preload_realm_script_state_->ContextIsValid() &&
+           preload_realm_script_state_->GetContext() == context;
+  }
+
   v8::MaybeLocal<v8::Context> GetContext() {
-    return preload_realm_script_state_->ContextIsValid()
+    return preload_realm_script_state_ &&
+                   preload_realm_script_state_->ContextIsValid()
                ? preload_realm_script_state_->GetContext()
                : v8::MaybeLocal<v8::Context>();
   }
 
   v8::MaybeLocal<v8::Context> GetInitiatorContext() {
-    return initiator_script_state_->ContextIsValid()
+    return initiator_script_state_ && initiator_script_state_->ContextIsValid()
                ? initiator_script_state_->GetContext()
                : v8::MaybeLocal<v8::Context>();
   }
@@ -112,9 +108,9 @@ class PreloadRealmLifetimeController
  protected:
   void ContextDestroyed() override {
     v8::HandleScope handle_scope(realm_isolate());
-    realm_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, nullptr,
-        v8::kEmbedderDataTypeTagDefault);
+    preload_realm_global_scope_
+        ->blink::Supplementable<blink::ExecutionContext>::RemoveSupplement<
+            PreloadRealmLifetimeController>();
 
     preload_realm_script_state_->DisposePerContextData();
     // No V8 GC runs during worker thread termination, so the ScriptState's
@@ -125,8 +121,6 @@ class PreloadRealmLifetimeController
     preload_realm_script_state_.Clear();
     preload_realm_global_scope_->NotifyContextDestroyed();
     preload_realm_global_scope_.Clear();
-
-    self_.Clear();
   }
 
  private:
@@ -135,9 +129,6 @@ class PreloadRealmLifetimeController
   }
   v8::Local<v8::Context> realm_context() {
     return preload_realm_script_state_->GetContext();
-  }
-  v8::Local<v8::Context> initiator_context() {
-    return initiator_script_state_->GetContext();
   }
 
   void RegisterDebugger(blink::ExecutionContext* initiator_execution_context) {
@@ -218,27 +209,20 @@ class PreloadRealmLifetimeController
 
   std::unique_ptr<base::ProcessMetrics> metrics_;
   raw_ptr<ServiceWorkerData, DanglingUntriaged> service_worker_data_;
-
-  GC_PLUGIN_IGNORE(
-      "Intentional GC root to keep this object alive until the context is "
-      "destroyed")
-  blink::Persistent<PreloadRealmLifetimeController> self_;
 };
+
+const char PreloadRealmLifetimeController::kSupplementName[] =
+    "PreloadRealmLifetimeController";
 
 }  // namespace
 
 v8::MaybeLocal<v8::Context> GetInitiatorContext(
     v8::Local<v8::Context> context) {
   DCHECK(!context.IsEmpty());
-  blink::ExecutionContext* execution_context =
-      blink::ExecutionContext::From(context);
-  if (!execution_context->IsPreloadRealmGlobalScope())
-    return v8::MaybeLocal<v8::Context>();
   auto* controller = PreloadRealmLifetimeController::From(context);
-  if (controller) {
-    return controller->GetInitiatorContext();
-  }
-  return v8::MaybeLocal<v8::Context>();
+  if (!controller || !controller->IsPreloadRealmContext(context))
+    return v8::MaybeLocal<v8::Context>();
+  return controller->GetInitiatorContext();
 }
 
 v8::MaybeLocal<v8::Context> GetPreloadRealmContext(
