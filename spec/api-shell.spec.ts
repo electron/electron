@@ -119,9 +119,14 @@ describe('shell module', () => {
         });
         expect(w.isFocused()).toBe(true);
 
-        await Promise.all<void>([shell.openExternal(url), once(w, 'blur') as Promise<any>]);
+        // Read the focus state when 'blur' arrives. By the time openExternal()
+        // also resolves, the activation requests made above or the browser
+        // finishing its launch can already have handed focus back to the
+        // window, which says nothing about whether opening the link removed it.
+        const focusedWhenBlurred = once(w, 'blur').then(() => w.isFocused());
+        await shell.openExternal(url);
 
-        expect(w.isFocused()).toBe(false);
+        expect(await focusedWhenBlurred).toBe(false);
       }
     );
   });
