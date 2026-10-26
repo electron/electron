@@ -48,7 +48,6 @@ import {
   ifit,
   ifdescribe,
   defer,
-  focusWebContents,
   listen,
   waitUntil,
   isWayland,
@@ -8025,9 +8024,20 @@ describe('BrowserWindow module', () => {
           // the page is focused after entering simple fullscreen.
           // webContents.focus() only activates the app when no other app is
           // active, and the earlier fullscreen specs can leave another app
-          // frontmost, so take activation explicitly first.
-          app.focus({ steal: true });
-          await focusWebContents(w.webContents);
+          // frontmost, so take activation explicitly. One request is not
+          // always enough: on macOS arm64 CI the first attempt sometimes
+          // spent the whole wait without the page getting focus, while the
+          // retry, which requested activation again, passed at once. So ask
+          // again on every poll until the page has focus.
+          await waitUntil(
+            async () => {
+              if (await w.webContents.executeJavaScript('document.hasFocus()')) return true;
+              app.focus({ steal: true });
+              w.webContents.focus();
+              return false;
+            },
+            { rate: 100 }
+          );
 
           const enterHtmlFS = once(w.webContents, 'enter-html-full-screen');
           await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
