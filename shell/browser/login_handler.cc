@@ -148,12 +148,12 @@ void LoginHandler::EmitEvent(
     // respondToAuthRequestsFromMainProcess. Without a session, auth falls
     // through to app.on('login') for backward compatibility.
     default_prevented =
-        utility_process->Emit("login", std::move(details), auth_info,
+        utility_process->Emit("login", details, auth_info,
                               base::BindOnce(&LoginHandler::CallbackFromJS,
                                              weak_factory_.GetWeakPtr()));
   } else {
     default_prevented =
-        api::App::Get()->Emit("login", nullptr, std::move(details), auth_info,
+        api::App::Get()->Emit("login", nullptr, details, auth_info,
                               base::BindOnce(&LoginHandler::CallbackFromJS,
                                              weak_factory_.GetWeakPtr()));
   }

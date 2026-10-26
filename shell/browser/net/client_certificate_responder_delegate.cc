@@ -97,9 +97,9 @@ class ClientCertificateResponderDelegate
     mojo::MakeSelfOwnedReceiver(
         std::make_unique<SSLPrivateKeyImpl>(private_key),
         ssl_private_key.InitWithNewPipeAndPassReceiver());
-    responder_->ContinueWithCertificate(
-        std::move(cert), private_key->GetProviderName(),
-        private_key->GetAlgorithmPreferences(), std::move(ssl_private_key));
+    responder_->ContinueWithCertificate(cert, private_key->GetProviderName(),
+                                        private_key->GetAlgorithmPreferences(),
+                                        std::move(ssl_private_key));
   }
 
  private:

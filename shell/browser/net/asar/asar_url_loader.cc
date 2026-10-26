@@ -178,7 +178,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
         archive->CopyFileOut(relative_path, &unpacked);
         info.offset = 0;
         if (root.empty()) {
-          real_path = unpacked;
+          real_path = std::move(unpacked);
         } else if (!base::NormalizeFilePath(unpacked, &real_path) ||
                    !real_archive.AddExtension(FILE_PATH_LITERAL("unpacked"))
                         .AppendRelativePath(real_path, &logical) ||
