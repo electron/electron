@@ -2,10 +2,11 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   window.onbeforeunload = function() {
-    setTimeout(function() {
-        var ipcRenderer = require('electron').ipcRenderer;
-      ipcRenderer.sendToHost('onbeforeunload');
-    }, 0);
+    // Report synchronously. Without a user gesture Chromium skips the
+    // confirmation and the navigation goes ahead, so a deferred message can
+    // be dropped when this document unloads.
+    var ipcRenderer = require('electron').ipcRenderer;
+    ipcRenderer.sendToHost('onbeforeunload');
     return false;
   }
 </script>
