@@ -235,27 +235,28 @@ describe('debugger module', () => {
     });
 
     it('does not crash for invalid unicode characters in message', async () => {
-      w.webContents.debugger.attach();
-
-      const loadingFinished = new Promise<void>((resolve) => {
-        w.webContents.debugger.on('message', (event, method) => {
-          // loadingFinished indicates that page has been loaded and it did not
-          // crash because of invalid UTF-8 data
-          if (method === 'Network.loadingFinished') {
-            resolve();
-          }
-        });
-      });
-
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.end('\uFFFF');
       });
 
       const { url } = await listen(server);
-      w.webContents.debugger.sendCommand('Network.enable');
-      w.loadURL(url);
+      // Network.enable only reaches the renderer once it exists. On a fresh
+      // window that is during the first navigation, which can then finish
+      // before the renderer reports Network.loadingFinished. Load a page
+      // first and wait for Network.enable before the real navigation.
+      await w.loadURL('about:blank');
+      w.webContents.debugger.attach();
+      await w.webContents.debugger.sendCommand('Network.enable');
 
+      // loadingFinished indicates that page has been loaded and it did not
+      // crash because of invalid UTF-8 data
+      const loadingFinished = emittedUntil(
+        w.webContents.debugger,
+        'message',
+        (_event: any, method: string) => method === 'Network.loadingFinished'
+      );
+      await w.loadURL(url);
       await loadingFinished;
     });
 
