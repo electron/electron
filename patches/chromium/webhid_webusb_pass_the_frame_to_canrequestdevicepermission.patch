@@ -107,10 +107,10 @@ index 9463c12f2ab56c4bf04f80d0dd4ae7c4bad36891..f13ddc2c177b1d2ee90fd298fe169553
        /*browser_context=*/nullptr, /*frame=*/nullptr, origin,
        device::mojom::UsbDeviceInfo()));
 diff --git a/content/browser/hid/hid_service.cc b/content/browser/hid/hid_service.cc
-index 54e6b22689716b55b89512c80e49226b8b6e4235..b7bedaffd8505e2824f8c4e51bbcf0be3816635b 100644
+index ff6959cc8dea83f1d1cac6d0fbbf5450b9f5ba03..5059dbb1463ac6801fc27d989f604942f9238d26 100644
 --- a/content/browser/hid/hid_service.cc
 +++ b/content/browser/hid/hid_service.cc
-@@ -461,8 +461,8 @@ void HidService::RequestDevice(
+@@ -464,8 +464,8 @@ void HidService::RequestDevice(
      std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
      RequestDeviceCallback callback) {
    HidDelegate* delegate = GetContentClient()->browser()->GetHidDelegate();
@@ -150,10 +150,10 @@ index 0c6a091a224fcbb26bb134accf69d42e191e6041..f93b6402c1366d8a34da5e5d5e5268a9
                 void(BrowserContext*,
                      const url::Origin&,
 diff --git a/content/browser/usb/web_usb_service_impl.cc b/content/browser/usb/web_usb_service_impl.cc
-index 3c34492e7274ddc3d628639b3f46acae0c6600d1..e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed 100644
+index 030a41a3c904f61c23d37e625eadb769c3e73fc7..d85b45867243a476a64ebaf00d4ea4cd495d2a4c 100644
 --- a/content/browser/usb/web_usb_service_impl.cc
 +++ b/content/browser/usb/web_usb_service_impl.cc
-@@ -336,8 +336,8 @@ void WebUsbServiceImpl::GetPermission(
+@@ -338,8 +338,8 @@ void WebUsbServiceImpl::GetPermission(
      blink::mojom::WebUsbRequestDeviceOptionsPtr options,
      GetPermissionCallback callback) {
    auto* delegate = GetContentClient()->browser()->GetUsbDelegate();
