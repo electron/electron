@@ -2408,62 +2408,54 @@ describe('app module', () => {
         })
     );
 
+    // Launches the fixture app and resolves with the renderer argv it reports
+    // over the socket once both of its windows have loaded and opened DevTools.
+    const getRendererArgv = async (flag: string) => {
+      const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+      const connection = once(server, 'connection') as Promise<[net.Socket]>;
+      appProcess = cp.spawn(process.execPath, [appPath, flag], { stdio: 'inherit' });
+      const exited = once(appProcess, 'exit').then(([code, signal]) => {
+        throw new Error(`mixed-sandbox-app exited before reporting (code ${code}, signal ${signal})`);
+      });
+      const serverFailed = once(server, 'error').then(([error]) => {
+        throw error;
+      });
+      const report = (async () => {
+        const [client] = await connection;
+        // The report can arrive in more than one chunk; it is complete once the
+        // app ends its side of the connection.
+        let data = '';
+        client.setEncoding('utf8');
+        client.on('data', (chunk) => {
+          data += chunk;
+        });
+        await once(client, 'end');
+        return JSON.parse(data);
+      })();
+      return Promise.race([report, exited, serverFailed]);
+    };
+
+    const expectSandboxedEverywhere = (argv: any) => {
+      expect(argv.sandbox).toContain('--enable-sandbox');
+      expect(argv.sandbox).not.toContain('--no-sandbox');
+
+      expect(argv.noSandbox).toContain('--enable-sandbox');
+      expect(argv.noSandbox).not.toContain('--no-sandbox');
+
+      expect(argv.noSandboxDevtools).toBe(true);
+      expect(argv.sandboxDevtools).toBe(true);
+    };
+
     describe('when app.enableSandbox() is called', () => {
-      it('adds --enable-sandbox to all renderer processes', () =>
-        new Promise<void>((resolve, reject) => {
-          const done = (error?: unknown) => (error ? reject(error) : resolve());
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
-
-          server.once('error', (error) => {
-            done(error);
-          });
-
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).toContain('--enable-sandbox');
-              expect(argv.sandbox).not.toContain('--no-sandbox');
-
-              expect(argv.noSandbox).toContain('--enable-sandbox');
-              expect(argv.noSandbox).not.toContain('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).toBe(true);
-              expect(argv.sandboxDevtools).toBe(true);
-
-              done();
-            });
-          });
-        }));
+      it('adds --enable-sandbox to all renderer processes', async () => {
+        expectSandboxedEverywhere(await getRendererArgv('--app-enable-sandbox'));
+      });
     });
 
     describe('when the app is launched with --enable-sandbox', () => {
-      it('adds --enable-sandbox to all renderer processes', () =>
-        new Promise<void>((resolve, reject) => {
-          const done = (error?: unknown) => (error ? reject(error) : resolve());
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
-
-          server.once('error', (error) => {
-            done(error);
-          });
-
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).toContain('--enable-sandbox');
-              expect(argv.sandbox).not.toContain('--no-sandbox');
-
-              expect(argv.noSandbox).toContain('--enable-sandbox');
-              expect(argv.noSandbox).not.toContain('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).toBe(true);
-              expect(argv.sandboxDevtools).toBe(true);
-
-              done();
-            });
-          });
-        }));
+      it('adds --enable-sandbox to all renderer processes', async () => {
+        expectSandboxedEverywhere(await getRendererArgv('--enable-sandbox'));
+      });
     });
   });
 
