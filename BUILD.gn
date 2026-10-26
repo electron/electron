@@ -477,6 +477,102 @@ action("electron_generate_node_defines") {
   args = [ rebase_path(target_gen_dir) ] + rebase_path(inputs)
 }
 
+action("electron_generate_preload_realm_bindings") {
+  script = "build/generate_preload_realm_bindings.py"
+
+  core_idl_files = [
+    "//third_party/blink/renderer/core/dom/abort_controller.idl",
+    "//third_party/blink/renderer/core/dom/abort_signal.idl",
+    "//third_party/blink/renderer/core/dom/dom_exception.idl",
+    "//third_party/blink/renderer/core/dom/events/custom_event.idl",
+    "//third_party/blink/renderer/core/dom/events/event.idl",
+    "//third_party/blink/renderer/core/dom/events/event_target.idl",
+    "//third_party/blink/renderer/core/dom/observable.idl",
+    "//third_party/blink/renderer/core/dom/quota_exceeded_error.idl",
+    "//third_party/blink/renderer/core/dom/subscriber.idl",
+    "//third_party/blink/renderer/core/dom/void_function.idl",
+    "//third_party/blink/renderer/core/events/error_event.idl",
+    "//third_party/blink/renderer/core/events/promise_rejection_event.idl",
+    "//third_party/blink/renderer/core/frame/universal_global_scope.idl",
+    "//third_party/blink/renderer/core/messaging/structured_serialize_options.idl",
+    "//third_party/blink/renderer/core/streams/byte_length_queuing_strategy.idl",
+    "//third_party/blink/renderer/core/streams/count_queuing_strategy.idl",
+    "//third_party/blink/renderer/core/streams/readable_byte_stream_controller.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_byob_reader.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_byob_request.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_default_reader.idl",
+    "//third_party/blink/renderer/core/streams/transform_stream.idl",
+    "//third_party/blink/renderer/core/streams/transform_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream_default_writer.idl",
+    "//third_party/blink/renderer/core/url/url.idl",
+    "//third_party/blink/renderer/core/url/url_search_params.idl",
+    "//third_party/blink/renderer/core/url_pattern/url_pattern.idl",
+  ]
+  modules_idl_files = [
+    "//third_party/blink/renderer/modules/compression/compression_stream.idl",
+    "//third_party/blink/renderer/modules/compression/decompression_stream.idl",
+    "//third_party/blink/renderer/modules/encoding/text_decoder.idl",
+    "//third_party/blink/renderer/modules/encoding/text_decoder_stream.idl",
+    "//third_party/blink/renderer/modules/encoding/text_encoder.idl",
+    "//third_party/blink/renderer/modules/encoding/text_encoder_stream.idl",
+  ]
+  idl_file = "shell/renderer/preload_realm_global_scope.idl"
+  runtime_enabled_features =
+      "//third_party/blink/renderer/platform/runtime_enabled_features.json5"
+  wrapper_type_info_header =
+      "//third_party/blink/renderer/platform/bindings/wrapper_type_info.h"
+
+  inputs = [
+             idl_file,
+             runtime_enabled_features,
+             wrapper_type_info_header,
+           ] + core_idl_files + modules_idl_files
+
+  # Read Blink's own .pydeps files directly instead of using action_with_pydeps
+  # (which expects a checked-in build/generate_preload_realm_bindings.pydeps)
+  # so we automatically pick up upstream Blink bindings script changes on rolls
+  # without manually maintaining a duplicate .pydeps file in //electron.
+  _blink_scripts_dir = "//third_party/blink/renderer/bindings/scripts"
+  _pydeps_files = [
+    "$_blink_scripts_dir/collect_idl_files.pydeps",
+    "$_blink_scripts_dir/generate_bindings.pydeps",
+  ]
+  _pydeps_lines = []
+  foreach(_pydeps_file, _pydeps_files) {
+    _pydeps_lines += read_file(_pydeps_file, "list lines")
+  }
+  _pydeps_entries = filter_exclude(_pydeps_lines, [ "#*" ])
+  inputs +=
+      rebase_path(_pydeps_entries, ".", _blink_scripts_dir) + _pydeps_files
+
+  outputs = [
+    "$target_gen_dir/preload_realm/v8_preload_realm_global_scope.cc",
+    "$target_gen_dir/preload_realm/v8_preload_realm_global_scope.h",
+  ]
+
+  args =
+      [
+        "--root-src-dir",
+        rebase_path("//", root_build_dir),
+        "--root-gen-dir",
+        rebase_path(root_gen_dir, root_build_dir),
+        "--output-reldir",
+        rebase_path("$target_gen_dir/preload_realm", root_gen_dir),
+        "--idl-file",
+        rebase_path(idl_file, root_build_dir),
+        "--runtime-enabled-features",
+        rebase_path(runtime_enabled_features, root_build_dir),
+        "--wrapper-type-info-header",
+        rebase_path(wrapper_type_info_header, root_build_dir),
+        "--core-idl-files",
+      ] + rebase_path(core_idl_files, root_build_dir) +
+      [ "--modules-idl-files" ] + rebase_path(modules_idl_files, root_build_dir)
+}
+
 source_set("electron_lib") {
   configs += [
     "//v8:external_startup_data",
@@ -491,6 +587,7 @@ source_set("electron_lib") {
   deps = [
     ":electron_fuses",
     ":electron_generate_node_defines",
+    ":electron_generate_preload_realm_bindings",
     ":electron_js2c",
     ":electron_version_header",
     ":resources",
@@ -633,7 +730,8 @@ source_set("electron_lib") {
 
   deps += [ "//electron/build/config:generate_mas_config" ]
 
-  sources = filenames.lib_sources
+  sources = filenames.lib_sources +
+            get_target_outputs(":electron_generate_preload_realm_bindings")
   if (is_win) {
     sources += filenames.lib_sources_win
   }

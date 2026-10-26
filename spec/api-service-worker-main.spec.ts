@@ -483,6 +483,80 @@ describe('ServiceWorkerMain module', () => {
     });
   });
 
+  describe('global scope', () => {
+    beforeEach(() => {
+      registerPreload('preload-tests.js');
+    });
+
+    it('exposes the web interfaces available in every global', async () => {
+      loadWorkerScript();
+      const serviceWorker = await waitForServiceWorker('running');
+      const result: any = await runTest(serviceWorker, { name: 'testGlobalScope', args: [] });
+      expect(result.constructorName).toBe('PreloadRealmGlobalScope');
+      expect(result.missing).toEqual([]);
+    });
+
+    it('survives uncaught errors and unhandled rejections', async () => {
+      loadWorkerScript();
+      const serviceWorker = await waitForServiceWorker('running');
+      serviceWorker.ipc.handle('ping', () => 'pong');
+      await runTest(serviceWorker, { name: 'testReportError', args: [] });
+      const result = await runTest(serviceWorker, { name: 'testInvoke', args: ['ping'] });
+      expect(result).toBe('pong');
+    });
+
+    it('does not crash when DevTools calls getEventListeners()', async () => {
+      loadWorkerScript();
+      await waitForServiceWorker('running');
+
+      wc.debugger.attach();
+      try {
+        const workerSessionId = new Promise<string>((resolve) => {
+          wc.debugger.on('message', (_event, method, params) => {
+            if (method === 'Target.attachedToTarget' && params.targetInfo.type === 'service_worker') {
+              resolve(params.sessionId);
+            }
+          });
+        });
+        await wc.debugger.sendCommand('Target.setAutoAttach', {
+          autoAttach: true,
+          flatten: true,
+          waitForDebuggerOnStart: false
+        });
+        const sessionId = await workerSessionId;
+
+        const preloadContextId = new Promise<number>((resolve) => {
+          wc.debugger.on('message', (_event, method, params, messageSessionId) => {
+            if (
+              method === 'Runtime.executionContextCreated' &&
+              messageSessionId === sessionId &&
+              params.context.origin.includes('electron-preload-realm')
+            ) {
+              resolve(params.context.id);
+            }
+          });
+        });
+        await wc.debugger.sendCommand('Runtime.enable', {}, sessionId);
+        const contextId = await preloadContextId;
+
+        const { result, exceptionDetails } = await wc.debugger.sendCommand(
+          'Runtime.evaluate',
+          {
+            expression: 'getEventListeners(new EventTarget())',
+            contextId,
+            includeCommandLineAPI: true,
+            returnByValue: true
+          },
+          sessionId
+        );
+        expect(exceptionDetails).toBeUndefined();
+        expect(result.type).toBe('object');
+      } finally {
+        wc.debugger.detach();
+      }
+    });
+  });
+
   describe('contextBridge', () => {
     beforeEach(() => {
       registerPreload('preload-tests.js');
