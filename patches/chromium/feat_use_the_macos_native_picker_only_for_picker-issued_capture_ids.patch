@@ -51,7 +51,7 @@ index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..c9155f67d1c78bbc17b64fdeb4c7775d
  
  }  // namespace content
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..599cd151c19d33dde71a8d632b0b8d590e34d0c0 100644
+index 5a8818515c11dba057426224da3537634eddae68..1263324748b2d174e28564902fc246a47215ca19 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 @@ -184,7 +184,8 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
@@ -65,10 +65,10 @@ index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..599cd151c19d33dde71a8d632b0b8d59
      if (device_out) {
        return kNativeMacOSPickerCaptureDevice;
 diff --git a/content/browser/renderer_host/media/video_capture_manager.cc b/content/browser/renderer_host/media/video_capture_manager.cc
-index a9c53964a931f19889d60f0c5f3b3a9919acd3e7..902e95264549b2005ffe6ef32a0a29aaa2026bc6 100644
+index c3b30212d71c63a9811c5ebfbc7e2e8f6d112403..3f86baac52cf32a638923451330e2346cbc39f38 100644
 --- a/content/browser/renderer_host/media/video_capture_manager.cc
 +++ b/content/browser/renderer_host/media/video_capture_manager.cc
-@@ -939,8 +939,11 @@ void VideoCaptureManager::DestroyControllerIfNoClients(
+@@ -879,8 +879,11 @@ void VideoCaptureManager::DestroyControllerIfNoClients(
  
      // Close the native OS picker as the associated VideoCaptureDevice is being
      // closed.

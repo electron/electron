@@ -1,6 +1,6 @@
 import { type Display, screen, desktopCapturer } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('screen module', { tags: ['serial'] }, () => {
   describe('methods reassignment', () => {
@@ -8,7 +8,7 @@ describe('screen module', { tags: ['serial'] }, () => {
       const originalFunction = screen.getPrimaryDisplay;
       try {
         (screen as any).getPrimaryDisplay = () => null;
-        expect(screen.getPrimaryDisplay()).to.be.null();
+        expect(screen.getPrimaryDisplay()).toBeNull();
       } finally {
         screen.getPrimaryDisplay = originalFunction;
       }
@@ -18,9 +18,10 @@ describe('screen module', { tags: ['serial'] }, () => {
   describe('screen.getAllDisplays', () => {
     it('returns an array of displays', () => {
       const displays = screen.getAllDisplays();
-      expect(displays).to.be.an('array').with.lengthOf.at.least(1);
+      expect(displays).toBeInstanceOf(Array);
+      expect(displays.length).toBeGreaterThanOrEqual(1);
       for (const display of displays) {
-        expect(display).to.be.an('object');
+        expect(display).toBeTypeOf('object');
       }
     });
 
@@ -30,16 +31,17 @@ describe('screen module', { tags: ['serial'] }, () => {
       const sources = await desktopCapturer.getSources({ types: ['screen'] });
       const sourceIds = sources.map((s) => s.display_id);
 
-      expect(displayIds).to.have.length(sources.length);
-      expect(displayIds).to.have.same.members(sourceIds);
+      expect(displayIds).toHaveLength(sources.length);
+      expect(displayIds).toHaveLength(sourceIds.length);
+      expect(displayIds).toEqual(expect.arrayContaining(sourceIds));
     });
   });
 
   describe('screen.getCursorScreenPoint()', () => {
     it('returns a point object', () => {
       const point = screen.getCursorScreenPoint();
-      expect(point.x).to.be.a('number');
-      expect(point.y).to.be.a('number');
+      expect(point.x).toBeTypeOf('number');
+      expect(point.y).toBeTypeOf('number');
     });
   });
 
@@ -55,93 +57,101 @@ describe('screen module', { tags: ['serial'] }, () => {
     });
 
     it('returns a display object', () => {
-      expect(display).to.be.an('object');
+      expect(display).toBeTypeOf('object');
     });
 
-    it('has the correct non-object properties', function () {
-      expect(display).to.have.property('accelerometerSupport').that.is.a('string');
-      expect(display).to.have.property('colorDepth').that.is.a('number');
-      expect(display).to.have.property('colorSpace').that.is.a('string');
-      expect(display).to.have.property('depthPerComponent').that.is.a('number');
-      expect(display).to.have.property('detected').that.is.a('boolean');
-      expect(display).to.have.property('displayFrequency').that.is.a('number');
-      expect(display).to.have.property('id').that.is.a('number');
-      expect(display).to.have.property('internal').that.is.a('boolean');
-      expect(display).to.have.property('label').that.is.a('string');
-      expect(display).to.have.property('monochrome').that.is.a('boolean');
-      expect(display).to.have.property('scaleFactor').that.is.a('number');
-      expect(display).to.have.property('rotation').that.is.a('number');
-      expect(display).to.have.property('touchSupport').that.is.a('string');
+    it('has the correct non-object properties', () => {
+      expect(display).toHaveProperty('accelerometerSupport', expect.any(String));
+      expect(display).toHaveProperty('colorDepth', expect.any(Number));
+      expect(display).toHaveProperty('colorSpace', expect.any(String));
+      expect(display).toHaveProperty('depthPerComponent', expect.any(Number));
+      expect(display).toHaveProperty('detected', expect.any(Boolean));
+      expect(display).toHaveProperty('displayFrequency', expect.any(Number));
+      expect(display).toHaveProperty('id', expect.any(Number));
+      expect(display).toHaveProperty('internal', expect.any(Boolean));
+      expect(display).toHaveProperty('label', expect.any(String));
+      expect(display).toHaveProperty('monochrome', expect.any(Boolean));
+      expect(display).toHaveProperty('scaleFactor', expect.any(Number));
+      expect(display).toHaveProperty('rotation', expect.any(Number));
+      expect(display).toHaveProperty('touchSupport', expect.any(String));
     });
 
     it('has a maximumCursorSize object property', () => {
-      expect(display).to.have.property('maximumCursorSize').that.is.an('object');
+      expect(display).toHaveProperty('maximumCursorSize', expect.any(Object));
 
       const { maximumCursorSize } = display!;
-      expect(maximumCursorSize).to.have.property('width').that.is.a('number');
-      expect(maximumCursorSize).to.have.property('height').that.is.a('number');
+      expect(maximumCursorSize).toHaveProperty('width', expect.any(Number));
+      expect(maximumCursorSize).toHaveProperty('height', expect.any(Number));
     });
 
     it('has a nativeOrigin object property', () => {
-      expect(display).to.have.property('nativeOrigin').that.is.an('object');
+      expect(display).toHaveProperty('nativeOrigin', expect.any(Object));
 
       const { nativeOrigin } = display!;
-      expect(nativeOrigin).to.have.property('x').that.is.a('number');
-      expect(nativeOrigin).to.have.property('y').that.is.a('number');
+      expect(nativeOrigin).toHaveProperty('x', expect.any(Number));
+      expect(nativeOrigin).toHaveProperty('y', expect.any(Number));
     });
 
     it('has a size object property', () => {
-      expect(display).to.have.property('size').that.is.an('object');
+      expect(display).toHaveProperty('size', expect.any(Object));
 
       const { size } = display!;
 
       if (process.platform === 'linux') {
-        expect(size).to.have.property('width').that.is.a('number');
-        expect(size).to.have.property('height').that.is.a('number');
+        expect(size).toHaveProperty('width', expect.any(Number));
+        expect(size).toHaveProperty('height', expect.any(Number));
       } else {
-        expect(size).to.have.property('width').that.is.greaterThan(0);
-        expect(size).to.have.property('height').that.is.greaterThan(0);
+        expect(size).toHaveProperty('width');
+        expect(size.width).toBeGreaterThan(0);
+        expect(size).toHaveProperty('height');
+        expect(size.height).toBeGreaterThan(0);
       }
     });
 
     it('has a workAreaSize object property', () => {
-      expect(display).to.have.property('workAreaSize').that.is.an('object');
+      expect(display).toHaveProperty('workAreaSize', expect.any(Object));
 
       const { workAreaSize } = display!;
 
       if (process.platform === 'linux') {
-        expect(workAreaSize).to.have.property('width').that.is.a('number');
-        expect(workAreaSize).to.have.property('height').that.is.a('number');
+        expect(workAreaSize).toHaveProperty('width', expect.any(Number));
+        expect(workAreaSize).toHaveProperty('height', expect.any(Number));
       } else {
-        expect(workAreaSize).to.have.property('width').that.is.greaterThan(0);
-        expect(workAreaSize).to.have.property('height').that.is.greaterThan(0);
+        expect(workAreaSize).toHaveProperty('width');
+        expect(workAreaSize.width).toBeGreaterThan(0);
+        expect(workAreaSize).toHaveProperty('height');
+        expect(workAreaSize.height).toBeGreaterThan(0);
       }
     });
 
     it('has a bounds object property', () => {
-      expect(display).to.have.property('bounds').that.is.an('object');
+      expect(display).toHaveProperty('bounds', expect.any(Object));
 
       const { bounds } = display!;
-      expect(bounds).to.have.property('x').that.is.a('number');
-      expect(bounds).to.have.property('y').that.is.a('number');
+      expect(bounds).toHaveProperty('x', expect.any(Number));
+      expect(bounds).toHaveProperty('y', expect.any(Number));
 
       if (process.platform === 'linux') {
-        expect(bounds).to.have.property('width').that.is.a('number');
-        expect(bounds).to.have.property('height').that.is.a('number');
+        expect(bounds).toHaveProperty('width', expect.any(Number));
+        expect(bounds).toHaveProperty('height', expect.any(Number));
       } else {
-        expect(bounds).to.have.property('width').that.is.greaterThan(0);
-        expect(bounds).to.have.property('height').that.is.greaterThan(0);
+        expect(bounds).toHaveProperty('width');
+        expect(bounds.width).toBeGreaterThan(0);
+        expect(bounds).toHaveProperty('height');
+        expect(bounds.height).toBeGreaterThan(0);
       }
     });
 
     it('has a workArea object property', () => {
-      expect(display).to.have.property('workArea').that.is.an('object');
+      expect(display).toHaveProperty('workArea', expect.any(Object));
 
       const { workArea } = display!;
-      expect(workArea).to.have.property('x').that.is.a('number');
-      expect(workArea).to.have.property('y').that.is.a('number');
-      expect(workArea).to.have.property('width').that.is.greaterThan(0);
-      expect(workArea).to.have.property('height').that.is.greaterThan(0);
+      expect(workArea).toHaveProperty('x', expect.any(Number));
+      expect(workArea).toHaveProperty('y', expect.any(Number));
+      expect(workArea).toHaveProperty('width');
+      expect(workArea.width).toBeGreaterThan(0);
+      expect(workArea).toHaveProperty('height');
+      expect(workArea.height).toBeGreaterThan(0);
     });
   });
 });

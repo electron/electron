@@ -1,6 +1,6 @@
 import { app } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
@@ -26,10 +26,10 @@ const snapshotHolder =
 
 ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', () => {
   let tmp: string;
-  before(() => {
+  beforeAll(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-xcache-'));
   });
-  after(() => {
+  afterAll(() => {
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 
@@ -55,25 +55,37 @@ ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', ()
       ],
       { encoding: 'utf8' }
     );
-    expect(result.status, result.stderr).to.equal(0);
+    expect(result.status, result.stderr).toBe(0);
     return { info: JSON.parse(result.stdout), cache: fs.readFileSync(output) };
   };
 
   it('finds the Node startup snapshot this process was created from', () => {
     const { info } = generate('1');
-    expect(info.snapshot.kind).to.equal('node-startup-snapshot');
+    expect(info.snapshot.kind).toBe('node-startup-snapshot');
     const own = new vm.Script('1', { filename: 'probe' }).createCachedData();
-    // SerializedCodeData header: [12] FlagList::Hash, [16] read-only snapshot checksum.
-    expect(info.header.flagHash).to.equal('0x' + own.readUInt32LE(12).toString(16).padStart(8, '0'));
-    expect(info.header.roSnapshotChecksum).to.equal('0x' + own.readUInt32LE(16).toString(16).padStart(8, '0'));
+    // SerializedCodeData header: [8..40) source hash, [40] flag hash, [44] snapshot checksum.
+    expect(info.header.sourceHash).toBe('0x' + own.subarray(8, 40).toString('hex'));
+    expect(info.header.flagHash).toBe('0x' + own.readUInt32LE(40).toString(16).padStart(8, '0'));
+    expect(info.header.roSnapshotChecksum).toBe('0x' + own.readUInt32LE(44).toString(16).padStart(8, '0'));
+  });
+
+  it('reports the complete SHA256 source hash', () => {
+    const { info, cache } = generate(
+      '1',
+      '--extra-v8-flags',
+      `${app.commandLine.getSwitchValue('js-flags')} --code-cache-source-hash-sha256`
+    );
+    expect(info.header.sourceHash).toBe('0x' + cache.subarray(8, 40).toString('hex'));
+    expect(info.header.sourceHash).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(cache.subarray(12, 40).some((byte) => byte !== 0)).toBe(true);
   });
 
   it('produces a script cache the main process accepts', () => {
     const source = 'function f (n) { return n * 7; } [f(6), typeof f];';
     const { cache } = generate(source, '--eager');
     const script = new vm.Script(source, { filename: 'xcache-script', cachedData: cache });
-    expect(script.cachedDataRejected).to.equal(false);
-    expect(script.runInThisContext()).to.deep.equal([42, 'function']);
+    expect(script.cachedDataRejected).toBe(false);
+    expect(script.runInThisContext()).toEqual([42, 'function']);
   });
 
   it('produces a function cache the main process accepts', () => {
@@ -83,9 +95,9 @@ ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', ()
       filename: 'xcache-function',
       cachedData: cache
     }) as any;
-    expect(fn.cachedDataRejected).to.equal(false);
+    expect(fn.cachedDataRejected).toBe(false);
     const mod = { exports: {} as any };
     fn({ seed: 21 }, require, mod, 'xcache-function', tmp);
-    expect(mod.exports).to.deep.equal({ answer: 42, self: 'function' });
+    expect(mod.exports).toEqual({ answer: 42, self: 'function' });
   });
 });

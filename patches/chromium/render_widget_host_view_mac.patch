@@ -8,10 +8,10 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 5b05de02f0ca0225d6bc1be9e219bce38cbff5d3..d42b3b58b63c7b4179b49c2d5ac73892f5a70cf3 100644
+index 53bc6fac1a8f8a287ab05438f019c5c0dd6bd767..45e8631ea6e5497edb90b91223d962abe3071849 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -191,6 +191,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -192,6 +192,11 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -23,7 +23,7 @@ index 5b05de02f0ca0225d6bc1be9e219bce38cbff5d3..d42b3b58b63c7b4179b49c2d5ac73892
  // RenderWidgetHostViewCocoa ---------------------------------------------------
  
  // Private methods:
-@@ -855,6 +860,10 @@ - (AcceptMouseEvents)acceptsMouseEventsOption {
+@@ -858,6 +863,10 @@ - (AcceptMouseEvents)acceptsMouseEventsOption {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -31,10 +31,10 @@ index 5b05de02f0ca0225d6bc1be9e219bce38cbff5d3..d42b3b58b63c7b4179b49c2d5ac73892
 +      [self.window acceptsFirstMouse])
 +    return YES;
 +
-   // Enable "click-through" if mouse clicks are accepted in inactive windows.
-   return
-       [self acceptsMouseEventsOption] > AcceptMouseEvents::kWhenInActiveWindow;
-@@ -1503,6 +1512,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+   // A click that another process posts straight to this process does not
+   // activate the app, unlike one the window server routes here, so treating it
+   // as an activation click would only drop it.
+@@ -1529,6 +1538,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  

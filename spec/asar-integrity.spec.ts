@@ -1,8 +1,8 @@
 import { createPackage, getRawHeader } from '@electron/asar';
 import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 
-import { expect } from 'chai';
 import { NtExecutable, NtExecutableResource, Resource } from 'resedit';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
@@ -56,12 +56,12 @@ function spawn(cmd: string, args: string[], opts: any = {}) {
 
 const expectToHaveCrashed = (res: SpawnResult) => {
   if (process.platform === 'win32') {
-    expect(res.code).to.not.equal(0);
-    expect(res.code).to.not.equal(null);
-    expect(res.signal).to.equal(null);
+    expect(res.code).not.toBe(0);
+    expect(res.code).not.toBe(null);
+    expect(res.signal).toBe(null);
   } else {
-    expect(res.code).to.equal(null);
-    expect(res.signal).to.be.oneOf(['SIGABRT', 'SIGTRAP']);
+    expect(res.code).toBe(null);
+    expect(['SIGABRT', 'SIGTRAP']).toContain(res.signal);
   }
 };
 
@@ -70,7 +70,11 @@ const expectToHaveCrashed = (res: SpawnResult) => {
 // reads): an "Integrity"/"ElectronAsar" resource containing a JSON list of
 // { file, alg, value } entries.
 async function embedAsarIntegrity(exePath: string, integrity: Record<string, { algorithm: 'SHA256'; hash: string }>) {
-  const exe = NtExecutable.from(await fs.promises.readFile(exePath));
+  // The executable under test may be Authenticode-signed
+  // (e.g. a signed release build), and resedit refuses to parse one by default.
+  // Editing the resources invalidates the signature anyway,
+  // so with ignoreCert this copy is written back out without its certificate table.
+  const exe = NtExecutable.from(await fs.promises.readFile(exePath), { ignoreCert: true });
   const resources = NtExecutableResource.from(exe);
 
   // Attach the resource to the same language as the existing version info.
@@ -94,9 +98,7 @@ async function embedAsarIntegrity(exePath: string, integrity: Record<string, { a
   await fs.promises.writeFile(exePath, Buffer.from(exe.generate()));
 }
 
-describe('fuses', function () {
-  this.timeout(120000);
-
+describe('fuses', { timeout: 120000 }, () => {
   let tmpDir: string;
   let appPath: string;
 
@@ -123,13 +125,13 @@ describe('fuses', function () {
         resetAdHocDarwinSignature: true,
         ...fuses
       });
-    });
+    }, 120000);
   };
 
   beforeEach(async () => {
     tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-asar-integrity-spec-'));
     appPath = await copyApp(tmpDir);
-  });
+  }, 120000);
 
   afterEach(async () => {
     for (let attempt = 0; attempt <= 3; attempt++) {
@@ -140,7 +142,7 @@ describe('fuses', function () {
         break;
       } catch {}
     }
-  });
+  }, 120000);
 
   // Layout of the archive used by fixtures/apps/asar-integrity-reads: a
   // multi-block entry (with a recognisable marker at the start of every 4MB
@@ -212,7 +214,7 @@ describe('fuses', function () {
           };
           await fs.promises.writeFile(infoPlistPath, plist.build(info));
         }
-      });
+      }, 120000);
 
       describe('when enabled', () => {
         ensureFusesBeforeEach({
@@ -221,16 +223,16 @@ describe('fuses', function () {
 
         it('opens normally when unmodified', async () => {
           const res = await launchApp([path.resolve(import.meta.dirname, 'fixtures/apps/hello/hello.js')]);
-          expect(res.code).to.equal(0);
-          expect(res.signal).to.equal(null);
-          expect(res.out).to.include('alive');
+          expect(res.code).toBe(0);
+          expect(res.signal).toBe(null);
+          expect(res.out).toContain('alive');
         });
 
         it('fatals if the integrity header does not match', async () => {
           const asar = await originalFs.promises.readFile(pathToAsar);
           // Ensure that the header still starts with the same thing, if build system
           // things result in the header changing we should update this test
-          expect(asar.toString()).to.contain('{"files":{"default_app.js"');
+          expect(asar.toString()).toContain('{"files":{"default_app.js"');
           await originalFs.promises.writeFile(
             pathToAsar,
             bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"')
@@ -238,27 +240,27 @@ describe('fuses', function () {
 
           const res = await launchApp(['--version']);
           expectToHaveCrashed(res);
-          expect(res.out).to.include('Integrity check failed for asar archive');
+          expect(res.out).toContain('Integrity check failed for asar archive');
         });
 
         it('fatals if a loaded main process JS file does not match', async () => {
           const asar = await originalFs.promises.readFile(pathToAsar);
           // Ensure that the header still starts with the same thing, if build system
           // things result in the header changing we should update this test
-          expect(asar.toString()).to.contain('Invalid Usage');
+          expect(asar.toString()).toContain('Invalid Usage');
           await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'Invalid Usage', 'VVValid Usage'));
 
           const res = await launchApp(['--version']);
-          expect(res.code).to.equal(1);
-          expect(res.signal).to.equal(null);
-          expect(res.out).to.include('ASAR Integrity Violation: got a hash mismatch');
+          expect(res.code).toBe(1);
+          expect(res.signal).toBe(null);
+          expect(res.out).toContain('ASAR Integrity Violation: got a hash mismatch');
         });
 
         it('fatals if a renderer content file does not match', async () => {
           const asar = await originalFs.promises.readFile(pathToAsar);
           // Ensure that the header still starts with the same thing, if build system
           // things result in the header changing we should update this test
-          expect(asar.toString()).to.contain('require-trusted-types-for');
+          expect(asar.toString()).toContain('require-trusted-types-for');
           await originalFs.promises.writeFile(
             pathToAsar,
             bufferReplace(asar, 'require-trusted-types-for', 'require-trusted-types-not')
@@ -266,7 +268,7 @@ describe('fuses', function () {
 
           const res = await launchApp();
           expectToHaveCrashed(res);
-          expect(res.out).to.include('Failed to validate block while ending ASAR file stream');
+          expect(res.out).toContain('Failed to validate block while ending ASAR file stream');
         });
 
         const fdReadModes = ['fd', 'stream', 'handle', 'copy'];
@@ -275,24 +277,24 @@ describe('fuses', function () {
         for (const mode of fdReadModes) {
           it(`serves unmodified files through fs.open-style APIs (${mode})`, async () => {
             const res = await launchApp([fdReadsApp], { env: { ...process.env, ASAR_FD_READ_MODE: mode } });
-            expect(res.out).to.include(`${mode}-read-ok`);
-            expect(res.code).to.equal(0);
-            expect(res.signal).to.equal(null);
+            expect(res.out).toContain(`${mode}-read-ok`);
+            expect(res.code).toBe(0);
+            expect(res.signal).toBe(null);
           });
 
           it(`fatals if a file read through fs.open-style APIs does not match (${mode})`, async () => {
             const asar = await originalFs.promises.readFile(pathToAsar);
-            expect(asar.toString()).to.contain('require-trusted-types-for');
+            expect(asar.toString()).toContain('require-trusted-types-for');
             await originalFs.promises.writeFile(
               pathToAsar,
               bufferReplace(asar, 'require-trusted-types-for', 'require-trusted-types-not')
             );
 
             const res = await launchApp([fdReadsApp], { env: { ...process.env, ASAR_FD_READ_MODE: mode } });
-            expect(res.code).to.equal(1);
-            expect(res.signal).to.equal(null);
-            expect(res.out).to.include('ASAR Integrity Violation: got a hash mismatch');
-            expect(res.out).to.not.include(`${mode}-read-ok`);
+            expect(res.code).toBe(1);
+            expect(res.signal).toBe(null);
+            expect(res.out).toContain('ASAR Integrity Violation: got a hash mismatch');
+            expect(res.out).not.toContain(`${mode}-read-ok`);
           });
         }
 
@@ -303,29 +305,29 @@ describe('fuses', function () {
           const corruptBlock = async (n: number) => {
             const asar = await originalFs.promises.readFile(pathToReadsAsar);
             const marker = blockMarker(n);
-            expect(asar.indexOf(marker)).to.not.equal(-1);
+            expect(asar.indexOf(marker)).not.toBe(-1);
             await originalFs.promises.writeFile(
               pathToReadsAsar,
               bufferReplace(asar, marker, `TAMPERED${n}MAGIC!!`.slice(0, marker.length))
             );
           };
           const expectViolation = (res: SpawnResult) => {
-            expect(res.code).to.equal(1);
-            expect(res.signal).to.equal(null);
-            expect(res.out).to.include('ASAR Integrity Violation: got a hash mismatch');
+            expect(res.code).toBe(1);
+            expect(res.signal).toBe(null);
+            expect(res.out).toContain('ASAR Integrity Violation: got a hash mismatch');
           };
 
           it('serves streams, ranged reads, fds, handles, readv and copies correctly when unmodified', async () => {
             const res = await runReads('sweep');
-            expect(res.out).to.include('sweep-streams-ok');
-            expect(res.out).to.include('sweep-ranges-ok');
-            expect(res.out).to.include('sweep-fd-ok');
-            expect(res.out).to.include('sweep-handle-ok');
-            expect(res.out).to.include('sweep-concurrent-ok');
-            expect(res.out).to.include('sweep-copy-ok');
-            expect(res.out).to.include('sweep-ok');
-            expect(res.code).to.equal(0);
-            expect(res.signal).to.equal(null);
+            expect(res.out).toContain('sweep-streams-ok');
+            expect(res.out).toContain('sweep-ranges-ok');
+            expect(res.out).toContain('sweep-fd-ok');
+            expect(res.out).toContain('sweep-handle-ok');
+            expect(res.out).toContain('sweep-concurrent-ok');
+            expect(res.out).toContain('sweep-copy-ok');
+            expect(res.out).toContain('sweep-ok');
+            expect(res.code).toBe(0);
+            expect(res.signal).toBe(null);
           });
 
           for (const block of [0, 1, 2]) {
@@ -333,35 +335,87 @@ describe('fuses', function () {
               await corruptBlock(block);
               const res = await runReads('block-stream');
               expectViolation(res);
-              expect(res.out).to.not.include('stream-ok');
+              expect(res.out).not.toContain('stream-ok');
               // Every block before the corrupted one streamed successfully...
-              for (let n = 0; n < block; n++) expect(res.out).to.include(`reached-block-${n}`);
+              for (let n = 0; n < block; n++) expect(res.out).toContain(`reached-block-${n}`);
               // ...and no byte from the corrupted block was ever delivered.
-              expect(res.out).to.not.include(`reached-block-${block}`);
+              expect(res.out).not.toContain(`reached-block-${block}`);
             });
           }
 
           it('still serves ranges that only touch intact blocks when a later block is corrupted', async () => {
             await corruptBlock(2);
             const res = await runReads('range-block0');
-            expect(res.out).to.include('range-block0-ok');
-            expect(res.code).to.equal(0);
-            expect(res.signal).to.equal(null);
+            expect(res.out).toContain('range-block0-ok');
+            expect(res.code).toBe(0);
+            expect(res.signal).toBe(null);
           });
 
           it('fatals whole-file reads of an entry with a corrupted block', async () => {
             await corruptBlock(1);
             const res = await runReads('readfile');
             expectViolation(res);
-            expect(res.out).to.not.include('readfile-ok');
+            expect(res.out).not.toContain('readfile-ok');
           });
 
           it('detects a block that is corrupted in place after it was already read once', async () => {
             const res = await runReads('tamper-after-read');
-            expect(res.out).to.include('tamper-after-read-A-ok');
-            expect(res.out).to.not.include('tamper-after-read-B-unexpectedly-ok');
+            expect(res.out).toContain('tamper-after-read-A-ok');
+            expect(res.out).not.toContain('tamper-after-read-B-unexpectedly-ok');
             expectViolation(res);
           });
+        });
+      });
+
+      ifdescribe(process.platform === 'darwin')('when the app archive is replaced while running', () => {
+        let replacement: string;
+
+        beforeEach(async () => {
+          const resourcesDir = path.resolve(appPath, 'Contents', 'Resources');
+          const appAsar = path.resolve(resourcesDir, 'app.asar');
+          replacement = path.resolve(resourcesDir, 'replacement');
+          await createPackage(path.resolve(import.meta.dirname, 'fixtures/apps/asar-integrity-swap'), appAsar);
+
+          const infoPlistPath = path.resolve(appPath, 'Contents', 'Info.plist');
+          const info = plist.parse(await fs.promises.readFile(infoPlistPath, 'utf8'));
+          info.ElectronAsarIntegrity = {
+            ...info.ElectronAsarIntegrity,
+            'Resources/app.asar': { algorithm: 'SHA256', hash: headerHash(appAsar) }
+          };
+          await fs.promises.writeFile(infoPlistPath, plist.build(info));
+        }, 120000);
+
+        ensureFusesBeforeEach({
+          [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+          [FuseV1Options.OnlyLoadAppFromAsar]: true
+        });
+
+        const writeReplacementFiles = async (dir: string) => {
+          await fs.promises.mkdir(dir);
+          await fs.promises.writeFile(path.join(dir, 'package.json'), '{"main":"child.js"}');
+          await fs.promises.writeFile(
+            path.join(dir, 'child.js'),
+            "process.parentPort.postMessage('child-loaded-replacement');"
+          );
+        };
+        // Any argument, so that launchApp() opts out of AppKit state restoration.
+        const launchSwapApp = () =>
+          launchApp(['--enable-logging'], { env: { ...process.env, ASAR_SWAP_REPLACEMENT: replacement } });
+
+        it('does not load a child process from a directory', async () => {
+          await writeReplacementFiles(replacement);
+          const res = await launchSwapApp();
+          expect(res.out).toContain('child-exited');
+          expect(res.out).not.toContain('child-loaded-replacement');
+        });
+
+        it('does not load a child process from a modified archive', async () => {
+          const src = path.resolve(tmpDir, 'replacement-src');
+          await writeReplacementFiles(src);
+          await createPackage(src, replacement);
+          const res = await launchSwapApp();
+          expect(res.out).toContain('child-exited');
+          expect(res.out).not.toContain('child-loaded-replacement');
         });
       });
 
@@ -374,14 +428,14 @@ describe('fuses', function () {
           const asar = await originalFs.promises.readFile(pathToAsar);
           // Ensure that the header still starts with the same thing, if build system
           // things result in the header changing we should update this test
-          expect(asar.toString()).to.contain('{"files":{"default_app.js"');
+          expect(asar.toString()).toContain('{"files":{"default_app.js"');
           await originalFs.promises.writeFile(
             pathToAsar,
             bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"')
           );
 
           const res = await launchApp(['--version']);
-          expect(res.code).to.equal(0);
+          expect(res.code).toBe(0);
         });
       });
     }

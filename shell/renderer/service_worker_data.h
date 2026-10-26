@@ -14,6 +14,7 @@
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
+#include "mojo/public/cpp/platform/platform_handle.h"
 #include "third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-forward.h"
@@ -56,7 +57,7 @@ class ServiceWorkerData : public mojom::ElectronRenderer {
                electron::SerializedValue arguments) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
-  void TakeHeapSnapshot(mojo::ScopedHandle file,
+  void TakeHeapSnapshot(mojo::PlatformHandle file,
                         TakeHeapSnapshotCallback callback) override;
 
  private:

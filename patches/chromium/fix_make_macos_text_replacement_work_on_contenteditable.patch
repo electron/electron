@@ -11,10 +11,10 @@ is currently bugged on these elements. This patch fixes that.
 2. Space now adds a space after accepting the replacement.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 7aaba0f0262fbb63746718a29572bd75389a719c..9be2749716cd21399dc89abada6e1cef489f9f16 100644
+index dbd8cbc192931ee7821f7e76923c6cb260bddb61..a34636240f0c14c4369237573b2e0a9bdd952e29 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -565,6 +565,13 @@ - (void)didAcceptReplacementString:(NSString*)acceptedString
+@@ -568,6 +568,13 @@ - (void)didAcceptReplacementString:(NSString*)acceptedString
    if (acceptedString == nil)
      return;
  

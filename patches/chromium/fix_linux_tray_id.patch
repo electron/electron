@@ -13,7 +13,7 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 3f7543580ee1d82a28c6864ef0154aafcb6806f0..110fdb5e1654433ff31a6893ee7a8c830a702d60 100644
+index e08f260845778647563af254ace2dca304a3145a..1e7915eea274e3a0605fc492ce9f7249cbe61a44 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -138,8 +138,9 @@ int NextServiceId() {
@@ -47,7 +47,7 @@ index 3f7543580ee1d82a28c6864ef0154aafcb6806f0..110fdb5e1654433ff31a6893ee7a8c83
 -           base::TaskShutdownBehavior::BLOCK_SHUTDOWN})) {
 +           base::TaskShutdownBehavior::BLOCK_SHUTDOWN})),
 +      app_name_(app_name) {
-   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   CHECK_CURRENTLY_ON(content::BrowserThread::UI, base::NotFatalUntil::M162);
    if (bus_) {
      CheckStatusNotifierWatcherHasOwner();
 @@ -464,7 +467,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(

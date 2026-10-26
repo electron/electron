@@ -1,6 +1,7 @@
 # THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
 auto_filenames = {
   api_docs = [
+    "docs/api/app-shim-host.md",
     "docs/api/app.md",
     "docs/api/auto-updater.md",
     "docs/api/base-window.md",
@@ -128,6 +129,7 @@ auto_filenames = {
     "docs/api/structures/mime-typed-buffer.md",
     "docs/api/structures/mouse-input-event.md",
     "docs/api/structures/mouse-wheel-input-event.md",
+    "docs/api/structures/native-heap-profiler-options.md",
     "docs/api/structures/navigation-entry.md",
     "docs/api/structures/notification-action.md",
     "docs/api/structures/notification-response.md",
@@ -226,8 +228,6 @@ auto_filenames = {
     "../third_party/electron_node/src/crypto/crypto_bio.h",
     "../third_party/electron_node/src/crypto/crypto_chacha20_poly1305.h",
     "../third_party/electron_node/src/crypto/crypto_cipher.h",
-    "../third_party/electron_node/src/crypto/crypto_clienthello-inl.h",
-    "../third_party/electron_node/src/crypto/crypto_clienthello.h",
     "../third_party/electron_node/src/crypto/crypto_common.h",
     "../third_party/electron_node/src/crypto/crypto_context.h",
     "../third_party/electron_node/src/crypto/crypto_dh.h",
@@ -240,7 +240,9 @@ auto_filenames = {
     "../third_party/electron_node/src/crypto/crypto_keygen.h",
     "../third_party/electron_node/src/crypto/crypto_keys.h",
     "../third_party/electron_node/src/crypto/crypto_kmac.h",
+    "../third_party/electron_node/src/crypto/crypto_mac.h",
     "../third_party/electron_node/src/crypto/crypto_pbkdf2.h",
+    "../third_party/electron_node/src/crypto/crypto_pkcs12.h",
     "../third_party/electron_node/src/crypto/crypto_pqc.h",
     "../third_party/electron_node/src/crypto/crypto_random.h",
     "../third_party/electron_node/src/crypto/crypto_rsa.h",

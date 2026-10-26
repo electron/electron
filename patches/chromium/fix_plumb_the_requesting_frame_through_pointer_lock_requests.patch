@@ -22,18 +22,18 @@ it could be proposed upstream alongside crbug.com/492211919 (the sandbox
 flag check has the same local-root-only limitation).
 
 diff --git a/components/input/input_router_client.h b/components/input/input_router_client.h
-index 861d0180f892bcdd15627f8ca0baac31c2063e27..75cfd93a2f05bfee2e356cdda168732fb1eb18f3 100644
+index cb1bf9e36afd47e22a7957e0c822014c75c617b0..25e72a9e95b98322b39ee6f83564af4c276f1131 100644
 --- a/components/input/input_router_client.h
 +++ b/components/input/input_router_client.h
-@@ -10,6 +10,7 @@
+@@ -12,6 +12,7 @@
  #include "components/input/event_with_latency_info.h"
  #include "components/input/native_web_keyboard_event.h"
  #include "third_party/blink/public/common/input/web_input_event.h"
 +#include "third_party/blink/public/common/tokens/tokens.h"
  #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
- 
-@@ -93,6 +94,7 @@ class COMPONENT_EXPORT(INPUT) InputRouterClient {
+ #include "ui/gfx/geometry/vector2d_f.h"
+@@ -99,6 +100,7 @@ class COMPONENT_EXPORT(INPUT) InputRouterClient {
    virtual void SetAutoscrollSelectionActiveInMainFrame(
        bool autoscroll_selection) = 0;
    virtual void RequestMouseLock(
@@ -65,7 +65,7 @@ index 51baeda2c2e35bb27cc12e1973e96fd047840615..ad497a826df405440b77a82247fe1bc2
  
  void InputRouterImpl::SetMovementXYForTouchPoints(blink::WebTouchEvent* event) {
 diff --git a/components/input/input_router_impl.h b/components/input/input_router_impl.h
-index cd945e47898c7d574288afbd171d2f7afd70830f..bb218281bd42c230f55d4c00995e5677f11fa75a 100644
+index 016e12288ec354905f0b172a7f8b6d8ecdff8346..ad387eaf0b1d8e07593419378315ded705dd6468 100644
 --- a/components/input/input_router_impl.h
 +++ b/components/input/input_router_impl.h
 @@ -108,7 +108,8 @@ class COMPONENT_EXPORT(INPUT) InputRouterImpl
@@ -122,7 +122,7 @@ index 79e79a79538612af6d3f5ff7f3fc7c973afbd6bc..ac9d5889fd106d34325f8260235dd83d
        bool unadjusted_movement,
        blink::mojom::WidgetInputHandlerHost::RequestMouseLockCallback
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index e857f68897f5dd94d28c690440b6711e5343542f..6b16668f5f06bc7a891dff0f00f0827e95df6731 100644
+index 5b87ed5def8b6ff737cdc59aa577fd49f7ab257a..a9b3a67e80a325079b9519da1a6436d56783e6c9 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -21,6 +21,7 @@
@@ -133,7 +133,7 @@ index e857f68897f5dd94d28c690440b6711e5343542f..6b16668f5f06bc7a891dff0f00f0827e
  #include "third_party/blink/public/mojom/frame/lifecycle.mojom.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom-shared.h"
  #include "third_party/blink/public/mojom/manifest/application_context.mojom.h"
-@@ -224,10 +225,13 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -227,10 +228,13 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
  
    // Requests to lock the mouse. Once the request is approved or rejected,
    // GotResponseToLockPointerRequest() will be called on the requesting render
@@ -152,10 +152,10 @@ index e857f68897f5dd94d28c690440b6711e5343542f..6b16668f5f06bc7a891dff0f00f0827e
    virtual void UnlockPointer(RenderWidgetHostImpl* render_widget_host) {}
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index a75058e37a740be83dfb619c0bc4b2ec14794712..05e8c27b4ec9bfda0dc61c77ff3eb31ad5520e02 100644
+index 2b1a4323c0c5ebcb21e8ba41b83f46688fc1b981..421c913e529d03f1f9d8bc498900a6c17dedda0f 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -3691,6 +3691,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
+@@ -3700,6 +3700,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
  }
  
  void RenderWidgetHostImpl::RequestMouseLock(
@@ -163,7 +163,7 @@ index a75058e37a740be83dfb619c0bc4b2ec14794712..05e8c27b4ec9bfda0dc61c77ff3eb31a
      bool from_user_gesture,
      bool unadjusted_movement,
      input::InputRouterImpl::RequestMouseLockCallback response) {
-@@ -3727,7 +3728,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
+@@ -3736,7 +3737,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
      return;
    }
  
@@ -173,7 +173,7 @@ index a75058e37a740be83dfb619c0bc4b2ec14794712..05e8c27b4ec9bfda0dc61c77ff3eb31a
    // We need to reset |is_last_unlocked_by_target_| here as we don't know
    // request source in |LostPointerLock()|.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 35a414a123e2a75b824eb7332728c6da55262636..a9ad4bee3b649cd8eb5e2064620872540282d4c4 100644
+index f3c132412ca87c3abda84cf91434a9f7d874cb35..c615390ea3d0bc57b39af463ead589a3cb196499 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -891,6 +891,7 @@ class CONTENT_EXPORT RenderWidgetHostImpl
@@ -185,10 +185,10 @@ index 35a414a123e2a75b824eb7332728c6da55262636..a9ad4bee3b649cd8eb5e206462087254
        bool unadjusted_movement,
        input::InputRouterImpl::RequestMouseLockCallback response) override;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 67bc9eb1906a7febe5dead56f874a1761dddde09..f3cb64aaa9e8fd7ed07ddef6f5a1c40b655c6143 100644
+index d0af3bbca5c1476c93c66dde15f566bfbdf07e78..2b83659cdfb4c150d6ec76c1723df89a9d0dbf64 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5501,6 +5501,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
+@@ -5505,6 +5505,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
  
  void WebContentsImpl::RequestToLockPointer(
      RenderWidgetHostImpl* render_widget_host,
@@ -196,7 +196,7 @@ index 67bc9eb1906a7febe5dead56f874a1761dddde09..f3cb64aaa9e8fd7ed07ddef6f5a1c40b
      bool user_gesture,
      bool last_unlocked_by_target) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RequestPointerLock",
-@@ -5528,9 +5529,19 @@ void WebContentsImpl::RequestToLockPointer(
+@@ -5532,9 +5533,19 @@ void WebContentsImpl::RequestToLockPointer(
      }
    }
  
@@ -216,7 +216,7 @@ index 67bc9eb1906a7febe5dead56f874a1761dddde09..f3cb64aaa9e8fd7ed07ddef6f5a1c40b
      observers_.NotifyObservers(&WebContentsObserver::PointerLockRequested);
      delegate->RequestPointerLock(this, user_gesture, last_unlocked_by_target);
    } else {
-@@ -10170,9 +10181,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
+@@ -10146,9 +10157,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
    return false;
  }
  
@@ -240,10 +240,10 @@ index 67bc9eb1906a7febe5dead56f874a1761dddde09..f3cb64aaa9e8fd7ed07ddef6f5a1c40b
      static_cast<SurfaceEmbedConnectorImpl*>(connector)
          ->SetPointerLockWidgetInParentChain(widget);
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 470a1af6b2495b805ee4b0d22f05c37778066776..7ba8faddb6f1f9c7591e1114b21a8d5d0f23e090 100644
+index 4b30b9752a54d7a30fd4f8b2187416bbab025f52..7c766e1e6fb23958691ef3ce0aed1978f6fe5e50 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1232,6 +1232,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1233,6 +1233,7 @@ class CONTENT_EXPORT WebContentsImpl
        base::RepeatingClosure hang_monitor_restarter) override;
    void RendererResponsive(RenderWidgetHostImpl* render_widget_host) override;
    void RequestToLockPointer(RenderWidgetHostImpl* render_widget_host,
@@ -251,7 +251,7 @@ index 470a1af6b2495b805ee4b0d22f05c37778066776..7ba8faddb6f1f9c7591e1114b21a8d5d
                              bool user_gesture,
                              bool last_unlocked_by_target) override;
    bool IsWaitingForPointerLockPrompt(
-@@ -1674,6 +1675,11 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1675,6 +1676,11 @@ class CONTENT_EXPORT WebContentsImpl
      return pointer_lock_widget_;
    }
  
@@ -263,7 +263,7 @@ index 470a1af6b2495b805ee4b0d22f05c37778066776..7ba8faddb6f1f9c7591e1114b21a8d5d
    const std::set<raw_ptr<RenderFrameHostImpl, SetExperimental>>&
    fullscreen_frames_for_testing() const {
      return fullscreen_frames_;
-@@ -2748,6 +2754,9 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -2756,6 +2762,9 @@ class CONTENT_EXPORT WebContentsImpl
    raw_ptr<RenderWidgetHostImpl, DanglingUntriaged> pointer_lock_widget_ =
        nullptr;
  
@@ -306,10 +306,10 @@ index 1ff83218d9bc4ec2990c59bd79cc06e5d5fd8e85..6e7770af81bdbf476e7fa0b1eeb6b369
            pending_remote<blink.mojom.PointerLockContext>? context);
  };
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-index dd94769995b46ca30e2e5b27055662e14cbbeddf..8034d6e936ed26a9304e264ea9a992ad5306fd07 100644
+index 494aa6a5b68f04239b101aa71385a4920f051850..64c47d8bc88a74b93201a10ddf783689919e6c90 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-@@ -3664,6 +3664,7 @@ void WebFrameWidgetImpl::CancelComposition() {
+@@ -3675,6 +3675,7 @@ void WebFrameWidgetImpl::CancelComposition() {
  }
  
  void WebFrameWidgetImpl::RequestMouseLock(
@@ -317,7 +317,7 @@ index dd94769995b46ca30e2e5b27055662e14cbbeddf..8034d6e936ed26a9304e264ea9a992ad
      bool has_transient_user_activation,
      bool request_unadjusted_movement,
      mojom::blink::WidgetInputHandlerHost::RequestMouseLockCallback callback) {
-@@ -3677,7 +3678,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
+@@ -3688,7 +3689,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
    // callback. It does share the same signature as the mojo definition
    // for simplicity.
    if (host) {
@@ -327,7 +327,7 @@ index dd94769995b46ca30e2e5b27055662e14cbbeddf..8034d6e936ed26a9304e264ea9a992ad
    }
  }
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.h b/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
-index abb1bf2fcb50ff91fd74d52f04e840580debc43f..932c019c0a31b4e564de7d4fa8d97f30c032a3ee 100644
+index 9c9b3c56ba68274d2bd09b996903074d945cfc9e..6dc9cc72221debb472025be01b8aeefcd404f832 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
 @@ -333,6 +333,7 @@ class CORE_EXPORT WebFrameWidgetImpl
@@ -359,7 +359,7 @@ index baf946888ba29b6fc5a5de3f221ced99803d23f9..5b1d36d11f173007dc0cc76823f2fcb1
          unadjusted_movement_requested,
          blink::BindOnce(&PointerLockController::LockRequestCallback,
 diff --git a/third_party/blink/renderer/platform/widget/frame_widget.h b/third_party/blink/renderer/platform/widget/frame_widget.h
-index b75564df1d249efa779835d9dfe23cc269f25d61..2f78acc6f4928d075b9d236d2e43ea13841197fb 100644
+index f326109b3159cdef935d412e3b16b2b391b72f62..a5d57242d1a47b86af5756b989133e528aeec470 100644
 --- a/third_party/blink/renderer/platform/widget/frame_widget.h
 +++ b/third_party/blink/renderer/platform/widget/frame_widget.h
 @@ -16,6 +16,7 @@

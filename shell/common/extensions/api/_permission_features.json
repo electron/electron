@@ -19,12 +19,6 @@
     "channel": "stable",
     "extension_types": ["extension", "platform_app"]
   },
-  "aiLanguageModelOriginTrial": {
-    "channel": "stable",
-    "extension_types": [
-      "extension"
-    ]
-  },
   "background": {
     "channel": "stable",
     "extension_types": [
@@ -58,10 +52,6 @@
   "contextMenus": {
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app", "platform_app"]
-  },
-  "cookies": {
-    "channel": "stable",
-    "extension_types": ["extension", "legacy_packaged_app"]
   },
   "debugger": [
     {
@@ -139,9 +129,9 @@
     "channel": "stable",
     "extension_types": ["extension", "platform_app"]
   },
-  "idltest": {
-    "channel": "trunk",
-    "extension_types": ["extension"]
+  "management": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
   },
   "notifications": {
     "channel": "stable",

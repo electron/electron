@@ -8,7 +8,7 @@ import {
   clipboard
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -18,7 +18,7 @@ import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers.ts';
 import { containsText, readPDF } from './lib/pdf-helpers.ts';
-import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
@@ -98,34 +98,34 @@ describe('webFrameMain module', () => {
     });
 
     it('can access top frame', () => {
-      expect(webFrame.top).to.equal(webFrame);
+      expect(webFrame.top).toBe(webFrame);
     });
 
     it('has no parent on top frame', () => {
-      expect(webFrame.parent).to.be.null();
+      expect(webFrame.parent).toBeNull();
     });
 
     it('can access immediate frame descendents', () => {
       const { frames } = webFrame;
-      expect(frames).to.have.lengthOf(1);
+      expect(frames).toHaveLength(1);
       const subframe = frames[0];
-      expect(subframe).not.to.equal(webFrame);
-      expect(subframe.parent).to.equal(webFrame);
+      expect(subframe).not.toBe(webFrame);
+      expect(subframe.parent).toBe(webFrame);
     });
 
     it('can access deeply nested frames', () => {
       const subframe = webFrame.frames[0];
-      expect(subframe).not.to.equal(webFrame);
-      expect(subframe.parent).to.equal(webFrame);
+      expect(subframe).not.toBe(webFrame);
+      expect(subframe.parent).toBe(webFrame);
       const nestedSubframe = subframe.frames[0];
-      expect(nestedSubframe).not.to.equal(webFrame);
-      expect(nestedSubframe).not.to.equal(subframe);
-      expect(nestedSubframe.parent).to.equal(subframe);
+      expect(nestedSubframe).not.toBe(webFrame);
+      expect(nestedSubframe).not.toBe(subframe);
+      expect(nestedSubframe.parent).toBe(subframe);
     });
 
     it('can traverse all frames in root', () => {
       const urls = webFrame.framesInSubtree.map((frame) => frame.url);
-      expect(urls).to.deep.equal([
+      expect(urls).toEqual([
         fileUrl('frame-with-frame-container.html'),
         fileUrl('frame-with-frame.html'),
         fileUrl('frame.html')
@@ -134,19 +134,19 @@ describe('webFrameMain module', () => {
 
     it('can traverse all frames in subtree', () => {
       const urls = webFrame.frames[0].framesInSubtree.map((frame) => frame.url);
-      expect(urls).to.deep.equal([fileUrl('frame-with-frame.html'), fileUrl('frame.html')]);
+      expect(urls).toEqual([fileUrl('frame-with-frame.html'), fileUrl('frame.html')]);
     });
 
     describe('cross-origin', () => {
       let serverA: Server;
       let serverB: Server;
 
-      before(async () => {
+      beforeAll(async () => {
         serverA = await createServer();
         serverB = await createServer();
       });
 
-      after(() => {
+      afterAll(() => {
         serverA.server.close();
         serverB.server.close();
       });
@@ -154,8 +154,8 @@ describe('webFrameMain module', () => {
       it('can access cross-origin frames', async () => {
         await w.loadURL(`${serverA.url}?frameSrc=${serverB.url}`);
         webFrame = w.webContents.mainFrame;
-        expect(webFrame.url.startsWith(serverA.url)).to.be.true();
-        expect(webFrame.frames[0].url).to.equal(serverB.url);
+        expect(webFrame.url.startsWith(serverA.url)).toBe(true);
+        expect(webFrame.frames[0].url).toBe(serverB.url);
       });
     });
   });
@@ -166,22 +166,22 @@ describe('webFrameMain module', () => {
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       const webFrame = w.webContents.mainFrame;
 
-      expect(webFrame.url).to.equal(fileUrl('frame-with-frame-container.html'));
-      expect(webFrame.frames[0].url).to.equal(fileUrl('frame-with-frame.html'));
-      expect(webFrame.frames[0].frames[0].url).to.equal(fileUrl('frame.html'));
+      expect(webFrame.url).toBe(fileUrl('frame-with-frame-container.html'));
+      expect(webFrame.frames[0].url).toBe(fileUrl('frame-with-frame.html'));
+      expect(webFrame.frames[0].frames[0].url).toBe(fileUrl('frame.html'));
     });
   });
 
   describe('WebFrame.origin', () => {
     it('should be null for a fresh WebContents', () => {
       const w = new BrowserWindow({ show: false });
-      expect(w.webContents.mainFrame.origin).to.equal('null');
+      expect(w.webContents.mainFrame.origin).toBe('null');
     });
 
     it('should be file:// for file frames', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
-      expect(w.webContents.mainFrame.origin).to.equal('file://');
+      expect(w.webContents.mainFrame.origin).toBe('file://');
     });
 
     it('should be http:// for an http frame', async () => {
@@ -189,17 +189,17 @@ describe('webFrameMain module', () => {
       const s = await createServer();
       defer(() => s.server.close());
       await w.loadURL(s.url);
-      expect(w.webContents.mainFrame.origin).to.equal(s.url.replace(/\/$/, ''));
+      expect(w.webContents.mainFrame.origin).toBe(s.url.replace(/\/$/, ''));
     });
 
     it('should show parent origin when child page is about:blank', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
       const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
-      expect(w.webContents.mainFrame.origin).to.equal('file://');
+      expect(w.webContents.mainFrame.origin).toBe('file://');
       await w.webContents.executeJavaScript('window.open("", null, "show=false"), null');
       const [, childWebContents] = await webContentsCreated;
-      expect(childWebContents.mainFrame.origin).to.equal('file://');
+      expect(childWebContents.mainFrame.origin).toBe('file://');
     });
 
     it("should show parent frame's origin when about:blank child window opened through cross-origin subframe", async () => {
@@ -212,13 +212,13 @@ describe('webFrameMain module', () => {
       });
       await w.loadURL(serverA.url + '?frameSrc=' + encodeURIComponent(serverB.url));
       const { mainFrame } = w.webContents;
-      expect(mainFrame.origin).to.equal(serverA.url.replace(/\/$/, ''));
+      expect(mainFrame.origin).toBe(serverA.url.replace(/\/$/, ''));
       const [childFrame] = mainFrame.frames;
-      expect(childFrame.origin).to.equal(serverB.url.replace(/\/$/, ''));
+      expect(childFrame.origin).toBe(serverB.url.replace(/\/$/, ''));
       const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       await childFrame.executeJavaScript('window.open("", null, "show=false"), null');
       const [, childWebContents] = await webContentsCreated;
-      expect(childWebContents.mainFrame.origin).to.equal(childFrame.origin);
+      expect(childWebContents.mainFrame.origin).toBe(childFrame.origin);
     });
   });
 
@@ -227,13 +227,13 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
-      expect(webFrame).to.have.property('url').that.is.a('string');
-      expect(webFrame).to.have.property('frameTreeNodeId').that.is.a('number');
-      expect(webFrame).to.have.property('name').that.is.a('string');
-      expect(webFrame).to.have.property('osProcessId').that.is.a('number');
-      expect(webFrame).to.have.property('processId').that.is.a('number');
-      expect(webFrame).to.have.property('routingId').that.is.a('number');
-      expect(webFrame).to.have.property('frameToken').that.is.a('string');
+      expect(webFrame).toHaveProperty('url', expect.any(String));
+      expect(webFrame).toHaveProperty('frameTreeNodeId', expect.any(Number));
+      expect(webFrame).toHaveProperty('name', expect.any(String));
+      expect(webFrame).toHaveProperty('osProcessId', expect.any(Number));
+      expect(webFrame).toHaveProperty('processId', expect.any(Number));
+      expect(webFrame).toHaveProperty('routingId', expect.any(Number));
+      expect(webFrame).toHaveProperty('frameToken', expect.any(String));
     });
   });
 
@@ -244,9 +244,9 @@ describe('webFrameMain module', () => {
       await w.loadURL('about:blank');
       const webFrame = w.webContents.mainFrame;
 
-      expect(webFrame.visibilityState).to.equal('visible');
+      expect(webFrame.visibilityState).toBe('visible');
       w.hide();
-      await expect(waitUntil(() => webFrame.visibilityState === 'hidden')).to.eventually.be.fulfilled();
+      await waitUntil(() => webFrame.visibilityState === 'hidden');
     });
   });
 
@@ -257,9 +257,9 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
 
       const getUrl = (frame: WebFrameMain) => frame.executeJavaScript('location.href');
-      expect(await getUrl(webFrame)).to.equal(fileUrl('frame-with-frame-container.html'));
-      expect(await getUrl(webFrame.frames[0])).to.equal(fileUrl('frame-with-frame.html'));
-      expect(await getUrl(webFrame.frames[0].frames[0])).to.equal(fileUrl('frame.html'));
+      expect(await getUrl(webFrame)).toBe(fileUrl('frame-with-frame-container.html'));
+      expect(await getUrl(webFrame.frames[0])).toBe(fileUrl('frame-with-frame.html'));
+      expect(await getUrl(webFrame.frames[0].frames[0])).toBe(fileUrl('frame.html'));
     });
 
     it('can resolve promise', async () => {
@@ -268,7 +268,7 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
       const p = () => webFrame.executeJavaScript('new Promise(resolve => setTimeout(resolve(42), 2000));');
       const result = await p();
-      expect(result).to.equal(42);
+      expect(result).toBe(42);
     });
 
     it('can reject with error', async () => {
@@ -276,12 +276,12 @@ describe('webFrameMain module', () => {
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
       const p = () => webFrame.executeJavaScript('new Promise((r,e) => setTimeout(e("error!"), 500));');
-      await expect(p()).to.be.eventually.rejectedWith('error!');
+      await expect(p()).rejects.toThrow('error!');
       const errorTypes = new Set([Error, ReferenceError, EvalError, RangeError, SyntaxError, TypeError, URIError]);
       for (const error of errorTypes) {
-        await expect(
-          webFrame.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`)
-        ).to.eventually.be.rejectedWith(/Error/);
+        await expect(webFrame.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`)).rejects.toThrow(
+          /Error/
+        );
       }
     });
 
@@ -290,7 +290,7 @@ describe('webFrameMain module', () => {
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
       const p = () => webFrame.executeJavaScript('console.log(test)');
-      await expect(p()).to.be.eventually.rejectedWith(/ReferenceError/);
+      await expect(p()).rejects.toThrow(/ReferenceError/);
     });
   });
 
@@ -301,9 +301,9 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
 
       await webFrame.executeJavaScript('window.TEMP = 1', false);
-      expect(webFrame.reload()).to.be.true();
+      expect(webFrame.reload()).toBe(true);
       await once(w.webContents, 'dom-ready');
-      expect(await webFrame.executeJavaScript('window.TEMP', false)).to.be.null();
+      expect(await webFrame.executeJavaScript('window.TEMP', false)).toBeNull();
     });
   });
 
@@ -321,7 +321,7 @@ describe('webFrameMain module', () => {
       const pongPromise = once(ipcMain, 'preload-pong');
       webFrame.send('preload-ping');
       const [, frameToken] = await pongPromise;
-      expect(frameToken).to.equal(webFrame.frameToken);
+      expect(frameToken).toBe(webFrame.frameToken);
     });
   });
 
@@ -329,10 +329,12 @@ describe('webFrameMain module', () => {
     let server: Awaited<ReturnType<typeof createServer>>;
     let w: BrowserWindow;
 
-    before(async () => {
-      server = await createServer();
+    beforeAll(async () => {
+      // Chromium deprecates unload handlers on http(s) pages by default, so
+      // opt back in for the specs that observe IPC sent from an unload handler.
+      server = await createServer({ headers: { 'Permissions-Policy': 'unload=*' } });
     });
-    after(() => {
+    afterAll(() => {
       server.server.close();
     });
     beforeEach(async () => {
@@ -346,51 +348,57 @@ describe('webFrameMain module', () => {
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
       await waitUntil(() => mainFrame.isDestroyed());
-      expect(() => mainFrame.url).to.throw(/Render frame was disposed/);
+      expect(() => mainFrame.url).toThrow(/Render frame was disposed/);
     });
 
     it('persists through cross-origin navigation', async () => {
       await w.loadURL(server.url);
       const { mainFrame } = w.webContents;
-      expect(mainFrame.url).to.equal(server.url);
+      expect(mainFrame.url).toBe(server.url);
       await w.loadURL(server.crossOriginUrl);
-      expect(w.webContents.mainFrame).to.equal(mainFrame);
-      expect(mainFrame.url).to.equal(server.crossOriginUrl);
+      expect(w.webContents.mainFrame).toBe(mainFrame);
+      expect(mainFrame.url).toBe(server.crossOriginUrl);
     });
 
-    it('keeps a single instance when mainFrame is touched from focus/blur during a cross-origin swap', async () => {
-      // The swap re-focuses the view before RenderFrameHostChanged, so these
-      // handlers see the new RFH first; they must get the existing object.
-      const win = new BrowserWindow({ show: true });
-      await win.loadURL(server.url);
-      win.focus();
-      win.webContents.focus();
-      const { mainFrame } = win.webContents;
-      let navigating = false;
-      const seen: { event: string; navigating: boolean; frame: Electron.WebFrameMain }[] = [];
-      win.webContents.on('did-start-navigation', (e) => {
-        if (e.isMainFrame) navigating = true;
-      });
-      win.webContents.on('did-navigate', () => {
-        navigating = false;
-      });
-      const record = (event: 'focus' | 'blur') => () => {
-        seen.push({ event, navigating, frame: win.webContents.mainFrame });
-      };
-      win.webContents.on('focus', record('focus'));
-      win.webContents.on('blur', record('blur'));
-      await win.loadURL(server.crossOriginUrl);
-      win.webContents.removeAllListeners('focus');
-      win.webContents.removeAllListeners('blur');
-      const duringSwap = seen.filter((s) => s.navigating);
-      expect(duringSwap, 'expected focus/blur to fire during the swap').to.not.be.empty();
-      for (const s of duringSwap) {
-        expect(s.frame).to.equal(mainFrame);
+    it(
+      'keeps a single instance when mainFrame is touched from focus/blur during a cross-origin swap',
+      { tags: ['serial'] },
+      async () => {
+        // The swap re-focuses the view before RenderFrameHostChanged, so these
+        // handlers see the new RFH first; they must get the existing object.
+        const win = new BrowserWindow({ show: true });
+        await win.loadURL(server.url);
+        win.focus();
+        win.webContents.focus();
+        // The swap only emits focus/blur if the view is focused when it starts.
+        await waitUntil(() => win.webContents.isFocused());
+        const { mainFrame } = win.webContents;
+        let navigating = false;
+        const seen: { event: string; navigating: boolean; frame: Electron.WebFrameMain }[] = [];
+        win.webContents.on('did-start-navigation', (e) => {
+          if (e.isMainFrame) navigating = true;
+        });
+        win.webContents.on('did-navigate', () => {
+          navigating = false;
+        });
+        const record = (event: 'focus' | 'blur') => () => {
+          seen.push({ event, navigating, frame: win.webContents.mainFrame });
+        };
+        win.webContents.on('focus', record('focus'));
+        win.webContents.on('blur', record('blur'));
+        await win.loadURL(server.crossOriginUrl);
+        win.webContents.removeAllListeners('focus');
+        win.webContents.removeAllListeners('blur');
+        const duringSwap = seen.filter((s) => s.navigating);
+        expect(duringSwap, 'expected focus/blur to fire during the swap').not.toHaveLength(0);
+        for (const s of duringSwap) {
+          expect(s.frame).toBe(mainFrame);
+        }
+        expect(win.webContents.mainFrame).toBe(mainFrame);
+        expect(mainFrame.url).toBe(server.crossOriginUrl);
+        expect(mainFrame.framesInSubtree).toHaveLength(1);
       }
-      expect(win.webContents.mainFrame).to.equal(mainFrame);
-      expect(mainFrame.url).to.equal(server.crossOriginUrl);
-      expect(mainFrame.framesInSubtree).to.have.lengthOf(1);
-    });
+    );
 
     it('recovers from renderer crash on same-origin', async () => {
       // Keep reference to mainFrame alive throughout crash and recovery.
@@ -440,6 +448,14 @@ describe('webFrameMain module', () => {
     });
 
     it('is detached when unload handler sends IPC', async () => {
+      // The old renderer is backgrounded once the cross-origin page commits,
+      // and under parallel spec load it can miss the 500 ms unload timeout, so
+      // the IPC is dropped. Keep renderers at foreground priority for this test
+      // (see 'receives ipcs from unloading frames' in api-ipc.spec.ts).
+      if (!app.commandLine.hasSwitch('disable-renderer-backgrounding')) {
+        app.commandLine.appendSwitch('disable-renderer-backgrounding');
+        defer(() => app.commandLine.removeSwitch('disable-renderer-backgrounding'));
+      }
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -450,27 +466,86 @@ describe('webFrameMain module', () => {
       const unloadPromise = onceUnload(w.webContents);
       await w.webContents.loadURL(server.crossOriginUrl);
       const { senderFrame, frameProcessId, processId } = await unloadPromise;
-      expect(senderFrame).to.not.be.null();
-      expect(senderFrame!.detached).to.be.true();
-      expect(frameProcessId).to.equal(processId);
+      expect(senderFrame).not.toBeNull();
+      expect(senderFrame!.detached).toBe(true);
+      expect(frameProcessId).toBe(processId);
     });
 
     it('disposes detached frame after cross-origin navigation', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          preload: path.join(subframesPath, 'preload.js')
-        }
-      });
-      await w.webContents.loadURL(server.url);
-      const unloadPromise = onceUnload(w.webContents);
-      const crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
-      const { senderFrame } = await unloadPromise;
-      expect(senderFrame!.detached).to.be.true();
-      await crossOriginPromise;
-      // The detached frame is not destroyed immediately, so wait until it is
-      await waitUntil(() => senderFrame!.isDestroyed());
-      expect(() => senderFrame!.url).to.throw(/Render frame was disposed/);
+      // This waits for the old page's unload IPC. Once the cross-origin page
+      // commits, Chromium backgrounds the old renderer, which can then miss
+      // the 500 ms unload timeout and drop the IPC. Run it in its own app
+      // with renderer backgrounding disabled, so the spec runner's switches
+      // are left alone.
+      const { remotely } = await startRemoteControlApp(['--disable-renderer-backgrounding']);
+      const result = await remotely(
+        async (preload: string) => {
+          const { app, BrowserWindow, ipcMain } = require('electron');
+          const { once } = require('node:events');
+          const http = require('node:http');
+          const { setTimeout: delay } = require('node:timers/promises');
+
+          app.on('window-all-closed', () => {});
+
+          const server = http.createServer((_request: any, response: any) => {
+            // Chromium deprecates unload handlers on http(s) pages by default.
+            response.setHeader('permissions-policy', 'unload=*');
+            response.end('');
+          });
+          server.listen(0, '127.0.0.1');
+          await once(server, 'listening');
+          const url = `http://127.0.0.1:${server.address().port}/`;
+          const crossOriginUrl = url.replace('127.0.0.1', 'localhost');
+          const w = new BrowserWindow({ show: false, webPreferences: { preload } });
+
+          // Polls like waitUntil() in the spec runner, with the same bound.
+          const poll = async (condition: () => boolean) => {
+            for (const start = Date.now(); Date.now() - start < 10000; await delay(10)) {
+              if (condition()) return true;
+            }
+            return false;
+          };
+
+          try {
+            await w.webContents.loadURL(url);
+            // senderFrame stops resolving once the frame is disposed, so read
+            // it when the IPC arrives.
+            let senderFrame: Electron.WebFrameMain | null | undefined;
+            const listener = (event: Electron.IpcMainEvent) => {
+              if (event.sender !== w.webContents) return;
+              senderFrame = event.senderFrame;
+              ipcMain.off('preload-unload', listener);
+            };
+            ipcMain.on('preload-unload', listener);
+            const crossOriginPromise = w.webContents.loadURL(crossOriginUrl);
+            // Awaited below; this only keeps an early return from leaving it unhandled.
+            crossOriginPromise.catch(() => {});
+            const unloaded = await poll(() => senderFrame !== undefined);
+            ipcMain.off('preload-unload', listener);
+            if (!unloaded || !senderFrame) return { unloaded, hasSenderFrame: !!senderFrame };
+            const detached = senderFrame.detached;
+            await crossOriginPromise;
+            // The detached frame is not destroyed immediately, so wait until it is
+            const destroyed = await poll(() => senderFrame!.isDestroyed());
+            let urlError = 'did not throw';
+            try {
+              console.log(senderFrame.url);
+            } catch (error) {
+              urlError = (error as Error).message;
+            }
+            return { unloaded, hasSenderFrame: true, detached, destroyed, urlError };
+          } finally {
+            w.destroy();
+            server.close();
+          }
+        },
+        path.join(subframesPath, 'preload.js')
+      );
+      expect(result.unloaded, 'the old page should send its unload IPC').toBe(true);
+      expect(result.hasSenderFrame).toBe(true);
+      expect(result.detached).toBe(true);
+      expect(result.destroyed, 'the detached frame should be destroyed').toBe(true);
+      expect(result.urlError).toMatch(/Render frame was disposed/);
     });
 
     // Skip test as we don't have an offline repro yet
@@ -499,9 +574,9 @@ describe('webFrameMain module', () => {
       // Test that no frame will crash due to a dangling render frame host
       const crashTest = () => {
         for (const frame of frames) {
-          expect(frame._lifecycleStateForTesting).to.not.equal('Speculative');
+          expect(frame._lifecycleStateForTesting).not.toBe('Speculative');
           try {
-            expect(frame.url).to.be.a('string');
+            expect(frame.url).toBeTypeOf('string');
           } catch {
             // Exceptions from non-dangling frames are expected
           }
@@ -517,7 +592,7 @@ describe('webFrameMain module', () => {
 
   describe('webFrameMain.fromId', () => {
     it('returns undefined for unknown IDs', () => {
-      expect(webFrameMain.fromId(0, 0)).to.be.undefined();
+      expect(webFrameMain.fromId(0, 0)).toBeUndefined();
     });
 
     it('can find each frame from navigation events', async () => {
@@ -529,47 +604,50 @@ describe('webFrameMain module', () => {
 
       for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
         const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-        expect(frame).not.to.be.null();
-        expect(frame?.processId).to.be.equal(frameProcessId);
-        expect(frame?.routingId).to.be.equal(frameRoutingId);
-        expect(frame?.top === frame).to.be.equal(isMainFrame);
+        expect(frame).not.toBeNull();
+        expect(frame?.processId).toBe(frameProcessId);
+        expect(frame?.routingId).toBe(frameRoutingId);
+        expect(frame?.top === frame).toBe(isMainFrame);
       }
     });
   });
 
   describe('webFrameMain.fromFrameToken', () => {
     it('returns null for unknown IDs', () => {
-      expect(webFrameMain.fromFrameToken(0, '')).to.be.null();
+      expect(webFrameMain.fromFrameToken(0, '')).toBeNull();
     });
 
     it('can find existing frame', async () => {
       const w = new BrowserWindow({ show: false });
       const { mainFrame } = w.webContents;
       const frame = webFrameMain.fromFrameToken(mainFrame.processId, mainFrame.frameToken);
-      expect(frame).to.equal(mainFrame);
+      expect(frame).toBe(mainFrame);
     });
   });
 
   describe('webFrameMain.collectJavaScriptCallStack', () => {
     let server: Server;
-    before(async () => {
+    beforeAll(async () => {
       server = await createServer({
         headers: {
           'Document-Policy': 'include-js-call-stacks-in-crash-reports'
         }
       });
     });
-    after(() => {
+    afterAll(() => {
       server.server.close();
     });
 
     it('collects call stack during JS execution', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL(server.url);
-      const callStackPromise = w.webContents.mainFrame.collectJavaScriptCallStack();
-      w.webContents.mainFrame.executeJavaScript('"run a lil js"');
-      const callStack = await callStackPromise;
-      expect(callStack).to.be.a('string');
+      // The renderer collects the stack from a V8 interrupt, which only runs
+      // while the page is executing JavaScript, and a single short script can
+      // finish before the request reaches the renderer. Keep the page running
+      // script until the call stack arrives.
+      await w.webContents.mainFrame.executeJavaScript('void setInterval(() => {}, 1)');
+      const callStack = await w.webContents.mainFrame.collectJavaScriptCallStack();
+      expect(callStack).toBeTypeOf('string');
     });
   });
 
@@ -578,7 +656,7 @@ describe('webFrameMain module', () => {
     let serverUrl: string;
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
         if (req.url === '/frame') {
@@ -590,7 +668,7 @@ describe('webFrameMain module', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -603,11 +681,12 @@ describe('webFrameMain module', () => {
 
       const iframe = w.webContents.mainFrame.frames[0];
       const data = await iframe.printToPDF({});
-      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+      expect(data).toBeInstanceOf(Buffer);
+      expect(data).not.toHaveLength(0);
 
       const pdfInfo = await readPDF(data);
-      expect(containsText(pdfInfo.textContent, /This text lives in the iframe document/)).to.be.true();
-      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.false();
+      expect(containsText(pdfInfo.textContent, /This text lives in the iframe document/)).toBe(true);
+      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).toBe(false);
     });
 
     it('can print the main frame', async () => {
@@ -615,7 +694,7 @@ describe('webFrameMain module', () => {
 
       const data = await w.webContents.mainFrame.printToPDF({});
       const pdfInfo = await readPDF(data);
-      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).toBe(true);
     });
 
     it('does not crash when called on multiple frames in parallel', async () => {
@@ -624,7 +703,8 @@ describe('webFrameMain module', () => {
       const frames = [w.webContents.mainFrame, ...w.webContents.mainFrame.frames];
       const results = await Promise.all(frames.map((frame) => frame.printToPDF({})));
       for (const data of results) {
-        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+        expect(data).toBeInstanceOf(Buffer);
+        expect(data).not.toHaveLength(0);
       }
     });
 
@@ -632,7 +712,7 @@ describe('webFrameMain module', () => {
       await w.loadURL(serverUrl);
 
       const iframe = w.webContents.mainFrame.frames[0];
-      await expect(iframe.printToPDF({ landscape: [] as any })).to.eventually.be.rejected();
+      await expect(iframe.printToPDF({ landscape: [] as any })).rejects.toThrow();
     });
 
     it('rejects when the render frame is disposed', async () => {
@@ -641,15 +721,21 @@ describe('webFrameMain module', () => {
       const iframe = w.webContents.mainFrame.frames[0];
       w.webContents.destroy();
       await waitUntil(() => iframe.isDestroyed());
-      await expect(iframe.printToPDF({})).to.eventually.be.rejected();
+      await expect(iframe.printToPDF({})).rejects.toThrow();
     });
   });
 
-  describe('webFrameMain.copyVideoFrameAt', () => {
+  describe('webFrameMain.copyVideoFrameAt', { tags: ['serial'] }, () => {
     const insertVideoInFrame = async (frame: WebFrameMain) => {
       const videoFilePath = url.pathToFileURL(path.join(fixtures, 'cat-spin.mp4')).href;
       await frame.executeJavaScript(`
         const video = document.createElement('video');
+        // A fixed box, so the point copyVideoFrameInFrame() picks is on the
+        // video whether or not its metadata has loaded yet; at its natural
+        // size (480x360) the centre would be outside the 300x150 iframe.
+        video.style.display = 'block';
+        video.style.width = '100px';
+        video.style.height = '100px';
         video.src = '${videoFilePath}';
         video.muted = true;
         video.loop = true;
@@ -667,11 +753,22 @@ describe('webFrameMain module', () => {
           return { x: Math.floor(rect.x), y: Math.floor(rect.y) };
         }})()`
       )) as Electron.Point;
-      expect(point).to.be.an('object');
+      expect(point).toBeTypeOf('object');
       return point;
     };
 
     const copyVideoFrameInFrame = async (frame: WebFrameMain) => {
+      // wait for video to load
+      await frame.executeJavaScript(
+        `(${() => {
+          const video = document.querySelector('video');
+          if (!video) return;
+          return new Promise((resolve) => {
+            if (video.readyState >= 4) resolve(null);
+            else video.addEventListener('canplaythrough', resolve, { once: true });
+          });
+        }})()`
+      );
       const point = (await frame.executeJavaScript(
         `(${() => {
           const video = document.querySelector('video');
@@ -684,7 +781,7 @@ describe('webFrameMain module', () => {
         }})()`
       )) as Electron.Point;
 
-      expect(point).to.be.an('object');
+      expect(point).toBeTypeOf('object');
 
       // Translate coordinate to be relative of main frame
       if (frame.parent) {
@@ -693,18 +790,7 @@ describe('webFrameMain module', () => {
         point.y += framePosition.y;
       }
 
-      expect(await clipboardHasImageType()).to.be.false();
-      // wait for video to load
-      await frame.executeJavaScript(
-        `(${() => {
-          const video = document.querySelector('video');
-          if (!video) return;
-          return new Promise((resolve) => {
-            if (video.readyState >= 4) resolve(null);
-            else video.addEventListener('canplaythrough', resolve, { once: true });
-          });
-        }})()`
-      );
+      expect(await clipboardHasImageType()).toBe(false);
       frame.copyVideoFrameAt(point.x, point.y);
       await waitUntil(clipboardHasImageType);
     };
@@ -728,7 +814,7 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
       const subframe = w.webContents.mainFrame.frames[0];
-      expect(subframe).to.exist();
+      expect(subframe).toEqual(expect.anything());
       await insertVideoInFrame(subframe);
       await copyVideoFrameInFrame(subframe);
       await waitUntil(clipboardHasImageType);
@@ -741,7 +827,7 @@ describe('webFrameMain module', () => {
       const promise = once(w.webContents, 'frame-created') as Promise<[any, Electron.FrameCreatedDetails]>;
       w.webContents.loadFile(path.join(subframesPath, 'frame.html'));
       const [, details] = await promise;
-      expect(details.frame).to.equal(w.webContents.mainFrame);
+      expect(details.frame).toBe(w.webContents.mainFrame);
     });
 
     it('emits when nested frames are created', async () => {
@@ -751,8 +837,8 @@ describe('webFrameMain module', () => {
       >;
       w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
       const [[, mainDetails], [, nestedDetails]] = await promise;
-      expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
-      expect(nestedDetails.frame).to.equal(w.webContents.mainFrame.frames[0]);
+      expect(mainDetails.frame).toBe(w.webContents.mainFrame);
+      expect(nestedDetails.frame).toBe(w.webContents.mainFrame.frames[0]);
     });
 
     it('is not emitted upon cross-origin navigation', async () => {
@@ -772,7 +858,7 @@ describe('webFrameMain module', () => {
 
       await w.webContents.loadURL(server.crossOriginUrl);
 
-      expect(frameCreatedEmitted).to.be.false();
+      expect(frameCreatedEmitted).toBe(false);
     });
   });
 

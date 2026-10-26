@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 4969c908c487a96fd6da80741d70d11b10dea131..4dea08fafee4379066a7d8af66fb07c7e7a3490c 100644
+index 4debed160e1abf8d3d4ecdd3d5e7d11f0a091cc1..312a857537867e408fe2bd1b1a0d1061c41ccf3b 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -320,6 +320,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -349,6 +349,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -32,7 +32,7 @@ index 4969c908c487a96fd6da80741d70d11b10dea131..4dea08fafee4379066a7d8af66fb07c7
    IsolateGroup group = GetOrCreateIsolateGroup();
    Isolate* isolate = Isolate::Allocate(group);
    if (isolate == nullptr) return nullptr;
-@@ -370,9 +374,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -382,9 +386,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,
@@ -47,10 +47,10 @@ index 4969c908c487a96fd6da80741d70d11b10dea131..4dea08fafee4379066a7d8af66fb07c7
                      event_loop,
                      platform,
 diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
-index 745ecab746f7c7540733d31a94f52809dcddd5be..0e52bf5a6f4837d0f4bfed83987c6903796fda55 100644
+index f81dfb9bf60d52b225479c3a7a00b93225a9d10f..745f2c0526fafc1079b94be875a9e5a519d3a794 100644
 --- a/src/cppgc_helpers-inl.h
 +++ b/src/cppgc_helpers-inl.h
-@@ -15,11 +15,12 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
+@@ -14,11 +14,12 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
    v8::Isolate* isolate = realm->isolate();
    ptr->traced_reference_ = v8::TracedReference<v8::Object>(isolate, obj);
    // Note that ptr must be of concrete type T in Wrap.
@@ -63,10 +63,10 @@ index 745ecab746f7c7540733d31a94f52809dcddd5be..0e52bf5a6f4837d0f4bfed83987c6903
 -  obj->SetAlignedPointerInInternalField(kSlot, ptr);
 +      kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc(), 0);
 +  obj->SetAlignedPointerInInternalField(kSlot, ptr, 0);
-   realm->TrackCppgcWrapper(ptr);
+   ptr->list_node_ = realm->TrackCppgcWrapper(ptr);
  }
  
-@@ -40,7 +41,7 @@ T* CppgcMixin::Unwrap(v8::Local<v8::Object> obj) {
+@@ -39,7 +40,7 @@ T* CppgcMixin::Unwrap(v8::Local<v8::Object> obj) {
    if (obj->InternalFieldCount() != T::kInternalFieldCount) {
      return nullptr;
    }
@@ -75,29 +75,11 @@ index 745ecab746f7c7540733d31a94f52809dcddd5be..0e52bf5a6f4837d0f4bfed83987c6903
    return ptr;
  }
  
-diff --git a/src/cppgc_helpers.cc b/src/cppgc_helpers.cc
-index 7c557a822d2028aa88adbdca63677a44afd1a120..ae7e45fbc26317a53207c267865ea4db553f5a8a 100644
---- a/src/cppgc_helpers.cc
-+++ b/src/cppgc_helpers.cc
-@@ -4,11 +4,12 @@
- namespace node {
- 
- void CppgcWrapperList::Cleanup() {
--  for (auto node : *this) {
-+  while (CppgcWrapperListNode* node = PopFront()) {
-     CppgcMixin* ptr = node->persistent.Get();
-     if (ptr != nullptr) {
-       ptr->Finalize();
-     }
-+    delete node;
-   }
- }
- 
 diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
-index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c2133041d1b0 100644
+index df6b4836c676d468a97371f804ffe53606e7d171..f1363d5da78f7a3603fb4502489ecf2ee3483fdb 100644
 --- a/src/cppgc_helpers.h
 +++ b/src/cppgc_helpers.h
-@@ -155,7 +155,7 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
+@@ -149,7 +149,7 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
   */
  #define CPPGC_MIXIN(Klass)                                                     \
    public /* NOLINT(whitespace/indent) */                                       \
@@ -107,10 +89,10 @@ index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c213
  #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
  
 diff --git a/src/env.cc b/src/env.cc
-index 84957de5cb0149e518c92ca0608f6e16faf5e5e6..c68bb8e4854a301b6899d2f7183b77dd9ff98c31 100644
+index 3495479752fb8957ea4d89ca76f2c2dcddecf100..7674b06f7018020f87c32316a66eebc04720ab5e 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -642,7 +642,7 @@ IsolateData::~IsolateData() {}
+@@ -643,7 +643,7 @@ IsolateData::~IsolateData() {}
  // Deprecated API, embedders should use v8::Object::Wrap() directly instead.
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
@@ -120,7 +102,7 @@ index 84957de5cb0149e518c92ca0608f6e16faf5e5e6..c68bb8e4854a301b6899d2f7183b77dd
        isolate, object, wrappable);
  }
 diff --git a/src/node.h b/src/node.h
-index 3bd4849bb93340569c0067fedd37fefeebff4eb5..952d51946d9412c376dfe305a2c5fd564b60998c 100644
+index cba83119bfaf88b360b2f1220611a0c642ec7364..564ba432f023ea0575bba72e1a17816faf4d830c 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -78,6 +78,7 @@
@@ -131,7 +113,7 @@ index 3bd4849bb93340569c0067fedd37fefeebff4eb5..952d51946d9412c376dfe305a2c5fd56
  
  #include "v8-platform.h"  // NOLINT(build/include_order)
  #include "node_version.h"  // NODE_MODULE_VERSION
-@@ -597,7 +598,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
+@@ -599,7 +600,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
      struct uv_loop_s* event_loop,
      MultiIsolatePlatform* platform,
      const EmbedderSnapshotData* snapshot_data = nullptr,
@@ -141,7 +123,7 @@ index 3bd4849bb93340569c0067fedd37fefeebff4eb5..952d51946d9412c376dfe305a2c5fd56
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
-@@ -1720,9 +1722,10 @@ void RegisterSignalHandler(int signal,
+@@ -1728,9 +1730,10 @@ void RegisterSignalHandler(int signal,
  // work with only Node.js versions with v8::Object::Wrap() should use that
  // instead.
  NODE_DEPRECATED("Use v8::Object::Wrap()",
@@ -156,7 +138,7 @@ index 3bd4849bb93340569c0067fedd37fefeebff4eb5..952d51946d9412c376dfe305a2c5fd56
  namespace crypto {
  
 diff --git a/src/node_main_instance.cc b/src/node_main_instance.cc
-index 6f674df3ed0dc1b4e5cd3a249fb787a9fc98361d..90f9eb84b6835c36a91ce23d77722812ce173c0f 100644
+index bc07d6aaf42678d935c28659c8b1d7adc6475194..6faf7569f7323fa1c85b19ba6e2f7583cd63b848 100644
 --- a/src/node_main_instance.cc
 +++ b/src/node_main_instance.cc
 @@ -44,6 +44,8 @@ NodeMainInstance::NodeMainInstance(const SnapshotData* snapshot_data,
@@ -169,7 +151,7 @@ index 6f674df3ed0dc1b4e5cd3a249fb787a9fc98361d..90f9eb84b6835c36a91ce23d77722812
    isolate_ =
        NewIsolate(isolate_params_.get(), event_loop, platform, snapshot_data);
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index e743cb45359a2e1e3151f17dc80ada639a9db3e0..ed3aa30caac3f47691c4a7262e671589c3bace7b 100644
+index fd6a0d90afaa7195564b09b81a24cb155aca81ae..b45ee62d0e13d24c013102ca2b463a2517d92907 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
 @@ -182,6 +182,9 @@ class WorkerThreadData {

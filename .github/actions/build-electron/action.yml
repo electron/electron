@@ -52,6 +52,14 @@ inputs:
     description: 'Package and upload the src artifacts. Set to false when another variant of the same build uploads identical ones.'
     required: false
     default: 'true'
+  run-include-analysis:
+    description: 'Run analyze_includes.py and upload include-analysis.<platform>.html as an artifact'
+    required: false
+    default: 'false'
+  include-analysis-root-filter:
+    description: 'Regex passed to analyze_includes.py --root-filter'
+    required: false
+    default: '^electron/'
 runs:
   using: "composite"
   steps:
@@ -140,6 +148,30 @@ runs:
       run: |
         sudo sysctl -w net.local.stream.sendspace=2097152 || true
         sudo sysctl -w net.local.stream.recvspace=2097152 || true
+    # Diagnostics for the "Failed to run esbuild: Error: The service was
+    # stopped" flake, where the esbuild child's stdout closes without a panic
+    # trace. devtools-frontend's esbuild.js always points ESBUILD_BINARY_PATH
+    # at third_party/esbuild/esbuild, so wrap the binary in place: the wrapper
+    # records how a failed run ended (exit code or signal, stderr tail) for the
+    # failure-only dump below. If the wrapper cannot run, the real binary is
+    # put back. Runs once per job; the MAS build reuses it.
+    - name: Wrap esbuild to record its exit status (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      shell: bash
+      run: |
+        ESBUILD="src/third_party/devtools-frontend/src/third_party/esbuild/esbuild"
+        if [ -e "$ESBUILD.real" ]; then
+          echo "esbuild is already wrapped"
+          exit 0
+        fi
+        mv "$ESBUILD" "$ESBUILD.real"
+        cp src/electron/script/actions/esbuild-wrapper.sh "$ESBUILD"
+        chmod +x "$ESBUILD"
+        if ! "$ESBUILD" --version; then
+          echo "::warning::esbuild wrapper failed to run; using the real binary"
+          rm -f "$ESBUILD"
+          mv "$ESBUILD.real" "$ESBUILD"
+        fi
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
@@ -211,6 +243,110 @@ runs:
         echo "::group::esbuild process mentions (last 45m)"
         log show --last 45m --style compact --predicate 'eventMessage CONTAINS "esbuild"' | tail -n 50
         echo "::endgroup::"
+        # Written by script/actions/esbuild-wrapper.sh, one file per failed
+        # esbuild run (under $TMPDIR if the build tool did not pass
+        # RUNNER_TEMP through). Staged with any esbuild/node crash reports for
+        # upload.
+        DIAG_DIR="$RUNNER_TEMP/esbuild-diagnostics"
+        mkdir -p "$DIAG_DIR"
+        echo "::group::esbuild wrapper exit records"
+        found=""
+        for f in "$RUNNER_TEMP"/esbuild-exit-logs/exit-*.log "${TMPDIR:-/tmp}"/esbuild-exit-logs/exit-*.log; do
+          [ -f "$f" ] || continue
+          found=1
+          cat "$f"
+          cp "$f" "$DIAG_DIR/"
+        done
+        [ -n "$found" ] || echo "No failed esbuild runs were recorded"
+        echo "::endgroup::"
+        echo "::group::esbuild / node crash reports (last 3h)"
+        find ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports \
+          -maxdepth 1 -type f \( -iname '*esbuild*' -o -iname '*node*' \) -mmin -180 2>/dev/null |
+        while read -r f; do
+          echo "=== $f"
+          copy="$DIAG_DIR/$(basename "$f")"
+          # Only reading may need root; the copy stays owned by the runner.
+          # shellcheck disable=SC2024
+          cat "$f" > "$copy" 2>/dev/null || sudo -n cat "$f" > "$copy"
+          head -n 200 "$copy"
+        done
+        echo "::endgroup::"
+    - name: Upload esbuild diagnostics
+      if: ${{ failure() && inputs.target-platform == 'macos' }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: esbuild-diagnostics-${{ inputs.artifact-platform }}-${{ inputs.target-arch }}
+        path: ${{ runner.temp }}/esbuild-diagnostics
+        if-no-files-found: ignore
+        retention-days: 7
+    - name: Generate Include Analysis ${{ inputs.step-suffix }}
+      id: include-analysis
+      # One leg per platform: linux-x64, and the darwin (not MAS) variant of
+      # macos-arm64.
+      if: ${{ inputs.run-include-analysis == 'true' && ((inputs.target-platform == 'linux' && inputs.target-arch == 'x64') || (inputs.target-platform == 'macos' && inputs.target-arch == 'arm64' && inputs.artifact-platform == 'darwin')) && inputs.is-asan != 'true' && inputs.is-ubsan != 'true' }}
+      shell: bash
+      env:
+        INCLUDE_ANALYSIS_ROOT_FILTER: ${{ inputs.include-analysis-root-filter }}
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
+      run: |
+        set -o pipefail
+
+        cd src
+        REVISION=$(cd electron && git rev-parse --short HEAD)
+
+        export NO_COLOR=1
+
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
+          ulimit -n 10000
+          # The macOS build hosts have far fewer cores and less memory than
+          # the Linux one, so size the analysis worker pool to the host
+          PROCESSES=$(sysctl -n hw.ncpu)
+        else
+          PROCESSES=24
+        fi
+
+        # Build with show_includes=true to get the extra info analyze_includes.py needs.
+        # analyze_includes.py needs the [N/M] compile command lines and the include
+        # trees interleaved in one stream, so stdout and stderr both go to the log.
+        # Don't pass -quiet: siso's quiet UI drops the command lines.
+        export GN_EXTRA_ARGS="use_remoteexec=true use_siso=true show_includes=true symbol_level=0 enable_precompiled_headers=false use_clang_modules=false"
+        if ! e build -v --target electron > /tmp/include-build.log 2>&1; then
+          echo "::error::Include analysis build failed, last 200 lines of the build log follow"
+          tail -n 200 /tmp/include-build.log
+          exit 1
+        fi
+
+        python3 tools/clang/scripts/analyze_includes.py \
+          --target electron \
+          --revision "$REVISION" \
+          --root-filter "$INCLUDE_ANALYSIS_ROOT_FILTER" \
+          --json-out /tmp/include-analysis.data.js \
+          --processes "$PROCESSES" \
+          /tmp/include-build.log
+
+        # Apply Electron's customizations on top of the upstream
+        # include-analysis.html template shipped with Chromium
+        patch -o /tmp/include-analysis.html tools/clang/scripts/include-analysis.html \
+          electron/.github/actions/build-electron/include-analysis.html.patch
+
+        # The upstream template hardcodes the build platform as "(Linux)"
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
+          awk '{ gsub(/\(Linux\)/, "(macOS)"); print }' /tmp/include-analysis.html > /tmp/include-analysis.macos.html
+          mv /tmp/include-analysis.macos.html /tmp/include-analysis.html
+        fi
+
+        # Inline the JS into the HTML so we have a single file to upload
+        awk -v data=/tmp/include-analysis.data.js '
+          /<script src="include-analysis.js"><\/script>/ {
+            print "<script>"
+            while ((getline line < data) > 0) print line
+            print "</script>"
+            next
+          }
+          { print }
+        ' /tmp/include-analysis.html > "include-analysis.$TARGET_PLATFORM.html"
+
+        echo "path=./src/include-analysis.$TARGET_PLATFORM.html" >> "$GITHUB_OUTPUT"
     - name: Build Electron (Windows) ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
@@ -549,4 +685,11 @@ runs:
       with:
         name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
         path: ./src/object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
+        archive: false
+    - name: Upload Include Analysis ${{ inputs.step-suffix }}
+      if: ${{ steps.include-analysis.outputs.path != '' }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: include-analysis.${{ inputs.target-platform }}.html
+        path: ${{ steps.include-analysis.outputs.path }}
         archive: false

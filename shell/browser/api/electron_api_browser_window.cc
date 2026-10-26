@@ -10,6 +10,7 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
@@ -17,11 +18,9 @@
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
-#include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/widget/widget.h"
 
@@ -67,16 +66,16 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, true);
 
   // Creates the WebContentsView.
-  gin_helper::Handle<WebContentsView> web_contents_view =
+  WebContentsView* web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
-  DCHECK(web_contents_view.get());
-  window()->AddDraggableRegionProvider(web_contents_view.get());
+  CHECK(web_contents_view);
+  web_contents_view->RegisterDraggableRegionProvider(window());
+  auto* web_contents = web_contents_view->GetWebContents();
   window()->InitPrimaryWebContentsView(
-      static_cast<InspectableWebContentsView*>(web_contents_view->view()));
-  web_contents_view_.Reset(isolate, web_contents_view.ToV8());
+      web_contents->inspectable_web_contents()->GetView());
+  web_contents_view_ = web_contents_view;
 
   // Save a reference of the WebContents.
-  auto* web_contents = web_contents_view->GetWebContents();
   v8::Local<v8::Object> wrapper =
       web_contents->GetWrapper(isolate).ToLocalChecked();
   web_contents_.Reset(isolate, wrapper);
@@ -139,7 +138,7 @@ void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
 void BrowserWindow::OnActivateContents() {
   // Hide the auto-hide menu when webContents is focused.
 #if !BUILDFLAG(IS_MAC)
-  if (IsMenuBarAutoHide() && IsMenuBarVisible())
+  if (window()->IsMenuBarAutoHide() && window()->IsMenuBarVisible())
     window()->SetMenuBarVisibility(false);
 #endif
 }
@@ -343,7 +342,7 @@ void BrowserWindow::Show() {
 
 void BrowserWindow::ShowInactive() {
   // This method doesn't make sense for modal window.
-  if (IsModal())
+  if (window()->is_modal())
     return;
   if (auto* api_web_contents = GetLiveWebContents()) {
     api_web_contents->web_contents()->WasShown();
@@ -374,6 +373,11 @@ gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
   if (!IsWindowNameValid(options, &error_message)) {
     // Window name is already in use throw an error and do not create the window
     thrower.ThrowError(error_message);
+    return nullptr;
+  }
+  if (!IsAppShimValid(options, &error_message) ||
+      !IsParentValid(options, &error_message)) {
+    thrower.ThrowTypeError(error_message);
     return nullptr;
   }
 

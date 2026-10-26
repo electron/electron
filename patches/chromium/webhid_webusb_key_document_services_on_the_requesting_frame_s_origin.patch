@@ -19,10 +19,10 @@ This is specific to Electron's permission model and is not intended for
 upstream.
 
 diff --git a/content/browser/hid/hid_service.cc b/content/browser/hid/hid_service.cc
-index ecda417d739b6c5649f9d85d627e433b5b5d36e7..3e893c2ce08255d8c53ad48c30b83d7c466f40c8 100644
+index 5059dbb1463ac6801fc27d989f604942f9238d26..f5f103ecdd0390fcf0e84ef79bbfc2be490053e4 100644
 --- a/content/browser/hid/hid_service.cc
 +++ b/content/browser/hid/hid_service.cc
-@@ -123,7 +123,7 @@ HidService::HidService(
+@@ -137,7 +137,7 @@ HidService::HidService(
  HidService::HidService(RenderFrameHostImpl* render_frame_host)
      : HidService(render_frame_host,
                   /*service_worker_version=*/nullptr,
@@ -32,10 +32,10 @@ index ecda417d739b6c5649f9d85d627e433b5b5d36e7..3e893c2ce08255d8c53ad48c30b83d7c
  HidService::HidService(
      base::WeakPtr<ServiceWorkerVersion> service_worker_version,
 diff --git a/content/browser/usb/web_usb_service_impl.cc b/content/browser/usb/web_usb_service_impl.cc
-index e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed..0403a237756bbdc4cdd6b6a9992a65d191782771 100644
+index d85b45867243a476a64ebaf00d4ea4cd495d2a4c..9b5b86a8ab694496bf5691780f45cb8a57c5bbe0 100644
 --- a/content/browser/usb/web_usb_service_impl.cc
 +++ b/content/browser/usb/web_usb_service_impl.cc
-@@ -206,7 +206,7 @@ void WebUsbServiceImpl::Create(
+@@ -208,7 +208,7 @@ void WebUsbServiceImpl::Create(
        std::make_unique<WebUsbServiceImpl>(
            &render_frame_host,
            /*service_worker_version=*/nullptr,
