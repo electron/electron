@@ -1397,11 +1397,7 @@ describe('chromium features', () => {
       ses = session.fromPartition(`file-system-spec-${Math.random()}`);
     });
 
-    afterEach(async () => {
-      ses.setPermissionCheckHandler(null);
-      ses.setPermissionRequestHandler(null);
-      await closeAllWindows();
-    });
+    afterEach(closeAllWindows);
 
     // Pastes a file:// URI into the test-perms.html fixture
     // and resolves with the channel the fixture reported its new handle on.
@@ -1516,7 +1512,7 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           permissionRequests.push(details);
           callback(true);
@@ -1569,7 +1565,7 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           permissionRequests.push(details);
           callback(true);
@@ -1632,7 +1628,7 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           trace(`permission requested: ${JSON.stringify(details)}`);
           permissionRequests.push(details);
@@ -1665,7 +1661,6 @@ describe('chromium features', () => {
       trace('file handle received');
 
       const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
-      trace(`initial permission: ${permission}`);
       expect(permission).toBe('prompt');
       trace('createWritable requested');
       // webFrameMain.executeJavaScript(),
@@ -1710,7 +1705,7 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
@@ -1757,7 +1752,7 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return false;
@@ -1800,7 +1795,7 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
@@ -1843,11 +1838,11 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => {
         callback(true);
       });
 
-      w.webContents.session.setPermissionCheckHandler((_wc, permission, _origin, details) => {
+      ses.setPermissionCheckHandler((_wc, permission, _origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
