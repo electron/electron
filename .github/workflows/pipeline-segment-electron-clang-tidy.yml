@@ -172,6 +172,11 @@ jobs:
         export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\" use_clang_modules=false"
         if [ "$TARGET_PLATFORM" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
+          # out_gen_artifacts_win_x64 is built on a Windows runner where
+          # code_generator.py's os.path.join emits backslash #include paths in
+          # inspector protocol headers; normalize them for the Linux host Siso
+          # include scanner.
+          find src/out/${ELECTRON_OUT_DIR}/gen -name '*.h' -exec grep -l '#include ".*\\' {} + | xargs -r sed -i '/^#include /s|\\|/|g'
         fi
         e build --gen=only
 
