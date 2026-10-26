@@ -91,10 +91,22 @@ index 3a52d94a105bcc34c2319940eb10ff381fe975ba..5f0e35a3c07edd04750f3898fc73c79a
  
  void WorkerThreadDebugger::PauseWorkerOnStart(WorkerThread* worker_thread) {
 diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
-index 7b77d51ca3ca41a187021a13c213bbd723e997da..ca5990c177539f650a264e02bb7f00107625806d 100644
+index 7b77d51ca3ca41a187021a13c213bbd723e997da..06620d26be43508a0c2e3e163ec0f049edf946b8 100644
 --- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
 +++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
-@@ -63,6 +63,10 @@ bool ShadowRealmGlobalScope::IsShadowRealmGlobalScope() const {
+@@ -20,10 +20,7 @@ ShadowRealmGlobalScope::ShadowRealmGlobalScope(
+ 
+ ExecutionContext* ShadowRealmGlobalScope::GetRootInitiatorExecutionContext()
+     const {
+-  return initiator_execution_context_->IsShadowRealmGlobalScope()
+-             ? To<ShadowRealmGlobalScope>(initiator_execution_context_.Get())
+-                   ->GetRootInitiatorExecutionContext()
+-             : initiator_execution_context_.Get();
++  return initiator_execution_context_->GetRootExecutionContext();
+ }
+ 
+ void ShadowRealmGlobalScope::Trace(Visitor* visitor) const {
+@@ -63,6 +60,10 @@ bool ShadowRealmGlobalScope::IsShadowRealmGlobalScope() const {
    return true;
  }
  
