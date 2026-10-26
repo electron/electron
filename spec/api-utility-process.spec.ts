@@ -1030,7 +1030,10 @@ describe('utilityProcess module', () => {
       expect(loginAuthInfo!.scheme).toBe('basic');
     });
 
-    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout: 60_000 }, async () => {
+    // Sanitizer builds give every test ELECTRON_SPEC_TIMEOUT (180s); a fixed
+    // 60s here would leave this one a third of what the rest get there.
+    const timeout = Math.max(60_000, Number(process.env.ELECTRON_SPEC_TIMEOUT) || 0);
+    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout }, async () => {
       const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
       defer(() => fs.rm(tmpDir, { recursive: true, force: true }));
       const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
