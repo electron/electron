@@ -862,13 +862,17 @@ describe('cpp heap', () => {
           );
         }
 
-        async function rebuildAndMeasure(n: number) {
+        function rebuild(n: number) {
           for (let i = 0; i < n; i++) {
             Menu.setApplicationMenu(buildLargeMenu());
           }
+        }
+
+        async function rebuildAndMeasure(n: number) {
+          rebuild(n);
           for (let i = 0; i < 10; i++) {
             await new Promise((resolve) => setTimeout(resolve, 0));
-            v8Util.requestGarbageCollectionForTesting();
+            await v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
           }
           return getCppHeapStatistics('brief').used_size_bytes;
         }
@@ -882,7 +886,7 @@ describe('cpp heap', () => {
       const growth = result.after2 - result.after1;
       expect(
         growth,
-        `C++ heap grew by ${growth} bytes between two identical rounds of 100 menu rebuilds — likely a leak`
+        `C++ heap grew by ${growth} bytes between two identical rounds of 50 menu rebuilds — likely a leak`
       ).toBeLessThanOrEqual(result.after1 * 0.1);
     });
   });

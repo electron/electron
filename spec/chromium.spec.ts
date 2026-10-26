@@ -1391,12 +1391,13 @@ describe('chromium features', () => {
 
   describe('File System API,', { tags: ['serial'] }, () => {
     let w: BrowserWindow | null = null;
+    let ses: Electron.Session;
 
-    afterEach(async () => {
-      session.defaultSession.setPermissionCheckHandler(null);
-      session.defaultSession.setPermissionRequestHandler(null);
-      await closeAllWindows();
+    beforeEach(() => {
+      ses = session.fromPartition(`file-system-spec-${Math.random()}`);
     });
+
+    afterEach(closeAllWindows);
 
     // Pastes a file:// URI into the test-perms.html fixture
     // and resolves with the channel the fixture reported its new handle on.
@@ -1425,7 +1426,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1450,7 +1451,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1475,7 +1476,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1505,12 +1506,13 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           permissionRequests.push(details);
           callback(true);
@@ -1557,12 +1559,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           permissionRequests.push(details);
           callback(true);
@@ -1613,6 +1616,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
@@ -1624,7 +1628,7 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           trace(`permission requested: ${JSON.stringify(details)}`);
           permissionRequests.push(details);
@@ -1657,7 +1661,7 @@ describe('chromium features', () => {
       trace('file handle received');
 
       const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
-      trace(`initial permission: ${permission}`);
+      expect(permission).toBe('prompt');
       trace('createWritable requested');
       // webFrameMain.executeJavaScript(),
       // so that the browser process knows of the user activation before the request (see above).
@@ -1695,12 +1699,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
@@ -1741,12 +1746,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return false;
@@ -1783,12 +1789,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
@@ -1825,16 +1832,17 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => {
         callback(true);
       });
 
-      w.webContents.session.setPermissionCheckHandler((_wc, permission, _origin, details) => {
+      ses.setPermissionCheckHandler((_wc, permission, _origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
