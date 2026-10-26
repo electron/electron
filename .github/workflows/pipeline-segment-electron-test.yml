@@ -371,6 +371,16 @@ jobs:
         /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
           -f src/out/Default/Electron.app
 
+    # Some hosted macOS VMs deny screen capture and synthetic input to the job
+    # even though the image and the TCC step above grant them. Print what TCC
+    # needs to explain why (process chain, TCC.db rows, tccd attribution) and
+    # warn; this step never changes TCC state or fails the job.
+    - name: Check TCC access on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      timeout-minutes: 5
+      continue-on-error: true
+      run: src/electron/script/actions/check-macos-tcc.sh
+
     # On GitHub-hosted Windows runners the agent's terminal window sits in the
     # foreground and covers most of the desktop. Windows' native occlusion
     # tracking then marks test windows beneath it as hidden, so they stop

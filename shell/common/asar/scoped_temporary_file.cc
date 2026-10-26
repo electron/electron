@@ -4,6 +4,7 @@
 
 #include "shell/common/asar/scoped_temporary_file.h"
 
+#include <utility>
 #include <vector>
 
 #include "base/files/file_util.h"
@@ -42,7 +43,7 @@ bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
     base::FilePath new_path = path_.AddExtension(ext);
     if (!base::Move(path_, new_path))
       return false;
-    path_ = new_path;
+    path_ = std::move(new_path);
   }
 #endif
 

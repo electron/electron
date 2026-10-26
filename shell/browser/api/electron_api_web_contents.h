@@ -714,7 +714,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void DidUpdateFaviconURL(content::RenderFrameHost* render_frame_host,
                            const std::vector<blink::mojom::FaviconURLPtr>& urls,
                            blink::mojom::FaviconUpdateReason reason);
-  void NotifyPageTitleUpdated(content::NavigationEntry* entry,
+  void NotifyPageTitleUpdated(const content::NavigationEntry* entry,
                               bool from_same_document_history_navigation);
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const content::MediaPlayerId& id);
