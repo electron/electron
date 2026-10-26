@@ -197,11 +197,6 @@ Disables the Chromium [sandbox](https://www.chromium.org/developers/design-docum
 Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
 
-### --no-stdio-init
-
-Disable stdio initialization during node initialization.
-Used to avoid node initialization crash when the nul device is disabled on Windows platform.
-
 ### --ozone-platform=`platform` _Linux_
 
 Forces Electron to use a specific display backend instead of choosing one
