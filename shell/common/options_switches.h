@@ -14,6 +14,7 @@ namespace electron {
 namespace options {
 
 inline constexpr std::string_view kTitle = "title";
+inline constexpr std::string_view kAppShim = "appShim";
 inline constexpr std::string_view kIcon = "icon";
 inline constexpr std::string_view kFrame = "frame";
 inline constexpr std::string_view kShow = "show";
@@ -106,6 +107,19 @@ inline constexpr std::string_view kFocusable = "focusable";
 
 // The WebPreferences.
 inline constexpr std::string_view kWebPreferences = "webPreferences";
+
+// Window state persistence for BaseWindow
+inline constexpr std::string_view kWindowStatePersistence =
+    "windowStatePersistence";
+
+// Identifier for the window provided by the application
+inline constexpr std::string_view kName = "name";
+
+// Whether to save the window bounds
+inline constexpr std::string_view kBounds = "bounds";
+
+// Whether to save the window display mode
+inline constexpr std::string_view kDisplayMode = "displayMode";
 
 // Add a vibrancy effect to the browser window
 inline constexpr std::string_view kVibrancyType = "vibrancy";
@@ -230,6 +244,9 @@ inline constexpr std::string_view kEnableDeprecatedPaste =
 // Whether to focus the webContents on navigation.
 inline constexpr std::string_view kFocusOnNavigation = "focusOnNavigation";
 
+// Whether to disable the wake lock for this WebContents
+inline constexpr std::string_view kDisableWakeLocks = "disableWakeLocks";
+
 inline constexpr std::string_view kModal = "modal";
 
 }  // namespace options
@@ -313,14 +330,6 @@ inline constexpr base::cstring_view kEnableAuthNegotiatePort =
 
 // If set, NTLM v2 is disabled for POSIX platforms.
 inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
-
-// Indicates that preloads for service workers are registered.
-inline constexpr base::cstring_view kServiceWorkerPreload =
-    "service-worker-preload";
-
-// If set, flag node::ProcessInitializationFlags::kNoStdioInitialization would
-// be set for node initialization.
-inline constexpr base::cstring_view kNoStdioInit = "no-stdio-init";
 
 }  // namespace switches
 

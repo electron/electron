@@ -4,12 +4,15 @@
 
 #include <limits>
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 #include "base/containers/span.h"
+#include "base/functional/callback.h"
+#include "base/functional/callback_helpers.h"
 #include "base/memory/memory_pressure_listener_registry.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
@@ -18,29 +21,29 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
-#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/node_event_emitter.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/web_contents_utility.mojom.h"
-#include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
+#include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -58,12 +61,12 @@
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
-#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
-#include "third_party/blink/renderer/core/frame/csp/content_security_policy.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
-
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/prefinalizer.h"
+#include "v8/include/v8-cppgc.h"
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "components/spellcheck/renderer/spellcheck_provider.h"
@@ -169,8 +172,8 @@ class ScriptExecutionCallback {
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked(isolate);
       maybe_result = PassValueToOtherContext(
-          isolate, source_context, promise_.isolate(), promise_.GetContext(),
-          result, source_context->Global(), false, BridgeErrorTarget::kSource);
+          isolate, source_context, promise_.GetContext(), result,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
@@ -202,7 +205,10 @@ class ScriptExecutionCallback {
     }
   }
 
-  void Completed(const std::vector<v8::Local<v8::Value>>& result) {
+  // Promise results are not awaited here (kDoNotWait), so |rejections| is
+  // always empty: a returned promise is handed to the caller as the result.
+  void Completed(const std::vector<v8::Local<v8::Value>>& result,
+                 const std::vector<v8::Local<v8::Value>>& rejections) {
     v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
@@ -341,67 +347,69 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
 };
 
 class WebFrameRenderer final
-    : public gin_helper::DeprecatedWrappable<WebFrameRenderer>,
+    : public gin::Wrappable<WebFrameRenderer>,
       public gin_helper::Constructible<WebFrameRenderer>,
       private content::RenderFrameObserver {
+  CPPGC_USING_PRE_FINALIZER(WebFrameRenderer, Dispose);
+
  public:
   // gin_helper::Constructible
   static void FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
     gin_helper::ObjectTemplateBuilder(isolate, templ)
-        .SetMethod("setName", &WebFrameRenderer::SetName)
-        .SetMethod("setZoomLevel", &WebFrameRenderer::SetZoomLevel)
-        .SetMethod("getZoomLevel", &WebFrameRenderer::GetZoomLevel)
-        .SetMethod("setZoomFactor", &WebFrameRenderer::SetZoomFactor)
-        .SetMethod("getZoomFactor", &WebFrameRenderer::GetZoomFactor)
-        .SetMethod("getWebPreference", &WebFrameRenderer::GetWebPreference)
+        .SetMethod<&WebFrameRenderer::SetName>("setName")
+        .SetMethod<&WebFrameRenderer::SetZoomLevel>("setZoomLevel")
+        .SetMethod<&WebFrameRenderer::GetZoomLevel>("getZoomLevel")
+        .SetMethod<&WebFrameRenderer::SetZoomFactor>("setZoomFactor")
+        .SetMethod<&WebFrameRenderer::GetZoomFactor>("getZoomFactor")
+        .SetMethod<&WebFrameRenderer::GetWebPreference>("getWebPreference")
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-        .SetMethod("isWordMisspelled", &WebFrameRenderer::IsWordMisspelled)
-        .SetMethod("getWordSuggestions", &WebFrameRenderer::GetWordSuggestions)
+        .SetMethod<&WebFrameRenderer::IsWordMisspelled>("isWordMisspelled")
+        .SetMethod<&WebFrameRenderer::GetWordSuggestions>("getWordSuggestions")
 #endif
-        .SetMethod("setVisualZoomLevelLimits",
-                   &WebFrameRenderer::SetVisualZoomLevelLimits)
-        .SetMethod("allowGuestViewElementDefinition",
-                   &RendererClientBase::AllowGuestViewElementDefinition)
-        .SetMethod("insertText", &WebFrameRenderer::InsertText)
-        .SetMethod("insertCSS", &WebFrameRenderer::InsertCSS)
-        .SetMethod("removeInsertedCSS", &WebFrameRenderer::RemoveInsertedCSS)
-        .SetMethod("_isEvalAllowed", &WebFrameRenderer::IsEvalAllowed)
-        .SetMethod("executeJavaScript", &WebFrameRenderer::ExecuteJavaScript)
-        .SetMethod("executeJavaScriptInIsolatedWorld",
-                   &WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld)
-        .SetMethod("setIsolatedWorldInfo",
-                   &WebFrameRenderer::SetIsolatedWorldInfo)
-        .SetMethod("getResourceUsage", &WebFrameRenderer::GetResourceUsage)
-        .SetMethod("clearCache", &WebFrameRenderer::ClearCache)
-        .SetMethod("setSpellCheckProvider",
-                   &WebFrameRenderer::SetSpellCheckProvider)
+        .SetMethod<&WebFrameRenderer::SetVisualZoomLevelLimits>(
+            "setVisualZoomLevelLimits")
+        .SetMethod<&RendererClientBase::AllowGuestViewElementDefinition>(
+            "allowGuestViewElementDefinition")
+        .SetMethod<&WebFrameRenderer::InsertText>("insertText")
+        .SetMethod<&WebFrameRenderer::InsertCSS>("insertCSS")
+        .SetMethod<&WebFrameRenderer::RemoveInsertedCSS>("removeInsertedCSS")
+        .SetMethod<&WebFrameRenderer::ExecuteJavaScript>("executeJavaScript")
+        .SetMethod<&WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld>(
+            "executeJavaScriptInIsolatedWorld")
+        .SetMethod<&WebFrameRenderer::GetIsolatedWorlds>("getIsolatedWorlds")
+        .SetMethod<&WebFrameRenderer::SetIsolatedWorldInfo>(
+            "setIsolatedWorldInfo")
+        .SetMethod<&WebFrameRenderer::GetResourceUsage>("getResourceUsage")
+        .SetMethod<&WebFrameRenderer::ClearCache>("clearCache")
+        .SetMethod<&WebFrameRenderer::SetSpellCheckProvider>(
+            "setSpellCheckProvider")
         // Frame navigators
-        .SetMethod("findFrameByToken", &WebFrameRenderer::FindFrameByToken)
-        .SetMethod("getFrameForSelector",
-                   &WebFrameRenderer::GetFrameForSelector)
-        .SetMethod("findFrameByName", &WebFrameRenderer::FindFrameByName)
-        .SetMethod("_findFrameByWindow", &WebFrameRenderer::FindFrameByWindow)
-        .SetProperty("frameToken", &WebFrameRenderer::GetFrameToken)
-        .SetProperty("opener", &WebFrameRenderer::GetOpener)
-        .SetProperty("parent", &WebFrameRenderer::GetFrameParent)
-        .SetProperty("top", &WebFrameRenderer::GetTop)
-        .SetProperty("firstChild", &WebFrameRenderer::GetFirstChild)
-        .SetProperty("nextSibling", &WebFrameRenderer::GetNextSibling)
+        .SetMethod<&WebFrameRenderer::FindFrameByToken>("findFrameByToken")
+        .SetMethod<&WebFrameRenderer::FindFrameByRoutingId>(
+            "findFrameByRoutingId")
+        .SetMethod<&WebFrameRenderer::GetFrameForSelector>(
+            "getFrameForSelector")
+        .SetMethod<&WebFrameRenderer::FindFrameByName>("findFrameByName")
+        .SetMethod<&WebFrameRenderer::FindFrameByWindow>("_findFrameByWindow")
+        .SetProperty<&WebFrameRenderer::GetFrameToken>("frameToken")
+        .SetProperty<&WebFrameRenderer::GetRoutingId>("routingId")
+        .SetProperty<&WebFrameRenderer::GetOpener>("opener")
+        .SetProperty<&WebFrameRenderer::GetFrameParent>("parent")
+        .SetProperty<&WebFrameRenderer::GetTop>("top")
+        .SetProperty<&WebFrameRenderer::GetFirstChild>("firstChild")
+        .SetProperty<&WebFrameRenderer::GetNextSibling>("nextSibling")
         .Build();
   }
   static const char* GetClassName() { return "WebFrame"; }
-  static gin_helper::Handle<WebFrameRenderer> New(v8::Isolate* isolate) {
-    return {};
-  }
+  static WebFrameRenderer* New(v8::Isolate* isolate) { return nullptr; }
 
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static gin::WrapperInfo kWrapperInfo;
 
-  static gin_helper::Handle<WebFrameRenderer> Create(
-      v8::Isolate* isolate,
-      content::RenderFrame* render_frame) {
-    return gin_helper::CreateHandle(isolate,
-                                    new WebFrameRenderer(render_frame));
+  static WebFrameRenderer* Create(v8::Isolate* isolate,
+                                  content::RenderFrame* render_frame) {
+    return cppgc::MakeGarbageCollected<WebFrameRenderer>(
+        isolate->GetCppHeap()->GetAllocationHandle(), render_frame);
   }
 
   explicit WebFrameRenderer(content::RenderFrame* render_frame)
@@ -409,11 +417,63 @@ class WebFrameRenderer final
     DCHECK(render_frame);
   }
 
-  const char* GetTypeName() override { return GetClassName(); }
+  // gin::Wrappable
+  const gin::WrapperInfo* wrapper_info() const override {
+    return &kWrapperInfo;
+  }
+  const char* GetHumanReadableName() const override {
+    return "Electron / WebFrameRenderer";
+  }
 
   void OnDestruct() override {}
 
+  // Deregister from the RenderFrame's observer list before cppgc reclaims this
+  // object.
+  void Dispose() { content::RenderFrameObserver::Dispose(); }
+
+  // Starts emitting 'isolated-world-created' on |wrapper| (this object) the
+  // first time something listens for it, so that frame objects nobody listens
+  // to are not wired into the observer.
+  void EnsureIsolatedWorldCreatedEvent(v8::Isolate* isolate,
+                                       v8::Local<v8::Object> wrapper) {
+    if (emits_isolated_world_created_)
+      return;
+    content::RenderFrame* render_frame;
+    std::string unused;
+    if (!MaybeGetRenderFrame(&unused, "on", &render_frame))
+      return;
+    auto* observer = ElectronRenderFrameObserver::Get(render_frame);
+    if (!observer)
+      return;
+    emits_isolated_world_created_ = true;
+    // Held for the document's lifetime, as the JavaScript listener closure
+    // that used to be registered here was.
+    auto handle = std::make_shared<v8::Global<v8::Object>>(isolate, wrapper);
+    observer->SetIsolatedWorldCreatedCallback(base::BindRepeating(
+        [](v8::Isolate* isolate, std::shared_ptr<v8::Global<v8::Object>> self,
+           int world_id) {
+          v8::HandleScope handle_scope(isolate);
+          v8::Local<v8::Object> wrapper = self->Get(isolate);
+          v8::Local<v8::Context> context;
+          if (!wrapper->GetCreationContext(isolate).ToLocal(&context))
+            return;
+          v8::MicrotasksScope microtasks_scope(
+              context, v8::MicrotasksScope::kRunMicrotasks);
+          v8::Context::Scope context_scope(context);
+          v8::TryCatch try_catch(isolate);
+          try_catch.SetVerbose(true);
+          std::array<v8::Local<v8::Value>, 1> args{
+              v8::Integer::New(isolate, world_id)};
+          gin_helper::EmitEvent(
+              isolate, wrapper,
+              gin::StringToV8(isolate, "isolated-world-created"), args);
+        },
+        base::Unretained(isolate), std::move(handle)));
+  }
+
  private:
+  bool emits_isolated_world_created_ = false;
+
   bool MaybeGetRenderFrame(v8::Isolate* isolate,
                            const std::string_view method_name,
                            content::RenderFrame** render_frame_ptr) {
@@ -443,7 +503,9 @@ class WebFrameRenderer final
     if (frame && frame->IsWebLocalFrame()) {
       auto* render_frame =
           content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame());
-      return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+      return WebFrameRenderer::Create(isolate, render_frame)
+          ->GetWrapper(isolate)
+          .ToLocalChecked();
     } else {
       return v8::Null(isolate);
     }
@@ -543,8 +605,10 @@ class WebFrameRenderer final
                              &render_frame))
       return;
 
-    blink::WebFrame* web_frame = render_frame->GetWebFrame();
-    web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
+    blink::WebView* web_view = render_frame->GetWebFrame()->View();
+    web_view->SetDefaultPageScaleLimits(min_level, max_level);
+    // See ElectronApiServiceImpl::SetVisualZoomLevelLimits.
+    web_view->SetInitialPageScaleOverride(1.f);
   }
 
   void SetSpellCheckProvider(gin_helper::ErrorThrower thrower,
@@ -553,10 +617,14 @@ class WebFrameRenderer final
                              v8::Local<v8::Object> provider) {
     auto context = isolate->GetCurrentContext();
     if (!provider->Has(context, gin::StringToV8(isolate, "spellCheck"))
-             .ToChecked()) {
+             .FromMaybe(false)) {
       thrower.ThrowError("\"spellCheck\" has to be defined");
       return;
     }
+
+    // Reading |provider| may run script that detaches the frame; do it first.
+    auto spell_check_client =
+        std::make_unique<SpellCheckClient>(language, isolate, provider);
 
     // Remove the old client.
     content::RenderFrame* render_frame;
@@ -569,8 +637,6 @@ class WebFrameRenderer final
 
     // Set spellchecker for all live frames in the same process or
     // in the sandbox mode for all live sub frames to this WebFrame.
-    auto spell_check_client =
-        std::make_unique<SpellCheckClient>(language, isolate, provider);
     FrameSetSpellChecker spell_checker(spell_check_client.get(), render_frame);
 
     // Attach the spell checker to RenderFrame.
@@ -628,16 +694,6 @@ class WebFrameRenderer final
     }
   }
 
-  bool IsEvalAllowed(v8::Isolate* isolate) {
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "isEvalAllowed", &render_frame))
-      return true;
-
-    auto* context = blink::ExecutionContext::From(
-        render_frame->GetWebFrame()->MainWorldScriptContext());
-    return !context->GetContentSecurityPolicy()->ShouldCheckEval();
-  }
-
   // webFrame.executeJavaScript(code[, userGesture][, callback])
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* const args,
                                            const std::u16string& code) {
@@ -678,7 +734,8 @@ class WebFrameRenderer final
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kAllow,
         blink::mojom::WantResultOption::kWantResult,
-        blink::mojom::PromiseResultOption::kDoNotWait);
+        blink::mojom::PromiseResultOption::kDoNotWait,
+        /*script_injector_id=*/blink::WebString());
 
     return handle;
   }
@@ -687,19 +744,20 @@ class WebFrameRenderer final
   //   worldId, scripts[, userGesture][, callback])
   v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
       gin::Arguments* const args,
-      const int world_id,
+      v8::Local<v8::Value> world_id_value,
       const std::vector<gin_helper::Dictionary>& scripts) {
     v8::Isolate* const isolate = args->isolate();
     gin_helper::Promise<v8::Local<v8::Value>> promise{isolate};
     v8::Local<v8::Promise> handle = promise.GetHandle();
 
-    content::RenderFrame* render_frame;
-    std::string error_msg;
-    if (!MaybeGetRenderFrame(&error_msg, "executeJavaScriptInIsolatedWorld",
-                             &render_frame)) {
-      promise.RejectWithErrorMessage(error_msg);
+    // Take the raw value: gin's int converter never entered this method, so a
+    // non-integer worldId resolved undefined instead of rejecting.
+    if (!world_id_value->IsInt32()) {
+      promise.Reject(v8::Exception::TypeError(v8::String::NewFromUtf8Literal(
+          isolate, "worldId must be an integer")));
       return handle;
     }
+    const int world_id = world_id_value.As<v8::Int32>()->Value();
 
     bool has_user_gesture = false;
     if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsBoolean()) {
@@ -735,6 +793,15 @@ class WebFrameRenderer final
                            blink::WebURL(GURL(url)));
     }
 
+    // Only now: the |scripts| getters above may have detached the frame.
+    content::RenderFrame* render_frame;
+    std::string error_msg;
+    if (!MaybeGetRenderFrame(&error_msg, "executeJavaScriptInIsolatedWorld",
+                             &render_frame)) {
+      promise.RejectWithErrorMessage(error_msg);
+      return handle;
+    }
+
     // Deletes itself.
     auto* self = new ScriptExecutionCallback(std::move(promise),
                                              std::move(completion_callback));
@@ -750,9 +817,19 @@ class WebFrameRenderer final
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
         blink::mojom::WantResultOption::kWantResult,
-        blink::mojom::PromiseResultOption::kDoNotWait);
+        blink::mojom::PromiseResultOption::kDoNotWait,
+        /*script_injector_id=*/blink::WebString());
 
     return handle;
+  }
+
+  std::vector<int> GetIsolatedWorlds(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "getIsolatedWorlds", &render_frame))
+      return {};
+
+    auto* observer = ElectronRenderFrameObserver::Get(render_frame);
+    return observer ? observer->GetIsolatedWorlds() : std::vector<int>{};
   }
 
   void SetIsolatedWorldInfo(v8::Isolate* isolate,
@@ -830,7 +907,9 @@ class WebFrameRenderer final
     content::RenderFrame* render_frame =
         content::RenderFrame::FromWebFrame(web_frame);
     if (render_frame)
-      return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+      return WebFrameRenderer::Create(isolate, render_frame)
+          ->GetWrapper(isolate)
+          .ToLocalChecked();
     else
       return v8::Null(isolate);
   }
@@ -851,7 +930,59 @@ class WebFrameRenderer final
     DCHECK(parent_frame);
     DCHECK(parent_frame->IsWebLocalFrame());
 
-    return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+    return WebFrameRenderer::Create(isolate, render_frame)
+        ->GetWrapper(isolate)
+        .ToLocalChecked();
+  }
+
+  // Deprecated: the browser keeps the routing ID mapping.
+  int GetRoutingId(v8::Isolate* isolate) {
+    static bool warned = false;
+    if (!warned) {
+      warned = true;
+      electron::util::EmitDeprecationWarning(
+          isolate,
+          "webFrame.routingId is deprecated. Use webFrame.frameToken instead.",
+          "electron");
+    }
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "routingId", &render_frame))
+      return 0;
+    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility> utility;
+    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(&utility);
+    int32_t routing_id = 0;
+    utility->GetFrameRoutingIdDeprecated(
+        render_frame->GetWebFrame()->GetLocalFrameToken(), &routing_id);
+    return routing_id;
+  }
+
+  v8::Local<v8::Value> FindFrameByRoutingId(v8::Isolate* isolate,
+                                            int routing_id) {
+    static bool warned = false;
+    if (!warned) {
+      warned = true;
+      electron::util::EmitDeprecationWarning(
+          isolate,
+          "webFrame.findFrameByRoutingId is deprecated. Use "
+          "webFrame.findFrameByToken instead.",
+          "electron");
+    }
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "findFrameByRoutingId", &render_frame))
+      return v8::Null(isolate);
+    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility> utility;
+    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(&utility);
+    std::optional<blink::LocalFrameToken> token;
+    utility->GetFrameTokenDeprecated(routing_id, &token);
+    blink::WebLocalFrame* web_frame =
+        token ? blink::WebLocalFrame::FromFrameToken(*token) : nullptr;
+    content::RenderFrame* found =
+        web_frame ? content::RenderFrame::FromWebFrame(web_frame) : nullptr;
+    if (!found)
+      return v8::Null(isolate);
+    return WebFrameRenderer::Create(isolate, found)
+        ->GetWrapper(isolate)
+        .ToLocalChecked();
   }
 
   std::string GetFrameToken(v8::Isolate* isolate) {
@@ -941,14 +1072,78 @@ class WebFrameRenderer final
 };
 }  // namespace
 
-gin::DeprecatedWrapperInfo WebFrameRenderer::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo WebFrameRenderer::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronWebFrameRenderer);
 
 }  // namespace api
 
 }  // namespace electron
 
 namespace {
+
+// WebFrame.prototype.on() and friends: register for 'isolated-world-created'
+// on first use, then defer to the EventEmitter.prototype method of the same
+// name, which is |data|.
+void ListenHook(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  using electron::api::WebFrameRenderer;
+  v8::Isolate* isolate = info.GetIsolate();
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Object> self;
+  if (!info.This()->ToObject(context).ToLocal(&self))
+    return;
+  if (info.Length() > 0 && info[0]->IsString() &&
+      gin::V8ToString(isolate, info[0]) == "isolated-world-created") {
+    WebFrameRenderer* frame = nullptr;
+    if (gin::ConvertFromV8(isolate, self, &frame) && frame)
+      frame->EnsureIsolatedWorldCreatedEvent(isolate, self);
+  }
+  v8::Local<v8::Function> method =
+      info.DataV2().As<v8::Value>().As<v8::Function>();
+  v8::LocalVector<v8::Value> args(isolate);
+  for (int i = 0; i < info.Length(); ++i)
+    args.push_back(info[i]);
+  v8::Local<v8::Value> result;
+  if (method->Call(context, self, static_cast<int>(args.size()), args.data())
+          .ToLocal(&result)) {
+    info.GetReturnValue().Set(result);
+  }
+}
+
+// Makes WebFrame an EventEmitter subclass in |context|.
+void MakeEventEmitter(v8::Local<v8::Context> context,
+                      v8::Local<v8::Function> constructor) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Value> proto_value;
+  if (!constructor->Get(context, gin::StringToSymbol(isolate, "prototype"))
+           .ToLocal(&proto_value) ||
+      !proto_value->IsObject()) {
+    return;
+  }
+  v8::Local<v8::Object> proto = proto_value.As<v8::Object>();
+  v8::Local<v8::Function> emitter =
+      gin_helper::GetNodeEventEmitterConstructor(context);
+  v8::Local<v8::Value> emitter_proto =
+      emitter->Get(context, gin::StringToSymbol(isolate, "prototype"))
+          .ToLocalChecked();
+  // Already done for this context (the templates are cached per context).
+  v8::Local<v8::Value> current = proto->GetPrototype();
+  if (current == emitter_proto)
+    return;
+  proto->SetPrototype(context, emitter_proto).Check();
+  for (const char* name : {"on", "addListener", "once", "prependListener",
+                           "prependOnceListener"}) {
+    v8::Local<v8::String> key = gin::StringToSymbol(isolate, name);
+    v8::Local<v8::Value> method;
+    CHECK(emitter_proto.As<v8::Object>()->Get(context, key).ToLocal(&method) &&
+          method->IsFunction());
+    v8::Local<v8::Function> hook =
+        v8::Function::New(context, ListenHook, method, 2,
+                          v8::ConstructorBehavior::kThrow)
+            .ToLocalChecked();
+    hook->SetName(key);
+    proto->Set(context, key, hook).Check();
+  }
+}
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -958,7 +1153,10 @@ void Initialize(v8::Local<v8::Object> exports,
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("WebFrame", WebFrameRenderer::GetConstructor(isolate, context));
+  v8::Local<v8::Function> constructor = WebFrameRenderer::GetConstructor(
+      isolate, context, &WebFrameRenderer::kWrapperInfo);
+  MakeEventEmitter(context, constructor);
+  dict.Set("WebFrame", constructor);
   dict.Set("mainFrame",
            WebFrameRenderer::Create(
                isolate, electron::GetRenderFrame(isolate, exports)));

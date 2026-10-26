@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ryan Fitzgerald <rf-figma@electronjs.org>
+Date: Wed, 19 Aug 2026 12:03:14 -0700
+Subject: Remove `CR_XCODE_BUILD` define from `BUILD.gn`
+
+This makes everything in the RBE cache depend on the current version of
+Xcode, which causes pointless cache misses in development.
+
+There's an open Chromium issue to fix this: https://issues.chromium.org/issues/514632432
+
+diff --git a/build/config/mac/BUILD.gn b/build/config/mac/BUILD.gn
+index 7114fd817a76ecaf095712f96c2cfdd662ce1e93..4c161338026b7a426493c4e25c2af41df7338669 100644
+--- a/build/config/mac/BUILD.gn
++++ b/build/config/mac/BUILD.gn
+@@ -26,11 +26,6 @@ config("compiler") {
+     }
+   }
+ 
+-  # This is here so that all files get recompiled after an Xcode update.
+-  # (defines are passed via the command line, and build system rebuild things
+-  # when their commandline changes). Nothing should ever read this define.
+-  defines = [ "CR_XCODE_BUILD=$xcode_build" ]
+-
+   asmflags = common_mac_flags
+   cflags = common_mac_flags
+ 

@@ -23,29 +23,19 @@
 #include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
-#include "content/browser/web_contents/web_contents_view.h"  // nogncheck
-#include "shell/browser/osr/osr_host_display_client.h"
-#include "shell/browser/osr/osr_video_consumer.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/common/page/content_to_visible_time_request.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
 #include "ui/compositor/compositor.h"
-#include "ui/compositor/layer_delegate.h"
-#include "ui/compositor/layer_owner.h"
-#include "ui/gfx/geometry/point.h"
 
 #include "components/viz/host/host_display_client.h"
-
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/window_impl.h"
-#endif
 
 class SkBitmap;
 
 namespace gfx {
-class Point;
 class PointF;
 class Rect;
 }  // namespace gfx
@@ -56,10 +46,9 @@ class CursorManager;
 
 namespace electron {
 
-class ElectronBeginFrameTimer;
-class ElectronCopyFrameGenerator;
 class ElectronDelegatedFrameHostClient;
 class OffScreenHostDisplayClient;
+class OffScreenVideoConsumer;
 
 using OnPopupPaintCallback = base::RepeatingCallback<void(const gfx::Rect&)>;
 
@@ -96,11 +85,9 @@ class OffScreenRenderWidgetHostView
   ui::TextInputClient* GetTextInputClient() override;
   void Focus() override {}
   bool HasFocus() override;
-  uint32_t GetCaptureSequenceNumber() const override;
   bool IsSurfaceAvailableForCopy() override;
   void Hide() override;
   bool IsShowing() override;
-  void EnsureSurfaceSynchronizedForWebTest() override;
   gfx::Rect GetViewBounds() override;
   gfx::Size GetVisibleViewportSize() override;
   void SetInsets(const gfx::Insets&) override {}
@@ -142,18 +129,19 @@ class OffScreenRenderWidgetHostView
   void ImeCancelComposition() override {}
   void RenderProcessGone() override;
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
-  void Destroy() override;
+  void DestroyImpl() override;
   void UpdateTooltipUnderCursor(const std::u16string&) override {}
   void OnUnconfirmedTapConvertedToTap() override {}
   input::CursorManager* GetCursorManager() override;
-  void CopyFromSurface(
+  void CopyFromSurfaceImpl(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
+      bool is_copy_request_secure,
       base::TimeDelta timeout,
       base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback)
       override;
   void TransformPointToRootSurface(gfx::PointF* point) override {}
-  gfx::Rect GetBoundsInRootWindow() override;
+  gfx::Rect GetBoundsInScreen() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
   void DisableDisplayFeatureOverrideForEmulation() override {}
   void OverrideDisplayFeatureForEmulation(
@@ -174,11 +162,6 @@ class OffScreenRenderWidgetHostView
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
   display::ScreenInfos GetNewScreenInfosForUpdate() override;
-
-  content::RenderWidgetHostViewBase* CreateViewForWidget(
-      content::RenderWidgetHost*,
-      content::RenderWidgetHost*,
-      content::WebContentsView*);
 
   const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
   const viz::FrameSinkId& GetFrameSinkId() const override;
@@ -207,10 +190,7 @@ class OffScreenRenderWidgetHostView
   bool InstallTransparency();
 
   void CancelWidget();
-  void AddGuestHostView(OffScreenRenderWidgetHostView* guest_host);
-  void RemoveGuestHostView(OffScreenRenderWidgetHostView* guest_host);
   void AddViewProxy(OffscreenViewProxy* proxy);
-  void RemoveViewProxy(OffscreenViewProxy* proxy);
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
   void OnPaint(const gfx::Rect& damage_rect,
@@ -250,7 +230,7 @@ class OffScreenRenderWidgetHostView
     return offscreen_shared_texture_pixel_format_;
   }
 
-  ui::Layer* root_layer() const { return root_layer_.get(); }
+  ui::LayerSurface* root_layer() const { return root_layer_.get(); }
 
   content::DelegatedFrameHost* delegated_frame_host() const {
     return delegated_frame_host_.get();
@@ -274,6 +254,9 @@ class OffScreenRenderWidgetHostView
   }
 
  private:
+  // content::RenderWidgetHostViewBase:
+  void CleanUpHostObservers() override;
+
   void ReleaseCompositor();
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
@@ -290,7 +273,6 @@ class OffScreenRenderWidgetHostView
   raw_ptr<OffScreenRenderWidgetHostView> parent_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> popup_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> child_host_view_ = nullptr;
-  absl::flat_hash_set<OffScreenRenderWidgetHostView*> guest_host_views_;
   absl::flat_hash_set<OffscreenViewProxy*> proxy_views_;
 
   const bool transparent_;
@@ -320,7 +302,7 @@ class OffScreenRenderWidgetHostView
   viz::LocalSurfaceId compositor_surface_id_;
   viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
-  std::unique_ptr<ui::Layer> root_layer_;
+  std::unique_ptr<ui::LayerSurface> root_layer_;
 
   // depends-on: root_layer_
   std::unique_ptr<ui::Compositor> compositor_;
@@ -338,11 +320,6 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
-
-  // Latest capture sequence number which is incremented when the caller
-  // requests surfaces be synchronized via
-  // EnsureSurfaceSynchronizedForWebTest().
-  uint32_t latest_capture_sequence_number_ = 0u;
 
   SkColor background_color_ = SkColor();
 

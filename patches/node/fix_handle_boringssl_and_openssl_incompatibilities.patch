@@ -3,101 +3,21 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Wed, 12 Feb 2020 15:08:04 -0800
 Subject: fix: handle BoringSSL and OpenSSL incompatibilities
 
-This patch corrects for imcompatibilities between OpenSSL, which Node.js uses,
-and BoringSSL which Electron uses via Chromium. Each incompatibility typically has
-~2 paths forward:
-* Upstream a shim or adapted implementation to BoringSSL
-* Alter Node.js functionality to something which both libraries can handle.
+This patch corrects for incompatibilities between OpenSSL, which Node.js
+uses, and BoringSSL, which Electron uses via Chromium.
 
-Where possible, we should seek to make this patch as minimal as possible.
+BoringSSL's sk_*_num() and EVP_MD_size() return size_t where OpenSSL
+returns int, so code that hard codes int for these values does not build
+cleanly against BoringSSL.
 
-Upstreams:
-- https://github.com/nodejs/node/pull/39054
-- https://github.com/nodejs/node/pull/39138
-- https://github.com/nodejs/node/pull/39136
+This is a backport of https://github.com/nodejs/node/pull/66752, which
+switches those call sites to ncrypto's OPENSSL_SIZE_T (size_t under
+BoringSSL, int under OpenSSL). The hunks are kept identical to upstream,
+so this patch can be removed once Electron updates to a Node.js version
+that includes that change.
 
-diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 3e3e8d4720a45650c0699f0106a3cdb2fd49e9ca..7de5d24b008f3da6265e84161ca59b9448b86f3b 100644
---- a/deps/ncrypto/ncrypto.cc
-+++ b/deps/ncrypto/ncrypto.cc
-@@ -11,6 +11,7 @@
- #include <array>
- #include <cstring>
- #include <string_view>
-+#include <vector>
- #if OPENSSL_VERSION_MAJOR >= 3
- #include <openssl/core_names.h>
- #include <openssl/params.h>
-@@ -3103,9 +3104,11 @@ const Cipher Cipher::AES_256_GCM = Cipher::FromNid(NID_aes_256_gcm);
- const Cipher Cipher::AES_128_KW = Cipher::FromNid(NID_id_aes128_wrap);
- const Cipher Cipher::AES_192_KW = Cipher::FromNid(NID_id_aes192_wrap);
- const Cipher Cipher::AES_256_KW = Cipher::FromNid(NID_id_aes256_wrap);
-+#ifndef OPENSSL_IS_BORINGSSL
- const Cipher Cipher::AES_128_OCB = Cipher::FromNid(NID_aes_128_ocb);
- const Cipher Cipher::AES_192_OCB = Cipher::FromNid(NID_aes_192_ocb);
- const Cipher Cipher::AES_256_OCB = Cipher::FromNid(NID_aes_256_ocb);
-+#endif
- const Cipher Cipher::CHACHA20_POLY1305 = Cipher::FromNid(NID_chacha20_poly1305);
- 
- bool Cipher::isGcmMode() const {
-diff --git a/deps/ncrypto/ncrypto.h b/deps/ncrypto/ncrypto.h
-index 4f86702da88267ded46d33a943a80ae3c2e17fa6..854c29f27f95634b96780b4750d23986d6ba522f 100644
---- a/deps/ncrypto/ncrypto.h
-+++ b/deps/ncrypto/ncrypto.h
-@@ -309,9 +309,13 @@ class Cipher final {
- #else
-   static constexpr size_t MAX_AUTH_TAG_LENGTH = 16;
- #endif
--  static_assert(EVP_GCM_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH &&
--                EVP_CCM_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH &&
--                EVP_CHACHAPOLY_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH);
-+  static_assert(EVP_GCM_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH
-+#ifndef OPENSSL_IS_BORINGSSL
-+                && EVP_CCM_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH
-+                && EVP_CHACHAPOLY_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH);
-+#else
-+                );
-+#endif
- 
-   Cipher() = default;
-   Cipher(const EVP_CIPHER* cipher) : cipher_(cipher) {}
-diff --git a/node.gni b/node.gni
-index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..8239967653fee7791800ee3292e77b91bffaaef9 100644
---- a/node.gni
-+++ b/node.gni
-@@ -11,7 +11,7 @@ declare_args() {
-   node_v8_path = "//v8"
- 
-   # The location of OpenSSL - use the one from node's deps by default.
--  node_openssl_path = "$node_path/deps/openssl"
-+  node_openssl_path = "//third_party/boringssl"
- 
-   # The location of simdutf - use the one from node's deps by default.
-   node_simdutf_path = "//third_party/simdutf"
-diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index ed509e5c9fe79c5d545180fef0fea9ab6f1ba39b..9446314c95e57ea408568d107a9f6e76886650cb 100644
---- a/src/crypto/crypto_cipher.cc
-+++ b/src/crypto/crypto_cipher.cc
-@@ -447,6 +447,7 @@ bool CipherBase::InitAuthenticated(const char* cipher_type,
-     }
-   } else {
-     if (auth_tag_len == kNoAuthTagLength) {
-+#ifndef OPENSSL_IS_BORINGSSL
-       // We treat ChaCha20-Poly1305 specially. Like GCM, the authentication tag
-       // length defaults to 16 bytes when encrypting. Unlike GCM, the
-       // authentication tag length also defaults to 16 bytes when decrypting,
-@@ -458,6 +459,9 @@ bool CipherBase::InitAuthenticated(const char* cipher_type,
-           env(), "authTagLength required for %s", cipher_type);
-         return false;
-       }
-+#else
-+      return false;
-+#endif
-     }
- 
-     // TODO(tniessen) Support CCM decryption in FIPS mode
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bbac5c47b8f 100644
+index ea0747511a107c96befd2dae1d7bd56759dd95b6..ad056b5610bc8f0db2137402cecc07e18ff0cd09 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -90,7 +90,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
@@ -105,7 +25,7 @@ index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bba
    if (cert && !sk_X509_push(peer_certs.get(), cert.release()))
      return StackOfX509();
 -  for (int i = 0; i < sk_X509_num(ssl_certs); i++) {
-+  for (size_t i = 0; i < sk_X509_num(ssl_certs); i++) {
++  for (OPENSSL_SIZE_T i = 0; i < sk_X509_num(ssl_certs); i++) {
      X509Pointer cert(X509_dup(sk_X509_value(ssl_certs, i)));
      if (!cert || !sk_X509_push(peer_certs.get(), cert.get()))
        return StackOfX509();
@@ -114,180 +34,56 @@ index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bba
    cert->reset(sk_X509_delete(peer_certs.get(), 0));
    for (;;) {
 -    int i;
-+    size_t i;
++    OPENSSL_SIZE_T i;
      for (i = 0; i < sk_X509_num(peer_certs.get()); i++) {
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 980b7fafb3144b1db0ff26dc157e0f08633c3c9e..cb586936a904e7b9a017732e993a35ef1115ff9a 100644
+index 71debb0805b62deba0b941fc7679b08a9c41d542..0b7ebcebadf11023e0cfad105f53518ff31e09e1 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -143,7 +143,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -175,7 +175,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
 -    for (int i = 0; i < sk_X509_num(extra_certs); i++) {
-+    for (size_t i = 0; i < sk_X509_num(extra_certs); i++) {
++    for (OPENSSL_SIZE_T i = 0; i < sk_X509_num(extra_certs); i++) {
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1855,11 +1855,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
-   // If the user specified "auto" for dhparams, the JavaScript layer will pass
-   // true to this function instead of the original string. Any other string
-   // value will be interpreted as custom DH parameters below.
-+#ifndef OPENSSL_IS_BORINGSSL
-   if (args[0]->IsTrue()) {
-     CHECK(SSL_CTX_set_dh_auto(sc->ctx_.get(), true));
-     return;
-   }
--
-+#endif
-   DHPointer dh;
-   {
-     BIOPointer bio(LoadBIO(env, args[0]));
-@@ -2085,7 +2086,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2618,7 +2618,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
 -  for (int i = 0; i < sk_X509_num(extra_certs.get()); i++) {
-+  for (size_t i = 0; i < sk_X509_num(extra_certs.get()); i++) {
++  for (OPENSSL_SIZE_T i = 0; i < sk_X509_num(extra_certs.get()); i++) {
      X509* ca = sk_X509_value(extra_certs.get(), i);
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
-diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index e35fda9ad2e8c52c75492d66566dc6e6c57dd2ae..46a7d1396dc1a175ae99f4e403721f1730fdd320 100644
---- a/src/crypto/crypto_dh.cc
-+++ b/src/crypto/crypto_dh.cc
-@@ -309,15 +309,17 @@ void ComputeSecret(const FunctionCallbackInfo<Value>& args) {
-   BignumPointer key(key_buf.data(), key_buf.size());
- 
-   switch (dh.checkPublicKey(key)) {
--    case DHPointer::CheckPublicKeyResult::INVALID:
--      // Fall-through
-     case DHPointer::CheckPublicKeyResult::CHECK_FAILED:
-       return THROW_ERR_CRYPTO_INVALID_KEYTYPE(env,
-                                               "Unspecified validation error");
-+#ifndef OPENSSL_IS_BORINGSSL
-     case DHPointer::CheckPublicKeyResult::TOO_SMALL:
-       return THROW_ERR_CRYPTO_INVALID_KEYLEN(env, "Supplied key is too small");
-     case DHPointer::CheckPublicKeyResult::TOO_LARGE:
-       return THROW_ERR_CRYPTO_INVALID_KEYLEN(env, "Supplied key is too large");
-+#endif
-+    case DHPointer::CheckPublicKeyResult::INVALID:
-+      return THROW_ERR_CRYPTO_INVALID_KEYTYPE(env, "Supplied key is invalid");
-     case DHPointer::CheckPublicKeyResult::NONE:
-       break;
-   }
 diff --git a/src/crypto/crypto_hash.cc b/src/crypto/crypto_hash.cc
-index 33cde71b105c7cf22b559583d2e46bfb50016f6d..659910992dff7c05bb7e367e1cba14256b46dea4 100644
+index 2cf971347b9ea98bf76a8d277a46d7a6842efda6..9391b884e18557815365e0b3c2442e364543ddd0 100644
 --- a/src/crypto/crypto_hash.cc
 +++ b/src/crypto/crypto_hash.cc
-@@ -232,7 +232,7 @@ void Hash::OneShotDigest(const FunctionCallbackInfo<Value>& args) {
+@@ -380,7 +380,7 @@ void OneShotDigestWithMD(Environment* env,
    enum encoding output_enc = ParseEncoding(isolate, args[4], args[5], HEX);
  
    bool is_xof = (EVP_MD_flags(md) & EVP_MD_FLAG_XOF) != 0;
 -  int output_length = EVP_MD_size(md);
-+  size_t output_length = EVP_MD_size(md);
++  OPENSSL_SIZE_T output_length = EVP_MD_size(md);
  
    // This is to cause hash() to fail when an incorrect
    // outputLength option was passed for a non-XOF hash function.
-diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index c05872d73f6fc21cf362928559f3b232a907238d..8efe004ce88ae4d798a24504d47073b331f6525f 100644
---- a/src/crypto/crypto_keys.cc
-+++ b/src/crypto/crypto_keys.cc
-@@ -1225,6 +1225,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
- }
+diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
+index 8e6d934d22077b5f4efc21366fbfcc09fca95ee9..912e07c911c86e23a35e395d720376b3d269bca0 100644
+--- a/src/crypto/crypto_x509.cc
++++ b/src/crypto/crypto_x509.cc
+@@ -1041,7 +1041,8 @@ MaybeLocal<Object> X509Certificate::NewWithIssuers(
+   }
  
- bool KeyObjectHandle::CheckEcKeyData() const {
-+#ifndef OPENSSL_IS_BORINGSSL
-   MarkPopErrorOnReturn mark_pop_error_on_return;
- 
-   const auto& key = data_.GetAsymmetricKey();
-@@ -1234,6 +1235,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
- 
-   return data_.GetKeyType() == kKeyTypePrivate ? ctx.privateCheck()
-                                                : ctx.publicCheck();
-+#else
-+  return true;
-+#endif
- }
- 
- void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
-diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 3435e43b3baa0c188b984fa1905c6a8614c77de3..a2fa1132c47d8cc4b875396c6cbaa9db6fe20262 100644
---- a/src/crypto/crypto_util.cc
-+++ b/src/crypto/crypto_util.cc
-@@ -533,24 +533,15 @@ Maybe<void> Decorate(Environment* env,
-     V(BIO)                                                                    \
-     V(PKCS7)                                                                  \
-     V(X509V3)                                                                 \
--    V(PKCS12)                                                                 \
-     V(RAND)                                                                   \
--    V(DSO)                                                                    \
-     V(ENGINE)                                                                 \
-     V(OCSP)                                                                   \
-     V(UI)                                                                     \
-     V(COMP)                                                                   \
-     V(ECDSA)                                                                  \
-     V(ECDH)                                                                   \
--    V(OSSL_STORE)                                                             \
--    V(FIPS)                                                                   \
--    V(CMS)                                                                    \
--    V(TS)                                                                     \
-     V(HMAC)                                                                   \
--    V(CT)                                                                     \
--    V(ASYNC)                                                                  \
--    V(KDF)                                                                    \
--    V(SM2)                                                                    \
-+    V(HKDF)                                                                    \
-     V(USER)                                                                   \
- 
- #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-diff --git a/src/env.h b/src/env.h
-index 3ab33341806ad6c0b06b982a30a57b7b5399e38f..754ddf7b331465c56081db05d6fd2a45fe50596a 100644
---- a/src/env.h
-+++ b/src/env.h
-@@ -52,7 +52,7 @@
- #include "v8-profiler.h"
- #include "v8.h"
- 
--#if HAVE_OPENSSL
-+#if HAVE_OPENSSL && OPENSSL_VERSION_MAJOR >= 3
- #include <openssl/evp.h>
- #endif
- 
-@@ -1059,7 +1059,7 @@ class Environment final : public MemoryRetainer {
-     kExitInfoFieldCount
-   };
- 
--#if HAVE_OPENSSL
-+#if HAVE_OPENSSL// && !defined(OPENSSL_IS_BORINGSSL)
- #if OPENSSL_VERSION_MAJOR >= 3
-   // We declare another alias here to avoid having to include crypto_util.h
-   using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
-diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 7f6268a1d83d3182b318bc95fd2ee119a2df8dea..f2ee335aa98a2465f63dafa33664197acc6f79b1 100644
---- a/src/node_metadata.h
-+++ b/src/node_metadata.h
-@@ -8,7 +8,7 @@
- #include <utility>
- #include "node_version.h"
- 
--#if HAVE_OPENSSL
-+#if 0
- #include <openssl/crypto.h>
- #if NODE_OPENSSL_HAS_QUIC
- #include <openssl/quic.h>
-diff --git a/src/node_options.h b/src/node_options.h
-index 887ead81d4b8bd55351091c06ed641c6a87b8419..6d4df44ccc06c3278948879a2430ab6f459cbec4 100644
---- a/src/node_options.h
-+++ b/src/node_options.h
-@@ -11,7 +11,7 @@
- #include "node_mutex.h"
- #include "util.h"
- 
--#if HAVE_OPENSSL
-+#if 0
- #include "openssl/opensslv.h"
- #endif
- 
+   Local<Object> issuer;
+-  if (issuer_chain != nullptr && start < sk_X509_num(issuer_chain)) {
++  if (issuer_chain != nullptr &&
++      static_cast<OPENSSL_SIZE_T>(start) < sk_X509_num(issuer_chain)) {
+     X509Pointer issuer_cert =
+         X509View(sk_X509_value(issuer_chain, start)).clone();
+     if (!issuer_cert) [[unlikely]] {

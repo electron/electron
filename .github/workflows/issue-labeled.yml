@@ -64,7 +64,7 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -eo pipefail
-          COMMENT_COUNT=$(gh issue view "$ISSUE_NUMBER" --comments --json comments | jq '[ .comments[] | select(.author.login == "electron-issue-triage" or .authorAssociation == "OWNER" or .authorAssociation == "MEMBER") | select(.body | startswith("<!-- blocked/need-repro -->")) ] | length')
+          COMMENT_COUNT=$(gh issue view "$ISSUE_NUMBER" --json comments | jq '[ .comments[] | select(.author.login == "electron-issue-triage" or .authorAssociation == "OWNER" or .authorAssociation == "MEMBER") | select(.body | startswith("<!-- blocked/need-repro -->")) ] | length')
           if [[ $COMMENT_COUNT -eq 0 ]]; then
             echo "SHOULD_COMMENT=1" >> "$GITHUB_OUTPUT"
           fi
@@ -80,11 +80,12 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           GH_REPO: electron/electron
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body-file - <<'EOF'
+          gh issue comment "$ISSUE_NUMBER" --body-file - <<EOF
           <!-- blocked/need-repro -->
 
-          Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
+          Hello @${ISSUE_AUTHOR}. Thanks for reporting this and helping to make Electron better!
 
           Would it be possible for you to make a standalone testcase with only the code necessary to reproduce the issue? For example, [Electron Fiddle](https://www.electronjs.org/fiddle) is a great tool for making small test cases and makes it easy to publish your test case to a [gist](https://gist.github.com) that Electron maintainers can use.
 

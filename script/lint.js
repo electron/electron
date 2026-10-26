@@ -116,13 +116,11 @@ const LINTERS = [
     roots: ['shell'],
     test: (filename) => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
     run: (opts, filenames) => {
-      const env = {
-        ...getDepotToolsEnv(),
-        CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
-      };
       const clangFormatFlags = opts.fix ? ['--fix'] : [];
       for (const chunk of chunkFilenames(filenames)) {
-        spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk], { env });
+        spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk], {
+          env: getDepotToolsEnv()
+        });
         cpplint([`--filter=${CPPLINT_FILTERS.join(',')}`, ...chunk]);
       }
     }
@@ -132,13 +130,9 @@ const LINTERS = [
     roots: ['shell'],
     test: (filename) => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
     run: (opts, filenames) => {
-      const env = {
-        ...getDepotToolsEnv(),
-        CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
-      };
       const clangFormatFlags = opts.fix ? ['--fix'] : [];
       spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames], {
-        env
+        env: getDepotToolsEnv()
       });
       const filter = [...CPPLINT_FILTERS, '-readability/braces'];
       cpplint(['--extensions=mm,h', `--filter=${filter.join(',')}`, ...filenames]);
@@ -156,8 +150,14 @@ const LINTERS = [
   {
     key: 'javascript',
     roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
-    ignoreRoots: ['.github/workflows/node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
-    test: (filename) => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
+    ignoreRoots: [
+      '.github/workflows/node_modules',
+      'script/pgo/node_modules',
+      'spec/node_modules',
+      'spec/fixtures/native-addon'
+    ],
+    test: (filename) =>
+      filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs') || filename.endsWith('.mts'),
     run: async (opts, filenames) => {
       const clean = runOxlint(filenames, { fix: opts.fix });
       if (!clean) {
@@ -174,9 +174,8 @@ const LINTERS = [
       const allOk = filenames
         .map((filename) => {
           const env = {
-            ...getDepotToolsEnv(),
-            CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
-            DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
+            DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+            ...getDepotToolsEnv()
           };
           const args = ['format', filename];
           if (!opts.fix) args.push('--dry-run');
@@ -227,7 +226,8 @@ const LINTERS = [
         }
 
         // Read the patch list
-        const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
+        const patchList = fs.readFileSync(dotPatchesPath, 'utf8').trim();
+        const patchFileList = patchList ? patchList.split('\n') : [];
         const patchFileSet = new Set(patchFileList);
         patchFileList.reduce((seen, file) => {
           if (seen.has(file)) {
@@ -305,6 +305,7 @@ const LINTERS = [
       '.git',
       '.github/workflows/node_modules',
       'node_modules',
+      'script/pgo/node_modules',
       'spec/node_modules',
       'spec/fixtures/native-addon'
     ],
@@ -570,7 +571,7 @@ async function findFiles(args, linter) {
 
   for (const ignoreRoot of linter.ignoreRoots || []) {
     const ignorePath = path.join(ELECTRON_ROOT, ignoreRoot);
-    if (!fs.existsSync(ignorePath)) continue;
+    if (!fs.existsSync(ignorePath) || !fs.statSync(ignorePath).isDirectory()) continue;
 
     const ignoreFiles = new Set(await findMatchingFiles(ignorePath, linter.test));
     filenames = filenames.filter((fileName) => !ignoreFiles.has(fileName));

@@ -24,9 +24,14 @@ void SavePageHandler::OnDownloadCreated(content::DownloadManager* manager,
   item->AddObserver(this);
 }
 
-bool SavePageHandler::Handle(const base::FilePath& full_path,
+void SavePageHandler::Handle(const base::FilePath& full_path,
                              const content::SavePageType& save_type,
-                             content::WebContents* web_contents) {
+                             base::WeakPtr<content::WebContents> web_contents) {
+  if (!web_contents) {
+    promise_.RejectWithErrorMessage("Failed to save the page");
+    delete this;
+    return;
+  }
   auto* download_manager =
       web_contents->GetBrowserContext()->GetDownloadManager();
   download_manager->AddObserver(this);
@@ -44,7 +49,6 @@ bool SavePageHandler::Handle(const base::FilePath& full_path,
     promise_.RejectWithErrorMessage("Failed to save the page");
     delete this;
   }
-  return result;
 }
 
 void SavePageHandler::OnDownloadUpdated(download::DownloadItem* item) {

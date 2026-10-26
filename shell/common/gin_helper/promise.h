@@ -5,13 +5,11 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 
-#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/task/task_runner.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -45,10 +43,6 @@ class PromiseBase {
   PromiseBase(PromiseBase&&);
   PromiseBase& operator=(PromiseBase&&);
 
-  // Helper for rejecting promise with error message.
-  static void RejectPromise(PromiseBase&& promise, std::string_view errmsg);
-
-  v8::Maybe<bool> Reject();
   v8::Maybe<bool> Reject(v8::Local<v8::Value> except);
   v8::Maybe<bool> RejectWithErrorMessage(std::string_view message);
   v8::Maybe<bool> Resolve();
@@ -75,7 +69,7 @@ class PromiseBase {
   v8::Local<v8::Context> GetContext() const;
   v8::Local<v8::Promise> GetHandle() const;
 
-  v8::Isolate* isolate() const { return isolate_; }
+  v8::Isolate* isolate() const { return v8::Isolate::TryGetCurrent(); }
 
  protected:
   static scoped_refptr<base::TaskRunner> GetTaskRunner();
@@ -87,17 +81,18 @@ class PromiseBase {
   v8::Maybe<bool> ResolveWith(v8::Local<v8::Value> value);
 
   struct SettleScope {
+    CPPGC_STACK_ALLOCATED();
+
+   public:
     explicit SettleScope(const PromiseBase& base);
     ~SettleScope();
 
-    const raw_ptr<v8::Isolate> isolate_;
     v8::HandleScope handle_scope_;
     v8::Local<v8::Context> context_;
     v8::MicrotasksScope microtasks_scope_;
     v8::Context::Scope context_scope_;
   };
 
-  raw_ptr<v8::Isolate> isolate_;
   cppgc::Persistent<PromiseHandle> handle_;
 };
 

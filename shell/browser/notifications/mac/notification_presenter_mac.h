@@ -6,7 +6,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_PRESENTER_MAC_H_
 #define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_PRESENTER_MAC_H_
 
-#include "chrome/common/notifications/notification_image_retainer.h"
 #include "shell/browser/notifications/mac/notification_center_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 
@@ -27,11 +26,11 @@ class NotificationPresenterMac : public NotificationPresenter {
   // NotificationPresenter
   void GetDeliveredNotifications(
       GetDeliveredNotificationsCallback callback) override;
-
-  NotificationImageRetainer* image_retainer() { return image_retainer_.get(); }
-  scoped_refptr<base::SequencedTaskRunner> image_task_runner() {
-    return image_task_runner_;
-  }
+  void RemoveDeliveredNotifications(
+      const std::vector<std::string>& identifiers) override;
+  void RemoveAllDeliveredNotifications() override;
+  void RemoveDeliveredNotificationsByGroupId(
+      const std::string& group_id) override;
 
  private:
   // NotificationPresenter
@@ -39,8 +38,6 @@ class NotificationPresenterMac : public NotificationPresenter {
       NotificationDelegate* delegate) override;
 
   NotificationCenterDelegate* __strong notification_center_delegate_;
-  std::unique_ptr<NotificationImageRetainer> image_retainer_;
-  scoped_refptr<base::SequencedTaskRunner> image_task_runner_;
 };
 
 }  // namespace electron

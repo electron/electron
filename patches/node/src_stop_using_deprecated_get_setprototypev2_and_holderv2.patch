@@ -1,0 +1,294 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Fri, 19 Jun 2026 21:06:40 +0000
+Subject: src: stop using deprecated Get/SetPrototypeV2 and HolderV2
+
+V8 advanced the deprecation of v8::Object::GetPrototypeV2(),
+v8::Object::SetPrototypeV2() and v8::PropertyCallbackInfo::HolderV2()
+in favor of the plain GetPrototype()/SetPrototype()/Holder() names,
+which now have the V2 semantics. Rename the call sites accordingly.
+
+https://chromium-review.googlesource.com/c/v8/v8/+/7955758
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 6313d5ce1839fafb175c0e0c74eb39445baed467..4126d4b9f6caf6cbddba403189858c7f0ec60abb 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -989,7 +989,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+ 
+   Local<Object> private_symbols_object;
+   if (!private_symbols->NewInstance(context).ToLocal(&private_symbols_object) ||
+-      private_symbols_object->SetPrototypeV2(context, Null(isolate))
++      private_symbols_object->SetPrototype(context, Null(isolate))
+           .IsNothing()) {
+     return MaybeLocal<Object>();
+   }
+@@ -1015,7 +1015,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+   Local<Object> per_isolate_symbols_object;
+   if (!per_isolate_symbols->NewInstance(context).ToLocal(
+           &per_isolate_symbols_object) ||
+-      per_isolate_symbols_object->SetPrototypeV2(context, Null(isolate))
++      per_isolate_symbols_object->SetPrototype(context, Null(isolate))
+           .IsNothing()) {
+     return MaybeLocal<Object>();
+   }
+diff --git a/src/internal_only_v8.cc b/src/internal_only_v8.cc
+index 6a3c4e6952a8f3250bf1b57652a1622e9f63ec52..487b8b7adfd35646d20fdb15be5fd6f2bee9315b 100644
+--- a/src/internal_only_v8.cc
++++ b/src/internal_only_v8.cc
+@@ -33,8 +33,8 @@ class PrototypeChainHas : public v8::QueryObjectPredicate {
+     if (creation_context != context_) {
+       return false;
+     }
+-    for (Local<Value> proto = object->GetPrototypeV2(); proto->IsObject();
+-         proto = proto.As<Object>()->GetPrototypeV2()) {
++    for (Local<Value> proto = object->GetPrototype(); proto->IsObject();
++         proto = proto.As<Object>()->GetPrototype()) {
+       if (search_ == proto) return true;
+     }
+     return false;
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index 29e2e1808a3f42a35d9478f2f8949037b0011880..33ac5632781134d76f11143b24db1bc2db5b581a 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -1579,7 +1579,7 @@ napi_status NAPI_CDECL node_api_set_prototype(napi_env env,
+ 
+   v8::Local<v8::Value> val = v8impl::V8LocalValueFromJsValue(value);
+ 
+-  v8::Maybe<bool> set_maybe = obj->SetPrototypeV2(context, val);
++  v8::Maybe<bool> set_maybe = obj->SetPrototype(context, val);
+ 
+   RETURN_STATUS_IF_FALSE_WITH_PREAMBLE(
+       env, set_maybe.FromMaybe(false), napi_generic_failure);
+@@ -1598,7 +1598,7 @@ napi_status NAPI_CDECL napi_get_prototype(napi_env env,
+   CHECK_TO_OBJECT(env, context, obj, object);
+ 
+   // This doesn't invokes Proxy's [[GetPrototypeOf]] handler.
+-  v8::Local<v8::Value> val = obj->GetPrototypeV2();
++  v8::Local<v8::Value> val = obj->GetPrototype();
+   *result = v8impl::JsValueFromV8LocalValue(val);
+   return GET_RETURN_STATUS(env);
+ }
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index 8004c8ed06cac33853b227df377b8e2bef2af7e2..134fcd561af053e2a42f54398a28abaa0bf2b118 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -986,7 +986,7 @@ void ModuleWrap::HasAsyncGraph(Local<Name> property,
+   Isolate* isolate = args.GetIsolate();
+   Environment* env = Environment::GetCurrent(isolate);
+   ModuleWrap* obj;
+-  ASSIGN_OR_RETURN_UNWRAP(&obj, args.HolderV2());
++  ASSIGN_OR_RETURN_UNWRAP(&obj, args.Holder());
+ 
+   Local<Module> module = obj->module_.Get(isolate);
+   if (module->GetStatus() < Module::kInstantiated) {
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index 573e1da2c210bf67e813e21daa5a0a48001808e0..c631ad615cc8acad6f96a01f4b619e7326149273 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -279,7 +279,7 @@ MaybeLocal<Uint8Array> New(Environment* env,
+                            size_t length) {
+   CHECK(!env->buffer_prototype_object().IsEmpty());
+   Local<Uint8Array> ui = Uint8Array::New(ab, byte_offset, length);
+-  if (ui->SetPrototypeV2(env->context(), env->buffer_prototype_object())
++  if (ui->SetPrototype(env->context(), env->buffer_prototype_object())
+           .IsNothing()) {
+     return MaybeLocal<Uint8Array>();
+   }
+diff --git a/src/node_constants.cc b/src/node_constants.cc
+index 0cc09fd10e83e59852bbf9abfecd5e30622c0f02..12a1bde53574acb1a4cd91108fd4151f4c979b40 100644
+--- a/src/node_constants.cc
++++ b/src/node_constants.cc
+@@ -1352,7 +1352,7 @@ void CreatePerContextProperties(Local<Object> target,
+   Environment* env = Environment::GetCurrent(context);
+ 
+   CHECK(
+-      target->SetPrototypeV2(env->context(), Null(env->isolate())).FromJust());
++      target->SetPrototype(env->context(), Null(env->isolate())).FromJust());
+ 
+   Local<Object> os_constants =
+       Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 6efb4ec8391356f1141990e8f49aa2d3da3a8b0c..b03b19f4b6f84332766a3e1192235e0c53dbfcc1 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -456,7 +456,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
+   // args.GetIsolate()->GetCurrentContext() and take the pointer at
+   // ContextEmbedderIndex::kContextifyContext, as V8 is supposed to
+   // push the creation context before invoking these callbacks.
+-  return Get(args.HolderV2());
++  return Get(args.Holder());
+ }
+ 
+ ContextifyContext* ContextifyContext::Get(Local<Object> object) {
+diff --git a/src/node_modules.cc b/src/node_modules.cc
+index 51c097e69388a516aa7a9239053367faa4f7595e..d2337033fc1bf538f84c619add57bcc7d7b9f219 100644
+--- a/src/node_modules.cc
++++ b/src/node_modules.cc
+@@ -705,7 +705,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
+   // When this getter is invoked in a vm context, the `Realm::GetCurrent(info)`
+   // returns a nullptr and retrieve the creation context via `this` object and
+   // get the creation Realm.
+-  Local<Value> receiver_val = info.HolderV2();
++  Local<Value> receiver_val = info.Holder();
+   if (!receiver_val->IsObject()) {
+     THROW_ERR_INVALID_INVOCATION(isolate);
+     return;
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 9ccad939f1aefe38bcd7fa1f906c0e40dfc0adfd..d78133e65c275219a38976d4cde4e81901d906e3 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -1847,7 +1847,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+ 
+   Local<Map> options = Map::New(isolate);
+   if (options
+-          ->SetPrototypeV2(context,
++          ->SetPrototype(context,
+                            env->primordials_safe_map_prototype_object())
+           .IsNothing()) {
+     return;
+@@ -1888,7 +1888,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+   if (!ToV8Value(context, _ppop_instance.aliases_).ToLocal(&aliases)) return;
+ 
+   if (aliases.As<Object>()
+-          ->SetPrototypeV2(context,
++          ->SetPrototype(context,
+                            env->primordials_safe_map_prototype_object())
+           .IsNothing()) {
+     return;
+diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
+index d1ef4d06f73bcb23686d91df2a0a3d5141e1ba70..0b32b2a8be3650da0d46f72ee344363fb341b81d 100644
+--- a/src/node_sqlite.cc
++++ b/src/node_sqlite.cc
+@@ -827,7 +827,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
+   }
+ 
+   DatabaseSyncLimits* limits;
+-  ASSIGN_OR_RETURN_UNWRAP(&limits, info.HolderV2(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&limits, info.Holder(), Intercepted::kNo);
+ 
+   Environment* env = limits->env();
+   Isolate* isolate = env->isolate();
+@@ -859,7 +859,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
+   }
+ 
+   DatabaseSyncLimits* limits;
+-  ASSIGN_OR_RETURN_UNWRAP(&limits, info.HolderV2(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&limits, info.Holder(), Intercepted::kNo);
+ 
+   Environment* env = limits->env();
+   Isolate* isolate = env->isolate();
+@@ -3253,9 +3253,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
+   }
+ 
+   if (iter->object()
+-          ->GetPrototypeV2()
++          ->GetPrototype()
+           .As<Object>()
+-          ->SetPrototypeV2(context, js_iterator_prototype)
++          ->SetPrototype(context, js_iterator_prototype)
+           .IsNothing()) {
+     return BaseObjectPtr<StatementSyncIterator>();
+   }
+diff --git a/src/node_util.cc b/src/node_util.cc
+index 39523bd256c8bf22597ba79dd06ea451025ffabb..04217d6dce9333cf0e5a1c6de711f49b93c46663 100644
+--- a/src/node_util.cc
++++ b/src/node_util.cc
+@@ -369,7 +369,7 @@ static void DefineLazyPropertiesGetter(
+   // When this getter is invoked in a vm context, the `Realm::GetCurrent(info)`
+   // returns a nullptr and retrieve the creation context via `this` object and
+   // get the creation Realm.
+-  Local<Value> receiver_val = info.HolderV2();
++  Local<Value> receiver_val = info.Holder();
+   if (!receiver_val->IsObject()) {
+     THROW_ERR_INVALID_INVOCATION(isolate);
+     return;
+@@ -522,7 +522,7 @@ void Initialize(Local<Object> target,
+ 
+   {
+     const Local<Object> prototype =
+-        SharedArrayBuffer::New(isolate, 0)->GetPrototypeV2().As<Object>();
++        SharedArrayBuffer::New(isolate, 0)->GetPrototype().As<Object>();
+     const Local<Object> descriptor =
+         prototype
+             ->GetOwnPropertyDescriptor(
+diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
+index 8a058f19834134ca65b7a763b7c41fe850642980..3856e9cdaa305f4919c315060bae8d1a5f17cb80 100644
+--- a/src/node_webstorage.cc
++++ b/src/node_webstorage.cc
+@@ -565,7 +565,7 @@ template <typename T>
+ static bool ShouldIntercept(Local<Name> property,
+                             const PropertyCallbackInfo<T>& info) {
+   Environment* env = Environment::GetCurrent(info);
+-  Local<Value> proto = info.HolderV2()->GetPrototypeV2();
++  Local<Value> proto = info.Holder()->GetPrototype();
+ 
+   if (proto->IsObject()) {
+     bool has_prop;
+@@ -589,7 +589,7 @@ static Intercepted StorageGetter(Local<Name> property,
+   }
+ 
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
+   Local<Value> result;
+ 
+   if (storage->Load(property).ToLocal(&result) && !result->IsNull()) {
+@@ -603,7 +603,7 @@ static Intercepted StorageSetter(Local<Name> property,
+                                  Local<Value> value,
+                                  const PropertyCallbackInfo<void>& info) {
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
+ 
+   if (storage->Store(property, value).IsNothing()) {
+     info.GetReturnValue().SetFalse();
+@@ -619,7 +619,7 @@ static Intercepted StorageQuery(Local<Name> property,
+   }
+ 
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
+   Local<Value> result;
+   if (!storage->Load(property).ToLocal(&result) || result->IsNull()) {
+     return Intercepted::kNo;
+@@ -632,7 +632,7 @@ static Intercepted StorageQuery(Local<Name> property,
+ static Intercepted StorageDeleter(Local<Name> property,
+                                   const PropertyCallbackInfo<Boolean>& info) {
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
+ 
+   info.GetReturnValue().Set(storage->Remove(property).IsJust());
+ 
+@@ -641,7 +641,7 @@ static Intercepted StorageDeleter(Local<Name> property,
+ 
+ static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2());
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder());
+   Local<Array> result;
+   if (!storage->Enumerate().ToLocal(&result)) {
+     return;
+@@ -653,7 +653,7 @@ static Intercepted StorageDefiner(Local<Name> property,
+                                   const PropertyDescriptor& desc,
+                                   const PropertyCallbackInfo<void>& info) {
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
+ 
+   if (desc.has_value()) {
+     return StorageSetter(property, desc.value(), info);
+diff --git a/src/util-inl.h b/src/util-inl.h
+index d59e30a635b08b97d255ed2e5540a66db54b068f..17f72857aa5ba4a8631b04e064f054852a7fe262 100644
+--- a/src/util-inl.h
++++ b/src/util-inl.h
+@@ -811,7 +811,7 @@ inline v8::MaybeLocal<v8::Object> NewDictionaryInstanceNullProto(
+     if (value.IsEmpty()) return v8::MaybeLocal<v8::Object>();
+   }
+   v8::Local<v8::Object> obj = tmpl->NewInstance(context, property_values);
+-  if (obj->SetPrototypeV2(context, v8::Null(v8::Isolate::GetCurrent()))
++  if (obj->SetPrototype(context, v8::Null(v8::Isolate::GetCurrent()))
+           .IsNothing()) {
+     return v8::MaybeLocal<v8::Object>();
+   }

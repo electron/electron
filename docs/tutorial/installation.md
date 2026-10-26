@@ -73,9 +73,7 @@ Supported architectures are a subset of Node.js [`process.arch`](https://nodejs.
 values, and include:
 
 * `x64` (Intel Mac and 64-bit Windows)
-* `ia32` (32-bit Windows)
 * `arm64` (Apple silicon, Windows on ARM, ARM64 Linux)
-* `arm` (32-bit ARM)
 
 In addition to changing the architecture, you can also specify the platform
 (e.g., `win32`, `linux`, etc.) using the `--platform` flag:
@@ -167,11 +165,11 @@ cache also in `~/.electron`.
 You can also override the local cache location by providing a `electron_config_cache`
 environment variable.
 
-The cache contains the version's official zip file as well as a checksum, and is stored as
-`[checksum]/[filename]`. A typical cache might look like this:
+Cached zip files are stored in subdirectories. Their names are assigned by
+`@electron/get`. A typical cache might look like this:
 
 ```sh
-├── a91b089b5dc5b1279966511344b805ec84869b6cd60af44f800b363bba25b915
+├── 523ee27feac8b931299c79e78b7ca4f365aa3f7069fff666cae93c7fb9ff2fee
 │   └── electron-v15.3.1-darwin-x64.zip
 ```
 

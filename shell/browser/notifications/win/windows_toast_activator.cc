@@ -5,15 +5,9 @@
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 
 #include <propkey.h>
-#include <propvarutil.h>
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <wrl/module.h>
-#ifdef StrCat
-// Undefine Windows shlwapi.h StrCat macro to avoid conflict with
-// base/strings/strcat.h which deliberately defines a StrCat macro sentinel.
-#undef StrCat
-#endif
 
 #include <memory>
 #include <string>
@@ -24,18 +18,15 @@
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/hash/hash.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_number_conversions_win.h"
 #include "base/strings/string_split.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/propvarutil.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_propvariant.h"
-#include "base/win/win_util.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/api/electron_api_notification.h"  // nogncheck - for delegate events
 #include "shell/browser/electron_browser_client.h"
@@ -442,13 +433,13 @@ void HandleToastActivation(const std::wstring& invoked_args,
   // Expected invoked_args format:
   // type=<click|action|reply>&action=<index>&tag=<hash> Parse simple key=value
   // pairs separated by '&'.
-  std::wstring args = invoked_args;
   std::wstring type;
   std::wstring action_index_str;
   std::wstring tag_str;
 
-  for (const auto& token : base::SplitString(args, L"&", base::KEEP_WHITESPACE,
-                                             base::SPLIT_WANT_NONEMPTY)) {
+  for (const auto& token :
+       base::SplitString(invoked_args, L"&", base::KEEP_WHITESPACE,
+                         base::SPLIT_WANT_NONEMPTY)) {
     auto kv = base::SplitString(token, L"=", base::KEEP_WHITESPACE,
                                 base::SPLIT_WANT_NONEMPTY);
     if (kv.size() != 2)
@@ -538,7 +529,7 @@ void HandleToastActivation(const std::wstring& invoked_args,
   handle_callback(activation_args);
 
   Notification* target = nullptr;
-  for (auto* n : presenter->notifications()) {
+  for (Notification* n : presenter->notifications()) {
     std::wstring tag = base::UTF8ToWide(n->notification_id());
     if (tag == tag_str) {
       target = n;

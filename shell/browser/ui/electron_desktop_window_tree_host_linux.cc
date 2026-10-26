@@ -10,11 +10,9 @@
 
 #include <vector>
 
-#include "base/i18n/rtl.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "ui/aura/window_delegate.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
@@ -52,12 +50,9 @@ void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
   // SetSupportsClientFrameShadow must happen after widget init when
   // platform_window is available.
   if (auto* fvl = native_window_view_->GetFrameViewLinux())
-    fvl->SetSupportsClientFrameShadow(SupportsClientFrameShadow());
+    fvl->SetSupportsClientFrameShadow(SupportsClientFrameShadow() &&
+                                      !native_window_view_->IsTranslucent());
 
-  UpdateFrameHints();
-}
-
-void ElectronDesktopWindowTreeHostLinux::ApplyDecorationInsets() {
   UpdateFrameHints();
 }
 
@@ -91,8 +86,7 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::GetRestoredFrameBorderInsets()
   if (auto* fvl = native_window_view_->GetFrameViewLinux())
     return fvl->GetRestoredFrameBorderInsets();
 
-  auto* const layout = native_window_view_->GetLinuxFrameLayout();
-  return layout ? layout->RestoredFrameBorderInsets() : gfx::Insets();
+  return gfx::Insets();
 }
 
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
@@ -100,15 +94,6 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
   // If we are not showing frame, the insets should be zero.
   if (!IsShowingFrame(window_state))
     return gfx::Insets();
-
-  // Tiled windows should not have shadow insets.
-  if (native_window_view_->IsTiled())
-    return gfx::Insets();
-
-  // Use custom decoration insets if set (for app-rendered CSD shadows).
-  auto custom = native_window_view_->GetCustomDecorationInsets();
-  if (!custom.IsEmpty())
-    return custom;
 
   return GetRestoredFrameBorderInsets();
 }
@@ -174,9 +159,6 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
 
   if (auto* fvl = native_window_view_->GetFrameViewLinux())
     fvl->SetTiled(is_tiled);
-  else if (auto* layout = native_window_view_->GetLinuxFrameLayout())
-    layout->set_tiled(is_tiled);
-  native_window_view_->SetTiled(is_tiled);
   UpdateFrameHints();
   ScheduleRelayout();
   if (GetWidget()->non_client_view()) {
@@ -229,74 +211,42 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
   UpdateFrameHints();
 }
 
+void ElectronDesktopWindowTreeHostLinux::SetOpacity(float opacity) {
+  views::DesktopWindowTreeHostLinux::SetOpacity(opacity);
+  UpdateFrameHints();
+}
+
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
-  if (native_window_view_->GetFrameViewLinux()) {
+  if (!platform_window())
+    return;
+
+  const bool is_non_opaque = native_window_view_->IsTranslucent() ||
+                             native_window_view_->GetOpacity() < 1.0;
+
+  auto* fvl = native_window_view_->GetFrameViewLinux();
+  if (!fvl || !fvl->ShouldDrawRestoredFrameShadow()) {
+    platform_window()->SetInputRegion(std::nullopt);
+    if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
+      if (is_non_opaque) {
+        platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
+      } else {
+        gfx::Size size = GetWidget()->GetWindowBoundsInScreen().size();
+        float scale = device_scale_factor();
+        platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{
+            gfx::ScaleToEnclosingRect(gfx::Rect(size), scale)});
+      }
+    }
+  } else {
     views::DesktopWindowTreeHostLinux::UpdateFrameHints();
-    // Clear the opaque region for translucent windows.
-    if (native_window_view_->IsTranslucent() &&
-        views::Widget::IsWindowCompositingSupported()) {
+    if (is_non_opaque && views::Widget::IsWindowCompositingSupported()) {
       platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
     }
-    SizeConstraintsChanged();
-    return;
   }
 
-  auto* layout = native_window_view_->GetLinuxFrameLayout();
-  if (!layout) {
-    // Frameless window with no layout. If custom decoration insets are set,
-    // ensure the input region covers the full surface (including the shadow
-    // area) so pointer events reach the client for resize hit-testing.
-    // Without this, Wayland won't deliver events in the shadow area.
-    auto custom_insets = native_window_view_->GetCustomDecorationInsets();
-    if (!custom_insets.IsEmpty()) {
-      platform_window()->SetInputRegion(std::nullopt);
-      if (native_window_view_->IsTranslucent())
-        platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
-    }
-    return;
-  }
-
-  ui::PlatformWindow* window = platform_window();
-  auto window_state = window->GetPlatformWindowState();
-  float scale = device_scale_factor();
-  const gfx::Size widget_size = GetWidget()->GetWindowBoundsInScreen().size();
-
-  if (SupportsClientFrameShadow()) {
-    auto insets = CalculateInsetsInDIP(window_state);
-    // When custom decoration insets are set, the entire surface must receive
-    // input so the shadow area is interactive for resize hit-testing.
-    if (insets.IsEmpty() ||
-        !native_window_view_->GetCustomDecorationInsets().IsEmpty()) {
-      window->SetInputRegion(std::nullopt);
-    } else {
-      gfx::Rect input_bounds(widget_size);
-      input_bounds.Inset(insets - layout->GetInputInsets());
-      input_bounds = gfx::ScaleToEnclosingRect(input_bounds, scale);
-      window->SetInputRegion(
-          std::optional<std::vector<gfx::Rect>>({input_bounds}));
-    }
-  }
-
-  if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
-    // Set the opaque region.
-    std::vector<gfx::Rect> opaque_region;
-    if (native_window_view_->IsTranslucent()) {
-      // Leave opaque_region empty.
-    } else if (IsShowingFrame(window_state)) {
-      opaque_region = views::GetRestoredOpaqueRegion(
-          layout->GetRoundedWindowBounds(), scale,
-          layout->GetTranslucentTopAreaHeight());
-    } else {
-      // The entire window except for the translucent top is opaque.
-      gfx::Rect opaque_region_dip(widget_size);
-      gfx::Insets insets;
-      insets.set_top(layout->GetTranslucentTopAreaHeight());
-      opaque_region_dip.Inset(insets);
-      opaque_region.push_back(
-          gfx::ScaleToEnclosingRect(opaque_region_dip, scale));
-    }
-    window->SetOpaqueRegion(opaque_region);
-  }
+  // setIgnoreMouseEvents(true): a 1x1 input region lets every click through
+  // to the window below (X11 input shape, Wayland wl_surface input region).
+  if (native_window_view_->ignore_mouse_events())
+    platform_window()->SetInputRegion(std::vector<gfx::Rect>{{0, 0, 1, 1}});
 
   SizeConstraintsChanged();
 }

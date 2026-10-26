@@ -11,6 +11,7 @@
 
 #include "base/functional/callback_forward.h"
 #include "base/task/single_thread_task_runner.h"
+#include "base/threading/platform_thread.h"
 #include "content/public/browser/browser_main_parts.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -45,7 +46,7 @@ class Environment;
 
 namespace ui {
 class LinuxUiGetter;
-class DarkModeManagerLinux;
+class PortalSettingsLinux;
 }  // namespace ui
 
 namespace views {
@@ -111,7 +112,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   void PostCreateMainMessageLoop() override;
   void PostMainMessageLoopRun() override;
   void PreCreateMainMessageLoop() override;
-  void PostCreateThreads() override;
+  int PostCreateThreads() override;
   void PostDestroyThreads() override;
 
  private:
@@ -144,7 +145,11 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-  std::unique_ptr<ui::DarkModeManagerLinux> dark_mode_manager_;
+  void JoinSystemFontConfigInit();
+
+  base::PlatformThreadHandle system_fontconfig_thread_;
+
+  std::unique_ptr<ui::PortalSettingsLinux> portal_settings_;
   std::unique_ptr<ui::LinuxUiGetter> linux_ui_getter_;
 #endif
 

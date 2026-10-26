@@ -5,7 +5,7 @@ Subject: chore: modify chromium handling of mouse events
 
 This patch does the following:
 
-1. When Windows Control Overlay is enabled, it allows chromium to handle synthetic mouse events generated for touch
+1. When Window Control Overlay is enabled, it allows chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
 2. It calls HandleMouseEvent on the delegate earlier in HandleMouseEventInternal, so that Electron can selectively disable
 draggable regions to allow events to propagate to the underlying renderer.
@@ -34,10 +34,10 @@ index cc3f9bc9383f8272a5cd95b1f2ac56529d86e493..5ca29b84cdaf42ef516ef819ae32b230
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 905de3cafd91457a8bc816242a3b029472cb3914..95af2da65403d35d4b7a5eb0d032e01ab8d23f62 100644
+index 281ffd8c522aa5e5906455db562aa88dd5c91d9b..0f0b0853410ec111f7fde3b991681bcf4046af8b 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1417,6 +1417,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
+@@ -1584,6 +1584,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
    return background_paint_brush_;
  }
  
@@ -49,10 +49,10 @@ index 905de3cafd91457a8bc816242a3b029472cb3914..95af2da65403d35d4b7a5eb0d032e01a
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index a389e96de45c8a380e4db23821feb396dab9bcbb..27322ef34edf3fa8bfbd20b1baddcaf3b7555618 100644
+index 16bb1c377691bf20298eb87e5ed95f0c951fafac..bb4c968427e2b97ef8a7d29b4ab91326085b5930 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -275,6 +275,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -290,6 +290,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void HandleWindowScaleFactorChanged(float window_scale_factor) override;
    void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) override;
    HBRUSH GetBackgroundPaintBrush() override;
@@ -61,10 +61,10 @@ index a389e96de45c8a380e4db23821feb396dab9bcbb..27322ef34edf3fa8bfbd20b1baddcaf3
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 1234857177f7fa44c5999ade6c70e96f263b096d..b9b50b726f69c9e1a7609e7fe9db064dbcf2194d 100644
+index 4715a7d9f2e845f9ffc8e84a6d7dc4a9d3483393..513a4a0942a4bd1372034f4f94129c8a1b4d6418 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3278,15 +3278,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3362,15 +3362,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -86,7 +86,7 @@ index 1234857177f7fa44c5999ade6c70e96f263b096d..b9b50b726f69c9e1a7609e7fe9db064d
        return 0;
      }
    }
-@@ -3309,6 +3313,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3393,6 +3397,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      // handle alt-space, or in the frame itself.
      is_right_mouse_pressed_on_caption_ = false;
      ::ReleaseCapture();
@@ -94,30 +94,30 @@ index 1234857177f7fa44c5999ade6c70e96f263b096d..b9b50b726f69c9e1a7609e7fe9db064d
      // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
      // expect screen coordinates.
      POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
-@@ -3316,7 +3321,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
-     w_param = static_cast<WPARAM>(::SendMessage(
+@@ -3401,7 +3406,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
          hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
      if (w_param == HTCAPTION || w_param == HTSYSMENU) {
--      ShowSystemMenuAtScreenPixelLocation(hwnd(), gfx::Point(screen_point));
-+      LONG message_time = GetMessageTime();
-+      CHROME_MSG msg = {hwnd(),
-+                        message,
-+                        w_param,
-+                        l_param,
-+                        static_cast<DWORD>(message_time),
-+                        {CR_GET_X_LPARAM(l_param), CR_GET_Y_LPARAM(l_param)}};
-+      ui::MouseEvent event(msg);
-+      event.set_is_system_menu(true);
-+      if (!delegate_->HandleMouseEvent(&event))
-+        ShowSystemMenuAtScreenPixelLocation(hwnd(), gfx::Point(screen_point));
-       return 0;
-     }
-   } else if (message == WM_NCLBUTTONDOWN &&
+       if (delegate_->UsesNativeSystemMenu()) {
+-        ShowSystemMenuAtScreenPixelLocation(hwnd(), gfx::Point(screen_point));
++        LONG message_time = GetMessageTime();
++        CHROME_MSG msg = {hwnd(),
++                          message,
++                          w_param,
++                          l_param,
++                          static_cast<DWORD>(message_time),
++                          {CR_GET_X_LPARAM(l_param), CR_GET_Y_LPARAM(l_param)}};
++        ui::MouseEvent event(msg);
++        event.set_is_system_menu(true);
++        if (!delegate_->HandleMouseEvent(&event))
++          ShowSystemMenuAtScreenPixelLocation(hwnd(), gfx::Point(screen_point));
+       } else {
+         delegate_->ShowCustomSystemMenu(gfx::Point(screen_point));
+       }
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 727cb38b1198a2fde104b4f45e566383c4446de5..1261be469317cdfb20d03f0e34c570ac2c3b0ba1 100644
+index be3ec89c4e0145d9c3c26e024a46be01f46465c4..5d30b432ab4358428afdd5f93826c7044dba1049 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
-@@ -263,6 +263,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+@@ -264,6 +264,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
    // if the default should be used.
    virtual HBRUSH GetBackgroundPaintBrush() = 0;
  

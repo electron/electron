@@ -7,6 +7,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     labels:
       - "no-backport"
       - "semver/none"
@@ -18,51 +20,8 @@ updates:
       - /npm
     schedule:
       interval: daily
+    cooldown:
+      default-days: 7
     labels:
       - "no-backport"
-    open-pull-requests-limit: 2
-    target-branch: main
-  - package-ecosystem: npm
-    directories:
-      - /
-      - /spec
-      - /npm
-    schedule:
-      interval: daily
-    labels:
-      - "backport-check-skip"
     open-pull-requests-limit: 0
-    target-branch: 33-x-y
-  - package-ecosystem: npm
-    directories:
-      - /
-      - /spec
-      - /npm
-    schedule:
-      interval: daily
-    labels:
-      - "backport-check-skip"
-    open-pull-requests-limit: 0
-    target-branch: 32-x-y
-  - package-ecosystem: npm
-    directories:
-      - /
-      - /spec
-      - /npm
-    schedule:
-      interval: daily
-    labels:
-      - "backport-check-skip"
-    open-pull-requests-limit: 0
-    target-branch: 31-x-y
-  - package-ecosystem: npm
-    directories:
-      - /
-      - /spec
-      - /npm
-    schedule:
-      interval: daily
-    labels:
-      - "backport-check-skip"
-    open-pull-requests-limit: 0
-    target-branch: 30-x-y

@@ -40,7 +40,7 @@ added:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
-    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
+    * `showHiddenFiles` _macOS_ _Windows_ - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
@@ -54,7 +54,7 @@ added:
     * `dontAddToRecent` _Windows_ - Do not add the item being opened to the recent documents list.
   * `message` string (optional) _macOS_ - Message to display above input
     boxes.
-  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
+  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/documentation/professional-video-applications/enabling-security-scoped-bookmark-and-url-access) when packaged for the Mac App Store.
 
 Returns `string[] | undefined`, the file paths chosen by the user; if the dialog is cancelled it returns `undefined`.
 
@@ -63,9 +63,7 @@ The `window` argument allows the dialog to attach itself to a parent window, mak
 The `filters` specifies an array of file types that can be displayed or
 selected when you want to limit the user to a specific type. For example:
 
-<!-- eslint-skip -->
-
-```js
+```json5
 {
   filters: [
     { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
@@ -124,7 +122,7 @@ changes:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
-    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
+    * `showHiddenFiles` _macOS_ _Windows_ - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
@@ -138,7 +136,7 @@ changes:
     * `dontAddToRecent` _Windows_ - Do not add the item being opened to the recent documents list.
   * `message` string (optional) _macOS_ - Message to display above input
     boxes.
-  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
+  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/documentation/professional-video-applications/enabling-security-scoped-bookmark-and-url-access) when packaged for the Mac App Store.
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
 
@@ -151,9 +149,7 @@ The `window` argument allows the dialog to attach itself to a parent window, mak
 The `filters` specifies an array of file types that can be displayed or
 selected when you want to limit the user to a specific type. For example:
 
-<!-- eslint-skip -->
-
-```js
+```json5
 {
   filters: [
     { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
@@ -175,14 +171,17 @@ The `extensions` array should contain extensions without wildcards or dots (e.g.
 > shown.
 
 ```js @ts-type={mainWindow:Electron.BaseWindow}
-dialog.showOpenDialog(mainWindow, {
-  properties: ['openFile', 'openDirectory']
-}).then(result => {
-  console.log(result.canceled)
-  console.log(result.filePaths)
-}).catch(err => {
-  console.log(err)
-})
+dialog
+  .showOpenDialog(mainWindow, {
+    properties: ['openFile', 'openDirectory']
+  })
+  .then((result) => {
+    console.log(result.canceled)
+    console.log(result.filePaths)
+  })
+  .catch((err) => {
+    console.log(err)
+  })
 ```
 
 > [!NOTE]
@@ -216,13 +215,13 @@ added:
   * `showsTagField` boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
   * `properties` string[]&#32;(optional)
-    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
+    * `showHiddenFiles` _macOS_ _Windows_ - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
     * `showOverwriteConfirmation` _Linux_ - Sets whether the user will be presented a confirmation dialog if the user types a file name that already exists.
     * `dontAddToRecent` _Windows_ - Do not add the item being saved to the recent documents list.
-  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
+  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/documentation/professional-video-applications/enabling-security-scoped-bookmark-and-url-access) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `string`, the path of the file chosen by the user; if the dialog is cancelled it returns an empty string.
 
@@ -257,13 +256,13 @@ changes:
     displayed in front of the filename text field.
   * `showsTagField` boolean (optional) _macOS_ - Show the tags input box, defaults to `true`.
   * `properties` string[]&#32;(optional)
-    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
+    * `showHiddenFiles` _macOS_ _Windows_ - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
     * `showOverwriteConfirmation` _Linux_ - Sets whether the user will be presented a confirmation dialog if the user types a file name that already exists.
     * `dontAddToRecent` _Windows_ - Do not add the item being saved to the recent documents list.
-  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
+  * `securityScopedBookmarks` boolean (optional) _macOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/documentation/professional-video-applications/enabling-security-scoped-bookmark-and-url-access) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
 
@@ -443,7 +442,7 @@ On Windows the options are more limited, due to the Win32 APIs used:
 
 ## Bookmarks array
 
-`showOpenDialog` and `showSaveDialog` resolve to an object with a `bookmarks` field. This field is an array of Base64 encoded strings that contain the [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) data for the saved file. The `securityScopedBookmarks` option must be enabled for this to be present.
+`showOpenDialog` and `showSaveDialog` resolve to an object with a `bookmarks` field. This field is an array of Base64 encoded strings that contain the [security scoped bookmark](https://developer.apple.com/documentation/professional-video-applications/enabling-security-scoped-bookmark-and-url-access) data for the saved file. The `securityScopedBookmarks` option must be enabled for this to be present.
 
 | Build Type | securityScopedBookmarks boolean | Return Type | Return Value                   |
 |------------|---------------------------------|:-----------:|--------------------------------|

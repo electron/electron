@@ -3,14 +3,20 @@
 // found in the LICENSE file.
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
-#include "base/files/file_util.h"
+#include "base/command_line.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/logging.h"
+#include "base/memory/stack_allocated.h"
 #include "base/run_loop.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "components/dbus/thread_linux/dbus_thread_linux.h"
+#include "components/dbus/xdg/portal.h"
+#include "components/dbus/xdg/portal_constants.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -20,6 +26,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
+#include "ui/shell_dialogs/select_file_dialog_linux_portal.h"
 #include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -60,21 +67,72 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
   return file_type_info;
 }
 
+// A relative defaultPath (e.g. a bare filename) would make the file chooser
+// open at the unusable relative directory ".", so anchor it to the default
+// directory instead.
+base::FilePath GetDefaultDialogPath(const DialogSettings& settings) {
+  if (settings.default_path.empty())
+    return electron::GetDefaultPath();
+  if (settings.default_path.IsAbsolute())
+    return settings.default_path;
+  return electron::GetDefaultPath().Append(settings.default_path);
+}
+
+// Version 4 of org.freedesktop.portal.FileChooser adds the current_folder
+// option to OpenFile
+// (https://github.com/flatpak/xdg-desktop-portal/commit/71165a5); older portals
+// ignore defaultPath for open dialogs.
+constexpr uint32_t kPortalVersionWithOpenDialogDefaultPath = 4;
+constexpr char kXdgPortalRequiredVersionSwitch[] =
+    "xdg-portal-required-version";
+
+// Applies --xdg-portal-required-version once and returns the effective minimum
+// portal version (never below Chromium's built-in minimum of 3).
+uint32_t GetRequiredPortalVersion() {
+  static const uint32_t required_version = [] {
+    uint32_t version = 0;
+    const std::string value =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            kXdgPortalRequiredVersionSwitch);
+    if (!value.empty() && !base::StringToUint(value, &version)) {
+      LOG(WARNING) << "Unable to parse --" << kXdgPortalRequiredVersionSwitch
+                   << "=" << value;
+    }
+    ui::SelectFileDialogLinuxPortal::SetRequiredPortalVersion(version);
+    return std::max(version, 3u);
+  }();
+  return required_version;
+}
+
 void LogIfNeededAboutUnsupportedPortalFeature(const DialogSettings& settings) {
-  if (!settings.default_path.empty() && IsPortalAvailable() &&
-      GetPortalVersion() < 4) {
-    LOG(INFO) << "Available portal version " << GetPortalVersion()
-              << " does not support defaultPath option, try the non-portal"
-              << " file chooser dialogs by launching with"
-              << " --xdg-portal-required-version";
-  }
+  const uint32_t required_version = GetRequiredPortalVersion();
+  if (settings.default_path.empty())
+    return;
+  dbus_xdg::RequestXdgDesktopPortal(
+      dbus_thread_linux::GetSharedSessionBus().get(),
+      dbus_xdg::kFileChooserInterfaceName,
+      base::BindOnce(
+          [](uint32_t required_version, uint32_t available_version) {
+            if (available_version >= required_version &&
+                available_version < kPortalVersionWithOpenDialogDefaultPath) {
+              LOG(INFO) << "Available portal version " << available_version
+                        << " does not support defaultPath option, try the"
+                        << " non-portal file chooser dialogs by launching"
+                        << " with --" << kXdgPortalRequiredVersionSwitch << "="
+                        << kPortalVersionWithOpenDialogDefaultPath;
+            }
+          },
+          required_version));
 }
 
 class FileChooserDialog : public ui::SelectFileDialog::Listener {
  public:
   enum class DialogType { OPEN, SAVE };
 
-  FileChooserDialog() { dialog_ = ui::SelectFileDialog::Create(this, nullptr); }
+  FileChooserDialog() {
+    GetRequiredPortalVersion();
+    dialog_ = ui::SelectFileDialog::Create(this, nullptr);
+  }
 
   ~FileChooserDialog() override = default;
 
@@ -83,9 +141,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
-    base::FilePath default_path = settings.default_path.empty()
-                                      ? electron::GetDefaultPath()
-                                      : settings.default_path;
+    base::FilePath default_path = GetDefaultDialogPath(settings);
 
     dialog_->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
                         base::UTF8ToUTF16(settings.title), default_path,
@@ -114,9 +170,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
-    base::FilePath default_path = settings.default_path.empty()
-                                      ? electron::GetDefaultPath()
-                                      : settings.default_path;
+    base::FilePath default_path = GetDefaultDialogPath(settings);
 
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
@@ -204,15 +258,14 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION);
     dialog_->SetMultipleSelectionsAllowed(settings.properties &
                                           OPEN_DIALOG_MULTI_SELECTIONS);
-    int hidden_flag = type_ == DialogType::SAVE
-                          ? static_cast<int>(SAVE_DIALOG_SHOW_HIDDEN_FILES)
-                          : static_cast<int>(OPEN_DIALOG_SHOW_HIDDEN_FILES);
-    dialog_->SetHiddenShown(settings.properties & hidden_flag);
   }
 
   DialogType type_;
   scoped_refptr<ui::SelectFileDialog> dialog_;
   base::OnceCallback<void(gin_helper::Dictionary)> callback_;
+  // gin::Dictionary is STACK_ALLOCATED(), but Promise<T> only names T as its
+  // resolve type and never stores one.
+  STACK_ALLOCATED_IGNORE("Promise<T> does not store a T")
   gin_helper::Promise<gin_helper::Dictionary> promise_;
 };
 

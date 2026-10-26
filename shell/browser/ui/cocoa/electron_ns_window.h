@@ -7,8 +7,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "components/remote_cocoa/app_shim/native_widget_mac_nswindow.h"
-#include "shell/browser/ui/cocoa/event_dispatching_window.h"
-#include "ui/views/widget/native_widget_mac.h"
 
 namespace electron {
 

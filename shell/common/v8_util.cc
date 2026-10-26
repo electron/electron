@@ -4,18 +4,26 @@
 
 #include "shell/common/v8_util.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <utility>
 #include <vector>
 
 #include "base/base_switches.h"
-#include "base/memory/raw_ptr.h"
+#include "base/containers/heap_array.h"
+#include "base/memory/stack_allocated.h"
 #include "gin/converter.h"
+#include "gin/public/wrapper_info.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_api_native_image.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
+#include "shell/common/process_util.h"
+#include "shell/common/serialized_value.h"
 #include "skia/public/mojom/bitmap.mojom.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "third_party/blink/public/common/messaging/web_message_port.h"
 #include "ui/gfx/image/image_skia.h"
+#include "ui/gfx/image/image_skia_rep.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
@@ -35,39 +43,60 @@ constexpr uint8_t kNativeImageTag = 'i';
 constexpr uint8_t kTrailerOffsetTag = 0xFE;
 constexpr uint8_t kVersionTag = 0xFF;
 
+bool IsElectronApiWrapper(v8::Isolate* isolate, v8::Local<v8::Object> object) {
+  if (!object->IsApiWrapper())
+    return false;
+  // The serializer sees Blink, Node and gin wrappers too, so unwrap with the
+  // generic range and check the type info rather than probing with our tags.
+  auto* wrappable = v8::Object::Unwrap<v8::Object::Wrappable>(
+      isolate, object, v8::kObjectWrappableTagRange);
+  if (!wrappable)
+    return false;
+  const v8::Object::WrapperTypeInfo* info = wrappable->GetWrapperTypeInfo();
+  if (!info || info->type_id != gin::kEmbedderNativeGin)
+    return false;
+  return kElectronWrappableTagRange.Contains(static_cast<v8::CppHeapPointerTag>(
+      static_cast<const gin::WrapperInfo*>(info)->pointer_tag));
+}
+
 }  // namespace
 
 class V8Serializer : public v8::ValueSerializer::Delegate {
+  STACK_ALLOCATED();
+
  public:
   explicit V8Serializer(v8::Isolate* isolate)
       : isolate_(isolate), serializer_(isolate, this) {}
   ~V8Serializer() override = default;
 
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
-    v8::MicrotasksScope microtasks_scope(
-        isolate_->GetCurrentContext(),
-        v8::MicrotasksScope::kDoNotRunMicrotasks);
-    WriteBlinkEnvelope(19);
-
-    serializer_.WriteHeader();
-    bool wrote_value;
-    if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
-             .To(&wrote_value)) {
-      isolate_->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate_, "An object could not be cloned.")));
+    size_t length;
+    if (!Write(value, &length))
       return false;
-    }
-    DCHECK(wrote_value);
-
-    const auto [data_bytes, data_len] = serializer_.Release();
-    DCHECK_EQ(std::data(data_), data_bytes);
-    DCHECK_GE(std::size(data_), data_len);
-    data_.resize(data_len);
-    out->owned_encoded_message = std::move(data_);
+    heap_.resize(length);
+    out->owned_encoded_message = std::move(heap_);
     out->encoded_message = out->owned_encoded_message;
     out->sender_agent_cluster_id =
         blink::WebMessagePort::GetEmbedderAgentClusterID();
+    return true;
+  }
 
+  // Large values continue in the shared memory region they will be sent in.
+  // Only such a region may travel larger than the payload (its spare bytes are
+  // kernel-zeroed or this value's own); heap-backed results are trimmed.
+  bool Serialize(v8::Local<v8::Value> value, SerializedValue* out) {
+    use_transport_buffer_ = true;
+    size_t length;
+    if (!Write(value, &length))
+      return false;
+    if (transport_.size() == 0 ||
+        length <= mojo_base::BigBuffer::kMaxInlineBytes) {
+      base::span<const uint8_t> written =
+          transport_.size() ? base::span(transport_) : base::span(heap_);
+      mojo_base::BigBuffer exact(written.first(length));
+      transport_ = std::move(exact);
+    }
+    *out = SerializedValue(std::move(transport_), length);
     return true;
   }
 
@@ -75,15 +104,52 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   void* ReallocateBufferMemory(void* old_buffer,
                                size_t size,
                                size_t* actual_size) override {
-    DCHECK_EQ(old_buffer, data_.data());
-    data_.resize(size);
-    *actual_size = data_.capacity();
-    return data_.data();
+    base::span<const uint8_t> written =
+        transport_.size() ? base::span(transport_) : base::span(heap_);
+    // V8 asks for max(required, 2 * capacity) + 64, so a request beyond plain
+    // doubling tells how many bytes the value needs now; move to shared memory
+    // once that exceeds an inline message, and grow regions 4x after that.
+    const size_t needed = size > 2 * capacity_ + 64 ? size - 64 : capacity_ + 1;
+    if (use_transport_buffer_ &&
+        needed > mojo_base::BigBuffer::kMaxInlineBytes) {
+      mojo_base::BigBuffer bigger(std::max(size, 4 * capacity_));
+      // Only kernel-zeroed shared memory is adopted; if the region could not
+      // be created BigBuffer falls back to uninitialized heap, so stay on ours.
+      if (bigger.storage_type() ==
+          mojo_base::BigBuffer::StorageType::kSharedMemory) {
+        base::span(bigger).first(capacity_).copy_from(written.first(capacity_));
+        transport_ = std::move(bigger);
+        heap_ = {};
+        capacity_ = transport_.size();
+        *actual_size = capacity_;
+        return transport_.data();
+      }
+    }
+    if (transport_.size() != 0) {
+      base::span<const uint8_t> kept = written.first(capacity_);
+      std::vector<uint8_t> heap(kept.begin(), kept.end());
+      transport_ = {};
+      heap_ = std::move(heap);
+    }
+    heap_.resize(size);
+    capacity_ = heap_.size();
+    *actual_size = capacity_;
+    return heap_.data();
   }
 
   void FreeBufferMemory(void* buffer) override {
-    DCHECK_EQ(buffer, data_.data());
-    data_ = {};
+    heap_ = {};
+    transport_ = {};
+    capacity_ = 0;
+  }
+
+  bool HasCustomHostObject(v8::Isolate* isolate) override { return true; }
+
+  v8::Maybe<bool> IsHostObject(v8::Isolate* isolate,
+                               v8::Local<v8::Object> object) override {
+    if (IsElectronApiWrapper(isolate, object))
+      return v8::Just(true);
+    return v8::ValueSerializer::Delegate::IsHostObject(isolate, object);
   }
 
   v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,
@@ -114,6 +180,29 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   }
 
  private:
+  bool Write(v8::Local<v8::Value> value, size_t* length) {
+    v8::MicrotasksScope microtasks_scope(
+        isolate_->GetCurrentContext(),
+        v8::MicrotasksScope::kDoNotRunMicrotasks);
+    WriteBlinkEnvelope(19);
+
+    serializer_.WriteHeader();
+    bool wrote_value;
+    if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
+             .To(&wrote_value)) {
+      isolate_->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate_, "An object could not be cloned.")));
+      return false;
+    }
+    DCHECK(wrote_value);
+
+    const auto [data_bytes, data_len] = serializer_.Release();
+    DCHECK_EQ(data_bytes, transport_.size() ? transport_.data() : heap_.data());
+    DCHECK_LE(data_len, capacity_);
+    *length = data_len;
+    return true;
+  }
+
   void WriteTag(const uint8_t tag) { serializer_.WriteRawBytes(&tag, 1U); }
 
   void WriteBlinkEnvelope(uint32_t blink_version) {
@@ -123,12 +212,17 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     serializer_.WriteUint32(blink_version);
   }
 
-  raw_ptr<v8::Isolate> isolate_;
-  std::vector<uint8_t> data_;
+  v8::Isolate* isolate_;
+  std::vector<uint8_t> heap_;
+  mojo_base::BigBuffer transport_;
+  size_t capacity_ = 0;
+  bool use_transport_buffer_ = false;
   v8::ValueSerializer serializer_;
 };
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
+  STACK_ALLOCATED();
+
  public:
   V8Deserializer(v8::Isolate* isolate, base::span<const uint8_t> data)
       : isolate_(isolate),
@@ -227,10 +321,10 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
       image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale));
     }
     gfx::Image image(image_skia);
-    return new api::NativeImage(isolate, image);
+    return api::NativeImage::Create(isolate, image);
   }
 
-  raw_ptr<v8::Isolate> isolate_;
+  v8::Isolate* isolate_;
   v8::ValueDeserializer deserializer_;
 };
 
@@ -240,9 +334,26 @@ bool SerializeV8Value(v8::Isolate* isolate,
   return V8Serializer(isolate).Serialize(value, out);
 }
 
+bool SerializeV8Value(v8::Isolate* isolate,
+                      v8::Local<v8::Value> value,
+                      SerializedValue* out) {
+  return V8Serializer(isolate).Serialize(value, out);
+}
+
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         const blink::CloneableMessage& in) {
   return V8Deserializer(isolate, in).Deserialize();
+}
+
+v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
+                                        const SerializedValue& in) {
+  // The process that sent a shared-memory payload can still write to it while
+  // it is parsed here; only renderers parse in place, everyone else a copy.
+  if (in.is_shared_memory() && !IsRendererProcess()) {
+    auto copy = base::HeapArray<uint8_t>::CopiedFrom(in.bytes());
+    return V8Deserializer(isolate, copy.as_span()).Deserialize();
+  }
+  return V8Deserializer(isolate, in.bytes()).Deserialize();
 }
 
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,

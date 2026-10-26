@@ -18,7 +18,6 @@
 #include "services/device/public/mojom/usb_manager.mojom-forward.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/mojom/usb/web_usb_service.mojom.h"
-#include "url/origin.h"
 
 namespace content {
 class BrowserContext;
@@ -31,6 +30,10 @@ class PendingReceiver;
 template <typename T>
 class PendingRemote;
 }  // namespace mojo
+
+namespace url {
+class Origin;
+}  // namespace url
 
 namespace electron {
 
@@ -53,6 +56,7 @@ class ElectronUsbDelegate : public content::UsbDelegate {
       blink::mojom::WebUsbRequestDeviceOptionsPtr options,
       blink::mojom::WebUsbService::GetPermissionCallback callback) override;
   bool CanRequestDevicePermission(content::BrowserContext* browser_context,
+                                  content::RenderFrameHost* frame,
                                   const url::Origin& origin) override;
   void RevokeDevicePermissionWebInitiated(
       content::BrowserContext* browser_context,

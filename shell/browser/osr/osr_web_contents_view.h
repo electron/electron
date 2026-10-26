@@ -12,7 +12,8 @@
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "shell/browser/osr/osr_render_widget_host_view.h"
-#include "third_party/blink/public/common/page/drag_mojom_traits.h"
+#include "third_party/blink/public/common/page/drag_operation.h"
+#include "third_party/blink/public/mojom/drag/drag.mojom-forward.h"
 
 #if BUILDFLAG(IS_MAC)
 #ifdef __OBJC__
@@ -96,7 +97,9 @@ class OffScreenWebContentsView : public content::WebContentsView,
       const gfx::Rect& drag_obj_rect,
       const blink::mojom::DragEventSourceInfo& event_info) override;
   void UpdateDragOperation(ui::mojom::DragOperation operation,
-                           bool document_is_handling_drag) override {}
+                           bool document_is_handling_drag,
+                           content::RenderWidgetHostImpl* source_rwh) override {
+  }
   void SetPainting(bool painting);
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);

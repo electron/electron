@@ -8,11 +8,19 @@
 #include <utility>
 #include <vector>
 
+#include "gin/persistent.h"
+#include "shell/browser/api/electron_api_event_emitter.h"
+#include "shell/browser/javascript_environment.h"
+#include "shell/browser/mac/in_app_purchase.h"
+#include "shell/browser/mac/in_app_purchase_product.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -130,13 +138,20 @@ struct Converter<in_app_purchase::Product> {
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo InAppPurchase::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo InAppPurchase::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronInAppPurchase);
 
 #if BUILDFLAG(IS_MAC)
 // static
-gin_helper::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(isolate, new InAppPurchase());
+InAppPurchase* InAppPurchase::Create(v8::Isolate* isolate) {
+  auto& allocation_handle = isolate->GetCppHeap()->GetAllocationHandle();
+  auto* in_app_purchase =
+      cppgc::MakeGarbageCollected<InAppPurchase>(allocation_handle);
+  in_app_purchase->StartObserving(base::BindRepeating(
+      &InAppPurchase::OnTransactionsUpdated,
+      gin::WrapPersistent(
+          in_app_purchase->weak_factory_.GetWeakCell(allocation_handle))));
+  return in_app_purchase;
 }
 
 gin::ObjectTemplateBuilder InAppPurchase::GetObjectTemplateBuilder(
@@ -155,8 +170,17 @@ gin::ObjectTemplateBuilder InAppPurchase::GetObjectTemplateBuilder(
       .SetMethod("getProducts", &InAppPurchase::GetProducts);
 }
 
-const char* InAppPurchase::GetTypeName() {
-  return "InAppPurchase";
+const gin::WrapperInfo* InAppPurchase::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* InAppPurchase::GetHumanReadableName() const {
+  return "Electron / InAppPurchase";
+}
+
+void InAppPurchase::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<InAppPurchase>::Trace(visitor);
+  visitor->Trace(weak_factory_);
 }
 
 InAppPurchase::InAppPurchase() = default;
@@ -171,9 +195,16 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   int quantity = 1;
-  args->GetNext(&quantity);
-  std::string username = "";
-  args->GetNext(&username);
+  std::string username;
+  gin_helper::Dictionary opts;
+  v8::Local<v8::Value> opts_value;
+  if (args->GetNext(&opts_value) && opts_value->IsObject() &&
+      gin::ConvertFromV8(isolate, opts_value, &opts)) {
+    opts.Get("quantity", &quantity);
+    opts.Get("username", &username);
+  } else if (!opts_value.IsEmpty()) {
+    gin::ConvertFromV8(isolate, opts_value, &quantity);
+  }
 
   in_app_purchase::PurchaseProduct(
       product_id, quantity, username,
@@ -211,14 +242,37 @@ namespace {
 
 using electron::api::InAppPurchase;
 
+#if !BUILDFLAG(IS_MAC)
+void PurchaseProduct(gin_helper::ErrorThrower thrower) {
+  thrower.ThrowError("The inAppPurchase module can only be used on macOS");
+}
+
+bool CanMakePayments() {
+  return false;
+}
+
+std::string GetReceiptURL() {
+  return "";
+}
+#endif
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-#if BUILDFLAG(IS_MAC)
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
+#if BUILDFLAG(IS_MAC)
   dict.Set("inAppPurchase", InAppPurchase::Create(isolate));
+#else
+  auto in_app_purchase = gin_helper::Dictionary::CreateEmpty(isolate);
+  in_app_purchase.GetHandle()
+      ->SetPrototype(context, electron::GetEventEmitterPrototype(isolate))
+      .Check();
+  in_app_purchase.SetMethod<&PurchaseProduct>("purchaseProduct");
+  in_app_purchase.SetMethod<&CanMakePayments>("canMakePayments");
+  in_app_purchase.SetMethod<&GetReceiptURL>("getReceiptURL");
+  dict.Set("inAppPurchase", in_app_purchase);
 #endif
 }
 

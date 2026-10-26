@@ -6,7 +6,6 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 
 #include <algorithm>
-#include <array>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -16,8 +15,9 @@
 #include "base/containers/fixed_flat_set.h"
 #include "base/containers/span.h"
 #include "base/dcheck_is_on.h"
+#include "base/json/json_reader.h"
+#include "base/logging.h"
 #include "base/memory/raw_ptr.h"
-#include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -27,20 +27,22 @@
 #include "build/util/chromium_git_revision.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/common/pref_names.h"
+#include "chrome/common/webui_url_constants.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/common/url_constants.h"
 #include "ipc/constants.mojom.h"
+#include "net/cert/x509_certificate.h"
 #include "net/http/http_response_headers.h"
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/simple_url_loader.h"
@@ -48,22 +50,30 @@
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/browser/ui/message_box.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/platform_util.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
-#include "third_party/blink/public/common/logging/logging_utils.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "ui/events/keycodes/dom/keycode_converter.h"
+#include "ui/events/keycodes/keyboard_code_conversion.h"
+#include "ui/events/keycodes/keyboard_codes.h"
 #include "url/url_util.h"
 #include "v8/include/v8.h"
+
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+#include "shell/browser/ui/certificate_viewer.h"
+#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "content/public/browser/child_process_security_policy.h"
@@ -99,6 +109,25 @@ constexpr std::string_view kFrontendHostMethod = "method";
 constexpr std::string_view kFrontendHostParams = "params";
 constexpr std::string_view kTitleFormat = "Developer Tools - %s";
 
+// Mirrors IsLocalDevToolsFrontendURL() in
+// chrome/browser/devtools/devtools_ui_bindings.cc: only the bundled, custom
+// and blank devtools:// frontends are trusted to access profile DevTools
+// settings and the other local-only embedder messages.
+bool IsLocalDevToolsFrontendURL(const GURL& url) {
+  if (!url.is_valid() || url.IsAboutBlank() ||
+      !url.SchemeIs(content::kChromeDevToolsScheme) ||
+      url.host() != chrome::kChromeUIDevToolsHost) {
+    return false;
+  }
+  std::string_view path = url.path();
+  if (path.starts_with('/')) {
+    path = path.substr(1);
+  }
+  return path.starts_with(chrome::kChromeUIDevToolsBundledPath) ||
+         path.starts_with(chrome::kChromeUIDevToolsCustomPath) ||
+         path.starts_with(chrome::kChromeUIDevToolsBlankPath);
+}
+
 const size_t kMaxMessageChunkSize = IPC::mojom::kChannelMaximumMessageSize / 4;
 
 base::DictValue RectToDictionary(const gfx::Rect& bounds) {
@@ -128,19 +157,22 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 }
 
 double GetNextZoomLevel(double level, bool out) {
-  static constexpr std::array<double, 16U> kPresetFactors{
-      0.25, 0.333, 0.5,  0.666, 0.75, 0.9, 1.0, 1.1,
-      1.25, 1.5,   1.75, 2.0,   2.5,  3.0, 4.0, 5.0};
-  static constexpr size_t size = std::size(kPresetFactors);
-
+  // Step to the neighbouring preset (the same list the browser zoom menu
+  // uses), even when the current level sits between two presets. Compare
+  // factors rather than levels so a stored level for a rounded factor such as
+  // 0.333 counts as the 1/3 preset.
   const double factor = blink::ZoomLevelToZoomFactor(level);
-  for (size_t i = 0U; i < size; ++i) {
-    if (!blink::ZoomValuesEqual(kPresetFactors[i], factor))
-      continue;
-    if (out && i > 0U)
-      return blink::ZoomFactorToZoomLevel(kPresetFactors[i - 1U]);
-    if (!out && i + 1U < size)
-      return blink::ZoomFactorToZoomLevel(kPresetFactors[i + 1U]);
+  const base::span<const double> presets = blink::kPresetBrowserZoomFactors;
+  if (out) {
+    for (size_t i = presets.size(); i-- > 0;) {
+      if (presets[i] < factor && !blink::ZoomValuesEqual(presets[i], factor))
+        return blink::ZoomFactorToZoomLevel(presets[i]);
+    }
+  } else {
+    for (double preset : presets) {
+      if (preset > factor && !blink::ZoomValuesEqual(preset, factor))
+        return blink::ZoomFactorToZoomLevel(preset);
+    }
   }
   return level;
 }
@@ -165,6 +197,17 @@ constexpr auto kValidDockStates = base::MakeFixedFlatSet<std::string_view>(
 
 bool IsValidDockState(const std::string& state) {
   return kValidDockStates.contains(state);
+}
+
+// Combines a keyboard code and modifier mask into a single int for shortcut
+// whitelisting, mirroring Chrome's DevToolsEventForwarder.
+int CombineKeyCodeAndModifiers(int key_code, int modifiers) {
+  return key_code | (modifiers << 16);
+}
+
+bool KeyWhitelistingAllowed(int key_code, int modifiers) {
+  return (ui::VKEY_F1 <= key_code && key_code <= ui::VKEY_F12) ||
+         modifiers != 0;
 }
 
 }  // namespace
@@ -371,7 +414,7 @@ content::WebContents* InspectableWebContents::GetWebContents() const {
 
 content::WebContents* InspectableWebContents::GetDevToolsWebContents() const {
   if (external_devtools_web_contents_)
-    return external_devtools_web_contents_;
+    return external_devtools_web_contents_.get();
   else
     return managed_devtools_web_contents_.get();
 }
@@ -384,10 +427,6 @@ void InspectableWebContents::InspectElement(int x, int y) {
 void InspectableWebContents::SetDelegate(
     InspectableWebContentsDelegate* delegate) {
   delegate_ = delegate;
-}
-
-InspectableWebContentsDelegate* InspectableWebContents::GetDelegate() const {
-  return delegate_;
 }
 
 void InspectableWebContents::ReleaseWebContents() {
@@ -405,6 +444,11 @@ void InspectableWebContents::SetDockState(const std::string& state) {
   }
 }
 
+std::string InspectableWebContents::DockStateSetting() const {
+  // DevTools settings are stored JSON-encoded.
+  return "\"" + dock_state_ + "\"";
+}
+
 void InspectableWebContents::SetDevToolsTitle(const std::u16string& title) {
   devtools_title_ = title;
   view_->SetTitle(devtools_title_);
@@ -412,8 +456,12 @@ void InspectableWebContents::SetDevToolsTitle(const std::u16string& title) {
 
 void InspectableWebContents::SetDevToolsWebContents(
     content::WebContents* devtools) {
-  if (!managed_devtools_web_contents_)
-    external_devtools_web_contents_ = devtools;
+  if (managed_devtools_web_contents_)
+    return;
+  if (devtools)
+    external_devtools_web_contents_ = devtools->GetWeakPtr();
+  else
+    external_devtools_web_contents_.reset();
 }
 
 void InspectableWebContents::ShowDevTools(bool activate) {
@@ -429,6 +477,39 @@ void InspectableWebContents::ShowDevTools(bool activate) {
   // SetIsDocked is called *BEFORE* ShowDevTools.
   embedder_message_dispatcher_ =
       DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this);
+
+  if (can_dock_) {
+    if (dock_state_.empty()) {
+      const base::DictValue& prefs =
+          pref_service_->GetDict(kDevToolsPreferences);
+      const std::string* current_dock_state =
+          prefs.FindString("currentDockState");
+      if (current_dock_state) {
+        std::string sanitized;
+        base::RemoveChars(*current_dock_state, "\"", &sanitized);
+        dock_state_ = IsValidDockState(sanitized) ? sanitized : "right";
+      } else {
+        dock_state_ = "right";
+      }
+    }
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
+    auto* api_web_contents = api::WebContents::From(GetWebContents());
+    if (api_web_contents) {
+      auto* win =
+          static_cast<NativeWindowViews*>(api_web_contents->owner_window());
+      // When WCO is enabled, undock the devtools if the current dock
+      // position overlaps with the position of window controls to avoid
+      // broken layout.
+      if (win && win->IsWindowControlsOverlayEnabled()) {
+        if (IsAppRTL() && dock_state_ == "left") {
+          dock_state_ = "undocked";
+        } else if (dock_state_ == "right") {
+          dock_state_ = "undocked";
+        }
+      }
+    }
+#endif
+  }
 
   if (!external_devtools_web_contents_) {  // no external devtools
     managed_devtools_web_contents_ = content::WebContents::Create(
@@ -536,6 +617,13 @@ void InspectableWebContents::UpdateDevToolsZoomLevel(double level) {
   pref_service_->SetDouble(kDevToolsZoomPref, level);
 }
 
+bool InspectableWebContents::IsLocalFrontend() const {
+  content::WebContents* devtools_web_contents = GetDevToolsWebContents();
+  return devtools_web_contents &&
+         IsLocalDevToolsFrontendURL(
+             devtools_web_contents->GetLastCommittedURL());
+}
+
 void InspectableWebContents::ActivateWindow() {
   if (embedder_message_dispatcher_) {
     if (managed_devtools_web_contents_ && view_) {
@@ -570,48 +658,12 @@ void InspectableWebContents::LoadCompleted() {
       view_->ShowDevTools(activate_);
 
     // If the devtools can dock, "SetIsDocked" will be called by devtools
-    // itself.
+    // itself with the currentDockState handed out by GetPreferences().
     if (!can_dock_) {
       SetIsDocked(DispatchCallback(), false);
       if (!devtools_title_.empty()) {
         view_->SetTitle(devtools_title_);
       }
-    } else {
-      if (dock_state_.empty()) {
-        const base::DictValue& prefs =
-            pref_service_->GetDict(kDevToolsPreferences);
-        const std::string* current_dock_state =
-            prefs.FindString("currentDockState");
-        if (current_dock_state) {
-          std::string sanitized;
-          base::RemoveChars(*current_dock_state, "\"", &sanitized);
-          dock_state_ = IsValidDockState(sanitized) ? sanitized : "right";
-        } else {
-          dock_state_ = "right";
-        }
-      }
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-      auto* api_web_contents = api::WebContents::From(GetWebContents());
-      if (api_web_contents) {
-        auto* win =
-            static_cast<NativeWindowViews*>(api_web_contents->owner_window());
-        // When WCO is enabled, undock the devtools if the current dock
-        // position overlaps with the position of window controls to avoid
-        // broken layout.
-        if (win && win->IsWindowControlsOverlayEnabled()) {
-          if (IsAppRTL() && dock_state_ == "left") {
-            dock_state_ = "undocked";
-          } else if (dock_state_ == "right") {
-            dock_state_ = "undocked";
-          }
-        }
-      }
-#endif
-      std::u16string javascript = base::UTF8ToUTF16(
-          "EUI.DockController.DockController.instance().setDockSide(\"" +
-          dock_state_ + "\");");
-      GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
-          javascript, base::NullCallback());
     }
   }
 
@@ -674,7 +726,8 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
 
 void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
   if (managed_devtools_web_contents_)
-    view_->SetContentsResizingStrategy(DevToolsContentsResizingStrategy{rect});
+    view_->SetContentsResizingStrategy(
+        DevToolsContentsResizingStrategy{devtools::DockSide::kNone, rect});
 }
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
@@ -733,10 +786,13 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
             std::move(pending_remote)));
   } else if (const auto* const protocol_handler =
                  protocol_registry->FindRegistered(gurl.scheme())) {
+    auto* browser_context = static_cast<ElectronBrowserContext*>(
+        GetDevToolsWebContents()->GetBrowserContext());
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                             protocol_handler->second)));
+                                             protocol_handler->second,
+                                             browser_context->GetWeakPtr())));
   } else {
     auto* partition = GetDevToolsWebContents()
                           ->GetBrowserContext()
@@ -848,6 +904,110 @@ void InspectableWebContents::SetEyeDropperActive(bool active) {
     delegate_->DevToolsSetEyeDropperActive(active);
 }
 
+void InspectableWebContents::SetWhitelistedShortcuts(
+    const std::string& message) {
+  std::optional<base::Value> parsed =
+      base::JSONReader::Read(message, base::JSON_PARSE_RFC);
+  if (!parsed || !parsed->is_list())
+    return;
+  whitelisted_shortcut_keys_.clear();
+  for (const auto& list_item : parsed->GetList()) {
+    if (!list_item.is_dict())
+      continue;
+    const base::DictValue& dict = list_item.GetDict();
+    const int key_code = dict.FindInt("keyCode").value_or(0);
+    if (key_code == 0)
+      continue;
+    const int modifiers = dict.FindInt("modifiers").value_or(0);
+    if (!KeyWhitelistingAllowed(key_code, modifiers)) {
+      LOG(WARNING) << "Key whitelisting forbidden: (" << key_code << ","
+                   << modifiers << ")";
+      continue;
+    }
+    whitelisted_shortcut_keys_.insert(
+        CombineKeyCodeAndModifiers(key_code, modifiers));
+  }
+}
+
+bool InspectableWebContents::ForwardKeyboardEvent(
+    const input::NativeWebKeyboardEvent& event) {
+  if (!frontend_loaded_ || whitelisted_shortcut_keys_.empty())
+    return false;
+
+  std::string event_type;
+  switch (event.GetType()) {
+    case blink::WebInputEvent::Type::kKeyDown:
+    case blink::WebInputEvent::Type::kRawKeyDown:
+      event_type = "keydown";
+      break;
+    case blink::WebInputEvent::Type::kKeyUp:
+      event_type = "keyup";
+      break;
+    default:
+      return false;
+  }
+
+  const int key_code = ui::LocatedToNonLocatedKeyboardCode(
+      static_cast<ui::KeyboardCode>(event.windows_key_code));
+  const int modifiers =
+      event.GetModifiers() &
+      (blink::WebInputEvent::kShiftKey | blink::WebInputEvent::kControlKey |
+       blink::WebInputEvent::kAltKey | blink::WebInputEvent::kMetaKey);
+  if (!whitelisted_shortcut_keys_.contains(
+          CombineKeyCodeAndModifiers(key_code, modifiers))) {
+    return false;
+  }
+
+  base::DictValue event_data;
+  event_data.Set("type", event_type);
+  event_data.Set("key", ui::KeycodeConverter::DomKeyToKeyString(
+                            ui::DomKey(event.dom_key)));
+  event_data.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
+                             static_cast<ui::DomCode>(event.dom_code)));
+  event_data.Set("keyCode", key_code);
+  event_data.Set("modifiers", modifiers);
+  CallClientFunction("DevToolsAPI", "keyEventUnhandled",
+                     base::Value(std::move(event_data)));
+  return true;
+}
+
+void InspectableWebContents::ShowCertificateViewer(
+    const std::string& cert_chain) {
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+  // |cert_chain| is a JSON list of base64-encoded DER certificates, sent by
+  // the DevTools Security panel.
+  std::optional<base::Value> parsed =
+      base::JSONReader::Read(cert_chain, base::JSON_PARSE_RFC);
+  if (!parsed || !parsed->is_list())
+    return;
+
+  std::vector<std::string> decoded;
+  decoded.reserve(parsed->GetList().size());
+  for (const auto& item : parsed->GetList()) {
+    if (!item.is_string())
+      return;
+    std::string der;
+    if (!base::Base64Decode(item.GetString(), &der))
+      return;
+    decoded.push_back(std::move(der));
+  }
+  if (decoded.empty())
+    return;
+
+  const std::vector<std::string_view> der_views(decoded.begin(), decoded.end());
+  scoped_refptr<net::X509Certificate> certificate =
+      net::X509Certificate::CreateFromDERCertChain(der_views);
+  if (!certificate)
+    return;
+
+  content::WebContents* devtools_web_contents = GetDevToolsWebContents();
+  ShowPlatformCertificateViewer(
+      certificate.get(), devtools_web_contents
+                             ? devtools_web_contents->GetTopLevelNativeWindow()
+                             : gfx::NativeWindow());
+#endif
+}
+
 void InspectableWebContents::ZoomIn() {
   double new_level = GetNextZoomLevel(GetDevToolsZoomLevel(), false);
   SetZoomLevelForWebContents(GetDevToolsWebContents(), new_level);
@@ -883,12 +1043,21 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
 }
 
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
-  const base::Value& prefs = pref_service_->GetValue(kDevToolsPreferences);
+  base::Value prefs = pref_service_->GetValue(kDevToolsPreferences).Clone();
+  if (can_dock_) {
+    // The frontend's DockController docks to this setting when it loads.
+    prefs.GetDict().Set("currentDockState", DockStateSetting());
+  }
   std::move(callback).Run(&prefs);
 }
 
 void InspectableWebContents::GetPreference(DispatchCallback callback,
                                            const std::string& name) {
+  if (can_dock_ && name == "currentDockState") {
+    base::Value dock_state(DockStateSetting());
+    std::move(callback).Run(&dock_state);
+    return;
+  }
   if (auto* pref = pref_service_->GetDict(kDevToolsPreferences).Find(name)) {
     std::move(callback).Run(pref);
     return;
@@ -990,6 +1159,16 @@ void InspectableWebContents::DispatchProtocolMessage(
   }
 }
 
+void InspectableWebContents::AgentHostClosed(
+    content::DevToolsAgentHost* agent_host) {
+  // The inspected target has gone away (e.g. its WebContents was destroyed,
+  // or another DevTools client force-detached this one). The frontend is now
+  // inspecting nothing, so close it like Chrome does.
+  DCHECK_EQ(agent_host, agent_host_.get());
+  agent_host_ = nullptr;
+  CloseDevTools();
+}
+
 void InspectableWebContents::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
@@ -1080,6 +1259,108 @@ void InspectableWebContents::EnumerateDirectory(
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)
     delegate->EnumerateDirectory(source, std::move(listener), path);
+}
+
+bool InspectableWebContents::HandleContextMenu(
+    content::RenderFrameHost& render_frame_host,
+    const content::ContextMenuParams& params) {
+  // Context menu requests from the DevTools frontend
+  // (InspectorFrontendHost.showContextMenuAtPoint) arrive here with the menu
+  // items in |params.custom_items|. Show them as a native menu anchored to
+  // whichever window hosts the DevTools view.
+  if (view_)
+    view_->ShowDevToolsContextMenu(params);
+  return true;
+}
+
+content::JavaScriptDialogManager*
+InspectableWebContents::GetJavaScriptDialogManager(
+    content::WebContents* source) {
+  return this;
+}
+
+void InspectableWebContents::RunJavaScriptDialog(
+    content::WebContents* web_contents,
+    content::RenderFrameHost* rfh,
+    content::JavaScriptDialogType dialog_type,
+    const std::u16string& message_text,
+    const std::u16string& default_prompt_text,
+    DialogClosedCallback callback,
+    bool* did_suppress_message) {
+  // The DevTools frontend uses window.confirm() for destructive actions
+  // (e.g. deleting all breakpoints) and window.alert() for notices. Prompts
+  // are not used; suppress them.
+  if (dialog_type == content::JAVASCRIPT_DIALOG_TYPE_PROMPT) {
+    *did_suppress_message = true;
+    return;
+  }
+
+  const bool is_confirm =
+      dialog_type == content::JAVASCRIPT_DIALOG_TYPE_CONFIRM;
+
+  MessageBoxSettings settings;
+  settings.message = base::UTF16ToUTF8(message_text);
+  settings.buttons = {"OK"};
+  settings.default_id = 0;
+  settings.cancel_id = 0;
+  if (is_confirm) {
+    settings.buttons.push_back("Cancel");
+    settings.cancel_id = 1;
+  }
+
+  ShowMessageBox(settings,
+                 base::BindOnce(
+                     [](DialogClosedCallback callback, int code, bool) {
+                       std::move(callback).Run(code == 0, std::u16string());
+                     },
+                     std::move(callback)));
+}
+
+void InspectableWebContents::RunBeforeUnloadDialog(
+    content::WebContents* web_contents,
+    content::RenderFrameHost* rfh,
+    bool is_reload,
+    DialogClosedCallback callback) {
+  // The DevTools frontend doesn't use beforeunload handlers; always proceed.
+  std::move(callback).Run(true, std::u16string());
+}
+
+void InspectableWebContents::CancelDialogs(content::WebContents* web_contents,
+                                           bool reset_state) {}
+
+void InspectableWebContents::ActivateContents(content::WebContents* contents) {
+  // Called when the DevTools frontend requests focus, e.g. window.focus().
+  if (managed_devtools_web_contents_ && view_)
+    view_->ActivateDevTools();
+}
+
+void InspectableWebContents::ContentsZoomChange(bool zoom_in) {
+  // Ctrl+wheel / pinch zooming inside the DevTools frontend.
+  if (zoom_in)
+    ZoomIn();
+  else
+    ZoomOut();
+}
+
+content::WebContents* InspectableWebContents::OpenURLFromTab(
+    content::WebContents* source,
+    const content::OpenURLParams& params,
+    base::OnceCallback<void(content::NavigationHandle&)>
+        navigation_handle_callback) {
+  // Navigations inside the DevTools frontend: requests for devtools:// URLs
+  // reload the frontend in place; anything else is handed to the embedding
+  // app (devtools-open-url) so the frontend can't be navigated away.
+  if (params.url.SchemeIs(content::kChromeDevToolsScheme)) {
+    content::WebContents* devtools_web_contents = GetDevToolsWebContents();
+    if (!devtools_web_contents)
+      return nullptr;
+    devtools_web_contents->GetController().Reload(content::ReloadType::NORMAL,
+                                                  false);
+    return devtools_web_contents;
+  }
+
+  OpenInNewTab(params.url.spec());
+  return nullptr;
 }
 
 void InspectableWebContents::OnWebContentsFocused(

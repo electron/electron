@@ -1,19 +1,91 @@
 module electron.mojom;
 
+import "mojo/public/mojom/base/big_buffer.mojom";
 import "mojo/public/mojom/base/string16.mojom";
 import "ui/gfx/geometry/mojom/geometry.mojom";
-import "third_party/blink/public/mojom/messaging/cloneable_message.mojom";
 import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
+
+// A preload script and its contents, pushed to the renderer ahead of the
+// document that needs it.
+struct PreloadScriptData {
+  string id;
+  string file_path;
+  // UTF-8 contents. array<uint8> rather than BigBuffer so RendererStartupData
+  // can be flat-serialized into an opaque blob for the CreateNewWindowReply
+  // path.
+  array<uint8> contents;
+  // Set if the file could not be read; surfaced via the 'preload-error' event.
+  string? error;
+  // V8 code cache, produced by the first renderer to compile this preload and
+  // persisted under userData/Code Cache/electron-preload/. Only shipped when
+  // its recorded source hash matches |contents|.
+  array<uint8>? code_cache;
+};
+
+// Everything a sandboxed renderer needs to bootstrap a preload environment.
+// process.arch/platform/version/versions are intentionally not here — they're
+// filled renderer-side from node::per_process::metadata.
+struct RendererStartupData {
+  array<PreloadScriptData> preload_scripts;
+  // Browser process.env, captured fresh per push.
+  map<string, string> environment;
+  string helper_exec_path;
+};
+
+// A value serialized with electron::SerializeV8Value(), in the buffer it is
+// sent in. |buffer| may be larger than the |size| bytes that were written.
+struct SerializedValue {
+  mojo_base.mojom.BigBuffer buffer;
+  uint64 size;
+};
+
+struct ScriptSource {
+  mojo_base.mojom.String16 code;
+  string url;
+};
+
+// Per-frame interface associated with content.mojom.Frame, so its messages and
+// replies are ordered with navigation and the frame's other host messages:
+// SetStartupData() arrives before the CommitNavigation that follows it, and a
+// reply is seen after anything the frame told its host while handling the
+// request.
+interface ElectronFrame {
+  SetStartupData(RendererStartupData data);
+
+  // webContents.executeJavaScript() and friends. |result| is the script's
+  // completion value (a thenable is awaited first) when |success|, otherwise
+  // the value it threw or rejected with, unless |error| describes a failure
+  // that produced no value. |world_id| 0 is the main world.
+  ExecuteJavaScript(int32 world_id,
+                    array<ScriptSource> sources,
+                    bool has_user_gesture)
+      => (bool success, SerializedValue result, string error);
+  InsertCSS(string css, string css_origin) => (mojo_base.mojom.String16 key);
+  RemoveInsertedCSS(mojo_base.mojom.String16 key) => ();
+  InsertText(string text) => ();
+  SetVisualZoomLevelLimits(double min_level, double max_level) => ();
+
+  // sharedTexture.sendSharedTexture(): imports |transfer| (the result of
+  // startTransferSharedTexture() in the browser) in the frame's Electron
+  // context and hands it to the receiver registered with
+  // sharedTexture.setSharedTextureReceiver() along with |args|. |result| is
+  // the imported texture's frame creation sync token when |success|, otherwise
+  // the error thrown, or |error| describes the failure.
+  ReceiveSharedTexture(SerializedValue transfer,
+                       string texture_id,
+                       SerializedValue args)
+      => (bool success, SerializedValue result, string error);
+};
 
 interface ElectronRenderer {
   Message(
       bool internal,
       string channel,
-      blink.mojom.CloneableMessage arguments);
+      SerializedValue arguments);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
-  TakeHeapSnapshot(handle file) => (bool success);
+  TakeHeapSnapshot(handle<platform> file) => (bool success);
 };
 
 interface ElectronAutofillAgent {
@@ -31,14 +103,14 @@ interface ElectronApiIPC {
   Message(
       bool internal,
       string channel,
-      blink.mojom.CloneableMessage arguments);
+      SerializedValue arguments);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and returns the response.
   Invoke(
       bool internal,
       string channel,
-      blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
+      SerializedValue arguments) => (SerializedValue result);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
@@ -48,9 +120,9 @@ interface ElectronApiIPC {
   MessageSync(
     bool internal,
     string channel,
-    blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
+    SerializedValue arguments) => (SerializedValue result);
 
   MessageHost(
     string channel,
-    blink.mojom.CloneableMessage arguments);
+    SerializedValue arguments);
 };

@@ -8,11 +8,9 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "base/message_loop/message_pump_apple.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/uuid.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
 #include "shell/browser/ui/cocoa/electron_menu_controller.h"
@@ -20,8 +18,8 @@
 #include "ui/gfx/mac/coordinate_conversion.h"
 
 @interface StatusItemView : NSView {
-  raw_ptr<electron::TrayIconCocoa> trayIcon_;  // weak
-  ElectronMenuController* menuController_;     // weak
+  raw_ptr<electron::TrayIconCocoa, DanglingUntriaged> trayIcon_;  // weak
+  ElectronMenuController* menuController_;                        // weak
   BOOL ignoreDoubleClickEvents_;
   NSStatusItem* __strong statusItem_;
   NSTrackingArea* __strong trackingArea_;
@@ -203,15 +201,19 @@
   // arrived here from VoiceOver, which does not pass an event.
   // Create a synthetic event to pass to the click handler.
   if (![event respondsToSelector:@selector(locationInWindow)]) {
-    event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
-                               location:NSMakePoint(0, 0)
-                          modifierFlags:0
-                              timestamp:NSApp.currentEvent.timestamp
-                           windowNumber:0
-                                context:nil
-                            eventNumber:0
-                             clickCount:1
-                               pressure:1.0];
+    NSEvent* synthetic_event =
+        [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                           location:NSMakePoint(0, 0)
+                      modifierFlags:0
+                          timestamp:NSApp.currentEvent.timestamp
+                       windowNumber:0
+                            context:nil
+                        eventNumber:0
+                         clickCount:1
+                           pressure:1.0];
+    if (!synthetic_event)
+      return;
+    event = synthetic_event;
 
     // We also need to explicitly call the click handler here, since
     // VoiceOver won't trigger mouseUp.
@@ -267,8 +269,6 @@
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
-    // Ensure the UI can update while the menu is fading out.
-    base::ScopedPumpMessagesInPrivateModes pump_private;
     [[statusItem_ button] performClick:self];
   }
 }
@@ -394,16 +394,21 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
-void TrayIconCocoa::PopUpOnUI(base::WeakPtr<ElectronMenuModel> menu_model) {
+void TrayIconCocoa::PopUpOnUI(base::WeakPtr<ElectronMenuModel> menu_model,
+                              base::ScopedClosureRunner retain_menu) {
+  // -popUpContextMenu: spins a nested loop until the menu closes, so
+  // |retain_menu| covers the whole time the model is in use.
   [status_item_view_ popUpContextMenu:menu_model.get()];
 }
 
 void TrayIconCocoa::PopUpContextMenu(
     const gfx::Point& pos,
-    base::WeakPtr<ElectronMenuModel> menu_model) {
+    base::WeakPtr<ElectronMenuModel> menu_model,
+    base::ScopedClosureRunner retain_menu) {
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE, base::BindOnce(&TrayIconCocoa::PopUpOnUI,
-                                weak_factory_.GetWeakPtr(), menu_model));
+      FROM_HERE,
+      base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
+                     menu_model, std::move(retain_menu)));
 }
 
 void TrayIconCocoa::CloseContextMenu() {

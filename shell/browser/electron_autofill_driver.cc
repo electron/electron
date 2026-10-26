@@ -34,6 +34,14 @@ void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<std::u16string>& values,
     const std::vector<std::u16string>& labels) {
+  // The renderer only requests the popup for a non-empty suggestion list,
+  // and always sends one label per value. Don't let a compromised renderer
+  // create native popup windows for empty or malformed lists.
+  if (values.empty() || values.size() != labels.size()) {
+    HideAutofillPopup();
+    return;
+  }
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* web_contents = api::WebContents::From(

@@ -45,7 +45,7 @@ auto LoadIntegrityConfig() {
   absl::flat_hash_map<std::string, IntegrityPayload> cache;
 
   // Load integrity config from exe resource
-  HMODULE module_handle = ::GetModuleHandle(NULL);
+  HMODULE module_handle = ::GetModuleHandle(nullptr);
 
   HRSRC resource = ::FindResource(module_handle, kIntegrityCheckResourceItem,
                                   kIntegrityCheckResourceType);

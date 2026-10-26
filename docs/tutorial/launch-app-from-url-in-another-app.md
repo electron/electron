@@ -43,6 +43,10 @@ if (process.defaultApp) {
 }
 ```
 
+On Windows, when running through the default Electron executable (for example, `electron .`),
+registration must include the app entry path so protocol launches load the correct application.
+Packaged apps launch their own executable and do not need these additional arguments.
+
 We will now define the function in charge of creating our browser window and load our application's `index.html` file.
 
 ```js
@@ -74,7 +78,7 @@ const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLine) => {
     // Someone tried to run a second instance, we should focus our window.
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore()
@@ -99,6 +103,10 @@ if (!gotTheLock) {
 ```
 
 #### macOS code:
+
+> [!IMPORTANT]
+> Register an `open-url` listener during initial startup, before waiting for `ready` or other
+> asynchronous initialization. Listeners registered later may miss a launch URL delivered by macOS.
 
 ```js @ts-type={createWindow:()=>void}
 // This method will be called when Electron has finished
@@ -185,9 +193,9 @@ packager({
       schemes: ['electron-fiddle']
     }
   ]
-
-}).then(paths => console.log(`SUCCESS: Created ${paths.join(', ')}`))
-  .catch(err => console.error(`ERROR: ${err.message}`))
+})
+  .then((paths) => console.log(`SUCCESS: Created ${paths.join(', ')}`))
+  .catch((err) => console.error(`ERROR: ${err.message}`))
 ```
 
 If you're using Electron Packager's CLI, use the `--protocol` and `--protocol-name` flags. For

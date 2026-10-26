@@ -21,7 +21,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/mac_util.h"
 #include "shell/common/node_util.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/geometry/size.h"
@@ -32,6 +31,8 @@ namespace electron::api {
 
 NSData* bufferFromNSImage(NSImage* image) {
   CGImageRef ref = [image CGImageForProposedRect:nil context:nil hints:nil];
+  if (!ref)
+    return nil;
   NSBitmapImageRep* rep = [[NSBitmapImageRep alloc] initWithCGImage:ref];
   [rep setSize:[image size]];
   return [rep representationUsingType:NSBitmapImageFileTypePNG
@@ -49,7 +50,7 @@ void ReceivedThumbnailResult(CGSize size,
                              QLThumbnailRepresentation* thumbnail,
                              NSError* error) {
   if (error || !thumbnail) {
-    std::string err_msg([error.localizedDescription UTF8String]);
+    std::string err_msg = base::SysNSStringToUTF8(error.localizedDescription);
     p.RejectWithErrorMessage("unable to retrieve thumbnail preview "
                              "image for the given path: " +
                              err_msg);
@@ -77,11 +78,12 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   CGSize cg_size = size.ToCGSize();
 
   NSURL* nsurl = base::apple::FilePathToNSURL(path);
+  NSString* ns_path = [nsurl path];
 
   // We need to explicitly check if the user has passed an invalid path
   // because QLThumbnailGenerationRequest will generate a stock file icon
   // and pass silently if we do not.
-  if (![[NSFileManager defaultManager] fileExistsAtPath:[nsurl path]]) {
+  if (!ns_path || ![[NSFileManager defaultManager] fileExistsAtPath:ns_path]) {
     promise.RejectWithErrorMessage(
         "unable to retrieve thumbnail preview image for the given path");
     return handle;
@@ -106,9 +108,8 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   return handle;
 }
 
-gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
-    gin::Arguments* args,
-    std::string name) {
+NativeImage* NativeImage::CreateMenuSymbol(gin::Arguments* args,
+                                           std::string name) {
   @autoreleasepool {
     NSImage* image =
         [NSImage imageWithSystemSymbolName:base::SysUTF8ToNSString(name)
@@ -131,8 +132,8 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
       return CreateEmpty(args->isolate());
     }
 
-    gin_helper::Handle<NativeImage> handle =
-        CreateFromPNG(args->isolate(), electron::util::as_byte_span(png_data));
+    NativeImage* handle =
+        CreateFromPNG(args->isolate(), base::apple::NSDataToSpan(png_data));
 
     gfx::Size size = handle->GetSize(1.0);
 
@@ -148,7 +149,7 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
       new_width = static_cast<int>(15 * aspect_ratio);
     }
 
-    gin_helper::Handle<NativeImage> sized = handle->Resize(
+    NativeImage* sized = handle->Resize(
         args,
         base::DictValue().Set("width", new_width).Set("height", new_height));
 
@@ -158,9 +159,8 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
   }
 }
 
-gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
-    gin::Arguments* args,
-    std::string name) {
+NativeImage* NativeImage::CreateFromNamedImage(gin::Arguments* args,
+                                               std::string name) {
   @autoreleasepool {
     static bool deprecated_warning_issued = false;
 
@@ -179,6 +179,7 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
         if (!deprecated_warning_issued) {
           deprecated_warning_issued = true;
           util::EmitDeprecationWarning(
+              args->isolate(),
               "createFromNamedImage(name, hslShift) is deprecated, use "
               "createFromNamedImage(name, { hslShift }) instead.");
         }
@@ -263,8 +264,8 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     NSData* png_data = bufferFromNSImage(image);
 
     if (hsl_shift.size() == 3) {
-      auto gfx_image = gfx::Image::CreateFrom1xPNGBytes(
-          electron::util::as_byte_span(png_data));
+      auto gfx_image =
+          gfx::Image::CreateFrom1xPNGBytes(base::apple::NSDataToSpan(png_data));
       color_utils::HSL shift = {safeShift(hsl_shift[0], -1),
                                 safeShift(hsl_shift[1], 0.5),
                                 safeShift(hsl_shift[2], 0.5)};
@@ -274,8 +275,7 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
               .AsNSImage());
     }
 
-    return CreateFromPNG(args->isolate(),
-                         electron::util::as_byte_span(png_data));
+    return CreateFromPNG(args->isolate(), base::apple::NSDataToSpan(png_data));
   }
 }
 

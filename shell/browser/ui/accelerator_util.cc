@@ -4,9 +4,6 @@
 
 #include "shell/browser/ui/accelerator_util.h"
 
-#include <stdio.h>
-
-#include <string>
 #include <string_view>
 #include <vector>
 

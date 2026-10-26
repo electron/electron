@@ -28,6 +28,18 @@ function_registration("api_registration") {
   root_namespace = "extensions::api::%(namespace)s"
   schema_include_rules = "extensions/common/api:extensions::api::%(namespace)s"
 
+  # Schemas with a custom "implemented_in" path are excluded from the
+  # automatic <impl_dir>/<name>/<name>_api.h input calculation; their
+  # actual headers are listed in "inputs" instead.
+  custom_impl_schemas = [
+    "action",
+    "extension",
+  ]
+  inputs = [
+    "//chrome/browser/extensions/api/module/module.h",
+    "extension_action/extension_action_api.h",
+  ]
+
   deps = [
     # Different APIs include headers from these targets.
     "//components/zoom",

@@ -49,6 +49,7 @@ move_src_dirs_if_exist() {
   mkdir src_artifacts
 
   dirs=("src/out/Default/gen/node_headers" \
+    "src/out/Default/gen/electron/v8-code-cache" \
     "src/out/Default/overlapped-checker" \
     "src/out/Default/ffmpeg" \
     "src/out/Default/hunspell_dictionaries" \
@@ -110,6 +111,7 @@ mv_if_exist src/out/Default/mksnapshot.zip
 mv_if_exist src/out/Default/chromedriver.zip
 mv_if_exist src/out/ffmpeg/ffmpeg.zip
 mv_if_exist src/out/Default/hunspell_dictionaries.zip
+mv_if_exist src/out/Default/xcache.zip
 mv_if_exist src/cross-arch-snapshots
 cp_if_exist src/out/electron_ninja_log
 cp_if_exist src/out/Default/.ninja_log
@@ -117,4 +119,8 @@ if [ -n "$SISO_REPORT_PATH" ]; then
   cp_if_exist "$SISO_REPORT_PATH"
 fi
 
-move_src_dirs_if_exist
+# Test jobs are the only consumers of src_artifacts - skip the (expensive)
+# copy and tar when the caller declares no test job will run.
+if [ "${GENERATE_TEST_ARTIFACTS:-true}" != "false" ]; then
+  move_src_dirs_if_exist
+fi

@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44da311f119 100644
+index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7986619e0 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -20,18 +20,23 @@ index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44d
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
  #include "chrome/browser/ui/navigator/browser_navigator_params.h"
  #include "content/public/browser/document_picture_in_picture_window_controller.h"
-@@ -32,8 +33,10 @@
+@@ -28,11 +29,15 @@
+ #include "base/metrics/histogram_functions.h"
+ #include "base/numerics/checked_math.h"
  #include "base/task/sequenced_task_runner.h"
- // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
- // Android when supporting document PiP.
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
  #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/ui/views/picture_in_picture/document_pip_host.h"
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "components/webapps/isolated_web_apps/scheme.h"
  #include "media/base/media_switches.h"
-@@ -72,6 +75,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+ #include "ui/views/view.h"
+@@ -70,6 +75,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
  // `kMaxWindowSizeRatio`.
  constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
  
@@ -39,7 +44,7 @@ index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44d
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -88,6 +92,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+@@ -86,6 +92,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
    // AutoPictureInPictureTabHelper.
    return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
  }
@@ -47,7 +52,7 @@ index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44d
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -221,7 +226,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -232,7 +239,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -56,7 +61,7 @@ index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44d
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -573,7 +578,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -595,7 +602,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -65,7 +70,40 @@ index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44d
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -682,6 +687,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -656,14 +663,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
+ void PictureInPictureWindowManager::CloseWindowInternal() {
+   video_web_contents_observer_.reset();
+ 
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // Close the standalone Document PiP window, if one is open. The host itself
+   // stays attached to the opener WebContents.
+   if (document_pip_host_) {
+     document_pip_host_->Close();
+     document_pip_host_ = nullptr;
+   }
+-#endif  // !BUILDFLAG(IS_ANDROID)
++#endif  // !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ 
+   // Close and reset the picture-in-picture window controller, if it exists.
+   if (pip_window_controller_) {
+@@ -706,6 +713,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+ }
+ 
+ #if !BUILDFLAG(IS_ANDROID)
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+     content::WebContents* parent_web_contents,
+     std::unique_ptr<content::WebContents> child_web_contents,
+@@ -754,6 +762,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+   }
+   document_pip_host_ = host->GetWeakPtr();
+ }
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ 
+ std::unique_ptr<AutoPipSettingOverlayView>
+ PictureInPictureWindowManager::GetOverlayView(
+@@ -764,6 +773,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -73,7 +111,7 @@ index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44d
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -720,6 +726,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -802,6 +812,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -82,11 +120,63 @@ index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44d
  }
  
  PictureInPictureOcclusionTracker*
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
+index 2786953a872abd331d777d64231adfd3b685e85e..9b9998cdcce0c183fe0d7c06331526492e6f64ed 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
++++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
+@@ -13,6 +13,7 @@
+ #include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "base/observer_list_types.h"
++#include "build/branding_buildflags.h"
+ #include "build/build_config.h"
+ #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
+ #include "ui/display/display.h"
+@@ -221,6 +222,7 @@ class PictureInPictureWindowManager {
+   void NotifyObserversOnExitPictureInPicture();
+ 
+ #if !BUILDFLAG(IS_ANDROID)
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // Shows a standalone Document Picture-in-Picture window using a
+   // `DocumentPipHost` instead of a `Browser`. Used when the
+   // `kDocumentPipStandaloneWindow` feature is enabled. Takes ownership of the
+@@ -233,6 +235,7 @@ class PictureInPictureWindowManager {
+       std::unique_ptr<content::WebContents> child_web_contents,
+       blink::mojom::PictureInPictureWindowOptions pip_options,
+       bool focus_contents);
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ 
+   std::unique_ptr<AutoPipSettingOverlayView> GetOverlayView(
+       views::View* anchor_view,
+@@ -431,10 +434,12 @@ class PictureInPictureWindowManager {
+ 
+   std::unique_ptr<PictureInPictureWindowManagerUmaHelper> uma_helper_;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // The standalone Document PiP host for the current window, if the
+   // `kDocumentPipStandaloneWindow` path is active. Non-owning: the host is
+   // owned by the opener WebContents as user data.
+   base::WeakPtr<DocumentPipHost> document_pip_host_;
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #endif  //! BUILDFLAG(IS_ANDROID)
+ 
+   // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 15b35792469aca29900025733fbcc9d62d7d1d62..1fe989a3191e491de89d654023911bd72bf6ff3f 100644
+index a9436ec55914d264cc59637860785881ad2dd16a..b2953144a85fbd0014f5285b9b430206e6d7b890 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -450,11 +450,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -116,8 +116,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
+ 
+ constexpr int kOverlayBorderThickness = 10;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ // Minimum padding between the overlay view, if shown, and the window.
+ constexpr gfx::Size kOverlayViewPadding(64, 46);
++#endif
+ 
+ // Size for action buttons.
+ constexpr gfx::Size kActionButtonSize(28, 28);
+@@ -417,11 +419,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  
@@ -100,3 +190,234 @@ index 15b35792469aca29900025733fbcc9d62d7d1d62..1fe989a3191e491de89d654023911bd7
  
    return overlay_window;
  }
+@@ -454,9 +458,11 @@ VideoOverlayWindowViews::VideoOverlayWindowViews(
+ }
+ 
+ VideoOverlayWindowViews::~VideoOverlayWindowViews() {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (overlay_view_) {
+     overlay_view_->RemoveObserver(this);
+   }
++#endif
+   display::Screen::Get()->RemoveObserver(this);
+   PictureInPictureWindowManager::GetInstance()->OnPictureInPictureWindowHidden(
+       this);
+@@ -554,6 +560,7 @@ void VideoOverlayWindowViews::OnNativeBlur() {
+ }
+ 
+ gfx::Size VideoOverlayWindowViews::GetMinimumSize() const {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (IsOverlayViewShown()) {
+     // Make sure that our minimum is sufficiently large to enclose the bubble,
+     // plus some margin to make it look nicer.
+@@ -562,6 +569,7 @@ gfx::Size VideoOverlayWindowViews::GetMinimumSize() const {
+     overlay_size.SetToMax(min_size_);
+     return overlay_size;
+   }
++#endif
+   return min_size_;
+ }
+ 
+@@ -920,6 +928,7 @@ void VideoOverlayWindowViews::OnDisplayMetricsChanged(
+   }
+ }
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ void VideoOverlayWindowViews::OnViewVisibilityChanged(
+     views::View* observed_view,
+     views::View* starting_view,
+@@ -933,6 +942,7 @@ void VideoOverlayWindowViews::OnViewVisibilityChanged(
+   // The visibility of `overlay_view_` affects our minimum size.
+   OnSizeConstraintsChanged();
+ }
++#endif
+ 
+ void VideoOverlayWindowViews::SetForcedTucking(bool tuck) {
+   if (!tucker_) {
+@@ -952,10 +962,12 @@ void VideoOverlayWindowViews::OnAnyBrowserEnteredFullscreen() {
+ }
+ #endif  // BUILDFLAG(IS_MAC)
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ void VideoOverlayWindowViews::OnAutoPipSettingOverlayViewHidden() {
+   // If there is an existing overlay view, remove it now.
+   RemoveOverlayViewIfExists();
+ }
++#endif
+ 
+ gfx::Rect VideoOverlayWindowViews::GetWorkAreaForWindow() const {
+   return display::Screen::Get()
+@@ -1009,6 +1021,7 @@ void VideoOverlayWindowViews::UpdateMaxSize(const gfx::Rect& work_area) {
+ 
+ bool VideoOverlayWindowViews::ControlsHitTestContainsPoint(
+     const gfx::Point& point) {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (overlay_view_) {
+     // Let the overlay view consume this event if it wants to.  If not, then
+     // ignore any of our controls as well.  This will still permit dragging the
+@@ -1017,6 +1030,7 @@ bool VideoOverlayWindowViews::ControlsHitTestContainsPoint(
+         views::View::ConvertPointToScreen(non_client_view(), point);
+     return overlay_view_->WantsEvent(point_in_screen);
+   }
++#endif
+ 
+   if (!AreControlsVisible()) {
+     return false;
+@@ -1485,9 +1499,11 @@ void VideoOverlayWindowViews::UpdateLayerBoundsWithLetterboxing(
+   video_view_->SetBoundsRect(video_bounds);
+   video_view_->layer()->AsSurface()->SetSurfaceSize(video_bounds.size());
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (IsOverlayViewShown()) {
+     overlay_view_->SetBoundsRect(gfx::Rect(GetBounds().size()));
+   }
++#endif
+ 
+   // Notify the controller that the bounds have changed.
+   controller_->UpdateLayerBounds();
+@@ -1760,6 +1776,7 @@ void VideoOverlayWindowViews::ShowInactive() {
+   non_client_view()->frame_view()->UpdateWindowRoundedCorners();
+ #endif
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // If there is an existing overlay view, remove it now.
+   RemoveOverlayViewIfExists();
+ 
+@@ -1781,6 +1798,7 @@ void VideoOverlayWindowViews::ShowInactive() {
+     overlay_view_->ShowBubble(GetNativeView());
+     SetBounds(CalculateAndUpdateWindowBounds());
+   }
++#endif
+ 
+   // When the window is first shown, make the title and top controls
+   // visible for a few seconds.
+@@ -2372,10 +2390,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
+ }
+ 
+ bool VideoOverlayWindowViews::IsOverlayViewShown() const {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   return overlay_view_ && overlay_view_->GetVisible();
++#else
++  return false;
++#endif
+ }
+ 
+ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (overlay_view_) {
+     // Remove and delete the outgoing view.  Note the trailing `T` on the method
+     // name -- this removes `overlay_view_` and returns a unique_ptr to it which
+@@ -2384,6 +2407,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
+     GetContentsView()->RemoveChildViewT(overlay_view_.ExtractAsDangling());
+     OnSizeConstraintsChanged();
+   }
++#endif
+ }
+ 
+ void VideoOverlayWindowViews::OnProgressDragStateChanged(
+diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.h b/chrome/browser/ui/views/overlay/video_overlay_window_views.h
+index 222a5167b5e719403268e672372acd809a043263..9d5a0af231d95830013d87d6fdc104a304d3d730 100644
+--- a/chrome/browser/ui/views/overlay/video_overlay_window_views.h
++++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.h
+@@ -10,7 +10,10 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/timer/timer.h"
++#include "build/branding_buildflags.h"
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
++#endif
+ #include "chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.h"
+ #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
+ #include "components/global_media_controls/public/views/media_progress_view.h"
+@@ -20,7 +23,9 @@
+ #include "ui/display/display.h"
+ #include "ui/display/display_observer.h"
+ #include "ui/gfx/geometry/size.h"
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "ui/views/view_observer.h"
++#endif
+ #include "ui/views/widget/widget.h"
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -58,12 +63,16 @@ class ToggleMuteButton;
+ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+                                 public views::Widget,
+                                 public display::DisplayObserver,
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+                                 public views::ViewObserver,
+-                                public PictureInPictureWindow,
+-                                public AutoPipSettingOverlayView::Delegate {
++                                public AutoPipSettingOverlayView::Delegate,
++#endif
++                                public PictureInPictureWindow {
+  public:
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   using GetOverlayViewCb =
+       base::RepeatingCallback<std::unique_ptr<AutoPipSettingOverlayView>()>;
++#endif
+ 
+   static std::unique_ptr<VideoOverlayWindowViews> Create(
+       content::VideoPictureInPictureWindowController* controller);
+@@ -132,10 +141,12 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   void OnDisplayMetricsChanged(const display::Display& display,
+                                uint32_t changed_metrics) override;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // views::ViewObserver:
+   void OnViewVisibilityChanged(views::View* observed_view,
+                                views::View* starting_view,
+                                bool visible) override;
++#endif
+ 
+   // PictureInPictureWindow:
+   void SetForcedTucking(bool tuck) override;
+@@ -143,8 +154,10 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   void OnAnyBrowserEnteredFullscreen() override;
+ #endif  // BUILDFLAG(IS_MAC)
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // AutoPipSettingOverlayView::Delegate:
+   void OnAutoPipSettingOverlayViewHidden() override;
++#endif
+ 
+   bool ControlsHitTestContainsPoint(const gfx::Point& point);
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -249,6 +262,7 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+ 
+   void FireEnableControlsAfterMoveTimerForTesting();
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   void set_overlay_view_cb_for_testing(GetOverlayViewCb get_overlay_view_cb) {
+     get_overlay_view_cb_ = std::move(get_overlay_view_cb);
+   }
+@@ -256,6 +270,7 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   AutoPipSettingOverlayView* get_overlay_view_for_testing() {
+     return overlay_view_;
+   }
++#endif
+ 
+   PictureInPictureWidgetFadeAnimator* get_fade_animator_for_testing() {
+     return fade_animator_.get();
+@@ -500,7 +515,9 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   raw_ptr<views::Label> live_status_ = nullptr;
+   raw_ptr<OverlayWindowLiveCaptionButton> live_caption_button_ = nullptr;
+   raw_ptr<OverlayWindowLiveCaptionDialog> live_caption_dialog_ = nullptr;
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   raw_ptr<AutoPipSettingOverlayView> overlay_view_ = nullptr;
++#endif
+   raw_ptr<views::View> title_view_ = nullptr;
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -566,9 +583,11 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   std::unique_ptr<OverlayControlsFadeAnimation>
+       title_and_top_scrim_fade_animation_;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // Callback to get / create an overlay view.  This is a callback to let tests
+   // provide alternate implementations.
+   GetOverlayViewCb get_overlay_view_cb_;
++#endif
+ 
+   // Used to animate the Picture-in-Picture window creation.
+   std::unique_ptr<PictureInPictureWidgetFadeAnimator> fade_animator_;

@@ -5,11 +5,20 @@ Subject: disable_hidden.patch
 
 Electron uses this to disable background throttling for hidden windows.
 
+Electron also keeps the widget visible while its native view is hidden
+(paintWhenInitiallyHidden, backgroundThrottling: false), so
+RenderWidgetHostViewAura::DidNavigate must not treat such a widget as
+dormant: invalidating the LocalSurfaceId there means the next
+VisualProperties update (e.g. a Window Controls Overlay rect pushed from
+DidFinishNavigation) reaches the renderer without a surface id, which
+makes it defer main frames until the view is eventually shown. Key the
+decision off the host's visibility, as RenderWidgetHostViewMac does.
+
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2a113539548c99a1b97723d99475391984fbbca3..03f49a97d123e88f48fd4d9dd05f8ca39dd6f317 100644
+index 421fa454dce53943cf90f1073f6938bb624f0c6d..b0ed11224b554839111e47d37ea1fe10e165b054 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -828,6 +828,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -910,6 +910,10 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -21,10 +30,10 @@ index 2a113539548c99a1b97723d99475391984fbbca3..03f49a97d123e88f48fd4d9dd05f8ca3
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 26ee661ae532159ba33d3c96627eca9e91097870..1677bc9fecf2e02bb1ded985f3dd77e9426a84a6 100644
+index 02bdef3bae5a29d874956d88e33e37bf0fd9ce5c..f3c132412ca87c3abda84cf91434a9f7d874cb35 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1066,6 +1066,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1106,6 +1106,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
  
    base::TimeDelta GetHungRendererDelayForTesting();
  
@@ -34,10 +43,10 @@ index 26ee661ae532159ba33d3c96627eca9e91097870..1677bc9fecf2e02bb1ded985f3dd77e9
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index b6f9361437688eb355aecf3fe9ab13eb434b940a..74f987e8aa28a78dc5f67999e940b1ee5ce49da7 100644
+index cdd82d37e4938e5722b958aa0c21a3be066ed017..56f2629d87ac241199599f4f4fa3b32f9307da5f 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -712,7 +712,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -768,7 +768,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    CHECK(visibility_ == Visibility::HIDDEN ||
          visibility_ == Visibility::OCCLUDED);
  
@@ -46,3 +55,17 @@ index b6f9361437688eb355aecf3fe9ab13eb434b940a..74f987e8aa28a78dc5f67999e940b1ee
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
        aura::Window* parent = window_->parent();
+@@ -3894,7 +3894,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
+ void RenderWidgetHostViewAura::DidNavigate() {
+   CHECK(delegated_frame_host_) << "Cannot be invoked during destruction.";
+ 
+-  if (!IsShowing()) {
++  // Electron: a widget that Electron keeps visible while its native view is
++  // hidden is still producing frames, so treat it as showing here. Otherwise
++  // the next VisualProperties update is sent without a LocalSurfaceId and the
++  // renderer stops producing frames until the view is shown. This matches
++  // RenderWidgetHostViewMac, which keys this off the host's visibility.
++  if (!IsShowing() && host()->IsHidden()) {
+     // Navigating while hidden should not allocate a new LocalSurfaceID. Once
+     // sizes are ready, or we begin to Show, we can then allocate the new
+     // LocalSurfaceId.

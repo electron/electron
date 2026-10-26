@@ -15,16 +15,26 @@ const { app, BrowserWindow, desktopCapturer, session } = require('electron')
 app.whenReady().then(() => {
   const mainWindow = new BrowserWindow()
 
-  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-      // Grant access to the first screen found.
-      callback({ video: sources[0], audio: 'loopback' })
-    })
-    // If true, use the system picker if available.
-    // Note: this is currently experimental. If the system picker
-    // is available, it will be used and the media request handler
-    // will not be invoked.
-  }, { useSystemPicker: true })
+  session.defaultSession.setDisplayMediaRequestHandler(
+    (request, callback) => {
+      desktopCapturer.getSources({ types: ['screen'] }).then(
+        (sources) => {
+          // Grant access to the first screen found.
+          callback({ video: sources[0], audio: 'loopback' })
+        },
+        () => {
+          // Deny the request if no sources could be retrieved, for example
+          // when the user cancels the PipeWire picker on Linux.
+          callback(null)
+        }
+      )
+      // If true, use the system picker if available.
+      // Note: this is currently experimental. If the system picker
+      // is available, it will be used and the media request handler
+      // will not be invoked.
+    },
+    { useSystemPicker: true }
+  )
 
   mainWindow.loadFile('index.html')
 })
@@ -37,17 +47,20 @@ const stopButton = document.getElementById('stopButton')
 const video = document.querySelector('video')
 
 startButton.addEventListener('click', () => {
-  navigator.mediaDevices.getDisplayMedia({
-    audio: true,
-    video: {
-      width: 320,
-      height: 240,
-      frameRate: 30
-    }
-  }).then(stream => {
-    video.srcObject = stream
-    video.onloadedmetadata = (e) => video.play()
-  }).catch(e => console.log(e))
+  navigator.mediaDevices
+    .getDisplayMedia({
+      audio: true,
+      video: {
+        width: 320,
+        height: 240,
+        frameRate: 30
+      }
+    })
+    .then((stream) => {
+      video.srcObject = stream
+      video.onloadedmetadata = (e) => video.play()
+    })
+    .catch((e) => console.log(e))
 })
 
 stopButton.addEventListener('click', () => {
@@ -88,6 +101,8 @@ changes:
   - pr-url: https://github.com/electron/electron/pull/16427
     description: "This method now returns a Promise instead of using a callback function."
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+  - pr-url: https://github.com/electron/electron/pull/54550
+    description: "Added the `persistMode` and `restoreToken` options."
 ```
 -->
 
@@ -101,6 +116,18 @@ changes:
   * `fetchWindowIcons` boolean (optional) - Set to true to enable fetching window icons. The default
     value is false. When false the appIcon property of the sources return null. Same if a source has
     the type screen.
+  * `persistMode` string (optional) _Linux_ _Experimental_ - Can be `transient` or `persistent`.
+    How long the source the user picks in the system picker can be reopened without showing the
+    picker again. `transient`, the default, lasts at most until the app exits. `persistent` lasts
+    across launches until the user revokes it; store the returned source's `restoreToken` to use
+    it on a later launch. See [Restoring a source on Wayland](#restoring-a-source-on-wayland).
+  * `restoreToken` string (optional) _Linux_ _Experimental_ - A `restoreToken` from an earlier
+    call; `persistMode` must be passed with it. If the system still honors the token, the promise
+    resolves with that source and no picker is shown. A token that was revoked or names a source
+    that no longer exists is ignored and the picker is shown as if no token was passed; a value
+    that is not a token the system issued makes the promise reject. Pass `persistMode:
+    'persistent'` with a persistent token every time: restoring it as `transient` ends the
+    persistent grant.
 
 Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) objects, each `DesktopCapturerSource` represents a screen or an individual window that can be captured.
 
@@ -108,6 +135,25 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 <!-- markdownlint-disable-next-line MD032 -->
 > * Capturing audio requires `NSAudioCaptureUsageDescription` Info.plist key on macOS 14.2 Sonoma and higher - [read more](#macos-versions-142-or-higher).
 > * Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher, which can detected by [`systemPreferences.getMediaAccessStatus`][].
+
+### `desktopCapturer.getRestoreToken(sourceId)` _Linux_ _Experimental_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54550
+```
+-->
+
+* `sourceId` string - The `id` of a [`DesktopCapturerSource`](structures/desktop-capturer-source.md).
+
+Returns `string` - The current restore token for the source, or an empty string if it has none.
+
+The system may replace the token each time the source is opened, which happens once in
+`desktopCapturer.getSources` and again when a stream is started from the source, and then only
+the newest token works on the next launch. Read it with this method once the stream is running,
+or before the app quits, and store that value rather than the one `getSources` returned. See
+[Restoring a source on Wayland](#restoring-a-source-on-wayland).
 
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
@@ -120,31 +166,106 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 
 PipeWire supports a single capture for both screens and windows. If you request the window and screen type, the selected source will be returned as a window capture.
 
+#### Restoring a source on Wayland
+
+On Wayland the source is chosen in the system's own picker, which `desktopCapturer.getSources`
+shows on every call. To let the user pick once and capture that choice again on later launches,
+pass `persistMode: 'persistent'`, store the source's restore token, and pass it back as
+`restoreToken` next time. Electron does not store tokens itself. A token names a screen or
+window the user already agreed to share, so keep it somewhere private to the app, for example
+encrypted with [`safeStorage`](safe-storage.md). If the user has revoked the grant or the screen or
+window no longer exists, the token is ignored and the picker is shown again. If the stored value is
+not a token the system issued, `getSources` rejects, so drop it and ask again without one.
+
+How a token is matched to a source is up to the desktop environment. GNOME and KDE remember a
+window by its app and title, and restore the open window of that app whose title is closest, so a
+token can resolve to a different window of the same app. If no title is close enough the picker is
+shown.
+
+With a valid token nothing asks the user before capture starts. Show the user what is being
+shared, and let them choose something else by calling `desktopCapturer.getSources` again without
+`restoreToken`.
+
+This needs `xdg-desktop-portal` with version 4 or later of the ScreenCast interface. In an X11
+session and on other platforms the options are ignored and `restoreToken` is always empty. In a
+Wayland session they also apply when the app runs under XWayland.
+
+```js
+const { app, desktopCapturer, safeStorage, session } = require('electron')
+
+const fs = require('node:fs/promises')
+const path = require('node:path')
+
+const tokenFile = path.join(app.getPath('userData'), 'screencast-token')
+
+async function readToken() {
+  try {
+    const { result } = await safeStorage.decryptStringAsync(await fs.readFile(tokenFile))
+    return result
+  } catch {
+    return undefined
+  }
+}
+
+async function writeToken(token) {
+  if (token) await fs.writeFile(tokenFile, await safeStorage.encryptStringAsync(token))
+}
+
+app.whenReady().then(() => {
+  let sourceId
+
+  session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+    // There is no source if the user closes the picker, and the call rejects if
+    // the stored value is not a token the system issued; forget it either way.
+    const [source] = await desktopCapturer
+      .getSources({
+        types: ['screen', 'window'],
+        persistMode: 'persistent',
+        restoreToken: (sourceId && desktopCapturer.getRestoreToken(sourceId)) || (await readToken())
+      })
+      .catch(() => fs.rm(tokenFile, { force: true }).then(() => []))
+    if (!source) {
+      callback(null)
+      return
+    }
+    sourceId = source.id
+    await writeToken(source.restoreToken)
+    callback({ video: source })
+  })
+
+  app.on('will-quit', (event) => {
+    if (!sourceId) return
+    event.preventDefault()
+    writeToken(desktopCapturer.getRestoreToken(sourceId)).finally(() => {
+      sourceId = undefined
+      app.quit()
+    })
+  })
+})
+```
+
 ### macOS versions 14.2 or higher
 
 `NSAudioCaptureUsageDescription` Info.plist key must be added in order for audio to be captured by
 `desktopCapturer`. If instead you are running Electron from another program like a terminal or IDE
 then that parent program must contain the Info.plist key.
 
-This is in order to facillitate use of Apple's new [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by Chromium.
+This is in order to facilitate use of Apple's [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by Chromium,
+which is gated behind the "System Audio Recording" privacy permission. macOS attributes that
+permission to the responsible process, so when running unpackaged from a terminal or IDE it is the
+terminal or IDE that must be granted access.
 
 > [!WARNING]
-> Failure of `desktopCapturer` to start an audio stream due to `NSAudioCaptureUsageDescription`
-> permission not present will still create a dead audio stream however no warnings or errors are
-> displayed.
+> If the permission is missing or has been denied, `desktopCapturer` still produces an audio
+> track, but it is created in the `ended` state and never delivers samples. No warning or error is
+> surfaced to JavaScript.
 
-As of Electron `v39.0.0-beta.4`, Chromium [made Apple's new `CoreAudio Tap API` the default](https://source.chromium.org/chromium/chromium/src/+/ad17e8f8b93d5f34891b06085d373a668918255e)
-for desktop audio capture. There is no fallback to the older `Screen & System Audio Recording`
-permissions system even if [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps) stream creation fails.
-
-If you need to continue using `Screen & System Audio Recording` permissions for `desktopCapturer`
-on macOS versions 14.2 and later, you can apply a Chromium feature flag to force use of that older
-permissions system:
-
-```js
-// main.js (right beneath your require/import statments)
-app.commandLine.appendSwitch('disable-features', 'MacCatapLoopbackAudioForScreenShare')
-```
+Since Electron 39, Chromium [uses the CoreAudio Tap API by default](https://source.chromium.org/chromium/chromium/src/+/ad17e8f8b93d5f34891b06085d373a668918255e)
+for system audio capture on macOS 14.2 and later. There is no automatic fallback to the older
+ScreenCaptureKit-based "Screen & System Audio Recording" path if tap creation fails, and as of
+Electron 45 the `MacCatapLoopbackAudioForScreenShare` feature flag that previously allowed opting
+back into it has been [removed upstream](https://chromium-review.googlesource.com/c/chromium/src/+/8275391)
+and no longer has any effect.
 
 ### macOS versions 12.7.6 or lower
 

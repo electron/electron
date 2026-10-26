@@ -5,14 +5,18 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_API_STREAMS_PRIVATE_STREAMS_PRIVATE_API_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_API_STREAMS_PRIVATE_STREAMS_PRIVATE_API_H_
 
+#include <cstdint>
 #include <string>
 
+#include "base/memory/scoped_refptr.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom-forward.h"
 
 class GURL;
 
 namespace extensions {
+
+class MimeHandlerBodyCache;
 
 // TODO(devlin): This is now only used for the MimeTypesHandler API. We should
 // rename and move it to make that clear. https://crbug.com/890401.
@@ -23,15 +27,19 @@ class StreamsPrivateAPI {
   // MimeHandlerViewGuest creation. |embedded| should be set to whether the
   // document is embedded within another document. The |frame_tree_node_id|
   // parameter is used for the top level plugins case. (PDF, etc).
+  // |navigation_id| identifies the navigation whose response was intercepted
+  // and is recorded on the stream.
   static void SendExecuteMimeTypeHandlerEvent(
       const std::string& extension_id,
       const std::string& stream_id,
       bool embedded,
       content::FrameTreeNodeId frame_tree_node_id,
+      int64_t navigation_id,
       blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
       const GURL& original_url,
       const std::string& internal_id,
-      const std::string& mime_type);
+      const std::string& mime_type,
+      scoped_refptr<MimeHandlerBodyCache> body_cache);
 };
 
 }  // namespace extensions

@@ -59,14 +59,11 @@ git commit -m "chore: update patches (trivial only)"
 
 ## Finding References
 
-Use `git log` or `git blame` on Node.js source files in `../third_party/electron_node`. Look for:
+Follow the procedure in `references/phase-one-commit-guidelines.md` under "Finding Commit/Issue References": identify the symbol the build break is about, find the commit that introduced it with `git log -S` or `git blame` against `refs/patches/upstream-head`, verify that commit's diff contains the symbol, and only then take its `PR-URL:` and subject line. The most recent commit to touch the file is not the answer unless that check passes.
 
-```
-PR-URL: https://github.com/nodejs/node/pull/XXXXX
-Refs: https://github.com/nodejs/node/issues/XXXXX
-```
+Before writing any fix, also check `roller/node/main` and the sibling `roller/node/{N}-x-y` branches for the same version (phase one guidelines, "Reuse Fixes From Sibling Roller Branches"). Build breaks from a Node.js bump are the same on every branch, and the fix should be too.
 
-Note: Many Node.js patches in Electron are Electron-authored and won't have upstream `PR-URL:` lines. Check the patch's own commit message for `Refs:` lines, or use `git log` in the Node.js repo to find which upstream commit caused the build break.
+Note: Many Node.js patches in Electron are Electron-authored and won't have upstream `PR-URL:` lines. Check the patch's own commit message for `Refs:` lines, or use the procedure above to find which upstream commit caused the build break.
 
 If no reference found after searching: `Ref: Unable to locate reference`
 

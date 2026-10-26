@@ -8,8 +8,8 @@
 
 #include "base/functional/callback_helpers.h"
 #include "content/public/browser/device_service.h"
+#include "gin/converter.h"
 #include "gin/dictionary.h"
-#include "gin/function_template.h"
 #include "gin/object_template_builder.h"
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
@@ -46,8 +46,7 @@ namespace electron::api {
 const gin::WrapperInfo PowerSaveBlocker::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronPowerSaveBlocker);
 
-PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
-    : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}
+PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate) {}
 
 PowerSaveBlocker::~PowerSaveBlocker() = default;
 

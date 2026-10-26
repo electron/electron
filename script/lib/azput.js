@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-
 const { BlobServiceClient } = require('@azure/storage-blob');
 const minimist = require('minimist');
 

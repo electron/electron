@@ -8,12 +8,7 @@
 #include <string>
 
 #include "ui/base/metadata/metadata_header_macros.h"
-#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/controls/button/menu_button.h"
-
-namespace ui {
-struct AXNodeData;
-}
 
 namespace electron {
 

@@ -8,10 +8,11 @@
 #include <utility>
 #include <vector>
 
+#include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/task/thread_pool.h"
 #include "shell/browser/notifications/mac/cocoa_notification.h"
 #include "shell/browser/notifications/mac/notification_center_delegate.h"
 
@@ -41,16 +42,7 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
 
 NotificationPresenterMac::NotificationPresenterMac()
     : notification_center_delegate_(
-          [[NotificationCenterDelegate alloc] initWithPresenter:this]),
-      image_retainer_(std::make_unique<NotificationImageRetainer>()),
-      image_task_runner_(base::ThreadPool::CreateSequencedTaskRunner(
-          {base::MayBlock(), base::TaskPriority::USER_VISIBLE})) {
-  // Delete any remaining temp files in the image folder from the previous
-  // sessions.
-  DCHECK(image_task_runner_);
-  auto cleanup_task = image_retainer_->GetCleanupTask();
-  image_task_runner_->PostTask(FROM_HERE, std::move(cleanup_task));
-
+          [[NotificationCenterDelegate alloc] initWithPresenter:this]) {
   UNUserNotificationCenter* center =
       [UNUserNotificationCenter currentNotificationCenter];
 
@@ -77,7 +69,6 @@ NotificationPresenterMac::NotificationPresenterMac()
 
 NotificationPresenterMac::~NotificationPresenterMac() {
   UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
-  image_task_runner_->DeleteSoon(FROM_HERE, image_retainer_.release());
 }
 
 Notification* NotificationPresenterMac::CreateNotificationObject(
@@ -87,6 +78,8 @@ Notification* NotificationPresenterMac::CreateNotificationObject(
 
 void NotificationPresenterMac::GetDeliveredNotifications(
     GetDeliveredNotificationsCallback callback) {
+  // A copy is needed: the block below would capture a reference by reference.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   scoped_refptr<base::SequencedTaskRunner> task_runner =
       base::SequencedTaskRunner::GetCurrentDefault();
 
@@ -114,6 +107,43 @@ void NotificationPresenterMac::GetDeliveredNotifications(
             FROM_HERE,
             base::BindOnce(std::move(block_callback), std::move(results)));
       }];
+}
+
+void NotificationPresenterMac::RemoveDeliveredNotifications(
+    const std::vector<std::string>& identifiers) {
+  NSMutableArray* ns_identifiers =
+      [NSMutableArray arrayWithCapacity:identifiers.size()];
+  for (const auto& id : identifiers) {
+    [ns_identifiers addObject:base::SysUTF8ToNSString(id)];
+  }
+  [[UNUserNotificationCenter currentNotificationCenter]
+      removeDeliveredNotificationsWithIdentifiers:ns_identifiers];
+}
+
+void NotificationPresenterMac::RemoveAllDeliveredNotifications() {
+  [[UNUserNotificationCenter currentNotificationCenter]
+      removeAllDeliveredNotifications];
+}
+
+void NotificationPresenterMac::RemoveDeliveredNotificationsByGroupId(
+    const std::string& group_id) {
+  NSString* target_group = base::SysUTF8ToNSString(group_id);
+  UNUserNotificationCenter* center =
+      [UNUserNotificationCenter currentNotificationCenter];
+
+  [center getDeliveredNotificationsWithCompletionHandler:^(
+              NSArray<UNNotification*>* _Nonnull notifications) {
+    NSMutableArray* matching_ids = [NSMutableArray array];
+    for (UNNotification* notification in notifications) {
+      if ([notification.request.content.threadIdentifier
+              isEqualToString:target_group]) {
+        [matching_ids addObject:notification.request.identifier];
+      }
+    }
+    if (matching_ids.count > 0) {
+      [center removeDeliveredNotificationsWithIdentifiers:matching_ids];
+    }
+  }];
 }
 
 }  // namespace electron

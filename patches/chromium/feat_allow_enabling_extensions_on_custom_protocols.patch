@@ -29,11 +29,11 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern url_pattern(kAllowedSchemes);
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
-diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
-index 32116daf768b52021b795afd6b0d5b96b5d0cf46..90ab5d50e7efbd3212e074514c41caf419e47f5e 100644
---- a/extensions/browser/api/web_request/extension_web_request_event_router.h
-+++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
-@@ -55,7 +55,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
+diff --git a/extensions/common/api/web_request/web_request_filter.h b/extensions/common/api/web_request/web_request_filter.h
+index 46ba17e5a3d6755a119a91a015a385253d598c52..bc8569fd0fc2c0fa9b12aa138567dcbfea4007a1 100644
+--- a/extensions/common/api/web_request/web_request_filter.h
++++ b/extensions/common/api/web_request/web_request_filter.h
+@@ -26,7 +26,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
      URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_EXTENSION | URLPattern::SCHEME_WS |
@@ -41,13 +41,13 @@ index 32116daf768b52021b795afd6b0d5b96b5d0cf46..90ab5d50e7efbd3212e074514c41caf4
 +    URLPattern::SCHEME_WSS | URLPattern::SCHEME_UUID_IN_PACKAGE |
 +    URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS;
  
- class WebRequestEventRouter : public KeyedService {
-  public:
+ // Keys of the webRequest.RequestFilter dictionary.
+ inline constexpr char kRequestFilterUrlsKey[] = "urls";
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index b98a85280fb8abef06b2f7420115a48b37727377..0da1f574a01bf32702cc1d8068a440b117809d38 100644
+index 28a3cac3756c7dab50819987ab0a924678042a43..12852d59969c81b75c26f678ae13f5fcb51b3e85 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
-@@ -225,7 +225,8 @@ const int Extension::kValidHostPermissionSchemes =
+@@ -218,7 +218,8 @@ const int Extension::kValidHostPermissionSchemes =
      URLPattern::SCHEME_CHROMEUI | URLPattern::SCHEME_HTTP |
      URLPattern::SCHEME_HTTPS | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_WS | URLPattern::SCHEME_WSS |
@@ -58,7 +58,7 @@ index b98a85280fb8abef06b2f7420115a48b37727377..0da1f574a01bf32702cc1d8068a440b1
  //
  // Extension
 diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
-index d4328ca22fdeefd3dca88bfe959dfb849705b109..ba24e788d4a2e467d24f6369e2d93ea3b4a0c9d7 100644
+index 584b62da4957d43b334295dbaaa7091110f5d5d5..b3156dbe31b2f25555496b4f971f3137d9bb7b16 100644
 --- a/extensions/common/url_pattern.cc
 +++ b/extensions/common/url_pattern.cc
 @@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
@@ -89,7 +89,7 @@ index d4328ca22fdeefd3dca88bfe959dfb849705b109..ba24e788d4a2e467d24f6369e2d93ea3
  }
  
 diff --git a/extensions/common/url_pattern.h b/extensions/common/url_pattern.h
-index 4d09251b0160644d86682ad3db7c41b50f360e6f..8a626e14eff2d58d8218a7b0df820c6c0522b00f 100644
+index 0ceff6bf8d6968bbb3643e673e9ffd8886349297..411fb3b072bf584b2568a4c027d6232f9e42ebc7 100644
 --- a/extensions/common/url_pattern.h
 +++ b/extensions/common/url_pattern.h
 @@ -64,6 +64,9 @@ class URLPattern {
@@ -103,7 +103,7 @@ index 4d09251b0160644d86682ad3db7c41b50f360e6f..8a626e14eff2d58d8218a7b0df820c6c
      // SCHEME_ALL will match every scheme, including chrome://, chrome-
      // extension://, about:, etc. Because this has lots of security
 diff --git a/extensions/common/user_script.cc b/extensions/common/user_script.cc
-index f680ef4d31d580a285abe51387e3df043d4458f1..afde40d56d7874aa04ea2b1d881e5cab79fd7661 100644
+index 672b6fe2fd92c7f83272549a1f2b44c29c5dc674..a72d3d6790ddf89cec6016aeef0c309cfb1550dd 100644
 --- a/extensions/common/user_script.cc
 +++ b/extensions/common/user_script.cc
 @@ -69,7 +69,8 @@ enum {
@@ -117,12 +117,12 @@ index f680ef4d31d580a285abe51387e3df043d4458f1..afde40d56d7874aa04ea2b1d881e5cab
  
  // static
 diff --git a/url/url_util.cc b/url/url_util.cc
-index f1f8ffe14fdac1156dce2502bff69e1d03eac2fc..d1bc847be05c1fb88c04dc936a5dbfc145a801ce 100644
+index cedfbaf417db8d244c80f051e03d5bed1030a944..339bd4d1340f94ae82ef41da3be937bd117dd55c 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -135,6 +135,9 @@ struct SchemeRegistry {
-   // Embedder schemes that have V8 code cache enabled in js and wasm scripts.
-   std::vector<std::string> code_cache_schemes = {};
+@@ -132,6 +132,9 @@ struct SchemeRegistry {
+       kMaterializedViewScheme,
+   };
  
 +  // Embedder schemes on which Chrome extensions can be used.
 +  std::vector<std::string> extension_schemes = {};
@@ -130,8 +130,8 @@ index f1f8ffe14fdac1156dce2502bff69e1d03eac2fc..d1bc847be05c1fb88c04dc936a5dbfc1
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -679,6 +682,15 @@ const std::vector<std::string>& GetCodeCacheSchemes() {
-   return GetSchemeRegistry().code_cache_schemes;
+@@ -667,6 +670,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+   return GetSchemeRegistry().empty_document_schemes;
  }
  
 +void AddExtensionScheme(std::string_view new_scheme) {
@@ -147,12 +147,12 @@ index f1f8ffe14fdac1156dce2502bff69e1d03eac2fc..d1bc847be05c1fb88c04dc936a5dbfc1
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 2647d26b25b26f570b40666ad2da3553b97d6088..88ed86392eb4e10a5b99267027371f3a46fc1ae1 100644
+index e4070343fbbafed6c7ca187459f08e9e0d8f5c00..b635bce630e9785c6c0462fc4ac7038511ad1513 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
-@@ -124,6 +124,11 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();
- COMPONENT_EXPORT(URL) void AddCodeCacheScheme(std::string_view new_scheme);
- COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCodeCacheSchemes();
+@@ -115,6 +115,11 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
+ COMPONENT_EXPORT(URL) void AddEmptyDocumentScheme(std::string_view new_scheme);
+ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();
  
 +// Adds an application-defined scheme to the list of schemes on which Chrome
 +// extensions can be used.

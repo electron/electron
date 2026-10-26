@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/byte_size.h"
 #include "base/containers/flat_map.h"
 #include "base/containers/map_util.h"
 #include "base/memory/weak_ptr.h"
@@ -15,7 +16,6 @@
 #include "base/task/sequenced_task_runner.h"
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "mojo/public/cpp/system/simple_watcher.h"
-#include "net/base/net_errors.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
@@ -69,11 +69,12 @@ class DataPipeReader {
 
  private:
   // Callback invoked by DataPipeGetter::Read.
-  void ReadCallback(int32_t status, uint64_t size) {
-    if (status != net::OK) {
+  void ReadCallback(network::mojom::DataPipeGetter::ReadResult result) {
+    if (!result.has_value()) {
       OnFailure();
       return;
     }
+    const uint64_t size = result->InBytes();
     buffer_.resize(size);
     head_offset_ = 0;
     remaining_size_ = size;
@@ -157,7 +158,10 @@ DataPipeHolder::DataPipeHolder(const network::DataElement& element)
       element.As<network::DataElementDataPipe>().CloneDataPipeGetter());
 }
 
-DataPipeHolder::~DataPipeHolder() = default;
+DataPipeHolder::~DataPipeHolder() {
+  // Off-heap registry; safe to touch from the finalizer.
+  AllDataPipeHolders().erase(id_);
+}
 
 v8::Local<v8::Promise> DataPipeHolder::ReadAll(v8::Isolate* isolate) {
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);

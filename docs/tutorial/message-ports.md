@@ -129,11 +129,11 @@ listeners.
 ```js title='preloadMain.js and preloadSecondary.js (Preload scripts)' @ts-window-type={electronMessagePort:MessagePort}
 const { ipcRenderer } = require('electron')
 
-ipcRenderer.on('port', e => {
+ipcRenderer.on('port', (e) => {
   // port received, make it globally available.
   window.electronMessagePort = e.ports[0]
 
-  window.electronMessagePort.onmessage = messageEvent => {
+  window.electronMessagePort.onmessage = (messageEvent) => {
     // handle message
   }
 })
@@ -245,18 +245,14 @@ Electron's built-in IPC methods only support two modes: fire-and-forget
 can implement a "response stream", where a single request responds with a
 stream of data.
 
-```js title='renderer.js (Renderer Process)' @ts-expect-error=[18]
+```js title='renderer.js (Renderer Process)' @ts-expect-error=[14]
 const makeStreamingRequest = (element, callback) => {
   // MessageChannels are lightweight--it's cheap to create a new one for each
   // request.
   const { port1, port2 } = new MessageChannel()
 
   // We send one end of the port to the main process ...
-  ipcRenderer.postMessage(
-    'give-me-a-stream',
-    { element, count: 10 },
-    [port2]
-  )
+  ipcRenderer.postMessage('give-me-a-stream', { element, count: 10 }, [port2])
 
   // ... and we hang on to the other end. The main process will send messages
   // to its end of the port, and close it when it's finished.
@@ -343,7 +339,7 @@ const { ipcRenderer } = require('electron')
 // We need to wait until the main world is ready to receive the message before
 // sending the port. We create this promise in the preload so it's guaranteed
 // to register the onload listener before the load event is fired.
-const windowLoaded = new Promise(resolve => {
+const windowLoaded = new Promise((resolve) => {
   window.onload = resolve
 })
 

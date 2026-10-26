@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/bluetooth_chooser.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -43,10 +42,11 @@ class BluetoothChooser : public content::BluetoothChooser {
 
   void OnDeviceChosen(const std::string& device_id);
   std::vector<DeviceInfo> GetDeviceList();
+  bool EmitSelectBluetoothDevice();
 
  private:
   absl::flat_hash_map<std::string, std::u16string> device_id_to_name_map_;
-  raw_ptr<api::WebContents> api_web_contents_;
+  cppgc::WeakPersistent<api::WebContents> api_web_contents_;
   EventHandler event_handler_;
   bool refreshing_ = false;
   bool rescan_ = false;

@@ -17,16 +17,17 @@ jobs:
       contents: read
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22.17.x
+          node-version: 22.23.4
       - name: Sparse checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
             .
             .github
             .yarn
+          persist-credentials: false
       - run: yarn workspaces focus @electron/gha-workflows
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: audit-errors
@@ -72,6 +73,12 @@ jobs:
                   continue; // Skip the audit workflow itself
                 }
 
+                // Only consider runs which actually failed, since retries within a
+                // test run can create error annotations even when the run succeeded
+                if (checkRun.conclusion !== 'failure') {
+                  continue;
+                }
+
                 const annotations = (await github.rest.checks.listAnnotations({
                   owner: "electron",
                   repo: "electron",
@@ -84,11 +91,13 @@ jobs:
                       annotation_level === "failure" &&
                       !message.startsWith("Process completed with exit code") &&
                       !message.startsWith("Response status code does not indicate success") &&
-                      !message.startsWith("The hosted runner lost communication with the server") &&
                       !message.startsWith("Dependabot encountered an error performing the update") &&
                       !message.startsWith("The action 'Run Electron Tests' has timed out") &&
                       !message.startsWith("The operation was canceled") &&
                       !message.startsWith("Canceling since") &&
+                      !/runner lost communication with the server/.test(message) &&
+                      !/curl 56 GnuTLS recv error/.test(message) &&
+                      !/Could not resolve host/.test(message) &&
                       !/Unable to make request/.test(message) &&
                       !/The requested URL returned error/.test(message),
                   )
@@ -154,10 +163,19 @@ jobs:
               core.summary.addRaw('🎉 No runs with errors');
             }
 
+            require('fs').writeFileSync(`${process.env.GITHUB_WORKSPACE}/audit-results.md`, core.summary.stringify());
             await core.summary.write();
+      - name: Upload audit results artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: audit-results.md
+          path: audit-results.md
+          archive: false
+          if-no-files-found: warn
       - name: Send Slack message if errors
         if: ${{ always() && steps.audit-errors.outputs.errorsFound && github.ref == 'refs/heads/main' }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           payload: |
             link: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

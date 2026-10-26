@@ -10,9 +10,10 @@
 #include <optional>
 #include <vector>
 
-#include "shell/common/gin_converters/guid_converter.h"
+#include "base/memory/raw_ptr.h"
+#include "base/uuid.h"
 
-const GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+inline constexpr GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 namespace electron {
 
@@ -31,8 +32,6 @@ class NotifyIconHost {
   void Remove(NotifyIcon* notify_icon);
 
  private:
-  typedef std::vector<NotifyIcon*> NotifyIcons;
-
   // Static callback invoked when a message comes in to our messaging window.
   static LRESULT CALLBACK WndProcStatic(HWND hwnd,
                                         UINT message,
@@ -50,7 +49,7 @@ class NotifyIconHost {
   UINT next_icon_id_ = 1;
 
   // List containing all active NotifyIcons.
-  NotifyIcons notify_icons_;
+  std::vector<raw_ptr<NotifyIcon>> notify_icons_;
 
   // The window class of |window_|.
   ATOM atom_ = 0;

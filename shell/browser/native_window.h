@@ -13,19 +13,22 @@
 #include <vector>
 
 #include "base/containers/queue.h"
+#include "base/functional/callback_helpers.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/strings/cstring_view.h"
+#include "base/timer/timer.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+#include "ui/views/view_tracker.h"
 #include "ui/views/widget/widget_delegate.h"
 
-class SkRegion;
 class DraggableRegionProvider;
+class PrefService;
 
 namespace input {
 struct NativeWebKeyboardEvent;
@@ -48,6 +51,7 @@ namespace electron {
 
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
+class InspectableWebContentsView;
 
 #if BUILDFLAG(IS_MAC)
 using NativeWindowHandle = gfx::NativeView;
@@ -79,6 +83,10 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
   virtual bool IsClosed() const;
+  // macOS: whether the window's NSWindow is in an app shim's process. What
+  // GetNativeWindow() names is then a stand-in that is never on screen, and
+  // nothing may be attached to it.
+  virtual bool IsInAppShim() const;
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() const = 0;
   virtual void Show() = 0;
@@ -95,7 +103,6 @@ class NativeWindow : public views::WidgetDelegate {
   virtual bool IsMinimized() const = 0;
   virtual void SetFullScreen(bool fullscreen) = 0;
   virtual bool IsFullscreen() const = 0;
-  virtual bool IsTiled() const;
 
   virtual void SetBounds(const gfx::Rect& bounds, bool animate) = 0;
   virtual gfx::Rect GetBounds() const = 0;
@@ -147,8 +154,8 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() const = 0;
   virtual void SetAlwaysOnTop(ui::ZOrderLevel z_order,
-                              const std::string& level = "floating",
-                              int relativeLevel = 0) = 0;
+                              const std::string& level,
+                              int relativeLevel) = 0;
   virtual ui::ZOrderLevel GetZOrderLevel() const = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
@@ -165,9 +172,11 @@ class NativeWindow : public views::WidgetDelegate {
   void SetTitle(std::string_view title);
   [[nodiscard]] std::string GetTitle() const;
 
+  [[nodiscard]] std::string GetName() const;
+
   // Ability to augment the window title for the screen readers.
   void SetAccessibleTitle(const std::string& title);
-  std::string GetAccessibleTitle();
+  [[nodiscard]] std::string GetAccessibleTitle() const;
 
   virtual void FlashFrame(bool flash) = 0;
   virtual void SetSkipTaskbar(bool skip) = 0;
@@ -181,12 +190,13 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void SetBackgroundColor(SkColor color) = 0;
   virtual SkColor GetBackgroundColor() const = 0;
   virtual void InvalidateShadow() {}
-  virtual void SetDecorationInsets(const gfx::Insets& insets) {}
 
   virtual void SetHasShadow(bool has_shadow) = 0;
   virtual bool HasShadow() const = 0;
   virtual void SetOpacity(const double opacity) = 0;
   virtual double GetOpacity() const = 0;
+  // NaN is treated as fully opaque, then the value is clamped to [0, 1].
+  static double ClampOpacity(double opacity);
   virtual void SetRepresentedFilename(const std::string& filename) {}
   virtual std::string GetRepresentedFilename() const;
   virtual void SetDocumentEdited(bool edited) {}
@@ -218,10 +228,9 @@ class NativeWindow : public views::WidgetDelegate {
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(
-      bool visible,
-      bool visibleOnFullScreen = false,
-      bool skipTransformProcessType = false) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible,
+                                         bool visibleOnFullScreen,
+                                         bool skipTransformProcessType) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() const = 0;
 
@@ -287,8 +296,6 @@ class NativeWindow : public views::WidgetDelegate {
                            const std::string& display_name) {}
   virtual void CloseFilePreview() {}
 
-  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
-
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -318,7 +325,6 @@ class NativeWindow : public views::WidgetDelegate {
   void NotifyWindowUnmaximize();
   void NotifyWindowMinimize();
   void NotifyWindowRestore();
-  void NotifyWindowTiledStateChanged(bool is_tiled);
   void NotifyWindowMove();
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
                               gfx::ResizeEdge edge,
@@ -342,6 +348,7 @@ class NativeWindow : public views::WidgetDelegate {
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();
+  void NotifyWindowStateRestored();
 
 #if BUILDFLAG(IS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
@@ -404,11 +411,14 @@ class NativeWindow : public views::WidgetDelegate {
 
   [[nodiscard]] bool has_frame() const { return has_frame_; }
 
-  NativeWindow* parent() const { return parent_; }
+  NativeWindow* parent() const { return parent_.get(); }
 
   [[nodiscard]] bool is_modal() const { return is_modal_; }
 
   [[nodiscard]] constexpr int32_t window_id() const { return window_id_; }
+
+  InspectableWebContentsView* primary_web_contents_view();
+  void InitPrimaryWebContentsView(InspectableWebContentsView* view);
 
   void add_child_window(NativeWindow* child) {
     child_windows_.push_back(child);
@@ -420,18 +430,43 @@ class NativeWindow : public views::WidgetDelegate {
 
   bool IsTranslucent() const;
 
-  // Adds |source| to |background_throttling_sources_|, triggers update of
-  // background throttling state.
-  void AddBackgroundThrottlingSource(BackgroundThrottlingSource* source);
-  // Removes |source| to |background_throttling_sources_|, triggers update of
-  // background throttling state.
-  void RemoveBackgroundThrottlingSource(BackgroundThrottlingSource* source);
+  // Registers |source| in |background_throttling_sources_| and returns a token
+  // that unregisters it when reset or destroyed.
+  [[nodiscard]] base::ScopedClosureRunner RegisterBackgroundThrottlingSource(
+      BackgroundThrottlingSource* source);
   // Updates `ui::Compositor` background throttling state based on
   // |background_throttling_sources_|. If at least one of the sources disables
   // throttling, then throttling in the `ui::Compositor` will be disabled.
   void UpdateBackgroundThrottlingState();
 
   [[nodiscard]] auto base_window_id() const { return base_window_id_; }
+
+  // Saves current window state to the Local State JSON file in
+  // app.getPath('userData') via PrefService.
+  // This does NOT immediately write to disk - it updates the in-memory
+  // preference store and queues an asynchronous write operation. The actual
+  // disk write is batched and flushed later.
+  void SaveWindowState();
+  void DebouncedSaveWindowState();
+  // Flushes save_window_state_timer_ that was queued by
+  // DebouncedSaveWindowState. This does NOT flush the actual disk write.
+  void FlushWindowState();
+  // Fires save_window_state_timer_ now if DebouncedSaveWindowState started it,
+  // so the electron_common_testing binding can make the debounced save
+  // deterministic in specs. Unlike FlushWindowState this has no other side
+  // effects, and it does NOT flush the actual disk write either.
+  void FlushPendingWindowStateSaveForTesting();
+
+  // Restores window state - bounds first and then display mode.
+  void RestoreWindowState(const gin_helper::Dictionary& options);
+  // Applies saved bounds to the window.
+  void RestoreBounds(const display::Display& display,
+                     const gfx::Rect& saved_work_area,
+                     gfx::Rect& saved_bounds);
+  // Flushes pending display mode restoration (fullscreen, maximized, kiosk)
+  // that was deferred during initialization to respect show=false. This
+  // consumes and clears the restore_display_mode_callback_.
+  void FlushPendingDisplayMode();
 
  protected:
   NativeWindow(int32_t base_window_id,
@@ -445,8 +480,6 @@ class NativeWindow : public views::WidgetDelegate {
   [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
 
   [[nodiscard]] bool transparent() const { return transparent_; }
-
-  [[nodiscard]] bool is_closed() const { return is_closed_; }
 
   [[nodiscard]] bool enable_larger_than_screen() const {
     return enable_larger_than_screen_;
@@ -485,7 +518,7 @@ class NativeWindow : public views::WidgetDelegate {
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
 
-  std::list<NativeWindow*> child_windows_;
+  std::list<raw_ptr<NativeWindow>> child_windows_;
 
  private:
   static bool PlatformHasClientFrame();
@@ -497,6 +530,10 @@ class NativeWindow : public views::WidgetDelegate {
 
   // ID of the api::BaseWindow that owns this NativeWindow.
   const int32_t base_window_id_;
+
+  // Identifier for the window provided by the application.
+  // Used by Electron internally for features such as state persistence.
+  std::string window_name_;
 
   // The "titleBarStyle" option.
   const TitleBarStyle title_bar_style_;
@@ -538,12 +575,13 @@ class NativeWindow : public views::WidgetDelegate {
   double aspect_ratio_ = 0.0;
   gfx::Size aspect_ratio_extraSize_;
 
-  // The parent window, it is guaranteed to be valid during this window's life.
-  raw_ptr<NativeWindow> parent_ = nullptr;
+  // The parent window. Held weakly because the parent may be destroyed
+  // before this window (e.g. a modal child whose parent is destroy()ed).
+  base::WeakPtr<NativeWindow> parent_;
 
   bool is_transitioning_fullscreen_ = false;
 
-  std::list<DraggableRegionProvider*> draggable_region_providers_;
+  std::list<raw_ptr<DraggableRegionProvider>> draggable_region_providers_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver,
@@ -558,6 +596,39 @@ class NativeWindow : public views::WidgetDelegate {
   std::string background_material_;
 
   gfx::Rect overlay_rect_;
+
+  // Flag to prevent SaveWindowState calls during window restoration.
+  bool is_being_restored_ = false;
+
+  // True while a restoration-initiated display-mode transition
+  // (fullscreen/maximize/kiosk) is in flight. Cleared from the matching
+  // Notify* observer once the (possibly async) transition completes.
+  bool awaiting_restore_display_mode_transition_ = false;
+
+  // The boolean parsing of the "windowStatePersistence" option
+  bool window_state_persistence_enabled_ = false;
+
+  // PrefService is used to persist window bounds and state.
+  // Only populated when windowStatePersistence is enabled and window has a
+  // valid name.
+  raw_ptr<PrefService> prefs_ = nullptr;
+
+  // Whether to restore bounds.
+  bool restore_bounds_ = false;
+  // Whether to restore display mode.
+  bool restore_display_mode_ = false;
+  // Callback to restore display mode.
+  base::OnceCallback<void()> restore_display_mode_callback_;
+
+  // Timer to debounce window state saving operations.
+  base::OneShotTimer save_window_state_timer_;
+
+  // Minimum height of the visible part of a window.
+  const int kMinVisibleHeight = 100;
+  // Minimum width of the visible part of a window.
+  const int kMinVisibleWidth = 100;
+
+  views::ViewTracker primary_web_contents_view_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

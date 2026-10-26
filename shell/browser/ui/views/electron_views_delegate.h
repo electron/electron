@@ -54,7 +54,6 @@ class ViewsDelegate : public views::ViewsDelegate {
   void OnBeforeWidgetInit(
       views::Widget::InitParams* params,
       views::internal::NativeWidgetDelegate* delegate) override;
-  bool WindowManagerProvidesTitleBar(bool maximized) override;
 
  private:
 #if BUILDFLAG(IS_WIN)

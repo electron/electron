@@ -6,10 +6,12 @@
 
 #include <objbase.h>
 
-#include "base/containers/span.h"
+#include <utility>
+
 #include "base/logging.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"
@@ -84,7 +86,7 @@ void NotifyIcon::HandleClickEvent(int modifiers,
     NotifyMiddleClicked(bounds, modifiers);
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
-      PopUpContextMenu(gfx::Point(), menu_model_->GetWeakPtr());
+      PopUpContextMenu(gfx::Point(), menu_model_->GetWeakPtr(), {});
     else
       NotifyRightClicked(bounds, modifiers);
   }
@@ -121,6 +123,10 @@ void NotifyIcon::ResetIcon() {
   // Shell_NotifyIcon() to set the image for the status icon it creates.
   if (icon_data.hIcon)
     icon_data.uFlags |= NIF_ICON;
+  if (!tool_tip_.empty()) {
+    icon_data.uFlags |= NIF_TIP;
+    base::wcslcpy(icon_data.szTip, tool_tip_);
+  }
   // Re-add our icon.
   BOOL result = Shell_NotifyIcon(NIM_ADD, &icon_data);
   if (!result)
@@ -144,24 +150,12 @@ void NotifyIcon::SetPressedImage(HICON image) {
   // pressed status icons.
 }
 
-template <typename CharT, size_t N>
-static void CopyStringToBuf(CharT (&tgt_buf)[N],
-                            const std::basic_string<CharT> src_str) {
-  if constexpr (N < 1U)
-    return;
-
-  const auto src = base::span{src_str};
-  const auto n_chars = std::min(src.size(), N - 1U);
-  auto tgt = base::span{tgt_buf};
-  tgt.first(n_chars).copy_from(src.first(n_chars));
-  tgt[n_chars] = CharT{};  // zero-terminate the string
-}
-
 void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   // Create the icon.
   NOTIFYICONDATA icon_data = InitIconData();
+  tool_tip_ = base::UTF8ToWide(tool_tip);
   icon_data.uFlags |= NIF_TIP;
-  CopyStringToBuf(icon_data.szTip, base::UTF8ToWide(tool_tip));
+  base::wcslcpy(icon_data.szTip, tool_tip_);
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
@@ -170,8 +164,8 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
 void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
   NOTIFYICONDATA icon_data = InitIconData();
   icon_data.uFlags |= NIF_INFO;
-  CopyStringToBuf(icon_data.szInfoTitle, base::AsWString(options.title));
-  CopyStringToBuf(icon_data.szInfo, base::AsWString(options.content));
+  base::wcslcpy(icon_data.szInfoTitle, base::AsWStringView(options.title));
+  base::wcslcpy(icon_data.szInfo, base::AsWStringView(options.content));
   icon_data.uTimeout = 0;
   icon_data.hBalloonIcon = options.icon;
   icon_data.dwInfoFlags = ConvertIconType(options.icon_type);
@@ -208,7 +202,8 @@ void NotifyIcon::Focus() {
 }
 
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
-                                  base::WeakPtr<ElectronMenuModel> menu_model) {
+                                  base::WeakPtr<ElectronMenuModel> menu_model,
+                                  base::ScopedClosureRunner retain_menu) {
   // Returns if context menu isn't set.
   if (menu_model == nullptr && menu_model_ == nullptr)
     return;
@@ -227,9 +222,11 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
     rect.set_origin(display::Screen::Get()->GetCursorScreenPoint());
 
   if (menu_model) {
+    popup_menu_retain_ = std::move(retain_menu);
     menu_runner_ = std::make_unique<views::MenuRunner>(
         menu_model.get(), views::MenuRunner::HAS_MNEMONICS);
   } else {
+    popup_menu_retain_.RunAndReset();
     menu_runner_ = std::make_unique<views::MenuRunner>(
         menu_model_, views::MenuRunner::HAS_MNEMONICS);
   }
@@ -245,7 +242,7 @@ void NotifyIcon::CloseContextMenu() {
 }
 
 void NotifyIcon::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
-  menu_model_ = menu_model;
+  menu_model_ = std::move(menu_model);
 }
 
 gfx::Rect NotifyIcon::GetBounds() {

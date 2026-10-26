@@ -7,16 +7,16 @@
 
 #include <string>
 
-#include "base/cancelable_callback.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/ui/drag_util.h"
 
 namespace gin_helper {
 class ErrorThrower;
 }  // namespace gin_helper
 
 namespace electron::api {
+
+class WebContentsView;
 
 class BrowserWindow : public BaseWindow,
                       private content::WebContentsObserver,
@@ -48,13 +48,13 @@ class BrowserWindow : public BaseWindow,
   void OnSetContentBounds(const gfx::Rect& rect) override;
   void OnActivateContents() override;
   void OnPageTitleUpdated(const std::u16string& title,
-                          bool explicit_set) override;
+                          bool explicit_set,
+                          bool from_same_document_history_navigation) override;
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowIsKeyChanged(bool is_key) override;
-  void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
 
   // BaseWindow:
   void OnWindowBlur() override;
@@ -77,11 +77,13 @@ class BrowserWindow : public BaseWindow,
 
  private:
   // Helpers.
+  bool FocusIsInAnotherView();
+  WebContents* GetLiveWebContents() const;
 
   v8::Global<v8::Value> web_contents_;
   bool web_contents_shown_ = false;
-  v8::Global<v8::Value> web_contents_view_;
-  base::WeakPtr<api::WebContents> api_web_contents_;
+  cppgc::Persistent<WebContentsView> web_contents_view_;
+  cppgc::WeakPersistent<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_{this};
 };

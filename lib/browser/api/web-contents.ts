@@ -4,144 +4,34 @@ import {
   parseContentTypeFormat
 } from '@electron/internal/browser/guest-window-manager';
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
-import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import * as deprecate from '@electron/internal/common/deprecate';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import { app, session, webFrameMain, dialog } from 'electron/main';
+import { app, webFrameMain, dialog } from 'electron/main';
 import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
 import * as path from 'path';
 import * as url from 'url';
-
-// session is not used here, the purpose is to make sure session is initialized
-// before the webContents module.
-// eslint-disable-next-line no-unused-expressions
-session;
-
-let nextId = 0;
-const getNextId = function () {
-  return ++nextId;
-};
-
-// Stock page sizes
-const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
-  Letter: {
-    custom_display_name: 'Letter',
-    height_microns: 279400,
-    name: 'NA_LETTER',
-    width_microns: 215900
-  },
-  Legal: {
-    custom_display_name: 'Legal',
-    height_microns: 355600,
-    name: 'NA_LEGAL',
-    width_microns: 215900
-  },
-  Tabloid: {
-    height_microns: 431800,
-    name: 'NA_LEDGER',
-    width_microns: 279400,
-    custom_display_name: 'Tabloid'
-  },
-  A0: {
-    custom_display_name: 'A0',
-    height_microns: 1189000,
-    name: 'ISO_A0',
-    width_microns: 841000
-  },
-  A1: {
-    custom_display_name: 'A1',
-    height_microns: 841000,
-    name: 'ISO_A1',
-    width_microns: 594000
-  },
-  A2: {
-    custom_display_name: 'A2',
-    height_microns: 594000,
-    name: 'ISO_A2',
-    width_microns: 420000
-  },
-  A3: {
-    custom_display_name: 'A3',
-    height_microns: 420000,
-    name: 'ISO_A3',
-    width_microns: 297000
-  },
-  A4: {
-    custom_display_name: 'A4',
-    height_microns: 297000,
-    name: 'ISO_A4',
-    is_default: 'true',
-    width_microns: 210000
-  },
-  A5: {
-    custom_display_name: 'A5',
-    height_microns: 210000,
-    name: 'ISO_A5',
-    width_microns: 148000
-  },
-  A6: {
-    custom_display_name: 'A6',
-    height_microns: 148000,
-    name: 'ISO_A6',
-    width_microns: 105000
-  }
-} as const;
-
-const paperFormats: Record<string, ElectronInternal.PageSize> = {
-  letter: { width: 8.5, height: 11 },
-  legal: { width: 8.5, height: 14 },
-  tabloid: { width: 11, height: 17 },
-  ledger: { width: 17, height: 11 },
-  a0: { width: 33.1, height: 46.8 },
-  a1: { width: 23.4, height: 33.1 },
-  a2: { width: 16.54, height: 23.4 },
-  a3: { width: 11.7, height: 16.54 },
-  a4: { width: 8.27, height: 11.7 },
-  a5: { width: 5.83, height: 8.27 },
-  a6: { width: 4.13, height: 5.83 }
-} as const;
-
-// The minimum micron size Chromium accepts is that where:
-// Per printing/units.h:
-//  * kMicronsPerInch - Length of an inch in 0.001mm unit.
-//  * kPointsPerInch - Length of an inch in CSS's 1pt unit.
-//
-// Formula: (kPointsPerInch / kMicronsPerInch) * size >= 1
-//
-// Practically, this means microns need to be > 352 microns.
-// We therefore need to verify this or it will silently fail.
-const isValidCustomPageSize = (width: number, height: number) => {
-  return [width, height].every((x) => x > 352);
-};
+// session is not used here, the purpose of the import is to make sure session
+// is initialized before the webContents module.
+import '@electron/internal/browser/api/session';
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
-const printing = process._linkedBinding('electron_browser_printing');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
 
-WebContents.prototype.postMessage = function (...args) {
-  return this.mainFrame.postMessage(...args);
-};
-
-WebContents.prototype.send = function (channel, ...args) {
-  return this.mainFrame.send(channel, ...args);
-};
-
-WebContents.prototype._sendInternal = function (channel, ...args) {
-  return this.mainFrame._sendInternal(channel, ...args);
-};
-
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
+  let webFrame: Electron.WebFrameMain | undefined;
   if (typeof frame === 'number') {
-    return webFrameMain.fromId(contents.mainFrame.processId, frame);
+    webFrame = webFrameMain.fromId(contents.mainFrame.processId, frame);
   } else if (Array.isArray(frame) && frame.length === 2 && frame.every((value) => typeof value === 'number')) {
-    return webFrameMain.fromId(frame[0], frame[1]);
+    webFrame = webFrameMain.fromId(frame[0], frame[1]);
   } else {
     throw new Error('Missing required frame argument (must be number or [processId, frameId])');
   }
+  // Frame ids are global; only address frames that belong to |contents|.
+  if (webFrame && webFrame.top !== contents.mainFrame) return undefined;
+  return webFrame;
 }
 
 WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
@@ -150,20 +40,6 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
   frame.send(channel, ...args);
   return true;
 };
-
-// Following methods are mapped to webFrame.
-const webFrameMethods = ['insertCSS', 'insertText', 'removeInsertedCSS', 'setVisualZoomLevelLimits'] as (
-  | 'insertCSS'
-  | 'insertText'
-  | 'removeInsertedCSS'
-  | 'setVisualZoomLevelLimits'
-)[];
-
-for (const method of webFrameMethods) {
-  WebContents.prototype[method] = function (...args: any[]): Promise<any> {
-    return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
-  };
-}
 
 const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
@@ -179,171 +55,12 @@ const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) =
 // WebContents has been loaded.
 WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(
-    this,
-    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
-    'executeJavaScript',
-    String(code),
-    !!hasUserGesture
-  );
+  return this._executeJavaScript(0, [{ code: String(code) }], !!hasUserGesture);
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
+  if (!Number.isInteger(worldId)) throw new TypeError('worldId must be an integer');
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(
-    this,
-    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
-    'executeJavaScriptInIsolatedWorld',
-    worldId,
-    code,
-    !!hasUserGesture
-  );
-};
-
-function checkType<T>(value: T, type: 'number' | 'boolean' | 'string' | 'object', name: string): T {
-  // eslint-disable-next-line valid-typeof
-  if (typeof value !== type) {
-    throw new TypeError(`${name} must be a ${type}`);
-  }
-
-  return value;
-}
-
-function parsePageSize(pageSize: string | ElectronInternal.PageSize) {
-  if (typeof pageSize === 'string') {
-    const format = paperFormats[pageSize.toLowerCase()];
-    if (!format) {
-      throw new Error(`Invalid pageSize ${pageSize}`);
-    }
-
-    return { paperWidth: format.width, paperHeight: format.height };
-  } else if (typeof pageSize === 'object') {
-    if (typeof pageSize.width !== 'number' || typeof pageSize.height !== 'number') {
-      throw new TypeError('width and height properties are required for pageSize');
-    }
-
-    return { paperWidth: pageSize.width, paperHeight: pageSize.height };
-  } else {
-    throw new TypeError('pageSize must be a string or an object');
-  }
-}
-
-// Translate the options of printToPDF.
-
-const printToPDFQueues = new WeakMap<Electron.WebContents, Promise<unknown>>();
-WebContents.prototype.printToPDF = async function (options) {
-  const margins = checkType(options.margins ?? {}, 'object', 'margins');
-  const pageSize = parsePageSize(options.pageSize ?? 'letter');
-
-  const { top, bottom, left, right } = margins;
-  const validHeight = [top, bottom].every((u) => u === undefined || u <= pageSize.paperHeight);
-  const validWidth = [left, right].every((u) => u === undefined || u <= pageSize.paperWidth);
-
-  if (!validHeight || !validWidth) {
-    throw new Error('margins must be less than or equal to pageSize');
-  }
-
-  const printSettings = {
-    requestID: getNextId(),
-    landscape: checkType(options.landscape ?? false, 'boolean', 'landscape'),
-    displayHeaderFooter: checkType(options.displayHeaderFooter ?? false, 'boolean', 'displayHeaderFooter'),
-    headerTemplate: checkType(options.headerTemplate ?? '', 'string', 'headerTemplate'),
-    footerTemplate: checkType(options.footerTemplate ?? '', 'string', 'footerTemplate'),
-    printBackground: checkType(options.printBackground ?? false, 'boolean', 'printBackground'),
-    scale: checkType(options.scale ?? 1.0, 'number', 'scale'),
-    marginTop: checkType(margins.top ?? 0.4, 'number', 'margins.top'),
-    marginBottom: checkType(margins.bottom ?? 0.4, 'number', 'margins.bottom'),
-    marginLeft: checkType(margins.left ?? 0.4, 'number', 'margins.left'),
-    marginRight: checkType(margins.right ?? 0.4, 'number', 'margins.right'),
-    pageRanges: checkType(options.pageRanges ?? '', 'string', 'pageRanges'),
-    preferCSSPageSize: checkType(options.preferCSSPageSize ?? false, 'boolean', 'preferCSSPageSize'),
-    generateTaggedPDF: checkType(options.generateTaggedPDF ?? false, 'boolean', 'generateTaggedPDF'),
-    generateDocumentOutline: checkType(options.generateDocumentOutline ?? false, 'boolean', 'generateDocumentOutline'),
-    ...pageSize
-  };
-
-  if (!this._printToPDF) {
-    throw new Error('Printing feature is disabled');
-  }
-
-  const prev = printToPDFQueues.get(this) ?? Promise.resolve();
-  const next = prev.catch(() => {}).then(() => this._printToPDF(printSettings));
-  printToPDFQueues.set(this, next);
-  next
-    .finally(() => {
-      if (printToPDFQueues.get(this) === next) printToPDFQueues.delete(this);
-    })
-    .catch(() => {});
-  return next;
-};
-
-// TODO(codebytere): deduplicate argument sanitization by moving rest of
-// print param logic into new file shared between printToPDF and print
-WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions = {}, callback) {
-  if (typeof options !== 'object' || options == null) {
-    throw new TypeError('webContents.print(): Invalid print settings specified.');
-  }
-
-  const { pageSize, usePrinterDefaultPageSize } = options;
-
-  if (usePrinterDefaultPageSize !== undefined && pageSize !== undefined) {
-    throw new Error('usePrinterDefaultPageSize cannot be combined with pageSize');
-  }
-
-  if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
-    const mediaSize = PDFPageSizes[pageSize];
-    options.mediaSize = {
-      ...mediaSize,
-      imageable_area_left_microns: 0,
-      imageable_area_bottom_microns: 0,
-      imageable_area_right_microns: mediaSize.width_microns,
-      imageable_area_top_microns: mediaSize.height_microns
-    };
-  } else if (typeof pageSize === 'object') {
-    if (!pageSize.height || !pageSize.width) {
-      throw new Error('height and width properties are required for pageSize');
-    }
-
-    // Dimensions in Microns - 1 meter = 10^6 microns
-    const height = Math.ceil(pageSize.height);
-    const width = Math.ceil(pageSize.width);
-    if (!isValidCustomPageSize(width, height)) {
-      throw new RangeError('height and width properties must be minimum 352 microns.');
-    }
-
-    options.mediaSize = {
-      name: 'CUSTOM',
-      custom_display_name: 'Custom',
-      height_microns: height,
-      width_microns: width,
-      imageable_area_left_microns: 0,
-      imageable_area_bottom_microns: 0,
-      imageable_area_right_microns: width,
-      imageable_area_top_microns: height
-    };
-  } else if (pageSize !== undefined) {
-    throw new Error(`Unsupported pageSize: ${pageSize}`);
-  }
-
-  if (this._print) {
-    if (callback) {
-      this._print(options, callback);
-    } else {
-      this._print(options);
-    }
-  } else {
-    console.error('Error: Printing feature is disabled.');
-  }
-};
-
-WebContents.prototype.getPrintersAsync = async function () {
-  // TODO(nornagon): this API has nothing to do with WebContents and should be
-  // moved.
-  if (printing.getPrinterListAsync) {
-    return printing.getPrinterListAsync();
-  } else {
-    console.error('Error: Printing feature is disabled.');
-    return [];
-  }
+  return this._executeJavaScript(worldId, code, !!hasUserGesture);
 };
 
 WebContents.prototype.loadFile = function (filePath, options = {}) {
@@ -362,109 +79,6 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
       hash
     })
   );
-};
-
-type LoadError = { errorCode: number; errorDescription: string; url: string };
-
-function _awaitNextLoad(this: Electron.WebContents, navigationUrl: string) {
-  return new Promise<void>((resolve, reject) => {
-    const resolveAndCleanup = () => {
-      removeListeners();
-      resolve();
-    };
-    let error: LoadError | undefined;
-    const rejectAndCleanup = ({ errorCode, errorDescription, url }: LoadError) => {
-      const err = new Error(
-        `${errorDescription} (${errorCode}) loading '${typeof url === 'string' ? url.substr(0, 2048) : url}'`
-      );
-      Object.assign(err, { errno: errorCode, code: errorDescription, url });
-      removeListeners();
-      reject(err);
-    };
-    const finishListener = () => {
-      if (error) {
-        rejectAndCleanup(error);
-      } else {
-        resolveAndCleanup();
-      }
-    };
-
-    let navigationStarted = false;
-    let browserInitiatedInPageNavigation = false;
-    const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
-      if (isMainFrame) {
-        if (navigationStarted && !isSameDocument) {
-          // the webcontents has started another unrelated navigation in the
-          // main frame (probably from the app calling `loadURL` again); reject
-          // the promise
-          // We should only consider the request aborted if the "navigation" is
-          // actually navigating and not simply transitioning URL state in the
-          // current context.  E.g. pushState and `location.hash` changes are
-          // considered navigation events but are triggered with isSameDocument.
-          // We can ignore these to allow virtual routing on page load as long
-          // as the routing does not leave the document
-          return rejectAndCleanup({ errorCode: -3, errorDescription: 'ERR_ABORTED', url });
-        }
-        browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
-        navigationStarted = true;
-      }
-    };
-    const failListener = (
-      event: Electron.Event,
-      errorCode: number,
-      errorDescription: string,
-      validatedURL: string,
-      isMainFrame: boolean
-    ) => {
-      if (!error && isMainFrame) {
-        error = { errorCode, errorDescription, url: validatedURL };
-      }
-      if (!navigationStarted && isMainFrame) {
-        finishListener();
-      }
-    };
-    const stopLoadingListener = () => {
-      // By the time we get here, either 'finish' or 'fail' should have fired
-      // if the navigation occurred. However, in some situations (e.g. when
-      // attempting to load a page with a bad scheme), loading will stop
-      // without emitting finish or fail. In this case, we reject the promise
-      // with a generic failure.
-      // TODO(jeremy): enumerate all the cases in which this can happen. If
-      // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
-      // would be more appropriate.
-      if (!error) {
-        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: navigationUrl };
-      }
-      finishListener();
-    };
-    const finishListenerWhenUserInitiatedNavigation = () => {
-      if (!browserInitiatedInPageNavigation) {
-        finishListener();
-      }
-    };
-    const removeListeners = () => {
-      this.removeListener('did-finish-load', finishListener);
-      this.removeListener('did-fail-load', failListener);
-      this.removeListener('did-navigate-in-page', finishListenerWhenUserInitiatedNavigation);
-      this.removeListener('did-start-navigation', navigationListener);
-      this.removeListener('did-stop-loading', stopLoadingListener);
-      this.removeListener('destroyed', stopLoadingListener);
-    };
-    this.on('did-finish-load', finishListener);
-    this.on('did-fail-load', failListener);
-    this.on('did-navigate-in-page', finishListenerWhenUserInitiatedNavigation);
-    this.on('did-start-navigation', navigationListener);
-    this.on('did-stop-loading', stopLoadingListener);
-    this.on('destroyed', stopLoadingListener);
-  });
-}
-
-WebContents.prototype.loadURL = function (url, options) {
-  const p = _awaitNextLoad.call(this, url);
-  // Add a no-op rejection handler to silence the unhandled rejection error.
-  p.catch(() => {});
-  this._loadURL(url, options ?? {});
-  return p;
 };
 
 WebContents.prototype.copyVideoFrameAt = function (x: number, y: number) {
@@ -529,12 +143,6 @@ WebContents.prototype._callWindowOpenHandler = function (
   }
 };
 
-const commandLine = process._linkedBinding('electron_common_command_line');
-const environment = process._linkedBinding('electron_common_environment');
-
-const loggingEnabled = () => {
-  return environment.hasVar('ELECTRON_ENABLE_LOGGING') || commandLine.hasSwitch('enable-logging');
-};
 // Deprecation warnings for navigation related APIs.
 const canGoBackDeprecated = deprecate.warnOnce('webContents.canGoBack', 'webContents.navigationHistory.canGoBack');
 WebContents.prototype.canGoBack = function () {
@@ -596,20 +204,6 @@ const consoleMessageDeprecated = deprecate.warnOnceMessage(
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
-  const prefs = this.getLastWebPreferences() || {};
-  if (!prefs.nodeIntegration && prefs.preload != null && prefs.sandbox == null) {
-    deprecate.log(
-      "The default sandbox option for windows without nodeIntegration is changing. Presently, by default, when a window has a preload script, it defaults to being unsandboxed. In Electron 20, this default will be changing, and all windows that have nodeIntegration: false (which is the default) will be sandboxed by default. If your preload script doesn't use Node, no action is needed. If your preload script does use Node, either refactor it to move Node usage to the main process, or specify sandbox: false in your WebPreferences."
-    );
-  }
-  // Read off the ID at construction time, so that it's accessible even after
-  // the underlying C++ WebContents is destroyed.
-  const id = this.id;
-  Object.defineProperty(this, 'id', {
-    value: id,
-    writable: false
-  });
-
   this._windowOpenHandler = null;
 
   const ipc = new IpcMainImpl();
@@ -648,91 +242,18 @@ WebContents.prototype._init = function () {
           );
         }
 
-        const p = _awaitNextLoad.call(this, entries[index].url);
-        p.catch(() => {});
-
         try {
-          this._restoreHistory(index, entries);
+          return this._restoreHistory(index, entries);
         } catch (error) {
           return Promise.reject(error);
         }
-
-        return p;
       }
     },
     writable: false,
     enumerable: true
   });
 
-  this.on('render-process-gone', (event, details) => {
-    app.emit('render-process-gone', event, this, details);
-
-    // Log out a hint to help users better debug renderer crashes.
-    if (loggingEnabled()) {
-      console.info(
-        `Renderer process ${details.reason} - see https://www.electronjs.org/docs/tutorial/application-debugging for potential debugging information.`
-      );
-    }
-  });
-
-  this.on('-before-unload-fired', function (this: Electron.WebContents, event, proceed) {
-    const type = this.getType();
-    // These are the "interactive" types, i.e. ones a user might be looking at.
-    // All other types should ignore the "proceed" signal and unload
-    // regardless.
-    if (type === 'window' || type === 'offscreen' || type === 'browserView') {
-      if (!proceed) {
-        return event.preventDefault();
-      }
-    }
-  });
-
-  // The devtools requests the webContents to reload.
-  this.on('devtools-reload-page', function (this: Electron.WebContents) {
-    this.reload();
-  });
-
   if (this.getType() !== 'remote') {
-    // Make new windows requested by links behave like "window.open".
-    this.on('-new-window', (event, url, frameName, disposition, rawFeatures, referrer, postData) => {
-      const postBody = postData
-        ? {
-            data: postData,
-            ...parseContentTypeFormat(postData)
-          }
-        : undefined;
-      const details: Electron.HandlerDetails = {
-        url,
-        frameName,
-        features: rawFeatures,
-        referrer,
-        postBody,
-        disposition
-      };
-
-      let result: ReturnType<typeof this._callWindowOpenHandler>;
-      try {
-        result = this._callWindowOpenHandler(event, details);
-      } catch (err) {
-        event.preventDefault();
-        throw err;
-      }
-
-      const options = result.browserWindowConstructorOptions;
-      if (!event.defaultPrevented) {
-        openGuestWindow({
-          embedder: this,
-          disposition,
-          referrer,
-          postData,
-          overrideBrowserWindowOptions: options || {},
-          windowOpenArgs: details,
-          outlivesOpener: result.outlivesOpener,
-          createWindow: result.createWindow
-        });
-      }
-    });
-
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
     let createWindow: Electron.CreateWindowFunction | undefined;
@@ -789,7 +310,8 @@ WebContents.prototype._init = function () {
       }
     });
 
-    // Create a new browser window for "window.open"
+    // Create a new browser window for window.open() and for links opened into
+    // a new window; both arrive here with the new webContents already created.
     this.on(
       '-add-new-contents',
       (
@@ -816,7 +338,12 @@ WebContents.prototype._init = function () {
         // false is the default
         windowOpenOutlivesOpenerOption = false;
 
-        if (disposition !== 'foreground-tab' && disposition !== 'new-window' && disposition !== 'background-tab') {
+        if (
+          disposition !== 'foreground-tab' &&
+          disposition !== 'new-window' &&
+          disposition !== 'background-tab' &&
+          disposition !== 'save-to-disk'
+        ) {
           event.preventDefault();
           return;
         }
@@ -839,27 +366,6 @@ WebContents.prototype._init = function () {
       }
     );
   }
-
-  this.on('login', (event, ...args) => {
-    app.emit('login', event, this, ...args);
-  });
-
-  this.on('ready-to-show', () => {
-    const owner = this.getOwnerBrowserWindow();
-    if (owner && !owner.isDestroyed()) {
-      process.nextTick(() => {
-        owner.emit('ready-to-show');
-      });
-    }
-  });
-
-  this.on('select-bluetooth-device', (event, devices, callback) => {
-    if (this.listenerCount('select-bluetooth-device') === 1) {
-      // Cancel it if there are no handlers
-      event.preventDefault();
-      callback('');
-    }
-  });
 
   const originCounts = new Map<string, number>();
   const openDialogs = new Set<AbortController>();
@@ -918,69 +424,17 @@ WebContents.prototype._init = function () {
     openDialogs.clear();
   });
 
-  // TODO(samuelmaddock): remove deprecated 'console-message' arguments
-  this.on('-console-message' as any, (event: Electron.Event<Electron.WebContentsConsoleMessageEventParams>) => {
-    const hasDeprecatedListener = this.listeners('console-message').some((listener) => listener.length > 1);
-    if (hasDeprecatedListener) {
-      consoleMessageDeprecated();
-    }
-    this.emit('console-message', event, (event as any)._level, event.message, event.lineNumber, event.sourceId);
-  });
-
-  this.on('-unresponsive' as any, (event: Electron.Event<any>) => {
-    const shouldEmit = !event.shouldIgnore && event.visible && event.rendererInitialized;
-    if (shouldEmit) {
-      this.emit('unresponsive', event);
+  (this as NodeJS.EventEmitter).on('newListener', (eventName: string | symbol, listener: (...args: any[]) => void) => {
+    if (eventName === 'console-message') {
+      // TODO(samuelmaddock): remove deprecated 'console-message' arguments
+      if (listener.length > 1) consoleMessageDeprecated();
+      if (!this.isDestroyed()) this._setConsoleMessageObserved(true);
     }
   });
-
-  app.emit(
-    'web-contents-created',
-    {
-      sender: this,
-      preventDefault() {},
-      get defaultPrevented() {
-        return false;
-      }
-    },
-    this
-  );
-
-  // Properties
-
-  Object.defineProperty(this, 'audioMuted', {
-    get: () => this.isAudioMuted(),
-    set: (muted) => this.setAudioMuted(muted)
-  });
-
-  Object.defineProperty(this, 'userAgent', {
-    get: () => this.getUserAgent(),
-    set: (agent) => this.setUserAgent(agent)
-  });
-
-  Object.defineProperty(this, 'zoomLevel', {
-    get: () => this.getZoomLevel(),
-    set: (level) => this.setZoomLevel(level)
-  });
-
-  Object.defineProperty(this, 'zoomFactor', {
-    get: () => this.getZoomFactor(),
-    set: (factor) => this.setZoomFactor(factor)
-  });
-
-  Object.defineProperty(this, 'zoomMode', {
-    get: () => this.getZoomMode(),
-    set: (mode) => this.setZoomMode(mode)
-  });
-
-  Object.defineProperty(this, 'frameRate', {
-    get: () => this.getFrameRate(),
-    set: (rate) => this.setFrameRate(rate)
-  });
-
-  Object.defineProperty(this, 'backgroundThrottling', {
-    get: () => this.getBackgroundThrottling(),
-    set: (allowed) => this.setBackgroundThrottling(allowed)
+  (this as NodeJS.EventEmitter).on('removeListener', (eventName: string | symbol) => {
+    if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {
+      this._setConsoleMessageObserved(false);
+    }
   });
 };
 

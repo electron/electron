@@ -9,7 +9,6 @@
 #include <optional>
 #include <utility>
 
-#include "base/functional/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
@@ -27,16 +26,17 @@
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/common/input/synthetic_gesture.h"  // nogncheck
 #include "content/common/input/synthetic_gesture_target.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/osr/osr_host_display_client.h"
+#include "shell/browser/osr/osr_video_consumer.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
+#include "ui/compositor/layer_surface.h"
 #include "ui/compositor/layer_type.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
@@ -108,7 +108,7 @@ class ElectronDelegatedFrameHostClient
       const ElectronDelegatedFrameHostClient&) = delete;
 
   // content::DelegatedFrameHostClient
-  [[nodiscard]] ui::Layer* DelegatedFrameHostGetLayer() const override {
+  [[nodiscard]] ui::LayerSurface* GetDelegatedFrameHostLayer() const override {
     return view_->root_layer();
   }
 
@@ -117,7 +117,8 @@ class ElectronDelegatedFrameHostClient
   }
 
   [[nodiscard]] SkColor DelegatedFrameHostGetGutterColor() const override {
-    if (view_->render_widget_host()->delegate() &&
+    if (view_->render_widget_host() &&
+        view_->render_widget_host()->delegate() &&
         view_->render_widget_host()->delegate()->IsFullscreen()) {
       return SK_ColorWHITE;
     }
@@ -126,7 +127,10 @@ class ElectronDelegatedFrameHostClient
 
   void OnFrameTokenChanged(uint32_t frame_token,
                            base::TimeTicks activation_time) override {
-    view_->render_widget_host()->DidProcessFrame(frame_token, activation_time);
+    if (view_->render_widget_host()) {
+      view_->render_widget_host()->DidProcessFrame(frame_token,
+                                                   activation_time);
+    }
   }
 
   [[nodiscard]] float GetDeviceScaleFactor() const override {
@@ -135,8 +139,10 @@ class ElectronDelegatedFrameHostClient
 
   viz::FrameEvictorClient::EvictIds CollectSurfaceIdsForEviction() override {
     viz::FrameEvictorClient::EvictIds ids;
-    ids.embedded_ids =
-        view_->render_widget_host()->CollectSurfaceIdsForEviction();
+    if (view_->render_widget_host()) {
+      ids.embedded_ids =
+          view_->render_widget_host()->CollectSurfaceIdsForEviction();
+    }
     return ids;
   }
 
@@ -193,9 +199,10 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_allocator_.GenerateId();
   compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
 
-  root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
+  root_layer_ = std::make_unique<ui::LayerSurface>();
 
-  root_layer()->SetColor(background_color_);
+  root_layer()->SetFallbackBackgroundColor(
+      SkColor4f::FromColor(background_color_));
 
   ui::ContextFactory* context_factory = content::GetContextFactory();
   compositor_ = std::make_unique<ui::Compositor>(
@@ -239,7 +246,6 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   DCHECK(!parent_host_view_);
   DCHECK(!popup_host_view_);
   DCHECK(!child_host_view_);
-  DCHECK(guest_host_views_.empty());
 }
 
 void OffScreenRenderWidgetHostView::ReleaseCompositor() {
@@ -352,11 +358,6 @@ bool OffScreenRenderWidgetHostView::IsShowing() {
   return is_showing_;
 }
 
-void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForWebTest() {
-  ++latest_capture_sequence_number_;
-  SynchronizeVisualProperties();
-}
-
 gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() {
   if (IsPopupWidget())
     return popup_position_;
@@ -440,7 +441,7 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
 
   ResizeRootLayer(true);
   SetPainting(parent_host_view_->is_painting());
-  Show();
+  ShowWithVisibility(content::PageVisibilityState::kVisible);
 }
 
 input::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
@@ -448,10 +449,22 @@ input::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
 }
 
 void OffScreenRenderWidgetHostView::RenderProcessGone() {
-  Destroy();
+  DestroyOrDefer();
 }
 
-void OffScreenRenderWidgetHostView::Destroy() {
+void OffScreenRenderWidgetHostView::CleanUpHostObservers() {
+  if (!render_widget_host_) {
+    return;
+  }
+  render_widget_host_->render_frame_metadata_provider()->RemoveObserver(this);
+  // Ask the RWH to drop reference to us.
+  render_widget_host_->ViewDestroyed();
+  // The host may be deleted before a deferred DestroyImpl() runs, so drop our
+  // reference to it here, mirroring RenderWidgetHostViewBase::host_.
+  render_widget_host_ = nullptr;
+}
+
+void OffScreenRenderWidgetHostView::DestroyImpl() {
   if (!is_destroyed_) {
     is_destroyed_ = true;
 
@@ -462,14 +475,6 @@ void OffScreenRenderWidgetHostView::Destroy() {
         popup_host_view_->CancelWidget();
       if (child_host_view_)
         child_host_view_->CancelWidget();
-      if (!guest_host_views_.empty()) {
-        // Guest RWHVs will be destroyed when the associated RWHVGuest is
-        // destroyed. This parent RWHV may be destroyed first, so disassociate
-        // the guest RWHVs here without destroying them.
-        for (auto* guest_host_view : guest_host_views_)
-          guest_host_view->parent_host_view_ = nullptr;
-        guest_host_views_.clear();
-      }
       for (auto* proxy_view : proxy_views_)
         proxy_view->RemoveObserver();
       Hide();
@@ -479,20 +484,18 @@ void OffScreenRenderWidgetHostView::Destroy() {
   delete this;
 }
 
-uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
-  return latest_capture_sequence_number_;
-}
-
-void OffScreenRenderWidgetHostView::CopyFromSurface(
+void OffScreenRenderWidgetHostView::CopyFromSurfaceImpl(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
+    bool is_copy_request_secure,
     base::TimeDelta timeout,
     base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback) {
   delegated_frame_host()->CopyFromCompositingSurface(
-      src_rect, output_size, base::TimeDelta(), std::move(callback));
+      src_rect, output_size, is_copy_request_secure, base::TimeDelta(),
+      std::move(callback));
 }
 
-gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
+gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInScreen() {
   return gfx::Rect(size_);
 }
 
@@ -523,27 +526,6 @@ gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
 
 ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() {
   return compositor_.get();
-}
-
-content::RenderWidgetHostViewBase*
-OffScreenRenderWidgetHostView::CreateViewForWidget(
-    content::RenderWidgetHost* render_widget_host,
-    content::RenderWidgetHost* embedder_render_widget_host,
-    content::WebContentsView* web_contents_view) {
-  if (auto* rwhv = render_widget_host->GetView())
-    return static_cast<content::RenderWidgetHostViewBase*>(rwhv);
-
-  OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
-  if (embedder_render_widget_host) {
-    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
-        embedder_render_widget_host->GetView());
-  }
-
-  return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_,
-      offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
-      true, embedder_host_view->frame_rate(), callback_, render_widget_host,
-      embedder_host_view, size());
 }
 
 const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
@@ -578,38 +560,22 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
       parent_host_view_->set_popup_host_view(nullptr);
     } else if (parent_host_view_->child_host_view_ == this) {
       parent_host_view_->set_child_host_view(nullptr);
-      parent_host_view_->Show();
-    } else {
-      parent_host_view_->RemoveGuestHostView(this);
+      parent_host_view_->ShowWithVisibility(
+          content::PageVisibilityState::kVisible);
     }
     parent_host_view_ = nullptr;
   }
 
   if (render_widget_host_ && !is_destroyed_) {
     is_destroyed_ = true;
-    // Results in a call to Destroy().
+    // Results in a call to DestroyOrDefer().
     render_widget_host_->ShutdownAndDestroyWidget(true);
   }
-}
-
-void OffScreenRenderWidgetHostView::AddGuestHostView(
-    OffScreenRenderWidgetHostView* guest_host) {
-  guest_host_views_.insert(guest_host);
-}
-
-void OffScreenRenderWidgetHostView::RemoveGuestHostView(
-    OffScreenRenderWidgetHostView* guest_host) {
-  guest_host_views_.erase(guest_host);
 }
 
 void OffScreenRenderWidgetHostView::AddViewProxy(OffscreenViewProxy* proxy) {
   proxy->SetObserver(this);
   proxy_views_.insert(proxy);
-}
-
-void OffScreenRenderWidgetHostView::RemoveViewProxy(OffscreenViewProxy* proxy) {
-  proxy->RemoveObserver();
-  proxy_views_.erase(proxy);
 }
 
 void OffScreenRenderWidgetHostView::ProxyViewDestroyed(
@@ -854,28 +820,6 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }
-    } else if (!guest_host_views_.empty()) {
-      for (auto* guest_host_view : guest_host_views_) {
-        if (!guest_host_view->render_widget_host_ ||
-            !guest_host_view->render_widget_host_->GetView()) {
-          continue;
-        }
-        const gfx::Rect& guest_bounds =
-            guest_host_view->render_widget_host_->GetView()->GetViewBounds();
-        if (guest_bounds.Contains(mouse_wheel_event.PositionInWidget().x(),
-                                  mouse_wheel_event.PositionInWidget().y())) {
-          blink::WebMouseWheelEvent guest_mouse_wheel_event(mouse_wheel_event);
-          guest_mouse_wheel_event.SetPositionInWidget(
-              mouse_wheel_event.PositionInWidget().x() - guest_bounds.x(),
-              mouse_wheel_event.PositionInWidget().y() - guest_bounds.y());
-          guest_mouse_wheel_event.SetPositionInScreen(
-              guest_mouse_wheel_event.PositionInWidget().x(),
-              guest_mouse_wheel_event.PositionInWidget().y());
-
-          guest_host_view->SendMouseWheelEvent(guest_mouse_wheel_event);
-          return;
-        }
-      }
     }
   }
   if (!render_widget_host_)
@@ -889,9 +833,6 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   if (popup_host_view_) {
     popup_host_view_->SetPainting(painting);
   }
-
-  for (auto* guest_host_view : guest_host_views_)
-    guest_host_view->SetPainting(painting);
 
   if (video_consumer_) {
     video_consumer_->SetActive(is_painting());
@@ -920,9 +861,6 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   if (video_consumer_) {
     video_consumer_->SetFrameRate(this->frame_rate());
   }
-
-  for (auto* guest_host_view : guest_host_views_)
-    guest_host_view->SetFrameRate(frame_rate);
 }
 
 const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
@@ -1030,7 +968,7 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
     return;
   background_color_ = color;
 
-  root_layer()->SetColor(color);
+  root_layer()->SetFallbackBackgroundColor(SkColor4f::FromColor(color));
 }
 
 void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(

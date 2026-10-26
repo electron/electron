@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTROLLER_H_
 
-#include <string>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"

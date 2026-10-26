@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/logging.h"
+#include "base/strings/sys_string_conversions.h"
 #include "electron/mas.h"
 #include "shell/browser/notifications/mac/cocoa_notification.h"
 #include "shell/browser/notifications/mac/notification_presenter_mac.h"
@@ -60,7 +61,7 @@
         if ([response isKindOfClass:[UNTextInputNotificationResponse class]]) {
           NSString* userText =
               [(UNTextInputNotificationResponse*)response userText];
-          notification->NotificationReplied([userText UTF8String]);
+          notification->NotificationReplied(base::SysNSStringToUTF8(userText));
         }
       } else if ([actionIdentifier hasPrefix:@"ACTION_"]) {
         NSString* actionIndexString =

@@ -6,13 +6,14 @@
 
 2. **Examine current state** of the file in the Node.js repo at mentioned line numbers
 
-3. **Check recent upstream changes:**
+3. **Check recent upstream changes** to orient yourself:
    ```bash
    cd ../third_party/electron_node
    git log --oneline -10 -- {file}
    ```
+   This list tells you what has been happening in the file. It does not tell you which commit to cite; see [Finding the Upstream Commit for a Change](#finding-the-upstream-commit-for-a-change).
 
-4. **Find Node.js PR** in commit messages:
+4. **Find the introducing commit and its Node.js PR** in its commit message:
    ```
    PR-URL: https://github.com/nodejs/node/pull/{PR_NUMBER}
    ```
@@ -67,15 +68,22 @@ When resolving a patch conflict, do NOT blindly preserve the patch's old code. I
 | Deleted code | Feature removed | Verify patch still needed |
 | V8 API bridge patch conflicts | Node.js caught up to Chromium's V8 | Patch may be deletable — verify the API is now in Node.js' V8 natively |
 
-## Using Git Blame
+## Finding the Upstream Commit for a Change
 
-To find the commit that changed specific lines:
+Attribute a fix to the commit that introduced the code it responds to, never to the commit that most recently touched the file. Work against `refs/patches/upstream-head` (the unpatched Node.js commit) so the answer is an upstream commit and not one of Electron's own patches.
 
 ```bash
 cd ../third_party/electron_node
-git blame -L {start},{end} -- {file}
-git log -1 {commit_sha}  # Look for PR-URL: line
+# by symbol: the commit that added or removed it
+git log -S'{symbol}' refs/patches/upstream-head -- {file}
+# by lines: the commit that last wrote them
+git blame -L {start},{end} refs/patches/upstream-head -- {file}
+# verify: the candidate's diff must contain the symbol
+git show {commit_sha} -- {file} | grep -n '{symbol}'
+git log -1 {commit_sha}  # Look for the PR-URL: line
 ```
+
+If the verification grep finds nothing, the candidate is a follow-up that happened to touch the same file. Follow-ups often carry `Refs:` lines pointing at the real change; follow that pointer rather than citing the follow-up.
 
 ## Verifying Patch Necessity
 

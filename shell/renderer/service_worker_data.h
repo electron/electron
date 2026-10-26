@@ -14,6 +14,7 @@
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
+#include "mojo/public/cpp/platform/platform_handle.h"
 #include "third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-forward.h"
@@ -39,13 +40,24 @@ class ServiceWorkerData : public mojom::ElectronRenderer {
 
   blink::WebServiceWorkerContextProxy* proxy() const { return proxy_; }
 
+  // The startup data the browser pushed for this renderer process at
+  // RenderProcessReady(), captured once when the preload realm is created
+  // so its preload contents and code caches can be looked up from C++ without
+  // marshaling them through V8.
+  void SetWorkerStartupData(mojom::RendererStartupDataPtr data) {
+    worker_startup_data_ = std::move(data);
+  }
+  const mojom::RendererStartupDataPtr& worker_startup_data() const {
+    return worker_startup_data_;
+  }
+
   // mojom::ElectronRenderer
   void Message(bool internal,
                const std::string& channel,
-               blink::CloneableMessage arguments) override;
+               electron::SerializedValue arguments) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
-  void TakeHeapSnapshot(mojo::ScopedHandle file,
+  void TakeHeapSnapshot(mojo::PlatformHandle file,
                         TakeHeapSnapshotCallback callback) override;
 
  private:
@@ -60,6 +72,8 @@ class ServiceWorkerData : public mojom::ElectronRenderer {
   v8::Global<v8::Context> v8_context_;
 
   mojo::AssociatedReceiver<mojom::ElectronRenderer> receiver_{this};
+
+  mojom::RendererStartupDataPtr worker_startup_data_;
 
   base::WeakPtrFactory<ServiceWorkerData> weak_ptr_factory_{this};
 };

@@ -14,12 +14,12 @@ target. Given neither the static nor the dynamic registration can be
 upstreamed, the minimal of the two changes is chosen here.
 
 diff --git a/base/trace_event/builtin_categories.h b/base/trace_event/builtin_categories.h
-index 976221d0303036ecae500b7861931ff96e9ea0c1..5b5582aab913fc7106d9a4133c9fa03fd1a3d5f7 100644
+index 41e7cdf59f44d31ad63689fc2f507d30caff6a57..d6f6df37a885db0f0f376c04e7b6212681aa929c 100644
 --- a/base/trace_event/builtin_categories.h
 +++ b/base/trace_event/builtin_categories.h
-@@ -14,6 +14,7 @@ PERFETTO_DEFINE_TEST_CATEGORY_PREFIXES("cat",
-                                        "foo",
+@@ -16,6 +16,7 @@ PERFETTO_DEFINE_TEST_CATEGORY_PREFIXES("cat",
                                         "test",
+                                        "test_gpu",
                                         "kTest",
 +                                       "node",
                                         "noise",

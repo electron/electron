@@ -23,14 +23,12 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
-#include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
 namespace electron {
@@ -161,10 +159,6 @@ bool ElectronPermissionManager::IsGeolocationDisabledViaCommandLine() {
 #endif
 }
 
-bool ElectronPermissionManager::HasPermissionRequestHandler() const {
-  return !request_handler_.is_null();
-}
-
 bool ElectronPermissionManager::HasPermissionCheckHandler() const {
   return !check_handler_.is_null();
 }
@@ -257,8 +251,16 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
       render_frame_host, std::move(permissions), std::move(response_callback)));
 
-  details.Set("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
-  details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
+  // The caller may already have attributed the request (see
+  // WebContentsPermissionHelper::RequestOpenExternalPermission); otherwise it
+  // comes from |render_frame_host|.
+  if (!details.Find("requestingUrl")) {
+    details.Set("requestingUrl",
+                render_frame_host->GetLastCommittedURL().spec());
+  }
+  if (!details.Find("isMainFrame")) {
+    details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
+  }
   base::Value dict_value(std::move(details));
 
   for (size_t i = 0; i < request_description.permissions.size(); ++i) {

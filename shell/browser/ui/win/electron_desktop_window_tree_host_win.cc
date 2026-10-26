@@ -4,13 +4,13 @@
 
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 
+#include "base/check.h"
 #include "base/win/windows_version.h"
-#include "electron/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
-#include "ui/base/win/hwnd_metrics.h"
+#include "ui/events/event.h"
 
 namespace electron {
 
@@ -175,6 +175,49 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
   return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
 }
 
+void ElectronDesktopWindowTreeHostWin::DispatchSyntheticMouseMessage(
+    UINT message,
+    const gfx::Point& client_point) {
+  DCHECK(message == WM_MOUSEMOVE || message == WM_MOUSELEAVE);
+
+  // The aura tree only exists once the widget has been initialized; this is the
+  // same precondition |HandleTouchEvent| checks before calling SendEventToSink.
+  views::Widget* widget = GetWidget();
+  if (!widget || !widget->GetNativeView())
+    return;
+
+  HWND hwnd = GetAcceleratedWidget();
+  if (!hwnd)
+    return;
+
+  // Build the message the way Win32 would deliver it: |lParam| carries the
+  // position relative to the client area, |pt| the position on the desktop.
+  // |ui::MouseEvent| reads its |native_event()| back out of the message (for
+  // example Windows-only filtering in |CanRendererHandleEvent|), so the
+  // message must be a well formed one.
+  POINT desktop_point = client_point.ToPOINT();
+  ::ClientToScreen(hwnd, &desktop_point);
+
+  CHROME_MSG msg = {};
+  msg.hwnd = hwnd;
+  msg.message = message;
+  msg.wParam = 0;  // No virtual keys pressed for our purposes.
+  msg.lParam = MAKELPARAM(client_point.x(), client_point.y());
+  msg.time = ::GetTickCount();
+  msg.pt.x = desktop_point.x;
+  msg.pt.y = desktop_point.y;
+
+  // WindowEventDispatcher::OnEventFromSource() expects locations in raw
+  // (physical) pixels, which is exactly what the low level mouse hook reports,
+  // so no DIP conversion is needed here.
+  ui::MouseEvent event(msg);
+
+  // This is the same entry point a real WM_MOUSEMOVE takes, which means hit
+  // testing, draggable regions, capture and input event routing all behave as
+  // they would for an OS generated event.
+  SendEventToSink(&event);
+}
+
 bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
                                                         WPARAM w_param,
                                                         LPARAM l_param,
@@ -200,49 +243,12 @@ bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
                                                            l_param, result);
 }
 
-void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
-  if (native_window_view_->widget())
-    native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);
-
-  if (visible)
-    UpdateAllowScreenshots();
-}
-
-void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
-  if (allow_screenshots_ == allow)
-    return;
-
-  allow_screenshots_ = allow;
-
-  // If the window is not visible, do not set the window display affinity
-  // because `SetWindowDisplayAffinity` will attempt to compose the window,
-  if (!IsVisible())
-    return;
-
-  UpdateAllowScreenshots();
-}
-
 // Refs https://chromium-review.googlesource.com/c/chromium/src/+/7095963
 // Chromium's fullscreen handler conflicts with ours and results in incorrect
 // restoration.
 void ElectronDesktopWindowTreeHostWin::Restore() {
   ::SendMessage(GetAcceleratedWidget(), WM_SYSCOMMAND,
                 static_cast<WPARAM>(SC_RESTORE), 0);
-}
-
-void ElectronDesktopWindowTreeHostWin::UpdateAllowScreenshots() {
-  bool allowed = views::DesktopWindowTreeHostWin::AreScreenshotsAllowed();
-  if (allowed == allow_screenshots_)
-    return;
-
-  // On some older Windows versions, setting the display affinity
-  // to WDA_EXCLUDEFROMCAPTURE won't prevent the window from being
-  // captured - setting WS_EX_LAYERED mitigates this issue.
-  if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
-    native_window_view_->SetLayered();
-  ::SetWindowDisplayAffinity(
-      GetAcceleratedWidget(),
-      allow_screenshots_ ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);
 }
 
 void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(

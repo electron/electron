@@ -10,18 +10,20 @@
 #include <string>
 
 #include "base/containers/flat_set.h"
-#include "base/files/file_enumerator.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/nix/xdg_util.h"
 #include "base/no_destructor.h"
 #include "base/process/process_handle.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "grit/electron_resources.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/base/l10n/l10n_util.h"
 
 namespace electron {
 
@@ -126,11 +128,23 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
       base::BindRepeating(&LibnotifyNotification::OnNotificationClosed,
                           base::Unretained(this)));
 
-  // NB: On Unity and on any other DE using Notify-OSD, adding a notification
-  // action will cause the notification to display as a modal dialog box.
+  // NB: On any DE using Notify-OSD, adding a notification action will cause
+  // the notification to display as a modal dialog box.
   if (NotifierSupportsActions()) {
     GetLibNotifyLoader().notify_notification_add_action(
-        notification_, "default", "View", OnNotificationView, this, nullptr);
+        notification_, "default",
+        l10n_util::GetStringUTF8(IDS_NOTIFICATION_SHOW_BUTTON).c_str(),
+        OnActionInvoked, this, nullptr);
+    // A button's key is its index in `actions`. libnotify rejects empty labels.
+    for (size_t i = 0; i < options.actions.size(); ++i) {
+      if (options.actions[i].type != u"button" ||
+          options.actions[i].text.empty())
+        continue;
+      GetLibNotifyLoader().notify_notification_add_action(
+          notification_, base::NumberToString(i).c_str(),
+          base::UTF16ToUTF8(options.actions[i].text).c_str(), OnActionInvoked,
+          this, nullptr);
+    }
   }
 
   NotifyUrgency urgency = NOTIFY_URGENCY_NORMAL;
@@ -216,9 +230,9 @@ void LibnotifyNotification::OnNotificationClosed(
   NotificationDismissed(!on_dismissing_);
 }
 
-void LibnotifyNotification::OnNotificationView(NotifyNotification* notification,
-                                               char* action,
-                                               gpointer user_data) {
+void LibnotifyNotification::OnActionInvoked(NotifyNotification* notification,
+                                            char* action,
+                                            gpointer user_data) {
   LibnotifyNotification* that = static_cast<LibnotifyNotification*>(user_data);
   DCHECK(that);
 
@@ -229,7 +243,12 @@ void LibnotifyNotification::OnNotificationView(NotifyNotification* notification,
     }
   }
 
-  that->NotificationClicked();
+  int index = 0;
+  if (!base::StringToInt(action, &index)) {
+    that->NotificationClicked();
+  } else if (that->delegate()) {
+    that->delegate()->NotificationAction(index, -1);
+  }
 }
 
 }  // namespace electron

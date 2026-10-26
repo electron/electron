@@ -32,7 +32,7 @@ runs:
       fi
   - name: Set the git cookie from chromium.googlesource.com (Windows)
     if: ${{ runner.os == 'Windows' }}
-    shell: cmd
+    shell: cmd # zizmor: ignore[misfeature] cmd is deliberate: the cookie string's quoting only survives under cmd, and the step expands no untrusted input
     run: |
       if "%CHROMIUM_GIT_COOKIE_WINDOWS_STRING%"=="" (
         echo CHROMIUM_GIT_COOKIE_WINDOWS_STRING is not set - cannot authenticate.

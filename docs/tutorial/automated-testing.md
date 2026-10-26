@@ -42,16 +42,18 @@ After running the configuration wizard, your `wdio.conf.js` should include rough
 export const config = {
   // ...
   services: ['electron'],
-  capabilities: [{
-    browserName: 'electron',
-    'wdio:electronServiceOptions': {
-      // WebdriverIO can automatically find your bundled application
-      // if you use Electron Forge or electron-builder, otherwise you
-      // can define it here, e.g.:
-      // appBinaryPath: './path/to/bundled/application.exe',
-      appArgs: ['foo', 'bar=baz']
+  capabilities: [
+    {
+      browserName: 'electron',
+      'wdio:electronServiceOptions': {
+        // WebdriverIO can automatically find your bundled application
+        // if you use Electron Forge or electron-builder, otherwise you
+        // can define it here, e.g.:
+        // appBinaryPath: './path/to/bundled/application.exe',
+        appArgs: ['foo', 'bar=baz']
+      }
     }
-  }]
+  ]
   // ...
 }
 ```
@@ -193,7 +195,7 @@ Playwright launches your app in development mode through the `_electron.launch` 
 To point this API to your Electron app, you can pass the path to your main process
 entry point (here, it is `main.js`).
 
-```js {5} @ts-nocheck
+```js {4} @ts-nocheck
 import { test, _electron as electron } from '@playwright/test'
 
 test('launch app', async () => {
@@ -225,7 +227,7 @@ test('get isPackaged', async () => {
 It can also create individual [Page][playwright-page] objects from Electron BrowserWindow instances.
 For example, to grab the first BrowserWindow and save a screenshot:
 
-```js {6-7} @ts-nocheck
+```js {5-6} @ts-nocheck
 import { test, _electron as electron } from '@playwright/test'
 
 test('save screenshot', async () => {
@@ -300,7 +302,9 @@ const electronPath = require('electron')
 const childProcess = require('node:child_process')
 
 // spawn the process
-const env = { /* ... */ }
+const env = {
+  /* ... */
+}
 const stdio = ['inherit', 'inherit', 'inherit', 'ipc']
 const appProcess = childProcess.spawn(electronPath, ['./app'], { stdio, env })
 
@@ -334,7 +338,7 @@ a `TestDriver` class:
 
 ```js title='testDriver.js' @ts-nocheck
 class TestDriver {
-  constructor ({ path, args, env }) {
+  constructor({ path, args, env }) {
     this.rpcCalls = []
 
     // start child process
@@ -362,14 +366,14 @@ class TestDriver {
 
   // simple RPC call
   // to use: driver.rpc('method', 1, 2, 3).then(...)
-  async rpc (cmd, ...args) {
+  async rpc(cmd, ...args) {
     // send rpc request
     const msgId = this.rpcCalls.length
     this.process.send({ msgId, cmd, args })
     return new Promise((resolve, reject) => this.rpcCalls.push({ resolve, reject }))
   }
 
-  stop () {
+  stop() {
     this.process.kill()
   }
 }
@@ -381,7 +385,7 @@ In your app code, you can then write a simple handler to receive RPC calls:
 
 ```js title='main.js'
 const METHODS = {
-  isReady () {
+  isReady() {
     // do any setup needed
     return true
   }
@@ -428,10 +432,10 @@ const app = new TestDriver({
     NODE_ENV: 'test'
   }
 })
-test.before(async t => {
+test.before(async (t) => {
   await app.isReady
 })
-test.after.always('cleanup', async t => {
+test.after.always('cleanup', async (t) => {
   await app.stop()
 })
 ```

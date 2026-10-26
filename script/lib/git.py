@@ -29,39 +29,14 @@ UPSTREAM_HEAD = (
   _LEGACY_UPSTREAM_HEAD + '-' + hashlib.md5(SCRIPT_DIR.encode()).hexdigest()[:8]
 )
 
-def is_repo_root(path):
-  path_exists = os.path.exists(path)
-  if not path_exists:
-    return False
-
-  git_folder_path = os.path.join(path, '.git')
-  git_folder_exists = os.path.exists(git_folder_path)
-
-  return git_folder_exists
-
-
-def get_repo_root(path):
-  """Finds a closest ancestor folder which is a repo root."""
-  norm_path = os.path.normpath(path)
-  norm_path_exists = os.path.exists(norm_path)
-  if not norm_path_exists:
-    return None
-
-  if is_repo_root(norm_path):
-    return norm_path
-
-  parent_path = os.path.dirname(norm_path)
-
-  # Check if we're in the root folder already.
-  if parent_path == norm_path:
-    return None
-
-  return get_repo_root(parent_path)
-
-
 def am(repo, patch_data, threeway=False, directory=None, exclude=None,
     committer_name=None, committer_email=None, keep_cr=True,
     output_prefix=None):
+  if not patch_data:
+    sys.stderr.write(
+      f'{output_prefix or ""}No patches to apply in {repo}\n'
+    )
+    return
   # --keep-non-patch prevents stripping leading bracketed strings on the subject line
   args = ['--keep-non-patch']
   if threeway:
@@ -159,13 +134,17 @@ def update_ref(repo, ref, newvalue):
   return subprocess.check_call(args)
 
 
+def _run(repo, *args):
+  return subprocess.check_output(
+      ['git', '--no-optional-locks', '-C', str(repo), *args])
+
+
 def get_commit_for_ref(repo, ref):
-  args = ['git', '-C', repo, 'rev-parse', '--verify', ref]
-  return subprocess.check_output(args).decode('utf-8').strip()
+  return _run(repo, 'rev-parse', '--verify', ref).decode('utf-8').strip()
 
 def get_commit_count(repo, commit_range):
-  args = ['git', '-C', repo, 'rev-list', '--count', commit_range]
-  return int(subprocess.check_output(args).decode('utf-8').strip())
+  return int(_run(repo, 'rev-list', '--count', commit_range))
+
 
 def guess_base_commit(repo, ref):
   """Guess which commit the patches might be based on"""
@@ -224,6 +203,9 @@ def format_patch(repo, since):
     # 'index' line of patches, so pass --full-index to get consistent
     # behaviour.
     '--full-index',
+
+    # Never export gitlink changes, e.g. sub-repos moved by `e sync` in src.
+    '--ignore-submodules=all',
     since
   ]
   return subprocess.check_output(args).decode('utf-8')
@@ -299,9 +281,11 @@ def remove_patch_location(patch):
 def export_patches(repo, out_dir,
                    patch_range=None, ref=UPSTREAM_HEAD,
                    dry_run=False, grep=None):
-  if not os.path.exists(repo):
+  # An unfetched gitlink leaves an empty dir, and git would resolve it to the
+  # parent repo, exporting the parent's patches instead.
+  if not os.path.exists(os.path.join(repo, '.git')):
     sys.stderr.write(
-      f"Skipping patches in {repo} because it does not exist.\n"
+      f"Skipping patches in {repo} because it is not checked out.\n"
     )
     return
   if patch_range is None:

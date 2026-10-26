@@ -197,10 +197,37 @@ Disables the Chromium [sandbox](https://www.chromium.org/developers/design-docum
 Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
 
-### --no-stdio-init
+### --ozone-platform=`platform` _Linux_
 
-Disable stdio initialization during node initialization.
-Used to avoid node initialization crash when the nul device is disabled on Windows platform.
+Forces Electron to use a specific display backend instead of choosing one
+automatically. `platform` can be:
+
+* `x11` - Connect to an X server (this includes XWayland).
+* `wayland` - Connect to a Wayland compositor as a native Wayland client.
+* `headless` - Don't connect to any display server. No windows are shown on
+  screen, which is useful for automated testing and CI.
+
+For example, `my-app --ozone-platform=x11` runs the app under XWayland on a
+Wayland desktop.
+
+This switch must be passed on the command line (for example in a `.desktop`
+file or launcher script). Setting it with `app.commandLine.appendSwitch` does
+not work, because the display backend is chosen before your app's main script
+runs.
+
+When this switch is not passed, Electron picks a backend at startup:
+
+1. It checks which display servers it can reach.
+   * X11 is reachable if `DISPLAY` is set to a non-empty value or `--display`
+     is passed.
+   * Wayland is reachable if a Wayland connection is configured. Electron checks
+     `WAYLAND_SOCKET`, then `WAYLAND_DISPLAY`, then whether `XDG_RUNTIME_DIR`
+     contains `wayland-0`, the same order libwayland uses. Only the first of
+     these that is set is considered, so an empty `WAYLAND_DISPLAY` marks
+     Wayland as unreachable even if `wayland-0` exists.
+2. If exactly one display server is reachable, Electron uses it.
+3. If both or neither are reachable, Electron uses Wayland when
+   `XDG_SESSION_TYPE` is `wayland`, and X11 otherwise.
 
 ### --proxy-bypass-list=`hosts`
 
@@ -258,6 +285,40 @@ logging level for all code in the source files under a `foo/bar` directory.
 This switch only works when `--enable-logging` is also passed.
 
 See also `--enable-logging`, `--log-level`, and `--v`.
+
+### --widevine-cdm-path=`path` _Experimental_
+
+Specifies the directory containing Widevine CDM files.
+
+Electron looks for `manifest.json` in this directory and then loads the
+platform-specific Widevine CDM library. If this switch is not set, Electron
+checks for bundled Widevine CDM files at
+`<Electron executable directory>/WidevineCdm`.
+
+This switch is ignored in packaged applications to prevent loading library
+code from an arbitrary command-line path. Packaged applications must bundle
+the `WidevineCdm` directory beside the Electron executable.
+
+For unpackaged applications on Linux, pass this switch on Electron's process
+command line. Calling `app.commandLine.appendSwitch` from the app's main script
+is too late because the zygote loads library CDMs before that script runs. When
+the manifest does not contain a version, pass `--widevine-cdm-version` on the
+process command line as well. Alternatively, bundle the `WidevineCdm` directory
+beside the Electron executable.
+
+This switch is only effective in builds where Widevine support is enabled
+(`enable_widevine = true`).
+
+For CDM packaging, licensing, and VMP signing expectations, see
+[Testing Widevine CDM](../tutorial/testing-widevine-cdm.md).
+
+### --widevine-cdm-version=`version` _Experimental_
+
+Specifies the Widevine CDM version when it cannot be read from `manifest.json`.
+You can omit this switch when the manifest already contains the version.
+
+This switch is only effective in builds where Widevine support is enabled
+(`enable_widevine = true`).
 
 ### --force_high_performance_gpu
 
@@ -392,6 +453,13 @@ Finally, you'll need to ensure that the version of Chromium in Electron matches 
   [`long-animation-frame`](https://developer.mozilla.org/en-US/docs/Web/API/Performance_API/Long_animation_frame_timing)
   `PerformanceObserver` events for non-http(s), non-data, non-blob URLs (such as `file:` or custom
   protocol URLs).
+* `SpareRendererForSitePerProcess`: keeps a spare renderer process running at all times so
+  that a new window, or a navigation that needs a new process, does not wait for a process to
+  launch. Electron starts one such process when the default session is created, for the first
+  sandboxed window that uses it; enable this if the app opens windows regularly and the memory of an
+  idle renderer is acceptable. Only windows whose `webPreferences` are sandboxed and set none of `additionalArguments`,
+  `enableBlinkFeatures`, `disableBlinkFeatures`, `experimentalFeatures`, `offscreen` or (macOS)
+  `scrollBounce` can use it.
 
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value

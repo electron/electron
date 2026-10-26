@@ -7,10 +7,10 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index ea4a2faa2f60632301c084beaeeb58c3e2eaca40..f771deade22c86ca78ba281563921ebc55a065fd 100644
+index 36afb996e511c7685fcaea6efd3d188729182f5b..41a5db4e019084d47763a43bd548b29faa070660 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -737,8 +737,9 @@ bool WasmCustomDescriptorsEnabledCallback(v8::Local<v8::Context> context) {
+@@ -707,8 +707,9 @@ bool WasmCustomDescriptorsEnabledCallback(v8::Local<v8::Context> context) {
    return RuntimeEnabledFeatures::WebAssemblyCustomDescriptorsV2Enabled(
        execution_context);
  }
@@ -21,7 +21,7 @@ index ea4a2faa2f60632301c084beaeeb58c3e2eaca40..f771deade22c86ca78ba281563921ebc
      v8::Local<v8::Context> context,
      v8::Local<v8::Data> v8_host_defined_options,
      v8::Local<v8::Value> v8_referrer_resource_url,
-@@ -816,20 +817,23 @@ v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
+@@ -786,20 +787,23 @@ v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
  
    return resolver->Promise().V8Promise();
  }
@@ -47,7 +47,7 @@ index ea4a2faa2f60632301c084beaeeb58c3e2eaca40..f771deade22c86ca78ba281563921ebc
                                   v8::Local<v8::Module> module,
                                   v8::Local<v8::Object> meta) {
    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-@@ -856,6 +860,7 @@ void HostGetImportMetaProperties(v8::Local<v8::Context> context,
+@@ -826,6 +830,7 @@ void HostGetImportMetaProperties(v8::Local<v8::Context> context,
    meta->CreateDataProperty(context, resolve_key, resolve_value).ToChecked();
  }
  
@@ -55,7 +55,7 @@ index ea4a2faa2f60632301c084beaeeb58c3e2eaca40..f771deade22c86ca78ba281563921ebc
  bool IsDOMExceptionWrapper(v8::Isolate* isolate, v8::Local<v8::Object> object) {
    return V8DOMException::HasInstance(isolate, object);
  }
-@@ -886,7 +891,6 @@ void EmitDevToolsEvent(v8::Isolate* isolate) {
+@@ -862,7 +867,6 @@ int64_t CoarseTemporalHostSystemUTCEpochNanosecondsCallback(
  
  }  // namespace
  
@@ -63,7 +63,7 @@ index ea4a2faa2f60632301c084beaeeb58c3e2eaca40..f771deade22c86ca78ba281563921ebc
  void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
    // Set up garbage collection before setting up anything else as V8 may trigger
    // GCs during Blink setup.
-@@ -902,9 +906,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
+@@ -878,9 +882,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
        SharedArrayBufferConstructorEnabledCallback);
    isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
    isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
@@ -73,13 +73,13 @@ index ea4a2faa2f60632301c084beaeeb58c3e2eaca40..f771deade22c86ca78ba281563921ebc
 -      HostGetImportMetaProperties);
 +     V8Initializer::HostGetImportMetaProperties);
    isolate->SetIsJSApiWrapperNativeErrorCallback(IsDOMExceptionWrapper);
-   isolate->SetMetricsRecorder(std::make_shared<V8MetricsRecorder>(isolate));
- 
+   isolate->SetDynamicScriptCompiledFromEmbedderCallback(
+       DynamicScriptCompiledFromEmbedderCallback);
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-index ba688857b996f49ee7fb5e071bdbb55f1b667b27..f87eeddb6da48bf6a554c35e45e7f39def14938e 100644
+index 7a8562075e749c0c22da258d9131a77251fe54ea..f40c04628b07672d14e471ab98727fc4bd1d2fe2 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-@@ -84,6 +84,18 @@ class CORE_EXPORT V8Initializer {
+@@ -88,6 +88,18 @@ class CORE_EXPORT V8Initializer {
    static void PromiseRejectHandlerInMainThread(v8::PromiseRejectMessage data);
    static void ExceptionPropagationCallback(v8::ExceptionPropagationMessage);
  

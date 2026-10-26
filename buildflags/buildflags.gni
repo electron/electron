@@ -5,17 +5,14 @@
 declare_args() {
   enable_pdf_viewer = true
 
-  # Provide a fake location provider for mocking
-  # the geolocation responses. Disable it if you
-  # need to test with chromium's location provider.
-  # Should not be enabled for release build.
-  enable_fake_location_provider = !is_official_build
-
   # Enable Chrome extensions support.
   enable_electron_extensions = true
 
   # Enable Spellchecker support
   enable_builtin_spellchecker = true
+
+  # Enable Prompt API support.
+  enable_prompt_api = true
 
   # The version of Electron.
   # Packagers and vendor builders should set this in gn args to avoid running

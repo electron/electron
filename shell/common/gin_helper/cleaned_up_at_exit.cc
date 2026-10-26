@@ -4,14 +4,16 @@
 
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 
-#include <algorithm>
 #include <vector>
 
+#include "base/check.h"
 #include "base/no_destructor.h"
 
 namespace gin_helper {
 
 namespace {
+
+bool g_did_start_cleanup = false;
 
 std::vector<CleanedUpAtExit*>& GetDoomed() {
   static base::NoDestructor<std::vector<CleanedUpAtExit*>> doomed;
@@ -31,12 +33,19 @@ void CleanedUpAtExit::WillBeDestroyed() {}
 
 // static
 void CleanedUpAtExit::DoCleanup() {
+  DCHECK(!g_did_start_cleanup);
+  g_did_start_cleanup = true;
   auto& doomed = GetDoomed();
   while (!doomed.empty()) {
     CleanedUpAtExit* next = doomed.back();
     next->WillBeDestroyed();
     delete next;
   }
+}
+
+// static
+bool CleanedUpAtExit::DidStartCleanup() {
+  return g_did_start_cleanup;
 }
 
 }  // namespace gin_helper

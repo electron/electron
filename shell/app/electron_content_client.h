@@ -9,7 +9,10 @@
 #include <vector>
 
 #include "content/public/common/content_client.h"
-#include "url/origin.h"
+
+namespace url {
+class Origin;
+}  // namespace url
 
 namespace electron {
 
@@ -28,7 +31,8 @@ class ElectronContentClient : public content::ContentClient {
   std::string_view GetDataResource(int resource_id,
                                    ui::ResourceScaleFactor) override;
   gfx::Image& GetNativeImageNamed(int resource_id) override;
-  base::RefCountedMemory* GetDataResourceBytes(int resource_id) override;
+  scoped_refptr<base::RefCountedMemory> GetDataResourceBytes(
+      int resource_id) override;
   void AddAdditionalSchemes(Schemes* schemes) override;
   void AddPlugins(std::vector<content::WebPluginInfo>* plugins) override;
   void AddContentDecryptionModules(
@@ -36,9 +40,6 @@ class ElectronContentClient : public content::ContentClient {
       std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;
   bool IsFilePickerAllowedForCrossOriginSubframe(
       const url::Origin& origin) override;
-  void ExposeInterfacesToBrowser(
-      scoped_refptr<base::SequencedTaskRunner> io_task_runner,
-      mojo::BinderMap* binders) override;
 };
 
 }  // namespace electron

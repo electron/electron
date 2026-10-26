@@ -1,9 +1,9 @@
 /**
- * Create and minimally track guest windows at the direction of the renderer
- * (via window.open). Here, "guest" roughly means "child" — it's not necessarily
- * emblematic of its process status; both in-process (same-origin) and
- * out-of-process (cross-origin) are created here. "Embedder" roughly means
- * "parent."
+ * Create and minimally track guest windows opened by a page (window.open or
+ * a link opened into a new window). Here, "guest" roughly means "child" —
+ * it's not necessarily emblematic of its process status; both in-process
+ * (same-origin) and out-of-process (cross-origin) are created here.
+ * "Embedder" roughly means "parent."
  */
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 
@@ -33,7 +33,7 @@ export function openGuestWindow({
   createWindow
 }: {
   embedder: WebContents;
-  guest?: WebContents;
+  guest: WebContents;
   referrer: Referrer;
   disposition: string;
   postData?: PostData;
@@ -58,16 +58,13 @@ export function openGuestWindow({
       ...browserWindowOptions
     });
 
-    if (guest != null) {
-      if (webContents !== guest) {
-        throw new Error(
-          'Invalid webContents. Created window should be connected to webContents passed with options object.'
-        );
-      }
-
-      handleWindowLifecycleEvents({ embedder, guest, outlivesOpener });
+    if (webContents !== guest) {
+      throw new Error(
+        'Invalid webContents. Created window should be connected to webContents passed with options object.'
+      );
     }
 
+    handleWindowLifecycleEvents({ embedder, guest, outlivesOpener });
     return;
   }
 
@@ -76,20 +73,7 @@ export function openGuestWindow({
     ...browserWindowOptions
   });
 
-  if (!guest) {
-    // When we open a new window from a link (via OpenURLFromTab),
-    // the browser process is responsible for initiating navigation
-    // in the new window.
-    window.loadURL(url, {
-      httpReferrer: referrer,
-      ...(postData && {
-        postData,
-        extraHeaders: formatPostDataHeaders(postData as Electron.UploadRawData[])
-      })
-    });
-  }
-
-  handleWindowLifecycleEvents({ embedder, guest: window.webContents, outlivesOpener });
+  handleWindowLifecycleEvents({ embedder, guest, outlivesOpener });
 
   embedder.emit('did-create-window', window, {
     url,
@@ -138,10 +122,10 @@ const securityWebPreferences: { [key: string]: boolean } = {
   contextIsolation: true,
   javascript: false,
   nodeIntegration: false,
+  nodeIntegrationInWorker: false,
   sandbox: true,
   webviewTag: false,
-  nodeIntegrationInSubFrames: false,
-  enableWebSQL: false
+  nodeIntegrationInSubFrames: false
 };
 
 export function makeWebPreferences({
@@ -172,17 +156,6 @@ export function makeWebPreferences({
     ...securityWebPreferencesFromParent,
     ...secureOverrideWebPreferences
   };
-}
-
-function formatPostDataHeaders(postData: PostData) {
-  if (!postData) return;
-
-  const { contentType, boundary } = parseContentTypeFormat(postData);
-  if (boundary != null) {
-    return `content-type: ${contentType}; boundary=${boundary}`;
-  }
-
-  return `content-type: ${contentType}`;
 }
 
 const MULTIPART_CONTENT_TYPE = 'multipart/form-data';

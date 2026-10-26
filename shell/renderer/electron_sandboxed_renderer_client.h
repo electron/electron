@@ -6,15 +6,12 @@
 
 #include <memory>
 
+#include "shell/common/api/api.mojom.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 
 namespace base {
 class ProcessMetrics;
-}
-
-namespace blink {
-class WebLocalFrame;
 }
 
 namespace electron {
@@ -30,10 +27,13 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
   ElectronSandboxedRendererClient& operator=(
       const ElectronSandboxedRendererClient&) = delete;
 
-  void InitializeBindings(v8::Local<v8::Object> binding,
-                          v8::Isolate* isolate,
-                          v8::Local<v8::Context> context,
-                          content::RenderFrame* render_frame);
+  // The `process`, `require` and `electron` module for the frame's preload
+  // scripts, then runs them.
+  void SetUpPreloadEnvironment(
+      v8::Isolate* isolate,
+      v8::Local<v8::Context> context,
+      content::RenderFrame* render_frame,
+      const mojom::RendererStartupDataPtr& startup_data);
   // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Isolate* isolate,
                               v8::Local<v8::Context> context,
@@ -42,6 +42,7 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
                                 v8::Local<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
   // content::ContentRendererClient:
+  bool HasScriptsToInject(content::RenderFrame* render_frame) const override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
@@ -59,6 +60,9 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
       const GURL& service_worker_scope,
       const GURL& script_url,
       const blink::ServiceWorkerToken& service_worker_token) override;
+  std::unique_ptr<media::KeySystemSupportRegistration> GetSupportedKeySystems(
+      content::RenderFrame* render_frame,
+      media::GetSupportedKeySystemsCB cb) override;
 
  private:
   void EmitProcessEvent(content::RenderFrame* render_frame,

@@ -25,6 +25,7 @@
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
@@ -37,13 +38,17 @@
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
 #include "shell/renderer/oom_stack_trace.h"
+#include "shell/renderer/security_warnings.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
+#include "third_party/blink/public/common/features.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_runtime_features.h"
-#include "third_party/blink/public/web/blink.h"
+#include "third_party/blink/public/platform/web_security_origin.h"
+#include "third_party/blink/public/platform/web_string.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
+#include "third_party/blink/public/web/web_frame.h"
 #include "third_party/blink/public/web/web_frame_widget.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_plugin_params.h"
@@ -89,18 +94,20 @@
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "base/strings/utf_string_conversions.h"
-#include "content/public/common/webplugininfo.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
+#include "extensions/common/switches.h"
 #include "extensions/renderer/api/core_extensions_renderer_api_provider.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/extension_localization_throttle.h"
 #include "extensions/renderer/extension_web_view_helper.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/electron_extensions_client.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_api_provider.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
+#include "third_party/blink/public/common/loader/url_loader_throttle.h"
+#include "third_party/blink/public/platform/url_loader_throttle_provider.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace electron {
@@ -109,6 +116,29 @@ content::RenderFrame* GetRenderFrame(v8::Isolate* const isolate,
                                      v8::Local<v8::Object> value);
 
 namespace {
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+// Localizes __MSG_*__ placeholders in stylesheets loaded from extensions.
+class ExtensionURLLoaderThrottleProvider
+    : public blink::URLLoaderThrottleProvider {
+ public:
+  // blink::URLLoaderThrottleProvider:
+  std::unique_ptr<blink::URLLoaderThrottleProvider> Clone() override {
+    return std::make_unique<ExtensionURLLoaderThrottleProvider>();
+  }
+  std::vector<std::unique_ptr<blink::URLLoaderThrottle>> CreateThrottles(
+      base::optional_ref<const blink::LocalFrameToken> local_frame_token,
+      const network::ResourceRequest& request) override {
+    std::vector<std::unique_ptr<blink::URLLoaderThrottle>> throttles;
+    if (auto throttle = extensions::ExtensionLocalizationThrottle::MaybeCreate(
+            local_frame_token, request.url)) {
+      throttles.push_back(std::move(throttle));
+    }
+    return throttles;
+  }
+  void SetOnline(bool is_online) override {}
+};
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 void SetIsWebView(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   gin_helper::Dictionary dict(isolate, object);
@@ -131,9 +161,16 @@ bool IsDevTools(content::RenderFrame* render_frame) {
       "devtools");
 }
 
+// A DevTools extension panel or devtools_page: an extension document hosted
+// inside the DevTools front-end. A chrome-extension:// frame embedded anywhere
+// else (e.g. a web-accessible resource inside a regular page) is not one.
 bool IsDevToolsExtension(content::RenderFrame* render_frame) {
-  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
-      "chrome-extension");
+  blink::WebLocalFrame* frame = render_frame->GetWebFrame();
+  if (!frame->GetDocument().Url().ProtocolIs("chrome-extension"))
+    return false;
+  blink::WebFrame* top = frame->Top();
+  return top && top != frame &&
+         top->GetSecurityOrigin().Protocol() == "devtools";
 }
 
 }  // namespace
@@ -304,11 +341,36 @@ void RendererClientBase::RenderThreadStarted() {
 #endif
 }
 
+void RendererClientBase::SetRuntimeFeaturesDefaultsBeforeBlinkInitialization() {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Web platform features that are only exposed to extensions.
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          extensions::switches::kExtensionProcess) &&
+      base::FeatureList::IsEnabled(
+          blink::features::kClipboardOnExtensionServiceWorker)) {
+    blink::WebRuntimeFeatures::EnableClipboardOnExtensionServiceWorker(true);
+  }
+#endif
+}
+
 void RendererClientBase::ExposeInterfacesToBrowser(mojo::BinderMap* binders) {
   // NOTE: Do not add binders directly within this method. Instead, modify the
   // definition of |ExposeElectronRendererInterfacesToBrowser()| to ensure
   // security review coverage.
   ExposeElectronRendererInterfacesToBrowser(this, binders);
+}
+
+void RendererClientBase::SetPendingCreateNewWindowStartupData(
+    mojo_base::BigBuffer data) {
+  // Deserialize the opaque blob from CreateNewWindowReply and stash it for
+  // the about-to-be-created RenderFrame's ElectronApiServiceImpl. Same call
+  // stack, no reentrancy.
+  mojom::RendererStartupDataPtr deserialized;
+  if (mojom::RendererStartupData::Deserialize(base::span<const uint8_t>(data),
+                                              &deserialized)) {
+    ElectronApiServiceImpl::SetPendingNewWindowStartupData(
+        std::move(deserialized));
+  }
 }
 
 void RendererClientBase::RenderFrameCreated(
@@ -327,6 +389,7 @@ void RendererClientBase::RenderFrameCreated(
   // Note: ElectronApiServiceImpl has to be created now to capture the
   // DidCreateDocumentElement event.
   new ElectronApiServiceImpl(render_frame, this);
+  MaybeAddSecurityWarnings(render_frame);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* dispatcher = extensions_renderer_client_->dispatcher();
@@ -370,10 +433,26 @@ void RendererClientBase::DidCreateScriptContext(
   RegisterOomStackTraceCallback(isolate);
 }
 
+bool RendererClientBase::HasScriptsToInject(
+    content::RenderFrame* render_frame) const {
+  return true;
+}
+
 void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {
-  // Make sure every page will get a script context created.
-  render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
+  // Blink only creates a document's main-world script context once the page
+  // runs script. Preload scripts and Node.js have to run even in a document
+  // with no scripts of its own, so force the context for the frames Electron
+  // injects into (see ShouldLoadPreload()); leave every other frame alone.
+  const auto& prefs = render_frame->GetBlinkPreferences();
+  if ((render_frame->IsMainFrame() || prefs.node_integration_in_sub_frames ||
+       IsDevTools(render_frame) || IsDevToolsExtension(render_frame)) &&
+      HasScriptsToInject(render_frame)) {
+    blink::WebLocalFrame* web_frame = render_frame->GetWebFrame();
+    v8::HandleScope handle_scope(
+        web_frame->GetAgentGroupScheduler()->Isolate());
+    web_frame->MainWorldScriptContext();
+  }
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
@@ -382,7 +461,7 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (params.mime_type.Utf8() == pdf::kInternalPluginMimeType) {
-    *plugin = pdf::CreateInternalPlugin(std::move(params), render_frame, {});
+    *plugin = pdf::CreateInternalPlugin(params, render_frame, {});
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -482,10 +561,21 @@ void RendererClientBase::RunScriptsAtDocumentEnd(
 #endif
 }
 
-bool RendererClientBase::AllowScriptExtensionForServiceWorker(
-    const url::Origin& script_origin) {
+std::unique_ptr<blink::URLLoaderThrottleProvider>
+RendererClientBase::CreateURLLoaderThrottleProvider(
+    blink::URLLoaderThrottleProviderType provider_type) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  return script_origin.scheme() == extensions::kExtensionScheme;
+  return std::make_unique<ExtensionURLLoaderThrottleProvider>();
+#else
+  return nullptr;
+#endif
+}
+
+bool RendererClientBase::ShouldNotifyServiceWorkerOnWebSocketActivity(
+    v8::Local<v8::Context> context) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return extensions::Dispatcher::ShouldNotifyServiceWorkerOnWebSocketActivity(
+      context);
 #else
   return false;
 #endif
@@ -575,11 +665,26 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
     v8::Isolate* isolate) const {
   auto* render_frame = content::RenderFrame::FromWebFrame(frame);
   DCHECK(render_frame);
+  if (render_frame) {
+    v8::Local<v8::Context> env_context = GetEnvironmentContext(render_frame);
+    if (!env_context.IsEmpty())
+      return env_context;
+  }
   if (render_frame && render_frame->GetBlinkPreferences().context_isolation)
     return frame->GetScriptContextFromWorldId(isolate,
                                               WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();
+}
+
+v8::Local<v8::Context> RendererClientBase::GetEnvironmentContext(
+    content::RenderFrame* render_frame) const {
+  return {};
+}
+
+std::optional<int> RendererClientBase::GetEnvironmentWorldId(
+    content::RenderFrame* render_frame) const {
+  return std::nullopt;
 }
 
 bool RendererClientBase::IsWebViewFrame(
@@ -618,9 +723,9 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::Context::Scope context_scope{context};
 
   auto isolated_api = gin_helper::Dictionary::CreateEmpty(isolate);
-  isolated_api.SetMethod("allowGuestViewElementDefinition",
-                         &AllowGuestViewElementDefinition);
-  isolated_api.SetMethod("setIsWebView", &SetIsWebView);
+  isolated_api.SetMethod<&AllowGuestViewElementDefinition>(
+      "allowGuestViewElementDefinition");
+  isolated_api.SetMethod<&SetIsWebView>("setIsWebView");
 
   auto source_context = GetContext(render_frame->GetWebFrame(), isolate);
   gin_helper::Dictionary global(isolate, source_context->Global());
@@ -628,20 +733,20 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::Local<v8::Value> guest_view_internal;
   if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
     auto result = api::PassValueToOtherContext(
-        isolate, source_context, isolate, context, guest_view_internal,
+        isolate, source_context, context, guest_view_internal,
         source_context->Global(), false, api::BridgeErrorTarget::kSource);
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }
   }
 
-  v8::LocalVector<v8::String> isolated_bundle_params(
-      isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")});
+  v8::LocalVector<v8::String> isolated_bundle_params =
+      js2c::MakeBundleParams(isolate, js2c::kIsolatedBundleParams);
 
   v8::LocalVector<v8::Value> isolated_bundle_args(isolate,
                                                   {isolated_api.GetHandle()});
 
-  util::CompileAndCall(isolate, context, "electron/js2c/isolated_bundle",
+  util::CompileAndCall(isolate, context, js2c::kIsolatedBundleId,
                        &isolated_bundle_params, &isolated_bundle_args);
 }
 

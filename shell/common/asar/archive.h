@@ -8,14 +8,17 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
-#include <uv.h>
-
+#include "base/containers/span.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
+#include "base/thread_annotations.h"
 #include "base/values.h"
+#include "build/build_config.h"
+#include "shell/common/uv_includes.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace asar {
@@ -31,6 +34,9 @@ struct IntegrityPayload {
   IntegrityPayload();
   ~IntegrityPayload();
   IntegrityPayload(const IntegrityPayload& other);
+  IntegrityPayload(IntegrityPayload&& other);
+  IntegrityPayload& operator=(const IntegrityPayload& other);
+  IntegrityPayload& operator=(IntegrityPayload&& other);
   HashAlgorithm algorithm = HashAlgorithm::kNone;
   std::string hash;
   uint32_t block_size = 0U;
@@ -71,25 +77,48 @@ class Archive {
   // Read and parse the header.
   bool Init();
 
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   std::optional<IntegrityPayload> HeaderIntegrity() const;
   std::optional<base::FilePath> RelativePath() const;
+#endif
+
+  // Paths inside the archive are UTF-8, relative to the archive root, with the
+  // platform's separators. The std::string_view overloads are what the fs
+  // binding uses on every call and avoid a base::FilePath round trip.
 
   // Get the info of a file.
   bool GetFileInfo(const base::FilePath& path, FileInfo* info) const;
+  bool GetFileInfo(std::string_view path, FileInfo* info) const;
 
   // Fs.stat(path).
-  bool Stat(const base::FilePath& path, Stats* stats) const;
+  bool Stat(std::string_view path, Stats* stats) const;
 
-  // Fs.readdir(path).
-  bool Readdir(const base::FilePath& path,
-               std::vector<base::FilePath>* files) const;
+  // Fs.readdir(path). Fills |names| with the entry names under |path| and,
+  // when |types| is non-null, the matching FileType of each entry.
+  bool Readdir(std::string_view path,
+               std::vector<std::string>* names,
+               std::vector<FileType>* types) const;
 
-  // Fs.realpath(path).
-  bool Realpath(const base::FilePath& path, base::FilePath* realpath) const;
+  // Fs.realpath(path): |path| itself, or the link target if it is a link.
+  bool Realpath(std::string_view path, std::string* realpath) const;
 
   // Copy the file into a temporary file, and return the new path.
   // For unpacked file, this method will return its real path.
   bool CopyFileOut(const base::FilePath& path, base::FilePath* out);
+
+  // Reads |buf.size()| bytes at |offset| from the archive's retained file
+  // handle. Reading through the retained handle (instead of re-opening the
+  // archive by path) keeps reads consistent with the header that was
+  // integrity-validated when the archive was first opened, even if the file
+  // on disk has since been atomically replaced (e.g. by an app update while
+  // the app is running).
+  bool ReadFileAt(uint64_t offset, base::span<uint8_t> buf);
+
+  // Returns a duplicate of the archive's retained file handle, for consumers
+  // that need exclusive ownership of a base::File (e.g. concurrent streaming
+  // reads). The duplicate refers to the same underlying file as |file_|, so
+  // like ReadFileAt() it is unaffected by the on-disk file being replaced.
+  base::File DuplicateFile();
 
   // Returns the file's fd.
   // Using this fd will not validate the integrity of any files
@@ -97,16 +126,28 @@ class Archive {
   // for integrity validation after this fd is handed over.
   int GetUnsafeFD() const;
 
-  base::FilePath path() const { return path_; }
-
  private:
+  // Resolves |path|, following at most a bounded number of chained "link"
+  // entries so that a cyclic link in the header cannot recurse forever.
+  bool GetFileInfo(std::string_view path, FileInfo* info, int depth) const;
+
+  // GetNodeFromPath() through a per-archive memo. The header never changes
+  // after Init(), so both hits and misses are remembered; module resolution
+  // in particular asks about the same handful of paths many times over.
+  const base::DictValue* LookupNode(std::string_view path) const;
+
   bool initialized_ = false;
   bool header_validated_ = false;
   const base::FilePath path_;
   base::File file_{base::File::FILE_OK};
   int fd_ = -1;
   uint32_t header_size_ = 0;
+  uint64_t file_size_ = 0;
   std::optional<base::DictValue> header_;
+
+  mutable base::Lock node_cache_lock_;
+  mutable absl::flat_hash_map<std::string, const base::DictValue*> node_cache_
+      GUARDED_BY(node_cache_lock_);
 
   // Cached external temporary files.
   base::Lock external_files_lock_;

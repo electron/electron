@@ -5,10 +5,22 @@
 #ifndef ELECTRON_SHELL_RENDERER_PRELOAD_UTILS_H_
 #define ELECTRON_SHELL_RENDERER_PRELOAD_UTILS_H_
 
+#include <string>
+#include <vector>
+
+#include "electron/shell/common/api/api.mojom-forward.h"
 #include "v8/include/v8-forward.h"
 
+namespace content {
+class RenderFrame;
+}
+
 namespace gin_helper {
-class Arguments;
+class Dictionary;
+}
+
+namespace electron {
+class ServiceWorkerData;
 }
 
 namespace electron::preload_utils {
@@ -16,10 +28,30 @@ namespace electron::preload_utils {
 v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
                                 v8::Local<v8::String> key);
 
-v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
-                                         v8::Local<v8::String> source);
+// Compiles a preload script's body via v8::ScriptCompiler::CompileFunction()
+// with |param_names| as the function's parameter list, and returns the
+// resulting Function. The preload contents are looked up by |script_id| from
+// the per-frame (|render_frame|) or per-worker (|service_worker_data|) mojo-
+// cached startup data — they never become a V8 string until the single copy
+// here for the compile, and the V8 code cache is consumed/produced entirely
+// on the C++ side (BufferNotOwned / BigBuffer). Exactly one of
+// |render_frame| / |service_worker_data| should be non-null. Only the frame
+// path produces and ships a cache (the worker realm has no per-frame channel).
+v8::Local<v8::Value> CreatePreloadScript(
+    content::RenderFrame* render_frame,
+    ServiceWorkerData* service_worker_data,
+    v8::Isolate* isolate,
+    const std::string& script_id,
+    const std::vector<std::string>& param_names);
 
 double Uptime();
+
+// Adds the process information the browser sent (and this binary's own
+// arch/platform/version metadata) to a sandboxed preload's `process` object:
+// arch, platform, version, versions, env and execPath.
+void SetProcessProperties(v8::Isolate* isolate,
+                          gin_helper::Dictionary* process,
+                          const mojom::RendererStartupDataPtr& data);
 
 }  // namespace electron::preload_utils
 

@@ -8,20 +8,47 @@
 #include "base/containers/to_value_list.h"
 #include "base/json/json_writer.h"
 #include "base/logging.h"
-#include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/threading/thread_local.h"
 #include "base/values.h"
 #include "gin/converter.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_natives_code_cache.h"
 #include "shell/common/process_util.h"
 #include "third_party/electron_node/src/node_process-inl.h"
 
 namespace electron::util {
+
+v8::MaybeLocal<v8::Function> CompileBundle(
+    v8::Local<v8::Context> context,
+    const char* id,
+    v8::LocalVector<v8::String>* parameters) {
+  static base::NoDestructor<
+      base::ThreadLocalOwnedPointer<node::builtins::BuiltinLoader>>
+      builtin_loader;
+  if (!builtin_loader->Get()) {
+    auto loader = std::make_unique<node::builtins::BuiltinLoader>();
+    // Feed the build-time js2c code cache so the framework bundles are
+    // consumed instead of compiled from source. Must run before the first
+    // LookupAndCompileFunction; empty on builds without a generated cache.
+    const bool has_node_env = node::Environment::GetCurrent(context) != nullptr;
+    const auto& cache =
+        GetNativesCodeCache(CurrentProcessJs2cCacheFlavor(has_node_env));
+    if (!cache.empty())
+      loader->RefreshCodeCache(cache);
+    builtin_loader->Set(std::move(loader));
+  }
+  v8::MaybeLocal<v8::Function> compiled =
+      builtin_loader->Get()->LookupAndCompileFunction(
+          context, id, parameters, node::Realm::GetCurrent(context));
+  // TODO(samuelmaddock): how can we get the compilation error message?
+  if (compiled.IsEmpty())
+    LOG(ERROR) << "Failed to compile electron script (" << id << ")";
+  return compiled;
+}
 
 v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Isolate* const isolate,
@@ -30,30 +57,15 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::LocalVector<v8::String>* parameters,
     v8::LocalVector<v8::Value>* arguments) {
   v8::TryCatch try_catch{isolate};
-
-  static base::NoDestructor<
-      base::ThreadLocalOwnedPointer<node::builtins::BuiltinLoader>>
-      builtin_loader;
-  if (!builtin_loader->Get()) {
-    builtin_loader->Set(base::WrapUnique(new node::builtins::BuiltinLoader));
-  }
-  v8::MaybeLocal<v8::Function> compiled =
-      builtin_loader->Get()->LookupAndCompileFunction(
-          context, id, parameters, node::Realm::GetCurrent(context));
-
-  if (compiled.IsEmpty()) {
-    // TODO(samuelmaddock): how can we get the compilation error message?
-    LOG(ERROR) << "CompileAndCall failed to compile electron script (" << id
-               << ")";
+  v8::Local<v8::Function> fn;
+  if (!CompileBundle(context, id, parameters).ToLocal(&fn))
     return {};
-  }
-
-  v8::Local<v8::Function> fn = compiled.ToLocalChecked().As<v8::Function>();
   v8::MaybeLocal<v8::Value> ret = fn->Call(
       context, v8::Null(isolate), arguments->size(), arguments->data());
 
   // This will only be caught when something has gone terrible wrong as all
-  // electron scripts are wrapped in a try {} catch {} by webpack
+  // electron scripts are wrapped in a try {} catch {} by
+  // build/bundle/bundle.mjs
   if (try_catch.HasCaught()) {
     std::string msg = "no error message";
     if (!try_catch.Message().IsEmpty()) {
@@ -67,15 +79,33 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   return ret;
 }
 
+void FeedEnvironmentCodeCache(node::Environment* env) {
+  const auto& cache = GetNativesCodeCache(CurrentProcessJs2cCacheFlavor());
+  if (!cache.empty())
+    env->builtin_loader()->RefreshCodeCache(cache);
+}
+
+void InstallProcessCodeCache() {
+  static const bool installed = [] {
+    const auto& cache = GetNativesCodeCache(CurrentProcessJs2cCacheFlavor());
+    if (!cache.empty())
+      node::builtins::BuiltinLoader::SetProcessDefaultCodeCache(&cache);
+    return true;
+  }();
+  (void)installed;
+}
+
 void EmitWarning(const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  EmitWarning(JavascriptEnvironment::GetIsolate(), warning_msg, warning_type);
+  // Reachable from renderers, where there is no JavascriptEnvironment.
+  EmitWarning(v8::Isolate::TryGetCurrent(), warning_msg, warning_type);
 }
 
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  node::Environment* env = node::Environment::GetCurrent(isolate);
+  node::Environment* env =
+      isolate ? node::Environment::GetCurrent(isolate) : nullptr;
   if (!env) {
     // No Node.js environment available, fall back to console logging.
     LOG(WARNING) << "[" << warning_type << "] " << warning_msg;
@@ -86,14 +116,15 @@ void EmitWarning(v8::Isolate* isolate,
 
 void EmitDeprecationWarning(const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  EmitDeprecationWarning(JavascriptEnvironment::GetIsolate(), warning_msg,
+  EmitDeprecationWarning(v8::Isolate::TryGetCurrent(), warning_msg,
                          deprecation_code);
 }
 
 void EmitDeprecationWarning(v8::Isolate* isolate,
                             const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  node::Environment* env = node::Environment::GetCurrent(isolate);
+  node::Environment* env =
+      isolate ? node::Environment::GetCurrent(isolate) : nullptr;
   if (!env) {
     // No Node.js environment available, fall back to console logging.
     LOG(WARNING) << "[DeprecationWarning] " << warning_msg
@@ -151,24 +182,36 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
   return env;
 }
 
-ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
-    : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
-  // In browser-like processes, some nested run loops (macOS usually) may
-  // re-enter. This is safe because we expect the policy was explicit in the
-  // first place for those processes. However, in renderer processes, there may
-  // be unexpected behavior if this code is triggered within a pending microtask
-  // scope.
-  if (electron::IsBrowserProcess() || electron::IsUtilityProcess()) {
-    DCHECK_EQ(original_policy_, v8::MicrotasksPolicy::kExplicit);
-  } else {
-    DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
-  }
+v8::Local<v8::Object> CreateAbortController(v8::Isolate* isolate) {
+  auto context = isolate->GetCurrentContext();
+  auto global_object = context->Global();
 
-  microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+  auto value =
+      global_object->Get(context, gin::StringToV8(isolate, "AbortController"))
+          .ToLocalChecked();
+  DCHECK(!value.IsEmpty() && value->IsObject());
+
+  DCHECK(value->IsFunction());
+  auto constructor = value.As<v8::Function>();
+  auto instance =
+      constructor->NewInstance(context, 0, nullptr).ToLocalChecked();
+  return instance;
+}
+
+ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
+    : microtask_queue_(queue), original_policy_(queue->GetMicrotasksPolicy()) {
+  // Browser-like processes already run with kExplicit, nested run loops
+  // included. Renderers can get here from inside script (a frame's environment
+  // freed by element.remove()); explicit checkpoints are then no-ops until the
+  // enclosing scope unwinds.
+  if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
+    DCHECK_EQ(original_policy_, v8::MicrotasksPolicy::kExplicit);
+
+  microtask_queue_->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 }
 
 ExplicitMicrotasksScope::~ExplicitMicrotasksScope() {
-  microtask_queue_->set_microtasks_policy(original_policy_);
+  microtask_queue_->SetMicrotasksPolicy(original_policy_);
 }
 
 }  // namespace electron::util

@@ -1,30 +1,22 @@
-import { BrowserWindow } from 'electron/main';
+import type { BrowserWindow } from 'electron/main';
 
-import { AssertionError } from 'chai';
-import { SuiteFunction, TestFunction } from 'mocha';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
 import * as http from 'node:http';
-import * as http2 from 'node:http2';
-import * as https from 'node:https';
-import * as net from 'node:net';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import * as v8 from 'node:v8';
 
-const addOnly = <T>(fn: Function): T => {
-  const wrapped = (...args: any[]) => {
-    return fn(...args);
-  };
-  (wrapped as any).only = wrapped;
-  (wrapped as any).skip = wrapped;
-  return wrapped as any;
-};
+import type * as http2 from 'node:http2';
+import type * as https from 'node:https';
+import type * as net from 'node:net';
 
-export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
+export const ifit = (condition: boolean) => (condition ? it : it.skip);
+export const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip);
 
 export const isWayland =
   process.platform === 'linux' &&
@@ -32,20 +24,51 @@ export const isWayland =
     !!process.env.WAYLAND_DISPLAY ||
     process.argv.includes('--ozone-platform=wayland'));
 
+// macos-x64 CI runner VMs have no Metal-capable GPU, and SwiftShader's Vulkan
+// backend fails to initialize there too, so every GPU process launch fails
+// until Chromium falls back to software compositing with GL disabled. Start
+// spawned apps in that end state directly so they skip the failed launches.
+export const ciGpuArgs: string[] =
+  process.env.CI && process.platform === 'darwin' && process.arch === 'x64' ? ['--disable-gpu'] : [];
+
 type CleanupFunction = (() => void) | (() => Promise<void>);
-const cleanupFunctions: CleanupFunction[] = [];
-export async function runCleanupFunctions() {
-  for (const cleanup of cleanupFunctions) {
-    const r = cleanup();
-    if (r instanceof Promise) {
-      await r;
+// Each cleanup comes with the error it fails with if it times out,
+// created in defer() so that its stack points at the caller.
+const cleanupFunctions: { cleanup: CleanupFunction; timeoutError: Error }[] = [];
+
+// Runs every defer()-ed cleanup, newest first.
+// Like a vitest hook, each one gets `timeout` ms (no limit if 0 or Infinity),
+// so a cleanup that never settles fails the test instead of hanging the run.
+export async function runCleanupFunctions(timeout: number) {
+  // Take the whole list up front: a cleanup that throws must not leave the
+  // rest behind to run (and throw) again after every later test.
+  const pending = cleanupFunctions.splice(0, cleanupFunctions.length);
+  const errors: unknown[] = [];
+  for (const { cleanup, timeoutError } of pending) {
+    let timer: NodeJS.Timeout | undefined;
+    const timedOut = new Promise<never>((_resolve, reject) => {
+      if (timeout <= 0 || timeout === Infinity) return;
+      timer = globalThis.setTimeout(() => {
+        timeoutError.message = `defer()-ed cleanup timed out in ${timeout}ms`;
+        reject(timeoutError);
+      }, timeout);
+    });
+    try {
+      await Promise.race([cleanup(), timedOut]);
+    } catch (error) {
+      errors.push(error);
+    } finally {
+      globalThis.clearTimeout(timer);
     }
   }
-  cleanupFunctions.length = 0;
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, 'Several defer()-ed cleanup functions failed');
 }
 
 export function defer(f: CleanupFunction) {
-  cleanupFunctions.unshift(f);
+  const timeoutError = new Error('defer()-ed cleanup timed out');
+  Error.captureStackTrace(timeoutError, defer);
+  cleanupFunctions.unshift({ cleanup: f, timeoutError });
 }
 
 class RemoteControlApp {
@@ -80,6 +103,7 @@ class RemoteControlApp {
           });
         }
       );
+      req.on('error', reject);
       req.write(js);
       req.end();
     });
@@ -91,21 +115,68 @@ class RemoteControlApp {
 }
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
-  const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
+  const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
+  // The app quits by itself after --remote-app-timeout (30s unless given) in
+  // case nothing stops it. Sanitizer builds give each test 180s
+  // (ELECTRON_SPEC_TIMEOUT) and are slow enough that a test can still be
+  // talking to the app after 30s, which then fails with "socket hang up" or
+  // hangs. Keep the app alive at least as long as the test may run; defer()
+  // below stops it when the test is done.
+  const specTimeout = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
+  const timeoutArgs = extraArgs.some((arg) => arg.startsWith('--remote-app-timeout='))
+    ? []
+    : [`--remote-app-timeout=${specTimeout}`];
+  const appProcess = childProcess.spawn(
+    process.execPath,
+    [appPath, ...ciGpuArgs, ...timeoutArgs, ...extraArgs],
+    options
+  );
+  // Register cleanup before awaiting the port so a stalled startup that trips
+  // the test's timeout doesn't leak the child into the in-job retry.
+  defer(() => {
+    if (appProcess.exitCode === null && appProcess.signalCode === null) {
+      appProcess.kill('SIGINT');
+    }
+  });
   appProcess.stderr.on('data', (d) => {
     process.stderr.write(d);
   });
-  const port = await new Promise<number>((resolve) => {
-    appProcess.stdout.on('data', (d) => {
+  // Fail as soon as the app goes away before it reports its port, instead of
+  // waiting for the test's timeout.
+  const port = await new Promise<number>((resolve, reject) => {
+    let stderr = '';
+    const onStderr = (d: Buffer) => {
+      stderr += d.toString();
+    };
+    const onStdout = (d: Buffer) => {
       const m = /Listening: (\d+)/.exec(d.toString());
       if (m && m[1] != null) {
+        done();
         resolve(Number(m[1]));
       }
-    });
-  });
-  defer(() => {
-    appProcess.kill('SIGINT');
+    };
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      done();
+      reject(
+        new Error(
+          `remote-control app exited (code ${code}, signal ${signal}) before reporting its port.\n\nstderr:\n${stderr}`
+        )
+      );
+    };
+    const onError = (err: Error) => {
+      done();
+      reject(new Error(`remote-control app failed to start: ${err.message}\n\nstderr:\n${stderr}`, { cause: err }));
+    };
+    const done = () => {
+      appProcess.stderr.off('data', onStderr);
+      appProcess.stdout.off('data', onStdout);
+      appProcess.off('exit', onExit);
+      appProcess.off('error', onError);
+    };
+    appProcess.stderr.on('data', onStderr);
+    appProcess.stdout.on('data', onStdout);
+    appProcess.on('exit', onExit);
+    appProcess.on('error', onError);
   });
   return new RemoteControlApp(appProcess, port);
 }
@@ -224,6 +295,13 @@ export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { ra
   })();
 }
 
+// Blocks the calling thread for |ms| without yielding to the event loop,
+// so events that arrive in the meantime queue up and are handled together afterwards.
+// Atomics.wait() sleeps until the shared value changes, which never happens here, or until the timeout.
+export function sleepSync(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T) => boolean; timeLimit?: number }) {
   const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
   const begin = Date.now();
@@ -239,6 +317,10 @@ export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T
 }
 
 async function makeRemoteContext(opts?: any) {
+  // Resolved here rather than with a top-level import so that this file stays
+  // loadable in a utility process (see fixtures/api/utility-process/api-net-spec.js),
+  // whose 'electron/main' has no BrowserWindow export.
+  const { BrowserWindow } = await import('electron/main');
   const { webPreferences, setup, url = 'about:blank', ...rest } = opts ?? {};
   const w = new BrowserWindow({
     show: false,
@@ -261,24 +343,24 @@ export async function getRemoteContext() {
 }
 
 export function useRemoteContext(opts?: any) {
-  before(async () => {
+  beforeAll(async () => {
     remoteContext.unshift(await makeRemoteContext(opts));
   });
-  after(() => {
+  afterAll(() => {
     const w = remoteContext.shift();
     w!.close();
   });
 }
+
+// See vitest-cjs.cjs: the remote function runs in a CommonJS context.
+const vitestForRequire = path.join(import.meta.dirname, 'vitest-cjs.cjs');
 
 async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Function, args?: any[]) {
   const wrapped = async () => {
     const w = await getRemoteContext();
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
-        const chai_1 = require('chai')
-        const promises_1 = require('node:timers/promises')
-        chai_1.use(require('chai-as-promised'))
-        chai_1.use(require('dirty-chai'))
+        const { expect } = require(${JSON.stringify(vitestForRequire)})
         await (${fn})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {
@@ -286,13 +368,13 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
       }
     })()`);
     if (!ok) {
-      throw new AssertionError(message);
+      assert.fail(message);
     }
   };
 
   let runFn: any = it;
   if (type === 'only') {
-    // eslint-disable-next-line no-only-tests/no-only-tests
+    // oxlint-disable-next-line no-only-tests/no-only-tests
     runFn = it.only;
   } else if (type === 'skip') {
     runFn = it.skip;
@@ -330,4 +412,33 @@ export function isTestingBindingAvailable() {
   } catch {
     return false;
   }
+}
+
+export function deferKillUtilityProcess(utilityProcess: Electron.UtilityProcess) {
+  defer(async () => {
+    if (utilityProcess.pid) {
+      const exit = once(utilityProcess, 'exit');
+      utilityProcess.kill();
+      await exit;
+    }
+  });
+}
+
+// Focuses webContents and waits until its page reports document.hasFocus().
+// The browser-side 'focus' event can arrive before the renderer knows it has focus.
+// Until it does, the async clipboard rejects with "Document is not focused."
+// and webContents.paste() can be dropped.
+// Each poll requests focus again in case it was lost.
+// The wait is bounded by waitUntil's timeout,
+// so a window that never gets focus fails here instead of hanging the test.
+export async function focusWebContents(webContents: Electron.WebContents) {
+  webContents.focus();
+  await waitUntil(
+    async () => {
+      if (await webContents.executeJavaScript('document.hasFocus()')) return true;
+      webContents.focus();
+      return false;
+    },
+    { rate: 100 }
+  );
 }

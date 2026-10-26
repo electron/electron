@@ -4,8 +4,9 @@
 
 Process: [Main](../glossary.md#main-process)
 
-This module does not include a web interface. To view recorded traces, use
-[trace viewer][], available at `chrome://tracing` in Chrome.
+This module does not include a web interface. Traces are recorded in the
+[Perfetto protobuf format][perfetto trace format]; to view them, open them in
+the [Perfetto UI][].
 
 > [!NOTE]
 > You should not use this module until the `ready` event of the app
@@ -14,16 +15,14 @@ This module does not include a web interface. To view recorded traces, use
 ```js
 const { app, contentTracing } = require('electron')
 
-app.whenReady().then(() => {
-  (async () => {
-    await contentTracing.startRecording({
-      included_categories: ['*']
-    })
-    console.log('Tracing started')
-    await new Promise(resolve => setTimeout(resolve, 5000))
-    const path = await contentTracing.stopRecording()
-    console.log('Tracing data recorded to ' + path)
-  })()
+app.whenReady().then(async () => {
+  await contentTracing.startRecording({
+    included_categories: ['*']
+  })
+  console.log('Tracing started')
+  await new Promise((resolve) => setTimeout(resolve, 5000))
+  const path = await contentTracing.stopRecording()
+  console.log('Tracing data recorded to ' + path)
 })
 ```
 
@@ -61,6 +60,8 @@ changes:
   - pr-url: https://github.com/electron/electron/pull/16584
     description: "This function now returns a callback`Promise<void>`."
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+  - pr-url: https://github.com/electron/electron/pull/53349
+    description: "Added the `nativeHeapProfiling` option to enable native heap profiling."
 ```
 -->
 
@@ -74,7 +75,10 @@ Recording begins immediately locally and asynchronously on child processes
 as soon as they receive the EnableRecording request.
 
 If a recording is already running, the promise will be immediately resolved, as
-only one trace operation can be in progress at a time.
+only one trace operation can be in progress at a time. If `options.nativeHeapProfiling`
+is set while a recording is already running, the promise is rejected instead,
+since the already-running recording's options can't be changed to turn on heap
+profiling.
 
 ### `contentTracing.stopRecording([resultFilePath])`
 
@@ -86,6 +90,9 @@ changes:
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
   - pr-url: https://github.com/electron/electron/pull/18411
     description: "The `resultFilePath` parameter is now optional."
+  - pr-url: https://github.com/electron/electron/pull/53349
+    description: "Trace data is now written in the Perfetto protobuf format. The legacy JSON format is no longer supported."
+    breaking-changes-header: behavior-changed-contenttracing-recordings-use-the-perfetto-protobuf-format
 ```
 -->
 
@@ -104,6 +111,14 @@ pending trace data.
 Trace data will be written into `resultFilePath`. If `resultFilePath` is empty
 or not provided, trace data will be written to a temporary file, and the path
 will be returned in the promise.
+
+Trace data is written in the [Perfetto protobuf format][perfetto trace format].
+
+Heap profiling samples record instruction addresses and module build IDs rather
+than function names. To symbolize them, use the symbols published for the
+matching Electron release with Chromium's
+[`symbolize_trace`](https://chromium.googlesource.com/chromium/src/+/main/tools/tracing/README.md)
+tool.
 
 ### `contentTracing.getTraceBufferUsage()`
 
@@ -124,65 +139,5 @@ Returns `Promise<Object>` - Resolves with an object containing the `value` and `
 Get the maximum usage across processes of trace buffer as a percentage of the
 full state.
 
-### `contentTracing.enableHeapProfiling([options])` _Experimental_
-
-<!--
-```YAML history
-added:
-  - pr-url: https://github.com/electron/electron/pull/50826
-```
--->
-
-* `options` ([EnableHeapProfilingOptions](structures/enable-heap-profiling-options.md)) (optional)
-
-Returns `Promise<void>` - Resolves once heap profiling has been enabled.
-
-Enable [heap profiling](https://chromium.googlesource.com/chromium/src/+/lkgr/docs/memory-infra/heap_profiler.md)
-for MemoryInfra traces. Equivalent to the `--memlog` switch in Chrome.
-
-Only takes effect if the `disabled-by-default-memory-infra` category is included.
-
-Needs to be called before `contentTracing.startRecording()`.
-
-Usage:
-
-```js
-const { contentTracing } = require('electron')
-
-async function recordTrace () {
-  await contentTracing.enableHeapProfiling()
-  await contentTracing.startRecording({
-    included_categories: ['disabled-by-default-memory-infra'],
-    excluded_categories: ['*'],
-    memory_dump_config: {
-      triggers: [
-        { mode: 'detailed', periodic_interval_ms: 1000 }
-      ]
-    }
-  })
-
-  await new Promise(resolve => setTimeout(resolve, 5000))
-
-  const filePath = await contentTracing.stopRecording()
-}
-```
-
-To view the recorded heap dumps:
-
-1. Download the breakpad symbols for your Electron version from the Electron GitHub
-   [releases](https://github.com/electron/electron/releases)
-2. Clone the [Electron source code](../development/build-instructions-gn.md)
-3. In your Chromium checkout for Electron, run this command to symbolicate the heap dump:
-
-   ```bash
-   python3 third_party/catapult/tracing/bin/symbolize_trace --use-breakpad-symbols --breakpad-symbols-directory /path/to/breakpad_symbols /path/to/trace.json
-   ```
-
-4. Open the symbolicated trace in `chrome://tracing` (the Perfetto UI does not support memory dumps
-   yet)
-5. Click on one of the `M` symbols
-6. Click on a `☰` triple bar icon (e.g., in the `malloc` column)
-
-<img src="../images/viewing-heap-dumps.png" alt="Screenshot showing how to view a heapdump in Chromium's tracing view" />
-
-[trace viewer]: https://chromium.googlesource.com/catapult/+/HEAD/tracing/README.md
+[Perfetto UI]: https://ui.perfetto.dev
+[perfetto trace format]: https://perfetto.dev/docs/reference/trace-packet-proto

@@ -162,17 +162,16 @@
 }
 
 - (void)updateButtonsVisibility {
-  NSArray* buttons = @[
-    [window_ standardWindowButton:NSWindowCloseButton],
-    [window_ standardWindowButton:NSWindowMiniaturizeButton],
-    [window_ standardWindowButton:NSWindowZoomButton],
-  ];
   // Show buttons when mouse hovers above them.
   BOOL hidden = show_on_hover_ && !mouse_inside_;
   // Always show buttons under fullscreen.
   if ([window_ styleMask] & NSWindowStyleMaskFullScreen)
     hidden = NO;
-  for (NSView* button in buttons) {
+  for (NSWindowButton button_type :
+       {NSWindowCloseButton, NSWindowMiniaturizeButton, NSWindowZoomButton}) {
+    NSButton* button = [window_ standardWindowButton:button_type];
+    if (!button)
+      continue;
     [button setHidden:hidden];
     [button setNeedsDisplay:YES];
   }

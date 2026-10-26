@@ -12,12 +12,19 @@ On the Electron side, we then expose an extra parameter to the
 app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
+Since the payload can be large, the POSIX implementation reads the
+message into a growable buffer until the client shuts down its end of
+the socket instead of a fixed 32 KiB array, and the client waits for
+the socket to become writable rather than giving up, so an oversized
+message no longer gets truncated or causes the second instance to kill
+the primary as unresponsive.
+
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index f076d0f783e2c0f6b5444002f756001adf2729bd..a03d99f929e2d354cdba969567d781561656261d 100644
+index 7da4c199de1d2721a2e6ba9cb10ba0bc146917b7..b100f5feb95aabf63558aebc4d0054c95b90c4a9 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
-@@ -18,7 +18,8 @@
- #include "base/functional/callback.h"
+@@ -20,7 +20,8 @@
+ #include "base/functional/callback_helpers.h"
  #include "base/memory/scoped_refptr.h"
  #include "base/process/process.h"
 -
@@ -26,7 +33,7 @@ index f076d0f783e2c0f6b5444002f756001adf2729bd..a03d99f929e2d354cdba969567d78156
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
  #include "base/files/scoped_temp_dir.h"
  #endif
-@@ -99,21 +100,24 @@ class ProcessSingleton {
+@@ -102,21 +103,24 @@ class ProcessSingleton {
    // should handle it (i.e., because the current process is shutting down).
    using NotificationCallback =
        base::RepeatingCallback<bool(base::CommandLine command_line,
@@ -53,7 +60,7 @@ index f076d0f783e2c0f6b5444002f756001adf2729bd..a03d99f929e2d354cdba969567d78156
    ~ProcessSingleton();
  
    // Notify another process, if available. Otherwise sets ourselves as the
-@@ -177,7 +181,10 @@ class ProcessSingleton {
+@@ -191,7 +195,10 @@ class ProcessSingleton {
  #endif
  
   private:
@@ -65,10 +72,93 @@ index f076d0f783e2c0f6b5444002f756001adf2729bd..a03d99f929e2d354cdba969567d78156
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c643a39611e 100644
+index 7e60fda45f824974b3403a376d8aa9b35b0a1f84..27221b14dc9a6b8346207e5ebb9ff727503d86ac 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -621,6 +621,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -41,6 +41,7 @@
+ 
+ #include <errno.h>
+ #include <fcntl.h>
++#include <poll.h>
+ #include <signal.h>
+ #include <stddef.h>
+ #include <string.h>
+@@ -144,7 +145,9 @@ constexpr std::string_view kStartToken = "START";
+ constexpr std::string_view kACKToken = "ACK";
+ constexpr std::string_view kShutdownToken = "SHUTDOWN";
+ const char kTokenDelimiter = '\0';
+-const int kMaxMessageLength = 32 * 1024;
++// The maximum length of a message the browser will buffer. Longer messages
++// are drained from the socket and dropped.
++const size_t kMaxMessageLength = 32 * 1024 * 1024;
+ 
+ bool g_disable_prompt = false;
+ bool g_skip_is_chrome_process_check = false;
+@@ -167,15 +170,32 @@ void CloseSocket(int fd) {
+   DPCHECK(rv == 0) << "Error closing socket";
+ }
+ 
+-// Write a message to a socket fd.
+-bool WriteToSocket(int fd, std::string_view message) {
++// Wait for a socket to become writable, for up to |timeout|.
++// Returns -1 if error occurred, 0 if timeout reached, > 0 if the socket is
++// ready for write.
++int WaitSocketForWrite(int fd, const base::TimeDelta& timeout) {
++  struct pollfd pfd = {};
++  pfd.fd = fd;
++  pfd.events = POLLOUT;
++  return HANDLE_EINTR(poll(
++      &pfd, 1, base::saturated_cast<int>(timeout.InMillisecondsRoundedUp())));
++}
++
++// Write a message to a socket fd. Whenever the socket would block, wait for it
++// to become writable again; |timeout| bounds the total time spent waiting.
++bool WriteToSocket(int fd,
++                   std::string_view message,
++                   const base::TimeDelta& timeout = base::TimeDelta()) {
+   CHECK(!message.empty(), base::NotFatalUntil::M162);
++  const base::TimeTicks deadline = base::TimeTicks::Now() + timeout;
+   while (!message.empty()) {
+     ssize_t rv = HANDLE_EINTR(write(fd, message.data(), message.size()));
+     if (rv < 0) {
+       if (errno == EAGAIN || errno == EWOULDBLOCK) {
+-        // The socket shouldn't block, we're sending so little data.  Just give
+-        // up here, since NotifyOtherProcess() doesn't have an asynchronous api.
++        const base::TimeDelta remaining = deadline - base::TimeTicks::Now();
++        if (remaining.is_positive() && WaitSocketForWrite(fd, remaining) > 0) {
++          continue;
++        }
+         LOG(ERROR) << "ProcessSingleton would block on write(), so it gave up.";
+         return false;
+       }
+@@ -550,10 +570,7 @@ class ProcessSingleton::LinuxWatcher
+     SocketReader(ProcessSingleton::LinuxWatcher* parent,
+                  scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
+                  int fd)
+-        : parent_(parent),
+-          ui_task_runner_(ui_task_runner),
+-          fd_(fd),
+-          bytes_read_(0) {
++        : parent_(parent), ui_task_runner_(ui_task_runner), fd_(fd) {
+       CHECK_CURRENTLY_ON(BrowserThread::IO, base::NotFatalUntil::M162);
+       // Wait for reads.
+       fd_watch_controller_ = base::FileDescriptorWatcher::WatchReadable(
+@@ -597,11 +614,10 @@ class ProcessSingleton::LinuxWatcher
+     const int fd_;
+ 
+     // Store the message in this buffer.
+-    std::array<char, kMaxMessageLength> buf_;
++    std::string buf_;
+ 
+-    // Tracks the number of bytes we've read in case we're getting partial
+-    // reads.
+-    size_t bytes_read_;
++    // Whether the message exceeded kMaxMessageLength and is being dropped.
++    bool message_too_long_ = false;
+ 
+     base::OneShotTimer timer_;
+   };
+@@ -623,6 +639,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
@@ -76,7 +166,7 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
                       SocketReader* reader);
  
    // Called when the ProcessSingleton that owns this class is about to be
-@@ -680,13 +681,17 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+@@ -683,13 +700,17 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -85,8 +175,8 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
 +    const std::vector<std::string>& argv,
 +    const std::vector<uint8_t> additional_data,
      SocketReader* reader) {
-   DCHECK(ui_task_runner_->BelongsToCurrentThread());
-   DCHECK(reader);
+   CHECK(ui_task_runner_->BelongsToCurrentThread(), base::NotFatalUntil::M162);
+   CHECK(reader, base::NotFatalUntil::M162);
  
    if (parent_ && parent_->notification_callback_.Run(
 -                     base::CommandLine(argv), base::FilePath(current_dir))) {
@@ -96,17 +186,75 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
      // Send back "ACK" message to prevent the client process from starting up.
      reader->FinishWithACK(kACKToken);
    } else {
-@@ -716,7 +721,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
-   bytes_read_ += ReadFromSocketWithTimeout(
-       fd_, base::span(buf_).subspan(bytes_read_), base::Seconds(0));
+@@ -716,23 +737,58 @@ void ProcessSingleton::LinuxWatcher::RemoveSocketReader(SocketReader* reader) {
+ void ProcessSingleton::LinuxWatcher::SocketReader::
+     OnSocketCanReadWithoutBlocking() {
+   CHECK_CURRENTLY_ON(BrowserThread::IO, base::NotFatalUntil::M162);
+-  bytes_read_ += ReadFromSocketWithTimeout(
+-      fd_, base::span(buf_).subspan(bytes_read_), base::Seconds(0));
  
 -  // Validate the message.  The shortest message is kStartToken\0x\0x
++  // The client shuts down its writing end after sending the message, so read
++  // until EOF to get the whole message.
++  std::array<char, 64 * 1024> chunk;
++  while (true) {
++    ssize_t rv = HANDLE_EINTR(read(fd_, chunk.data(), chunk.size()));
++    if (rv > 0) {
++      const size_t bytes_read = base::checked_cast<size_t>(rv);
++      if (message_too_long_) {
++        continue;
++      }
++      if (buf_.size() + bytes_read > kMaxMessageLength) {
++        LOG(ERROR) << "Socket message too long, dropping it";
++        message_too_long_ = true;
++        buf_.clear();
++        continue;
++      }
++      buf_.append(base::as_string_view(base::span(chunk).first(bytes_read)));
++      continue;
++    }
++    if (rv == 0) {  // The client has finished sending.
++      break;
++    }
++    if (errno == EAGAIN || errno == EWOULDBLOCK) {
++      return;  // Wait for the rest of the message.
++    }
++    PLOG(ERROR) << "read() failed";
++    CleanupAndDeleteSelf();
++    return;
++  }
++
++  if (message_too_long_) {
++    // Reply so the client exits instead of treating this process as hung.
++    fd_watch_controller_.reset();
++    timer_.Stop();
++    FinishWithACK(kACKToken);
++    return;
++  }
++
 +  // Validate the message.  The shortest message kStartToken\0\00
 +  // The shortest message with additional data is kStartToken\0\00\00\0.
    const size_t kMinMessageLength = kStartToken.length() + 4;
-   if (bytes_read_ < kMinMessageLength) {
-     buf_[bytes_read_] = 0;
-@@ -747,10 +753,45 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+-  if (bytes_read_ < kMinMessageLength) {
+-    buf_[bytes_read_] = 0;
+-    LOG(ERROR) << "Invalid socket message (wrong length):" << buf_.data();
++  if (buf_.size() < kMinMessageLength) {
++    LOG(ERROR) << "Invalid socket message (wrong length):" << buf_;
+     CleanupAndDeleteSelf();
+     return;
+   }
+ 
+-  std::string_view str =
+-      base::as_string_view(base::span(buf_).first(bytes_read_));
++  std::string_view str = buf_;
+   std::vector<std::string> tokens =
+       base::SplitString(str, std::string(1, kTokenDelimiter),
+-                        base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
++                        base::KEEP_WHITESPACE, base::SPLIT_WANT_ALL);
+ 
+   if (tokens.size() < 3 || tokens[0] != kStartToken) {
+     LOG(ERROR) << "Wrong message format: " << str;
+@@ -750,10 +806,45 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
@@ -153,7 +301,7 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -779,8 +820,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -782,8 +873,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -164,7 +312,7 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
        current_pid_(base::GetCurrentProcId()) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
    lock_path_ = user_data_dir.Append(chrome::kSingletonLockFilename);
-@@ -901,7 +944,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -904,7 +997,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -174,7 +322,7 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -911,11 +955,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -914,13 +1008,23 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -194,10 +342,13 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
 +  }
 +
    // Send the message
-   if (!WriteToSocket(socket.fd(), to_send)) {
+-  if (!WriteToSocket(socket.fd(), to_send)) {
++  if (!WriteToSocket(socket.fd(), to_send, timeout)) {
      // Try to kill the other process, because it might have been dead.
+     if (!kill_unresponsive || !KillProcessByLockPath(true))
+       return PROFILE_IN_USE;
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 6687bcd53ab8dca1bc7b96446fdd673ed9d1a5da..a469ebd214407114784e06b7a8687d2de5943864 100644
+index 83f8698e402e06e87767b975d0fe0da2b8b4a024..c3bdee1d24380285b6b1bb21d9201ceb37b64ed4 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -9,6 +9,7 @@
@@ -208,7 +359,7 @@ index 6687bcd53ab8dca1bc7b96446fdd673ed9d1a5da..a469ebd214407114784e06b7a8687d2d
  #include "base/base_paths.h"
  #include "base/command_line.h"
  #include "base/files/file_path.h"
-@@ -81,10 +82,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -83,10 +84,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -223,7 +374,7 @@ index 6687bcd53ab8dca1bc7b96446fdd673ed9d1a5da..a469ebd214407114784e06b7a8687d2d
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -134,6 +137,25 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -136,6 +139,25 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -249,7 +400,7 @@ index 6687bcd53ab8dca1bc7b96446fdd673ed9d1a5da..a469ebd214407114784e06b7a8687d2d
      return true;
    }
    return false;
-@@ -155,13 +177,14 @@ bool ProcessLaunchNotification(
+@@ -157,13 +179,14 @@ bool ProcessLaunchNotification(
  
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
@@ -267,7 +418,7 @@ index 6687bcd53ab8dca1bc7b96446fdd673ed9d1a5da..a469ebd214407114784e06b7a8687d2d
    return true;
  }
  
-@@ -260,9 +283,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -339,9 +362,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -279,7 +430,7 @@ index 6687bcd53ab8dca1bc7b96446fdd673ed9d1a5da..a469ebd214407114784e06b7a8687d2d
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -289,7 +314,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -365,7 +390,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  

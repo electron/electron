@@ -9,10 +9,7 @@
 
 #include "base/logging.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/metrics/histogram_functions.h"
 #include "base/strings/strcat.h"
-#include "base/strings/string_number_conversions.h"
-#include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/ui/color/chrome_color_id.h"
 #include "chrome/browser/ui/color/chrome_color_provider_utils.h"
@@ -92,7 +89,7 @@ void BundledDataSource::StartDataRequest(
   const std::string path = content::URLDataSource::URLToRequestPath(url);
   // Serve request from local bundle.
   std::string bundled_path_prefix(chrome::kChromeUIDevToolsBundledPath);
-  bundled_path_prefix += "/";
+  bundled_path_prefix += '/';
   if (base::StartsWith(path, bundled_path_prefix,
                        base::CompareCase::INSENSITIVE_ASCII)) {
     StartBundledDataRequest(path.substr(bundled_path_prefix.length()),
@@ -118,6 +115,14 @@ bool BundledDataSource::ShouldDenyXFrameOptions() {
 
 bool BundledDataSource::ShouldServeMimeTypeAsContentTypeHeader() {
   return true;
+}
+
+bool BundledDataSource::ShouldServiceRequest(
+    const GURL& url,
+    content::BrowserContext* browser_context,
+    int render_process_id) {
+  // URL data sources are only served to devtools:// when they opt in.
+  return url.SchemeIs(content::kChromeDevToolsScheme);
 }
 
 void BundledDataSource::StartBundledDataRequest(const std::string& path,

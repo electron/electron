@@ -8,13 +8,13 @@
 #include <utility>
 
 #include "base/no_destructor.h"
-#include "base/strings/strcat.h"
 #include "base/threading/thread_local.h"
 #include "gin/converter.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 
 namespace electron {
@@ -37,8 +37,7 @@ bool IsPooledWorkletContext(v8::Local<v8::Context> context) {
   if (!ec)
     return false;
   return ec->IsAudioWorkletGlobalScope() || ec->IsPaintWorkletGlobalScope() ||
-         ec->IsAnimationWorkletGlobalScope() ||
-         ec->IsSharedStorageWorkletGlobalScope();
+         ec->IsAnimationWorkletGlobalScope();
 }
 
 }  // namespace
@@ -49,18 +48,24 @@ WebWorkerObserver* WebWorkerObserver::GetCurrent() {
 }
 
 // static
-WebWorkerObserver* WebWorkerObserver::Create() {
-  auto obs = std::make_unique<WebWorkerObserver>();
+WebWorkerObserver* WebWorkerObserver::Create(v8::Isolate* isolate) {
+  auto obs = std::make_unique<WebWorkerObserver>(isolate);
   auto* obs_raw = obs.get();
   lazy_tls->Set(std::move(obs));
   return obs_raw;
 }
 
-WebWorkerObserver::WebWorkerObserver()
+WebWorkerObserver::WebWorkerObserver(v8::Isolate* isolate)
     : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker)),
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker,
+                               nullptr)),
       electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
+  node_bindings_->SetUpIsolate(isolate);
+  // SetUpIsolate registers Node's WebAssembly streaming callback, whose JS
+  // side kNoBrowserGlobals never installs; put Blink's back.
+  blink::WasmResponseExtensions::Initialize(isolate);
+}
 
 WebWorkerObserver::~WebWorkerObserver() = default;
 
@@ -89,36 +94,16 @@ void WebWorkerObserver::InitializeNewEnvironment(
   // Start the embed thread.
   node_bindings_->PrepareEmbedThread();
 
-  // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetAgent()) {
-    auto* tracing_agent = new node::tracing::Agent();
-    node::tracing::TraceEventHelper::SetAgent(tracing_agent);
-  }
+  // The renderer main thread normally installed the process-wide builtin code
+  // cache already (NodeBindings::Initialize); make sure before this thread's
+  // per-context BuiltinLoader is constructed by InitializeContext. Idempotent.
+  electron::util::InstallProcessCodeCache();
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
   std::shared_ptr<node::Environment> env =
       node_bindings_->CreateEnvironment(isolate, worker_context, nullptr);
-
-  // We need to use the Blink implementation of fetch in web workers
-  // Node.js deletes the global fetch function when their fetch implementation
-  // is disabled, so we need to save and re-add it after the Node.js environment
-  // is loaded. See corresponding change in node/init.ts.
-  v8::Local<v8::Object> global = worker_context->Global();
-
-  for (const std::string_view key :
-       {"fetch", "Response", "FormData", "Request", "Headers", "EventSource"}) {
-    v8::MaybeLocal<v8::Value> value =
-        global->Get(worker_context, gin::StringToV8(isolate, key));
-    if (!value.IsEmpty()) {
-      std::string blink_key = base::StrCat({"blink", key});
-      global
-          ->Set(worker_context, gin::StringToV8(isolate, blink_key),
-                value.ToLocalChecked())
-          .Check();
-    }
-  }
 
   // We do not want to crash Web Workers on unhandled rejections.
   env->options()->unhandled_rejections = "warn-with-error-code";
@@ -165,15 +150,23 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
   v8::Local<v8::Object> original_global = original_context->Global();
   v8::Local<v8::Object> new_global = worker_context->Global();
 
+  // Script in the original context can redefine these globals with accessors
+  // that throw, so read them defensively and fall back to the environment's
+  // own process object / undefined rather than crashing the worker.
+  v8::TryCatch try_catch(isolate);
   v8::Local<v8::Value> process_value;
-  CHECK(original_global
-            ->Get(original_context, gin::StringToV8(isolate, "process"))
-            .ToLocal(&process_value));
+  if (!original_global
+           ->Get(original_context, gin::StringToV8(isolate, "process"))
+           .ToLocal(&process_value)) {
+    process_value = env->process_object();
+  }
 
   v8::Local<v8::Value> require_value;
-  CHECK(original_global
-            ->Get(original_context, gin::StringToV8(isolate, "require"))
-            .ToLocal(&require_value));
+  if (!original_global
+           ->Get(original_context, gin::StringToV8(isolate, "require"))
+           .ToLocal(&require_value)) {
+    require_value = v8::Undefined(isolate);
+  }
 
   // Set up 'global' as an alias for globalThis. Node.js bootstrapping normally
   // does this during LoadEnvironment, but we skip full bootstrap for shared
@@ -199,10 +192,10 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
         .Check();
   }
 
-  // Restore the Blink implementations of web APIs that Node.js may
-  // have deleted. For first-context init this is done by the node_init script
-  // but we can't run that for shared contexts (it calls internalBinding).
-  // Instead, copy the blink-prefixed values set during first init.
+  // Ensure the Blink implementations of fetch and friends are available in
+  // the new pooled context. Node.js no longer touches these globals when
+  // kNoBrowserGlobals is set, but some worklet global scopes do not expose
+  // them at all; fall back to the original context's bindings in that case.
   for (const std::string_view key :
        {"fetch", "Response", "FormData", "Request", "Headers", "EventSource"}) {
     // First, check if the new context has a working Blink version.
@@ -211,7 +204,6 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
     if (!blink_value.IsEmpty() && !blink_value.ToLocalChecked()->IsUndefined())
       continue;
     // If not, copy from the original context.
-    std::string blink_key = base::StrCat({"blink", key});
     v8::Local<v8::Value> orig_value;
     if (original_global->Get(original_context, gin::StringToV8(isolate, key))
             .ToLocal(&orig_value) &&
@@ -306,8 +298,8 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
     // not reuse the worker thread, so tear down the observer completely.
     //
     // For pooled worklet contexts (AudioWorklet, PaintWorklet,
-    // AnimationWorklet, SharedStorageWorklet — see
-    // blink::WorkletThreadHolder) the same NodeBindings must be reused
+    // AnimationWorklet — see blink::WorkletThreadHolder) the same
+    // NodeBindings must be reused
     // for the next context on the thread because Node.js cannot be
     // re-initialized on the same thread. Keep the observer alive and let
     // the next WorkerScriptReadyForEvaluation call

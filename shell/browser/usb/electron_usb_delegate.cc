@@ -82,6 +82,13 @@ bool IsDevicePermissionAutoGranted(
   return false;
 }
 
+// The origin device permissions are scoped to: the requesting document's, or
+// for a service worker (no frame) the origin content keyed the service on.
+const url::Origin& RequestingOrigin(content::RenderFrameHost* frame,
+                                    const url::Origin& service_origin) {
+  return frame ? frame->GetLastCommittedOrigin() : service_origin;
+}
+
 }  // namespace
 
 namespace electron {
@@ -93,9 +100,7 @@ class ElectronUsbDelegate::ContextObservation
   ContextObservation(ElectronUsbDelegate* parent,
                      content::BrowserContext* browser_context)
       : parent_(parent), browser_context_(browser_context) {
-    auto* chooser_context = GetChooserContext(browser_context_);
-    if (chooser_context)
-      device_observation_.Observe(chooser_context);
+    device_observation_.Observe(GetChooserContext(browser_context_));
   }
   ContextObservation(ContextObservation&) = delete;
   ContextObservation& operator=(ContextObservation&) = delete;
@@ -136,7 +141,8 @@ class ElectronUsbDelegate::ContextObservation
   const raw_ptr<ElectronUsbDelegate> parent_;
 
   // Safe because `this` is destroyed when the context is lost.
-  const raw_ptr<content::BrowserContext> browser_context_;
+  const raw_ptr<content::BrowserContext, LeakedDanglingUntriaged>
+      browser_context_;
 
   base::ScopedObservation<UsbChooserContext, UsbChooserContext::DeviceObserver>
       device_observation_{this};
@@ -174,16 +180,19 @@ std::unique_ptr<content::UsbChooser> ElectronUsbDelegate::RunChooser(
 
 bool ElectronUsbDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
+    content::RenderFrameHost* frame,
     const url::Origin& origin) {
   if (!browser_context)
     return false;
 
+  const url::Origin& requesting_origin = RequestingOrigin(frame, origin);
   base::DictValue details;
-  details.Set("securityOrigin", origin.GetURL().spec());
+  details.Set("securityOrigin", requesting_origin.GetURL().spec());
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
   return permission_manager->CheckPermissionWithDetails(
-      blink::PermissionType::USB, nullptr, origin.GetURL(), std::move(details));
+      blink::PermissionType::USB, frame, requesting_origin.GetURL(),
+      std::move(details));
 }
 
 void ElectronUsbDelegate::RevokeDevicePermissionWebInitiated(
@@ -210,15 +219,13 @@ bool ElectronUsbDelegate::HasDevicePermission(
     content::RenderFrameHost* frame,
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
-  if (IsDevicePermissionAutoGranted(origin, device_info))
+  const url::Origin& requesting_origin = RequestingOrigin(frame, origin);
+  if (IsDevicePermissionAutoGranted(requesting_origin, device_info))
     return true;
 
   auto* chooser_context = GetChooserContext(browser_context);
-  if (!chooser_context)
-    return false;
-
-  return GetChooserContext(browser_context)
-      ->HasDevicePermission(origin, device_info);
+  return chooser_context &&
+         chooser_context->HasDevicePermission(requesting_origin, device_info);
 }
 
 void ElectronUsbDelegate::GetDevices(

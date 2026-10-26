@@ -13,7 +13,18 @@ const ELECTRON_DIR = resolve(__dirname, '..');
 const CL_REGEX =
   /https:\/\/chromium-review\.googlesource\.com\/c\/(chromium\/src|devtools\/devtools-frontend|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
+const MERGE_MSG_REGEX = /^Merge (?:remote-tracking )?branch '([^']+)'(?: of \S+)?(?: into (.+))?$/;
 const DEPS_BUMP_MSG_REGEX = /^chore: bump chromium in DEPS to (\S+)$/;
+const PATCHES_UPDATE_MSG = 'chore: update patches';
+const LIBCXX_FILENAMES_UPDATE_MSG = 'chore: update libc++ filenames';
+const LIBCXX_FILENAMES_FILE = 'filenames.libcxx.gni';
+const SISO_REVISION_UPDATE_MSG = 'chore: update siso revision';
+const SISO_REVISION_FILE = 'build/siso_revision';
+
+function getCLLabel(cl) {
+  const [owner, repo] = cl.fullRepo.split('/');
+  return `${owner === 'chromium' ? '' : `${repo} `}CL ${cl.clNumber}`;
+}
 
 function getCurrentBranch() {
   // In CI, use `GITHUB_HEAD_REF` since we checkout the PR branch in detached HEAD state
@@ -75,6 +86,45 @@ function getChangedFilesForCommit(sha) {
   }
 }
 
+function getCommitParents(sha) {
+  try {
+    const output = execSync(`git rev-list --parents -n 1 ${sha}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    }).trim();
+    // Output format: "<commit> [<parent1> <parent2> ...]"
+    return output.split(/\s+/).slice(1).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function getMergeCombinedDiff(sha) {
+  try {
+    // A dense combined diff (--cc) only shows hunks that differ from *all*
+    // parents, so a clean merge (no conflict resolution or "evil merge"
+    // changes of its own) produces empty output.
+    return execSync(`git diff-tree --cc -r --no-commit-id ${sha}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8',
+      maxBuffer: 100 * 1024 * 1024
+    });
+  } catch {
+    return null;
+  }
+}
+
+function getCommitDiffForFile(sha, filename) {
+  try {
+    return execSync(`git show --format= ${sha} -- ${filename}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    });
+  } catch {
+    return null;
+  }
+}
+
 function getChromiumVersionForCommit(sha) {
   try {
     const depsContent = execSync(`git show ${sha}:DEPS`, {
@@ -114,6 +164,27 @@ async function fetchChromiumDashCommit(commitSha, repo) {
   }
 }
 
+// Upstream fixes are often cherry-picked back to the release branch a roller
+// is tracking, so the original CL lands outside the roll range while its
+// cherry-pick lands inside it. Chromium Dash lists those cherry-picks in the
+// commit's `relations`; return the first one whose earliest version is in range.
+async function findInRangeCherryPick(dashDetails, commitSha, repo, isInRange) {
+  const cherryPicks = (dashDetails.relations ?? []).filter((rel) => rel.relation_type === 'CHERRY_PICK');
+
+  for (const relation of cherryPicks) {
+    // Take whichever side of the relation isn't the commit we started from
+    const relatedSha = relation.from_commit === commitSha ? relation.to_commit : relation.from_commit;
+    if (!relatedSha || relatedSha === commitSha) continue;
+
+    const relatedDetails = await fetchChromiumDashCommit(relatedSha, repo);
+    if (relatedDetails?.earliest && isInRange(relatedDetails.earliest)) {
+      return { commitSha: relatedSha, earliest: relatedDetails.earliest };
+    }
+  }
+
+  return null;
+}
+
 async function getGerritPatchDetails(clUrl) {
   const parsedUrl = new URL(clUrl);
   const match = /^\/c\/(.+?)\/\+\/(\d+)/.exec(parsedUrl.pathname);
@@ -140,7 +211,8 @@ async function getGerritPatchDetails(clUrl) {
     const currentRevision = data.current_revision;
     return {
       commitSha: currentRevision,
-      project: data.project
+      project: data.project,
+      subject: data.subject
     };
   } catch {
     return null;
@@ -221,6 +293,61 @@ async function main() {
       continue;
     }
 
+    // Validate merge commits (e.g. "Merge branch 'main' into roller/chromium/main")
+    const mergeMatch = MERGE_MSG_REGEX.exec(firstLine);
+    const parents = getCommitParents(commit.sha);
+    const isMergeCommit = parents.length > 1;
+
+    if (mergeMatch || isMergeCommit) {
+      let commitValid = true;
+
+      if (!isMergeCommit) {
+        console.error(`  ❌ Commit message looks like a merge but the commit has a single parent`);
+        hasErrors = true;
+        commitValid = false;
+      } else if (!mergeMatch) {
+        console.error(`  ❌ Merge commit message does not match the expected format`);
+        console.error(`     Expected: "Merge branch '${targetBranch}' into ${currentBranch}"`);
+        console.error(`     Got:      "${firstLine}"`);
+        hasErrors = true;
+        commitValid = false;
+      } else {
+        // The merged-in branch must be the base (target) branch
+        const mergedBranch = mergeMatch[1].replace(/^origin\//, '');
+        if (mergedBranch !== targetBranch) {
+          console.error(
+            `  ❌ Merge commit merges in '${mergeMatch[1]}' but expected the base branch '${targetBranch}'`
+          );
+          hasErrors = true;
+          commitValid = false;
+        }
+      }
+
+      // Must be an "empty" merge — only merging in the base branch, with no
+      // direct changes of its own (no conflict resolution or evil-merge edits)
+      // If merge conflicts were resolved, the commit should stat that with `Skip-Lint`
+      if (isMergeCommit) {
+        const combinedDiff = getMergeCombinedDiff(commit.sha);
+        if (combinedDiff === null) {
+          console.error(`  ❌ Could not determine the combined diff for merge commit`);
+          hasErrors = true;
+          commitValid = false;
+        } else if (combinedDiff.trim().length > 0) {
+          const files = [...combinedDiff.matchAll(/^diff --(?:cc|combined) (.+)$/gm)].map((m) => m[1]);
+          const filesDesc = files.length > 0 ? files.join(', ') : 'unknown';
+          console.error(`  ❌ Merge commit is not empty — it introduces direct changes to: ${filesDesc}`);
+          console.error(`     If this is intentional use Skip-Lint in the commit message to explain`);
+          hasErrors = true;
+          commitValid = false;
+        }
+      }
+
+      if (commitValid) {
+        console.log(`  ✅ Merge commit is valid`);
+      }
+      continue;
+    }
+
     // Validate Chromium version bump commits
     const parentVersion = getParentChromiumVersion(commit.sha);
     const commitVersion = getChromiumVersionForCommit(commit.sha);
@@ -261,6 +388,90 @@ async function main() {
       continue;
     }
 
+    // Validate "chore: update patches" commits
+    if (firstLine === PATCHES_UPDATE_MSG) {
+      let commitValid = true;
+
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+      if (!changedFiles || changedFiles.length === 0) {
+        console.error(`  ❌ Could not determine changed files for "${PATCHES_UPDATE_MSG}" commit`);
+        hasErrors = true;
+        continue;
+      }
+
+      // Must only contain non-content changes to files under patches/
+      // Mirrors the logic in build-tools `e patches --commit-updates`
+      for (const filename of changedFiles) {
+        if (!filename.startsWith('patches/')) {
+          console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit modifies non-patch file: ${filename}`);
+          hasErrors = true;
+          commitValid = false;
+          continue;
+        }
+
+        const fileDiff = getCommitDiffForFile(commit.sha, filename);
+        if (fileDiff === null) {
+          console.error(`  ❌ Could not get diff for ${filename}`);
+          hasErrors = true;
+          commitValid = false;
+          continue;
+        }
+
+        const changedLines = fileDiff.matchAll(/^[-+].*$/gm);
+        for (const line of changedLines) {
+          // Allowed non-content changes: diff metadata (`--- `/`+++ ` file
+          // headers, `index `, `@@ ` hunk headers) and context line changes
+          // (`^[-+] `), which only reflect upstream drift around the patched
+          // region, not changes to what the patch itself adds or removes.
+          if (!line[0].match(/^[-+]( |(--|\+\+|index|@@) )/)) {
+            console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit contains content changes in ${filename}`);
+            hasErrors = true;
+            commitValid = false;
+            break;
+          }
+        }
+      }
+
+      if (commitValid) {
+        console.log(`  ✅ "${PATCHES_UPDATE_MSG}" commit is valid`);
+      }
+      continue;
+    }
+
+    // Validate "chore: update libc++ filenames" commits
+    if (firstLine === LIBCXX_FILENAMES_UPDATE_MSG) {
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+
+      if (!changedFiles || changedFiles.length !== 1 || changedFiles[0] !== LIBCXX_FILENAMES_FILE) {
+        const filesDesc = changedFiles ? changedFiles.join(', ') : 'unknown';
+        console.error(
+          `  ❌ "${LIBCXX_FILENAMES_UPDATE_MSG}" commit must only modify ${LIBCXX_FILENAMES_FILE}, but changes: ${filesDesc}`
+        );
+        hasErrors = true;
+      } else {
+        console.log(`  ✅ "${LIBCXX_FILENAMES_UPDATE_MSG}" commit is valid`);
+      }
+
+      continue;
+    }
+
+    // Validate "chore: update siso revision" commits
+    if (firstLine === SISO_REVISION_UPDATE_MSG) {
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+
+      if (!changedFiles || changedFiles.length !== 1 || changedFiles[0] !== SISO_REVISION_FILE) {
+        const filesDesc = changedFiles ? changedFiles.join(', ') : 'unknown';
+        console.error(
+          `  ❌ "${SISO_REVISION_UPDATE_MSG}" commit must only modify ${SISO_REVISION_FILE}, but changes: ${filesDesc}`
+        );
+        hasErrors = true;
+      } else {
+        console.log(`  ✅ "${SISO_REVISION_UPDATE_MSG}" commit is valid`);
+      }
+
+      continue;
+    }
+
     const cls = [...commit.message.matchAll(CL_REGEX)].map((match) => ({
       url: match[0],
       fullRepo: match[1],
@@ -269,15 +480,21 @@ async function main() {
     }));
 
     if (cls.length === 0) {
-      // No CLs in this commit, skip
-      console.log(`  ⏭️  No CLs found`);
+      console.error(`  ❌ Commit does not match any allowed pattern and references no CLs`);
+      console.error(
+        `     Allowed: fixup! commit, merge commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", "${LIBCXX_FILENAMES_UPDATE_MSG}", "${SISO_REVISION_UPDATE_MSG}", or a commit referencing one or more CLs`
+      );
+      hasErrors = true;
       continue;
     }
 
     for (const cl of cls) {
+      const repo = cl.fullRepo.split('/')[0];
+      const clLabel = getCLLabel(cl);
+
       // Skip CLs annotated with #nolint
       if (cl.fragment === '#nolint') {
-        console.log(`  ⏭️  CL ${cl.clNumber}: skipped (#nolint)`);
+        console.log(`  ⏭️  ${clLabel}: skipped (#nolint)`);
         continue;
       }
 
@@ -285,15 +502,13 @@ async function main() {
       if (checkedCLs.has(cl.url)) {
         const cached = checkedCLs.get(cl.url);
         if (cached.valid) {
-          console.log(`  ✅ CL ${cl.clNumber}: (already validated)`);
+          console.log(`  ✅ ${clLabel}: (already validated)`);
         } else {
-          console.error(`  ❌ CL ${cl.clNumber}: ${cached.error}`);
+          console.error(`  ❌ ${clLabel}: ${cached.error}`);
           hasErrors = true;
         }
         continue;
       }
-
-      const repo = cl.fullRepo.split('/')[0];
 
       // Fetch Gerrit details to get commit SHA
       const gerritDetails = await getGerritPatchDetails(cl.url);
@@ -301,7 +516,7 @@ async function main() {
       if (!gerritDetails) {
         const error = 'Could not fetch CL details from Gerrit';
         checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ CL ${cl.clNumber}: ${error}`);
+        console.error(`  ❌ ${clLabel}: ${error}`);
         hasErrors = true;
         continue;
       }
@@ -312,7 +527,7 @@ async function main() {
       if (!dashDetails) {
         const error = 'Could not fetch commit details from Chromium Dash';
         checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ CL ${cl.clNumber}: ${error}`);
+        console.error(`  ❌ ${clLabel}: ${error}`);
         hasErrors = true;
         continue;
       }
@@ -322,37 +537,56 @@ async function main() {
       if (!clEarliestVersion) {
         const error = 'CL has no earliest version (may not be merged yet)';
         checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ CL ${cl.clNumber}: ${error}`);
+        console.error(`  ❌ ${clLabel}: ${error}`);
         hasErrors = true;
         continue;
-      }
-
-      // For non-Chromium CLs, we need to find the corresponding Chromium commit
-      let chromiumVersion = clEarliestVersion;
-      if (repo !== 'chromium' && dashDetails.relations) {
-        const chromiumRelation = dashDetails.relations.find((rel) => rel.from_commit === gerritDetails.commitSha);
-        if (chromiumRelation) {
-          const chromiumDash = await fetchChromiumDashCommit(chromiumRelation.to_commit, 'chromium');
-          if (chromiumDash?.earliest) {
-            chromiumVersion = chromiumDash.earliest;
-          }
-        }
       }
 
       // CL should have landed after the base version and at or before the new version
-      const isInRange =
-        compareVersions(chromiumVersion, baseVersion) > 0 && compareVersions(chromiumVersion, newVersion) <= 0;
+      const isInRange = (version) =>
+        compareVersions(version, baseVersion) > 0 && compareVersions(version, newVersion) <= 0;
 
-      if (!isInRange) {
-        const error = `CL earliest version ${chromiumVersion} is outside roller range (${baseVersion} -> ${newVersion})`;
-        checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ CL ${cl.clNumber}: ${error}`);
-        hasErrors = true;
+      if (!isInRange(clEarliestVersion)) {
+        const cherryPick = await findInRangeCherryPick(dashDetails, gerritDetails.commitSha, repo, isInRange);
+
+        if (!cherryPick) {
+          const error = `CL earliest version ${clEarliestVersion} is outside roller range (${baseVersion} -> ${newVersion})`;
+          checkedCLs.set(cl.url, { valid: false, error });
+          console.error(`  ❌ ${clLabel}: ${error}`);
+          hasErrors = true;
+          continue;
+        }
+
+        checkedCLs.set(cl.url, { valid: true, subject: gerritDetails.subject });
+        console.log(
+          `  ✅ ${clLabel}: version ${clEarliestVersion} is outside range, but cherry-pick ${cherryPick.commitSha.substring(0, 7)} (version ${cherryPick.earliest}) is within range`
+        );
         continue;
       }
 
-      checkedCLs.set(cl.url, { valid: true });
-      console.log(`  ✅ CL ${cl.clNumber}: version ${chromiumVersion} is within range`);
+      checkedCLs.set(cl.url, { valid: true, subject: gerritDetails.subject });
+      console.log(`  ✅ ${clLabel}: version ${clEarliestVersion} is within range`);
+    }
+
+    // If exactly one CL is referenced (excluding #nolint), the commit title
+    // must be the CL number followed by the CL subject.
+    const enforceableCLs = cls.filter((cl) => cl.fragment !== '#nolint');
+    if (enforceableCLs.length === 1) {
+      const cl = enforceableCLs[0];
+      const clLabel = getCLLabel(cl);
+      const cached = checkedCLs.get(cl.url);
+      const clSubject = cached?.subject;
+      if (clSubject) {
+        const expectedTitle = `${cl.clNumber}: ${clSubject}`;
+        if (firstLine !== expectedTitle) {
+          console.error(`  ❌ Commit title does not match the expected format for referenced ${clLabel}`);
+          console.error(`     Expected: "${expectedTitle}"`);
+          console.error(`     Got:      "${firstLine}"`);
+          hasErrors = true;
+        } else {
+          console.log(`  ✅ Commit title matches ${clLabel} subject`);
+        }
+      }
     }
   }
 
@@ -360,7 +594,8 @@ async function main() {
   if (hasErrors) {
     console.log('  NOTE: Add "Skip-Lint: <reason>" to a commit message to skip linting that commit.');
   }
-  process.exit(hasErrors ? 1 : 0);
+  // TODO(dsanders11): Remove the exit code guard once we're confident Claude follows the guidelines
+  process.exit(hasErrors && process.env.CI ? 1 : 0);
 }
 
 if ((await fs.realpath(process.argv[1])) === fileURLToPath(import.meta.url)) {

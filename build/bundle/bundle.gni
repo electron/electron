@@ -1,0 +1,59 @@
+import("../npm.gni")
+
+# Builds one of the internal JavaScript bundles described in
+# //electron/build/bundle/targets.mjs with rolldown.
+#
+#   bundle:   the key in targets.mjs (and the lib/ subdirectory) to build
+#   out_file: where to write the bundle
+#   inputs:   the bundle's source files, from filenames.auto.gni
+template("electron_bundle") {
+  assert(defined(invoker.bundle), "Need the name of the bundle to build")
+  assert(defined(invoker.out_file), "Need output file to run")
+  assert(defined(invoker.inputs), "Need bundle inputs to run")
+
+  npm_action(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+    script = "bundle"
+
+    inputs = [
+               "//electron/build/bundle/bundle.mjs",
+               "//electron/build/bundle/targets.mjs",
+               "//electron/tsconfig.electron.json",
+               "//electron/tsconfig.json",
+               "//electron/yarn.lock",
+             ] + invoker.inputs
+
+    mode = "development"
+    if (is_official_build) {
+      mode = "production"
+    }
+
+    args = [
+      "--target",
+      invoker.bundle,
+      "--output-filename",
+      get_path_info(invoker.out_file, "file"),
+      "--output-path",
+      rebase_path(get_path_info(invoker.out_file, "dir")),
+      "--buildflags",
+      rebase_path("$target_gen_dir/buildflags/buildflags.h"),
+      "--mode",
+      mode,
+    ]
+
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [
+      # rolldown only strips types; refuse to bundle code that does not check.
+      "//electron:electron_lib_typecheck",
+      "//electron/buildflags",
+    ]
+
+    outputs = [ invoker.out_file ]
+  }
+}

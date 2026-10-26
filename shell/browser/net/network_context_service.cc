@@ -8,7 +8,6 @@
 
 #include "chrome/browser/browser_features.h"
 #include "chrome/common/chrome_constants.h"
-#include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "electron/fuses.h"
 #include "net/http/http_util.h"

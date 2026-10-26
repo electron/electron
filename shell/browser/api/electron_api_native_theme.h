@@ -5,9 +5,13 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
+#include <optional>
+
 #include "base/memory/raw_ptr.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/browser/microtasks_runner.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
@@ -15,41 +19,45 @@
 #include "base/win/registry.h"
 #endif
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace electron::api {
 
-class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
+class NativeTheme final : public gin::Wrappable<NativeTheme>,
                           public gin_helper::EventEmitterMixin<NativeTheme>,
                           private ui::NativeThemeObserver {
  public:
-  static gin_helper::Handle<NativeTheme> Create(v8::Isolate* isolate);
+  enum class ThemeSource {
+    kSystem,
+    kForcedDark,
+    kForcedLight,
+  };
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static NativeTheme* Create(v8::Isolate* isolate);
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "NativeTheme"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor* visitor) const override;
+
+  void OnBeforeMicrotasksRunnerDispose();
 
   // disable copy
   NativeTheme(const NativeTheme&) = delete;
   NativeTheme& operator=(const NativeTheme&) = delete;
 
- protected:
-  NativeTheme(v8::Isolate* isolate,
-              ui::NativeTheme* ui_theme,
-              ui::NativeTheme* web_theme);
+  // Make public for cppgc::MakeGarbageCollected.
+  NativeTheme(v8::Isolate* isolate, ui::NativeTheme* ui_theme);
   ~NativeTheme() override;
 
-  void SetThemeSource(ui::NativeTheme::ThemeSource override);
+ private:
+  void SetThemeSource(ThemeSource override);
 #if BUILDFLAG(IS_MAC)
-  void UpdateMacOSAppearanceForOverrideValue(
-      ui::NativeTheme::ThemeSource override);
+  void UpdateMacOSAppearanceForOverrideValue(ThemeSource override);
 #endif
-  ui::NativeTheme::ThemeSource GetThemeSource() const;
+  ThemeSource GetThemeSource() const;
   bool ShouldUseDarkColors();
   bool ShouldUseHighContrastColors();
   bool ShouldUseDarkColorsForSystemIntegratedUI();
@@ -64,14 +72,18 @@ class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
   void OnNativeThemeUpdated(ui::NativeTheme* theme) override;
   void OnNativeThemeUpdatedOnUI();
 
- private:
 #if BUILDFLAG(IS_WIN)
   base::win::RegKey hkcu_themes_regkey_;
 #endif
   std::optional<bool> should_use_dark_colors_for_system_integrated_ui_ =
       std::nullopt;
+  ThemeSource theme_source_ = ThemeSource::kSystem;
+  // What kSystem goes back to: dark under --force-dark-mode, otherwise unset.
+  const std::optional<ui::NativeTheme::PreferredColorScheme>
+      system_color_scheme_override_ =
+          ui::NativeTheme::GetPreferredColorSchemeOverride();
   raw_ptr<ui::NativeTheme> ui_theme_;
-  raw_ptr<ui::NativeTheme> web_theme_;
+  gin::WeakCellFactory<NativeTheme> weak_factory_{this};
 };
 
 }  // namespace electron::api
@@ -79,12 +91,13 @@ class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
 namespace gin {
 
 template <>
-struct Converter<ui::NativeTheme::ThemeSource> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const ui::NativeTheme::ThemeSource& val);
+struct Converter<electron::api::NativeTheme::ThemeSource> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const electron::api::NativeTheme::ThemeSource& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     ui::NativeTheme::ThemeSource* out);
+                     electron::api::NativeTheme::ThemeSource* out);
 };
 
 }  // namespace gin

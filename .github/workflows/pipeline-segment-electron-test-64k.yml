@@ -37,13 +37,14 @@ jobs:
       pull-requests: read
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: generated_artifacts_linux_arm64
         path: ./generated_artifacts_linux_arm64
@@ -57,11 +58,10 @@ jobs:
     - name: Run Electron Tests in QEMU 64k Container
       shell: bash
       env:
-        MOCHA_REPORTER: mocha-multi-reporters
-        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
+        TEST_CONTAINER: ${{ inputs.test-container }}
       run: |
-        container=$(echo '${{ inputs.test-container }}' | jq -r '.image')
+        container=$(echo "$TEST_CONTAINER" | jq -r '.image')
         src/electron/script/run-qemu-64k.sh --container $container --testfiles "`pwd`/src"
         

@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/views/menu_model_adapter.h"
 
+#include "shell/browser/ui/electron_menu_model.h"
+
 namespace electron {
 
 MenuModelAdapter::MenuModelAdapter(ElectronMenuModel* menu_model)

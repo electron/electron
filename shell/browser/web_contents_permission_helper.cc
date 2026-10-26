@@ -9,10 +9,13 @@
 
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/webrtc/media_stream_devices_controller.h"
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/permission_descriptor_util.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
@@ -80,6 +83,17 @@ bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
 }
 #endif
 
+// Whether the request is for screen, window or tab capture rather than for a
+// camera or microphone device. This covers both `getDisplayMedia()` and legacy
+// `getUserMedia()` calls that use the chromeMediaSource desktop/screen/tab
+// constraints.
+[[nodiscard]] bool IsDisplayCaptureRequest(
+    const content::MediaStreamRequest& request) {
+  return blink::IsScreenCaptureMediaType(request.audio_type) ||
+         blink::IsScreenCaptureMediaType(request.video_type) ||
+         request.audio_type == MediaStreamType::DISPLAY_AUDIO_CAPTURE;
+}
+
 // Handles requests for legacy-style `navigator.getUserMedia(...)` calls.
 // This includes desktop capture through the chromeMediaSource /
 // chromeMediaSourceId constraints.
@@ -107,9 +121,14 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
         blink::MediaStreamDevice(request.video_type, "", "");
   } else if (request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
     // If the DesktopMediaID can't be successfully parsed, throw an
-    // Invalid state error to match upstream.
+    // Invalid state error to match upstream. The `desktop` source only names
+    // screens and windows (ids from desktopCapturer.getSources()); a
+    // WebContents is captured through the `tab` source with an id from
+    // webContents.getMediaSourceId(), which is bound to the requesting
+    // contents, or through getDisplayMedia().
     auto dm_id = GetScreenId(request.requested_video_device_ids);
-    if (dm_id.is_null()) {
+    if (dm_id.is_null() ||
+        dm_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS) {
       std::move(callback).Run(blink::mojom::StreamDevicesSet(),
                               MediaStreamRequestResult::INVALID_STATE, nullptr);
       return;
@@ -223,7 +242,7 @@ void WebContentsPermissionHelper::RequestPermission(
   permission_manager->RequestPermissionWithDetails(
       content::PermissionDescriptorUtil::
           CreatePermissionDescriptorForPermissionType(permission),
-      requesting_frame, origin, false, std::move(details),
+      requesting_frame, origin, user_gesture, std::move(details),
       base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
@@ -249,28 +268,48 @@ void WebContentsPermissionHelper::RequestFullscreenPermission(
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback response_callback) {
+  // Screen, window and tab capture (getDisplayMedia and legacy getUserMedia
+  // with chromeMediaSource desktop/screen/tab constraints) is surfaced to the
+  // app as the "display-capture" permission; camera and microphone access is
+  // surfaced as "media". The two are different capabilities and apps must be
+  // able to tell them apart in setPermissionRequestHandler.
+  const bool is_display_capture = IsDisplayCaptureRequest(request);
+
+  auto* requesting_frame = content::RenderFrameHost::FromID(
+      request.render_process_id, request.render_frame_id);
+
+  // Blink only enforces the `display-capture` permissions policy for
+  // getDisplayMedia(); apply it to the legacy getUserMedia() desktop/tab
+  // capture path as well so that a frame the embedder has not allowed to
+  // capture the display cannot do so through the older API either.
+  if (is_display_capture && requesting_frame &&
+      !requesting_frame->IsFeatureEnabled(
+          network::mojom::PermissionsPolicyFeature::kDisplayCapture)) {
+    std::move(response_callback)
+        .Run(blink::mojom::StreamDevicesSet(),
+             MediaStreamRequestResult::CAPTURE_NOT_ALLOWED_BY_POLICY, nullptr);
+    return;
+  }
+
   auto callback = base::BindOnce(&MediaAccessAllowed, request,
                                  std::move(response_callback));
 
   base::DictValue details;
   base::ListValue media_types;
-  if (request.audio_type ==
-      blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+  if (blink::IsAudioInputMediaType(request.audio_type))
     media_types.Append("audio");
-  }
-  if (request.video_type ==
-      blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
+  if (blink::IsVideoInputMediaType(request.video_type))
     media_types.Append("video");
-  }
   details.Set("mediaTypes", std::move(media_types));
   details.Set("securityOrigin", request.security_origin.spec());
 
-  // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
-  // are presented as same type in content_converter.h.
-  RequestPermission(content::RenderFrameHost::FromID(request.render_process_id,
-                                                     request.render_frame_id),
-                    blink::PermissionType::AUDIO_CAPTURE, std::move(callback),
-                    false, std::move(details));
+  // For device capture the permission type doesn't matter here,
+  // AUDIO_CAPTURE/VIDEO_CAPTURE are presented as same type in
+  // content_converter.h.
+  RequestPermission(requesting_frame,
+                    is_display_capture ? blink::PermissionType::DISPLAY_CAPTURE
+                                       : blink::PermissionType::AUDIO_CAPTURE,
+                    std::move(callback), false, std::move(details));
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
@@ -285,8 +324,18 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
     bool last_unlocked_by_target,
     base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
         callback) {
-  RequestPermission(web_contents_->GetPrimaryMainFrame(),
-                    blink::PermissionType::POINTER_LOCK,
+  // content records the frame that called requestPointerLock() before asking
+  // the delegate, so the request is attributed to that document rather than
+  // to the top-level document or to the local root whose widget carried it.
+  content::RenderFrameHost* requesting_frame =
+      static_cast<content::WebContentsImpl*>(web_contents_)
+          ->GetPointerLockRequestingFrame();
+  if (!requesting_frame) {
+    std::move(callback).Run(web_contents_, user_gesture,
+                            last_unlocked_by_target, false);
+    return;
+  }
+  RequestPermission(requesting_frame, blink::PermissionType::POINTER_LOCK,
                     base::BindOnce(std::move(callback), web_contents_,
                                    user_gesture, last_unlocked_by_target),
                     user_gesture);
@@ -295,9 +344,20 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
 void WebContentsPermissionHelper::RequestKeyboardLockPermission(
     bool esc_key_locked,
     base::OnceCallback<void(content::WebContents*, bool, bool)> callback) {
+  // navigator.keyboard.lock() is only honoured for the primary main frame;
+  // content rejects it from any document that has a parent before we are
+  // asked (see KeyboardLockServiceImpl::RequestKeyboardLock). The request
+  // only names a widget, so if that invariant ever stops holding we cannot
+  // tell which document asked: refuse rather than attribute it to the main
+  // frame.
+  content::RenderFrameHost* main_frame = web_contents_->GetPrimaryMainFrame();
+  if (static_cast<content::WebContentsImpl*>(web_contents_)
+          ->GetKeyboardLockWidget() != main_frame->GetRenderWidgetHost()) {
+    std::move(callback).Run(web_contents_, esc_key_locked, false);
+    return;
+  }
   RequestPermission(
-      web_contents_->GetPrimaryMainFrame(),
-      blink::PermissionType::KEYBOARD_LOCK,
+      main_frame, blink::PermissionType::KEYBOARD_LOCK,
       base::BindOnce(std::move(callback), web_contents_, esc_key_locked));
 }
 
@@ -305,9 +365,26 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
     content::RenderFrameHost* requesting_frame,
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
-    const GURL& url) {
+    const GURL& url,
+    const std::optional<ExternalProtocolRequester>& requester) {
   base::DictValue details;
   details.Set("externalURL", url.spec());
+  if (requester) {
+    // |requesting_frame| only anchors the request; report who content holds
+    // responsible for the launch. An opaque origin is reported as "".
+    details.Set("requestingUrl", requester->origin.GetURL().spec());
+    details.Set("isMainFrame", requester->is_main_frame);
+    auto* permission_manager = static_cast<ElectronPermissionManager*>(
+        web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+    permission_manager->RequestPermissionWithDetails(
+        content::PermissionDescriptorUtil::
+            CreatePermissionDescriptorForPermissionType(
+                blink::PermissionType::OPEN_EXTERNAL),
+        requesting_frame, requester->origin.GetURL(), user_gesture,
+        std::move(details),
+        base::BindOnce(&OnPermissionResponse, std::move(callback)));
+    return;
+  }
   RequestPermission(requesting_frame, blink::PermissionType::OPEN_EXTERNAL,
                     std::move(callback), user_gesture, std::move(details));
 }

@@ -8,10 +8,10 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index ff7a5917b554fc0c67edf4e36f567e7223e70577..23aaa364e955753a92c3cb575646955c40cdfd55 100644
+index 1bab35b2a7e6ae652991235999ee1270612b0c7c..083e650823472920db76b201ca5616a87112cd84 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -2336,7 +2336,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+@@ -2880,7 +2880,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
  void SecureContext::CtxGetter(const FunctionCallbackInfo<Value>& info) {
    SecureContext* sc;
    ASSIGN_OR_RETURN_UNWRAP(&sc, info.This());
@@ -21,7 +21,7 @@ index ff7a5917b554fc0c67edf4e36f567e7223e70577..23aaa364e955753a92c3cb575646955c
  }
  
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index a944c18518471a55a44a7ff32190fe9920d0cb20..82214a5d051bb2ca487c92f684b03dcf709255a0 100644
+index 5c4a7b611888664ad70e48fb240be7320bac032b..29e2e1808a3f42a35d9478f2f8949037b0011880 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
 @@ -356,7 +356,7 @@ inline napi_status Unwrap(napi_env env,
@@ -78,10 +78,10 @@ index a944c18518471a55a44a7ff32190fe9920d0cb20..82214a5d051bb2ca487c92f684b03dcf
  
    void* Data() { return data_; }
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index d067b47e7e30a95740fe0275c70445707dec426b..391c57eed9058602bd8311d885cf5fc60bfea903 100644
+index 757d39558f7853d39ee0d574152bb3810cfa3ca5..51c097e69388a516aa7a9239053367faa4f7595e 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -642,7 +642,7 @@ void GetCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+@@ -665,7 +665,7 @@ void GetCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
    v8::LocalVector<v8::Name> names(isolate,
                                    {FIXED_ONE_BYTE_STRING(isolate, "external")});
    v8::LocalVector<v8::Value> values(isolate,
@@ -90,7 +90,7 @@ index d067b47e7e30a95740fe0275c70445707dec426b..391c57eed9058602bd8311d885cf5fc6
    if (cache_entry->cache != nullptr) {
      Debug(env,
            DebugCategory::COMPILE_CACHE,
-@@ -752,7 +752,7 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+@@ -775,7 +775,7 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsExternal());
    CHECK(args[1]->IsString());  // TODO(joyeecheung): accept buffer.
    auto* cache_entry =
@@ -100,10 +100,10 @@ index d067b47e7e30a95740fe0275c70445707dec426b..391c57eed9058602bd8311d885cf5fc6
    env->compile_cache_handler()->MaybeSave(cache_entry, utf8.ToStringView());
  }
 diff --git a/src/node_util.cc b/src/node_util.cc
-index 065ed602b314f367c2e7dec94019521fd5d23bf4..8be8a8b5726a265a838841a21bb023fa41ceeb13 100644
+index c3a6fbed06efc92e3cc0ac59ab51c8b802033c81..39523bd256c8bf22597ba79dd06ea451025ffabb 100644
 --- a/src/node_util.cc
 +++ b/src/node_util.cc
-@@ -93,7 +93,7 @@ static void GetExternalValue(
+@@ -96,7 +96,7 @@ static void GetExternalValue(
    Isolate* isolate = args.GetIsolate();
    Local<External> external = args[0].As<External>();
  
@@ -113,10 +113,10 @@ index 065ed602b314f367c2e7dec94019521fd5d23bf4..8be8a8b5726a265a838841a21bb023fa
    Local<BigInt> ret = BigInt::NewFromUnsigned(isolate, value);
    args.GetReturnValue().Set(ret);
 diff --git a/src/stream_base.cc b/src/stream_base.cc
-index 566204e667c8e8802db6ac47881d33178f6147b2..31af8313611961d8c18654ce9ccaee6e6af087b1 100644
+index ad9affc538732fcc88ef839598b9cbf7e22fd79d..74717fbae8776bdba7c288308c5c1cc7fc8393ef 100644
 --- a/src/stream_base.cc
 +++ b/src/stream_base.cc
-@@ -653,7 +653,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
+@@ -685,7 +685,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
    StreamBase* wrap = StreamBase::FromObject(args.This().As<Object>());
    if (wrap == nullptr) return;
  

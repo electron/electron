@@ -93,3 +93,12 @@ the 'returns' attribute of the command description in the remote debugging proto
 or is rejected indicating the failure of the command.
 
 Send given command to the debugging target.
+
+> [!NOTE]
+> <!-- markdownlint-disable-next-line MD032 -->
+> * If `sendCommand` is called before the target has navigated (e.g.
+>   immediately after `attach()`), the returned promise may not resolve
+>   until navigation occurs.
+> * If the command's response has no `result` data, as defined by that
+>   command's entry in the remote debugging protocol, the promise
+>   resolves with an empty object (`{}`), not `null` or `undefined`.

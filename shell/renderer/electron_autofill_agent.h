@@ -40,7 +40,7 @@ class AutofillAgent : private content::RenderFrameObserver,
   // content::RenderFrameObserver:
   void OnDestruct() override;
 
-  void DidChangeScrollOffset() override;
+  void DidChangeScrollOffset(blink::mojom::ScrollType) override;
   void FocusedElementChanged(const blink::WebElement&) override;
   void DidCompleteFocusChangeInFrame() override;
   void DidReceiveLeftMouseDownOrGestureTapInNode(
@@ -64,8 +64,8 @@ class AutofillAgent : private content::RenderFrameObserver,
   void TextFieldDidEndEditing(const blink::WebInputElement&) override;
   void TextFieldValueChanged(const blink::WebFormControlElement&) override;
   void TextFieldValueChangedImpl(const blink::WebFormControlElement&);
-  void TextFieldDidReceiveKeyDown(const blink::WebInputElement&,
-                                  const blink::WebKeyboardEvent&) override;
+  bool DidReceiveKeyDown(const blink::WebElement&,
+                         const blink::WebKeyboardEvent&) override;
   void OpenTextDataListChooser(const blink::WebInputElement&) override;
   void DataListOptionsChanged(const blink::WebInputElement&) override;
 

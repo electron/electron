@@ -14,16 +14,15 @@
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
-#include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/types/pass_key.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/predictors/predictors_traffic_annotations.h"  // nogncheck
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
@@ -35,7 +34,6 @@
 #include "components/proxy_config/proxy_prefs.h"
 #include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
 #include "content/browser/storage_partition_impl.h"  // nogncheck
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/browsing_data_filter_builder.h"
 #include "content/public/browser/browsing_data_remover.h"
@@ -44,7 +42,10 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
+#include "content/public/browser/render_process_host.h"
+#include "content/public/browser/spare_render_process_host_manager.h"
 #include "content/public/browser/storage_partition.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -57,6 +58,7 @@
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_util.h"
+#include "net/traffic_annotation/network_traffic_annotation.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/request_destination.h"
@@ -68,6 +70,7 @@
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
@@ -83,6 +86,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -104,6 +108,8 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "shell/browser/api/electron_api_extensions.h"
@@ -127,6 +133,22 @@ using content::BrowsingDataRemover;
 using content::StoragePartition;
 
 namespace {
+
+constexpr net::NetworkTrafficAnnotationTag kPreconnectTrafficAnnotation =
+    net::DefineNetworkTrafficAnnotation("electron_session_preconnect", R"(
+        semantics {
+          sender: "Electron Session"
+          description:
+            "Preemptively opens sockets to an origin so that later requests "
+            "to it can skip DNS resolution, TCP connection and TLS setup."
+          trigger: "Using session.preconnect"
+          data: "No user data is sent; only a connection is established."
+          destination: OTHER
+        }
+        policy {
+          cookies_allowed: NO
+          setting: "This feature cannot be disabled."
+        })");
 
 struct ClearStorageDataOptions {
   blink::StorageKey storage_key;
@@ -344,9 +366,9 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
       auto error = v8::Exception::Error(
           gin::StringToV8(isolate, "Failed to clear data"));
       error.As<v8::Object>()
-          ->Set(promise_.GetContext(),
-                gin::StringToV8(isolate, "failedDataTypes"),
-                failed_data_types_array)
+          ->CreateDataProperty(promise_.GetContext(),
+                               gin::StringToV8(isolate, "failedDataTypes"),
+                               failed_data_types_array)
           .Check();
 
       promise_.Reject(error);
@@ -494,7 +516,29 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
       download::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
-      false, std::vector<download::DownloadItem::ReceivedSlice>());
+      false, std::vector<download::DownloadItem::ReceivedSlice>(),
+      base::FilePath());
+}
+
+// Runs as its own task because DownloadManager dispatches OnDownloadCreated
+// over a non-reentrant observer list and the caller may be a will-download
+// handler.
+void CreateInterruptedDownloadItem(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    const base::FilePath& path,
+    const std::vector<GURL>& url_chain,
+    const std::string& mime_type,
+    int64_t offset,
+    int64_t length,
+    const std::string& last_modified,
+    const std::string& etag,
+    const base::Time& start_time) {
+  if (!browser_context)
+    return;
+  auto* download_manager = browser_context->GetDownloadManager();
+  download_manager->GetNextId(base::BindOnce(
+      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
+      length, last_modified, etag, start_time));
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -555,8 +599,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
       network_emulation_token_(base::UnguessableToken::Create()),
       network_emulation_client_id_(base::UnguessableToken::Create()),
       browser_context_{browser_context} {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
   // Observe DownloadManager to get download notifications.
   browser_context->GetDownloadManager()->AddObserver(this);
 
@@ -608,12 +651,18 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     return;
 
   v8::HandleScope handle_scope(isolate_);
-  auto handle = DownloadItem::FromOrCreate(isolate_, item);
+  auto* handle = DownloadItem::FromOrCreate(isolate_, item);
+  v8::Local<v8::Object> handle_object;
+  if (!handle->GetWrapper(isolate_).ToLocal(&handle_object))
+    return;
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
     handle->SetSavePath(item->GetTargetFilePath());
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(item);
-  bool prevent_default = Emit("will-download", handle, web_contents);
+  content::RenderFrameHost* frame =
+      content::DownloadItemUtils::GetRenderFrameHost(item);
+  bool prevent_default =
+      Emit("will-download", handle_object, web_contents, frame);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -1093,16 +1142,16 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
         isolate_, "Must pass an offset value less than length.")));
     return;
   }
-  auto* download_manager = browser_context()->GetDownloadManager();
-  download_manager->GetNextId(base::BindRepeating(
-      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
-      length, last_modified, etag,
-      base::Time::FromSecondsSinceUnixEpoch(start_time)));
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&CreateInterruptedDownloadItem,
+                     browser_context()->GetWeakPtr(), path, url_chain,
+                     mime_type, offset, length, last_modified, etag,
+                     base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
-std::string Session::RegisterPreloadScript(
-    gin_helper::ErrorThrower thrower,
-    const PreloadScript& new_preload_script) {
+std::string Session::RegisterPreloadScript(gin_helper::ErrorThrower thrower,
+                                           PreloadScript new_preload_script) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
 
@@ -1133,8 +1182,16 @@ std::string Session::RegisterPreloadScript(
     }
   }
 
-  preload_scripts.push_back(new_preload_script);
-  return new_preload_script.id;
+  if (std::string error; !new_preload_script.ParseUrlPatterns(&error)) {
+    thrower.ThrowError(error);
+    return "";
+  }
+
+  preload_scripts.push_back(std::move(new_preload_script));
+  // A service worker that starts after this point picks up the new preload
+  // automatically — GetServiceWorkerStartupData() rebuilds from
+  // SessionPreferences on every StartWorker.
+  return preload_scripts.back().id;
 }
 
 void Session::UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
@@ -1289,7 +1346,9 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(
                            item->expiration.InMillisecondsF());
                   dict.Set("lastUsedTime", item->last_used_time);
                   dict.Set("size", item->size);
-                  dict.Set("hash", net::HashValue(item->hash).ToString());
+                  dict.Set("hash",
+                           net::HashValue(net::HASH_VALUE_SHA256, item->hash)
+                               .ToString());
 
                   result.push_back(dict);
                 }
@@ -1368,7 +1427,8 @@ api::ServiceWorkerContext* Session::ServiceWorkerContext() {
 
 WebRequest* Session::WebRequest(v8::Isolate* isolate) {
   if (!web_request_)
-    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{});
+    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{},
+                                      browser_context()->GetWeakPtr());
   return web_request_;
 }
 
@@ -1379,6 +1439,15 @@ NetLog* Session::NetLog(v8::Isolate* isolate) {
   return net_log_;
 }
 
+UtilityProcessWrapper* Session::LocalAIHandler() {
+  return local_ai_handler_;
+}
+
+base::CallbackListSubscription Session::AddAIHandlerChangedCallback(
+    base::RepeatingClosure callback) {
+  return local_ai_handler_changed_callbacks_.Add(std::move(callback));
+}
+
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 const GURL& url,
                                 int num_sockets_to_preconnect) {
@@ -1387,8 +1456,8 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
       {url::Origin::Create(url), num_sockets_to_preconnect,
        net::NetworkAnonymizationKey::CreateSameSite(
            net::SchemefulSite(origin))}};
-  browser_context->GetPreconnectManager()->Start(
-      url, requests, predictors::kLoadingPredictorPreconnectTrafficAnnotation);
+  browser_context->GetPreconnectManager()->Start(url, requests,
+                                                 kPreconnectTrafficAnnotation);
 }
 
 void Session::Preconnect(const gin_helper::Dictionary& options,
@@ -1553,6 +1622,20 @@ v8::Local<v8::Value> Session::ClearData(gin::Arguments* const args) {
                      std::move(origins), filter_mode, origin_matching_mode);
 
   return promise_handle;
+}
+
+void Session::RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
+                                     v8::Local<v8::Value> val) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  UtilityProcessWrapper* handler = nullptr;
+
+  if (!(val->IsNull() || gin::ConvertFromV8(isolate, val, &handler))) {
+    thrower.ThrowTypeError("Must pass null or UtilityProcess");
+    return;
+  }
+
+  local_ai_handler_ = handler;
+  local_ai_handler_changed_callbacks_.Notify();
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -1738,7 +1821,15 @@ Session* Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-  return FromOrCreate(isolate, browser_context);
+  const bool creating = !FromBrowserContext(browser_context);
+  Session* session = FromOrCreate(isolate, browser_context);
+  // One renderer started ahead of the first window; the first sandboxed
+  // WebContents takes it (ElectronBrowserClient::ShouldUseSpareRenderProcess-
+  // Host), anything else lets content discard it.
+  if (creating && partition.empty()) {
+    content::SpareRenderProcessHostManager::Get().WarmupSpare(browser_context);
+  }
+  return session;
 }
 
 // static
@@ -1756,8 +1847,7 @@ Session* Session::FromPath(gin::Arguments* args,
     return nullptr;
   }
 
-  browser_context =
-      ElectronBrowserContext::FromPath(std::move(path), std::move(options));
+  browser_context = ElectronBrowserContext::FromPath(path, std::move(options));
 
   return FromOrCreate(args->isolate(), browser_context);
 }
@@ -1770,84 +1860,87 @@ void Session::New() {
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
-      .SetMethod("resolveHost", &Session::ResolveHost)
-      .SetMethod("resolveProxy", &Session::ResolveProxy)
-      .SetMethod("getCacheSize", &Session::GetCacheSize)
-      .SetMethod("clearCache", &Session::ClearCache)
-      .SetMethod("clearStorageData", &Session::ClearStorageData)
-      .SetMethod("flushStorageData", &Session::FlushStorageData)
-      .SetMethod("setProxy", &Session::SetProxy)
-      .SetMethod("forceReloadProxyConfig", &Session::ForceReloadProxyConfig)
-      .SetMethod("setDownloadPath", &Session::SetDownloadPath)
-      .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
-      .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
-      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
-      .SetMethod("setPermissionRequestHandler",
-                 &Session::SetPermissionRequestHandler)
-      .SetMethod("setPermissionCheckHandler",
-                 &Session::SetPermissionCheckHandler)
-      .SetMethod("_setDisplayMediaRequestHandler",
-                 &Session::SetDisplayMediaRequestHandler)
-      .SetMethod("setDevicePermissionHandler",
-                 &Session::SetDevicePermissionHandler)
-      .SetMethod("setUSBProtectedClassesHandler",
-                 &Session::SetUSBProtectedClassesHandler)
-      .SetMethod("setBluetoothPairingHandler",
-                 &Session::SetBluetoothPairingHandler)
-      .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
-      .SetMethod("clearAuthCache", &Session::ClearAuthCache)
-      .SetMethod("allowNTLMCredentialsForDomains",
-                 &Session::AllowNTLMCredentialsForDomains)
-      .SetMethod("isPersistent", &Session::IsPersistent)
-      .SetMethod("setUserAgent", &Session::SetUserAgent)
-      .SetMethod("getUserAgent", &Session::GetUserAgent)
-      .SetMethod("setSSLConfig", &Session::SetSSLConfig)
-      .SetMethod("getBlobData", &Session::GetBlobData)
-      .SetMethod("downloadURL", &Session::DownloadURL)
-      .SetMethod("createInterruptedDownload",
-                 &Session::CreateInterruptedDownload)
-      .SetMethod("registerPreloadScript", &Session::RegisterPreloadScript)
-      .SetMethod("unregisterPreloadScript", &Session::UnregisterPreloadScript)
-      .SetMethod("getPreloadScripts", &Session::GetPreloadScripts)
-      .SetMethod("getSharedDictionaryUsageInfo",
-                 &Session::GetSharedDictionaryUsageInfo)
-      .SetMethod("getSharedDictionaryInfo", &Session::GetSharedDictionaryInfo)
-      .SetMethod("clearSharedDictionaryCache",
-                 &Session::ClearSharedDictionaryCache)
-      .SetMethod("clearSharedDictionaryCacheForIsolationKey",
-                 &Session::ClearSharedDictionaryCacheForIsolationKey)
+  // gin_helper::ObjectTemplateBuilder so that a Session made inert at shutdown
+  // throws "Object has been destroyed" rather than gin's conversion error.
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
+      .SetMethod<&Session::ResolveHost>("resolveHost")
+      .SetMethod<&Session::ResolveProxy>("resolveProxy")
+      .SetMethod<&Session::GetCacheSize>("getCacheSize")
+      .SetMethod<&Session::ClearCache>("clearCache")
+      .SetMethod<&Session::ClearStorageData>("clearStorageData")
+      .SetMethod<&Session::FlushStorageData>("flushStorageData")
+      .SetMethod<&Session::SetProxy>("setProxy")
+      .SetMethod<&Session::ForceReloadProxyConfig>("forceReloadProxyConfig")
+      .SetMethod<&Session::SetDownloadPath>("setDownloadPath")
+      .SetMethod<&Session::EnableNetworkEmulation>("enableNetworkEmulation")
+      .SetMethod<&Session::DisableNetworkEmulation>("disableNetworkEmulation")
+      .SetMethod<&Session::SetCertVerifyProc>("setCertificateVerifyProc")
+      .SetMethod<&Session::SetPermissionRequestHandler>(
+          "setPermissionRequestHandler")
+      .SetMethod<&Session::SetPermissionCheckHandler>(
+          "setPermissionCheckHandler")
+      .SetMethod<&Session::SetDisplayMediaRequestHandler>(
+          "_setDisplayMediaRequestHandler")
+      .SetMethod<&Session::SetDevicePermissionHandler>(
+          "setDevicePermissionHandler")
+      .SetMethod<&Session::SetUSBProtectedClassesHandler>(
+          "setUSBProtectedClassesHandler")
+      .SetMethod<&Session::SetBluetoothPairingHandler>(
+          "setBluetoothPairingHandler")
+      .SetMethod<&Session::ClearHostResolverCache>("clearHostResolverCache")
+      .SetMethod<&Session::ClearAuthCache>("clearAuthCache")
+      .SetMethod<&Session::AllowNTLMCredentialsForDomains>(
+          "allowNTLMCredentialsForDomains")
+      .SetMethod<&Session::IsPersistent>("isPersistent")
+      .SetMethod<&Session::SetUserAgent>("setUserAgent")
+      .SetMethod<&Session::GetUserAgent>("getUserAgent")
+      .SetMethod<&Session::SetSSLConfig>("setSSLConfig")
+      .SetMethod<&Session::GetBlobData>("getBlobData")
+      .SetMethod<&Session::DownloadURL>("downloadURL")
+      .SetMethod<&Session::CreateInterruptedDownload>(
+          "createInterruptedDownload")
+      .SetMethod<&Session::RegisterPreloadScript>("registerPreloadScript")
+      .SetMethod<&Session::UnregisterPreloadScript>("unregisterPreloadScript")
+      .SetMethod<&Session::GetPreloadScripts>("getPreloadScripts")
+      .SetMethod<&Session::GetSharedDictionaryUsageInfo>(
+          "getSharedDictionaryUsageInfo")
+      .SetMethod<&Session::GetSharedDictionaryInfo>("getSharedDictionaryInfo")
+      .SetMethod<&Session::ClearSharedDictionaryCache>(
+          "clearSharedDictionaryCache")
+      .SetMethod<&Session::ClearSharedDictionaryCacheForIsolationKey>(
+          "clearSharedDictionaryCacheForIsolationKey")
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-      .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)
-      .SetMethod("setSpellCheckerLanguages", &Session::SetSpellCheckerLanguages)
-      .SetProperty("availableSpellCheckerLanguages",
-                   &spellcheck::SpellCheckLanguages)
-      .SetMethod("setSpellCheckerDictionaryDownloadURL",
-                 &SetSpellCheckerDictionaryDownloadURL)
-      .SetMethod("listWordsInSpellCheckerDictionary",
-                 &Session::ListWordsInSpellCheckerDictionary)
-      .SetMethod("addWordToSpellCheckerDictionary",
-                 &Session::AddWordToSpellCheckerDictionary)
-      .SetMethod("removeWordFromSpellCheckerDictionary",
-                 &Session::RemoveWordFromSpellCheckerDictionary)
-      .SetMethod("setSpellCheckerEnabled", &Session::SetSpellCheckerEnabled)
-      .SetMethod("isSpellCheckerEnabled", &Session::IsSpellCheckerEnabled)
-      .SetProperty("spellCheckerEnabled", &Session::IsSpellCheckerEnabled,
-                   &Session::SetSpellCheckerEnabled)
+      .SetMethod<&Session::GetSpellCheckerLanguages>("getSpellCheckerLanguages")
+      .SetMethod<&Session::SetSpellCheckerLanguages>("setSpellCheckerLanguages")
+      .SetProperty<&spellcheck::SpellCheckLanguages>(
+          "availableSpellCheckerLanguages")
+      .SetMethod<&SetSpellCheckerDictionaryDownloadURL>(
+          "setSpellCheckerDictionaryDownloadURL")
+      .SetMethod<&Session::ListWordsInSpellCheckerDictionary>(
+          "listWordsInSpellCheckerDictionary")
+      .SetMethod<&Session::AddWordToSpellCheckerDictionary>(
+          "addWordToSpellCheckerDictionary")
+      .SetMethod<&Session::RemoveWordFromSpellCheckerDictionary>(
+          "removeWordFromSpellCheckerDictionary")
+      .SetMethod<&Session::SetSpellCheckerEnabled>("setSpellCheckerEnabled")
+      .SetMethod<&Session::IsSpellCheckerEnabled>("isSpellCheckerEnabled")
+      .SetProperty<&Session::IsSpellCheckerEnabled,
+                   &Session::SetSpellCheckerEnabled>("spellCheckerEnabled")
 #endif
-      .SetMethod("preconnect", &Session::Preconnect)
-      .SetMethod("closeAllConnections", &Session::CloseAllConnections)
-      .SetMethod("getStoragePath", &Session::GetPath)
-      .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
-      .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
-      .SetMethod("clearData", &Session::ClearData)
-      .SetProperty("cookies", &Session::Cookies)
-      .SetProperty("extensions", &Session::Extensions)
-      .SetProperty("netLog", &Session::NetLog)
-      .SetProperty("protocol", &Session::Protocol)
-      .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
-      .SetProperty("webRequest", &Session::WebRequest)
-      .SetProperty("storagePath", &Session::GetPath)
+      .SetMethod<&Session::Preconnect>("preconnect")
+      .SetMethod<&Session::CloseAllConnections>("closeAllConnections")
+      .SetMethod<&Session::GetPath>("getStoragePath")
+      .SetMethod<&Session::SetCodeCachePath>("setCodeCachePath")
+      .SetMethod<&Session::ClearCodeCaches>("clearCodeCaches")
+      .SetMethod<&Session::ClearData>("clearData")
+      .SetMethod<&Session::RegisterLocalAIHandler>("_registerLocalAIHandler")
+      .SetProperty<&Session::Cookies>("cookies")
+      .SetProperty<&Session::Extensions>("extensions")
+      .SetProperty<&Session::NetLog>("netLog")
+      .SetProperty<&Session::Protocol>("protocol")
+      .SetProperty<&Session::ServiceWorkerContext>("serviceWorkers")
+      .SetProperty<&Session::WebRequest>("webRequest")
+      .SetProperty<&Session::GetPath>("storagePath")
       .Build();
 }
 
@@ -1860,6 +1953,7 @@ void Session::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(service_worker_context_);
   visitor->Trace(web_request_);
   visitor->Trace(weak_factory_);
+  visitor->Trace(local_ai_handler_);
 }
 
 const gin::WrapperInfo* Session::wrapper_info() const {
@@ -1870,9 +1964,7 @@ const char* Session::GetHumanReadableName() const {
   return "Electron / Session";
 }
 
-void Session::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
+void Session::OnBeforeMicrotasksRunnerDispose() {
   Dispose();
   weak_factory_.Invalidate();
   browser_context_ = nullptr;
@@ -1913,8 +2005,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Session",
            Session::GetConstructor(isolate, context, &Session::kWrapperInfo));
-  dict.SetMethod("fromPartition", &FromPartition);
-  dict.SetMethod("fromPath", &FromPath);
+  dict.SetMethod<&FromPartition>("fromPartition");
+  dict.SetMethod<&FromPath>("fromPath");
 }
 
 }  // namespace

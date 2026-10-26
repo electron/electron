@@ -6,12 +6,24 @@
 
 #include "base/no_destructor.h"
 #include "gin/converter.h"
+#include "gin/wrappable.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/wrappable_base.h"
 #include "v8/include/v8-function.h"
+#include "v8/include/v8-object.h"
+#include "v8/include/v8-sandbox.h"
 
 namespace gin_helper {
 
 namespace {
+
+bool IsCppHeapWrappable(v8::Local<v8::Object> object) {
+  if (!object->IsApiWrapper())
+    return false;
+  return v8::Object::Unwrap<v8::Object::Wrappable>(
+             v8::Isolate::GetCurrent(), object, v8::kAnyCppHeapPointer) !=
+         nullptr;
+}
 
 v8::Global<v8::FunctionTemplate>* GetDestroyFunc() {
   static base::NoDestructor<v8::Global<v8::FunctionTemplate>> destroy_func;
@@ -27,6 +39,17 @@ void DestroyFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Local<v8::Object> holder = info.This();
   if (Destroyable::IsDestroyed(holder))
     return;
+
+  if (IsCppHeapWrappable(holder))
+    return;
+
+  // Only gin_helper::Wrappable stores a WrappableBase* in field 0 of a
+  // single-field wrapper; reject foreign receivers like FromV8Impl does.
+  if (holder->InternalFieldCount() != 1) {
+    gin_helper::ErrorThrower(info.GetIsolate())
+        .ThrowTypeError("Illegal invocation");
+    return;
+  }
 
   // TODO(zcbenz): gin_helper::Wrappable will be removed.
   delete static_cast<gin_helper::WrappableBase*>(
@@ -45,11 +68,31 @@ void IsDestroyedFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 // static
 bool Destroyable::IsDestroyed(v8::Local<v8::Object> object) {
+  // cppgc-managed objects keep their native pointer on the V8 unified heap and
+  // deliberately leave the gin internal fields null, so the internal-field
+  // heuristic below does not apply to them. Their native object is kept alive
+  // by the unified heap for as long as the wrapper is reachable, so such an
+  // object is never considered destroyed through this mechanism.
+  if (IsCppHeapWrappable(object))
+    return false;
+
   // An object is considered destroyed if it has no internal pointer or its
   // internal has been destroyed.
   return object->InternalFieldCount() == 0 ||
          object->GetAlignedPointerFromInternalField(
              0, v8::kEmbedderDataTypeTagDefault) == nullptr;
+}
+
+// static
+void Destroyable::MarkDestroyed(v8::Isolate* isolate,
+                                gin::WrappableBase* wrappable) {
+  v8::Local<v8::Object> wrapper;
+  if (!wrappable->GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+
+  v8::Object::Wrap(isolate, wrapper, nullptr,
+                   static_cast<v8::CppHeapPointerTag>(
+                       wrappable->wrapper_info()->pointer_tag));
 }
 
 // static

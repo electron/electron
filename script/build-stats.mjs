@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs/promises';
+import { availableParallelism } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 
 import { getChromiumVersionFromDEPS } from './lib/utils.js';
 
@@ -108,6 +110,91 @@ async function uploadObjectChangeStats(stats) {
   await uploadSeriesToDatadog(series);
 }
 
+// Returns the last `maxBytes` of `filename` as a string.
+async function readTail(filename, maxBytes) {
+  const handle = await fs.open(filename, 'r');
+  try {
+    const { size } = await handle.stat();
+    const length = Math.min(size, maxBytes);
+    const buffer = Buffer.alloc(length);
+    await handle.read(buffer, 0, length, size - length);
+    return buffer.toString('utf-8');
+  } finally {
+    await handle.close();
+  }
+}
+
+// Lists the .o/.obj files under `outDir`, relative to it. Objects only live
+// under `obj/` and `<secondary-toolchain>/obj/`, so only those trees are
+// walked: a recursive readdir of the whole out dir touches ~800k entries
+// (gen/, bundles, dSYMs) and dominated this step's runtime.
+async function listObjectFiles(outDir) {
+  const objectFiles = [];
+  const isObject = (name) => name.endsWith('.o') || name.endsWith('.obj');
+  const walk = async (rel) => {
+    const entries = await fs.readdir(resolve(outDir, rel), { withFileTypes: true });
+    await Promise.all(
+      entries.map(async (entry) => {
+        const entryRel = rel ? `${rel}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+          await walk(entryRel);
+        } else if (entry.isFile() && isObject(entry.name)) {
+          objectFiles.push(entryRel);
+        }
+      })
+    );
+  };
+  const top = await fs.readdir(outDir, { withFileTypes: true });
+  for (const entry of top) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === 'obj') {
+      await walk('obj');
+      continue;
+    }
+    const objDir = `${entry.name}/obj`;
+    const st = await fs.stat(resolve(outDir, objDir)).catch(() => null);
+    if (st && st.isDirectory()) await walk(objDir);
+  }
+  return objectFiles.sort();
+}
+
+// Hashes `files` (relative to `dir`) on a pool of worker threads. A release
+// build has ~6 GB of objects; hashing them serially on the main thread took
+// 2-3 minutes on the 5-core macOS runners.
+async function checksumFiles(dir, files) {
+  const workers = Math.max(1, Math.min(availableParallelism(), files.length));
+  const shard = Math.ceil(files.length / workers);
+  const results = await Promise.all(
+    Array.from({ length: workers }, (_, i) => {
+      const chunk = files.slice(i * shard, (i + 1) * shard);
+      return new Promise((resolve, reject) => {
+        const worker = new Worker(new URL(import.meta.url), {
+          workerData: { dir, files: chunk }
+        });
+        worker.once('message', resolve);
+        worker.once('error', reject);
+        worker.once('exit', (code) => {
+          if (code !== 0) reject(new Error(`checksum worker exited with code ${code}`));
+        });
+      });
+    })
+  );
+  return Object.assign({}, ...results);
+}
+
+if (!isMainThread) {
+  const { dir, files } = workerData;
+  const checksums = {};
+  for (const file of files) {
+    const content = await fs.readFile(resolve(dir, file));
+    checksums[file] = {
+      size: content.byteLength,
+      checksum: createHash('sha256').update(content).digest('hex')
+    };
+  }
+  parentPort.postMessage(checksums);
+}
+
 async function main() {
   const {
     positionals: [filename],
@@ -148,10 +235,11 @@ async function main() {
     throw new Error('--out-dir only makes sense with --input-object-checksums or --output-object-checksums');
   }
 
-  const log = await fs.readFile(filename, 'utf-8');
-
   // We expect to find a line which looks like stats=build.Stats{..., CacheHit:39008, Local:4778, Remote:0, LocalFallback:0, ...}
-  const match = log.match(/stats=build\.Stats{(.*)}/);
+  // near the end of the log. siso.INFO can exceed V8's maximum string length
+  // (it grows with the step count; a release build's is several hundred MB),
+  // so read the tail of the file rather than the whole thing.
+  const match = (await readTail(filename, 16 * 1024 * 1024)).match(/stats=build\.Stats{(.*)}/);
 
   if (!match) {
     throw new Error('could not find stats=build.Stats in log');
@@ -176,16 +264,8 @@ async function main() {
     const currentVersion = getChromiumVersionFromDEPS(depsContent);
 
     // Calculate the SHA256 for each object file under `outDir`
-    const files = await fs.readdir(outDir, { encoding: 'utf8', recursive: true });
-    const objectFiles = files.filter((file) => file.endsWith('.o') || file.endsWith('.obj'));
-    const checksums = {};
-    for (const file of objectFiles) {
-      const content = await fs.readFile(resolve(outDir, file));
-      checksums[file] = {
-        size: content.byteLength,
-        checksum: createHash('sha256').update(content).digest('hex')
-      };
-    }
+    const objectFiles = await listObjectFiles(outDir);
+    const checksums = await checksumFiles(outDir, objectFiles);
 
     if (outputObjectChecksums) {
       const outputData = {
@@ -259,7 +339,7 @@ async function main() {
   }
 }
 
-if ((await fs.realpath(process.argv[1])) === fileURLToPath(import.meta.url)) {
+if (isMainThread && (await fs.realpath(process.argv[1])) === fileURLToPath(import.meta.url)) {
   main()
     .then(() => {
       process.exit(0);

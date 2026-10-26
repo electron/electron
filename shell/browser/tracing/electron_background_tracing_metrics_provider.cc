@@ -4,7 +4,6 @@
 
 #include "shell/browser/tracing/electron_background_tracing_metrics_provider.h"
 
-#include <memory>
 #include <string>
 
 #include "base/version_info/channel.h"

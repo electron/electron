@@ -6,8 +6,6 @@
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_MEDIA_CONVERTER_H_
 
 #include "gin/converter.h"
-#include "third_party/blink/public/common/mediastream/media_stream_request.h"
-#include "third_party/blink/public/mojom/mediastream/media_stream.mojom-forward.h"
 
 namespace content {
 struct MediaStreamRequest;

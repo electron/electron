@@ -1,4 +1,22 @@
 ---
-Checks: '-modernize-use-nullptr'
+Checks: 'clang-analyzer-core.*,
+         clang-analyzer-cplusplus.*,
+         clang-analyzer-deadcode.*,
+         clang-analyzer-nullability.*,
+         clang-analyzer-osx.*,
+         clang-analyzer-security.*,
+         clang-analyzer-unix.*,
+         performance-for-range-copy,
+         performance-implicit-conversion-in-loop,
+         performance-move-const-arg,
+         performance-no-automatic-move,
+         performance-prefer-single-char-overloads,
+         performance-unnecessary-copy-initialization,
+         performance-use-std-move,
+         -bugprone-forward-declaration-namespace,
+         -clang-analyzer-core.CallAndMessage,
+         -clang-analyzer-security.PointerSub'
+# Only report header diagnostics in Electron's headers
+HeaderFilterRegex: '^(\.\./)*electron/'
 InheritParentConfig: true
 ...

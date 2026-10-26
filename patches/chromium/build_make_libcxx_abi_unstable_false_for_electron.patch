@@ -31,3 +31,54 @@ index a9ab1614b67e2df7b379c1d8a4147265a15747db..f1c60c7d0a320e5a1e9a9e454ef0e084
  
  #define _LIBCPP_ABI_FORCE_ITANIUM 0
  #define _LIBCPP_ABI_FORCE_MICROSOFT 0
+diff --git a/components/password_manager/core/browser/password_form_manager.cc b/components/password_manager/core/browser/password_form_manager.cc
+index a58d586e082760ab1c146b296201d9728df76cda..7856e562e363041cea413d87b5a58b39df2a0f98 100644
+--- a/components/password_manager/core/browser/password_form_manager.cc
++++ b/components/password_manager/core/browser/password_form_manager.cc
+@@ -41,6 +41,7 @@
+ #include "components/password_manager/core/browser/form_fetcher_impl.h"
+ #include "components/password_manager/core/browser/form_parsing/form_data_parser.h"
+ #include "components/password_manager/core/browser/form_parsing/password_field_prediction.h"
++#include "components/password_manager/core/browser/passkey_credential.h"
+ #include "components/password_manager/core/browser/password_feature_manager.h"
+ #include "components/password_manager/core/browser/password_form.h"
+ #include "components/password_manager/core/browser/password_form_cache.h"
+diff --git a/extensions/common/value_counter.cc b/extensions/common/value_counter.cc
+index 445a73884339dd5c1df06edf2b7d18ec5730690b..68d92f9d63787fda96fbb93c97828cef94dd7676 100644
+--- a/extensions/common/value_counter.cc
++++ b/extensions/common/value_counter.cc
+@@ -31,6 +31,14 @@ ValueCounter::ValueCounter() {
+ ValueCounter::~ValueCounter() {
+ }
+ 
++bool ValueCounter::is_empty() const {
++  return entries_.empty();
++}
++
++size_t ValueCounter::distinct_count() const {
++  return entries_.size();
++}
++
+ bool ValueCounter::Add(const base::Value& value) {
+   ++total_count_;
+   for (auto& entry : entries_) {
+diff --git a/extensions/common/value_counter.h b/extensions/common/value_counter.h
+index 8346f48e1c2cc5a36de3c4f111e0ab65f32e7066..25787535cefb8cac82788dc74dbca715e8d510f9 100644
+--- a/extensions/common/value_counter.h
++++ b/extensions/common/value_counter.h
+@@ -41,13 +41,13 @@ class ValueCounter {
+   bool Remove(const base::Value& value);
+ 
+   // Returns true if there are no values of any type being counted.
+-  bool is_empty() const { return entries_.empty(); }
++  bool is_empty() const;
+ 
+   // Returns the number of values being counted, including duplicates.
+   size_t total_count() const { return total_count_; }
+ 
+   // Returns the number of distinct values being counted.
+-  size_t distinct_count() const { return entries_.size(); }
++  size_t distinct_count() const;
+ 
+  private:
+   struct Entry;

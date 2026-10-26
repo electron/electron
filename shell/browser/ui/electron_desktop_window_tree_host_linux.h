@@ -41,10 +41,8 @@ class ElectronDesktopWindowTreeHostLinux
 
   bool SupportsClientFrameShadow() const;
 
-  // Re-applies input region, opaque region, and triggers a geometry
-  // recalculation via the Wayland compositor. Public so NativeWindowViews
-  // can call it when custom decoration insets change.
-  void ApplyDecorationInsets();
+  // views::DesktopWindowTreeHostLinux:
+  void UpdateFrameHints() override;
 
  protected:
   // views::DesktopWindowTreeHostLinuxImpl:
@@ -71,11 +69,11 @@ class ElectronDesktopWindowTreeHostLinux
   void OnDeviceScaleFactorChanged() override;
 
   // views::DesktopWindowTreeHostLinux:
-  void UpdateFrameHints() override;
   void DispatchEvent(ui::Event* event) override;
   void AddAdditionalInitProperties(
       const views::Widget::InitParams& params,
       ui::PlatformWindowInitProperties* properties) override;
+  void SetOpacity(float opacity) override;
 
  private:
   void UpdateWindowState(ui::PlatformWindowState new_state);

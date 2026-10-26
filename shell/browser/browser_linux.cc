@@ -5,7 +5,6 @@
 #include "shell/browser/browser.h"
 
 #include <fcntl.h>
-#include <stdlib.h>
 
 #include <string_view>
 
@@ -21,7 +20,9 @@
 #include "base/strings/utf_string_conversions.h"
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/linux/launcher_entry.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/gtk_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -36,10 +37,6 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
-
-#if BUILDFLAG(IS_LINUX)
-#include "shell/browser/linux/unity_service.h"
-#endif
 
 namespace electron {
 
@@ -84,7 +81,7 @@ bool SetDefaultWebClient(const std::string& protocol) {
   if (!found)
     return {};
 
-  const auto path = base::FilePath::FromUTF8Unsafe(found);
+  auto path = base::FilePath::FromUTF8Unsafe(found);
   g_free(found);
   return path;
 }
@@ -93,7 +90,7 @@ bool SetDefaultWebClient(const std::string& protocol) {
   constexpr int kIconSize = 32;
 
   GIcon* const icon = g_app_info_get_icon(app_info);
-  if (!icon)
+  if (!icon || !gtk_util::IsGtkAvailable())
     return {};
 
   // Note: this gtk3/gtk4 + icon theme lookup + snapshot control flow
@@ -257,13 +254,12 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
 }
 
 bool Browser::SetBadgeCount(std::optional<int> count) {
-  if (IsUnityRunning() && count.has_value()) {
-    unity::SetDownloadCount(count.value());
-    badge_count_ = count.value();
-    return true;
-  } else {
+  if (!count.has_value())
     return false;
-  }
+  if (!launcher_entry::SetBadgeCount(count.value()))
+    return false;
+  badge_count_ = count.value();
+  return true;
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
@@ -280,10 +276,6 @@ std::string Browser::GetExecutableFileVersion() const {
 
 std::string Browser::GetExecutableFileProductName() const {
   return GetApplicationName();
-}
-
-bool Browser::IsUnityRunning() {
-  return unity::IsRunning();
 }
 
 bool Browser::IsEmojiPanelSupported() {

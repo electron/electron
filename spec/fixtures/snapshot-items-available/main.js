@@ -5,7 +5,7 @@ const { app } = require('electron');
 app.whenReady().then(() => {
   let returnCode = 0;
   try {
-    const testValue = f(); // eslint-disable-line no-undef
+    const testValue = f();
     if (testValue === 86) {
       console.log('ok test snapshot successfully loaded.');
     } else {

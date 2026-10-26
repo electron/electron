@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, '..', 'fixtures');
 const xdgMockFixturePath = path.join(fixturesPath, 'api', 'xdg-mock');
 const protocolLookupFixturePath = path.join(fixturesPath, 'api', 'protocol-name');
 const kDefaultXdgDataDirs = '/usr/local/share:/usr/share';

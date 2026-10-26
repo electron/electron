@@ -13,7 +13,7 @@
 #include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/x/xproto.h"
 
-// Advertises our menu bars to Unity.
+// Advertises our menu bars to desktops that consume the AppMenu D-Bus service.
 //
 // GlobalMenuBarX11 is responsible for managing the DbusmenuServer for each
 // x11::Window. We need a separate object to own the dbus channel to
@@ -26,16 +26,16 @@ class GlobalMenuBarRegistrarX11 {
   void OnWindowMapped(x11::Window window);
   void OnWindowUnmapped(x11::Window window);
 
+  // disable copy
+  GlobalMenuBarRegistrarX11(const GlobalMenuBarRegistrarX11&) = delete;
+  GlobalMenuBarRegistrarX11& operator=(const GlobalMenuBarRegistrarX11&) =
+      delete;
+
  private:
   friend struct base::DefaultSingletonTraits<GlobalMenuBarRegistrarX11>;
 
   GlobalMenuBarRegistrarX11();
   ~GlobalMenuBarRegistrarX11();
-
-  // disable copy
-  GlobalMenuBarRegistrarX11(const GlobalMenuBarRegistrarX11&) = delete;
-  GlobalMenuBarRegistrarX11& operator=(const GlobalMenuBarRegistrarX11&) =
-      delete;
 
   // Sends the actual message.
   void RegisterXWindow(x11::Window window);

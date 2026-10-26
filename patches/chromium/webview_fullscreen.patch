@@ -15,10 +15,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 524b573c78813eb0bf6d055135c728e5be16f56b..10dcc495f61c09d980f39f1c49ef327897ec7eda 100644
+index f2e64e5569741000552218689ae5edf1f1d63791..5e38acee26fc8aab78580e952315c9677b3bbe01 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9304,6 +9304,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -9797,6 +9797,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -37,10 +37,10 @@ index 524b573c78813eb0bf6d055135c728e5be16f56b..10dcc495f61c09d980f39f1c49ef3278
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f83bf320b9a6df2ccade89beda3685e0c17bb91d..ad6faf3a851909e4736b5bbe4925e69930bb9f80 100644
+index 032f61c273321c5c34b86a164d09afb6bdf7f30b..46fa58cf8316991d7d6119e671216fb1d5d7686e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4592,21 +4592,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -4821,21 +4821,28 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const input::NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");
@@ -66,11 +66,14 @@ index f83bf320b9a6df2ccade89beda3685e0c17bb91d..ad6faf3a851909e4736b5bbe4925e699
 +    if (handled == KeyboardEventProcessingResult::HANDLED)
 +       return KeyboardEventProcessingResult::HANDLED;
 +
-+    // When an inner WebContents has focus and is fullscreen, traverse through
-+    // containing webcontents to any that may handle the escape key.
-+    while (auto* outer_web_contents = GetOuterWebContents()) {
-+      auto result = outer_web_contents->PreHandleKeyboardEvent(event);
-+      if (result == KeyboardEventProcessingResult::HANDLED) {
++    // When an inner WebContents has focus and is fullscreen, offer <esc> to
++    // each containing WebContents' delegate so an embedder can leave
++    // fullscreen.
++    for (auto* outer = GetOuterWebContents(); outer;
++         outer = outer->GetOuterWebContents()) {
++      if (outer->delegate_ &&
++          outer->delegate_->PreHandleKeyboardEvent(outer, event) ==
++              KeyboardEventProcessingResult::HANDLED) {
 +        return KeyboardEventProcessingResult::HANDLED;
 +      }
 +    }
@@ -79,12 +82,12 @@ index f83bf320b9a6df2ccade89beda3685e0c17bb91d..ad6faf3a851909e4736b5bbe4925e699
 +  return handled;
  }
  
- bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {
+ bool WebContentsImpl::PreHandleMouseEvent(const blink::WebMouseEvent& event) {
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index a4e56d13651cea6cd41a52e0e6e1488a7b6ab07a..833e45754841f4e10d8d3fbace7e05d41b28036c 100644
+index e8c11b5d28a3c50c97770360015632a2977f4c09..33cf21d32f35ca0ffc39fdebc8e4375d195bbe0d 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-@@ -106,7 +106,6 @@ void FullscreenElementChanged(Document& document,
+@@ -107,7 +107,6 @@ void FullscreenElementChanged(Document& document,
      // is the iframe element for the out-of-process frame that contains the
      // fullscreen element. Hence, it must match :-webkit-full-screen-ancestor.
      if (new_request_type & FullscreenRequestType::kForCrossProcessDescendant) {

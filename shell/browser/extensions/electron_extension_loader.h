@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include "base/functional/callback.h"
+#include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "extensions/browser/extension_registrar.h"
@@ -72,6 +72,10 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void FinishExtensionLoad(
       base::OnceCallback<void(const Extension*, const std::string&)> cb,
       std::pair<scoped_refptr<const Extension>, std::string> result);
+  void AddLoadedExtension(
+      base::OnceCallback<void(const Extension*, const std::string&)> cb,
+      scoped_refptr<const Extension> extension,
+      const std::string& error_or_warnings);
   void DoLoadExtensionForReload(const ExtensionId& extension_id,
                                 const base::FilePath& path);
 

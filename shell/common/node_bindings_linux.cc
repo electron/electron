@@ -8,8 +8,9 @@
 
 namespace electron {
 
-NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env)
-    : NodeBindings(browser_env), epoll_(epoll_create(1)) {
+NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env,
+                                     uv_loop_t* loop)
+    : NodeBindings(browser_env, loop), epoll_(epoll_create(1)) {
   auto* const event_loop = uv_loop();
 
   int backend_fd = uv_backend_fd(event_loop);
@@ -33,8 +34,9 @@ void NodeBindingsLinux::PollEvents() {
 }
 
 // static
-std::unique_ptr<NodeBindings> NodeBindings::Create(BrowserEnvironment env) {
-  return std::make_unique<NodeBindingsLinux>(env);
+std::unique_ptr<NodeBindings> NodeBindings::Create(BrowserEnvironment env,
+                                                   uv_loop_t* loop) {
+  return std::make_unique<NodeBindingsLinux>(env, loop);
 }
 
 }  // namespace electron

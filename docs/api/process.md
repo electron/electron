@@ -160,7 +160,13 @@ The time is represented as number of milliseconds since epoch. It returns null i
 
 ### `process.getCPUUsage()`
 
-Returns [`CPUUsage`](structures/cpu-usage.md)
+Returns [`CPUUsage`](structures/cpu-usage.md) - CPU usage of the process this is called in.
+
+> [!NOTE]
+> `percentCPUUsage` and `idleWakeupsPerSecond` are averages over the time since the
+> previous call to `process.getCPUUsage()` in this process, and each call starts a new
+> measurement interval. Every caller in the process shares that interval. See
+> [`CPUUsage`](structures/cpu-usage.md) for details.
 
 ### `process.getHeapStatistics()`
 
@@ -211,6 +217,10 @@ Returns `Object`:
   system.
 * `free` Integer - The total amount of memory not being used by applications or disk
   cache.
+* `available` Integer _Linux_ - The kernel's estimate of the amount of memory
+  available for allocation without swapping, from `/proc/meminfo`
+  `MemAvailable`. Use this as the memory pressure signal on Linux; `free` there
+  is `MemFree`, which excludes page cache and other reclaimable memory.
 * `fileBacked` Integer _macOS_ - The amount of memory that currently has been paged out to storage.
   Includes memory for file caches, network buffers, and other system services.
 * `purgeable` Integer _macOS_ - The amount of memory that is marked as "purgeable". The system can reclaim it

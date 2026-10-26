@@ -272,6 +272,11 @@ _This class is not exported from the `'electron'` module. It is only available a
 
 The following methods are available on instances of the `NativeImage` class:
 
+> [!NOTE]
+> The methods that return a `Buffer` throw an error when called from a context without a
+> Node.js environment, such as a [sandboxed](../tutorial/sandbox.md) preload script.
+> `image.toDataURL()` works in every context.
+
 #### `image.toPNG([options])`
 
 * `options` Object (optional)
@@ -287,8 +292,20 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded d
 
 #### `image.toBitmap([options])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/48178
+    description: "Normalized `NativeImage.toBitmap()` pixel data to sRGB by default."
+    breaking-changes-header: behavior-changed-nativeimagetobitmap-now-normalizes-color-space
+```
+-->
+
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
+  * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The target color space
+    for the output pixel data. Defaults to sRGB. Pass the image's original color space to
+    preserve the previous behavior, or another color space to get pixel values in that space.
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
@@ -311,8 +328,20 @@ Returns `string` - The [Data URL][data-url] of the image.
 
 #### `image.getBitmap([options])` _Deprecated_
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/48178
+    description: "Normalized `NativeImage.toBitmap()` pixel data to sRGB by default."
+    breaking-changes-header: behavior-changed-nativeimagetobitmap-now-normalizes-color-space
+```
+-->
+
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
+  * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The target color space
+    for the output pixel data. Defaults to sRGB. Pass the image's original color space to
+    preserve the previous behavior, or another color space to get pixel values in that space.
 
 Legacy alias for `image.toBitmap()`.
 

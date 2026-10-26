@@ -18,6 +18,7 @@
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/serial/serial.mojom-forward.h"
+#include "url/origin.h"
 
 namespace content {
 class RenderFrameHost;

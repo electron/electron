@@ -5,11 +5,9 @@
 #ifndef ELECTRON_SHELL_BROWSER_FONT_DEFAULTS_H_
 #define ELECTRON_SHELL_BROWSER_FONT_DEFAULTS_H_
 
-namespace blink {
-namespace web_pref {
+namespace blink::web_pref {
 struct WebPreferences;
-}  // namespace web_pref
-}  // namespace blink
+}  // namespace blink::web_pref
 
 namespace electron {
 

@@ -24,6 +24,7 @@ template("strip_binary") {
                            "deps",
                            "testonly",
                          ])
+
   action("${target_name}") {
     llvm_strip_binary = "${clang_base_path}/bin/llvm-strip"
     llvm_objcopy_binary = "${clang_base_path}/bin/llvm-objcopy"

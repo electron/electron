@@ -1,7 +1,6 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
-import("//components/os_crypt/sync/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//content/public/common/features.gni")
@@ -14,16 +13,18 @@ import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
+import("//tools/resources/generate_resource_allowlist.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
+import("//v8/gni/v8.gni")
 import("build/asar.gni")
+import("build/bundle/bundle.gni")
 import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
 import("build/js2c_toolchain.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
-import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
@@ -31,15 +32,36 @@ import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
 
+declare_args() {
+  # Emit a build-time V8 code cache for the internal/electron/js2c/* bundles.
+  # When false an empty stub is compiled and bundles compile from source.
+  #
+  # Cross-arch is supported: the generator is built in v8_snapshot_toolchain
+  # (V8_TARGET_ARCH set to the target) and reads the target's snapshot blob,
+  # so the cache it emits is keyed to the target's read-only checksum -- the
+  # same mechanism that makes V8's mksnapshot cross-arch correct. Cross-OS is
+  # untested and stays off.
+  electron_generate_js2c_code_cache = host_os == target_os
+}
+
 if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//third_party/icu/config.gni")
-  import("//v8/gni/v8.gni")
   import("build/rules.gni")
 
   assert(
-      mac_deployment_target == "12.0",
+      mac_deployment_target == "13.0",
       "Chromium has updated the mac_deployment_target, please update this assert and flag this as a breaking change (docs/breaking-changes.md)")
+
+  # shell/browser/feature_list_mac.mm enables this unexported content feature
+  # by name; fail here rather than silently if a Chromium roll removes it.
+  assert(
+      filter_include(
+              read_file(
+                  "//content/browser/renderer_host/render_widget_host_view_mac.mm",
+                  "list lines"),
+              [ "BASE_FEATURE(kThrottleResizeIpc,*" ]) != [],
+      "kThrottleResizeIpc is gone from render_widget_host_view_mac.mm; update shell/browser/feature_list_mac.mm")
 }
 
 if (is_linux) {
@@ -88,6 +110,7 @@ if (is_linux) {
     sigs = [
       "shell/browser/ui/electron_gdk.sigs",
       "shell/browser/ui/electron_gdk_pixbuf.sigs",
+      "shell/browser/ui/electron_gtk.sigs",
     ]
     extra_header = "shell/browser/ui/electron_gtk.fragment"
     output_name = "electron_gtk_stubs"
@@ -172,89 +195,88 @@ config("electron_lib_config") {
   }
 }
 
-# We generate the definitions twice here, once in //electron/electron.d.ts
-# and once in $target_gen_dir
-# The one in $target_gen_dir is used for the actual TSC build later one
-# and the one in //electron/electron.d.ts is used by your IDE (vscode)
-# for typescript prompting
-npm_action("build_electron_definitions") {
-  script = "gn-typescript-definitions"
-  args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
-  inputs = auto_filenames.api_docs + [ "yarn.lock" ]
+# electron.d.ts is generated into the repo root (//electron/electron.d.ts) — a
+# single shared path consumed via the /// <reference> in
+# typings/internal-electron.d.ts — plus a per-toolchain gen-dir copy. Because
+# the repo-root write is a fixed shared path, instantiating this action in more
+# than one toolchain races two concurrent truncate-then-write generators on it.
+# Generate it once in the default toolchain and forward to that instance
+# everywhere else. The lib/ type check only depends on source files, so there is
+# no point repeating it per toolchain either.
+if (current_toolchain == default_toolchain) {
+  npm_action("build_electron_definitions") {
+    script = "gn-typescript-definitions"
+    args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
+    inputs = auto_filenames.api_docs + [ "yarn.lock" ]
 
-  outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
+    outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
+  }
+
+  # Type checks lib/ against tsconfig.electron.json for the electron_bundle
+  # targets below, which only strip types.
+  npm_action("electron_lib_typecheck") {
+    deps = [ ":build_electron_definitions" ]
+
+    script = "typecheck"
+    inputs = auto_filenames.lib_typecheck_sources + [ "yarn.lock" ]
+    outputs = [ "$target_gen_dir/electron_lib_typecheck.stamp" ]
+    args = [
+      "--project",
+      rebase_path("tsconfig.electron.json"),
+      "--stamp",
+      rebase_path(outputs[0]),
+    ]
+  }
+} else {
+  group("build_electron_definitions") {
+    public_deps = [ ":build_electron_definitions($default_toolchain)" ]
+  }
+
+  group("electron_lib_typecheck") {
+    public_deps = [ ":electron_lib_typecheck($default_toolchain)" ]
+  }
 }
 
-webpack_build("electron_browser_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_browser_bundle") {
+  bundle = "browser"
   inputs = auto_filenames.browser_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.browser.js"
-  out_file = "$target_gen_dir/js2c/browser_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/browser_init.js"
 }
 
-webpack_build("electron_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_renderer_bundle") {
+  bundle = "renderer"
   inputs = auto_filenames.renderer_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.renderer.js"
-  out_file = "$target_gen_dir/js2c/renderer_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/renderer_init.js"
 }
 
-webpack_build("electron_worker_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_worker_bundle") {
+  bundle = "worker"
   inputs = auto_filenames.worker_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.worker.js"
-  out_file = "$target_gen_dir/js2c/worker_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
-webpack_build("electron_sandboxed_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.sandbox_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
-  out_file = "$target_gen_dir/js2c/sandbox_bundle.js"
+electron_bundle("electron_webview_bundle") {
+  bundle = "webview"
+  inputs = auto_filenames.webview_bundle_deps
+  out_file = "$root_gen_dir/internal/electron/js2c/webview_bundle.js"
 }
 
-webpack_build("electron_isolated_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_isolated_renderer_bundle") {
+  bundle = "isolated_renderer"
   inputs = auto_filenames.isolated_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
-  out_file = "$target_gen_dir/js2c/isolated_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_node_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_node_bundle") {
+  bundle = "node"
   inputs = auto_filenames.node_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.node.js"
-  out_file = "$target_gen_dir/js2c/node_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/node_init.js"
 }
 
-webpack_build("electron_utility_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_utility_bundle") {
+  bundle = "utility"
   inputs = auto_filenames.utility_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.utility.js"
-  out_file = "$target_gen_dir/js2c/utility_init.js"
-}
-
-webpack_build("electron_preload_realm_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.preload_realm_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
-  out_file = "$target_gen_dir/js2c/preload_realm_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
 }
 
 action("electron_js2c") {
@@ -262,23 +284,21 @@ action("electron_js2c") {
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_node_bundle",
-    ":electron_preload_realm_bundle",
     ":electron_renderer_bundle",
-    ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
+    ":electron_webview_bundle",
     ":electron_worker_bundle",
     "//third_party/electron_node:node_js2c($electron_js2c_toolchain)",
   ]
 
   sources = [
-    "$target_gen_dir/js2c/browser_init.js",
-    "$target_gen_dir/js2c/isolated_bundle.js",
-    "$target_gen_dir/js2c/node_init.js",
-    "$target_gen_dir/js2c/preload_realm_bundle.js",
-    "$target_gen_dir/js2c/renderer_init.js",
-    "$target_gen_dir/js2c/sandbox_bundle.js",
-    "$target_gen_dir/js2c/utility_init.js",
-    "$target_gen_dir/js2c/worker_init.js",
+    "$root_gen_dir/internal/electron/js2c/browser_init.js",
+    "$root_gen_dir/internal/electron/js2c/isolated_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/node_init.js",
+    "$root_gen_dir/internal/electron/js2c/renderer_init.js",
+    "$root_gen_dir/internal/electron/js2c/utility_init.js",
+    "$root_gen_dir/internal/electron/js2c/webview_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/worker_init.js",
   ]
 
   inputs = sources
@@ -318,22 +338,15 @@ copy("default_app_static") {
   outputs = [ "$target_gen_default_app_js/{{source}}" ]
 }
 
-copy("default_app_octicon_deps") {
-  sources = filenames.default_app_octicon_sources
-  outputs = [ "$target_gen_default_app_js/electron/default_app/octicon/{{source_file_part}}" ]
-}
-
 asar("default_app_asar") {
   deps = [
     ":default_app_js",
-    ":default_app_octicon_deps",
     ":default_app_static",
   ]
 
   root = "$target_gen_default_app_js/electron/default_app"
   sources = get_target_outputs(":default_app_js") +
-            get_target_outputs(":default_app_static") +
-            get_target_outputs(":default_app_octicon_deps")
+            get_target_outputs(":default_app_static")
   outputs = [ "$root_out_dir/resources/default_app.asar" ]
 }
 
@@ -464,6 +477,102 @@ action("electron_generate_node_defines") {
   args = [ rebase_path(target_gen_dir) ] + rebase_path(inputs)
 }
 
+action("electron_generate_preload_realm_bindings") {
+  script = "build/generate_preload_realm_bindings.py"
+
+  core_idl_files = [
+    "//third_party/blink/renderer/core/dom/abort_controller.idl",
+    "//third_party/blink/renderer/core/dom/abort_signal.idl",
+    "//third_party/blink/renderer/core/dom/dom_exception.idl",
+    "//third_party/blink/renderer/core/dom/events/custom_event.idl",
+    "//third_party/blink/renderer/core/dom/events/event.idl",
+    "//third_party/blink/renderer/core/dom/events/event_target.idl",
+    "//third_party/blink/renderer/core/dom/observable.idl",
+    "//third_party/blink/renderer/core/dom/quota_exceeded_error.idl",
+    "//third_party/blink/renderer/core/dom/subscriber.idl",
+    "//third_party/blink/renderer/core/dom/void_function.idl",
+    "//third_party/blink/renderer/core/events/error_event.idl",
+    "//third_party/blink/renderer/core/events/promise_rejection_event.idl",
+    "//third_party/blink/renderer/core/frame/universal_global_scope.idl",
+    "//third_party/blink/renderer/core/messaging/structured_serialize_options.idl",
+    "//third_party/blink/renderer/core/streams/byte_length_queuing_strategy.idl",
+    "//third_party/blink/renderer/core/streams/count_queuing_strategy.idl",
+    "//third_party/blink/renderer/core/streams/readable_byte_stream_controller.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_byob_reader.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_byob_request.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_default_reader.idl",
+    "//third_party/blink/renderer/core/streams/transform_stream.idl",
+    "//third_party/blink/renderer/core/streams/transform_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream_default_writer.idl",
+    "//third_party/blink/renderer/core/url/url.idl",
+    "//third_party/blink/renderer/core/url/url_search_params.idl",
+    "//third_party/blink/renderer/core/url_pattern/url_pattern.idl",
+  ]
+  modules_idl_files = [
+    "//third_party/blink/renderer/modules/compression/compression_stream.idl",
+    "//third_party/blink/renderer/modules/compression/decompression_stream.idl",
+    "//third_party/blink/renderer/modules/encoding/text_decoder.idl",
+    "//third_party/blink/renderer/modules/encoding/text_decoder_stream.idl",
+    "//third_party/blink/renderer/modules/encoding/text_encoder.idl",
+    "//third_party/blink/renderer/modules/encoding/text_encoder_stream.idl",
+  ]
+  idl_file = "shell/renderer/preload_realm_global_scope.idl"
+  runtime_enabled_features =
+      "//third_party/blink/renderer/platform/runtime_enabled_features.json5"
+  wrapper_type_info_header =
+      "//third_party/blink/renderer/platform/bindings/wrapper_type_info.h"
+
+  inputs = [
+             idl_file,
+             runtime_enabled_features,
+             wrapper_type_info_header,
+           ] + core_idl_files + modules_idl_files
+
+  # Read Blink's own .pydeps files directly instead of using action_with_pydeps
+  # (which expects a checked-in build/generate_preload_realm_bindings.pydeps)
+  # so we automatically pick up upstream Blink bindings script changes on rolls
+  # without manually maintaining a duplicate .pydeps file in //electron.
+  _blink_scripts_dir = "//third_party/blink/renderer/bindings/scripts"
+  _pydeps_files = [
+    "$_blink_scripts_dir/collect_idl_files.pydeps",
+    "$_blink_scripts_dir/generate_bindings.pydeps",
+  ]
+  _pydeps_lines = []
+  foreach(_pydeps_file, _pydeps_files) {
+    _pydeps_lines += read_file(_pydeps_file, "list lines")
+  }
+  _pydeps_entries = filter_exclude(_pydeps_lines, [ "#*" ])
+  inputs +=
+      rebase_path(_pydeps_entries, ".", _blink_scripts_dir) + _pydeps_files
+
+  outputs = [
+    "$target_gen_dir/preload_realm/v8_preload_realm_global_scope.cc",
+    "$target_gen_dir/preload_realm/v8_preload_realm_global_scope.h",
+  ]
+
+  args =
+      [
+        "--root-src-dir",
+        rebase_path("//", root_build_dir),
+        "--root-gen-dir",
+        rebase_path(root_gen_dir, root_build_dir),
+        "--output-reldir",
+        rebase_path("$target_gen_dir/preload_realm", root_gen_dir),
+        "--idl-file",
+        rebase_path(idl_file, root_build_dir),
+        "--runtime-enabled-features",
+        rebase_path(runtime_enabled_features, root_build_dir),
+        "--wrapper-type-info-header",
+        rebase_path(wrapper_type_info_header, root_build_dir),
+        "--core-idl-files",
+      ] + rebase_path(core_idl_files, root_build_dir) +
+      [ "--modules-idl-files" ] + rebase_path(modules_idl_files, root_build_dir)
+}
+
 source_set("electron_lib") {
   configs += [
     "//v8:external_startup_data",
@@ -478,6 +587,7 @@ source_set("electron_lib") {
   deps = [
     ":electron_fuses",
     ":electron_generate_node_defines",
+    ":electron_generate_preload_realm_bindings",
     ":electron_js2c",
     ":electron_version_header",
     ":resources",
@@ -495,11 +605,11 @@ source_set("electron_lib") {
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/common/notifications",
-    "//components/autofill/core/common:features",
+    "//components/cbor",
+    "//components/cdm/renderer",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:user_agent",
-    "//components/heap_profiling/multi_process",
     "//components/input",
     "//components/language/core/browser",
     "//components/memory_system",
@@ -511,7 +621,6 @@ source_set("electron_lib") {
     "//components/omnibox/browser:buildflags",
     "//components/os_crypt/async/browser",
     "//components/os_crypt/async/browser:key_provider_interface",
-    "//components/os_crypt/sync",
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
@@ -529,9 +638,11 @@ source_set("electron_lib") {
     "//device/bluetooth",
     "//device/bluetooth/public/cpp",
     "//device/fido",
+    "//device/fido/strings",
     "//gin",
     "//gpu/ipc/client",
     "//media/capture/mojom:video_capture",
+    "//media/cdm:cdm_paths",
     "//media/mojo/mojom",
     "//media/mojo/mojom:web_speech_recognition",
     "//net:extras",
@@ -542,22 +653,29 @@ source_set("electron_lib") {
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
+    "//services/tracing/public/cpp",
     "//services/video_capture/public/mojom:constants",
     "//services/viz/privileged/mojom/compositing",
     "//services/viz/public/mojom",
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/blink/public:blink_devtools_inspector_resources",
-    "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:libnode",
+
+    # Provides the strong SnapshotBuilder::GetEmbeddedSnapshotData() (the
+    # embedded Node startup snapshot) that overrides libnode's weak no-snapshot
+    # stub. Lets the browser process boot Node from a snapshot.
+    "//third_party/electron_node:node_snapshot",
     "//third_party/highway:libhwy",
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
+    "//third_party/perfetto/protos/perfetto/config:cpp",
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
+    "//tools/v8_context_snapshot:buildflags",
     "//ui/base:ozone_buildflags",
     "//ui/base/idle",
     "//ui/compositor",
@@ -571,13 +689,15 @@ source_set("electron_lib") {
     "//v8:v8_libplatform",
   ]
 
-  if (v8_use_external_startup_data && use_v8_context_snapshot) {
+  if (v8_use_external_startup_data && use_v8_context_snapshot &&
+      current_toolchain == default_toolchain) {
     deps += [ ":mksnapshot_checksum_gen" ]
   }
 
   public_deps = [
     "//base",
     "//base:i18n",
+    "//build/config/compiler:compiler_buildflags",
     "//content/public/app",
     "//ui/base/unowned_user_data",
   ]
@@ -610,7 +730,8 @@ source_set("electron_lib") {
 
   deps += [ "//electron/build/config:generate_mas_config" ]
 
-  sources = filenames.lib_sources
+  sources = filenames.lib_sources +
+            get_target_outputs(":electron_generate_preload_realm_bindings")
   if (is_win) {
     sources += filenames.lib_sources_win
   }
@@ -626,30 +747,49 @@ source_set("electron_lib") {
   if (!is_mac) {
     sources += filenames.lib_sources_views
   }
+  if (is_debug || dcheck_always_on) {
+    sources += [ "shell/common/api/electron_api_testing.cc" ]
+    deps += [ "shell/common:v8_code_cache_test_helpers" ]
+  }
+
+  if (electron_generate_js2c_code_cache) {
+    sources += [
+      "$root_gen_dir/electron_natives_code_cache_browser.cc",
+      "$root_gen_dir/electron_natives_code_cache_renderer.cc",
+      "$root_gen_dir/electron_natives_code_cache_sandbox.cc",
+      "$root_gen_dir/electron_natives_code_cache_utility.cc",
+      "$root_gen_dir/electron_natives_code_cache_worker.cc",
+    ]
+    deps += [ ":run_electron_natives_codecache" ]
+  } else {
+    sources += [ "shell/common/node_natives_code_cache_stub.cc" ]
+  }
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
   }
 
-  if (enable_fake_location_provider) {
+  if (enable_prompt_api) {
     sources += [
-      "shell/browser/fake_location_provider.cc",
-      "shell/browser/fake_location_provider.h",
+      "shell/browser/ai/proxying_ai_manager.cc",
+      "shell/browser/ai/proxying_ai_manager.h",
+      "shell/utility/ai/utility_ai_language_model.cc",
+      "shell/utility/ai/utility_ai_language_model.h",
+      "shell/utility/ai/utility_ai_manager.cc",
+      "shell/utility/ai/utility_ai_manager.h",
     ]
   }
 
   if (is_mac) {
-    # Disable C++ modules to resolve linking error when including MacOS SDK
-    # headers from third_party/electron_node/deps/uv/include/uv/darwin.h
-    # TODO(samuelmaddock): consider revisiting this in the future
-    use_libcxx_modules = false
-
     deps += [
+      "shell/common:app_shim",
       "//components/os_crypt/async/browser:keychain_key_provider",
       "//components/os_crypt/common:keychain_password_mac",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
+      "//mojo/core/embedder",
+      "//mojo/public/cpp/platform",
       "//ui/accelerated_widget_mac",
     ]
 
@@ -747,13 +887,17 @@ source_set("electron_lib") {
     ]
   }
   if (is_win) {
-    libs += [ "dwmapi.lib" ]
+    libs += [
+      "cryptui.lib",
+      "dwmapi.lib",
+    ]
     sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
       "//components/app_launch_prefetch",
       "//components/crash/core/app:crash_export_thunks",
       "//components/os_crypt/async/browser:dpapi_key_provider",
       "//third_party/libxml:xml_writer",
+      "//ui/color:accent_color_observer",
       "//ui/wm",
       "//ui/wm/public",
     ]
@@ -774,6 +918,8 @@ source_set("electron_lib") {
 
   if (enable_printing) {
     sources += [
+      "shell/browser/printing/print_to_pdf.cc",
+      "shell/browser/printing/print_to_pdf.h",
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",
       "shell/browser/printing/printing_utils.cc",
@@ -840,22 +986,248 @@ source_set("electron_lib") {
   }
 
   sources += get_target_outputs(":electron_fuses")
+}
 
-  if (allow_runtime_configurable_key_storage) {
-    defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
+# Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
+# startup snapshot blob it is given -- including one from another OS/CPU's
+# build of the same Electron version. See shell/common/electron_xcache_main.cc.
+if (current_toolchain == default_toolchain) {
+  executable("electron_xcache") {
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    include_dirs = [ "//" ]
+    sources = [ "shell/common/electron_xcache_main.cc" ]
+    deps = [
+      "//third_party/zlib",
+      "//v8",
+      "//v8:v8_libplatform",
+    ]
   }
 }
 
-action("mksnapshot_checksum_gen") {
-  script = "build/checksum_header.py"
+# Build-time host tool emitting V8 code caches for the internal/electron/js2c/*
+# framework bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it
+# links V8 with V8_TARGET_ARCH set to the target and reads the target's snapshot
+# blob -- the cache it emits is keyed to the target's read-only checksum and
+# flag hash. Cross-OS stays off; see electron_generate_js2c_code_cache.
+if (electron_generate_js2c_code_cache) {
+  if (current_toolchain == v8_snapshot_toolchain) {
+    executable("electron_natives_codecache") {
+      # Host build tool, not shipped Chromium code.
+      configs += [ "//build/config/compiler:no_chromium_code" ]
+      configs -= [ "//build/config/compiler:chromium_code" ]
+      include_dirs = [
+        ".",
+        "//",
+      ]
+      sources = [ "shell/common/electron_natives_codecache_main.cc" ]
 
-  outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
-  inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
-  args = rebase_path(inputs)
+      # node's zstd binding also needs the compression symbols.
+      deps = [
+        "//third_party/electron_node:libnode",
 
-  args += rebase_path(outputs)
+        # libnode no longer carries the GetEmbeddedSnapshotData stub; this
+        # (non-browser-flavor) tool builds caches against the v8 context
+        # snapshot, not the embedded Node snapshot, so it links the stub.
+        "//third_party/electron_node:node_snapshot_stub",
+        "//third_party/zstd:compress",
+      ]
+    }
 
-  deps = [ "//tools/v8_context_snapshot" ]
+    # The browser process boots from the embedded Node startup snapshot, whose
+    # read-only heap (and thus the code-cache read-only checksum) is owned
+    # uniquely by the SnapshotCreator-produced blob -- matching no standalone
+    # snapshot file. This variant links the real node_snapshot so it builds the
+    # browser bundles' cache against that exact snapshot's isolate (via
+    # GetEmbeddedSnapshotData + InitializeIsolateParams in the tool), the only
+    # isolate whose read-only checksum matches the runtime browser process.
+    if (node_use_node_snapshot) {
+      executable("electron_natives_codecache_snapshot") {
+        # Host build tool, not shipped Chromium code.
+        configs += [ "//build/config/compiler:no_chromium_code" ]
+        configs -= [ "//build/config/compiler:chromium_code" ]
+        include_dirs = [
+          ".",
+          "//",
+        ]
+        sources = [ "shell/common/electron_natives_codecache_main.cc" ]
+        deps = [
+          "//third_party/electron_node:libnode",
+          "//third_party/electron_node:node_snapshot",
+          "//third_party/zstd:compress",
+        ]
+      }
+    }
+  }
+
+  # One generated cache per process flavor: V8's code-cache key includes
+  # FlagList::Hash() over non-default flags, which differs per process type.
+  # The flag deltas below were captured from live processes.
+  # `node_builtins`: whether the flavor also carries a cache for Node's own
+  # builtins, i.e. whether its processes bootstrap their Node.js environment
+  # from scratch on this build instead of deserializing it from the embedded
+  # Node startup snapshot (~6.5 MB per flavor, so only where it is consumed).
+  # Renderer / web-worker environments always bootstrap from scratch; the node
+  # service's utility process only on builds without a Node snapshot; the
+  # sandboxed renderer has no Node environment and no process type consumes the
+  # worker flavor for one.
+  _js2c_cc_flavors = [
+    {
+      name = "sandbox"  # sandboxed renderer (no Node env)
+      flags = "--enable-sharedarraybuffer-per-context"
+      node_builtins = false
+    },
+    {
+      name = "renderer"
+      flags = "--enable-sharedarraybuffer-per-context --rehash-snapshot " +
+              "--no-freeze-flags-after-init"
+      node_builtins = true
+    },
+    {
+      name = "utility"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      node_builtins = !node_use_node_snapshot
+    },
+    {
+      name = "worker"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      node_builtins = false
+    },
+  ]
+
+  # The browser flavor is special-cased below when a Node startup snapshot is
+  # embedded: its isolate (and so its code-cache read-only checksum) comes from
+  # that snapshot, not the v8 context snapshot. Without a snapshot it boots from
+  # the v8 context snapshot like the rest, and bootstraps Node from scratch.
+  if (!node_use_node_snapshot) {
+    _js2c_cc_flavors += [
+      {
+        name = "browser"
+        flags = "--rehash-snapshot --no-freeze-flags-after-init"
+        node_builtins = true
+      },
+    ]
+  }
+
+  foreach(_f, _js2c_cc_flavors) {
+    action("run_electron_natives_codecache_" + _f.name) {
+      deps = [
+        ":electron_natives_codecache($v8_snapshot_toolchain)",
+        "//tools/v8_context_snapshot",
+        "//v8:run_mksnapshot_default",
+      ]
+      script = "//v8/tools/run.py"
+      _gen_dir =
+          get_label_info(":electron_natives_codecache($v8_snapshot_toolchain)",
+                         "root_out_dir")
+      _out = "$root_gen_dir/electron_natives_code_cache_" + _f.name + ".cc"
+      outputs = [ _out ]
+      args = [
+        "./" + rebase_path(_gen_dir + "/electron_natives_codecache",
+                           root_build_dir),
+        rebase_path(_out, root_build_dir),
+        rebase_path("$root_out_dir/$v8_context_snapshot_filename",
+                    root_build_dir),
+        _f.name,
+        _f.flags,
+      ]
+      if (_f.node_builtins) {
+        args += [ "1" ]
+      } else {
+        args += [ "0" ]
+      }
+    }
+  }
+
+  # Browser flavor, built against the embedded Node startup snapshot so its
+  # code-cache read-only checksum matches the runtime browser isolate.
+  if (node_use_node_snapshot) {
+    action("run_electron_natives_codecache_browser") {
+      deps = [
+        ":electron_natives_codecache_snapshot($v8_snapshot_toolchain)",
+        "//v8:run_mksnapshot_default",
+      ]
+      script = "//v8/tools/run.py"
+      _gen_dir = get_label_info(
+              ":electron_natives_codecache_snapshot($v8_snapshot_toolchain)",
+              "root_out_dir")
+      _out = "$root_gen_dir/electron_natives_code_cache_browser.cc"
+      outputs = [ _out ]
+      args = [
+        "./" + rebase_path(_gen_dir + "/electron_natives_codecache_snapshot",
+                           root_build_dir),
+        rebase_path(_out, root_build_dir),
+
+        # Base blob for V8's global init; the isolate itself is created from the
+        # embedded snapshot, which overrides this (the tool ignores it when the
+        # real node_snapshot is linked).
+        rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
+        "browser",
+        "--rehash-snapshot --no-freeze-flags-after-init",
+
+        # Processes created from the Node snapshot deserialize Node's builtins'
+        # code cache from it.
+        "0",
+      ]
+    }
+  }
+
+  group("run_electron_natives_codecache") {
+    public_deps = []
+    foreach(_f, _js2c_cc_flavors) {
+      public_deps += [ ":run_electron_natives_codecache_" + _f.name ]
+    }
+    if (node_use_node_snapshot) {
+      public_deps += [ ":run_electron_natives_codecache_browser" ]
+    }
+  }
+}
+
+# tools/v8_context_snapshot writes its output to $root_build_dir regardless
+# of toolchain, so this is only well-formed in the default toolchain (where
+# $root_out_dir == $root_build_dir). It is also only needed there -- only the
+# shipped framework reads snapshot_checksum.h.
+if (current_toolchain == default_toolchain) {
+  action("mksnapshot_checksum_gen") {
+    script = "build/checksum_header.py"
+
+    outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
+    inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
+    args = rebase_path(inputs)
+
+    args += rebase_path(outputs)
+
+    deps = [ "//tools/v8_context_snapshot" ]
+  }
+}
+
+# Resource allowlisting (slimmed locale paks + the completeness check) is
+# wired up for Linux and macOS: Windows still needs PDB-based extraction.
+electron_use_resource_allowlist =
+    enable_resource_allowlist_generation && (is_linux || is_mac)
+
+if (electron_use_resource_allowlist) {
+  # The list of grit resource IDs actually referenced by the link inputs of
+  # the electron executable (the Electron Framework on macOS), extracted from
+  # the ui::AllowlistedResource<id> markers that --allowlist-support plants at
+  # every resource-macro use. Used to repack only reachable strings into the
+  # locale .pak files.
+  electron_resource_allowlist_file =
+      "$target_gen_dir/electron_resource_allowlist.txt"
+
+  # On macOS this target is defined with the framework below.
+  if (!is_mac) {
+    # TODO: on Windows this should extract from electron.exe.pdb instead of the
+    # inputs pseudo-link (and the executable must then stop depending on
+    # :packed_resources to avoid a dependency cycle).
+    generate_resource_allowlist("electron_resource_allowlist") {
+      deps = [ ":electron_resource_allowlist_inputs" ]
+      inputs = [
+        "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
+      ]
+      output = electron_resource_allowlist_file
+    }
+  }
 }
 
 electron_paks("packed_resources") {
@@ -864,6 +1236,68 @@ electron_paks("packed_resources") {
     copy_data_to_bundle = true
   } else {
     output_dir = root_out_dir
+  }
+  if (electron_use_resource_allowlist) {
+    # locale_deps rather than deps: only the locale repacks consume the
+    # allowlist, so the other .pak repacks need not wait for it (it is
+    # derived from the binary's link inputs, i.e. all native compilation).
+    locale_allowlist = electron_resource_allowlist_file
+    locale_deps = [ ":electron_resource_allowlist" ]
+  }
+}
+
+if (electron_use_resource_allowlist) {
+  # Asserts that every grit resource the binary can request is present in one
+  # of the shipped .pak files, so a missing string/.grd fails the build
+  # instead of rendering as an empty string at runtime.
+  action("electron_resource_allowlist_check") {
+    script = "build/check_resource_allowlist.py"
+    deps = [
+      ":electron_resource_allowlist",
+      ":packed_resources",
+    ]
+    if (is_mac) {
+      # Matches the output_dir of :packed_resources above and the Apple
+      # locale output naming of repack_locales() (en-US is repacked as en.pak
+      # and ships in the bundle as en.lproj/locale.pak).
+      _packed_resources_dir = "$root_gen_dir/electron_repack"
+      _reference_locale = "en"
+    } else {
+      _packed_resources_dir = root_out_dir
+      _reference_locale = "en-US"
+    }
+    _shipped_paks = [
+      "$_packed_resources_dir/resources.pak",
+      "$_packed_resources_dir/chrome_100_percent.pak",
+      "$_packed_resources_dir/locales/$_reference_locale.pak",
+    ]
+    if (enable_hidpi) {
+      _shipped_paks += [ "$_packed_resources_dir/chrome_200_percent.pak" ]
+    }
+    inputs = [
+               electron_resource_allowlist_file,
+               "build/resource_allowlist_check_suppressions.txt",
+             ] + _shipped_paks
+    outputs = [ "$target_gen_dir/electron_resource_allowlist_check.stamp" ]
+    args = [
+      "--allowlist",
+      rebase_path(electron_resource_allowlist_file, root_build_dir),
+      "--gen-dir",
+      rebase_path(root_gen_dir, root_build_dir),
+      "--grit-dir",
+      rebase_path("//tools/grit", root_build_dir),
+      "--suppressions",
+      rebase_path("build/resource_allowlist_check_suppressions.txt",
+                  root_build_dir),
+      "--stamp",
+      rebase_path(outputs[0], root_build_dir),
+    ]
+    foreach(pak, _shipped_paks) {
+      args += [
+        "--pak",
+        rebase_path(pak, root_build_dir),
+      ]
+    }
   }
 }
 
@@ -909,16 +1343,6 @@ if (is_mac) {
     }
   }
 
-  # Add the ANGLE .dylibs in the Libraries directory of the Framework.
-  bundle_data("electron_angle_binaries") {
-    sources = [
-      "$root_out_dir/egl_intermediates/libEGL.dylib",
-      "$root_out_dir/egl_intermediates/libGLESv2.dylib",
-    ]
-    outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
-    public_deps = [ "//ui/gl:angle_library_copy" ]
-  }
-
   # Add the SwiftShader .dylibs in the Libraries directory of the Framework.
   bundle_data("electron_swiftshader_binaries") {
     sources = [
@@ -929,12 +1353,22 @@ if (is_mac) {
     public_deps = [ "//ui/gl:swiftshader_vk_library_copy" ]
   }
 
-  group("electron_angle_library") {
-    deps = [ ":electron_angle_binaries" ]
-  }
-
   group("electron_swiftshader_library") {
     deps = [ ":electron_swiftshader_binaries" ]
+  }
+
+  # The executable of an app shim. Apps copy it into the shim bundles they make;
+  # it links nothing from Electron and loads the host app's framework.
+  executable("electron_app_shim_loader") {
+    output_name = "app_shim_loader"
+    sources = [ "shell/app_shim/app_shim_loader_mac.mm" ]
+    frameworks = [ "Cocoa.framework" ]
+  }
+
+  bundle_data("electron_app_shim_loader_bundle_data") {
+    sources = [ "$root_out_dir/app_shim_loader" ]
+    outputs = [ "{{bundle_contents_dir}}/Helpers/{{source_file_part}}" ]
+    public_deps = [ ":electron_app_shim_loader" ]
   }
 
   bundle_data("electron_crashpad_helper") {
@@ -951,9 +1385,70 @@ if (is_mac) {
     }
   }
 
+  if (electron_use_resource_allowlist) {
+    # Read the markers back from the linked framework's symbol table (the
+    # dSYM's copy when the framework itself is stripped). The locale paks that
+    # consume this reach the framework through bundle_deps, not the link, so
+    # there is no cycle.
+    if (enable_dsyms) {
+      _allowlist_binary = "$root_out_dir/$electron_framework_name.dSYM/Contents/Resources/DWARF/$electron_framework_name"
+    } else if (save_unstripped_output) {
+      _allowlist_binary = "$root_out_dir/$electron_framework_name.unstripped"
+    } else {
+      _allowlist_binary =
+          get_label_info(":electron_framework_shared_library",
+                         "target_out_dir") +
+          "/electron_framework_shared_library/$electron_framework_name"
+    }
+
+    action("electron_resource_allowlist") {
+      script = "build/mac_resource_allowlist.py"
+      deps = [ ":electron_framework+link_nested" ]
+      _nm = "//third_party/llvm-build/Release+Asserts/bin/llvm-nm"
+      inputs = [
+        _allowlist_binary,
+        _nm,
+      ]
+      outputs = [ electron_resource_allowlist_file ]
+      args = [
+        "--nm",
+        rebase_path(_nm, root_build_dir),
+        "--input",
+        rebase_path(_allowlist_binary, root_build_dir),
+        "--output",
+        rebase_path(electron_resource_allowlist_file, root_build_dir),
+      ]
+    }
+  }
+
+  # Link against Electron Framework without mac_framework_bundle's "+link"
+  # group. Its public config lists the framework bundle in `inputs`, which GN
+  # applies to every compile step of the consuming target, so each executable's
+  # objects were rebuilt (and the whole bundle uploaded to RBE) whenever the
+  # framework relinked. GN already makes the link step depend on the bundle.
+  config("electron_framework_link_config") {
+    visibility = [ ":electron_framework_link" ]
+    framework_dirs = [ root_out_dir ]
+    frameworks = [ "$electron_framework_name.framework" ]
+  }
+
+  group("electron_framework_link") {
+    public_deps = [ ":electron_framework" ]
+    public_configs = [ ":electron_framework_link_config" ]
+  }
+
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
+
+    # Perform full ThinLTO optimization in the link step for the framework
+    # (where all of Chromium/Electron's code lives on macOS), matching what
+    # Chrome does for its framework. The default thinlto_optimize_default
+    # config links with --lto-O0, which skips link-time optimization entirely
+    # and gives up most of the benefit of ThinLTO and PGO.
+    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+
     framework_contents = [
       "Resources",
       "Libraries",
@@ -961,20 +1456,23 @@ if (is_mac) {
     if (!is_mas_build) {
       framework_contents += [ "Helpers" ]
     }
-    public_deps = [
-      ":electron_framework_libraries",
-      ":electron_lib",
-    ]
-    deps = [
-      ":electron_angle_library",
+    public_deps = [ ":electron_lib" ]
+    deps = [ "//third_party/electron_node:libnode" ]
+
+    # bundle_deps reach the bundle but not the framework's link, which
+    # :electron_resource_allowlist (and through it :packed_resources) depends
+    # on; bundle_data on the link would leak to every consumer of the paks.
+    bundle_deps = [
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
-      "//third_party/electron_node:libnode",
     ]
     if (!is_mas_build) {
-      deps += [ ":electron_crashpad_helper" ]
+      bundle_deps += [
+        ":electron_app_shim_loader_bundle_data",
+        ":electron_crashpad_helper",
+      ]
     }
     info_plist = "shell/common/resources/mac/Info.plist"
 
@@ -991,6 +1489,12 @@ if (is_mac) {
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
+
+      # The folder this framework is in, where its sibling frameworks are. The
+      # app's executable has it as an rpath too, but an app shim loads this
+      # framework from an executable in another bundle.
+      "-rpath",
+      "@loader_path/../../..",
 
       # Required for exporting all symbols of libuv.
       "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a",
@@ -1016,7 +1520,7 @@ if (is_mac) {
 
       output_name = electron_helper_name + invoker.helper_name_suffix
       deps = [
-        ":electron_framework+link",
+        ":electron_framework_link",
         "//electron/build/config:generate_mas_config",
       ]
       if (!is_mas_build) {
@@ -1059,6 +1563,7 @@ if (is_mac) {
     _helper_target = helper_params[0]
     _helper_bundle_id = helper_params[1]
     _helper_suffix = helper_params[2]
+
     electron_helper_app("electron_helper_app_${_helper_target}") {
       helper_name_suffix = _helper_suffix
     }
@@ -1102,7 +1607,7 @@ if (is_mac) {
     }
     outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
     public_deps = [
-      ":electron_framework+link",
+      ":electron_framework_link",
       ":stripped_mantle_framework",
       ":stripped_reactiveobjc_framework",
       ":stripped_squirrel_framework",
@@ -1149,6 +1654,7 @@ if (is_mac) {
       public_deps = [ ":electron_app_lproj_dirs" ]
     }
   }
+
   group("electron_app_strings_bundle_data") {
     public_deps = []
     foreach(locale, locales_as_apple_outputs) {
@@ -1216,6 +1722,7 @@ if (is_mac) {
       _helper_target = helper_params[0]
       _helper_bundle_id = helper_params[1]
       _helper_suffix = helper_params[2]
+
       extract_symbols("electron_helper_syms_${_helper_target}") {
         binary = "$root_out_dir/$electron_helper_name${_helper_suffix}.app/Contents/MacOS/$electron_helper_name${_helper_suffix}"
         symbol_dir = "$root_out_dir/breakpad_symbols"
@@ -1231,20 +1738,6 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    extract_symbols("egl_syms") {
-      binary = "$root_out_dir/libEGL.dylib"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/libEGL.dylib.dSYM/Contents/Resources/DWARF/libEGL.dylib"
-      deps = [ "//third_party/angle:libEGL" ]
-    }
-
-    extract_symbols("gles_syms") {
-      binary = "$root_out_dir/libGLESv2.dylib"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libGLESv2.dylib"
-      deps = [ "//third_party/angle:libGLESv2" ]
-    }
-
     extract_symbols("crashpad_handler_syms") {
       binary = "$root_out_dir/chrome_crashpad_handler"
       symbol_dir = "$root_out_dir/breakpad_symbols"
@@ -1254,10 +1747,8 @@ if (is_mac) {
 
     group("electron_symbols") {
       deps = [
-        ":egl_syms",
         ":electron_app_syms",
         ":electron_framework_syms",
-        ":gles_syms",
       ]
 
       if (!is_mas_build) {
@@ -1284,30 +1775,59 @@ if (is_mac) {
     ]
   }
 
+  # Deps that determine the native code linked into the electron executable.
+  # Shared with :electron_resource_allowlist_inputs below so the resource
+  # allowlist is computed from exactly the same link inputs as the shipped
+  # binary.
+  electron_app_link_deps = [
+    ":default_app_asar",
+    ":electron_app_manifest",
+    ":electron_lib",
+    ":electron_win32_resources",
+    "//components/crash/core/app",
+    "//content:sandbox_helper_win",
+    "//electron/buildflags",
+    "//third_party/electron_node:libnode",
+    "//ui/strings",
+  ]
+
+  if (electron_use_resource_allowlist) {
+    # Pseudo-link sharing the executable's link inputs: --collect-inputs-only
+    # makes gcc_solink_wrapper.py skip the real link and write the list of
+    # link inputs instead. generate_resource_allowlist greps those inputs for
+    # ui::AllowlistedResource<id> markers, which is the supported way to
+    # extract the referenced-resource set on ELF (the markers are dropped from
+    # the linked binary by --gc-sections and the debug strings live in .dwo
+    # files with use_debug_fission).
+    shared_library("electron_resource_allowlist_inputs") {
+      ldflags = [ "--collect-inputs-only" ]
+      deps = electron_app_link_deps
+    }
+  }
+
   executable("electron_app") {
     output_name = electron_project_name
+
+    # Perform full ThinLTO optimization in the link step for the main binary,
+    # matching what Chrome does for its main executable. The default
+    # thinlto_optimize_default config links with --lto-O0, which skips
+    # link-time optimization entirely and gives up most of the benefit of
+    # ThinLTO and PGO.
+    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+
     if (is_win) {
       sources = [ "shell/app/electron_main_win.cc" ]
     } else if (is_linux) {
       sources = [
         "shell/app/electron_main_linux.cc",
+        "shell/app/environ_linux.cc",
         "shell/app/uv_stdio_fix.cc",
         "shell/app/uv_stdio_fix.h",
       ]
     }
     include_dirs = [ "." ]
-    deps = [
-      ":default_app_asar",
-      ":electron_app_manifest",
-      ":electron_lib",
-      ":electron_win32_resources",
-      ":packed_resources",
-      "//components/crash/core/app",
-      "//content:sandbox_helper_win",
-      "//electron/buildflags",
-      "//third_party/electron_node:libnode",
-      "//ui/strings",
-    ]
+    deps = electron_app_link_deps + [ ":packed_resources" ]
 
     data = []
     data_deps = []
@@ -1343,6 +1863,10 @@ if (is_mac) {
         "//chrome/app:exit_code_watcher",
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
+
+      # Ship the WER runtime exception helper next to the executable so that
+      # crashpad can register it; see :electron_wer.
+      data_deps += [ ":electron_wer" ]
 
       ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
 
@@ -1402,6 +1926,20 @@ if (is_mac) {
     }
   }
 
+  if (is_win) {
+    # Windows Error Reporting runtime exception helper module. WerFault.exe
+    # loads this DLL out-of-process for crashes that bypass crashpad's
+    # in-process handler (e.g. __fastfail / STATUS_STACK_BUFFER_OVERRUN) and
+    # it asks the crashpad handler to dump the crashed process. It is
+    # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule
+    # as <exe name>_wer.dll.
+    copy("electron_wer") {
+      sources = [ "$root_out_dir/crashpad_wer.dll" ]
+      outputs = [ "$root_out_dir/${electron_project_name}_wer.dll" ]
+      deps = [ "//third_party/crashpad/crashpad/handler/win/wer:crashpad_wer" ]
+    }
+  }
+
   if (is_official_build) {
     if (is_linux) {
       _target_executable_suffix = ""
@@ -1417,24 +1955,8 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    extract_symbols("egl_symbols") {
-      binary = "$root_out_dir/libEGL$_target_shared_library_suffix"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps = [ "//third_party/angle:libEGL" ]
-    }
-
-    extract_symbols("gles_symbols") {
-      binary = "$root_out_dir/libGLESv2$_target_shared_library_suffix"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps = [ "//third_party/angle:libGLESv2" ]
-    }
-
     group("electron_symbols") {
-      deps = [
-        ":egl_symbols",
-        ":electron_app_symbols",
-        ":gles_symbols",
-      ]
+      deps = [ ":electron_app_symbols" ]
     }
   }
 }
@@ -1459,6 +1981,10 @@ template("dist_zip") {
   action(target_name) {
     script = "//electron/build/zip.py"
     deps = [ ":$_runtime_deps_target" ]
+    if (defined(invoker.build_deps)) {
+      # Ordered before the zip without contributing to its runtime deps.
+      deps += invoker.build_deps
+    }
     forward_variables_from(invoker,
                            [
                              "outputs",
@@ -1485,6 +2011,7 @@ copy("electron_license") {
   sources = [ "LICENSE" ]
   outputs = [ "$root_build_dir/{{source_file_part}}" ]
 }
+
 copy("chromium_licenses") {
   deps = [ "//components/resources:about_credits" ]
   sources = [ "$root_gen_dir/components/resources/about_credits.html" ]
@@ -1510,8 +2037,6 @@ dist_zip("electron_dist_zip") {
         ":strip_chrome_crashpad_handler",
         ":strip_chrome_sandbox",
         ":strip_electron_binary",
-        ":strip_libEGL_shlib",
-        ":strip_libGLESv2_shlib",
         ":strip_libffmpeg_shlib",
         ":strip_libvk_swiftshader_shlib",
       ]
@@ -1520,6 +2045,9 @@ dist_zip("electron_dist_zip") {
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
   deps = data_deps
+  if (electron_use_resource_allowlist) {
+    build_deps = [ ":electron_resource_allowlist_check" ]
+  }
   outputs = [ "$root_build_dir/dist.zip" ]
 }
 
@@ -1562,10 +2090,16 @@ group("electron_mksnapshot") {
 
 dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
+
+  # When the snapshot tools are built in a secondary toolchain (see
+  # //electron/build/toolchain/mac) their runtime deps live under
+  # $root_out_dir/<toolchain>/; flatten so mksnapshot.zip keeps the layout
+  # consumers (@electron/mksnapshot) expect on macOS: everything at the root.
+  if (is_mac && v8_snapshot_toolchain != default_toolchain) {
+    flatten = true
+  }
   if (is_linux && is_official_build) {
     data_deps += [
-      ":strip_libEGL_shlib",
-      ":strip_libGLESv2_shlib",
       ":strip_libffmpeg_shlib",
       ":strip_libvk_swiftshader_shlib",
       ":strip_mksnapshot_binary",
@@ -1587,6 +2121,18 @@ dist_zip("hunspell_dictionaries_zip") {
   flatten = true
 
   outputs = [ "$root_build_dir/hunspell_dictionaries.zip" ]
+}
+
+dist_zip("electron_xcache_zip") {
+  data_deps = [
+    ":electron_xcache",
+    ":licenses",
+  ]
+  if (is_linux && is_official_build) {
+    data_deps += [ ":strip_electron_xcache_binary" ]
+  }
+  deps = data_deps
+  outputs = [ "$root_build_dir/xcache.zip" ]
 }
 
 copy("libcxx_headers") {
@@ -1632,8 +2178,22 @@ action("libcxx_objects_zip") {
   args = rebase_path(outputs)
 }
 
+if (is_debug || dcheck_always_on) {
+  # Test runners receive these assets rather than a full V8 checkout.
+  copy("v8_code_cache_spec_assets") {
+    sources = [
+      "//v8/LICENSE",
+      "//v8/test/mjsunit/wasm/wasm-module-builder.js",
+    ]
+    outputs = [ "$root_gen_dir/electron/v8-code-cache/{{source_file_part}}" ]
+  }
+}
+
 group("electron") {
   public_deps = [ ":electron_app" ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
 }
 
 ##### node_headers
@@ -1705,6 +2265,12 @@ group("testing_build") {
     ":electron_mksnapshot_zip",
     ":node_headers",
   ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
+  if (!is_mas_build) {
+    public_deps += [ ":electron_xcache_zip" ]
+  }
 }
 
 group("release_build") {
@@ -1744,18 +2310,11 @@ if (is_linux && is_official_build) {
     deps = [ "//sandbox/linux:chrome_sandbox" ]
   }
 
-  strip_binary("strip_libEGL_shlib") {
-    binary_input = "$root_out_dir/libEGL.so"
-    symbol_output = "$root_out_dir/debug/libEGL.so.debug"
+  strip_binary("strip_electron_xcache_binary") {
+    binary_input = "$root_out_dir/electron_xcache"
+    symbol_output = "$root_out_dir/debug/electron_xcache.debug"
     compress_debug_sections = true
-    deps = [ "//third_party/angle:libEGL" ]
-  }
-
-  strip_binary("strip_libGLESv2_shlib") {
-    binary_input = "$root_out_dir/libGLESv2.so"
-    symbol_output = "$root_out_dir/debug/libGLESv2.so.debug"
-    compress_debug_sections = true
-    deps = [ "//third_party/angle:libGLESv2" ]
+    deps = [ ":electron_xcache" ]
   }
 
   strip_binary("strip_libffmpeg_shlib") {

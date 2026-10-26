@@ -19,12 +19,9 @@ An example of exposing an API to a renderer from an isolated preload script is g
 // Preload (Isolated World)
 const { contextBridge, ipcRenderer } = require('electron')
 
-contextBridge.exposeInMainWorld(
-  'electron',
-  {
-    doThing: () => ipcRenderer.send('do-a-thing')
-  }
-)
+contextBridge.exposeInMainWorld('electron', {
+  doThing: () => ipcRenderer.send('do-a-thing')
+})
 ```
 
 ```js @ts-nocheck
@@ -90,27 +87,24 @@ An example of a complex API is shown below:
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
 
-contextBridge.exposeInMainWorld(
-  'electron',
-  {
-    doThing: () => ipcRenderer.send('do-a-thing'),
-    myPromises: [Promise.resolve(), Promise.reject(new Error('whoops'))],
-    anAsyncFunction: async () => 123,
-    data: {
-      myFlags: ['a', 'b', 'c'],
-      bootTime: 1234
-    },
-    nestedAPI: {
-      evenDeeper: {
-        youCanDoThisAsMuchAsYouWant: {
-          fn: () => ({
-            returnData: 123
-          })
-        }
+contextBridge.exposeInMainWorld('electron', {
+  doThing: () => ipcRenderer.send('do-a-thing'),
+  myPromises: [Promise.resolve(), Promise.reject(new Error('whoops'))],
+  anAsyncFunction: async () => 123,
+  data: {
+    myFlags: ['a', 'b', 'c'],
+    bootTime: 1234
+  },
+  nestedAPI: {
+    evenDeeper: {
+      youCanDoThisAsMuchAsYouWant: {
+        fn: () => ({
+          returnData: 123
+        })
       }
     }
   }
-)
+})
 ```
 
 An example of `exposeInIsolatedWorld` is shown below:
@@ -118,13 +112,9 @@ An example of `exposeInIsolatedWorld` is shown below:
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
 
-contextBridge.exposeInIsolatedWorld(
-  1004,
-  'electron',
-  {
-    doThing: () => ipcRenderer.send('do-a-thing')
-  }
-)
+contextBridge.exposeInIsolatedWorld(1004, 'electron', {
+  doThing: () => ipcRenderer.send('do-a-thing')
+})
 ```
 
 ```js @ts-nocheck
@@ -178,7 +168,9 @@ contextBridge.exposeInMainWorld('electron', {
 
 ```js @ts-nocheck
 // Renderer (Main World)
-window.electron.onMyEventName(data => { /* ... */ })
+window.electron.onMyEventName((data) => {
+  /* ... */
+})
 ```
 
 ### Exposing Node Global Symbols
@@ -194,7 +186,7 @@ const { contextBridge } = require('electron')
 const crypto = require('node:crypto')
 
 contextBridge.exposeInMainWorld('nodeCrypto', {
-  sha256sum (data) {
+  sha256sum(data) {
     const hash = crypto.createHash('sha256')
     hash.update(data)
     return hash.digest('hex')

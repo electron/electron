@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
-#include "shell/browser/serial/serial_chooser_context.h"
 
 namespace base {
 template <typename T>
@@ -25,16 +24,16 @@ class SerialChooserContextFactory : public BrowserContextKeyedServiceFactory {
       content::BrowserContext* context);
   static SerialChooserContextFactory* GetInstance();
 
+  // disable copy
+  SerialChooserContextFactory(const SerialChooserContextFactory&) = delete;
+  SerialChooserContextFactory& operator=(const SerialChooserContextFactory&) =
+      delete;
+
  private:
   friend base::NoDestructor<SerialChooserContextFactory>;
 
   SerialChooserContextFactory();
   ~SerialChooserContextFactory() override;
-
-  // disable copy
-  SerialChooserContextFactory(const SerialChooserContextFactory&) = delete;
-  SerialChooserContextFactory& operator=(const SerialChooserContextFactory&) =
-      delete;
 
   // BrowserContextKeyedServiceFactory methods:
   std::unique_ptr<KeyedService> BuildServiceInstanceForBrowserContext(

@@ -30,6 +30,10 @@ hide the app, and switch between different open windows.
 To set an app-defined custom Dock menu, pass any [Menu](../api/menu.md) instance into the
 [`dock.setMenu`](../api/dock.md#docksetmenumenu-macos) API.
 
+> [!NOTE]
+> A [`badge`](../api/menu-item.md#menuitembadge-macos) on a `MenuItem` is not displayed in a Dock
+> menu, though the same item shows it in an application menu.
+
 > [!TIP]
 > For best practices to make your Dock menu feel more native, see Apple's
 > [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/dock-menus)
@@ -45,7 +49,9 @@ app.whenReady().then(() => {
   const dockMenu = Menu.buildFromTemplate([
     {
       label: 'New Window',
-      click: () => { const win = new BrowserWindow() }
+      click: () => {
+        const win = new BrowserWindow()
+      }
     }
     // add more menu options to the array
   ])

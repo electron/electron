@@ -1,0 +1,110 @@
+name: 'Paths Filter'
+description: 'Check which file path groups are modified, similar to dorny/paths-filter'
+inputs:
+  filters:
+    description: |
+      YAML filter configuration. Each top-level key becomes an output.
+      Values are arrays of glob patterns: * matches within a single path
+      segment, ** matches across path separators.
+      Prefix with ! to negate. Brace expansion {a,b} is supported.
+    required: true
+outputs:
+  results:
+    description: 'JSON object mapping each filter name to "true" or "false"'
+    value: ${{ steps.check.outputs.results }}
+runs:
+  using: 'composite'
+  steps:
+    - id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        EVENT_NAME: ${{ github.event_name }}
+        FILTERS: ${{ inputs.filters }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        BEFORE_SHA: ${{ github.event.before }}
+        CURRENT_SHA: ${{ github.sha }}
+      run: |
+        set -eo pipefail
+
+        get_changed_files() {
+          case "$EVENT_NAME" in
+            pull_request)
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate --jq '.[]? | .filename, (.previous_filename // empty)'
+              ;;
+            push)
+              # Redirect git fetch to stderr so its output won't pollute the captured file list
+              if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]] &&
+                  git fetch origin --depth=1 "$BEFORE_SHA" >&2; then
+                git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA"
+              else
+                # New branch push (no usable before SHA) or the before SHA is no longer
+                # fetchable: treat every tracked file as changed.
+                git ls-files
+              fi
+              ;;
+            *)
+              # Any other event (e.g. workflow_dispatch, schedule): treat every tracked file as changed.
+              git ls-files
+              ;;
+          esac
+        }
+
+        CHANGED_FILES=$(get_changed_files | sort -u)
+
+        # Convert a glob pattern to an ERE regex
+        # * matches any chars except /, ** matches everything including /
+        glob_to_regex() {
+          printf '%s\n' "$1" | sed -E \
+            -e 's/[][\\.^$()+|]/\\&/g' \
+            -e 's/\?/[^\/]/g' \
+            -e 's/\*\*\//DOUBLESTAR_SLASH/g' \
+            -e 's/\*\*/DOUBLESTAR/g' \
+            -e 's/\*/[^\/]*/g' \
+            -e 's|DOUBLESTAR_SLASH|(.+/)?|g' \
+            -e 's/DOUBLESTAR/.+/g' \
+            -e 's/\{/(/g' \
+            -e 's/\}/)/g' \
+            -e 's/,/|/g'
+        }
+
+        # Parse filters YAML to JSON
+        FILTERS_JSON=$(echo "$FILTERS" | yq -o=json '.')
+
+        # Validate the shape up front
+        if ! jq -e 'type == "object" and all(.[]; type == "array" and all(.[]; type == "string"))' <<< "$FILTERS_JSON" > /dev/null; then
+          echo "Invalid filters input: each filter must be a list of pattern strings" >&2
+          exit 1
+        fi
+
+        results="{}"
+
+        for filter in $(echo "$FILTERS_JSON" | jq -r 'keys[]'); do
+          matched=false
+
+          while IFS= read -r pattern; do
+            negated=false
+            if [[ "$pattern" == !* ]]; then
+              negated=true
+              pattern="${pattern:1}"
+            fi
+
+            regex="^$(glob_to_regex "$pattern")$"
+
+            if [[ -z "$CHANGED_FILES" ]]; then
+              matched=false # No files changed, so no pattern (negated or not) can match.
+            elif [[ "$negated" == true ]]; then
+              grep -qvE "$regex" <<< "$CHANGED_FILES" && matched=true
+            else
+              grep -qE "$regex" <<< "$CHANGED_FILES" && matched=true
+            fi
+          done < <(echo "$FILTERS_JSON" | jq -r --arg k "$filter" '.[$k][]')
+
+          results=$(echo "$results" | jq -c --arg k "$filter" --arg v "$matched" '. + {($k): $v}')
+        done
+
+        # Echo the results as nicely formatted JSON
+        echo "Filter results:"
+        echo "$results" | jq '.'
+
+        echo "results=${results}" >> "$GITHUB_OUTPUT"

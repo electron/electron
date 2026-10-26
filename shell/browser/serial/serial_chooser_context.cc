@@ -5,7 +5,6 @@
 #include "shell/browser/serial/serial_chooser_context.h"
 
 #include <string>
-#include <string_view>
 #include <utility>
 
 #include "base/base64.h"
@@ -132,20 +131,21 @@ void SerialChooserContext::RevokePortPermissionWebInitiated(
     const url::Origin& origin,
     const base::UnguessableToken& token,
     content::RenderFrameHost* render_frame_host) {
-  auto it = port_info_.find(token);
-  if (it != port_info_.end()) {
-    auto* permission_manager = static_cast<ElectronPermissionManager*>(
-        browser_context_->GetPermissionControllerDelegate());
-    permission_manager->RevokeDevicePermission(
-        blink::PermissionType::SERIAL, origin, PortInfoToValue(*it->second),
-        browser_context_);
-  }
-
   auto ephemeral = ephemeral_ports_.find(origin);
   if (ephemeral != ephemeral_ports_.end()) {
     std::set<base::UnguessableToken>& ports = ephemeral->second;
     ports.erase(token);
   }
+
+  auto it = port_info_.find(token);
+  if (it == port_info_.end())
+    return;
+
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  permission_manager->RevokeDevicePermission(
+      blink::PermissionType::SERIAL, origin, PortInfoToValue(*it->second),
+      browser_context_);
 
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);

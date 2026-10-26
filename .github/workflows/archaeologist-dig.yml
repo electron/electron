@@ -13,13 +13,14 @@ jobs:
       contents: read
     steps:
       - name: Checkout Electron
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Setup Node.js/npm
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
-          node-version: 24.12.x
+          node-version: 24.22.1
       - name: Setting Up Dig Site
         env:
           CLONE_URL: ${{ github.event.pull_request.head.repo.clone_url }}
@@ -49,7 +50,7 @@ jobs:
           sha-file: .dig-old
           filename: electron.old.d.ts
       - name: Upload artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
         with:
           name: artifacts
           path: electron/artifacts
@@ -70,4 +71,13 @@ jobs:
             echo "## No Changes" > $GITHUB_STEP_SUMMARY
             echo "We couldn't see any changes in the \`electron.d.ts\` artifact" >> $GITHUB_STEP_SUMMARY
           fi
+          cp "$GITHUB_STEP_SUMMARY" "$GITHUB_WORKSPACE/audit-results.md"
         working-directory: ./electron/artifacts
+      - name: Upload audit results artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
+        with:
+          name: audit-results.md
+          path: audit-results.md
+          archive: false
+          if-no-files-found: warn

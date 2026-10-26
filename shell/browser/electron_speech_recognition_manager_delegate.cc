@@ -29,6 +29,7 @@ ElectronSpeechRecognitionManagerDelegate::GetEventListener() {
 
 void ElectronSpeechRecognitionManagerDelegate::BindSpeechRecognitionContext(
     mojo::PendingReceiver<media::mojom::SpeechRecognitionContext> receiver,
-    const std::string& language) {}
+    const std::string& language,
+    const content::GlobalRenderFrameHostId& render_frame_host_id) {}
 
 }  // namespace electron

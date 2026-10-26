@@ -8,7 +8,6 @@
 #include <windows.h>
 #endif
 
-#include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
 #include "base/logging.h"
 #include "base/path_service.h"
@@ -49,7 +48,8 @@ const int kRelauncherSyncFD = STDERR_FILENO + 1;
 
 }  // namespace internal
 
-bool RelaunchApp(const StringVector& argv) {
+bool RelaunchApp(const StringVector& argv,
+                 const StringVector& relauncher_args) {
   // Use the currently-running application's helper process. The automatic
   // update feature is careful to leave the currently-running version alone,
   // so this is safe even if the relaunch is the result of an update having
@@ -62,7 +62,6 @@ bool RelaunchApp(const StringVector& argv) {
     return false;
   }
 
-  StringVector relauncher_args;
   return RelaunchAppWithHelper(child_path, relauncher_args, argv);
 }
 

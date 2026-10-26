@@ -7,12 +7,14 @@
 
 #include <string_view>
 
-#include "base/memory/raw_ptr.h"
+#include "base/memory/stack_allocated.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin_helper {
 
 class ErrorThrower {
+  STACK_ALLOCATED();
+
  public:
   constexpr explicit ErrorThrower(v8::Isolate* isolate) : isolate_{isolate} {}
   constexpr ErrorThrower() = default;
@@ -21,8 +23,6 @@ class ErrorThrower {
   void ThrowError(std::string_view err_msg) const;
   void ThrowTypeError(std::string_view err_msg) const;
   void ThrowRangeError(std::string_view err_msg) const;
-  void ThrowReferenceError(std::string_view err_msg) const;
-  void ThrowSyntaxError(std::string_view err_msg) const;
 
   v8::Isolate* isolate() const;
 
@@ -31,7 +31,7 @@ class ErrorThrower {
                                                   v8::Local<v8::Value> options);
   void Throw(ErrorGenerator gen, std::string_view err_msg) const;
 
-  raw_ptr<v8::Isolate> isolate_ = {};
+  v8::Isolate* isolate_ = nullptr;
 };
 
 }  // namespace gin_helper

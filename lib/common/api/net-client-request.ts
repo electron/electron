@@ -124,19 +124,19 @@ class IncomingMessage extends Readable {
 
 /** Writable stream that buffers up everything written to it. */
 class SlurpStream extends Writable {
-  _data: Buffer;
-  constructor() {
-    super();
-    this._data = Buffer.alloc(0);
-  }
+  _chunks: Buffer[] = [];
 
   _write(chunk: Buffer, encoding: string, callback: () => void) {
-    this._data = Buffer.concat([this._data, chunk]);
+    // Copy the chunk: the write callback below tells the caller it may reuse or
+    // mutate the buffer, but the body is not concatenated until data() is called.
+    this._chunks.push(Buffer.from(chunk));
     callback();
   }
 
   data() {
-    return this._data;
+    const data = this._chunks.length === 1 ? this._chunks[0] : Buffer.concat(this._chunks);
+    this._chunks = [];
+    return data;
   }
 }
 
@@ -177,11 +177,9 @@ class ChunkedBodyStream extends Writable {
     this._downstream = pipe;
     if (this._pendingChunk) {
       const doneWriting = (maybeError: Error | void) => {
-        // If the underlying request has been aborted, we honestly don't care about the error
-        // all work should cease as soon as we abort anyway, this error is probably a
-        // "mojo pipe disconnected" error (code=9)
-        if (this._clientRequest._aborted) return;
-
+        // This also runs when the request was aborted mid-write: the write
+        // then settles with the abort error, as Node.js does, and no 'error'
+        // event follows because the request is already destroyed by then.
         const cb = this._pendingCallback!;
         delete this._pendingCallback;
         delete this._pendingChunk;
@@ -200,6 +198,16 @@ export function allowAnyProtocol(opts: ClientRequestConstructorOptions): ClientR
     ...opts,
     [kAllowNonHttpProtocols]: true
   } as any;
+}
+
+export function toByteString(val: string): string {
+  if (typeof val !== 'string') return String(val);
+  for (let i = 0; i < val.length; i++) {
+    if (val.charCodeAt(i) > 255) {
+      return Buffer.from(val, 'utf-8').toString('latin1');
+    }
+  }
+  return val;
 }
 
 type ExtraURLLoaderOptions = {
@@ -369,6 +377,10 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     this._chunkedEncoding = !!value;
     if (this._chunkedEncoding) {
       this._body = new ChunkedBodyStream(this);
+      // A write that fails because the request ended first is reported
+      // through the write callback on this request; the body stream must not
+      // also raise it as an unhandled 'error' of its own.
+      this._body.on('error', () => {});
       this._urlLoaderOptions.body = (pipe: NodeJS.DataPipe) => {
         (this._body! as ChunkedBodyStream).startReading(pipe);
       };

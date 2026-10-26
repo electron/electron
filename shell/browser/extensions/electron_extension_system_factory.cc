@@ -8,6 +8,7 @@
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "extensions/browser/extension_prefs_factory.h"
 #include "extensions/browser/extension_registry_factory.h"
+#include "extensions/browser/extensions_browser_client.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 
 using content::BrowserContext;
@@ -43,8 +44,8 @@ ElectronExtensionSystemFactory::BuildServiceInstanceForBrowserContext(
 
 BrowserContext* ElectronExtensionSystemFactory::GetBrowserContextToUse(
     BrowserContext* context) const {
-  // Use a separate instance for incognito.
-  return context;
+  return ExtensionsBrowserClient::Get()->GetContextRedirectedToOriginal(
+      context);
 }
 
 bool ElectronExtensionSystemFactory::ServiceIsCreatedWithBrowserContext()

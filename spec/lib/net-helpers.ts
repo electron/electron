@@ -1,10 +1,11 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as dns from 'node:dns';
 import * as http from 'node:http';
-import { Socket } from 'node:net';
 
-import { defer, listen } from './spec-helpers';
+import { defer, listen } from './spec-helpers.ts';
+
+import type { Socket } from 'node:net';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');
@@ -24,6 +25,19 @@ export function randomBuffer(size: number, start: number = 0, end: number = 255)
 export function randomString(length: number) {
   const buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0));
   return buffer.toString();
+}
+
+/**
+ * Parses the credentials out of an HTTP Basic `Authorization` header, or
+ * returns null if the request does not carry one.
+ */
+export function parseBasicAuth(request: http.IncomingMessage): { name: string; pass: string } | null {
+  const match = /^Basic (.+)$/i.exec(request.headers.authorization ?? '');
+  if (!match) return null;
+  const decoded = Buffer.from(match[1], 'base64').toString();
+  const separator = decoded.indexOf(':');
+  if (separator === -1) return null;
+  return { name: decoded.slice(0, separator), pass: decoded.slice(separator + 1) };
 }
 
 export async function getResponse(urlRequest: Electron.ClientRequest) {

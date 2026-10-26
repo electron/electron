@@ -59,7 +59,7 @@ app.on('activate', function () {
   }
 })
 
-ipcMain.on('open-error-dialog', event => {
+ipcMain.on('open-error-dialog', () => {
   dialog.showErrorBox('An Error Message', 'Demonstrating an error message.')
 })
 

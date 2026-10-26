@@ -7,14 +7,10 @@
 
 #include <memory>
 #include <string>
-#include <string_view>
 
+#include "base/containers/span.h"
 #include "components/memory_system/memory_system.h"
 #include "content/public/app/content_main_delegate.h"
-
-namespace content {
-class Client;
-}
 
 namespace tracing {
 class TracingSamplerProfiler;
@@ -26,8 +22,7 @@ std::string LoadResourceBundle(const std::string& locale);
 
 class ElectronMainDelegate : public content::ContentMainDelegate {
  public:
-  static const char* const kNonWildcardDomainNonPortSchemes[];
-  static const size_t kNonWildcardDomainNonPortSchemesSize;
+  static base::span<const char* const> GetNonWildcardDomainNonPortSchemes();
   ElectronMainDelegate();
   ~ElectronMainDelegate() override;
 
@@ -43,7 +38,6 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 
  protected:
   // content::ContentMainDelegate:
-  std::string_view GetBrowserV8SnapshotFilename() override;
   std::optional<int> BasicStartupComplete() override;
   void PreSandboxStartup() override;
   void SandboxInitialized(const std::string& process_type) override;
@@ -69,10 +63,13 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 
  private:
   std::unique_ptr<content::ContentBrowserClient> browser_client_;
-  std::unique_ptr<content::ContentClient> content_client_;
   std::unique_ptr<content::ContentGpuClient> gpu_client_;
   std::unique_ptr<content::ContentRendererClient> renderer_client_;
   std::unique_ptr<content::ContentUtilityClient> utility_client_;
+  // Declared after the per-process clients so it is destroyed first: the
+  // base content::ContentClient holds raw_ptrs to them, and releasing those
+  // after the pointees are freed trips the dangling pointer detector.
+  std::unique_ptr<content::ContentClient> content_client_;
   std::unique_ptr<tracing::TracingSamplerProfiler> tracing_sampler_profiler_;
 
   memory_system::MemorySystem memory_system_;

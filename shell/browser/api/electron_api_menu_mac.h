@@ -11,12 +11,13 @@
 
 #include "gin/weak_cell.h"
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace electron {
 class NativeWindow;
-class WebFrameMain;
 
 namespace api {
+class WebFrameMain;
 
 class MenuMac : public Menu {
  public:
@@ -36,7 +37,7 @@ class MenuMac : public Menu {
                ui::mojom::MenuSourceType source_type,
                base::OnceClosure callback) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                 const base::WeakPtr<WebFrameMain>& frame,
+                 cppgc::WeakPersistent<WebFrameMain> frame,
                  int32_t window_id,
                  int x,
                  int y,
@@ -46,12 +47,8 @@ class MenuMac : public Menu {
   std::u16string GetAcceleratorTextAtForTesting(int index) const override;
 
  private:
-  friend class Menu;
-
   void ClosePopupOnUI(int32_t window_id);
   void OnClosed(int32_t window_id, base::OnceClosure callback);
-
-  ElectronMenuController* __strong menu_controller_;
 
   // window ID -> open context menu
   std::map<int32_t, ElectronMenuController*> popup_controllers_;

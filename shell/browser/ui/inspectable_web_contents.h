@@ -19,6 +19,7 @@
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
+#include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
@@ -37,6 +38,7 @@ class InspectableWebContents
     : public content::DevToolsAgentHostClient,
       private content::WebContentsObserver,
       public content::WebContentsDelegate,
+      private content::JavaScriptDialogManager,
       public DevToolsEmbedderMessageDispatcher::Delegate {
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
@@ -55,7 +57,6 @@ class InspectableWebContents
   content::WebContents* GetDevToolsWebContents() const;
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
-  InspectableWebContentsDelegate* GetDelegate() const;
   [[nodiscard]] bool is_guest() const { return is_guest_; }
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
@@ -76,6 +77,12 @@ class InspectableWebContents
       base::OnceCallback<void(base::Value)> cb = base::NullCallback());
   void InspectElement(int x, int y);
 
+  // Forwards a keyboard event from the inspected page to the DevTools
+  // frontend if the frontend has asked for it via
+  // InspectorFrontendHost.setWhitelistedShortcuts (e.g. F8 to pause).
+  // Returns true if the event was consumed by DevTools.
+  bool ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& event);
+
   // Return the last position and size of devtools window.
   [[nodiscard]] const gfx::Rect& dev_tools_bounds() const {
     return devtools_bounds_;
@@ -88,6 +95,7 @@ class InspectableWebContents
 
  private:
   // DevToolsEmbedderMessageDispatcher::Delegate
+  bool IsLocalFrontend() const override;
   void ActivateWindow() override;
   void CloseWindow() override;
   void LoadCompleted() override;
@@ -126,9 +134,9 @@ class InspectableWebContents
   void SearchInPath(int search_request_id,
                     const std::string& file_system_path,
                     const std::string& query) override;
-  void SetWhitelistedShortcuts(const std::string& message) override {}
+  void SetWhitelistedShortcuts(const std::string& message) override;
   void SetEyeDropperActive(bool active) override;
-  void ShowCertificateViewer(const std::string& cert_chain) override {}
+  void ShowCertificateViewer(const std::string& cert_chain) override;
   void ZoomIn() override;
   void ZoomOut() override;
   void ResetZoom() override;
@@ -207,7 +215,7 @@ class InspectableWebContents
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
                                base::span<const uint8_t> message) override;
-  void AgentHostClosed(content::DevToolsAgentHost* agent_host) override {}
+  void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
 
   // content::WebContentsObserver:
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
@@ -238,8 +246,37 @@ class InspectableWebContents
   void EnumerateDirectory(content::WebContents* source,
                           scoped_refptr<content::FileSelectListener> listener,
                           const base::FilePath& path) override;
+  bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
+                         const content::ContextMenuParams& params) override;
+  void ActivateContents(content::WebContents* contents) override;
+  void ContentsZoomChange(bool zoom_in) override;
+  content::WebContents* OpenURLFromTab(
+      content::WebContents* source,
+      const content::OpenURLParams& params,
+      base::OnceCallback<void(content::NavigationHandle&)>
+          navigation_handle_callback) override;
+  content::JavaScriptDialogManager* GetJavaScriptDialogManager(
+      content::WebContents* source) override;
+
+  // content::JavaScriptDialogManager:
+  void RunJavaScriptDialog(content::WebContents* web_contents,
+                           content::RenderFrameHost* rfh,
+                           content::JavaScriptDialogType dialog_type,
+                           const std::u16string& message_text,
+                           const std::u16string& default_prompt_text,
+                           DialogClosedCallback callback,
+                           bool* did_suppress_message) override;
+  void RunBeforeUnloadDialog(content::WebContents* web_contents,
+                             content::RenderFrameHost* rfh,
+                             bool is_reload,
+                             DialogClosedCallback callback) override;
+  void CancelDialogs(content::WebContents* web_contents,
+                     bool reset_state) override;
 
   void SendMessageAck(int request_id, const base::Value* arg1);
+
+  // dock_state_ in the encoding of the frontend's currentDockState setting.
+  std::string DockStateSetting() const;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void AddDevToolsExtensionsToClient();
@@ -261,8 +298,10 @@ class InspectableWebContents
   // The default devtools created by this class when we don't have an external
   // one assigned by SetDevToolsWebContents.
   std::unique_ptr<content::WebContents> managed_devtools_web_contents_;
-  // The external devtools assigned by SetDevToolsWebContents.
-  raw_ptr<content::WebContents> external_devtools_web_contents_ = nullptr;
+  // The external devtools assigned by SetDevToolsWebContents. Not owned by
+  // us and only observed once ShowDevTools() runs, so hold it weakly in case
+  // it is destroyed before then.
+  base::WeakPtr<content::WebContents> external_devtools_web_contents_;
 
   bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;
@@ -288,6 +327,10 @@ class InspectableWebContents
 
   // origin -> script
   base::flat_map<std::string, std::string> extensions_api_;
+
+  // Keyboard shortcuts (key_code | modifiers << 16) that the DevTools
+  // frontend wants to receive even when the inspected page has focus.
+  base::flat_set<int> whitelisted_shortcut_keys_;
 
   SEQUENCE_CHECKER(sequence_checker_);
 

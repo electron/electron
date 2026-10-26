@@ -5,13 +5,13 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
 
-#include <memory>
 #include <string>
 
-#include "base/functional/bind.h"
 #include "base/values.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/browser/microtasks_runner.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/callback_list.h"
@@ -23,11 +23,6 @@
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 #endif
-
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
 
 namespace gin_helper {
 class ErrorThrower;
@@ -44,7 +39,7 @@ enum class NotificationCenterKind {
 #endif
 
 class SystemPreferences final
-    : public gin_helper::DeprecatedWrappable<SystemPreferences>,
+    : public gin::Wrappable<SystemPreferences>,
       public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
     ,
@@ -55,13 +50,18 @@ class SystemPreferences final
 #endif
 {
  public:
-  static gin_helper::Handle<SystemPreferences> Create(v8::Isolate* isolate);
+  static SystemPreferences* Create(v8::Isolate* isolate);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "SystemPreferences"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor* visitor) const override;
+
+  void OnBeforeMicrotasksRunnerDispose();
 
   std::string GetAccentColor();
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
@@ -136,8 +136,8 @@ class SystemPreferences final
   SystemPreferences(const SystemPreferences&) = delete;
   SystemPreferences& operator=(const SystemPreferences&) = delete;
 
- protected:
-  SystemPreferences();
+  // Public for cppgc::MakeGarbageCollected.
+  explicit SystemPreferences(v8::Isolate* isolate);
   ~SystemPreferences() override;
 
 #if BUILDFLAG(IS_MAC)
@@ -145,40 +145,30 @@ class SystemPreferences final
                               const NotificationCallback& callback,
                               NotificationCenterKind kind);
   void DoUnsubscribeNotification(int request_id, NotificationCenterKind kind);
+  void ClearNotificationSubscriptions();
 #endif
 
  private:
+  void Dispose();
+
 #if BUILDFLAG(IS_WIN)
-  // Static callback invoked when a message comes in to our messaging window.
-  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
-                                        UINT message,
-                                        WPARAM wparam,
-                                        LPARAM lparam);
-
-  LRESULT CALLBACK WndProc(HWND hwnd,
-                           UINT message,
-                           WPARAM wparam,
-                           LPARAM lparam);
-
-  // The window class of |window_|.
-  ATOM atom_;
-
-  // The handle of the module that contains the window procedure of |window_|.
-  HMODULE instance_;
-
-  // The window used for processing events.
-  HWND window_;
+  void OnSystemAccentColorChanged();
+  void OnAccentColorChanged();
 
   std::string current_color_;
 
   // Color/high contrast mode change observer.
   base::CallbackListSubscription hwnd_subscription_;
+  base::CallbackListSubscription accent_color_subscription_;
 #endif
 #if BUILDFLAG(IS_LINUX)
   void OnNativeThemeUpdatedOnUI();
 
   raw_ptr<ui::NativeTheme> ui_theme_;
   std::string current_accent_color_;
+#endif
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
+  gin::WeakCellFactory<SystemPreferences> weak_factory_{this};
 #endif
 };
 

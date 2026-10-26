@@ -1,6 +1,6 @@
-import { BrowserWindow } from 'electron/main';
+import { BaseWindow } from 'electron/main';
 
-const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding(
+const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable, getRestoreToken } = process._linkedBinding(
   'electron_browser_desktop_capturer'
 );
 
@@ -12,23 +12,27 @@ let currentlyRunning: {
   getSources: Promise<ElectronInternal.GetSourcesResult[]>;
 }[] = [];
 
-// |options.types| can't be empty and must be an array
+const persistModes = new Set(['transient', 'persistent']);
+
 function isValid(options: Electron.SourcesOptions) {
-  return Array.isArray(options?.types);
+  if (!Array.isArray(options?.types)) return false;
+  if (options.persistMode != null && !persistModes.has(options.persistMode)) return false;
+  if (options.restoreToken != null && typeof options.restoreToken !== 'string') return false;
+  return !options.restoreToken || options.persistMode != null;
 }
 
-export { isDisplayMediaSystemPickerAvailable };
+export { isDisplayMediaSystemPickerAvailable, getRestoreToken };
 
 export async function getSources(args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
-  const resizableValues = new Map();
+  const resizableValues = new Map<number, boolean>();
   if (process.platform === 'darwin') {
     // Fix for bug in ScreenCaptureKit that modifies a window's styleMask the first time
     // it captures a non-resizable window. We record each non-resizable window's styleMask,
     // and we restore modified styleMasks later, after the screen capture.
-    for (const win of BrowserWindow.getAllWindows()) {
-      resizableValues.set([win.id], win.resizable);
+    for (const win of BaseWindow.getAllWindows()) {
+      resizableValues.set(win.id, win.resizable);
     }
   }
 
@@ -37,12 +41,16 @@ export async function getSources(args: Electron.SourcesOptions) {
 
   const { thumbnailSize = { width: 150, height: 150 } } = args;
   const { fetchWindowIcons = false } = args;
+  const persistent = args.persistMode === 'persistent';
+  const restoreToken = args.restoreToken ?? '';
 
   const options = {
     captureWindow,
     captureScreen,
     thumbnailSize,
-    fetchWindowIcons
+    fetchWindowIcons,
+    persistent,
+    restoreToken
   };
 
   for (const running of currentlyRunning) {
@@ -74,9 +82,10 @@ export async function getSources(args: Electron.SourcesOptions) {
       capturer = null;
 
       if (process.platform === 'darwin') {
-        for (const win of BrowserWindow.getAllWindows()) {
-          if (resizableValues.has(win.id)) {
-            win.resizable = resizableValues.get(win.id);
+        for (const win of BaseWindow.getAllWindows()) {
+          const resizable = resizableValues.get(win.id);
+          if (resizable !== undefined && win.resizable !== resizable) {
+            win.resizable = resizable;
           }
         }
       }
@@ -87,7 +96,6 @@ export async function getSources(args: Electron.SourcesOptions) {
 
   capturer._onerror = (error: string) => {
     stopRunning();
-    // eslint-disable-next-line prefer-promise-reject-errors
     rejectGetSources(error);
   };
 
@@ -96,7 +104,7 @@ export async function getSources(args: Electron.SourcesOptions) {
     resolveGetSources(sources);
   };
 
-  capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
+  capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons, persistent, restoreToken);
 
   return getSources;
 }

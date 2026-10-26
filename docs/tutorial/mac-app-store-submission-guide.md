@@ -130,7 +130,7 @@ the app bundle's entitlements have at least following keys:
 The `TEAM_ID` should be replaced with your Apple Developer account's Team ID,
 and the `your.bundle.id` should be replaced with the App ID of the app.
 
-And the following entitlements must be added to the binaries and helpers in
+And the following entitlements must be added to the executables in
 the app's bundle:
 
 ```xml
@@ -266,7 +266,7 @@ With `@electron/osx-sign`, you can set custom entitlements per file as such:
 ```js @ts-nocheck
 const { signAsync } = require('@electron/osx-sign')
 
-function getEntitlementsForFile (filePath) {
+function getEntitlementsForFile(filePath) {
   if (filePath.startsWith('my-path-1')) {
     return './my-path-1.plist'
   } else {

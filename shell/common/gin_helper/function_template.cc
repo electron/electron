@@ -5,68 +5,33 @@
 #include "shell/common/gin_helper/function_template.h"
 
 #include "base/strings/strcat.h"
-#include "gin/public/gin_embedders.h"
 
 namespace gin_helper {
 
-CallbackHolderBase::DisposeObserver::DisposeObserver(
-    gin::PerIsolateData* per_isolate_data,
-    CallbackHolderBase* holder)
-    : per_isolate_data_(per_isolate_data), holder_(*holder) {
-  if (per_isolate_data_)
-    per_isolate_data_->AddDisposeObserver(this);
-}
-CallbackHolderBase::DisposeObserver::~DisposeObserver() {
-  if (per_isolate_data_)
-    per_isolate_data_->RemoveDisposeObserver(this);
-}
-void CallbackHolderBase::DisposeObserver::OnBeforeDispose(
-    v8::Isolate* isolate) {
-  holder_->v8_ref_.Reset();
-}
-void CallbackHolderBase::DisposeObserver::OnDisposed() {
-  // The holder contains the observer, so the observer is destroyed here also.
-  delete &holder_.get();
+MaybeMicrotasksScope::MaybeMicrotasksScope(gin::Arguments* args) {
+  if (args->isolate()->GetMicrotasksPolicy() !=
+      v8::MicrotasksPolicy::kExplicit) {
+    scope_.emplace(args->GetHolderCreationContext(),
+                   v8::MicrotasksScope::kRunMicrotasks);
+  }
 }
 
-CallbackHolderBase::CallbackHolderBase(v8::Isolate* isolate)
-    : v8_ref_(isolate,
-              v8::External::New(isolate,
-                                this,
-                                gin::kGinInternalCallbackHolderBaseTag)),
-      dispose_observer_(gin::PerIsolateData::From(isolate), this) {
-  v8_ref_.SetWeak(this, &CallbackHolderBase::FirstWeakCallback,
-                  v8::WeakCallbackType::kParameter);
-}
-
-CallbackHolderBase::~CallbackHolderBase() {
-  DCHECK(v8_ref_.IsEmpty());
-}
-
-v8::Local<v8::External> CallbackHolderBase::GetHandle(v8::Isolate* isolate) {
-  return v8::Local<v8::External>::New(isolate, v8_ref_);
-}
-
-// static
-void CallbackHolderBase::FirstWeakCallback(
-    const v8::WeakCallbackInfo<CallbackHolderBase>& data) {
-  data.GetParameter()->v8_ref_.Reset();
-  data.SetSecondPassCallback(SecondWeakCallback);
-}
-
-// static
-void CallbackHolderBase::SecondWeakCallback(
-    const v8::WeakCallbackInfo<CallbackHolderBase>& data) {
-  delete data.GetParameter();
-}
+MaybeMicrotasksScope::~MaybeMicrotasksScope() = default;
 
 void ThrowConversionError(gin::Arguments* args,
                           const InvokerOptions& invoker_options,
                           size_t index) {
   if (index == 0 && invoker_options.holder_is_first_argument) {
-    // Failed to get the appropriate `this` object. This can happen if a
-    // method is invoked using Function.prototype.[call|apply] and passed an
-    // invalid (or null) `this` argument.
+    // Failed to get the appropriate `this` object. Either the native object
+    // behind it has been destroyed - its wrapper then no longer converts - or
+    // the method was invoked using Function.prototype.[call|apply] with an
+    // invalid (or null) `this` argument. Telling the two apart here, after
+    // the conversion has failed, keeps the check off every successful call.
+    v8::Local<v8::Object> holder;
+    if (args->GetHolder(&holder) && Destroyable::IsDestroyed(holder)) {
+      args->ThrowTypeError("Object has been destroyed");
+      return;
+    }
     std::string error =
         invoker_options.holder_type
             ? base::StrCat({"Illegal invocation: Function must be "

@@ -15,12 +15,15 @@
 #include "services/device/public/mojom/hid.mojom-forward.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/mojom/hid/hid.mojom-forward.h"
-#include "url/origin.h"
 
 namespace content {
 class BrowserContext;
 class RenderFrameHost;
 }  // namespace content
+
+namespace url {
+class Origin;
+}  // namespace url
 
 namespace electron {
 
@@ -39,7 +42,10 @@ class ElectronHidDelegate : public content::HidDelegate {
       std::vector<blink::mojom::HidDeviceFilterPtr> filters,
       std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
       content::HidChooser::Callback callback) override;
+  bool IsHidAllowedForFrame(
+      content::RenderFrameHost* render_frame_host) override;
   bool CanRequestDevicePermission(content::BrowserContext* browser_context,
+                                  content::RenderFrameHost* render_frame_host,
                                   const url::Origin& origin) override;
   bool HasDevicePermission(content::BrowserContext* browser_context,
                            content::RenderFrameHost* render_frame_host,

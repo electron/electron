@@ -14,12 +14,12 @@
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_stream_manager.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
+#include "extensions/browser/mime_handler/mime_handler_body_cache.h"  // nogncheck
 #include "extensions/browser/mime_handler/stream_container.h"  // nogncheck
 #include "extensions/common/manifest_handlers/mime_types_handler.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "base/feature_list.h"
 #include "chrome/browser/pdf/pdf_handler_stream_delegate.h"
 #include "extensions/browser/mime_handler/mime_handler_stream_manager.h"
 #include "extensions/common/constants.h"
@@ -33,10 +33,12 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     const std::string& stream_id,
     bool embedded,
     content::FrameTreeNodeId frame_tree_node_id,
+    int64_t navigation_id,
     blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
     const GURL& original_url,
     const std::string& internal_id,
-    const std::string& mime_type) {
+    const std::string& mime_type,
+    scoped_refptr<MimeHandlerBodyCache> body_cache) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   content::WebContents* web_contents =
@@ -71,6 +73,8 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
   auto stream_container = std::make_unique<extensions::StreamContainer>(
       tab_id, embedded, handler_url, extension_id,
       std::move(transferrable_loader), original_url);
+  if (body_cache)
+    stream_container->SetBodyCache(std::move(body_cache));
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (chrome_pdf::features::IsOopifPdfEnabled() &&
@@ -78,9 +82,9 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     extensions::mime_handler::MimeHandlerStreamManager::Create(web_contents);
     extensions::mime_handler::MimeHandlerStreamManager::FromWebContents(
         web_contents)
-        ->AddStreamContainer(frame_tree_node_id, internal_id,
-                             std::move(stream_container),
-                             std::make_unique<pdf::PdfHandlerStreamDelegate>());
+        ->AddStreamContainer(
+            frame_tree_node_id, internal_id, std::move(stream_container),
+            std::make_unique<pdf::PdfHandlerStreamDelegate>(), navigation_id);
     return;
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)

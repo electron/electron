@@ -6,13 +6,24 @@ untrusted content within a renderer. Windows can be created from the renderer in
 * clicking on links or submitting forms adorned with `target=_blank`
 * JavaScript calling `window.open()`
 
-For same-origin content, the new window is created within the same process,
+For same-site content, the new window is created within the same process,
 enabling the parent to access the child window directly. This can be very
 useful for app sub-windows that act as preference panels, or similar, as the
 parent can render to the sub-window directly, as if it were a `div` in the
 parent. This is the same behavior as in the browser.
 
-Electron pairs this native Chrome `Window` with a BrowserWindow under the hood.
+Process-level `webPreferences` such as `sandbox` and `nodeIntegration` are
+baked into a renderer process when it launches, so a child window whose sandbox
+state differs from the opener's process cannot share it. In that case the child
+is created in a process of its own with no opener relationship: `window.open()`
+returns `null` in the opener and `window.opener` is `null` in the child. Child
+windows default to sandboxed, so a `window.open()` from an unsandboxed opener
+(for example one with `nodeIntegration: true`) is isolated like this by
+default. To keep such a child in the opener's process, explicitly set
+`sandbox: false` in the `webPreferences` returned from
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+
+Electron pairs this native DOM `Window` with a BrowserWindow under the hood.
 You can take advantage of all the customization available when creating a
 BrowserWindow in the main process by using `webContents.setWindowOpenHandler()`
 for renderer-created windows.

@@ -5,27 +5,27 @@
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
 #include <iterator>
-#include <vector>
 
-#include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/process/process_metrics.h"
+#include "components/cdm/renderer/key_system_support_update.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/js2c_bundle_ids.h"
+#include "shell/common/node_bindings.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_render_frame_observer.h"
+#include "shell/renderer/preload_environment.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
-#include "third_party/blink/public/web/blink.h"
-#include "third_party/blink/public/web/web_document.h"
-#include "third_party/electron_node/src/node_binding.h"
+#include "third_party/blink/public/web/web_local_frame.h"
+#include "v8/include/v8-function.h"
 
 namespace electron {
 
@@ -33,29 +33,6 @@ namespace {
 
 // Data which only lives on the service worker's thread
 constinit thread_local ServiceWorkerData* service_worker_data = nullptr;
-
-constexpr std::string_view kEmitProcessEventKey = "emit-process-event";
-
-void InvokeEmitProcessEvent(v8::Isolate* const isolate,
-                            v8::Local<v8::Context> context,
-                            const std::string& event_name) {
-  // set by sandboxed_renderer/init.js
-  auto binding_key = gin::ConvertToV8(isolate, kEmitProcessEventKey)
-                         ->ToString(context)
-                         .ToLocalChecked();
-  auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
-  auto global_object = context->Global();
-  v8::Local<v8::Value> callback_value;
-  if (!global_object->GetPrivate(context, private_binding_key)
-           .ToLocal(&callback_value))
-    return;
-  if (callback_value.IsEmpty() || !callback_value->IsFunction())
-    return;
-  auto callback = callback_value.As<v8::Function>();
-  v8::Local<v8::Value> args[] = {gin::ConvertToV8(isolate, event_name)};
-  std::ignore =
-      callback->Call(context, callback, std::size(args), std::data(args));
-}
 
 }  // namespace
 
@@ -67,26 +44,38 @@ ElectronSandboxedRendererClient::ElectronSandboxedRendererClient() {
 
 ElectronSandboxedRendererClient::~ElectronSandboxedRendererClient() = default;
 
-void ElectronSandboxedRendererClient::InitializeBindings(
-    v8::Local<v8::Object> binding,
-    v8::Isolate* const isolate,
+void ElectronSandboxedRendererClient::SetUpPreloadEnvironment(
+    v8::Isolate* isolate,
     v8::Local<v8::Context> context,
-    content::RenderFrame* render_frame) {
-  gin_helper::Dictionary b(isolate, binding);
-  b.SetMethod("get", preload_utils::GetBinding);
-  b.SetMethod("createPreloadScript", preload_utils::CreatePreloadScript);
-
+    content::RenderFrame* render_frame,
+    const mojom::RendererStartupDataPtr& startup_data) {
   auto process = gin_helper::Dictionary::CreateEmpty(isolate);
-  b.Set("process", process);
-
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
   BindProcess(isolate, &process, render_frame);
-
-  process.SetMethod("uptime", preload_utils::Uptime);
+  process.SetMethod<&preload_utils::Uptime>("uptime");
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
-  process.SetReadOnly("pid", base::GetCurrentProcId());
-  process.SetReadOnly("sandboxed", true);
-  process.SetReadOnly("type", "renderer");
+  process.Set("pid", base::GetCurrentProcId());
+  process.Set("sandboxed", true);
+  process.Set("type", "renderer");
+
+  v8::Local<v8::Object> preload_process =
+      preload_environment::CreateProcessObject(context, process, startup_data);
+  v8::Local<v8::Object> electron_module =
+      preload_environment::CreateElectronModule(
+          context, preload_environment::Flavor::kRenderer);
+  preload_environment::RunPreloadScripts(
+      context, render_frame, /*service_worker_data=*/nullptr, preload_process,
+      electron_module, preload_environment::Flavor::kRenderer, startup_data);
+}
+
+bool ElectronSandboxedRendererClient::HasScriptsToInject(
+    content::RenderFrame* render_frame) const {
+  // The <webview> element is implemented by the bundle in the embedder.
+  if (render_frame->GetBlinkPreferences().webview_tag)
+    return true;
+  auto* api_service = ElectronApiServiceImpl::Get(render_frame);
+  return api_service && api_service->startup_data() &&
+         !api_service->startup_data()->preload_scripts.empty();
 }
 
 void ElectronSandboxedRendererClient::RenderFrameCreated(
@@ -116,28 +105,46 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
-  if (!ShouldLoadPreload(isolate, context, render_frame))
+  if (!ShouldLoadPreload(isolate, context, render_frame) ||
+      !HasScriptsToInject(render_frame)) {
     return;
+  }
 
   injected_frames_.insert(render_frame);
 
-  // Wrap the bundle into a function that receives the binding object as
-  // argument.
-  auto binding = v8::Object::New(isolate);
-  InitializeBindings(binding, isolate, context, render_frame);
-
-  v8::LocalVector<v8::String> sandbox_preload_bundle_params(
-      isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "binding")});
-
-  v8::LocalVector<v8::Value> sandbox_preload_bundle_args(isolate, {binding});
-
-  util::CompileAndCall(
-      isolate, isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
-      &sandbox_preload_bundle_params, &sandbox_preload_bundle_args);
-
   v8::HandleScope handle_scope{isolate};
   v8::Context::Scope context_scope{context};
-  InvokeEmitProcessEvent(isolate, context, "loaded");
+
+  // Create ipcRenderer up front so that messages from the browser have
+  // somewhere to go before a preload script asks for it.
+  preload_utils::GetBinding(isolate,
+                            gin::StringToV8(isolate, "electron_renderer_ipc"));
+
+  // The <webview> element for renderers that enable it.
+  const blink::web_pref::WebPreferences& prefs =
+      render_frame->GetBlinkPreferences();
+  if (prefs.webview_tag && render_frame->IsMainFrame()) {
+    auto binding = gin_helper::Dictionary::CreateEmpty(isolate);
+    binding.SetMethod<&preload_utils::GetBinding>("get");
+    binding.Set("contextIsolated", prefs.context_isolation);
+    v8::LocalVector<v8::String> params =
+        js2c::MakeBundleParams(isolate, js2c::kWebViewBundleParams);
+    v8::LocalVector<v8::Value> args(isolate, {binding.GetHandle()});
+    util::CompileAndCall(isolate, context, js2c::kWebViewBundleId, &params,
+                         &args);
+  }
+
+  // The browser pushed the preload script set and process info via
+  // ElectronFrame, ordered ahead of the CommitNavigation that created this
+  // context.
+  auto* api_service = ElectronApiServiceImpl::Get(render_frame);
+  if (api_service && api_service->startup_data() &&
+      !api_service->startup_data()->preload_scripts.empty()) {
+    SetUpPreloadEnvironment(isolate, context, render_frame,
+                            api_service->startup_data());
+  }
+
+  preload_environment::EmitProcessEvent(context, "loaded");
 }
 
 void ElectronSandboxedRendererClient::WillReleaseScriptContext(
@@ -151,7 +158,7 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope{isolate};
   v8::Context::Scope context_scope{context};
-  InvokeEmitProcessEvent(isolate, context, "exit");
+  preload_environment::EmitProcessEvent(context, "exit");
 }
 
 void ElectronSandboxedRendererClient::EmitProcessEvent(
@@ -169,7 +176,7 @@ void ElectronSandboxedRendererClient::EmitProcessEvent(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks};
   v8::Context::Scope context_scope{context};
 
-  InvokeEmitProcessEvent(isolate, context, event_name);
+  preload_environment::EmitProcessEvent(context, event_name);
 }
 
 void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
@@ -184,8 +191,9 @@ void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
       context_proxy, v8_isolate, v8_context, service_worker_version_id,
       service_worker_scope, script_url, service_worker_token);
 
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kServiceWorkerPreload)) {
+  // The browser attaches preload data only when the session has service
+  // worker preload scripts registered (GetServiceWorkerStartupData).
+  if (context_proxy->ElectronPreloadData().has_value()) {
     if (!service_worker_data) {
       service_worker_data = new ServiceWorkerData{
           context_proxy, service_worker_version_id, v8_isolate, v8_context};
@@ -213,6 +221,15 @@ void ElectronSandboxedRendererClient::
   RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
       context, service_worker_version_id, service_worker_scope, script_url,
       service_worker_token);
+}
+
+std::unique_ptr<media::KeySystemSupportRegistration>
+ElectronSandboxedRendererClient::GetSupportedKeySystems(
+    content::RenderFrame* render_frame,
+    media::GetSupportedKeySystemsCB cb) {
+  return cdm::GetSupportedKeySystemsUpdates(render_frame,
+                                            /*can_persist_data=*/true,
+                                            std::move(cb));
 }
 
 }  // namespace electron

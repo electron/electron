@@ -37,7 +37,8 @@ template("typescript_build") {
     outputs = []
 
     foreach(invoker_source, invoker.sources) {
-      # The output of TSC is all inputs but with JS instead of TS as the extension
+      # The output of TSC is all inputs but with JS instead of TS as the
+      # extension
       outputs += [ "$base_out_path" + get_path_info(invoker_source, "dir") +
                    "/" + get_path_info(invoker_source, "name") + ".js" ]
     }

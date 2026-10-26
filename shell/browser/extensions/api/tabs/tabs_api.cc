@@ -10,22 +10,20 @@
 #include <utility>
 #include <vector>
 
-#include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/strings/pattern.h"
-#include "base/types/expected_macros.h"
+#include "base/types/expected.h"
 #include "chrome/common/url_constants.h"
 #include "components/url_formatter/url_fixer.h"
 #include "content/public/browser/navigation_entry.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
-#include "extensions/browser/extension_prefs.h"
+#include "extensions/browser/extension_util.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/extension_features.h"
 #include "extensions/common/feature_switch.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/mojom/host_id.mojom.h"
 #include "extensions/common/permissions/permissions_data.h"
-#include "extensions/common/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "shell/browser/native_window.h"
@@ -88,9 +86,20 @@ api::tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
   return info;
 }
 
+// "title" and "url" properties are considered privileged data and can only
+// be exposed if the extension has the "tabs" permission or it has access to
+// the WebContents's origin.
+bool CanAccessPrivilegedTabFields(const Extension* extension,
+                                  int tab_id,
+                                  const GURL& url) {
+  return extension->permissions_data()->HasAPIPermissionForTab(
+             tab_id, mojom::APIPermissionID::kTab) ||
+         extension->permissions_data()->HasHostPermission(url);
+}
+
 }  // namespace
 
-ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
+ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() = default;
 
 ExecuteCodeInTabFunction::~ExecuteCodeInTabFunction() = default;
 
@@ -272,12 +281,9 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
   // Filter out webContents that don't belong to the current browser context.
   auto* bc = browser_context();
   auto all_contents = electron::api::WebContents::GetWebContentsList();
-  all_contents.remove_if([&bc](electron::api::WebContents* wc) {
-    return (bc != wc->web_contents()->GetBrowserContext());
-  });
-
-  for (auto* contents : all_contents) {
-    if (!contents || !contents->web_contents())
+  for (const auto& contents : all_contents) {
+    if (!contents || !contents->web_contents() ||
+        bc != contents->web_contents()->GetBrowserContext())
       continue;
 
     auto* wc = contents->web_contents();
@@ -294,16 +300,14 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
     if (!MatchesBool(params->query_info.active, contents->IsFocused()))
       continue;
 
+    const GURL& committed_url = wc->GetLastCommittedURL();
+    const bool has_privileged_access = CanAccessPrivilegedTabFields(
+        extension(), contents->ID(), committed_url);
+
     if (!title.empty() || !url_patterns.is_empty()) {
-      // "title" and "url" properties are considered privileged data and can
-      // only be checked if the extension has the "tabs" permission or it has
-      // access to the WebContents's origin. Otherwise, this tab is considered
-      // not matched.
-      if (!extension()->permissions_data()->HasAPIPermissionForTab(
-              contents->ID(), mojom::APIPermissionID::kTab) &&
-          !extension()->permissions_data()->HasHostPermission(wc->GetURL())) {
+      // Without privileged access, this tab is considered not matched.
+      if (!has_privileged_access)
         continue;
-      }
 
       // Match webContents title.
       if (!title.empty() &&
@@ -311,14 +315,16 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
         continue;
 
       // Match webContents url.
-      if (!url_patterns.is_empty() && !url_patterns.MatchesURL(wc->GetURL()))
+      if (!url_patterns.is_empty() && !url_patterns.MatchesURL(committed_url))
         continue;
     }
 
     tabs::Tab tab;
     tab.id = contents->ID();
-    tab.title = base::UTF16ToUTF8(wc->GetTitle());
-    tab.url = wc->GetLastCommittedURL().spec();
+    if (has_privileged_access) {
+      tab.title = base::UTF16ToUTF8(wc->GetTitle());
+      tab.url = committed_url.spec();
+    }
     tab.active = contents->IsFocused();
     tab.audible = contents->IsCurrentlyAudible();
     tab.muted_info = CreateMutedInfo(wc);
@@ -343,13 +349,9 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   tabs::Tab tab;
   tab.id = tab_id;
 
-  // "title" and "url" properties are considered privileged data and can
-  // only be checked if the extension has the "tabs" permission or it has
-  // access to the WebContents's origin.
   auto* wc = contents->web_contents();
-  if (extension()->permissions_data()->HasAPIPermissionForTab(
-          contents->ID(), mojom::APIPermissionID::kTab) ||
-      extension()->permissions_data()->HasHostPermission(wc->GetURL())) {
+  if (CanAccessPrivilegedTabFields(extension(), contents->ID(),
+                                   wc->GetLastCommittedURL())) {
     tab.url = wc->GetLastCommittedURL().spec();
     tab.title = base::UTF16ToUTF8(wc->GetTitle());
   }
@@ -359,7 +361,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   // TODO: Add proper support for split views
   tab.split_view_id = -1;
 
-  return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
+  return RespondNow(ArgumentList(tabs::Get::Results::Create(tab)));
 }
 
 ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
@@ -521,13 +523,6 @@ GURL ResolvePossiblyRelativeURL(const std::string& url_string,
   return url;
 }
 
-bool AllowFileAccess(const ExtensionId& extension_id,
-                     content::BrowserContext* context) {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-             switches::kDisableExtensionsFileAccessCheck) ||
-         ExtensionPrefs::Get(context)->AllowFileAccess(extension_id);
-}
-
 base::expected<GURL, std::string> PrepareURLForNavigation(
     const std::string& url_string,
     const Extension* extension,
@@ -590,7 +585,7 @@ base::expected<GURL, std::string> PrepareURLForNavigation(
   // Don't let the extension navigate directly to file scheme pages, unless
   // they have file access.
   if (url.SchemeIsFile() &&
-      !AllowFileAccess(extension->id(), browser_context)) {
+      !util::AllowFileAccess(extension->id(), browser_context)) {
     const char kFileUrlsNotAllowedInExtensionNavigations[] =
         "Cannot navigate to a file URL without local file access.";
     return base::unexpected(kFileUrlsNotAllowedInExtensionNavigations);
@@ -684,13 +679,9 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   auto* api_web_contents = electron::api::WebContents::From(web_contents_);
   tab.id = (api_web_contents ? api_web_contents->ID() : -1);
 
-  // "title" and "url" properties are considered privileged data and can
-  // only be checked if the extension has the "tabs" permission or it has
-  // access to the WebContents's origin.
-  if (extension()->permissions_data()->HasAPIPermissionForTab(
-          api_web_contents->ID(), mojom::APIPermissionID::kTab) ||
-      extension()->permissions_data()->HasHostPermission(
-          web_contents_->GetURL())) {
+  if (CanAccessPrivilegedTabFields(
+          extension(), api_web_contents ? api_web_contents->ID() : -1,
+          web_contents_->GetLastCommittedURL())) {
     tab.url = web_contents_->GetLastCommittedURL().spec();
     tab.title = base::UTF16ToUTF8(web_contents_->GetTitle());
   }
@@ -702,7 +693,7 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   // TODO: Add proper support for split views
   tab.split_view_id = -1;
 
-  return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
+  return ArgumentList(tabs::Get::Results::Create(tab));
 }
 
 }  // namespace extensions

@@ -46,6 +46,16 @@ def main():
     pdb_name = 'pdb.zip'
     with scoped_cwd(args.build_dir):
       pdbs = glob.glob('*.pdb')
+      # Host build tools whose V8/Node-sized PDBs push pdb.zip over
+      # GitHub's 2 GiB release asset limit. The codecache and node_mksnapshot
+      # executables never ship in any release zip.
+      excluded_pdbs = ['electron_xcache.exe.pdb',
+                       'electron_natives_codecache.exe.pdb',
+                       'electron_natives_codecache_snapshot.exe.pdb',
+                       'node_mksnapshot.exe.pdb']
+      for pdb in excluded_pdbs:
+        if (pdb in pdbs):
+          pdbs.remove(pdb)
       pdb_zip_file = os.path.join(args.build_dir, pdb_name)
       print('Making pdb zip: ' + pdb_zip_file)
       make_zip(pdb_zip_file, pdbs + licenses, [])

@@ -11,12 +11,21 @@
     {
       "name": "no-only-tests",
       "specifier": "./script/lint-plugins/no-only-tests.mjs"
+    },
+    {
+      "name": "no-floating-spec-helpers",
+      "specifier": "./script/lint-plugins/no-floating-spec-helpers.mjs"
+    },
+    {
+      "name": "no-chai-assertions",
+      "specifier": "./script/lint-plugins/no-chai-assertions.mjs"
     }
   ],
   "categories": {
     "correctness": "off"
   },
   "options": {
+    "reportUnusedDisableDirectives": "error",
     "typeAware": false
   },
   "env": {
@@ -26,6 +35,7 @@
   "ignorePatterns": [
     ".github/workflows/node_modules",
     "spec/node_modules",
+    "script/pgo/node_modules",
     "spec/fixtures/native-addon",
     "shell/browser/resources/win/resource.h",
     "shell/common/node_includes.h",
@@ -238,18 +248,29 @@
   },
   "overrides": [
     {
-      "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+      "files": [
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.mts",
+        "**/*.cts"
+      ],
       "rules": {
         "no-use-before-define": "off"
       }
     },
     {
-      "files": ["lib/browser/**", "lib/utility/**"],
+      "files": [
+        "lib/browser/**",
+        "lib/utility/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "paths": ["electron", "electron/renderer"],
+            "paths": [
+              "electron",
+              "electron/renderer"
+            ],
             "patterns": [
               "./*",
               "../*",
@@ -266,27 +287,38 @@
       "files": [
         "lib/renderer/**",
         "lib/worker/**",
-        "lib/preload_realm/**",
-        "lib/sandboxed_renderer/**",
         "lib/isolated_renderer/**"
       ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "paths": ["electron", "electron/main"],
-            "patterns": ["./*", "../*", "@electron/internal/browser/*"]
+            "paths": [
+              "electron",
+              "electron/main"
+            ],
+            "patterns": [
+              "./*",
+              "../*",
+              "@electron/internal/browser/*"
+            ]
           }
         ]
       }
     },
     {
-      "files": ["lib/common/**"],
+      "files": [
+        "lib/common/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "paths": ["electron", "electron/main", "electron/renderer"],
+            "paths": [
+              "electron",
+              "electron/main",
+              "electron/renderer"
+            ],
             "patterns": [
               "./*",
               "../*",
@@ -313,13 +345,51 @@
       }
     },
     {
-      "files": ["spec/**/*.ts", "spec/**/*.js", "spec/**/*.mjs"],
+      "files": [
+        "spec/**/*.ts",
+        "spec/**/*.js",
+        "spec/**/*.mjs"
+      ],
       "rules": {
-        "no-only-tests/no-only-tests": "error"
+        "no-only-tests/no-only-tests": "error",
+        "no-floating-spec-helpers/no-floating-spec-helpers": "error",
+        "no-chai-assertions/no-chai-assertions": "error"
       }
     },
     {
-      "files": ["**/*.d.ts"],
+      // Specs run straight from source with Node's type stripping, which leaves
+      // imports untouched: a type imported without `type` fails at load time.
+      "files": [
+        "spec/**/*.ts"
+      ],
+      "rules": {
+        // Assertions are matcher calls; a bare property chain asserts nothing.
+        "no-unused-expressions": "error",
+        "typescript/consistent-type-imports": [
+          "error",
+          { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }
+        ],
+        "typescript/no-import-type-side-effects": "error"
+      }
+    },
+    {
+      "files": [
+        "spec/**/api-*.ts",
+        "spec/**/api-*.js",
+        "spec/**/api-*.mjs"
+      ],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [{
+            "regex": "^\\.\\./"
+          }]
+        }]
+      }
+    },
+    {
+      "files": [
+        "**/*.d.ts"
+      ],
       "rules": {
         "no-useless-constructor": "off",
         "no-unused-vars": "off"

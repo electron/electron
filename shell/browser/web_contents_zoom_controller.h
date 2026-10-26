@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 
+#include <optional>
+
 #include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
@@ -104,7 +106,6 @@ class WebContentsZoomController
   // When true, the zoom mode persists across cross-document navigations
   // instead of resetting to ZOOM_MODE_DEFAULT.
   void SetPersistZoomMode(bool persist) { persist_zoom_mode_ = persist; }
-  bool persist_zoom_mode() const { return persist_zoom_mode_; }
 
   // Convenience method to get default zoom level. Implemented here for
   // inlining.
@@ -160,7 +161,7 @@ class WebContentsZoomController
   int old_process_id_ = -1;
   int old_view_id_ = -1;
 
-  std::unique_ptr<ZoomChangedEventData> event_data_;
+  std::optional<ZoomChangedEventData> event_data_;
 
   raw_ptr<WebContentsZoomController> embedder_zoom_controller_ = nullptr;
 

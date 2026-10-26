@@ -7,16 +7,12 @@
 
 #include <memory>
 
-#include "base/functional/callback_forward.h"
 #include "base/memory/shared_memory_mapping.h"
 #include "components/viz/host/host_display_client.h"
 #include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 #include "shell/browser/osr/osr_paint_event.h"
-#include "third_party/skia/include/core/SkBitmap.h"
-#include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/gfx/native_ui_types.h"
 
-class SkBitmap;
 class SkCanvas;
 
 namespace electron {

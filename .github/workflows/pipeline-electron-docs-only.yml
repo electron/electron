@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:  
-  GCLIENT_EXTRA_ARGS: --custom-var=checkout_arm=True --custom-var=checkout_arm64=True
+  GCLIENT_EXTRA_ARGS: --custom-var=checkout_arm64=True
 
 jobs:
   docs-only:
@@ -24,14 +24,15 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 20
-    container: ${{ fromJSON(inputs.container) }}
+    container: ${{ fromJSON(inputs.container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -43,11 +44,12 @@ jobs:
       with:
         target-platform: linux
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Run TS/JS compile
@@ -56,10 +58,10 @@ jobs:
         cd src/electron
         node script/yarn.js create-typescript-definitions
         node script/yarn.js tsc -p tsconfig.default_app.json --noEmit
-        for f in build/webpack/*.js
+        node script/yarn.js tsc -p tsconfig.spec.json --noEmit
+        node script/yarn.js typecheck --project tsconfig.electron.json
+        targets=$(node --input-type=module -e "import { targets } from './build/bundle/targets.mjs'; console.log(Object.keys(targets).join(' '))")
+        for target in $targets
         do
-            out="${f:29}"
-            if [ "$out" != "base.js" ]; then
-            node script/yarn.js webpack --config $f --output-filename=$out --output-path=./.tmp --env mode=development
-            fi
+            node script/yarn.js bundle --target $target --output-filename $target.js --output-path ./.tmp
         done

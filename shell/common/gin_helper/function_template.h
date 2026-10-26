@@ -5,19 +5,23 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include <cstdint>
+#include <functional>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "gin/arguments.h"
-#include "gin/per_isolate_data.h"
-#include "gin/public/gin_embedders.h"
+#include "gin/function_template.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/macros.h"
-#include "v8/include/v8-external.h"
+#include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-isolate.h"
 #include "v8/include/v8-microtask-queue.h"
 #include "v8/include/v8-template.h"
 
@@ -47,76 +51,31 @@ struct CallbackParamTraits<const T*> {
   typedef T* LocalType;
 };
 
-// CallbackHolder and CallbackHolderBase are used to pass a
-// base::RepeatingCallback from CreateFunctionTemplate through v8 (via
-// v8::FunctionTemplate) to DispatchToCallback, where it is invoked.
+// CallbackHolder is used to pass a base::RepeatingCallback from
+// CreateFunctionTemplate through v8 (via v8::FunctionTemplate) to
+// DispatchToCallback, where it is invoked. It derives from gin's cppgc managed
+// holder base so its lifetime is handled by unified heap tracing.
 
-// CallbackHolder will clean up the callback in two different scenarios:
-// - If the garbage collector finds that it's garbage and collects it. (But note
-//   that even _if_ we become garbage, we might never get collected!)
-// - If the isolate gets disposed.
-//
-// TODO(crbug.com/1285119): When gin::Wrappable gets migrated over to using
-//   cppgc, this class should also be considered for migration.
-
-// This simple base class is used so that we can share a single object template
-// among every CallbackHolder instance.
-class CallbackHolderBase {
- public:
-  CallbackHolderBase(const CallbackHolderBase&) = delete;
-  CallbackHolderBase& operator=(const CallbackHolderBase&) = delete;
-
-  v8::Local<v8::External> GetHandle(v8::Isolate* isolate);
-
- protected:
-  explicit CallbackHolderBase(v8::Isolate* isolate);
-  virtual ~CallbackHolderBase();
-
- private:
-  class DisposeObserver : gin::PerIsolateData::DisposeObserver {
-   public:
-    DisposeObserver(gin::PerIsolateData* per_isolate_data,
-                    CallbackHolderBase* holder);
-    ~DisposeObserver() override;
-
-    // gin::PerIsolateData::DisposeObserver
-    void OnBeforeDispose(v8::Isolate* isolate) override;
-    void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {}
-    void OnDisposed() override;
-
-   private:
-    // Unlike in Chromium, it's possible for PerIsolateData to be null
-    // for a given isolate - e.g. in a Node.js Worker. Thus this
-    // needs to be a raw_ptr instead of a raw_ref.
-    const raw_ptr<gin::PerIsolateData> per_isolate_data_;
-    const raw_ref<CallbackHolderBase> holder_;
-  };
-
-  static void FirstWeakCallback(
-      const v8::WeakCallbackInfo<CallbackHolderBase>& data);
-  static void SecondWeakCallback(
-      const v8::WeakCallbackInfo<CallbackHolderBase>& data);
-
-  v8::Global<v8::External> v8_ref_;
-  DisposeObserver dispose_observer_;
-};
+// All callback signatures share a pointer tag, so this identifier is checked
+// before casting a holder to its signature specific subclass.
+template <typename Sig>
+inline constexpr int kSignatureId = 0;
 
 template <typename Sig>
-class CallbackHolder : public CallbackHolderBase {
+class CallbackHolder final : public gin::internal::CallbackHolderBase {
  public:
-  CallbackHolder(v8::Isolate* isolate,
-                 base::RepeatingCallback<Sig> callback,
+  CallbackHolder(base::RepeatingCallback<Sig> callback,
                  InvokerOptions invoker_options)
-      : CallbackHolderBase(isolate),
+      : gin::internal::CallbackHolderBase(
+            reinterpret_cast<uintptr_t>(&kSignatureId<Sig>)),
         callback(std::move(callback)),
-        invoker_options(std::move(invoker_options)) {}
+        invoker_options(invoker_options) {}
   CallbackHolder(const CallbackHolder&) = delete;
   CallbackHolder& operator=(const CallbackHolder&) = delete;
 
   base::RepeatingCallback<Sig> callback;
   InvokerOptions invoker_options;
 
- private:
   ~CallbackHolder() override = default;
 };
 
@@ -199,14 +158,6 @@ struct ArgumentHolder {
   bool ok = false;
 
   ArgumentHolder(gin::Arguments* args, const InvokerOptions& invoker_options) {
-    v8::Local<v8::Object> holder;
-    if (index == 0 && invoker_options.holder_is_first_argument &&
-        args->GetHolder(&holder) &&
-        gin_helper::Destroyable::IsDestroyed(holder)) {
-      args->ThrowTypeError("Object has been destroyed");
-      return;
-    }
-
     ok = GetNextArgument(args, invoker_options, index == 0, &value);
     if (!ok) {
       ThrowConversionError(args, invoker_options, index);
@@ -243,6 +194,22 @@ struct ArgumentHolder<
   }
 };
 
+// Blink runs microtasks when the outermost MicrotasksScope closes (kScoped),
+// so a bound call in the renderer needs one. Where Node owns the checkpoint
+// (kExplicit: the browser and utility processes) a scope never runs anything
+// and every native-to-JS entry point already holds one, so skip it there,
+// along with the creation-context lookup it needs.
+class MaybeMicrotasksScope {
+  CPPGC_STACK_ALLOCATED();
+
+ public:
+  explicit MaybeMicrotasksScope(gin::Arguments* args);
+  ~MaybeMicrotasksScope();
+
+ private:
+  std::optional<v8::MicrotasksScope> scope_;
+};
+
 // Class template for converting arguments from JavaScript to C++ and running
 // the callback with them.
 template <typename IndicesType, typename... ArgTypes>
@@ -251,6 +218,8 @@ class Invoker;
 template <size_t... indices, typename... ArgTypes>
 class Invoker<std::index_sequence<indices...>, ArgTypes...>
     : public ArgumentHolder<indices, ArgTypes>... {
+  CPPGC_STACK_ALLOCATED();
+
  public:
   // Invoker<> inherits from ArgumentHolder<> for each argument.
   // C++ has always been strict about the class initialization order,
@@ -266,9 +235,8 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
 
   template <typename ReturnType>
   void DispatchToCallback(
-      base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
-    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
-                                         v8::MicrotasksScope::kRunMicrotasks);
+      const base::RepeatingCallback<ReturnType(ArgTypes...)>& callback) {
+    MaybeMicrotasksScope microtasks_scope(args_);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -276,14 +244,30 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
   // In C++, you can declare the function foo(void), but you can't pass a void
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
-  void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
-    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
-                                         v8::MicrotasksScope::kRunMicrotasks);
+  void DispatchToCallback(
+      const base::RepeatingCallback<void(ArgTypes...)>& callback) {
+    MaybeMicrotasksScope microtasks_scope(args_);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 
+  // Calls a plain function or member function pointer. For a member function
+  // the first converted argument is the receiver.
+  template <typename Target>
+  void DispatchToTarget(Target target) {
+    MaybeMicrotasksScope microtasks_scope(args_);
+    using ReturnType = decltype(std::invoke(
+        target, std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+    if constexpr (std::is_void_v<ReturnType>) {
+      std::invoke(target,
+                  std::move(ArgumentHolder<indices, ArgTypes>::value)...);
+    } else {
+      args_->Return(std::invoke(
+          target, std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+    }
+  }
+
  private:
-  raw_ptr<gin::Arguments> args_;
+  gin::Arguments* args_;
 };
 
 // DispatchToCallback converts all the JavaScript arguments to C++ types and
@@ -294,10 +278,15 @@ struct Dispatcher {};
 template <typename ReturnType, typename... ArgTypes>
 struct Dispatcher<ReturnType(ArgTypes...)> {
   static void DispatchToCallbackImpl(gin::Arguments* args) {
-    v8::Local<v8::External> v8_holder;
-    CHECK(args->GetData(&v8_holder));
-    CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
-        v8_holder->Value(gin::kGinInternalCallbackHolderBaseTag));
+    gin::internal::CallbackHolderBase* holder_base =
+        gin::internal::CallbackHolderBase::FromV8(args->isolate(),
+                                                  args->GetData());
+    if (!holder_base || holder_base->type_identifier() !=
+                            reinterpret_cast<uintptr_t>(
+                                &kSignatureId<ReturnType(ArgTypes...)>)) {
+      args->ThrowTypeError("Illegal invocation");
+      return;
+    }
 
     typedef CallbackHolder<ReturnType(ArgTypes...)> HolderT;
     HolderT* holder = static_cast<HolderT*>(holder_base);
@@ -313,14 +302,121 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
     gin::Arguments args(info);
     DispatchToCallbackImpl(&args);
   }
+};
 
-  static void DispatchToCallbackForProperty(
-      v8::Local<v8::Name>,
-      const v8::PropertyCallbackInfo<v8::Value>& info) {
+// True for the targets that CreateFunctionTemplate<kTarget>() can dispatch to
+// directly: free functions and member functions.
+template <typename T>
+inline constexpr bool kIsFunctionOrMethodPointer =
+    std::is_member_function_pointer_v<T> ||
+    (std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>);
+
+// DirectDispatcher is the counterpart of Dispatcher for a target that is named
+// at compile time. There is no CallbackHolder to find and no callback to run:
+// the V8 callback converts the arguments and calls the target.
+//
+// The work is split in two so that targets with the same signature share
+// code: SignatureDispatcher<Target> converts the arguments and calls through
+// a Target passed at run time, and DirectDispatcher<kTarget> is the V8
+// callback, a thunk that hands it kTarget. Where a signature has a single
+// target the compiler folds the two together.
+template <typename Target,
+          bool is_method,
+          typename IndicesType,
+          typename... RunArgs>
+struct SignatureDispatcherImpl;
+
+template <typename Target,
+          bool is_method,
+          size_t... indices,
+          typename... RunArgs>
+struct SignatureDispatcherImpl<Target,
+                               is_method,
+                               std::index_sequence<indices...>,
+                               RunArgs...> {
+  static void Run(gin::Arguments* args, Target target) {
+    static constexpr InvokerOptions kOptions = {.holder_is_first_argument =
+                                                    is_method};
+    Invoker<std::index_sequence<indices...>, RunArgs...> invoker(args,
+                                                                 kOptions);
+    if (invoker.IsOK()) {
+      invoker.DispatchToTarget(target);
+    }
+  }
+
+  static void Run(const v8::FunctionCallbackInfo<v8::Value>& info,
+                  Target target) {
     gin::Arguments args(info);
-    DispatchToCallbackImpl(&args);
+    Run(&args, target);
   }
 };
+
+template <typename Target>
+struct SignatureDispatcher;
+
+template <typename R, typename... Args>
+struct SignatureDispatcher<R (*)(Args...)>
+    : SignatureDispatcherImpl<R (*)(Args...),
+                              false,
+                              std::index_sequence_for<Args...>,
+                              Args...> {};
+
+template <typename R, typename... Args>
+struct SignatureDispatcher<R (*)(Args...) noexcept>
+    : SignatureDispatcher<R (*)(Args...)> {};
+
+// For member functions the receiver is converted from the JavaScript `this`,
+// as ObjectTemplateBuilder has always done for member function pointers.
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...)>
+    : SignatureDispatcherImpl<R (C::*)(Args...),
+                              true,
+                              std::index_sequence_for<C*, Args...>,
+                              C*,
+                              Args...> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) const>
+    : SignatureDispatcherImpl<R (C::*)(Args...) const,
+                              true,
+                              std::index_sequence_for<const C*, Args...>,
+                              const C*,
+                              Args...> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) noexcept>
+    : SignatureDispatcher<R (C::*)(Args...)> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) const noexcept>
+    : SignatureDispatcher<R (C::*)(Args...) const> {};
+
+template <auto kTarget>
+struct DirectDispatcher {
+  static void DispatchToTarget(
+      const v8::FunctionCallbackInfo<v8::Value>& info) {
+    SignatureDispatcher<decltype(kTarget)>::Run(info, kTarget);
+  }
+};
+
+// CreateFunctionTemplate for a function or member function that is known at
+// compile time:
+//
+//   gin_helper::CreateFunctionTemplate<&MyClass::Method>(isolate);
+//
+// No CallbackHolder is allocated and each call goes from V8 to the target
+// without unwrapping a holder or running a callback, so prefer this form
+// whenever the target is not a bound base::RepeatingCallback. A member
+// function always takes its receiver from the JavaScript `this` here, whereas
+// the callback form below only does so if |invoker_options| says so.
+template <auto kTarget>
+  requires(kIsFunctionOrMethodPointer<decltype(kTarget)>)
+v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(v8::Isolate* isolate) {
+  return v8::FunctionTemplate::New(
+      isolate, &DirectDispatcher<kTarget>::DispatchToTarget,
+      v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
+      v8::ConstructorBehavior::kAllow);
+}
 
 // CreateFunctionTemplate creates a v8::FunctionTemplate that will create
 // JavaScript functions that execute a provided C++ function or
@@ -336,46 +432,25 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
 // returned by this function.  Otherwise, repeated method invocations from JS
 // will create substantial memory leaks. See http://crbug.com/463487.
 //
-// The callback will be destroyed if either the function template gets garbage
-// collected or _after_ the isolate is disposed. Garbage collection can never be
-// relied upon. As such, any destructors for objects bound to the callback must
-// not depend on the isolate being alive at the point they are called. The order
-// in which callbacks are destroyed is not guaranteed.
+// Callback holders are managed by cppgc. Destructors for objects bound to the
+// callback must not access other GC-managed objects or depend on the isolate
+// being alive. The order in which callbacks are destroyed is not guaranteed.
 template <typename Sig>
 v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
     v8::Isolate* isolate,
     base::RepeatingCallback<Sig> callback,
     InvokerOptions invoker_options = {}) {
   typedef CallbackHolder<Sig> HolderT;
-  HolderT* holder =
-      new HolderT(isolate, std::move(callback), std::move(invoker_options));
+  HolderT* holder = cppgc::MakeGarbageCollected<HolderT>(
+      isolate->GetCppHeap()->GetAllocationHandle(), std::move(callback),
+      std::move(invoker_options));
 
   v8::Local<v8::FunctionTemplate> tmpl = v8::FunctionTemplate::New(
-      isolate, &Dispatcher<Sig>::DispatchToCallback,
-      gin::ConvertToV8<v8::Local<v8::External>>(isolate,
-                                                holder->GetHandle(isolate)),
-      v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kAllow);
+      isolate, nullptr, v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
+      v8::ConstructorBehavior::kAllow);
+  tmpl->SetCallHandler(&Dispatcher<Sig>::DispatchToCallback,
+                       holder->GetHandle(isolate));
   return tmpl;
-}
-
-// CreateDataPropertyCallback creates a v8::AccessorNameGetterCallback and
-// corresponding data value that will hold and execute the provided
-// base::RepeatingCallback, using automatic conversions similar to
-// |CreateFunctionTemplate|.
-//
-// It is expected that these will be passed to v8::Template::SetLazyDataProperty
-// or another similar function.
-template <typename Sig>
-std::pair<v8::AccessorNameGetterCallback, v8::Local<v8::Value>>
-CreateDataPropertyCallback(v8::Isolate* isolate,
-                           base::RepeatingCallback<Sig> callback,
-                           InvokerOptions invoker_options = {}) {
-  typedef CallbackHolder<Sig> HolderT;
-  HolderT* holder =
-      new HolderT(isolate, std::move(callback), std::move(invoker_options));
-  return {&Dispatcher<Sig>::DispatchToCallbackForProperty,
-          gin::ConvertToV8<v8::Local<v8::External>>(
-              isolate, holder->GetHandle(isolate))};
 }
 
 // Base template - used only for non-member function pointers. Other types

@@ -208,15 +208,13 @@ Emitted when the window exits from a maximized state.
 
 Emitted when the window is minimized.
 
+> [!NOTE]
+> On Wayland, “minimized” is not currently a supported state. The minimize event will only fire when triggered by client-side decoration (e.g. clicking the minimize
+> button on a frameless window’s Window Control Overlay)
+
 #### Event: 'restore'
 
 Emitted when the window is restored from a minimized state.
-
-#### Event: 'tiled-state-changed' _Linux_
-
-Emitted when the window's tiled state changes — for example, when it is snapped
-to the left or right half of the screen. Use `win.isTiled()` in the handler to
-query the current state.
 
 #### Event: 'will-resize' _macOS_ _Windows_
 
@@ -379,6 +377,15 @@ Calling `event.preventDefault()` will prevent the menu from being displayed.
 
 To convert `point` to DIP, use [`screen.screenToDipPoint(point)`](./screen.md#screenscreentodippointpoint-windows-linux).
 
+#### Event: 'persisted-state-restored'
+
+Emitted after the persisted window state has been restored.
+
+Window state includes the window bounds (x, y, height, width) and display mode (maximized, fullscreen, kiosk).
+
+> [!NOTE]
+> This event is only emitted when [windowStatePersistence](structures/window-state-persistence.md) is enabled in [BaseWindowConstructorOptions](structures/base-window-options.md) or in [BrowserWindowConstructorOptions](structures/browser-window-options.md).
+
 ### Static Methods
 
 The `BaseWindow` class has the following static methods:
@@ -396,6 +403,14 @@ Returns `BaseWindow | null` - The window that is focused in this application, ot
 * `id` Integer
 
 Returns `BaseWindow | null` - The window with the given `id`.
+
+#### `BaseWindow.clearPersistedState(name)`
+
+* `name` string - The window `name` to clear state for (see [BaseWindowConstructorOptions](structures/base-window-options.md)).
+
+Clears the saved state for a window with the given name. This removes all persisted window bounds, display mode, and work area information that was previously saved when `windowStatePersistence` was enabled.
+
+If the window `name` is empty or the window state doesn't exist, the method will log a warning.
 
 ### Instance Properties
 
@@ -588,6 +603,9 @@ Returns `boolean` - Whether the window is focused.
 
 Returns `boolean` - Whether the window is destroyed.
 
+> [!NOTE]
+> Once a window is destroyed, accessing most of its other properties and methods throws `Object has been destroyed`, so callbacks that may run after the window is gone should guard with `isDestroyed()`.
+
 #### `win.show()`
 
 Shows and gives focus to the window.
@@ -646,12 +664,6 @@ Sets whether the window should be in fullscreen mode.
 #### `win.isFullScreen()`
 
 Returns `boolean` - Whether the window is in fullscreen mode.
-
-#### `win.isTiled()` _Linux_
-
-Returns `boolean` - Whether the window is tiled by the window manager (e.g.
-snapped to the left or right half of the screen). Only meaningful on Wayland;
-always returns `false` on other platforms.
 
 #### `win.setSimpleFullScreen(flag)` _macOS_
 
@@ -956,9 +968,13 @@ Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
 can not be focused on.
 
+Not supported on Wayland (Linux).
+
 #### `win.isAlwaysOnTop()`
 
 Returns `boolean` - Whether the window is always on top of other windows.
+
+Not supported on Wayland (Linux).
 
 #### `win.moveAbove(mediaSourceId)`
 
@@ -1152,13 +1168,14 @@ Sets progress value in progress bar. Valid range is \[0, 1.0].
 Remove progress bar when progress < 0;
 Change to indeterminate mode when progress > 1.
 
-On Linux platform, only supports Unity desktop environment, you need to specify
-the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `{app.name}.desktop`.
-
 On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
 mode set (but with a value within the valid range), `normal` will be assumed.
+
+On Linux, the progress bar shows on docks and taskbars that support the
+LauncherEntry D-Bus API. It is associated with the app's `.desktop` file, so
+[`app.setDesktopName`](app.md#appsetdesktopnamename-linux) must match the name
+of the app's actual `.desktop` file. Indeterminate mode is not supported.
 
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 
@@ -1177,25 +1194,6 @@ Invalidates the window shadow so that it is recomputed based on the current wind
 
 `BaseWindow`s that are transparent can sometimes leave behind visual artifacts on macOS.
 This method can be used to clear these artifacts when, for example, performing an animation.
-
-#### `win.setDecorationInsets(insets)` _Linux_
-
-* `insets` Object
-  * `top` Integer
-  * `left` Integer
-  * `bottom` Integer
-  * `right` Integer
-
-Sets the decoration insets for the window on Wayland. This tells the compositor
-the margins between the window surface edges and the actual content, so that
-areas used for client-side decorations (such as shadows) are excluded from
-window management operations like snapping, tiling, and maximizing.
-
-This is useful for applications that render their own window shadow using
-`transparent: true` and `frame: false` — without decoration insets, the
-compositor treats the shadow area as part of the window content.
-
-On X11 and non-Linux platforms, this method is a no-op.
 
 #### `win.setHasShadow(hasShadow)`
 
@@ -1423,7 +1421,19 @@ Makes the window ignore all mouse events.
 
 All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
-events.
+events. On Linux this is supported on both X11 and Wayland. On X11 the X server
+has applied the window's new input shape when the call returns; on Wayland the
+new input region is applied with the window's next frame.
+
+> [!NOTE]
+> On Windows, `forward: true` stops working temporarily when the active window is running at a
+> higher integrity level (e.g., elevated/Administrator) than your Electron app. Since Electron
+> typically runs at standard user privilege, this occurs when an elevated window—such as Task
+> Manager or an installer—takes focus. This is due to User Interface Privacy Isolation (UIPI).
+>
+> To work around it, your app must be run with Administrator privileges or configured with UIAccess
+> privileges (see the Background section under
+> [the Reference section of this page](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/jj852244(v=ws.11)#reference)).
 
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 
@@ -1435,6 +1445,21 @@ On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
 On Windows it calls SetWindowDisplayAffinity with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+The change takes effect with the next desktop composition, not when the call returns, so a
+capture started immediately afterwards can still contain the window.
+
+Protection also applies in a Windows remote session. A Remote Desktop client still
+shows the window to the remote user, but remote access software that works by
+capturing the desktop cannot. To leave windows unprotected in remote sessions
+instead, disable the `AllowWindowCaptureExclusionInRemoteSessions` Chromium feature
+at the start of your main script. `win.isContentProtected()` still returns `true`
+in that case.
+
+```js
+const { app } = require('electron')
+
+app.commandLine.appendSwitch('disable-features', 'AllowWindowCaptureExclusionInRemoteSessions')
+```
 
 #### `win.isContentProtected()` _macOS_ _Windows_
 

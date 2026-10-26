@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -17,16 +18,16 @@ bool IsPDFViewerEnabled() {
   return BUILDFLAG(ENABLE_PDF_VIEWER);
 }
 
-bool IsFakeLocationProviderEnabled() {
-  return BUILDFLAG(OVERRIDE_LOCATION_PROVIDER);
-}
-
 bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
 
-bool IsExtensionsEnabled() {
-  return BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS);
+bool IsPromptAPIEnabled() {
+  return BUILDFLAG(ENABLE_PROMPT_API);
+}
+
+bool IsRunAsNodeEnabled() {
+  return electron::fuses::IsRunAsNodeEnabled();
 }
 
 bool IsComponentBuild() {
@@ -43,13 +44,12 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("isBuiltinSpellCheckerEnabled", &IsBuiltinSpellCheckerEnabled);
-  dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
-  dict.SetMethod("isFakeLocationProviderEnabled",
-                 &IsFakeLocationProviderEnabled);
-  dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
-  dict.SetMethod("isComponentBuild", &IsComponentBuild);
-  dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
+  dict.SetMethod<&IsBuiltinSpellCheckerEnabled>("isBuiltinSpellCheckerEnabled");
+  dict.SetMethod<&IsPDFViewerEnabled>("isPDFViewerEnabled");
+  dict.SetMethod<&IsPrintingEnabled>("isPrintingEnabled");
+  dict.SetMethod<&IsPromptAPIEnabled>("isPromptAPIEnabled");
+  dict.SetMethod<&IsComponentBuild>("isComponentBuild");
+  dict.SetMethod<&IsRunAsNodeEnabled>("isRunAsNodeEnabled");
 }
 
 }  // namespace

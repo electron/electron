@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,37 @@ class Dictionary;
 
 namespace electron {
 
+// The webPreferences that shape a WebContents' renderer process command line.
+// Evaluated from the constructor options as well, before any WebContents
+// exists, to decide whether a pre-warmed renderer fits.
+struct RendererProcessPreferences {
+  static RendererProcessPreferences From(
+      const gin_helper::Dictionary& web_preferences);
+
+  RendererProcessPreferences();
+  RendererProcessPreferences(const RendererProcessPreferences&);
+  RendererProcessPreferences& operator=(const RendererProcessPreferences&);
+  ~RendererProcessPreferences();
+
+  void AppendCommandLineSwitches(base::CommandLine* command_line,
+                                 bool is_subframe) const;
+  // True when a renderer launched ahead of time with just --enable-sandbox
+  // matches what AppendCommandLineSwitches() would produce for a main frame.
+  bool CanUseSpareRenderer() const;
+
+  // From webPreferences alone; app.enableSandbox() applies on top.
+  bool sandboxed = true;
+  bool offscreen = false;
+  bool experimental_features = false;
+  bool node_integration_in_sub_frames = false;
+  std::vector<std::string> custom_args;
+  std::optional<std::string> enable_blink_features;
+  std::optional<std::string> disable_blink_features;
+#if BUILDFLAG(IS_MAC)
+  bool scroll_bounce = false;
+#endif
+};
+
 // Stores and applies the preferences of WebContents.
 class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
@@ -34,8 +66,18 @@ class WebContentsPreferences
   // Get self from WebContents.
   static WebContentsPreferences* From(content::WebContents* web_contents);
 
-  WebContentsPreferences(content::WebContents* web_contents,
-                         const gin_helper::Dictionary& web_preferences);
+  // Whether |web_contents| runs a sandboxed renderer. A WebContents that
+  // never went through a BrowserWindow/webContents constructor (extension
+  // pages, devtools) has no WebContentsPreferences but still runs the
+  // sandboxed renderer (the default since Electron 20), so a null prefs
+  // counts as sandboxed. app.enableSandbox() / --enable-sandbox forces every
+  // renderer sandboxed regardless of per-WC webPreferences.
+  static bool ShouldUseSandbox(content::WebContents* web_contents);
+
+  // The sandbox state a WebContents constructed from |web_preferences| would
+  // have, following the same rules as ShouldUseSandbox().
+  static bool IsSandboxed(const gin_helper::Dictionary& web_preferences);
+
   ~WebContentsPreferences() override;
 
   // disable copy
@@ -54,7 +96,7 @@ class WebContentsPreferences
 
   const base::Value* last_preference() const { return &last_web_preferences_; }
 
-  bool IsOffscreen() const { return offscreen_; }
+  bool IsOffscreen() const { return renderer_.offscreen; }
   std::optional<SkColor> GetBackgroundColor() const {
     return background_color_;
   }
@@ -64,26 +106,28 @@ class WebContentsPreferences
   bool ShouldUsePreferredSizeMode() const {
     return enable_preferred_size_mode_;
   }
-  void SetIgnoreMenuShortcuts(bool ignore_menu_shortcuts) {
-    ignore_menu_shortcuts_ = ignore_menu_shortcuts;
-  }
   bool ShouldIgnoreMenuShortcuts() const { return ignore_menu_shortcuts_; }
   bool SetImageAnimationPolicy(std::string policy);
+  void SetVisualZoomLevelLimits(double min_level, double max_level);
   bool ShouldDisableHtmlFullscreenWindowResize() const {
     return disable_html_fullscreen_window_resize_;
   }
   bool AllowsNodeIntegrationInSubFrames() const {
-    return node_integration_in_sub_frames_;
+    return renderer_.node_integration_in_sub_frames;
   }
   bool ShouldDisablePopups() const { return disable_popups_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
   std::optional<base::FilePath> GetPreloadPath() const { return preload_path_; }
   bool ShouldFocusOnNavigation() const { return focus_on_navigation_; }
-  bool IsSandboxed() const;
+  bool IsSandboxed() const { return renderer_.sandboxed; }
+  bool CanUseSpareRenderer() const { return renderer_.CanUseSpareRenderer(); }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
   friend class ElectronBrowserClient;
+
+  WebContentsPreferences(content::WebContents* web_contents,
+                         const gin_helper::Dictionary& web_preferences);
 
   // Get WebContents according to process ID.
   static content::WebContents* GetWebContentsFromProcessID(
@@ -96,14 +140,12 @@ class WebContentsPreferences
   // WebContentsUserData base class instead of storing a duplicate ref
   raw_ptr<content::WebContents> web_contents_;
 
+  RendererProcessPreferences renderer_;
   bool plugins_;
-  bool experimental_features_;
   bool node_integration_;
-  bool node_integration_in_sub_frames_;
   bool node_integration_in_worker_;
   bool disable_html_fullscreen_window_resize_;
   bool webview_tag_;
-  std::optional<bool> sandbox_;
   bool context_isolation_;
   bool javascript_;
   bool images_;
@@ -112,7 +154,6 @@ class WebContentsPreferences
   bool enable_preferred_size_mode_;
   bool web_security_;
   bool allow_running_insecure_content_;
-  bool offscreen_;
   bool navigate_on_drag_drop_;
   blink::mojom::AutoplayPolicy autoplay_policy_;
   std::map<std::string, std::u16string> default_font_family_;
@@ -121,9 +162,6 @@ class WebContentsPreferences
   std::optional<int> minimum_font_size_;
   std::optional<std::string> default_encoding_;
   bool is_webview_;
-  std::vector<std::string> custom_args_;
-  std::optional<std::string> enable_blink_features_;
-  std::optional<std::string> disable_blink_features_;
   bool disable_popups_;
   bool disable_dialogs_;
   bool safe_dialogs_;
@@ -135,10 +173,10 @@ class WebContentsPreferences
   blink::mojom::V8CacheOptions v8_cache_options_;
   bool deprecated_paste_enabled_ = false;
   bool focus_on_navigation_;
+  bool disable_wake_locks_;
+  std::optional<float> default_minimum_page_scale_factor_;
+  std::optional<float> default_maximum_page_scale_factor_;
 
-#if BUILDFLAG(IS_MAC)
-  bool scroll_bounce_;
-#endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   bool spellcheck_;
 #endif

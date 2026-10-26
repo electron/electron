@@ -1,18 +1,16 @@
-const chalk = require('chalk');
-
 const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { styleText } = require('node:util');
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
 const CHROMIUM_VERSION_DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const pass = chalk.green('✓');
-const fail = chalk.red('✗');
+// oxlint-disable-next-line @typescript-eslint/no-unused-vars
+const pass = styleText('green', '✓');
 
 function getElectronExec() {
   const OUT_DIR = getOutDir();
@@ -63,45 +61,6 @@ function getOutDir(options = {}) {
 
 function getAbsoluteElectronExec() {
   return path.resolve(SRC_DIR, getElectronExec());
-}
-
-function handleGitCall(args, gitDir) {
-  const result = childProcess.spawnSync('git', args, {
-    cwd: gitDir,
-    encoding: 'utf8',
-    stdio: ['inherit', 'pipe', 'pipe']
-  });
-  if (result.status === 0) {
-    return result.stdout.replace(/^\*|\s+|\s+$/, '');
-  } else {
-    console.log(`${fail} couldn't parse git process call: `, result.stderr);
-    process.exit(1);
-  }
-}
-
-async function getCurrentBranch(gitDir) {
-  const RELEASE_BRANCH_PATTERN = /^\d+-x-y$/;
-  const MAIN_BRANCH_PATTERN = /^main$/;
-  const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/main$/;
-
-  let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir);
-  if (!MAIN_BRANCH_PATTERN.test(branch) && !RELEASE_BRANCH_PATTERN.test(branch)) {
-    const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir);
-    const branches = (await handleGitCall(['branch', '--contains', lastCommit, '--remote'], gitDir)).split('\n');
-
-    branch = branches.find(
-      (b) =>
-        MAIN_BRANCH_PATTERN.test(b.trim()) ||
-        ORIGIN_MAIN_BRANCH_PATTERN.test(b.trim()) ||
-        RELEASE_BRANCH_PATTERN.test(b.trim())
-    );
-    if (!branch) {
-      console.log(`${fail} no release branch exists for this ref`);
-      process.exit(1);
-    }
-    if (branch.startsWith('origin/')) branch = branch.substr('origin/'.length);
-  }
-  return branch.trim();
 }
 
 function chunkFilenames(filenames, offset = 0) {
@@ -194,8 +153,23 @@ function getDepotToolsEnv() {
     throw new Error("Couldn't find depot_tools, ensure it's on your PATH");
   }
 
-  if (!('CHROMIUM_BUILDTOOLS_PATH' in depotToolsEnv)) {
-    throw new Error('CHROMIUM_BUILDTOOLS_PATH environment variable must be set');
+  const result = childProcess.spawnSync(
+    'python3',
+    [
+      '-c',
+      '\'from lib.util import get_chromium_buildtools_path_value; print(get_chromium_buildtools_path_value() or "")\''
+    ],
+    { env: depotToolsEnv, shell: true, encoding: 'utf8', cwd: path.join(ELECTRON_DIR, 'script') }
+  );
+  if (result.status !== 0) {
+    throw new Error(result.stderr);
+  }
+
+  const chromiumBuildtoolsPathValue = result.status === 0 ? result.stdout.trim() : null;
+
+  // Only set CHROMIUM_BUILDTOOLS_PATH if we're on an older version of depot_tools which requires it
+  if (chromiumBuildtoolsPathValue) {
+    depotToolsEnv.CHROMIUM_BUILDTOOLS_PATH = chromiumBuildtoolsPathValue;
   }
 
   return depotToolsEnv;
@@ -206,12 +180,10 @@ module.exports = {
   compareVersions,
   findMatchingFiles,
   getChromiumVersionFromDEPS,
-  getCurrentBranch,
   getDepotToolsEnv,
   getElectronExec,
   getOutDir,
   getAbsoluteElectronExec,
-  handleGitCall,
   ELECTRON_DIR,
   SRC_DIR
 };

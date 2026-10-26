@@ -12,7 +12,6 @@
 #include "base/functional/callback.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/apple/url_conversions.h"
 #include "shell/browser/mac/electron_application.h"
@@ -117,6 +116,25 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   return result;
 }
 
+// Convert a Badge to an NSMenuItemBadge, or nil if it has nothing to show.
+NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
+    API_AVAILABLE(macos(14.0)) {
+  if (badge.type == "none") {
+    if (!badge.content)
+      return nil;
+    return [[NSMenuItemBadge alloc]
+        initWithString:base::SysUTF8ToNSString(*badge.content)];
+  }
+  const NSInteger count = badge.count.value_or(0);
+  if (badge.type == "alerts")
+    return [NSMenuItemBadge alertsWithCount:count];
+  if (badge.type == "updates")
+    return [NSMenuItemBadge updatesWithCount:count];
+  if (badge.type == "new-items")
+    return [NSMenuItemBadge newItemsWithCount:count];
+  return nil;
+}
+
 }  // namespace
 
 // This class stores a base::WeakPtr<electron::ElectronMenuModel> as an
@@ -217,8 +235,12 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
 - (void)cancel {
   if (isMenuOpen_) {
-    [menu_ cancelTracking];
+    // Clear the flag first so that a -menuDidClose: delivered during the
+    // cancel is ignored and the close is only reported once, from here.
     isMenuOpen_ = NO;
+    // Cancel without the fade-out animation: while it runs, a following
+    // -popUpMenuPositioningItem:atLocation:inView: silently shows nothing.
+    [menu_ cancelTrackingWithoutAnimation];
     if (model_)
       model_->MenuWillClose();
     if (!popupCloseCallback.is_null()) {
@@ -261,6 +283,8 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   const NSInteger count = source.numberOfItems;
   for (NSInteger index = 0; index < count; index++) {
     NSMenuItem* removedItem = [source itemAtIndex:0];
+    if (!removedItem)
+      return;
     [source removeItemAtIndex:0];
     [destination addItem:removedItem];
   }
@@ -300,7 +324,15 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     return MakeEmptySubmenu();
   NSMenu* menu = [[NSMenu alloc] init];
   menu.autoenablesItems = NO;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  // +[NSSharingService sharingServicesForItems:] is deprecated in macOS 13,
+  // but the replacement is not adequate for our usage. It creates a menu item
+  // that shows a picker that we're not in control of, and conflicts with
+  // existing menu items. See https://crbug.com/40846334 for the investigation
+  // into the replacement API and why it can't be used.
   NSArray* services = [NSSharingService sharingServicesForItems:items];
+#pragma clang diagnostic pop
   for (NSSharingService* service in services)
     [menu addItem:[self menuItemForService:service withItems:items]];
   menu.delegate = self;
@@ -361,6 +393,12 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
   std::u16string toolTip = model->GetToolTipAt(index);
   item.toolTip = base::SysUTF16ToNSString(toolTip);
+
+  if (@available(macOS 14, *)) {
+    electron::ElectronMenuModel::Badge badge;
+    if (model->GetBadgeAt(index, &badge))
+      item.badge = CreateBadge(badge);
+  }
 
   if (role == u"services") {
     std::u16string title = u"Services";
@@ -528,6 +566,27 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     item.image = icon.GetImage().ToNSImage();
   } else {
     item.image = nil;
+    // Since macOS Tahoe introduced default menu icons, some role-based
+    // menu items receive a system-provided icon. When we clear `item.image`
+    // (set it to nil) AppKit may remove or fail to restore the role's
+    // default icon. To ensure the correct icon is shown, we force AppKit to
+    // refresh the item by reassigning its action selector (clear then set),
+    // which causes the menu item to update its displayed icon.
+    std::u16string role = model->GetRoleAt(index);
+    if (!role.empty()) {
+      for (const Role& pair : kRolesMap) {
+        if (role == base::ASCIIToUTF16(pair.role)) {
+          item.action = nil;
+          item.action = pair.selector;
+          break;
+        }
+      }
+    }
+  }
+
+  if (@available(macOS 14, *)) {
+    electron::ElectronMenuModel::Badge badge;
+    item.badge = model->GetBadgeAt(index, &badge) ? CreateBadge(badge) : nil;
   }
 }
 

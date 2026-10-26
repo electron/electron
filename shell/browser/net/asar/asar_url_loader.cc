@@ -11,6 +11,10 @@
 #include <utility>
 #include <vector>
 
+#include "base/compiler_specific.h"
+#include "base/files/file_util.h"
+#include "base/numerics/safe_conversions.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -22,6 +26,7 @@
 #include "net/base/mime_util.h"
 #include "net/http/http_byte_range.h"
 #include "net/http/http_util.h"
+#include "services/network/public/cpp/loading_params.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/net/asar/asar_file_validator.h"
 #include "shell/common/asar/archive.h"
@@ -48,12 +53,20 @@ net::Error ConvertMojoResultToNetError(MojoResult result) {
   }
 }
 
-constexpr size_t kDefaultFileUrlPipeSize = 65536;
+bool IsUnder(const base::FilePath& real_path, const base::FilePath& root) {
+  return real_path == root || root.IsParent(real_path);
+}
 
-// Because this makes things simpler.
-static_assert(kDefaultFileUrlPipeSize >= net::kMaxBytesToSniff,
-              "Default file data pipe size must be at least as large as a MIME-"
-              "type sniffing buffer.");
+// A pipe as large as the body up to what FileURLLoader uses for file://, so
+// small files do not pay for a 2 MB shared buffer and large ones are not fed
+// through in 64 KB slices. Never smaller than the MIME sniffing buffer, which
+// is written in one go.
+uint32_t ResponsePipeSize(uint64_t body_size) {
+  return base::saturated_cast<uint32_t>(std::clamp<uint64_t>(
+      body_size, net::kMaxBytesToSniff,
+      network::GetDataPipeDefaultAllocationSize(
+          network::DataPipeAllocationSize::kLargerSizeIfPossible)));
+}
 
 // Modified from the |FileURLLoader| in |file_url_loader_factory.cc|, to serve
 // asar files instead of normal files.
@@ -63,20 +76,21 @@ class AsarURLLoader : public network::mojom::URLLoader {
       const network::ResourceRequest& request,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+      scoped_refptr<net::HttpResponseHeaders> extra_response_headers,
+      const base::FilePath& root) {
     // Owns itself. Will live as long as its URLLoader and URLLoaderClientPtr
     // bindings are alive - essentially until either the client gives up or all
     // file data has been sent to it.
     auto* asar_url_loader = new AsarURLLoader;
     asar_url_loader->Start(request, std::move(loader), std::move(client),
-                           std::move(extra_response_headers));
+                           std::move(extra_response_headers), root);
+    // Tell analyzer to ignore the leak of the self-owned AsarURLLoader
+    ANALYZER_SKIP_THIS_PATH();
   }
 
   // network::mojom::URLLoader:
   void FollowRedirect(
-      const std::vector<std::string>& removed_headers,
-      const net::HttpRequestHeaders& modified_headers,
-      const net::HttpRequestHeaders& modified_cors_exempt_headers,
+      network::HttpRequestHeadersUpdateParams headers_update_params,
       const std::optional<GURL>& new_url) override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
@@ -89,10 +103,26 @@ class AsarURLLoader : public network::mojom::URLLoader {
   AsarURLLoader() = default;
   ~AsarURLLoader() override = default;
 
+  // Sends `head` with an empty body and completes.
+  void RespondWithoutBody(network::mojom::URLResponseHeadPtr head) {
+    mojo::ScopedDataPipeProducerHandle producer;
+    mojo::ScopedDataPipeConsumerHandle consumer;
+    if (mojo::CreateDataPipe(1, producer, consumer) != MOJO_RESULT_OK) {
+      OnClientComplete(net::ERR_FAILED);
+      return;
+    }
+    producer.reset();
+    client_->OnReceiveResponse(std::move(head), std::move(consumer),
+                               std::nullopt);
+    total_bytes_written_ = 0;
+    OnClientComplete(net::OK);
+  }
+
   void Start(const network::ResourceRequest& request,
              mojo::PendingReceiver<network::mojom::URLLoader> loader,
              mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-             scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+             scoped_refptr<net::HttpResponseHeaders> extra_response_headers,
+             const base::FilePath& root) {
     auto head = network::mojom::URLResponseHead::New();
     head->request_start = base::TimeTicks::Now();
     head->response_start = base::TimeTicks::Now();
@@ -110,7 +140,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     // Determine whether it is an asar file.
     base::FilePath asar_path, relative_path;
-    if (!GetAsarArchivePath(path, &asar_path, &relative_path)) {
+    const bool in_archive =
+        GetAsarArchivePath(path, &asar_path, &relative_path);
+    if (!in_archive && root.empty()) {
       content::CreateFileURLLoaderBypassingSecurityChecks(
           request, std::move(loader), std::move(client), nullptr, false,
           extra_response_headers);
@@ -123,60 +155,55 @@ class AsarURLLoader : public network::mojom::URLLoader {
     receiver_.set_disconnect_handler(base::BindOnce(
         &AsarURLLoader::OnConnectionError, base::Unretained(this)));
 
-    // Parse asar archive.
-    std::shared_ptr<Archive> archive = GetOrCreateAsarArchive(asar_path);
+    std::shared_ptr<Archive> archive;
     Archive::FileInfo info;
-    if (!archive || !archive->GetFileInfo(relative_path, &info)) {
-      OnClientComplete(net::ERR_FILE_NOT_FOUND);
-      return;
-    }
-    bool is_verifying_file = info.integrity.has_value();
-
-    // For unpacked path, read like normal file.
     base::FilePath real_path;
-    if (info.unpacked) {
-      archive->CopyFileOut(relative_path, &real_path);
-      info.offset = 0;
-    }
-
-    mojo::ScopedDataPipeProducerHandle producer_handle;
-    mojo::ScopedDataPipeConsumerHandle consumer_handle;
-    if (mojo::CreateDataPipe(kDefaultFileUrlPipeSize, producer_handle,
-                             consumer_handle) != MOJO_RESULT_OK) {
-      OnClientComplete(net::ERR_FAILED);
-      return;
-    }
-
-    // Note that while the |Archive| already opens a |base::File|, we still need
-    // to create a new |base::File| here, as it might be accessed by multiple
-    // requests at the same time.
-    base::File file(info.unpacked ? real_path : archive->path(),
-                    base::File::FLAG_OPEN | base::File::FLAG_READ);
-    auto file_data_source =
-        std::make_unique<mojo::FileDataSource>(file.Duplicate());
-    std::unique_ptr<mojo::DataPipeProducer::DataSource> readable_data_source;
-    mojo::FileDataSource* file_data_source_raw = file_data_source.get();
-    AsarFileValidator* file_validator_raw = nullptr;
-    uint32_t block_size = 0;
-    if (info.integrity.has_value()) {
-      block_size = info.integrity.value().block_size;
-      auto asar_validator = std::make_unique<AsarFileValidator>(
-          std::move(info.integrity.value()), std::move(file));
-      file_validator_raw = asar_validator.get();
-      readable_data_source = std::make_unique<mojo::FilteredDataSource>(
-          std::move(file_data_source), std::move(asar_validator));
+    uint64_t file_size = 0;
+    if (in_archive) {
+      base::FilePath real_archive;
+      if (!root.empty() &&
+          (!base::NormalizeFilePath(asar_path, &real_archive) ||
+           !IsUnder(real_archive.Append(relative_path), root))) {
+        OnClientComplete(net::ERR_FILE_NOT_FOUND);
+        return;
+      }
+      archive = GetOrCreateAsarArchive(asar_path);
+      if (!archive || !archive->GetFileInfo(relative_path, &info)) {
+        OnClientComplete(net::ERR_FILE_NOT_FOUND);
+        return;
+      }
+      // For unpacked path, read like normal file.
+      if (info.unpacked) {
+        base::FilePath unpacked, logical = real_archive;
+        archive->CopyFileOut(relative_path, &unpacked);
+        info.offset = 0;
+        if (root.empty()) {
+          real_path = std::move(unpacked);
+        } else if (!base::NormalizeFilePath(unpacked, &real_path) ||
+                   !real_archive.AddExtension(FILE_PATH_LITERAL("unpacked"))
+                        .AppendRelativePath(real_path, &logical) ||
+                   !IsUnder(logical, root)) {
+          OnClientComplete(net::ERR_FILE_NOT_FOUND);
+          return;
+        }
+      }
     } else {
-      readable_data_source = std::move(file_data_source);
+      // A plain file reads like an unpacked entry.
+      base::File::Info file_info;
+      if (!base::NormalizeFilePath(path, &real_path) ||
+          !IsUnder(real_path, root) ||
+          !base::GetFileInfo(real_path, &file_info) || file_info.is_directory ||
+          file_info.size < 0) {
+        OnClientComplete(net::ERR_FILE_NOT_FOUND);
+        return;
+      }
+      info.unpacked = true;
+      info.offset = 0;
+      file_size = static_cast<uint64_t>(file_info.size);
     }
-
-    std::vector<char> initial_read_buffer(
-        std::min(static_cast<uint32_t>(net::kMaxBytesToSniff), info.size));
-    auto read_result = readable_data_source.get()->Read(
-        info.offset, base::span<char>(initial_read_buffer));
-    if (read_result.result != MOJO_RESULT_OK) {
-      OnClientComplete(ConvertMojoResultToNetError(read_result.result));
-      return;
-    }
+    if (in_archive)
+      file_size = info.size;
+    bool is_verifying_file = info.integrity.has_value();
 
     auto range_header =
         request.headers.GetHeader(net::HttpRequestHeaders::kRange);
@@ -188,27 +215,112 @@ class AsarURLLoader : public network::mojom::URLLoader {
       if (net::HttpUtil::ParseRangeHeader(range_header.value(), &ranges) &&
           ranges.size() == 1) {
         byte_range = ranges[0];
-        if (!byte_range.ComputeBounds(info.size))
+        if (!byte_range.ComputeBounds(file_size))
           fail = true;
       } else {
         fail = true;
       }
 
       if (fail) {
-        OnClientComplete(net::ERR_REQUEST_RANGE_NOT_SATISFIABLE);
+        if (head->headers) {
+          head->headers->ReplaceStatusLine(
+              "HTTP/1.1 416 Range Not Satisfiable");
+          head->headers->SetHeader(
+              "Content-Range", "bytes */" + base::NumberToString(file_size));
+          head->content_length = 0;
+          RespondWithoutBody(std::move(head));
+        } else {
+          OnClientComplete(net::ERR_REQUEST_RANGE_NOT_SATISFIABLE);
+        }
         return;
       }
     }
 
     uint64_t first_byte_to_send = 0U;
-    uint64_t total_bytes_dropped_from_head = initial_read_buffer.size();
-    uint64_t total_bytes_to_send = info.size;
-
+    uint64_t total_bytes_to_send = file_size;
     if (byte_range.IsValid()) {
       first_byte_to_send = byte_range.first_byte_position();
       total_bytes_to_send =
           byte_range.last_byte_position() - first_byte_to_send + 1;
+      if (head->headers) {
+        head->headers->ReplaceStatusLine("HTTP/1.1 206 Partial Content");
+        head->headers->SetHeader(
+            "Content-Range",
+            "bytes " + base::NumberToString(first_byte_to_send) + "-" +
+                base::NumberToString(byte_range.last_byte_position()) + "/" +
+                base::NumberToString(file_size));
+      }
     }
+    if (head->headers) {
+      head->headers->SetHeader(net::HttpRequestHeaders::kContentLength,
+                               base::NumberToString(total_bytes_to_send));
+    }
+
+    // HEAD: the same head, no body and no read.
+    if (request.method == net::HttpRequestHeaders::kHeadMethod) {
+      if (head->headers) {
+        if (net::GetMimeTypeFromFile(path, &head->mime_type)) {
+          head->headers->SetHeader(net::HttpRequestHeaders::kContentType,
+                                   head->mime_type);
+        }
+      }
+      head->content_length = base::saturated_cast<int64_t>(total_bytes_to_send);
+      RespondWithoutBody(std::move(head));
+      return;
+    }
+
+    mojo::ScopedDataPipeProducerHandle producer_handle;
+    mojo::ScopedDataPipeConsumerHandle consumer_handle;
+    if (mojo::CreateDataPipe(ResponsePipeSize(total_bytes_to_send),
+                             producer_handle,
+                             consumer_handle) != MOJO_RESULT_OK) {
+      OnClientComplete(net::ERR_FAILED);
+      return;
+    }
+
+    // Each request needs its own |base::File| as multiple requests may be
+    // streaming at the same time, but for packed files it must be a duplicate
+    // of the |Archive|'s retained handle rather than a fresh open by path:
+    // |info|'s offset and block hashes come from the cached header, and the
+    // archive on disk may have been replaced (e.g. by an app update) since
+    // that header was read. The retained handle always sees the bytes the
+    // header describes.
+    base::File file = info.unpacked
+                          ? base::File(real_path, base::File::FLAG_OPEN |
+                                                      base::File::FLAG_READ)
+                          : archive->DuplicateFile();
+    // The validator reads skipped byte ranges itself, so it needs a handle of
+    // its own alongside the data source's.
+    base::File validator_file;
+    if (info.integrity.has_value())
+      validator_file = file.Duplicate();
+    auto file_data_source =
+        std::make_unique<mojo::FileDataSource>(std::move(file));
+    mojo::FileDataSource* file_data_source_raw = file_data_source.get();
+    std::unique_ptr<mojo::DataPipeProducer::DataSource> readable_data_source;
+    AsarFileValidator* file_validator_raw = nullptr;
+    uint32_t block_size = 0;
+    if (info.integrity.has_value()) {
+      block_size = info.integrity.value().block_size;
+      auto asar_validator = std::make_unique<AsarFileValidator>(
+          std::move(info.integrity.value()), std::move(validator_file));
+      file_validator_raw = asar_validator.get();
+      readable_data_source = std::make_unique<mojo::FilteredDataSource>(
+          std::move(file_data_source), std::move(asar_validator));
+    } else {
+      readable_data_source = std::move(file_data_source);
+    }
+
+    std::vector<char> initial_read_buffer(static_cast<size_t>(
+        std::min<uint64_t>(net::kMaxBytesToSniff, file_size)));
+    auto read_result = readable_data_source.get()->Read(
+        info.offset, base::span<char>(initial_read_buffer));
+    if (read_result.result != MOJO_RESULT_OK) {
+      OnClientComplete(ConvertMojoResultToNetError(read_result.result));
+      return;
+    }
+
+    uint64_t total_bytes_dropped_from_head = initial_read_buffer.size();
 
     total_bytes_written_ = total_bytes_to_send;
 
@@ -216,8 +328,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     if (first_byte_to_send < read_result.bytes_read) {
       // Write any data we read for MIME sniffing, constraining by range where
-      // applicable. This will always fit in the pipe (see assertion near
-      // |kDefaultFileUrlPipeSize| definition).
+      // applicable. This will always fit in the pipe (see ResponsePipeSize()).
       const size_t write_size = std::min(
           (read_result.bytes_read - first_byte_to_send), total_bytes_to_send);
       base::span<const uint8_t> bytes =
@@ -264,7 +375,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       head->did_mime_sniff = true;
     }
     if (head->headers) {
-      head->headers->AddHeader(net::HttpRequestHeaders::kContentType,
+      head->headers->SetHeader(net::HttpRequestHeaders::kContentType,
                                head->mime_type);
     }
     client_->OnReceiveResponse(std::move(head), std::move(consumer_handle),
@@ -277,7 +388,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       if (file_validator_raw)
         file_validator_raw->SetRange(info.offset + first_byte_to_send,
                                      total_bytes_dropped_from_head,
-                                     info.offset + info.size);
+                                     info.offset + file_size);
       OnFileWritten(MOJO_RESULT_OK);
       return;
     }
@@ -327,7 +438,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
     if (file_validator_raw)
       file_validator_raw->SetRange(info.offset + first_byte_to_send,
                                    total_bytes_dropped_from_head,
-                                   info.offset + info.size);
+                                   info.offset + file_size);
 
     data_producer_ =
         std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
@@ -359,9 +470,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     if (result == MOJO_RESULT_OK) {
       network::URLLoaderCompletionStatus status(net::OK);
-      status.encoded_data_length = total_bytes_written_;
-      status.encoded_body_length = total_bytes_written_;
-      status.decoded_body_length = total_bytes_written_;
+      status.encoded_data_length = base::ByteSize(total_bytes_written_);
+      status.encoded_body_length = base::ByteSize(total_bytes_written_);
+      status.decoded_body_length = base::ByteSize(total_bytes_written_);
       client_->OnComplete(status);
     } else {
       client_->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
@@ -388,14 +499,15 @@ void CreateAsarURLLoader(
     const network::ResourceRequest& request,
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-    scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+    scoped_refptr<net::HttpResponseHeaders> extra_response_headers,
+    const base::FilePath& root) {
   auto task_runner = base::ThreadPool::CreateSequencedTaskRunner(
       {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
   task_runner->PostTask(
-      FROM_HERE,
-      base::BindOnce(&AsarURLLoader::CreateAndStart, request, std::move(loader),
-                     std::move(client), std::move(extra_response_headers)));
+      FROM_HERE, base::BindOnce(&AsarURLLoader::CreateAndStart, request,
+                                std::move(loader), std::move(client),
+                                std::move(extra_response_headers), root));
 }
 
 }  // namespace asar

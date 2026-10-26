@@ -7,10 +7,6 @@
 #include "components/pdf/browser/pdf_document_helper_client.h"
 #include "services/screen_ai/buildflags/buildflags.h"
 
-namespace content {
-class WebContents;
-}
-
 class ElectronPDFDocumentHelperClient : public pdf::PDFDocumentHelperClient {
  public:
   ElectronPDFDocumentHelperClient();
@@ -18,13 +14,13 @@ class ElectronPDFDocumentHelperClient : public pdf::PDFDocumentHelperClient {
 
  private:
   // pdf::PDFDocumentHelperClient
-  void UpdateContentRestrictions(content::RenderFrameHost* render_frame_host,
+  void UpdateContentRestrictions(content::RenderFrameHost& render_frame_host,
                                  int content_restrictions) override;
   void OnSaveURL() override {}
-  void SetPluginCanSave(content::RenderFrameHost* render_frame_host,
+  void SetPluginCanSave(content::RenderFrameHost& render_frame_host,
                         bool can_save) override;
 #if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
-  void OnSearchifyStarted(content::RenderFrameHost* render_frame_host) override;
+  void OnSearchifyStarted(content::RenderFrameHost& render_frame_host) override;
 #endif
 };
 

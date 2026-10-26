@@ -5,7 +5,6 @@
 #include "shell/renderer/content_settings_observer.h"
 
 #include "content/public/renderer/render_frame.h"
-#include "shell/common/options_switches.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/url_conversion.h"

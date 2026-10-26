@@ -4,7 +4,6 @@
 
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
 
-#include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context.h"
@@ -34,6 +33,16 @@ FileSystemAccessPermissionContextFactory::
 
 FileSystemAccessPermissionContextFactory::
     ~FileSystemAccessPermissionContextFactory() = default;
+
+// In-memory partitions report themselves as off-the-record, which the base
+// class maps to "no service"; without a permission context content denies all
+// write access and never consults the app. Every Electron session gets its own
+// context.
+content::BrowserContext*
+FileSystemAccessPermissionContextFactory::GetBrowserContextToUse(
+    content::BrowserContext* context) const {
+  return context;
+}
 
 std::unique_ptr<KeyedService>
 FileSystemAccessPermissionContextFactory::BuildServiceInstanceForBrowserContext(

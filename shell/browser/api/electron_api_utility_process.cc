@@ -4,24 +4,31 @@
 
 #include "shell/browser/api/electron_api_utility_process.h"
 
+#include <array>
 #include <map>
-#include <unordered_map>
 #include <utility>
+#include <vector>
 
-#include "base/files/file_util.h"
 #include "base/functional/bind.h"
+#include "base/location.h"
 #include "base/no_destructor.h"
-#include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process.h"
+#include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/browser_child_process_host_iterator.h"
+#include "content/public/browser/child_process_data.h"
 #include "content/public/browser/child_process_host.h"
+#include "content/public/browser/child_process_termination_info.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -45,6 +52,8 @@
 #include "v8/include/cppgc/allocation.h"
 
 #if BUILDFLAG(IS_POSIX)
+#include <unistd.h>
+
 #include "base/posix/eintr_wrapper.h"
 #endif
 
@@ -54,31 +63,40 @@
 #include "base/win/windows_types.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
 namespace electron {
 
 namespace {
 
-// Maps process IDs to their UtilityProcessWrapper instances.
+// Tracks every UtilityProcessWrapper from construction until termination,
+// including ones whose child has not launched yet and so has no pid.
 struct UtilityProcessRegistry {
-  void Add(base::ProcessId pid, api::UtilityProcessWrapper* wrapper) {
-    map_.emplace(pid, wrapper);
+  using Entries =
+      std::vector<cppgc::WeakPersistent<api::UtilityProcessWrapper>>;
+
+  void Add(api::UtilityProcessWrapper* wrapper) {
+    wrappers_.emplace_back(wrapper);
   }
-  void Remove(base::ProcessId pid) { map_.erase(pid); }
-  api::UtilityProcessWrapper* Lookup(base::ProcessId pid) {
-    auto it = map_.find(pid);
-    return it != map_.end() ? it->second.Get() : nullptr;
+  void Remove(api::UtilityProcessWrapper* wrapper) {
+    std::erase_if(wrappers_, [wrapper](const auto& entry) {
+      return !entry || entry.Get() == wrapper;
+    });
   }
+  const Entries& wrappers() const { return wrappers_; }
 
  private:
-  std::unordered_map<base::ProcessId,
-                     cppgc::WeakPersistent<api::UtilityProcessWrapper>>
-      map_;
+  Entries wrappers_;
 };
 
 UtilityProcessRegistry& GetAllUtilityProcessWrappers() {
   static base::NoDestructor<UtilityProcessRegistry> registry;
   return *registry;
 }
+
+constexpr uint32_t kLaunchFailureExitCode = 1;
 
 }  // namespace
 
@@ -98,6 +116,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     bool disclaim_responsibility,
     Session* session)
     : create_network_observer_(create_network_observer), session_(session) {
+  // Registered before anything can fail, so that browser shutdown also reaches
+  // a wrapper whose child is still launching. HandleTermination() removes it.
+  GetAllUtilityProcessWrappers().Add(this);
   auto& allocation_handle =
       JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
 #if BUILDFLAG(IS_WIN)
@@ -106,6 +127,21 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #elif BUILDFLAG(IS_POSIX)
   base::FileHandleMappingVector fds_to_remap;
 #endif
+  // Nothing else calls HandleTermination() if we bail before launch; post it
+  // so 'exit' fires after JS has attached its listeners.
+  auto fail_launch = [&] {
+#if BUILDFLAG(IS_POSIX)
+    for (const auto& [fd, _] : fds_to_remap)
+      close(fd);
+#endif
+    CloseStdioReadFds();
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            &UtilityProcessWrapper::HandleTermination,
+            gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)),
+            kLaunchFailureExitCode));
+  };
   for (const auto& [io_handle, io_type] : stdio) {
     if (io_handle == IOHandle::STDIN)
       continue;
@@ -126,6 +162,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       // https://source.chromium.org/chromium/chromium/src/+/main:base/process/launch_win.cc;l=303-332
       if (!::CreatePipe(&read, &write, nullptr, 0)) {
         PLOG(ERROR) << "pipe creation failed";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -143,6 +180,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       int pipe_fd[2];
       if (HANDLE_EINTR(pipe(pipe_fd)) < 0) {
         PLOG(ERROR) << "pipe creation failed";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -161,7 +199,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                       OPEN_EXISTING, 0, nullptr);
       if (handle == INVALID_HANDLE_VALUE) {
         PLOG(ERROR) << "Failed to create null handle";
-        Emit("error", "Failed to create null handle for ignoring stdio");
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -173,6 +211,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       int devnull = open("/dev/null", O_WRONLY);
       if (devnull < 0) {
         PLOG(ERROR) << "failed to open /dev/null";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -186,6 +225,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
   // Watch for service process termination events.
   content::ServiceProcessHost::AddObserver(this);
+  content::BrowserChildProcessObserver::Add(this);
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
@@ -238,9 +278,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       mojo::Connector::SINGLE_THREADED_SEND,
       base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->set_incoming_receiver(this);
+  // |connector_| is owned by this wrapper and only ever reset, never moved, so
+  // destroying it cancels the handler.
   connector_->set_connection_error_handler(base::BindOnce(
-      &UtilityProcessWrapper::CloseConnectorPort,
-      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+      &UtilityProcessWrapper::CloseConnectorPort, base::Unretained(this)));
 
   params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),
@@ -255,18 +296,38 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
   content::ServiceProcessHost::RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
+  // A wrapper that never reached HandleTermination(), e.g. one still alive at
+  // heap teardown, still owns its port and stdio read ends. Both are native,
+  // non-GC members. A port destroyed while still lent to |connector_| fails a
+  // DCHECK in MessagePortDescriptor::Reset().
+  CloseConnectorPort();
+  CloseStdioReadFds();
 }
 
 void UtilityProcessWrapper::OnServiceProcessLaunch(
     const base::Process& process) {
+  if (terminated_)
+    return;
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
-  GetAllUtilityProcessWrappers().Add(pid_, this);
+  // Remember the child process id: the process has already gone from the
+  // ChildProcessData that BrowserChildProcessCrashed/Killed receive.
+  for (content::BrowserChildProcessHostIterator it(
+           content::PROCESS_TYPE_UTILITY);
+       !it.Done(); ++it) {
+    const base::Process& host_process = it.GetProcess();
+    if (host_process.IsValid() && host_process.Pid() == pid_) {
+      child_process_id_ = it.GetData().GetChildProcessId();
+      break;
+    }
+  }
+  // JS wraps these in net.Socket and owns them from here on.
   if (stdout_read_fd_ != -1)
-    EmitWithoutEvent("stdout", stdout_read_fd_);
+    EmitWithoutEvent("stdout", std::exchange(stdout_read_fd_, -1));
   if (stderr_read_fd_ != -1)
-    EmitWithoutEvent("stderr", stderr_read_fd_);
-  if (url_loader_network_observer_.has_value()) {
+    EmitWithoutEvent("stderr", std::exchange(stderr_read_fd_, -1));
+  if (url_loader_network_observer_) {
     url_loader_network_observer_->set_process_id(pid_);
   }
   EmitWithoutEvent("spawn");
@@ -279,24 +340,26 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     return;
   terminated_ = true;
 
-  if (pid_ != base::kNullProcessId)
-    GetAllUtilityProcessWrappers().Remove(pid_);
+  GetAllUtilityProcessWrappers().Remove(this);
 
   pid_ = base::kNullProcessId;
+  child_process_id_ = content::ChildProcessId();
   content::ServiceProcessHost::RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
+  DispatchPendingMessages();
   CloseConnectorPort();
+  CloseStdioReadFds();
   if (killed_) {
 #if BUILDFLAG(IS_POSIX)
     // UtilityProcessWrapper::Kill relies on base::Process::Terminate
     // to gracefully shutdown the process which is performed by sending
     // SIGTERM signal. When listening for exit events via ServiceProcessHost
     // observers, the exit code on posix is obtained via
-    // BrowserChildProcessHostImpl::GetTerminationInfo which inturn relies
-    // on waitpid to extract the exit signal. If the process is unavailable,
-    // then the exit_code will be set to 0, otherwise we get the signal that
-    // was sent during the base::Process::Terminate call. For a user, this is
-    // still a graceful shutdown case so lets' convert the exit code to the
-    // expected value.
+    // BrowserChildProcessHostImpl::GetTerminationInfo which in turn relies
+    // on waitpid to extract the exit signal. A child that exits from the
+    // SIGTERM sent by kill() therefore reports the signal as its exit code.
+    // For a user, this is still a graceful shutdown case so let's convert
+    // the exit code to the expected value.
     if (exit_code == SIGTERM || exit_code == SIGKILL) {
       exit_code = 0;
     }
@@ -311,6 +374,10 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
     const std::string& description) {
   if (description == "process_exit_termination") {
     HandleTermination(exit_code);
+  } else if (pid_ == base::kNullProcessId) {
+    // Pipe dropped before launch means the child failed to launch; the host
+    // is deleted without notifying observers, so this is the only signal.
+    HandleTermination(kLaunchFailureExitCode);
   }
 }
 
@@ -320,20 +387,51 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
       info.GetProcess().Pid() != pid_)
     return;
 
-  HandleTermination(info.exit_code());
+  // A non-zero code from process.exit() arrives first through
+  // OnServiceProcessDisconnected.
+  HandleTermination(0);
 }
 
-void UtilityProcessWrapper::OnServiceProcessCrashed(
-    const content::ServiceProcessInfo& info) {
-  if (!info.IsService<node::mojom::NodeService>() ||
-      info.GetProcess().Pid() != pid_)
-    return;
+bool UtilityProcessWrapper::IsThisProcess(
+    const content::ChildProcessData& data) const {
+  return !child_process_id_.is_null() &&
+         data.process_type == content::PROCESS_TYPE_UTILITY &&
+         data.metrics_name == node::mojom::NodeService::Name_ &&
+         data.GetChildProcessId() == child_process_id_;
+}
 
-  HandleTermination(info.exit_code());
+void UtilityProcessWrapper::BrowserChildProcessCrashed(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  if (IsThisProcess(data))
+    HandleTermination(info.exit_code);
+}
+
+void UtilityProcessWrapper::BrowserChildProcessKilled(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  if (IsThisProcess(data))
+    HandleTermination(info.exit_code);
+}
+
+void UtilityProcessWrapper::CloseStdioReadFds() {
+  // Read ends not yet handed to JS; on Windows the CRT fd owns the HANDLE.
+  for (int* fd : {&stdout_read_fd_, &stderr_read_fd_}) {
+    if (*fd == -1)
+      continue;
+#if BUILDFLAG(IS_WIN)
+    _close(*fd);
+#else
+    close(*fd);
+#endif
+    *fd = -1;
+  }
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
-  if (!connector_closed_ && connector_->is_valid()) {
+  // GiveDisentangledHandle() replaces an invalid handle with a dangling one, so
+  // the port is always reset, even if the connector's pipe is gone.
+  if (!connector_closed_ && connector_) {
     host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
     connector_ = nullptr;
     host_port_.Reset();
@@ -341,13 +439,31 @@ void UtilityProcessWrapper::CloseConnectorPort() {
   }
 }
 
+void UtilityProcessWrapper::DispatchPendingMessages() {
+  // Messages the child posted before it exited can still be queued on the
+  // port when its exit is observed: the connector dispatches them one per
+  // task, and the exit notification may already be ahead of those tasks.
+  // Dispatch whatever is already queued so it is emitted before 'exit'
+  // instead of being dropped with the port. A readable pipe never blocks
+  // WaitForIncomingMessage(). If dispatch fails, the connector's error
+  // handler closes the port and the loop ends.
+  while (!connector_closed_ && connector_ && connector_->is_valid() &&
+         connector_->handle().QuerySignalsState().readable()) {
+    if (!connector_->WaitForIncomingMessage())
+      break;
+  }
+}
+
 void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
   node_service_remote_.reset();
+  // The child is still running during browser shutdown; drop its messages
+  // rather than dispatching them.
+  CloseConnectorPort();
   HandleTermination(exit_code);
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
-  if (!node_service_remote_.is_connected())
+  if (!connector_ || connector_closed_)
     return;
 
   blink::TransferableMessage transferable_message;
@@ -364,26 +480,10 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
   }
 
   v8::Local<v8::Value> transferables;
-  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
+  v8::LocalVector<v8::Value> wrapped_ports(isolate);
   if (args->GetNext(&transferables)) {
-    std::vector<v8::Local<v8::Value>> wrapped_port_values;
-    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_port_values)) {
-      args->ThrowTypeError("transferables must be an array of MessagePorts");
-      return;
-    }
-
-    for (size_t i = 0; i < wrapped_port_values.size(); ++i) {
-      if (!gin_helper::IsValidWrappable(wrapped_port_values[i],
-                                        &MessagePort::kWrapperInfo)) {
-        args->ThrowTypeError(
-            base::StrCat({"Port at index ", base::NumberToString(i),
-                          " is not a valid port"}));
-        return;
-      }
-    }
-
     if (!gin::ConvertFromV8(isolate, transferables, &wrapped_ports)) {
-      args->ThrowTypeError("Passed an invalid MessagePort");
+      args->ThrowTypeError("transferables must be an array of MessagePorts");
       return;
     }
   }
@@ -403,15 +503,13 @@ bool UtilityProcessWrapper::Kill() {
   if (pid_ == base::kNullProcessId)
     return false;
   base::Process process = base::Process::Open(pid_);
+  // Like Node's child_process.kill(), this delivers the signal (SIGTERM on
+  // POSIX, TerminateProcess on Windows) and does not guarantee that the child
+  // exits. content's BrowserChildProcessHost reaps the child once its mojo
+  // pipe drops; reaping it here as well (as base::EnsureProcessTerminated
+  // did) would race that and make content's kill()/waitpid() fail with
+  // ESRCH/ECHILD.
   bool result = process.Terminate(content::RESULT_CODE_NORMAL_EXIT, false);
-  // Refs https://bugs.chromium.org/p/chromium/issues/detail?id=818244
-  // Currently utility process is not sandboxed which
-  // means Zygote is not used on linux, refs
-  // content::UtilitySandboxedProcessLauncherDelegate::GetZygote.
-  // If sandbox feature is enabled for the utility process, then the
-  // process reap should be signaled through the zygote via
-  // content::ZygoteCommunication::EnsureProcessTerminated.
-  base::EnsureProcessTerminated(std::move(process));
   killed_ = result;
   return result;
 }
@@ -444,7 +542,7 @@ void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
 }
 
 void UtilityProcessWrapper::CreateAndSendURLLoaderFactory(bool /* crashed */) {
-  if (!node_service_remote_.is_connected())
+  if (!node_service_remote_.is_bound() || !node_service_remote_.is_connected())
     return;
 
   node_service_remote_->UpdateURLLoaderFactory(CreateURLLoaderFactoryParams());
@@ -462,7 +560,8 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
   loader_params->is_orb_enabled = false;
   loader_params->is_trusted = true;
   if (create_network_observer_) {
-    url_loader_network_observer_.emplace();
+    url_loader_network_observer_ =
+        std::make_unique<electron::URLLoaderNetworkObserver>();
     loader_params->url_loader_network_observer =
         url_loader_network_observer_->Bind();
   }
@@ -498,11 +597,47 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
   return params;
 }
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+void UtilityProcessWrapper::BindAIManager(
+    std::optional<int32_t> web_contents_id,
+    const url::Origin& security_origin,
+    const blink::LocalFrameToken& frame_token,
+    int32_t render_process_id,
+    mojo::PendingReceiver<blink::mojom::AIManager> ai_manager) {
+  auto params = node::mojom::BindAIManagerParams::New();
+  params->web_contents_id = web_contents_id;
+  params->security_origin = security_origin;
+  params->frame_token = frame_token;
+  params->render_process_id = render_process_id;
+
+  node_service_remote_->BindAIManager(std::move(params), std::move(ai_manager));
+}
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
 // static
 UtilityProcessWrapper* UtilityProcessWrapper::FromProcessId(
     base::ProcessId pid) {
-  auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
-  return utility_process_wrapper ? utility_process_wrapper : nullptr;
+  // Wrappers whose child has not launched yet have no pid.
+  if (pid == base::kNullProcessId)
+    return nullptr;
+  for (const auto& wrapper : GetAllUtilityProcessWrappers().wrappers()) {
+    if (wrapper && wrapper->pid_ == pid)
+      return wrapper.Get();
+  }
+  return nullptr;
+}
+
+// static
+void UtilityProcessWrapper::ShutdownAll() {
+  // Shutdown() removes each wrapper from the registry and runs 'exit'
+  // listeners, so iterate over a copy that keeps the wrappers alive.
+  std::vector<cppgc::Persistent<UtilityProcessWrapper>> wrappers;
+  for (const auto& wrapper : GetAllUtilityProcessWrappers().wrappers()) {
+    if (wrapper)
+      wrappers.emplace_back(wrapper.Get());
+  }
+  for (const auto& wrapper : wrappers)
+    wrapper->Shutdown(0 /* exit_code */);
 }
 
 // static
@@ -552,17 +687,23 @@ UtilityProcessWrapper* UtilityProcessWrapper::Create(
     opts.Get("cwd", &current_working_directory);
     opts.Get("respondToAuthRequestsFromMainProcess", &create_network_observer);
 
-    std::vector<std::string> stdio_arr{"ignore", "inherit", "inherit"};
+    constexpr std::array default_stdio{
+        IOType::IO_IGNORE,
+        IOType::IO_INHERIT,
+        IOType::IO_INHERIT,
+    };
+    std::vector<std::string> stdio_arr;
     opts.Get("stdio", &stdio_arr);
-    for (size_t i = 0; i < 3; i++) {
-      IOType type;
-      if (stdio_arr[i] == "ignore")
-        type = IOType::IO_IGNORE;
-      else if (stdio_arr[i] == "inherit")
-        type = IOType::IO_INHERIT;
-      else if (stdio_arr[i] == "pipe")
-        type = IOType::IO_PIPE;
-
+    for (size_t i = 0; i < default_stdio.size(); ++i) {
+      IOType type = default_stdio[i];
+      if (i < stdio_arr.size()) {
+        if (stdio_arr[i] == "ignore")
+          type = IOType::IO_IGNORE;
+        else if (stdio_arr[i] == "inherit")
+          type = IOType::IO_INHERIT;
+        else if (stdio_arr[i] == "pipe")
+          type = IOType::IO_PIPE;
+      }
       stdio.emplace(static_cast<IOHandle>(i), type);
     }
 
@@ -620,7 +761,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);
+  dict.SetMethod<&electron::api::UtilityProcessWrapper::Create>("_fork");
 }
 
 }  // namespace

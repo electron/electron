@@ -26,8 +26,6 @@ using Microsoft::WRL::RuntimeClassFlags;
 
 namespace electron {
 
-class ScopedHString;
-
 using DesktopToastActivatedEventHandler =
     ABI::Windows::Foundation::ITypedEventHandler<
         ABI::Windows::UI::Notifications::ToastNotification*,
@@ -59,7 +57,6 @@ class WindowsToastNotification : public Notification {
  private:
   friend class ToastEventHandler;
 
-  HRESULT ShowInternal(const NotificationOptions& options);
   static std::u16string GetToastXml(
       const std::string& notification_id,
       const std::u16string& title,

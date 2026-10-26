@@ -13,15 +13,21 @@
     let handle = null;
     let sent = false;
     window.document.onpaste = async (event) => {
-      const fileItem = event.clipboardData.items[0];
-      handle = await fileItem.getAsFileSystemHandle();
-      if (!sent) {
-        if (handle.kind === 'file') {
-          ipcRenderer.send('did-create-file-handle');
-        } else {
-          ipcRenderer.send('did-create-directory-handle');
+      ipcRenderer.send('file-system-progress', 'paste received');
+      try {
+        const fileItem = event.clipboardData.items[0];
+        handle = await fileItem.getAsFileSystemHandle();
+        ipcRenderer.send('file-system-progress', `handle acquired: ${handle.kind}`);
+        if (!sent) {
+          if (handle.kind === 'file') {
+            ipcRenderer.send('did-create-file-handle');
+          } else {
+            ipcRenderer.send('did-create-directory-handle');
+          }
+          sent = true;
         }
-        sent = true;
+      } catch (error) {
+        ipcRenderer.send('file-system-error', error.message);
       }
     };
   </script>

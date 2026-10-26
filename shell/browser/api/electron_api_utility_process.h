@@ -12,7 +12,10 @@
 #include "base/callback_list.h"
 #include "base/environment.h"
 #include "base/process/process_handle.h"
+#include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/service_process_host.h"
+#include "content/public/common/child_process_id.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/message.h"
@@ -23,6 +26,11 @@
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 #include "v8/include/v8-forward.h"
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "third_party/blink/public/common/tokens/tokens.h"
+#include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 namespace gin {
 class Arguments;
@@ -45,7 +53,8 @@ class UtilityProcessWrapper final
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
       private mojo::MessageReceiver,
       public node::mojom::NodeServiceClient,
-      public content::ServiceProcessHost::Observer {
+      public content::ServiceProcessHost::Observer,
+      public content::BrowserChildProcessObserver {
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
   enum class IOType { IO_PIPE, IO_INHERIT, IO_IGNORE };
@@ -63,6 +72,17 @@ class UtilityProcessWrapper final
 
   static UtilityProcessWrapper* Create(gin::Arguments* args);
   static UtilityProcessWrapper* FromProcessId(base::ProcessId pid);
+  // Shuts down every wrapper that has not terminated, including ones whose
+  // child is still launching. Called before Node.js stops at browser shutdown.
+  static void ShutdownAll();
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  void BindAIManager(std::optional<int32_t> web_contents_id,
+                     const url::Origin& security_origin,
+                     const blink::LocalFrameToken& frame_token,
+                     int32_t render_process_id,
+                     mojo::PendingReceiver<blink::mojom::AIManager> ai_manager);
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
   void Shutdown(uint32_t exit_code);
 
@@ -82,8 +102,11 @@ class UtilityProcessWrapper final
  private:
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
+  void DispatchPendingMessages();
+  void CloseStdioReadFds();
 
   void HandleTermination(uint32_t exit_code);
+  bool IsThisProcess(const content::ChildProcessData& data) const;
 
   void PostMessage(gin::Arguments* args);
   bool Kill();
@@ -99,8 +122,14 @@ class UtilityProcessWrapper final
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(
       const content::ServiceProcessInfo& info) override;
-  void OnServiceProcessCrashed(
-      const content::ServiceProcessInfo& info) override;
+
+  // content::BrowserChildProcessObserver
+  void BrowserChildProcessCrashed(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
+  void BrowserChildProcessKilled(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
 
   void OnServiceProcessDisconnected(uint32_t exit_code,
                                     const std::string& description);
@@ -111,6 +140,9 @@ class UtilityProcessWrapper final
   node::mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParams();
 
   base::ProcessId pid_ = base::kNullProcessId;
+  // Identifies the utility process in BrowserChildProcessObserver callbacks,
+  // whose ChildProcessData no longer carries the process.
+  content::ChildProcessId child_process_id_;
 #if BUILDFLAG(IS_WIN)
   // Non-owning handles, these will be closed when the
   // corresponding FD are closed via _close.
@@ -132,7 +164,7 @@ class UtilityProcessWrapper final
       "Context tracking of remote is not needed in the browser process.")
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
   cppgc::Member<Session> session_;
-  std::optional<electron::URLLoaderNetworkObserver>
+  std::unique_ptr<electron::URLLoaderNetworkObserver>
       url_loader_network_observer_;
   base::CallbackListSubscription network_service_gone_subscription_;
   gin_helper::SelfKeepAlive<UtilityProcessWrapper> keep_alive_{this};

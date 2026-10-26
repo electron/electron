@@ -90,13 +90,23 @@ The following events are available on instances of `Session`:
 
 #### Event: 'will-download'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53685
+    description: "Added the trailing `frame` argument."
+```
+-->
+
 Returns:
 
 * `event` Event
 * `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame that started the download, if it still exists.
 
-Emitted when Electron is about to download `item` in `webContents`.
+Emitted when Electron is about to download `item` in `webContents`. See also
+[`item.getInitiatorOrigin()`](download-item.md#downloaditemgetinitiatororigin).
 
 Calling `event.preventDefault()` will cancel the download and `item` will not be
 available from next tick of the process.
@@ -149,6 +159,14 @@ initialized to support the start of the extension's background page.
 
 #### Event: 'file-system-access-restricted'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53666
+    description: "Added `details.frame` and `details.webContents`; emitted once per requesting document instead of once per path."
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -156,6 +174,8 @@ Returns:
   * `origin` string - The origin that initiated access to the blocked path.
   * `isDirectory` boolean - Whether or not the path is a directory.
   * `path` string - The blocked path attempting to be accessed.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that initiated access. May be `null` if the frame has since been destroyed.
+  * `webContents` [WebContents](web-contents.md) | null - The WebContents that contains `frame`.
 * `callback` Function
   * `action` string - The action to take as a result of the restricted path access attempt.
     * `allow` - This will allow `path` to be accessed despite restricted status.
@@ -165,7 +185,7 @@ Returns:
 ```js
 const { app, dialog, BrowserWindow, session } = require('electron')
 
-async function createWindow () {
+async function createWindow() {
   const mainWindow = new BrowserWindow()
 
   await mainWindow.loadURL('https://buzzfeed.com')
@@ -188,14 +208,16 @@ async function createWindow () {
     }
   })
 
-  mainWindow.webContents.executeJavaScript(`
+  mainWindow.webContents.executeJavaScript(
+    `
     window.showDirectoryPicker({
       id: 'electron-demo',
       mode: 'readwrite',
       startIn: 'downloads',
     }).catch(e => {
       console.log(e)
-    })`, true
+    })`,
+    true
   )
 }
 
@@ -214,6 +236,14 @@ app.on('window-all-closed', function () {
 
 #### Event: 'preconnect'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53685
+    description: "Added the trailing `frame` argument."
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -222,6 +252,7 @@ Returns:
 * `allowCredentials` boolean - True if the renderer is requesting that the
   connection include credentials (see the
   [spec](https://w3c.github.io/resource-hints/#preconnect) for more details.)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame that requested the preconnection, if it still exists.
 
 Emitted when a render process requests preconnection to a URL, generally due to
 a [resource hint](https://w3c.github.io/resource-hints/).
@@ -312,9 +343,12 @@ app.whenReady().then(() => {
 
       // Search through the list of devices that have previously been granted permission
       return grantedDevices.some((grantedDevice) => {
-        return grantedDevice.vendorId === details.device.vendorId &&
-              grantedDevice.productId === details.device.productId &&
-              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+        return (
+          grantedDevice.vendorId === details.device.vendorId &&
+          grantedDevice.productId === details.device.productId &&
+          grantedDevice.serialNumber &&
+          grantedDevice.serialNumber === details.device.serialNumber
+        )
       })
     }
     return false
@@ -423,9 +457,12 @@ app.whenReady().then(() => {
 
       // Search through the list of devices that have previously been granted permission
       return grantedDevices.some((grantedDevice) => {
-        return grantedDevice.vendorId === details.device.vendorId &&
-              grantedDevice.productId === details.device.productId &&
-              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+        return (
+          grantedDevice.vendorId === details.device.vendorId &&
+          grantedDevice.productId === details.device.productId &&
+          grantedDevice.serialNumber &&
+          grantedDevice.serialNumber === details.device.serialNumber
+        )
       })
     }
     return false
@@ -565,9 +602,12 @@ app.whenReady().then(() => {
 
       // Search through the list of devices that have previously been granted permission
       return grantedDevices.some((grantedDevice) => {
-        return grantedDevice.vendorId === details.device.vendorId &&
-              grantedDevice.productId === details.device.productId &&
-              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+        return (
+          grantedDevice.vendorId === details.device.vendorId &&
+          grantedDevice.productId === details.device.productId &&
+          grantedDevice.serialNumber &&
+          grantedDevice.serialNumber === details.device.serialNumber
+        )
       })
     }
     return false
@@ -629,7 +669,65 @@ Emitted after `USBDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
 `setDevicePermissionHandler` is used.
 
+#### Event: 'select-webauthn-authenticator' _macOS_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51563
+```
+-->
+
+Returns:
+
+* `event` Event\<\>
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `authenticators` string[] - The available authenticator names. Possible
+    values are `'touchID'` and `'platformPasskeys'`.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+* `callback` Function
+  * `authenticatorName` string | null (optional)
+
+Emitted when both `touchID` and `platformPasskeys` are configured via
+[`app.configureWebAuthn`](app.md#appconfigurewebauthnoptions-macos) and a
+WebAuthn request needs to choose which platform authenticator to use. `callback`
+should be called with one of the names from `event.authenticators`; passing no
+arguments or a name that does not match will cancel the request and the page
+will receive a `NotAllowedError`. The request remains pending until the
+listener invokes the callback, so always invoke it exactly once — typically
+from a `try { … } finally { callback(…) }` block. If no listener is registered,
+`platformPasskeys` is used by default; a listener that throws before invoking
+the callback is treated as unhandled and the default applies. If only one
+authenticator is available for the request, this event is not emitted and that
+authenticator is used automatically.
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  app.configureWebAuthn({
+    touchID: { keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn' },
+    platformPasskeys: true
+  })
+
+  const win = new BrowserWindow()
+
+  win.webContents.session.on('select-webauthn-authenticator', (event, callback) => {
+    // Use the first available authenticator for the request.
+    callback(event.authenticators[0])
+  })
+})
+```
+
 #### Event: 'select-webauthn-account'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51255
+```
+-->
 
 Returns:
 
@@ -647,10 +745,17 @@ discoverable WebAuthn credentials and the user must choose one. `callback`
 should be called with the `credentialId` of the selected account; passing no
 arguments — or a `credentialId` that does not match one of the provided
 accounts — will cancel the request and the page will receive a
-`NotAllowedError`. If no listener is registered for this event, the request is
-cancelled with the same error. The credential request remains pending until
-the listener invokes the callback, so always invoke it exactly once — typically
-from a `try { … } finally { callback(…) }` block.
+`NotAllowedError`. The credential request remains pending until the listener
+invokes the callback, so always invoke it exactly once — typically from a
+`try { … } finally { callback(…) }` block.
+
+> [!NOTE]
+> If no listener is registered for this event, `navigator.credentials.get()`
+> calls that resolve discoverable Touch ID credentials are cancelled with a
+> `NotAllowedError` — even when only a single credential matches. Register a
+> listener if your app supports discoverable-credential (passkey) sign-in.
+> Assertions fulfilled by `platformPasskeys` select the account in the system
+> sheet and do not use this event.
 
 On macOS, the Touch ID platform authenticator surfaces accounts via this event
 once it has been configured with
@@ -821,13 +926,13 @@ Returns `Promise<void>` - Resolves when all connections are closed.
 Returns `Promise<GlobalResponse>` - see [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response).
 
 Sends a request, similarly to how `fetch()` works in the renderer, using
-Chrome's network stack. This differs from Node's `fetch()`, which uses
+Chromium's network stack. This differs from Node's `fetch()`, which uses
 Node.js's HTTP stack.
 
 Example:
 
 ```js
-async function example () {
+async function example() {
   const response = await net.fetch('https://my.app')
   if (response.ok) {
     const body = await response.json()
@@ -919,27 +1024,53 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 * `handler` Function | null
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
-  * `permission` string - The type of requested permission.
+  * `permission` string - The type of requested permission. Electron forwards every permission type that Chromium requests, so this list mirrors Chromium's permission types and includes some that have no effect on desktop or are only used by specific platforms or features.
+    * `ar` - Request access to augmented reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
+    * `automatic-fullscreen` - Request to enter fullscreen without a prior user gesture (Chromium's automatic fullscreen content setting).
+    * `background-fetch` - Request to download resources in the background via the [Background Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API).
+    * `background-sync` - Request to defer work until the user has connectivity via the [Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Synchronization_API).
+    * `captured-surface-control` - Request to forward wheel events to, and control the zoom level of, a captured tab via the [Captured Surface Control API](https://developer.mozilla.org/en-US/docs/Web/API/Captured_Surface_Control_API).
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
-    * `display-capture` - Request access to capture the screen via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API).
+    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`.
+    * `display-capture` - Request access to capture the screen, a window or a tab via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API) (`navigator.mediaDevices.getDisplayMedia`) or via `getUserMedia` with the `chromeMediaSource` constraints described in [desktopCapturer](desktop-capturer.md). Requests for camera or microphone devices are reported as `media` instead.
+    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API). As in Chrome, a cross-origin iframe cannot ask for more access than it already has, and grants for an origin are reset shortly after its last top-level document is closed or navigated away.
     * `fullscreen` - Request control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
     * `geolocation` - Request access to the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+    * `geolocation-approximate` - Request access to a coarse approximation of the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API).
+    * `hand-tracking` - Request access to hand tracking data in WebXR sessions via the [WebXR Hand Input API](https://developer.mozilla.org/en-US/docs/Web/API/XRHand).
+    * `hid` - Request access to HID devices via the [WebHID API](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API).
     * `idle-detection` - Request access to the user's idle state via the [IdleDetector API](https://developer.mozilla.org/en-US/docs/Web/API/IdleDetector).
-    * `media` -  Request access to media devices such as camera, microphone and speakers.
+    * `keyboardLock` - Request capture of keypresses for any or all of the keys on the physical keyboard via the [Keyboard Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock).
+    * `local-fonts` - Request access to the user's locally installed fonts via the [Local Font Access API](https://developer.mozilla.org/en-US/docs/Web/API/Local_Font_Access_API).
+    * `local-network` - Request access to devices on the user's local network via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access).
+    * `local-network-access` - Request access to devices on the user's local network via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access). This is the original permission type; newer Chromium versions split it into `local-network` and `loopback-network`.
+    * `loopback-network` - Request access to loopback (localhost) addresses via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access).
+    * `media` - Request access to media devices such as camera, microphone and speakers. Screen, window and tab capture is reported as `display-capture` instead.
     * `mediaKeySystem` - Request access to DRM protected content.
     * `midi` - Request MIDI access in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
     * `midiSysex` - Request the use of system exclusive messages in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
+    * `nfc` - Request access to NFC tags via the [Web NFC API](https://developer.mozilla.org/en-US/docs/Web/API/Web_NFC_API).
     * `notifications` - Request notification creation and the ability to display them in the user's system tray using the [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/notification)
-    * `pointerLock` - Request to directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API). These requests always appear to originate from the main frame.
-    * `keyboardLock` - Request capture of keypresses for any or all of the keys on the physical keyboard via the [Keyboard Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock). These requests always appear to originate from the main frame.
     * `openExternal` - Request to open links in external applications.
+    * `payment-handler` - Request to handle payment requests via the [Payment Handler API](https://developer.mozilla.org/en-US/docs/Web/API/Payment_Handler_API).
+    * `periodic-background-sync` - Request to run periodic tasks in the background via the [Web Periodic Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Periodic_Background_Synchronization_API).
+    * `persistent-storage` - Request that the origin's storage is not cleared under storage pressure via [`StorageManager.persist()`](https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist).
+    * `pointerLock` - Request to directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API).
+    * `screen-wake-lock` - Request to keep the screen awake via the [Screen Wake Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API).
+    * `sensors` - Request access to device sensors such as the accelerometer and gyroscope via the [Sensor APIs](https://developer.mozilla.org/en-US/docs/Web/API/Sensor_APIs).
+    * `serial` - Request access to serial devices via the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API).
+    * `smart-card` - Request access to smart card readers via the [Web Smart Card API](https://github.com/WICG/web-smart-card).
     * `speaker-selection` - Request to enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
-    * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+    * `system-wake-lock` - Request to keep the system awake without keeping the screen on (a system wake lock).
+    * `top-level-storage-access` - Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+    * `usb` - Request access to USB devices via the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
+    * `vr` - Request access to virtual reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
+    * `web-app-installation` - Request to install a web app via the [Web Install API](https://github.com/WICG/web-install).
+    * `web-printing` - Request access to printers via the [Web Printing API](https://github.com/WICG/web-printing).
     * `window-management` - Request access to enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
     * `unknown` - An unrecognized permission request.
-    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.
   * `details` [PermissionRequest](structures/permission-request.md)  | [FilesystemPermissionRequest](structures/filesystem-permission-request.md) | [MediaAccessPermissionRequest](structures/media-access-permission-request.md) | [OpenExternalPermissionRequest](structures/open-external-permission-request.md) - Additional information about the permission being requested.
@@ -962,37 +1093,89 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 })
 ```
 
+Both `media` and `display-capture` requests carry a
+[MediaAccessPermissionRequest](structures/media-access-permission-request.md) as
+`details`. A `media` request is for camera and/or microphone devices, while a
+`display-capture` request is for the screen, a window or a tab (whether made
+through `getDisplayMedia` or through `getUserMedia` with `chromeMediaSource`
+constraints). Applications that allow camera and microphone access but want to
+control screen sharing separately should handle the two permissions
+individually:
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  if (permission === 'media') {
+    // Camera / microphone. `details.mediaTypes` lists which of them was requested.
+    return callback(true)
+  }
+  if (permission === 'display-capture') {
+    // Screen, window or tab capture.
+    return callback(new URL(details.requestingUrl).origin === 'https://meet.example.com')
+  }
+  callback(false)
+})
+```
+
 #### `ses.setPermissionCheckHandler(handler)`
 
 * `handler` Function\<boolean> | null
-  * `webContents` ([WebContents](web-contents.md) | null) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.  All cross origin sub frames making permission checks will pass a `null` webContents to this handler, while certain other permission checks such as `notifications` checks will always pass `null`.  You should use `embeddingOrigin` and `requestingOrigin` to determine what origin the owning frame and the requesting frame are on respectively.
-  * `permission` string - Type of permission check.
+  * `webContents` ([WebContents](web-contents.md) | null) - WebContents that contains the frame checking the permission. This is `null` when the check is not made on behalf of a document, for example for a service worker or for a `notifications` check. If the check comes from a subframe, `webContents` is the top-level WebContents; use `requestingOrigin`, `requestingUrl` and `isMainFrame` to identify the frame that is asking.
+  * `permission` string - Type of permission check. Electron forwards every permission type that Chromium checks, so this list mirrors Chromium's permission types and includes some that have no effect on desktop or are only used by specific platforms or features.
+    * `ar` - Access to augmented reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
+    * `automatic-fullscreen` - Enter fullscreen without a prior user gesture (Chromium's automatic fullscreen content setting).
+    * `background-fetch` - Download resources in the background via the [Background Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API).
+    * `background-sync` - Defer work until the user has connectivity via the [Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Synchronization_API).
+    * `captured-surface-control` - Forward wheel events to, and control the zoom level of, a captured tab via the [Captured Surface Control API](https://developer.mozilla.org/en-US/docs/Web/API/Captured_Surface_Control_API).
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
-    * `geolocation` - Access the user's geolocation data via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
+    * `display-capture` - Capture the screen via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API).
+    * `fileSystem` - Access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
     * `fullscreen` - Control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
+    * `geolocation` - Access the user's geolocation data via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+    * `geolocation-approximate` - Access a coarse approximation of the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API).
+    * `hand-tracking` - Access hand tracking data in WebXR sessions via the [WebXR Hand Input API](https://developer.mozilla.org/en-US/docs/Web/API/XRHand).
     * `hid` - Access the HID protocol to manipulate HID devices via the [WebHID API](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API).
     * `idle-detection` - Access the user's idle state via the [IdleDetector API](https://developer.mozilla.org/en-US/docs/Web/API/IdleDetector).
+    * `keyboardLock` - Capture keypresses for any or all of the keys on the physical keyboard via the [Keyboard Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock).
+    * `local-fonts` - Access the user's locally installed fonts via the [Local Font Access API](https://developer.mozilla.org/en-US/docs/Web/API/Local_Font_Access_API).
+    * `local-network` - Access devices on the user's local network via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access).
+    * `local-network-access` - Access devices on the user's local network via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access). This is the original permission type; newer Chromium versions split it into `local-network` and `loopback-network`.
+    * `loopback-network` - Access loopback (localhost) addresses via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access).
     * `media` - Access to media devices such as camera, microphone and speakers.
     * `mediaKeySystem` - Access to DRM protected content.
     * `midi` - Enable MIDI access in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
     * `midiSysex` - Use system exclusive messages in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
+    * `nfc` - Access NFC tags via the [Web NFC API](https://developer.mozilla.org/en-US/docs/Web/API/Web_NFC_API).
     * `notifications` - Configure and display desktop notifications to the user with the [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/notification).
     * `openExternal` - Open links in external applications.
-    * `pointerLock` - Directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API). These requests always appear to originate from the main frame.
+    * `payment-handler` - Handle payment requests via the [Payment Handler API](https://developer.mozilla.org/en-US/docs/Web/API/Payment_Handler_API).
+    * `periodic-background-sync` - Run periodic tasks in the background via the [Web Periodic Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Periodic_Background_Synchronization_API).
+    * `persistent-storage` - Keep the origin's storage from being cleared under storage pressure via [`StorageManager.persist()`](https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist).
+    * `pointerLock` - Directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API).
+    * `screen-wake-lock` - Keep the screen awake via the [Screen Wake Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API).
+    * `sensors` - Access device sensors such as the accelerometer and gyroscope via the [Sensor APIs](https://developer.mozilla.org/en-US/docs/Web/API/Sensor_APIs).
     * `serial` - Read from and write to serial devices with the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API).
+    * `smart-card` - Access smart card readers via the [Web Smart Card API](https://github.com/WICG/web-smart-card).
+    * `speaker-selection` - Enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
-    * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+    * `system-wake-lock` - Keep the system awake without keeping the screen on (a system wake lock).
+    * `top-level-storage-access` - Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
-    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
-    * `fileSystem` - Access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
+    * `vr` - Access virtual reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
+    * `web-app-installation` - Install a web app via the [Web Install API](https://github.com/WICG/web-install).
+    * `web-printing` - Access printers via the [Web Printing API](https://github.com/WICG/web-printing).
+    * `window-management` - Enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
+    * `unknown` - An unrecognized permission check.
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
-    * `securityOrigin` string (optional) - The security origin of the `media` check.
+    * `securityOrigin` string (optional) - The origin of the requesting frame, for `media`, `hid`, `usb` and `serial` checks.
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
       `audio` or `unknown`.
-    * `requestingUrl` string (optional) - The last URL the requesting frame loaded.  This is not provided for cross-origin sub frames making permission checks.
+    * `requestingUrl` string (optional) - The last URL the requesting frame loaded. Not provided when the check is not made on behalf of a document (for example for a service worker).
     * `isMainFrame` boolean - Whether the frame making the request is the main frame.
     * `filePath` string (optional) - The path of a `fileSystem` request.
     * `isDirectory` boolean (optional) - Whether a `fileSystem` request is a directory.
@@ -1032,7 +1215,8 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
   * `callback` Function
-    * `streams` Object
+    * `streams` Object | null - Pass `null` to deny the request, which rejects
+      the `getDisplayMedia()` promise with an `AbortError`.
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
         * `id` String - The id of the stream being granted. This will usually
           come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
@@ -1044,7 +1228,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
         a string is specified, can be `loopback` or `loopbackWithMute`.
         Specifying a loopback device will capture system audio, and is
         currently only supported on Windows. If a WebFrameMain is specified,
-        will capture audio from that frame.
+        will capture audio from the `webContents` that contains that frame.
       * `enableLocalEcho` Boolean (optional) - If `audio` is a [WebFrameMain](web-frame-main.md)
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
@@ -1064,27 +1248,45 @@ is set to `true`, the handler will not be invoked.
 ```js
 const { session, desktopCapturer } = require('electron')
 
-session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-    // Grant access to the first screen found.
-    callback({ video: sources[0] })
-  })
-  // Use the system picker if available.
-  // Note: this is currently experimental. If the system picker
-  // is available, it will be used and the media request handler
-  // will not be invoked.
-}, { useSystemPicker: true })
+session.defaultSession.setDisplayMediaRequestHandler(
+  (request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] }).then(
+      (sources) => {
+        // Grant access to the first screen found.
+        callback({ video: sources[0] })
+      },
+      () => {
+        // Deny the request if no sources could be retrieved, for example
+        // when the user cancels the PipeWire picker on Linux.
+        callback(null)
+      }
+    )
+    // Use the system picker if available.
+    // Note: this is currently experimental. If the system picker
+    // is available, it will be used and the media request handler
+    // will not be invoked.
+  },
+  { useSystemPicker: true }
+)
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
-will capture the video or audio stream from that frame.
+captures the whole `webContents` that contains that frame (the tab), not just
+the frame: `request.frame` from an `<iframe>` therefore grants that iframe a
+capture of the page that embeds it. Check `request.frame` before using it this
+way, and note that the callback throws if the frame has been destroyed by the
+time it is called.
 
 ```js
 const { session } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  // Allow the tab to capture itself.
-  callback({ video: request.frame })
+  // Allow a top-level page to capture its own tab.
+  if (request.frame && request.frame === request.frame.top) {
+    callback({ video: request.frame })
+  } else {
+    callback(null)
+  }
 })
 ```
 
@@ -1140,9 +1342,12 @@ app.whenReady().then(() => {
 
       // Search through the list of devices that have previously been granted permission
       return grantedDevices.some((grantedDevice) => {
-        return grantedDevice.vendorId === details.device.vendorId &&
-              grantedDevice.productId === details.device.productId &&
-              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+        return (
+          grantedDevice.vendorId === details.device.vendorId &&
+          grantedDevice.productId === details.device.productId &&
+          grantedDevice.serialNumber &&
+          grantedDevice.serialNumber === details.device.serialNumber
+        )
       })
     } else if (details.deviceType === 'serial') {
       if (details.device.vendorId === 123 && details.device.productId === 345) {
@@ -1251,7 +1456,7 @@ const { app, BrowserWindow, session } = require('electron')
 
 const path = require('node:path')
 
-function createWindow () {
+function createWindow() {
   let bluetoothPinCallback = null
 
   const mainWindow = new BrowserWindow({
@@ -1330,9 +1535,9 @@ Returns `string` - The user agent for this session.
 #### `ses.setSSLConfig(config)`
 
 * `config` Object
-  * `minVersion` string (optional) - Can be `tls1`, `tls1.1`, `tls1.2` or `tls1.3`. The
+  * `minVersion` string (optional) - Can be `tls1.2` or `tls1.3`. The
     minimum SSL version to allow when connecting to remote servers. Defaults to
-    `tls1`.
+    `tls1.2`.
   * `maxVersion` string (optional) - Can be `tls1.2` or `tls1.3`. The maximum SSL version
     to allow when connecting to remote servers. Defaults to `tls1.3`.
   * `disabledCipherSuites` Integer[] (optional) - List of cipher suites which
@@ -1416,7 +1621,40 @@ for `frame` context types.
 
 Registers preload script that will be executed in its associated context type in this session. For
 `frame` contexts, this will run prior to any preload defined in the web preferences of a
-WebContents.
+WebContents. In-page navigations do not rerun the preload script.
+
+URL filters can limit which documents or service workers a script runs in. They behave like
+[content script URL matching](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/content_scripts#matching_url_patterns).
+A script runs for a URL that meets all of these conditions:
+
+* It matches at least one pattern in `matches`, if set.
+* It matches at least one glob in `includeGlobs`, if set.
+* It does not match any pattern in `excludeMatches`.
+* It does not match any glob in `excludeGlobs`.
+
+The URL that the filters are matched against depends on the context type:
+
+* For `service-worker` contexts, it is the service worker's scope.
+* For `frame` contexts, it is the URL of the document being loaded, with these special cases:
+  * The initial empty document of a frame or popup is matched as `about:blank`. Set
+    `matchOriginAsFallback` to match such documents by the origin of the frame that created them
+    instead, for example to keep a script out of the `about:blank` popups of an excluded site.
+  * A `data:` URL loaded with `baseURLForDataURL` is matched by its base URL.
+  * The error page of a failed navigation is matched by the URL that failed to load.
+
+Throws an error if any of the URL patterns are invalid, or if `matches` or `includeGlobs` is an
+empty array.
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.registerPreloadScript({
+  type: 'frame',
+  filePath: '/path/to/preload.js',
+  matches: ['https://*.example.com/*'],
+  excludeGlobs: ['*/logout*']
+})
+```
 
 Returns `string` - The ID of the registered preload script.
 
@@ -1657,7 +1895,6 @@ session is persisted on disk.  For in memory sessions this returns `null`.
     * `indexedDB` - IndexedDB
     * `localStorage` - Local Storage
     * `serviceWorkers` - Service Workers
-    * `webSQL` - WebSQL
   * `origins` String[] (optional) - Clear data for only these origins. Cannot be used with `excludeOrigins`.
   * `excludeOrigins` String[] (optional) - Clear data for all origins except these ones. Cannot be used with `origins`.
   * `avoidClosingConnections` boolean (optional) - Skips deleting cookies that would close current network connections. (Default: `false`)
@@ -1679,6 +1916,12 @@ This method clears more types of data and is more thorough than the
 > Clearing cache data will also clear the shared dictionary cache. This means that any dictionaries used for compression may be reloaded after clearing the cache. If you wish to clear the shared dictionary cache but leave other cached data intact, you may want to use the `clearSharedDictionaryCache` method.
 
 For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
+
+#### `ses.registerLocalAIHandler(handler)` _Experimental_
+
+* `handler` [UtilityProcess](utility-process.md#class-utilityprocess) | null
+
+Registers a local AI handler `UtilityProcess`. To clear the handler, call `registerLocalAIHandler(null)`, which will disconnect any existing Prompt API sessions and destroy any `LanguageModelUtility` instances.
 
 ### Instance Properties
 
@@ -1725,10 +1968,12 @@ const path = require('node:path')
 
 app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol
-  if (!protocol.registerFileProtocol('atom', (request, callback) => {
-    const url = request.url.substr(7)
-    callback({ path: path.normalize(path.join(__dirname, url)) })
-  })) {
+  if (
+    !protocol.registerFileProtocol('atom', (request, callback) => {
+      const url = request.url.substr(7)
+      callback({ path: path.normalize(path.join(__dirname, url)) })
+    })
+  ) {
     console.error('Failed to register protocol')
   }
 })

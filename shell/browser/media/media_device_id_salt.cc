@@ -7,7 +7,6 @@
 #include "base/unguessable_token.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
-#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 
 using content::BrowserThread;

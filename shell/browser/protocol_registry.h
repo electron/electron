@@ -5,9 +5,12 @@
 #ifndef ELECTRON_SHELL_BROWSER_PROTOCOL_REGISTRY_H_
 #define ELECTRON_SHELL_BROWSER_PROTOCOL_REGISTRY_H_
 
+#include <map>
 #include <string>
 #include <string_view>
 
+#include "base/memory/raw_ptr.h"
+#include "base/memory/scoped_refptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 
@@ -16,6 +19,9 @@ class BrowserContext;
 }
 
 namespace electron {
+
+class ElectronBrowserContext;
+class ProtocolSource;
 
 class ProtocolRegistry {
  public:
@@ -51,13 +57,31 @@ class ProtocolRegistry {
   [[nodiscard]] const HandlersMap::mapped_type* FindIntercepted(
       std::string_view scheme) const;
 
+  // protocol.registerSource(): schemes served from directories on disk with
+  // no JavaScript handler. A scheme has either a handler or a source.
+  // Schemes Chromium or the network service serve themselves.
+  static bool IsBuiltinScheme(std::string_view scheme);
+  bool RegisterSource(const std::string& scheme,
+                      scoped_refptr<const ProtocolSource> source);
+  bool UnregisterSource(const std::string& scheme);
+  const ProtocolSource* FindSource(std::string_view scheme) const;
+
+  // A factory for a scheme with a registered handler or source, or an
+  // invalid remote.
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> CreateRegisteredFactory(
+      std::string_view scheme) const;
+
  private:
   friend class ElectronBrowserContext;
 
-  ProtocolRegistry();
+  explicit ProtocolRegistry(ElectronBrowserContext* browser_context);
+
+  const raw_ptr<ElectronBrowserContext> browser_context_;
 
   HandlersMap handlers_;
   HandlersMap intercept_handlers_;
+  std::map<std::string, scoped_refptr<const ProtocolSource>, std::less<>>
+      sources_;
 };
 
 }  // namespace electron

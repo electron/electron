@@ -39,12 +39,9 @@ guide!).
 
 ## How to...?
 
-You can find the full list of "How to?" in the sidebar. If there is
-something that you would like to do that is not documented, please join
-our [Discord server][discord] and let us know!
+You can find the full list of "How to?" in the sidebar.
 
 [app]: ../api/app.md
-[discord]: https://discord.gg/electronjs
 [fiddle]: https://www.electronjs.org/fiddle
 [Message ports]: ./message-ports.md
 [Device access]: ./devices.md

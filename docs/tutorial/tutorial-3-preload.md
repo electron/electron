@@ -43,14 +43,10 @@ and a limited subset of Node.js and Electron APIs.
 :::info Preload script sandboxing
 
 From Electron 20 onwards, preload scripts are **sandboxed** by default and no longer have access
-to a full Node.js environment. Practically, this means that you have a polyfilled `require`
-function that only has access to a limited set of APIs.
-
-| Available API      | Details                                                                                                                                                                                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Electron modules   | Renderer process modules                                                                                                                                                                                                                                       |
-| Node.js modules    | [`events`](https://nodejs.org/api/events.html), [`timers`](https://nodejs.org/api/timers.html), [`url`](https://nodejs.org/api/url.html)                                                                                                                       |
-| Polyfilled globals | [`Buffer`](https://nodejs.org/api/buffer.html), [`process`](../api/process.md), [`clearImmediate`](https://nodejs.org/api/timers.html#timers_clearimmediate_immediate), [`setImmediate`](https://nodejs.org/api/timers.html#timers_setimmediate_callback_args) |
+to a full Node.js environment. Practically, this means that you have a `require` function
+that can only load the `electron` module (the renderer process modules), plus a reduced
+[`process`](../api/process.md) object and a `global` alias for `globalThis`. No Node.js
+built-in modules or Node.js globals are available.
 
 For more information, check out the [Process Sandboxing](./sandbox.md) guide.
 
@@ -81,7 +77,7 @@ contextBridge.exposeInMainWorld('versions', {
 To attach this script to your renderer process, pass its path to the
 `webPreferences.preload` option in the BrowserWindow constructor:
 
-```js {2,8-10} title="main.js"
+```js {3,9-11} title="main.js"
 const { app, BrowserWindow } = require('electron')
 
 const path = require('node:path')
@@ -131,15 +127,15 @@ and attach your `renderer.js` script:
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
-    />
+    >
     <meta
       http-equiv="X-Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
-    />
+    >
     <title>Hello from Electron renderer!</title>
   </head>
   <body>
@@ -203,7 +199,7 @@ Then, set up your `handle` listener in the main process. We do this _before_
 loading the HTML file so that the handler is guaranteed to be ready before
 you send out the `invoke` call from the renderer.
 
-```js {1,15} title="main.js"
+```js {1,16} title="main.js"
 const { app, BrowserWindow, ipcMain } = require('electron/main')
 
 const path = require('node:path')

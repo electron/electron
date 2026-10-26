@@ -11,10 +11,6 @@ namespace content {
 class RenderFrame;
 }
 
-namespace extensions {
-class Dispatcher;
-}
-
 namespace electron {
 
 class ElectronExtensionsRendererClient
@@ -32,8 +28,6 @@ class ElectronExtensionsRendererClient
   // extensions::ExtensionsRendererClient:
   bool IsIncognitoProcess() const override;
   int GetLowestIsolatedWorldId() const override;
-
-  bool AllowPopup();
 
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame);
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame);

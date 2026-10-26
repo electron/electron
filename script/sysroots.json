@@ -13,13 +13,6 @@
         "Tarball": "debian_bullseye_arm64_sysroot.tar.xz",
         "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
     },
-    "bullseye_armel": {
-        "Key": "20230329T085712Z-1",
-        "Sha256Sum": "86fd328cf923eeb81bcbdbdb522f73ab3f3750c272201d3f4258bc95a87d2568",
-        "SysrootDir": "debian_bullseye_armel-sysroot",
-        "Tarball": "debian_bullseye_armel_sysroot.tar.xz",
-        "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
-    },
     "bullseye_armhf": {
         "Key": "20250129T203412Z-2",
         "Sha256Sum": "f99ef848d2f6046437d3277da4442f82dafba040cafdf7f461c9726298e45653",

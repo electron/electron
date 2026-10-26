@@ -11,7 +11,9 @@
 #include <optional>
 #include <string>
 
+#include "base/functional/callback_helpers.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
@@ -21,6 +23,7 @@
 #include "ui/views/widget/widget_observer.h"
 
 #if BUILDFLAG(IS_WIN)
+#include "base/callback_list.h"
 #include "base/win/scoped_gdi_object.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
 #include "shell/browser/ui/win/taskbar_host.h"
@@ -39,13 +42,7 @@ class FrameViewLinux;
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
-class NativeFrameViewLinux;
 class GlobalMenuBarX11;
-class LinuxFrameLayout;
-#endif
-
-#if BUILDFLAG(SUPPORTS_OZONE_X11)
-class EventDisabler;
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -92,7 +89,6 @@ class NativeWindowViews : public NativeWindow,
 #if BUILDFLAG(IS_WIN)
   extensions::SizeConstraints GetContentSizeConstraints() const override;
 #endif
-  void SetDecorationInsets(const gfx::Insets& insets) override;
   void SetResizable(bool resizable) override;
   bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
@@ -156,8 +152,6 @@ class NativeWindowViews : public NativeWindow,
 
   bool IsVisibleOnAllWorkspaces() const override;
 
-  void SetGTKDarkThemeEnabled(bool use_dark_theme) override;
-
   content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
   NativeWindowHandle GetNativeWindowHandle() const override;
@@ -198,28 +192,37 @@ class NativeWindowViews : public NativeWindow,
       std::variant<std::monostate, bool, SkColor> accent_color) override;
   std::variant<bool, std::string> GetAccentColor() const override;
   void UpdateWindowAccentColor(bool active) override;
+  void OnSystemAccentColorChanged();
   TaskbarHost& taskbar_host() { return taskbar_host_; }
   void UpdateThickFrame();
   void SetLayered();
   bool has_thick_frame() const { return thick_frame_; }
 #endif
 
-  SkColor overlay_button_color() const { return overlay_button_color_; }
-  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+  std::optional<SkColor> overlay_button_color() const {
+    return overlay_button_color_;
+  }
+  std::optional<SkColor> overlay_symbol_color() const {
+    return overlay_symbol_color_;
+  }
 
 #if BUILDFLAG(IS_LINUX)
-  LinuxFrameLayout* GetLinuxFrameLayout();
   views::FrameViewLinux* GetFrameViewLinux() const;
-  gfx::Insets GetCustomDecorationInsets() const { return decoration_insets_; }
-  bool IsTiled() const override;
-  void SetTiled(bool tiled);
+  [[nodiscard]] bool ignore_mouse_events() const {
+    return ignore_mouse_events_;
+  }
 #endif
 
+  [[nodiscard]] bool has_rounded_corners() const { return rounded_corner_; }
+
  private:
-  void set_overlay_button_color(SkColor color) {
+  // Applies |menu_model| to the in-window menu bar.
+  void SetRootViewMenu(ElectronMenuModel* menu_model);
+  void SetGTKDarkThemeEnabled(bool use_dark_theme);
+  void set_overlay_button_color(std::optional<SkColor> color) {
     overlay_button_color_ = color;
   }
-  void set_overlay_symbol_color(SkColor color) {
+  void set_overlay_symbol_color(std::optional<SkColor> color) {
     overlay_symbol_color_ = color;
   }
 
@@ -244,12 +247,25 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
   void OnWidgetMove() override;
+
 #if BUILDFLAG(IS_WIN)
   bool ExecuteWindowsCommand(int command_id) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
+  // Remembers a legacy window (Chrome_RenderWidgetHostHWND) reported by
+  // WM_PARENTNOTIFY, one per web content container.
+  void RememberLegacyWindow(HWND legacy_window);
+  // Adds or removes the mouse leave filter on every remembered legacy window,
+  // depending on whether mouse messages are being forwarded.
+  void UpdateLegacyWindowSubclasses();
   void SetForwardMouseMessages(bool forward);
+  // Records the cursor position reported by |MouseHookProc| and schedules a
+  // deferred dispatch into the aura window tree.
+  void OnForwardedMouseMove(const gfx::Point& screen_point);
+  // Dispatches the most recent forwarded cursor position, or the mouse leave
+  // that ends it, to the web contents.
+  void FlushForwardedMouseEvent();
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
                                        WPARAM w_param,
@@ -291,21 +307,26 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_LINUX)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
-  gfx::Insets decoration_insets_;
-  // Tracks tiled state independently of the frame layout/view (which may
-  // not exist for frameless windows). Used by CalculateInsetsInDIP and
-  // the JS isTiled() API.
-  bool is_tiled_ = false;
-#endif
 
-#if BUILDFLAG(SUPPORTS_OZONE_X11)
-  // To disable the mouse events.
-  std::unique_ptr<EventDisabler> event_disabler_;
+  // Set while the window is disabled; running it re-enables event dispatch.
+  base::ScopedClosureRunner enable_event_listening_;
 #endif
 
   // The color to use as the theme and symbol colors respectively for WCO.
-  SkColor overlay_button_color_ = SkColor();
-  SkColor overlay_symbol_color_ = SkColor();
+  std::optional<SkColor> overlay_button_color_;
+  std::optional<SkColor> overlay_symbol_color_;
+
+  // The last background color set via SetBackgroundColor(). Tracked because the
+  // root view does not always reflect it (e.g. it is transparent for CSD
+  // windows on Linux).
+  SkColor background_color_ = SK_ColorTRANSPARENT;
+
+  // This value is determined when the window is created.
+  bool rounded_corner_ = true;
+
+#if BUILDFLAG(IS_LINUX)
+  bool ignore_mouse_events_ = false;
+#endif
 
 #if BUILDFLAG(IS_WIN)
 
@@ -322,6 +343,8 @@ class NativeWindowViews : public NativeWindow,
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_ = true;
 
+  bool content_protected_ = false;
+
   // The bounds of window before maximize/fullscreen.
   gfx::Rect restore_bounds_;
 
@@ -333,12 +356,29 @@ class NativeWindowViews : public NativeWindow,
   static inline base::NoDestructor<absl::flat_hash_set<NativeWindowViews*>>
       forwarding_windows_;
   static HHOOK mouse_hook_;
+  // The legacy windows created inside this window, one per web content
+  // container. They are recreated on navigation and renderer crashes, and the
+  // replacements are reported through WM_PARENTNOTIFY.
+  absl::flat_hash_set<HWND> legacy_windows_;
   bool forwarding_mouse_messages_ = false;
-  HWND legacy_window_ = nullptr;
+
+  // Cursor position (physical pixels, relative to the client area) that the
+  // next dispatch should use. Empty while the cursor is outside the window.
+  std::optional<gfx::Point> pending_forwarded_point_;
+  // Last position the web contents was told about, dispatched as the position
+  // of the leave that closes a forwarding session.
+  gfx::Point last_forwarded_point_;
+  // Whether the aura tree currently believes the cursor is inside the window,
+  // seeded from the cursor when forwarding is enabled.
+  bool cursor_inside_window_ = false;
+  // Whether a deferred dispatch has already been scheduled.
+  bool forwarded_event_pending_ = false;
+
   bool layered_ = false;
 
-  // This value is determined when the window is created.
-  bool rounded_corner_ = true;
+  // Reapplies the frame colour when the system accent colour or the "show
+  // accent colour on title bars" setting changes.
+  base::CallbackListSubscription accent_color_subscription_;
 
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;
@@ -388,6 +428,9 @@ class NativeWindowViews : public NativeWindow,
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;
+
+  // Must be the last member.
+  base::WeakPtrFactory<NativeWindowViews> mouse_forwarding_weak_factory_{this};
 };
 
 }  // namespace electron

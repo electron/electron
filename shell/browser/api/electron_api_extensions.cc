@@ -6,7 +6,8 @@
 
 #include "chrome/browser/browser_process.h"
 #include "extensions/browser/extension_registry.h"
-#include "gin/data_object_builder.h"
+#include "gin/arguments.h"
+#include "gin/converter.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/extensions/electron_extension_system.h"

@@ -7,7 +7,7 @@ const hideFocusBtn = () => {
   focusModalBtn.removeEventListener('click', focusWindow)
 }
 
-const showFocusBtn = (btn) => {
+const showFocusBtn = () => {
   focusModalBtn.classList.add('smooth-appear')
   focusModalBtn.classList.remove('disappear')
   focusModalBtn.addEventListener('click', focusWindow)

@@ -7,12 +7,12 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index dc3f7542498ba80bcfe554977bffc5cc23f5c088..77e98d75a03bb0f96bb7b24c0da67ae43808db8a 100644
+index aa6488c0923296c3549978b70f7b400b7d6f4607..559f8dad7946398798048cf32fae46556c787f3a 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -174,6 +174,11 @@
- #include "services/network/web_transport.h"
- #include "url/gurl.h"
+@@ -192,6 +192,11 @@
+ #include "services/network/ssl_private_key_proxy.h"
+ #endif
  
 +// Electron
 +#include "net/cert/caching_cert_verifier.h"
@@ -22,7 +22,7 @@ index dc3f7542498ba80bcfe554977bffc5cc23f5c088..77e98d75a03bb0f96bb7b24c0da67ae4
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -642,6 +647,111 @@ bool IsIncognitoFromParams(const mojom::NetworkContextParams& params) {
+@@ -668,6 +673,132 @@ void RemoveInvalidationFilterCallback(
  
  }  // namespace
  
@@ -74,10 +74,22 @@ index dc3f7542498ba80bcfe554977bffc5cc23f5c088..77e98d75a03bb0f96bb7b24c0da67ae4
 +             const net::NetLogWithSource& net_log) override {
 +    out_req->reset();
 +
-+    net::CompletionOnceCallback callback2 = base::BindOnce(
-+        &RemoteCertVerifier::OnRequestFinished, base::Unretained(this),
-+        params, std::move(callback), verify_result, out_req);
-+    return upstream_->Verify(params, verify_result, std::move(callback2), out_req, net_log);
++    auto [async_callback, sync_callback] =
++        base::SplitOnceCallback(std::move(callback));
++    int result = upstream_->Verify(
++        params, verify_result,
++        base::BindOnce(&RemoteCertVerifier::OnRequestFinished,
++                       base::Unretained(this), params,
++                       std::move(async_callback), verify_result, out_req),
++        out_req, net_log);
++    if (result != net::ERR_IO_PENDING && client_.is_bound()) {
++      // The upstream verifier can complete synchronously (e.g. a cache hit in
++      // an inner CachingCertVerifier); the client must still be consulted.
++      VerifyWithClient(params, std::move(sync_callback), verify_result, out_req,
++                       result);
++      return net::ERR_IO_PENDING;
++    }
++    return result;
 +  }
 +
 +  void Verify2QwacBinding(
@@ -111,19 +123,28 @@ index dc3f7542498ba80bcfe554977bffc5cc23f5c088..77e98d75a03bb0f96bb7b24c0da67ae4
 +                         std::unique_ptr<CertVerifier::Request>* out_req,
 +                         int error) {
 +    if (client_.is_bound()) {
-+      // We take a weak pointer to the request because deletion of the request
-+      // is what signals cancellation. Thus if the request is cancelled, the
-+      // callback won't be called, thus avoiding UAF, because |verify_result|
-+      // is freed when the request is cancelled.
-+      *out_req = std::make_unique<Request>();
-+      base::WeakPtr<Request> weak_req = static_cast<Request*>(out_req->get())->GetWeakPtr();
-+      client_->Verify(error, *verify_result, params.certificate(),
-+          params.hostname(), params.flags(), params.ocsp_response(),
-+          base::BindOnce(&Request::OnRemoteResponse,
-+            weak_req, params, verify_result, error, std::move(callback)));
++      VerifyWithClient(params, std::move(callback), verify_result, out_req,
++                       error);
 +    } else {
 +      std::move(callback).Run(error);
 +    }
++  }
++
++  void VerifyWithClient(const RequestParams& params,
++                        net::CompletionOnceCallback callback,
++                        net::CertVerifyResult* verify_result,
++                        std::unique_ptr<CertVerifier::Request>* out_req,
++                        int error) {
++    // We take a weak pointer to the request because deletion of the request
++    // is what signals cancellation. Thus if the request is cancelled, the
++    // callback won't be called, thus avoiding UAF, because |verify_result|
++    // is freed when the request is cancelled.
++    *out_req = std::make_unique<Request>();
++    base::WeakPtr<Request> weak_req = static_cast<Request*>(out_req->get())->GetWeakPtr();
++    client_->Verify(error, *verify_result, params.certificate(),
++        params.hostname(), params.flags(), params.ocsp_response(),
++        base::BindOnce(&Request::OnRemoteResponse,
++          weak_req, params, verify_result, error, std::move(callback)));
 +  }
 +
 + private:
@@ -134,8 +155,8 @@ index dc3f7542498ba80bcfe554977bffc5cc23f5c088..77e98d75a03bb0f96bb7b24c0da67ae4
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1090,6 +1200,13 @@ void NetworkContext::SetClient(
-   client_.Bind(std::move(client));
+@@ -1132,6 +1263,12 @@ void NetworkContext::CreateSocketFactory(
+   socket_factory_receivers_.Add(socket_factory_.get(), std::move(receiver));
  }
  
 +void NetworkContext::SetCertVerifierClient(
@@ -144,11 +165,10 @@ index dc3f7542498ba80bcfe554977bffc5cc23f5c088..77e98d75a03bb0f96bb7b24c0da67ae4
 +    remote_cert_verifier_->Bind(std::move(client));
 +  }
 +}
-+
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2786,6 +2903,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2932,6 +3069,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -160,10 +180,10 @@ index dc3f7542498ba80bcfe554977bffc5cc23f5c088..77e98d75a03bb0f96bb7b24c0da67ae4
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index cecfe79a530c33972eb1ec066038cd93eee607f0..8fefa1f73342de4e3fba5189ba37fa8657218a4d 100644
+index bc99d58e885577b71f8fa5a919d8a47cd420b560..d16e27762fd27d9ffbdc0bf94369f4c9b1e042fd 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -123,6 +123,7 @@ class SimpleUrlPatternMatcher;
+@@ -129,6 +129,7 @@ class SimpleUrlPatternMatcher;
  }
  
  namespace network {
@@ -171,7 +191,7 @@ index cecfe79a530c33972eb1ec066038cd93eee607f0..8fefa1f73342de4e3fba5189ba37fa86
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -259,6 +260,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -272,6 +273,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -180,7 +200,7 @@ index cecfe79a530c33972eb1ec066038cd93eee607f0..8fefa1f73342de4e3fba5189ba37fa86
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -1007,6 +1010,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -1118,6 +1121,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -190,10 +210,10 @@ index cecfe79a530c33972eb1ec066038cd93eee607f0..8fefa1f73342de4e3fba5189ba37fa86
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 91fd7f0d38216b5ed33875fcf2595cb2384672ed..6c586cc768ca8ee67617e432edfbc02a2fae97e2 100644
+index ccd9cc464b2a13eb355486fd472c21f4ca37388e..896917429ed60bfe6bc94f92587613d3f9f55d2b 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -331,6 +331,17 @@ struct SocketBrokerRemotes {
+@@ -351,6 +351,17 @@ struct SocketBrokerRemotes {
    pending_remote<SocketBroker> server;
  };
  
@@ -211,21 +231,20 @@ index 91fd7f0d38216b5ed33875fcf2595cb2384672ed..6c586cc768ca8ee67617e432edfbc02a
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -984,6 +995,9 @@ interface NetworkContext {
-   // Sets a client for this network context.
-   SetClient(pending_remote<NetworkContextClient> client);
+@@ -1061,6 +1072,8 @@ interface NetworkContext {
+   // `NetworkContext`.
+   CreateSocketFactory(pending_receiver<SocketFactory> receiver);
  
 +  // Sets a certificate verifier client for this network context.
 +  SetCertVerifierClient(pending_remote<CertVerifierClient>? client);
-+
    // Creates a new URLLoaderFactory with the given |params|.
    CreateURLLoaderFactory(
        pending_receiver<URLLoaderFactory> url_loader_factory,
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index d0614f3d775a21de62f5a486ab07b0875894e188..6b9cf7d98311a69ac613ea70ed56922cd60ed13e 100644
+index e64989bf12639919df8f9055c46e7c32c74953ef..d2ac1758f2990d2fa675b2e6780f0cc12b9992ed 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
-@@ -63,6 +63,8 @@ class TestNetworkContext : public mojom::NetworkContext {
+@@ -68,6 +68,8 @@ class TestNetworkContext : public mojom::NetworkContext {
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override {}

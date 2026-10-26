@@ -5,15 +5,13 @@
 #include "shell/common/color_util.h"
 
 #include <algorithm>
-#include <cmath>
 
 #include "content/public/common/color_parser.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 
 #if BUILDFLAG(IS_WIN)
-#include <dwmapi.h>
+#include <windows.h>
 
-#include "base/win/registry.h"
 #include "skia/ext/skia_utils_win.h"
 #endif
 
@@ -70,21 +68,6 @@ std::string ToRGBAHex(SkColor color, bool include_hash) {
 }
 
 #if BUILDFLAG(IS_WIN)
-std::optional<DWORD> GetSystemAccentColor() {
-  base::win::RegKey key;
-  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
-               KEY_READ) != ERROR_SUCCESS) {
-    return std::nullopt;
-  }
-
-  DWORD accent_color = 0;
-  if (key.ReadValueDW(L"AccentColor", &accent_color) != ERROR_SUCCESS) {
-    return std::nullopt;
-  }
-
-  return accent_color;
-}
-
 SkColor GetSysSkColor(int which) {
   return skia::COLORREFToSkColor(GetSysColor(which));
 }

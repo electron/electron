@@ -4,9 +4,16 @@
 
 #include "shell/common/api/electron_api_shared_texture.h"
 
+#include <string>
+#include <vector>
+
 #include "base/base64.h"
 #include "base/command_line.h"
+#include "base/memory/ref_counted_delete_on_sequence.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/numerics/byte_conversions.h"
+#include "base/task/bind_post_task.h"
+#include "base/task/sequenced_task_runner.h"
 #include "content/browser/compositor/image_transport_factory.h"  // nogncheck
 #include "gpu/command_buffer/client/context_support.h"
 #include "gpu/ipc/client/client_shared_image_interface.h"
@@ -49,32 +56,45 @@ bool IsBrowserProcess() {
 gpu::ContextSupport* GetContextSupport() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->ContextSupport();
+    if (!factory)
+      return nullptr;
+
+    scoped_refptr<viz::RasterContextProvider> provider =
+        factory->GetContextFactory()->SharedMainThreadRasterContextProvider();
+    return provider ? provider->ContextSupport() : nullptr;
   } else {
-    return blink::SharedGpuContext::ContextProviderWrapper()
-        ->ContextProvider()
-        .ContextSupport();
+    base::WeakPtr<blink::WebGraphicsContext3DProviderWrapper> wrapper =
+        blink::SharedGpuContext::ContextProviderWrapper();
+    if (!wrapper)
+      return nullptr;
+
+    auto& context_provider = wrapper->ContextProvider();
+    if (context_provider.IsContextLost())
+      return nullptr;
+
+    return context_provider.ContextSupport();
   }
 }
 
 gpu::SharedImageInterface* GetSharedImageInterface() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->SharedImageInterface();
+    if (!factory)
+      return nullptr;
+
+    scoped_refptr<viz::RasterContextProvider> provider =
+        factory->GetContextFactory()->SharedMainThreadRasterContextProvider();
+    return provider ? provider->SharedImageInterface() : nullptr;
   } else {
-    return blink::SharedGpuContext::SharedImageInterfaceProvider()
-        ->SharedImageInterface();
+    auto* provider = blink::SharedGpuContext::SharedImageInterfaceProvider();
+    return provider ? provider->SharedImageInterface() : nullptr;
   }
 }
 
 std::string GetBase64StringFromSyncToken(gpu::SyncToken& sync_token) {
   if (!sync_token.verified_flush()) {
-    auto* sii = GetSharedImageInterface();
-    sii->VerifySyncToken(sync_token);
+    if (auto* sii = GetSharedImageInterface())
+      sii->VerifySyncToken(sync_token);
   }
 
   auto sync_token_data = base::Base64Encode(UNSAFE_BUFFERS(
@@ -136,13 +156,19 @@ std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
   }
 }
 
+// VideoFrames holding a reference may die on any thread, but the GPU helpers
+// and cppgc-backed |release_callback| are sequence-affine; delete on sequence.
 struct ImportedSharedTexture
-    : base::RefCountedThreadSafe<ImportedSharedTexture> {
+    : base::RefCountedDeleteOnSequence<ImportedSharedTexture> {
+  ImportedSharedTexture()
+      : base::RefCountedDeleteOnSequence<ImportedSharedTexture>(
+            base::SequencedTaskRunner::GetCurrentDefault()) {}
+
   // Metadata
   gfx::Size coded_size;
   gfx::Rect visible_rect;
-  int64_t timestamp;
-  media::VideoPixelFormat pixel_format;
+  int64_t timestamp = 0;
+  media::VideoPixelFormat pixel_format = media::PIXEL_FORMAT_UNKNOWN;
 
   // Holds a reference to prevent it from being destroyed.
   scoped_refptr<gpu::ClientSharedImage> client_shared_image;
@@ -156,6 +182,10 @@ struct ImportedSharedTexture
 
   void UpdateReleaseSyncToken(const gpu::SyncToken& token);
   void SetupReleaseSyncTokenCallback();
+
+  // Safe to run or destroy on any thread; forwards the release sync token to
+  // UpdateReleaseSyncToken() on the owning sequence.
+  media::VideoFrame::ReleaseMailboxCB CreateFrameReleaseCallback();
 
   // Transfer to other Chromium processes.
   v8::Local<v8::Value> StartTransferSharedTexture(v8::Isolate* isolate);
@@ -180,7 +210,8 @@ struct ImportedSharedTexture
 
   // The cleanup happens at destructor.
  private:
-  friend class base::RefCountedThreadSafe<ImportedSharedTexture>;
+  friend class base::RefCountedDeleteOnSequence<ImportedSharedTexture>;
+  friend class base::DeleteHelper<ImportedSharedTexture>;
   ~ImportedSharedTexture();
 };
 
@@ -218,11 +249,12 @@ void ImportedSharedTextureWrapper::ReleaseReference() {
   ist.reset();
 }
 
-// This function will be called when the VideoFrame is destructed.
-void OnVideoFrameMailboxReleased(
-    const scoped_refptr<ImportedSharedTexture>& ist,
-    const gpu::SyncToken& sync_token) {
-  ist->UpdateReleaseSyncToken(sync_token);
+media::VideoFrame::ReleaseMailboxCB
+ImportedSharedTexture::CreateFrameReleaseCallback() {
+  return base::BindPostTask(
+      base::WrapRefCounted(owning_task_runner()),
+      base::BindOnce(&ImportedSharedTexture::UpdateReleaseSyncToken,
+                     base::WrapRefCounted(this)));
 }
 
 v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
@@ -232,7 +264,7 @@ v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
       blink::ToExecutionContext(current_script_state);
 
   auto si = ist->client_shared_image;
-  auto cb = base::BindOnce(OnVideoFrameMailboxReleased, ist);
+  auto cb = ist->CreateFrameReleaseCallback();
 
   scoped_refptr<media::VideoFrame> raw_frame =
       media::VideoFrame::WrapSharedImage(
@@ -312,7 +344,7 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
   base::AutoLock locker(release_sync_token_lock_);
 
   auto* sii = GetSharedImageInterface();
-  if (release_sync_token.HasData()) {
+  if (sii && release_sync_token.HasData()) {
     // If we already have a release sync token, we need to wait for it
     // to be signaled before we can set the new one.
     sii->WaitSyncToken(release_sync_token);
@@ -325,16 +357,21 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
 void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   base::AutoLock locker(release_sync_token_lock_);
 
-  auto* sii = GetSharedImageInterface();
   if (!release_sync_token.HasData()) {
-    release_sync_token = sii->GenUnverifiedSyncToken();
+    if (auto* sii = GetSharedImageInterface())
+      release_sync_token = sii->GenUnverifiedSyncToken();
   }
 
-  client_shared_image->UpdateDestructionSyncToken(release_sync_token);
+  if (release_sync_token.HasData())
+    client_shared_image->UpdateDestructionSyncToken(release_sync_token);
 
   if (release_callback) {
-    GetContextSupport()->SignalSyncToken(release_sync_token,
-                                         std::move(release_callback));
+    if (auto* context_support = GetContextSupport()) {
+      context_support->SignalSyncToken(release_sync_token,
+                                       std::move(release_callback));
+    } else {
+      std::move(release_callback).Run();
+    }
   }
 }
 
@@ -362,7 +399,7 @@ void ImportedTextureGetVideoFrame(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
@@ -385,12 +422,18 @@ void ImportedTextureStartTransferSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "The shared texture has been released.");
+    return;
+  }
+
+  if (!GetSharedImageInterface()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to start shared texture transfer: GPU is not available");
     return;
   }
 
@@ -400,8 +443,13 @@ void ImportedTextureStartTransferSharedTexture(
 
 void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
+
+  if (wrapper->IsReferenceReleased()) {
+    LOG(WARNING) << "This imported shared texture is already released.";
+    return;
+  }
 
   auto cb = info[0];
   if (cb->IsFunction()) {
@@ -420,12 +468,18 @@ void ImportedTextureGetFrameCreationSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "The shared texture has been released.");
+    return;
+  }
+
+  if (!GetSharedImageInterface()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to get frame creation sync token: GPU is not available");
     return;
   }
 
@@ -437,7 +491,7 @@ void ImportedTextureSetReleaseSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
@@ -452,17 +506,31 @@ void ImportedTextureSetReleaseSyncToken(
     return;
   }
 
+  if (!GetSharedImageInterface()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to set release sync token: GPU is not available");
+    return;
+  }
+
   wrapper->ist->SetReleaseSyncToken(isolate, info[0].As<v8::Object>());
 }
 
 v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
     v8::Isolate* isolate,
-    ImportedSharedTexture* imported) {
+    scoped_refptr<ImportedSharedTexture> imported) {
   auto* wrapper = new ImportedSharedTextureWrapper();
-  wrapper->ist = base::WrapRefCounted(imported);
+  wrapper->ist = std::move(imported);
 
+  // Every method below carries |imported_wrapped| as its [[Data]], so the
+  // external stays alive for as long as any of them is reachable. Tie the
+  // lifetime of |wrapper| to the external rather than to the returned
+  // dictionary so that a retained method can never observe a freed wrapper.
   auto imported_wrapped =
       v8::External::New(isolate, wrapper, v8::kExternalPointerTypeTagDefault);
+  auto* persistent = wrapper->CreatePersistent(isolate, imported_wrapped);
+  persistent->SetWeak(wrapper, PersistentCallbackPass1,
+                      v8::WeakCallbackType::kParameter);
+
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
   auto releaser = v8::Function::New(isolate->GetCurrentContext(),
@@ -497,13 +565,7 @@ v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
   root.Set("getFrameCreationSyncToken", get_frame_creation_sync_token);
   root.Set("setReleaseSyncToken", set_release_sync_token);
 
-  auto root_local = gin::ConvertToV8(isolate, root);
-  auto* persistent = wrapper->CreatePersistent(isolate, root_local);
-
-  persistent->SetWeak(wrapper, PersistentCallbackPass1,
-                      v8::WeakCallbackType::kParameter);
-
-  return root_local;
+  return gin::ConvertToV8(isolate, root);
 }
 
 struct ImportSharedTextureInfoPlane {
@@ -626,8 +688,12 @@ struct Converter<ImportSharedTextureInfo> {
       if (v8_native_pixmap.Get("planes", &v8_planes)) {
         out->planes.clear();
         for (uint32_t i = 0; i < v8_planes->Length(); ++i) {
-          v8::Local<v8::Value> v8_item =
-              v8_planes->Get(isolate->GetCurrentContext(), i).ToLocalChecked();
+          v8::Local<v8::Value> v8_item;
+          if (!v8_planes->Get(isolate->GetCurrentContext(), i)
+                   .ToLocal(&v8_item) ||
+              !v8_item->IsObject()) {
+            return false;
+          }
           gin::Dictionary v8_plane(isolate, v8_item.As<v8::Object>());
           ImportSharedTextureInfoPlane plane;
           v8_plane.Get("stride", &plane.stride);
@@ -728,6 +794,12 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   }
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to import shared texture: GPU is not available");
+    return v8::Null(isolate);
+  }
+
   gpu::SharedImageUsageSet shared_image_usage =
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE)
       gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_GLES2_WRITE |
@@ -753,7 +825,7 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
     return v8::Null(isolate);
   }
 
-  ImportedSharedTexture* imported = new ImportedSharedTexture();
+  auto imported = base::MakeRefCounted<ImportedSharedTexture>();
   imported->pixel_format = shared_texture.pixel_format;
   imported->coded_size = shared_texture.coded_size;
   imported->visible_rect = shared_texture.visible_rect;
@@ -762,7 +834,15 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   imported->client_shared_image = std::move(si);
   imported->id = shared_texture.id;
 
-  return CreateImportedSharedTextureFromSharedImage(isolate, imported);
+  return CreateImportedSharedTextureFromSharedImage(isolate,
+                                                    std::move(imported));
+}
+
+void SetSharedTextureReceiver(v8::Isolate* isolate,
+                              v8::Local<v8::Function> receiver) {
+  gin_helper::Dictionary global(isolate,
+                                isolate->GetCurrentContext()->Global());
+  global.SetHidden("sharedTextureReceiver", receiver.As<v8::Value>());
 }
 
 v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
@@ -795,12 +875,18 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
                                                                     &message);
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to finish shared texture transfer: GPU is not available");
+    return v8::Null(isolate);
+  }
+
   auto si = sii->ImportSharedImage(std::move(exported));
 
   auto source_st = GetSyncTokenFromBase64String(sync_token_data);
   sii->WaitSyncToken(source_st);
 
-  ImportedSharedTexture* imported = new ImportedSharedTexture();
+  auto imported = base::MakeRefCounted<ImportedSharedTexture>();
   imported->pixel_format = partial.pixel_format;
   imported->coded_size = partial.coded_size;
   imported->visible_rect = partial.visible_rect;
@@ -809,7 +895,8 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
   imported->client_shared_image = std::move(si);
   imported->id = id;
 
-  return CreateImportedSharedTextureFromSharedImage(isolate, imported);
+  return CreateImportedSharedTextureFromSharedImage(isolate,
+                                                    std::move(imported));
 }
 
 }  // namespace electron::api::shared_texture
@@ -822,10 +909,14 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("importSharedTexture",
-                 &electron::api::shared_texture::ImportSharedTexture);
-  dict.SetMethod("finishTransferSharedTexture",
-                 &electron::api::shared_texture::FinishTransferSharedTexture);
+  dict.SetMethod<&electron::api::shared_texture::ImportSharedTexture>(
+      "importSharedTexture");
+  dict.SetMethod<&electron::api::shared_texture::FinishTransferSharedTexture>(
+      "finishTransferSharedTexture");
+  // Renderer: the callback ElectronApiServiceImpl::ReceiveSharedTexture()
+  // hands textures sent with sharedTexture.sendSharedTexture() to.
+  dict.SetMethod<&electron::api::shared_texture::SetSharedTextureReceiver>(
+      "setSharedTextureReceiver");
 }
 
 }  // namespace

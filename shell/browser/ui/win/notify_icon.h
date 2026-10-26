@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 
+#include "base/functional/callback_helpers.h"
 #include "base/memory/weak_ptr.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/tray_icon.h"
@@ -68,7 +69,8 @@ class NotifyIcon : public TrayIcon {
   void RemoveBalloon() override;
   void Focus() override;
   void PopUpContextMenu(const gfx::Point& pos,
-                        base::WeakPtr<ElectronMenuModel> menu_model) override;
+                        base::WeakPtr<ElectronMenuModel> menu_model,
+                        base::ScopedClosureRunner retain_menu) override;
   void CloseContextMenu() override;
   void SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) override;
   gfx::Rect GetBounds() override;
@@ -93,6 +95,9 @@ class NotifyIcon : public TrayIcon {
   // The currently-displayed icon for the window.
   base::win::ScopedGDIObject<HICON> icon_;
 
+  // The tooltip, kept so it can be restored when the taskbar is re-created.
+  std::wstring tool_tip_;
+
   // The context menu.
   raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
 
@@ -104,6 +109,8 @@ class NotifyIcon : public TrayIcon {
 
   // Context menu associated with this icon (if any).
   std::unique_ptr<views::MenuRunner> menu_runner_;
+  // Keeps the popped-up menu's owner alive while |menu_runner_| uses it.
+  base::ScopedClosureRunner popup_menu_retain_;
 
   base::WeakPtrFactory<NotifyIcon> weak_factory_{this};
 };

@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/functional/callback.h"
+#include "base/functional/callback_forward.h"
 
 namespace in_app_purchase {
 

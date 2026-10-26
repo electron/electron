@@ -13,8 +13,6 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
@@ -218,9 +216,6 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
            {Reason::EXCLUDE_DOMAIN_NON_ASCII,
             "The cookie was set with a Domain attribute containing non ASCII "
             "characters."},
-           {Reason::EXCLUDE_THIRD_PARTY_BLOCKED_WITHIN_FIRST_PARTY_SET,
-            "The cookie is blocked by third-party cookie blocking but the two "
-            "sites are in the same First-Party Set"},
            {Reason::EXCLUDE_PORT_MISMATCH,
             "The cookie's source_port did not match the port of the request."},
            {Reason::EXCLUDE_SCHEME_MISMATCH,
@@ -333,7 +328,7 @@ v8::Local<v8::Promise> Cookies::Get(v8::Isolate* isolate,
     options.set_do_not_update_access_time();
 
     manager->GetCookieList(GURL(url), options,
-                           net::CookiePartitionKeyCollection::Todo(),
+                           net::CookiePartitionKeyCollection::ContainsAll(),
                            base::BindOnce(&FilterCookieWithStatuses,
                                           std::move(dict), std::move(promise)));
   }

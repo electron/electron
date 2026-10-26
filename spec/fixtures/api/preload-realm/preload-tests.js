@@ -5,6 +5,56 @@ const evalTests = {
 };
 
 const tests = {
+  testProcess: () => ({
+    type: process.type,
+    sandboxed: process.sandboxed,
+    contextIsolated: process.contextIsolated,
+    arch: process.arch,
+    platform: process.platform,
+    version: process.version,
+    electronVersion: process.versions.electron,
+    chromeVersion: process.versions.chrome,
+    nodeVersion: process.versions.node,
+    hasEnv: typeof process.env === 'object' && Object.keys(process.env).length > 0,
+    hasExecPath: typeof process.execPath === 'string' && process.execPath.length > 0
+  }),
+  testGlobalScope: () => {
+    const interfaces = [
+      'AbortController',
+      'AbortSignal',
+      'CompressionStream',
+      'CustomEvent',
+      'DecompressionStream',
+      'DOMException',
+      'ErrorEvent',
+      'Event',
+      'EventTarget',
+      'PromiseRejectionEvent',
+      'TextDecoder',
+      'TextDecoderStream',
+      'TextEncoder',
+      'TextEncoderStream',
+      'URL',
+      'URLPattern',
+      'URLSearchParams',
+      'atob',
+      'btoa',
+      'queueMicrotask',
+      'reportError',
+      'structuredClone'
+    ];
+    return {
+      constructorName: globalThis.constructor.name,
+      missing: interfaces.filter((name) => typeof globalThis[name] !== 'function')
+    };
+  },
+  testReportError: async () => {
+    reportError(new Error('reported from preload realm'));
+    Promise.reject(new Error('rejected in preload realm'));
+    // Unhandled rejections are reported after the microtask checkpoint.
+    await new Promise((resolve) => queueMicrotask(resolve));
+    return true;
+  },
   testSend: (name, ...args) => {
     ipcRenderer.send(name, ...args);
   },

@@ -1,8 +1,7 @@
 import { fetchWithSession } from '@electron/internal/browser/api/net-fetch';
-import { addIpcDispatchListeners } from '@electron/internal/browser/ipc-dispatch';
 import * as deprecate from '@electron/internal/common/deprecate';
 
-import { net } from 'electron/main';
+import { net, type UtilityProcess } from 'electron/main';
 
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
 const { isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
@@ -23,8 +22,6 @@ systemPickerVideoSource.name = '';
 Object.freeze(systemPickerVideoSource);
 
 Session.prototype._init = function () {
-  addIpcDispatchListeners(this);
-
   if (this.extensions) {
     const rerouteExtensionEvent = (eventName: string) => {
       const warn = deprecate.warnOnce(`${eventName} event`, `session.extensions ${eventName} event`);
@@ -115,6 +112,12 @@ Session.prototype.removeExtension = deprecate.moveAPI(
   'session.removeExtension',
   'session.extensions.removeExtension'
 );
+
+Session.prototype.registerLocalAIHandler = function (handler: UtilityProcess | null) {
+  // We need to unwrap the userland `ForkUtilityProcess` object and get the underlying
+  // `ElectronInternal.UtilityProcessWrapper` before we call the C++ function
+  return this._registerLocalAIHandler(handler !== null ? (handler as any)._unwrapHandle() : null);
+};
 
 export default {
   fromPartition,

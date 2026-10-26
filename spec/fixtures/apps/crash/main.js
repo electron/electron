@@ -7,6 +7,7 @@ app.setVersion('0.1.0');
 
 const url = app.commandLine.getSwitchValue('crash-reporter-url');
 const uploadToServer = !app.commandLine.hasSwitch('no-upload');
+const setUploadToServer = app.commandLine.getSwitchValue('set-upload-to-server');
 const setExtraParameters = app.commandLine.hasSwitch('set-extra-parameters-in-renderer');
 const addGlobalParam = app.commandLine.getSwitchValue('add-global-param')?.split(':');
 
@@ -22,6 +23,10 @@ crashReporter.start({
   },
   globalExtra: addGlobalParam[0] ? { [addGlobalParam[0]]: addGlobalParam[1] } : {}
 });
+
+if (setUploadToServer) {
+  crashReporter.setUploadToServer(setUploadToServer === 'true');
+}
 
 app.whenReady().then(() => {
   const crashType = app.commandLine.getSwitchValue('crash-type');
@@ -68,10 +73,14 @@ app.whenReady().then(() => {
     const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     w.webContents.on('render-process-gone', () => process.exit(0));
     w.webContents.on('did-finish-load', () => {
+      // Fill the heap with arrays of doubles, which hold no pointers. V8 runs
+      // about twenty full GCs near the heap limit before it gives up; arrays of
+      // pointers make each of them trace the whole heap, which on slow machines
+      // took long enough for the exit timer below to end the app first.
       w.webContents.executeJavaScript(`
         function oomTrigger() {
           const arr = [];
-          while (true) arr.push(new Array(10000).fill('x'.repeat(100)));
+          while (true) arr.push(new Array(10000).fill(0.5));
         }
         oomTrigger();
       `);
@@ -98,11 +107,12 @@ app.whenReady().then(() => {
     const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     w.webContents.on('render-process-gone', () => process.exit(0));
     w.webContents.on('did-finish-load', () => {
+      // Arrays of doubles, as in 'renderer-oom', so the GCs near the limit are quick.
       w.webContents.executeJavaScript(`
         const blob = new Blob([\`
           function workerLeakMemory() {
             const arr = [];
-            while (true) { arr.push(new Array(1000).fill("x".repeat(1000))); }
+            while (true) { arr.push(new Array(1000).fill(0.5)); }
           }
           function triggerWorkerOom() { workerLeakMemory(); }
           triggerWorkerOom();
@@ -111,6 +121,19 @@ app.whenReady().then(() => {
       `);
     });
     w.loadURL('about:blank');
+  } else if (crashType === 'renderer-fastfail' || crashType === 'node-renderer-fastfail') {
+    // Windows: chrome://crash/cfg makes the renderer terminate via a Control
+    // Flow Guard violation (__fastfail / STATUS_STACK_BUFFER_OVERRUN), which
+    // bypasses crashpad's in-process handler and is only captured through the
+    // electron_wer.dll WER runtime exception helper. The node variant also
+    // initialises libuv in the renderer, which changes the process error mode.
+    const webPreferences =
+      crashType === 'node-renderer-fastfail' ? { sandbox: false, nodeIntegration: true, contextIsolation: false } : {};
+    const w = new BrowserWindow({ show: false, webPreferences });
+    w.webContents.on('render-process-gone', () => process.exit(0));
+    w.loadURL('about:blank').then(() => {
+      w.loadURL('chrome://crash/cfg').catch(() => {});
+    });
   } else if (crashType === 'node') {
     const crashPath = path.join(__dirname, 'node-crash.js');
     const child = childProcess.fork(crashPath, { silent: true });

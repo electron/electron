@@ -7,9 +7,10 @@
 
 #include <vector>
 
-#include "base/files/file_path.h"
 #include "base/supports_user_data.h"
 #include "shell/browser/preload_script.h"
+
+class GURL;
 
 namespace content {
 class BrowserContext;
@@ -28,7 +29,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
   std::vector<PreloadScript>& preload_scripts() { return preload_scripts_; }
 
-  bool HasServiceWorkerPreloadScript();
+  // Whether any service worker preload's URL filters match |scope|.
+  bool HasServiceWorkerPreloadScript(const GURL& scope);
 
  private:
   SessionPreferences();

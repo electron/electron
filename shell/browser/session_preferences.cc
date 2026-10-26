@@ -4,7 +4,7 @@
 
 #include "shell/browser/session_preferences.h"
 
-#include "base/logging.h"
+#include "base/check.h"
 #include "base/memory/ptr_util.h"
 #include "content/public/browser/browser_context.h"
 
@@ -30,11 +30,13 @@ SessionPreferences* SessionPreferences::FromBrowserContext(
   return static_cast<SessionPreferences*>(context->GetUserData(&kLocatorKey));
 }
 
-bool SessionPreferences::HasServiceWorkerPreloadScript() {
+bool SessionPreferences::HasServiceWorkerPreloadScript(const GURL& scope) {
   const auto& preloads = preload_scripts();
   auto it = std::find_if(
-      preloads.begin(), preloads.end(), [](const PreloadScript& script) {
-        return script.script_type == PreloadScript::ScriptType::kServiceWorker;
+      preloads.begin(), preloads.end(), [&scope](const PreloadScript& script) {
+        return script.script_type ==
+                   PreloadScript::ScriptType::kServiceWorker &&
+               script.MatchesURL(scope);
       });
   return it != preloads.end();
 }

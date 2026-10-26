@@ -13,7 +13,6 @@
 #include "base/files/file_util.h"
 #include "base/json/values_util.h"
 #include "base/path_service.h"
-#include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
@@ -32,10 +31,13 @@
 #include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "third_party/blink/public/common/features_generated.h"
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -119,6 +121,8 @@ constexpr base::TimeDelta kPermissionRevocationTimeout = base::Seconds(5);
   });
 }
 
+// Returns true if the path is a Universal Naming Convention (UNC) path pointing
+// to a local system path, device namespace, or WSL loopback redirector.
 bool MaybeIsLocalUNCPath(const base::FilePath& path) {
   if (!path.IsNetwork()) {
     return false;
@@ -133,6 +137,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
   if (components.size() >= 2 &&
       (base::FilePath::CompareEqualIgnoreCase(components[1],
                                               FILE_PATH_LITERAL("localhost")) ||
+       base::FilePath::CompareEqualIgnoreCase(
+           components[1], FILE_PATH_LITERAL("wsl.localhost")) ||
+       base::FilePath::CompareEqualIgnoreCase(
+           components[1], FILE_PATH_LITERAL("wsl.localhost.")) ||
        components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
        components[1] == FILE_PATH_LITERAL(".") ||
        components[1] == FILE_PATH_LITERAL("?") ||
@@ -162,10 +170,12 @@ bool ShouldBlockAccessToPath(
   DCHECK(!path.empty());
   DCHECK(path.IsAbsolute());
 
-  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePath(path);
+  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
+      path, /*should_normalize_file_path=*/true);
   for (auto& rule : extra_rules) {
     rule.path =
-        ChromeFileSystemAccessPermissionContext::NormalizeFilePath(rule.path);
+        ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
+            rule.path, /*should_normalize_file_path=*/true);
   }
 
 #if BUILDFLAG(IS_WIN)
@@ -248,7 +258,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
                       const content::PathInfo& path_info,
                       HandleType handle_type,
                       GrantType type,
-                      UserAction user_action)
+                      AccessTrigger access_trigger)
       : context_{std::move(context)},
         origin_{origin},
         handle_type_{handle_type},
@@ -345,12 +355,16 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    auto origin = rfh->GetLastCommittedOrigin().GetURL();
-    if (url::Origin::Create(origin) != origin_) {
-      // Third party iframes are not allowed to request more permissions.
+    // Third party iframes are not allowed to request more permissions: the
+    // grant belongs to |origin_|, and only a top-level document of that origin
+    // may ask to widen it.
+    const url::Origin embedding_origin =
+        rfh->GetMainFrame()->GetLastCommittedOrigin();
+    if (embedding_origin != origin_) {
       std::move(callback).Run(PermissionRequestOutcome::kThirdPartyContext);
       return;
     }
+    auto origin = rfh->GetLastCommittedOrigin().GetURL();
 
     auto* permission_manager =
         static_cast<electron::ElectronPermissionManager*>(
@@ -558,7 +572,7 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
-    UserAction user_action) {
+    AccessTrigger access_trigger) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // operator[] might insert a new OriginState in |active_permissions_map_|,
   // but that is exactly what we want.
@@ -578,7 +592,7 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
   if (creating_new_grant) {
     grant = base::MakeRefCounted<PermissionGrantImpl>(
         weak_factory_.GetWeakPtr(), origin, path_info, handle_type,
-        GrantType::kRead, user_action);
+        GrantType::kRead, access_trigger);
     existing_grant = grant.get();
   } else {
     grant = existing_grant;
@@ -590,20 +604,21 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
       AncestorHasActivePermission(origin, path_info.path, GrantType::kRead)) {
     grant->SetStatus(PermissionStatus::GRANTED);
   } else {
-    switch (user_action) {
-      case UserAction::kOpen:
-      case UserAction::kSave:
+    switch (access_trigger) {
+      case AccessTrigger::kOpen:
+      case AccessTrigger::kSave:
         // Open and Save dialog only grant read access for individual files.
         if (handle_type == HandleType::kDirectory) {
           break;
         }
         [[fallthrough]];
-      case UserAction::kDragAndDrop:
+      case AccessTrigger::kDragAndDrop:
         // Drag&drop grants read access for all handles.
         grant->SetStatus(PermissionStatus::GRANTED);
         break;
-      case UserAction::kLoadFromStorage:
-      case UserAction::kNone:
+      case AccessTrigger::kLoadFromStorage:
+      case AccessTrigger::kProgrammaticRead:
+      case AccessTrigger::kProgrammaticWrite:
         break;
     }
   }
@@ -616,7 +631,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
-    UserAction user_action) {
+    AccessTrigger access_trigger) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // operator[] might insert a new OriginState in |active_permissions_map_|,
   // but that is exactly what we want.
@@ -636,7 +651,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
   if (creating_new_grant) {
     grant = base::MakeRefCounted<PermissionGrantImpl>(
         weak_factory_.GetWeakPtr(), origin, path_info, handle_type,
-        GrantType::kWrite, user_action);
+        GrantType::kWrite, access_trigger);
     existing_grant = grant.get();
   } else {
     grant = existing_grant;
@@ -648,15 +663,16 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
       AncestorHasActivePermission(origin, path_info.path, GrantType::kWrite)) {
     grant->SetStatus(PermissionStatus::GRANTED);
   } else {
-    switch (user_action) {
-      case UserAction::kSave:
+    switch (access_trigger) {
+      case AccessTrigger::kSave:
         // Only automatically grant write access for save dialogs.
         grant->SetStatus(PermissionStatus::GRANTED);
         break;
-      case UserAction::kOpen:
-      case UserAction::kDragAndDrop:
-      case UserAction::kLoadFromStorage:
-      case UserAction::kNone:
+      case AccessTrigger::kOpen:
+      case AccessTrigger::kDragAndDrop:
+      case AccessTrigger::kLoadFromStorage:
+      case AccessTrigger::kProgrammaticRead:
+      case AccessTrigger::kProgrammaticWrite:
         break;
     }
   }
@@ -665,8 +681,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
 }
 
 bool FileSystemAccessPermissionContext::IsFileTypeDangerous(
-    const base::FilePath& path,
-    const url::Origin& origin) {
+    const base::FilePath& path) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return false;
 }
@@ -693,19 +708,20 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
-    UserAction user_action,
+    AccessTrigger access_trigger,
     content::GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(SensitiveEntryResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-  auto [it, inserted] = callback_map_.try_emplace(path_info.path);
-  it->second.push_back(std::move(callback));
-  if (!inserted)
-    return;
-
+  // Every request is checked and, if needed, confirmed with the app on its
+  // own, so the app sees each requesting origin/frame and one requester's
+  // answer is never applied to another's.
+  const int request_id = next_restricted_path_request_id_++;
+  restricted_path_callbacks_.emplace(request_id, std::move(callback));
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
-      GetWeakPtr(), origin, path_info, handle_type, user_action, frame_id);
+      GetWeakPtr(), request_id, origin, path_info, handle_type, access_trigger,
+      frame_id);
   CheckPathAgainstBlocklist(path_info, handle_type,
                             std::move(after_blocklist_check_callback));
 }
@@ -771,36 +787,36 @@ void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
 }
 
 void FileSystemAccessPermissionContext::RunRestrictedPathCallback(
-    const base::FilePath& file_path,
+    int request_id,
     SensitiveEntryResult result) {
-  if (auto val = callback_map_.extract(file_path)) {
-    for (auto& callback : val.mapped()) {
-      std::move(callback).Run(result);
-    }
+  if (auto node = restricted_path_callbacks_.extract(request_id)) {
+    std::move(node.mapped()).Run(result);
   }
 }
 
 void FileSystemAccessPermissionContext::OnRestrictedPathResult(
-    const base::FilePath& file_path,
+    int request_id,
     gin::Arguments* args) {
   SensitiveEntryResult result = SensitiveEntryResult::kAbort;
   args->GetNext(&result);
-  RunRestrictedPathCallback(file_path, result);
+  RunRestrictedPathCallback(request_id, result);
 }
 
 void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
+    int request_id,
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
-    UserAction user_action,
+    AccessTrigger access_trigger,
     content::GlobalRenderFrameHostId frame_id,
     bool should_block) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-  if (user_action == UserAction::kNone) {
+  if (access_trigger == AccessTrigger::kProgrammaticRead ||
+      access_trigger == AccessTrigger::kProgrammaticWrite) {
     auto result = should_block ? SensitiveEntryResult::kAbort
                                : SensitiveEntryResult::kAllowed;
-    RunRestrictedPathCallback(path_info.path, result);
+    RunRestrictedPathCallback(request_id, result);
     return;
   }
 
@@ -810,22 +826,30 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     if (session && session->Get()) {
       v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
       v8::HandleScope scope(isolate);
+      content::RenderFrameHost* rfh =
+          content::RenderFrameHost::FromID(frame_id);
       v8::Local<v8::Object> details =
           gin::DataObjectBuilder(isolate)
               .Set("origin", origin.GetURL().spec())
               .Set("isDirectory", handle_type == HandleType::kDirectory)
               .Set("path", path_info.path)
+              .Set("frame", rfh)
+              .Set("webContents",
+                   rfh ? content::WebContents::FromRenderFrameHost(rfh)
+                       : nullptr)
               .Build();
       session->Get()->Emit(
           "file-system-access-restricted", details,
           base::BindRepeating(
               &FileSystemAccessPermissionContext::OnRestrictedPathResult,
-              weak_factory_.GetWeakPtr(), path_info.path));
+              weak_factory_.GetWeakPtr(), request_id));
+    } else {
+      RunRestrictedPathCallback(request_id, SensitiveEntryResult::kAbort);
     }
     return;
   }
 
-  RunRestrictedPathCallback(path_info.path, SensitiveEntryResult::kAllowed);
+  RunRestrictedPathCallback(request_id, SensitiveEntryResult::kAllowed);
 }
 
 void FileSystemAccessPermissionContext::MaybeEvictEntries(
@@ -1097,36 +1121,6 @@ void FileSystemAccessPermissionContext::RevokeActiveGrants(
   }
 }
 
-bool FileSystemAccessPermissionContext::OriginHasReadAccess(
-    const url::Origin& origin) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  auto it = active_permissions_map_.find(origin);
-  if (it != active_permissions_map_.end()) {
-    return std::ranges::any_of(it->second.read_grants, [&](const auto& grant) {
-      return grant.second->GetActivePermissionStatus() ==
-             PermissionStatus::GRANTED;
-    });
-  }
-
-  return false;
-}
-
-bool FileSystemAccessPermissionContext::OriginHasWriteAccess(
-    const url::Origin& origin) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  auto it = active_permissions_map_.find(origin);
-  if (it != active_permissions_map_.end()) {
-    return std::ranges::any_of(it->second.write_grants, [&](const auto& grant) {
-      return grant.second->GetActivePermissionStatus() ==
-             PermissionStatus::GRANTED;
-    });
-  }
-
-  return false;
-}
-
 void FileSystemAccessPermissionContext::NavigatedAwayFromOrigin(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -1150,6 +1144,18 @@ void FileSystemAccessPermissionContext::NavigatedAwayFromOrigin(
 void FileSystemAccessPermissionContext::CleanupPermissions(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  // Keep the grants while any top-level document of |origin| is still open in
+  // this session.
+  for (api::WebContents* api_web_contents :
+       api::WebContents::GetWebContentsList()) {
+    content::WebContents* web_contents = api_web_contents->web_contents();
+    if (web_contents && !web_contents->IsBeingDestroyed() &&
+        web_contents->GetBrowserContext() == browser_context() &&
+        web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin() ==
+            origin) {
+      return;
+    }
+  }
   RevokeActiveGrants(origin);
 }
 

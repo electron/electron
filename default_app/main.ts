@@ -74,7 +74,7 @@ if (option.modules.length > 0) {
   (Module as any)._preloadModules(option.modules);
 }
 
-// See lib/browser/desktop-name.ts
+// See DefaultDesktopName() in shell/browser/app_package.cc
 function defaultDesktopName(name: string | undefined): string {
   const slug =
     name &&
@@ -298,7 +298,6 @@ async function startRepl() {
 // start the default app.
 if (option.file && !option.webdriver) {
   const file = option.file;
-  // eslint-disable-next-line n/no-deprecated-api
   const protocol = URL.canParse(file) ? new URL(file).protocol : null;
   const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {

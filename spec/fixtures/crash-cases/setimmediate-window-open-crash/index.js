@@ -8,6 +8,13 @@ function createWindow() {
     }
   });
 
+  // The child posts back via window.opener, so it has to share the
+  // opener's unsandboxed process.
+  mainWindow.webContents.setWindowOpenHandler(() => ({
+    action: 'allow',
+    overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+  }));
+
   mainWindow.on('close', () => {
     app.quit();
   });

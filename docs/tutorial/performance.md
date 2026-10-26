@@ -179,11 +179,11 @@ const fs = require('node:fs')
 const fooParser = require('foo-parser')
 
 class Parser {
-  constructor () {
+  constructor() {
     this.files = fs.readdirSync('.')
   }
 
-  getParsedFiles () {
+  getParsedFiles() {
     return fooParser.parse(this.files)
   }
 }
@@ -202,16 +202,16 @@ do this work a little later, when `getParsedFiles()` is actually called?
 const fs = require('node:fs')
 
 class Parser {
-  async getFiles () {
+  async getFiles() {
     // Touch the disk as soon as `getFiles` is called, not sooner.
     // Also, ensure that we're not blocking other operations by using
     // the asynchronous version.
-    this.files = this.files || await fs.promises.readdir('.')
+    this.files = this.files || (await fs.promises.readdir('.'))
 
     return this.files
   }
 
-  async getParsedFiles () {
+  async getParsedFiles() {
     // Our fictitious foo-parser is a big and expensive module to load, so
     // defer that work until we actually need to parse files.
     // Since `require()` comes with a module cache, the `require()` call
@@ -276,7 +276,7 @@ variant.
 
 ### 4. Blocking the renderer process
 
-Since Electron ships with a current version of Chrome, you can make use of the
+Since Electron ships with a current version of Chromium, you can make use of the
 latest and greatest features the Web Platform offers to defer or offload heavy
 operations in a way that keeps your app smooth and responsive.
 

@@ -25,15 +25,12 @@ const gin::WrapperInfo AutoUpdater::kWrapperInfo =
 
 AutoUpdater::AutoUpdater(v8::Isolate* isolate) {
   auto_updater::AutoUpdater::SetDelegate(this);
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
 }
 
 AutoUpdater::~AutoUpdater() = default;
 
-void AutoUpdater::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
+void AutoUpdater::OnBeforeMicrotasksRunnerDispose() {
   auto_updater::AutoUpdater::SetDelegate(nullptr);
 }
 
@@ -75,12 +72,12 @@ void AutoUpdater::OnError(const std::string& message,
 
     // add two new params for better error handling
     errorObject
-        ->Set(context, gin::StringToV8(isolate, "code"),
-              v8::Integer::New(isolate, code))
+        ->CreateDataProperty(context, gin::StringToV8(isolate, "code"),
+                             v8::Integer::New(isolate, code))
         .Check();
     errorObject
-        ->Set(context, gin::StringToV8(isolate, "domain"),
-              gin::StringToV8(isolate, domain))
+        ->CreateDataProperty(context, gin::StringToV8(isolate, "domain"),
+                             gin::StringToV8(isolate, domain))
         .Check();
 
     gin_helper::EmitEvent(isolate, wrapper, "error", errorObject, message);

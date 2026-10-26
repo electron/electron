@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/memory/singleton.h"
 #include "base/task/single_thread_task_runner.h"
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
@@ -52,8 +51,14 @@ void GPUInfoManager::OnGpuInfoUpdate() {
 void GPUInfoManager::CompleteInfoFetcher(
     gin_helper::Promise<base::Value> promise) {
   complete_info_promise_set_.emplace_back(std::move(promise));
-  gpu_data_manager_->RequestDx12VulkanVideoGpuInfoIfNeeded(
-      content::GpuDataManagerImpl::kGpuInfoRequestAll, /* delayed */ false);
+  // Dawn info is deliberately not requested: it isn't part of gpu::GPUInfo
+  // (so it never reaches the result) and collecting it enumerates every Dawn
+  // adapter on the GPU main thread, which can stall compositing for seconds.
+  constexpr auto kRequest =
+      static_cast<content::GpuDataManagerImpl::GpuInfoRequest>(
+          content::GpuDataManagerImpl::kGpuInfoRequestDirectX |
+          content::GpuDataManagerImpl::kGpuInfoRequestVideo);
+  gpu_data_manager_->RequestGpuInfoIfNeeded(kRequest, /* delayed */ false);
 }
 
 void GPUInfoManager::FetchCompleteInfo(

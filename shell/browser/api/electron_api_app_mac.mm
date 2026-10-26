@@ -7,7 +7,14 @@
 #include <string>
 
 #include "base/path_service.h"
+#include "base/strings/sys_string_conversions.h"
+#include "electron/mas.h"
+#include "gin/arguments.h"
+#include "shell/browser/app_shim/app_shim_listener.h"
+#include "shell/browser/browser.h"
+#include "shell/common/app_shim_constants.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -23,7 +30,7 @@ base::FilePath App::GetDefaultAppLogPath() {
       [NSString stringWithFormat:@"Library/Logs/%@", bundle_name];
   NSString* library_path =
       [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
-  return base::FilePath{[library_path UTF8String]};
+  return base::FilePath{base::SysNSStringToUTF8(library_path)};
 }
 
 void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,
@@ -52,6 +59,38 @@ bool App::IsRunningUnderARM64Translation() const {
     return false;
   }
   return proc_translated == 1;
+}
+
+void App::StartAppShimServer(gin::Arguments* args) {
+#if IS_MAS_BUILD()
+  args->ThrowTypeError("App shims are not available in Mac App Store builds");
+#else
+  if (!Browser::Get()->is_ready()) {
+    args->ThrowTypeError(
+        "app.startAppShimServer() can only be called after app is ready");
+    return;
+  }
+  std::string name = app_shim::kDefaultServerName;
+  if (args->Length() > 0) {
+    gin_helper::Dictionary options;
+    v8::Local<v8::Value> name_value;
+    if (!args->GetNext(&options) ||
+        (options.Get("name", &name_value) && !name_value->IsUndefined() &&
+         !options.Get("name", &name))) {
+      args->ThrowTypeError("Invalid options: name must be a string");
+      return;
+    }
+  }
+  std::string error;
+  if (!AppShimListener::Get()->Start(name, &error))
+    args->ThrowTypeError(error);
+#endif
+}
+
+void App::StopAppShimServer() {
+#if !IS_MAS_BUILD()
+  AppShimListener::Get()->Stop();
+#endif
 }
 
 }  // namespace electron::api

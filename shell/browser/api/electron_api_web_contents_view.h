@@ -7,63 +7,71 @@
 
 #include <optional>
 
-#include "base/memory/weak_ptr.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "shell/browser/api/electron_api_view.h"
-#include "shell/browser/draggable_region_provider.h"
+#include "shell/common/color_util.h"
+#include "v8/include/cppgc/member.h"
+
+namespace gin {
+class Arguments;
+}  // namespace gin
 
 namespace gin_helper {
 class Dictionary;
-}
+}  // namespace gin_helper
+
+namespace electron {
+class NativeWindow;
+}  // namespace electron
 
 namespace electron::api {
 
 class WebContents;
+class WebContentsViewHost;
 
-class WebContentsView : public View,
-                        private content::WebContentsObserver,
-                        public DraggableRegionProvider {
+class WebContentsView final : public View {
  public:
-  // Create a new instance of WebContentsView.
-  static gin_helper::Handle<WebContentsView> Create(
-      v8::Isolate* isolate,
-      const gin_helper::Dictionary& web_preferences);
+  static WebContentsView* New(gin::Arguments* args);
 
-  // Return the cached constructor function.
-  static v8::Local<v8::Function> GetConstructor(v8::Isolate* isolate);
+  // Creates a WebContentsView through its JavaScript constructor.
+  static WebContentsView* Create(v8::Isolate* isolate,
+                                 const gin_helper::Dictionary& web_preferences);
 
-  // gin_helper::Wrappable
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor* visitor) const override;
+
+  // gin_helper::Constructible
+  using ConstructibleParent = View;
+  static void FillObjectTemplate(v8::Isolate* isolate,
+                                 v8::Local<v8::ObjectTemplate> templ);
+  static const char* GetClassName() { return "WebContentsView"; }
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit WebContentsView(WebContents* web_contents);
+  ~WebContentsView() override;
 
   // Public APIs.
-  gin_helper::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
+  WebContents* GetWebContents();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
 
-  int NonClientHitTest(const gfx::Point& point) override;
-
- protected:
-  // Takes an existing WebContents.
-  WebContentsView(v8::Isolate* isolate,
-                  gin_helper::Handle<WebContents> web_contents);
-  ~WebContentsView() override;
-
-  // content::WebContentsObserver:
-  void WebContentsDestroyed() override;
-
-  // views::ViewObserver
-  void OnViewAddedToWidget(views::View* view) override;
-  void OnViewRemovedFromWidget(views::View* view) override;
+  // Lets |window| hit test this view's draggable regions until the view is
+  // removed from it or its native peer is released.
+  void RegisterDraggableRegionProvider(NativeWindow* window);
 
  private:
-  static gin_helper::WrappableBase* New(gin::Arguments* args);
+  friend class WebContentsViewHost;
 
-  void ApplyBorderRadius();
+  // View:
+  bool IsUsable() const override;
 
-  // Keep a reference to v8 wrapper.
-  v8::Global<v8::Value> web_contents_;
-  base::WeakPtr<api::WebContents> api_web_contents_;
+  WebContentsViewHost* web_contents_view_host() const;
+  WebContents* GetLiveWebContents() const;
+  void OnWebContentsDestroyed();
+
+  cppgc::Member<WebContents> api_web_contents_;
 };
 
 }  // namespace electron::api

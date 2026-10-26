@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "net/base/address_list.h"
@@ -58,18 +57,17 @@ void ResolveHostFunction::Run() {
       /*endpoint_results_with_metadata=*/net::HostResolverEndpointResults()));
   if (electron::IsUtilityProcess()) {
     URLLoaderBundle::GetInstance()->GetHostResolver()->ResolveHost(
-        network::mojom::HostResolverHost::NewHostPortPair(
-            std::move(host_port_pair)),
+        network::mojom::HostResolverHost::NewHostPortPair(host_port_pair),
         net::NetworkAnonymizationKey(), std::move(params_),
         std::move(resolve_host_client));
   } else {
     DCHECK_CURRENTLY_ON(BrowserThread::UI);
     browser_context_->GetDefaultStoragePartition()
         ->GetNetworkContext()
-        ->ResolveHost(network::mojom::HostResolverHost::NewHostPortPair(
-                          std::move(host_port_pair)),
-                      net::NetworkAnonymizationKey(), std::move(params_),
-                      std::move(resolve_host_client));
+        ->ResolveHost(
+            network::mojom::HostResolverHost::NewHostPortPair(host_port_pair),
+            net::NetworkAnonymizationKey(), std::move(params_),
+            std::move(resolve_host_client));
   }
 }
 

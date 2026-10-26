@@ -284,15 +284,13 @@ Emitted when the window exits from a maximized state.
 
 Emitted when the window is minimized.
 
+> [!NOTE]
+> On Wayland, “minimized” is not currently a supported state. The minimize event will only fire when triggered by client-side decoration (e.g. clicking the minimize
+> button on a frameless window’s Window Control Overlay)
+
 #### Event: 'restore'
 
 Emitted when the window is restored from a minimized state.
-
-#### Event: 'tiled-state-changed' _Linux_
-
-Emitted when the window's tiled state changes — for example, when it is snapped
-to the left or right half of the screen. Use `win.isTiled()` in the handler to
-query the current state.
 
 #### Event: 'will-resize' _macOS_ _Windows_
 
@@ -516,6 +514,9 @@ operations will be done via it.
 
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
+
+> [!NOTE]
+> Reading this property throws `Object has been destroyed` once the window has been destroyed; see [`win.isDestroyed()`](base-window.md#winisdestroyed).
 
 #### `win.id` _Readonly_
 
@@ -750,12 +751,6 @@ Returns `boolean` - Whether the window is in fullscreen mode.
 
 > [!NOTE]
 > On macOS, fullscreen transitions take place asynchronously. When querying for a BrowserWindow's fullscreen status, you should ensure that either the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events have been emitted.
-
-#### `win.isTiled()` _Linux_
-
-Returns `boolean` - Whether the window is tiled by the window manager (e.g.
-snapped to the left or right half of the screen). Only meaningful on Wayland;
-always returns `false` on other platforms.
 
 #### `win.setSimpleFullScreen(flag)` _macOS_
 
@@ -1068,9 +1063,13 @@ Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
 can not be focused on.
 
+Not supported on Wayland (Linux).
+
 #### `win.isAlwaysOnTop()`
 
 Returns `boolean` - Whether the window is always on top of other windows.
+
+Not supported on Wayland (Linux).
 
 #### `win.moveAbove(mediaSourceId)`
 
@@ -1253,6 +1252,15 @@ Returns `boolean` - Whether the window's document has been edited.
 
 #### `win.capturePage([rect, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 * `opts` Object (optional)
   * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
@@ -1260,7 +1268,7 @@ Returns `boolean` - Whether the window's document has been edited.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
-Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page. If the page is not visible, `rect` may be empty. The page is considered visible when its browser window is hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
+Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page. If the page is not visible, `rect` may be empty. The page is considered visible when its browser window is hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true. The image has the page's device scale factor (for offscreen rendering, `webPreferences.offscreen.deviceScaleFactor`), so `image.getSize()` is in DIPs and `image.toBitmap()` holds the full-resolution pixels.
 
 #### `win.loadURL(url[, options])`
 
@@ -1309,10 +1317,12 @@ const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
 win.loadURL('http://localhost:8000/post', {
-  postData: [{
-    type: 'rawData',
-    bytes: Buffer.from('hello=world')
-  }],
+  postData: [
+    {
+      type: 'rawData',
+      bytes: Buffer.from('hello=world')
+    }
+  ],
   extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
 })
 ```
@@ -1358,13 +1368,14 @@ Sets progress value in progress bar. Valid range is \[0, 1.0].
 Remove progress bar when progress < 0;
 Change to indeterminate mode when progress > 1.
 
-On Linux platform, only supports Unity desktop environment, you need to specify
-the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `{app.name}.desktop`.
-
 On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
 mode set (but with a value within the valid range), `normal` will be assumed.
+
+On Linux, the progress bar shows on docks and taskbars that support the
+LauncherEntry D-Bus API. It is associated with the app's `.desktop` file, so
+[`app.setDesktopName`](app.md#appsetdesktopnamename-linux) must match the name
+of the app's actual `.desktop` file. Indeterminate mode is not supported.
 
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 
@@ -1384,25 +1395,6 @@ Invalidates the window shadow so that it is recomputed based on the current wind
 `BrowserWindows` that are transparent can sometimes leave behind visual artifacts on macOS.
 This method can be used to clear these artifacts when, for example, performing an animation.
 
-#### `win.setDecorationInsets(insets)` _Linux_
-
-* `insets` Object
-  * `top` Integer
-  * `left` Integer
-  * `bottom` Integer
-  * `right` Integer
-
-Sets the decoration insets for the window on Wayland. This tells the compositor
-the margins between the window surface edges and the actual content, so that
-areas used for client-side decorations (such as shadows) are excluded from
-window management operations like snapping, tiling, and maximizing.
-
-This is useful for applications that render their own window shadow using
-`transparent: true` and `frame: false` — without decoration insets, the
-compositor treats the shadow area as part of the window content.
-
-On X11 and non-Linux platforms, this method is a no-op.
-
 #### `win.setHasShadow(hasShadow)`
 
 * `hasShadow` boolean
@@ -1413,17 +1405,16 @@ Sets whether the window should have a shadow.
 
 Returns `boolean` - Whether the window has a shadow.
 
-#### `win.setOpacity(opacity)` _Windows_ _macOS_
+#### `win.setOpacity(opacity)`
 
 * `opacity` number - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
-Sets the opacity of the window. On Linux, does nothing. Out of bound number
-values are clamped to the \[0, 1] range.
+Sets the opacity of the window. Out of bound number values are clamped to the
+\[0, 1] range.
 
 #### `win.getOpacity()`
 
-Returns `number` - between 0.0 (fully transparent) and 1.0 (fully opaque). On
-Linux, always returns 1.
+Returns `number` - between 0.0 (fully transparent) and 1.0 (fully opaque).
 
 #### `win.setShape(rects)` _Windows_ _Linux_ _Experimental_
 
@@ -1633,7 +1624,19 @@ Makes the window ignore all mouse events.
 
 All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
-events.
+events. On Linux this is supported on both X11 and Wayland. On X11 the X server
+has applied the window's new input shape when the call returns; on Wayland the
+new input region is applied with the window's next frame.
+
+> [!NOTE]
+> On Windows, `forward: true` stops working temporarily when the active window is running at a
+> higher integrity level (e.g., elevated/Administrator) than your Electron app. Since Electron
+> typically runs at standard user privilege, this occurs when an elevated window—such as Task
+> Manager or an installer—takes focus. This is due to User Interface Privacy Isolation (UIPI).
+>
+> To work around it, your app must be run with Administrator privileges or configured with UIAccess
+> privileges (see the Background section under
+> [the Reference section of this page](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/jj852244(v=ws.11)#reference)).
 
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 
@@ -1644,6 +1647,21 @@ Prevents the window contents from being captured by other apps.
 On Windows, it calls [`SetWindowDisplayAffinity`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity) with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+The change takes effect with the next desktop composition, not when the call returns, so a
+capture started immediately afterwards can still contain the window.
+
+Protection also applies in a Windows remote session. A Remote Desktop client still
+shows the window to the remote user, but remote access software that works by
+capturing the desktop cannot. To leave windows unprotected in remote sessions
+instead, disable the `AllowWindowCaptureExclusionInRemoteSessions` Chromium feature
+at the start of your main script. `win.isContentProtected()` still returns `true`
+in that case.
+
+```js
+const { app } = require('electron')
+
+app.commandLine.appendSwitch('disable-features', 'AllowWindowCaptureExclusionInRemoteSessions')
+```
 
 On macOS, it sets the `NSWindow`'s
 [`sharingType`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.property?language=objc)
