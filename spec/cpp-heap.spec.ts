@@ -15,6 +15,7 @@ import {
 } from './lib/spec-helpers.ts';
 
 const fixturesPath = path.join(import.meta.dirname, 'fixtures');
+const cppHeapHelpersPath = path.join(import.meta.dirname, 'lib', 'cpp-heap-helpers.js');
 
 describe('cpp heap', () => {
   ifdescribe(isTestingBindingAvailable())('native callback holders', () => {
@@ -642,12 +643,13 @@ describe('cpp heap', () => {
 
     it('should not leak when performing multiple downloads', async () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
-      const result = await remotely(async () => {
+      const result = await remotely(async (cppHeapHelpers: string) => {
         const { session } = require('electron');
         const http = require('node:http');
         const os = require('node:os');
         const path = require('node:path');
         const { getCppHeapStatistics } = require('node:v8');
+        const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
 
         const payload = Buffer.alloc(1024);
         const server = http.createServer((_req: any, res: any) => {
@@ -664,20 +666,7 @@ describe('cpp heap', () => {
         const ses = session.fromPartition('cppheap-download-leak');
         const savePath = path.join(os.tmpdir(), 'cppheap-download-leak.bin');
 
-        // The per-type counts include garbage too,
-        // so this runs right after gc() or while an item is still in use.
-        const countItems = () => {
-          const { type_names: typeNames, space_statistics: spaces } = getCppHeapStatistics('detailed');
-          let n = 0;
-          for (const space of spaces) {
-            for (const page of space.page_stats) {
-              page.object_statistics.forEach((entry: any, index: number) => {
-                if (typeNames[index] === 'Electron / DownloadItem') n += entry.object_count;
-              });
-            }
-          }
-          return n;
-        };
+        const countItems = () => countCppHeapObjects({ items: 'Electron / DownloadItem' }).items;
 
         // Every download item so far.
         const items: WeakRef<object>[] = [];
@@ -696,22 +685,12 @@ describe('cpp heap', () => {
           });
         }
 
-        // Collect from a fresh task without scanning the native stack,
-        // so a stale pointer cannot keep a finished item alive.
-        // Several rounds also reclaim objects that only become unreachable
-        // after an earlier round's weak callbacks have run.
-        const gc = async () => {
-          for (let i = 0; i < 3; i++) {
-            await globalThis.gc!({ type: 'major', execution: 'async' });
-          }
-        };
-
         async function measure(n: number) {
           let liveInUse = 0;
           for (let i = 0; i < n; i++) {
             liveInUse = await downloadOnce();
           }
-          await gc();
+          await collectGarbagePrecisely();
           return {
             liveInUse,
             live: countItems(),
@@ -725,7 +704,7 @@ describe('cpp heap', () => {
         const after2 = await measure(10);
         server.close();
         return { after1, after2 };
-      });
+      }, cppHeapHelpersPath);
 
       const { after1, after2 } = result;
       expect(after1.liveInUse, 'a download item in use should be counted').toBeGreaterThanOrEqual(1);
@@ -1360,10 +1339,11 @@ describe('cpp heap', () => {
     it('should not leak when performing chunked (streaming) uploads', async () => {
       const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
       const exited = once(rc.process, 'exit');
-      const result = await rc.remotely(async () => {
+      const result = await rc.remotely(async (cppHeapHelpers: string) => {
         const { net, app } = require('electron');
         const http = require('node:http');
         const { getCppHeapStatistics } = require('node:v8');
+        const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
         const server = http.createServer((req: any, res: any) => {
           req.on('data', () => {});
           req.on('end', () => res.end('ok'));
@@ -1371,21 +1351,11 @@ describe('cpp heap', () => {
         await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
         const { port } = server.address();
 
-        // The per-type counts include garbage too,
-        // so this runs right after gc() or while a request is still in flight.
-        const count = () => {
-          const { type_names: typeNames, space_statistics: spaces } = getCppHeapStatistics('detailed');
-          const counts = { loaders: 0, pipeGetters: 0 };
-          for (const space of spaces) {
-            for (const page of space.page_stats) {
-              page.object_statistics.forEach((entry: any, index: number) => {
-                if (typeNames[index] === 'Electron / SimpleURLLoaderWrapper') counts.loaders += entry.object_count;
-                if (typeNames[index] === 'Electron / JSChunkedDataPipeGetter') counts.pipeGetters += entry.object_count;
-              });
-            }
-          }
-          return counts;
-        };
+        const count = () =>
+          countCppHeapObjects({
+            loaders: 'Electron / SimpleURLLoaderWrapper',
+            pipeGetters: 'Electron / JSChunkedDataPipeGetter'
+          });
 
         // Every request so far.
         const requests: WeakRef<object>[] = [];
@@ -1414,22 +1384,12 @@ describe('cpp heap', () => {
           });
         }
 
-        // Collect from a fresh task without scanning the native stack,
-        // so a stale pointer cannot keep a finished request alive.
-        // Several rounds also reclaim objects that only become unreachable
-        // after an earlier round's weak callbacks have run.
-        const gc = async () => {
-          for (let i = 0; i < 3; i++) {
-            await globalThis.gc!({ type: 'major', execution: 'async' });
-          }
-        };
-
         async function measure(n: number) {
           let inFlight = { loaders: 0, pipeGetters: 0 };
           for (let i = 0; i < n; i++) {
             inFlight = await uploadOnce();
           }
-          await gc();
+          await collectGarbagePrecisely();
           return {
             inFlight,
             live: count(),
@@ -1444,7 +1404,7 @@ describe('cpp heap', () => {
         server.close();
         setTimeout(() => app.quit());
         return { after1, after2 };
-      });
+      }, cppHeapHelpersPath);
 
       const [code] = await exited;
       expect(code).toBe(0);
@@ -1867,9 +1827,10 @@ describe('cpp heap', () => {
     // Regression test for https://github.com/electron/electron/issues/50791
     it('should not leak when rebuilding application menu', async () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
-      const result = await remotely(async () => {
+      const result = await remotely(async (cppHeapHelpers: string) => {
         const { Menu } = require('electron');
         const { getCppHeapStatistics } = require('node:v8');
+        const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
 
         function buildLargeMenu() {
           return Menu.buildFromTemplate(
@@ -1899,38 +1860,10 @@ describe('cpp heap', () => {
 
         const countAlive = (refs: WeakRef<object>[]) => refs.filter((ref) => ref.deref() !== undefined).length;
 
-        // Collect from a fresh task without scanning the native stack,
-        // so a stale pointer cannot keep a replaced menu alive.
-        // Several rounds also reclaim objects that only become unreachable
-        // after an earlier round's weak callbacks have run.
-        const gc = async () => {
-          for (let i = 0; i < 3; i++) {
-            await globalThis.gc!({ type: 'major', execution: 'async' });
-          }
-        };
-
-        // The per-type counts include garbage too, so this runs right after gc().
         function measure() {
-          const {
-            type_names: typeNames,
-            space_statistics: spaces,
-            used_size_bytes: usedSize
-          } = getCppHeapStatistics('detailed');
-          const count = (typeName: string) => {
-            let n = 0;
-            for (const space of spaces) {
-              for (const page of space.page_stats) {
-                page.object_statistics.forEach((entry: any, index: number) => {
-                  if (typeNames[index] === typeName) n += entry.object_count;
-                });
-              }
-            }
-            return n;
-          };
           return {
-            menus: count('Electron / Menu'),
-            items: count('Electron / MenuItem'),
-            usedSize,
+            ...countCppHeapObjects({ menus: 'Electron / Menu', items: 'Electron / MenuItem' }),
+            usedSize: getCppHeapStatistics('brief').used_size_bytes,
             replacedAlive: countAlive(builtMenus.slice(0, -1)),
             currentAlive: countAlive(builtMenus.slice(-1))
           };
@@ -1938,7 +1871,7 @@ describe('cpp heap', () => {
 
         async function rebuildAndMeasure(n: number) {
           rebuild(n);
-          await gc();
+          await collectGarbagePrecisely();
           return measure();
         }
 
@@ -1946,7 +1879,7 @@ describe('cpp heap', () => {
         const after1 = await rebuildAndMeasure(50);
         const after2 = await rebuildAndMeasure(50);
         return { after1, after2 };
-      });
+      }, cppHeapHelpersPath);
 
       const { after1, after2 } = result;
       // The live application menu is a root menu and 10 submenus with 210 items in all,
@@ -2996,25 +2929,13 @@ describe('cpp heap', () => {
     it('should not leak when forking multiple processes', async () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
       const result = await remotely(
-        async (fixturePath: string) => {
+        async (fixturePath: string, cppHeapHelpers: string) => {
           const { utilityProcess } = require('electron');
           const { once } = require('node:events');
           const { getCppHeapStatistics } = require('node:v8');
+          const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
 
-          // The per-type counts include garbage too,
-          // so this runs right after gc() or while a child is still running.
-          const countWrappers = () => {
-            const { type_names: typeNames, space_statistics: spaces } = getCppHeapStatistics('detailed');
-            let n = 0;
-            for (const space of spaces) {
-              for (const page of space.page_stats) {
-                page.object_statistics.forEach((entry: any, index: number) => {
-                  if (typeNames[index] === 'Electron / UtilityProcess') n += entry.object_count;
-                });
-              }
-            }
-            return n;
-          };
+          const countWrappers = () => countCppHeapObjects({ wrappers: 'Electron / UtilityProcess' }).wrappers;
 
           // Every child so far.
           const children: WeakRef<object>[] = [];
@@ -3029,22 +2950,12 @@ describe('cpp heap', () => {
             return once(child, 'exit').then(() => whileRunning);
           }
 
-          // Collect from a fresh task without scanning the native stack,
-          // so a stale pointer cannot keep an exited child alive.
-          // Several rounds also reclaim objects that only become unreachable
-          // after an earlier round's weak callbacks have run.
-          const gc = async () => {
-            for (let i = 0; i < 3; i++) {
-              await globalThis.gc!({ type: 'major', execution: 'async' });
-            }
-          };
-
           async function measure(n: number) {
             let whileRunning = 0;
             for (let i = 0; i < n; i++) {
               whileRunning = await forkOnce();
             }
-            await gc();
+            await collectGarbagePrecisely();
             return {
               whileRunning,
               live: countWrappers(),
@@ -3058,7 +2969,8 @@ describe('cpp heap', () => {
           const after2 = await measure(10);
           return { after1, after2 };
         },
-        path.join(import.meta.dirname, 'fixtures/api/utility-process/empty.js')
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/empty.js'),
+        cppHeapHelpersPath
       );
 
       const { after1, after2 } = result;
@@ -3186,8 +3098,8 @@ describe('cpp heap', () => {
 
     it('PromiseHandle should not leak', async () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
-      const result = await remotely(async () => {
-        const { getCppHeapStatistics } = require('node:v8');
+      const result = await remotely(async (cppHeapHelpers: string) => {
+        const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
         const testingBinding = (process as any)._linkedBinding('electron_common_testing');
 
         // Count PromiseHandles in the C++ heap's per-type statistics.
@@ -3197,45 +3109,24 @@ describe('cpp heap', () => {
         // A heap snapshot shows the same objects,
         // but taking and parsing three snapshots of the main process
         // can overrun the test timeout on slow CI machines.
-        const countPromiseHandles = () => {
-          const { type_names: typeNames, space_statistics: spaces } = getCppHeapStatistics('detailed');
-          let count = 0;
-          for (const space of spaces) {
-            for (const page of space.page_stats) {
-              page.object_statistics.forEach((entry: any, index: number) => {
-                if (typeNames[index] === 'Electron / PromiseHandle') count += entry.object_count;
-              });
-            }
-          }
-          return count;
-        };
+        const countPromiseHandles = () => countCppHeapObjects({ handles: 'Electron / PromiseHandle' }).handles;
 
-        // Collect from a fresh task without scanning the native stack,
-        // so a stale pointer cannot keep a released PromiseHandle alive.
-        // This uses V8's gc() rather than v8Util's async collection,
+        // collectGarbagePrecisely() uses V8's gc() rather than v8Util's async collection,
         // whose returned promise would itself leave a PromiseHandle to count.
-        // Several rounds also reclaim objects that only become unreachable
-        // after an earlier round's weak callbacks have run.
-        const gc = async () => {
-          for (let i = 0; i < 3; i++) {
-            await globalThis.gc!({ type: 'major', execution: 'async' });
-          }
-        };
-
         // The first count is taken before any collection,
         // so start from a collected heap that holds no garbage for gc() to remove.
-        await gc();
+        await collectGarbagePrecisely();
         testingBinding.holdPromiseForTesting();
         const beforeGC = countPromiseHandles();
-        await gc();
+        await collectGarbagePrecisely();
         const afterGC = countPromiseHandles();
 
         testingBinding.clearHeldPromiseForTesting();
-        await gc();
+        await collectGarbagePrecisely();
         const afterClear = countPromiseHandles();
 
         return { beforeGC, afterGC, afterClear };
-      });
+      }, cppHeapHelpersPath);
 
       expect(result.afterGC, 'held PromiseHandle must survive GC').toBeGreaterThanOrEqual(result.beforeGC);
       expect(result.afterClear, 'clearing should release the PromiseHandle').toBeLessThan(result.afterGC);
