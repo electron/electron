@@ -4216,7 +4216,7 @@ describe('webContents module', () => {
   describe('setIgnoreMenuShortcuts(ignore)', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
-    const trackShortcutInvocations = (contents: WebContents) => {
+    const trackShortcutInvocations = (window: BrowserWindow, contents: WebContents) => {
       const previousMenu = Menu.getApplicationMenu();
       let invocations = 0;
       Menu.setApplicationMenu(
@@ -4233,21 +4233,31 @@ describe('webContents module', () => {
         if (!contents.isDestroyed() && contents.debugger.isAttached()) contents.debugger.detach();
       });
 
-      return async (expectedInvocations: number) => {
+      // Presses F13 in contents and returns the invocation count once the
+      // browser has finished handling the press.
+      return async () => {
+        // Windows and Linux hand accelerators only to the active window
+        // (View::CanHandleAccelerators), and page or DevTools focus can be set
+        // inside a window that isn't active. So focus the window itself.
+        if (!window.isFocused()) window.focus();
+        await waitUntil(() => window.isFocused());
         const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
-        if (process.platform === 'darwin') {
-          // Native macOS menu input requires kVK_F13 and NSF13FunctionKey.
-          await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
-            ...base,
-            type: 'rawKeyDown',
-            nativeVirtualKeyCode: 0x69,
-            text: '\uF710'
-          });
-        } else {
-          contents.sendInputEvent({ type: 'keyDown', keyCode: 'F13' });
-        }
+        // CDP keeps key events that lack a native key code away from the
+        // browser's unhandled-key handling, where menu shortcuts run. Only
+        // macOS turns the code into a native event; its menu needs kVK_F13
+        // and NSF13FunctionKey.
+        await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
+          ...base,
+          type: 'rawKeyDown',
+          ...(process.platform === 'darwin'
+            ? { nativeVirtualKeyCode: 0x69, text: '\uF710' }
+            : { nativeVirtualKeyCode: 124 })
+        });
+        // CDP answers each event when its ack arrives, just before the browser
+        // offers an unhandled keyDown to the menu. Both events go to the same
+        // widget, which acks them in order, so once the keyUp is answered the
+        // keyDown has either invoked the menu or been ignored.
         await contents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
-        await waitUntil(() => invocations >= expectedInvocations);
         return invocations;
       };
     };
@@ -4266,12 +4276,10 @@ describe('webContents module', () => {
         webPreferences: { ignoreMenuShortcuts: true } as Electron.WebPreferences
       });
       await window.loadURL('about:blank');
-      window.webContents.focus();
-      await waitUntil(() => window.webContents.isFocused());
-      const sendShortcut = trackShortcutInvocations(window.webContents);
-      expect(await sendShortcut(0)).toBe(0);
+      const sendShortcut = trackShortcutInvocations(window, window.webContents);
+      expect(await sendShortcut()).toBe(0);
       window.webContents.setIgnoreMenuShortcuts(false);
-      expect(await sendShortcut(1)).toBe(1);
+      expect(await sendShortcut()).toBe(1);
     });
 
     it('does not crash for detached DevTools without preferences', async () => {
@@ -4311,17 +4319,19 @@ describe('webContents module', () => {
           source.setIgnoreMenuShortcuts(false);
         }
 
-        const sendShortcut = trackShortcutInvocations(source);
+        const sendShortcut = trackShortcutInvocations(window, source);
         let expectedInvocations = 0;
         for (const ignore of [true, false, true, false]) {
           if (target === 'webview') {
             window.focus();
             await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
+            // CDP sends key events to the focused frame, so focus must be in the guest.
+            await waitUntil(() => source.executeJavaScript('document.hasFocus()'));
           }
           window.webContents.setIgnoreMenuShortcuts(!ignore);
           source.setIgnoreMenuShortcuts(ignore);
           if (!ignore) expectedInvocations++;
-          expect(await sendShortcut(expectedInvocations)).toBe(expectedInvocations);
+          expect(await sendShortcut()).toBe(expectedInvocations);
         }
       });
     }
