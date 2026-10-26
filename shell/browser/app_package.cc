@@ -6,6 +6,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "base/files/file_util.h"
@@ -119,7 +120,7 @@ std::optional<AppPackage> LoadAppPackage() {
     const base::DictValue& dict = manifest->GetDict();
     Apply(dict);
     AppPackage package;
-    package.path = path;
+    package.path = std::move(path);
     const std::string* main = dict.FindString("main");
     package.main = main && !main->empty() ? *main : "index.js";
     if (const std::string* v8_flags = dict.FindString("v8Flags"))

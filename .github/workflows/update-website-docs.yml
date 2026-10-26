@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Get GitHub App token
         id: secret-service
-        uses: electron/secret-service-action@3476425e8b30555aac15b1b7096938e254b0e155 # v1.0.0
+        uses: electron/secret-service-action@23b9042f797e34674f0fe2c91608f57f9661ccf2 # v1.1.0
       - name: Check if this release is the latest
         id: check-if-latest-release
         env:

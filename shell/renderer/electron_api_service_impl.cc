@@ -234,7 +234,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
   for (auto& port : message.ports) {
     ports.emplace_back(
         blink::WebMessagePortConverter::EntangleAndInjectMessagePortChannel(
-            isolate, context, std::move(port)));
+            isolate, context, port));
   }
 
   std::vector<v8::Local<v8::Value>> args = {message_value};
@@ -341,7 +341,7 @@ void ReleaseReceivedSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Array> data = info.Data().As<v8::Array>();
+  v8::Local<v8::Array> data = info.DataV2().As<v8::Value>().As<v8::Array>();
   v8::Local<v8::Value> imported, texture_id, release;
   if (!data->Get(context, 0).ToLocal(&imported) || !imported->IsObject() ||
       !data->Get(context, 1).ToLocal(&texture_id) ||
@@ -375,7 +375,7 @@ void ReleaseReceivedSharedTexture(
              v8::Local<v8::Value> args[] = {
                  gin::StringToV8(
                      isolate, "IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN"),
-                 info.Data()};
+                 info.DataV2().As<v8::Value>()};
              v8::Local<v8::Value> result;
              if (invoke.As<v8::Function>()
                      ->Call(context, ipc_renderer, 2, args)

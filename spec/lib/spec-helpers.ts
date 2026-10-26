@@ -32,17 +32,33 @@ export const ciGpuArgs: string[] =
   process.env.CI && process.platform === 'darwin' && process.arch === 'x64' ? ['--disable-gpu'] : [];
 
 type CleanupFunction = (() => void) | (() => Promise<void>);
-const cleanupFunctions: CleanupFunction[] = [];
-export async function runCleanupFunctions() {
+// Each cleanup comes with the error it fails with if it times out,
+// created in defer() so that its stack points at the caller.
+const cleanupFunctions: { cleanup: CleanupFunction; timeoutError: Error }[] = [];
+
+// Runs every defer()-ed cleanup, newest first.
+// Like a vitest hook, each one gets `timeout` ms (no limit if 0 or Infinity),
+// so a cleanup that never settles fails the test instead of hanging the run.
+export async function runCleanupFunctions(timeout: number) {
   // Take the whole list up front: a cleanup that throws must not leave the
   // rest behind to run (and throw) again after every later test.
   const pending = cleanupFunctions.splice(0, cleanupFunctions.length);
   const errors: unknown[] = [];
-  for (const cleanup of pending) {
+  for (const { cleanup, timeoutError } of pending) {
+    let timer: NodeJS.Timeout | undefined;
+    const timedOut = new Promise<never>((_resolve, reject) => {
+      if (timeout <= 0 || timeout === Infinity) return;
+      timer = globalThis.setTimeout(() => {
+        timeoutError.message = `defer()-ed cleanup timed out in ${timeout}ms`;
+        reject(timeoutError);
+      }, timeout);
+    });
     try {
-      await cleanup();
+      await Promise.race([cleanup(), timedOut]);
     } catch (error) {
       errors.push(error);
+    } finally {
+      globalThis.clearTimeout(timer);
     }
   }
   if (errors.length === 1) throw errors[0];
@@ -50,7 +66,9 @@ export async function runCleanupFunctions() {
 }
 
 export function defer(f: CleanupFunction) {
-  cleanupFunctions.unshift(f);
+  const timeoutError = new Error('defer()-ed cleanup timed out');
+  Error.captureStackTrace(timeoutError, defer);
+  cleanupFunctions.unshift({ cleanup: f, timeoutError });
 }
 
 class RemoteControlApp {
@@ -98,7 +116,21 @@ class RemoteControlApp {
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
   const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...ciGpuArgs, ...extraArgs], options);
+  // The app quits by itself after --remote-app-timeout (30s unless given) in
+  // case nothing stops it. Sanitizer builds give each test 180s
+  // (ELECTRON_SPEC_TIMEOUT) and are slow enough that a test can still be
+  // talking to the app after 30s, which then fails with "socket hang up" or
+  // hangs. Keep the app alive at least as long as the test may run; defer()
+  // below stops it when the test is done.
+  const specTimeout = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
+  const timeoutArgs = extraArgs.some((arg) => arg.startsWith('--remote-app-timeout='))
+    ? []
+    : [`--remote-app-timeout=${specTimeout}`];
+  const appProcess = childProcess.spawn(
+    process.execPath,
+    [appPath, ...ciGpuArgs, ...timeoutArgs, ...extraArgs],
+    options
+  );
   // Register cleanup before awaiting the port so a stalled startup that trips
   // the test's timeout doesn't leak the child into the in-job retry.
   defer(() => {
@@ -109,13 +141,42 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
   appProcess.stderr.on('data', (d) => {
     process.stderr.write(d);
   });
-  const port = await new Promise<number>((resolve) => {
-    appProcess.stdout.on('data', (d) => {
+  // Fail as soon as the app goes away before it reports its port, instead of
+  // waiting for the test's timeout.
+  const port = await new Promise<number>((resolve, reject) => {
+    let stderr = '';
+    const onStderr = (d: Buffer) => {
+      stderr += d.toString();
+    };
+    const onStdout = (d: Buffer) => {
       const m = /Listening: (\d+)/.exec(d.toString());
       if (m && m[1] != null) {
+        done();
         resolve(Number(m[1]));
       }
-    });
+    };
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      done();
+      reject(
+        new Error(
+          `remote-control app exited (code ${code}, signal ${signal}) before reporting its port.\n\nstderr:\n${stderr}`
+        )
+      );
+    };
+    const onError = (err: Error) => {
+      done();
+      reject(new Error(`remote-control app failed to start: ${err.message}\n\nstderr:\n${stderr}`, { cause: err }));
+    };
+    const done = () => {
+      appProcess.stderr.off('data', onStderr);
+      appProcess.stdout.off('data', onStdout);
+      appProcess.off('exit', onExit);
+      appProcess.off('error', onError);
+    };
+    appProcess.stderr.on('data', onStderr);
+    appProcess.stdout.on('data', onStdout);
+    appProcess.on('exit', onExit);
+    appProcess.on('error', onError);
   });
   return new RemoteControlApp(appProcess, port);
 }
@@ -232,6 +293,13 @@ export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { ra
       throw new Error(`waitUntil timed out after ${timeout}ms`);
     }
   })();
+}
+
+// Blocks the calling thread for |ms| without yielding to the event loop,
+// so events that arrive in the meantime queue up and are handled together afterwards.
+// Atomics.wait() sleeps until the shared value changes, which never happens here, or until the timeout.
+export function sleepSync(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T) => boolean; timeLimit?: number }) {

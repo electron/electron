@@ -16,6 +16,7 @@
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
+#include "content/public/common/child_process_id.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
 #include "gin/wrappable.h"
@@ -147,7 +148,7 @@ class App final : public gin::Wrappable<App>,
       override;
   base::OnceClosure SelectClientCertificate(
       content::BrowserContext* browser_context,
-      int process_id,
+      content::ChildProcessId process_id,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       net::ClientCertIdentityList identities,
@@ -211,6 +212,7 @@ class App final : public gin::Wrappable<App>,
                const base::FilePath& path);
 
   void SetDesktopName(const std::string& desktop_name);
+  void SetActivationToken(const std::string& token);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
   std::string GetSystemLocale(gin_helper::ErrorThrower thrower) const;
@@ -256,6 +258,8 @@ class App final : public gin::Wrappable<App>,
 #if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
                            const std::string& policy);
+  void StartAppShimServer(gin::Arguments* args);
+  void StopAppShimServer();
   void ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
                          gin::Arguments* args);
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);

@@ -571,6 +571,33 @@ describe('webContents module', () => {
         expect(result).toBe('test');
       });
     });
+
+    describe('with userGesture', () => {
+      afterEach(closeAllWindows);
+
+      // navigator.hid.requestDevice() is sent on the HID service's own Mojo
+      // pipe and needs transient user activation in the browser process, which
+      // it consumes. If the browser only learned of the activation from the
+      // renderer, on the frame's channel-associated interfaces, the request
+      // could overtake that update and resolve empty without a chooser.
+      it('gives the browser user activation before the script runs', async () => {
+        const ses = session.fromPartition(`execute-javascript-user-gesture-${Math.random()}`);
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        let choosersShown = 0;
+        ses.on('select-hid-device', (event, details, callback) => {
+          choosersShown++;
+          callback();
+        });
+        const code = 'navigator.hid.requestDevice({ filters: [] }).then(() => true)';
+        const attempts = 20;
+        for (let i = 0; i < attempts; i++) {
+          await w.webContents.executeJavaScript(code, true);
+          await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code }], true);
+        }
+        expect(choosersShown).toBe(attempts * 2);
+      });
+    });
   });
 
   describe('webContents.executeJavaScriptInIsolatedWorld', () => {
@@ -644,7 +671,10 @@ describe('webContents module', () => {
 
     it('resolves when navigating within the page', async () => {
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-      await setTimeout();
+      // loadFile() resolves on did-finish-load, and did-stop-loading can come
+      // later. A did-stop-loading that arrives after the next loadURL() has
+      // started would reject it, so start from a page that has stopped loading.
+      if (w.webContents.isLoading()) await once(w.webContents, 'did-stop-loading');
       await w.loadURL(w.getURL() + '#foo');
     });
 
@@ -662,17 +692,9 @@ describe('webContents module', () => {
       await expect(w.loadURL('file:non-existent')).rejects.toHaveProperty('code', 'ERR_FILE_NOT_FOUND');
     });
 
-    // FIXME: Temporarily disable on WOA until
-    // https://github.com/electron/electron/issues/20008 is resolved
-    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))(
-      'rejects when loading fails due to DNS not resolved',
-      async () => {
-        await expect(w.loadURL('https://err.name.not.resolved')).rejects.toHaveProperty(
-          'code',
-          'ERR_NAME_NOT_RESOLVED'
-        );
-      }
-    );
+    it('rejects when loading fails due to DNS not resolved', async () => {
+      await expect(w.loadURL('https://notfound.localhost')).rejects.toHaveProperty('code', 'ERR_NAME_NOT_RESOLVED');
+    });
 
     it('rejects when navigation is cancelled due to a bad scheme', async () => {
       await expect(w.loadURL('bad-scheme://foo')).rejects.toHaveProperty('code', 'ERR_FAILED');
@@ -787,7 +809,7 @@ describe('webContents module', () => {
       let resp = null as unknown as http.ServerResponse;
       s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write('<iframe src="http://err.name.not.resolved"></iframe>');
+        res.write('<iframe src="http://notfound.localhost"></iframe>');
         resp = res;
         // don't end the response yet
       });
@@ -1306,7 +1328,9 @@ describe('webContents module', () => {
         webPreferences: { partition }
       });
 
-      wcv.webContents.navigationHistory.restore({
+      // Wait for the restored page to load, so the script below runs in it
+      // rather than in the initial empty document that it replaces.
+      await wcv.webContents.navigationHistory.restore({
         entries: [
           {
             url: urlPage1,
@@ -2350,27 +2374,50 @@ describe('webContents module', () => {
     });
 
     describe('pre-warmed renderer', () => {
+      // Chromium drops a spare renderer to background priority as soon as it
+      // launches, since it hosts no visible page;
+      // on Windows that is IDLE_PRIORITY_CLASS.
+      // While a parallel spec worker keeps every CPU busy,
+      // the spare can then take longer than the 10 s wait below to start up,
+      // and is still missing from app.getAppMetrics() when the wait ends.
+      // These tests check which window gets the spare, not its priority.
+      const startAppWithoutBackgrounding = (extraArgs: string[] = []) =>
+        startRemoteControlApp(['--disable-renderer-backgrounding', ...extraArgs]);
+
       const tabPidsAroundFirstWindow = (
         rc: Awaited<ReturnType<typeof startRemoteControlApp>>,
-        firstPrefs: Electron.WebPreferences
+        firstPrefs: Electron.WebPreferences,
+        { expectReplacement = false } = {}
       ) => {
-        return rc.remotely(async (prefs: Electron.WebPreferences) => {
+        const options = { prefs: firstPrefs, expectReplacement };
+        return rc.remotely(async ({ prefs, expectReplacement }: typeof options) => {
           const { app, BrowserWindow, session } = require('electron');
           const tabPids = () =>
             app
               .getAppMetrics()
               .filter((m: Electron.ProcessMetric) => m.type === 'Tab')
               .map((m: Electron.ProcessMetric) => m.pid);
+          const waitForTabPids = async (done: (pids: number[]) => boolean) => {
+            const deadline = Date.now() + 10000;
+            while (!done(tabPids()) && Date.now() < deadline) {
+              await new Promise((resolve) => global.setTimeout(resolve, 20));
+            }
+          };
           session.defaultSession.getUserAgent();
-          const deadline = Date.now() + 10000;
-          while (tabPids().length === 0 && Date.now() < deadline) {
-            await new Promise((resolve) => global.setTimeout(resolve, 20));
-          }
+          await waitForTabPids((pids) => pids.length > 0);
           const warmed = tabPids();
           const first = new BrowserWindow({ show: false, webPreferences: prefs });
           const firstPidBeforeLoad = first.webContents.getOSProcessId();
           await first.loadURL('about:blank');
-          await new Promise((resolve) => global.setTimeout(resolve, 500));
+          if (expectReplacement) {
+            // Taking the warmed renderer starts a replacement spare.
+            const firstPid = first.webContents.getOSProcessId();
+            await waitForTabPids((pids) => pids.some((pid) => pid !== firstPid));
+          } else {
+            // Leave time for a replacement spare that should not exist.
+            await new Promise((resolve) => global.setTimeout(resolve, 500));
+          }
+          const tabsBeforeSecond = tabPids();
           const second = new BrowserWindow({ show: false });
           const secondPidBeforeLoad = second.webContents.getOSProcessId();
           await second.loadURL('about:blank');
@@ -2378,6 +2425,7 @@ describe('webContents module', () => {
             warmed,
             firstPidBeforeLoad,
             firstPid: first.webContents.getOSProcessId(),
+            tabsBeforeSecond,
             secondPidBeforeLoad,
             secondPid: second.webContents.getOSProcessId(),
             tabsAfter: tabPids()
@@ -2385,11 +2433,11 @@ describe('webContents module', () => {
           first.destroy();
           second.destroy();
           return result;
-        }, firstPrefs);
+        }, options);
       };
 
       it('is handed to the first sandboxed window only', async () => {
-        const rc = await startRemoteControlApp();
+        const rc = await startAppWithoutBackgrounding();
         const r = await tabPidsAroundFirstWindow(rc, {});
         expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(r.warmed[0]);
@@ -2398,7 +2446,7 @@ describe('webContents module', () => {
       });
 
       it('is discarded when the first window cannot use it', async () => {
-        const rc = await startRemoteControlApp();
+        const rc = await startAppWithoutBackgrounding();
         const r = await tabPidsAroundFirstWindow(rc, { sandbox: false });
         expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(0);
@@ -2408,11 +2456,14 @@ describe('webContents module', () => {
       });
 
       it('keeps serving later windows with SpareRendererForSitePerProcess enabled', async () => {
-        const rc = await startRemoteControlApp(['--enable-features=SpareRendererForSitePerProcess']);
-        const r = await tabPidsAroundFirstWindow(rc, {});
+        const rc = await startAppWithoutBackgrounding(['--enable-features=SpareRendererForSitePerProcess']);
+        const r = await tabPidsAroundFirstWindow(rc, {}, { expectReplacement: true });
+        expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(r.warmed[0]);
+        expect(r.firstPid).toBe(r.warmed[0]);
         expect(r.secondPidBeforeLoad).not.toBe(0);
         expect(r.secondPidBeforeLoad).not.toBe(r.firstPid);
+        expect(r.tabsBeforeSecond).toContain(r.secondPidBeforeLoad);
         expect(r.secondPid).toBe(r.secondPidBeforeLoad);
       });
     });
@@ -2568,10 +2619,11 @@ describe('webContents module', () => {
 
       const origWebContents = w.webContents;
 
-      // Destroy the original WebContents
+      // Destroy the original WebContents. destroy() disposes it from a posted
+      // task, so wait for that rather than for a timer.
+      const destroyed = once(origWebContents, 'destroyed');
       w.webContents.destroy();
-
-      await setTimeout();
+      await destroyed;
 
       // Original should be destroyed, but cloned should still be alive
       expect(origWebContents.isDestroyed()).toBe(true);
@@ -2687,9 +2739,6 @@ describe('webContents module', () => {
   describe('caretBrowsingEnabled', () => {
     afterEach(closeAllWindows);
 
-    const platformCaretBrowsing = () =>
-      process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
-
     it('defaults to false', () => {
       const w = new BrowserWindow({ show: false });
       expect(w.webContents.caretBrowsingEnabled).toBe(false);
@@ -2782,6 +2831,9 @@ describe('webContents module', () => {
 
     // These depend on a binding that is only available when DCHECK_IS_ON.
     ifdescribe(isTestingBindingAvailable())('process-wide accessibility notification', () => {
+      const platformCaretBrowsing = () =>
+        process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
+
       it('stays on while another WebContents still has caret browsing enabled', () => {
         const w1 = new BrowserWindow({ show: false });
         const w2 = new BrowserWindow({ show: false });
@@ -2797,6 +2849,47 @@ describe('webContents module', () => {
 
         w2.webContents.caretBrowsingEnabled = false;
         expect(platformCaretBrowsing()).toBe(false);
+      });
+
+      describe('guest preference inheritance', () => {
+        it('releases exactly one reference when an inherited preference is disabled', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).toBe(true);
+
+          // An inherited preference has to come with its own reference, otherwise
+          // the guest keeps caret browsing on with nothing holding the count up.
+          w.webContents.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).toBe(true);
+
+          guest.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).toBe(false);
+        });
+
+        it('releases an inherited reference when the guest is destroyed', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).toBe(true);
+          expect(platformCaretBrowsing()).toBe(true);
+
+          // An attached guest's WebContents is owned by its embedder frame, so the
+          // wrapper holding the reference is only deleted at garbage collection.
+          const destroyed = once(guest, 'destroyed');
+          w.close();
+          await destroyed;
+
+          expect(platformCaretBrowsing()).toBe(false);
+        });
       });
 
       it('takes at most one reference per WebContents however often it is set', () => {
@@ -2905,48 +2998,6 @@ describe('webContents module', () => {
 
         expect(guest.getType()).toBe('webview');
         expect(guest.caretBrowsingEnabled).toBe(true);
-      });
-
-      ifit(isTestingBindingAvailable())(
-        'releases exactly one reference when an inherited preference is disabled',
-        async () => {
-          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-          w.webContents.caretBrowsingEnabled = true;
-
-          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
-          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
-          const [, guest] = await created;
-
-          expect(guest.caretBrowsingEnabled).toBe(true);
-
-          // An inherited preference has to come with its own reference, otherwise
-          // the guest keeps caret browsing on with nothing holding the count up.
-          w.webContents.caretBrowsingEnabled = false;
-          expect(platformCaretBrowsing()).toBe(true);
-
-          guest.caretBrowsingEnabled = false;
-          expect(platformCaretBrowsing()).toBe(false);
-        }
-      );
-
-      ifit(isTestingBindingAvailable())('releases an inherited reference when the guest is destroyed', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-        w.webContents.caretBrowsingEnabled = true;
-
-        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
-        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
-        const [, guest] = await created;
-
-        expect(guest.caretBrowsingEnabled).toBe(true);
-        expect(platformCaretBrowsing()).toBe(true);
-
-        // An attached guest's WebContents is owned by its embedder frame, so the
-        // wrapper holding the reference is only deleted at garbage collection.
-        const destroyed = once(guest, 'destroyed');
-        w.close();
-        await destroyed;
-
-        expect(platformCaretBrowsing()).toBe(false);
       });
     });
   });
@@ -4018,9 +4069,29 @@ describe('webContents module', () => {
     );
 
     it('is not followed by responsive just because the window is hidden', { timeout: 90000 }, async () => {
+      // The page stays hung in a synchronous XHR until the test answers it,
+      // rather than spinning for a fixed time that a slow host can use up
+      // before the hang is reported a second time.
+      let release: (() => void) | undefined;
+      const server = http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        release = () => res.end('released');
+      });
+      defer(() => {
+        release?.();
+        server.close();
+      });
+      const { url: serverUrl } = await listen(server);
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
-      await hangAndPoke(w, 40000);
+      const requested = once(server, 'request');
+      w.webContents
+        .executeJavaScript(
+          `{ const xhr = new XMLHttpRequest(); xhr.open('GET', ${JSON.stringify(serverUrl)}, false); xhr.send(); }`
+        )
+        .catch(() => {});
+      await requested;
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
       await once(w.webContents, 'unresponsive');
       const events: string[] = [];
       w.webContents.on('responsive', () => events.push('responsive'));
@@ -4031,8 +4102,10 @@ describe('webContents module', () => {
       w.show();
       // Still hung and visible again: reported again after one delay.
       await once(w.webContents, 'unresponsive');
-      // The spin ends ~40 s in; the pending key event is then acked.
-      await once(w.webContents, 'responsive');
+      // End the hang; the pending key event is then acked.
+      const responsive = once(w.webContents, 'responsive');
+      release!();
+      await responsive;
       expect(events).toEqual(['unresponsive', 'responsive']);
     });
 
@@ -4143,7 +4216,11 @@ describe('webContents module', () => {
   describe('setIgnoreMenuShortcuts(ignore)', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
-    const trackShortcutInvocations = (contents: WebContents) => {
+    // Windows marks a covered window hidden and shows it again only some time
+    // after it is raised, so keep the windows above everything there.
+    const alwaysOnTop = process.platform === 'win32';
+
+    const trackShortcutInvocations = (window: BrowserWindow, contents: WebContents) => {
       const previousMenu = Menu.getApplicationMenu();
       let invocations = 0;
       Menu.setApplicationMenu(
@@ -4160,21 +4237,43 @@ describe('webContents module', () => {
         if (!contents.isDestroyed() && contents.debugger.isAttached()) contents.debugger.detach();
       });
 
-      return async (expectedInvocations: number) => {
-        const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
-        if (process.platform === 'darwin') {
-          // Native macOS menu input requires kVK_F13 and NSF13FunctionKey.
-          await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
-            ...base,
-            type: 'rawKeyDown',
-            nativeVirtualKeyCode: 0x69,
-            text: '\uF710'
-          });
-        } else {
-          contents.sendInputEvent({ type: 'keyDown', keyCode: 'F13' });
+      // Presses F13 in contents and returns the invocation count once the
+      // browser has finished handling the press.
+      return async () => {
+        // Windows and Linux hand accelerators only to the active window
+        // (View::CanHandleAccelerators), and page or DevTools focus can be set
+        // inside a window that isn't active. So focus the window itself. On
+        // macOS, window.focus() can't activate the app while another app is
+        // frontmost, so take activation first.
+        if (!window.isFocused()) {
+          if (process.platform === 'darwin') app.focus({ steal: true });
+          window.focus();
         }
+        await waitUntil(() => window.isFocused());
+        if (contents.getType() === 'webview') {
+          // CDP sends key events to the focused frame, so focus must be in the guest.
+          await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
+          await waitUntil(() => contents.executeJavaScript('document.hasFocus()'));
+        }
+        // Keys from a hidden widget never reach the menu.
+        await waitUntil(async () => (await contents.executeJavaScript('document.visibilityState')) === 'visible');
+        const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
+        // CDP keeps key events that lack a native key code away from the
+        // browser's unhandled-key handling, where menu shortcuts run. Only
+        // macOS turns the code into a native event, and its menu needs
+        // kVK_F13 and NSF13FunctionKey; elsewhere any non-zero code works.
+        await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
+          ...base,
+          type: 'rawKeyDown',
+          ...(process.platform === 'darwin'
+            ? { nativeVirtualKeyCode: 0x69, text: '\uF710' }
+            : { nativeVirtualKeyCode: 124 })
+        });
+        // CDP answers each event when its ack arrives, just before the browser
+        // offers an unhandled keyDown to the menu. Both events go to the same
+        // widget, which acks them in order, so once the keyUp is answered the
+        // keyDown has either invoked the menu or been ignored.
         await contents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
-        await waitUntil(() => invocations >= expectedInvocations);
         return invocations;
       };
     };
@@ -4190,15 +4289,14 @@ describe('webContents module', () => {
     it('honors the initial ignoreMenuShortcuts preference', async () => {
       const window = new BrowserWindow({
         show: true,
+        alwaysOnTop,
         webPreferences: { ignoreMenuShortcuts: true } as Electron.WebPreferences
       });
       await window.loadURL('about:blank');
-      window.webContents.focus();
-      await waitUntil(() => window.webContents.isFocused());
-      const sendShortcut = trackShortcutInvocations(window.webContents);
-      expect(await sendShortcut(0)).toBe(0);
+      const sendShortcut = trackShortcutInvocations(window, window.webContents);
+      expect(await sendShortcut()).toBe(0);
       window.webContents.setIgnoreMenuShortcuts(false);
-      expect(await sendShortcut(1)).toBe(1);
+      expect(await sendShortcut()).toBe(1);
     });
 
     it('does not crash for detached DevTools without preferences', async () => {
@@ -4217,7 +4315,7 @@ describe('webContents module', () => {
 
     for (const target of ['webview', 'docked DevTools'] as const) {
       it(`uses the source settings for ${target}`, async () => {
-        const window = new BrowserWindow({ show: true, webPreferences: { webviewTag: true } });
+        const window = new BrowserWindow({ show: true, alwaysOnTop, webPreferences: { webviewTag: true } });
         let source: WebContents;
         if (target === 'webview') {
           const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
@@ -4230,25 +4328,20 @@ describe('webContents module', () => {
         } else {
           await window.loadURL('about:blank');
           const devToolsOpened = once(window.webContents, 'devtools-opened');
-          const devToolsFocused = once(window.webContents, 'devtools-focused');
-          window.webContents.openDevTools({ mode: 'right', activate: true });
-          await Promise.all([devToolsOpened, devToolsFocused]);
+          window.webContents.openDevTools({ mode: 'right' });
+          await devToolsOpened;
           source = window.webContents.devToolsWebContents!;
           expect(source.getLastWebPreferences()).toBe(null);
           source.setIgnoreMenuShortcuts(false);
         }
 
-        const sendShortcut = trackShortcutInvocations(source);
+        const sendShortcut = trackShortcutInvocations(window, source);
         let expectedInvocations = 0;
         for (const ignore of [true, false, true, false]) {
-          if (target === 'webview') {
-            window.focus();
-            await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
-          }
           window.webContents.setIgnoreMenuShortcuts(!ignore);
           source.setIgnoreMenuShortcuts(ignore);
           if (!ignore) expectedInvocations++;
-          expect(await sendShortcut(expectedInvocations)).toBe(expectedInvocations);
+          expect(await sendShortcut()).toBe(expectedInvocations);
         }
       });
     }
@@ -4864,6 +4957,11 @@ describe('webContents module', () => {
         waitUntil(async () => (await framesInHalfSecond(wc, frame)) === 0, { timeout: 10000 });
       const startsPainting = (wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
         waitUntil(async () => (await framesInHalfSecond(wc, frame)) > 0, { timeout: 10000 });
+      // The page learns its visibility from the browser separately from its
+      // widget being shown or hidden, so it can still report the old state for
+      // a moment after frames have started or stopped.
+      const becomes = (state: string, wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
+        waitUntil(async () => (await visibilityState(wc, frame)) === state, { timeout: 10000 });
 
       // Regression test: re-enabling throttling on a hidden page used to leave
       // the RenderWidgetHost shown (from the setBackgroundThrottling(false)
@@ -4874,13 +4972,13 @@ describe('webContents module', () => {
         await w.loadURL('about:blank');
         w.hide();
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
         w.webContents.setBackgroundThrottling(false);
         await startsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('visible');
+        await becomes('visible', w.webContents);
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
       });
 
       // Same, but with throttling disabled before the window is hidden (the
@@ -4896,10 +4994,10 @@ describe('webContents module', () => {
         expect(await visibilityState(w.webContents)).toBe('visible');
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
         w.show();
         await startsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('visible');
+        await becomes('visible', w.webContents);
       });
 
       // Cross-process iframes have their own RenderWidgetHost; re-enabling
@@ -4920,12 +5018,15 @@ describe('webContents module', () => {
         await w.loadURL(serverUrl);
         const child = w.webContents.mainFrame.frames.find((f) => f.name === 'child')!;
         expect(child.osProcessId).not.toBe(w.webContents.mainFrame.osProcessId);
+        // Start from an iframe that is rendering: until Blink has seen it on
+        // screen it may hold back the iframe's frames, hidden or not.
+        await startsPainting(w.webContents, child);
         w.hide();
         await setTimeout(500);
         expect(await framesInHalfSecond(w.webContents, child)).toBeGreaterThan(0);
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents, child);
-        expect(await visibilityState(w.webContents, child)).toBe('hidden');
+        await becomes('hidden', w.webContents, child);
         w.webContents.setBackgroundThrottling(false);
         await startsPainting(w.webContents, child);
         w.show();
@@ -5152,8 +5253,6 @@ describe('webContents module', () => {
         pdfs.push(await w.webContents.printToPDF({ pageSize: format }));
       }
 
-      // Parse every PDF in one pdf.js subprocess: one Electron launch per
-      // format is enough to push this test past its timeout on slow CI hosts.
       const pdfInfos = await readPDFs(pdfs);
 
       const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;

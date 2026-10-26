@@ -1,5 +1,12 @@
 import { nativeImage } from 'electron/common';
-import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, MessageChannelMain, type WebContents } from 'electron/main';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  type IpcMainInvokeEvent,
+  MessageChannelMain,
+  type WebContents
+} from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -1189,12 +1196,26 @@ describe('ipc module', () => {
     it('receives ipcs from unloading frames in the main frame', async () => {
       const server = http.createServer((req, res) => {
         res.setHeader('content-type', 'text/html');
+        // Chromium deprecates unload handlers on http(s) pages by default.
+        res.setHeader('permissions-policy', 'unload=*');
         res.end('');
       });
       const { port } = await listen(server);
       defer(() => {
         server.close();
       });
+      // Content gives the old frame's unload handlers 500 ms (kUnloadTimeout)
+      // before it deletes the frame and drops its IPC, and once the new page
+      // commits the old process hosts no active page, so Chromium drops it to
+      // background priority (on macOS, darwinbg with CPU and timer
+      // suppression). With other spec workers busy, the unload handler then
+      // misses that window and the IPC never arrives. Keep renderers at
+      // foreground priority for this test; the switch is read on every
+      // priority update.
+      if (!app.commandLine.hasSwitch('disable-renderer-backgrounding')) {
+        app.commandLine.appendSwitch('disable-renderer-backgrounding');
+        defer(() => app.commandLine.removeSwitch('disable-renderer-backgrounding'));
+      }
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(`http://localhost:${port}`);
       await w.webContents.executeJavaScript(
@@ -1209,17 +1230,18 @@ describe('ipc module', () => {
 
   describe('event frame accessors', () => {
     it('does not create an ObjectTemplate for every message', async () => {
-      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const { remotely } = await startRemoteControlApp();
       const { messageCount, templatesCreated } = await remotely(
-        async (heap: string) => {
+        async (snapshotHelper: string) => {
           const { BrowserWindow, ipcMain } = require('electron');
-          const { recordState } = require(heap);
+          const { countHeapSnapshotNodes, takeHeapSnapshot } = require(snapshotHelper);
 
           const channel = 'ipc-object-template-test';
           const messageCount = 50;
 
           const countObjectTemplates = () =>
-            recordState().snapshot.filter((node: any) => node.name === 'system / ObjectTemplateInfo').length;
+            countHeapSnapshotNodes(takeHeapSnapshot(), { templates: { name: 'system / ObjectTemplateInfo' } })
+              .templates;
 
           const retainedEvents: any[] = [];
           (globalThis as any).retainedEvents = retainedEvents;
@@ -1252,7 +1274,7 @@ describe('ipc module', () => {
             w.destroy();
           }
         },
-        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
       expect(templatesCreated).toBeLessThan(messageCount / 2);

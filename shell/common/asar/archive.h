@@ -34,6 +34,9 @@ struct IntegrityPayload {
   IntegrityPayload();
   ~IntegrityPayload();
   IntegrityPayload(const IntegrityPayload& other);
+  IntegrityPayload(IntegrityPayload&& other);
+  IntegrityPayload& operator=(const IntegrityPayload& other);
+  IntegrityPayload& operator=(IntegrityPayload&& other);
   HashAlgorithm algorithm = HashAlgorithm::kNone;
   std::string hash;
   uint32_t block_size = 0U;
@@ -139,6 +142,7 @@ class Archive {
   base::File file_{base::File::FILE_OK};
   int fd_ = -1;
   uint32_t header_size_ = 0;
+  uint64_t file_size_ = 0;
   std::optional<base::DictValue> header_;
 
   mutable base::Lock node_cache_lock_;

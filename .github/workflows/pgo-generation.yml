@@ -459,7 +459,7 @@ jobs:
         done
     - name: Upload V8 Builtins Profiles
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: pgo-v8-builtins-profiles
         path: src/v8-builtins-profiles/
@@ -593,7 +593,7 @@ jobs:
         python3 src/tools/clang/scripts/update.py --package=coverage_tools --output-dir=/tmp/coverage-tools
         /tmp/coverage-tools/bin/llvm-profdata --version
     - name: Download Profraw Artifacts
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         pattern: pgo-profraw-*
         path: profraw
@@ -630,7 +630,7 @@ jobs:
         echo "Merged $merged profile(s):"
         ls -la profiles/
     - name: Upload Merged Profiles as Workflow Artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: pgo-profiles
         path: profiles/
@@ -658,7 +658,7 @@ jobs:
       id-token: write
     steps:
     - name: Download Merged Profiles
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: pgo-profiles
         path: profiles
@@ -666,7 +666,7 @@ jobs:
     # skipped entirely when skip-linux is set - only download when it ran.
     - name: Download V8 Builtins Profiles
       if: ${{ needs.generate-v8-builtins-profiles.result == 'success' }}
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: pgo-v8-builtins-profiles
         path: profiles
@@ -695,7 +695,7 @@ jobs:
     # update-website-docs.yml.
     - name: Get GitHub App token
       id: secret-service
-      uses: electron/secret-service-action@3476425e8b30555aac15b1b7096938e254b0e155 # v1.0.0
+      uses: electron/secret-service-action@23b9042f797e34674f0fe2c91608f57f9661ccf2 # v1.1.0
     # The app token is narrowed to single_file: write on the state files and
     # cannot create refs, so the branch comes from GITHUB_TOKEN.
     - name: Create Profile Update Branch
@@ -770,9 +770,13 @@ jobs:
         PR_NUMBER="${PR_URL##*/}"
         labels=(--field "labels[]=semver/none")
         # Every supported release branch gets its own profile update PR from
-        # its own run, so the main PR must never be backported.
+        # its own run, so the main PR must never be backported. Release branch
+        # PRs carry their branch label (e.g. 46-x-y); main PRs get the current
+        # major's label on merge from pull-request-merged.yml.
         if [ "$BASE_BRANCH" = "main" ]; then
           labels+=(--field "labels[]=no-backport")
+        elif [[ "$BASE_BRANCH" =~ ^[0-9]+-x-y$ ]]; then
+          labels+=(--field "labels[]=$BASE_BRANCH")
         fi
         gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" "${labels[@]}" > /dev/null
         echo "## Profile Update PR" >> $GITHUB_STEP_SUMMARY

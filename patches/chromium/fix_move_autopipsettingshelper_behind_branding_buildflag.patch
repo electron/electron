@@ -121,7 +121,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index b7abd2bb5d160bad8944aea46e7dfb64a46d11d8..4fcbfb36ad341d30ec3de5b080620c710a37b5b0 100644
+index 2786953a872abd331d777d64231adfd3b685e85e..9b9998cdcce0c183fe0d7c06331526492e6f64ed 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -13,6 +13,7 @@
@@ -162,7 +162,7 @@ index b7abd2bb5d160bad8944aea46e7dfb64a46d11d8..4fcbfb36ad341d30ec3de5b080620c71
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index e1154047af16efd14465539696de7b55e5ba50cc..4fbb0e6d1b3c8a99bdc81a97821c01149df27e4e 100644
+index a9436ec55914d264cc59637860785881ad2dd16a..b2953144a85fbd0014f5285b9b430206e6d7b890 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -116,8 +116,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);

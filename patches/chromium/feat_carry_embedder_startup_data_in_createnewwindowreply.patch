@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 4d9988cd980099aa1d030ca22f8118571ead6716..c266e2a0f6225d7d116a9a40e0d2617f688decb8 100644
+index 5e38acee26fc8aab78580e952315c9677b3bbe01..8d2f19ba73a389ec0cce3b2a93f58dd52f0b6e9e 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10874,7 +10874,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11066,7 +11066,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -44,7 +44,7 @@ index 4d9988cd980099aa1d030ca22f8118571ead6716..c266e2a0f6225d7d116a9a40e0d2617f
    new_main_rfh->render_view_host()->RenderViewCreated(new_main_rfh);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 66c36cedacc93897e1bf51bee5181eeed3e310ee..02e1b5b8b417016a53ec6554d046c3332199424f 100644
+index c1a08cef12a58935839bfa42f937b2ee65fb39d2..8894901c171f0e90951a3a6dd3aa405258d6934b 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -13,6 +13,7 @@ import "content/public/common/window_container_type.mojom";
@@ -71,10 +71,10 @@ index 66c36cedacc93897e1bf51bee5181eeed3e310ee..02e1b5b8b417016a53ec6554d046c333
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 7457ec8403c7e85ddb89a4e801309d0d0687938c..a915a8de43d1d2735c399fe16109fab6c37fca52 100644
+index 225a1e707b6b6b37210b04acba30404a567f20f1..f3b7b2433d086c0b3eaab1fe519adb196661508e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -839,6 +839,13 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -851,6 +851,13 @@ bool ContentBrowserClient::CanCreateWindow(
    return true;
  }
  
@@ -89,10 +89,10 @@ index 7457ec8403c7e85ddb89a4e801309d0d0687938c..a915a8de43d1d2735c399fe16109fab6
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f4cbfc2db1586b0fab446076ccf4a39612afb7e9..5bacac41429d2c9d99982d11e9a0c1753f9c75d9 100644
+index 8c11e7da0ac23dc4f75c06c079d6de7807a0593a..40083916171a6fb1386a4fbefc24227052c3c9e7 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -64,6 +64,7 @@
+@@ -63,6 +63,7 @@
  #include "media/mojo/mojom/speech_recognizer.mojom-forward.h"
  #include "mojo/public/cpp/bindings/generic_pending_receiver.h"
  #include "mojo/public/cpp/bindings/pending_receiver.h"
@@ -100,7 +100,7 @@ index f4cbfc2db1586b0fab446076ccf4a39612afb7e9..5bacac41429d2c9d99982d11e9a0c175
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1297,6 +1298,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1314,6 +1315,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
@@ -119,7 +119,7 @@ index f4cbfc2db1586b0fab446076ccf4a39612afb7e9..5bacac41429d2c9d99982d11e9a0c175
    // The delegate will be owned by the manager. It's valid to return nullptr.
    virtual SpeechRecognitionManagerDelegate*
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index d36c62edaf0478df7775e132fef87bb3b3e507ca..384c4a6fa9758c292f3d4da47f79b9d5cadea765 100644
+index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308f1b0c3d2 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -24,6 +24,7 @@
@@ -130,7 +130,7 @@ index d36c62edaf0478df7775e132fef87bb3b3e507ca..384c4a6fa9758c292f3d4da47f79b9d5
  #include "media/base/key_system_info.h"
  #include "media/base/key_systems_support_registration.h"
  #include "media/base/supported_types.h"
-@@ -113,6 +114,16 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -114,6 +115,16 @@ class CONTENT_EXPORT ContentRendererClient {
    // Notifies that a new RenderFrame has been created.
    virtual void RenderFrameCreated(RenderFrame* render_frame) {}
  
@@ -148,10 +148,10 @@ index d36c62edaf0478df7775e132fef87bb3b3e507ca..384c4a6fa9758c292f3d4da47f79b9d5
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 2112158f1778a8b43b10fbd9f587d542cb90dd0a..8a1c7f477c4f65263a7f1be2552ee26186eab875 100644
+index c3e10e079c7a18ca3ba4fc7e0419e6309594475a..ce0f74ae0fc90fa83d7cba137fabab9501a239ca 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7190,6 +7190,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7223,6 +7223,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  

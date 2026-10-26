@@ -14,7 +14,7 @@ and
 This patch can be removed once this is fixed upstream in simdjson.
 
 diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
-index afcca85ad6bf7835f8f914d9d417f8347ad3db5c..a836ca8cfdb2fa7348ef7c2cf9c21f18ade5707b 100644
+index 43fe09631c0135af616f9df082c82ba87c434b72..91b0fc22e5965ddb3378887867b5c5c951ae7226 100644
 --- a/deps/simdjson/simdjson.h
 +++ b/deps/simdjson/simdjson.h
 @@ -4408,12 +4408,17 @@ private:
@@ -35,7 +35,7 @@ index afcca85ad6bf7835f8f914d9d417f8347ad3db5c..a836ca8cfdb2fa7348ef7c2cf9c21f18
  namespace simdjson {
  namespace internal {
  
-@@ -5115,6 +5120,9 @@ simdjson_inline bool padded_memory_map::is_valid() const noexcept {
+@@ -5116,6 +5121,9 @@ simdjson_inline bool padded_memory_map::is_valid() const noexcept {
  
  } // namespace simdjson
  
@@ -45,7 +45,7 @@ index afcca85ad6bf7835f8f914d9d417f8347ad3db5c..a836ca8cfdb2fa7348ef7c2cf9c21f18
  inline simdjson::padded_string operator ""_padded(const char *str, size_t len) {
    return simdjson::padded_string(str, len);
  }
-@@ -5123,6 +5131,8 @@ inline simdjson::padded_string operator ""_padded(const char8_t *str, size_t len
+@@ -5124,6 +5132,8 @@ inline simdjson::padded_string operator ""_padded(const char8_t *str, size_t len
    return simdjson::padded_string(reinterpret_cast<const char *>(str), len);
  }
  #endif
@@ -54,7 +54,7 @@ index afcca85ad6bf7835f8f914d9d417f8347ad3db5c..a836ca8cfdb2fa7348ef7c2cf9c21f18
  
  #endif // SIMDJSON_PADDED_STRING_INL_H
  /* end file simdjson/padded_string-inl.h */
-@@ -72764,12 +72774,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
+@@ -72847,12 +72857,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
    return parser_instance;
  }
  
@@ -71,7 +71,7 @@ index afcca85ad6bf7835f8f914d9d417f8347ad3db5c..a836ca8cfdb2fa7348ef7c2cf9c21f18
  
  } // namespace ondemand
  } // namespace arm64
-@@ -86146,12 +86160,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
+@@ -86238,12 +86252,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
    return parser_instance;
  }
  

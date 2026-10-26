@@ -33,8 +33,9 @@ const electronNet = net;
 v8.setFlagsFromString('--expose_gc');
 
 // Posts |result| and exits with |code| once the parent has acknowledged it
-// (see waitForUtilityResult in spec/lib/utility-process-helpers.ts). Exiting
-// right after posting lets the exit overtake the message, or lose it.
+// (see waitForUtilityResult in spec/lib/utility-process-helpers.ts).
+// postMessage() is an asynchronous write and process.exit() does not wait for
+// pending writes, so exiting right after posting can lose the result.
 function finish(result, code) {
   // Leftover async work from the test body can still fail while this waits for the ack.
   // Log it rather than let it change the exit code of a test that has already reported its result.

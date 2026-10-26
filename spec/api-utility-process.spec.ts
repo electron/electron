@@ -221,10 +221,26 @@ describe('utilityProcess module', () => {
     };
 
     it('with default serviceName', async () => {
+      // Every utility process forked without a serviceName is called "Node
+      // Utility Process", so in the spec runner the event for a child of an
+      // earlier test can reach this test's listener. Fork the child in an app
+      // of its own, where it is the only process with that name.
       const name = 'Node Utility Process';
-      const crashPromise = waitForCrash(name);
-      utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
-      const details = await crashPromise;
+      const { remotely } = await startRemoteControlApp();
+      const details: Electron.Details = await remotely(
+        async (fixture: string, name: string) => {
+          const { app, utilityProcess } = require('electron');
+          const gone = new Promise((resolve) => {
+            app.on('child-process-gone', (_event: Electron.Event, details: Electron.Details) => {
+              if (details.name === name) resolve(details);
+            });
+          });
+          utilityProcess.fork(fixture);
+          return gone;
+        },
+        path.join(fixturesPath, 'crash.js'),
+        name
+      );
       expect(details.type).toBe('Utility');
       expect(details.serviceName).toBe('node.mojom.NodeService');
       expect(details.name).toBe(name);
@@ -539,6 +555,30 @@ describe('utilityProcess module', () => {
       const exit = once(child, 'exit');
       expect(child.kill()).toBe(true);
       await exit;
+    });
+
+    it('delivers messages that reached this process before the child exited', async () => {
+      const count = 20;
+      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message-then-exit.js'));
+      deferKillUtilityProcess(child);
+      const received: number[] = [];
+      child.on('message', (index) => received.push(index));
+      let receivedBeforeExit: number[] = [];
+      child.once('exit', () => {
+        receivedBeforeExit = [...received];
+      });
+      // The child posts on this port after its parentPort messages, which share
+      // the same ordered Mojo channel, so they have all reached this process
+      // when the port message does. Only then is the child told to exit.
+      const { port1, port2 } = new MessageChannelMain();
+      defer(() => port1.close());
+      port1.once('message', () => port1.postMessage('exit'));
+      port1.start();
+      await once(child, 'spawn');
+      child.postMessage(count, [port2]);
+      const [code] = await once(child, 'exit');
+      expect(code).toBe(0);
+      expect(receivedBeforeExit).toEqual(Array.from({ length: count }, (_, index) => index));
     });
 
     it('handles the parent port trying to send an non-clonable object', async () => {
@@ -992,6 +1032,7 @@ describe('utilityProcess module', () => {
 
     it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout: 60_000 }, async () => {
       const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
+      defer(() => fs.rm(tmpDir, { recursive: true, force: true }));
       const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
         stdio: 'ignore',
         execArgv: [`--diagnostic-dir=${tmpDir}`, '--js-flags=--max-old-space-size=50'],
@@ -999,13 +1040,13 @@ describe('utilityProcess module', () => {
           NODE_DEBUG_NATIVE: 'diagnostic'
         }
       });
+      deferKillUtilityProcess(child);
       await once(child, 'spawn');
       await once(child, 'exit');
       const files = (await fs.readdir(tmpDir)).filter((file) => file.endsWith('.heapsnapshot'));
       expect(files.length).toBe(1);
       const stat = await fs.stat(path.join(tmpDir, files[0]));
       expect(stat.size).toBeGreaterThan(0);
-      await fs.rm(tmpDir, { recursive: true });
     });
 
     it('supports --no-experimental-global-navigator flag', async () => {

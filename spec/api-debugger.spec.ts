@@ -211,51 +211,54 @@ describe('debugger module', () => {
       });
 
       const { url } = await listen(server);
-      w.loadURL(url);
-      // If we do this synchronously, it's fast enough to attach and enable
-      // network capture before the load. If we do it before the loadURL, for
-      // some reason network capture doesn't get enabled soon enough and we get
-      // an error when calling `Network.getResponseBody`.
+      // Network.enable only reaches the renderer once it exists. Sent during
+      // the first navigation of a fresh window, it can arrive after the
+      // response, so Network.responseReceived never fires. Load a page first
+      // and wait for Network.enable before the real navigation.
+      await w.loadURL('about:blank');
       w.webContents.debugger.attach();
-      w.webContents.debugger.sendCommand('Network.enable');
-      const [, , { requestId }] = await emittedUntil(
+      await w.webContents.debugger.sendCommand('Network.enable');
+
+      let requestId: string | undefined;
+      const loadingFinished = emittedUntil(
         w.webContents.debugger,
         'message',
-        (_event: any, method: string, params: any) =>
-          method === 'Network.responseReceived' && params.response.url.startsWith('http://127.0.0.1')
+        (_event: any, method: string, params: any) => {
+          if (method === 'Network.responseReceived' && params.response.url.startsWith('http://127.0.0.1')) {
+            requestId = params.requestId;
+          }
+          return method === 'Network.loadingFinished' && requestId !== undefined && params.requestId === requestId;
+        }
       );
-      await emittedUntil(
-        w.webContents.debugger,
-        'message',
-        (_event: any, method: string, params: any) =>
-          method === 'Network.loadingFinished' && params.requestId === requestId
-      );
+      await w.loadURL(url);
+      await loadingFinished;
       const { body } = await w.webContents.debugger.sendCommand('Network.getResponseBody', { requestId });
       expect(body).toBe('\u0024');
     });
 
     it('does not crash for invalid unicode characters in message', async () => {
-      w.webContents.debugger.attach();
-
-      const loadingFinished = new Promise<void>((resolve) => {
-        w.webContents.debugger.on('message', (event, method) => {
-          // loadingFinished indicates that page has been loaded and it did not
-          // crash because of invalid UTF-8 data
-          if (method === 'Network.loadingFinished') {
-            resolve();
-          }
-        });
-      });
-
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.end('\uFFFF');
       });
 
       const { url } = await listen(server);
-      w.webContents.debugger.sendCommand('Network.enable');
-      w.loadURL(url);
+      // Network.enable only reaches the renderer once it exists. On a fresh
+      // window that is during the first navigation, which can then finish
+      // before the renderer reports Network.loadingFinished. Load a page
+      // first and wait for Network.enable before the real navigation.
+      await w.loadURL('about:blank');
+      w.webContents.debugger.attach();
+      await w.webContents.debugger.sendCommand('Network.enable');
 
+      // loadingFinished indicates that page has been loaded and it did not
+      // crash because of invalid UTF-8 data
+      const loadingFinished = emittedUntil(
+        w.webContents.debugger,
+        'message',
+        (_event: any, method: string) => method === 'Network.loadingFinished'
+      );
+      await w.loadURL(url);
       await loadingFinished;
     });
 

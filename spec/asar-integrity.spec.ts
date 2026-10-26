@@ -70,7 +70,11 @@ const expectToHaveCrashed = (res: SpawnResult) => {
 // reads): an "Integrity"/"ElectronAsar" resource containing a JSON list of
 // { file, alg, value } entries.
 async function embedAsarIntegrity(exePath: string, integrity: Record<string, { algorithm: 'SHA256'; hash: string }>) {
-  const exe = NtExecutable.from(await fs.promises.readFile(exePath));
+  // The executable under test may be Authenticode-signed
+  // (e.g. a signed release build), and resedit refuses to parse one by default.
+  // Editing the resources invalidates the signature anyway,
+  // so with ignoreCert this copy is written back out without its certificate table.
+  const exe = NtExecutable.from(await fs.promises.readFile(exePath), { ignoreCert: true });
   const resources = NtExecutableResource.from(exe);
 
   // Attach the resource to the same language as the existing version info.
@@ -360,6 +364,58 @@ describe('fuses', { timeout: 120000 }, () => {
             expect(res.out).not.toContain('tamper-after-read-B-unexpectedly-ok');
             expectViolation(res);
           });
+        });
+      });
+
+      ifdescribe(process.platform === 'darwin')('when the app archive is replaced while running', () => {
+        let replacement: string;
+
+        beforeEach(async () => {
+          const resourcesDir = path.resolve(appPath, 'Contents', 'Resources');
+          const appAsar = path.resolve(resourcesDir, 'app.asar');
+          replacement = path.resolve(resourcesDir, 'replacement');
+          await createPackage(path.resolve(import.meta.dirname, 'fixtures/apps/asar-integrity-swap'), appAsar);
+
+          const infoPlistPath = path.resolve(appPath, 'Contents', 'Info.plist');
+          const info = plist.parse(await fs.promises.readFile(infoPlistPath, 'utf8'));
+          info.ElectronAsarIntegrity = {
+            ...info.ElectronAsarIntegrity,
+            'Resources/app.asar': { algorithm: 'SHA256', hash: headerHash(appAsar) }
+          };
+          await fs.promises.writeFile(infoPlistPath, plist.build(info));
+        }, 120000);
+
+        ensureFusesBeforeEach({
+          [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+          [FuseV1Options.OnlyLoadAppFromAsar]: true
+        });
+
+        const writeReplacementFiles = async (dir: string) => {
+          await fs.promises.mkdir(dir);
+          await fs.promises.writeFile(path.join(dir, 'package.json'), '{"main":"child.js"}');
+          await fs.promises.writeFile(
+            path.join(dir, 'child.js'),
+            "process.parentPort.postMessage('child-loaded-replacement');"
+          );
+        };
+        // Any argument, so that launchApp() opts out of AppKit state restoration.
+        const launchSwapApp = () =>
+          launchApp(['--enable-logging'], { env: { ...process.env, ASAR_SWAP_REPLACEMENT: replacement } });
+
+        it('does not load a child process from a directory', async () => {
+          await writeReplacementFiles(replacement);
+          const res = await launchSwapApp();
+          expect(res.out).toContain('child-exited');
+          expect(res.out).not.toContain('child-loaded-replacement');
+        });
+
+        it('does not load a child process from a modified archive', async () => {
+          const src = path.resolve(tmpDir, 'replacement-src');
+          await writeReplacementFiles(src);
+          await createPackage(src, replacement);
+          const res = await launchSwapApp();
+          expect(res.out).toContain('child-exited');
+          expect(res.out).not.toContain('child-loaded-replacement');
         });
       });
 

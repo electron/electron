@@ -30,7 +30,7 @@ index 824686c5d37f69311b306a9228cb212f6abfe90b..c9ebd900e3c18119c1feb3e5a9b37884
  
    return ContentSettingsType::DEFAULT;
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index c623c4451b36738ab91ac42f54c17c91376708bf..ec80237a64dc0dc25d623a0f0a0fc75175cf01f7 100644
+index a7f44aa73117ce935695b7c0783d93270bec660f..aac4ad42735df9dfa50eea129309f334f69435a3 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -100,9 +100,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -204,10 +204,10 @@ index 507eaa61fb8e83727807e6917ba0c9a3e23f9d31..f2603172991ba2c29092c95e3c92905e
    bool sysex;
  };
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 490e3bdca2a092cfb98f8a7cda2666ec979d953b..8689da58e0e225e67fac695e6375468f1678aab9 100644
+index 323b86d6f571647c551fd216dbd9f2ac9ca2c3a1..cbeff89c2a607160b74f17e64c7ba1ab0b76db05 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -165,8 +165,22 @@ String PermissionNameToString(PermissionName name) {
+@@ -164,8 +164,22 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

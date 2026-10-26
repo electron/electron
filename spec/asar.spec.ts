@@ -150,14 +150,18 @@ describe('asar package', () => {
       const willDownload = once(w.webContents.session, 'will-download');
       // The click loop below can start more than one download. Give the first
       // its save path here, synchronously, and refuse the rest, so none of them
-      // ever falls through to the native Save dialog.
+      // ever falls through to the native Save dialog. Start listening for the
+      // first one's 'done' here too: it can finish while the loop is still
+      // waiting on a later click, before the loop sees that it started.
       let started = false;
+      let done: Promise<any[]> | undefined;
       const onWillDownload = (event: Electron.Event, item: Electron.DownloadItem) => {
         if (started) {
           event.preventDefault();
         } else {
           started = true;
           item.savePath = savePath;
+          done = once(item, 'done');
         }
       };
       w.webContents.session.on('will-download', onWillDownload);
@@ -180,7 +184,7 @@ describe('asar package', () => {
       }
       expect(downloading, 'the viewer never started a download').toBeInstanceOf(Array);
       const item = downloading![1] as Electron.DownloadItem;
-      const [, state] = await once(item, 'done');
+      const [, state] = await done!;
       expect(state).toBe('completed');
       expect(item.getFilename()).toBe('cat.pdf');
       expect(importedFs.readFileSync(savePath).equals(importedFs.readFileSync(path.join(fixtures, 'cat.pdf')))).toBe(
@@ -241,7 +245,7 @@ describe('asar package', () => {
 
     // Writes a minimal asar archive: |tree| maps names to file contents
     // (string/Buffer), nested trees (directories) or { link } entries.
-    const writeAsar = (file: string, tree: Record<string, any>) => {
+    const writeAsar = (file: string, tree: Record<string, any>, patch?: (files: Record<string, any>) => void) => {
       const chunks: Buffer[] = [];
       let offset = 0;
       const build = (node: Record<string, any>): any => {
@@ -261,7 +265,9 @@ describe('asar package', () => {
         }
         return files;
       };
-      const json = Buffer.from(JSON.stringify({ files: build(tree) }));
+      const files = build(tree);
+      patch?.(files);
+      const json = Buffer.from(JSON.stringify({ files }));
       const padded = (json.length + 3) & ~3;
       const headerPickle = Buffer.alloc(8 + padded);
       headerPickle.writeUInt32LE(4 + padded, 0);
@@ -333,6 +339,44 @@ describe('asar package', () => {
         if (process.platform !== 'win32' || !['EBUSY', 'EPERM'].includes(error.code)) throw error;
       }
     });
+
+    // Skipped on Windows, where an open archive cannot be renamed.
+    ifit(process.platform !== 'win32')(
+      'keeps reading an opened archive after its path is replaced by a directory',
+      () => {
+        const swapped = j(tmp, 'swap', 'app.asar');
+        originalFs.mkdirSync(j(tmp, 'swap'));
+        writeAsar(swapped, { 'a.txt': 'from the archive' });
+        expect(new asarBinding.Archive(swapped)).toBeTruthy();
+        originalFs.renameSync(swapped, swapped + '.orig');
+        originalFs.mkdirSync(swapped);
+        originalFs.writeFileSync(j(swapped, 'a.txt'), 'from a plain directory');
+        expect(fs.readFileSync(j(swapped, 'a.txt'), 'utf8')).toBe('from the archive');
+      }
+    );
+
+    // Skipped on Windows, where an open archive cannot be renamed.
+    ifit(process.platform !== 'win32')(
+      'keeps treating an opened archive as an archive after an earlier directory probe',
+      () => {
+        const swapped = j(tmp, 'previously-directory.asar');
+        const entry = j(swapped, 'a.txt');
+
+        originalFs.mkdirSync(swapped);
+        expect(splitPath(entry, true)).toBe(-1);
+        originalFs.rmdirSync(swapped);
+
+        writeAsar(swapped, { 'a.txt': 'from the archive' });
+        expect(new asarBinding.Archive(swapped)).toBeTruthy();
+
+        originalFs.renameSync(swapped, swapped + '.orig');
+        originalFs.mkdirSync(swapped);
+        originalFs.writeFileSync(entry, 'from a plain directory');
+
+        expect(splitPath(entry, true)).toBe(swapped.length);
+        expect(fs.readFileSync(entry, 'utf8')).toBe('from the archive');
+      }
+    );
 
     describe('splitPath (native archive prefix detection)', () => {
       it('finds the archive component and returns its length in JS string units', () => {
@@ -659,6 +703,49 @@ describe('asar package', () => {
         expect(await Promise.all(results)).toEqual([4000, 4000, 4000, 4000]);
         await Promise.all(workers.map((w) => w.terminate()));
       });
+    });
+
+    describe('archives with out-of-range size fields', () => {
+      let oversizedHeader: string; // header size field larger than the file
+      let badEntries: string; // entries whose size/offset do not fit the file
+
+      beforeAll(() => {
+        oversizedHeader = j(tmp, 'plain', 'oversized-header.asar');
+        const bytes = Buffer.from(originalFs.readFileSync(archive));
+        bytes.writeUInt32LE(0xffffffff, 4);
+        originalFs.writeFileSync(oversizedHeader, bytes);
+
+        badEntries = j(tmp, 'plain', 'bad-entries.asar');
+        writeAsar(
+          badEntries,
+          { 'ok.txt': 'ok', 'negative.txt': 'neg', 'too-long.txt': 'long', 'far-away.txt': 'far' },
+          (files) => {
+            files['negative.txt'].size = -1;
+            files['too-long.txt'].size = 1 << 30;
+            files['far-away.txt'].offset = String(2 ** 40);
+          }
+        );
+      });
+
+      it('rejects an archive whose header size exceeds the file size', () => {
+        expect(() => fs.readFileSync(j(oversizedHeader, 'a.txt'))).toThrow(/Invalid package/);
+        expect(() => fs.statSync(j(oversizedHeader, 'a.txt'))).toThrow(/Invalid package/);
+      });
+
+      it('still serves well-formed entries next to malformed ones', () => {
+        expect(fs.readFileSync(j(badEntries, 'ok.txt'), 'utf8')).toBe('ok');
+      });
+
+      for (const name of ['negative.txt', 'too-long.txt', 'far-away.txt']) {
+        it(`treats ${name} as missing instead of reading past the archive`, () => {
+          const p = j(badEntries, name);
+          expect(() => fs.statSync(p)).toThrow(/ENOENT/);
+          expect(() => fs.readFileSync(p)).toThrow(/ENOENT/);
+          expect(() => fs.openSync(p, 'r')).toThrow(/ENOENT/);
+          expect(() => fs.copyFileSync(p, j(tmp, 'copied-' + name))).toThrow(/ENOENT/);
+          expect(fs.existsSync(p)).toBe(false);
+        });
+      }
     });
 
     describe('fs on archives in unusual locations', () => {

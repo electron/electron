@@ -235,6 +235,85 @@ describe('app module', () => {
         expect(signal).toBeNull();
         expect(code).toBe(0);
       });
+
+      ifit(fs.existsSync('/usr/bin/dbus-monitor'))(
+        'fails a method call made after the bus is lost instead of crashing',
+        async () => {
+          // Runs a private dbus-daemon and returns a function that resolves
+          // once dbus-monitor has printed a line matching the pattern.
+          const startBus = async () => {
+            const daemon = cp.spawn('dbus-daemon', ['--session', '--nofork', '--print-address']);
+            defer(() => daemon.kill());
+            const [address] = await once(daemon.stdout, 'data');
+            const monitor = cp.spawn('dbus-monitor', ['--address', address.toString().trim()]);
+            defer(() => monitor.kill());
+            const lines: string[] = [];
+            const waiters = new Set<{ pattern: RegExp; resolve: () => void }>();
+            readline.createInterface({ input: monitor.stdout }).on('line', (line) => {
+              lines.push(line);
+              for (const waiter of waiters) {
+                if (waiter.pattern.test(line)) {
+                  waiters.delete(waiter);
+                  waiter.resolve();
+                }
+              }
+            });
+            const waitFor = (pattern: RegExp) =>
+              lines.some((line) => pattern.test(line))
+                ? Promise.resolve()
+                : new Promise<void>((resolve) => waiters.add({ pattern, resolve }));
+            // dbus-monitor prints NameAcquired once it is monitoring.
+            await waitFor(/member=NameAcquired/);
+            return { daemon, address: address.toString().trim(), waitFor };
+          };
+
+          // Separate buses, so that only the system bus goes away and the
+          // session bus can show what the app's D-Bus thread did afterwards.
+          const systemBus = await startBus();
+          const sessionBus = await startBus();
+          const env = {
+            ...process.env,
+            DBUS_SESSION_BUS_ADDRESS: sessionBus.address,
+            DBUS_SYSTEM_BUS_ADDRESS: systemBus.address,
+            CHROME_DESKTOP: 'electron-test.desktop'
+          };
+
+          const appProcess = cp.spawn(process.execPath, [path.join(fixturesPath, 'api', 'bus-lost-method-call')], {
+            env
+          });
+          defer(() => appProcess.kill('SIGKILL'));
+          appProcess.stdin.on('error', () => {});
+          const exited = once(appProcess, 'exit');
+          const output: string[] = [];
+          const ready = new Promise<void>((resolve) => {
+            readline.createInterface({ input: appProcess.stdout }).on('line', (line) => {
+              output.push(line);
+              if (line === 'ready') resolve();
+            });
+          });
+
+          // Wait until the app is up and its org.freedesktop.login1 proxy
+          // has connected to the system bus, then take the system bus away.
+          await ready;
+          await systemBus.waitFor(/interface='org\.freedesktop\.login1\.Manager'/);
+          systemBus.daemon.kill();
+
+          // The badge update reaches the session bus only after the D-Bus
+          // thread has started the login1 call on the lost system bus. Without
+          // the fix, that call aborts the process first.
+          const first = await Promise.race([
+            exited.then(() => 'exit'),
+            sessionBus.waitFor(/interface=com\.canonical\.Unity\.LauncherEntry; member=Update/).then(() => 'update')
+          ]);
+          if (first === 'update') appProcess.stdin.end('x');
+
+          const [code, signal] = await exited;
+          expect(signal).toBeNull();
+          expect(code).toBe(0);
+          expect(first).toBe('update');
+          expect(output).toContain('quit');
+        }
+      );
     }
   );
 
@@ -2040,17 +2119,18 @@ describe('app module', () => {
   // losing the display server connection went straight to LOG(FATAL).
   ifdescribe(process.platform === 'linux')('GDK_BACKEND', () => {
     const fixture = path.join(fixturesPath, 'apps', 'gdk-backend');
+    // Wait for the app to exit, not just for its output. Otherwise the next
+    // test (or retry) launches the fixture again while this copy is still
+    // quitting, which on the ASAN lane can hold up the new launch for longer
+    // than a fixed wait for output allows.
     const run = async (env: NodeJS.ProcessEnv) => {
-      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'ignore'] });
-      defer(() => {
-        if (child.exitCode === null && child.signalCode === null) child.kill();
-      });
-      let out = '';
-      child.stdout.on('data', (chunk) => {
-        out += chunk;
-      });
-      await waitUntil(() => /GDK_BACKEND in child: .*\n/.test(out));
-      return out.match(/GDK_BACKEND in child: (.*)\n/)![1];
+      // Starting Electron is slow on sanitizer builds, so stay within the
+      // per-test timeout (raised there) rather than a fixed short poll.
+      const timeout = (Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000) - 5_000;
+      const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [fixture], { env, timeout });
+      const match = /GDK_BACKEND in child: (.*)/.exec(stdout);
+      expect(match, `exited with ${code}/${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`).not.toBeNull();
+      return match![1];
     };
 
     it('is not added to the environment that child processes inherit', async () => {
@@ -2060,6 +2140,38 @@ describe('app module', () => {
 
     it('is left as the user set it', async () => {
       expect(await run({ ...process.env, GDK_BACKEND: 'x11' })).toBe('x11');
+    });
+  });
+
+  ifdescribe(process.platform === 'linux')('app.setActivationToken(token)', () => {
+    it('throws when the token is not a string', () => {
+      expect(() => app.setActivationToken(1 as any)).toThrow(/Error processing argument at index 0/);
+    });
+
+    ifit(isWayland)('activates the next window with the token', async (ctx) => {
+      const child = cp.spawn(
+        process.execPath,
+        [path.join(fixturesPath, 'api', 'activation-token'), '--ozone-platform=wayland'],
+        { env: { ...process.env, WAYLAND_DEBUG: '1' }, stdio: ['ignore', 'ignore', 'pipe'] }
+      );
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      });
+      let protocolLog = '';
+      child.stderr.on('data', (chunk) => {
+        protocolLog += chunk;
+      });
+      const hasActivationProtocol = () => protocolLog.includes('"xdg_activation_v1"');
+      await waitUntil(() => {
+        expect(child.exitCode ?? child.signalCode, protocolLog).toBeNull();
+        return (
+          /xdg_activation_v1[#@]\d+\.activate\(/.test(protocolLog) ||
+          (/xdg_surface[#@]\d+\.ack_configure\(/.test(protocolLog) && !hasActivationProtocol())
+        );
+      });
+
+      if (!hasActivationProtocol()) ctx.skip();
+      expect(protocolLog).toMatch(/xdg_activation_v1[#@]\d+\.activate\("electron-test-token"/);
     });
   });
 
@@ -2328,62 +2440,54 @@ describe('app module', () => {
         })
     );
 
+    // Launches the fixture app and resolves with the renderer argv it reports
+    // over the socket once both of its windows have loaded and opened DevTools.
+    const getRendererArgv = async (flag: string) => {
+      const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+      const connection = once(server, 'connection') as Promise<[net.Socket]>;
+      appProcess = cp.spawn(process.execPath, [appPath, flag], { stdio: 'inherit' });
+      const exited = once(appProcess, 'exit').then(([code, signal]) => {
+        throw new Error(`mixed-sandbox-app exited before reporting (code ${code}, signal ${signal})`);
+      });
+      const serverFailed = once(server, 'error').then(([error]) => {
+        throw error;
+      });
+      const report = (async () => {
+        const [client] = await connection;
+        // The report can arrive in more than one chunk; it is complete once the
+        // app ends its side of the connection.
+        let data = '';
+        client.setEncoding('utf8');
+        client.on('data', (chunk) => {
+          data += chunk;
+        });
+        await once(client, 'end');
+        return JSON.parse(data);
+      })();
+      return Promise.race([report, exited, serverFailed]);
+    };
+
+    const expectSandboxedEverywhere = (argv: any) => {
+      expect(argv.sandbox).toContain('--enable-sandbox');
+      expect(argv.sandbox).not.toContain('--no-sandbox');
+
+      expect(argv.noSandbox).toContain('--enable-sandbox');
+      expect(argv.noSandbox).not.toContain('--no-sandbox');
+
+      expect(argv.noSandboxDevtools).toBe(true);
+      expect(argv.sandboxDevtools).toBe(true);
+    };
+
     describe('when app.enableSandbox() is called', () => {
-      it('adds --enable-sandbox to all renderer processes', () =>
-        new Promise<void>((resolve, reject) => {
-          const done = (error?: unknown) => (error ? reject(error) : resolve());
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
-
-          server.once('error', (error) => {
-            done(error);
-          });
-
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).toContain('--enable-sandbox');
-              expect(argv.sandbox).not.toContain('--no-sandbox');
-
-              expect(argv.noSandbox).toContain('--enable-sandbox');
-              expect(argv.noSandbox).not.toContain('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).toBe(true);
-              expect(argv.sandboxDevtools).toBe(true);
-
-              done();
-            });
-          });
-        }));
+      it('adds --enable-sandbox to all renderer processes', async () => {
+        expectSandboxedEverywhere(await getRendererArgv('--app-enable-sandbox'));
+      });
     });
 
     describe('when the app is launched with --enable-sandbox', () => {
-      it('adds --enable-sandbox to all renderer processes', () =>
-        new Promise<void>((resolve, reject) => {
-          const done = (error?: unknown) => (error ? reject(error) : resolve());
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
-
-          server.once('error', (error) => {
-            done(error);
-          });
-
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).toContain('--enable-sandbox');
-              expect(argv.sandbox).not.toContain('--no-sandbox');
-
-              expect(argv.noSandbox).toContain('--enable-sandbox');
-              expect(argv.noSandbox).not.toContain('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).toBe(true);
-              expect(argv.sandboxDevtools).toBe(true);
-
-              done();
-            });
-          });
-        }));
+      it('adds --enable-sandbox to all renderer processes', async () => {
+        expectSandboxedEverywhere(await getRendererArgv('--enable-sandbox'));
+      });
     });
   });
 

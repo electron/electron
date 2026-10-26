@@ -41,10 +41,10 @@ index f308232804352a72f81aa75dc42487b7a0697a47..077b8bff2c29cf35291e30b1bbfc8bdb
    bench.end(n);
  }
 diff --git a/common.gypi b/common.gypi
-index 7e67f7575c866c7628c980c77d131a4766caf58f..b1802a5fa1742f1896bcdfaca644245051cf7841 100644
+index c11b4a8df43cd2d07c55ca3dbbb67d5b555c77cc..17b737036093faad249134751bee65fa3a148fe1 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -90,7 +90,7 @@
+@@ -93,7 +93,7 @@
      'v8_enable_sandbox%': 0,
      'v8_enable_v8_checks%': 0,
      'v8_enable_zone_compression%': 0,
@@ -54,10 +54,10 @@ index 7e67f7575c866c7628c980c77d131a4766caf58f..b1802a5fa1742f1896bcdfaca6442450
  
      'using_electron_config_gypi%': 0,
 diff --git a/configure.py b/configure.py
-index 443818802df9bf62c17aa783617ec5b932cedf81..be0707fa1781201959fa0f4b3712021657dbfee8 100755
+index 172aef2c5194574eb298462588ecf76ae2a2e366..80d5362e0037664aa98c02ff5568682bf5d3143b 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1031,6 +1031,12 @@ parser.add_argument('--without-inspector',
+@@ -1004,6 +1004,12 @@ parser.add_argument('--without-inspector',
      default=None,
      help='disable the V8 inspector protocol')
  
@@ -70,7 +70,7 @@ index 443818802df9bf62c17aa783617ec5b932cedf81..be0707fa1781201959fa0f4b37120216
  parser.add_argument('--shared',
      action='store_true',
      dest='shared',
-@@ -1997,6 +2003,7 @@ def configure_v8(o, configs):
+@@ -1962,6 +1968,7 @@ def configure_v8(o, configs):
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_extensible_ro_snapshot'] = 0
    o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
@@ -402,7 +402,7 @@ index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1cb3ba4df520e782037d63bf1aeaef8b
    let debugLogCategoryEnabled = false;
    let timerFlags = kNone;
 diff --git a/node.gyp b/node.gyp
-index 5df80c48e7c747a49bd2e86ea7706de757fff32e..8aa3652277db2aef5e9ac5f0febdd08a44853fa0 100644
+index 14f14c79630f19bbf7d319b669614123ef94b148..e9a73b3b5cf580d559d1cac60082c1022fcdc3ac 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -193,10 +193,9 @@
@@ -432,7 +432,7 @@ index 5df80c48e7c747a49bd2e86ea7706de757fff32e..8aa3652277db2aef5e9ac5f0febdd08a
        'src/tracing/traced_value.h',
        'src/timer_wrap.h',
        'src/timer_wrap-inl.h',
-@@ -1387,6 +1384,14 @@
+@@ -1339,6 +1336,14 @@
          }, {
            'sources!': [ '<@(node_cctest_quic_sources)' ],
          }],
@@ -447,7 +447,7 @@ index 5df80c48e7c747a49bd2e86ea7706de757fff32e..8aa3652277db2aef5e9ac5f0febdd08a
          ['v8_enable_inspector==1', {
            'defines': [
              'HAVE_INSPECTOR=1',
-@@ -1709,6 +1714,14 @@
+@@ -1661,6 +1666,14 @@
              'NODE_USE_NODE_CODE_CACHE=1',
            ],
          }],
@@ -463,10 +463,10 @@ index 5df80c48e7c747a49bd2e86ea7706de757fff32e..8aa3652277db2aef5e9ac5f0febdd08a
            'defines': [
              'HAVE_INSPECTOR=1',
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index c81ef82c5a23d30ec7430b8726bd28e1be2f225e..75fc97a581b79c87a51adcbe999b937262b422db 100644
+index 4126d4b9f6caf6cbddba403189858c7f0ec60abb..885b9d9e6f9cc4497f27492f5eabcdbbe7f1e902 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -759,14 +759,6 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
+@@ -777,14 +777,6 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
    return env->platform();
  }
  
@@ -530,7 +530,7 @@ index a493f59465d207b4b89d8941807d4ff6acff82ac..88e8a2f401cac75810e3b0fdb776b41e
 +  ],
  }
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17937167af 100644
+index c22d6fc36b9cef4c15fe579bc3f9acf979528e8e..8ef5de4b47bf8d98a4fbbb8aa91ed639b3ae0e27 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -14,7 +14,9 @@
@@ -543,7 +543,7 @@ index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17
  #include "inspector/worker_agent.h"
  #include "inspector/worker_inspector.h"
  #include "inspector_io.h"
-@@ -286,9 +288,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -293,9 +295,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
                                    StringView(),
                                    V8Inspector::ClientTrustLevel::kFullyTrusted);
      node_dispatcher_ = std::make_unique<UberDispatcher>(this);
@@ -555,7 +555,7 @@ index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17
      if (worker_manager) {
        worker_agent_ = std::make_unique<protocol::WorkerAgent>(worker_manager);
        worker_agent_->Wire(node_dispatcher_.get());
-@@ -322,8 +326,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -329,8 +333,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
    }
  
    ~ChannelImpl() override {
@@ -566,7 +566,7 @@ index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17
      if (worker_agent_) {
        worker_agent_->disable();
        worker_agent_.reset();  // Dispose before the dispatchers
-@@ -472,7 +478,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -479,7 +485,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
    }
  
    std::unique_ptr<protocol::RuntimeAgent> runtime_agent_;
@@ -691,7 +691,7 @@ index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..952161d9e2cf1c92c3600fc2da0af594
      return env->ThrowUVException(err, "opendir");
    }
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 15a433fc2c1fde03d1e875a88c238bc36fcc6c93..06bafaea64e7fbb2b5f32e92fd7dc79be875ac68 100644
+index fb5aaa3ab08923bf9c1c4e767bad2881510633e8..b6e2d325e338aedcab3e7fa2038e773930f56fcd 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -153,10 +153,16 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {
@@ -712,7 +712,7 @@ index 15a433fc2c1fde03d1e875a88c238bc36fcc6c93..06bafaea64e7fbb2b5f32e92fd7dc79b
  #define FS_ASYNC_TRACE_BEGIN0(fs_type, id)                                     \
    TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs, async),         \
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233bb2943a9 100644
+index dc228f8e1e245d9f4fca8f2f948619304bfed5d5..39e8312ddd7167ee235927e1772f6d4dff98a5ad 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -315,6 +315,7 @@ class ThreadPoolWork {
@@ -732,7 +732,7 @@ index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233
  // Functions defined in node.cc that are exposed via the bootstrapper object
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 4ffcdb8c1f9e1d866960c419569f3410f8e50934..04ca2785b9da5cd4083c6dee200cfaeb6e06bfc6 100644
+index b55fae0a32175fdff7a0c3ecb479297bd035eb7e..0cd2aa0fce832484b26e30af8d9470cb98a3fb0a 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -333,7 +333,11 @@ class PerProcessOptions : public Options {
@@ -748,7 +748,7 @@ index 4ffcdb8c1f9e1d866960c419569f3410f8e50934..04ca2785b9da5cd4083c6dee200cfaeb
    bool zero_fill_all_buffers = false;
    bool debug_arraybuffer_allocations = false;
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index c13d363cde2cf028ba3f364db489bb5d6bedf7a6..1f235cdd171ed4d00bdfd3ed25acbbfdfd172d2f 100644
+index 6893935e7cf7bc5cc92479f553a1e4827820b71d..bf2dac8f5d9e11f52603c562ff049cabc67eb91e 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
 @@ -477,7 +477,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
@@ -784,7 +784,7 @@ index f47e2a46b66b84938bcbf5b34ffc4a4a4a39af3f..665d2a467e08084837217482f65bb626
    v8::PageAllocator* page_allocator_;
    std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index 49c457cae2b3da603a548874f63dbdf9f50580d9..412b5b67b35dfd192af04485e9c858f9862e9e0a 100644
+index f2d766b8b192dfbbd40af1f8ffaee624b747bb1d..c8f2a58734ee6d2ab440cd2439574cbd09d6fc00 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
 @@ -7,7 +7,7 @@
@@ -811,7 +811,7 @@ index 49c457cae2b3da603a548874f63dbdf9f50580d9..412b5b67b35dfd192af04485e9c858f9
      // Starts the Tracing Agent if it wasn't started already (e.g. through
      // a command line flag.)
      auto* agent = tracing::Agent::GetInstance();
-@@ -205,6 +204,14 @@ void NodeCategorySet::Initialize(Local<Object> target,
+@@ -210,6 +209,14 @@ void NodeCategorySet::Initialize(Local<Object> target,
                    .Check();
    target->Set(context, trace,
                binding->Get(context, trace).ToLocalChecked()).Check();
@@ -1747,7 +1747,7 @@ index 0bc9df81d87562243817a6618641a49b602654e3..e04ffff48efbc55cc2221c22be7fd2e0
  
  // Do not use this class directly. Define a custom structured class to provide
 diff --git a/test/common/index.js b/test/common/index.js
-index 9d15b57bf6b85bb006496069149f41110a2664b5..309c7301f2bbf842aad00c31f57c8a455e6b2228 100755
+index 0f2d695bbc5a6476d0e87bc79eb94485398e6e6b..15f3c1fa796f3ce11b62b8437469a5ae83c9c389 100755
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -58,6 +58,7 @@ const hasCrypto = Boolean(process.versions.openssl) &&
@@ -1777,7 +1777,7 @@ index 9d15b57bf6b85bb006496069149f41110a2664b5..309c7301f2bbf842aad00c31f57c8a45
  function getArrayBufferViews(buf) {
    const { buffer, byteOffset, byteLength } = buf;
  
-@@ -1006,6 +1019,8 @@ const common = {
+@@ -1007,6 +1020,8 @@ const common = {
    skipIfEslintMissing,
    skipIfInspectorDisabled,
    skipIfSQLiteMissing,
@@ -2231,10 +2231,10 @@ index 844b3769ce201c615b2daaaaa85c8dd01a13c8f1..2e6c20255ce75f94c83e9238bc90a50b
    const CODE = 'const { Worker } = require(\'worker_threads\'); ' +
                 `new Worker(${JSON.stringify(__filename)})`;
 diff --git a/tools/v8_gypfiles/features.gypi b/tools/v8_gypfiles/features.gypi
-index 53886830721c46b3ea1df7aaf7180ed19c3288eb..56f2ec123d22250ac1c7bcf368c4ea640114eb09 100644
+index 373448fccfb22ca2ec16df321a387fc710319cc4..d911d9f01b0c02e154358ccd812f324850655b56 100644
 --- a/tools/v8_gypfiles/features.gypi
 +++ b/tools/v8_gypfiles/features.gypi
-@@ -205,8 +205,7 @@
+@@ -208,8 +208,7 @@
      # Enable seeded array index hash.
      'v8_enable_seeded_array_index_hash%': 1,
  
@@ -2244,7 +2244,7 @@ index 53886830721c46b3ea1df7aaf7180ed19c3288eb..56f2ec123d22250ac1c7bcf368c4ea64
      'v8_use_perfetto%': 0,
  
      # Enable map packing & unpacking (sets -dV8_MAP_PACKING).
-@@ -465,7 +464,10 @@
+@@ -484,7 +483,10 @@
          'defines': ['ENABLE_VERIFY_CSA',],
        }],
        ['v8_use_perfetto==1', {
@@ -2257,7 +2257,7 @@ index 53886830721c46b3ea1df7aaf7180ed19c3288eb..56f2ec123d22250ac1c7bcf368c4ea64
        ['v8_enable_map_packing==1', {
          'defines': ['V8_MAP_PACKING',],
 diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
-index f90a29d102ac0246a9261e223f0b5f69ec6d328b..71a7c40efa061afa954874ac97820be97e50463c 100644
+index 370001847ee8b43c0e83e516f65856c85eff3f41..60d630702b95d786d9634c0ffda40ba7f8374a1d 100644
 --- a/tools/v8_gypfiles/v8.gyp
 +++ b/tools/v8_gypfiles/v8.gyp
 @@ -33,6 +33,7 @@
@@ -2385,7 +2385,7 @@ index f90a29d102ac0246a9261e223f0b5f69ec6d328b..71a7c40efa061afa954874ac97820be9
      },  # cppgc_base
      {
 diff --git a/unofficial.gni b/unofficial.gni
-index 98921973b2a75597832b68f12816c6bdc6698447..8fa773b2f22099585f1de4b43febce7f7f1aa953 100644
+index a4cfd7fe8d80c96b11e33daff90e95b7581772be..dd88a03c352910760e5e5d8eeb0eb6f0dbbdfe42 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -166,6 +166,7 @@ template("node_gn_build") {
