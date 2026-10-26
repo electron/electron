@@ -2368,8 +2368,10 @@ describe('protocol module', () => {
       const ratios = samples.map(({ ratio }) => ratio).sort((a, b) => a - b);
       const medianRatio = (ratios[1] + ratios[2]) / 2;
       // Balance pair order to reduce drift and use the median to limit isolated outliers.
-      // Interception adds another response body pipeline; allow headroom above its expected ~2x cost.
-      expect(medianRatio, `timings: ${JSON.stringify(samples)}`).toBeLessThan(3);
+      // This branch has no native relay for untouched net.fetch responses (#52953), so the
+      // intercepted body is pumped through JS (~3-4x a direct fetch on Linux x64 CI). Only
+      // catch gross regressions, matching main's bound (#55083).
+      expect(medianRatio, `timings: ${JSON.stringify(samples)}`).toBeLessThan(5);
     });
   });
 });
