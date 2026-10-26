@@ -2057,9 +2057,23 @@ describe('chrome extensions', () => {
 
   describe('custom protocol', () => {
     async function runFixture(name: string) {
-      const args = [path.join(fixtures, 'extensions', name, 'main.js')];
+      // Without a package.json the fixture app would use the default profile,
+      // which other fixture apps share. When another browser process holds
+      // that profile the extension's service worker never answers the content
+      // script and the app hangs, so give every run a profile of its own.
+      const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), `electron-${name}-`));
+      const args = [path.join(fixtures, 'extensions', name, 'main.js'), `--user-data-dir=${userDataDir}`];
       if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const appProcess = spawn(process.execPath, args);
+      const exited = once(appProcess, 'exit');
+      defer(async () => {
+        // A hung app would keep its profile open into the retry.
+        if (appProcess.exitCode === null && appProcess.signalCode === null) {
+          appProcess.kill();
+          await exited;
+        }
+        await fs.rm(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+      });
 
       let output = '';
       appProcess.stdout.on('data', (data) => {
