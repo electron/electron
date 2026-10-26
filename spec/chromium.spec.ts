@@ -2084,6 +2084,92 @@ describe('chromium features', () => {
       expect(restricted).toEqual([]);
     });
 
+    // A pasted directory only reaches the blocklist if it exists, so this
+    // shares a fixture directory over loopback SMB and reaches it under
+    // different UNC server and share names. Creating a share needs an
+    // elevated administrator.
+    ifit(process.platform === 'win32')("applies Chrome's local UNC path rules", { timeout: 120000 }, async (ctx) => {
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(fixturesPath, 'file-system', 'fsa-unc-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const share = `electron-fsa-${process.pid}-${Math.floor(Math.random() * 1e6)}`;
+      const hiddenShare = `${share}$`;
+      try {
+        for (const name of [share, hiddenShare]) {
+          ChildProcess.execFileSync('net', ['share', `${name}=${dir}`], { stdio: 'pipe' });
+          defer(() => {
+            try {
+              ChildProcess.execFileSync('net', ['share', name, '/delete', '/y'], { stdio: 'pipe' });
+            } catch {}
+          });
+        }
+      } catch (error) {
+        // On CI this must not turn into a silent skip.
+        if (process.env.CI) throw error;
+        console.warn(`Skipping UNC blocklist spec, could not create an SMB share: ${error}`);
+        return ctx.skip();
+      }
+
+      const host = os.hostname();
+      const unc = (server: string, ...rest: string[]) => `\\\\${server}\\${rest.join('\\')}`;
+      const isReachable = (p: string) =>
+        Promise.race([
+          fs.promises.stat(p).then(
+            (s) => s.isDirectory(),
+            () => false
+          ),
+          setTimeout(20000, false, { ref: false })
+        ]);
+
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('deny');
+      });
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+      const classify = async (p: string) => {
+        // Also opens the SMB session up front, which can be slow.
+        expect(await isReachable(p), `${p} should be reachable`).toBe(true);
+        const before = restricted.length;
+        await frame.executeJavaScript('window.handle = null; true');
+        await pasteHandle(w, frame, p);
+        await waitForHandle(frame);
+        const kind = await frame.executeJavaScript('window.handle && window.handle.kind');
+        if (restricted.length === before) {
+          expect(kind, p).toBe('directory');
+          return 'allowed';
+        }
+        // File URLs lowercase the server name.
+        expect(restricted.slice(before).map((r) => r.toLowerCase())).toEqual([p.toLowerCase()]);
+        expect(kind, p).toBe(null);
+        return 'blocked';
+      };
+
+      // A server name that isn't known to be local is treated as remote.
+      expect(await classify(unc(host, share))).toBe('allowed');
+      // Intentional change: Electron used to block every share ending in '$';
+      // like Chrome, only drive (X$) and ADMIN$/IPC$/PRINT$/FAX$ shares are.
+      expect(await classify(unc(host, hiddenShare))).toBe('allowed');
+      // Drive admin shares are blocked whatever the server is called.
+      const [drive, ...dirComponents] = dir.split(path.sep);
+      expect(await classify(unc(host, `${drive.replace(/:$/, '')}$`, ...dirComponents))).toBe('blocked');
+      // Local server names are blocked whatever the share is.
+      expect(await classify(unc('localhost', share))).toBe('blocked');
+      expect(await classify(unc('127.0.0.1', share))).toBe('blocked');
+
+      // Intentional change: a trailing dot no longer hides a local server name.
+      // Electron used to allow this. It needs "localhost." to resolve, so it is
+      // skipped where it doesn't.
+      const trailingDot = unc('localhost.', share);
+      if (await isReachable(trailingDot)) {
+        expect(await classify(trailingDot)).toBe('blocked');
+      } else {
+        console.warn(`Skipping ${trailingDot}, it does not resolve here`);
+      }
+    });
+
     it('revokes active grants once no top-level document of the origin remains', { timeout: 60000 }, async () => {
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
       ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
