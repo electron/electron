@@ -1260,7 +1260,7 @@ for audio, the stream includes system audio unless the page opts out with `syste
 `windowAudio: 'exclude'` (windows). `windowAudio: 'window'` gets no audio, since per-window audio isn't supported. This needs the `NSAudioCaptureUsageDescription` Info.plist key, as
 described in [`desktopCapturer`](desktop-capturer.md#macos-versions-142-or-higher).
 `getDisplayMedia()` rejects with `NotAllowedError` if the user cancels the picker, or if the page calls it again
-while the picker is still open.
+while the picker is still open. A call from a different frame while the picker is open rejects with `AbortError`.
 
 ```js
 const { session, desktopCapturer } = require('electron')

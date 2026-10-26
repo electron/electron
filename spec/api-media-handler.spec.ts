@@ -133,7 +133,7 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(message).toBe('Could not start video source');
   });
 
-  it('rejects a system picker session id returned from the handler', async () => {
+  ifit(process.platform === 'darwin')('rejects a system picker session id returned from the handler', async () => {
     const ses = session.fromPartition('' + Math.random());
     let callbackError: Error | undefined;
     ses.setDisplayMediaRequestHandler((request, callback) => {
@@ -152,8 +152,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(ok).to.be.false();
-    expect(callbackError?.message).to.equal('video.id is not a valid source id');
+    expect(ok).toBe(false);
+    expect(callbackError?.message).toBe('video.id is not a valid source id');
   });
 
   it('successfully returns a capture handle', async () => {
@@ -563,10 +563,12 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(ok, message).toBe(true);
   });
 
-  it('rejects a system picker session id in the legacy desktop capture constraint', async () => {
-    const w = new BrowserWindow({ show: false });
-    await w.loadURL(serverUrl);
-    const { ok } = await w.webContents.executeJavaScript(`
+  ifit(process.platform === 'darwin')(
+    'rejects a system picker session id in the legacy desktop capture constraint',
+    async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(serverUrl);
+      const { ok } = await w.webContents.executeJavaScript(`
       new Promise((resolve) => navigator.getUserMedia({
         video: {
           mandatory: {
@@ -576,8 +578,9 @@ describe('setDisplayMediaRequestHandler', () => {
         },
       }, x => resolve({ok: x instanceof MediaStream}), e => resolve({ok: false, message: e.message})))
     `);
-    expect(ok).to.be.false();
-  });
+      expect(ok).toBe(false);
+    }
+  );
 
   it('works when calling getUserMedia without a media request handler', async () => {
     const w = new BrowserWindow({ show: false });

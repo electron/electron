@@ -977,7 +977,7 @@ void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
 
   if (val->IsNull()) {
     browser_context_->SetDisplayMediaRequestHandler(
-        DisplayMediaRequestHandler(), use_system_picker);
+        DisplayMediaRequestHandler(), /*use_system_picker=*/false);
     return;
   }
   DisplayMediaRequestHandler handler;

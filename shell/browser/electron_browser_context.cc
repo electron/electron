@@ -866,6 +866,11 @@ class SystemPickerRequest
 
   void SetPending() { g_pending_system_picker_request = this; }
 
+  bool IsFromFrame(const content::MediaStreamRequest& other) const {
+    return other.render_process_id == request_.render_process_id &&
+           other.render_frame_id == request_.render_frame_id;
+  }
+
   content::DesktopMediaID::Type type() const { return type_; }
 
  private:
@@ -955,8 +960,9 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
     if (result_dict.Get("video", &video_dict) && video_dict.Get("id", &id) &&
         video_dict.Get("name", &name)) {
       const auto media_id = content::DesktopMediaID::Parse(id);
-      // Picker session ids come only from useSystemPicker; an id passed back
-      // through the handler may have come from a renderer.
+#if BUILDFLAG(IS_MAC)
+      // On macOS only useSystemPicker issues picker session ids; one passed
+      // back through the handler may have come from a renderer.
       if (media_id.id_type ==
           content::DesktopMediaID::IdType::kNativePickerSession) {
         args->ThrowTypeError("video.id is not a valid source id");
@@ -966,6 +972,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
                                 nullptr);
         return;
       }
+#endif
       blink::MediaStreamDevice video_device(request.video_type, id, name);
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           capturer, capturer_origin, media_id);
@@ -1081,9 +1088,15 @@ bool ElectronBrowserContext::ChooseDisplayMediaDevice(
     // Route useSystemPicker: true through upstream's
     // NativeScreenCapturePickerMac, which owns the system picker lifecycle and
     // issues source ids. The JS handler is bypassed (documented behavior).
-    // Supersede a request whose picker never answered (e.g. the user asked
-    // again) instead of leaving both waiting on one picker.
+    // One picker at a time: a frame asking again replaces its own request,
+    // and any other frame is turned away rather than taking over the picker.
     if (g_pending_system_picker_request) {
+      if (!g_pending_system_picker_request->IsFromFrame(request)) {
+        std::move(callback).Run(
+            blink::mojom::StreamDevicesSet(),
+            blink::mojom::MediaStreamRequestResult::INVALID_STATE, nullptr);
+        return true;
+      }
       g_pending_system_picker_request->Supersede();
     }
     api::DesktopCapturer::ExcludeContentProtectedWindowsFromSystemPicker();
