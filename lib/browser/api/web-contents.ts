@@ -201,10 +201,18 @@ WebContents.prototype.goToOffset = function (index: number) {
 const consoleMessageDeprecated = deprecate.warnOnceMessage(
   "'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead."
 );
+const nodeIntegrationInSubFramesDeprecated = deprecate.warnOnce(
+  'webPreferences.nodeIntegrationInSubFrames',
+  'session.registerPreloadScript() with allFrames'
+);
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   this._windowOpenHandler = null;
+
+  if (this.getLastWebPreferences()?.nodeIntegrationInSubFrames) {
+    nodeIntegrationInSubFramesDeprecated();
+  }
 
   const ipc = new IpcMainImpl();
   Object.defineProperty(this, 'ipc', {

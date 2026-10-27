@@ -2470,9 +2470,11 @@ first one that is defined will be called, the rest will be ignored.
 
 A handler or event listener registered on the WebContents will receive IPC
 messages sent from any frame, including child frames. In most cases, only the
-main frame can send IPC messages. However, if the `nodeIntegrationInSubFrames`
-option is enabled, it is possible for child frames to send IPC messages also.
-In that case, handlers should check the `senderFrame` property of the IPC event
+main frame can send IPC messages. However, a child frame that runs a preload
+script registered with `allFrames` (see
+[`ses.registerPreloadScript()`](session.md#sesregisterpreloadscriptscript)), or any
+child frame when the deprecated `nodeIntegrationInSubFrames` option is enabled,
+can send IPC messages also. In that case, handlers should check the `senderFrame` property of the IPC event
 to ensure that the message is coming from the expected frame. Alternatively,
 register handlers on the appropriate frame directly using the
 [`WebFrameMain.ipc`](web-frame-main.md#frameipc-readonly) interface.
