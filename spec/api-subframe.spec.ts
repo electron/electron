@@ -283,7 +283,13 @@ describe('renderer allFrames preload scripts', () => {
         const id = ses.registerPreloadScript({ type: 'frame', filePath: preload });
         defer(() => ses.unregisterPreloadScript(id));
         await closeWindow(w);
-        w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses, preload } });
+        // A separate file: with Node.js integration, require() caches a
+        // module by path, so the same file would only run once.
+        const webPreferencesPreload = path.resolve(import.meta.dirname, 'fixtures/module/preload-location-2.js');
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox, session: ses, preload: webPreferencesPreload }
+        });
         const locations: string[] = [];
         ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
         defer(() => ipcMain.removeAllListeners('preload-location'));

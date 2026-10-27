@@ -4594,7 +4594,13 @@ describe('BrowserWindow module', () => {
             const locations: string[] = [];
             ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
             defer(() => ipcMain.removeAllListeners('preload-location'));
-            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses, preload } });
+            // A separate file: with Node.js integration, require() caches a
+            // module by path, so the same file would only run once.
+            const webPreferencesPreload = path.join(fixtures, 'module', 'preload-location-2.js');
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: { sandbox, session: ses, preload: webPreferencesPreload }
+            });
             await w.loadURL(`${url}/page?child=/frame`);
             // The session preload and webPreferences.preload, in the main frame only.
             expect(locations).toEqual([`${url}/page?child=/frame`, `${url}/page?child=/frame`]);
