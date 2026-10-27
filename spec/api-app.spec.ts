@@ -275,8 +275,7 @@ describe('app module', () => {
           const env = {
             ...process.env,
             DBUS_SESSION_BUS_ADDRESS: sessionBus.address,
-            DBUS_SYSTEM_BUS_ADDRESS: systemBus.address,
-            CHROME_DESKTOP: 'electron-test.desktop'
+            DBUS_SYSTEM_BUS_ADDRESS: systemBus.address
           };
 
           const appProcess = cp.spawn(process.execPath, [path.join(fixturesPath, 'api', 'bus-lost-method-call')], {
@@ -299,19 +298,19 @@ describe('app module', () => {
           await systemBus.waitFor(/interface='org\.freedesktop\.login1\.Manager'/);
           systemBus.daemon.kill();
 
-          // The badge update reaches the session bus only after the D-Bus
-          // thread has started the login1 call on the lost system bus. Without
-          // the fix, that call aborts the process first.
+          // The tray's NameHasOwner call reaches the session bus only after the
+          // D-Bus thread has started the login1 call on the lost system bus.
+          // Without the fix, that call aborts the process first.
           const first = await Promise.race([
             exited.then(() => 'exit'),
-            sessionBus.waitFor(/interface=com\.canonical\.Unity\.LauncherEntry; member=Update/).then(() => 'update')
+            sessionBus.waitFor(/string "org\.kde\.StatusNotifierWatcher"/).then(() => 'tray')
           ]);
-          if (first === 'update') appProcess.stdin.end('x');
+          if (first === 'tray') appProcess.stdin.end('x');
 
           const [code, signal] = await exited;
           expect(signal).toBeNull();
           expect(code).toBe(0);
-          expect(first).toBe('update');
+          expect(first).toBe('tray');
           expect(output).toContain('quit');
         }
       );
