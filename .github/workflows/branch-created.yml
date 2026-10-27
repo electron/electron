@@ -212,10 +212,11 @@ jobs:
             }
 
             const projectId = process.env.PROJECT_ID;
-            const draftIssues = await actions.getDraftIssues(projectId);
+            const draftIssues = (await actions.getDraftIssues(projectId))
+              .filter(issue => issue.content.assignees.nodes.length === 0);
 
             if (draftIssues.length === 0) {
-              core.info('No draft issues found in the project');
+              core.info('No unassigned draft issues found in the project');
               return;
             }
 
