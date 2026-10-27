@@ -252,6 +252,52 @@ jobs:
             const projectNumber = process.env.PROJECT_NUMBER;
             const major = process.env.MAJOR;
 
+            const pullRequestItems = new Map();
+            let cursor = null;
+            let hasNextPage;
+
+            do {
+              const { node: project } = await github.graphql(`
+                query($projectId: ID!, $cursor: String) {
+                  node(id: $projectId) {
+                    ... on ProjectV2 {
+                      items(first: 100, after: $cursor) {
+                        nodes {
+                          id
+                          type
+                          content {
+                            ... on PullRequest {
+                              url
+                            }
+                          }
+                          fieldValueByName(name: "Semver") {
+                            ... on ProjectV2ItemFieldSingleSelectValue {
+                              name
+                            }
+                          }
+                        }
+                        pageInfo {
+                          hasNextPage
+                          endCursor
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { projectId, cursor });
+
+              for (const item of project.items.nodes) {
+                if (item.type !== 'PULL_REQUEST' || !item.content?.url) continue;
+
+                pullRequestItems.set(item.content.url, {
+                  id: item.id,
+                  semver: item.fieldValueByName?.name,
+                });
+              }
+
+              ({ hasNextPage, endCursor: cursor } = project.items.pageInfo);
+            } while (hasNextPage);
+
             // Maps the `semver/*` label to the matching "Semver" field option
             const semverLabelToField = {
               'semver/major': 'Major',
@@ -273,8 +319,13 @@ jobs:
               // want pull requests which have actually been merged
               if (!pr.pull_request?.merged_at) continue;
 
-              core.info(`Adding #${pr.number} to the release project board`);
-              const itemId = await actions.addItem('electron', projectNumber, pr.html_url);
+              let item = pullRequestItems.get(pr.html_url);
+              if (!item) {
+                core.info(`Adding #${pr.number} to the release project board`);
+                const itemId = await actions.addItem('electron', projectNumber, pr.html_url);
+                item = { id: itemId, semver: undefined };
+                pullRequestItems.set(pr.html_url, item);
+              }
 
               const semverLabel = pr.labels
                 .map(label => (typeof label === 'string' ? label : label.name))
@@ -282,11 +333,14 @@ jobs:
 
               if (semverLabel) {
                 const fieldValue = semverLabelToField[semverLabel];
+                if (item.semver === fieldValue) continue;
+
                 core.info(`Setting Semver to "${fieldValue}" for #${pr.number}`);
-                await actions.editItem(projectId, itemId, {
+                await actions.editItem(projectId, item.id, {
                   field: 'Semver',
                   fieldValue,
                 });
+                item.semver = fieldValue;
               }
             }
       - name: Dump Release Project Board Contents
