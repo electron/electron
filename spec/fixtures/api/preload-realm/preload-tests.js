@@ -18,6 +18,43 @@ const tests = {
     hasEnv: typeof process.env === 'object' && Object.keys(process.env).length > 0,
     hasExecPath: typeof process.execPath === 'string' && process.execPath.length > 0
   }),
+  testGlobalScope: () => {
+    const interfaces = [
+      'AbortController',
+      'AbortSignal',
+      'CompressionStream',
+      'CustomEvent',
+      'DecompressionStream',
+      'DOMException',
+      'ErrorEvent',
+      'Event',
+      'EventTarget',
+      'PromiseRejectionEvent',
+      'TextDecoder',
+      'TextDecoderStream',
+      'TextEncoder',
+      'TextEncoderStream',
+      'URL',
+      'URLPattern',
+      'URLSearchParams',
+      'atob',
+      'btoa',
+      'queueMicrotask',
+      'reportError',
+      'structuredClone'
+    ];
+    return {
+      constructorName: globalThis.constructor.name,
+      missing: interfaces.filter((name) => typeof globalThis[name] !== 'function')
+    };
+  },
+  testReportError: async () => {
+    reportError(new Error('reported from preload realm'));
+    Promise.reject(new Error('rejected in preload realm'));
+    // Unhandled rejections are reported after the microtask checkpoint.
+    await new Promise((resolve) => queueMicrotask(resolve));
+    return true;
+  },
   testSend: (name, ...args) => {
     ipcRenderer.send(name, ...args);
   },
