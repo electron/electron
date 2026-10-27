@@ -1013,7 +1013,7 @@ index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 637d34d4b05dd82cf52fc0ca281a98160df91cbe..7ece43a6502000bbdb11801a38ab67e8e3bfb91c 100644
+index 5beda3489b369b52fd9f711eecf3505a41732bc4..60f75e6354342e59db98afef1c357d039d2bb8ed 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -396,6 +396,7 @@ source_set("browser") {
@@ -2466,10 +2466,10 @@ index 84060d2c442e2786e12d9837e0128bc4536d7d0b..933f2020ae89a02a39e21a7115b5f651
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 3aed5d109d145a587d19a2c66052cbf70a32066d..211f0744503c586bd9cb63211634bb10a95341bb 100644
+index a07afd253b13bc63d8061a4aa6cfcd4577ebbbd7..dd0426289f7487d7ee9e6b693af864cbe473ba8c 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -793,6 +793,8 @@ component("views") {
+@@ -795,6 +795,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2478,7 +2478,7 @@ index 3aed5d109d145a587d19a2c66052cbf70a32066d..211f0744503c586bd9cb63211634bb10
    }
  
    if (is_win) {
-@@ -1213,6 +1215,8 @@ source_set("test_support") {
+@@ -1215,6 +1217,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
