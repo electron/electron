@@ -31,9 +31,11 @@ now opens the same system picker Chrome uses:
   `displaySurface: 'monitor'` instead of `'window'`. Its `deviceId` also
   changes format.
 
-### Removed: `--no-stdio-init` command-line switch
+### Behavior Changed: `--no-stdio-init` command-line switch is ignored
 
-The `--no-stdio-init` command-line switch has been removed.
+The `--no-stdio-init` command-line switch no longer affects stdio initialization.
+It is still accepted and silently ignored, including in `ELECTRON_RUN_AS_NODE`
+mode, so existing launch arguments do not prevent startup.
 
 On Windows, Electron now automatically skips Node.js stdio initialization when
 the `NUL` device cannot be opened, instead of aborting startup. This applies to
