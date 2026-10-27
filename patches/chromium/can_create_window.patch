@@ -128,7 +128,7 @@ index b9a2b7cc0655a569a8e4e2835f5846257f509706..95c7ac3c7f7aca3c283b22a2a5cf6f1b
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 434bf4b1743d6d85b9912cd369e1e68d80a416e5..c4dd5f3e8c4d88814ecae130eaeee5db63862cae 100644
+index 0b44d8bc87968be56f08af09dc1b0b5c64e39b48..401e19d2f1d42f2a7dbbef238577136cb61bfc3b 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -35,6 +35,18 @@ namespace content {
@@ -151,7 +151,7 @@ index 434bf4b1743d6d85b9912cd369e1e68d80a416e5..c4dd5f3e8c4d88814ecae130eaeee5db
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index afebf55b1abc5d3eefde47b3b317bb1692b1b5d4..a5fd5dae63d9d66e974c0c68e831b2b051d78ea0 100644
+index 7e0c703c677d356941c4dbefd2c814c9165c1234..5f86b3672448af0bfe7157390d3e076550741e27 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -19,6 +19,7 @@
@@ -242,10 +242,10 @@ index 37cfc495b51a4e9a18ff6bdf9c6305562d02a298..e008fa40ea8011bb7a917942ae8d8118
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 989733f78fccff95227fa6f25c031bf7def51cff..6b5a603e900fef64110e07856349c63fb17415d4 100644
+index 3c8005efb96d163df749c15765bcec4d0e3be691..69d3c4adf618513f6fd87c9f5c756a69c02a0a62 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2521,6 +2521,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2520,6 +2520,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  
