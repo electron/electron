@@ -162,7 +162,7 @@ index 2786953a872abd331d777d64231adfd3b685e85e..9b9998cdcce0c183fe0d7c0633152649
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index a9436ec55914d264cc59637860785881ad2dd16a..b2953144a85fbd0014f5285b9b430206e6d7b890 100644
+index b786b9b6ac62573fc2977e2a075b3de1f17fdf35..4c8bfbd57122e7cda8ae1e60353387c7464f9518 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -116,8 +116,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
@@ -291,7 +291,7 @@ index a9436ec55914d264cc59637860785881ad2dd16a..b2953144a85fbd0014f5285b9b430206
  
    // When the window is first shown, make the title and top controls
    // visible for a few seconds.
-@@ -2372,10 +2390,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
+@@ -2374,10 +2392,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
  }
  
  bool VideoOverlayWindowViews::IsOverlayViewShown() const {
@@ -307,7 +307,7 @@ index a9436ec55914d264cc59637860785881ad2dd16a..b2953144a85fbd0014f5285b9b430206
    if (overlay_view_) {
      // Remove and delete the outgoing view.  Note the trailing `T` on the method
      // name -- this removes `overlay_view_` and returns a unique_ptr to it which
-@@ -2384,6 +2407,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
+@@ -2386,6 +2409,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
      GetContentsView()->RemoveChildViewT(overlay_view_.ExtractAsDangling());
      OnSizeConstraintsChanged();
    }

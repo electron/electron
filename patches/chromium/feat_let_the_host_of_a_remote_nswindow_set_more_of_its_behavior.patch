@@ -26,10 +26,10 @@ it ever does.
 Co-Authored-By: Claude <noreply@anthropic.com>
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-index bd38cfa246d4b7fadc221bf70c2e362995093e4a..d4f542d1d81b093f6b9a27a5f787a9a49a1e88dc 100644
+index 834897f345154f48f868fa25d6e87fad8666e10b..793fa52e3a378ecbed18f1c2cfa76b9f832802fc 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-@@ -320,6 +320,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+@@ -325,6 +325,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
    void SetCALayerParams(gfx::CALayerParams ca_layer_params) override;
    void SetWindowTitle(const std::u16string& title) override;
    void SetIgnoresMouseEvents(bool ignores_mouse_events) override;
@@ -40,7 +40,7 @@ index bd38cfa246d4b7fadc221bf70c2e362995093e4a..d4f542d1d81b093f6b9a27a5f787a9a4
    void MakeFirstResponder() override;
    void SortSubviews(
        const std::vector<uint64_t>& associated_subview_ids) override;
-@@ -475,6 +479,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+@@ -480,6 +484,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
    std::unique_ptr<CocoaWindowMoveLoop> window_move_loop_;
    ui::mojom::ModalType modal_type_ = ui::mojom::ModalType::kNone;
    bool is_translucent_window_ = false;
@@ -52,10 +52,10 @@ index bd38cfa246d4b7fadc221bf70c2e362995093e4a..d4f542d1d81b093f6b9a27a5f787a9a4
  
    raw_ptr<NativeWidgetNSWindowBridge> parent_ =
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 7cbf2596bf6b0dc70568f5a591745c38e3572ef9..a4ba2c3e29cf5107dc8537f19a026efc6d5aa99a 100644
+index 1febc578747baf590386f59c20a8ee349394c67a..dc5b2c305ef353aeaf785c818724efc945a36071 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -1628,6 +1628,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1632,6 +1632,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    gfx::ApplyNSWindowSizeConstraints(window_, min_size, max_size,
                                      shows_resize_controls,
                                      shows_fullscreen_controls);
@@ -63,7 +63,7 @@ index 7cbf2596bf6b0dc70568f5a591745c38e3572ef9..a4ba2c3e29cf5107dc8537f19a026efc
  }
  
  void NativeWidgetNSWindowBridge::OnShowAnimationComplete() {
-@@ -2043,7 +2044,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2047,7 +2048,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  void NativeWidgetNSWindowBridge::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {
@@ -75,7 +75,7 @@ index 7cbf2596bf6b0dc70568f5a591745c38e3572ef9..a4ba2c3e29cf5107dc8537f19a026efc
    [window_delegate_ setAspectRatio:aspect_ratio.width() / aspect_ratio.height()
                      excludedMargin:excluded_margin];
  }
-@@ -2123,6 +2127,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2127,6 +2131,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    [window_ setIgnoresMouseEvents:ignores_mouse_events];
  }
  
@@ -223,10 +223,10 @@ index 8ca5673a225b69b5630383ed9673653ba03a0e97..f650180f02ef8c5c92421a5bec35f1b1
    MakeFirstResponder();
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 0d796595adc97607f9c84990123d8a60a84d9ec8..58b73d061e17ce46c6a714e42ad9ed0190f2d328 100644
+index d88a457d25459a4b97495dfeabd58c1aebbff4c8..17592ecae14a9ffaf1d678e1ef7db033aa9403dd 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -907,8 +907,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -910,8 +910,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (@available(macOS 14, *)) {
      if (application_host_ &&
          new_state == WindowVisibilityState::kShowAndActivateWindow) {

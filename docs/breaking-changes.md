@@ -63,9 +63,11 @@ main process inspector on `SIGUSR1`, unless the fuse is enabled with
 `FuseV1Options.EnableNodeCliInspectArguments`. Running your app with the
 `electron` executable during development is unaffected.
 
-### Removed: `--no-stdio-init` command-line switch
+### Behavior Changed: `--no-stdio-init` command-line switch is ignored
 
-The `--no-stdio-init` command-line switch has been removed.
+The `--no-stdio-init` command-line switch no longer affects stdio initialization.
+It is still accepted and silently ignored, including in `ELECTRON_RUN_AS_NODE`
+mode, so existing launch arguments do not prevent startup.
 
 On Windows, Electron now automatically skips Node.js stdio initialization when
 the `NUL` device cannot be opened, instead of aborting startup. This applies to
