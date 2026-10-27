@@ -2186,9 +2186,7 @@ void WebContents::OnDidAddMessageToConsole(
   dict.Set("lineNumber", line_no);
   dict.Set("sourceId", source_id);
 
-  // TODO(samuelmaddock): remove the deprecated positional arguments.
-  EmitWithoutEvent("console-message", event_object, static_cast<int32_t>(level),
-                   message, line_no, source_id);
+  EmitWithoutEvent("console-message", event_object);
 }
 
 void WebContents::WebContentsCreatedWithFullParams(

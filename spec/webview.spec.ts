@@ -1152,6 +1152,29 @@ describe('<webview> tag', () => {
       expect(message).toBe('hi');
     });
 
+    it('emits console-message with level, message, line and sourceId', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          contextIsolation: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const details = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = new WebView()
+        webview.setAttribute('src', 'data:text/html,<script>console.warn("hi")</script>')
+        webview.addEventListener('console-message', (e) => {
+          resolve({ level: e.level, message: e.message, line: e.line, sourceId: e.sourceId })
+        })
+        document.body.appendChild(webview)
+      })`);
+      expect(details.level).toBe(2);
+      expect(details.message).toBe('hi');
+      expect(details.line).toBe(1);
+      expect(typeof details.sourceId).toBe('string');
+    });
+
     it('emits focus event when contextIsolation is enabled', async () => {
       const w = new BrowserWindow({
         show: false,
