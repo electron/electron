@@ -158,7 +158,7 @@ jobs:
             }))
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/copy-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/copy-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         id: create-release-board
         with:
           drafts: true
@@ -173,7 +173,7 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       - name: Randomly Assign Draft Issues to Release WG Members
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/github-script@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/github-script@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         env:
           PROJECT_ID: ${{ steps.create-release-board.outputs.id }}
         with:
@@ -227,7 +227,7 @@ jobs:
             core.info(`Assigned ${draftIssues.length} draft issues to ${eligible.length} team members`);
       - name: Add Merged PRs to Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/github-script@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/github-script@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         env:
           PROJECT_ID: ${{ steps.create-release-board.outputs.id }}
           PROJECT_NUMBER: ${{ steps.create-release-board.outputs.number }}
@@ -284,7 +284,7 @@ jobs:
           BOARD_NUMBER: ${{ steps.create-release-board.outputs.number }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/find-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/find-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         id: find-prev-release-board
         with:
           fail-if-project-not-found: false
@@ -292,7 +292,7 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       - name: Close Previous Release Project Board
         if: ${{ steps.find-prev-release-board.outputs.number }}
-        uses: dsanders11/project-actions/close-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/close-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         with:
           project-number: ${{ steps.find-prev-release-board.outputs.number }}
           token: ${{ steps.generate-token.outputs.token }}
