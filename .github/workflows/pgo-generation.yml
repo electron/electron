@@ -728,8 +728,12 @@ jobs:
           --field base="$BASE_BRANCH" \
           --field body="$(cat /tmp/pr-body.md)" --jq .html_url)
         PR_NUMBER="${PR_URL##*/}"
-        gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
-          --field "labels[]=semver/none" > /dev/null
+        labels=(--field "labels[]=semver/none")
+        # Release branch PRs carry their branch label (e.g. 46-x-y).
+        if [[ "$BASE_BRANCH" =~ ^[0-9]+-x-y$ ]]; then
+          labels+=(--field "labels[]=$BASE_BRANCH")
+        fi
+        gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" "${labels[@]}" > /dev/null
         echo "## Profile Update PR" >> $GITHUB_STEP_SUMMARY
         echo "$PR_URL" >> $GITHUB_STEP_SUMMARY
 

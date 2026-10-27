@@ -223,10 +223,26 @@ describe('utilityProcess module', () => {
     };
 
     ifit(!isWindows32Bit)('with default serviceName', async () => {
+      // Every utility process forked without a serviceName is called "Node
+      // Utility Process", so in the spec runner the event for a child of an
+      // earlier test can reach this test's listener. Fork the child in an app
+      // of its own, where it is the only process with that name.
       const name = 'Node Utility Process';
-      const crashPromise = waitForCrash(name);
-      utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
-      const details = await crashPromise;
+      const { remotely } = await startRemoteControlApp();
+      const details: Electron.Details = await remotely(
+        async (fixture: string, name: string) => {
+          const { app, utilityProcess } = require('electron');
+          const gone = new Promise((resolve) => {
+            app.on('child-process-gone', (_event: Electron.Event, details: Electron.Details) => {
+              if (details.name === name) resolve(details);
+            });
+          });
+          utilityProcess.fork(fixture);
+          return gone;
+        },
+        path.join(fixturesPath, 'crash.js'),
+        name
+      );
       expect(details.type).toBe('Utility');
       expect(details.serviceName).toBe('node.mojom.NodeService');
       expect(details.name).toBe(name);
