@@ -3311,17 +3311,29 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
     return;
 
   bool is_main_frame = !render_frame_host->GetParent();
-  EmitDidFailLoad(error_code, "", url, is_main_frame, render_frame_host);
+  int32_t frame_process_id =
+      render_frame_host->GetProcess()->GetID().GetUnsafeValue();
+  int frame_routing_id = render_frame_host->GetRoutingID();
+  EmitDidFailLoad(error_code, "", url, is_main_frame, frame_process_id,
+                  frame_routing_id);
 }
 
 void WebContents::EmitDidFailLoad(int error_code,
                                   std::string_view error_description,
                                   const GURL& url,
                                   bool is_main_frame,
-                                  content::RenderFrameHost* render_frame_host) {
+                                  int frame_process_id,
+                                  int frame_routing_id) {
   const std::string& spec = url.possibly_invalid_spec();
   native_lifecycle_->load_url_promises_.DidFailLoad(
       error_code, error_description, spec, is_main_frame);
+
+  // Look the frame up by id, as it may have been destroyed by JS (e.g. a
+  // 'did-fail-provisional-load' listener) since the ids were taken.
+  content::RenderFrameHost* render_frame_host =
+      frame_process_id == -1 ? nullptr
+                             : content::RenderFrameHost::FromID(
+                                   frame_process_id, frame_routing_id);
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -3333,14 +3345,12 @@ void WebContents::EmitDidFailLoad(int error_code,
   dict.Set("url", spec);
 
   // TODO(samuelmaddock): remove the deprecated positional arguments.
-  if (!render_frame_host) {
+  if (frame_process_id == -1) {
     EmitWithoutEvent("did-fail-load", event, error_code, error_description,
                      spec, is_main_frame);
   } else {
     EmitWithoutEvent("did-fail-load", event, error_code, error_description, url,
-                     is_main_frame,
-                     render_frame_host->GetProcess()->GetID().GetUnsafeValue(),
-                     render_frame_host->GetRoutingID());
+                     is_main_frame, frame_process_id, frame_routing_id);
   }
 }
 
@@ -3718,10 +3728,8 @@ void WebContents::DidFinishNavigation(
           base::StrCat({"Failed to load URL: ", url.possibly_invalid_spec(),
                         " with error: ", description}),
           "electron");
-      // Look the frame up again, as the listeners above may have destroyed it.
-      EmitDidFailLoad(
-          code, description, url, is_main_frame,
-          content::RenderFrameHost::FromID(frame_process_id, frame_routing_id));
+      EmitDidFailLoad(code, description, url, is_main_frame, frame_process_id,
+                      frame_routing_id);
     }
   }
 }

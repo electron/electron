@@ -447,13 +447,14 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
-  // 'did-fail-load'; the event has a null frame, and the deprecated frame id
-  // arguments are omitted, when |render_frame_host| is null.
+  // 'did-fail-load'; the frame ids are omitted from the event when -1. The
+  // event's frame is null when the ids are -1 or the frame no longer exists.
   void EmitDidFailLoad(int error_code,
                        std::string_view error_description,
                        const GURL& url,
                        bool is_main_frame,
-                       content::RenderFrameHost* render_frame_host = nullptr);
+                       int frame_process_id = -1,
+                       int frame_routing_id = -1);
 
   WebContents* embedder() const;
 
