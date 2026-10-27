@@ -330,6 +330,7 @@ describe("session 'select-webauthn-account' event", () => {
 
   afterEach(async () => {
     session.defaultSession.removeAllListeners('select-webauthn-account');
+    session.defaultSession.removeAllListeners('collect-webauthn-pin');
     try {
       w.webContents.debugger.detach();
     } catch {}
@@ -493,6 +494,27 @@ describe("session 'select-webauthn-account' event", () => {
     const result = await getAssertion();
     expect(result.ok).toBe(false);
     expect(result.name).toBe('NotAllowedError');
+  });
+
+  // A 'collect-webauthn-pin' listener makes the delegate report PIN support
+  // to Chromium's FIDO layer (SupportsPIN). That must not change the outcome
+  // of requests an authenticator can satisfy with its own user verification —
+  // the PIN event only fires when a PIN exchange is actually required.
+  it('is not disturbed by a collect-webauthn-pin listener when no PIN is needed', async () => {
+    await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
+
+    let pinEventFired = false;
+    (w.webContents.session as NodeJS.EventEmitter).on('collect-webauthn-pin', (event, details, callback) => {
+      pinEventFired = true;
+      callback();
+    });
+    (w.webContents.session as NodeJS.EventEmitter).on('select-webauthn-account', (event, details, callback) => {
+      callback(details.accounts[0].credentialId);
+    });
+
+    const result = await getAssertion();
+    expect(result.ok).toBe(true);
+    expect(pinEventFired).toBe(false);
   });
 });
 
