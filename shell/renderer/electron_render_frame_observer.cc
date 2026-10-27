@@ -194,12 +194,10 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   // to avoid explaining it twice go check that implementation in
   // DidCreateScriptContext();
   bool is_main_world = electron::is_main_world(world_id);
-  bool is_main_frame = render_frame_->IsMainFrame();
-  bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
 
   bool should_create_isolated_context =
       use_context_isolation && is_main_world &&
-      (is_main_frame || allow_node_in_sub_frames) &&
+      RendererClientBase::IsPreloadFrame(render_frame_) &&
       renderer_client_->HasScriptsToInject(render_frame_);
 
   if (should_create_isolated_context) {
@@ -260,16 +258,17 @@ bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) const {
     return *env_world_id == world_id;
 
   const auto& prefs = render_frame_->GetBlinkPreferences();
+  const bool is_preload_frame =
+      RendererClientBase::IsPreloadFrame(render_frame_);
 
   // about:blank subframes commit synchronously in the renderer and never get
   // the browser's preload startup data (see MaybeSendRendererStartupData), so
   // they are left without preload scripts and Node.js integration.
-  if (prefs.node_integration_in_sub_frames && !render_frame_->IsMainFrame() &&
+  if (is_preload_frame && !render_frame_->IsMainFrame() &&
       GURL{render_frame_->GetWebFrame()->GetDocument().Url()}.IsAboutBlank())
     return false;
 
-  if (prefs.context_isolation &&
-      (render_frame_->IsMainFrame() || prefs.node_integration_in_sub_frames))
+  if (prefs.context_isolation && is_preload_frame)
     return is_isolated_world(world_id);
 
   return is_main_world(world_id);

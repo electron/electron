@@ -697,10 +697,12 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void MaybeSendRendererStartupData(
       content::NavigationHandle* navigation_handle);
   // |url| and |origin| are those of the document the preloads will run in,
-  // matched against each session preload's URL filters.
+  // matched against each session preload's URL filters. |all_frames_only| is
+  // passed on to renderer_startup_data::BuildForFrame().
   void SendRendererStartupData(content::RenderFrameHost* rfh,
                                const GURL& url,
-                               const url::Origin& origin);
+                               const url::Origin& origin,
+                               bool all_frames_only = false);
   void DidFinishNavigation(content::NavigationHandle* navigation_handle);
   void DidReceiveFindReply(int request_id,
                            int number_of_matches,

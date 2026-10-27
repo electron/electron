@@ -3499,8 +3499,21 @@ void WebContents::MaybeSendRendererStartupData(
       url.SchemeIs("devtools") ||
       (url.SchemeIs("chrome-extension") && !main_frame &&
        rfh->GetMainFrame()->GetLastCommittedURL().SchemeIs("devtools"));
-  if (!main_frame && !allow_subframes && !is_devtools_like)
-    return;
+  // Any other subframe only gets the preloads registered with allFrames whose
+  // filters match it. Once such a preload has been registered, every subframe
+  // is sent its (possibly empty) set so that one moving to a document that no
+  // longer matches drops the preloads of the previous one.
+  const bool all_frames_only =
+      !main_frame && !allow_subframes && !is_devtools_like;
+  if (all_frames_only) {
+    // A same-document navigation keeps the document and the preloads it ran.
+    if (navigation_handle->IsSameDocument())
+      return;
+    auto* session_prefs =
+        SessionPreferences::FromBrowserContext(rfh->GetBrowserContext());
+    if (!session_prefs || !session_prefs->all_frames_preload_registered())
+      return;
+  }
 
   // loadURL(dataUrl, {baseURLForDataURL}) commits the data: URL as a document
   // at the base URL, so match URL filters against that. Same condition as
@@ -3514,12 +3527,14 @@ void WebContents::MaybeSendRendererStartupData(
   // Has a value whenever the navigation has a RenderFrameHost to commit in.
   SendRendererStartupData(
       rfh, is_load_data_with_base_url ? base_url : url,
-      navigation_handle->GetOriginToCommit().value_or(url::Origin()));
+      navigation_handle->GetOriginToCommit().value_or(url::Origin()),
+      all_frames_only);
 }
 
 void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
                                           const GURL& url,
-                                          const url::Origin& origin) {
+                                          const url::Origin& origin,
+                                          bool all_frames_only) {
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
@@ -3530,7 +3545,8 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::BuildForFrame(rfh, url, origin);
+    data =
+        renderer_startup_data::BuildForFrame(rfh, url, origin, all_frames_only);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as

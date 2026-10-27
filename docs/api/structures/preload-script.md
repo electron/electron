@@ -22,3 +22,7 @@
   opened by `https://example.com/page` is matched as `https://example.com/`. When set, every
   pattern in `matches` must have a path of `/*`. Only applies to `frame` contexts. Default is
   `false`.
+* `allFrames` boolean (optional) - Whether the script also runs in subframes, including nested
+  ones, whose own URL passes the filters above, rather than only in the main frame. The initial
+  empty document and `about:blank` documents of a subframe are skipped. Only applies to `frame`
+  contexts. Default is `false`.

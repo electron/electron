@@ -1642,8 +1642,16 @@ The URL that the filters are matched against depends on the context type:
   * A `data:` URL loaded with `baseURLForDataURL` is matched by its base URL.
   * The error page of a failed navigation is matched by the URL that failed to load.
 
-Throws an error if any of the URL patterns are invalid, or if `matches` or `includeGlobs` is an
-empty array.
+A `frame` script runs only in the main frame of each page unless `allFrames` is set. With
+`allFrames`, it also runs in every subframe whose own URL passes the filters, regardless of the
+URL of its parent, and those subframes can use `ipcRenderer`. Use `process.isMainFrame` in the
+script to tell them apart, and check `event.senderFrame` in IPC handlers. A cross-site subframe
+still runs in a sandboxed renderer process, so the script runs there with the sandboxed preload
+environment. Other preload scripts, including `webPreferences.preload`, keep running only in the
+main frame.
+
+Throws an error if any of the URL patterns are invalid, if `matches` or `includeGlobs` is an
+empty array, or if `allFrames` is set for a `service-worker` script.
 
 ```js
 const { session } = require('electron')
@@ -1653,6 +1661,14 @@ session.defaultSession.registerPreloadScript({
   filePath: '/path/to/preload.js',
   matches: ['https://*.example.com/*'],
   excludeGlobs: ['*/logout*']
+})
+
+// Also run in every subframe from example.com
+session.defaultSession.registerPreloadScript({
+  type: 'frame',
+  filePath: '/path/to/frame-preload.js',
+  matches: ['https://*.example.com/*'],
+  allFrames: true
 })
 ```
 

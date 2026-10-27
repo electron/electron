@@ -5,10 +5,11 @@
 #define ELECTRON_SHELL_RENDERER_ELECTRON_SANDBOXED_RENDERER_CLIENT_H_
 
 #include <memory>
+#include <optional>
 
 #include "shell/common/api/api.mojom.h"
 #include "shell/renderer/renderer_client_base.h"
-#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace base {
 class ProcessMetrics;
@@ -41,6 +42,8 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
   void WillReleaseScriptContext(v8::Isolate* isolate,
                                 v8::Local<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
+  std::optional<int> GetEnvironmentWorldId(
+      content::RenderFrame* render_frame) const override;
   // content::ContentRendererClient:
   bool HasScriptsToInject(content::RenderFrame* render_frame) const override;
   void RenderFrameCreated(content::RenderFrame*) override;
@@ -72,8 +75,9 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
 
   // Getting main script context from web frame would lazily initializes
   // its script context. Doing so in a web page without scripts would trigger
-  // assertion, so we have to keep a book of injected web frames.
-  absl::flat_hash_set<content::RenderFrame*> injected_frames_;
+  // assertion, so we have to keep a book of injected web frames, along with
+  // the world the preload environment was set up in.
+  absl::flat_hash_map<content::RenderFrame*, int> injected_frames_;
 };
 
 }  // namespace electron

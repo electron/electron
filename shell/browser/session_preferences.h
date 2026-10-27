@@ -32,6 +32,16 @@ class SessionPreferences : public base::SupportsUserData::Data {
   // Whether any service worker preload's URL filters match |scope|.
   bool HasServiceWorkerPreloadScript(const GURL& scope);
 
+  // Whether a frame preload with allFrames was ever registered. Not reset on
+  // unregister, so that a subframe which ran one is still sent the (now
+  // empty) set of preloads for its next document.
+  bool all_frames_preload_registered() const {
+    return all_frames_preload_registered_;
+  }
+  void set_all_frames_preload_registered() {
+    all_frames_preload_registered_ = true;
+  }
+
  private:
   SessionPreferences();
 
@@ -39,6 +49,7 @@ class SessionPreferences : public base::SupportsUserData::Data {
   static int kLocatorKey;
 
   std::vector<PreloadScript> preload_scripts_;
+  bool all_frames_preload_registered_ = false;
 };
 
 }  // namespace electron
