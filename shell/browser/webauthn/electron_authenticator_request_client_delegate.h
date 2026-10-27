@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_CLIENT_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_CLIENT_DELEGATE_H_
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -102,8 +103,8 @@ class ElectronAuthenticatorRequestClientDelegate
   void MaybeEmitSelectAuthenticatorEvent();
   void DispatchDefaultAuthenticator();
   void OnAuthenticatorSelected(gin::Arguments* args);
-  void EmitCollectPinEvent();
-  void OnPinProvided(gin::Arguments* args);
+  void EmitCollectPinEvent(const CollectPINOptions& options);
+  void OnPinProvided(uint64_t prompt_id, gin::Arguments* args);
   void CancelPendingPinCollection();
 
   const content::GlobalRenderFrameHostId render_frame_host_id_;
@@ -122,11 +123,9 @@ class ElectronAuthenticatorRequestClientDelegate
   std::vector<PendingAuthenticator> pending_authenticators_;
   bool controls_dispatch_ = false;
 
-  // CollectPINOptions has no default for |reason|; the value here is
-  // meaningless and always overwritten in CollectPIN() before use.
-  CollectPINOptions pending_pin_options_{
-      .reason = device::pin::PINEntryReason::kChallenge};
   base::OnceCallback<void(std::u16string)> provide_pin_callback_;
+  // Identifies the current 'collect-webauthn-pin' emission.
+  uint64_t pin_prompt_id_ = 0;
 
   base::WeakPtrFactory<ElectronAuthenticatorRequestClientDelegate>
       weak_factory_{this};

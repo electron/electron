@@ -604,5 +604,79 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
       expect(result).toEqual({ ok: false, name: 'NotAllowedError' });
       await warned;
     });
+
+    describe("with a 'collect-webauthn-pin' listener", () => {
+      // The simulated key's PIN, see UvLockedPinSecurityKeyDiscovery.
+      const pin = '123456';
+
+      afterEach(() => {
+        session.defaultSession.removeAllListeners('collect-webauthn-pin');
+      });
+
+      const createCredential = () =>
+        w.webContents.executeJavaScript(`
+          navigator.credentials.create({
+            publicKey: {
+              rp: { id: 'localhost', name: 'Electron Spec' },
+              user: {
+                id: new TextEncoder().encode('user-1'),
+                name: 'alice@example.com',
+                displayName: 'Alice'
+              },
+              challenge: new Uint8Array(32),
+              pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+              authenticatorSelection: { userVerification: 'required' }
+            }
+          }).then(
+            c => ({ ok: true }),
+            e => ({ ok: false, name: e.name })
+          )
+        `);
+
+      // Answers each event with the next entry, recording the details it saw.
+      const answerWith = (entries: (string | undefined)[]) => {
+        const seen: any[] = [];
+        session.defaultSession.on('collect-webauthn-pin' as any, (event: any, details: any, callback: any) => {
+          seen.push({ ...details, frame: undefined });
+          callback(entries[seen.length - 1]);
+        });
+        return seen;
+      };
+
+      it('completes the request with the PIN from the listener', async () => {
+        const seen = answerWith([pin]);
+        expect(await createCredential()).toEqual({ ok: true });
+        expect(seen).toHaveLength(1);
+        // The simulated key's built-in user verification is locked, which is
+        // why Chromium falls back to the PIN.
+        expect(seen[0]).toMatchObject({
+          relyingPartyId: 'localhost',
+          reason: 'challenge',
+          error: 'internal-uv-locked'
+        });
+        expect(seen[0].attemptsRemaining).toBeGreaterThan(0);
+      });
+
+      it('asks again after a wrong PIN, with one attempt fewer', async () => {
+        const seen = answerWith(['654321', pin]);
+        expect(await createCredential()).toEqual({ ok: true });
+        expect(seen).toHaveLength(2);
+        expect(seen[1].error).toBe('wrong-pin');
+        expect(seen[1].attemptsRemaining).toBe(seen[0].attemptsRemaining - 1);
+      });
+
+      it('asks again after a PIN that is too short, without using an attempt', async () => {
+        const seen = answerWith(['12', pin]);
+        expect(await createCredential()).toEqual({ ok: true });
+        expect(seen).toHaveLength(2);
+        expect(seen[1].error).toBe('too-short');
+        expect(seen[1].attemptsRemaining).toBe(seen[0].attemptsRemaining);
+      });
+
+      it('rejects with NotAllowedError when the listener cancels', async () => {
+        answerWith([undefined]);
+        expect(await createCredential()).toEqual({ ok: false, name: 'NotAllowedError' });
+      });
+    });
   }
 );

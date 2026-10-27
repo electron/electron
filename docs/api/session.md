@@ -807,10 +807,9 @@ Returns:
     `invalid-characters`, `same-as-current-pin` or `internal-uv-locked`.
     `internal-uv-locked` means the authenticator's built-in user verification
     (e.g. a fingerprint sensor) is locked and the request fell back to PIN
-    entry. `null` on the first prompt.
-  * `minPinLength` Integer - The minimum length the authenticator will accept
-    for a new PIN. When `reason` is `challenge`, the existing PIN may be
-    shorter than this if it was set before the minimum was raised.
+    entry. `null` when there is nothing to report.
+  * `minPinLength` Integer - The minimum PIN length. For `challenge` it
+    applies to the existing PIN; for `set` and `change`, to the new PIN.
   * `attemptsRemaining` Integer | null - The number of attempts remaining
     before the authenticator locks itself. Only set when `reason` is
     `challenge`; `null` otherwise.
@@ -847,7 +846,7 @@ platforms where no system-level WebAuthn UI exists (notably Linux). On
 Windows, security key requests are handled by the operating system's own
 dialogs and this event is not emitted.
 
-```js
+```js @ts-expect-error=[6]
 const { BrowserWindow, session } = require('electron')
 
 session.defaultSession.on('collect-webauthn-pin', async (event, details, callback) => {

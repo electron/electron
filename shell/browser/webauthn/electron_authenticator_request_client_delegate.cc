@@ -21,7 +21,6 @@
 #include "device/fido/authenticator_get_assertion_response.h"
 #include "device/fido/fido_authenticator.h"
 #include "device/fido/pin.h"
-#include "device/fido/public/fido_constants.h"
 #include "device/fido/public/fido_types.h"
 #include "device/fido/public/public_key_credential_descriptor.h"
 #include "device/fido/public/public_key_credential_user_entity.h"
@@ -559,12 +558,13 @@ void ElectronAuthenticatorRequestClientDelegate::CollectPIN(
     base::OnceCallback<void(std::u16string)> provide_pin_cb) {
   // May be called several times per request (e.g. once per wrong-PIN retry);
   // each call supersedes the previous exchange.
-  pending_pin_options_ = options;
   provide_pin_callback_ = std::move(provide_pin_cb);
-  EmitCollectPinEvent();
+  ++pin_prompt_id_;
+  EmitCollectPinEvent(options);
 }
 
-void ElectronAuthenticatorRequestClientDelegate::EmitCollectPinEvent() {
+void ElectronAuthenticatorRequestClientDelegate::EmitCollectPinEvent(
+    const CollectPINOptions& options) {
   gin::WeakCell<api::Session>* session = GetSession();
   if (!session || !session->Get()) {
     CancelPendingPinCollection();
@@ -579,19 +579,16 @@ void ElectronAuthenticatorRequestClientDelegate::EmitCollectPinEvent() {
 
   gin::DataObjectBuilder details(isolate);
   details.Set("relyingPartyId", relying_party_id_);
-  details.Set("reason",
-              std::string(PinEntryReasonToString(pending_pin_options_.reason)));
-  if (pending_pin_options_.error == device::pin::PINEntryError::kNoError) {
+  details.Set("reason", std::string(PinEntryReasonToString(options.reason)));
+  if (options.error == device::pin::PINEntryError::kNoError) {
     details.Set("error", v8::Null(isolate).As<v8::Value>());
   } else {
-    details.Set("error",
-                std::string(PinEntryErrorToString(pending_pin_options_.error)));
+    details.Set("error", std::string(PinEntryErrorToString(options.error)));
   }
-  details.Set("minPinLength",
-              static_cast<int32_t>(pending_pin_options_.min_pin_length));
+  details.Set("minPinLength", static_cast<int32_t>(options.min_pin_length));
   // Per CollectPINOptions, |attempts| is only meaningful for kChallenge.
-  if (pending_pin_options_.reason == device::pin::PINEntryReason::kChallenge) {
-    details.Set("attemptsRemaining", pending_pin_options_.attempts);
+  if (options.reason == device::pin::PINEntryReason::kChallenge) {
+    details.Set("attemptsRemaining", options.attempts);
   } else {
     details.Set("attemptsRemaining", v8::Null(isolate).As<v8::Value>());
   }
@@ -616,7 +613,7 @@ void ElectronAuthenticatorRequestClientDelegate::EmitCollectPinEvent() {
       details.Build(),
       base::BindRepeating(
           &ElectronAuthenticatorRequestClientDelegate::OnPinProvided,
-          weak_factory_.GetWeakPtr()));
+          weak_factory_.GetWeakPtr(), pin_prompt_id_));
   if (!weak_this) {
     return;
   }
@@ -631,18 +628,20 @@ void ElectronAuthenticatorRequestClientDelegate::EmitCollectPinEvent() {
       rfh->AddMessageToConsole(
           blink::mojom::ConsoleMessageLevel::kWarning,
           "The security key needs its PIN to continue, but Electron does not "
-          "support WebAuthn PIN entry "
-          "(https://github.com/electron/electron/issues/24573). The request "
-          "was cancelled.");
+          "support WebAuthn PIN entry without a 'collect-webauthn-pin' "
+          "listener (https://github.com/electron/electron/issues/24573). The "
+          "request was cancelled.");
     }
     CancelPendingPinCollection();
   }
 }
 
 void ElectronAuthenticatorRequestClientDelegate::OnPinProvided(
+    uint64_t prompt_id,
     gin::Arguments* args) {
-  // Repeating callback: ignore any call after the first.
-  if (!provide_pin_callback_) {
+  // Repeating callback: ignore any call after the first, and calls to the
+  // callback of an earlier prompt in the same request.
+  if (!provide_pin_callback_ || prompt_id != pin_prompt_id_) {
     return;
   }
 
@@ -652,25 +651,9 @@ void ElectronAuthenticatorRequestClientDelegate::OnPinProvided(
     return;
   }
 
-  // Validate locally before sending the PIN to the authenticator: an entry
-  // that cannot possibly be accepted must not consume one of the limited
-  // attempts before the authenticator locks. Chrome's PIN dialog validates
-  // inline the same way; here the listener is re-invoked with |error| set.
-  // When collecting an existing PIN the authenticator-reported minimum only
-  // applies to *new* PINs — a PIN set before a minPinLength increase may be
-  // shorter — so only the CTAP2 floor is enforced for kChallenge.
-  const uint32_t min_pin_length =
-      pending_pin_options_.reason == device::pin::PINEntryReason::kChallenge
-          ? device::kMinPinLength
-          : pending_pin_options_.min_pin_length;
-  device::pin::PINEntryError error =
-      device::pin::ValidatePIN(pin, min_pin_length);
-  if (error != device::pin::PINEntryError::kNoError) {
-    pending_pin_options_.error = error;
-    EmitCollectPinEvent();
-    return;
-  }
-
+  // Chromium validates the entry itself (length, encoding, same as the current
+  // PIN) before contacting the authenticator, and asks again through
+  // CollectPIN() with |error| set if it is rejected.
   std::move(provide_pin_callback_).Run(std::move(pin));
 }
 
