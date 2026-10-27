@@ -77,18 +77,18 @@ jobs:
           UNSUPPORTED_MAJOR=$((NEXT_UNSUPPORTED_MAJOR - 1))
 
           # Create new labels
-          gh label create ${NEXT_MAJOR}-x-y --color 8d9ee8 || true
-          gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || true
-          gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || true
-          gh label create in-flight/$MAJOR-x-y --color db69a6 || true
-          gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || true
+          gh label create ${NEXT_MAJOR}-x-y --color 8d9ee8 || echo "::warning::Failed to create or update label ${NEXT_MAJOR}-x-y"
+          gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || echo "::warning::Failed to create or update label target/$MAJOR-x-y"
+          gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || echo "::warning::Failed to create or update label merged/$MAJOR-x-y"
+          gh label create in-flight/$MAJOR-x-y --color db69a6 || echo "::warning::Failed to create or update label in-flight/$MAJOR-x-y"
+          gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || echo "::warning::Failed to create or update label needs-manual-bp/$MAJOR-x-y"
 
           # Change color of old labels
-          gh label edit $UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit target/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit merged/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit in-flight/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit needs-manual-bp/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+          gh label edit $UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label $UNSUPPORTED_MAJOR-x-y"
+          gh label edit target/$UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label target/$UNSUPPORTED_MAJOR-x-y"
+          gh label edit merged/$UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label merged/$UNSUPPORTED_MAJOR-x-y"
+          gh label edit in-flight/$UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label in-flight/$UNSUPPORTED_MAJOR-x-y"
+          gh label edit needs-manual-bp/$UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label needs-manual-bp/$UNSUPPORTED_MAJOR-x-y"
 
           # Add the new target label to any PRs which:
           #   * target the previous major
@@ -97,7 +97,7 @@ jobs:
           for PREVIOUS_MAJOR_LABEL in target/$PREVIOUS_MAJOR-x-y in-flight/$PREVIOUS_MAJOR-x-y needs-manual-bp/$PREVIOUS_MAJOR-x-y; do
             PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --search "-label:target/$MAJOR-x-y" --jq .[].number --json number --limit 500)
             if [[ $PULL_REQUESTS ]]; then
-              echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || true
+              echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || echo "::error::Failed to add label target/$MAJOR-x-y to one or more PRs with label $PREVIOUS_MAJOR_LABEL"
             fi
           done
       - name: Generate GitHub App token
