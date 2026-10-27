@@ -740,7 +740,7 @@ spinning, and the `onload` event is dispatched.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/55388
-    description: "Added `frameToken`."
+    description: "Added `frameProcessId` and `frameToken`."
 ```
 -->
 
@@ -750,8 +750,12 @@ Returns:
 * `errorDescription` string
 * `validatedURL` string
 * `isMainFrame` boolean
+* `frameProcessId` Integer (optional) - Not set if the load failed without
+  reaching a frame.
 * `frameToken` string (optional) - The [frame token](web-frame-main.md#frameframetoken-readonly)
-  of the frame. Not set if the load failed without reaching a frame.
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
+  Not set if the load failed without reaching a frame.
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -762,15 +766,17 @@ cancelled, e.g. `window.stop()` is invoked.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/55388
-    description: "Added `frameToken`."
+    description: "Added `frameProcessId` and `frameToken`."
 ```
 -->
 
 Returns:
 
 * `isMainFrame` boolean
+* `frameProcessId` Integer
 * `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
-  of the frame.
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
 
 Fired when a frame has done navigation.
 
@@ -1006,7 +1012,7 @@ this purpose.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/55388
-    description: "Added `frameToken`."
+    description: "Added `frameProcessId` and `frameToken`."
 ```
 -->
 
@@ -1014,8 +1020,10 @@ Returns:
 
 * `isMainFrame` boolean
 * `url` string
+* `frameProcessId` Integer
 * `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
-  of the frame.
+  of the frame. Use it with `frameProcessId` in
+  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
 
 Emitted when an in-page navigation happened.
 

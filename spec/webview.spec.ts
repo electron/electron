@@ -1,4 +1,4 @@
-import { BrowserWindow, session, ipcMain, app, webContents, type WebContents } from 'electron/main';
+import { BrowserWindow, session, ipcMain, app, webContents, webFrameMain, type WebContents } from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -1950,6 +1950,7 @@ describe('<webview> tag', () => {
           { src: `file://${fixtures}/pages/a.html` },
           'did-frame-finish-load'
         );
+        expect(event.frameProcessId).toBeTypeOf('number');
         expect(event.frameToken).toBeTypeOf('string');
       });
     });
@@ -1968,11 +1969,13 @@ describe('<webview> tag', () => {
         const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate-in-page');
         expect(event.url).toBe(`${pageUrl}#test_content`);
         expect(event.isMainFrame).toBe(true);
+        expect(event.frameProcessId).toBeTypeOf('number');
         expect(event.frameToken).toBeTypeOf('string');
         const guest = webContents.fromId(
           await w.executeJavaScript("document.getElementById('webview').getWebContentsId()")
         );
-        expect(event.frameToken).toBe(guest!.mainFrame.frameToken);
+        const frame = webFrameMain.fromFrameToken(event.frameProcessId, event.frameToken);
+        expect(frame).toBe(guest!.mainFrame);
       });
 
       it('emits when window.history.replaceState is called', async () => {
