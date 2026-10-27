@@ -198,6 +198,10 @@ int NodeMain() {
     // Parse Node.js cli flags and strip out disallowed options.
     std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
+    // Silently ignore the obsolete workaround while applications migrate to
+    // automatic NUL detection.
+    if (base::CommandLine::ForCurrentProcess()->HasSwitch("no-stdio-init"))
+      std::erase(args, "--no-stdio-init");
     // Match the other process types (see NodeBindings::ParseNodeCliFlags); an
     // explicit --js-source-phase-imports later on the command line still wins.
     // Kept out of process.execArgv below so fork() does not accumulate it.
