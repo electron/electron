@@ -159,8 +159,17 @@ jobs:
                 "stable-date": stableDate,
                 "next-alpha-date": nextAlphaDate.toISOString().split('T')[0],
             }))
-      - name: Create Release Project Board
+      - name: Find Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
+        uses: dsanders11/project-actions/find-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
+        id: find-release-board
+        with:
+          fail-if-project-not-found: false
+          limit: 1000
+          title: ${{ steps.generate-project-metadata.outputs.major }}-x-y
+          token: ${{ steps.generate-token.outputs.token }}
+      - name: Create Release Project Board
+        if: ${{ steps.check-major-version.outputs.MAJOR && !steps.find-release-board.outputs.id }}
         uses: dsanders11/project-actions/copy-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         id: create-release-board
         with:
@@ -178,7 +187,7 @@ jobs:
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/github-script@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         env:
-          PROJECT_ID: ${{ steps.create-release-board.outputs.id }}
+          PROJECT_ID: ${{ steps.find-release-board.outputs.id || steps.create-release-board.outputs.id }}
         with:
           token: ${{ steps.generate-token.outputs.token }}
           script: |
@@ -232,8 +241,8 @@ jobs:
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/github-script@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         env:
-          PROJECT_ID: ${{ steps.create-release-board.outputs.id }}
-          PROJECT_NUMBER: ${{ steps.create-release-board.outputs.number }}
+          PROJECT_ID: ${{ steps.find-release-board.outputs.id || steps.create-release-board.outputs.id }}
+          PROJECT_NUMBER: ${{ steps.find-release-board.outputs.number || steps.create-release-board.outputs.number }}
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
         with:
           token: ${{ steps.generate-token.outputs.token }}
@@ -284,7 +293,7 @@ jobs:
         run: gh project item-list "$BOARD_NUMBER" --owner electron --format json | jq
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-          BOARD_NUMBER: ${{ steps.create-release-board.outputs.number }}
+          BOARD_NUMBER: ${{ steps.find-release-board.outputs.number || steps.create-release-board.outputs.number }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/find-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
