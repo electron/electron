@@ -95,7 +95,7 @@ jobs:
           #   * are in-flight for the previous major
           #   * need manual backport for the previous major
           for PREVIOUS_MAJOR_LABEL in target/$PREVIOUS_MAJOR-x-y in-flight/$PREVIOUS_MAJOR-x-y needs-manual-bp/$PREVIOUS_MAJOR-x-y; do
-            PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --jq .[].number --json number --limit 500)
+            PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --search "-label:target/$MAJOR-x-y" --jq .[].number --json number --limit 500)
             if [[ $PULL_REQUESTS ]]; then
               echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || true
             fi
