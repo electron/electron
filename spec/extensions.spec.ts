@@ -19,10 +19,11 @@ import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import { createRequire } from 'node:module';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
-import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { expectWarningMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
