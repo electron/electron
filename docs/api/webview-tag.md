@@ -750,14 +750,8 @@ Returns:
 * `errorDescription` string
 * `validatedURL` string
 * `isMainFrame` boolean
-* `frameProcessId` Integer (optional) - Not set if the load failed without
-  reaching a frame.
-* `frameRoutingId` Integer (optional) - Not set if the load failed without
-  reaching a frame.
 * `frameToken` string (optional) - The [frame token](web-frame-main.md#frameframetoken-readonly)
-  of the frame. Use it with `frameProcessId` in
-  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
-  Not set if the load failed without reaching a frame.
+  of the frame. Not set if the load failed without reaching a frame.
 
 This event is like `did-finish-load`, but fired when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -775,11 +769,8 @@ changes:
 Returns:
 
 * `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
 * `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
-  of the frame. Use it with `frameProcessId` in
-  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
+  of the frame.
 
 Fired when a frame has done navigation.
 
@@ -1023,11 +1014,8 @@ Returns:
 
 * `isMainFrame` boolean
 * `url` string
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
 * `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
-  of the frame. Use it with `frameProcessId` in
-  [`webFrameMain.fromFrameToken()`](web-frame-main.md#webframemainfromframetokenprocessid-frametoken).
+  of the frame.
 
 Emitted when an in-page navigation happened.
 
