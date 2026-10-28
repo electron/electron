@@ -1228,6 +1228,11 @@ describe('BrowserWindow module', () => {
         afterAll(() => {
           server.close();
         });
+        // Follow the page's link from the renderer rather than by clicking it.
+        // Input sent to a window that was never shown can be dropped before it
+        // reaches the page (on Wayland the hidden window presents no frames),
+        // and then the navigation never starts.
+        const followLink = () => w.webContents.executeJavaScript("document.querySelector('a').click()");
         it('exposes a cross-origin iframe during navigation', async () => {
           const port = (server.address() as AddressInfo).port;
           const fixture = path.join(os.tmpdir(), `web-frame-main-navigation-${crypto.randomUUID()}.html`);
@@ -1336,40 +1341,10 @@ describe('BrowserWindow module', () => {
             'did-frame-navigate',
             'did-navigate'
           ];
-          w.loadURL(url + '/navigate');
-          await once(w.webContents, 'did-navigate');
-          await setTimeout(2000);
+          await w.loadURL(url + '/navigate');
           Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate');
-          w.webContents.debugger.attach('1.1');
-          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
-          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
-          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
-            targetId: pageTarget.targetId,
-            flatten: true
-          });
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mousePressed',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mouseReleased',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
+          await followLink();
           await navigationFinished;
           expect(firedEvents).toEqual(expectedEventOrder);
         });
@@ -1385,40 +1360,10 @@ describe('BrowserWindow module', () => {
             'did-frame-navigate',
             'did-navigate'
           ];
-          w.loadURL(url + '/redirect');
-          await once(w.webContents, 'did-navigate');
-          await setTimeout(2000);
+          await w.loadURL(url + '/redirect');
           Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate');
-          w.webContents.debugger.attach('1.1');
-          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
-          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
-          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
-            targetId: pageTarget.targetId,
-            flatten: true
-          });
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mousePressed',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mouseReleased',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
+          await followLink();
           await navigationFinished;
           expect(firedEvents).toEqual(expectedEventOrder);
         });
@@ -1426,40 +1371,10 @@ describe('BrowserWindow module', () => {
         it('when navigating in-page, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = ['did-start-navigation', 'did-navigate-in-page'];
-          w.loadURL(url + '/in-page');
-          await once(w.webContents, 'did-navigate');
-          await setTimeout(2000);
+          await w.loadURL(url + '/in-page');
           Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate-in-page');
-          w.webContents.debugger.attach('1.1');
-          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
-          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
-          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
-            targetId: pageTarget.targetId,
-            flatten: true
-          });
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mousePressed',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mouseReleased',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
+          await followLink();
           await navigationFinished;
           expect(firedEvents).toEqual(expectedEventOrder);
         });

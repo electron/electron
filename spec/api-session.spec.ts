@@ -718,30 +718,30 @@ describe('session module', () => {
         document.body.appendChild(f);
       })`);
       const iframe = w.webContents.mainFrame.frames[0];
-      const willDownload = new Promise<{ item: Electron.DownloadItem; wc: Electron.WebContents; frame: any }>(
-        (resolve) => {
-          w.webContents.session.once('will-download', (e, item, wc, frame) => {
-            e.preventDefault();
-            resolve({ item, wc, frame });
-          });
-        }
-      );
+      // preventDefault() cancels the download, which destroys the item, possibly
+      // before the code awaiting the event runs. Read the item in the listener.
+      const willDownload = new Promise<{ initiatorOrigin: string; wc: Electron.WebContents; frame: any }>((resolve) => {
+        w.webContents.session.once('will-download', (e, item, wc, frame) => {
+          e.preventDefault();
+          resolve({ initiatorOrigin: item.getInitiatorOrigin(), wc, frame });
+        });
+      });
       await iframe.executeJavaScript("document.getElementById('dl').click()", true);
-      const { item, wc, frame } = await willDownload;
+      const { initiatorOrigin, wc, frame } = await willDownload;
       expect(wc).toBe(w.webContents);
       expect(frame).toBe(iframe);
-      expect(item.getInitiatorOrigin()).toBe(downloadOrigin);
+      expect(initiatorOrigin).toBe(downloadOrigin);
 
       // A download the app starts itself has no initiating origin or frame.
-      const own = new Promise<{ item: Electron.DownloadItem; frame: any }>((resolve) => {
+      const own = new Promise<{ initiatorOrigin: string; frame: any }>((resolve) => {
         w.webContents.session.once('will-download', (e, item, _wc, frame) => {
           e.preventDefault();
-          resolve({ item, frame });
+          resolve({ initiatorOrigin: item.getInitiatorOrigin(), frame });
         });
       });
       w.webContents.session.downloadURL(`${downloadOrigin}/file`);
       const ownResult = await own;
-      expect(ownResult.item.getInitiatorOrigin()).toBe('');
+      expect(ownResult.initiatorOrigin).toBe('');
       expect(ownResult.frame).toBe(null);
     });
 
@@ -2397,6 +2397,13 @@ describe('session module', () => {
 
     // NOTE: This API clears more than localStorage, but localStorage is a
     // convenient test target for this API
+    //
+    // The page keeps its own copy of localStorage. clearData() resolves once the
+    // storage backend has deleted the data, and the backend tells the page
+    // separately, so the page can still answer from its old copy for a moment.
+    const waitForEmptyLocalStorage = (w: BrowserWindow) =>
+      waitUntil(async () => (await w.webContents.executeJavaScript('localStorage.length')) === 0);
+
     it('clears all data when no options supplied', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
@@ -2405,7 +2412,7 @@ describe('session module', () => {
 
       await w.webContents.session.clearData();
 
-      expect(await w.webContents.executeJavaScript('localStorage.length')).toBe(0);
+      await waitForEmptyLocalStorage(w);
     });
 
     it('clears all data when no options supplied, called twice in parallel', async () => {
@@ -2418,7 +2425,7 @@ describe('session module', () => {
       const clearDataPromise = w.webContents.session.clearData();
       await w.webContents.session.clearData();
 
-      expect(await w.webContents.executeJavaScript('localStorage.length')).toBe(0);
+      await waitForEmptyLocalStorage(w);
 
       // Await the first promise so it doesn't creep into another test
       await clearDataPromise;

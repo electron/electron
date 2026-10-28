@@ -124,14 +124,18 @@ describe('asar package', () => {
       const willDownload = once(w.webContents.session, 'will-download');
       // The click loop below can start more than one download. Give the first
       // its save path here, synchronously, and refuse the rest, so none of them
-      // ever falls through to the native Save dialog.
+      // ever falls through to the native Save dialog. Start listening for the
+      // first one's 'done' here too: it can finish while the loop is still
+      // waiting on a later click, before the loop sees that it started.
       let started = false;
+      let done: Promise<any[]> | undefined;
       const onWillDownload = (event: Electron.Event, item: Electron.DownloadItem) => {
         if (started) {
           event.preventDefault();
         } else {
           started = true;
           item.savePath = savePath;
+          done = once(item, 'done');
         }
       };
       w.webContents.session.on('will-download', onWillDownload);
@@ -154,7 +158,7 @@ describe('asar package', () => {
       }
       expect(downloading, 'the viewer never started a download').toBeInstanceOf(Array);
       const item = downloading![1] as Electron.DownloadItem;
-      const [, state] = await once(item, 'done');
+      const [, state] = await done!;
       expect(state).toBe('completed');
       expect(item.getFilename()).toBe('cat.pdf');
       expect(importedFs.readFileSync(savePath).equals(importedFs.readFileSync(path.join(fixtures, 'cat.pdf')))).toBe(
