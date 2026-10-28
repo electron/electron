@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: clavin <clavin@electronjs.org>
+Date: Wed, 28 Oct 2026 12:00:00 -0700
+Subject: chore: disable BeginFrameArgs unthrottled_interval DCHECK on macOS
+
+https://chromium-review.googlesource.com/c/chromium/src/+/8664700
+re-enabled this DCHECK on macOS. It still fires when
+ExternalBeginFrameSourceMac has no usable display and falls back to its
+DelayBasedTimeSource: GetMissedBeginFrameArgs() then pairs the timer's
+preferred_interval_ with a longer min_refresh_interval_. Headless macOS
+CI runners take that path, and three DCHECKs in a row make the browser
+abort with "GPU process isn't usable".
+
+This restores the upstream macOS exclusion. It can be removed once the
+timer fallback keeps the two intervals consistent.
+
+diff --git a/components/viz/common/frame_sinks/begin_frame_args.cc b/components/viz/common/frame_sinks/begin_frame_args.cc
+index f170cb9cefad6f9620866798eb4d40d30fb9bb0e..c8542b0af0a38880035f8aefdee0a46b76a5ee7b 100644
+--- a/components/viz/common/frame_sinks/begin_frame_args.cc
++++ b/components/viz/common/frame_sinks/begin_frame_args.cc
+@@ -131,7 +131,11 @@ BeginFrameArgs::BeginFrameArgs(uint64_t source_id,
+       frame_id(BeginFrameId(source_id, sequence_number)),
+       type(type) {
+   DCHECK_LE(kStartingFrameNumber, sequence_number);
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_ANDROID)
++  // TODO(crbug.com/477242770): Re-enable on Mac. Changing the system display
++  // refresh rate on macOS causes the unthrottled_interval state to go
++  // stale, which incorrectly trips this DCHECK.
++  //
+   // TODO(crbug.com/477617022): Re-enable on Android.
+   // ExternalBeginFrameSourceAndroid currently does not implement
+   // GetMinimumFrameInterval() causing unthrottled_interval to always be
