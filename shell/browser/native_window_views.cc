@@ -176,6 +176,31 @@ gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
   return ScreenToDIPRect(hwnd, gfx::Rect(screen_client_size)).size();
 }
 
+// ScreenWin's enclosing rect conversions make setBounds(getBounds()) grow by a
+// pixel at fractional scales, so shrink to the largest size SetBounds maps back
+// inside the window. https://github.com/electron/electron/issues/55245
+gfx::Rect StableWindowBoundsInScreen(HWND hwnd, const gfx::Rect& dip_bounds) {
+  RECT window_rect;
+  if (!::GetWindowRect(hwnd, &window_rect))
+    return dip_bounds;
+  const gfx::Size pixel_size = gfx::Rect(window_rect).size();
+  const auto* const screen_win = display::win::GetScreenWin();
+  gfx::Rect stable_bounds = dip_bounds;
+  // Enclosing overshoots by under 2 DIP; anything more is a display mismatch.
+  for (int i = 0; i <= 2; ++i) {
+    const gfx::Size set_size =
+        screen_win->DIPToScreenRect(nullptr, stable_bounds).size();
+    if (set_size.width() <= pixel_size.width() &&
+        set_size.height() <= pixel_size.height())
+      return stable_bounds;
+    if (set_size.width() > pixel_size.width())
+      stable_bounds.set_width(stable_bounds.width() - 1);
+    if (set_size.height() > pixel_size.height())
+      stable_bounds.set_height(stable_bounds.height() - 1);
+  }
+  return dip_bounds;
+}
+
 #endif
 
 class NativeWindowClientView : public views::ClientView {
@@ -929,7 +954,12 @@ gfx::Rect NativeWindowViews::GetBounds() const {
   if (IsMinimized())
     return WidgetToLogicalBounds(widget()->GetRestoredBounds());
 
+#if BUILDFLAG(IS_WIN)
+  return WidgetToLogicalBounds(StableWindowBoundsInScreen(
+      GetAcceleratedWidget(), widget()->GetWindowBoundsInScreen()));
+#else
   return WidgetToLogicalBounds(widget()->GetWindowBoundsInScreen());
+#endif
 }
 
 gfx::Rect NativeWindowViews::GetContentBounds() const {

@@ -1917,6 +1917,22 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getBounds(), expectedBounds);
       });
 
+      ifdescribe(process.platform === 'win32')('at a fractional display scale', () => {
+        for (const scale of [1.25, 1.5, 1.75]) {
+          for (const frameless of [false, true]) {
+            it(`keeps setBounds(getBounds()) stable at ${scale}x (frameless: ${frameless})`, async () => {
+              const appPath = path.join(fixtures, 'apps', 'window-bounds-round-trip');
+              const args = [appPath, `--force-device-scale-factor=${scale}`];
+              if (frameless) args.push('--frameless');
+              const { code, stdout, stderr } = await spawnAndWait(process.execPath, args, { timeout: 30000 });
+              expect(code, stderr).toBe(0);
+              const { before, after } = JSON.parse(stdout.trim().split('\n').at(-1) ?? '');
+              expect(after).toEqual(before);
+            });
+          }
+        }
+      });
+
       ifdescribe(process.platform === 'darwin')('on macOS', () => {
         // FIXME: this was nested inside an it() and so never ran; on the CI
         // macOS hosts no 'resized' arrives after an animated setBounds()
