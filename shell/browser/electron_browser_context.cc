@@ -14,6 +14,7 @@
 #include "base/containers/to_vector.h"
 #include "base/files/file_path.h"
 #include "base/memory/ref_counted_delete_on_sequence.h"
+#include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/escape.h"
@@ -36,13 +37,13 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/desktop_capture.h"
+#include "content/public/browser/document_user_data.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/page.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
-#include "content/public/browser/weak_document_ptr.h"
 #include "content/public/browser/web_contents_media_capture_id.h"
 #include "gin/arguments.h"
 #include "media/audio/audio_device_description.h"
@@ -757,8 +758,8 @@ content::DesktopMediaID::Type PickerTypeForRequest(
 
 class SystemPickerRequest;
 
-// The native picker is process-wide and tracks one pending selection at a
-// time: opening it again drops the previous request's callbacks.
+// The native picker is process-wide and rejects an Open() while another one
+// is pending, so requests are turned away here before reaching it.
 SystemPickerRequest* g_pending_system_picker_request = nullptr;
 
 void CloseSystemPickerSession(content::DesktopMediaID::Type type,
@@ -774,6 +775,7 @@ void CloseSystemPickerSession(content::DesktopMediaID::Type type,
 // State for one getDisplayMedia() request answered by the system picker.
 // Exactly one of the picker/cancel/error callbacks consumes `callback`; if
 // none does (e.g. the picker went away), the destructor fails the request.
+// SystemPickerRequestOwner fails it when the requesting document goes away.
 class SystemPickerRequest
     : public base::RefCountedDeleteOnSequence<SystemPickerRequest> {
  public:
@@ -784,20 +786,23 @@ class SystemPickerRequest
             content::GetUIThreadTaskRunner({})),
         request_(request),
         type_(type),
-        callback_(std::move(callback)) {
-    if (auto* rfh = content::RenderFrameHost::FromID(request.render_process_id,
-                                                     request.render_frame_id))
-      document_ = rfh->GetWeakDocumentPtr();
-  }
+        callback_(std::move(callback)) {}
 
   void OnCreated(content::DesktopMediaID::Id session_id) {
     session_id_ = session_id;
+    // Failed before the picker reported its session, so close it now.
+    if (!callback_)
+      CloseSystemPickerSession(type_, session_id);
   }
 
   void OnSelected(webrtc::DesktopCapturer::Source source) {
     if (!callback_)
       return;
-    if (!document_.AsRenderFrameHostIfValid()) {
+    // A crashed renderer keeps its document until the next navigation, so
+    // close the session rather than answer a request nobody is waiting on.
+    auto* rfh = content::RenderFrameHost::FromID(request_.render_process_id,
+                                                 request_.render_frame_id);
+    if (!rfh || !rfh->IsRenderFrameLive()) {
       Fail(
           blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
       return;
@@ -857,21 +862,13 @@ class SystemPickerRequest
     std::move(callback_).Run(blink::mojom::StreamDevicesSet(), result, nullptr);
   }
 
-  // Fails a request whose picker never answered without closing its session:
-  // deactivating the picker could deliver its cancel to the next request.
-  void Supersede() {
-    session_id_.reset();
-    Fail(blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED);
-  }
-
   void SetPending() { g_pending_system_picker_request = this; }
 
-  bool IsFromFrame(const content::MediaStreamRequest& other) const {
-    return other.render_process_id == request_.render_process_id &&
-           other.render_frame_id == request_.render_frame_id;
-  }
-
   content::DesktopMediaID::Type type() const { return type_; }
+
+  base::WeakPtr<SystemPickerRequest> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
  private:
   friend class base::RefCountedDeleteOnSequence<SystemPickerRequest>;
@@ -890,8 +887,32 @@ class SystemPickerRequest
   const content::DesktopMediaID::Type type_;
   content::MediaResponseCallback callback_;
   std::optional<content::DesktopMediaID::Id> session_id_;
-  content::WeakDocumentPtr document_;
+  base::WeakPtrFactory<SystemPickerRequest> weak_factory_{this};
 };
+
+// Lives as long as the requesting document, so navigating away or closing the
+// frame fails a request the picker hasn't answered and closes its session.
+class SystemPickerRequestOwner
+    : public content::DocumentUserData<SystemPickerRequestOwner> {
+ public:
+  ~SystemPickerRequestOwner() override {
+    if (request_)
+      request_->Fail(
+          blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
+  }
+
+ private:
+  friend class content::DocumentUserData<SystemPickerRequestOwner>;
+  DOCUMENT_USER_DATA_KEY_DECL();
+
+  SystemPickerRequestOwner(content::RenderFrameHost* rfh,
+                           base::WeakPtr<SystemPickerRequest> request)
+      : DocumentUserData(rfh), request_(std::move(request)) {}
+
+  base::WeakPtr<SystemPickerRequest> request_;
+};
+
+DOCUMENT_USER_DATA_KEY_IMPL(SystemPickerRequestOwner);
 
 }  // namespace
 
@@ -1088,21 +1109,23 @@ bool ElectronBrowserContext::ChooseDisplayMediaDevice(
     // Route useSystemPicker: true through upstream's
     // NativeScreenCapturePickerMac, which owns the system picker lifecycle and
     // issues source ids. The JS handler is bypassed (documented behavior).
-    // One picker at a time: a frame asking again replaces its own request,
-    // and any other frame is turned away rather than taking over the picker.
-    if (g_pending_system_picker_request) {
-      if (!g_pending_system_picker_request->IsFromFrame(request)) {
-        std::move(callback).Run(
-            blink::mojom::StreamDevicesSet(),
-            blink::mojom::MediaStreamRequestResult::INVALID_STATE, nullptr);
-        return true;
-      }
-      g_pending_system_picker_request->Supersede();
+    // One picker at a time, matching Chromium: a request made while the
+    // picker is open is turned away and the open picker keeps its request.
+    auto* rfh = content::RenderFrameHost::FromID(request.render_process_id,
+                                                 request.render_frame_id);
+    if (g_pending_system_picker_request || !rfh) {
+      std::move(callback).Run(
+          blink::mojom::StreamDevicesSet(),
+          blink::mojom::MediaStreamRequestResult::INVALID_STATE, nullptr);
+      return true;
     }
-    api::DesktopCapturer::ExcludeContentProtectedWindowsFromSystemPicker();
     auto state = base::MakeRefCounted<SystemPickerRequest>(
         request, PickerTypeForRequest(request), std::move(callback));
     state->SetPending();
+    if (SystemPickerRequestOwner::GetForCurrentDocument(rfh))
+      SystemPickerRequestOwner::DeleteForCurrentDocument(rfh);
+    SystemPickerRequestOwner::CreateForCurrentDocument(rfh,
+                                                       state->GetWeakPtr());
     auto runner = content::GetUIThreadTaskRunner({});
     content::GetIOThreadTaskRunner({})->PostTask(
         FROM_HERE,

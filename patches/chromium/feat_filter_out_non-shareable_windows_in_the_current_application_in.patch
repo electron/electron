@@ -12,10 +12,28 @@ GetNonShareableWindows() helper and applied in both OnShareableContentCreated
 change handler), so content-protected windows stay excluded even when the
 SCContentFilter is rebuilt during capture.
 
+NativeScreenCapturePickerMac::Open() also adds them to the system picker
+configuration's excludedWindowIDs, so they aren't offered in the picker.
+Open() rebuilds that list on every call, so it can't be set from outside.
+
 Limitation: only filters windows protected before the query runs. Dynamically
 protecting a window during an active capture will not take effect until the
 next filter update or stream restart.
 
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
+index dccb79683513dc5b338b1a40808dc04fdaa0746a..13cb3b63a4c05158052720ced8b86389edef7d34 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
++++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
+@@ -471,7 +471,8 @@ void API_AVAILABLE(macos(14.0))
+     }
+     NSMutableArray<NSNumber*>* excluded_window_ids = [NSMutableArray array];
+     for (NSWindow* window in [NSApp windows]) {
+-      if (![window isVisible] && ![window isMiniaturized] &&
++      if (([window sharingType] == NSWindowSharingNone ||
++           (![window isVisible] && ![window isMiniaturized])) &&
+           [window windowNumber] > 0) {
+         [excluded_window_ids addObject:@([window windowNumber])];
+       }
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 index 9e293cc59d5b1507840e67e7b3d984c0591a7d1f..d65fec0b3f3d7cd8f47be7b30639476537d6af67 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm

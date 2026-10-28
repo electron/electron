@@ -35,10 +35,6 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer> {
 
   static bool IsDisplayMediaSystemPickerAvailable();
 
-  // Keeps windows with content protection (NSWindowSharingNone) out of the
-  // next system picker session.
-  static void ExcludeContentProtectedWindowsFromSystemPicker();
-
   [[nodiscard]] static std::string GetRestoreToken(
       const std::string& source_id);
 

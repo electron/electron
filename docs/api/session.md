@@ -1259,8 +1259,8 @@ windows when the page calls `getDisplayMedia({ video: { displaySurface: 'window'
 for audio, the stream includes system audio unless the page opts out with `systemAudio: 'exclude'` (screens) or
 `windowAudio: 'exclude'` (windows). `windowAudio: 'window'` gets no audio, since per-window audio isn't supported. This needs the `NSAudioCaptureUsageDescription` Info.plist key, as
 described in [`desktopCapturer`](desktop-capturer.md#macos-versions-142-or-higher).
-`getDisplayMedia()` rejects with `NotAllowedError` if the user cancels the picker, or if the page calls it again
-while the picker is still open. A call from a different frame while the picker is open rejects with `AbortError`.
+`getDisplayMedia()` rejects with `NotAllowedError` if the user cancels the picker. Any call made while the picker
+is already open rejects with `AbortError`, and the open picker keeps its original request.
 
 ```js
 const { session, desktopCapturer } = require('electron')
