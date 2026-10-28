@@ -41,10 +41,10 @@ index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6
      "file_system_access_permission_context_factory.cc",
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..c26eb34183aa46fd2d5886df768ab909e7484fde
+index 0000000000000000000000000000000000000000..2e531877d0c8914e3babf078d48f3a42038f148f
 --- /dev/null
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
-@@ -0,0 +1,567 @@
+@@ -0,0 +1,572 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -388,6 +388,11 @@ index 0000000000000000000000000000000000000000..c26eb34183aa46fd2d5886df768ab909
 +                                BlockType::kBlockAllChildren),
 +      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
 +                                BlockType::kBlockAllChildren),
++      // And runtime data in /run, including per-session runtime directories
++      // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
++      // crbug.com/577376424.
++      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
++                                BlockType::kBlockAllChildren),
 +      // Block ~/.dbus as well, just in case, although there probably isn't much
 +      // a website can do with access to that directory and its contents.
 +      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
@@ -613,10 +618,10 @@ index 0000000000000000000000000000000000000000..c26eb34183aa46fd2d5886df768ab909
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index b32c79be552991c5414e5f7317edaee10a2e5193..779dd39a4227b61ad2f122eeb5668fe3b7ed03d6 100644
+index 8d819cdd4b79088118ef4b3a67dcb0daa087f5e0..779dd39a4227b61ad2f122eeb5668fe3b7ed03d6 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -268,541 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
+@@ -268,546 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
  }
  #endif
  
@@ -930,6 +935,11 @@ index b32c79be552991c5414e5f7317edaee10a2e5193..779dd39a4227b61ad2f122eeb5668fe3
 -      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/boot"),
 -                                BlockType::kBlockAllChildren),
 -      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
+-                                BlockType::kBlockAllChildren),
+-      // And runtime data in /run, including per-session runtime directories
+-      // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
+-      // crbug.com/577376424.
+-      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
 -                                BlockType::kBlockAllChildren),
 -      // Block ~/.dbus as well, just in case, although there probably isn't much
 -      // a website can do with access to that directory and its contents.
