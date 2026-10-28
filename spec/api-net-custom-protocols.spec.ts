@@ -2,6 +2,7 @@ import { net, protocol, session } from 'electron/main';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as originalFs from 'node:original-fs';
 import * as os from 'node:os';
@@ -135,6 +136,7 @@ describe('net module custom protocols', () => {
   describe('file: URLs answered from the file', () => {
     const big = Buffer.alloc(300 * 1024, 'x');
     let dir: string;
+    let fifoWriter: number | undefined;
     const fileUrl = (name: string) => url.pathToFileURL(path.join(dir, name)).toString();
     const newSession = () => session.fromPartition(`net-file-${Math.random()}`);
     // A Range header sends the fetch to the URL loader; for bytes=0- it
@@ -158,6 +160,7 @@ describe('net module custom protocols', () => {
       fs.mkdirSync(path.join(dir, 'sub'));
     });
     afterAll(() => {
+      if (fifoWriter !== undefined) fs.closeSync(fifoWriter);
       fs.rmSync(dir, { recursive: true, force: true });
     });
 
@@ -261,6 +264,20 @@ describe('net module custom protocols', () => {
     it('rejects with the abort reason when aborted before the response', async () => {
       const controller = new AbortController();
       const response = newSession().fetch(fileUrl('a.js'), { signal: controller.signal });
+      controller.abort(new Error('stopped'));
+      await expect(response).rejects.toThrow('stopped');
+    });
+
+    // Opening a FIFO waits for a writer, as opening a file on a hung mount can.
+    ifit(process.platform !== 'win32')('rejects at once when aborted while opening the file blocks', async () => {
+      const fifo = path.join(dir, 'fifo');
+      execFileSync('mkfifo', [fifo]);
+      // Lets the open finish whenever it starts. Closed in afterAll().
+      defer(() => {
+        fifoWriter = fs.openSync(fifo, 'r+');
+      });
+      const controller = new AbortController();
+      const response = newSession().fetch(url.pathToFileURL(fifo).toString(), { signal: controller.signal });
       controller.abort(new Error('stopped'));
       await expect(response).rejects.toThrow('stopped');
     });

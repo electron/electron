@@ -152,6 +152,25 @@ async function dispatchFileFetch(
   return undefined;
 }
 
+// Runs getFileInfoForFetch() for |req|. The check can block on a slow or hung
+// mount, so an abort rejects at once, as it does with the URL loader, and a
+// body the check reads after that is dropped.
+function checkFile(req: Request) {
+  const check = getFileInfoForFetch(req.url, req.method === 'GET');
+  const { signal } = req;
+  return new Promise<Awaited<typeof check>>((resolve, reject) => {
+    const onAbort = () => {
+      reject(abortReason(signal));
+      check.then(
+        (late) => late?.body?.discard(),
+        () => {}
+      );
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    check.finally(() => signal.removeEventListener('abort', onAbort)).then(resolve, reject);
+  });
+}
+
 // Answers a file: fetch as the URL loader would, with the same status,
 // headers, body and webRequest events. Resolves with null when the loader has
 // to.
@@ -163,7 +182,7 @@ async function fetchFile(
 ): Promise<Response | null> {
   // For a GET, the check also reads the body, so later changes to the file
   // don't affect it.
-  const info = await getFileInfoForFetch(req.url, req.method === 'GET');
+  const info = await checkFile(req);
   if (!info) return null;
 
   let redirectURL: string | undefined;
