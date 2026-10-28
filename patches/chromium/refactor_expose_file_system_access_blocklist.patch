@@ -13,8 +13,8 @@ The exposed copy also carries the upstream macOS firmlink handling
 against the blocklist the same way Chrome matches them.
 
 As of 159.0.8129.0, it also carries the Vim startup rules (~/.vim, ~/vimfiles,
-~/.vimrc, ~/_vimrc, ~/.gvimrc, ~/_gvimrc, ~/.exrc and ~/_exrc) added upstream
-in that version.
+~/.vimrc, ~/_vimrc, ~/.gvimrc, ~/_gvimrc, ~/.exrc and ~/_exrc) and the .mvn
+kBlockWrite suffix rule added upstream in that version.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 index 05ee182cf840bc925697a2bfa3d1c281579296c4..e3e7e4a739d02b48059bce874de182a000f47730 100644
@@ -42,7 +42,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..e3e7e4a739d02b48059bce874de182a0
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,340 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,345 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -206,6 +206,11 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..e3e7e4a739d02b48059bce874de182a0
 +        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
 +                                BlockType::kBlockWrite),
 +        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
++                                BlockType::kBlockWrite),
++        // Block write access to */.mvn, which holds Maven project and JVM
++        // configuration (such as jvm.config, maven.config, and extensions.xml),
++        // see crbug.com/578500839.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".mvn"),
 +                                BlockType::kBlockWrite),
 +  #if BUILDFLAG(IS_WIN)
 +        // Some Windows specific directories to block, basically all apps, the
