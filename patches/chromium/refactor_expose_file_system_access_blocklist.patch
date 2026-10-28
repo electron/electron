@@ -28,8 +28,8 @@ shell startup files, .git/config and .git/modules suffix rules, /dev on mac,
 and ~/.local/share, ~/.fonts.conf{,.d} and ~/.pki on Linux).
 
 As of 159.0.8129.0, it also carries the Vim startup rules (~/.vim, ~/vimfiles,
-~/.vimrc, ~/_vimrc, ~/.gvimrc, ~/_gvimrc, ~/.exrc and ~/_exrc) added upstream
-in that version.
+~/.vimrc, ~/_vimrc, ~/.gvimrc, ~/_gvimrc, ~/.exrc and ~/_exrc) and the .mvn
+kBlockWrite suffix rule added upstream in that version.
 
 diff --git a/chrome/browser/file_system_access/BUILD.gn b/chrome/browser/file_system_access/BUILD.gn
 index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6eea230e6 100644
@@ -45,10 +45,10 @@ index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6
      "file_system_access_permission_context_factory.cc",
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..d6a62a8db584726109a4556c874fc10a624c51c5
+index 0000000000000000000000000000000000000000..7f2621829843253fb64c81844aa38d6f306e4ea8
 --- /dev/null
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
-@@ -0,0 +1,591 @@
+@@ -0,0 +1,596 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -326,6 +326,11 @@ index 0000000000000000000000000000000000000000..d6a62a8db584726109a4556c874fc10a
 +      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
 +                              BlockType::kBlockWrite),
 +      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
++                              BlockType::kBlockWrite),
++      // Block write access to */.mvn, which holds Maven project and JVM
++      // configuration (such as jvm.config, maven.config, and extensions.xml),
++      // see crbug.com/578500839.
++      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".mvn"),
 +                              BlockType::kBlockWrite),
 +#if BUILDFLAG(IS_WIN)
 +      // Some Windows specific directories to block, basically all apps, the
