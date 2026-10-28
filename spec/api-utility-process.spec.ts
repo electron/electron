@@ -213,12 +213,14 @@ describe('utilityProcess module', () => {
   describe("app 'child-process-gone' event", () => {
     const waitForCrash = (name: string) => {
       return new Promise<Electron.Details>((resolve) => {
-        app.on('child-process-gone', function onCrash(_event, details) {
+        const onCrash = (_event: Electron.Event, details: Electron.Details) => {
           if (details.name === name) {
             app.off('child-process-gone', onCrash);
             resolve(details);
           }
-        });
+        };
+        app.on('child-process-gone', onCrash);
+        defer(() => app.off('child-process-gone', onCrash));
       });
     };
 
@@ -261,7 +263,7 @@ describe('utilityProcess module', () => {
     });
 
     ifit(!isWindows32Bit)('does not keep stale observers for crashed processes without JS references', async () => {
-      const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+      const v8Util = process._linkedBinding('electron_common_v8_util');
       const logExpectedCrash = (phase: string) => {
         console.error(
           `[expected crash] utilityProcess regression forcing ${phase} crash; signal 11 + backtrace expected`
@@ -270,7 +272,8 @@ describe('utilityProcess module', () => {
       const waitForCollection = async (weakChild: WeakRef<ReturnType<typeof utilityProcess.fork>>) => {
         for (let i = 0; i < 30; ++i) {
           await setImmediate();
-          v8Util.requestGarbageCollectionForTesting();
+          // A synchronous GC can retain the native wrapper via stale stack pointers.
+          await v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
           if (weakChild.deref() === undefined) {
             return true;
           }
@@ -278,22 +281,20 @@ describe('utilityProcess module', () => {
         return false;
       };
 
-      const name = 'Node Utility Process';
+      const name = crypto.randomUUID();
       const firstCrash = waitForCrash(name);
       logExpectedCrash('first');
-      let child: ReturnType<typeof utilityProcess.fork> | null = utilityProcess.fork(
-        path.join(fixturesPath, 'crash.js')
+      const weakChild = new WeakRef(
+        utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: name })
       );
-      const weakChild = new WeakRef(child!);
-      child = null;
 
       const firstDetails = await firstCrash;
       expect(['crashed', 'abnormal-exit']).toContain(firstDetails.reason);
-      expect(await waitForCollection(weakChild)).toBe(true);
+      expect(await waitForCollection(weakChild), 'first crashed utility process was not collected').toBe(true);
 
       const secondCrash = waitForCrash(name);
       logExpectedCrash('second');
-      utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
+      utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: name });
       const secondDetails = await secondCrash;
       expect(['crashed', 'abnormal-exit']).toContain(secondDetails.reason);
     });
