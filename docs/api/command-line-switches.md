@@ -199,8 +199,10 @@ Should only be used for testing.
 
 ### --no-stdio-init
 
-Disable stdio initialization during node initialization.
-Used to avoid node initialization crash when the nul device is disabled on Windows platform.
+This switch is deprecated and silently ignored, including in `ELECTRON_RUN_AS_NODE`
+mode. On Windows, Electron automatically skips Node.js stdio initialization when
+the `NUL` device cannot be opened. Remove this switch from application launch
+arguments; no replacement is needed.
 
 ### --ozone-platform=`platform` _Linux_
 
