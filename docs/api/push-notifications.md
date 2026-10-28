@@ -22,7 +22,7 @@ pushNotifications.on('received-apns-notification', (event, userInfo) => {
 
 The `pushNotification` module emits the following events:
 
-#### Event: 'received-apns-notification' _macOS_
+### Event: 'received-apns-notification' _macOS_
 
 Returns:
 
