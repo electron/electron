@@ -1899,18 +1899,18 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-index 8736e0be60194803cac6737f567cafe4a9200116..bd8e1d349402d41b7558be71b82f0aa49aaad0f7 100644
+index 93f6eb62e3648119315300be026fe6b9fccfa4f4..b9f7423e515217cf32202722ea62b02f0145c279 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-@@ -38,6 +38,7 @@
+@@ -37,6 +37,7 @@
+ #include "base/apple/bridging.h"
  #include "base/apple/foundation_util.h"
  #include "base/apple/scoped_cftyperef.h"
- #include "base/numerics/safe_conversions.h"
 +#include "electron/mas.h"
  #include "third_party/blink/renderer/platform/fonts/font_cache.h"
  #include "third_party/blink/renderer/platform/fonts/font_selection_types.h"
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
-@@ -61,8 +62,10 @@
+@@ -60,8 +61,10 @@
  // We don't need localized variation axis name, so we can use
  // `CTFontCopyVariationAxesInternal()` instead.
  // Request for public API: FB13788219.
@@ -1921,7 +1921,7 @@ index 8736e0be60194803cac6737f567cafe4a9200116..bd8e1d349402d41b7558be71b82f0aa4
  
  namespace blink {
  
-@@ -470,12 +473,16 @@ void ClampVariationValuesToFontAcceptableRange(
+@@ -418,12 +421,16 @@ void ClampVariationValuesToFontAcceptableRange(
    // we are enabling it only on MacOS 13+ because these are our benchmarking
    // platforms.
    NSArray* all_axes;

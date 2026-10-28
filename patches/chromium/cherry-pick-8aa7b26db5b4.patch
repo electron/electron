@@ -54,7 +54,7 @@ index c4cc043dc9bac54dd0876198ac54a6b8133c71b6..ca89a52843b3c2b16cb7fcaafe6f8ac2
  
  ExecutionContextToken ShadowRealmGlobalScope::GetExecutionContextToken() const {
 diff --git a/third_party/blink/web_tests/VirtualTestSuites b/third_party/blink/web_tests/VirtualTestSuites
-index 5caaa27f424a8ad2313985de9d7616823dbfd9ac..0a5cb0b48cfdd4f21077e746d47c65a0b4f544e2 100644
+index f2c725f425be2713dacfbfe30abcdeaeb72c3f3a..9d9a8abb310d95b709e48d03ad95450910b0ffa6 100644
 --- a/third_party/blink/web_tests/VirtualTestSuites
 +++ b/third_party/blink/web_tests/VirtualTestSuites
 @@ -2974,6 +2974,7 @@
