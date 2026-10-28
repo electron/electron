@@ -209,7 +209,7 @@ jobs:
     - name: Set GN_EXTRA_ARGS for macOS UBSan
       if: ${{ inputs.target-platform == 'macos' && inputs.is-ubsan }}
       run: |
-        echo "GN_EXTRA_ARGS=is_ubsan=true is_ubsan_no_recover=true" >> $GITHUB_ENV
+        echo "GN_EXTRA_ARGS=is_ubsan=true is_ubsan_no_recover=true use_clang_modules=false" >> $GITHUB_ENV
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
