@@ -226,7 +226,7 @@ index 0000000..bb610d7
 +	}
 +}
 diff --git a/siso/reapi/reapitest/reapitest.go b/siso/reapi/reapitest/reapitest.go
-index d5068d5..da6f0f5 100644
+index 0161b1e..4f9b1f4 100644
 --- a/siso/reapi/reapitest/reapitest.go
 +++ b/siso/reapi/reapitest/reapitest.go
 @@ -46,6 +46,12 @@ type Fake struct {
@@ -242,12 +242,12 @@ index d5068d5..da6f0f5 100644
  }
  
  // fn returns the fake server's digest function (SHA-256 by default).
-@@ -92,7 +98,11 @@ func newServer(ctx context.Context, t *testing.T, fake *Fake) *testServer {
- 	t.Logf("fake reapi at %s", s.addr)
- 
- 	dir := t.TempDir()
--	serv := grpc.NewServer()
-+	var sopts []grpc.ServerOption
+@@ -98,7 +104,11 @@ func newServer(ctx context.Context, t *testing.T, fake *Fake) *testServer {
+ 	// Wait for in-flight RPC handlers (e.g. detached CAS uploads via
+ 	// BatchUpdateBlobs) to return before Stop returns, so they don't race
+ 	// with dir's t.TempDir RemoveAll cleanup. b/575196094
+-	serv := grpc.NewServer(grpc.WaitForHandlers(true))
++	sopts := []grpc.ServerOption{grpc.WaitForHandlers(true)}
 +	if fake.UnaryInterceptor != nil {
 +		sopts = append(sopts, grpc.UnaryInterceptor(fake.UnaryInterceptor))
 +	}

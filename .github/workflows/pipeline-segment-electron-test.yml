@@ -30,6 +30,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-coverage:
+        description: 'Running against a Clang source-based code coverage build'
+        required: false
+        type: boolean
+        default: false
       enable-ssh:
         description: 'Enable SSH debugging'
         required: false
@@ -66,7 +71,7 @@ on:
         required: false
 
 concurrency:
-  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.is-coverage }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions: {}
@@ -94,8 +99,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && (inputs.is-ubsan && fromJSON('["darwin"]') || fromJSON('["darwin","mas"]')) || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
-        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.is-ubsan, fromJSON('[1, 2, 3]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && !inputs.full-macos-tests && inputs.target-arch == 'x64', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        build-type: ${{ inputs.target-platform == 'macos' && ((inputs.is-ubsan || inputs.is-coverage) && fromJSON('["darwin"]') || fromJSON('["darwin","mas"]')) || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        # Coverage runs unsharded so the whole suite lands in one profile set.
+        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.is-coverage, fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.is-ubsan, fromJSON('[1, 2, 3]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && !inputs.full-macos-tests && inputs.target-arch == 'x64', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
         # The reduced macOS arm64 leg keeps both darwin shards and runs mas on
         # a single one; the reduced x64 leg is already one shard per variant.
         exclude: ${{ inputs.target-platform == 'macos' && !inputs.full-macos-tests && inputs.target-arch == 'arm64' && fromJSON('[{"build-type":"mas","shard":2}]') || fromJSON('[]') }}
@@ -108,6 +114,7 @@ jobs:
       # elsewhere. The mas list wins on mas_x64: its arch coverage comes from
       # the darwin_x64 leg of the same run.
       MACOS_SPEC_ALLOWLIST: ${{ inputs.target-platform == 'macos' && !inputs.full-macos-tests && (matrix.build-type == 'mas' && 'script/macos-mas-spec-allowlist.txt' || inputs.target-arch == 'x64' && 'script/macos-x64-spec-allowlist.txt') || '' }}
+      COVERAGE_PROFILE_DIR: /tmp/electron-coverage
       # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
       DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
@@ -217,6 +224,18 @@ jobs:
         echo "ARTIFACT_KEY=${BUILD_TYPE}_${TARGET_ARCH}_ubsan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_UBSAN=true" >> $GITHUB_ENV
+    - name: Load coverage specific environment variables
+      if: ${{ inputs.is-coverage == true }}
+      run: |
+        # World-writable because Linux tests run as builduser via runuser, and
+        # every Electron child process inherits LLVM_PROFILE_FILE and writes here.
+        mkdir -p "$COVERAGE_PROFILE_DIR"
+        chmod 777 "$COVERAGE_PROFILE_DIR"
+        # %4m caps the profile set at four files (the runtime merges into them
+        # under a lock); %c enables continuous mode so counters survive the
+        # abnormal exits and sandboxed processes the suite produces.
+        echo "LLVM_PROFILE_FILE=$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw" >> $GITHUB_ENV
+        echo "IS_COVERAGE=true" >> $GITHUB_ENV
     # Safe to parallelize: each step writes a disjoint location (src/electron
     # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*,
     # system CUPS state) and none reads another's output; the env/PATH changes
@@ -426,7 +445,7 @@ jobs:
         TARGET_PLATFORM: ${{ inputs.target-platform }}
         DISPLAY_SERVER: ${{ inputs.display-server }}
         SHARD: ${{ matrix.shard }}
-        SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, env.MACOS_SPEC_ALLOWLIST != '', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
+        SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, inputs.is-coverage, 1, env.MACOS_SPEC_ALLOWLIST != '', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
@@ -577,6 +596,16 @@ jobs:
         name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}
         path: src/electron/spec/artifacts
         if-no-files-found: ignore
+    # Raw counters only; pipeline-segment-electron-coverage-report.yml indexes
+    # them and renders the report.
+    - name: Upload Coverage Profiles
+      if: ${{ inputs.is-coverage && !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
+      with:
+        name: coverage_profraw_${{ env.ARTIFACT_KEY }}
+        path: ${{ env.COVERAGE_PROFILE_DIR }}
+        if-no-files-found: error
+        retention-days: 7
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       shell: bash

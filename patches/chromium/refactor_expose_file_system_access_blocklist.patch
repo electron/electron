@@ -7,15 +7,20 @@ This CL exposes the file system access blocklist publicly so that we can leverag
 it in Electron and prevent drift from Chrome's blocklist. We should look for a way
 to upstream this change to Chrome.
 
-NormalizeFilePathForBlocklist() and GenerateBlockPaths() are declared as static
-members in the header, and their definitions (along with the NormalizeFilePath()
-and MaybeStripMacDataVolumePrefix() helpers they use) are moved verbatim out of
+NormalizeFilePathForBlocklist(), GenerateBlockPaths() and
+ShouldBlockAccessToPath() are declared as static members in the header, and
+their definitions (along with the NormalizeFilePath() and
+MaybeStripMacDataVolumePrefix() helpers, and the Windows-only
+ContainsInvalidDNSCharacter(), IsLocalUNCServer() and MaybeIsLocalUNCPath()
+helpers they use) are moved verbatim out of
 chrome_file_system_access_permission_context.cc into a new
-chrome_file_system_access_blocklist.cc, which Electron compiles. Upstream changes
-to the blocklist therefore conflict on the hunk that removes them from
-chrome_file_system_access_permission_context.cc instead of being silently
-dropped; when resolving such a conflict, carry the change over into
-chrome_file_system_access_blocklist.cc.
+chrome_file_system_access_blocklist.cc, which Electron compiles. Electron
+therefore uses Chrome's own path matcher as well as its rules, including suffix
+rules such as .git/hooks, kBlockWrite handling and the local UNC path checks.
+Upstream changes to the blocklist or the matcher conflict on the hunks that
+remove them from chrome_file_system_access_permission_context.cc instead of
+being silently dropped; when resolving such a conflict, carry the change over
+into chrome_file_system_access_blocklist.cc.
 
 As of 158.0.8118.0, chrome_file_system_access_blocklist.cc also carries the
 upstream kBlockPaths additions from that version (~/.config on all platforms,
@@ -36,10 +41,10 @@ index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6
      "file_system_access_permission_context_factory.cc",
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..7cec4f2dd24f5c376293b62aad51994c7601814c
+index 0000000000000000000000000000000000000000..2e531877d0c8914e3babf078d48f3a42038f148f
 --- /dev/null
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
-@@ -0,0 +1,330 @@
+@@ -0,0 +1,572 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -50,19 +55,115 @@ index 0000000000000000000000000000000000000000..7cec4f2dd24f5c376293b62aad51994c
 +// chrome_file_system_access_permission_context.cc can still use Chrome's
 +// blocklist rules.
 +
++#include <algorithm>
 +#include <memory>
++#include <vector>
 +
 +#include "base/base_paths.h"
 +#include "base/check.h"
 +#include "base/check_op.h"
 +#include "base/files/file_path.h"
 +#include "base/files/file_util.h"
++#include "base/logging.h"
 +#include "base/path_service.h"
 +#include "build/build_config.h"
 +#include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"
 +#include "chrome/common/chrome_paths.h"
 +
 +namespace {
++
++#if BUILDFLAG(IS_WIN)
++bool ContainsInvalidDNSCharacter(base::FilePath::StringType hostname) {
++  for (base::FilePath::CharType c : hostname) {
++    if (!((c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') ||
++          (c >= L'0' && c <= L'9') || (c == L'.') || (c == L'-') ||
++          (c == L'_'))) {
++      return true;
++    }
++  }
++  return false;
++}
++
++bool IsLocalUNCServer(base::FilePath::StringViewType server) {
++  if (server.size() > 1 && server.back() == FILE_PATH_LITERAL('.')) {
++    server.remove_suffix(1);
++  }
++  static constexpr base::FilePath::StringViewType kLocalServers[] = {
++      FILE_PATH_LITERAL("localhost"),
++      FILE_PATH_LITERAL("wsl.localhost"),
++      // Hypervisor host-share redirectors (Parallels, VMware, VirtualBox).
++      FILE_PATH_LITERAL("mac"),
++      FILE_PATH_LITERAL("psf"),
++      FILE_PATH_LITERAL("vmware-host"),
++      FILE_PATH_LITERAL(".host"),
++      FILE_PATH_LITERAL("vboxsvr"),
++      FILE_PATH_LITERAL("vboxsrv"),
++  };
++  for (const auto& candidate : kLocalServers) {
++    if (base::FilePath::CompareEqualIgnoreCase(server, candidate)) {
++      return true;
++    }
++  }
++  return false;
++}
++
++// Returns true if the path is a Universal Naming Convention (UNC) path pointing
++// to a local system path, device namespace, WSL loopback redirector, or
++// hypervisor host-share namespace.
++bool MaybeIsLocalUNCPath(const base::FilePath& path) {
++  if (!path.IsNetwork()) {
++    return false;
++  }
++
++  const std::vector<base::FilePath::StringType> components =
++      path.GetComponents();
++
++  // Check for server name that could represent a local or host system. We only
++  // check for a very short list, as it is impossible to cover all different
++  // variants on Windows.
++  if (components.size() >= 2 &&
++      (IsLocalUNCServer(components[1]) ||
++       components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
++       components[1] == FILE_PATH_LITERAL(".") ||
++       components[1] == FILE_PATH_LITERAL("?") ||
++       ContainsInvalidDNSCharacter(components[1]))) {
++    return true;
++  }
++
++  // Check *admin* shares only (drive admin like "C$" and named admin).
++  // Note: the share component is typically components[2], but we scan all
++  // components defensively in case the structure changes.
++  for (size_t i = 2; i < components.size(); ++i) {
++    const auto& component = components[i];
++
++    // component ends with "$"
++    if (!component.empty() && component.back() == L'$') {
++      // Drive admin share: "C$".."Z$" (case-insensitive on the letter).
++      if (component.size() == 2 &&
++          ((component[0] >= L'A' && component[0] <= L'Z') ||
++           (component[0] >= L'a' && component[0] <= L'z'))) {
++        return true;
++      }
++
++      // Named admin shares: "ADMIN$", "IPC$", "PRINT$", and "FAX$"
++      if (base::FilePath::CompareEqualIgnoreCase(component,
++                                                 FILE_PATH_LITERAL("ADMIN$")) ||
++          base::FilePath::CompareEqualIgnoreCase(component,
++                                                 FILE_PATH_LITERAL("IPC$")) ||
++          base::FilePath::CompareEqualIgnoreCase(component,
++                                                 FILE_PATH_LITERAL("PRINT$")) ||
++          base::FilePath::CompareEqualIgnoreCase(component,
++                                                 FILE_PATH_LITERAL("FAX$"))) {
++        return true;
++      }
++
++      // Otherwise, it is just a hidden share (e.g. "Share$")—do not block.
++    }
++  }
++
++  return false;
++}
++#endif
 +
 +#if BUILDFLAG(IS_MAC)
 +// Returns a file path with the "/System/Volumes/Data" firmlink prefix stripped,
@@ -287,6 +388,11 @@ index 0000000000000000000000000000000000000000..7cec4f2dd24f5c376293b62aad51994c
 +                                BlockType::kBlockAllChildren),
 +      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
 +                                BlockType::kBlockAllChildren),
++      // And runtime data in /run, including per-session runtime directories
++      // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
++      // crbug.com/577376424.
++      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
++                                BlockType::kBlockAllChildren),
 +      // Block ~/.dbus as well, just in case, although there probably isn't much
 +      // a website can do with access to that directory and its contents.
 +      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
@@ -370,14 +476,248 @@ index 0000000000000000000000000000000000000000..7cec4f2dd24f5c376293b62aad51994c
 +
 +  return block_path_rules;
 +}
++
++// Checks if `path` should be blocked by the `rules`.
++// The BlockType of the nearest ancestor of a path to check is what
++// ultimately determines if a path is blocked or not. If a blocked path is a
++// descendent of another blocked path, then it may override the
++// child-blocking policy of its ancestor. For example, if /home blocks all
++// children, but /home/downloads does not, then /home/downloads/file.ext
++// will *not* be blocked.
++// static
++bool ChromeFileSystemAccessPermissionContext::ShouldBlockAccessToPath(
++    bool should_normalize_file_path,
++    base::FilePath path,
++    HandleType handle_type,
++    AccessTrigger access_trigger,
++    std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
++        extra_rules,
++    ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules,
++    base::FilePath profile_path) {
++  CHECK(!path.empty(), base::NotFatalUntil::M161);
++  CHECK(path.IsAbsolute(), base::NotFatalUntil::M161);
++
++  path = NormalizeFilePathForBlocklist(path, should_normalize_file_path);
++  profile_path =
++      NormalizeFilePathForBlocklist(profile_path, should_normalize_file_path);
++  for (auto& rule : extra_rules) {
++    rule.path =
++        NormalizeFilePathForBlocklist(rule.path, should_normalize_file_path);
++  }
++
++#if BUILDFLAG(IS_WIN)
++  // On Windows, local UNC paths are rejected, as UNC path can be written in a
++  // way that can bypass the blocklist.
++  if (MaybeIsLocalUNCPath(path)) {
++    return true;
++  }
++#endif
++
++  base::FilePath nearest_ancestor;
++  BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
++  auto should_block_with_rule = [&](const base::FilePath& block_path,
++                                    BlockType block_type) -> bool {
++    if (block_type == BlockType::kBlockWrite &&
++        access_trigger != AccessTrigger::kSave &&
++        access_trigger != AccessTrigger::kProgrammaticWrite) {
++      return false;
++    }
++
++    if (path == block_path || path.IsParent(block_path)) {
++      LOG(ERROR) << "Blocking access to " << path
++                 << " because it is a parent of " << block_path;
++      return true;
++    }
++
++    if (block_path.IsParent(path) &&
++        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block_path))) {
++      nearest_ancestor = block_path;
++      nearest_ancestor_block_type = block_type;
++    }
++    return false;
++  };
++
++  for (const auto* block_rules_ptr :
++       {&extra_rules, &block_path_rules.block_path_rules_}) {
++    for (const auto& block : *block_rules_ptr) {
++      if (should_block_with_rule(block.path, block.type)) {
++        return true;
++      }
++    }
++  }
++
++  for (const auto& rule : block_path_rules.profile_based_block_path_rules_) {
++    if (should_block_with_rule(
++            rule.path ? profile_path.Append(rule.path) : profile_path,
++            rule.type)) {
++      return true;
++    }
++  }
++
++  std::vector<base::FilePath::StringType> path_components =
++      path.GetComponents();
++
++  // Checks if the path components contain the components of the suffix rule.
++  // For example, if the rule is `.git/hooks`, it will block paths like
++  // `/foo/bar/.git/hooks`. The `std::search` identifies the matching subrange
++  // using case-insensitive comparison and constructs a `current_path` from the
++  // root up to the end of the matched subrange (e.g., `/foo/bar/.git/hooks`).
++  // This path is then evaluated against the regular block rules.
++  for (const auto& rule : block_path_rules.suffix_block_path_rules_) {
++    base::FilePath rule_path(rule.path);
++    std::vector<base::FilePath::StringType> rule_components =
++        rule_path.GetComponents();
++    if (rule_components.empty()) {
++      continue;
++    }
++
++    auto it = path_components.begin();
++    while (true) {
++      it = std::search(it, path_components.end(), rule_components.begin(),
++                       rule_components.end(),
++                       base::FilePath::CompareEqualIgnoreCase);
++      if (it == path_components.end()) {
++        break;
++      }
++
++      base::FilePath current_path = base::FilePath(path_components[0]);
++      for (auto path_it = path_components.begin() + 1;
++           path_it != it + rule_components.size(); ++path_it) {
++        current_path = current_path.Append(*path_it);
++      }
++
++      if (should_block_with_rule(current_path, rule.type)) {
++        return true;
++      }
++
++      ++it;
++    }
++  }
++
++  // The path we're checking is not in a potentially blocked directory, or the
++  // nearest ancestor does not block access to its children. Grant access.
++  if (nearest_ancestor.empty() ||
++      nearest_ancestor_block_type == BlockType::kDontBlockChildren) {
++    VLOG(1) << "Not blocking access to " << path << " because it is inside "
++            << nearest_ancestor << " and it's kDontBlockChildren";
++    return false;
++  }
++
++  // The path we're checking is a file, and the nearest ancestor only blocks
++  // access to directories. Grant access.
++  if (handle_type == HandleType::kFile &&
++      nearest_ancestor_block_type == BlockType::kBlockNestedDirectories) {
++    VLOG(1) << "Not blocking access to " << path << " because it is inside "
++            << nearest_ancestor << " and it's kBlockNestedDirectories";
++    return false;
++  }
++
++  // The nearest ancestor blocks access to its children, so block access.
++  VLOG(1) << "Blocking access to " << path << " because it is inside "
++          << nearest_ancestor << " and it's kBlockAllChildren";
++  return true;
++}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index b32c79be552991c5414e5f7317edaee10a2e5193..1a5135f1a06d8f3f4db8477b3e9f25ea0c86ea73 100644
+index 8d819cdd4b79088118ef4b3a67dcb0daa087f5e0..779dd39a4227b61ad2f122eeb5668fe3b7ed03d6 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -361,308 +361,8 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -268,546 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
  }
  #endif
  
+-#if BUILDFLAG(IS_WIN)
+-bool ContainsInvalidDNSCharacter(base::FilePath::StringType hostname) {
+-  for (base::FilePath::CharType c : hostname) {
+-    if (!((c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') ||
+-          (c >= L'0' && c <= L'9') || (c == L'.') || (c == L'-') ||
+-          (c == L'_'))) {
+-      return true;
+-    }
+-  }
+-  return false;
+-}
+-
+-bool IsLocalUNCServer(base::FilePath::StringViewType server) {
+-  if (server.size() > 1 && server.back() == FILE_PATH_LITERAL('.')) {
+-    server.remove_suffix(1);
+-  }
+-  static constexpr base::FilePath::StringViewType kLocalServers[] = {
+-      FILE_PATH_LITERAL("localhost"),
+-      FILE_PATH_LITERAL("wsl.localhost"),
+-      // Hypervisor host-share redirectors (Parallels, VMware, VirtualBox).
+-      FILE_PATH_LITERAL("mac"),
+-      FILE_PATH_LITERAL("psf"),
+-      FILE_PATH_LITERAL("vmware-host"),
+-      FILE_PATH_LITERAL(".host"),
+-      FILE_PATH_LITERAL("vboxsvr"),
+-      FILE_PATH_LITERAL("vboxsrv"),
+-  };
+-  for (const auto& candidate : kLocalServers) {
+-    if (base::FilePath::CompareEqualIgnoreCase(server, candidate)) {
+-      return true;
+-    }
+-  }
+-  return false;
+-}
+-
+-// Returns true if the path is a Universal Naming Convention (UNC) path pointing
+-// to a local system path, device namespace, WSL loopback redirector, or
+-// hypervisor host-share namespace.
+-bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+-  if (!path.IsNetwork()) {
+-    return false;
+-  }
+-
+-  const std::vector<base::FilePath::StringType> components =
+-      path.GetComponents();
+-
+-  // Check for server name that could represent a local or host system. We only
+-  // check for a very short list, as it is impossible to cover all different
+-  // variants on Windows.
+-  if (components.size() >= 2 &&
+-      (IsLocalUNCServer(components[1]) ||
+-       components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
+-       components[1] == FILE_PATH_LITERAL(".") ||
+-       components[1] == FILE_PATH_LITERAL("?") ||
+-       ContainsInvalidDNSCharacter(components[1]))) {
+-    return true;
+-  }
+-
+-  // Check *admin* shares only (drive admin like "C$" and named admin).
+-  // Note: the share component is typically components[2], but we scan all
+-  // components defensively in case the structure changes.
+-  for (size_t i = 2; i < components.size(); ++i) {
+-    const auto& component = components[i];
+-
+-    // component ends with "$"
+-    if (!component.empty() && component.back() == L'$') {
+-      // Drive admin share: "C$".."Z$" (case-insensitive on the letter).
+-      if (component.size() == 2 &&
+-          ((component[0] >= L'A' && component[0] <= L'Z') ||
+-           (component[0] >= L'a' && component[0] <= L'z'))) {
+-        return true;
+-      }
+-
+-      // Named admin shares: "ADMIN$", "IPC$", "PRINT$", and "FAX$"
+-      if (base::FilePath::CompareEqualIgnoreCase(component,
+-                                                 FILE_PATH_LITERAL("ADMIN$")) ||
+-          base::FilePath::CompareEqualIgnoreCase(component,
+-                                                 FILE_PATH_LITERAL("IPC$")) ||
+-          base::FilePath::CompareEqualIgnoreCase(component,
+-                                                 FILE_PATH_LITERAL("PRINT$")) ||
+-          base::FilePath::CompareEqualIgnoreCase(component,
+-                                                 FILE_PATH_LITERAL("FAX$"))) {
+-        return true;
+-      }
+-
+-      // Otherwise, it is just a hidden share (e.g. "Share$")—do not block.
+-    }
+-  }
+-
+-  return false;
+-}
+-#endif
+-
 -#if BUILDFLAG(IS_MAC)
 -// Returns a file path with the "/System/Volumes/Data" firmlink prefix stripped,
 -// mapping paths on the macOS Data volume back to the root "/" namespace.
@@ -596,6 +936,11 @@ index b32c79be552991c5414e5f7317edaee10a2e5193..1a5135f1a06d8f3f4db8477b3e9f25ea
 -                                BlockType::kBlockAllChildren),
 -      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
 -                                BlockType::kBlockAllChildren),
+-      // And runtime data in /run, including per-session runtime directories
+-      // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
+-      // crbug.com/577376424.
+-      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
+-                                BlockType::kBlockAllChildren),
 -      // Block ~/.dbus as well, just in case, although there probably isn't much
 -      // a website can do with access to that directory and its contents.
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
@@ -680,33 +1025,154 @@ index b32c79be552991c5414e5f7317edaee10a2e5193..1a5135f1a06d8f3f4db8477b3e9f25ea
 -  return block_path_rules;
 -}
 -
- // Checks if `path` should be blocked by the `rules`.
- // The BlockType of the nearest ancestor of a path to check is what
- // ultimately determines if a path is blocked or not. If a blocked path is a
-@@ -682,12 +382,15 @@ bool ShouldBlockAccessToPath(
-   CHECK(!path.empty(), base::NotFatalUntil::M161);
-   CHECK(path.IsAbsolute(), base::NotFatalUntil::M161);
- 
+-// Checks if `path` should be blocked by the `rules`.
+-// The BlockType of the nearest ancestor of a path to check is what
+-// ultimately determines if a path is blocked or not. If a blocked path is a
+-// descendent of another blocked path, then it may override the
+-// child-blocking policy of its ancestor. For example, if /home blocks all
+-// children, but /home/downloads does not, then /home/downloads/file.ext
+-// will *not* be blocked.
+-bool ShouldBlockAccessToPath(
+-    bool should_normalize_file_path,
+-    base::FilePath path,
+-    HandleType handle_type,
+-    AccessTrigger access_trigger,
+-    std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
+-        extra_rules,
+-    ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules,
+-    base::FilePath profile_path) {
+-  CHECK(!path.empty(), base::NotFatalUntil::M161);
+-  CHECK(path.IsAbsolute(), base::NotFatalUntil::M161);
+-
 -  path = NormalizeFilePathForBlocklist(path, should_normalize_file_path);
-+  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
-+      path, should_normalize_file_path);
-   profile_path =
+-  profile_path =
 -      NormalizeFilePathForBlocklist(profile_path, should_normalize_file_path);
-+      ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
-+          profile_path, should_normalize_file_path);
-   for (auto& rule : extra_rules) {
-     rule.path =
+-  for (auto& rule : extra_rules) {
+-    rule.path =
 -        NormalizeFilePathForBlocklist(rule.path, should_normalize_file_path);
-+        ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
-+            rule.path, should_normalize_file_path);
-   }
- 
- #if BUILDFLAG(IS_WIN)
+-  }
+-
+-#if BUILDFLAG(IS_WIN)
+-  // On Windows, local UNC paths are rejected, as UNC path can be written in a
+-  // way that can bypass the blocklist.
+-  if (MaybeIsLocalUNCPath(path)) {
+-    return true;
+-  }
+-#endif
+-
+-  base::FilePath nearest_ancestor;
+-  BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
+-  auto should_block_with_rule = [&](const base::FilePath& block_path,
+-                                    BlockType block_type) -> bool {
+-    if (block_type == BlockType::kBlockWrite &&
+-        access_trigger != AccessTrigger::kSave &&
+-        access_trigger != AccessTrigger::kProgrammaticWrite) {
+-      return false;
+-    }
+-
+-    if (path == block_path || path.IsParent(block_path)) {
+-      LOG(ERROR) << "Blocking access to " << path
+-                 << " because it is a parent of " << block_path;
+-      return true;
+-    }
+-
+-    if (block_path.IsParent(path) &&
+-        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block_path))) {
+-      nearest_ancestor = block_path;
+-      nearest_ancestor_block_type = block_type;
+-    }
+-    return false;
+-  };
+-
+-  for (const auto* block_rules_ptr :
+-       {&extra_rules, &block_path_rules.block_path_rules_}) {
+-    for (const auto& block : *block_rules_ptr) {
+-      if (should_block_with_rule(block.path, block.type)) {
+-        return true;
+-      }
+-    }
+-  }
+-
+-  for (const auto& rule : block_path_rules.profile_based_block_path_rules_) {
+-    if (should_block_with_rule(
+-            rule.path ? profile_path.Append(rule.path) : profile_path,
+-            rule.type)) {
+-      return true;
+-    }
+-  }
+-
+-  std::vector<base::FilePath::StringType> path_components =
+-      path.GetComponents();
+-
+-  // Checks if the path components contain the components of the suffix rule.
+-  // For example, if the rule is `.git/hooks`, it will block paths like
+-  // `/foo/bar/.git/hooks`. The `std::search` identifies the matching subrange
+-  // using case-insensitive comparison and constructs a `current_path` from the
+-  // root up to the end of the matched subrange (e.g., `/foo/bar/.git/hooks`).
+-  // This path is then evaluated against the regular block rules.
+-  for (const auto& rule : block_path_rules.suffix_block_path_rules_) {
+-    base::FilePath rule_path(rule.path);
+-    std::vector<base::FilePath::StringType> rule_components =
+-        rule_path.GetComponents();
+-    if (rule_components.empty()) {
+-      continue;
+-    }
+-
+-    auto it = path_components.begin();
+-    while (true) {
+-      it = std::search(it, path_components.end(), rule_components.begin(),
+-                       rule_components.end(),
+-                       base::FilePath::CompareEqualIgnoreCase);
+-      if (it == path_components.end()) {
+-        break;
+-      }
+-
+-      base::FilePath current_path = base::FilePath(path_components[0]);
+-      for (auto path_it = path_components.begin() + 1;
+-           path_it != it + rule_components.size(); ++path_it) {
+-        current_path = current_path.Append(*path_it);
+-      }
+-
+-      if (should_block_with_rule(current_path, rule.type)) {
+-        return true;
+-      }
+-
+-      ++it;
+-    }
+-  }
+-
+-  // The path we're checking is not in a potentially blocked directory, or the
+-  // nearest ancestor does not block access to its children. Grant access.
+-  if (nearest_ancestor.empty() ||
+-      nearest_ancestor_block_type == BlockType::kDontBlockChildren) {
+-    VLOG(1) << "Not blocking access to " << path << " because it is inside "
+-            << nearest_ancestor << " and it's kDontBlockChildren";
+-    return false;
+-  }
+-
+-  // The path we're checking is a file, and the nearest ancestor only blocks
+-  // access to directories. Grant access.
+-  if (handle_type == HandleType::kFile &&
+-      nearest_ancestor_block_type == BlockType::kBlockNestedDirectories) {
+-    VLOG(1) << "Not blocking access to " << path << " because it is inside "
+-            << nearest_ancestor << " and it's kBlockNestedDirectories";
+-    return false;
+-  }
+-
+-  // The nearest ancestor blocks access to its children, so block access.
+-  VLOG(1) << "Blocking access to " << path << " because it is inside "
+-          << nearest_ancestor << " and it's kBlockAllChildren";
+-  return true;
+-}
+-
+ // Returns true if `child_path` is the same as or a descendant of
+ // `parent_path`, ignoring case differences. Unlike
+ // `base::FilePath::IsParent()`, this handles case-variant paths returned by
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 05ee182cf840bc925697a2bfa3d1c281579296c4..33595aaa73cf1301f1361bd07deb39ac30cc9201 100644
+index 05ee182cf840bc925697a2bfa3d1c281579296c4..e201e4d82b7298d6f90d78490aa342d915251a56 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-@@ -242,6 +242,18 @@ class ChromeFileSystemAccessPermissionContext
+@@ -242,6 +242,31 @@ class ChromeFileSystemAccessPermissionContext
      }
    };
  
@@ -721,6 +1187,19 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..33595aaa73cf1301f1361bd07deb39ac
 +  // chrome_file_system_access_blocklist.cc.
 +  static std::unique_ptr<BlockPathRules> GenerateBlockPaths(
 +      bool should_normalize_file_path);
++
++  // Returns true if access to `path` should be blocked by `extra_rules` or
++  // `block_path_rules`. Rules of type `BlockType::kBlockWrite` only apply when
++  // `access_trigger` is `AccessTrigger::kSave` or
++  // `AccessTrigger::kProgrammaticWrite`. May block, so must be called on a
++  // sequence that allows blocking. See chrome_file_system_access_blocklist.cc.
++  static bool ShouldBlockAccessToPath(bool should_normalize_file_path,
++                                      base::FilePath path,
++                                      HandleType handle_type,
++                                      AccessTrigger access_trigger,
++                                      std::vector<BlockPathRule> extra_rules,
++                                      BlockPathRules block_path_rules,
++                                      base::FilePath profile_path);
 +
    explicit ChromeFileSystemAccessPermissionContext(
        content::BrowserContext* context,
