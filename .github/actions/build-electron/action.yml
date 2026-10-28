@@ -422,6 +422,9 @@ runs:
         if [ "`uname`" = "Darwin" ]; then
           SEDOPTION="-i ''"
         fi
+        # gn prints build arg warnings on stdout ahead of the description. The
+        # mksnapshot command always starts with "./", so drop anything before it.
+        sed $SEDOPTION -n '/^\.\//,$p' out/Default/mksnapshot_args
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         # The Electron builtins profile path is a bare value on the line after
         # --turbo-profiling-input; both lines must go or mksnapshot treats the
