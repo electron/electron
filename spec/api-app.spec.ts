@@ -236,6 +236,84 @@ describe('app module', () => {
         expect(signal).toBeNull();
         expect(code).toBe(0);
       });
+
+      ifit(fs.existsSync('/usr/bin/dbus-monitor'))(
+        'fails a method call made after the bus is lost instead of crashing',
+        async () => {
+          // Runs a private dbus-daemon and returns a function that resolves
+          // once dbus-monitor has printed a line matching the pattern.
+          const startBus = async () => {
+            const daemon = cp.spawn('dbus-daemon', ['--session', '--nofork', '--print-address']);
+            defer(() => daemon.kill());
+            const [address] = await once(daemon.stdout, 'data');
+            const monitor = cp.spawn('dbus-monitor', ['--address', address.toString().trim()]);
+            defer(() => monitor.kill());
+            const lines: string[] = [];
+            const waiters = new Set<{ pattern: RegExp; resolve: () => void }>();
+            readline.createInterface({ input: monitor.stdout }).on('line', (line) => {
+              lines.push(line);
+              for (const waiter of waiters) {
+                if (waiter.pattern.test(line)) {
+                  waiters.delete(waiter);
+                  waiter.resolve();
+                }
+              }
+            });
+            const waitFor = (pattern: RegExp) =>
+              lines.some((line) => pattern.test(line))
+                ? Promise.resolve()
+                : new Promise<void>((resolve) => waiters.add({ pattern, resolve }));
+            // dbus-monitor prints NameAcquired once it is monitoring.
+            await waitFor(/member=NameAcquired/);
+            return { daemon, address: address.toString().trim(), waitFor };
+          };
+
+          // Separate buses, so that only the system bus goes away and the
+          // session bus can show what the app's D-Bus thread did afterwards.
+          const systemBus = await startBus();
+          const sessionBus = await startBus();
+          const env = {
+            ...process.env,
+            DBUS_SESSION_BUS_ADDRESS: sessionBus.address,
+            DBUS_SYSTEM_BUS_ADDRESS: systemBus.address
+          };
+
+          const appProcess = cp.spawn(process.execPath, [path.join(fixturesPath, 'api', 'bus-lost-method-call')], {
+            env
+          });
+          defer(() => appProcess.kill('SIGKILL'));
+          appProcess.stdin.on('error', () => {});
+          const exited = once(appProcess, 'exit');
+          const output: string[] = [];
+          const ready = new Promise<void>((resolve) => {
+            readline.createInterface({ input: appProcess.stdout }).on('line', (line) => {
+              output.push(line);
+              if (line === 'ready') resolve();
+            });
+          });
+
+          // Wait until the app is up and its org.freedesktop.login1 proxy
+          // has connected to the system bus, then take the system bus away.
+          await ready;
+          await systemBus.waitFor(/interface='org\.freedesktop\.login1\.Manager'/);
+          systemBus.daemon.kill();
+
+          // The tray's NameHasOwner call reaches the session bus only after the
+          // D-Bus thread has started the login1 call on the lost system bus.
+          // Without the fix, that call aborts the process first.
+          const first = await Promise.race([
+            exited.then(() => 'exit'),
+            sessionBus.waitFor(/string "org\.kde\.StatusNotifierWatcher"/).then(() => 'tray')
+          ]);
+          if (first === 'tray') appProcess.stdin.end('x');
+
+          const [code, signal] = await exited;
+          expect(signal).toBeNull();
+          expect(code).toBe(0);
+          expect(first).toBe('tray');
+          expect(output).toContain('quit');
+        }
+      );
     }
   );
 

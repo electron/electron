@@ -417,3 +417,4 @@ cherry-pick-73c78a52d2b7.patch
 cherry-pick-6d070361d55e.patch
 cherry-pick-928928c148a5.patch
 cherry-pick-e85c5aea16d7.patch
+fix_handle_a_null_pending_call_in_dbus_objectproxy.patch
