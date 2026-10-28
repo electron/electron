@@ -353,7 +353,7 @@ Activate inspector on host:port and break at start of user script. Default host:
 
 Aliased to `--debug-brk=[host:]port`.
 
-#### `--inspect-brk-node[=[host:]port]`
+### `--inspect-brk-node[=[host:]port]`
 
 Activate inspector on `host:port` and break at start of the first internal
 JavaScript script executed when the inspector is available.
