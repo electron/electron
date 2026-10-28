@@ -39,7 +39,7 @@ index 0ccc352cad46a27fc3b9d64a2e15e15239851d1d..d5da139d012b0a237cbe02a34e53aee3
    // Detaches |this| from the input method object.
    // is_removed flag is true if this is called while the window is
 diff --git a/content/browser/renderer_host/text_input_manager.cc b/content/browser/renderer_host/text_input_manager.cc
-index fd9b763f716fa133552bf2b118a65c935f3f0dc0..b49e9f1e75555e5443933669127d6201b60e9162 100644
+index 1aaaaca36ff5f011c1e93c197f9f002180b1ab40..8589ac46fc33b8fa302e3c80ca5710ca06836eee 100644
 --- a/content/browser/renderer_host/text_input_manager.cc
 +++ b/content/browser/renderer_host/text_input_manager.cc
 @@ -266,6 +266,7 @@ void TextInputManager::UpdateTextInputState(
@@ -50,7 +50,7 @@ index fd9b763f716fa133552bf2b118a65c935f3f0dc0..b49e9f1e75555e5443933669127d6201
      // We reached here because an IPC is received to reset the TextInputState
      // for |view|. But |view| != |active_view_|, which suggests that at least
      // one other view has become active and we have received the corresponding
-@@ -643,6 +644,12 @@ void TextInputManager::NotifyObserversAboutInputStateUpdate(
+@@ -645,6 +646,12 @@ void TextInputManager::NotifyObserversAboutInputStateUpdate(
      observer.OnUpdateTextInputStateCalled(this, updated_view, did_update_state);
  }
  
@@ -87,10 +87,10 @@ index c501f3e7f36340a9a8f82dd042dd797ab94c8e28..f37bec8cbac93e23702684c9c092d2b4
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 46fa58cf8316991d7d6119e671216fb1d5d7686e..94ef2c7a058219b345060353c0d41f1528b6e1cf 100644
+index d3de0cc2faf077ca48c98edc2d341e9128d65bf3..83fb930f21eae19fb72cbbd348690ea9945ed76c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -11260,7 +11260,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -11269,7 +11269,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
      return;
    }
    RenderWidgetHostViewBase* root_view =

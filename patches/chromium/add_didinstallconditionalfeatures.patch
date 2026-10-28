@@ -54,10 +54,10 @@ index e695adace60aed337ea5d42674deb87b31d65ede..a1cd482d5b5baaa125a2084ab5dad6d7
                                  int world_id) override;
    void DidChangeScrollOffset(blink::mojom::ScrollType) override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index ee18be1802d48e0a7db83332c4338175ef5d1712..c1f61cce431c226398c3708f016783f0189887bd 100644
+index 3fc889059bb11e34ca732767fc2753516699e020..321d6dd9c80f14d3d9411f8b2c7e5b211ef65366 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -678,6 +678,9 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -680,6 +680,9 @@ class BLINK_EXPORT WebLocalFrameClient {
    virtual void DidCreateScriptContext(v8::Local<v8::Context>,
                                        int32_t world_id) {}
  
@@ -124,7 +124,7 @@ index 59971fb0cf0c66d85afde2cfe372b7b669339db2..2d9475f3d838308bcded05bf85c3523d
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 32a8672be10e69f2c3bfd679095ba22ae86c7492..60a18b62a97b13f1501e4e2b45010e51b2c69d26 100644
+index 3cd7c8698f26b2bf0f856d32c9ca26a38ff7d1e6..399cbb958ef8e3fb3c6509a751aa1780276363b9 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -428,6 +428,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
