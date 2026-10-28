@@ -237,7 +237,7 @@ Returns `Record<string, string>` - The current 'extra' parameters of the crash r
 Since `require('electron')` is not available in Node child processes, the
 following APIs are available on the `process` object in Node child processes.
 
-#### `process.crashReporter.start(options)`
+### `process.crashReporter.start(options)`
 
 See [`crashReporter.start()`](#crashreporterstartoptions).
 
@@ -246,15 +246,15 @@ automatically monitor child processes, so it should not be started in the child
 process. Only use this method if the main process does not initialize the crash
 reporter.
 
-#### `process.crashReporter.getParameters()`
+### `process.crashReporter.getParameters()`
 
 See [`crashReporter.getParameters()`](#crashreportergetparameters).
 
-#### `process.crashReporter.addExtraParameter(key, value)`
+### `process.crashReporter.addExtraParameter(key, value)`
 
 See [`crashReporter.addExtraParameter(key, value)`](#crashreporteraddextraparameterkey-value).
 
-#### `process.crashReporter.removeExtraParameter(key)`
+### `process.crashReporter.removeExtraParameter(key)`
 
 See [`crashReporter.removeExtraParameter(key)`](#crashreporterremoveextraparameterkey).
 
