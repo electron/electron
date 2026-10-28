@@ -210,6 +210,7 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
+#include "shell/browser/linux/x11_util.h"
 #include "ui/linux/linux_ui.h"
 #endif
 
@@ -3011,6 +3012,14 @@ void WebContents::HandleNewRenderFrame(
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences)
     SetBackgroundColor(web_preferences->GetBackgroundColor());
+
+#if BUILDFLAG(IS_LINUX)
+  // On Wayland, show a resized window once its page has drawn at the new
+  // size, instead of with the page's old drawing.
+  if (x11_util::IsWayland() && !render_frame_host->GetParentOrOuterDocument() &&
+      !IsOffScreen())
+    rwhv->SetShouldUseDefaultDeadlineOnResize(true);
+#endif
 
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
