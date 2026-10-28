@@ -67,7 +67,7 @@ index e1093d964d4f27fd3222dfa2a216ef5f5dffe3b5..9dc1e8a18b599813391e0e6ceee18fea
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index cba29ad496d89a536f65ba8fb140466ed134cabd..1febc578747baf590386f59c20a8ee349394c67a 100644
+index 83e8a277434b8e815c088c34f94b21257ae8d631..387a021fbaf4378fec227dde1c2301322f52bfb8 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -613,7 +613,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -80,7 +80,7 @@ index cba29ad496d89a536f65ba8fb140466ed134cabd..1febc578747baf590386f59c20a8ee34
    }
  
 diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
-index a41254c1f31654c1326b4bf1f29237bdf44bbe5a..8ca5673a225b69b5630383ed9673653ba03a0e97 100644
+index 6ea8dcc7e37d4b613b8ba833ab5c10fdf0189378..caffbfc6c7f700ec0c8178a34caefb3c23cfa693 100644
 --- a/components/remote_cocoa/common/native_widget_ns_window.mojom
 +++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
 @@ -98,6 +98,9 @@ struct NativeWidgetNSWindowInitParams {
@@ -94,10 +94,10 @@ index a41254c1f31654c1326b4bf1f29237bdf44bbe5a..8ca5673a225b69b5630383ed9673653b
    StateRestorationData? state_restoration_data;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index e297e2645184ad2f27f563edab769eca2f1ae73f..12411c9107159aef28ba7d2ac5c973b333b49df4 100644
+index b0165bb6396e20230ab53c9b9f64870ad90a90b7..15f04862dd731001f84a890de425780f7cf079ec 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-@@ -588,6 +588,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -607,6 +607,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    bool is_miniaturized_ = false;
    bool is_window_key_ = false;
    bool is_mouse_capture_active_ = false;
@@ -106,10 +106,10 @@ index e297e2645184ad2f27f563edab769eca2f1ae73f..12411c9107159aef28ba7d2ac5c973b3
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 839a159699bc3def84fd3ecd069fe344aef19c04..d88a457d25459a4b97495dfeabd58c1aebbff4c8 100644
+index 68f362eee5c00aacf6e6241b886e1c39b557e426..f00c5cb2b2244da449cac337f689baf5af5b1338 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -481,6 +481,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -485,6 +485,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (!is_tooltip) {
      tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
    }
@@ -117,7 +117,7 @@ index 839a159699bc3def84fd3ecd069fe344aef19c04..d88a457d25459a4b97495dfeabd58c1a
  
    if (params.workspace.length()) {
      if (std::optional<std::vector<uint8_t>> restoration_data =
-@@ -498,6 +499,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -502,6 +503,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      window_params->modal_type = widget->widget_delegate()->GetModalType();
      window_params->is_translucent =
          params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
@@ -125,7 +125,7 @@ index 839a159699bc3def84fd3ecd069fe344aef19c04..d88a457d25459a4b97495dfeabd58c1a
      window_params->is_tooltip = is_tooltip;
  
      // macOS likes to put shadows on most things. However, frameless windows
-@@ -691,10 +693,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -724,10 +726,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
