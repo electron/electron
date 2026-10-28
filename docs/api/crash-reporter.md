@@ -262,15 +262,15 @@ If the crash reporter is started in the main process, Node child processes are
 monitored automatically. There is no way to start the crash reporter from a
 Node child process.
 
-#### `process.crashReporter.getParameters()`
+### `process.crashReporter.getParameters()`
 
 See [`crashReporter.getParameters()`](#crashreportergetparameters).
 
-#### `process.crashReporter.addExtraParameter(key, value)`
+### `process.crashReporter.addExtraParameter(key, value)`
 
 See [`crashReporter.addExtraParameter(key, value)`](#crashreporteraddextraparameterkey-value).
 
-#### `process.crashReporter.removeExtraParameter(key)`
+### `process.crashReporter.removeExtraParameter(key)`
 
 See [`crashReporter.removeExtraParameter(key)`](#crashreporterremoveextraparameterkey).
 
