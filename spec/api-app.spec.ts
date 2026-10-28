@@ -2583,8 +2583,10 @@ describe('app module', () => {
 
     it('affects dns lookup behavior', async () => {
       const knownHost = 'configure-host-resolver.electron-spec.test';
-      // Minimal RFC 8484 DoH server: an A record for knownHost, NXDOMAIN
-      // for any other name.
+      // Minimal RFC 8484 DoH server: answers every A query with 127.0.0.1.
+      // It must not return NXDOMAIN for other names, because Chromium probes
+      // DoH servers with a query for www.gstatic.com and a NXDOMAIN probe
+      // response trips a DCHECK in the network service.
       const dohServer = https.createServer(
         {
           key: fs.readFileSync(path.join(certPath, 'server.key')),
@@ -2594,20 +2596,16 @@ describe('app module', () => {
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk);
           const query = Buffer.concat(chunks);
-          const labels: string[] = [];
+          // Skip over the question name to its terminating zero-length label.
           let offset = 12;
-          while (query[offset] !== 0) {
-            labels.push(query.toString('latin1', offset + 1, offset + 1 + query[offset]));
-            offset += query[offset] + 1;
-          }
+          while (query[offset] !== 0) offset += query[offset] + 1;
           const qtype = query.readUInt16BE(offset + 1);
-          const known = labels.join('.').toLowerCase() === knownHost;
           const header = Buffer.alloc(12);
           header.writeUInt16BE(query.readUInt16BE(0), 0);
-          header.writeUInt16BE(known ? 0x8180 : 0x8183, 2);
+          header.writeUInt16BE(0x8180, 2);
           header.writeUInt16BE(1, 4);
           const answers: Buffer[] = [];
-          if (known && qtype === 1) {
+          if (qtype === 1) {
             header.writeUInt16BE(1, 6);
             // Name pointer to the question, type A, class IN, TTL 60, 127.0.0.1.
             answers.push(Buffer.from([0xc0, 0x0c, 0, 1, 0, 1, 0, 0, 0, 60, 0, 4, 127, 0, 0, 1]));
