@@ -86,6 +86,10 @@ declare namespace NodeJS {
     isValidHeaderName: (headerName: string) => boolean;
     isValidHeaderValue: (headerValue: string) => boolean;
     fileURLToFilePath: (url: string) => string;
+    getFileInfoForFetch(
+      url: string,
+      readBody: boolean
+    ): Promise<{ mimeType: string; lastModified: string; body?: FileFetchBody } | null>;
     createURLLoader(options: CreateURLLoaderOptions): URLLoader;
     createWebSocket(options: CreateWebSocketOptions): WebSocketWrapper;
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
@@ -203,6 +207,12 @@ declare namespace NodeJS {
     insecureSchemeWasUpgraded: boolean;
     isSignedExchangeFallbackRedirect: boolean;
   };
+
+  // A file's bytes, as getFileInfoForFetch() read them.
+  interface FileFetchBody {
+    read(): Uint8Array;
+    discard(): void;
+  }
 
   interface URLLoader extends EventEmitter {
     cancel(): void;
