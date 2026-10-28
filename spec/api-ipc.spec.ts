@@ -1148,17 +1148,18 @@ describe('ipc module', () => {
 
   describe('event frame accessors', () => {
     it('does not create an ObjectTemplate for every message', async () => {
-      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const { remotely } = await startRemoteControlApp();
       const { messageCount, templatesCreated } = await remotely(
-        async (heap: string) => {
+        async (snapshotHelper: string) => {
           const { BrowserWindow, ipcMain } = require('electron');
-          const { recordState } = require(heap);
+          const { countHeapSnapshotNodes, takeHeapSnapshot } = require(snapshotHelper);
 
           const channel = 'ipc-object-template-test';
           const messageCount = 50;
 
           const countObjectTemplates = () =>
-            recordState().snapshot.filter((node: any) => node.name === 'system / ObjectTemplateInfo').length;
+            countHeapSnapshotNodes(takeHeapSnapshot(), { templates: { name: 'system / ObjectTemplateInfo' } })
+              .templates;
 
           const retainedEvents: any[] = [];
           (globalThis as any).retainedEvents = retainedEvents;
@@ -1191,7 +1192,7 @@ describe('ipc module', () => {
             w.destroy();
           }
         },
-        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
       expect(templatesCreated).toBeLessThan(messageCount / 2);
