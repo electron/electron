@@ -284,6 +284,10 @@ int NodeMain() {
 
     v8::Isolate::Scope isolate_scope(isolate);
     v8::Locker locker(isolate);
+    // Implements --process-timeout, as node::NodeMainInstance::Run() does.
+    // Declared before the Environment so that the timeout still applies while
+    // the Environment is being freed.
+    std::unique_ptr<node::ProcessTimeoutWatchdog> process_timeout;
     node::Environment* env = nullptr;
     node::IsolateData* isolate_data = nullptr;
     {
@@ -346,12 +350,15 @@ int NodeMain() {
     }
 
     v8::HandleScope scope(isolate);
+    process_timeout = node::ProcessTimeoutWatchdog::MaybeStart(env);
     electron::util::FeedEnvironmentCodeCache(env);
     node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
 
     // Potential reasons we get Nothing here may include: the env
     // is stopping, or the user hooks process.emit('exit').
     exit_code = node::SpinEventLoop(env).FromMaybe(1);
+    if (process_timeout)
+      process_timeout->OnEnvironmentStopping();
 
     node::ResetStdio();
 
