@@ -670,15 +670,17 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
       args.push_back(option);
   }
 
-  // Node's setupEventsource() in lib/internal/process/pre_execution.js
-  // deletes globalThis.EventSource when --experimental-eventsource is not
-  // set, and unlike its sibling setup functions it does not check
-  // noBrowserGlobals. Pass the flag so Blink's EventSource is left alone;
-  // Node's own undici EventSource is never installed under
-  // kNoBrowserGlobals so there is no conflict.
+  // Node's setupEventsource() and removeWebWorkersIfDisabled() in
+  // lib/internal/process/pre_execution.js delete globalThis.EventSource and
+  // globalThis.Worker when --experimental-eventsource and
+  // --experimental-web-worker are not set, and unlike their sibling setup
+  // functions they do not check noBrowserGlobals. Pass the flags so Blink's
+  // EventSource and Worker are left alone; Node's own EventSource and Worker
+  // are never installed under kNoBrowserGlobals so there is no conflict.
   if (browser_env_ == BrowserEnvironment::kRenderer ||
       browser_env_ == BrowserEnvironment::kWorker) {
     args.push_back("--experimental-eventsource");
+    args.push_back("--experimental-web-worker");
   }
 
   return args;
