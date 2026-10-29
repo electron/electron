@@ -29,10 +29,10 @@ before first show.
 This patch can be removed if the changes are upstreamed to Chromium.
 
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-index d58fc9c26fc11de46d7fa909389af8eadec532fc..3a9430756b3d8f57fcfa747e922184fdda438655 100644
+index 00bf35b2c75088300de28968ade01d3ca5ff353c..4b3c958d5538ae2d2d77c07a761428024de576d4 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-@@ -532,7 +532,8 @@ - (void)updateWebContentsVisibility {
+@@ -547,7 +547,8 @@ - (void)updateWebContentsVisibility {
    Visibility visibility = Visibility::kVisible;
    if ([self isHiddenOrHasHiddenAncestor] || ![self window])
      visibility = Visibility::kHidden;
@@ -42,13 +42,13 @@ index d58fc9c26fc11de46d7fa909389af8eadec532fc..3a9430756b3d8f57fcfa747e922184fd
      visibility = Visibility::kOccluded;
  
    [self updateWebContentsVisibility:visibility];
-@@ -576,11 +577,12 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -598,11 +599,12 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
  }
  
  - (void)windowChangedOcclusionState:(NSNotification*)aNotification {
 -  // Only respond to occlusion notifications sent by the occlusion checker.
 -  NSDictionary* userInfo = [aNotification userInfo];
--  NSString* occlusionCheckerKey = [WebContentsOcclusionCheckerMac className];
+-  NSString* occlusionCheckerKey = [WindowOcclusionCheckerMac className];
 -  if (userInfo[occlusionCheckerKey] != nil)
 -    [self updateWebContentsVisibility];
 +  // Respond to occlusion notifications from both macOS and the occlusion
