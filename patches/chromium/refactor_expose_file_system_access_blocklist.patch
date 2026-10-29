@@ -42,7 +42,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..e3e7e4a739d02b48059bce874de182a0
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,345 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,349 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -156,6 +156,10 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..e3e7e4a739d02b48059bce874de182a0
 +        // ~/.config holds configuration for many cross-platform tools, so block
 +        // it on all platforms, see crbug.com/569012015.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".config"),
++                                  BlockType::kBlockAllChildren),
++        // ~/.cache holds caches and virtual environments for cross-platform
++        // tools, so block it on all platforms, see crbug.com/577400245.
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".cache"),
 +                                  BlockType::kBlockAllChildren),
 +        // Shell startup files in the home directory, including the ones read by
 +        // Git Bash on Windows, see crbug.com/558362029.
@@ -320,8 +324,8 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..e3e7e4a739d02b48059bce874de182a0
 +        // Block the per-user NSS database, see crbug.com/557367241.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".pki"),
 +                                  BlockType::kBlockAllChildren),
-+        // And block all of ~/.cache, matching the similar restrictions on mac
-+        // and windows.
++        // Also block base::DIR_CACHE to cover $XDG_CACHE_HOME overrides on Linux
++        // and ChromeOS, and the app cache directory on Android.
 +        BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 +  #endif
 +  #if BUILDFLAG(IS_ANDROID)
