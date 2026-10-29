@@ -15,15 +15,6 @@
     "dependencies": ["manifest:action"],
     "contexts": ["privileged_extension"]
   },
-  "action.isEnabled": {
-    "channel": "stable"
-  },
-  "action.getBadgeTextColor": {
-    "channel": "stable"
-  },
-  "action.setBadgeTextColor": {
-    "channel": "stable"
-  },
   "extension": {
     "channel": "stable",
     "extension_types": ["extension"],
@@ -45,12 +36,6 @@
     ],
     "max_manifest_version": 2
   },
-  "mimeHandlerViewGuestInternal": {
-    "internal": true,
-    "contexts": "all",
-    "channel": "stable",
-    "matches": ["<all_urls>"]
-  },
   "pdfViewerPrivate": {
     "dependencies": ["permission:pdfViewerPrivate"],
     "contexts": ["privileged_extension"]
@@ -71,12 +56,6 @@
     "contexts": ["privileged_extension"]
   },
   "tabs.executeScript": {
-    "max_manifest_version": 2
-  },
-  "tabs.insertCSS": {
-    "max_manifest_version": 2
-  },
-  "tabs.removeCSS": {
     "max_manifest_version": 2
   }
 }

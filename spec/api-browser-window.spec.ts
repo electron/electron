@@ -1236,6 +1236,11 @@ describe('BrowserWindow module', () => {
         afterAll(() => {
           server.close();
         });
+        // Follow the page's link from the renderer rather than by clicking it.
+        // Input sent to a window that was never shown can be dropped before it
+        // reaches the page (on Wayland the hidden window presents no frames),
+        // and then the navigation never starts.
+        const followLink = () => w.webContents.executeJavaScript("document.querySelector('a').click()");
         it('exposes a cross-origin iframe during navigation', async () => {
           const port = (server.address() as AddressInfo).port;
           const fixture = path.join(os.tmpdir(), `web-frame-main-navigation-${crypto.randomUUID()}.html`);
@@ -1344,40 +1349,10 @@ describe('BrowserWindow module', () => {
             'did-frame-navigate',
             'did-navigate'
           ];
-          w.loadURL(url + '/navigate');
-          await once(w.webContents, 'did-navigate');
-          await setTimeout(2000);
+          await w.loadURL(url + '/navigate');
           Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate');
-          w.webContents.debugger.attach('1.1');
-          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
-          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
-          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
-            targetId: pageTarget.targetId,
-            flatten: true
-          });
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mousePressed',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mouseReleased',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
+          await followLink();
           await navigationFinished;
           expect(firedEvents).toEqual(expectedEventOrder);
         });
@@ -1393,40 +1368,10 @@ describe('BrowserWindow module', () => {
             'did-frame-navigate',
             'did-navigate'
           ];
-          w.loadURL(url + '/redirect');
-          await once(w.webContents, 'did-navigate');
-          await setTimeout(2000);
+          await w.loadURL(url + '/redirect');
           Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate');
-          w.webContents.debugger.attach('1.1');
-          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
-          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
-          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
-            targetId: pageTarget.targetId,
-            flatten: true
-          });
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mousePressed',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mouseReleased',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
+          await followLink();
           await navigationFinished;
           expect(firedEvents).toEqual(expectedEventOrder);
         });
@@ -1434,40 +1379,10 @@ describe('BrowserWindow module', () => {
         it('when navigating in-page, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = ['did-start-navigation', 'did-navigate-in-page'];
-          w.loadURL(url + '/in-page');
-          await once(w.webContents, 'did-navigate');
-          await setTimeout(2000);
+          await w.loadURL(url + '/in-page');
           Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate-in-page');
-          w.webContents.debugger.attach('1.1');
-          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
-          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
-          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
-            targetId: pageTarget.targetId,
-            flatten: true
-          });
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mousePressed',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
-          await w.webContents.debugger.sendCommand(
-            'Input.dispatchMouseEvent',
-            {
-              type: 'mouseReleased',
-              x: 10,
-              y: 10,
-              clickCount: 1,
-              button: 'left'
-            },
-            sessionId
-          );
+          await followLink();
           await navigationFinished;
           expect(firedEvents).toEqual(expectedEventOrder);
         });
@@ -7515,6 +7430,13 @@ describe('BrowserWindow module', () => {
       it('correctly remembers state prior to HTML fullscreen transition', async () => {
         const w = new BrowserWindow();
         await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        // On the Windows CI hosts a foreign window can cover this one, and
+        // Chromium's native occlusion tracker then hides the page. A hidden
+        // page doesn't draw, and requestFullscreen() and exitFullscreen() only
+        // settle once the page has drawn at the window's new size. Keep it
+        // drawing while covered; unlike the constructor option, this also
+        // un-hides a hidden page.
+        w.webContents.setBackgroundThrottling(false);
 
         // This should do nothing.
         w.setFullScreen(false);
@@ -7528,6 +7450,9 @@ describe('BrowserWindow module', () => {
             menuBarVisible
           );
 
+          // Shortly after leaving fullscreen, Chromium refuses requestFullscreen()
+          // from an unfocused page, and a foreign window can take focus.
+          await focusWebContents(w.webContents);
           const enterFullScreen = once(w, 'enter-full-screen');
           await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
           await enterFullScreen;
@@ -7993,9 +7918,20 @@ describe('BrowserWindow module', () => {
           // the page is focused after entering simple fullscreen.
           // webContents.focus() only activates the app when no other app is
           // active, and the earlier fullscreen specs can leave another app
-          // frontmost, so take activation explicitly first.
-          app.focus({ steal: true });
-          await focusWebContents(w.webContents);
+          // frontmost, so take activation explicitly. One request is not
+          // always enough: on macOS arm64 CI the first attempt sometimes
+          // spent the whole wait without the page getting focus, while the
+          // retry, which requested activation again, passed at once. So ask
+          // again on every poll until the page has focus.
+          await waitUntil(
+            async () => {
+              if (await w.webContents.executeJavaScript('document.hasFocus()')) return true;
+              app.focus({ steal: true });
+              w.webContents.focus();
+              return false;
+            },
+            { rate: 100 }
+          );
 
           const enterHtmlFS = once(w.webContents, 'enter-html-full-screen');
           await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);

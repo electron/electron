@@ -17,7 +17,7 @@ As of 159.0.8129.0, it also carries the Vim startup rules (~/.vim, ~/vimfiles,
 kBlockWrite suffix rule added upstream in that version.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b729afd02 100644
+index 05ee182cf840bc925697a2bfa3d1c281579296c4..e3e7e4a739d02b48059bce874de182a000f47730 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -42,7 +42,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,302 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,349 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -153,9 +153,33 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
 +        // And limit access to ~/.gnupg as well.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
 +                                  BlockType::kBlockAllChildren),
++        // ~/.config holds configuration for many cross-platform tools, so block
++        // it on all platforms, see crbug.com/569012015.
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".config"),
++                                  BlockType::kBlockAllChildren),
 +        // ~/.cache holds caches and virtual environments for cross-platform
 +        // tools, so block it on all platforms, see crbug.com/577400245.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".cache"),
++                                  BlockType::kBlockAllChildren),
++        // Shell startup files in the home directory, including the ones read by
++        // Git Bash on Windows, see crbug.com/558362029.
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".bash_profile"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".bash_login"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".bashrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".profile"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zshenv"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zprofile"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zshrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zlogin"),
 +                                  BlockType::kBlockAllChildren),
 +        // Vim startup directories and files in the home directory, including the
 +        // ones read by Git for Windows' bundled Vim and native Windows Vim, see
@@ -176,6 +200,17 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
 +                                  BlockType::kBlockAllChildren),
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL("_exrc"),
 +                                  BlockType::kBlockAllChildren),
++        // Block write access to */.git/hooks, see crbug.com/465668234 and
++        // crbug.com/553115714.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
++                                BlockType::kBlockWrite),
++        // Block write access to the repository config and to submodule git
++        // directories, which have their own hooks and config, see
++        // crbug.com/572269631 and crbug.com/571913154.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
++                                BlockType::kBlockWrite),
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
++                                BlockType::kBlockWrite),
 +        // Block write access to */.mvn, which holds Maven project and JVM
 +        // configuration (such as jvm.config, maven.config, and extensions.xml),
 +        // see crbug.com/578500839.
@@ -204,15 +239,16 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
 +        // directory, but not whole directories.
 +        BlockPath::CreateRelative(base::DIR_IE_INTERNET_CACHE,
 +                                  BlockType::kBlockNestedDirectories),
-+        // Block */.git/hooks on Windows, see crbug.com/465668234.
-+        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
-+                                BlockType::kBlockWrite),
 +  #endif
 +  #if BUILDFLAG(IS_MAC)
 +        // Similar Mac specific blocks.
 +        // Block access to /System/Volumes (internal system and container
 +        // volumes).
 +        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/System/Volumes"),
++                                  BlockType::kBlockAllChildren),
++        // Block access to devices via /dev, matching Linux, see
++        // crbug.com/569012543.
++        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/dev"),
 +                                  BlockType::kBlockAllChildren),
 +        BlockPath::CreateRelative(base::DIR_APP_DATA,
 +                                  BlockType::kBlockAllChildren),
@@ -269,13 +305,24 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
 +        // crbug.com/577376424.
 +        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
 +                                  BlockType::kBlockAllChildren),
-+        // And block all of ~/.config, matching the similar restrictions on mac
-+        // and windows.
-+        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".config"),
-+                                  BlockType::kBlockAllChildren),
 +        // Block ~/.dbus as well, just in case, although there probably isn't much
 +        // a website can do with access to that directory and its contents.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
++                                  BlockType::kBlockAllChildren),
++        // Block per-user application data, see crbug.com/561996724.
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".local/share"),
++                                  BlockType::kBlockAllChildren),
++        // Block the legacy per-user fontconfig configuration, see
++        // crbug.com/559780982. The current location is under ~/.config.
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".fonts.conf"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".fonts.conf.d"),
++                                  BlockType::kBlockAllChildren),
++        // Block the per-user NSS database, see crbug.com/557367241.
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".pki"),
 +                                  BlockType::kBlockAllChildren),
 +        // Also block base::DIR_CACHE to cover $XDG_CACHE_HOME overrides on Linux
 +        // and ChromeOS, and the app cache directory on Android.

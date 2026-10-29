@@ -283,7 +283,7 @@ void Browser::SetUserActivity(const std::string& type,
 
   [[AtomApplication sharedApplication]
       setCurrentActivity:base::SysUTF8ToNSString(type)
-            withUserInfo:DictionaryValueToNSDictionary(std::move(user_info))
+            withUserInfo:DictionaryValueToNSDictionary(user_info)
           withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
 }
 
@@ -305,8 +305,7 @@ void Browser::UpdateCurrentActivity(const std::string& type,
                                     base::DictValue user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
-               withUserInfo:DictionaryValueToNSDictionary(
-                                std::move(user_info))];
+               withUserInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
 bool Browser::WillContinueUserActivity(const std::string& type) {

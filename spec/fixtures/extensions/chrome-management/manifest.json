@@ -1,0 +1,6 @@
+{
+  "name": "chrome-management",
+  "version": "1.0",
+  "permissions": ["management"],
+  "manifest_version": 3
+}

@@ -1396,12 +1396,13 @@ describe('chromium features', () => {
 
   describe('File System API,', { tags: ['serial'] }, () => {
     let w: BrowserWindow | null = null;
+    let ses: Electron.Session;
 
-    afterEach(async () => {
-      session.defaultSession.setPermissionCheckHandler(null);
-      session.defaultSession.setPermissionRequestHandler(null);
-      await closeAllWindows();
+    beforeEach(() => {
+      ses = session.fromPartition(`file-system-spec-${Math.random()}`);
     });
+
+    afterEach(closeAllWindows);
 
     // Pastes a file:// URI into the test-perms.html fixture
     // and resolves with the channel the fixture reported its new handle on.
@@ -1429,7 +1430,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1454,7 +1455,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1479,7 +1480,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1509,12 +1510,13 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           permissionRequests.push(details);
           callback(true);
@@ -1561,12 +1563,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           permissionRequests.push(details);
           callback(true);
@@ -1617,6 +1620,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
@@ -1628,7 +1632,7 @@ describe('chromium features', () => {
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+      ses.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
           trace(`permission requested: ${JSON.stringify(details)}`);
           permissionRequests.push(details);
@@ -1660,7 +1664,7 @@ describe('chromium features', () => {
       trace('file handle received');
 
       const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
-      trace(`initial permission: ${permission}`);
+      expect(permission).toBe('prompt');
       trace('createWritable requested');
       // webFrameMain.executeJavaScript(),
       // so that the browser process knows of the user activation before the request (see above).
@@ -1698,12 +1702,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
@@ -1744,12 +1749,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return false;
@@ -1786,12 +1792,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
@@ -1828,16 +1835,17 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
       });
 
-      w.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => {
         callback(true);
       });
 
-      w.webContents.session.setPermissionCheckHandler((_wc, permission, _origin, details) => {
+      ses.setPermissionCheckHandler((_wc, permission, _origin, details) => {
         if (permission === 'fileSystem') {
           permissionChecks.push(details);
           return true;
@@ -2018,6 +2026,167 @@ describe('chromium features', () => {
       await pasteHandle(w, frame, '/System/Volumes');
       await waitForHandle(frame);
       expect(restricted).toHaveLength(2);
+    });
+
+    it('blocks writes to .git/hooks, .git/config and .git/modules but still allows reading them', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('deny');
+      });
+
+      // On Windows the temp dir lives under %LOCALAPPDATA%, which the blocklist
+      // blocks entirely, so use a directory the blocklist leaves alone there.
+      const base = process.platform === 'win32' ? path.join(fixturesPath, 'file-system') : os.tmpdir();
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(base, 'fsa-git-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const hooks = path.join(dir, '.git', 'hooks');
+      fs.mkdirSync(hooks, { recursive: true });
+      fs.writeFileSync(path.join(hooks, 'pre-commit.sample'), 'sample');
+      fs.writeFileSync(path.join(dir, '.git', 'config'), '[core]\n');
+
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+      await pasteHandle(w, frame, dir);
+      await waitForHandle(frame);
+      expect(await frame.executeJavaScript('window.handle && window.handle.kind')).toBe('directory');
+      expect(await frame.executeJavaScript("window.handle.requestPermission({ mode: 'readwrite' })", true)).toBe(
+        'granted'
+      );
+
+      // Matches Chrome: these are case-insensitive kBlockWrite suffix rules, so
+      // reads are allowed and only operations that write are rejected.
+      const result = await frame.executeJavaScript(`(async () => {
+        const attempt = (p) => p.then(() => 'ok', (e) => e.name);
+        const git = await window.handle.getDirectoryHandle('.git');
+        const hooks = await git.getDirectoryHandle('hooks');
+        const sample = await hooks.getFileHandle('pre-commit.sample');
+        const config = await git.getFileHandle('config');
+        return {
+          readHook: await (await sample.getFile()).text(),
+          readConfig: await (await config.getFile()).text(),
+          createHook: await attempt(hooks.getFileHandle('post-checkout', { create: true })),
+          writeHook: await attempt(sample.createWritable()),
+          writeConfig: await attempt(config.createWritable()),
+          createModules: await attempt(git.getDirectoryHandle('modules', { create: true })),
+          createHooksUpperCase: await attempt(git.getDirectoryHandle('HOOKS', { create: true })),
+          createAllowed: await attempt(window.handle.getFileHandle('allowed.txt', { create: true }))
+        };
+      })()`);
+      expect(result).toEqual({
+        readHook: 'sample',
+        readConfig: '[core]\n',
+        createHook: 'SecurityError',
+        writeHook: 'SecurityError',
+        writeConfig: 'SecurityError',
+        createModules: 'SecurityError',
+        createHooksUpperCase: 'SecurityError',
+        createAllowed: 'ok'
+      });
+      expect(fs.existsSync(path.join(hooks, 'post-checkout'))).toBe(false);
+      expect(fs.readFileSync(path.join(hooks, 'pre-commit.sample'), 'utf8')).toBe('sample');
+      expect(fs.existsSync(path.join(dir, '.git', 'modules'))).toBe(false);
+      expect(fs.readFileSync(path.join(dir, '.git', 'config'), 'utf8')).toBe('[core]\n');
+      expect(fs.existsSync(path.join(dir, 'allowed.txt'))).toBe(true);
+      // Programmatic writes are rejected outright rather than asking the app.
+      expect(restricted).toEqual([]);
+    });
+
+    // A pasted directory only reaches the blocklist if it exists, so this
+    // shares a fixture directory over loopback SMB and reaches it under
+    // different UNC server and share names. Creating a share needs an
+    // elevated administrator.
+    ifit(process.platform === 'win32')("applies Chrome's local UNC path rules", { timeout: 120000 }, async (ctx) => {
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(fixturesPath, 'file-system', 'fsa-unc-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      // At most 12 characters, including the hidden share's '$', or net share
+      // asks whether MS-DOS clients matter.
+      const share = `efsa${Math.floor(Math.random() * 0x1000000)
+        .toString(16)
+        .padStart(6, '0')}`;
+      const hiddenShare = `${share}$`;
+      try {
+        for (const name of [share, hiddenShare]) {
+          ChildProcess.execFileSync('net', ['share', `${name}=${dir}`], { stdio: 'pipe', input: 'y\r\n' });
+          defer(() => {
+            try {
+              ChildProcess.execFileSync('net', ['share', name, '/delete', '/y'], { stdio: 'pipe' });
+            } catch {}
+          });
+        }
+      } catch (error) {
+        // On CI this must not turn into a silent skip.
+        if (process.env.CI) throw error;
+        console.warn(`Skipping UNC blocklist spec, could not create an SMB share: ${error}`);
+        return ctx.skip();
+      }
+
+      const host = os.hostname();
+      const unc = (server: string, ...rest: string[]) => `\\\\${server}\\${rest.join('\\')}`;
+      const isReachable = (p: string) =>
+        Promise.race([
+          fs.promises.stat(p).then(
+            (s) => s.isDirectory(),
+            () => false
+          ),
+          setTimeout(20000, false, { ref: false })
+        ]);
+
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('deny');
+      });
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+      const classify = async (p: string) => {
+        // Also opens the SMB session up front, which can be slow.
+        expect(await isReachable(p), `${p} should be reachable`).toBe(true);
+        const before = restricted.length;
+        await frame.executeJavaScript('window.handle = null; true');
+        await pasteHandle(w, frame, p);
+        await waitForHandle(frame);
+        const kind = await frame.executeJavaScript('window.handle && window.handle.kind');
+        if (restricted.length === before) {
+          expect(kind, p).toBe('directory');
+          return 'allowed';
+        }
+        // File URLs lowercase the server name.
+        expect(restricted.slice(before).map((r) => r.toLowerCase())).toEqual([p.toLowerCase()]);
+        expect(kind, p).toBe(null);
+        return 'blocked';
+      };
+
+      // A server name that isn't known to be local is treated as remote,
+      // unless it has characters a DNS name can't, which are blocked.
+      const hostIsDNSName = /^[A-Za-z0-9.-]+$/.test(host);
+      if (!hostIsDNSName) console.warn(`${host} is not a plain DNS name, so it is expected to be blocked`);
+      expect(await classify(unc(host, share))).toBe(hostIsDNSName ? 'allowed' : 'blocked');
+      // Electron blocks every share ending in '$', not only the drive (X$)
+      // and ADMIN$/IPC$/PRINT$/FAX$ ones, so a plain hidden share is too.
+      expect(await classify(unc(host, hiddenShare))).toBe('blocked');
+      // Drive admin shares are blocked whatever the server is called.
+      const [drive, ...dirComponents] = dir.split(path.sep);
+      expect(await classify(unc(host, `${drive.replace(/:$/, '')}$`, ...dirComponents))).toBe('blocked');
+      // Local server names are blocked whatever the share is. A bare
+      // "localhost" can't be pasted: file URLs drop that host, so it would
+      // arrive as a path with no server.
+      expect(await classify(unc('127.0.0.1', share))).toBe('blocked');
+
+      // Intentional change: a trailing dot no longer hides a local server name.
+      // Electron used to allow this. It needs "localhost." to resolve, so it is
+      // skipped where it doesn't.
+      const trailingDot = unc('localhost.', share);
+      if (await isReachable(trailingDot)) {
+        expect(await classify(trailingDot)).toBe('blocked');
+      } else {
+        console.warn(`Skipping ${trailingDot}, it does not resolve here`);
+      }
     });
 
     it('revokes active grants once no top-level document of the origin remains', { timeout: 60000 }, async () => {

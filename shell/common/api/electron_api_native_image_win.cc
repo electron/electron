@@ -37,8 +37,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
 
   // create an IShellItem
   Microsoft::WRL::ComPtr<IShellItem> pItem;
-  std::wstring image_path = path.value();
-  hr = SHCreateItemFromParsingName(image_path.c_str(), nullptr,
+  hr = SHCreateItemFromParsingName(path.value().c_str(), nullptr,
                                    IID_PPV_ARGS(&pItem));
 
   if (FAILED(hr)) {

@@ -695,7 +695,7 @@ jobs:
     # update-website-docs.yml.
     - name: Get GitHub App token
       id: secret-service
-      uses: electron/secret-service-action@3476425e8b30555aac15b1b7096938e254b0e155 # v1.0.0
+      uses: electron/secret-service-action@23b9042f797e34674f0fe2c91608f57f9661ccf2 # v1.1.0
     # The app token is narrowed to single_file: write on the state files and
     # cannot create refs, so the branch comes from GITHUB_TOKEN.
     - name: Create Profile Update Branch
@@ -770,9 +770,13 @@ jobs:
         PR_NUMBER="${PR_URL##*/}"
         labels=(--field "labels[]=semver/none")
         # Every supported release branch gets its own profile update PR from
-        # its own run, so the main PR must never be backported.
+        # its own run, so the main PR must never be backported. Release branch
+        # PRs carry their branch label (e.g. 46-x-y); main PRs get the current
+        # major's label on merge from pull-request-merged.yml.
         if [ "$BASE_BRANCH" = "main" ]; then
           labels+=(--field "labels[]=no-backport")
+        elif [[ "$BASE_BRANCH" =~ ^[0-9]+-x-y$ ]]; then
+          labels+=(--field "labels[]=$BASE_BRANCH")
         fi
         gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" "${labels[@]}" > /dev/null
         echo "## Profile Update PR" >> $GITHUB_STEP_SUMMARY

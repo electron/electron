@@ -18,7 +18,7 @@ import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers.ts';
 import { containsText, readPDF } from './lib/pdf-helpers.ts';
-import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
@@ -472,21 +472,80 @@ describe('webFrameMain module', () => {
     });
 
     it('disposes detached frame after cross-origin navigation', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          preload: path.join(subframesPath, 'preload.js')
-        }
-      });
-      await w.webContents.loadURL(server.url);
-      const unloadPromise = onceUnload(w.webContents);
-      const crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
-      const { senderFrame } = await unloadPromise;
-      expect(senderFrame!.detached).toBe(true);
-      await crossOriginPromise;
-      // The detached frame is not destroyed immediately, so wait until it is
-      await waitUntil(() => senderFrame!.isDestroyed());
-      expect(() => senderFrame!.url).toThrow(/Render frame was disposed/);
+      // This waits for the old page's unload IPC. Once the cross-origin page
+      // commits, Chromium backgrounds the old renderer, which can then miss
+      // the 500 ms unload timeout and drop the IPC. Run it in its own app
+      // with renderer backgrounding disabled, so the spec runner's switches
+      // are left alone.
+      const { remotely } = await startRemoteControlApp(['--disable-renderer-backgrounding']);
+      const result = await remotely(
+        async (preload: string) => {
+          const { app, BrowserWindow, ipcMain } = require('electron');
+          const { once } = require('node:events');
+          const http = require('node:http');
+          const { setTimeout: delay } = require('node:timers/promises');
+
+          app.on('window-all-closed', () => {});
+
+          const server = http.createServer((_request: any, response: any) => {
+            // Chromium deprecates unload handlers on http(s) pages by default.
+            response.setHeader('permissions-policy', 'unload=*');
+            response.end('');
+          });
+          server.listen(0, '127.0.0.1');
+          await once(server, 'listening');
+          const url = `http://127.0.0.1:${server.address().port}/`;
+          const crossOriginUrl = url.replace('127.0.0.1', 'localhost');
+          const w = new BrowserWindow({ show: false, webPreferences: { preload } });
+
+          // Polls like waitUntil() in the spec runner, with the same bound.
+          const poll = async (condition: () => boolean) => {
+            for (const start = Date.now(); Date.now() - start < 10000; await delay(10)) {
+              if (condition()) return true;
+            }
+            return false;
+          };
+
+          try {
+            await w.webContents.loadURL(url);
+            // senderFrame stops resolving once the frame is disposed, so read
+            // it when the IPC arrives.
+            let senderFrame: Electron.WebFrameMain | null | undefined;
+            const listener = (event: Electron.IpcMainEvent) => {
+              if (event.sender !== w.webContents) return;
+              senderFrame = event.senderFrame;
+              ipcMain.off('preload-unload', listener);
+            };
+            ipcMain.on('preload-unload', listener);
+            const crossOriginPromise = w.webContents.loadURL(crossOriginUrl);
+            // Awaited below; this only keeps an early return from leaving it unhandled.
+            crossOriginPromise.catch(() => {});
+            const unloaded = await poll(() => senderFrame !== undefined);
+            ipcMain.off('preload-unload', listener);
+            if (!unloaded || !senderFrame) return { unloaded, hasSenderFrame: !!senderFrame };
+            const detached = senderFrame.detached;
+            await crossOriginPromise;
+            // The detached frame is not destroyed immediately, so wait until it is
+            const destroyed = await poll(() => senderFrame!.isDestroyed());
+            let urlError = 'did not throw';
+            try {
+              console.log(senderFrame.url);
+            } catch (error) {
+              urlError = (error as Error).message;
+            }
+            return { unloaded, hasSenderFrame: true, detached, destroyed, urlError };
+          } finally {
+            w.destroy();
+            server.close();
+          }
+        },
+        path.join(subframesPath, 'preload.js')
+      );
+      expect(result.unloaded, 'the old page should send its unload IPC').toBe(true);
+      expect(result.hasSenderFrame).toBe(true);
+      expect(result.detached).toBe(true);
+      expect(result.destroyed, 'the detached frame should be destroyed').toBe(true);
+      expect(result.urlError).toMatch(/Render frame was disposed/);
     });
 
     // Skip test as we don't have an offline repro yet
@@ -582,9 +641,12 @@ describe('webFrameMain module', () => {
     it('collects call stack during JS execution', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL(server.url);
-      const callStackPromise = w.webContents.mainFrame.collectJavaScriptCallStack();
-      w.webContents.mainFrame.executeJavaScript('"run a lil js"');
-      const callStack = await callStackPromise;
+      // The renderer collects the stack from a V8 interrupt, which only runs
+      // while the page is executing JavaScript, and a single short script can
+      // finish before the request reaches the renderer. Keep the page running
+      // script until the call stack arrives.
+      await w.webContents.mainFrame.executeJavaScript('void setInterval(() => {}, 1)');
+      const callStack = await w.webContents.mainFrame.collectJavaScriptCallStack();
       expect(callStack).toBeTypeOf('string');
     });
   });
@@ -663,11 +725,17 @@ describe('webFrameMain module', () => {
     });
   });
 
-  describe('webFrameMain.copyVideoFrameAt', () => {
+  describe('webFrameMain.copyVideoFrameAt', { tags: ['serial'] }, () => {
     const insertVideoInFrame = async (frame: WebFrameMain) => {
       const videoFilePath = url.pathToFileURL(path.join(fixtures, 'cat-spin.mp4')).href;
       await frame.executeJavaScript(`
         const video = document.createElement('video');
+        // A fixed box, so the point copyVideoFrameInFrame() picks is on the
+        // video whether or not its metadata has loaded yet; at its natural
+        // size (480x360) the centre would be outside the 300x150 iframe.
+        video.style.display = 'block';
+        video.style.width = '100px';
+        video.style.height = '100px';
         video.src = '${videoFilePath}';
         video.muted = true;
         video.loop = true;
@@ -690,6 +758,17 @@ describe('webFrameMain module', () => {
     };
 
     const copyVideoFrameInFrame = async (frame: WebFrameMain) => {
+      // wait for video to load
+      await frame.executeJavaScript(
+        `(${() => {
+          const video = document.querySelector('video');
+          if (!video) return;
+          return new Promise((resolve) => {
+            if (video.readyState >= 4) resolve(null);
+            else video.addEventListener('canplaythrough', resolve, { once: true });
+          });
+        }})()`
+      );
       const point = (await frame.executeJavaScript(
         `(${() => {
           const video = document.querySelector('video');
@@ -712,17 +791,6 @@ describe('webFrameMain module', () => {
       }
 
       expect(await clipboardHasImageType()).toBe(false);
-      // wait for video to load
-      await frame.executeJavaScript(
-        `(${() => {
-          const video = document.querySelector('video');
-          if (!video) return;
-          return new Promise((resolve) => {
-            if (video.readyState >= 4) resolve(null);
-            else video.addEventListener('canplaythrough', resolve, { once: true });
-          });
-        }})()`
-      );
       frame.copyVideoFrameAt(point.x, point.y);
       await waitUntil(clipboardHasImageType);
     };

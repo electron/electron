@@ -829,6 +829,8 @@ filenames = {
     "shell/renderer/preload_environment.h",
     "shell/renderer/preload_realm_context.cc",
     "shell/renderer/preload_realm_context.h",
+    "shell/renderer/preload_realm_global_scope.cc",
+    "shell/renderer/preload_realm_global_scope.h",
     "shell/renderer/preload_utils.cc",
     "shell/renderer/preload_utils.h",
     "shell/renderer/renderer_client_base.cc",

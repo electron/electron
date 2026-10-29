@@ -86,6 +86,13 @@ class ElectronExtensionSystem : public ExtensionSystem {
 
   raw_ptr<content::BrowserContext> browser_context_;  // Not owned.
 
+  // Persist per-extension state such as alarms, declarative rules and dynamic
+  // content scripts. Null for in-memory sessions. Declared before the members
+  // that keep pointers to them.
+  std::unique_ptr<StateStore> state_store_;
+  std::unique_ptr<StateStore> rules_store_;
+  std::unique_ptr<StateStore> dynamic_user_scripts_store_;
+
   std::unique_ptr<ServiceWorkerManager> service_worker_manager_;
   std::unique_ptr<QuotaService> quota_service_;
   std::unique_ptr<UserScriptManager> user_script_manager_;

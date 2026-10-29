@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 
-import { ifit } from './lib/spec-helpers.ts';
+import { ifit, waitUntil } from './lib/spec-helpers.ts';
 
 describe('Notification module', () => {
   it('sets the correct class name on the prototype', () => {
@@ -379,6 +379,15 @@ describe('Notification module', () => {
   // TODO(sethlu): Find way to test init with notification icon?
 
   describe('static methods', () => {
+    // Notification Center applies removals asynchronously and the remove*()
+    // methods report no completion, so wait for the notifications to drop out
+    // of the history rather than for a fixed time.
+    const waitUntilGoneFromHistory = (...ids: string[]) =>
+      waitUntil(async () => {
+        const history = await Notification.getHistory();
+        return !history.some((item: any) => ids.includes(item.id));
+      });
+
     ifit(process.platform === 'darwin')('getHistory returns a promise that resolves to an array', async () => {
       const result = Notification.getHistory();
       expect(result).toBeInstanceOf(Promise);
@@ -492,9 +501,7 @@ describe('Notification module', () => {
       await shown;
 
       Notification.remove('remove-test-id');
-
-      // Give the notification center a moment to process the removal
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await waitUntilGoneFromHistory('remove-test-id');
 
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-test-id');
@@ -524,8 +531,7 @@ describe('Notification module', () => {
       await shown2;
 
       Notification.remove(['remove-array-1', 'remove-array-2']);
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await waitUntilGoneFromHistory('remove-array-1', 'remove-array-2');
 
       const history = await Notification.getHistory();
       const found1 = history.find((item: any) => item.id === 'remove-array-1');
@@ -547,8 +553,7 @@ describe('Notification module', () => {
       await shown;
 
       Notification.removeAll();
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await waitUntilGoneFromHistory('remove-all-test');
 
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-all-test');
@@ -585,9 +590,7 @@ describe('Notification module', () => {
       }
 
       Notification.removeGroup('group-b');
-
-      // Give the notification center a moment to fetch and remove
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await waitUntilGoneFromHistory('group-remove-1', 'group-remove-2');
 
       const history = await Notification.getHistory();
       // In code-signed builds, group-a notification should remain

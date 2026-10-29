@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { setTimeout } from 'node:timers/promises';
+import { setImmediate, setTimeout } from 'node:timers/promises';
 
 import { singleModifierCombinations } from './lib/accelerator-helpers.ts';
 import { defer, ifit, isWayland, spawnAndWait } from './lib/spec-helpers.ts';
@@ -841,6 +841,54 @@ describe('Menu module', () => {
       await closeWindow(w);
       w = null as unknown as BrowserWindow;
     });
+
+    // Closing a popup with the animated -[NSMenu cancelTracking] made a popup
+    // opened during the fade-out show nothing, so it never emitted
+    // 'menu-will-show' or 'menu-will-close' or ran its callback. Every retry
+    // repeats the same sequence, so retries could only hide a regression.
+    ifit(process.platform === 'darwin')(
+      'reopens a menu from the callback of a popup closed with closePopup()',
+      { retry: 0 },
+      async () => {
+        const events: string[] = [];
+        let popup = 1;
+        menu.on('menu-will-show', () => {
+          events.push(`menu-will-show ${popup}`);
+          menu.closePopup(w);
+        });
+        menu.on('menu-will-close', () => {
+          events.push(`menu-will-close ${popup}`);
+        });
+
+        await new Promise<void>((resolve) => {
+          menu.popup({
+            window: w,
+            callback: () => {
+              events.push('callback 1');
+              popup = 2;
+              menu.popup({
+                window: w,
+                callback: () => {
+                  events.push('callback 2');
+                  resolve();
+                }
+              });
+            }
+          });
+        });
+        // Let any duplicate event that is already queued arrive before checking.
+        await setImmediate();
+
+        expect(events).toEqual([
+          'menu-will-show 1',
+          'menu-will-close 1',
+          'callback 1',
+          'menu-will-show 2',
+          'menu-will-close 2',
+          'callback 2'
+        ]);
+      }
+    );
 
     it('throws an error if options is not an object', () => {
       expect(() => {

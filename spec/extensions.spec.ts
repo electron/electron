@@ -19,11 +19,12 @@ import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
-import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { expectWarningMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
@@ -88,6 +89,20 @@ describe('chrome extensions', () => {
       })();
     `)
     ).resolves.toHaveProperty('id');
+  });
+
+  it('supports chrome.management with the management permission', async () => {
+    const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+    const extension = await customSession.extensions.loadExtension(
+      path.join(fixtures, 'extensions', 'chrome-management')
+    );
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    await w.loadURL(`${extension.url}page.html`);
+
+    const all = await w.webContents.executeJavaScript('chrome.management.getAll()');
+    expect(all.map((info: any) => info.id)).toContain(extension.id);
+    const info = await w.webContents.executeJavaScript(`chrome.management.get('${extension.id}')`);
+    expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
   });
 
   describe('Chrome Web Store origin', () => {
@@ -421,6 +436,39 @@ describe('chrome extensions', () => {
     });
   });
 
+  describe('chrome.cookies', () => {
+    let customSession: Session;
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-cookies')
+      );
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${extension.url}page.html`);
+    });
+
+    it('lists the session as a cookie store', async () => {
+      const stores = await w.webContents.executeJavaScript('chrome.cookies.getAllCookieStores()');
+      expect(stores).toEqual([{ id: '0', tabIds: [w.webContents.id] }]);
+    });
+
+    it('sets and gets cookies and emits onChanged', async () => {
+      const cookieUrl = `${url}/`;
+      const { change, cookie } = await w.webContents.executeJavaScript(`(async () => {
+        const changed = new Promise((resolve) => chrome.cookies.onChanged.addListener(resolve));
+        await chrome.cookies.set({ url: ${JSON.stringify(cookieUrl)}, name: 'key', value: 'value' });
+        return { change: await changed, cookie: await chrome.cookies.get({ url: ${JSON.stringify(cookieUrl)}, name: 'key' }) };
+      })()`);
+      expect(cookie).toMatchObject({ name: 'key', value: 'value', storeId: '0' });
+      expect(change).toMatchObject({ removed: false, cause: 'explicit', cookie: { name: 'key', value: 'value' } });
+
+      const cookies = await customSession.cookies.get({ url: cookieUrl, name: 'key' });
+      expect(cookies.map((c) => c.value)).toEqual(['value']);
+    });
+  });
+
   describe('chrome.storage', () => {
     it('stores and retrieves a key', async () => {
       const customSession = session.fromPartition(`persist:${randomUUID()}`);
@@ -587,6 +635,44 @@ describe('chrome extensions', () => {
           }
         });
       });
+    });
+
+    it('reports the tab id of the requesting WebContents', async () => {
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'request-tab-id')
+      );
+      const page = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await page.loadURL(`${extension.url}page.html`);
+      // Wait for the service worker to register its listener.
+      await page.webContents.executeJavaScript("chrome.runtime.sendMessage({ type: 'ping' })");
+
+      await w.loadURL(`${url}/?tab-id`);
+      const request = await page.webContents.executeJavaScript(
+        "chrome.runtime.sendMessage({ type: 'wait-for-request', marker: 'tab-id' })"
+      );
+      expect(request.tabId).toBe(w.webContents.id);
+    });
+  });
+
+  describe('chrome.declarativeNetRequest', () => {
+    it('matches rules restricted to a tab', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'request-tab-id')
+      );
+      const page = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      const tab = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      const otherTab = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await Promise.all([page.loadURL(`${extension.url}page.html`), tab.loadURL(url), otherTab.loadURL(url)]);
+
+      await page.webContents.executeJavaScript(
+        `chrome.runtime.sendMessage({ type: 'block-in-tab', marker: 'blocked-in-tab', tabId: ${tab.webContents.id} })`
+      );
+
+      const canFetch = (contents: WebContents) =>
+        contents.executeJavaScript(`fetch('${url}/blocked-in-tab').then(() => true, () => false)`);
+      expect(await canFetch(otherTab.webContents)).toBe(true);
+      expect(await canFetch(tab.webContents)).toBe(false);
     });
   });
 
@@ -1041,6 +1127,39 @@ describe('chrome extensions', () => {
       const textContent = await w.webContents.executeJavaScript('document.body.textContent');
       expect(textContent).toBe('script loaded ok\n');
     });
+
+    it('isolates only manifest-sandboxed pages from the extension process', async () => {
+      const { id } = await session.defaultSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'sandboxed-pages')
+      );
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`chrome-extension://${id}/page.html`);
+
+      const { mainFrame } = w.webContents;
+      const findFrame = (file: string) => mainFrame.frames.find((frame) => frame.url.endsWith(file))!;
+      const hasExtensionApi = (frame: Electron.WebFrameMain) =>
+        frame.executeJavaScript("typeof globalThis.chrome?.runtime?.getManifest === 'function'");
+
+      // Listed under "sandbox" in the manifest: its own process, no API access.
+      const sandboxed = findFrame('sandboxed.html');
+      expect(sandboxed.processId).not.toBe(mainFrame.processId);
+      expect(await hasExtensionApi(sandboxed)).toBe(false);
+
+      // Sandboxed by its embedder only: stays in the extension's process.
+      const inherited = findFrame('frame.html');
+      expect(inherited.processId).toBe(mainFrame.processId);
+      expect(await hasExtensionApi(inherited)).toBe(true);
+    });
+
+    it('localizes messages in stylesheets', async () => {
+      const { id } = await session.defaultSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'css-localization')
+      );
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`chrome-extension://${id}/page.html`);
+      const content = await w.webContents.executeJavaScript("getComputedStyle(document.body, '::after').content");
+      expect(content).toBe(`"${id}"`);
+    });
   });
 
   describe('manifest v3', () => {
@@ -1157,6 +1276,165 @@ describe('chrome extensions', () => {
       for (let i = 0; i < 3; i++) {
         await runRemoteControlApp();
       }
+    });
+
+    // Loads a generated extension in a fresh app, reports what its worker saw
+    // and quits. `write` replaces the extension's files between launches.
+    const setUpRestartingExtension = async () => {
+      const partition = `persist:${crypto.randomUUID()}`;
+      const extensionPath = await fs.mkdtemp(path.join(os.tmpdir(), 'electron-extension-'));
+      defer(() => fs.rm(extensionPath, { recursive: true, force: true }));
+
+      const writeExtension = async (version: string, marker: string) => {
+        await fs.writeFile(
+          path.join(extensionPath, 'manifest.json'),
+          JSON.stringify({
+            name: 'restart',
+            version,
+            manifest_version: 3,
+            background: { service_worker: 'background.js' }
+          })
+        );
+        await fs.writeFile(path.join(extensionPath, 'page.html'), '<!doctype html>');
+        await fs.writeFile(
+          path.join(extensionPath, 'background.js'),
+          `chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            sendResponse({ marker: ${JSON.stringify(marker)} });
+          });`
+        );
+      };
+
+      const runRemoteControlApp = async () => {
+        const rc = await startRemoteControlApp();
+        const exitPromise = once(rc.process, 'exit');
+
+        const state = await rc.remotely(
+          async (partition: string, extensionPath: string) => {
+            const { BrowserWindow, session } = require('electron/main');
+            const { setTimeout } = require('node:timers/promises');
+
+            const customSession = session.fromPartition(partition);
+            const extension = await customSession.extensions.loadExtension(extensionPath);
+            const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+            await w.loadURL(`${extension.url}page.html`);
+
+            const state = await w.webContents.executeJavaScript('chrome.runtime.sendMessage({})');
+
+            // Give Chromium some time to write the extension's prefs to disk.
+            await setTimeout(500);
+
+            global.setTimeout(() => require('electron').app.quit());
+
+            return state;
+          },
+          partition,
+          extensionPath
+        );
+
+        await exitPromise;
+        return state;
+      };
+
+      return { write: writeExtension, launch: runRemoteControlApp };
+    };
+
+    it('runs the worker script on disk after restarting the app', async () => {
+      const extension = await setUpRestartingExtension();
+
+      await extension.write('1.0', 'first');
+      expect((await extension.launch()).marker).toBe('first');
+
+      // Same version, new script.
+      await extension.write('1.0', 'second');
+      expect((await extension.launch()).marker).toBe('second');
+    });
+
+    it('persists alarms and dynamic content scripts across restarts', async () => {
+      const partition = `persist:${crypto.randomUUID()}`;
+      const extensionPath = path.join(fixtures, 'extensions', 'persistent-state');
+
+      const runRemoteControlApp = async (script: string) => {
+        const rc = await startRemoteControlApp();
+        const exitPromise = once(rc.process, 'exit');
+
+        const result = await rc.remotely(
+          async (partition: string, extensionPath: string, script: string) => {
+            const { BrowserWindow, session } = require('electron/main');
+            const { setTimeout } = require('node:timers/promises');
+
+            const customSession = session.fromPartition(partition);
+            const extension = await customSession.extensions.loadExtension(extensionPath);
+            const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+            await w.loadURL(`${extension.url}page.html`);
+            const result = await w.webContents.executeJavaScript(script);
+
+            // Give Chromium some time to write the extension's state to disk.
+            await setTimeout(500);
+
+            global.setTimeout(() => require('electron').app.quit());
+
+            return result;
+          },
+          partition,
+          extensionPath,
+          script
+        );
+
+        await exitPromise;
+        return result;
+      };
+
+      const getState = `(async () => ({
+        alarms: (await chrome.alarms.getAll()).map((alarm) => alarm.name),
+        scripts: (await chrome.scripting.getRegisteredContentScripts()).map((script) => script.id)
+      }))()`;
+
+      const created = await runRemoteControlApp(`(async () => {
+        await chrome.alarms.create('persisted', { delayInMinutes: 60 });
+        await chrome.scripting.registerContentScripts([
+          { id: 'persisted', js: ['content.js'], matches: ['<all_urls>'], persistAcrossSessions: true }
+        ]);
+        return ${getState};
+      })()`);
+      expect(created).toEqual({ alarms: ['persisted'], scripts: ['persisted'] });
+
+      expect(await runRemoteControlApp(getState)).toEqual({ alarms: ['persisted'], scripts: ['persisted'] });
+    });
+
+    it('keeps the background service worker when storage data is cleared', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'mv3-service-worker')
+      );
+
+      const messageWorker = async () => {
+        await w.loadURL(url);
+        w.webContents.executeJavaScript("window.postMessage('fetch-confirmation', '*')");
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
+        return JSON.parse(responseString).message;
+      };
+
+      // A reply means the worker has finished registering. Until then the
+      // registration is not protected.
+      expect(await messageWorker()).toBe('Hello from background.js');
+
+      await customSession.clearStorageData();
+
+      const worker = await customSession.serviceWorkers.startWorkerForScope(extension.url);
+      expect(worker.scope).toBe(extension.url);
+      expect(await messageWorker()).toBe('Hello from background.js');
+    });
+
+    it('can write to the clipboard from the background service worker', { tags: ['serial'] }, async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'clipboard-service-worker')
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${extension.url}page.html`);
+      const result = await w.webContents.executeJavaScript("chrome.runtime.sendMessage('from a service worker')");
+      expect(result).toEqual({ written: true });
     });
 
     it('can run chrome extension APIs', async () => {
@@ -1779,9 +2057,23 @@ describe('chrome extensions', () => {
 
   describe('custom protocol', () => {
     async function runFixture(name: string) {
-      const args = [path.join(fixtures, 'extensions', name, 'main.js')];
+      // Without a package.json the fixture app would use the default profile,
+      // which other fixture apps share. When another browser process holds
+      // that profile the extension's service worker never answers the content
+      // script and the app hangs, so give every run a profile of its own.
+      const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), `electron-${name}-`));
+      const args = [path.join(fixtures, 'extensions', name, 'main.js'), `--user-data-dir=${userDataDir}`];
       if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const appProcess = spawn(process.execPath, args);
+      const exited = once(appProcess, 'exit');
+      defer(async () => {
+        // A hung app would keep its profile open into the retry.
+        if (appProcess.exitCode === null && appProcess.signalCode === null) {
+          appProcess.kill();
+          await exited;
+        }
+        await fs.rm(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+      });
 
       let output = '';
       appProcess.stdout.on('data', (data) => {

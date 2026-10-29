@@ -6,6 +6,8 @@
 
 #include <objbase.h>
 
+#include <utility>
+
 #include "base/logging.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
@@ -240,7 +242,7 @@ void NotifyIcon::CloseContextMenu() {
 }
 
 void NotifyIcon::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
-  menu_model_ = menu_model;
+  menu_model_ = std::move(menu_model);
 }
 
 gfx::Rect NotifyIcon::GetBounds() {

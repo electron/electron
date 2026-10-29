@@ -159,7 +159,7 @@ v8::Local<v8::Value> CompileWasmModuleWithCacheForTesting(
             std::span(cached_bytes.span().data(), cached_bytes.span().size()));
       },
       [resolve = std::move(resolve)](ModuleResult result) {
-        resolve.Run(std::move(result));
+        resolve.Run(result);
       });
   auto result = gin_helper::Dictionary::CreateEmpty(isolate);
   result.Set("accepted", accepted);

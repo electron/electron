@@ -230,12 +230,23 @@ describe('<webview> tag', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', () => {
+  // The guest's visibility follows whether the embedder window is actually on
+  // screen, so this needs the screen to itself (see the BrowserWindow
+  // visibilityState specs): on macOS a window from another spec worker can
+  // occlude this one and hide the guest.
+  ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', { tags: ['serial'] }, () => {
     afterEach(() => {
       ipcMain.removeAllListeners('pong');
     });
 
     afterEach(closeAllWindows);
+
+    // The guest reports its state when its script runs and on every
+    // visibilitychange. Wait for the expected state rather than taking the
+    // next report: the guest can run its script while it is still being
+    // attached, before the embedder has shown it, and report 'hidden' first.
+    const guestVisibility = (state: 'visible' | 'hidden') =>
+      emittedUntil(ipcMain, 'pong', (_event: unknown, visibilityState: string) => visibilityState === state);
 
     it('follows the embedder window when it is hidden and shown again', async () => {
       const w = new BrowserWindow({
@@ -243,24 +254,24 @@ describe('<webview> tag', () => {
         height: 100,
         webPreferences: { webviewTag: true, nodeIntegration: true, contextIsolation: false }
       });
+      const initiallyVisible = guestVisibility('visible');
       w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
-        expect(visibilityState).toBe('visible');
+        const [, , hidden] = await initiallyVisible;
         expect(hidden).toBe(false);
       }
 
+      const hiddenState = guestVisibility('hidden');
       w.hide();
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
-        expect(visibilityState).toBe('hidden');
+        const [, , hidden] = await hiddenState;
         expect(hidden).toBe(true);
       }
 
+      const visibleState = guestVisibility('visible');
       w.show();
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
-        expect(visibilityState).toBe('visible');
+        const [, , hidden] = await visibleState;
         expect(hidden).toBe(false);
       }
     });

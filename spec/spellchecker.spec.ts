@@ -8,7 +8,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifit, ifdescribe, listen } from './lib/spec-helpers.ts';
+import { ifit, ifdescribe, listen, waitUntil } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
@@ -45,6 +45,13 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', { timeout },
     return contextMenuParams;
   }
 
+  // The misspelled word comes from the asynchronous check that underlines it,
+  // but its suggestions are looked up separately when the menu opens, and on
+  // macOS that lookup can time out on its own ("NSSpellServer
+  // suggestGuessesForWordRange timed out"). Wait for the menu to have both.
+  const isMisspelledWithSuggestions = (params: Electron.ContextMenuParams) =>
+    params.misspelledWord.length > 0 && params.dictionarySuggestions.length > 0;
+
   // Setup a server to download hunspell dictionary.
   const server = http.createServer(async (req, res) => {
     // The provided is minimal dict for testing only, full list of words can
@@ -69,6 +76,33 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', { timeout },
 
   const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const preload = path.join(fixtures, 'module', 'preload-electron.js');
+
+  // On macOS the specs below go through the system spell checker, whose
+  // spelling server starts on first use. On a fresh CI machine that took 30 to
+  // 60 seconds, and until then AppKit times every request out ("NSSpellServer
+  // dataFromCheckingString timed out") and nothing is reported as misspelled.
+  // Blink does not ask again about text it has already checked, so the first
+  // spec's page never had its misspelling marked. Wait once, here, until the
+  // spell checker answers with suggestions for a misspelled word.
+  const spellServerStartTimeout = 120 * 1000;
+  beforeAll(async () => {
+    if (process.platform !== 'darwin') return;
+    const warmUpWindow = new BrowserWindow({
+      show: false,
+      webPreferences: { partition: 'spellchecker-warm-up', contextIsolation: false, preload }
+    });
+    try {
+      await warmUpWindow.loadFile(path.resolve(import.meta.dirname, './fixtures/chromium/spellchecker.html'));
+      await waitUntil(
+        async () =>
+          (await warmUpWindow.webContents.executeJavaScript('electron.webFrame.getWordSuggestions("typograpy")'))
+            .length > 0,
+        { rate: 100, timeout: spellServerStartTimeout }
+      );
+    } finally {
+      await closeWindow(warmUpWindow);
+    }
+  }, spellServerStartTimeout + timeout);
 
   const generateSpecs = (description: string, sandbox: boolean) => {
     describe(description, () => {
@@ -107,9 +141,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', { timeout },
       ifit(shouldRun)('should detect incorrectly spelled words as incorrect', async () => {
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
-        const contextMenuParams = await rightClickUntil(
-          (contextMenuParams) => contextMenuParams.misspelledWord.length > 0
-        );
+        const contextMenuParams = await rightClickUntil(isMisspelledWithSuggestions);
         expect(contextMenuParams.misspelledWord).toBe('typograpy');
         expect(contextMenuParams.dictionarySuggestions.length).toBeGreaterThanOrEqual(1);
       });
@@ -122,9 +154,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', { timeout },
           w.webContents.session.setSpellCheckerLanguages(['en-US']);
           await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
           await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
-          const contextMenuParams = await rightClickUntil(
-            (contextMenuParams) => contextMenuParams.misspelledWord.length > 0
-          );
+          const contextMenuParams = await rightClickUntil(isMisspelledWithSuggestions);
           expect(contextMenuParams.misspelledWord).toBe('typograpy');
           expect(contextMenuParams.dictionarySuggestions.length).toBeGreaterThanOrEqual(1);
         }
@@ -133,7 +163,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', { timeout },
       ifit(shouldRun)('should expose webFrame spellchecker correctly', async () => {
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
-        await rightClickUntil((contextMenuParams) => contextMenuParams.misspelledWord.length > 0);
+        await rightClickUntil(isMisspelledWithSuggestions);
 
         const callWebFrameFn = (expr: string) => w.webContents.executeJavaScript(`electron.webFrame.${expr}`);
 
@@ -151,7 +181,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', { timeout },
         ifit(shouldRun)('can be dynamically changed', async () => {
           await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
           await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
-          await rightClickUntil((contextMenuParams) => contextMenuParams.misspelledWord.length > 0);
+          await rightClickUntil(isMisspelledWithSuggestions);
 
           const callWebFrameFn = (expr: string) => w.webContents.executeJavaScript(`electron.webFrame.${expr}`);
 

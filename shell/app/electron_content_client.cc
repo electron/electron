@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
@@ -164,7 +165,7 @@ bool TryGetBundledWidevineCdm(
     return false;
   }
 
-  *cdm_path = cdm_library_path;
+  *cdm_path = std::move(cdm_library_path);
   *capability_out = std::move(capability);
   return true;
 }
@@ -340,6 +341,7 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
   schemes->cors_enabled_schemes.push_back(extensions::kExtensionScheme);
   schemes->csp_bypassing_schemes.push_back(extensions::kExtensionScheme);
   schemes->code_cache_schemes.push_back(extensions::kExtensionScheme);
+  schemes->extension_schemes.push_back(extensions::kExtensionScheme);
 #endif
 }
 

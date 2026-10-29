@@ -193,8 +193,13 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     }
   });
 
-  const recordingTimeout = process.platform === 'win32' && process.arch === 'arm64' ? 10_000 : 5_000;
-  describe('startRecording', { timeout: recordingTimeout }, () => {
+  // These suites use the default spec timeout. Recording waits on every child
+  // process: startRecording() resolves once all of them ack the start, or
+  // after Chromium's 10s timeout, and stopRecording() waits up to Perfetto's
+  // 5s for their stop acks. A child that is slow to get scheduled can stretch
+  // a single record() to 15s whatever the categories are, so a tighter
+  // per-suite timeout fails on a busy host even though the recording finishes.
+  describe('startRecording', () => {
     const getFileSizeInKiloBytes = (filePath: string) => {
       const stats = fs.statSync(filePath);
       const fileSizeInBytes = stats.size;
@@ -301,7 +306,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('stopRecording', { timeout: recordingTimeout }, () => {
+  ifdescribe(process.platform !== 'linux')('stopRecording', () => {
     // FIXME(samuelmaddock): this test regularly flakes
     it.skip('does not crash on empty string', async () => {
       const options = {

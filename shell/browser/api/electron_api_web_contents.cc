@@ -438,7 +438,7 @@ struct Converter<content::NavigationEntry*> {
         if (!page_state.IsValid())
           return false;
 
-        entry->SetPageState(std::move(page_state), restore_context.get());
+        entry->SetPageState(page_state, restore_context.get());
       }
     }
 
@@ -3654,13 +3654,13 @@ void WebContents::DidFinishNavigation(
 }
 
 void WebContents::NotifyPageTitleUpdated(
-    content::NavigationEntry* entry,
+    const content::NavigationEntry* entry,
     bool from_same_document_history_navigation) {
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
-    auto title = entry->GetTitle();
-    auto url = entry->GetURL();
+    const auto& title = entry->GetTitle();
+    const auto& url = entry->GetURL();
     if (url.SchemeIsFile() && title.empty()) {
       final_title = base::UTF8ToUTF16(url.ExtractFileName());
       explicit_set = false;
@@ -4017,7 +4017,7 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
 
   GURL base_url_for_data_url;
   if (options.Get("baseURLForDataURL", &base_url_for_data_url)) {
-    params.base_url_for_data_url = base_url_for_data_url;
+    params.base_url_for_data_url = std::move(base_url_for_data_url);
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 
@@ -5117,7 +5117,7 @@ void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("start", &start_adjust);
-    dict.Get("matchCase", &end_adjust);
+    dict.Get("end", &end_adjust);
   }
 
   // The selection menu is a Chrome-specific piece of UI.
@@ -5884,7 +5884,7 @@ void WebContents::PostMessage(v8::Isolate* isolate,
         "webContents has no main frame to post to");
     return;
   }
-  frame->PostMessage(isolate, channel, message, std::move(transfer));
+  frame->PostMessage(isolate, channel, message, transfer);
 }
 
 void WebContents::SendInternal(gin::Arguments* args) {

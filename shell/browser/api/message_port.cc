@@ -190,7 +190,7 @@ bool MessagePort::EntanglePorts(v8::Isolate* isolate,
   v8::LocalVector<v8::Value> result(isolate);
   for (auto& port : channels) {
     auto* wrapped_port = MessagePort::Create(isolate);
-    wrapped_port->Entangle(std::move(port));
+    wrapped_port->Entangle(port);
     v8::Local<v8::Object> wrapper;
     if (!wrapped_port->GetWrapper(isolate).ToLocal(&wrapper))
       return false;

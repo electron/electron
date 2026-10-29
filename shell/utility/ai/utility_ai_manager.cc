@@ -404,7 +404,7 @@ void UtilityAIManager::CreateLanguageModel(
 
   CreateLanguageModelInternal(isolate, std::move(client),
                               language_model_class.Get(isolate), "create",
-                              std::move(options_dict), std::move(options));
+                              options_dict, std::move(options));
 }
 
 void UtilityAIManager::CreateLanguageModelInternal(

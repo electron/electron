@@ -52,6 +52,7 @@
 #include "shell/browser/electron_preconnect_manager_delegate.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "shell/browser/media/media_device_id_salt.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/browser/protocol_registry.h"
@@ -393,7 +394,7 @@ ElectronBrowserContext::ElectronBrowserContext(
                  std::get_if<std::reference_wrapper<const base::FilePath>>(
                      &partition_location)) {
     const base::FilePath& partition_path = filepath_partition->get();
-    path_ = std::move(partition_path);
+    path_ = partition_path;
   }
 
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
@@ -651,8 +652,17 @@ void ElectronBrowserContext::InterceptedProtocolsChanged() {
 
 scoped_refptr<network::SharedURLLoaderFactory>
 ElectronBrowserContext::InterceptURLLoaderFactory(
-    scoped_refptr<network::SharedURLLoaderFactory> factory) {
-  return CreateURLLoaderFactoryBuilder().first.Finish(factory);
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> factory) {
+  return CreateURLLoaderFactoryBuilder().first.Finish(std::move(factory));
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+ElectronBrowserContext::GetFileURLLoaderFactory() {
+  if (!file_url_loader_factory_) {
+    file_url_loader_factory_ =
+        InterceptURLLoaderFactory(AsarURLLoaderFactory::Create());
+  }
+  return file_url_loader_factory_;
 }
 
 content::PushMessagingService*

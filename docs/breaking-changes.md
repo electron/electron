@@ -16,6 +16,20 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Behavior Changed: `--no-stdio-init` command-line switch is ignored
+
+The `--no-stdio-init` command-line switch no longer affects stdio initialization.
+It is still accepted and silently ignored, including in `ELECTRON_RUN_AS_NODE`
+mode, so existing launch arguments do not prevent startup.
+
+On Windows, Electron now automatically skips Node.js stdio initialization when
+the `NUL` device cannot be opened, instead of aborting startup. This applies to
+both regular Electron processes and `ELECTRON_RUN_AS_NODE` mode. Stdio
+initialization remains enabled when `NUL` is available.
+
+Remove this switch from application launch arguments. No replacement is needed
+for the Windows `NUL` device workaround.
+
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 
 `child.kill()` used to send `SIGTERM` and then `SIGKILL` two seconds later if the

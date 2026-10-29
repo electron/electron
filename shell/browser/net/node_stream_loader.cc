@@ -207,7 +207,7 @@ void NodeStreamLoader::On(const char* event, EventCallback callback) {
   // emitter.on(event, callback)
   v8::Local<v8::Value> args[] = {
       gin::StringToV8(isolate_, event),
-      gin_helper::CallbackToV8Leaked(isolate_, std::move(callback)),
+      gin_helper::CallbackToV8Leaked(isolate_, callback),
   };
   handlers_[event].Reset(isolate_, args[1]);
   node::MakeCallback(isolate_, emitter_.Get(isolate_), "on",

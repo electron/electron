@@ -184,7 +184,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     identifier = [self identifierFromID:item_id type:type];
   }
   if (identifier) {
-    [self addNonDefaultTouchBarItems:{std::move(item)}];
+    [self addNonDefaultTouchBarItems:{item}];
     touchBar.escapeKeyReplacementItemIdentifier = identifier;
   } else {
     touchBar.escapeKeyReplacementItemIdentifier = nil;
