@@ -1776,10 +1776,7 @@ describe('webContents module', () => {
       bus?.connection.end();
     });
 
-    afterEach(async () => {
-      await closeAllWindows();
-      await clearQueuedResponses();
-    });
+    afterEach(closeAllWindows);
 
     it('reuses the saved path for a repeat save of the same URL', async () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-save-'));
@@ -1802,6 +1799,7 @@ describe('webContents module', () => {
 
       await clearCalls();
       await queueResponse([url.pathToFileURL(target).href]);
+      defer(() => clearQueuedResponses());
 
       // The first save has no stored path, so it asks the portal for one.
       await save('first');
