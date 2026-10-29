@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { defer, listen } from './lib/spec-helpers.ts';
 
@@ -439,6 +440,165 @@ describe('webFrame module', () => {
           webFrame.executeJavaScriptInIsolatedWorld(1107, [{ code: 'void 0' }]);
         })`);
         expect(worlds).toEqual([1107, 1107]);
+      });
+    });
+  });
+
+  describe('frame tree', () => {
+    it('nextSibling walks sibling frames in document order', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      defer(() => w.close());
+      await w.loadURL('data:text/html,<iframe name="a"></iframe><iframe name="b"></iframe><iframe name="c"></iframe>');
+      const result = await w.webContents.executeJavaScript(`(() => {
+        const { webFrame } = require('electron');
+        const first = webFrame.firstChild;
+        const second = first.nextSibling;
+        const third = second.nextSibling;
+        return {
+          first: first.frameToken === webFrame.findFrameByName('a').frameToken,
+          second: second.frameToken === webFrame.findFrameByName('b').frameToken,
+          third: third.frameToken === webFrame.findFrameByName('c').frameToken,
+          afterLast: third.nextSibling,
+          topNextSibling: webFrame.nextSibling
+        };
+      })()`);
+      expect(result).toEqual({ first: true, second: true, third: true, afterLast: null, topNextSibling: null });
+    });
+  });
+
+  describe('insertText()', () => {
+    it('inserts text into the focused element', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      defer(() => w.close());
+      await w.loadURL('data:text/html,<input id="field" value="">');
+      const value = await w.webContents.executeJavaScript(`(() => {
+        const field = document.getElementById('field');
+        field.focus();
+        require('electron').webFrame.insertText('hello world');
+        return field.value;
+      })()`);
+      expect(value).toBe('hello world');
+    });
+  });
+
+  describe('insertCSS() and removeInsertedCSS()', () => {
+    let w: BrowserWindow;
+    beforeAll(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      await w.loadURL(
+        'data:text/html,<style>%23important { color: rgb(255, 0, 0) !important; }</style>' +
+          '<div id="important"></div><div id="plain"></div>'
+      );
+      await w.webContents.executeJavaScript(`
+        var { webFrame } = require('electron');
+        var colorOf = (id) => getComputedStyle(document.getElementById(id)).color;
+        null
+      `);
+    });
+
+    afterAll(() => {
+      w.close();
+      w = null as unknown as BrowserWindow;
+    });
+
+    it('applies author-origin CSS by default and removes it by key', async () => {
+      const result = await w.webContents.executeJavaScript(`(() => {
+        const before = colorOf('plain');
+        const key = webFrame.insertCSS('#plain { color: rgb(0, 128, 0); }');
+        const inserted = colorOf('plain');
+        webFrame.removeInsertedCSS(key);
+        return { before, key, inserted, after: colorOf('plain') };
+      })()`);
+      expect(result.key).toEqual(expect.any(String));
+      expect(result.key).not.toBe('');
+      expect(result.inserted).toBe('rgb(0, 128, 0)');
+      expect(result.after).toBe(result.before);
+    });
+
+    it('applies user-origin CSS when cssOrigin is "user"', async () => {
+      // An !important declaration from the user origin wins over an !important
+      // declaration from the author origin, but an author-origin one does not.
+      const result = await w.webContents.executeJavaScript(`(() => {
+        const authorKey = webFrame.insertCSS('#important { color: rgb(0, 0, 255) !important; }', { cssOrigin: 'author' });
+        const withAuthor = colorOf('important');
+        webFrame.removeInsertedCSS(authorKey);
+        webFrame.insertCSS('#important { color: rgb(0, 0, 255) !important; }', { cssOrigin: 'user' });
+        return { withAuthor, withUser: colorOf('important') };
+      })()`);
+      expect(result.withAuthor).toBe('rgb(255, 0, 0)');
+      expect(result.withUser).toBe('rgb(0, 0, 255)');
+    });
+  });
+
+  describe('setVisualZoomLevelLimits()', () => {
+    it('sets the range that the page scale is clamped to', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      defer(() => w.close());
+      await w.loadURL('about:blank');
+      w.webContents.debugger.attach();
+      const pageScaleAfterPinchTo = async (scale: number) => {
+        await w.webContents.debugger.sendCommand('Emulation.setPageScaleFactor', { pageScaleFactor: scale });
+        return w.webContents.executeJavaScript('window.visualViewport.scale');
+      };
+
+      expect(await pageScaleAfterPinchTo(2)).toBe(1);
+      await w.webContents.executeJavaScript("require('electron').webFrame.setVisualZoomLevelLimits(1, 3)");
+      expect(await pageScaleAfterPinchTo(2)).toBe(2);
+      expect(await pageScaleAfterPinchTo(5)).toBe(3);
+    });
+  });
+
+  describe('clearCache()', () => {
+    it('frees cached resources that are no longer in use', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      defer(() => w.close());
+      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      const result = await w.webContents.executeJavaScript(`(async () => {
+        const { webFrame } = require('electron');
+        const img = new Image();
+        img.src = ${JSON.stringify(pathToFileURL(path.join(fixtures, 'assets', 'capybara.png')).href)};
+        await img.decode();
+        img.src = '';
+        const before = webFrame.getResourceUsage().images;
+        webFrame.clearCache();
+        const after = webFrame.getResourceUsage().images;
+        return { before, after };
+      })()`);
+      // The image stays in Blink's memory cache after it is no longer used,
+      // until clearCache() evicts it.
+      expect(result.before.count).toBeGreaterThan(0);
+      expect(result.after.count).toBeLessThan(result.before.count);
+      expect(result.after.size).toBeLessThan(result.before.size);
+    });
+  });
+
+  describe('executeJavaScriptInIsolatedWorld() with invalid code', () => {
+    it('rejects and passes the error to the callback when a script has no string code', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      defer(() => w.close());
+      await w.loadURL('about:blank');
+      const result = await w.webContents.executeJavaScript(`new Promise(resolve => {
+        let callbackResult, callbackError;
+        require('electron').webFrame
+          .executeJavaScriptInIsolatedWorld(999, [{ code: 42 }], (result, error) => {
+            callbackResult = result;
+            callbackError = error;
+          })
+          .then(
+            () => resolve({ rejected: false }),
+            (error) => resolve({
+              rejected: true,
+              message: error.message,
+              callbackResult,
+              callbackErrorMessage: callbackError && callbackError.message
+            })
+          );
+      })`);
+      expect(result).toEqual({
+        rejected: true,
+        message: "Invalid 'code'",
+        callbackResult: undefined,
+        callbackErrorMessage: "Invalid 'code'"
       });
     });
   });
