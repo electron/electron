@@ -1,0 +1,169 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@google.com>
+Date: Tue, 13 Oct 2026 15:16:57 -0700
+Subject: [WebAudio] Stop paused destination and guard automatic pull on close
+
+When an AudioContext is closed while its frame is frozen, the platform
+audio destination is in the kPaused state (`IsPlaying()` is false), so
+`StopPlatformDestination()` previously skipped calling `Stop()`. When
+the frame later thawed, `Resume()` restarted the audio thread on the
+closed context, and `Render()` invoked `ProcessAutomaticPullNodes()`
+even when pulling the audio graph was disabled, causing an object
+lifetime issue with disposed upstream nodes.
+
+Changes:
+- Call `platform_destination_->Stop()` in `StopPlatformDestination()`
+  whenever `platform_destination_` is present so `kPaused` destinations
+  transition to `kStopped`.
+- Move `ProcessAutomaticPullNodes()` inside the active graph-pulling
+  branch of `RealtimeAudioDestinationHandler::Render()`.
+- Add `AudioContextTest.CloseWhileFrozenStopsDestination` to verify
+  closing a frozen context stops the destination and guards automatic
+  pull nodes.
+
+Bug: 572191610
+Test: blink_unittests --gtest_filter=AudioContextTest.CloseWhileFrozen*
+Change-Id: I3126957a0a43ffdce2f541908ad90359e8f0fd6e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8561977
+Commit-Queue: Hongchan Choi <hongchan@google.com>
+Reviewed-by: Mahesh Kannan <kmaheshb@google.com>
+Cr-Commit-Position: refs/heads/main@{#1717977}
+(cherry picked from commit c26b38a137c5f813e0bc01d3781be5a16cb25638)
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_context_test.cc b/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
+index d0c2d03648561f5677075751bdd445793e1dea19..0d6bf449e5c69a1371a2a774816a4c3538a9b778 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
+@@ -46,6 +46,7 @@
+ #include "third_party/blink/renderer/core/workers/worker_thread.h"
+ #include "third_party/blink/renderer/modules/mediastream/sub_capture_target.h"
+ #include "third_party/blink/renderer/modules/peerconnection/peer_connection_dependency_factory.h"
++#include "third_party/blink/renderer/modules/webaudio/analyser_node.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_playback_stats.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.h"
+@@ -377,6 +378,7 @@ class AudioContextTest : public PageTestBase {
+   }
+ 
+   void SetUp() override {
++    web_audio_device_paused_ = false;
+     PageTestBase::SetUp(gfx::Size());
+     CoreInitializer::GetInstance().ProvideModulesToPage(GetPage(),
+                                                         std::string());
+@@ -645,6 +647,80 @@ TEST_F(AudioContextTest, ExecutionContextPaused) {
+   EXPECT_FALSE(web_audio_device_paused_);
+ }
+ 
++TEST_F(AudioContextTest, CloseWhileFrozenStopsDestination) {
++  AudioContextOptions* options = AudioContextOptions::Create();
++  AudioContext* audio_context = AudioContext::Create(
++      GetFrame().DomWindow(), options, ASSERT_NO_EXCEPTION);
++  ExpectContextBecomesRunningAsync(audio_context);
++  ExpectContextRunning(audio_context);
++
++  RealtimeAudioDestinationHandler* dest_handler =
++      &audio_context->destinationNode()->GetAudioDestinationHandler();
++
++  GetFrame().DomWindow()->SetLifecycleState(
++      mojom::FrameLifecycleState::kFrozen);
++  EXPECT_TRUE(web_audio_device_paused_);
++  EXPECT_FALSE(dest_handler->get_platform_destination_is_playing_for_testing());
++
++  {
++    V8TestingScope scope;
++    audio_context->closeContext(scope.GetScriptState(),
++                                scope.GetExceptionState());
++  }
++  EXPECT_EQ(audio_context->ContextState(), V8AudioContextState::Enum::kClosed);
++  EXPECT_FALSE(audio_context->IsPullingAudioGraph());
++
++  // Thawing the frame after closing must not resume the stopped destination.
++  GetFrame().DomWindow()->SetLifecycleState(
++      mojom::FrameLifecycleState::kRunning);
++  EXPECT_FALSE(dest_handler->get_platform_destination_is_playing_for_testing());
++  EXPECT_TRUE(web_audio_device_paused_);
++
++  // Verify that if Render() runs while pulling the audio graph is disabled,
++  // automatic pull nodes do not pull disposed upstream nodes.
++  FakeAudioThread audio_thread(ThreadType::kRealtimeAudioWorkletThread);
++  Persistent<AnalyserNode> analyser =
++      audio_context->createAnalyser(ASSERT_NO_EXCEPTION);
++  {
++    DelayNode* node = audio_context->createDelay(ASSERT_NO_EXCEPTION);
++    node->connect(analyser.Get(), 0, 0, ASSERT_NO_EXCEPTION);
++
++    // Flush the automatic pull handler list to
++    // `rendering_automatic_pull_handlers_` while the upstream `DelayNode` is
++    // still alive.
++    audio_thread.RunOnAudioThreadWithContext(
++        audio_context, CrossThreadBindOnce(
++                           [](RealtimeAudioDestinationHandler* handler) {
++                             const AudioIOPosition pos{0, 0, 0};
++                             const AudioCallbackMetric metric;
++                             scoped_refptr<AudioBus> bus =
++                                 AudioBus::Create(2, 128, /*allocate=*/true);
++                             handler->Render(bus.get(), 128, pos, metric,
++                                             base::TimeDelta(), {});
++                           },
++                           CrossThreadUnretained(dest_handler)));
++  }
++
++  WebHeap::CollectAllGarbageForTesting();
++
++  {
++    // Hold the graph lock so `UpdateAutomaticPullNodes()` is skipped and
++    // `rendering_automatic_pull_handlers_` retains `AnalyserHandler` after its
++    // upstream `DelayNode` has been collected and disposed.
++    DeferredTaskHandler::GraphAutoLocker locker(
++        audio_context->GetDeferredTaskHandler());
++    audio_thread.RunOnAudioThread(CrossThreadBindOnce(
++        [](RealtimeAudioDestinationHandler* handler) {
++          const AudioIOPosition pos{0, 0, 0};
++          const AudioCallbackMetric metric;
++          scoped_refptr<AudioBus> bus =
++              AudioBus::Create(2, 128, /*allocate=*/true);
++          handler->Render(bus.get(), 128, pos, metric, base::TimeDelta(), {});
++        },
++        CrossThreadUnretained(dest_handler)));
++  }
++}
++
+ // Test that the AudioContext correctly handles audibility state transitions
+ // and implements the 2-second silence hysteresis.
+ TEST_F(AudioContextTest, AudioContextAudibilityHysteresis) {
+diff --git a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+index c3f2c080440fe671201918af49d28a04260dc959..5e545ed025626d76b5fd35d0e1b0e70335df2e80 100644
+--- a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+@@ -274,14 +274,15 @@ void RealtimeAudioDestinationHandler::Render(
+       // given `destination_bus` buffer.
+       destination_bus->CopyFrom(*rendered_bus);
+     }
++
++    // Processes "automatic" nodes that are not connected to anything. This can
++    // be done after copying because it does not affect the rendered result.
++    context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(
++        number_of_frames);
+   } else {
+     destination_bus->Zero();
+   }
+ 
+-  // Processes "automatic" nodes that are not connected to anything. This can
+-  // be done after copying because it does not affect the rendered result.
+-  context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(number_of_frames);
+-
+   context->HandlePostRenderTasks();
+ 
+   // Handle audibility before handling the volume multiplier since the volume
+@@ -473,7 +474,10 @@ void RealtimeAudioDestinationHandler::StopPlatformDestination() {
+   // for a while. (It may take a bit of time for the destination to stop.)
+   DisablePullingAudioGraph();
+ 
+-  if (platform_destination_->IsPlaying()) {
++  // `AudioDestination::Stop()` is a no-op when already stopped, and transitions
++  // both `kRunning` and `kPaused` destinations to `kStopped` so a subsequent
++  // lifecycle `Resume()` cannot restart a stopped destination.
++  if (platform_destination_) {
+     platform_destination_->Stop();
+   }
+ }

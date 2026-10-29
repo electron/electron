@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Awogbemila <awogbemila@chromium.org>
+Date: Thu, 8 Oct 2026 06:53:04 -0700
+Subject: Update animation when setting currentTime with null timeline
+
+When an animation has no timeline, setting currentTime leaves the
+animation outdated without an active timeline to tick it. This can leave
+the animation outdated until a later lifecycle phase (such as Paint)
+lazily queries its state, triggering an on-demand timing update and
+style invalidation mid-paint.
+
+This CL eagerly updates the timing model and invalidates the effect in
+Animation::setCurrentTime when timeline_ is null, matching the behavior
+in Animation::setTimeline.
+
+Bug: 567645136
+Change-Id: I5b977331b3670a9b9d88e744d6a58049388a5868
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8517898
+Commit-Queue: David A <awogbemila@chromium.org>
+Reviewed-by: Kevin Ellis <kevers@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1714449}
+(cherry picked from commit 7097f7405ec79ff86e5c0ae32d4de4bf66b18b1d)
+
+diff --git a/third_party/blink/renderer/core/animation/animation.cc b/third_party/blink/renderer/core/animation/animation.cc
+index 8122da0d6acd5186c6f7ca4d7a65a228b0455147..fcd1f9daba790fd0b4dca84b8161ef3f5fa994c6 100644
+--- a/third_party/blink/renderer/core/animation/animation.cc
++++ b/third_party/blink/renderer/core/animation/animation.cc
+@@ -2446,8 +2446,15 @@ void Animation::SetOutdated() {
+   if (outdated_)
+     return;
+   outdated_ = true;
+-  if (timeline_)
++  if (timeline_) {
+     timeline_->SetOutdatedAnimation(this);
++  } else {
++    // Animations without a timeline will not be ticked on a subsequent frame.
++    // Synchronously update so that the animation is not left in an outdated
++    // state, which could trigger a style invalidation post-style and layout,
++    // e.g. mid-paint (see crbug.com/567645136).
++    Update(kTimingUpdateOnDemand);
++  }
+ }
+ 
+ void Animation::ForceServiceOnNextFrame() {
+diff --git a/third_party/blink/web_tests/external/wpt/web-animations/crashtests/null-timeline-backdrop-filter-crash.html b/third_party/blink/web_tests/external/wpt/web-animations/crashtests/null-timeline-backdrop-filter-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..18a8d859840171a3da9679a8773dd40d8fe3648a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/web-animations/crashtests/null-timeline-backdrop-filter-crash.html
+@@ -0,0 +1,32 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<title>Null timeline animation does not crash.</title>
++<link rel="help" href="https://drafts.csswg.org/web-animations-1/#the-animation-interface">
++<link rel="help" href="https://crbug.com/567645136">
++<script src="/common/rendering-utils.js"></script>
++
++<div id="target" style="width: 100px; height: 100px;"></div>
++
++<script>
++onload = async () => {
++  const anim_no_timeline = new Animation(
++    new KeyframeEffect(document.body,
++                       { 'opacity': ['0', '1'] },
++                       { duration: 1000, fill: 'both' }),
++    null
++  );
++  await waitForAtLeastOneFrame();
++  anim_no_timeline.currentTime = 900;
++  await waitForAtLeastOneFrame();
++  const anim = new Animation(
++    new KeyframeEffect(target,
++                       { 'transform': ['scaleX(1)', 'scaleX(2)'] },
++                       { duration: 1000, fill: 'both' }),
++    document.timeline
++  );
++  anim.play();
++  await waitForAtLeastOneFrame();
++  document.documentElement.classList.remove('test-wait');
++};
++</script>
++</html>

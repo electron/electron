@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Tue, 20 Oct 2026 00:04:04 -0700
+Subject: views: Deduplicate deferred destruction in
+ MenuRunnerImpl::OnMenuClosed
+
+Delegate the `delete_after_run_` destruction path in
+`MenuRunnerImpl::OnMenuClosed` to `Release()` instead of duplicating the
+`IsStackActive()` / `DeferMenuRunnerDestruction()` logic.
+
+Bug: 574516887
+CONV=cced0104-bc4a-465a-9306-2ed8a06093b5
+
+Change-Id: I059734bf9e8f34ebf4d2ed642f089a7edf246a0a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613233
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722638}
+(cherry picked from commit 72bc9fdbbe985f6131d7bd0e3b6d84f6e592d6c4)
+
+diff --git a/ui/views/controls/menu/menu_runner_impl.cc b/ui/views/controls/menu/menu_runner_impl.cc
+index 36d21d2c9658cbc1d4244c1063f52289db991dd3..9d4f1847d79de277fdecdc8f474880d963c6f1c4 100644
+--- a/ui/views/controls/menu/menu_runner_impl.cc
++++ b/ui/views/controls/menu/menu_runner_impl.cc
+@@ -108,9 +108,8 @@ void MenuRunnerImpl::Release() {
+     }
+   }
+ 
+-  bool is_stack_active = controller_ && controller_->IsStackActive();
+-  if (is_stack_active) {
+-    // Invlidate the menu runner's weakptrs now because the menu runner is
++  if (controller_ && controller_->IsStackActive()) {
++    // Invalidate the menu runner's weakptrs now because the menu runner is
+     // considered deleted at this point.
+     weak_factory_.InvalidateWeakPtrs();
+     // Transfer ownership to controller.
+@@ -256,14 +255,8 @@ void MenuRunnerImpl::OnMenuClosed(NotifyType type,
+ 
+   if (delete_after_run_) {
+     FireFocusAfterMenuClose(parent_widget);
+-
+-    bool is_stack_active = controller_ && controller_->IsStackActive();
+-    if (is_stack_active) {
+-      // Transfer ownership to controller.
+-      controller_->DeferMenuRunnerDestruction(base::WrapUnique(this));
+-    } else {
+-      delete this;
+-    }
++    running_ = false;
++    Release();
+     return;
+   }
+   running_ = false;

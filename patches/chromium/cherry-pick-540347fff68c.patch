@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Tue, 20 Oct 2026 02:27:33 -0700
+Subject: [webvtt] Make text-track pseudo-elements read-only
+
+Add `-webkit-user-modify: read-only !important` to the
+`video::-webkit-media-text-track-*` rules in `mediaControls.css` so
+author CSS cannot make internal WebVTT text-track elements in the user
+agent shadow root editable or focusable.
+
+Most other user agent shadow pseudo-elements in `html.css` and
+`input_multiple_fields.css` already set `-webkit-user-modify: read-only
+!important`.
+
+While it is also possible to enforce this in C++, pinning the property
+in the UA stylesheet is a safer and lower-risk fix for backporting.
+
+Fixed: 574412629
+Change-Id: Ibd85ec254e2d3639c6ced8891243954338f74b0d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8610568
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722739}
+(cherry picked from commit 540347fff68cb796bd8e5c82835769a069126138)
+
+diff --git a/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css b/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css
+index 9eeb2ca85c9349b662a14b4ef04d2379c589b4e3..eb8bf3547bf1cabe3cc760f9a72335dc49d8cfed 100644
+--- a/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css
++++ b/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css
+@@ -1321,6 +1321,7 @@ video::-webkit-media-text-track-container {
+     text-indent: 0;
+     text-decoration: none;
+     pointer-events: none;
++    -webkit-user-modify: read-only !important;
+     user-select: none;
+     word-break: break-word;
+ }
+@@ -1341,6 +1342,7 @@ video::-webkit-media-text-track-region {
+     word-wrap: break-word;
+     overflow-wrap: break-word;
+     overflow: hidden;
++    -webkit-user-modify: read-only !important;
+ }
+ 
+ video::-webkit-media-text-track-region-container {
+@@ -1349,6 +1351,7 @@ video::-webkit-media-text-track-region-container {
+     display: flex;
+     flex-flow: column;
+     flex-direction: column;
++    -webkit-user-modify: read-only !important;
+ }
+ 
+ video::-webkit-media-text-track-region-container.scrolling {
+@@ -1361,6 +1364,7 @@ video::-webkit-media-text-track-display {
+     white-space: pre-wrap;
+     box-sizing: border-box;
+     flex: 0 0 auto;
++    -webkit-user-modify: read-only !important;
+ }
+ 
+ video::cue(:future) {

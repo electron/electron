@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Wed, 21 Oct 2026 14:00:02 +0000
+Subject: [wasm] Scan outgoing stack parameters from Wasm to builtins
+
+When a Wasm function calls a builtin that passes tagged parameters on
+the stack (e.g. TFS builtins with >= 4 parameters on ia32 such as
+CallIndirectIC), the callee's StubFrame expects the caller frame to
+scan those outgoing stack parameters during GC. Previously,
+WasmFrame::Iterate skipped outgoing parameters for kWasmFunction frames.
+
+Check in WasmFrame::Iterate whether the callee is a builtin whose
+CallInterfaceDescriptor allows stack scanning, and visit its
+GetStackParameterCount() outgoing stack slots starting at sp().
+
+TAG=agy
+CONV=96b1f648-2589-484a-a505-7ed7a444bec1
+
+Fixed: 574223268
+Change-Id: Ie725f7e5bbf009434509e44c0ccfca428099403a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8616353
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111022}
+(cherry picked from commit 11a31ce52ce0b1b2b637929562ebbed8ea3dbb38)
+
+diff --git a/src/execution/frames.cc b/src/execution/frames.cc
+index 0b67898756f8836db7275b58cfdc787215777d26..6f13005109b51b551e9b5863d9eb570bcf8a6c43 100644
+--- a/src/execution/frames.cc
++++ b/src/execution/frames.cc
+@@ -1895,10 +1895,35 @@ void WasmFrame::Iterate(RootVisitor* v) const {
+   bool has_tagged_outgoing_params =
+       wasm_code->kind() != wasm::WasmCode::kWasmFunction &&
+       wasm_code->kind() != wasm::WasmCode::kWasmToCapiWrapper;
+-  if (!InFastCCall() && has_tagged_outgoing_params) {
+-    FullObjectSlot parameters_base(&Memory<Address>(sp()));
+-    v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
+-                         parameters_limit);
++  if (!InFastCCall()) {
++    if (has_tagged_outgoing_params) {
++      FullObjectSlot parameters_base(&Memory<Address>(sp()));
++      v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
++                           parameters_limit);
++    } else if (wasm_code->kind() == wasm::WasmCode::kWasmFunction &&
++               callee_pc() != kNullAddress) {
++      // If a Wasm function calls a builtin with tagged stack parameters,
++      // visit those parameters. (Calls to other Wasm functions or to
++      // WasmToJsWrapperCSA have their tagged stack parameters visited by the
++      // callee frame instead.)
++      Builtin builtin =
++          OffHeapInstructionStream::TryLookupCode(isolate(), callee_pc());
++      if (Builtins::IsBuiltinId(builtin)) {
++        CallInterfaceDescriptor descriptor =
++            Builtins::CallInterfaceDescriptorFor(builtin);
++        DCHECK(!descriptor.AllowVarArgs());
++        if (!(descriptor.flags() & CallInterfaceDescriptorData::kNoStackScan)) {
++          int stack_params = descriptor.GetStackParameterCount();
++          DCHECK_IMPLIES(builtin == Builtin::kWasmToJsWrapperCSA,
++                         stack_params == 0);
++          if (stack_params > 0) {
++            FullObjectSlot parameters_base(&Memory<Address>(sp()));
++            v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
++                                 parameters_base + stack_params);
++          }
++        }
++      }
++    }
+   }
+ 
+   // Visit pointer spill slots and locals.
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index f75323506d94e14570c0d4edb0da828f46775565..e6cfca3c40cca2fec9ee87a21faeca9db2eed8c8 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -2759,6 +2759,7 @@
+   'regress/wasm/regress-455832038': [SKIP],
+   'regress/wasm/regress-483269968': [SKIP],
+   'regress/wasm/regress-560536735': [SKIP],
++  'regress/wasm/regress-574223268': [SKIP],
+   'compiler/regress-347724915': [SKIP],
+   'regress/regress-crbug-418520151': [SKIP],
+   'regress/regress-535000102': [SKIP],
+diff --git a/test/mjsunit/regress/wasm/regress-574223268.js b/test/mjsunit/regress/wasm/regress-574223268.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..edbbaa76ede507a6fb556669bba7780a10b4c18a
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-574223268.js
+@@ -0,0 +1,55 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --stress-compaction
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++function buildModule(numTargets, tableSize = numTargets) {
++  const builder = new WasmModuleBuilder();
++  builder.addMemory(1, 1);
++  const sig_v_v = builder.addType(kSig_v_v);
++  const sig_v_i = builder.addType(kSig_v_i);
++  const funcs = [];
++  for (let i = 0; i < numTargets; i++) {
++    const f = builder.addFunction('f' + i, sig_v_v)
++        .addBody([
++          kExprI32Const, 0,
++          kExprI32Const, 42 + i,
++          kExprI32StoreMem, 0, 0,
++        ])
++        .exportFunc();
++    funcs.push(f.index);
++  }
++  builder.addFunction('call', sig_v_i)
++      .addBody([
++        kExprLocalGet, 0,
++        kExprCallIndirect, sig_v_v, kTableZero,
++      ])
++      .exportFunc();
++  builder.setTableBounds(tableSize, tableSize);
++  builder.addActiveElementSegment(0, wasmI32Const(0), funcs);
++  return builder.toModule();
++}
++
++// Fill the bootstrap trusted page(s) (which are marked never_evacuate) so that
++// subsequent trusted objects land on movable pages.
++const filler = [];
++const fillerModule = buildModule(1, 2000);
++for (let i = 0; i < 64; i++) {
++  filler.push(new WebAssembly.Instance(fillerModule));
++}
++
++const targetModule = buildModule(2);
++const instance = new WebAssembly.Instance(targetModule);
++
++// Compile both callees up front.
++instance.exports.f0();
++instance.exports.f1();
++// Make the call site monomorphic on target 0.
++instance.exports.call(0);
++// Force the monomorphic-miss FixedArray allocation inside CallIndirectIC to
++// trigger a compacting GC while WasmTrustedInstanceData is on the stack.
++%SimulateNewspaceFull();
++instance.exports.call(1);

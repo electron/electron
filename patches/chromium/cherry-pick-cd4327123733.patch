@@ -1,0 +1,371 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Tue, 20 Oct 2026 04:30:58 -0700
+Subject: [FSA] Prevent synchronous lock promotion UAF during manager teardown
+
+During ~FileSystemAccessManagerImpl(), destroying
+`access_handle_host_receivers_` and `writer_receivers_` before
+`file_receivers_` and `directory_receivers_` releases held `LockHandle`s
+while file and directory handles are still alive. When a lock held by an
+evicting BFCache handle is destroyed, `Lock::LockHandleDestroyed()`
+synchronously promotes pending lock requests and runs callbacks on live
+`FileSystemAccessFileHandleImpl` instances. In Incognito mode,
+`DidTakeAccessHandleLock()` -> `DoOpenIncognitoFile()` completes
+synchronously and calls `CreateAccessHandleHost()`, inserting into
+`access_handle_host_receivers_` while it is mid-destruction or after its
+backing buffer has already been freed.
+
+Fix this by:
+1. Declaring `file_receivers_` and `directory_receivers_` after
+   `writer_receivers_` and `access_handle_host_receivers_` and explicitly
+   clearing them first in `~FileSystemAccessManagerImpl()`, after
+   invalidating `weak_factory_`.
+2. Guarding `TakeLock()` callbacks with `weak_factory_.GetWeakPtr()` so
+   any lock promotion during manager teardown passes `nullptr`.
+3. Moving elements out of `writer_receivers_` and
+   `access_handle_host_receivers_` before erasing them during teardown
+   and in `RemoveFileWriter()`.
+
+TAG=agy
+CONV=1c519f9c-078d-4200-8484-614956cd3f7d
+
+Bug: 574911589, 562191732
+Change-Id: I3c65bbd8e8f56ebec3995f81b9b6c0fa9b82e7e4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8602672
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722787}
+(cherry picked from commit cd43271237330d34795ca374997b23684001182a)
+
+diff --git a/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc b/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
+index 3fe12e277e34edadf582e843f3c1c20244df2d67..6b7ff3b1c792c00a07b0e6424535670171fe92b3 100644
+--- a/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
+@@ -33,6 +33,7 @@
+ #include "content/browser/file_system_access/features.h"
+ #include "content/browser/file_system_access/fixed_file_system_access_permission_grant.h"
+ #include "content/browser/file_system_access/mock_file_system_access_permission_grant.h"
++#include "content/browser/renderer_host/render_frame_host_impl.h"
+ #include "content/public/browser/file_system_access_permission_context.h"
+ #include "content/public/common/content_switches.h"
+ #include "content/public/test/browser_task_environment.h"
+@@ -41,6 +42,7 @@
+ #include "content/test/test_web_contents.h"
+ #include "file_system_access_directory_handle_impl.h"
+ #include "mock_file_system_access_permission_context.h"
++#include "mojo/public/cpp/bindings/remote.h"
+ #include "net/base/io_buffer.h"
+ #include "net/base/net_errors.h"
+ #include "net/base/test_completion_callback.h"
+@@ -777,6 +779,188 @@ TEST_F(FileSystemAccessAccessHandleIncognitoTest, OpenAccessHandle) {
+   EXPECT_TRUE(access_handle_remote.is_valid());
+ }
+ 
++TEST_F(FileSystemAccessAccessHandleIncognitoTest,
++       ManagerDestructionWithPendingOpenAccessHandle) {
++  auto* bfcache_rfh =
++      static_cast<RenderFrameHostImpl*>(web_contents_->GetPrimaryMainFrame());
++  const FileSystemAccessManagerImpl::BindingContext bfcache_context(
++      test_src_storage_key_, test_src_url_, bfcache_rfh->GetGlobalId());
++  const FileSystemAccessManagerImpl::SharedHandleState shared_handle_state(
++      allow_grant_, allow_grant_);
++
++  constexpr size_t kNumFiles = 4;
++  std::vector<FileSystemURL> file_urls;
++  std::vector<mojo::Remote<blink::mojom::FileSystemAccessFileHandle>>
++      bfcache_file_handles;
++  std::vector<
++      mojo::PendingRemote<blink::mojom::FileSystemAccessAccessHandleHost>>
++      held_access_handles;
++
++  auto [initial_result, initial_file, initial_access_handle_remote] =
++      OpenAccessHandle(
++          blink::mojom::FileSystemAccessAccessHandleLockMode::kReadwrite);
++  ASSERT_EQ(initial_result->status, FileSystemAccessStatus::kOk);
++  ASSERT_TRUE(initial_access_handle_remote.is_valid());
++  held_access_handles.push_back(std::move(initial_access_handle_remote));
++
++  for (size_t i = 0; i < kNumFiles; ++i) {
++    auto safe_name = base::SafeBaseName::Create(
++        base::FilePath::FromUTF8Unsafe(base::StringPrintf("file_%zu", i)));
++    ASSERT_TRUE(safe_name.has_value());
++    FileSystemURL url = test_file_url_.CreateSibling(*safe_name);
++    ASSERT_EQ(base::File::FILE_OK, storage::AsyncFileTestHelper::CreateFile(
++                                       file_system_context_.get(), url));
++    file_urls.push_back(url);
++
++    mojo::Remote<blink::mojom::FileSystemAccessFileHandle> file_handle(
++        manager_->CreateFileHandle(bfcache_context, url,
++                                   base::StringPrintf("file_%zu", i),
++                                   shared_handle_state));
++    base::test::TestFuture<
++        blink::mojom::FileSystemAccessErrorPtr,
++        blink::mojom::FileSystemAccessAccessHandleFilePtr,
++        mojo::PendingRemote<blink::mojom::FileSystemAccessAccessHandleHost>>
++        open_future;
++    file_handle->OpenAccessHandle(
++        blink::mojom::FileSystemAccessAccessHandleLockMode::kReadwrite,
++        open_future.GetCallback());
++    auto [result, file, access_handle_remote] = open_future.Take();
++    ASSERT_EQ(result->status, FileSystemAccessStatus::kOk);
++    ASSERT_TRUE(access_handle_remote.is_valid());
++    bfcache_file_handles.push_back(std::move(file_handle));
++    held_access_handles.push_back(std::move(access_handle_remote));
++  }
++
++  bfcache_rfh->SetLifecycleState(
++      RenderFrameHostImpl::LifecycleStateImpl::kInBackForwardCache);
++  EXPECT_FALSE(bfcache_rfh->is_evicted_from_back_forward_cache());
++
++  WebContents* active_web_contents =
++      web_contents_factory_.CreateWebContents(&browser_context_);
++  static_cast<TestWebContents*>(active_web_contents)
++      ->NavigateAndCommit(test_src_url_);
++  const FileSystemAccessManagerImpl::BindingContext active_context(
++      test_src_storage_key_, test_src_url_,
++      active_web_contents->GetPrimaryMainFrame()->GetGlobalId());
++
++  std::vector<mojo::Remote<blink::mojom::FileSystemAccessFileHandle>>
++      active_file_handles;
++  std::vector<std::unique_ptr<base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      blink::mojom::FileSystemAccessAccessHandleFilePtr,
++      mojo::PendingRemote<blink::mojom::FileSystemAccessAccessHandleHost>>>>
++      pending_futures;
++
++  for (size_t i = 0; i < kNumFiles; ++i) {
++    mojo::Remote<blink::mojom::FileSystemAccessFileHandle> file_handle(
++        manager_->CreateFileHandle(active_context, file_urls[i],
++                                   base::StringPrintf("file_%zu", i),
++                                   shared_handle_state));
++    auto pending_future = std::make_unique<base::test::TestFuture<
++        blink::mojom::FileSystemAccessErrorPtr,
++        blink::mojom::FileSystemAccessAccessHandleFilePtr,
++        mojo::PendingRemote<blink::mojom::FileSystemAccessAccessHandleHost>>>();
++    file_handle->OpenAccessHandle(
++        blink::mojom::FileSystemAccessAccessHandleLockMode::kReadwrite,
++        pending_future->GetCallback());
++    file_handle.FlushForTesting();
++    EXPECT_FALSE(pending_future->IsReady());
++    active_file_handles.push_back(std::move(file_handle));
++    pending_futures.push_back(std::move(pending_future));
++  }
++
++  // Also queue a pending OpenAccessHandle request on a standalone handle
++  // owned outside `manager_->file_receivers_`.
++  auto standalone_handle = std::make_unique<FileSystemAccessFileHandleImpl>(
++      manager_.get(), active_context, test_file_url_, "test",
++      shared_handle_state);
++  base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      blink::mojom::FileSystemAccessAccessHandleFilePtr,
++      mojo::PendingRemote<blink::mojom::FileSystemAccessAccessHandleHost>>
++      standalone_future;
++  standalone_handle->OpenAccessHandle(
++      blink::mojom::FileSystemAccessAccessHandleLockMode::kReadwrite,
++      standalone_future.GetCallback());
++  EXPECT_TRUE(bfcache_rfh->is_evicted_from_back_forward_cache());
++  ASSERT_FALSE(standalone_future.IsReady());
++
++  // Destroying the manager while access handles are held by a BFCache frame
++  // and contending OpenAccessHandle requests are pending must not re-entrantly
++  // mutate `access_handle_host_receivers_` during its destruction.
++  handle_.reset();
++  manager_.reset();
++
++  ASSERT_TRUE(standalone_future.IsReady());
++  EXPECT_EQ(std::get<0>(standalone_future.Take())->status,
++            FileSystemAccessStatus::kNoModificationAllowedError);
++  standalone_handle.reset();
++}
++
++TEST_F(FileSystemAccessAccessHandleIncognitoTest,
++       ManagerDestructionWithPendingOpenAccessHandleAndFileWriter) {
++  auto* bfcache_rfh =
++      static_cast<RenderFrameHostImpl*>(web_contents_->GetPrimaryMainFrame());
++  const FileSystemAccessManagerImpl::SharedHandleState shared_handle_state(
++      allow_grant_, allow_grant_);
++
++  // Open and close an access handle first so `access_handle_host_receivers_`
++  // retains non-zero capacity while empty when the manager is later destroyed.
++  {
++    auto [warmup_result, warmup_file, warmup_access_handle_remote] =
++        OpenAccessHandle(
++            blink::mojom::FileSystemAccessAccessHandleLockMode::kReadwrite);
++    ASSERT_EQ(warmup_result->status, FileSystemAccessStatus::kOk);
++    ASSERT_TRUE(warmup_access_handle_remote.is_valid());
++    mojo::Remote<blink::mojom::FileSystemAccessAccessHandleHost> warmup_remote(
++        std::move(warmup_access_handle_remote));
++    base::test::TestFuture<void> close_future;
++    warmup_remote->Close(close_future.GetCallback());
++    EXPECT_TRUE(close_future.Wait());
++  }
++
++  base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter>>
++      writer_future;
++  handle_->CreateFileWriter(
++      /*keep_existing_data=*/false, /*auto_close=*/false,
++      blink::mojom::FileSystemAccessWritableFileStreamLockMode::kExclusive,
++      writer_future.GetCallback());
++  auto [writer_result, writer_remote] = writer_future.Take();
++  ASSERT_EQ(writer_result->status, FileSystemAccessStatus::kOk);
++  ASSERT_TRUE(writer_remote.is_valid());
++
++  bfcache_rfh->SetLifecycleState(
++      RenderFrameHostImpl::LifecycleStateImpl::kInBackForwardCache);
++
++  WebContents* active_web_contents =
++      web_contents_factory_.CreateWebContents(&browser_context_);
++  static_cast<TestWebContents*>(active_web_contents)
++      ->NavigateAndCommit(test_src_url_);
++  const FileSystemAccessManagerImpl::BindingContext active_context(
++      test_src_storage_key_, test_src_url_,
++      active_web_contents->GetPrimaryMainFrame()->GetGlobalId());
++
++  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> active_file_handle(
++      manager_->CreateFileHandle(active_context, test_file_url_, "test",
++                                 shared_handle_state));
++  base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      blink::mojom::FileSystemAccessAccessHandleFilePtr,
++      mojo::PendingRemote<blink::mojom::FileSystemAccessAccessHandleHost>>
++      pending_future;
++  active_file_handle->OpenAccessHandle(
++      blink::mojom::FileSystemAccessAccessHandleLockMode::kReadwrite,
++      pending_future.GetCallback());
++  active_file_handle.FlushForTesting();
++  EXPECT_FALSE(pending_future.IsReady());
++  EXPECT_TRUE(bfcache_rfh->is_evicted_from_back_forward_cache());
++
++  handle_.reset();
++  manager_.reset();
++}
++
+ TEST_F(FileSystemAccessAccessHandleTest, OpenAccessHandleLockModes_Readwrite) {
+   // For a file with an open access handle in READWRITE mode, no other access
+   // handles can be open.
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
+index 67c8eddf4937a7e8d47bcc1a012ca1847beba732..c79ce442356c991e42dbdffbe68c4a8b938f15cb 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
+@@ -528,6 +528,28 @@ FileSystemAccessManagerImpl::FileSystemAccessManagerImpl(
+ 
+ FileSystemAccessManagerImpl::~FileSystemAccessManagerImpl() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
++  // Invalidate weak pointers and destroy file and directory handle receivers
++  // first so that pending lock callbacks are cancelled before releasing locks
++  // held by writers or access handle hosts.
++  weak_factory_.InvalidateWeakPtrs();
++  file_receivers_.Clear();
++  directory_receivers_.Clear();
++
++  // Move each writer and access handle host out of its `flat_set` and erase the
++  // entry before running its destructor, so releasing locks cannot re-entrantly
++  // mutate a set while it is being destroyed.
++  while (!writer_receivers_.empty()) {
++    auto iter = writer_receivers_.begin();
++    auto writer_receiver = std::move(*iter);
++    writer_receivers_.erase(iter);
++  }
++
++  while (!access_handle_host_receivers_.empty()) {
++    auto iter = access_handle_host_receivers_.begin();
++    auto access_handle_host_receiver = std::move(*iter);
++    access_handle_host_receivers_.erase(iter);
++  }
+ }
+ 
+ void FileSystemAccessManagerImpl::BindReceiver(
+@@ -1462,8 +1484,19 @@ void FileSystemAccessManagerImpl::TakeLock(
+     FileSystemAccessLockManager::LockType lock_type,
+     FileSystemAccessLockManager::TakeLockCallback callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  lock_manager_->TakeLock(binding_context.frame_id, url, lock_type,
+-                          std::move(callback));
++  lock_manager_->TakeLock(
++      binding_context.frame_id, url, lock_type,
++      base::BindOnce(
++          [](base::WeakPtr<FileSystemAccessManagerImpl> manager,
++             FileSystemAccessLockManager::TakeLockCallback callback,
++             scoped_refptr<FileSystemAccessLockManager::LockHandle> lock) {
++            if (!manager) {
++              std::move(callback).Run(nullptr);
++              return;
++            }
++            std::move(callback).Run(std::move(lock));
++          },
++          weak_factory_.GetWeakPtr(), std::move(callback)));
+ }
+ bool FileSystemAccessManagerImpl::IsContentious(
+     const storage::FileSystemURL& url,
+@@ -2061,9 +2094,19 @@ void FileSystemAccessManagerImpl::CreateTransferTokenImpl(
+ void FileSystemAccessManagerImpl::RemoveFileWriter(
+     FileSystemAccessFileWriterImpl* writer) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  CHECK(writer, base::NotFatalUntil::M159);
+ 
+-  size_t count_removed = writer_receivers_.erase(writer);
+-  DCHECK_EQ(1u, count_removed);
++  // Move `writer` out of `writer_receivers_` and erase the entry before
++  // destroying it, since destroying a `FileSystemAccessFileWriterImpl`
++  // releases its locks and can synchronously trigger lock promotion callbacks.
++  auto iter = writer_receivers_.find(writer);
++  if (iter == writer_receivers_.end()) {
++    NOTREACHED(base::NotFatalUntil::M159);
++    return;
++  }
++
++  auto writer_receiver = std::move(*iter);
++  writer_receivers_.erase(iter);
+ }
+ 
+ void FileSystemAccessManagerImpl::RemoveAccessHandleHost(
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.h b/content/browser/file_system_access/file_system_access_manager_impl.h
+index 5d5aa0930a751dd2a370d0c55a9e25d922584ac2..6ddb7a23ba07475c1a7958fd762676b9648fb48f 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.h
++++ b/content/browser/file_system_access/file_system_access_manager_impl.h
+@@ -704,18 +704,20 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
+   // and `access_handle_host_receivers_`. The locks held by file writers and
+   // access handles dereference the lock manager on destruction, so it should
+   // outlive them.
++  //
++  // `writer_receivers_` and `access_handle_host_receivers_` should be
++  // destroyed after `file_receivers_` and `directory_receivers_`. Destroying
++  // file writers and access handle hosts releases their locks, which can
++  // synchronously promote pending lock requests and invoke callbacks on live
++  // file or directory handles. Destroying `file_receivers_` and
++  // `directory_receivers_` first invalidates those callbacks before any locks
++  // are released.
+   scoped_refptr<FileSystemAccessLockManager> lock_manager_
+       GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+   FileSystemAccessWatcherManager watcher_manager_
+       GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+-  // All the receivers for file and directory handles that have references to
+-  // them.
+-  mojo::UniqueReceiverSet<blink::mojom::FileSystemAccessFileHandle>
+-      file_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
+-  mojo::UniqueReceiverSet<blink::mojom::FileSystemAccessDirectoryHandle>
+-      directory_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
+   base::flat_set<std::unique_ptr<FileSystemAccessFileWriterImpl>,
+                  base::UniquePtrComparator>
+       writer_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
+@@ -723,6 +725,13 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
+                  base::UniquePtrComparator>
+       access_handle_host_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
+ 
++  // All the receivers for file and directory handles that have references to
++  // them.
++  mojo::UniqueReceiverSet<blink::mojom::FileSystemAccessFileHandle>
++      file_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
++  mojo::UniqueReceiverSet<blink::mojom::FileSystemAccessDirectoryHandle>
++      directory_receivers_ GUARDED_BY_CONTEXT(sequence_checker_);
++
+   const bool off_the_record_;
+ 
+   // FileSystemAccessTransferTokenImpl owns a Transfer token receiver set and is

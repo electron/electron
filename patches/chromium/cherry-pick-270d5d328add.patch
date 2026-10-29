@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Mon, 19 Oct 2026 13:53:59 -0700
+Subject: Make timed elements inserted into <use> shadow trees inert
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+If timed elements somehow make it into a <use> shadow tree, they should
+not be scheduled on the timeline. Treat them the same as if they were
+not in the document at all.
+
+Fixed: 574791952
+Change-Id: I0a88c3a352139fbe2b93f4634794de929826ff47
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8610829
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Auto-Submit: Fredrik Söderquist <fs@opera.com>
+Cr-Commit-Position: refs/heads/main@{#1722305}
+(cherry picked from commit 270d5d328addf47356621fb27f93873d5cd5e96f)
+
+diff --git a/third_party/blink/renderer/core/svg/animation/svg_smil_element.cc b/third_party/blink/renderer/core/svg/animation/svg_smil_element.cc
+index 262c062c448dff48e0a5ca7d9d851166ec2bc276..acb1a809885a6ab873fbd9c3f04b4ff7825817ac 100644
+--- a/third_party/blink/renderer/core/svg/animation/svg_smil_element.cc
++++ b/third_party/blink/renderer/core/svg/animation/svg_smil_element.cc
+@@ -328,7 +328,9 @@ void SVGSMILElement::BuildPendingResource() {
+   ClearResourceAndEventBaseReferences();
+   DisconnectConditions();
+ 
+-  if (!isConnected()) {
++  // Ignore timed elements that are inserted into a <use> shadow tree. This is
++  // currently possible via a cloned event handler.
++  if (!isConnected() || InUseShadowTree()) {
+     // Reset the target element if we are no longer in the document.
+     SetTargetElement(nullptr);
+     return;

@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: alexis cruz-ayala <alexisdavidc@google.com>
+Date: Mon, 19 Oct 2026 18:31:46 -0400
+Subject: [skif] Update SkImageFilter_Base uniqueID to 64-bit
+
+SkImageFilter_Base previously assigned each filter a 32-bit uniqueID
+from an atomic counter that could wrap after 2^32 constructions and
+cause cache collisions in SkImageFilterCache.
+
+Update SkImageFilter_Base::fUniqueID and SkImageFilterCacheKey::fUniqueID to uint64_t, with an explicit zero-initialized padding field in SkImageFilterCacheKey to maintain tight packing for hashing.
+
+Bug: b/568936530
+Change-Id: If1b172c41e582bccb3c2323e54bbce43e0fd2671
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1398516
+Reviewed-by: Julia Lavrova <jlavrova@google.com>
+Commit-Queue: Alexis Cruz-Ayala <alexisdavidc@google.com>
+Auto-Submit: Alexis Cruz-Ayala <alexisdavidc@google.com>
+(cherry picked from commit 87002299235987ace504133d8ed6570f3cb87bc2)
+
+diff --git a/src/core/SkImageFilter.cpp b/src/core/SkImageFilter.cpp
+index 35b97683d3433cf16a3c9b75e57a06933df5eaa3..fc2cb4392009d9c72107fe39ba277d1878a9c0ae 100644
+--- a/src/core/SkImageFilter.cpp
++++ b/src/core/SkImageFilter.cpp
+@@ -135,10 +135,10 @@ sk_sp<SkImageFilter> SkImageFilter::makeWithLocalMatrix(const SkMatrix& matrix)
+ // SkImageFilter_Base
+ ///////////////////////////////////////////////////////////////////////////////////////////////////
+ 
+-static int32_t next_image_filter_unique_id() {
+-    static std::atomic<int32_t> nextID{1};
++static uint64_t next_image_filter_unique_id() {
++    static std::atomic<uint64_t> nextID{1};
+ 
+-    int32_t id;
++    uint64_t id;
+     do {
+         id = nextID.fetch_add(1, std::memory_order_relaxed);
+     } while (id == 0);
+diff --git a/src/core/SkImageFilterCache.h b/src/core/SkImageFilterCache.h
+index a2909e0480851fe5d20c0af928a787b5b0b698f5..92f40eb0abcfc8a3a9f66146b486f2bdff790a68 100644
+--- a/src/core/SkImageFilterCache.h
++++ b/src/core/SkImageFilterCache.h
+@@ -21,7 +21,7 @@ class SkImageFilter;
+ namespace skif { class FilterResult; }
+ 
+ struct SkImageFilterCacheKey {
+-    SkImageFilterCacheKey(const uint32_t uniqueID, const SkMatrix& matrix,
++    SkImageFilterCacheKey(const uint64_t uniqueID, const SkMatrix& matrix,
+         const SkIRect& clipBounds, uint32_t srcGenID, const SkIRect& srcSubset)
+         : fUniqueID(uniqueID)
+         , fMatrix(matrix)
+@@ -29,18 +29,20 @@ struct SkImageFilterCacheKey {
+         , fSrcGenID(srcGenID)
+         , fSrcSubset(srcSubset) {
+         // Assert that Key is tightly-packed, since it is hashed.
+-        static_assert(sizeof(SkImageFilterCacheKey) == sizeof(uint32_t) + sizeof(SkMatrix) +
+-                                     sizeof(SkIRect) + sizeof(uint32_t) + 4 * sizeof(int32_t),
++        static_assert(sizeof(SkImageFilterCacheKey) == sizeof(uint64_t) + sizeof(SkMatrix) +
++                                     sizeof(SkIRect) + sizeof(uint32_t) + 4 * sizeof(int32_t) +
++                                     sizeof(uint32_t),
+                                      "image_filter_key_tight_packing");
+         fMatrix.getType();  // force initialization of type, so hashes match
+         SkASSERT(fMatrix.isFinite());   // otherwise we can't rely on == self when comparing keys
+     }
+ 
+-    uint32_t fUniqueID;
++    uint64_t fUniqueID;
+     SkMatrix fMatrix;
+     SkIRect fClipBounds;
+     uint32_t fSrcGenID;
+     SkIRect fSrcSubset;
++    uint32_t fPad = 0;
+ 
+     bool operator==(const SkImageFilterCacheKey& other) const {
+         return fUniqueID == other.fUniqueID &&
+diff --git a/src/core/SkImageFilter_Base.h b/src/core/SkImageFilter_Base.h
+index 8beea3df6e4dd6c076150575c0870b5c734a2729..9b3d46190c0e2fa4dbf68ee65bc2d4866f4df073 100644
+--- a/src/core/SkImageFilter_Base.h
++++ b/src/core/SkImageFilter_Base.h
+@@ -127,7 +127,7 @@ public:
+     using MatrixCapability = skif::MatrixCapability;
+     MatrixCapability getCTMCapability() const;
+ 
+-    uint32_t uniqueID() const { return fUniqueID; }
++    uint64_t uniqueID() const { return fUniqueID; }
+ 
+     static SkFlattenable::Type GetFlattenableType() {
+         return kSkImageFilter_Type;
+@@ -302,7 +302,7 @@ private:
+     skia_private::AutoSTArray<2, sk_sp<SkImageFilter>> fInputs;
+ 
+     bool fUsesSrcInput;
+-    uint32_t fUniqueID; // Globally unique
++    uint64_t fUniqueID; // Globally unique
+ 
+     using INHERITED = SkImageFilter;
+ };
+diff --git a/tests/ImageFilterCacheTest.cpp b/tests/ImageFilterCacheTest.cpp
+index fa72b9ce1d6cc24e8731fdf71f0d7f6fa2249e19..3d7080fe3c338854afacdd84ccb7924732a9024e 100644
+--- a/tests/ImageFilterCacheTest.cpp
++++ b/tests/ImageFilterCacheTest.cpp
+@@ -47,6 +47,7 @@
+ #endif
+ 
+ #include <cstddef>
++#include <cstdint>
+ #include <tuple>
+ #include <utility>
+ 
+@@ -109,10 +110,12 @@ static void test_dont_find_if_diff_key(skiatest::Reporter* reporter,
+     SkIRect clip2 = SkIRect::MakeWH(200, 200);
+     SkImageFilterCacheKey key0(0, SkMatrix::I(), clip1, image->uniqueID(), image->subset());
+     SkImageFilterCacheKey key1(1, SkMatrix::I(), clip1, image->uniqueID(), image->subset());
+-    SkImageFilterCacheKey key2(0, SkMatrix::Translate(5, 5), clip1,
+-                                   image->uniqueID(), image->subset());
+-    SkImageFilterCacheKey key3(0, SkMatrix::I(), clip2, image->uniqueID(), image->subset());
+-    SkImageFilterCacheKey key4(0, SkMatrix::I(), clip1, subset->uniqueID(), subset->subset());
++    SkImageFilterCacheKey key2(1ULL << 32, SkMatrix::I(), clip1,
++                               image->uniqueID(), image->subset());
++    SkImageFilterCacheKey key3(0, SkMatrix::Translate(5, 5), clip1,
++                               image->uniqueID(), image->subset());
++    SkImageFilterCacheKey key4(0, SkMatrix::I(), clip2, image->uniqueID(), image->subset());
++    SkImageFilterCacheKey key5(0, SkMatrix::I(), clip1, subset->uniqueID(), subset->subset());
+ 
+     SkIPoint offset = SkIPoint::Make(3, 4);
+     auto filter = make_filter();
+@@ -123,6 +126,7 @@ static void test_dont_find_if_diff_key(skiatest::Reporter* reporter,
+     REPORTER_ASSERT(reporter, !cache->get(key2, &foundImage));
+     REPORTER_ASSERT(reporter, !cache->get(key3, &foundImage));
+     REPORTER_ASSERT(reporter, !cache->get(key4, &foundImage));
++    REPORTER_ASSERT(reporter, !cache->get(key5, &foundImage));
+ }
+ 
+ // Test purging when the max cache size is exceeded
+@@ -362,3 +366,45 @@ DEF_SERIAL_TEST(PurgeImageFilterCache, r) {
+         REPORTER_ASSERT(r, cache);
+     }
+ }
++
++DEF_TEST(ImageFilterCache_64BitUniqueID, reporter) {
++    static const size_t kCacheSize = 1000000;
++    sk_sp<SkImageFilterCache> cache(SkImageFilterCache::Create(kCacheSize));
++
++    SkBitmap bm = create_bm();
++    const SkIRect full = SkIRect::MakeWH(kFullSize, kFullSize);
++    sk_sp<SkSpecialImage> img1(SkSpecialImages::MakeFromRaster(full, bm, SkSurfaceProps()));
++    sk_sp<SkSpecialImage> img2(SkSpecialImages::MakeFromRaster(full, bm, SkSurfaceProps()));
++
++    constexpr uint64_t kBaseId = 42;
++    constexpr uint64_t kUpperBitDiffId = kBaseId + (1ULL << 32);
++
++    SkIRect clip = SkIRect::MakeWH(100, 100);
++    SkImageFilterCacheKey key1(kBaseId, SkMatrix::I(), clip, img1->uniqueID(), img1->subset());
++    SkImageFilterCacheKey key2(
++            kUpperBitDiffId, SkMatrix::I(), clip, img1->uniqueID(), img1->subset());
++
++    REPORTER_ASSERT(reporter, key1 == key1);
++    REPORTER_ASSERT(reporter, key2 == key2);
++    REPORTER_ASSERT(reporter, !(key1 == key2));
++
++    auto filter1 = make_filter();
++    auto filter2 = make_filter();
++    SkIPoint offset1 = SkIPoint::Make(1, 2);
++    SkIPoint offset2 = SkIPoint::Make(5, 6);
++
++    cache->set(key1, filter1.get(), skif::FilterResult(img1, skif::LayerSpace<SkIPoint>(offset1)));
++
++    skif::FilterResult found;
++    REPORTER_ASSERT(reporter, cache->get(key1, &found));
++    REPORTER_ASSERT(reporter, found.image() == img1.get());
++    REPORTER_ASSERT(reporter, !cache->get(key2, &found));
++
++    cache->set(key2, filter2.get(), skif::FilterResult(img2, skif::LayerSpace<SkIPoint>(offset2)));
++    SkDEBUGCODE(REPORTER_ASSERT(reporter, 2 == cache->count());)
++
++    REPORTER_ASSERT(reporter, cache->get(key1, &found));
++    REPORTER_ASSERT(reporter, found.image() == img1.get());
++    REPORTER_ASSERT(reporter, cache->get(key2, &found));
++    REPORTER_ASSERT(reporter, found.image() == img2.get());
++}

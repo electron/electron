@@ -1,0 +1,364 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Wed, 21 Oct 2026 16:37:30 -0700
+Subject: Disable FEDisplacementMap for animated CSS backdrop-filter
+
+The composited animations code path was missed in the earlier CL
+to disable FEDisplacementMap for backdrop-filter. Fix the oversight.
+
+Also move some animated filter effects WPT tests into the existing
+animations directly, and enable that directory for the virtual/threaded
+test suite so that we have coverage for composited filter animations.
+
+Bug: 575826638
+Change-Id: I9b51a04945103b0913dbb1aae7acb9ddabef3747
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8624807
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1724266}
+(cherry picked from commit e0cb253a6f794a3cb0c15a2bbd69150ce7d2b7c1)
+
+diff --git a/third_party/blink/renderer/core/animation/compositor_animations.cc b/third_party/blink/renderer/core/animation/compositor_animations.cc
+index a0c0608378eee9a97c595583c782dfa582ad381b..f39f097a4fc9a9a71e9d47488ccd6c70ce41b6a3 100644
+--- a/third_party/blink/renderer/core/animation/compositor_animations.cc
++++ b/third_party/blink/renderer/core/animation/compositor_animations.cc
+@@ -867,11 +867,13 @@ namespace {
+ void AddKeyframeToCurve(cc::KeyframedFilterAnimationCurve& curve,
+                         Keyframe::PropertySpecificKeyframe* keyframe,
+                         const CompositorKeyframeValue* value,
+-                        const TimingFunction& keyframe_timing_function) {
++                        const TimingFunction& keyframe_timing_function,
++                        bool is_backdrop_filter) {
+   FilterEffectBuilder builder(gfx::RectF(), std::nullopt, 1, Color::kBlack,
+                               mojom::blink::ColorScheme::kLight);
+   CompositorFilterOperations operations = builder.BuildFilterOperations(
+-      To<CompositorKeyframeFilterOperations>(value)->Operations());
++      To<CompositorKeyframeFilterOperations>(value)->Operations(),
++      is_backdrop_filter);
+   std::unique_ptr<cc::FilterKeyframe> filter_keyframe =
+       cc::FilterKeyframe::Create(base::Seconds(keyframe->Offset()),
+                                  operations.ReleaseCcFilterOperations(),
+@@ -1009,7 +1011,8 @@ void CompositorAnimations::GetAnimationOnCompositor(
+       case CSSPropertyID::kFilter:
+       case CSSPropertyID::kBackdropFilter: {
+         auto filter_curve = cc::KeyframedFilterAnimationCurve::Create();
+-        AddKeyframesToCurve(*filter_curve, values);
++        AddKeyframesToCurve(*filter_curve, values,
++                            css_property_id == CSSPropertyID::kBackdropFilter);
+         filter_curve->SetTimingFunction(timing.timing_function->CloneToCC());
+         filter_curve->set_scaled_duration(scale);
+         curve = std::move(filter_curve);
+diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
+index f0c35f5664dfd30099a78f9b7470f742db28ea43..9dc778ce41407dd8b6d103b06cd37dcc5a4c4f44 100644
+--- a/third_party/blink/web_tests/TestExpectations
++++ b/third_party/blink/web_tests/TestExpectations
+@@ -653,6 +653,9 @@ crbug.com/40550039 external/wpt/svg/styling/use-element-transitions-dom-mutation
+ crbug.com/386610909 external/wpt/svg/styling/use-element-non-rendered-has-selector.html [ Failure ]
+ crbug.com/386610909 external/wpt/svg/styling/use-element-non-rendered-sibling-selector.html [ Failure ]
+ 
++# Something broken in zoom for compositor animation of SVG filter
++crbug.com/576324619 virtual/scalefactor200/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-displacement.html [ Failure ]
++
+ ### ====== Paint team owned tests to here ======
+ 
+ ### ====== Overscroll tests ======
+diff --git a/third_party/blink/web_tests/VirtualTestSuites b/third_party/blink/web_tests/VirtualTestSuites
+index 2724c944932e1f41c89f17484c8a8f9c4a14b661..35c95642cef5760a024cd5a54569885ae80a1622 100644
+--- a/third_party/blink/web_tests/VirtualTestSuites
++++ b/third_party/blink/web_tests/VirtualTestSuites
+@@ -3479,6 +3479,7 @@
+       "external/wpt/css/css-overflow/scroll-markers/scroll-markers-updated-by-programmatic-scroll.html",
+       "external/wpt/css/cssom-view/overflow-hidden-smooth-scroll-crash.html",
+       "external/wpt/css/cssom-view/scroll-behavior-smooth-after-hiding-iframe.html",
++      "external/wpt/css/filter-effects/animation",
+       "external/wpt/fetch/compression-dictionary/dictionary-fetch-timing-001.tentative.https.html",
+       "external/wpt/fetch/compression-dictionary/dictionary-fetch-timing-002.tentative.https.html",
+       "external/wpt/fetch/compression-dictionary/dictionary-fetch-with-link-element.tentative.https.html",
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-blur-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-blur-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-blur-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-blur-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-blur.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-blur.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-blur.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-blur.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-brightness-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-brightness-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-brightness-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-brightness-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-brightness.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-brightness.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-brightness.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-brightness.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-combined-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-combined-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-combined-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-combined-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-combined.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-combined.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-combined.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-combined.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-contrast-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-contrast-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-contrast-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-contrast-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-contrast.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-contrast.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-contrast.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-contrast.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-displacement-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-displacement-ref.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..7fe6450e5a9389c1938b752507a5463d0be4c1cb
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-displacement-ref.html
+@@ -0,0 +1,15 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++
++<div class="greenbox"></div>
++
++<style>
++.greenbox {
++  position: absolute;
++  background: green;
++  width: 100px;
++  height: 100px;
++  top: 50px;
++  left: 50px;
++}
++</style>
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-displacement.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-displacement.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..32f3d40e1b89887403ab97e4081db909e8b1f2d5
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-displacement.html
+@@ -0,0 +1,61 @@
++<!DOCTYPE html>
++<html class="reftest-wait">
++<meta charset="utf-8">
++  <title>backdrop-filter: An animated SVG feDisplacement filter is pass through</title>
++  <link rel="help" href="https://drafts.fxtf.org/filter-effects-2/#BackdropFilterProperty">
++  <link rel="match"  href="css-backdrop-filters-animation-displacement-ref.html">
++  <script src="/common/reftest-wait.js"></script>
++
++  <style>
++    @keyframes animate-backdrop {
++      0% {
++        backdrop-filter: url(#displacement);
++      }
++      99% {
++        backdrop-filter: url(#displacement);
++      }
++      100% {
++        backdrop-filter: none;
++      }
++    }
++
++    .whitebox {
++      position: absolute;
++      background: white;
++      width: 100px;
++      height: 100px;
++      top: 50px;
++      left: 50px;
++    }
++
++    .filter {
++      background-color: transparent;
++      position: absolute;
++      width: 200px;
++      height: 200px;
++      top: 0px;
++      left: 0px;
++      animation: animate-backdrop 10s linear;
++    }
++  </style>
++
++  <div class="whitebox"></div>
++  <div class="filter"></div>
++
++  <svg width="0" height="0">
++    <filter id="displacement" filterUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
++      <feFlood result="flood" flood-color="green" x="50" y="50" width="100" height="100"/>
++      <feDisplacementMap in2="SourceGraphic" in="flood" xChannelSelector="G" yChannelSelector="G" scale="20"/>
++    </filter>
++  </svg>
++  <script>
++    onload = () => {
++      const anim = document.getAnimations()[0];
++      anim.ready.then(() => {
++        requestAnimationFrame(() => {
++          requestAnimationFrame(takeScreenshot);
++        });
++      });
++    };
++  </script>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-drop-shadow-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-drop-shadow-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-drop-shadow-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-drop-shadow-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-drop-shadow.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-drop-shadow.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-drop-shadow.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-drop-shadow.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-grayscale-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-grayscale-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-grayscale-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-grayscale-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-grayscale.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-grayscale.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-grayscale.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-grayscale.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-hue-rotate-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-hue-rotate-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-hue-rotate-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-hue-rotate-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-hue-rotate.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-hue-rotate.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-hue-rotate.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-hue-rotate.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-invert-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-invert-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-invert-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-invert-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-invert.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-invert.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-invert.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-invert.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-opacity-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-opacity-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-opacity-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-opacity-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-opacity.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-opacity.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-opacity.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-opacity.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-saturate-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-saturate-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-saturate-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-saturate-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-saturate.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-saturate.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-saturate.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-saturate.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-sepia-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-sepia-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-sepia-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-sepia-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-sepia.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-sepia.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-backdrop-filters-animation-sepia.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-backdrop-filters-animation-sepia.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-blur-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-blur-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-blur-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-blur-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-blur.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-blur.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-blur.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-blur.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-brightness-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-brightness-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-brightness-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-brightness-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-brightness.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-brightness.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-brightness.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-brightness.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-combined-001-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-combined-001-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-combined-001-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-combined-001-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-combined-001.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-combined-001.html
+similarity index 98%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-combined-001.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-combined-001.html
+index db917daa9a03c1ae757633fb8524e3234d052024..235643301808ccefd620d53097ffd437c28511e9 100644
+--- a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-combined-001.html
++++ b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-combined-001.html
+@@ -17,7 +17,7 @@
+     <link rel="help" href="http://www.w3.org/TR/css3-animations/#animations">
+     <link rel="match" href="css-filters-animation-combined-001-ref.html">
+     <meta name="assert" content="The black square should be a gray square 10px blurred">
+-    <meta name="fuzzy" content="0-1;0-10000">
++    <meta name="fuzzy" content="0-2;0-12000">
+     <style type="text/css">
+         @keyframes animate {
+             0% {
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-contrast-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-contrast-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-contrast-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-contrast-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-contrast.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-contrast.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-contrast.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-contrast.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-drop-shadow-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-drop-shadow-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-drop-shadow-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-drop-shadow-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-drop-shadow.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-drop-shadow.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-drop-shadow.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-drop-shadow.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-grayscale-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-grayscale-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-grayscale-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-grayscale-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-grayscale.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-grayscale.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-grayscale.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-grayscale.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-hue-rotate-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-hue-rotate-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-hue-rotate-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-hue-rotate-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-hue-rotate.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-hue-rotate.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-hue-rotate.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-hue-rotate.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-invert-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-invert-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-invert-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-invert-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-invert.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-invert.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-invert.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-invert.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-opacity-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-opacity-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-opacity-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-opacity-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-opacity.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-opacity.html
+similarity index 99%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-opacity.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-opacity.html
+index abc16d3daaedc991157137e866bf9276851650fe..874175a227cfca82e120be68dfac214cf2acb00a 100644
+--- a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-opacity.html
++++ b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-opacity.html
+@@ -10,7 +10,7 @@
+     <link rel="help" href="http://www.w3.org/TR/css3-animations/#animations">
+     <link rel="match" href="css-filters-animation-opacity-ref.html">
+     <meta name="assert" content="The black square should be gray">
+-    <meta name="fuzzy" content="maxDifference=0-1;totalPixels=0-10000">
++    <meta name="fuzzy" content="maxDifference=0-1;totalPixels=0-40000">
+     <style type="text/css">
+         @keyframes animate {
+             0% {
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-saturate-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-saturate-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-saturate-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-saturate-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-saturate.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-saturate.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-saturate.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-saturate.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-sepia-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-sepia-ref.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-sepia-ref.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-sepia-ref.html
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-sepia.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-sepia.html
+similarity index 100%
+rename from third_party/blink/web_tests/external/wpt/css/filter-effects/css-filters-animation-sepia.html
+rename to third_party/blink/web_tests/external/wpt/css/filter-effects/animation/css-filters-animation-sepia.html

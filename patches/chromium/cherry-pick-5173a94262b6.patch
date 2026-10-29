@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ian Kilpatrick <ikilpatrick@chromium.org>
+Date: Thu, 22 Oct 2026 15:29:38 -0700
+Subject: [layout] Add move constructor and assignment operator to Shelf.
+
+This adds the missing move constructor & assignment operator to the
+Shelf data-type.
+
+Additionally adds the copy assignment operator for completeness.
+
+Fixed: 574852698
+Change-Id: Ief97ee317f7aba8d86b3c6cf920cb362efc679c5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8633358
+Reviewed-by: David Grogan <dgrogan@chromium.org>
+Commit-Queue: Ian Kilpatrick <ikilpatrick@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725253}
+(cherry picked from commit 5173a94262b618f50810938fa3d50b8a36a68886)
+
+diff --git a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
+index badde343a8d6dd4973acff385f95b86e991d3a72..51c71efb2c6c71ed81a7892f87fd1f7190338f07 100644
+--- a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
++++ b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
+@@ -609,7 +609,7 @@ void ExclusionSpaceInternal::DerivedGeometry::Add(
+                                    ? LayoutUnit::Max()
+                                    : shelf_copy->line_right;
+ 
+-        shelves_.insert(i + 1, new_shelf);
++        shelves_.insert(i + 1, std::move(new_shelf));
+       }
+ 
+       // It's safe to early exit out of this loop now. This exclusion won't
+diff --git a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
+index 42821c08655279e14716be048d1e5369c9dc062b..fcb53dd93abff272b99aaa21fe59270aab33b0ff 100644
+--- a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
++++ b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
+@@ -319,7 +319,8 @@ class CORE_EXPORT ExclusionSpaceInternal final
+                                : nullptr),
+           has_shape_exclusions(false) {}
+ 
+-    // The copy constructor explicitly copies the shape_exclusions member.
++    // The copy constructor and copy assignment operator explicitly copy the
++    // shape_exclusions member.
+     Shelf(const Shelf& other)
+         : block_offset(other.block_offset),
+           line_left(other.line_left),
+@@ -331,6 +332,22 @@ class CORE_EXPORT ExclusionSpaceInternal final
+                                      *other.shape_exclusions)
+                                : nullptr),
+           has_shape_exclusions(other.has_shape_exclusions) {}
++    Shelf(Shelf&&) noexcept = default;
++
++    Shelf& operator=(const Shelf& other) {
++      block_offset = other.block_offset;
++      line_left = other.line_left;
++      line_right = other.line_right;
++      line_left_edges = other.line_left_edges;
++      line_right_edges = other.line_right_edges;
++      shape_exclusions =
++          other.shape_exclusions
++              ? MakeGarbageCollected<ShapeExclusions>(*other.shape_exclusions)
++              : nullptr;
++      has_shape_exclusions = other.has_shape_exclusions;
++      return *this;
++    }
++    Shelf& operator=(Shelf&&) noexcept = default;
+ 
+     void Trace(Visitor* visitor) const { visitor->Trace(shape_exclusions); }
+ 

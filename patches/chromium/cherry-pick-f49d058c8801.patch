@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Mon, 19 Oct 2026 12:37:03 -0700
+Subject: Limit image request in HTMLPlugInElement::CustomStyleForLayoutObject
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When the ComputedStyle is being ensured we shouldn't perform an image
+load.
+
+Fixed: 574101376, 575184164
+Change-Id: I7b678074d4496ef667f360cbab62ce7c459b4785
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8611107
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Auto-Submit: Fredrik Söderquist <fs@opera.com>
+Cr-Commit-Position: refs/heads/main@{#1722229}
+(cherry picked from commit f49d058c880110acd4479e6634cc8013e3f672cd)
+
+diff --git a/third_party/blink/renderer/core/html/html_object_element_test.cc b/third_party/blink/renderer/core/html/html_object_element_test.cc
+index 7a8e47095638c9757eb9c976d340e0ddbe3a6eb5..cc7812d0c7f5c6df2d4f11973e6ce059cbb0ed4c 100644
+--- a/third_party/blink/renderer/core/html/html_object_element_test.cc
++++ b/third_party/blink/renderer/core/html/html_object_element_test.cc
+@@ -11,6 +11,8 @@
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+ #include "third_party/blink/renderer/core/html/html_slot_element.h"
+ #include "third_party/blink/renderer/core/testing/dummy_page_holder.h"
++#include "third_party/blink/renderer/core/testing/sim/sim_request.h"
++#include "third_party/blink/renderer/core/testing/sim/sim_test.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ 
+ namespace blink {
+@@ -50,4 +52,24 @@ TEST_F(HTMLObjectElementTest, FallbackRecalcForReattach) {
+   EXPECT_TRUE(slot->GetComputedStyle());
+ }
+ 
++class HTMLObjectElementSimTest : public SimTest {};
++
++TEST_F(HTMLObjectElementSimTest, NoLoadOnEnsureComputedStyle) {
++  SimRequest request("https://example.com/test.html", "text/html");
++  LoadURL("https://example.com/test.html");
++  request.Complete(R"HTML(
++     <!doctype html>
++     <div style='display: none'>
++       <object id='obj' data='file.png' type='image/png'></object>
++     </div>
++  )HTML");
++
++  Element* object = GetElementById("obj");
++  ASSERT_TRUE(object);
++  EXPECT_FALSE(object->GetComputedStyle());
++  object->EnsureComputedStyle();
++  // Pass if no crash (URLLoaderMock DCHECK failure) because of a request being
++  // performed for 'file.png'.
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/html/html_plugin_element.cc b/third_party/blink/renderer/core/html/html_plugin_element.cc
+index 71d03d95080586e13c91b373d0abe991e7ce2785..fafc63545f15efe55b90f03962b78a1078144a62 100644
+--- a/third_party/blink/renderer/core/html/html_plugin_element.cc
++++ b/third_party/blink/renderer/core/html/html_plugin_element.cc
+@@ -35,6 +35,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/to_v8_traits.h"
+ #include "third_party/blink/renderer/core/css/css_property_names.h"
+ #include "third_party/blink/renderer/core/css/style_change_reason.h"
++#include "third_party/blink/renderer/core/css/style_recalc_context.h"
+ #include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/events/event.h"
+@@ -936,8 +937,9 @@ const ComputedStyle* HTMLPlugInElement::CustomStyleForLayoutObject(
+     const StyleRecalcContext& style_recalc_context) {
+   const ComputedStyle* style =
+       OriginalStyleForLayoutObject(style_recalc_context);
+-  if (IsImageType() && !GetLayoutObject() && style &&
+-      LayoutObjectIsNeeded(*style)) {
++  // Don't attempt a load if this computed style is for EnsureComputedStyle().
++  if (!style_recalc_context.is_ensuring_style && IsImageType() &&
++      !GetLayoutObject() && style && LayoutObjectIsNeeded(*style)) {
+     if (!image_loader_) {
+       image_loader_ = MakeGarbageCollected<HTMLImageLoader>(this);
+     }

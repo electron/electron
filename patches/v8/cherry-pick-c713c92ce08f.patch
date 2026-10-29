@@ -1,0 +1,162 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Vitale <mrcvtl@chromium.org>
+Date: Tue, 29 Sep 2026 15:50:53 +0000
+Subject: [maglev] Validate alternative type checks before reusing conversions
+
+MaglevGraphOptimizer could replace a conversion node with a cached
+alternative that performed a weaker type check. For example, a
+TruncateCheckedNumberOrOddballToInt32 assuming kNumber could be replaced
+by a cached alternative assuming kNumberOrOddball. This dropped the
+stricter deopt guard, allowing non-Numbers (such as Booleans) to reach
+downstream operations that rely on the stronger type.
+
+This CL introduces a check ensuring that an alternative can only be
+reused if its guaranteed input type satisfies the requested input type.
+
+Fixed: 567129324
+Change-Id: I7909cce03bea404a9fc145e86ff5f9096a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8492751
+Commit-Queue: Marco Vitale <mrcvtl@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110191}
+(cherry picked from commit c713c92ce08f558caec5b068172348a21e9a5d9d)
+
+Electron adaptation notes (44-x-y): V8 15.2 predates 3eefa7acc3f
+([maglev] Replace TaggedToFloat64ConversionType with NodeType), so
+GetUntaggedValueWithRepresentation() and the new CanReuseAlternative()
+take std::optional<TaggedToFloat64ConversionType> conversion_type instead
+of std::optional<NodeType> assumed_input_type. CanReuseAlternative()
+derives the NodeType via GetAllowedTypeFromConversionType(), and
+GuaranteedInputType() reads the Truncate nodes' conversion_type() the same
+way. The check performed is otherwise identical to upstream.
+
+diff --git a/src/maglev/maglev-graph-optimizer.cc b/src/maglev/maglev-graph-optimizer.cc
+index 2e4407d7c14e2db9f3ef227fee1eac4de336ffdd..8f48736fa07edd2ddef8b7a444f6e43b71235cdd 100644
+--- a/src/maglev/maglev-graph-optimizer.cc
++++ b/src/maglev/maglev-graph-optimizer.cc
+@@ -578,6 +578,50 @@ ValueNode* MaglevGraphOptimizer::GetConstantWithRepresentation(
+   }
+ }
+ 
++namespace {
++
++// Returns the type check that `alt` is guaranteed to have already performed
++// on its tagged input node.
++NodeType GuaranteedInputType(UseRepresentation repr, ValueNode* alt) {
++  switch (repr) {
++    case UseRepresentation::kInt32:
++    case UseRepresentation::kFloat64:
++      return NodeType::kNumber;
++    case UseRepresentation::kHoleyFloat64:
++      return NodeType::kNumberOrUndefined;
++    // Unlike Int32/Float64, a Truncate node doesn't have a single fixed check,
++    // it depends on its assumed_input_type.
++    case UseRepresentation::kTruncatedInt32:
++      if (auto* t = alt->TryCast<TruncateCheckedNumberOrOddballToInt32>()) {
++        return GetAllowedTypeFromConversionType(t->conversion_type());
++      }
++      if (auto* t = alt->TryCast<TruncateUnsafeNumberOrOddballToInt32>()) {
++        return GetAllowedTypeFromConversionType(t->conversion_type());
++      }
++      return NodeType::kNumberOrOddball;
++    case UseRepresentation::kTagged:
++    case UseRepresentation::kTaggedForNumberToString:
++    case UseRepresentation::kUint32:
++    case UseRepresentation::kNonTruncated:
++      UNREACHABLE();
++  }
++  UNREACHABLE();
++}
++
++}  // namespace
++
++bool MaglevGraphOptimizer::CanReuseAlternative(
++    ValueNode* node, ValueNode* alt, UseRepresentation repr,
++    std::optional<TaggedToFloat64ConversionType> conversion_type) {
++  if (!conversion_type.has_value()) return true;
++  NodeType assumed_input_type =
++      GetAllowedTypeFromConversionType(*conversion_type);
++  // We cannot replace a stricter check with a weaker one, as subsequent
++  // operations might rely on this node to deopt invalid inputs.
++  return reducer_.CheckType(node, assumed_input_type) ||
++         NodeTypeIs(GuaranteedInputType(repr, alt), assumed_input_type);
++}
++
+ MaybeReduceResult MaglevGraphOptimizer::GetUntaggedValueWithRepresentation(
+     ValueNode* node, UseRepresentation use_repr,
+     std::optional<TaggedToFloat64ConversionType> conversion_type) {
+@@ -599,8 +643,11 @@ MaybeReduceResult MaglevGraphOptimizer::GetUntaggedValueWithRepresentation(
+     // Check if we already have a canonical conversion.
+     NodeInfo* node_info =
+         known_node_aspects().GetOrCreateInfoFor(broker(), node);
+-    auto& alternative = node_info->alternative();
+-    if (ValueNode* alt = alternative.get(use_repr)) return alt;
++    if (ValueNode* alternative = node_info->alternative().get(use_repr);
++        alternative &&
++        CanReuseAlternative(node, alternative, use_repr, conversion_type)) {
++      return alternative;
++    }
+     return {};
+   }
+   // TODO(victorgomes): The GetXXX functions may emit a conversion node that
+diff --git a/src/maglev/maglev-graph-optimizer.h b/src/maglev/maglev-graph-optimizer.h
+index 62d680122b8d8851d8f3c9a4daca510b1f8117dd..6443733223e0c2a4edee91e033346ad8fe52d98e 100644
+--- a/src/maglev/maglev-graph-optimizer.h
++++ b/src/maglev/maglev-graph-optimizer.h
+@@ -147,6 +147,12 @@ class MaglevGraphOptimizer {
+       ValueNode* node, UseRepresentation repr,
+       std::optional<TaggedToFloat64ConversionType> conversion_type);
+ 
++  // Returns true if reusing the cached conversion 'alt' safely preserves all
++  // required type checks for 'node'.
++  bool CanReuseAlternative(
++      ValueNode* node, ValueNode* alt, UseRepresentation repr,
++      std::optional<TaggedToFloat64ConversionType> conversion_type);
++
+   // Records the untagged input of a tagging conversion as the matching
+   // untagged alternative of `tagged`, so a later untagging use can reuse it.
+   template <ValueRepresentation kRepresentation>
+diff --git a/test/mjsunit/turbolev/regress-567129324.js b/test/mjsunit/turbolev/regress-567129324.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1abeaeaafc1533c6e0579e9b2d9d01675338f30b
+--- /dev/null
++++ b/test/mjsunit/turbolev/regress-567129324.js
+@@ -0,0 +1,38 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbolev
++// Flags: --max-turbolev-eager-inlined-bytecode-size=0
++
++// The graph optimizer must not replace a TruncateChecked...ToInt32[Number]
++// with a cached truncation that only assumed NumberOrOddball: the Number check
++// narrows `x` (Smi|Boolean) to Smi, which the Smi-field store relies on.
++// `alt` must not be eagerly inlined, so that its truncation is only added to
++// the graph by the inliner, after `x | y` has been built.
++
++function alt(x) {
++  return Math.imul(x, 3);
++}
++
++const obj = { b: 123 };
++
++function f(flag, y, obj) {
++  const x = flag ? true : 123;
++  const a = alt(x);
++  const b = x | y;
++  obj.b = x;
++  return b + a;
++}
++
++%PrepareFunctionForOptimization(alt);
++%PrepareFunctionForOptimization(f);
++f(false, 0.125, obj);
++%OptimizeFunctionOnNextCall(f);
++assertEquals(123 + 369, f(false, 0.125, obj));
++assertOptimized(f);
++
++assertEquals(1 + 3, f(true, 0.125, obj));
++assertUnoptimized(f);
++assertEquals(true, obj.b);
++%HeapObjectVerify(obj);
