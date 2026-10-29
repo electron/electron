@@ -90,19 +90,6 @@ jobs:
       run: |
         cd src/out/Default
         unzip -:o dist.zip
-    # The trace_events tests read Perfetto traces back through
-    # trace_processor_shell. Node's own tool fetches the release matching the
-    # vendored deps/perfetto/VERSION into the path test/common/trace_events.js
-    # expects, so key the cache on that file.
-    - name: Restore Perfetto trace_processor_shell
-      id: trace-processor-cache
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-      with:
-        path: src/third_party/electron_node/tools/perfetto/trace_processor_shell
-        key: ${{ runner.os }}-${{ runner.arch }}-perfetto-trace-processor-${{ hashFiles('src/third_party/electron_node/deps/perfetto/VERSION') }}
-    - name: Download Perfetto trace_processor_shell
-      if: steps.trace-processor-cache.outputs.cache-hit != 'true'
-      run: src/third_party/electron_node/tools/perfetto/get_trace_processor
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
     - name: Run Node.js Tests
