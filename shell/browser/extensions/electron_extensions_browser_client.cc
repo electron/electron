@@ -409,7 +409,8 @@ ElectronExtensionsBrowserClient::GetSafeBrowsingDelegate() {
 }
 
 std::string ElectronExtensionsBrowserClient::GetApplicationLocale() {
-  return ElectronBrowserClient::Get()->GetApplicationLocale();
+  return std::string(
+      ElectronBrowserClient::Get()->GetApplicationLocale().tag_string());
 }
 
 void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(

@@ -19,6 +19,8 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/i18n/language_tag.h"
+#include "base/i18n/tag_converters.h"
 #include "base/memory/self_deleting.h"
 #include "base/no_destructor.h"
 #include "base/notreached.h"
@@ -1866,10 +1868,12 @@ void ElectronBrowserClient::BindAIManager(
 }
 #endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
-std::string ElectronBrowserClient::GetApplicationLocale() {
-  return BrowserThread::CurrentlyOn(BrowserThread::IO)
-             ? *g_io_thread_application_locale
-             : *g_application_locale;
+base::i18n::LanguageTag ElectronBrowserClient::GetApplicationLocale() {
+  const std::string& locale = BrowserThread::CurrentlyOn(BrowserThread::IO)
+                                  ? *g_io_thread_application_locale
+                                  : *g_application_locale;
+  return base::i18n::GetLanguageTagFromString(locale).value_or(
+      ContentBrowserClient::GetApplicationLocale());
 }
 
 bool ElectronBrowserClient::ShouldUseSpareRenderProcessHost(

@@ -38,7 +38,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,269 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,274 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -231,6 +231,11 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
 +        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/boot"),
 +                                  BlockType::kBlockAllChildren),
 +        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
++                                  BlockType::kBlockAllChildren),
++        // And runtime data in /run, including per-session runtime directories
++        // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
++        // crbug.com/577376424.
++        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
 +                                  BlockType::kBlockAllChildren),
 +        // And block all of ~/.config, matching the similar restrictions on mac
 +        // and windows.
