@@ -280,6 +280,7 @@ __metadata:
     "@electron/asar": "npm:^4.3.0"
     "@electron/docs-parser": "npm:^3.0.2"
     "@electron/fiddle-core": "npm:^2.2.2"
+    "@electron/get": "npm:^5.0.0"
     "@electron/github-app-auth": "npm:^3.2.0"
     "@electron/lint-roller": "npm:^4.0.0"
     "@electron/typescript-definitions": "npm:^9.2.0"

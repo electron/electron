@@ -1,4 +1,4 @@
-// Run with: node --test script/benchmarks/test/
+// Run with: node --test script/benchmarks/test/*.test.mts
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -7,25 +7,38 @@ import * as path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { collectSamples, compareTargets, datadogSeries, findProblems } from '../compare.mjs';
+import { collectSamples, compareTargets, datadogSeries, findProblems } from '../compare.mts';
 
-const COMPARE = fileURLToPath(new URL('../compare.mjs', import.meta.url));
+import type { RunMetadata, TargetInfo } from '../lib/types.mts';
+
+const COMPARE = fileURLToPath(new URL('../compare.mts', import.meta.url));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'benchmarks-compare-test-'));
 after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
-const TARGETS = [
+const TARGETS: TargetInfo[] = [
   { id: 'candidate', kind: 'electron', electronVersion: '47.0.0', chromiumVersion: '158.0.1.0' },
   { id: 'baseline', kind: 'electron', electronVersion: '46.0.0', chromiumVersion: '157.0.1.0' },
   { id: 'cft', kind: 'chrome', chromiumVersion: '158.0.1.0' }
 ];
 
-// Writes a results dir laid out like run.mjs and crossbench leave it. Each
+// Writes a results dir laid out like run.mts and crossbench leave it. Each
 // invocation gets a first_load story whose fcp has `values` (default: one
 // value per repetition) unless `values` is null.
-function writeResults(name, invocations, { repeat = 3, targets = TARGETS } = {}) {
+interface TestInvocation {
+  round: number;
+  target: string;
+  exitCode?: number;
+  values?: number[] | null;
+}
+
+function writeResults(
+  name: string,
+  invocations: TestInvocation[],
+  { repeat = 3, targets = TARGETS }: { repeat?: number; targets?: TargetInfo[] } = {}
+) {
   const dir = path.join(tmp, name);
   fs.mkdirSync(dir, { recursive: true });
-  const metadata = {
+  const metadata: RunMetadata = {
     startedAt: '2026-10-29T00:00:00.000Z',
     platform: 'linux',
     arch: 'x64',
@@ -51,9 +64,10 @@ function writeResults(name, invocations, { repeat = 3, targets = TARGETS } = {})
   return { dir, metadata };
 }
 
-const everyTarget = (round, overrides = {}) => TARGETS.map(({ id }) => ({ round, target: id, ...overrides[id] }));
+const everyTarget = (round: number, overrides: Record<string, Partial<TestInvocation>> = {}): TestInvocation[] =>
+  TARGETS.map(({ id }) => ({ round, target: id, ...overrides[id] }));
 
-const runCompare = (dir) =>
+const runCompare = (dir: string) =>
   spawnSync(process.execPath, [COMPARE, '--results', dir, '--dry-run'], {
     encoding: 'utf8',
     env: { ...process.env, GITHUB_STEP_SUMMARY: '', GITHUB_ACTIONS: '' }
@@ -96,7 +110,7 @@ describe('collectSamples', () => {
 });
 
 describe('findProblems', () => {
-  const problemsFor = (name, invocations, options) => {
+  const problemsFor = (name: string, invocations: TestInvocation[], options?: { targets?: TargetInfo[] }) => {
     const { dir, metadata } = writeResults(name, invocations, options);
     const { samples } = collectSamples(dir, metadata);
     const comparisons = compareTargets(samples, metadata.targets, { alpha: 0.05, minChange: 0.1 });
@@ -119,7 +133,7 @@ describe('findProblems', () => {
 
 describe('datadogSeries', () => {
   it('stamps points at upload time for a run that never finished', () => {
-    // run.mjs was killed, so metadata.json has startedAt (hours ago) but no
+    // run.mts was killed, so metadata.json has startedAt (hours ago) but no
     // finishedAt.
     const { dir, metadata } = writeResults('unfinished', everyTarget(0));
     assert.equal(metadata.finishedAt, undefined);
@@ -137,7 +151,7 @@ describe('datadogSeries', () => {
   });
 });
 
-describe('compare.mjs', () => {
+describe('compare.mts', () => {
   it('exits with 0 for complete results', () => {
     const { dir } = writeResults('cli-ok', [...everyTarget(0), ...everyTarget(1)]);
     const result = runCompare(dir);

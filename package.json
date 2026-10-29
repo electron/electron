@@ -9,6 +9,7 @@
     "@electron/asar": "^4.3.0",
     "@electron/docs-parser": "^3.0.2",
     "@electron/fiddle-core": "^2.2.2",
+    "@electron/get": "^5.0.0",
     "@electron/github-app-auth": "^3.2.0",
     "@electron/lint-roller": "^4.0.0",
     "@electron/typescript-definitions": "^9.2.0",

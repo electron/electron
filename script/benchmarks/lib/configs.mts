@@ -3,10 +3,18 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import type { Capabilities, TargetKind } from './types.mts';
+
 // The file-loading strategies. Each custom scheme is registered by the
 // harness app (see harness-app/main.js) and only exists when the Electron
 // version under test has the API, so `capability` gates the story.
-export const FILE_STRATEGIES = [
+interface FileStrategy {
+  name: string;
+  scheme: string;
+  capability?: string;
+}
+
+export const FILE_STRATEGIES: FileStrategy[] = [
   { name: 'file', scheme: 'file' },
   { name: 'register_file_protocol', scheme: 'cblegacy', capability: 'registerFileProtocol' },
   { name: 'handle_fs', scheme: 'cbfs', capability: 'handleFs' },
@@ -50,22 +58,22 @@ const pad = '// padding to make each file about 300 bytes\n'.repeat(6);
 // Writes <root>/classic.html (N classic <script> tags) and <root>/module.html
 // (one module importing N modules), VS Code dev-build style. Both record the
 // time from navigation start to "all files evaluated" as files_loaded_ms.
-export function writeFileLoadingSite(root, count) {
+export function writeFileLoadingSite(root: string, count: number) {
   fs.rmSync(root, { recursive: true, force: true });
   fs.mkdirSync(path.join(root, 'classic'), { recursive: true });
   fs.mkdirSync(path.join(root, 'module'), { recursive: true });
   const done =
     "performance.mark('files-loaded'); window.__cbMetrics = { files_loaded_ms: performance.getEntriesByName('files-loaded')[0].startTime };";
 
-  const tags = [];
-  const imports = [];
+  const tags: string[] = [];
+  const imports: string[] = [];
   for (let i = 0; i < count; i++) {
     fs.writeFileSync(path.join(root, 'classic', `s${i}.js`), `window.__cbSum = (window.__cbSum || 0) + ${i};\n${pad}`);
     fs.writeFileSync(path.join(root, 'module', `m${i}.js`), `export const v${i} = ${i};\n${pad}`);
     tags.push(`<script src="classic/s${i}.js"></script>`);
     imports.push(`import { v${i} } from './module/m${i}.js';`);
   }
-  const html = (title, body) =>
+  const html = (title: string, body: string) =>
     `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>\n${body}\n</head><body><h1>${title}</h1></body></html>\n`;
   fs.writeFileSync(
     path.join(root, 'classic.html'),
@@ -82,8 +90,20 @@ export function writeFileLoadingSite(root, count) {
 // `capabilities` comes from the harness app's --cb-capabilities output.
 const hasPainted = "return performance.getEntriesByName('first-contentful-paint').length > 0";
 
-export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resizeCount = 20 }) {
-  const loading = {
+// One crossbench page action, e.g. { action: 'get', url, ready_state }.
+type Action = Record<string, string>;
+type Pages = Record<string, Action[]>;
+
+interface PageConfigOptions {
+  kind: TargetKind;
+  capabilities?: Capabilities;
+  baseUrl: string;
+  fileRoot: string;
+  resizeCount?: number;
+}
+
+export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resizeCount = 20 }: PageConfigOptions) {
+  const loading: Pages = {
     first_load: [
       { action: 'get', url: `${baseUrl}/pages/index.html`, ready_state: 'complete' },
       { action: 'wait_for_condition', timeout: '20s', condition: hasPainted },
@@ -111,7 +131,7 @@ export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resize
     ];
   }
 
-  const fileLoading = {};
+  const fileLoading: Pages = {};
   for (const strategy of FILE_STRATEGIES) {
     if (kind !== 'electron' && strategy.scheme !== 'file') continue;
     if (strategy.capability && !capabilities[strategy.capability]) continue;
@@ -122,7 +142,7 @@ export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resize
       // crossbench's `get` only accepts well-known schemes, and file:// must
       // be a browser-initiated navigation, so custom schemes navigate from
       // about:blank with JS instead.
-      const navigate =
+      const navigate: Action[] =
         strategy.scheme === 'file'
           ? [{ action: 'get', url: `file://${page}`, ready_state: 'any' }]
           : [

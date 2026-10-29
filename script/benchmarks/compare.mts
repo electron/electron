@@ -1,4 +1,4 @@
-// Compares the targets of one interleaved benchmark run (see run.mjs).
+// Compares the targets of one interleaved benchmark run (see run.mts).
 //
 // For every metric it takes one sample per round and target (the median of
 // that round's repetitions), then compares the candidate against the baseline
@@ -13,45 +13,77 @@
 //   electron.perf.delta.<metric>  relative change in percent per comparison
 //
 // Usage:
-//   node script/benchmarks/compare.mjs --results <dir> [--min-change 0.1]
+//   node script/benchmarks/compare.mts --results <dir> [--min-change 0.1]
 //     [--alpha 0.05] [--dry-run] [--fail-on-regression]
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { compareSamples, median } from './lib/stats.mjs';
+import { compareSamples, median, type SampleComparison } from './lib/stats.mts';
+
+import type { Invocation, RunMetadata, TargetInfo } from './lib/types.mts';
+
+// samples[metric][targetId] = one value per round.
+export type Samples = Record<string, Record<string, number[]>>;
+
+export interface Rejected {
+  round: number;
+  suite: string;
+  target: string;
+  reason: string;
+}
+
+interface ComparisonDefinition {
+  name: string;
+  reference: string;
+  candidate: string;
+  title: string;
+}
+
+export interface MetricComparison extends SampleComparison {
+  metric: string;
+  lowerIsBetter: boolean;
+}
+
+export interface Comparison extends ComparisonDefinition {
+  metrics: MetricComparison[];
+}
 
 // Measures reported per story, from the js probe (loading suites) or the
 // benchmark's own result file (press benchmarks).
-function measuresFor(suite, story) {
+function measuresFor(suite: string, story: string): string[] {
   if (suite === 'file_loading') return ['files_loaded_ms'];
   if (story === 'resize') return ['resize_median_ms', 'resize_p90_ms'];
   return ['fcp', 'lcp', 'load_event_end'];
 }
-const PRESS_RESULTS = {
+const PRESS_RESULTS: Record<string, { file: string; keys: string[] }> = {
   speedometer: { file: 'speedometer_3.1.json', keys: ['Score'] },
   jetstream: { file: 'jetstream_2.2.json', keys: ['Total/Score'] }
 };
 
-const COMPARISONS = [
+const COMPARISONS: ComparisonDefinition[] = [
   { name: 'vs_baseline', reference: 'baseline', candidate: 'candidate', title: 'Candidate vs baseline' },
   { name: 'vs_cft', reference: 'cft', candidate: 'candidate', title: 'Electron vs Chrome for Testing (same milestone)' }
 ];
 
-const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
+const readJson = (file: string): any => JSON.parse(fs.readFileSync(file, 'utf8'));
 
 // Values of `data[key].values`, as written by crossbench's metrics merger.
-const valuesOf = (entry) => (Array.isArray(entry?.values) ? entry.values.filter(Number.isFinite) : []);
+const valuesOf = (entry: any): number[] => (Array.isArray(entry?.values) ? entry.values.filter(Number.isFinite) : []);
 
 // Returns { metrics: { metric: number }, incomplete: [description] } for one
 // crossbench invocation. A measure with fewer (or more) values than the
 // expected repetitions is dropped, so a run where some repetitions failed or
 // timed out can't bias the round's median.
-function collectInvocation(resultDir, suite, expectedCount) {
-  const metrics = {};
-  const incomplete = [];
-  const complete = (name, values) => {
+function collectInvocation(
+  resultDir: string,
+  suite: string,
+  expectedCount: number | undefined
+): { metrics: Record<string, number>; incomplete: string[] } {
+  const metrics: Record<string, number> = {};
+  const incomplete: string[] = [];
+  const complete = (name: string, values: number[]) => {
     if (values.length === 0) return false;
     if (expectedCount === undefined || values.length === expectedCount) return true;
     incomplete.push(`${name} (${values.length}/${expectedCount} values)`);
@@ -62,7 +94,7 @@ function collectInvocation(resultDir, suite, expectedCount) {
   if (PRESS_RESULTS[suite]) {
     const file = path.join(resultDir, PRESS_RESULTS[suite].file);
     if (!fs.existsSync(file)) return { metrics, incomplete };
-    for (const browser of Object.values(readJson(file))) {
+    for (const browser of Object.values<any>(readJson(file))) {
       const key = PRESS_RESULTS[suite].keys.find((k) => valuesOf(browser.data?.[k]).length > 0);
       const values = key ? valuesOf(browser.data[key]) : [];
       if (complete(`${suite}.score`, values)) metrics[`${suite}.score`] = median(values);
@@ -101,9 +133,9 @@ function collectInvocation(resultDir, suite, expectedCount) {
   return { metrics, incomplete };
 }
 
-// Repetitions one invocation should report per measure. run.mjs records it;
+// Repetitions one invocation should report per measure. run.mts records it;
 // older metadata only has the loading suites' --repeat.
-function expectedCountOf(invocation, metadata) {
+function expectedCountOf(invocation: Invocation, metadata: RunMetadata): number | undefined {
   if (Number.isInteger(invocation.repetitions)) return invocation.repetitions;
   if (invocation.suite === 'loading' || invocation.suite === 'file_loading') return metadata.repeat;
   return undefined;
@@ -112,9 +144,9 @@ function expectedCountOf(invocation, metadata) {
 // samples[metric][targetId] = one value per round. Only invocations that
 // exited with 0 contribute, and only measures with every repetition present.
 // rejected lists what was left out and why.
-export function collectSamples(resultsDir, metadata) {
-  const samples = {};
-  const rejected = [];
+export function collectSamples(resultsDir: string, metadata: RunMetadata): { samples: Samples; rejected: Rejected[] } {
+  const samples: Samples = {};
+  const rejected: Rejected[] = [];
   for (const invocation of metadata.invocations) {
     const { round, suite, target } = invocation;
     if (invocation.exitCode !== 0) {
@@ -135,14 +167,14 @@ export function collectSamples(resultsDir, metadata) {
   return { samples, rejected };
 }
 
-const lowerIsBetter = (metric) => !metric.endsWith('.score');
+const lowerIsBetter = (metric: string) => !metric.endsWith('.score');
 
 // Reasons the results can't be trusted as a whole: no samples at all, or a
 // required comparison without a single comparable metric. Candidate vs
 // baseline is always required; Electron vs Chrome for Testing only when a CfT
-// target was fetched (fetch-targets.mjs --cft none skips it on purpose).
-export function findProblems(samples, comparisons, targets) {
-  const problems = [];
+// target was fetched (fetch-targets.mts --cft none skips it on purpose).
+export function findProblems(samples: Samples, comparisons: Comparison[], targets: TargetInfo[]): string[] {
+  const problems: string[] = [];
   if (Object.keys(samples).length === 0) problems.push('no usable benchmark results');
   const ids = new Set(targets.map((target) => target.id));
   for (const { name, reference, candidate } of COMPARISONS) {
@@ -158,7 +190,11 @@ export function findProblems(samples, comparisons, targets) {
   return problems;
 }
 
-export function compareTargets(samples, targets, { alpha, minChange }) {
+export function compareTargets(
+  samples: Samples,
+  targets: TargetInfo[],
+  { alpha, minChange }: { alpha: number; minChange: number }
+): Comparison[] {
   const ids = new Set(targets.map((target) => target.id));
   return COMPARISONS.filter((c) => ids.has(c.reference) && ids.has(c.candidate)).map((comparison) => ({
     ...comparison,
@@ -177,24 +213,36 @@ export function compareTargets(samples, targets, { alpha, minChange }) {
   }));
 }
 
-const describeTarget = (target) =>
+const describeTarget = (target: TargetInfo) =>
   target.kind === 'electron'
     ? `Electron ${target.electronVersion} (Chromium ${target.chromiumVersion})`
     : `Chrome for Testing ${target.chromiumVersion}`;
 
-function formatValue(metric, value) {
+function formatValue(metric: string, value: number) {
   if (!Number.isFinite(value)) return 'n/a';
   if (metric.endsWith('.ratio_to_file')) return `${value.toFixed(2)}x`;
   if (metric.endsWith('.score')) return value.toFixed(2);
   return `${value.toFixed(1)} ms`;
 }
 
-const formatP = (p) => (Number.isFinite(p) ? (p < 0.001 ? '<0.001' : p.toFixed(3)) : 'n/a');
-const formatChange = (change) =>
+const formatP = (p: number) => (Number.isFinite(p) ? (p < 0.001 ? '<0.001' : p.toFixed(3)) : 'n/a');
+const formatChange = (change: number) =>
   Number.isFinite(change) ? `${change >= 0 ? '+' : ''}${(change * 100).toFixed(1)}%` : 'n/a';
-const VERDICT_LABELS = { regression: ':red_circle: regression', improvement: ':green_circle: improvement' };
+const VERDICT_LABELS: Record<string, string> = {
+  regression: ':red_circle: regression',
+  improvement: ':green_circle: improvement'
+};
 
-export function markdownSummary({ metadata, comparisons, rejected, problems = [], alpha, minChange }) {
+interface SummaryOptions {
+  metadata: RunMetadata;
+  comparisons: Comparison[];
+  rejected: Rejected[];
+  problems?: string[];
+  alpha: number;
+  minChange: number;
+}
+
+export function markdownSummary({ metadata, comparisons, rejected, problems = [], alpha, minChange }: SummaryOptions) {
   const targets = Object.fromEntries(metadata.targets.map((target) => [target.id, target]));
   const lines = [
     '## Electron benchmarks',
@@ -230,7 +278,7 @@ export function markdownSummary({ metadata, comparisons, rejected, problems = []
 }
 
 // Datadog tags allow lowercase alphanumerics and _ - : . /
-const tag = (key, value) =>
+const tag = (key: string, value: unknown) =>
   `${key}:${String(value)
     .toLowerCase()
     .replace(/[^a-z0-9_.:/-]+/g, '_')
@@ -240,11 +288,22 @@ const tag = (key, value) =>
 // Points are stamped at upload time, as script/build-stats.mjs does: the v2
 // series intake rejects points more than an hour old, and a run cut off by a
 // timeout or cancellation can be hours past its start.
-export function datadogSeries({ metadata, samples, comparisons }, now = Date.now()) {
+interface Series {
+  metric: string;
+  type: number;
+  unit?: string;
+  points: { timestamp: number; value: number }[];
+  tags: string[];
+}
+
+export function datadogSeries(
+  { metadata, samples, comparisons }: { metadata: RunMetadata; samples: Samples; comparisons: Comparison[] },
+  now = Date.now()
+): Series[] {
   const timestamp = Math.round(now / 1000);
   const targets = Object.fromEntries(metadata.targets.map((target) => [target.id, target]));
   const common = [tag('platform', metadata.platform), tag('arch', metadata.arch), tag('cpu_model', metadata.cpuModel)];
-  const series = [];
+  const series: Series[] = [];
 
   for (const [metric, byTarget] of Object.entries(samples)) {
     for (const [id, values] of Object.entries(byTarget)) {
@@ -289,13 +348,13 @@ export function datadogSeries({ metadata, samples, comparisons }, now = Date.now
   return series;
 }
 
-async function uploadSeriesToDatadog(series) {
+async function uploadSeriesToDatadog(series: Series[]) {
   // Same endpoint and auth as script/build-stats.mjs.
   const response = await fetch('https://api.datadoghq.com/api/v2/series', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'DD-API-KEY': process.env.DD_API_KEY
+      'DD-API-KEY': process.env.DD_API_KEY ?? ''
     },
     body: JSON.stringify({ series })
   });
@@ -316,7 +375,7 @@ async function main() {
   const alpha = parseFloat(args.alpha);
   const minChange = parseFloat(args['min-change']);
   const resultsDir = path.resolve(args.results);
-  const metadata = readJson(path.join(resultsDir, 'metadata.json'));
+  const metadata: RunMetadata = readJson(path.join(resultsDir, 'metadata.json'));
 
   const { samples, rejected } = collectSamples(resultsDir, metadata);
   for (const r of rejected) {
@@ -365,8 +424,8 @@ async function main() {
 }
 
 if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    console.error(`ERROR: ${error.message}`);
+  main().catch((error: unknown) => {
+    console.error(`ERROR: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   });
 }

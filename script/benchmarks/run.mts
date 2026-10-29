@@ -1,24 +1,25 @@
 // Runs the benchmark suites against every target in targets.json (written by
-// fetch-targets.mjs), interleaved: each round runs every suite once per
+// fetch-targets.mts), interleaved: each round runs every suite once per
 // target (A, B, C, then B, C, A, ...) so slow drift on the host affects all
 // targets equally. Results land in <out>/rounds/<round>/<suite>/<target>/ and
-// <out>/metadata.json; compare.mjs turns them into a comparison.
+// <out>/metadata.json; compare.mts turns them into a comparison.
 //
 // Usage (under Xvfb on Linux):
-//   node script/benchmarks/run.mjs --targets <dir>/targets.json --out <dir>
+//   node script/benchmarks/run.mts --targets <dir>/targets.json --out <dir>
 //     [--rounds 10] [--repeat 3] [--suites loading,file_loading,speedometer]
 //     [--file-count 1500] [--work-dir <dir>] [--python python3]
-import { execFile, execFileSync, spawn } from 'node:child_process';
+import { type ChildProcess, execFile, execFileSync, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { pageConfigs, probeConfig, writeFileLoadingSite } from './lib/configs.mjs';
+import { pageConfigs, probeConfig, writeFileLoadingSite } from './lib/configs.mts';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SERVE_BENCHMARKS = path.resolve(__dirname, '../pgo/serve-benchmarks.js');
+import type { Capabilities, Invocation, RunMetadata, Target, TargetsFile } from './lib/types.mts';
+
+const SERVE_BENCHMARKS = path.resolve(import.meta.dirname, '../pgo/serve-benchmarks.js');
 
 // The one place crossbench is pinned. Installed from a plain checkout (not
 // `pip install git+...`, which would try to clone Google-internal submodules)
@@ -32,16 +33,16 @@ export const SUITES = ['loading', 'file_loading', 'speedometer', 'jetstream'];
 // Press benchmarks are served from the same pinned WebKit checkouts PGO uses.
 // MotionMark is left out: the revision PGO pins no longer exposes the
 // window.benchmarkRunnerClient global crossbench's MotionMark probe reads.
-const PRESS_BENCHMARKS = {
+const PRESS_BENCHMARKS: Record<string, { benchmark: string; path: string }> = {
   speedometer: { benchmark: 'speedometer_3.1', path: 'speedometer/' },
   jetstream: { benchmark: 'jetstream_2.2', path: 'jetstream/' }
 };
 
-function ensureCrossbench(workDir, python) {
+function ensureCrossbench(workDir: string, python: string): string {
   const checkout = path.join(workDir, 'crossbench');
   const venv = path.join(workDir, 'crossbench-venv');
   const cb = path.join(venv, 'bin', 'cb');
-  const git = (...args) => execFileSync('git', args, { cwd: checkout, encoding: 'utf8' }).trim();
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: checkout, encoding: 'utf8' }).trim();
   if (
     fs.existsSync(cb) &&
     fs.existsSync(path.join(checkout, '.git')) &&
@@ -64,7 +65,7 @@ function ensureCrossbench(workDir, python) {
 
 // Starts script/pgo/serve-benchmarks.js over <work>/www, which also fetches
 // the pinned Speedometer, JetStream and MotionMark checkouts on first use.
-async function startServer(wwwDir, port) {
+async function startServer(wwwDir: string, port: number): Promise<ChildProcess> {
   const server = spawn(process.execPath, [SERVE_BENCHMARKS, '--dir', wwwDir, '--port', String(port)], {
     stdio: ['ignore', 'inherit', 'inherit']
   });
@@ -84,7 +85,7 @@ async function startServer(wwwDir, port) {
 }
 
 // Asks the harness app which features this Electron version supports.
-function probeCapabilities(target, harnessApp, workDir) {
+function probeCapabilities(target: Target, harnessApp: string, workDir: string): Capabilities {
   const file = path.join(workDir, `${target.id}.capabilities.json`);
   fs.rmSync(file, { force: true });
   try {
@@ -94,12 +95,14 @@ function probeCapabilities(target, harnessApp, workDir) {
     });
     return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (error) {
-    console.warn(`[run] could not probe ${target.id} capabilities (${error.message}); running the basic stories only`);
+    console.warn(
+      `[run] could not probe ${target.id} capabilities (${errorMessage(error)}); running the basic stories only`
+    );
     return {};
   }
 }
 
-async function readAzureVmSize() {
+async function readAzureVmSize(): Promise<string | undefined> {
   try {
     const response = await fetch(
       'http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2021-02-01&format=text',
@@ -139,11 +142,13 @@ async function hostInfo() {
   };
 }
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Whether any process in the group still runs. Zombies (killed descendants
 // that were reparented to an init that has not reaped them yet) count as gone.
-function groupAlive(pgid) {
+function groupAlive(pgid: number): boolean {
   try {
     const members = fs
       .readdirSync('/proc')
@@ -169,7 +174,7 @@ function groupAlive(pgid) {
   }
 }
 
-function signalGroup(pgid, signal) {
+function signalGroup(pgid: number, signal: NodeJS.Signals) {
   try {
     process.kill(-pgid, signal);
   } catch {
@@ -180,17 +185,17 @@ function signalGroup(pgid, signal) {
 // Kills the whole process tree of one invocation (crossbench, chromedriver and
 // the browser), SIGTERM first and SIGKILL after graceMs, and waits until it is
 // gone so the next target never shares the machine with leftovers.
-async function killTree(child, graceMs) {
+async function killTree(child: ChildProcess, graceMs: number): Promise<void> {
   if (process.platform === 'win32') {
     // No process groups. taskkill /T walks the parent links, so it is only
     // used while crossbench itself is still alive (on timeout).
-    await new Promise((resolve) =>
+    await new Promise<void>((resolve) =>
       execFile('taskkill', ['/T', '/F', '/PID', String(child.pid)], { windowsHide: true }, () => resolve())
     );
     return;
   }
   const pgid = child.pid;
-  if (!groupAlive(pgid)) return;
+  if (pgid === undefined || !groupAlive(pgid)) return;
   signalGroup(pgid, 'SIGTERM');
   const deadline = Date.now() + graceMs;
   while (groupAlive(pgid) && Date.now() < deadline) await sleep(100);
@@ -201,20 +206,20 @@ async function killTree(child, graceMs) {
   if (groupAlive(pgid)) console.warn(`[run] processes in group ${pgid} survived SIGKILL`);
 }
 
-// Invocations in flight, killed if run.mjs itself is stopped.
-const activeChildren = new Set();
-// Called with the signal name before run.mjs exits on a signal.
-let onStopSignal = () => {};
+// Invocations in flight, killed if run.mts itself is stopped.
+const activeChildren = new Set<ChildProcess>();
+// Called with the signal name before run.mts exits on a signal.
+let onStopSignal: (signal: NodeJS.Signals) => void = () => {};
 
 // crossbench runs in its own process group, so a Ctrl+C or SIGTERM sent to
-// run.mjs would not reach it. Take its process tree down too.
+// run.mts would not reach it. Take its process tree down too.
 function killActiveChildrenOnSignals() {
-  for (const signal of ['SIGINT', 'SIGTERM']) {
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.on(signal, () => {
       for (const child of activeChildren) {
         if (process.platform === 'win32') {
           child.kill();
-        } else {
+        } else if (child.pid !== undefined) {
           signalGroup(child.pid, 'SIGKILL');
         }
       }
@@ -228,17 +233,23 @@ function killActiveChildrenOnSignals() {
 // all of its descendants are gone. On POSIX crossbench gets its own process
 // group (detached), so the browser and chromedriver it starts can be killed
 // with it. A timeout returns 124, death by a signal 128 + the signal number.
-export async function runCrossbench(cb, args, logFile, timeoutMs, { graceMs = 10_000 } = {}) {
+export async function runCrossbench(
+  cb: string,
+  args: string[],
+  logFile: string,
+  timeoutMs: number,
+  { graceMs = 10_000 }: { graceMs?: number } = {}
+): Promise<number> {
   const log = fs.openSync(logFile, 'w');
-  let child;
+  let child: ChildProcess;
   try {
     child = spawn(cb, args, { stdio: ['ignore', log, log], detached: process.platform !== 'win32' });
   } finally {
     fs.closeSync(log);
   }
   activeChildren.add(child);
-  let killing;
-  const exited = new Promise((resolve) => {
+  let killing: Promise<void> | undefined;
+  const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
     child.on('error', (error) => {
       console.warn(`[run] could not start crossbench: ${error.message}`);
       resolve({ code: 1, signal: null });
@@ -298,13 +309,13 @@ async function main() {
   const workDir = path.resolve(args['work-dir']);
   fs.mkdirSync(outDir, { recursive: true });
   fs.mkdirSync(workDir, { recursive: true });
-  const { targets } = JSON.parse(fs.readFileSync(args.targets, 'utf8'));
-  const harnessApp = path.join(__dirname, 'harness-app');
+  const { targets } = JSON.parse(fs.readFileSync(args.targets, 'utf8')) as TargetsFile;
+  const harnessApp = path.join(import.meta.dirname, 'harness-app');
 
   const cb = ensureCrossbench(workDir, args.python);
 
   const wwwDir = path.join(workDir, 'www');
-  fs.cpSync(path.join(__dirname, 'pages'), path.join(wwwDir, 'pages'), { recursive: true });
+  fs.cpSync(path.join(import.meta.dirname, 'pages'), path.join(wwwDir, 'pages'), { recursive: true });
   const fileRoot = path.join(workDir, 'file-loading');
   writeFileLoadingSite(fileRoot, fileCount);
   const server = await startServer(wwwDir, port);
@@ -314,18 +325,22 @@ async function main() {
   fs.mkdirSync(configDir, { recursive: true });
   const probeConfigPath = path.join(configDir, 'probe.json');
   fs.writeFileSync(probeConfigPath, JSON.stringify(probeConfig(), null, 2));
+  const capabilities = new Map<string, Capabilities>();
+  const pageConfigPaths = new Map<string, Record<string, string>>();
   for (const target of targets) {
-    target.capabilities = target.kind === 'electron' ? probeCapabilities(target, harnessApp, workDir) : {};
-    const configs = pageConfigs({ kind: target.kind, capabilities: target.capabilities, baseUrl, fileRoot });
-    target.pageConfigs = {};
+    const targetCapabilities = target.kind === 'electron' ? probeCapabilities(target, harnessApp, workDir) : {};
+    capabilities.set(target.id, targetCapabilities);
+    const configs = pageConfigs({ kind: target.kind, capabilities: targetCapabilities, baseUrl, fileRoot });
+    const paths: Record<string, string> = {};
     for (const [suite, config] of Object.entries(configs)) {
       if (Object.keys(config.pages).length === 0) continue;
-      target.pageConfigs[suite] = path.join(configDir, `${target.id}.${suite}.pages.json`);
-      fs.writeFileSync(target.pageConfigs[suite], JSON.stringify(config, null, 2));
+      paths[suite] = path.join(configDir, `${target.id}.${suite}.pages.json`);
+      fs.writeFileSync(paths[suite], JSON.stringify(config, null, 2));
     }
+    pageConfigPaths.set(target.id, paths);
   }
 
-  const metadata = {
+  const metadata: RunMetadata = {
     startedAt: new Date().toISOString(),
     ...(await hostInfo()),
     crossbenchRevision: CROSSBENCH_REVISION,
@@ -333,14 +348,14 @@ async function main() {
     repeat,
     suites,
     fileCount,
-    targets: targets.map(({ id, kind, electronVersion, chromiumVersion, capabilities }) => ({
+    targets: targets.map(({ id, kind, electronVersion, chromiumVersion }) => ({
       id,
       kind,
       electronVersion,
       chromiumVersion,
-      capabilities
+      capabilities: capabilities.get(id)
     })),
-    invocations: []
+    invocations: [] as Invocation[]
   };
   const writeMetadata = () => fs.writeFileSync(path.join(outDir, 'metadata.json'), JSON.stringify(metadata, null, 2));
   onStopSignal = (signal) => {
@@ -358,16 +373,17 @@ async function main() {
       const order = targets.map((_, i) => targets[(i + round) % targets.length]);
       for (const suite of suites) {
         for (const target of order) {
-          const suiteArgs = [];
-          // Values each measure should have, checked by compare.mjs. The
+          const suiteArgs: string[] = [];
+          // Values each measure should have, checked by compare.mts. The
           // press benchmarks run once per invocation (crossbench's default).
           let repetitions = 1;
           if (suite === 'loading' || suite === 'file_loading') {
             repetitions = repeat;
-            if (!target.pageConfigs[suite]) continue;
+            const pageConfig = pageConfigPaths.get(target.id)?.[suite];
+            if (!pageConfig) continue;
             suiteArgs.push(
               'loading',
-              `--page-config=${target.pageConfigs[suite]}`,
+              `--page-config=${pageConfig}`,
               `--probe-config=${probeConfigPath}`,
               '--separate',
               `--repeat=${repeat}`
@@ -431,8 +447,8 @@ async function main() {
 }
 
 if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    console.error(`ERROR: ${error.message}`);
+  main().catch((error: unknown) => {
+    console.error(`ERROR: ${errorMessage(error)}`);
     process.exit(1);
   });
 }

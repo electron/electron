@@ -1,19 +1,19 @@
 // Small, dependency-free statistics for paired benchmark comparisons:
 // median, Welch's t-test and the Mann-Whitney U test (both two-sided).
 
-export function median(values) {
+export function median(values: number[]): number {
   if (values.length === 0) return NaN;
   const sorted = [...values].sort((a, b) => a - b);
   const mid = sorted.length >> 1;
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-export function mean(values) {
+export function mean(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 // Sample variance (n - 1 denominator).
-export function variance(values) {
+export function variance(values: number[]): number {
   const m = mean(values);
   return values.reduce((sum, value) => sum + (value - m) ** 2, 0) / (values.length - 1);
 }
@@ -24,7 +24,7 @@ const LANCZOS = [
   12.507343278686905, -0.13857109526572012, 9.984369578019572e-6, 1.5056327351493116e-7
 ];
 
-function logGamma(x) {
+function logGamma(x: number): number {
   if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - logGamma(1 - x);
   x -= 1;
   let a = LANCZOS[0];
@@ -34,7 +34,7 @@ function logGamma(x) {
 }
 
 // Continued fraction for the regularized incomplete beta (modified Lentz).
-function betaContinuedFraction(x, a, b) {
+function betaContinuedFraction(x: number, a: number, b: number): number {
   const TINY = 1e-300;
   let c = 1;
   let d = 1 - ((a + b) * x) / (a + 1);
@@ -63,7 +63,7 @@ function betaContinuedFraction(x, a, b) {
   return h;
 }
 
-export function regularizedIncompleteBeta(x, a, b) {
+export function regularizedIncompleteBeta(x: number, a: number, b: number): number {
   if (x <= 0) return 0;
   if (x >= 1) return 1;
   const front = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
@@ -72,13 +72,13 @@ export function regularizedIncompleteBeta(x, a, b) {
 }
 
 // Two-sided p-value of Student's t distribution.
-export function studentTTwoSidedP(t, df) {
+export function studentTTwoSidedP(t: number, df: number): number {
   if (!Number.isFinite(t)) return 0;
   return regularizedIncompleteBeta(df / (df + t * t), df / 2, 0.5);
 }
 
 // Complementary error function (Numerical Recipes erfcc, |error| < 1.2e-7).
-function erfc(x) {
+function erfc(x: number): number {
   const z = Math.abs(x);
   const t = 1 / (1 + 0.5 * z);
   const r =
@@ -99,7 +99,7 @@ function erfc(x) {
   return x >= 0 ? r : 2 - r;
 }
 
-export function welchTTest(a, b) {
+export function welchTTest(a: number[], b: number[]): { t: number; df: number; p: number } {
   if (a.length < 2 || b.length < 2) return { t: NaN, df: NaN, p: NaN };
   const va = variance(a) / a.length;
   const vb = variance(b) / b.length;
@@ -111,15 +111,15 @@ export function welchTTest(a, b) {
 }
 
 // Number of arrangements with U = u for sample sizes n and m (no ties).
-function exactUCounts(n, m) {
+function exactUCounts(n: number, m: number): number[] {
   // counts[i][j] is the distribution of U for sizes i and j; built bottom-up
   // with the recurrence f(i, j, u) = f(i - 1, j, u - j) + f(i, j - 1, u).
-  let previousRow = [];
+  let previousRow: number[][] = [];
   for (let i = 0; i <= n; i++) {
-    const row = [];
+    const row: number[][] = [];
     for (let j = 0; j <= m; j++) {
       const size = i * j + 1;
-      const dist = new Array(size).fill(0);
+      const dist = new Array<number>(size).fill(0);
       if (i === 0 || j === 0) {
         dist[0] = 1;
       } else {
@@ -136,13 +136,13 @@ function exactUCounts(n, m) {
   return previousRow[m];
 }
 
-export function mannWhitneyU(a, b) {
+export function mannWhitneyU(a: number[], b: number[]): { u: number; p: number; exact: boolean } {
   const n = a.length;
   const m = b.length;
   if (n === 0 || m === 0) return { u: NaN, p: NaN, exact: false };
   const combined = [...a.map((value) => ({ value, group: 0 })), ...b.map((value) => ({ value, group: 1 }))];
   combined.sort((x, y) => x.value - y.value);
-  const ranks = new Array(combined.length);
+  const ranks = new Array<number>(combined.length);
   let tieCorrection = 0;
   for (let i = 0; i < combined.length; ) {
     let j = i;
@@ -182,14 +182,37 @@ export function mannWhitneyU(a, b) {
 // of change counts as a regression. A change is only flagged when both tests
 // agree (p < alpha) and the relative change of the medians is at least
 // minChange (0.10 = 10%).
-export function compareSamples(reference, candidate, { lowerIsBetter = true, alpha = 0.05, minChange = 0.1 } = {}) {
+export type Verdict = 'regression' | 'improvement' | 'no change' | 'insufficient data';
+
+export interface SampleComparison {
+  referenceMedian: number;
+  candidateMedian: number;
+  relativeChange: number;
+  welchP: number;
+  mannWhitneyP: number;
+  referenceCount: number;
+  candidateCount: number;
+  verdict: Verdict;
+}
+
+export interface CompareOptions {
+  lowerIsBetter?: boolean;
+  alpha?: number;
+  minChange?: number;
+}
+
+export function compareSamples(
+  reference: number[],
+  candidate: number[],
+  { lowerIsBetter = true, alpha = 0.05, minChange = 0.1 }: CompareOptions = {}
+): SampleComparison {
   const referenceMedian = median(reference);
   const candidateMedian = median(candidate);
   const relativeChange = referenceMedian === 0 ? NaN : (candidateMedian - referenceMedian) / Math.abs(referenceMedian);
   const welch = welchTTest(candidate, reference);
   const mwu = mannWhitneyU(candidate, reference);
   const significant = welch.p < alpha && mwu.p < alpha && Math.abs(relativeChange) >= minChange;
-  let verdict = 'no change';
+  let verdict: Verdict = 'no change';
   if (reference.length < 2 || candidate.length < 2) {
     verdict = 'insufficient data';
   } else if (significant) {

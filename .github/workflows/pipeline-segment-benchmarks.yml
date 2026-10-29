@@ -9,7 +9,7 @@ on:
         required: true
       target-arch:
         type: string
-        description: 'Arch of the builds to benchmark'
+        description: 'Arch of the runner, which the downloaded builds match'
         required: true
       runs-on:
         type: string
@@ -84,23 +84,25 @@ jobs:
         if ! command -v xrandr >/dev/null 2>&1; then
           apt-get update -qq && apt-get install -y -qq x11-xserver-utils
         fi
+    # The scripts use @electron/fiddle-core and @electron/get. No native
+    # modules are needed, so skip the build step.
+    - name: Install Dependencies
+      run: node script/yarn.js install --immutable --mode=skip-build
     - name: Test Benchmark Scripts
-      run: node --test script/benchmarks/test/*.test.mjs
+      run: node --test script/benchmarks/test/*.test.mts
     - name: Fetch Builds
       id: fetch
+      # Downloads builds for the runner's own platform and architecture.
       env:
-        GITHUB_TOKEN: ${{ github.token }}
         CANDIDATE: ${{ inputs.candidate }}
         BASELINE: ${{ inputs.baseline }}
-        TARGET_PLATFORM: ${{ inputs.target-platform }}
-        TARGET_ARCH: ${{ inputs.target-arch }}
         SKIP_STALE_NIGHTLY: ${{ inputs.skip-stale-nightly }}
       run: |
-        args=(--out "$RUNNER_TEMP/benchmark-targets" --platform "$TARGET_PLATFORM" --arch "$TARGET_ARCH")
+        args=(--out "$RUNNER_TEMP/benchmark-targets")
         if [ -n "$CANDIDATE" ]; then args+=(--candidate "$CANDIDATE"); fi
         if [ -n "$BASELINE" ]; then args+=(--baseline "$BASELINE"); fi
         if [ "$SKIP_STALE_NIGHTLY" = "true" ]; then args+=(--max-candidate-age-hours 24); fi
-        node script/benchmarks/fetch-targets.mjs "${args[@]}"
+        node script/benchmarks/fetch-targets.mts "${args[@]}"
     - name: Run Benchmarks (linux)
       if: ${{ inputs.target-platform == 'linux' && steps.fetch.outputs.skip != 'true' }}
       timeout-minutes: 270
@@ -109,13 +111,13 @@ jobs:
         SUITES: ${{ inputs.suites }}
       run: |
         xvfb-run -a -s "-screen 0 1920x1200x24" \
-          node script/benchmarks/run.mjs \
+          node script/benchmarks/run.mts \
             --targets "$RUNNER_TEMP/benchmark-targets/targets.json" \
             --out "$RUNNER_TEMP/benchmark-results" \
             --rounds "$ROUNDS" \
             --suites "$SUITES" \
             --python python
-    # Compare and upload even when the run step failed: run.mjs exits
+    # Compare and upload even when the run step failed: run.mts exits
     # non-zero on any failed crossbench invocation (so the job still ends red),
     # and the comparison and raw results are the diagnostics.
     - name: Compare Results
@@ -126,7 +128,7 @@ jobs:
       run: |
         args=(--results "$RUNNER_TEMP/benchmark-results")
         if [ "$UPLOAD_TO_DATADOG" != "true" ]; then args+=(--dry-run); fi
-        node script/benchmarks/compare.mjs "${args[@]}"
+        node script/benchmarks/compare.mts "${args[@]}"
     - name: Upload Results
       if: ${{ !cancelled() && steps.fetch.outputs.skip != 'true' }}
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

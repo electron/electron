@@ -1,12 +1,12 @@
-// Run with: node --test script/benchmarks/test/
+// Run with: node --test script/benchmarks/test/*.test.mts
 // Reference values come from scipy.stats (ttest_ind with equal_var=False and
 // mannwhitneyu with alternative='two-sided').
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { compareSamples, mannWhitneyU, median, welchTTest } from '../lib/stats.mjs';
+import { compareSamples, mannWhitneyU, median, welchTTest } from '../lib/stats.mts';
 
-const close = (actual, expected, tolerance = 1e-4) =>
+const close = (actual: number, expected: number, tolerance = 1e-4) =>
   assert.ok(Math.abs(actual - expected) <= tolerance, `expected ${actual} to be within ${tolerance} of ${expected}`);
 
 describe('median', () => {

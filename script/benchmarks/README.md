@@ -39,23 +39,25 @@ Chrome blocks module scripts from `file://`.
 
 ## How it works
 
-* [`fetch-targets.mjs`](fetch-targets.mjs) resolves the versions, downloads
-  the Electron and matching `chromedriver` zips from the
-  [electron/electron](https://github.com/electron/electron/releases) or
-  [electron/nightlies](https://github.com/electron/nightlies/releases) releases,
-  checks them against the release's `SHASUMS256.txt`, and downloads Chrome for
-  Testing at the candidate's Chromium version. It writes a crossbench browser
-  config per target and `targets.json`.
-* [`run.mjs`](run.mjs) installs crossbench at the pinned revision
+* [`fetch-targets.mts`](fetch-targets.mts) resolves the versions from
+  [releases.electronjs.org](https://releases.electronjs.org) with
+  [`@electron/fiddle-core`](https://github.com/electron/fiddle-core), installs
+  each Electron build with fiddle-core's `Installer` and downloads the matching
+  `chromedriver` with [`@electron/get`](https://github.com/electron/get). Both
+  are checked against the release's `SHASUMS256.txt`. It then downloads Chrome
+  for Testing at the candidate's Chromium version, and writes a crossbench
+  browser config per target and `targets.json`. Builds are for the host's
+  platform and architecture.
+* [`run.mts`](run.mts) installs crossbench at the pinned revision
   (`CROSSBENCH_REVISION`) into a virtualenv, serves the pages and press
   benchmarks, generates the page configs, and runs the rounds. It records the
   CPU model, kernel, runner name and (on Azure) VM size in `metadata.json`.
   Each crossbench invocation runs in its own process group, and its whole
   process tree (chromedriver and the browser included) is killed when it
   times out or exits, so nothing lingers into the next target's run. Every
-  round runs even when an invocation fails, but any failure makes `run.mjs`
+  round runs even when an invocation fails, but any failure makes `run.mts`
   exit non-zero.
-* [`compare.mjs`](compare.mjs) takes one sample per round and target (the
+* [`compare.mts`](compare.mts) takes one sample per round and target (the
   median of that round's repetitions) and compares the medians. A change is
   flagged when Welch's t-test and the Mann-Whitney U test both give
   p < 0.05 **and** the medians differ by at least 10%. It writes
@@ -80,22 +82,24 @@ action only accepts well-known schemes.
 
 ## Running locally
 
-Linux x64 only for now. You need Node.js, Python 3.11 or 3.12, `git`, `unzip`,
-`xvfb-run` and `xrandr`:
+Linux x64 only for now. You need Node.js 22.18 or newer (the scripts are
+TypeScript, run with Node's built-in type stripping), the repository's
+dependencies (`yarn install`), Python 3.11 or 3.12, `git`, `unzip`, `xvfb-run`
+and `xrandr`:
 
 ```sh
-node script/benchmarks/fetch-targets.mjs --out /tmp/bench/targets \
+node script/benchmarks/fetch-targets.mts --out /tmp/bench/targets \
   --candidate 47.0.0-nightly.20261028 --baseline 47.0.0-nightly.20261027
-xvfb-run -a node script/benchmarks/run.mjs \
+xvfb-run -a node script/benchmarks/run.mts \
   --targets /tmp/bench/targets/targets.json --out /tmp/bench/results \
   --rounds 3 --suites loading,file_loading --python python3.12
-node script/benchmarks/compare.mjs --results /tmp/bench/results --dry-run
+node script/benchmarks/compare.mts --results /tmp/bench/results --dry-run
 ```
 
 `--dry-run` prints the Datadog payload instead of sending it. Leave out
 `--candidate` and `--baseline` to compare the two latest nightlies, and pass
 `--cft none` to skip Chrome for Testing. The tests run with
-`node --test script/benchmarks/test/*.test.mjs`.
+`node --test script/benchmarks/test/*.test.mts`.
 
 ## Caveats
 
@@ -108,4 +112,6 @@ node script/benchmarks/compare.mjs --results /tmp/bench/results --dry-run
 * Only Linux x64 runs today. Windows and macOS need more callers of
   `pipeline-segment-benchmarks.yml`, plus the Windows desktop workarounds from
   `pipeline-segment-pgo-collect.yml`.
-* The harness uses `node:` imports, so it needs Electron 15 or newer.
+* The harness uses `node:` imports, so it needs Electron 15 or newer. It stays
+  plain JavaScript because every Electron version under test loads it with
+  `--app`, including ones whose Node.js can't strip types.
