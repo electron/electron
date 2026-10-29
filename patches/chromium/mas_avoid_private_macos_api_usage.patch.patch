@@ -1013,7 +1013,7 @@ index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e2d0f9c85cf30b9633ed7c0dad0f39ac2a1a7b91..3b9f6d80d9f868cc1f78ab3ca93bb2067edbdf96 100644
+index 451984c8380c616ffeb5b789917127715b201652..107062cfd1f6fee436323b40a54e3aac226642de 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -396,6 +396,7 @@ source_set("browser") {
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 09433ef7f82be9dfdf5a606e1c56b9bd88688c13..bb0e49c5c5c91aa102a9141a8f12a7d84a9df48d 100644
+index 8aab76534c35a11ff3678417f235cef67c69f8ed..a36431ad84569ebb7da44872824752b1d00a8bbd 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index 09433ef7f82be9dfdf5a606e1c56b9bd88688c13..bb0e49c5c5c91aa102a9141a8f12a7d8
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3458,6 +3462,7 @@ test("content_unittests") {
+@@ -3457,6 +3461,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index a96e9c9df209abba41bccf9d348eee89058b5f83..12942929d97d2bfff86fc43c506253934fd8e68e 100644
+index 208f82a8a9a15fb8525c9a63acc6e2a14418b348..0b2e73ac27b932377059ef806e471f0466e1ce48 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -2466,10 +2466,10 @@ index 84060d2c442e2786e12d9837e0128bc4536d7d0b..933f2020ae89a02a39e21a7115b5f651
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index a07afd253b13bc63d8061a4aa6cfcd4577ebbbd7..dd0426289f7487d7ee9e6b693af864cbe473ba8c 100644
+index c600a4827a6417eecef59f82f69efb5dfb3506c9..16bf0b0c22c673e32f99c12130d3a8380d1babf3 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -795,6 +795,8 @@ component("views") {
+@@ -801,6 +801,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
