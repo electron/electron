@@ -89,7 +89,7 @@ index c7c39ae8c0632695d8b22023b8e6b1d1cb2e6589..be3034da39fffe541394137e5e8107cf
        uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& args);
    static void IndexedPropertyEnumeratorCallback(
 diff --git a/src/node_env_var.cc b/src/node_env_var.cc
-index 8a16f9ec136df86e75d71ccfe1d40ddab3bf8f92..a2c9ac1167431664716294dced9811ec77627d36 100644
+index 8a16f9ec136df86e75d71ccfe1d40ddab3bf8f92..f944ea7d7f77744f7c44996c10a56d8f3e37f6eb 100644
 --- a/src/node_env_var.cc
 +++ b/src/node_env_var.cc
 @@ -513,7 +513,7 @@ static Intercepted EnvGetter(Local<Name> property,
@@ -110,6 +110,29 @@ index 8a16f9ec136df86e75d71ccfe1d40ddab3bf8f92..a2c9ac1167431664716294dced9811ec
    Environment* env = Environment::GetCurrent(info);
    if (desc.has_value()) {
      if (!desc.has_writable() ||
+@@ -644,7 +644,7 @@ static Intercepted EnvGetterIndexed(uint32_t index,
+ 
+ static Intercepted EnvSetterIndexed(uint32_t index,
+                                     Local<Value> value,
+-                                    const PropertyCallbackInfo<void>& info) {
++                                    const PropertyCallbackInfo<Boolean>& info) {
+   Environment* env = Environment::GetCurrent(info);
+   Local<Name> name = Uint32ToString(env->context(), index);
+   return EnvSetter(name, value, info);
+@@ -664,9 +664,10 @@ static Intercepted EnvDeleterIndexed(
+   return EnvDeleter(name, info);
+ }
+ 
+-static Intercepted EnvDefinerIndexed(uint32_t index,
+-                                     const PropertyDescriptor& desc,
+-                                     const PropertyCallbackInfo<void>& info) {
++static Intercepted EnvDefinerIndexed(
++    uint32_t index,
++    const PropertyDescriptor& desc,
++    const PropertyCallbackInfo<Boolean>& info) {
+   Environment* env = Environment::GetCurrent(info);
+   Local<Name> name = Uint32ToString(env->context(), index);
+   return EnvDefiner(name, desc, info);
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
 index 235f74ce0e624233afbc18f1dabf7a5272d7bf60..ecc5c3f429d2d6458fb82cf7916e9bffcc33edd2 100644
 --- a/src/node_external_reference.h
