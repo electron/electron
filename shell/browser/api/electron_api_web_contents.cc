@@ -5117,7 +5117,7 @@ void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("start", &start_adjust);
-    dict.Get("matchCase", &end_adjust);
+    dict.Get("end", &end_adjust);
   }
 
   // The selection menu is a Chrome-specific piece of UI.
