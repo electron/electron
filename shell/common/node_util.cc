@@ -65,13 +65,13 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
 
   // This will only be caught when something has gone terrible wrong as all
   // electron scripts are wrapped in a try {} catch {} by
-  // build/bundle/bundle.mjs
-  if (try_catch.HasCaught()) {
+  // build/bundle/bundle.mjs. Termination is not: it means the environment is
+  // being torn down while the script runs, e.g. a Worker that is stopped, or
+  // whose process exits, before it has finished bootstrapping.
+  if (try_catch.HasCaught() && !try_catch.HasTerminated()) {
     std::string msg = "no error message";
     if (!try_catch.Message().IsEmpty()) {
       gin::ConvertFromV8(isolate, try_catch.Message()->Get(), &msg);
-    } else if (try_catch.HasTerminated()) {
-      msg = "script execution has been terminated";
     }
     LOG(ERROR) << "CompileAndCall failed to evaluate electron script (" << id
                << "): " << msg;
