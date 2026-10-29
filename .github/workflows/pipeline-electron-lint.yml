@@ -55,22 +55,18 @@ jobs:
         fi
         echo "revision=$chromium_revision" >> "$GITHUB_OUTPUT"
     # Chromium's DEPS and buildtools/DEPS only change on a Chromium roll, so
-    # cache them per revision instead of hitting the shared API limit every run.
-    - name: Restore Chromium DEPS Cache
-      id: restore-chromium-deps
-      uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-      with:
-        path: |
-          src/DEPS
-          src/buildtools/DEPS
-        key: lint-chromium-deps-${{ steps.get-chromium-revision.outputs.revision }}
-    - name: Fetch Chromium DEPS
-      if: steps.restore-chromium-deps.outputs.cache-hit != 'true'
+    # keep a copy per revision on the cross-instance cache share (where the src
+    # cache lives) instead of hitting the shared API limit every run.
+    - name: Get Chromium DEPS
       shell: bash
       env:
         chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
         GITHUB_TOKEN: ${{ github.token }}
       run: |
+        cache_dir=/mnt/cross-instance-cache/lint-chromium-deps
+        cached_deps=$cache_dir/$chromium_revision.DEPS
+        cached_buildtools_deps=$cache_dir/$chromium_revision.buildtools-DEPS
+
         fetch_chromium_file() {
           local path=$1 out=$2
           if curl -fsSL --retry 3 --retry-delay 15 --retry-max-time 90 \
@@ -89,27 +85,44 @@ jobs:
             "https://chromium.googlesource.com/chromium/src/+/refs/tags/${chromium_revision}/${path}?format=TEXT" | base64 -d > "$out"
         }
 
+        # Make sure an error body never reaches gclient or the cache.
+        deps_look_valid() {
+          grep -q "'gn_version'" "$1" && grep -q "'linux64-format'" "$2"
+        }
+
         mkdir -p src/buildtools
+        if [ -s "$cached_deps" ] && [ -s "$cached_buildtools_deps" ] && deps_look_valid "$cached_deps" "$cached_buildtools_deps"; then
+          echo "Using cached Chromium DEPS for ${chromium_revision} from $cache_dir"
+          cp "$cached_deps" src/DEPS
+          cp "$cached_buildtools_deps" src/buildtools/DEPS
+          exit 0
+        fi
+
+        echo "Chromium DEPS for ${chromium_revision} not cached, fetching"
         fetch_chromium_file DEPS src/DEPS
         fetch_chromium_file buildtools/DEPS src/buildtools/DEPS
+        if ! deps_look_valid src/DEPS src/buildtools/DEPS; then
+          echo "::error::Fetched DEPS files for ${chromium_revision} do not look like Chromium's DEPS and buildtools/DEPS"
+          exit 1
+        fi
 
-        # Make sure an error body never reaches gclient or the cache.
-        if ! grep -q "'gn_version'" src/DEPS; then
-          echo "::error::src/DEPS for ${chromium_revision} does not look like a Chromium DEPS file"
-          exit 1
+        if [ ! -d /mnt/cross-instance-cache ]; then
+          echo "Cross-instance cache is not mounted, not saving Chromium DEPS"
+          exit 0
         fi
-        if ! grep -q "'linux64-format'" src/buildtools/DEPS; then
-          echo "::error::src/buildtools/DEPS for ${chromium_revision} does not look like a Chromium buildtools DEPS file"
-          exit 1
+        # Copy to run-unique temp names first so concurrent readers never see
+        # a partially-written file. Failing to save shouldn't fail lint.
+        upload_suffix=upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+        if mkdir -p "$cache_dir" \
+          && cp src/DEPS "$cached_deps.$upload_suffix" \
+          && cp src/buildtools/DEPS "$cached_buildtools_deps.$upload_suffix" \
+          && mv -f "$cached_buildtools_deps.$upload_suffix" "$cached_buildtools_deps" \
+          && mv -f "$cached_deps.$upload_suffix" "$cached_deps"; then
+          echo "Saved Chromium DEPS for ${chromium_revision} to $cache_dir"
+        else
+          echo "::warning::Could not save Chromium DEPS for ${chromium_revision} to $cache_dir"
+          rm -f "$cached_deps.$upload_suffix" "$cached_buildtools_deps.$upload_suffix"
         fi
-    - name: Save Chromium DEPS Cache
-      if: steps.restore-chromium-deps.outputs.cache-hit != 'true'
-      uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-      with:
-        path: |
-          src/DEPS
-          src/buildtools/DEPS
-        key: ${{ steps.restore-chromium-deps.outputs.cache-primary-key }}
     - name: Download GN Binary
       shell: bash
       run: |
