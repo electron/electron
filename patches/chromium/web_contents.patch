@@ -35,7 +35,7 @@ index 4e6ff7b985154ac40ab47aec05be54e222c9c5d9..e5d5e3d7307f3d3c02f3c4d99e4f2806
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 1c5e61a5aabc589826fe44976a4a7718bcae09be..6138ad6fc59a193fd005468758a27f0edff3e827 100644
+index 651558578a2010294d0f62edb6a0f8d1f1f56115..dbdf4ca88dabdab34fb27ba33d854e6fdc853d9d 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -137,12 +137,14 @@ class PrerenderHandle;
