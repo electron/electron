@@ -31,7 +31,6 @@
 #include "node_options.h"
 #include "node_platform.h"
 #include "node_report.h"
-#include "node_watchdog.h"
 #include "tracing/agent.h"
 
 #pragma clang diagnostic pop
