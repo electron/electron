@@ -1411,120 +1411,135 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     | null;
   type ReaddirCallback = (err: NodeJS.ErrnoException | null, files?: string[]) => void;
 
-  const processReaddirResult = (args: any) =>
-    args.context.withFileTypes ? handleDirents(args) : handleFilePaths(args);
+  // Recursive readdir walks the tree breadth-first like Node.js does: each
+  // directory's entries in listing order, descending into directories and
+  // symbolic links to directories, with names relative to the path as given.
+  // Unlike Node's native walk, archives met along the way are walked as
+  // directories, and directories inside archives are listed from the archive.
+  interface RecursiveReaddir {
+    withFileTypes: boolean;
+    encoding: any;
+    basePath: string | Buffer;
+    results: any[];
+    // Directories to list, and their paths relative to basePath.
+    dirs: string[];
+    prefixes: (string | Buffer)[];
+  }
 
-  function handleDirents({ result, currentPath, context }: { result: any[]; currentPath: string; context: any }) {
-    const length = result[0].length;
-    for (let i = 0; i < length; i++) {
-      const resultPath = path.join(currentPath, result[0][i]);
-      const info = splitPath(resultPath);
+  const kDirentDir = (constants as any).UV_DIRENT_DIR;
+  const kDirentLink = (constants as any).UV_DIRENT_LINK;
+  const kDirentUnknown = (constants as any).UV_DIRENT_UNKNOWN;
 
-      let type = result[1][i];
+  const startRecursiveReaddir = (basePath: string | Buffer, options: any): RecursiveReaddir => ({
+    withFileTypes: Boolean(options?.withFileTypes),
+    encoding: options?.encoding,
+    basePath,
+    results: [],
+    dirs: [typeof basePath === 'string' ? basePath : basePath.toString()],
+    prefixes: ['']
+  });
+
+  // A directory inside an archive, shaped like binding.readdir()'s result
+  // with file types: [names, types].
+  const readArchiveDirWithTypes = (pathInfo: { asarPath: string; filePath: string }, encoding: any) => {
+    const { asarPath, filePath } = pathInfo;
+    const archive = getOrCreateArchive(asarPath);
+    if (!archive) throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
+    const listing = archive.readdirWithTypes(filePath);
+    if (!listing) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
+    const names = encoding === 'buffer' ? listing[0].map((name: string) => Buffer.from(name)) : listing[0];
+    return [names, listing[1]];
+  };
+
+  const toBuffer = (value: string | Buffer) => (typeof value === 'string' ? Buffer.from(value) : value);
+
+  const joinRelativePath = (prefix: string | Buffer, name: string | Buffer) => {
+    if (prefix.length === 0) return name;
+    if (typeof prefix === 'string' && typeof name === 'string') return `${prefix}${path.sep}${name}`;
+    return Buffer.concat([toBuffer(prefix), Buffer.from(path.sep), toBuffer(name)]);
+  };
+
+  // The parentPath of the Dirents below basePath, as Node.js builds it: a
+  // Buffer whenever basePath or the relative path is one.
+  const joinParentPath = (basePath: string | Buffer, relative: string | Buffer) => {
+    if (typeof basePath === 'string' && typeof relative === 'string') return path.join(basePath, relative);
+    const base = toBuffer(basePath);
+    const parts = [base];
+    const last = base.length === 0 ? -1 : base[base.length - 1];
+    const endsWithSeparator = last === 0x2f || (process.platform === 'win32' && last === 0x5c); // '/' or '\\'
+    if (!endsWithSeparator) {
+      parts.push(Buffer.from(path.sep));
+    }
+    parts.push(toBuffer(relative));
+    return Buffer.concat(parts);
+  };
+
+  // Adds the entries of context.dirs[index] to the results, and the
+  // directories among them to the directories still to list.
+  const collectRecursiveReaddir = (context: RecursiveReaddir, index: number, { 0: names, 1: types }: any[]) => {
+    const dir = context.dirs[index];
+    const prefix = context.prefixes[index];
+    const parentPath = index === 0 ? context.basePath : joinParentPath(context.basePath, prefix);
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
+      const fullPath = path.join(dir, typeof name === 'string' ? name : name.toString());
+      let type = types[i];
+      // Archives, and the entries inside them, take their type from the
+      // archive, so an archive is listed and walked as a directory.
+      const info = splitPath(fullPath);
       if (info.isAsar) {
-        const archive = getOrCreateArchive(info.asarPath);
-        if (!archive) continue;
-        const stats = archive.stat(info.filePath);
-        if (!stats) continue;
-        type = stats.type;
+        const stats = getOrCreateArchive(info.asarPath)?.stat(info.filePath);
+        if (stats) type = stats.type;
       }
-
-      const dirent = getDirent(currentPath, result[0][i], type);
-      const stat = statTypeForReaddir(resultPath);
-
-      context.readdirResults.push(dirent);
-      if (dirent!.isDirectory() || stat === 1) {
-        context.pathsQueue.push(path.join(dirent!.parentPath, dirent!.name));
+      const isDirectory =
+        type === kDirentDir ||
+        ((type === kDirentLink || type === kDirentUnknown) && statTypeForReaddir(fullPath) === 1);
+      const relative = joinRelativePath(prefix, name);
+      context.results.push(context.withFileTypes ? getDirent(parentPath, name, type) : relative);
+      if (isDirectory) {
+        context.dirs.push(fullPath);
+        context.prefixes.push(relative);
       }
     }
-  }
+  };
 
-  function handleFilePaths({ result, currentPath, context }: { result: string[]; currentPath: string; context: any }) {
-    for (let i = 0; i < result.length; i++) {
-      const resultPath = path.join(currentPath, result[i]);
-      const relativeResultPath = path.relative(context.basePath, resultPath);
-      const stat = statTypeForReaddir(resultPath);
-      context.readdirResults.push(relativeResultPath);
-
-      if (stat === 1) {
-        context.pathsQueue.push(resultPath);
+  function readdirRecursive(basePath: string | Buffer, options: ReaddirOptions, callback: ReaddirCallback) {
+    const context = startRecursiveReaddir(basePath, options);
+    let next = 0;
+    const read = () => {
+      if (next >= context.dirs.length) {
+        callback(null, context.results);
+        return;
       }
-    }
-  }
-
-  function readdirRecursive(basePath: string, options: ReaddirOptions, callback: ReaddirCallback) {
-    const context = {
-      withFileTypes: Boolean(options!.withFileTypes),
-      encoding: options!.encoding,
-      basePath,
-      readdirResults: [],
-      pathsQueue: [basePath]
-    };
-
-    let i = 0;
-
-    function read(pathArg: string) {
+      const index = next++;
+      const pathInfo = splitPath(context.dirs[index]);
+      if (pathInfo.isAsar) {
+        try {
+          collectRecursiveReaddir(context, index, readArchiveDirWithTypes(pathInfo, context.encoding));
+        } catch (error) {
+          nextTick(callback, [error]);
+          return;
+        }
+        process.nextTick(read);
+        return;
+      }
       const req = new binding.FSReqCallback();
-      req.oncomplete = (err: any, result: string) => {
+      req.oncomplete = (err: any, result: any[]) => {
         if (err) {
           callback(err);
           return;
         }
-
-        if (result === undefined) {
-          callback(null, context.readdirResults);
+        try {
+          collectRecursiveReaddir(context, index, result);
+        } catch (error) {
+          callback(error as NodeJS.ErrnoException);
           return;
         }
-
-        processReaddirResult({
-          result,
-          currentPath: pathArg,
-          context
-        });
-
-        if (i < context.pathsQueue.length) {
-          read(context.pathsQueue[i++]);
-        } else {
-          callback(null, context.readdirResults);
-        }
+        read();
       };
-
-      const pathInfo = splitPath(pathArg);
-      if (pathInfo.isAsar) {
-        const { asarPath, filePath } = pathInfo;
-
-        const archive = getOrCreateArchive(asarPath);
-        if (!archive) {
-          const error = createError(AsarError.INVALID_ARCHIVE, { asarPath });
-          nextTick(callback, [error]);
-          return;
-        }
-
-        // Same shape as the native binding: names, or [names, types].
-        const readdirResult = context.withFileTypes ? archive.readdirWithTypes(filePath) : archive.readdir(filePath);
-        if (!readdirResult) {
-          const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
-          nextTick(callback, [error]);
-          return;
-        }
-
-        processReaddirResult({
-          result: readdirResult,
-          currentPath: pathArg,
-          context
-        });
-
-        if (i < context.pathsQueue.length) {
-          read(context.pathsQueue[i++]);
-        } else {
-          callback(null, context.readdirResults);
-        }
-      } else {
-        binding.readdir(pathArg, context.encoding, context.withFileTypes, req);
-      }
-    }
-
-    read(context.pathsQueue[i++]);
+      binding.readdir(index === 0 ? basePath : context.dirs[index], context.encoding, true, req);
+    };
+    read();
   }
 
   const { readdir } = fs;
@@ -1665,125 +1680,28 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return result;
   };
 
-  async function readdirRecursivePromises(originalPath: string, options: ReaddirOptions) {
-    const result: any[] = [];
-
-    const pathInfo = splitPath(originalPath);
-    let queue: [string, string[]][] = [];
-    const withFileTypes = Boolean(options?.withFileTypes);
-
-    let initialItem = [];
-    if (pathInfo.isAsar) {
-      const archive = getOrCreateArchive(pathInfo.asarPath);
-      if (!archive) return result;
-      // Same shape as the native binding: names, or [names, types].
-      const files = withFileTypes ? archive.readdirWithTypes(pathInfo.filePath) : archive.readdir(pathInfo.filePath);
-      if (!files) return result;
-      initialItem = files;
-    } else {
-      initialItem = await binding.readdir(
-        path.toNamespacedPath(originalPath),
-        options!.encoding,
-        withFileTypes,
-        kUsePromises
-      );
+  async function readdirRecursivePromises(basePath: string | Buffer, options: ReaddirOptions) {
+    const context = startRecursiveReaddir(basePath, options);
+    for (let i = 0; i < context.dirs.length; i++) {
+      const pathInfo = splitPath(context.dirs[i]);
+      const listing = pathInfo.isAsar
+        ? readArchiveDirWithTypes(pathInfo, context.encoding)
+        : await binding.readdir(i === 0 ? basePath : context.dirs[i], context.encoding, true, kUsePromises);
+      collectRecursiveReaddir(context, i, listing);
     }
-
-    queue = [[originalPath, initialItem]];
-
-    if (withFileTypes) {
-      while (queue.length > 0) {
-        // @ts-expect-error this is a valid array destructure assignment.
-        const { 0: pathArg, 1: readDir } = queue.pop();
-        for (const dirent of getDirents(pathArg, readDir)) {
-          result.push(dirent);
-          if (dirent.isDirectory()) {
-            const direntPath = path.join(pathArg, dirent.name);
-            const info = splitPath(direntPath);
-            let readdirResult;
-            if (info.isAsar) {
-              const archive = getOrCreateArchive(info.asarPath);
-              if (!archive) continue;
-              readdirResult = archive.readdirWithTypes(info.filePath);
-              if (!readdirResult) continue;
-            } else {
-              readdirResult = await binding.readdir(direntPath, options!.encoding, true, kUsePromises);
-            }
-            queue.push([direntPath, readdirResult]);
-          }
-        }
-      }
-    } else {
-      while (queue.length > 0) {
-        // @ts-expect-error this is a valid array destructure assignment.
-        const { 0: pathArg, 1: readDir } = queue.pop();
-        for (const ent of readDir) {
-          const direntPath = path.join(pathArg, ent);
-          const stat = statTypeForReaddir(direntPath);
-          result.push(path.relative(originalPath, direntPath));
-
-          if (stat === 1) {
-            const subPathInfo = splitPath(direntPath);
-            let item = [];
-            if (subPathInfo.isAsar) {
-              const archive = getOrCreateArchive(subPathInfo.asarPath);
-              if (!archive) return result;
-              const files = archive.readdir(subPathInfo.filePath);
-              if (!files) return result;
-              item = files;
-            } else {
-              item = await binding.readdir(path.toNamespacedPath(direntPath), options!.encoding, false, kUsePromises);
-            }
-            queue.push([direntPath, item]);
-          }
-        }
-      }
-    }
-
-    return result;
+    return context.results;
   }
 
-  function readdirSyncRecursive(basePath: string, options: ReaddirOptions) {
-    const context = {
-      withFileTypes: Boolean(options!.withFileTypes),
-      encoding: options!.encoding,
-      basePath,
-      readdirResults: [] as any,
-      pathsQueue: [basePath]
-    };
-
-    function read(pathArg: string) {
-      let readdirResult;
-
-      const pathInfo = splitPath(pathArg);
-      if (pathInfo.isAsar) {
-        const { asarPath, filePath } = pathInfo;
-        const archive = getOrCreateArchive(asarPath);
-        if (!archive) return;
-
-        // Same shape as the native binding: names, or [names, types].
-        readdirResult = context.withFileTypes ? archive.readdirWithTypes(filePath) : archive.readdir(filePath);
-        if (!readdirResult) return;
-      } else {
-        readdirResult = binding.readdir(path.toNamespacedPath(pathArg), context.encoding, context.withFileTypes);
-      }
-
-      if (readdirResult === undefined) {
-        return;
-      }
-
-      processReaddirResult({
-        result: readdirResult,
-        currentPath: pathArg,
-        context
-      });
+  function readdirSyncRecursive(basePath: string | Buffer, options: ReaddirOptions) {
+    const context = startRecursiveReaddir(basePath, options);
+    for (let i = 0; i < context.dirs.length; i++) {
+      const pathInfo = splitPath(context.dirs[i]);
+      const listing = pathInfo.isAsar
+        ? readArchiveDirWithTypes(pathInfo, context.encoding)
+        : binding.readdir(i === 0 ? basePath : context.dirs[i], context.encoding, true);
+      collectRecursiveReaddir(context, i, listing);
     }
-
-    for (let i = 0; i < context.pathsQueue.length; i++) {
-      read(context.pathsQueue[i]);
-    }
-
-    return context.readdirResults;
+    return context.results;
   }
 
   // Calling mkdir for directory inside asar archive should throw ENOTDIR
@@ -2596,20 +2514,3 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   // reached by `import ... from 'node:child_process'`.
   overrideChildProcess(require('child_process'));
 };
-
-function getDirents(p: string, { 0: names, 1: types }: any[][]): Dirent[] {
-  for (let i = 0; i < names.length; i++) {
-    let type = types[i];
-    const info = splitPath(path.join(p, names[i]));
-    if (info.isAsar) {
-      const archive = getOrCreateArchive(info.asarPath);
-      if (!archive) continue;
-      const stats = archive.stat(info.filePath);
-      if (!stats) continue;
-      type = stats.type;
-    }
-    names[i] = getDirent(p, names[i], type);
-  }
-
-  return names;
-}
