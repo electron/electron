@@ -5434,11 +5434,8 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
     settings.force_detached = offscreen_;
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
-    // On Linux a cancelled dialog yields an empty path rather than nullopt.
-    if (auto new_path = file_dialog::ShowSaveDialogSync(settings);
-        new_path && !new_path->empty()) {
-      // A fresh pick (e.g. "Save as") replaces any path stored for |url|.
-      auto [iter, _] = saved_files_.insert_or_assign(url, std::move(*new_path));
+    if (auto new_path = file_dialog::ShowSaveDialogSync(settings)) {
+      auto [iter, _] = saved_files_.try_emplace(url, std::move(*new_path));
       path = &iter->second;
     }
   }
