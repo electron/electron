@@ -1210,8 +1210,8 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/51243
-    description: "`useSystemPicker` offers either screens or windows, and can include system audio"
-    breaking-changes-header: behavior-changed-usesystempicker-offers-either-screens-or-windows
+    description: "`useSystemPicker` follows `displaySurface`, and can include system audio"
+    breaking-changes-header: behavior-changed-usesystempicker-follows-displaysurface
 ```
 -->
 
@@ -1254,8 +1254,9 @@ access to.
 
 `useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
 This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
-is set to `true`, the handler will not be invoked. The system picker offers either windows or screens, not both: it offers
-windows when the page calls `getDisplayMedia({ video: { displaySurface: 'window' } })` and screens otherwise. If the page also asks
+is set to `true`, the handler will not be invoked. The system picker offers windows when the page calls
+`getDisplayMedia({ video: { displaySurface: 'window' } })`, screens for `'monitor'` or `'browser'`, and both when the page
+doesn't set `displaySurface` (screens only on macOS 15.0 and 15.1). If the page also asks
 for audio, the stream includes system audio unless the page opts out with `systemAudio: 'exclude'` (screens) or
 `windowAudio: 'exclude'` (windows). `windowAudio: 'window'` gets no audio, since per-window audio isn't supported. This needs the `NSAudioCaptureUsageDescription` Info.plist key, as
 described in [`desktopCapturer`](desktop-capturer.md#macos-versions-142-or-higher).

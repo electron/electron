@@ -109,6 +109,10 @@
 #include "components/spellcheck/common/spellcheck_common.h"
 #endif
 
+#if BUILDFLAG(IS_MAC)
+#include "base/mac/mac_util.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -751,17 +755,22 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
 
 namespace {
 
+// TYPE_NONE opens a picker that offers both windows and screens.
 content::DesktopMediaID::Type PickerTypeForRequest(
     const content::MediaStreamRequest& request) {
-  // Upstream's NativeScreenCapturePickerMac requires exactly TYPE_SCREEN XOR
-  // TYPE_WINDOW. Use the request's `preferred_display_surface` when it maps
-  // cleanly; default to TYPE_SCREEN otherwise.
   switch (request.preferred_display_surface) {
     case blink::mojom::PreferredDisplaySurface::WINDOW:
       return content::DesktopMediaID::TYPE_WINDOW;
     case blink::mojom::PreferredDisplaySurface::MONITOR:
-    case blink::mojom::PreferredDisplaySurface::NO_PREFERENCE:
     case blink::mojom::PreferredDisplaySurface::BROWSER:
+      return content::DesktopMediaID::TYPE_SCREEN;
+    case blink::mojom::PreferredDisplaySurface::NO_PREFERENCE:
+#if BUILDFLAG(IS_MAC)
+      // A screen pick is only told apart from a window pick by its display
+      // id, which the picker reports from macOS 15.2.
+      if (base::mac::MacOSVersion() >= 15'02'00)
+        return content::DesktopMediaID::TYPE_NONE;
+#endif
       return content::DesktopMediaID::TYPE_SCREEN;
   }
 }
@@ -817,7 +826,11 @@ class SystemPickerRequest
           blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
       return;
     }
-    content::DesktopMediaID media_id(type_, source.id);
+    picked_type_ = type_ != content::DesktopMediaID::TYPE_NONE ? type_
+                   : source.display_id != webrtc::kInvalidDisplayId
+                       ? content::DesktopMediaID::TYPE_SCREEN
+                       : content::DesktopMediaID::TYPE_WINDOW;
+    content::DesktopMediaID media_id(picked_type_, source.id);
     // Serializes with a ":s" suffix so the capture launcher hands the id back
     // to the native picker instead of treating it as a CGWindowID/display id.
     media_id.id_type = content::DesktopMediaID::IdType::kNativePickerSession;
@@ -855,7 +868,7 @@ class SystemPickerRequest
   bool GrantsSystemAudio() const {
     if (request_.audio_type == blink::mojom::MediaStreamType::NO_SERVICE)
       return false;
-    if (type_ == content::DesktopMediaID::TYPE_SCREEN)
+    if (picked_type_ == content::DesktopMediaID::TYPE_SCREEN)
       return !request_.exclude_system_audio;
     return request_.window_audio_preference ==
            blink::mojom::WindowAudioPreference::kSystem;
@@ -895,6 +908,8 @@ class SystemPickerRequest
 
   const content::MediaStreamRequest request_;
   const content::DesktopMediaID::Type type_;
+  content::DesktopMediaID::Type picked_type_ =
+      content::DesktopMediaID::TYPE_NONE;
   content::MediaResponseCallback callback_;
   std::optional<content::DesktopMediaID::Id> session_id_;
   base::WeakPtrFactory<SystemPickerRequest> weak_factory_{this};
