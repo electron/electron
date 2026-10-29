@@ -49,6 +49,9 @@ const keysOfTypeNumber = new Set([
  */
 type CoercedValue = string | number | boolean;
 function coerce(key: string, value: string): CoercedValue {
+  if (key === 'opacity') {
+    return parseFloat(value);
+  }
   if (keysOfTypeNumber.has(key)) {
     return parseInt(value, 10);
   }
