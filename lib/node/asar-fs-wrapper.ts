@@ -973,7 +973,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     nextTick(callback, [null, fsStats]);
   };
 
-  fs.promises.lstat = util.promisify(fs.lstat);
+  // Paths outside archives keep fsPromises' own implementation, which does
+  // not go through a callback request.
+  const { lstat: lstatPromise } = fs.promises;
+  const promisifiedLstat = util.promisify(fs.lstat);
+  fs.promises.lstat = function (pathArgument: string, options: any) {
+    if (!splitPath(pathArgument).isAsar) return lstatPromise.apply(this, arguments);
+    return promisifiedLstat(pathArgument, options);
+  };
 
   const { statSync } = fs;
   fs.statSync = (pathArgument: string, options: any) => {
@@ -1025,7 +1032,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     nextTick(callback, [null, asarStatsToFsStats(resolved.stats, options)]);
   };
 
-  fs.promises.stat = util.promisify(fs.stat);
+  const { stat: statPromise } = fs.promises;
+  const promisifiedStat = util.promisify(fs.stat);
+  fs.promises.stat = function (pathArgument: string, options: any) {
+    if (!splitPath(pathArgument).isAsar) return statPromise.apply(this, arguments);
+    return promisifiedStat(pathArgument, options);
+  };
 
   // The on-disk real path of an archive file, per archive path. An archive is
   // held open (and its parsed header reused) for the life of the process once
