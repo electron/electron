@@ -33,6 +33,11 @@ Also emit node.perf.usertiming trace events from performance.mark()
 events), so contentTracing captures user timing as it has since
 electron/electron#50591. Upstream Node.js does not emit these.
 
+NodePlatform owns the v8::TracingController it creates when the embedder
+passes none (the perfetto agent has no legacy controller, as with
+ELECTRON_RUN_AS_NODE), and unregisters it on destruction, so it is not
+leaked.
+
 diff --git a/lib/internal/constants.js b/lib/internal/constants.js
 index c635272dc6cf6a0d58607ab7b8b56c682987b288..8ddb8ba81e6c4536f5d9c3042e3a0cbb1533c7a2 100644
 --- a/lib/internal/constants.js
@@ -223,6 +228,42 @@ index a8ccbd2e2d71f9c60ae704dd2e1ba51f349f1212..f2fd41ee176bf4e867d3e148dce8a335
  #define FS_SYNC_TRACE_BEGIN(syscall, ...)                                      \
    if (GET_TRACE_ENABLED)                                                       \
      TRACE_EVENT_BEGIN(                                                         \
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index 7adb360f939ae4dfe0c8b32de20bc000935cc2ec..0ec2a4efe9823caed8d117b2809cd4cabceb72e0 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -473,7 +473,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
+   if (tracing_controller != nullptr) {
+     tracing_controller_ = tracing_controller;
+   } else {
+-    tracing_controller_ = new v8::TracingController();
++    owned_tracing_controller_ = std::make_unique<v8::TracingController>();
++    tracing_controller_ = owned_tracing_controller_.get();
+   }
+ 
+   // V8 will default to its built in allocator if none is provided.
+@@ -492,6 +493,9 @@ NodePlatform::NodePlatform(int thread_pool_size,
+ 
+ NodePlatform::~NodePlatform() {
+   Shutdown();
++  if (node::GetTracingController() == tracing_controller_) {
++    node::SetTracingController(nullptr);
++  }
+ }
+ 
+ void NodePlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
+diff --git a/src/node_platform.h b/src/node_platform.h
+index 52e3e629bc00271623d00ed61c13d8a7ffe4de8f..5c5ef9d92f3253712c6f42bcf05fc96b964fa902 100644
+--- a/src/node_platform.h
++++ b/src/node_platform.h
+@@ -278,6 +278,7 @@ class NodePlatform : public MultiIsolatePlatform {
+                                  std::shared_ptr<PerIsolatePlatformData>>;
+   std::unordered_map<v8::Isolate*, DelegatePair> per_isolate_;
+ 
++  std::unique_ptr<v8::TracingController> owned_tracing_controller_;
+   v8::TracingController* tracing_controller_;
+   v8::PageAllocator* page_allocator_;
+   std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
 index 5bddd7413e54becb96876afa5b75be1d1030448a..20090c361b0c73647dc28c0fbe7aec8fc52dd6a3 100644
 --- a/src/node_trace_events.cc
