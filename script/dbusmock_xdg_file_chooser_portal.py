@@ -8,7 +8,8 @@ resolve without interaction.
 A spec can make the next request succeed instead by calling QueueResponse
 (on the org.freedesktop.DBus.Mock interface) with the file:// URIs it should
 return. Each queued response answers exactly one request; once the queue is
-empty, requests are cancelled again.
+empty, requests are cancelled again. ClearQueuedResponses drops any responses
+still queued, so one spec's leftovers cannot answer another spec's request.
 """
 
 import dbus
@@ -44,6 +45,12 @@ def load(mock, parameters):
 def QueueResponse(self, uris):
     """Answer the next OpenFile/SaveFile request with the given URIs."""
     self.queued_responses.append(list(uris))
+
+
+@dbus.service.method(MOCK_IFACE, in_signature='', out_signature='')
+def ClearQueuedResponses(self):
+    """Drop any responses queued by QueueResponse."""
+    self.queued_responses.clear()
 
 
 def handle_file_chooser_call(self, _parent_window, _title, _options):
