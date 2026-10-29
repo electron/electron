@@ -12,6 +12,10 @@ The exposed copy also carries the upstream macOS firmlink handling
 /System/Volumes block rule) so that /System/Volumes/Data alias paths are matched
 against the blocklist the same way Chrome matches them.
 
+As of 159.0.8129.0, it also carries the Vim startup rules (~/.vim, ~/vimfiles,
+~/.vimrc, ~/_vimrc, ~/.gvimrc, ~/_gvimrc, ~/.exrc and ~/_exrc) and the .mvn
+kBlockWrite suffix rule added upstream in that version.
+
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b729afd02 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
@@ -38,7 +42,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,274 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,298 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -149,6 +153,30 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
 +        // And limit access to ~/.gnupg as well.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
 +                                  BlockType::kBlockAllChildren),
++        // Vim startup directories and files in the home directory, including the
++        // ones read by Git for Windows' bundled Vim and native Windows Vim, see
++        // crbug.com/578510310.
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".vim"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL("vimfiles"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".vimrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL("_vimrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".gvimrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL("_gvimrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".exrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL("_exrc"),
++                                  BlockType::kBlockAllChildren),
++        // Block write access to */.mvn, which holds Maven project and JVM
++        // configuration (such as jvm.config, maven.config, and extensions.xml),
++        // see crbug.com/578500839.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".mvn"),
++                                BlockType::kBlockWrite),
 +  #if BUILDFLAG(IS_WIN)
 +        // Some Windows specific directories to block, basically all apps, the
 +        // operating system itself, as well as configuration data for apps.
