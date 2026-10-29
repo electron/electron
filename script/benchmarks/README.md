@@ -50,13 +50,21 @@ Chrome blocks module scripts from `file://`.
   (`CROSSBENCH_REVISION`) into a virtualenv, serves the pages and press
   benchmarks, generates the page configs, and runs the rounds. It records the
   CPU model, kernel, runner name and (on Azure) VM size in `metadata.json`.
+  Each crossbench invocation runs in its own process group, and its whole
+  process tree (chromedriver and the browser included) is killed when it
+  times out or exits, so nothing lingers into the next target's run. Every
+  round runs even when an invocation fails, but any failure makes `run.mjs`
+  exit non-zero.
 * [`compare.mjs`](compare.mjs) takes one sample per round and target (the
   median of that round's repetitions) and compares the medians. A change is
   flagged when Welch's t-test and the Mann-Whitney U test both give
   p < 0.05 **and** the medians differ by at least 10%. It writes
   `comparison.json` and a Markdown summary, and sends the medians
   (`electron.perf.<metric>`) and relative changes in percent
-  (`electron.perf.delta.<metric>`) to Datadog.
+  (`electron.perf.delta.<metric>`) to Datadog. Only invocations that exited
+  with 0 and reported every repetition are used. It exits non-zero when there
+  are no usable results, or when candidate vs baseline (or vs Chrome for
+  Testing, unless it was skipped) has no comparable metric.
 * [`harness-app/`](harness-app) is the Electron app crossbench launches. It
   registers one custom scheme per file-loading strategy and exposes
   `cbHarness.setSize()` to the page. Features an older Electron version lacks
@@ -86,7 +94,7 @@ node script/benchmarks/compare.mjs --results /tmp/bench/results --dry-run
 
 `--dry-run` prints the Datadog payload instead of sending it. Leave out
 `--candidate` and `--baseline` to compare the two latest nightlies, and pass
-`--cft none` to skip Chrome for Testing. The comparator's tests run with
+`--cft none` to skip Chrome for Testing. The tests run with
 `node --test script/benchmarks/test/*.test.mjs`.
 
 ## Caveats

@@ -44,19 +44,30 @@ const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 // Values of `data[key].values`, as written by crossbench's metrics merger.
 const valuesOf = (entry) => (Array.isArray(entry?.values) ? entry.values.filter(Number.isFinite) : []);
 
-// Returns { metric: number } for one crossbench invocation.
-function collectInvocation(resultDir, suite) {
+// Returns { metrics: { metric: number }, incomplete: [description] } for one
+// crossbench invocation. A measure with fewer (or more) values than the
+// expected repetitions is dropped, so a run where some repetitions failed or
+// timed out can't bias the round's median.
+function collectInvocation(resultDir, suite, expectedCount) {
   const metrics = {};
-  if (!fs.existsSync(resultDir)) return metrics;
+  const incomplete = [];
+  const complete = (name, values) => {
+    if (values.length === 0) return false;
+    if (expectedCount === undefined || values.length === expectedCount) return true;
+    incomplete.push(`${name} (${values.length}/${expectedCount} values)`);
+    return false;
+  };
+  if (!fs.existsSync(resultDir)) return { metrics, incomplete };
 
   if (PRESS_RESULTS[suite]) {
     const file = path.join(resultDir, PRESS_RESULTS[suite].file);
-    if (!fs.existsSync(file)) return metrics;
+    if (!fs.existsSync(file)) return { metrics, incomplete };
     for (const browser of Object.values(readJson(file))) {
       const key = PRESS_RESULTS[suite].keys.find((k) => valuesOf(browser.data?.[k]).length > 0);
-      if (key) metrics[`${suite}.score`] = median(valuesOf(browser.data[key]));
+      const values = key ? valuesOf(browser.data[key]) : [];
+      if (complete(`${suite}.score`, values)) metrics[`${suite}.score`] = median(values);
     }
-    return metrics;
+    return { metrics, incomplete };
   }
 
   // Each invocation runs one browser, so there is one <browser>/stories dir.
@@ -68,8 +79,9 @@ function collectInvocation(resultDir, suite) {
       if (!fs.existsSync(file)) continue;
       const data = readJson(file);
       for (const measure of measuresFor(suite, story)) {
+        const metric = `${suite}.${story}.${measure}`;
         const values = valuesOf(data[measure]);
-        if (values.length) metrics[`${suite}.${story}.${measure}`] = median(values);
+        if (complete(metric, values)) metrics[metric] = median(values);
       }
     }
   }
@@ -86,23 +98,65 @@ function collectInvocation(resultDir, suite) {
       }
     }
   }
-  return metrics;
+  return { metrics, incomplete };
 }
 
-// samples[metric][targetId] = one value per round.
+// Repetitions one invocation should report per measure. run.mjs records it;
+// older metadata only has the loading suites' --repeat.
+function expectedCountOf(invocation, metadata) {
+  if (Number.isInteger(invocation.repetitions)) return invocation.repetitions;
+  if (invocation.suite === 'loading' || invocation.suite === 'file_loading') return metadata.repeat;
+  return undefined;
+}
+
+// samples[metric][targetId] = one value per round. Only invocations that
+// exited with 0 contribute, and only measures with every repetition present.
+// rejected lists what was left out and why.
 export function collectSamples(resultsDir, metadata) {
   const samples = {};
+  const rejected = [];
   for (const invocation of metadata.invocations) {
-    const metrics = collectInvocation(path.join(resultsDir, invocation.dir), invocation.suite);
+    const { round, suite, target } = invocation;
+    if (invocation.exitCode !== 0) {
+      rejected.push({ round, suite, target, reason: `crossbench exited with ${invocation.exitCode}` });
+      continue;
+    }
+    const { metrics, incomplete } = collectInvocation(
+      path.join(resultsDir, invocation.dir),
+      suite,
+      expectedCountOf(invocation, metadata)
+    );
+    if (incomplete.length) rejected.push({ round, suite, target, reason: `incomplete: ${incomplete.join(', ')}` });
     for (const [metric, value] of Object.entries(metrics)) {
       samples[metric] ??= {};
-      (samples[metric][invocation.target] ??= []).push(value);
+      (samples[metric][target] ??= []).push(value);
     }
   }
-  return samples;
+  return { samples, rejected };
 }
 
 const lowerIsBetter = (metric) => !metric.endsWith('.score');
+
+// Reasons the results can't be trusted as a whole: no samples at all, or a
+// required comparison without a single comparable metric. Candidate vs
+// baseline is always required; Electron vs Chrome for Testing only when a CfT
+// target was fetched (fetch-targets.mjs --cft none skips it on purpose).
+export function findProblems(samples, comparisons, targets) {
+  const problems = [];
+  if (Object.keys(samples).length === 0) problems.push('no usable benchmark results');
+  const ids = new Set(targets.map((target) => target.id));
+  for (const { name, reference, candidate } of COMPARISONS) {
+    const required = name === 'vs_baseline' || ids.has(reference);
+    if (!required) continue;
+    const comparison = comparisons.find((c) => c.name === name);
+    if (!comparison) {
+      problems.push(`${name}: missing target ${ids.has(reference) ? candidate : reference}`);
+    } else if (comparison.metrics.length === 0) {
+      problems.push(`${name}: no metric has results for both ${reference} and ${candidate}`);
+    }
+  }
+  return problems;
+}
 
 export function compareTargets(samples, targets, { alpha, minChange }) {
   const ids = new Set(targets.map((target) => target.id));
@@ -140,7 +194,7 @@ const formatChange = (change) =>
   Number.isFinite(change) ? `${change >= 0 ? '+' : ''}${(change * 100).toFixed(1)}%` : 'n/a';
 const VERDICT_LABELS = { regression: ':red_circle: regression', improvement: ':green_circle: improvement' };
 
-export function markdownSummary({ metadata, comparisons, failures, alpha, minChange }) {
+export function markdownSummary({ metadata, comparisons, rejected, problems = [], alpha, minChange }) {
   const targets = Object.fromEntries(metadata.targets.map((target) => [target.id, target]));
   const lines = [
     '## Electron benchmarks',
@@ -149,9 +203,10 @@ export function markdownSummary({ metadata, comparisons, failures, alpha, minCha
     `Flagged when Welch's t-test and Mann-Whitney U both give p < ${alpha} and the medians differ by at least ${(minChange * 100).toFixed(0)}%. Thresholds are not calibrated yet.`,
     ''
   ];
-  if (failures.length) {
+  for (const problem of problems) lines.push(`:x: ${problem}`, '');
+  if (rejected.length) {
     lines.push(
-      `:warning: ${failures.length} crossbench runs failed: ${failures.map((f) => `${f.suite}/${f.target} (round ${f.round + 1})`).join(', ')}`,
+      `:warning: Left out of the comparison: ${rejected.map((r) => `${r.suite}/${r.target} round ${r.round + 1} (${r.reason})`).join('; ')}`,
       ''
     );
   }
@@ -260,15 +315,18 @@ async function main() {
   const resultsDir = path.resolve(args.results);
   const metadata = readJson(path.join(resultsDir, 'metadata.json'));
 
-  const samples = collectSamples(resultsDir, metadata);
+  const { samples, rejected } = collectSamples(resultsDir, metadata);
+  for (const r of rejected) {
+    console.warn(`[compare] leaving out ${r.suite}/${r.target} round ${r.round + 1}: ${r.reason}`);
+  }
   const comparisons = compareTargets(samples, metadata.targets, { alpha, minChange });
-  const failures = metadata.invocations.filter((invocation) => invocation.exitCode !== 0);
+  const problems = findProblems(samples, comparisons, metadata.targets);
   fs.writeFileSync(
     path.join(resultsDir, 'comparison.json'),
-    JSON.stringify({ alpha, minChange, metadata, samples, comparisons, failures }, null, 2)
+    JSON.stringify({ alpha, minChange, metadata, samples, comparisons, rejected, problems }, null, 2)
   );
 
-  const summary = markdownSummary({ metadata, comparisons, failures, alpha, minChange });
+  const summary = markdownSummary({ metadata, comparisons, rejected, problems, alpha, minChange });
   fs.writeFileSync(path.join(resultsDir, 'summary.md'), summary);
   if (process.env.GITHUB_STEP_SUMMARY) {
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
@@ -293,7 +351,13 @@ async function main() {
   if (regressions.length) {
     const prefix = process.env.GITHUB_ACTIONS ? '::warning title=Benchmark regression::' : '';
     console.log(`${prefix}${regressions.length} regressions: ${regressions.join(', ')}`);
-    if (args['fail-on-regression']) process.exit(1);
+    if (args['fail-on-regression']) process.exitCode = 1;
+  }
+
+  if (problems.length) {
+    const prefix = process.env.GITHUB_ACTIONS ? '::error title=Benchmark results::' : 'ERROR: ';
+    for (const problem of problems) console.error(`${prefix}${problem}`);
+    process.exitCode = 1;
   }
 }
 

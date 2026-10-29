@@ -84,7 +84,7 @@ jobs:
         if ! command -v xrandr >/dev/null 2>&1; then
           apt-get update -qq && apt-get install -y -qq x11-xserver-utils
         fi
-    - name: Test Comparator
+    - name: Test Benchmark Scripts
       run: node --test script/benchmarks/test/*.test.mjs
     - name: Fetch Builds
       id: fetch
@@ -115,6 +115,9 @@ jobs:
             --rounds "$ROUNDS" \
             --suites "$SUITES" \
             --python python
+    # Compare and upload even when the run step failed: run.mjs exits
+    # non-zero on any failed crossbench invocation (so the job still ends red),
+    # and the comparison and raw results are the diagnostics.
     - name: Compare Results
       if: ${{ !cancelled() && steps.fetch.outputs.skip != 'true' }}
       env:

@@ -8,7 +8,7 @@
 //   node script/benchmarks/run.mjs --targets <dir>/targets.json --out <dir>
 //     [--rounds 10] [--repeat 3] [--suites loading,file_loading,speedometer]
 //     [--file-count 1500] [--work-dir <dir>] [--python python3]
-import { execFileSync, spawn } from 'node:child_process';
+import { execFile, execFileSync, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -139,20 +139,131 @@ async function hostInfo() {
   };
 }
 
-function runCrossbench(cb, args, logFile, timeoutMs) {
-  return new Promise((resolve) => {
-    const log = fs.openSync(logFile, 'w');
-    const child = spawn(cb, args, { stdio: ['ignore', log, log] });
-    const timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs);
-    child.on('close', (code, signal) => {
-      clearTimeout(timer);
-      fs.closeSync(log);
-      resolve(code ?? (signal ? 128 : 1));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Whether any process in the group still runs. Zombies (killed descendants
+// that were reparented to an init that has not reaped them yet) count as gone.
+function groupAlive(pgid) {
+  try {
+    const members = fs
+      .readdirSync('/proc')
+      .filter((entry) => /^\d+$/.test(entry))
+      .map((pid) => {
+        try {
+          // The fields after the parenthesized command are: state ppid pgrp.
+          const stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+          return stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+        } catch {
+          return [];
+        }
+      });
+    return members.some(([state, , pgrp]) => Number(pgrp) === pgid && state !== 'Z');
+  } catch {
+    // No /proc (macOS): fall back to signal 0, which also sees zombies.
+    try {
+      process.kill(-pgid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+function signalGroup(pgid, signal) {
+  try {
+    process.kill(-pgid, signal);
+  } catch {
+    // ESRCH: the group is already gone.
+  }
+}
+
+// Kills the whole process tree of one invocation (crossbench, chromedriver and
+// the browser), SIGTERM first and SIGKILL after graceMs, and waits until it is
+// gone so the next target never shares the machine with leftovers.
+async function killTree(child, graceMs) {
+  if (process.platform === 'win32') {
+    // No process groups. taskkill /T walks the parent links, so it is only
+    // used while crossbench itself is still alive (on timeout).
+    await new Promise((resolve) =>
+      execFile('taskkill', ['/T', '/F', '/PID', String(child.pid)], { windowsHide: true }, () => resolve())
+    );
+    return;
+  }
+  const pgid = child.pid;
+  if (!groupAlive(pgid)) return;
+  signalGroup(pgid, 'SIGTERM');
+  const deadline = Date.now() + graceMs;
+  while (groupAlive(pgid) && Date.now() < deadline) await sleep(100);
+  if (!groupAlive(pgid)) return;
+  signalGroup(pgid, 'SIGKILL');
+  const killDeadline = Date.now() + 10_000;
+  while (groupAlive(pgid) && Date.now() < killDeadline) await sleep(100);
+  if (groupAlive(pgid)) console.warn(`[run] processes in group ${pgid} survived SIGKILL`);
+}
+
+// Invocations in flight, killed if run.mjs itself is stopped.
+const activeChildren = new Set();
+
+// crossbench runs in its own process group, so a Ctrl+C or SIGTERM sent to
+// run.mjs would not reach it. Take its process tree down too.
+function killActiveChildrenOnSignals() {
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => {
+      for (const child of activeChildren) {
+        if (process.platform === 'win32') {
+          child.kill();
+        } else {
+          signalGroup(child.pid, 'SIGKILL');
+        }
+      }
+      process.exit(128 + os.constants.signals[signal]);
     });
+  }
+}
+
+// Runs one crossbench invocation and resolves with its exit code once it and
+// all of its descendants are gone. On POSIX crossbench gets its own process
+// group (detached), so the browser and chromedriver it starts can be killed
+// with it. A timeout returns 124, death by a signal 128 + the signal number.
+export async function runCrossbench(cb, args, logFile, timeoutMs, { graceMs = 10_000 } = {}) {
+  const log = fs.openSync(logFile, 'w');
+  let child;
+  try {
+    child = spawn(cb, args, { stdio: ['ignore', log, log], detached: process.platform !== 'win32' });
+  } finally {
+    fs.closeSync(log);
+  }
+  activeChildren.add(child);
+  let killing;
+  const exited = new Promise((resolve) => {
+    child.on('error', (error) => {
+      console.warn(`[run] could not start crossbench: ${error.message}`);
+      resolve({ code: 1, signal: null });
+    });
+    child.on('exit', (code, signal) => resolve({ code, signal }));
   });
+  const timer = setTimeout(() => {
+    console.warn(`[run] crossbench timed out after ${timeoutMs / 1000}s; killing its process tree`);
+    killing = killTree(child, graceMs);
+  }, timeoutMs);
+  const { code, signal } = await exited;
+  clearTimeout(timer);
+  const timedOut = killing !== undefined;
+  if (killing) {
+    await killing;
+  } else if (child.pid !== undefined && process.platform !== 'win32') {
+    // Also after a normal exit: nothing crossbench started may outlive it.
+    // (Not on Windows, where the PID may already belong to another process.)
+    await killTree(child, graceMs);
+  }
+  activeChildren.delete(child);
+  if (timedOut) return 124;
+  if (signal) return 128 + (os.constants.signals[signal] ?? 0);
+  return code ?? 1;
 }
 
 async function main() {
+  killActiveChildrenOnSignals();
   const { values: args } = parseArgs({
     options: {
       targets: { type: 'string' },
@@ -240,7 +351,11 @@ async function main() {
       for (const suite of suites) {
         for (const target of order) {
           const suiteArgs = [];
+          // Values each measure should have, checked by compare.mjs. The
+          // press benchmarks run once per invocation (crossbench's default).
+          let repetitions = 1;
           if (suite === 'loading' || suite === 'file_loading') {
+            repetitions = repeat;
             if (!target.pageConfigs[suite]) continue;
             suiteArgs.push(
               'loading',
@@ -277,7 +392,15 @@ async function main() {
           if (exitCode !== 0) {
             console.warn(`[run] crossbench exited with ${exitCode} after ${seconds}s, see ${resultDir}.log`);
           }
-          metadata.invocations.push({ round, suite, target: target.id, exitCode, seconds, dir: relativeDir });
+          metadata.invocations.push({
+            round,
+            suite,
+            target: target.id,
+            exitCode,
+            repetitions,
+            seconds,
+            dir: relativeDir
+          });
           writeMetadata();
         }
       }
@@ -288,8 +411,15 @@ async function main() {
     writeMetadata();
   }
 
+  // Policy: any failed invocation fails the run. Every round still runs and
+  // metadata.json lists each invocation's exit code, so the results that did
+  // succeed can still be compared and uploaded as diagnostics.
   const failed = metadata.invocations.filter((invocation) => invocation.exitCode !== 0).length;
   console.log(`[run] ${metadata.invocations.length} crossbench runs, ${failed} failed`);
+  if (failed > 0) {
+    console.error(`ERROR: ${failed} of ${metadata.invocations.length} crossbench runs failed`);
+    process.exitCode = 1;
+  }
 }
 
 if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
