@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Wed, 21 Oct 2026 23:07:35 -0700
+Subject: [M150-LTS] Do not reuse non-CORS StyleImage data with a CORS request
+
+The StyleImageCache does not record the CORS status of the cached
+image content. Loading an image as a background with no CORS
+requirement caches the image, and a subsequent request for the
+same image as a CSS mask-image request for a CORS image will
+return the non-CORS result from the cache.
+
+Fix it by checking the origin status of the cached image and
+rejecting it when its status is inadequate for the request.
+
+Fixed: 572312175
+Change-Id: Ia3e2bd9b9031118158941c23b799bdec96be17d8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613320
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Auto-Submit: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1723067}
+(cherry picked from commit 25df6183505df2d433fb117d5a1101ab0df9a399)
+
+diff --git a/third_party/blink/renderer/core/css/style_image_cache.cc b/third_party/blink/renderer/core/css/style_image_cache.cc
+index 43ced3ebb68b2e689be65690dd310a1d5664b82b..6e9e03560c196bf466bf6e535306edda07e43fa6 100644
+--- a/third_party/blink/renderer/core/css/style_image_cache.cc
++++ b/third_party/blink/renderer/core/css/style_image_cache.cc
+@@ -12,10 +12,15 @@ namespace blink {
+ 
+ namespace {
+ 
+-bool CanReuseImageContent(const ImageResourceContent& image_content) {
++bool CanReuseImageContent(const ImageResourceContent& image_content,
++                          FetchParameters& params) {
+   if (image_content.ErrorOccurred()) {
+     return false;
+   }
++  if (params.GetCrossOriginAttributeValue() != kCrossOriginAttributeNotSet &&
++      !image_content.IsCorsSameOrigin()) {
++    return false;
++  }
+   return true;
+ }
+ 
+@@ -31,7 +36,7 @@ ImageResourceContent* StyleImageCache::CacheImageContent(
+   auto& image_content =
+       fetched_image_map_.insert(url_without_fragment.GetString(), nullptr)
+           .stored_value->value;
+-  if (!image_content || !CanReuseImageContent(*image_content)) {
++  if (!image_content || !CanReuseImageContent(*image_content, params)) {
+     image_content = ImageResourceContent::Fetch(params, fetcher);
+   }
+   return image_content.Get();
+diff --git a/third_party/blink/renderer/core/css/style_image_cache_test.cc b/third_party/blink/renderer/core/css/style_image_cache_test.cc
+index 4f8aac39772ed2d8f86a9f48d7b022b05a4a29c2..7cf38c3eb2d6fe0d788be1d36c3722098c8a8241 100644
+--- a/third_party/blink/renderer/core/css/style_image_cache_test.cc
++++ b/third_party/blink/renderer/core/css/style_image_cache_test.cc
+@@ -9,6 +9,7 @@
+ #include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/frame/settings.h"
+ #include "third_party/blink/renderer/core/loader/empty_clients.h"
++#include "third_party/blink/renderer/core/loader/resource/image_resource_content.h"
+ #include "third_party/blink/renderer/core/style/computed_style.h"
+ #include "third_party/blink/renderer/core/style/style_fetched_image.h"
+ #include "third_party/blink/renderer/core/testing/page_test_base.h"
+@@ -269,4 +270,46 @@ TEST_F(StyleImageCacheWithLoadingTest, LoadFailedBackgroundImageURL) {
+   EXPECT_EQ(FetchedImageMap().size(), 1u);
+ }
+ 
++TEST_F(StyleImageCacheWithLoadingTest, DifferingCORSModesImageURLs) {
++  SetBodyInnerHTML(R"HTML(
++    <style>
++      .rule1 { background-image: url(http://test.com/background_image.png) }
++      .rule2 { mask-image: url(http://test.com/background_image.png) }
++    </style>
++    <div id="target"></div>
++  )HTML");
++
++  const auto image_url =
++      url_test_helpers::ToKURL("http://test.com/background_image.png");
++  WebURLResponse response(image_url);
++  response.SetMimeType("image/png");
++  response.SetHttpHeaderField(http_names::kContentType, kTestResourceMimeType);
++  response.SetHttpStatusCode(200);
++  // Mark the response as opaque (cross-origin no-cors) so IsCorsSameOrigin()
++  // is false:
++  response.SetType(network::mojom::FetchResponseType::kOpaque);
++  url_test_helpers::RegisterMockedURLLoadWithCustomResponse(
++      image_url, test::CoreTestDataPath(kTestResourceFilename), response);
++
++  Element* target = GetDocument().getElementById(AtomicString("target"));
++  ASSERT_TRUE(target);
++  ASSERT_FALSE(target->ComputedStyleRef().BackgroundLayers().GetImage());
++
++  target->setAttribute(html_names::kClassAttr, AtomicString("rule1"));
++  UpdateAllLifecyclePhasesForTest();
++  url_test_helpers::ServeAsynchronousRequests();
++
++  ImageResourceContent* rule1_image =
++      target->ComputedStyleRef().BackgroundLayers().GetImage()->CachedImage();
++  EXPECT_TRUE(rule1_image);
++
++  target->setAttribute(html_names::kClassAttr, AtomicString("rule2"));
++  UpdateAllLifecyclePhasesForTest();
++  url_test_helpers::ServeAsynchronousRequests();
++
++  ImageResourceContent* rule2_image =
++      target->ComputedStyleRef().MaskLayers().GetImage()->CachedImage();
++  EXPECT_NE(rule1_image, rule2_image);
++}
++
+ }  // namespace blink

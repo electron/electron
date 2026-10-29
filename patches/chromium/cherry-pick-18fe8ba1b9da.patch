@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Fri, 23 Oct 2026 08:50:11 -0700
+Subject: [M156] Disable FEDisplacementMap for animated CSS backdrop-filter
+
+Original change's description:
+> Disable FEDisplacementMap for animated CSS backdrop-filter
+>
+> The composited animations code path was missed in the earlier CL
+> to disable FEDisplacementMap for backdrop-filter. Fix the oversight.
+>
+> Also move some animated filter effects WPT tests into the existing
+> animations directly, and enable that directory for the virtual/threaded
+> test suite so that we have coverage for composited filter animations.
+>
+> Bug: 575826638
+> Change-Id: I9b51a04945103b0913dbb1aae7acb9ddabef3747
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8624807
+> Reviewed-by: Stefan Zager <szager@chromium.org>
+> Commit-Queue: Stephen Chenney <schenney@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1724266}
+
+(cherry picked from commit e0cb253a6f794a3cb0c15a2bbd69150ce7d2b7c1)
+
+Bug: 576405505,575826638
+Change-Id: I9b51a04945103b0913dbb1aae7acb9ddabef3747
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8644469
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1485}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+Electron adaptation notes (43-x-y):
+Animated backdrop-filter: all third_party/blink/web_tests/ content (94
+paths: VirtualTestSuites, TestExpectations, WEB_FEATURES.yml, WPT
+renames/additions) dropped as test-only; the compositor_animations.cc
+fix hunk merged cleanly.
+
+diff --git a/third_party/blink/renderer/core/animation/compositor_animations.cc b/third_party/blink/renderer/core/animation/compositor_animations.cc
+index 5f38f23b37d1130e32057585761c8851e24847e4..1b39e44d2277d35057368bfe388fc9fa63afd66b 100644
+--- a/third_party/blink/renderer/core/animation/compositor_animations.cc
++++ b/third_party/blink/renderer/core/animation/compositor_animations.cc
+@@ -848,11 +848,13 @@ namespace {
+ void AddKeyframeToCurve(cc::KeyframedFilterAnimationCurve& curve,
+                         Keyframe::PropertySpecificKeyframe* keyframe,
+                         const CompositorKeyframeValue* value,
+-                        const TimingFunction& keyframe_timing_function) {
++                        const TimingFunction& keyframe_timing_function,
++                        bool is_backdrop_filter) {
+   FilterEffectBuilder builder(gfx::RectF(), std::nullopt, 1, Color::kBlack,
+                               mojom::blink::ColorScheme::kLight);
+   CompositorFilterOperations operations = builder.BuildFilterOperations(
+-      To<CompositorKeyframeFilterOperations>(value)->Operations());
++      To<CompositorKeyframeFilterOperations>(value)->Operations(),
++      is_backdrop_filter);
+   std::unique_ptr<cc::FilterKeyframe> filter_keyframe =
+       cc::FilterKeyframe::Create(base::Seconds(keyframe->Offset()),
+                                  operations.ReleaseCcFilterOperations(),
+@@ -990,7 +992,8 @@ void CompositorAnimations::GetAnimationOnCompositor(
+       case CSSPropertyID::kFilter:
+       case CSSPropertyID::kBackdropFilter: {
+         auto filter_curve = cc::KeyframedFilterAnimationCurve::Create();
+-        AddKeyframesToCurve(*filter_curve, values);
++        AddKeyframesToCurve(*filter_curve, values,
++                            css_property_id == CSSPropertyID::kBackdropFilter);
+         filter_curve->SetTimingFunction(timing.timing_function->CloneToCC());
+         filter_curve->set_scaled_duration(scale);
+         curve = std::move(filter_curve);

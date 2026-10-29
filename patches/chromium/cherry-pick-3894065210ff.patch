@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 27 Oct 2026 13:16:12 +0000
+Subject: [M150-LTS][WebAudio] Stop paused destination and guard automatic pull
+ on close
+
+When an AudioContext is closed while its frame is frozen, the platform
+audio destination is in the kPaused state (`IsPlaying()` is false), so
+`StopPlatformDestination()` previously skipped calling `Stop()`. When
+the frame later thawed, `Resume()` restarted the audio thread on the
+closed context, and `Render()` invoked `ProcessAutomaticPullNodes()`
+even when pulling the audio graph was disabled, causing an object
+lifetime issue with disposed upstream nodes.
+
+Changes:
+- Call `platform_destination_->Stop()` in `StopPlatformDestination()`
+  whenever `platform_destination_` is present so `kPaused` destinations
+  transition to `kStopped`.
+- Move `ProcessAutomaticPullNodes()` inside the active graph-pulling
+  branch of `RealtimeAudioDestinationHandler::Render()`.
+- Add `AudioContextTest.CloseWhileFrozenStopsDestination` to verify
+  closing a frozen context stops the destination and guards automatic
+  pull nodes.
+
+Bug: 572191610
+Test: blink_unittests --gtest_filter=AudioContextTest.CloseWhileFrozen*
+Change-Id: I3126957a0a43ffdce2f541908ad90359e8f0fd6e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8561977
+Commit-Queue: Hongchan Choi <hongchan@google.com>
+Reviewed-by: Mahesh Kannan <kmaheshb@google.com>
+Cr-Commit-Position: refs/heads/main@{#1717977}
+(cherry picked from commit c26b38a137c5f813e0bc01d3781be5a16cb25638)
+
+diff --git a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+index c69dbce4e4430616e64e05f9f6caf9dd435a6a2f..ea98fb48dcb0a0fcea6de918f5e61d1493062f65 100644
+--- a/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/realtime_audio_destination_handler.cc
+@@ -274,14 +274,15 @@ void RealtimeAudioDestinationHandler::Render(
+       // given `destination_bus` buffer.
+       destination_bus->CopyFrom(*rendered_bus);
+     }
++
++    // Processes "automatic" nodes that are not connected to anything. This can
++    // be done after copying because it does not affect the rendered result.
++    context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(
++        number_of_frames);
+   } else {
+     destination_bus->Zero();
+   }
+ 
+-  // Processes "automatic" nodes that are not connected to anything. This can
+-  // be done after copying because it does not affect the rendered result.
+-  context->GetDeferredTaskHandler().ProcessAutomaticPullNodes(number_of_frames);
+-
+   context->HandlePostRenderTasks();
+ 
+   // Handle audibility before handling the volume multiplier since the volume
+@@ -473,7 +474,10 @@ void RealtimeAudioDestinationHandler::StopPlatformDestination() {
+   // for a while. (It may take a bit of time for the destination to stop.)
+   DisablePullingAudioGraph();
+ 
+-  if (platform_destination_->IsPlaying()) {
++  // `AudioDestination::Stop()` is a no-op when already stopped, and transitions
++  // both `kRunning` and `kPaused` destinations to `kStopped` so a subsequent
++  // lifecycle `Resume()` cannot restart a stopped destination.
++  if (platform_destination_) {
+     platform_destination_->Stop();
+   }
+ }

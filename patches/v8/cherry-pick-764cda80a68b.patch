@@ -1,0 +1,237 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Vitale <mrcvtl@chromium.org>
+Date: Tue, 6 Oct 2026 08:41:18 +0000
+Subject: [M156] [maglev] Preserve number checks when untagging HoleyFloat64
+
+Original change's description:
+> [maglev] Preserve number checks when untagging HoleyFloat64
+>
+> When MaglevGraphOptimizer unwraps a ReturnedValue or
+> HoleyFloat64ToTagged node into a HoleyFloat64 input for a
+> TruncateCheckedNumberOrOddballToInt32 assuming kNumber,
+> GetTruncatedInt32ForToNumber ignores assumed_input_type and emits an
+> unchecked TruncateHoleyFloat64ToInt32. This drops the runtime check that
+> deopts on holes and undefined, allowing undefined to reach downstream
+> operations that rely on the kNumber type.
+>
+> This CL converts HoleyFloat64 inputs to Float64 via
+> GetFloat64ForToNumber whenever the assumed input type forbids undefined,
+> emitting a CheckedHoleyFloat64ToFloat64 guard before truncation. It also
+> checks CanReuseAlternative when matching the target representation
+> directly.
+>
+> Fixed: 568348290
+> Change-Id: Ib5e66da49503a74a4ded7526ad95d9166a6a6964
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8525046
+> Auto-Submit: Marco Vitale <mrcvtl@chromium.org>
+> Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+> Commit-Queue: Marco Vitale <mrcvtl@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110613}
+
+(cherry picked from commit f2df0f7686efaa881dbd0cd454ff04f78953272f)
+
+Bug: 573867371,568348290
+Change-Id: Ib5e66da49503a74a4ded7526ad95d9166a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8629747
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Marco Vitale <mrcvtl@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.6@{#47}
+Cr-Branched-From: b976f35da8356fcf4e5e176d1d810ba6a6f05718-refs/heads/15.6.75@{#1}
+Cr-Branched-From: a424b0597aab8e27f12ea4a700bae3961fa1a076-refs/heads/main@{#110135}
+
+Electron adaptation notes (43-x-y):
+maglev HoleyFloat64: on V8 15.0 GetUntaggedValueWithRepresentation()
+takes std::optional<TaggedToFloat64ConversionType> conversion_type
+instead of std::optional<NodeType> assumed_input_type. The two new
+references were mapped to conversion_type, deriving the NodeType with
+GetAllowedTypeFromConversionType() (same mapping as cherry-
+pick-7d2082938a3b).
+
+diff --git a/src/maglev/maglev-graph-optimizer.cc b/src/maglev/maglev-graph-optimizer.cc
+index df2be46da8c94ea5e90cf99b4af5f9e095e3e1bd..e538b491ef2d54609edf83437878f9943ece7ccc 100644
+--- a/src/maglev/maglev-graph-optimizer.cc
++++ b/src/maglev/maglev-graph-optimizer.cc
+@@ -529,7 +529,8 @@ MaybeReduceResult MaglevGraphOptimizer::GetUntaggedValueWithRepresentation(
+     ValueNode* node, UseRepresentation use_repr,
+     std::optional<TaggedToFloat64ConversionType> conversion_type) {
+   DCHECK_NE(use_repr, UseRepresentation::kTagged);
+-  if (node->value_representation() == ValueRepresentationFromUse(use_repr)) {
++  if (node->value_representation() == ValueRepresentationFromUse(use_repr) &&
++      CanReuseAlternative(node, node, use_repr, conversion_type)) {
+     return node;
+   }
+   if (node->Is<ReturnedValue>()) {
+@@ -559,6 +560,17 @@ MaybeReduceResult MaglevGraphOptimizer::GetUntaggedValueWithRepresentation(
+   if (!current_node_->properties().has_eager_deopt_info()) {
+     return {};
+   }
++  if (node->is_holey_float64() && conversion_type.has_value() &&
++      NodeTypeIs(GetAllowedTypeFromConversionType(*conversion_type),
++                 NodeType::kNumberOrBoolean)) {
++    // HoleyFloat64 can hold the hole or undefined, whereas the replaced node
++    // checked that the input is a number (or boolean, which cannot occur in
++    // HoleyFloat64). Convert to Float64 first so CheckedHoleyFloat64ToFloat64
++    // preserves the check that subsequent operations may rely on.
++    GET_VALUE_OR_ABORT(
++        node, reducer_.GetFloat64ForToNumber(
++                  node, GetAllowedTypeFromConversionType(*conversion_type)));
++  }
+   switch (use_repr) {
+     case UseRepresentation::kInt32:
+       return reducer_.GetInt32(node);
+diff --git a/test/mjsunit/turbolev/regress-568348290.js b/test/mjsunit/turbolev/regress-568348290.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2f39a98cc33c361f9af211899325d8c9b56a3337
+--- /dev/null
++++ b/test/mjsunit/turbolev/regress-568348290.js
+@@ -0,0 +1,149 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbolev
++// Flags: --max-turbolev-eager-inlined-bytecode-size=0
++
++// 1. Unwrapping ReturnedValue(HoleyFloat64) for a kNumber truncation must
++// preserve the number check via CheckedHoleyFloat64ToFloat64.
++(function TestReturnedValueHoleyFloat64() {
++  function get_elem(arr, i) {
++    return arr[i];
++  }
++
++  function opt(arr, i) {
++    const x = get_elem(arr, i);
++    const y = x | 0;
++    return String(x) + y;
++  }
++
++  const holey = [1.5, , 2.5];
++  %PrepareFunctionForOptimization(get_elem);
++  %PrepareFunctionForOptimization(opt);
++  assertEquals('1.51', opt(holey, 0));
++  assertEquals(undefined, get_elem(holey, 1));
++  assertEquals('1.51', opt(holey, 0));
++  %OptimizeFunctionOnNextCall(opt);
++  assertEquals('1.51', opt(holey, 0));
++  assertOptimized(opt);
++
++  assertEquals('undefined0', opt(holey, 1));
++  assertUnoptimized(opt);
++})();
++
++// 2. Unwrapping HoleyFloat64ToTagged(HoleyFloat64) for a kNumber truncation
++// must also preserve the number check.
++(function TestHoleyFloat64ToTaggedConversion() {
++  function get_elem_tagged(arr, i, flag) {
++    let v = arr[i];
++    if (flag) {
++      v = arr[0];
++    }
++    return v;
++  }
++
++  function opt(arr, i, flag) {
++    const x = get_elem_tagged(arr, i, flag);
++    const y = x | 0;
++    return String(x) + y;
++  }
++
++  const holey = [1.5, , 2.5];
++  %PrepareFunctionForOptimization(get_elem_tagged);
++  %PrepareFunctionForOptimization(opt);
++  assertEquals('1.51', opt(holey, 0, false));
++  assertEquals(undefined, get_elem_tagged(holey, 1, false));
++  assertEquals(1.5, get_elem_tagged(holey, 1, true));
++  assertEquals('1.51', opt(holey, 0, false));
++  %OptimizeFunctionOnNextCall(opt);
++  assertEquals('1.51', opt(holey, 0, false));
++  assertOptimized(opt);
++
++  assertEquals('undefined0', opt(holey, 1, false));
++  assertUnoptimized(opt);
++})();
++
++// 3. A prior weaker truncation (NumberOrOddball via Math.imul) on the same
++// HoleyFloat64 node must not cause a subsequent kNumber truncation to skip
++// CheckedHoleyFloat64ToFloat64.
++(function TestWeakerTruncationBeforeNumberTruncation() {
++  function get_elem(arr, i) {
++    return arr[i];
++  }
++
++  function imul(x) {
++    return Math.imul(x, 3);
++  }
++
++  function opt(arr, i) {
++    const x = get_elem(arr, i);
++    const a = imul(x);
++    const b = x | 0;
++    return String(x) + a + b;
++  }
++
++  const holey = [1.5, , 2.5];
++  %PrepareFunctionForOptimization(get_elem);
++  %PrepareFunctionForOptimization(imul);
++  %PrepareFunctionForOptimization(opt);
++  assertEquals('1.531', opt(holey, 0));
++  assertEquals(undefined, get_elem(holey, 1));
++  assertEquals('1.531', opt(holey, 0));
++  %OptimizeFunctionOnNextCall(opt);
++  assertEquals('1.531', opt(holey, 0));
++  assertOptimized(opt);
++
++  assertEquals('undefined00', opt(holey, 1));
++  assertUnoptimized(opt);
++})();
++
++// 4. Merging kSmi and kJSReceiverOrNullOrUndefined and intersecting with
++// kNumber on `x | y` narrows `x` to kSmi, eliding CheckSmi on a subsequent
++// Smi-field store. Dropping the kNumber check corrupts `smi_obj.a` with
++// #undefined in a Smi field.
++(function TestSmiFieldCorruptionViaTypeIntersection() {
++  function get_elem(arr, i) {
++    return arr[i];
++  }
++
++  const smi_obj = {a: 100};
++  smi_obj.a = 1;
++
++  function opt(arr, i, mode, bailout, y, obj, n) {
++    const x = get_elem(arr, i);
++    let cmp = false;
++    if (mode === 1) {
++      cmp = (x + 1) === 2;
++    } else {
++      cmp = (x === n);
++      if (bailout) return 0;
++    }
++    const b = x | y;
++    obj.a = x;
++    return b + (cmp ? 1 : 0);
++  }
++
++  const smi_arr = [1, 2];
++  const holey = [1, , 2.5];
++
++  %PrepareFunctionForOptimization(opt);
++  opt(smi_arr, 0, 1, false, 0.125, smi_obj, null);
++  opt(smi_arr, 0, 1, false, 0.125, smi_obj, null);
++
++  %PrepareFunctionForOptimization(get_elem);
++  get_elem(holey, 0);
++  get_elem(holey, 1);
++
++  opt(holey, 1, 0, true, 0.125, smi_obj, null);
++  opt(holey, 1, 0, true, 0.125, smi_obj, null);
++
++  %OptimizeFunctionOnNextCall(opt);
++  assertEquals(2, opt(holey, 0, 1, false, 0.125, smi_obj, null));
++  assertOptimized(opt);
++
++  assertEquals(0, opt(holey, 1, 0, false, 0.125, smi_obj, null));
++  assertUnoptimized(opt);
++  assertEquals(undefined, smi_obj.a);
++  %HeapObjectVerify(smi_obj);
++})();

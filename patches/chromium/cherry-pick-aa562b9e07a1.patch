@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Tue, 20 Oct 2026 08:35:18 -0700
+Subject: [M156] HttpCache: prevent lock timeout overtaking explicit restart
+
+Original change's description:
+> HttpCache: prevent lock timeout overtaking explicit restart
+>
+> ...by cancelling it when queuing the restart. This can happen if our
+> thread is super-overloaded (which is worrisome)
+>
+> Bug: 569674221
+> Change-Id: Iaa3f12540534ca58c2446102d6b79e3566a557c1
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8578804
+> Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+> Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1720263}
+
+(cherry picked from commit ef5adf65e8dcd6202bbb4d17f91dd1774ff14446)
+
+Bug: 575704372,569674221
+Change-Id: Iaa3f12540534ca58c2446102d6b79e3566a557c1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613840
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1349}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+Electron adaptation notes (43-x-y):
+HttpCache: test-only conflicts in net/http/http_cache_unittest.cc,
+net/http/http_transaction_test_util.cc and
+net/http/http_transaction_test_util.h taken as ours;
+net/http/http_cache.cc and http_cache_transaction.h hunks merged
+cleanly.
+
+diff --git a/net/http/http_cache.cc b/net/http/http_cache.cc
+index 8c709872ef00a85a8510e783fe7f5c7d4230b39d..5cb2061dd35f9b0eb7b184b60bd0237a5a9250b8 100644
+--- a/net/http/http_cache.cc
++++ b/net/http/http_cache.cc
+@@ -1417,6 +1417,13 @@ void HttpCache::DoomEntryValidationNoMatch(scoped_refptr<ActiveEntry> entry) {
+   // for the transaction to not be found in this entry.
+   for (HttpCache::Transaction* transaction : entry->add_to_entry_queue()) {
+     transaction->ResetCachePendingState();
++
++    // Cancel the timeout timer. Under extreme load that can end up firing
++    // before the task we post below, and our tasks expects us to be removed
++    // from the entry queue, which we might no longer be the case with the
++    // reversal.
++    transaction->CancelEntryLockTimeout();
++
+     TaskRunner(transaction->priority())
+         ->PostTask(FROM_HERE, base::BindOnce(transaction->cache_io_callback(),
+                                              ERR_CACHE_RACE));
+diff --git a/net/http/http_cache_transaction.h b/net/http/http_cache_transaction.h
+index 66bcb78bc9051afc344e53106948583184382fc6..99bb0fb21f6d68ff44badb326cb70cb19a56171d 100644
+--- a/net/http/http_cache_transaction.h
++++ b/net/http/http_cache_transaction.h
+@@ -182,6 +182,10 @@ class NET_EXPORT_PRIVATE HttpCache::Transaction : public HttpTransaction {
+   // added to an entry and the entry.
+   void ResetCachePendingState() { cache_pending_ = false; }
+ 
++  void CancelEntryLockTimeout() {
++    entry_lock_waiting_since_ = base::TimeTicks();
++  }
++
+   RequestPriority priority() const { return priority_; }
+   PartialData* partial() { return partial_.get(); }
+   bool is_truncated() { return truncated_; }
