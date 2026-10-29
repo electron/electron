@@ -2839,32 +2839,42 @@ describe('BrowserWindow module', () => {
 
         w.setMenuBarVisibility(false);
 
-        await w.loadURL('about:blank');
-        expect(w.isMenuBarVisible()).to.be.false('menu bar should initially be hidden');
+        await w.loadURL('data:text/html,<script>window.lastKey = ""; window.addEventListener("keydown", e => window.lastKey = "down:" + e.key); window.addEventListener("keyup", e => window.lastKey = "up:" + e.key);</script>');
+        expect(w.isMenuBarVisible(), 'menu bar should initially be hidden').toBe(false);
 
         const sendKey = async (
           type: 'rawKeyDown' | 'keyUp',
           keyCode: string,
+          expectedDomKey: string,
           modifiers: ('shift' | 'alt')[]
         ) => {
-          const inputHandled = once(w.webContents, 'before-input-event');
           w.webContents.sendInputEvent({ type, keyCode, modifiers });
-          await inputHandled;
+          const prefix = type === 'rawKeyDown' ? 'down:' : 'up:';
+          await expect.poll(
+            () => w.webContents.executeJavaScript('window.lastKey'),
+            { timeout: 5000 }
+          ).toBe(`${prefix}${expectedDomKey}`);
         };
 
         // Multi-modifier sequence: Shift↓ + Alt↓ → Alt↑ + Shift↑
-        await sendKey('rawKeyDown', 'Shift', ['shift']);
-        await sendKey('rawKeyDown', 'Alt', ['shift', 'alt']);
-        await sendKey('keyUp', 'Alt', ['shift']);
-        await sendKey('keyUp', 'Shift', []);
+        await sendKey('rawKeyDown', 'Shift', 'Shift', ['shift']);
+        await sendKey('rawKeyDown', 'Alt', 'Alt', ['shift', 'alt']);
+        await sendKey('keyUp', 'Alt', 'Alt', ['shift']);
+        await sendKey('keyUp', 'Shift', 'Shift', []);
 
-        expect(w.isMenuBarVisible()).to.be.false('menu bar should remain hidden after Shift+Alt');
+        // Wait one more renderer-to-browser round-trip so UnhandledKeyboardEvent -> RootView::HandleKeyEvent
+        // is guaranteed to have run in the browser process before asserting it stayed false.
+        await w.webContents.executeJavaScript('new Promise(r => setTimeout(r, 0))');
+        expect(w.isMenuBarVisible(), 'menu bar should remain hidden after Shift+Alt').toBe(false);
 
-        // Verify standalone Alt press-and-release still toggles the menu bar
-        await sendKey('rawKeyDown', 'Alt', ['alt']);
-        await sendKey('keyUp', 'Alt', []);
+        // Verify standalone Alt press-and-release toggles the menu bar
+        await sendKey('rawKeyDown', 'Alt', 'Alt', ['alt']);
+        await sendKey('keyUp', 'Alt', 'Alt', []);
 
-        expect(w.isMenuBarVisible()).to.be.true('menu bar should become visible after single Alt');
+        await expect.poll(
+          () => w.isMenuBarVisible(),
+          { message: 'menu bar should become visible after single Alt', timeout: 5000 }
+        ).toBe(true);
       });
     })
   });
@@ -8503,7 +8513,7 @@ describe('BrowserWindow module', () => {
       });
       await ow.loadURL(
         'data:text/html,<select id="s" style="position:absolute;left:10px;top:10px;width:120px;height:24px">' +
-          '<option>one</option><option>two</option><option>three</option><option>four</option></select>'
+        '<option>one</option><option>two</option><option>three</option><option>four</option></select>'
       );
       ow.webContents.focus();
       const paintedBelowSelect = new Promise<void>((resolve) => {
@@ -8655,9 +8665,9 @@ describe('BrowserWindow module', () => {
         // painted page from a blank or stale window surface.
         await w.loadURL(
           'data:text/html,<body style="background: transparent; margin: 0">' +
-            '<div style="position: absolute; left: 60px; top: 60px; width: 60px; height: 60px; background: %23ffffff"></div>' +
-            '<div style="position: absolute; left: 180px; top: 60px; width: 60px; height: 60px; background: %23ff0000"></div>' +
-            '</body>'
+          '<div style="position: absolute; left: 60px; top: 60px; width: 60px; height: 60px; background: %23ffffff"></div>' +
+          '<div style="position: absolute; left: 180px; top: 60px; width: 60px; height: 60px; background: %23ff0000"></div>' +
+          '</body>'
         );
         w.focus();
         const captured = await expectDisplayPixelsEventually((pixels) => {
@@ -8869,10 +8879,10 @@ describe('BrowserWindow module', () => {
     // writes on a 10s timer. Testing builds can force both; otherwise poll.
     const flushPrefs = isTestingBindingAvailable()
       ? async () => {
-          const testing = process._linkedBinding('electron_common_testing');
-          testing.flushPendingWindowStateSaves();
-          await testing.commitPendingLocalStateWrites();
-        }
+        const testing = process._linkedBinding('electron_common_testing');
+        testing.flushPendingWindowStateSaves();
+        await testing.commitPendingLocalStateWrites();
+      }
       : null;
 
     const waitForPrefsUpdate = async (
