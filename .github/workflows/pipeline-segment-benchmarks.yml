@@ -1,0 +1,136 @@
+name: Pipeline Segment - Benchmarks
+
+on:
+  workflow_call:
+    inputs:
+      target-platform:
+        type: string
+        description: 'Platform to benchmark on, can be linux (macos and win are not wired up yet)'
+        required: true
+      target-arch:
+        type: string
+        description: 'Arch of the builds to benchmark'
+        required: true
+      runs-on:
+        type: string
+        description: 'What host to run the benchmarks on'
+        required: true
+      container:
+        type: string
+        description: 'JSON container information for aks runs-on'
+        required: false
+        default: '{"image":null}'
+      candidate:
+        type: string
+        description: 'Electron version under test (empty for the latest nightly)'
+        required: false
+        default: ''
+      baseline:
+        type: string
+        description: 'Electron version to compare against (empty for the previous nightly or release)'
+        required: false
+        default: ''
+      rounds:
+        type: string
+        description: 'Interleaved rounds per target'
+        required: false
+        default: '10'
+      suites:
+        type: string
+        description: 'Comma-separated suites to run'
+        required: false
+        default: 'loading,file_loading,speedometer,jetstream'
+      upload-to-datadog:
+        type: boolean
+        description: 'Send the results to Datadog'
+        required: false
+        default: false
+      skip-stale-nightly:
+        type: boolean
+        description: 'Skip the run when the latest nightly is more than a day old'
+        required: false
+        default: false
+    secrets:
+      DD_API_KEY:
+        required: false
+
+permissions: {}
+
+jobs:
+  benchmark:
+    runs-on: ${{ inputs.runs-on }}
+    container: ${{ fromJSON(inputs.container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash from build-image-sha; there is no static digest to pin
+    timeout-minutes: 300
+    permissions:
+      contents: read
+    # Callers' defaults do not propagate into reusable workflows.
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+    # crossbench requires Python 3.11 or 3.12; the build image ships 3.10.
+    - name: Setup Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: '3.12'
+    # crossbench's system details probe shells out to xrandr.
+    - name: Install xrandr (linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: |
+        if ! command -v xrandr >/dev/null 2>&1; then
+          apt-get update -qq && apt-get install -y -qq x11-xserver-utils
+        fi
+    - name: Test Comparator
+      run: node --test script/benchmarks/test/*.test.mjs
+    - name: Fetch Builds
+      id: fetch
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        CANDIDATE: ${{ inputs.candidate }}
+        BASELINE: ${{ inputs.baseline }}
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
+        SKIP_STALE_NIGHTLY: ${{ inputs.skip-stale-nightly }}
+      run: |
+        args=(--out "$RUNNER_TEMP/benchmark-targets" --platform "$TARGET_PLATFORM" --arch "$TARGET_ARCH")
+        if [ -n "$CANDIDATE" ]; then args+=(--candidate "$CANDIDATE"); fi
+        if [ -n "$BASELINE" ]; then args+=(--baseline "$BASELINE"); fi
+        if [ "$SKIP_STALE_NIGHTLY" = "true" ]; then args+=(--max-candidate-age-hours 24); fi
+        node script/benchmarks/fetch-targets.mjs "${args[@]}"
+    - name: Run Benchmarks (linux)
+      if: ${{ inputs.target-platform == 'linux' && steps.fetch.outputs.skip != 'true' }}
+      timeout-minutes: 270
+      env:
+        ROUNDS: ${{ inputs.rounds }}
+        SUITES: ${{ inputs.suites }}
+      run: |
+        xvfb-run -a -s "-screen 0 1920x1200x24" \
+          node script/benchmarks/run.mjs \
+            --targets "$RUNNER_TEMP/benchmark-targets/targets.json" \
+            --out "$RUNNER_TEMP/benchmark-results" \
+            --rounds "$ROUNDS" \
+            --suites "$SUITES" \
+            --python python
+    - name: Compare Results
+      if: ${{ !cancelled() && steps.fetch.outputs.skip != 'true' }}
+      env:
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        UPLOAD_TO_DATADOG: ${{ inputs.upload-to-datadog }}
+      run: |
+        args=(--results "$RUNNER_TEMP/benchmark-results")
+        if [ "$UPLOAD_TO_DATADOG" != "true" ]; then args+=(--dry-run); fi
+        node script/benchmarks/compare.mjs "${args[@]}"
+    - name: Upload Results
+      if: ${{ !cancelled() && steps.fetch.outputs.skip != 'true' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: benchmark-results-${{ inputs.target-platform }}-${{ inputs.target-arch }}
+        path: |
+          ${{ runner.temp }}/benchmark-results
+          !${{ runner.temp }}/benchmark-results/**/*.xlsx
+        if-no-files-found: warn
+        retention-days: 30
