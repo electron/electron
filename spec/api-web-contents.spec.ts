@@ -2172,6 +2172,81 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents.adjustSelection()', () => {
+    type Selection = { start: number; end: number };
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      w.webContents.focus();
+    });
+
+    afterEach(closeAllWindows);
+
+    const getSelection = (): Promise<Selection> =>
+      w.webContents.executeJavaScript(
+        '({ start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd })'
+      );
+
+    // Focuses an input holding "Hello World" and selects [start, end)
+    const select = async ({ start, end }: Selection) => {
+      await w.webContents.executeJavaScript(`{
+        const input = document.createElement('input');
+        input.value = 'Hello World';
+        document.body.appendChild(input);
+        input.focus();
+        input.setSelectionRange(${start}, ${end});
+      }`);
+      expect(await getSelection()).toEqual({ start, end });
+    };
+
+    // The adjustment reaches the renderer asynchronously, so poll for it
+    const expectSelection = async (expected: Selection) => {
+      let actual = await getSelection();
+      await waitUntil(
+        async () => {
+          actual = await getSelection();
+          return actual.start === expected.start && actual.end === expected.end;
+        },
+        { rate: 50, timeout: 2000 }
+      ).catch(() => {
+        // Fall through so the assertion below reports the selection we got
+      });
+      expect(actual).toEqual(expected);
+    };
+
+    it('moves only the start of the selection', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ start: 1 });
+      await expectSelection({ start: 1, end: 5 });
+    });
+
+    it('moves only the end of the selection', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ end: 6 });
+      await expectSelection({ start: 0, end: 11 });
+    });
+
+    it('moves both ends of the selection forward', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ start: 1, end: 5 });
+      await expectSelection({ start: 1, end: 10 });
+    });
+
+    it('moves the end of the selection backward', async () => {
+      await select({ start: 0, end: 11 });
+      w.webContents.adjustSelection({ start: 2, end: -3 });
+      await expectSelection({ start: 2, end: 8 });
+    });
+
+    it('moves both ends of the selection backward', async () => {
+      await select({ start: 6, end: 11 });
+      w.webContents.adjustSelection({ start: -6, end: -6 });
+      await expectSelection({ start: 0, end: 5 });
+    });
+  });
+
   describe('insertCSS', () => {
     afterEach(closeAllWindows);
     it('supports inserting CSS', async () => {
@@ -4038,11 +4113,11 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     const testing = () => process._linkedBinding('electron_common_testing');
     // The hang monitor reports after kHungRendererDelay (15 s) plus a 1 s ping.
-    const hangAndPoke = async (w: BrowserWindow, ms = 0) => {
-      w.webContents
-        .executeJavaScript(ms ? `{ const end = Date.now() + ${ms}; while (Date.now() < end) {} }` : 'while (true) {}')
-        .catch(() => {});
-      await setTimeout(200);
+    // The key's own keydown handler hangs the page, so the key can't be acked
+    // before the hang starts. A sync XHR hang, as in the hidden-window test,
+    // would end at the simulated suspend, which fails pending requests.
+    const hangAndPoke = async (w: BrowserWindow) => {
+      await w.webContents.executeJavaScript("addEventListener('keydown', () => { while (true) {} })");
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
     };
 

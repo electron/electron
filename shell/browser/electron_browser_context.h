@@ -112,7 +112,12 @@ class ElectronBrowserContext : public content::BrowserContext {
   InterceptState* intercept_state() const { return intercept_state_.get(); }
   void InterceptedProtocolsChanged();
   scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
-      scoped_refptr<network::SharedURLLoaderFactory> factory);
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> factory);
+
+  // The net module's factory for file: URLs. Interception is decided per
+  // request, so one factory serves every request in this context.
+  [[nodiscard]] scoped_refptr<network::SharedURLLoaderFactory>
+  GetFileURLLoaderFactory();
 
   base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -242,6 +247,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // Shared URLLoaderFactory.
   scoped_refptr<content::ReconnectableURLLoaderFactory> url_loader_factory_;
+  // Created on first use by GetFileURLLoaderFactory().
+  scoped_refptr<network::SharedURLLoaderFactory> file_url_loader_factory_;
   scoped_refptr<InterceptState> intercept_state_;
 
   network::mojom::SSLConfigPtr ssl_config_;

@@ -76,7 +76,7 @@ index 0e9bffaf0203d39d9fb82d717f36b449d5566181..5cf3d98f4679a252290a34c15491a8a4
    auto it = accelerator_map_.begin();
    while (it != accelerator_map_.end()) {
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-index 0712e324023e5db9e7a550c1d0167cea39292860..4f996dce458e50cc00f556f7da5681d926c8dec8 100644
+index 83d7381eea7f2a68bd947d2ca5aa343d07c2463e..a62e0154c2cc1de10c6b6902b8b5b124efda8e8e 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 @@ -13,6 +13,7 @@

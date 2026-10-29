@@ -5133,7 +5133,7 @@ void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("start", &start_adjust);
-    dict.Get("matchCase", &end_adjust);
+    dict.Get("end", &end_adjust);
   }
 
   // The selection menu is a Chrome-specific piece of UI.
@@ -6168,7 +6168,7 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
   const base::FilePath* path = nullptr;
 
   if (!save_as)
-    base::FindOrNull(saved_files_, url);
+    path = base::FindOrNull(saved_files_, url);
 
   if (path == nullptr) {
     file_dialog::DialogSettings settings;
