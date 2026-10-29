@@ -1682,6 +1682,7 @@ describe('webContents module', () => {
     let getCalls: () => Promise<any[]>;
     let clearCalls: () => Promise<void>;
     let queueResponse: (uris: string[]) => Promise<void>;
+    let clearQueuedResponses: () => Promise<void>;
 
     beforeAll(async () => {
       bus = dbus.sessionBus();
@@ -1691,13 +1692,17 @@ describe('webContents module', () => {
       getCalls = promisify(mock.GetCalls.bind(mock));
       clearCalls = promisify(mock.ClearCalls.bind(mock));
       queueResponse = promisify(mock.QueueResponse.bind(mock));
+      clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
     });
 
     afterAll(() => {
       bus?.connection.end();
     });
 
-    afterEach(closeAllWindows);
+    afterEach(async () => {
+      await closeAllWindows();
+      await clearQueuedResponses();
+    });
 
     it('reuses the saved path for a repeat save of the same URL', async () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-save-'));
