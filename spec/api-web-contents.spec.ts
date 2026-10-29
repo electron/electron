@@ -1701,11 +1701,17 @@ describe('webContents module', () => {
 
     afterEach(closeAllWindows);
 
-    it('reuses the saved path for a repeat save of the same URL', async () => {
+    const makeTempDir = () => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-save-'));
       defer(() => fs.rmSync(dir, { recursive: true, force: true }));
-      const target = path.join(dir, 'saved.txt');
+      return dir;
+    };
 
+    const readFile = (file: string) => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null);
+
+    // Opens DevTools for a new window and records every savedURL and
+    // canceledSaveURL that the embedder sends to the frontend.
+    const openDevTools = async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
@@ -1713,28 +1719,93 @@ describe('webContents module', () => {
       await devtoolsOpened;
       const devtools = w.webContents.devToolsWebContents!;
       await waitUntil(() => devtools.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+      await devtools.executeJavaScript(`
+        window.saveEvents = [];
+        for (const name of ['savedURL', 'canceledSaveURL']) {
+          const original = DevToolsAPI[name];
+          DevToolsAPI[name] = function (...args) {
+            window.saveEvents.push([name, ...args]);
+            return original?.apply(this, args);
+          };
+        }
+        true;
+      `);
+      return devtools;
+    };
 
-      const save = (content: string) =>
-        devtools.executeJavaScript(
-          `DevToolsAPI.sendMessageToEmbedder('save', ['devtools-save-test.txt', ${JSON.stringify(content)}, false, false], null)`
-        );
-      const readTarget = () => (fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : null);
+    const save = (devtools: WebContents, saveURL: string, content: string, saveAs = false) =>
+      devtools.executeJavaScript(
+        `DevToolsAPI.sendMessageToEmbedder('save', [${JSON.stringify(saveURL)}, ${JSON.stringify(content)}, ${saveAs}, false], null)`
+      );
+
+    const saveEvents = (devtools: WebContents): Promise<string[][]> => devtools.executeJavaScript('window.saveEvents');
+
+    const saveFileCalls = async () => (await getCalls()).filter((call) => call[1] === 'SaveFile');
+
+    it('reuses the saved path for a repeat save of the same URL', async () => {
+      const target = path.join(makeTempDir(), 'saved.txt');
+      const devtools = await openDevTools();
 
       await clearCalls();
       await queueResponse([url.pathToFileURL(target).href]);
       defer(() => clearQueuedResponses());
 
       // The first save has no stored path, so it asks the portal for one.
-      await save('first');
-      await waitUntil(() => readTarget() === 'first');
+      await save(devtools, 'devtools-save-test.txt', 'first');
+      await waitUntil(() => readFile(target) === 'first');
 
       // The second save of the same URL must write to the stored path
       // without asking again.
-      await save('second');
-      await waitUntil(() => readTarget() === 'second');
+      await save(devtools, 'devtools-save-test.txt', 'second');
+      await waitUntil(() => readFile(target) === 'second');
 
-      const saveCalls = (await getCalls()).filter((call) => call[1] === 'SaveFile');
-      expect(saveCalls).toHaveLength(1);
+      expect(await saveFileCalls()).toHaveLength(1);
+    });
+
+    it('asks again after a cancelled save of the same URL', async () => {
+      const saveURL = 'devtools-cancel-test.txt';
+      const target = path.join(makeTempDir(), 'saved.txt');
+      const devtools = await openDevTools();
+
+      await clearCalls();
+      defer(() => clearQueuedResponses());
+
+      // Nothing is queued, so the portal cancels the first save.
+      await save(devtools, saveURL, 'first');
+      await waitUntil(async () => (await saveEvents(devtools)).length === 1);
+      expect(await saveEvents(devtools)).toEqual([['canceledSaveURL', saveURL]]);
+
+      // The cancel must not leave a stored path behind, so the next save
+      // asks the portal again and writes to the path it returns.
+      await queueResponse([url.pathToFileURL(target).href]);
+      await save(devtools, saveURL, 'second');
+      await waitUntil(() => readFile(target) === 'second');
+
+      expect(await saveFileCalls()).toHaveLength(2);
+    });
+
+    it('writes a "Save as" of an already saved URL to the newly picked path', async () => {
+      const saveURL = 'devtools-save-as-test.txt';
+      const dir = makeTempDir();
+      const first = path.join(dir, 'first.txt');
+      const second = path.join(dir, 'second.txt');
+      const devtools = await openDevTools();
+
+      await clearCalls();
+      defer(() => clearQueuedResponses());
+
+      await queueResponse([url.pathToFileURL(first).href]);
+      await save(devtools, saveURL, 'old');
+      await waitUntil(() => readFile(first) === 'old');
+
+      await queueResponse([url.pathToFileURL(second).href]);
+      await save(devtools, saveURL, 'new', true);
+      await waitUntil(async () => (await saveEvents(devtools)).length === 2);
+      expect((await saveEvents(devtools))[1]).toEqual(['savedURL', saveURL, second]);
+      await waitUntil(() => readFile(second) === 'new');
+
+      expect(readFile(first)).toBe('old');
+      expect(await saveFileCalls()).toHaveLength(2);
     });
   });
 
