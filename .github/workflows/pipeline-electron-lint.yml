@@ -54,17 +54,65 @@ jobs:
           exit 1
         fi
         echo "revision=$chromium_revision" >> "$GITHUB_OUTPUT"
-    - name: Download GN Binary
+    # Chromium's DEPS and buildtools/DEPS only change on a Chromium roll, so
+    # cache them per revision instead of hitting the shared API limit every run.
+    - name: Restore Chromium DEPS Cache
+      id: restore-chromium-deps
+      uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      with:
+        path: |
+          src/DEPS
+          src/buildtools/DEPS
+        key: lint-chromium-deps-${{ steps.get-chromium-revision.outputs.revision }}
+    - name: Fetch Chromium DEPS
+      if: steps.restore-chromium-deps.outputs.cache-hit != 'true'
       shell: bash
       env:
         chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
         GITHUB_TOKEN: ${{ github.token }}
       run: |
-        curl -fsSL --retry 3 \
-          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-          -H "Accept: application/vnd.github.raw+json" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          -o src/DEPS "https://api.github.com/repos/chromium/chromium/contents/DEPS?ref=refs/tags/${chromium_revision}"
+        fetch_chromium_file() {
+          local path=$1 out=$2
+          if curl -fsSL --retry 3 --retry-delay 15 --retry-max-time 90 \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github.raw+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -o "$out" "https://api.github.com/repos/chromium/chromium/contents/${path}?ref=refs/tags/${chromium_revision}"; then
+            return 0
+          fi
+          echo "::warning::GitHub contents API fetch of ${path} failed, falling back to chromium.googlesource.com"
+          local cookie_args=()
+          if [[ -f ~/.gitcookies ]]; then
+            cookie_args=(-b ~/.gitcookies)
+          fi
+          curl -fsSL --retry 3 --retry-delay 15 "${cookie_args[@]}" \
+            "https://chromium.googlesource.com/chromium/src/+/refs/tags/${chromium_revision}/${path}?format=TEXT" | base64 -d > "$out"
+        }
+
+        mkdir -p src/buildtools
+        fetch_chromium_file DEPS src/DEPS
+        fetch_chromium_file buildtools/DEPS src/buildtools/DEPS
+
+        # Make sure an error body never reaches gclient or the cache.
+        if ! grep -q "'gn_version'" src/DEPS; then
+          echo "::error::src/DEPS for ${chromium_revision} does not look like a Chromium DEPS file"
+          exit 1
+        fi
+        if ! grep -q "'linux64-format'" src/buildtools/DEPS; then
+          echo "::error::src/buildtools/DEPS for ${chromium_revision} does not look like a Chromium buildtools DEPS file"
+          exit 1
+        fi
+    - name: Save Chromium DEPS Cache
+      if: steps.restore-chromium-deps.outputs.cache-hit != 'true'
+      uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      with:
+        path: |
+          src/DEPS
+          src/buildtools/DEPS
+        key: ${{ steps.restore-chromium-deps.outputs.cache-primary-key }}
+    - name: Download GN Binary
+      shell: bash
+      run: |
         gn_version=$(e depot-tools gclient getdep --deps-file=src/DEPS --var=gn_version | tail -1)
 
         e d cipd ensure -ensure-file - -root . <<-CIPD
@@ -74,17 +122,7 @@ jobs:
         CIPD
     - name: Download clang-format Binary
       shell: bash
-      env:
-        chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
-        GITHUB_TOKEN: ${{ github.token }}
       run: |
-        mkdir -p src/buildtools
-        curl -fsSL --retry 3 \
-          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-          -H "Accept: application/vnd.github.raw+json" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          -o src/buildtools/DEPS "https://api.github.com/repos/chromium/chromium/contents/buildtools/DEPS?ref=refs/tags/${chromium_revision}"
-
         e d gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
     - name: Add problem matchers
       shell: bash
