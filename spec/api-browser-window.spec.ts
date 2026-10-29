@@ -48,6 +48,7 @@ import {
   ifit,
   ifdescribe,
   defer,
+  focusWebContents,
   listen,
   waitUntil,
   isWayland,
@@ -7429,6 +7430,13 @@ describe('BrowserWindow module', () => {
       it('correctly remembers state prior to HTML fullscreen transition', async () => {
         const w = new BrowserWindow();
         await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        // On the Windows CI hosts a foreign window can cover this one, and
+        // Chromium's native occlusion tracker then hides the page. A hidden
+        // page doesn't draw, and requestFullscreen() and exitFullscreen() only
+        // settle once the page has drawn at the window's new size. Keep it
+        // drawing while covered; unlike the constructor option, this also
+        // un-hides a hidden page.
+        w.webContents.setBackgroundThrottling(false);
 
         // This should do nothing.
         w.setFullScreen(false);
@@ -7442,6 +7450,9 @@ describe('BrowserWindow module', () => {
             menuBarVisible
           );
 
+          // Shortly after leaving fullscreen, Chromium refuses requestFullscreen()
+          // from an unfocused page, and a foreign window can take focus.
+          await focusWebContents(w.webContents);
           const enterFullScreen = once(w, 'enter-full-screen');
           await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
           await enterFullScreen;
