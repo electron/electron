@@ -49,7 +49,7 @@ const getOrCreateArchive = (archivePath: string) => {
   }
 };
 
-const { getValidatedPath, getOptions, getDirent, getStatsFromBinding } =
+const { getValidatedPath, getOptions, getDirent, getStatsFromBinding, stringToFlags } =
   require('internal/fs/utils') as typeof import('@node/lib/internal/fs/utils');
 
 const { assignFunctionName } = require('internal/util') as typeof import('@node/lib/internal/util');
@@ -2045,6 +2045,65 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     throw createError(AsarError.NO_ACCESS, { asarPath, filePath, syscall: 'open' });
   };
 
+  // fs.writeFile() and fsPromises.writeFile() open, write and close a path in
+  // one native job instead of going through binding.open(); give it the same
+  // checks as open() so writes into archives fail with EACCES and writes to
+  // unpacked entries land in the real file.
+  const resolveWriteFilePath = (pathArgument: any, flags: number): { path: any } | { error: Error } => {
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return { path: pathArgument };
+    const { asarPath, filePath } = pathInfo;
+    try {
+      const opened = openAsarEntry(asarPath, filePath, flags, 'open', false);
+      if ('unpackedPath' in opened) return { path: opened.unpackedPath };
+      // Only reachable with read-only flags, which writeFile never uses.
+      opened.reader.dispose();
+      return { error: createError(AsarError.NO_ACCESS, { asarPath, filePath, syscall: 'open' }) };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
+  // Reports an open failure the way the native job reports one: through
+  // `ondone`, asynchronously.
+  class FailedWriteFileJob {
+    ondone: ((error: Error) => void) | undefined;
+    constructor(private readonly failure: Error) {}
+    run() {
+      process.nextTick(() => this.ondone!.call(this, this.failure));
+    }
+  }
+
+  const OriginalWriteFileJob = binding.WriteFileJob;
+  binding.WriteFileJob = function WriteFileJob(pathArgument: any, flags: number, mode: number, data: any) {
+    const target = resolveWriteFilePath(pathArgument, flags);
+    if ('error' in target) return new FailedWriteFileJob(target.error);
+    const job = new OriginalWriteFileJob(target.path, flags, mode, data);
+    if (target.path !== pathArgument) {
+      // run() takes the path again for the permission model's check.
+      const { run } = job;
+      job.run = () => run.call(job, target.path);
+    }
+    return job;
+  };
+
+  // lib/fs.js captured the native WriteFileJob before the override above, so
+  // route fs.writeFile() (and fs.appendFile(), which calls it) for archive
+  // paths here.
+  const { writeFile } = fs;
+  fs.writeFile = function (pathArgument: any, data: any, options: any, callback: any) {
+    if (!splitPath(pathArgument).isAsar) return writeFile.apply(this, arguments);
+    const cb = typeof options === 'function' ? options : callback;
+    validateFunction(cb, 'cb')!;
+    const { flag } = getOptions(typeof options === 'function' ? null : options, { flag: 'w' });
+    const target = resolveWriteFilePath(pathArgument, stringToFlags(flag || 'w', 'options.flag'));
+    if ('error' in target) {
+      process.nextTick(cb, target.error);
+      return;
+    }
+    return writeFile.call(this, target.path, data, options, callback);
+  };
+
   // The sentinel descriptor is a write-only null device: reads through
   // anything but fs fail (EBADF), but writes, truncation and metadata changes
   // would quietly succeed against the null device.  Archives are read-only,
@@ -2303,10 +2362,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   //
-  // fs.cpSync from an archive.  Node's cp() (async) is written on top of
-  // fs.promises and works against the overrides above; cpSync() calls into
-  // native helpers that resolve paths themselves, so those are given
-  // archive-aware equivalents.
+  // fs.cp / fs.cpSync from an archive.  cpSync() and, for a destination that
+  // does not exist yet, cp() call into native helpers that resolve paths
+  // themselves, so those are given archive-aware equivalents; the rest of
+  // cp() is written on top of fs.promises and works against the overrides
+  // above.
   //
 
   const { ERR_FS_CP_EINVAL, ERR_FS_CP_DIR_TO_NON_DIR, ERR_FS_CP_NON_DIR_TO_DIR, ERR_FS_EISDIR, ERR_FS_CP_EEXIST } =
@@ -2383,16 +2443,18 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
   };
 
-  binding.cpSyncCopyDir = function (...args: any[]) {
-    const src = args[0];
-    const dest = args[1];
-    const force = args[2];
-    const dereference = args[3];
-    const errorOnExist = args[4];
-    const verbatimSymlinks = args[5];
-    const preserveTimestamps = args[6];
-    if (!splitPath(src).isAsar) return originalBinding.cpSyncCopyDir.apply(undefined, args);
+  interface AsarCopyDirOptions {
+    force: boolean;
+    dereference: boolean;
+    errorOnExist: boolean;
+    verbatimSymlinks: boolean;
+    preserveTimestamps: boolean;
+    mode?: number;
+  }
 
+  // Copies a directory tree out of an archive through the overrides above.
+  const copyAsarDirSync = (src: string, dest: string, options: AsarCopyDirOptions) => {
+    const { force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps, mode } = options;
     const copyDir = (srcDir: string, destDir: string) => {
       fs.mkdirSync(destDir, { recursive: true });
       for (const dirent of fs.readdirSync(srcDir, { withFileTypes: true }) as Dirent[]) {
@@ -2437,14 +2499,61 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
           }
           fs.unlinkSync(destItem);
         }
-        fs.copyFileSync(srcItem, destItem);
+        fs.copyFileSync(srcItem, destItem, mode);
         if (preserveTimestamps) {
           const srcStat = fs.statSync(srcItem);
           fs.utimesSync(destItem, srcStat.atime, srcStat.mtime);
         }
       }
+      // Like node's native walk, stamp each directory once it is filled.
+      if (preserveTimestamps) {
+        const srcStat = fs.statSync(srcDir);
+        fs.utimesSync(destDir, srcStat.atime, srcStat.mtime);
+      }
     };
     copyDir(src, dest);
+  };
+
+  binding.cpSyncCopyDir = function (...args: any[]) {
+    const src = args[0];
+    const dest = args[1];
+    if (!splitPath(src).isAsar) return originalBinding.cpSyncCopyDir.apply(undefined, args);
+    copyAsarDirSync(src, dest, {
+      force: args[2],
+      dereference: args[3],
+      errorOnExist: args[4],
+      verbatimSymlinks: args[5],
+      preserveTimestamps: args[6]
+    });
+  };
+
+  // fs.cp() and fsPromises.cp() copy a directory into a new destination with
+  // one native job that reads the source tree itself; copy trees out of
+  // archives with the walk above instead, reporting through `ondone` like the
+  // native job.
+  class AsarCpDirJob {
+    ondone: ((error: Error | null) => void) | undefined;
+    constructor(private readonly copy: () => void) {}
+    run() {
+      process.nextTick(() => {
+        let error: Error | null = null;
+        try {
+          this.copy();
+        } catch (e) {
+          error = e as Error;
+        }
+        this.ondone!.call(this, error);
+      });
+    }
+  }
+
+  const OriginalCpDirJob = binding.CpDirJob;
+  binding.CpDirJob = function CpDirJob(...args: any[]) {
+    const [src, dest, force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps, mode] = args;
+    if (!splitPath(src).isAsar) return new OriginalCpDirJob(...args);
+    return new AsarCpDirJob(() =>
+      copyAsarDirSync(src, dest, { force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps, mode })
+    );
   };
 
   // Native modules and child processes need a real file on disk, so these
