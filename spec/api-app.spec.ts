@@ -2642,38 +2642,77 @@ describe('app module', () => {
     });
 
     it('affects dns lookup behavior', async () => {
-      // 1. resolve a domain name to check that things are working
-      await new Promise((resolve, reject) => {
-        electronNet
-          .request({
-            method: 'HEAD',
-            url: 'https://www.electronjs.org'
-          })
-          .on('response', resolve)
-          .on('error', reject)
-          .end();
+      const knownHost = 'configure-host-resolver.electron-spec.test';
+      // Minimal RFC 8484 DoH server: answers every A query with 127.0.0.1.
+      // It must not return NXDOMAIN for other names, because Chromium probes
+      // DoH servers with a query for www.gstatic.com and a NXDOMAIN probe
+      // response trips a DCHECK in the network service.
+      const dohServer = https.createServer(
+        {
+          key: fs.readFileSync(path.join(certPath, 'server.key')),
+          cert: fs.readFileSync(path.join(certPath, 'server.pem'))
+        },
+        async (req, res) => {
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk);
+          const query = Buffer.concat(chunks);
+          // Skip over the question name to its terminating zero-length label.
+          let offset = 12;
+          while (query[offset] !== 0) offset += query[offset] + 1;
+          const qtype = query.readUInt16BE(offset + 1);
+          const header = Buffer.alloc(12);
+          header.writeUInt16BE(query.readUInt16BE(0), 0);
+          header.writeUInt16BE(0x8180, 2);
+          header.writeUInt16BE(1, 4);
+          const answers: Buffer[] = [];
+          if (qtype === 1) {
+            header.writeUInt16BE(1, 6);
+            // Name pointer to the question, type A, class IN, TTL 60, 127.0.0.1.
+            answers.push(Buffer.from([0xc0, 0x0c, 0, 1, 0, 1, 0, 0, 0, 60, 0, 4, 127, 0, 0, 1]));
+          }
+          res.writeHead(200, { 'Content-Type': 'application/dns-message' });
+          res.end(Buffer.concat([header, query.subarray(12, offset + 5), ...answers]));
+        }
+      );
+      const { port: dohPort } = await listen(dohServer);
+      defer(async () => {
+        dohServer.closeAllConnections();
+        await new Promise((resolve) => dohServer.close(resolve));
       });
+      const server = http.createServer((req, res) => res.end('ok'));
+      const { port } = await listen(server);
+      defer(async () => {
+        server.closeAllConnections();
+        await new Promise((resolve) => server.close(resolve));
+      });
+      // The DoH server uses the self-signed fixture certificate.
+      session.defaultSession.setCertificateVerifyProc((req, cb) => cb(0));
+      defer(() => session.defaultSession.setCertificateVerifyProc(null));
+
+      const request = (host: string) =>
+        new Promise((resolve, reject) => {
+          electronNet
+            .request({ method: 'HEAD', url: `http://${host}:${port}/` })
+            .on('response', resolve)
+            .on('error', reject)
+            .end();
+        });
+
+      // 1. resolve a name that only the local DoH server knows about
+      app.configureHostResolver({
+        secureDnsMode: 'secure',
+        secureDnsServers: [`https://127.0.0.1:${dohPort}/dns-query`]
+      });
+      await expect(request(knownHost)).resolves.toMatchObject({ statusCode: 200 });
       // 2. change the host resolver configuration to something that will
       // always fail
       app.configureHostResolver({
         secureDnsMode: 'secure',
         secureDnsServers: ['https://127.0.0.1:1234']
       });
-      // 3. check that resolving domain names now fails
-      await expect(
-        new Promise((resolve, reject) => {
-          electronNet
-            .request({
-              method: 'HEAD',
-              // Needs to be a slightly different domain to above, otherwise the
-              // response will come from the cache.
-              url: 'https://electronjs.org'
-            })
-            .on('response', resolve)
-            .on('error', reject)
-            .end();
-        })
-      ).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
+      // 3. check that resolving domain names now fails. Use a different name
+      // so the result of step 1 cannot come from the host cache.
+      await expect(request(`other.${knownHost}`)).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
     });
   });
 
