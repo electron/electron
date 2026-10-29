@@ -137,12 +137,11 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 
 }  // namespace
 
-// This class stores a base::WeakPtr<electron::ElectronMenuModel> as an
-// Objective-C object, which allows it to be stored in the representedObject
-// field of an NSMenuItem. It also records what Electron last applied to that
-// item, so that refreshing it doesn't undo AppKit's changes.
-@interface WeakPtrToElectronMenuModelAsNSObject : NSObject
-+ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model;
+// Attached to each NSMenuItem as its representedObject. It points back to the
+// item's menu model (or is null once the model is gone) and remembers the
+// title and image Electron last set, so a refresh won't undo AppKit's changes.
+@interface ElectronMenuItemState : NSObject
++ (instancetype)stateWithModel:(electron::ElectronMenuModel*)model;
 + (electron::ElectronMenuModel*)getFrom:(id)instance;
 - (instancetype)initWithModel:(electron::ElectronMenuModel*)model;
 - (electron::ElectronMenuModel*)menuModel;
@@ -157,20 +156,20 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 @property(nonatomic) BOOL hasAppliedImage;
 @end
 
-@implementation WeakPtrToElectronMenuModelAsNSObject {
+@implementation ElectronMenuItemState {
   base::WeakPtr<electron::ElectronMenuModel> _model;
 }
 
 @synthesize appliedTitle;
 @synthesize hasAppliedImage;
 
-+ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model {
-  return [[WeakPtrToElectronMenuModelAsNSObject alloc] initWithModel:model];
++ (instancetype)stateWithModel:(electron::ElectronMenuModel*)model {
+  return [[ElectronMenuItemState alloc] initWithModel:model];
 }
 
 + (electron::ElectronMenuModel*)getFrom:(id)instance {
-  return [base::apple::ObjCCastStrict<WeakPtrToElectronMenuModelAsNSObject>(
-      instance) menuModel];
+  return
+      [base::apple::ObjCCastStrict<ElectronMenuItemState>(instance) menuModel];
 }
 
 - (instancetype)initWithModel:(electron::ElectronMenuModel*)model {
@@ -446,8 +445,7 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     submenu.title = item.title;
     item.submenu = submenu;
     item.tag = index;
-    item.representedObject =
-        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model];
+    item.representedObject = [ElectronMenuItemState stateWithModel:model];
     submenu.delegate = self;
 
     // Set submenu's role.
@@ -464,8 +462,7 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     // model. Setting the target to |self| allows this class to participate
     // in validation of the menu items.
     item.tag = index;
-    item.representedObject =
-        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model];
+    item.representedObject = [ElectronMenuItemState stateWithModel:model];
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
@@ -515,9 +512,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 
   // Record what was applied above. Items without a model (e.g. Services) have
   // no state and are never refreshed.
-  WeakPtrToElectronMenuModelAsNSObject* state =
-      base::apple::ObjCCast<WeakPtrToElectronMenuModelAsNSObject>(
-          item.representedObject);
+  ElectronMenuItemState* state =
+      base::apple::ObjCCast<ElectronMenuItemState>(item.representedObject);
   state.appliedTitle = label;
   state.hasAppliedImage = icon.IsImage();
 
@@ -533,9 +529,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 }
 
 - (void)applyStateToMenuItem:(NSMenuItem*)item {
-  WeakPtrToElectronMenuModelAsNSObject* state =
-      base::apple::ObjCCast<WeakPtrToElectronMenuModelAsNSObject>(
-          item.representedObject);
+  ElectronMenuItemState* state =
+      base::apple::ObjCCast<ElectronMenuItemState>(item.representedObject);
   electron::ElectronMenuModel* model = [state menuModel];
   if (!model)
     return;
@@ -629,7 +624,7 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 - (void)itemSelected:(id)sender {
   NSInteger modelIndex = [sender tag];
   electron::ElectronMenuModel* model =
-      [WeakPtrToElectronMenuModelAsNSObject getFrom:[sender representedObject]];
+      [ElectronMenuItemState getFrom:[sender representedObject]];
   DCHECK(model);
   if (model) {
     NSEvent* event = [NSApp currentEvent];
