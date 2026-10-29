@@ -127,10 +127,17 @@ jobs:
           echo "::warning::Could not save Chromium DEPS for ${chromium_revision} to $cache_dir"
           rm -f "$cached_deps.$upload_suffix" "$cached_buildtools_deps.$upload_suffix"
         fi
+    # The DEPS files above may come from the shared cache, which any PR's
+    # workflow can write to, so treat them as untrusted: they can only pick
+    # which genuine Google-built gn and clang-format get downloaded.
     - name: Download GN Binary
       shell: bash
       run: |
         gn_version=$(e depot-tools gclient getdep --deps-file=src/DEPS --var=gn_version | tail -1)
+        if [[ ! "$gn_version" =~ ^git_revision:[0-9a-f]{40}$ ]]; then
+          echo "::error::Invalid gn_version in Chromium DEPS: $gn_version"
+          exit 1
+        fi
 
         e d cipd ensure -ensure-file - -root . <<-CIPD
         \$ServiceURL https://chrome-infra-packages.appspot.com/
@@ -140,7 +147,39 @@ jobs:
     - name: Download clang-format Binary
       shell: bash
       run: |
-        e d gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
+        # Don't gclient sync the possibly-cached buildtools/DEPS. Read only the
+        # Linux clang-format object name, fetch it from Chromium's bucket, and
+        # check its SHA-1 matches the name (the bucket is content-addressed).
+        clang_format_objects=$(e depot-tools gclient getdep --deps-file=src/buildtools/DEPS --revision=linux64-format | tail -1)
+        clang_format_object=$(python3 -I -c '
+        import ast, re, sys
+        try:
+            objects = ast.literal_eval(sys.argv[1])
+        except (ValueError, SyntaxError):
+            sys.exit("linux64-format in buildtools/DEPS is not a GCS dependency")
+        if not (isinstance(objects, list) and len(objects) == 1 and isinstance(objects[0], dict)):
+            sys.exit("linux64-format in buildtools/DEPS must have exactly one object")
+        name, sha256 = objects[0].get("object_name"), objects[0].get("sha256sum")
+        if not (isinstance(name, str) and re.fullmatch(r"[0-9a-f]{40}", name)):
+            sys.exit(f"Invalid clang-format object_name: {name!r}")
+        if not (isinstance(sha256, str) and re.fullmatch(r"[0-9a-f]{64}", sha256)):
+            sys.exit(f"Invalid clang-format sha256sum: {sha256!r}")
+        print(name, sha256)
+        ' "$clang_format_objects")
+        read -r object_name sha256sum <<< "$clang_format_object"
+
+        clang_format_dir=src/buildtools/linux64-format
+        mkdir -p "$clang_format_dir"
+        curl -fsSL --retry 3 --retry-delay 15 -o "$clang_format_dir/clang-format.download" \
+          "https://storage.googleapis.com/chromium-clang-format/${object_name}"
+        if ! echo "${object_name}  $clang_format_dir/clang-format.download" | sha1sum --check --status \
+          || ! echo "${sha256sum}  $clang_format_dir/clang-format.download" | sha256sum --check --status; then
+          echo "::error::Downloaded clang-format ${object_name} does not match its expected hashes"
+          rm -f "$clang_format_dir/clang-format.download"
+          exit 1
+        fi
+        chmod +x "$clang_format_dir/clang-format.download"
+        mv -f "$clang_format_dir/clang-format.download" "$clang_format_dir/clang-format"
     - name: Add problem matchers
       shell: bash
       run: |
