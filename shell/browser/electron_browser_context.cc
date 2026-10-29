@@ -755,7 +755,7 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
 
 namespace {
 
-// TYPE_NONE opens a picker that offers both windows and screens.
+// TYPE_NONE opens a picker that offers windows, applications and screens.
 content::DesktopMediaID::Type PickerTypeForRequest(
     const content::MediaStreamRequest& request) {
   switch (request.preferred_display_surface) {
@@ -826,6 +826,8 @@ class SystemPickerRequest
           blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
       return;
     }
+    // Only a screen pick has a display id; an application pick counts as a
+    // window, the closest displaySurface.
     picked_type_ = type_ != content::DesktopMediaID::TYPE_NONE ? type_
                    : source.display_id != webrtc::kInvalidDisplayId
                        ? content::DesktopMediaID::TYPE_SCREEN

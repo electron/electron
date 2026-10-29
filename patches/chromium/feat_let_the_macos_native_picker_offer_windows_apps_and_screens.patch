@@ -1,7 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: George Xu <george.xu@slack-corp.com>
 Date: Thu, 29 Oct 2026 15:14:16 -0700
-Subject: feat: let the macOS native picker offer windows and screens together
+Subject: feat: let the macOS native picker offer windows, apps and screens
+ together
 
 NativeScreenCapturePickerMac::Open() takes TYPE_SCREEN or TYPE_WINDOW
 and presents a picker for that kind only, because Chrome asks the user
@@ -10,14 +11,16 @@ of its own, so a page that doesn't set displaySurface would only ever
 be offered screens.
 
 Accept TYPE_NONE as "no preference" and present a picker that allows a
-single window or a single display. The caller tells the two apart from
-the picked Source's display_id, which macOS 15.2+ reports.
+single window, application or display. The caller tells a screen apart
+from the picked Source's display_id, which macOS 15.2+ reports. An
+application pick is a display filter that lists its application, so only
+report a display id when no application is included.
 
 This could be upstreamed if Chrome ever wants a combined picker, but
 Chrome itself has no caller for it today.
 
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index 1fd5abc969b6bf85c9b519f20334748d19c8a4cb..974b62f48c4e6261a4d64ab9267473a64aff33f9 100644
+index 1fd5abc969b6bf85c9b519f20334748d19c8a4cb..b4a0785991360b4d579876abe0d9e3733e430bdc 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
 @@ -414,7 +414,8 @@ void API_AVAILABLE(macos(14.0))
@@ -30,21 +33,34 @@ index 1fd5abc969b6bf85c9b519f20334748d19c8a4cb..974b62f48c4e6261a4d64ab9267473a6
    if (@available(macOS 14.0, *)) {
      if (picker_callback_) {
        // The system picker is already showing for another request; reject this
-@@ -479,7 +480,16 @@ void API_AVAILABLE(macos(14.0))
+@@ -479,7 +480,17 @@ void API_AVAILABLE(macos(14.0))
      }
      config.excludedWindowIDs = excluded_window_ids;
      NSNumber* max_stream_count = @(kMaxContentShareCountValue.Get());
 -    if (type == DesktopMediaID::Type::TYPE_SCREEN) {
 +    if (type == DesktopMediaID::Type::TYPE_NONE) {
-+      // No preference: offer both a single window and a single display.
++      // No preference: offer a single window, application or display.
 +      config.allowedPickerModes = SCContentSharingPickerModeSingleWindow |
++                                  SCContentSharingPickerModeSingleApplication |
 +                                  SCContentSharingPickerModeSingleDisplay;
 +      picker.defaultConfiguration = config;
 +      picker.maximumStreamCount = max_stream_count;
 +      [picker present];
-+      VLOG(1) << "NSCPM::Open: Show window-or-screen picker for source id = "
++      VLOG(1) << "NSCPM::Open: Show combined picker for source id = "
 +              << active_picker_source_id_;
 +    } else if (type == DesktopMediaID::Type::TYPE_SCREEN) {
        config.allowedPickerModes = SCContentSharingPickerModeSingleDisplay;
        picker.defaultConfiguration = config;
        picker.maximumStreamCount = max_stream_count;
+@@ -614,7 +625,10 @@ void API_AVAILABLE(macos(14.0))
+   Source source;
+   source.id = session_id;
+   if (@available(macOS 15.2, *)) {
+-    if (filter && filter.includedDisplays.count > 0) {
++    // An application pick is a display filter that lists its application,
++    // so only report a display when no application is included.
++    if (filter && filter.includedDisplays.count > 0 &&
++        filter.includedApplications.count == 0) {
+       source.display_id = filter.includedDisplays.firstObject.displayID;
+     }
+   }
