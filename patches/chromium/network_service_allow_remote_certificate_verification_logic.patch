@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 68d93ae1a6be2dc681d0ff51f7a3946dbb6d8269..488552051cbe00ce6374581481f5fb3d4fedaa13 100644
+index fd918ccbcb91d7230ec83c988e9a98475b4df944..6becf1c78329f8f65be79cfe259ce3d8aa4243b2 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -194,6 +194,11 @@
@@ -22,7 +22,7 @@ index 68d93ae1a6be2dc681d0ff51f7a3946dbb6d8269..488552051cbe00ce6374581481f5fb3d
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -670,6 +675,132 @@ void RemoveInvalidationFilterCallback(
+@@ -664,6 +669,132 @@ void RemoveInvalidationFilterCallback(
  
  }  // namespace
  
@@ -155,7 +155,7 @@ index 68d93ae1a6be2dc681d0ff51f7a3946dbb6d8269..488552051cbe00ce6374581481f5fb3d
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1134,6 +1265,12 @@ void NetworkContext::CreateSocketFactory(
+@@ -1125,6 +1256,12 @@ void NetworkContext::CreateSocketFactory(
    socket_factory_receivers_.Add(socket_factory_.get(), std::move(receiver));
  }
  
@@ -168,7 +168,7 @@ index 68d93ae1a6be2dc681d0ff51f7a3946dbb6d8269..488552051cbe00ce6374581481f5fb3d
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2955,6 +3092,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2946,6 +3083,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));

@@ -79,10 +79,10 @@ index 016e12288ec354905f0b172a7f8b6d8ecdff8346..ad387eaf0b1d8e07593419378315ded7
                          RequestMouseLockCallback response) override;
    // Notifies touch action filter and touch event queue whether there are
 diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
-index f6a35a61c842ef4601c65ad28ac80f6af93c26ea..32d25d03fc5e5cb0aca3271eaa51bc0349b70878 100644
+index cac25fd94d17b7005a23fad857d468910bff972a..b1fa5362c3ff3b7adbcf7e2d42fa74985f83ebe1 100644
 --- a/components/input/render_input_router.cc
 +++ b/components/input/render_input_router.cc
-@@ -301,11 +301,13 @@ void RenderInputRouter::SetAutoscrollSelectionActiveInMainFrame(
+@@ -325,11 +325,13 @@ void RenderInputRouter::SetAutoscrollSelectionActiveInMainFrame(
  }
  
  void RenderInputRouter::RequestMouseLock(
@@ -98,7 +98,7 @@ index f6a35a61c842ef4601c65ad28ac80f6af93c26ea..32d25d03fc5e5cb0aca3271eaa51bc03
  
  gfx::Size RenderInputRouter::GetRootWidgetViewportSize() {
 diff --git a/components/input/render_input_router.h b/components/input/render_input_router.h
-index 571b2bf8296a201e80efa496a34bee0e2984de08..9cf04c2f3a9d2fd5356c206c022cccadc8482116 100644
+index e5f9b1be4d0b10e9d3fcd7a48e19792a97851578..29d4b496512474f447a279c00652690d6a08be5d 100644
 --- a/components/input/render_input_router.h
 +++ b/components/input/render_input_router.h
 @@ -104,6 +104,7 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouter
@@ -306,10 +306,10 @@ index 1ff83218d9bc4ec2990c59bd79cc06e5d5fd8e85..6e7770af81bdbf476e7fa0b1eeb6b369
            pending_remote<blink.mojom.PointerLockContext>? context);
  };
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-index ea71406b084ce96cc5fc84b0cc4258cafb45afc4..fbc5ca14443e1ee2442de44e121d895b0b0eb69a 100644
+index 99c80b01017a7f94d9350df3a79ad19fc5d22656..387e262dc844b09a952fc249f8809afb1f62bc8c 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-@@ -3735,6 +3735,7 @@ void WebFrameWidgetImpl::CancelComposition() {
+@@ -3738,6 +3738,7 @@ void WebFrameWidgetImpl::CancelComposition() {
  }
  
  void WebFrameWidgetImpl::RequestMouseLock(
@@ -317,7 +317,7 @@ index ea71406b084ce96cc5fc84b0cc4258cafb45afc4..fbc5ca14443e1ee2442de44e121d895b
      bool has_transient_user_activation,
      bool request_unadjusted_movement,
      mojom::blink::WidgetInputHandlerHost::RequestMouseLockCallback callback) {
-@@ -3748,7 +3749,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
+@@ -3751,7 +3752,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
    // callback. It does share the same signature as the mojo definition
    // for simplicity.
    if (host) {
