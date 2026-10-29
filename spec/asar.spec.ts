@@ -3067,14 +3067,21 @@ describe('asar package', () => {
           const stale = fs.openSync(p, 'r');
           originalFs.closeSync(stale);
           let fd: number;
+          let handle: any;
           if (variant === 'sync') fd = fs.openSync(real, 'r');
           else if (variant === 'async') fd = await promisify(fs.open)(real, 'r');
-          else fd = (await fs.promises.open(real, 'r')).fd;
+          else {
+            handle = await fs.promises.open(real, 'r');
+            fd = handle.fd;
+          }
           const buffer = Buffer.alloc(17);
           expect(fs.readSync(fd, buffer, 0, 17, 0)).toBe(17);
           expect(buffer.toString()).toBe('real-file-content');
           expect(fs.fstatSync(fd).size).toBe(17);
-          if (variant !== 'handle') fs.closeSync(fd);
+          // Since Node.js 26 a FileHandle left for garbage collection to close
+          // is an uncaught error.
+          if (handle) await handle.close();
+          else fs.closeSync(fd);
           // A packed open that gets the same number again works too.
           const again = fs.openSync(p, 'r');
           expect(fs.readFileSync(again).toString()).toBe('file1\n');
