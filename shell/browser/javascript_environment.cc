@@ -211,6 +211,12 @@ const node::SnapshotData* NodeSnapshotForThisProcess() {
       []() -> const node::SnapshotData* {
     if (!electron::IsBrowserProcess() && !electron::IsUtilityProcess())
       return nullptr;
+    // --no-node-snapshot, as node::Start() honors it. Only ELECTRON_RUN_AS_NODE
+    // has parsed Node's options by now (shell/app/node_main.cc); the browser
+    // process and the node service parse them after creating their
+    // JavascriptEnvironment, so the option keeps its default (true) there.
+    if (!node::per_process::cli_options->node_snapshot)
+      return nullptr;
     const node::SnapshotData* embedded =
         node::SnapshotBuilder::GetEmbeddedSnapshotData();
     if (!embedded)
