@@ -41,6 +41,12 @@ on:
     # 8:43pm UTC daily. Nightlies usually publish between 2:30pm and 6pm UTC;
     # days without a new nightly are skipped.
     - cron: '43 20 * * *'
+  # TEMPORARY: example E2E run for review; remove before merge
+  pull_request:
+    paths:
+      - '.github/workflows/benchmarks.yml'
+      - '.github/workflows/pipeline-segment-benchmarks.yml'
+      - 'script/benchmarks/**'
 
 # No concurrency group: each run gets its own runner, and a group keeps only
 # one pending run, so queued bisect dispatches or a scheduled run waiting
@@ -77,7 +83,8 @@ jobs:
       container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
       candidate: ${{ inputs.candidate || '' }}
       baseline: ${{ inputs.baseline || '' }}
-      rounds: ${{ inputs.rounds || '10' }}
+      # TEMPORARY: example E2E run for review; remove before merge
+      rounds: ${{ inputs.rounds || (github.event_name == 'pull_request' && '3') || '10' }}
       suites: ${{ inputs.suites || 'loading,file_loading,speedometer,jetstream' }}
       upload-to-datadog: ${{ github.event_name == 'schedule' || inputs.upload-to-datadog == true }}
       skip-stale-nightly: ${{ github.event_name == 'schedule' }}
