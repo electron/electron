@@ -17,11 +17,11 @@ struct ColorProviderKey;
 namespace electron {
 
 // App-supplied colors for the selected (hovered or keyboard-focused) item of
-// Views menus. Unset values keep Chromium's defaults.
+// Views menus, set separately for light and dark mode. Unset values keep
+// Chromium's defaults for that mode.
 struct MenuHighlightColors {
-  std::optional<SkColor> background;
-  std::optional<SkColor> foreground;
-  // Used instead of |background| / |foreground| in dark mode when set.
+  std::optional<SkColor> light_background;
+  std::optional<SkColor> light_foreground;
   std::optional<SkColor> dark_background;
   std::optional<SkColor> dark_foreground;
 };

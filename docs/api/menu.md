@@ -71,19 +71,33 @@ added:
 -->
 
 - `options` Object | null
-  - `background` string (optional) - Background color of the hovered or
-    keyboard-focused menu item, as a CSS color string (e.g. `#0067c0`).
-  - `foreground` string (optional) - Text color of the hovered or
-    keyboard-focused menu item, as a CSS color string.
-  - `dark` Object (optional) - Colors to use instead when the menu uses dark
-    colors. Any value left unset falls back to `background` / `foreground`.
-    - `background` string (optional)
-    - `foreground` string (optional)
+  - `light` Object (optional) - Colors used when menus are drawn with light
+    colors.
+    - `background` string (optional) - Background color of the hovered or
+      keyboard-focused menu item, as a CSS color string (e.g. `#0067c0`).
+    - `foreground` string (optional) - Text color of the hovered or
+      keyboard-focused menu item, as a CSS color string.
+  - `dark` Object (optional) - Colors used when menus are drawn with dark
+    colors.
+    - `background` string (optional) - Background color of the hovered or
+      keyboard-focused menu item, as a CSS color string.
+    - `foreground` string (optional) - Text color of the hovered or
+      keyboard-focused menu item, as a CSS color string.
 
 Sets the colors used to highlight the hovered or keyboard-focused item in
 every menu the app shows, including context menus and the menu bar's
-dropdowns. Colors left unset keep the default. Passing `null` restores the
-defaults.
+dropdowns. Light and dark colors are set separately, and any color left unset
+keeps the default for that mode. Each call replaces the colors set by any
+previous call. Passing `null` restores the defaults.
+
+```js
+const { Menu } = require('electron')
+
+Menu.setHighlightColors({
+  light: { background: '#0067c0', foreground: '#ffffff' },
+  dark: { background: '#4cc2ff', foreground: '#000000' }
+})
+```
 
 Menus opened after the call use the new colors. The colors are not applied
 while Windows high contrast mode or forced colors are active, so the user's
