@@ -42,7 +42,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,298 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,302 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -152,6 +152,10 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
 +                                  BlockType::kBlockAllChildren),
 +        // And limit access to ~/.gnupg as well.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
++                                  BlockType::kBlockAllChildren),
++        // ~/.cache holds caches and virtual environments for cross-platform
++        // tools, so block it on all platforms, see crbug.com/577400245.
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".cache"),
 +                                  BlockType::kBlockAllChildren),
 +        // Vim startup directories and files in the home directory, including the
 +        // ones read by Git for Windows' bundled Vim and native Windows Vim, see
@@ -273,8 +277,8 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..60188c6277defca962b7eecc075cf50b
 +        // a website can do with access to that directory and its contents.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
 +                                  BlockType::kBlockAllChildren),
-+        // And block all of ~/.cache, matching the similar restrictions on mac
-+        // and windows.
++        // Also block base::DIR_CACHE to cover $XDG_CACHE_HOME overrides on Linux
++        // and ChromeOS, and the app cache directory on Android.
 +        BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 +  #endif
 +  #if BUILDFLAG(IS_ANDROID)

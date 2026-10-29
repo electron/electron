@@ -25,7 +25,7 @@ is upstream as of 154.0.8023.0.)
 This patch should be submitted upstream.
 
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-index 4f996dce458e50cc00f556f7da5681d926c8dec8..6f0de8ce780defb9db80fbef1427256abd4ed971 100644
+index a62e0154c2cc1de10c6b6902b8b5b124efda8e8e..84e610748eca1922e773c09ad47c5da54ff1b8e7 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 @@ -89,6 +89,18 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER) GlobalAcceleratorListener {
@@ -48,10 +48,10 @@ index 4f996dce458e50cc00f556f7da5681d926c8dec8..6f0de8ce780defb9db80fbef1427256a
    virtual void PruneStaleCommands() {}
  
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301a2317fec 100644
+index 79f04beb84aedc2e5707cef23ac28c4ea1d42460..d829cf0c060e03558bc790a7cd744e7b5576ec85 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-@@ -116,6 +116,7 @@ void GlobalAcceleratorListenerLinux::OnServiceStarted(uint32_t version) {
+@@ -109,6 +109,7 @@ void GlobalAcceleratorListenerLinux::OnServiceStarted(uint32_t version) {
    portal_version_ = version;
  
    if (!*service_started_) {
@@ -59,7 +59,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
      bound_commands_.clear();
      return;
    }
-@@ -170,8 +171,12 @@ void GlobalAcceleratorListenerLinux::OnCommandsChanged(
+@@ -163,8 +164,12 @@ void GlobalAcceleratorListenerLinux::OnCommandsChanged(
      gfx::AcceleratedWidget widget,
      base::RepeatingCallback<void(const std::string&, const std::string&)>
          execute_command) {
@@ -73,7 +73,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
      return;
    }
  
-@@ -230,6 +235,13 @@ void GlobalAcceleratorListenerLinux::OnCommandsChanged(
+@@ -228,6 +233,13 @@ void GlobalAcceleratorListenerLinux::OnCommandsChanged(
  
    SaveState();
    MaybeBind();
@@ -87,7 +87,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
  }
  
  void GlobalAcceleratorListenerLinux::SetStateStore(
-@@ -302,6 +314,8 @@ void GlobalAcceleratorListenerLinux::OnCreateSessionResponse(
+@@ -340,6 +352,8 @@ void GlobalAcceleratorListenerLinux::OnCreateSessionResponse(
    if (!session) {
      VLOG(1) << "Failed to create portal session.";
      session_.reset();
@@ -96,7 +96,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
      return;
    }
  
-@@ -369,6 +383,7 @@ void GlobalAcceleratorListenerLinux::OnListShortcuts(
+@@ -414,6 +428,7 @@ void GlobalAcceleratorListenerLinux::OnListShortcuts(
            [&](const std::string& id) { return listed_ids.contains(id); })) {
      session_ids_ = ids_to_bind;
      bind_state_ = BindState::kBound;
@@ -104,7 +104,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
      return;
    }
  
-@@ -398,12 +413,18 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(std::string parent_handle) {
+@@ -443,12 +458,18 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(std::string parent_handle) {
    }
  
    const base::flat_set<std::string> ids_to_bind = GetIdsToBind();
@@ -124,7 +124,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
        props["description"] =
            dbus_utils::Variant::Wrap<"s">(GetDescription(command));
        std::string trigger = AcceleratorToXdgShortcut(command.accelerator());
-@@ -451,6 +472,10 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
+@@ -496,6 +517,10 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
    const bool needs_rebind = bind_state_ == BindState::kNeedsRebind;
    base::flat_set<std::string> bound_ids = std::move(pending_bind_ids_);
    pending_bind_ids_.clear();
@@ -135,16 +135,16 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
  
    if (results.has_value()) {
      for (const std::string& id : bound_ids) {
-@@ -460,6 +485,8 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
-       }
-     }
+@@ -514,6 +539,8 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
+              !bound_ids.contains(pair.first);
+     });
      SaveState();
 +    // Shortcuts successfully bound.
 +    NotifyGroupsResolved(groups, true);
      session_ids_ = std::move(bound_ids);
      bind_state_ = BindState::kBound;
      if (needs_rebind) {
-@@ -471,6 +498,7 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
+@@ -525,6 +552,7 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
  
    LOG(ERROR) << "Failed to call BindShortcuts (error code "
               << static_cast<int>(results.error()) << ").";
@@ -152,7 +152,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
  
    // If the user cancelled the dialog, or the backend failed to apply the
    // shortcuts after showing it (e.g. xdg-desktop-portal-gnome without GNOME
-@@ -507,17 +535,12 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
+@@ -562,17 +590,12 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
      SaveState();
    }
  
@@ -174,7 +174,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
      return;
    }
  
-@@ -525,7 +548,6 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
+@@ -580,7 +603,6 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
    // stay active. This can't loop indefinitely, since a retry only happens if a
    // shortcut was declined or shortcuts were added during the bind.
    if (newly_declined || needs_rebind) {
@@ -182,7 +182,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
      CreateSession();
    }
  }
-@@ -564,6 +586,39 @@ void GlobalAcceleratorListenerLinux::OnSignalConnected(
+@@ -619,6 +641,39 @@ void GlobalAcceleratorListenerLinux::OnSignalConnected(
    }
  }
  
@@ -223,10 +223,10 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301
    // The shortcuts stay in `offered_shortcuts_` so that they remain stored in
    // the portal while their owner isn't loaded.
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
-index 022ddc9f483edd234e7dcd2df3f03df01fca53d1..53a857772b1398b4909693bb959b5d6e9b28eb2e 100644
+index 0a99bcb46927277fd0ce665e1e570a2f2446a7f8..50c221e8c0e901b7f7111c1356d1a037aa6e09c8 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
-@@ -145,6 +145,8 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
+@@ -150,6 +150,8 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
        gfx::AcceleratedWidget widget,
        base::RepeatingCallback<void(const std::string&, const std::string&)>
            execute_command) override;
@@ -234,8 +234,8 @@ index 022ddc9f483edd234e7dcd2df3f03df01fca53d1..53a857772b1398b4909693bb959b5d6e
 +      RegistrationResolvedCallback callback) override;
    void PruneStaleCommands() override;
    void SetStateStore(std::unique_ptr<StateStore> store) override;
- 
-@@ -192,6 +194,14 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
+   void OnAcceleratorGroupRemoved(const std::string& accelerator_group_id,
+@@ -199,6 +201,14 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
    void LoadState();
    void SaveState();
  
@@ -250,7 +250,7 @@ index 022ddc9f483edd234e7dcd2df3f03df01fca53d1..53a857772b1398b4909693bb959b5d6e
    // DBus components.
    scoped_refptr<dbus::Bus> bus_;
    raw_ptr<dbus::ObjectProxy> global_shortcuts_proxy_ = nullptr;
-@@ -234,6 +244,10 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
+@@ -246,6 +256,10 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
  
    std::unique_ptr<StateStore> state_store_;
  
