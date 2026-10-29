@@ -406,37 +406,42 @@ void Menu::SetHighlightColors(gin::Arguments* args) {
       thrower.ThrowTypeError("Options must be an object or null");
       return;
     }
-    // Reads the CSS color string at |key|; a missing key leaves |out| unset.
-    auto get_color = [&](const gin_helper::Dictionary& dict,
-                         std::string_view key, std::optional<SkColor>* out) {
-      v8::Local<v8::Value> value;
-      if (!dict.Get(key, &value) || value->IsUndefined())
+    gin_helper::Dictionary options(isolate, options_value.As<v8::Object>());
+    // Reads the optional |mode| ("light" or "dark") object and its CSS color
+    // strings; missing keys leave the corresponding color unset.
+    auto get_mode = [&](std::string_view mode,
+                        std::optional<SkColor>* background,
+                        std::optional<SkColor>* foreground) {
+      v8::Local<v8::Value> mode_value;
+      if (!options.Get(mode, &mode_value) || mode_value->IsUndefined())
         return true;
-      std::string str;
-      if (gin::ConvertFromV8(isolate, value, &str))
-        *out = ParseCSSColor(str);
-      if (!*out) {
-        thrower.ThrowTypeError(base::StrCat({"Invalid color for '", key, "'"}));
+      if (!mode_value->IsObject()) {
+        thrower.ThrowTypeError(
+            base::StrCat({"'", mode, "' must be an object"}));
         return false;
       }
-      return true;
+      gin_helper::Dictionary dict(isolate, mode_value.As<v8::Object>());
+      auto get_color = [&](std::string_view key, std::optional<SkColor>* out) {
+        v8::Local<v8::Value> value;
+        if (!dict.Get(key, &value) || value->IsUndefined())
+          return true;
+        std::string str;
+        if (gin::ConvertFromV8(isolate, value, &str))
+          *out = ParseCSSColor(str);
+        if (!*out) {
+          thrower.ThrowTypeError(
+              base::StrCat({"Invalid color for '", mode, ".", key, "'"}));
+          return false;
+        }
+        return true;
+      };
+      return get_color("background", background) &&
+             get_color("foreground", foreground);
     };
-    gin_helper::Dictionary options(isolate, options_value.As<v8::Object>());
-    if (!get_color(options, "background", &colors.background) ||
-        !get_color(options, "foreground", &colors.foreground)) {
+    if (!get_mode("light", &colors.light_background,
+                  &colors.light_foreground) ||
+        !get_mode("dark", &colors.dark_background, &colors.dark_foreground)) {
       return;
-    }
-    v8::Local<v8::Value> dark_value;
-    if (options.Get("dark", &dark_value) && !dark_value->IsUndefined()) {
-      if (!dark_value->IsObject() || dark_value->IsNull()) {
-        thrower.ThrowTypeError("'dark' must be an object");
-        return;
-      }
-      gin_helper::Dictionary dark(isolate, dark_value.As<v8::Object>());
-      if (!get_color(dark, "background", &colors.dark_background) ||
-          !get_color(dark, "foreground", &colors.dark_foreground)) {
-        return;
-      }
     }
   }
   SetMenuHighlightColors(colors);

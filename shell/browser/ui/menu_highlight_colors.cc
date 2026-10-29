@@ -38,12 +38,10 @@ void AddMenuHighlightColorMixer(ui::ColorProvider* provider,
 
   const MenuHighlightColors& colors = GetMenuHighlightColors();
   const bool dark = key.color_mode == ui::ColorProviderKey::ColorMode::kDark;
-  const std::optional<SkColor> background = dark && colors.dark_background
-                                                ? colors.dark_background
-                                                : colors.background;
-  const std::optional<SkColor> foreground = dark && colors.dark_foreground
-                                                ? colors.dark_foreground
-                                                : colors.foreground;
+  const std::optional<SkColor>& background =
+      dark ? colors.dark_background : colors.light_background;
+  const std::optional<SkColor>& foreground =
+      dark ? colors.dark_foreground : colors.light_foreground;
   if (!background && !foreground)
     return;
 
