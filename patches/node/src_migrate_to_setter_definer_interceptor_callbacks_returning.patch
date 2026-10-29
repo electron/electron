@@ -12,10 +12,10 @@ accessor setter/definer callbacks to PropertyCallbackInfo<Boolean> and
 register the non-deprecated callback types as external references.
 
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 40d1cdc169603e7617639eb38b7767677aca08ce..57eed79a77d49fd4c118313bbd352a029689940c 100644
+index d5cd2b0e60afba4620f9db681dc28bab84635837..d33cfafb2869c4f2980be5e44bcd6242cdfa2b86 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -566,7 +566,7 @@ Intercepted ContextifyContext::PropertyGetterCallback(
+@@ -596,7 +596,7 @@ Intercepted ContextifyContext::PropertyGetterCallback(
  Intercepted ContextifyContext::PropertySetterCallback(
      Local<Name> property,
      Local<Value> value,
@@ -33,7 +33,7 @@ index 40d1cdc169603e7617639eb38b7767677aca08ce..57eed79a77d49fd4c118313bbd352a02
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
-@@ -898,7 +898,7 @@ Intercepted ContextifyContext::IndexedPropertyGetterCallback(
+@@ -869,7 +869,7 @@ Intercepted ContextifyContext::IndexedPropertyGetterCallback(
  Intercepted ContextifyContext::IndexedPropertySetterCallback(
      uint32_t index,
      Local<Value> value,
@@ -42,7 +42,7 @@ index 40d1cdc169603e7617639eb38b7767677aca08ce..57eed79a77d49fd4c118313bbd352a02
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
-@@ -927,7 +927,7 @@ Intercepted ContextifyContext::IndexedPropertyDescriptorCallback(
+@@ -898,7 +898,7 @@ Intercepted ContextifyContext::IndexedPropertyDescriptorCallback(
  Intercepted ContextifyContext::IndexedPropertyDefinerCallback(
      uint32_t index,
      const PropertyDescriptor& desc,
@@ -89,10 +89,10 @@ index c7c39ae8c0632695d8b22023b8e6b1d1cb2e6589..be3034da39fffe541394137e5e8107cf
        uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& args);
    static void IndexedPropertyEnumeratorCallback(
 diff --git a/src/node_env_var.cc b/src/node_env_var.cc
-index b38c2f75a92f2d6c1b9c6e7b7aca924653f7494d..2afac129cc3e823f425da781be57b0f877e6d007 100644
+index 8a16f9ec136df86e75d71ccfe1d40ddab3bf8f92..a2c9ac1167431664716294dced9811ec77627d36 100644
 --- a/src/node_env_var.cc
 +++ b/src/node_env_var.cc
-@@ -448,7 +448,7 @@ static Intercepted EnvGetter(Local<Name> property,
+@@ -513,7 +513,7 @@ static Intercepted EnvGetter(Local<Name> property,
  
  static Intercepted EnvSetter(Local<Name> property,
                               Local<Value> value,
@@ -101,7 +101,7 @@ index b38c2f75a92f2d6c1b9c6e7b7aca924653f7494d..2afac129cc3e823f425da781be57b0f8
    Environment* env = Environment::GetCurrent(info);
    CHECK(env->has_run_bootstrapping_code());
    // calling env->EmitProcessEnvWarning() sets a variable indicating that
-@@ -529,7 +529,7 @@ static void EnvEnumerator(const PropertyCallbackInfo<Array>& info) {
+@@ -594,7 +594,7 @@ static void EnvEnumerator(const PropertyCallbackInfo<Array>& info) {
  
  static Intercepted EnvDefiner(Local<Name> property,
                                const PropertyDescriptor& desc,
@@ -172,11 +172,11 @@ index 5f5af63486a556f00b1cc3d44ec731f414904626..3132a96abb87f9275080ca0d8b2015b1
    int32_t port = value->Int32Value(env->context()).FromMaybe(0);
  
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 0b32b2a8be3650da0d46f72ee344363fb341b81d..ebdc0e049dd95c388a8e9465c0132d03afcf746a 100644
+index f958161d2b1ee9925dc146ec634221a8e64b3ec8..4f98c6224c7e096b143cc3a58ca9a7bf614db5fb 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -853,7 +853,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
- Intercepted DatabaseSyncLimits::LimitsSetter(
+@@ -938,7 +938,7 @@ Intercepted DatabaseLimits::LimitsGetter(
+ Intercepted DatabaseLimits::LimitsSetter(
      Local<Name> property,
      Local<Value> value,
 -    const PropertyCallbackInfo<void>& info) {
@@ -185,10 +185,10 @@ index 0b32b2a8be3650da0d46f72ee344363fb341b81d..ebdc0e049dd95c388a8e9465c0132d03
      return Intercepted::kNo;
    }
 diff --git a/src/node_sqlite.h b/src/node_sqlite.h
-index 442f291b05d65168b4fe6383adca703cb40f510d..998ac3b098752e70f00ce38ac014306346750586 100644
+index 98f9beabe8f8933df5bccab4a9fc324cffae506e..0f7f6084696a46fdc437ae8496d529ef3303aad5 100644
 --- a/src/node_sqlite.h
 +++ b/src/node_sqlite.h
-@@ -565,7 +565,7 @@ class DatabaseSyncLimits : public BaseObject {
+@@ -637,7 +637,7 @@ class DatabaseLimits : public BaseObject {
    static v8::Intercepted LimitsSetter(
        v8::Local<v8::Name> property,
        v8::Local<v8::Value> value,
@@ -198,10 +198,10 @@ index 442f291b05d65168b4fe6383adca703cb40f510d..998ac3b098752e70f00ce38ac0143063
        v8::Local<v8::Name> property,
        const v8::PropertyCallbackInfo<v8::Integer>& info);
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index 3856e9cdaa305f4919c315060bae8d1a5f17cb80..681208276eb18a86b268b29d6ddeb304947cdbfc 100644
+index 1a88f7068767246734897428bc46e3e8a034e6e4..204fd463126f2d5f1cbecb15aee738d3985ac68e 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
-@@ -601,7 +601,7 @@ static Intercepted StorageGetter(Local<Name> property,
+@@ -650,7 +650,7 @@ static Intercepted StorageGetter(Local<Name> property,
  
  static Intercepted StorageSetter(Local<Name> property,
                                   Local<Value> value,
@@ -210,7 +210,7 @@ index 3856e9cdaa305f4919c315060bae8d1a5f17cb80..681208276eb18a86b268b29d6ddeb304
    Storage* storage;
    ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
  
-@@ -651,7 +651,7 @@ static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
+@@ -700,7 +700,7 @@ static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
  
  static Intercepted StorageDefiner(Local<Name> property,
                                    const PropertyDescriptor& desc,
@@ -219,7 +219,7 @@ index 3856e9cdaa305f4919c315060bae8d1a5f17cb80..681208276eb18a86b268b29d6ddeb304
    Storage* storage;
    ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
  
-@@ -671,7 +671,7 @@ static Intercepted IndexedGetter(uint32_t index,
+@@ -720,7 +720,7 @@ static Intercepted IndexedGetter(uint32_t index,
  
  static Intercepted IndexedSetter(uint32_t index,
                                   Local<Value> value,
@@ -228,7 +228,7 @@ index 3856e9cdaa305f4919c315060bae8d1a5f17cb80..681208276eb18a86b268b29d6ddeb304
    Environment* env = Environment::GetCurrent(info);
    Local<Name> name = Uint32ToString(env->context(), index);
    return StorageSetter(name, value, info);
-@@ -693,7 +693,7 @@ static Intercepted IndexedDeleter(uint32_t index,
+@@ -742,7 +742,7 @@ static Intercepted IndexedDeleter(uint32_t index,
  
  static Intercepted IndexedDefiner(uint32_t index,
                                    const PropertyDescriptor& desc,

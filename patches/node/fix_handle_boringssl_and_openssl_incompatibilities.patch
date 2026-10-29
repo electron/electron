@@ -39,10 +39,10 @@ index ea0747511a107c96befd2dae1d7bd56759dd95b6..ad056b5610bc8f0db2137402cecc07e1
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 71debb0805b62deba0b941fc7679b08a9c41d542..0b7ebcebadf11023e0cfad105f53518ff31e09e1 100644
+index 64be71541fe3bdfac768d799d401a7cbcb563879..05e8e5f85c0ba67b90f48278a40f4a5bc8f0b37a 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -175,7 +175,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -157,7 +157,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -51,7 +51,7 @@ index 71debb0805b62deba0b941fc7679b08a9c41d542..0b7ebcebadf11023e0cfad105f53518f
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -2618,7 +2618,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2526,7 +2526,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -61,10 +61,10 @@ index 71debb0805b62deba0b941fc7679b08a9c41d542..0b7ebcebadf11023e0cfad105f53518f
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_hash.cc b/src/crypto/crypto_hash.cc
-index 2cf971347b9ea98bf76a8d277a46d7a6842efda6..9391b884e18557815365e0b3c2442e364543ddd0 100644
+index 085cebdef06ba9cf1d00b0437f4d07460f838137..c7b21e60de2470d09fdb918920c450ab491a783a 100644
 --- a/src/crypto/crypto_hash.cc
 +++ b/src/crypto/crypto_hash.cc
-@@ -380,7 +380,7 @@ void OneShotDigestWithMD(Environment* env,
+@@ -374,7 +374,7 @@ void OneShotDigestWithMD(Environment* env,
    enum encoding output_enc = ParseEncoding(isolate, args[4], args[5], HEX);
  
    bool is_xof = (EVP_MD_flags(md) & EVP_MD_FLAG_XOF) != 0;
@@ -74,10 +74,10 @@ index 2cf971347b9ea98bf76a8d277a46d7a6842efda6..9391b884e18557815365e0b3c2442e36
    // This is to cause hash() to fail when an incorrect
    // outputLength option was passed for a non-XOF hash function.
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 8e6d934d22077b5f4efc21366fbfcc09fca95ee9..912e07c911c86e23a35e395d720376b3d269bca0 100644
+index 4339d6ab4382037bf5ddab014211add3611dd036..c7dbe956149b479883ef1921db59b38dad7a55fd 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -1041,7 +1041,8 @@ MaybeLocal<Object> X509Certificate::NewWithIssuers(
+@@ -1028,7 +1028,8 @@ MaybeLocal<Object> X509Certificate::NewWithIssuers(
    }
  
    Local<Object> issuer;
