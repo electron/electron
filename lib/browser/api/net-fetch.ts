@@ -132,10 +132,10 @@ export function fetchWithSession(
     p.reject(err);
   });
 
-  // pipeTo expects a WritableStream<Uint8Array>. Node.js' Writable.toWeb returns WritableStream<any>,
-  // which causes a TS structural mismatch.
-  const writable = Writable.toWeb(r as unknown as Writable) as unknown as WritableStream<Uint8Array>;
-  if (!req.body?.pipeTo(writable).then(() => r.end())) {
+  // Writable.toWeb() has a measurable per-call cost, so only call it when there is a body.
+  if (req.body) {
+    req.body.pipeTo(Writable.toWeb(r as unknown as Writable)).then(() => r.end());
+  } else {
     r.end();
   }
 
