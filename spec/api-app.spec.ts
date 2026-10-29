@@ -285,10 +285,15 @@ describe('app module', () => {
           appProcess.stdin.on('error', () => {});
           const exited = once(appProcess, 'exit');
           const output: string[] = [];
+          let sawQuit: () => void;
+          const quit = new Promise<void>((resolve) => {
+            sawQuit = resolve;
+          });
           const ready = new Promise<void>((resolve) => {
             readline.createInterface({ input: appProcess.stdout }).on('line', (line) => {
               output.push(line);
               if (line === 'ready') resolve();
+              if (line === 'quit') sawQuit();
             });
           });
 
@@ -300,10 +305,14 @@ describe('app module', () => {
 
           // The badge update reaches the session bus only after the D-Bus
           // thread has started the login1 call on the lost system bus. Without
-          // the fix, that call aborts the process first.
+          // the fix, that call aborts the process first. Wait for the app's
+          // 'quit' line too, since it can still be in the pipe at 'exit'.
           const first = await Promise.race([
             exited.then(() => 'exit'),
-            sessionBus.waitFor(/interface=com\.canonical\.Unity\.LauncherEntry; member=Update/).then(() => 'update')
+            Promise.all([
+              quit,
+              sessionBus.waitFor(/interface=com\.canonical\.Unity\.LauncherEntry; member=Update/)
+            ]).then(() => 'update')
           ]);
           if (first === 'update') appProcess.stdin.end('x');
 
