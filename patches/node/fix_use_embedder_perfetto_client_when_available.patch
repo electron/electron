@@ -28,6 +28,75 @@ the Perfetto public headers Chromium provides instead, and skip defining
 Node's TrackEvent categories when Chromium's built-in categories are
 already in scope in the same translation unit.
 
+Also emit node.perf.usertiming trace events from performance.mark()
+(instant events) and performance.measure() (nestable async begin/end
+events), so contentTracing captures user timing as it has since
+electron/electron#50591. Upstream Node.js does not emit these.
+
+diff --git a/lib/internal/constants.js b/lib/internal/constants.js
+index c635272dc6cf6a0d58607ab7b8b56c682987b288..8ddb8ba81e6c4536f5d9c3042e3a0cbb1533c7a2 100644
+--- a/lib/internal/constants.js
++++ b/lib/internal/constants.js
+@@ -13,6 +13,7 @@ module.exports = {
+   CHAR_LOWERCASE_B: 98, /* b */
+   CHAR_UPPERCASE_E: 69, /* E */
+   CHAR_LOWERCASE_E: 101, /* e */
++  CHAR_UPPERCASE_I: 73, /* I */
+   CHAR_LOWERCASE_N: 110, /* n */
+ 
+   // Non-alphabetic chars.
+diff --git a/lib/internal/perf/usertiming.js b/lib/internal/perf/usertiming.js
+index 88bb63ead2d3d620dea6b54db043a404b484ead9..4eac195eb14d219e0b1539e5db3b3075e65b42f4 100644
+--- a/lib/internal/perf/usertiming.js
++++ b/lib/internal/perf/usertiming.js
+@@ -13,6 +13,12 @@ const { PerformanceEntry, kSkipThrow } = require('internal/perf/performance_entr
+ const { now } = require('internal/perf/utils');
+ const { enqueue, bufferUserTiming } = require('internal/perf/observe');
+ const nodeTiming = require('internal/perf/nodetiming');
++const { isTraceCategoryEnabled, trace } = internalBinding('trace_events');
++const {
++  CHAR_LOWERCASE_B,
++  CHAR_LOWERCASE_E,
++  CHAR_UPPERCASE_I,
++} = require('internal/constants');
+ 
+ const {
+   validateNumber,
+@@ -41,6 +47,9 @@ const kDetail = Symbol('kDetail');
+ 
+ const markTimings = new SafeMap();
+ 
++const traceEventCategory = 'node.perf.usertiming';
++let traceEventId = 0;
++
+ const nodeTimingReadOnlyAttributes = new SafeSet(new SafeArrayIterator([
+   'nodeStart',
+   'v8Start',
+@@ -168,6 +177,10 @@ function mark(name, options) {
+   const mark = new PerformanceMark(name, options);
+   enqueue(mark);
+   bufferUserTiming(mark);
++  if (isTraceCategoryEnabled(traceEventCategory)) {
++    trace(CHAR_UPPERCASE_I, traceEventCategory, name, undefined,
++          { startTime: mark.startTime });
++  }
+   return mark;
+ }
+ 
+@@ -233,6 +246,13 @@ function measure(name, startOrMeasureOptions, endMark) {
+   const measure = createPerformanceMeasure(name, start, duration, detail);
+   enqueue(measure);
+   bufferUserTiming(measure);
++  if (isTraceCategoryEnabled(traceEventCategory)) {
++    const id = ++traceEventId;
++    trace(CHAR_LOWERCASE_B, traceEventCategory, name, id,
++          { startTime: start });
++    trace(CHAR_LOWERCASE_E, traceEventCategory, name, id,
++          { startTime: start, duration });
++  }
+   return measure;
+ }
+ 
 diff --git a/node.gni b/node.gni
 index 2266de3a399e4cdafb93cd930ec6128e6634c639..e7bf3a480e0d5f0e5e18727aa17b4f96dad772b4 100644
 --- a/node.gni
