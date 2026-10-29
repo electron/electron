@@ -433,7 +433,7 @@ describe('BrowserWindow module', () => {
       }).toThrow('Object has been destroyed');
     });
     it('should not crash when destroying windows with pending events', () => {
-      const focusListener = () => { };
+      const focusListener = () => {};
       app.on('browser-window-focus', focusListener);
       const windowCount = 3;
       const windowOptions = {
@@ -1112,7 +1112,7 @@ describe('BrowserWindow module', () => {
           expect(isMainFrameValue).toBe(false);
         });
 
-        it('can cancel when a cross-origin iframe navigates itself', async () => { });
+        it('can cancel when a cross-origin iframe navigates itself', async () => {});
       });
 
       describe('will-redirect event', () => {
@@ -6279,7 +6279,7 @@ describe('BrowserWindow module', () => {
         fs.unlinkSync(savePageHtmlPath);
         fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
         fs.rmdirSync(savePageDir);
-      } catch { }
+      } catch {}
     });
 
     it('should throw when passing relative paths', async () => {
@@ -6321,7 +6321,7 @@ describe('BrowserWindow module', () => {
       try {
         await fs.promises.unlink(savePageMHTMLPath);
         await fs.promises.rmdir(tmpDir);
-      } catch { }
+      } catch {}
     });
 
     it('should save page to disk with HTMLComplete', async () => {
@@ -8503,7 +8503,7 @@ describe('BrowserWindow module', () => {
       });
       await ow.loadURL(
         'data:text/html,<select id="s" style="position:absolute;left:10px;top:10px;width:120px;height:24px">' +
-        '<option>one</option><option>two</option><option>three</option><option>four</option></select>'
+          '<option>one</option><option>two</option><option>three</option><option>four</option></select>'
       );
       ow.webContents.focus();
       const paintedBelowSelect = new Promise<void>((resolve) => {
@@ -8655,9 +8655,9 @@ describe('BrowserWindow module', () => {
         // painted page from a blank or stale window surface.
         await w.loadURL(
           'data:text/html,<body style="background: transparent; margin: 0">' +
-          '<div style="position: absolute; left: 60px; top: 60px; width: 60px; height: 60px; background: %23ffffff"></div>' +
-          '<div style="position: absolute; left: 180px; top: 60px; width: 60px; height: 60px; background: %23ff0000"></div>' +
-          '</body>'
+            '<div style="position: absolute; left: 60px; top: 60px; width: 60px; height: 60px; background: %23ffffff"></div>' +
+            '<div style="position: absolute; left: 180px; top: 60px; width: 60px; height: 60px; background: %23ff0000"></div>' +
+            '</body>'
         );
         w.focus();
         const captured = await expectDisplayPixelsEventually((pixels) => {
@@ -8869,10 +8869,10 @@ describe('BrowserWindow module', () => {
     // writes on a 10s timer. Testing builds can force both; otherwise poll.
     const flushPrefs = isTestingBindingAvailable()
       ? async () => {
-        const testing = process._linkedBinding('electron_common_testing');
-        testing.flushPendingWindowStateSaves();
-        await testing.commitPendingLocalStateWrites();
-      }
+          const testing = process._linkedBinding('electron_common_testing');
+          testing.flushPendingWindowStateSaves();
+          await testing.commitPendingLocalStateWrites();
+        }
       : null;
 
     const waitForPrefsUpdate = async (
