@@ -1512,10 +1512,8 @@ describe('app module', () => {
     });
 
     describe('sessionData', () => {
-      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'set-path');
-      const appName = JSON.parse(fs.readFileSync(path.join(appPath, 'package.json'), 'utf8')).name;
-      const userDataPath = path.join(app.getPath('appData'), appName);
-      const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
+      const fixturePath = path.join(import.meta.dirname, 'fixtures', 'apps', 'set-path');
+      const fixtureName = JSON.parse(fs.readFileSync(path.join(fixturePath, 'package.json'), 'utf8')).name;
 
       const sessionFiles = ['Preferences', 'Code Cache', 'Local Storage', 'IndexedDB', 'Service Worker'];
       const hasSessionFiles = (dir: string) => {
@@ -1527,35 +1525,80 @@ describe('app module', () => {
         return true;
       };
 
-      beforeEach(() => {
-        fs.rmSync(userDataPath, { force: true, recursive: true });
-        fs.rmSync(tempBrowserDataPath, { force: true, recursive: true });
+      // Best effort, as nothing else uses the directory. On Windows, the child
+      // processes of a killed app can keep files open for a while after it
+      // exits, so keep trying for a few seconds, then report it and move on.
+      const removeDir = async (dir: string) => {
+        const deadline = Date.now() + 5000;
+        for (;;) {
+          try {
+            await fs.promises.rm(dir, { force: true, recursive: true });
+            return;
+          } catch (error) {
+            if (Date.now() > deadline) {
+              console.warn(`Could not remove ${dir}: ${error}`);
+              return;
+            }
+          }
+          await setTimeout(200);
+        }
+      };
+
+      // Sweeps up what earlier runs could not remove, leaving anything from the
+      // last hour alone in case another run is still using it.
+      beforeAll(async () => {
+        const cutoff = Date.now() - 60 * 60 * 1000;
+        const stale = [app.getPath('appData'), os.tmpdir()].flatMap((dir) =>
+          fs
+            .readdirSync(dir)
+            .filter((entry) => entry.startsWith(`${fixtureName}-`))
+            .map((entry) => path.join(dir, entry))
+            .filter((entry) => (fs.statSync(entry, { throwIfNoEntry: false })?.mtimeMs ?? cutoff) < cutoff)
+        );
+        await Promise.all(stale.map(removeDir));
       });
 
+      // Each test runs its own copy of the fixture under a name of its own, so
+      // its default userData directory (appData/<name>) is its own as well.
+      const makeApp = () => {
+        const appPath = fs.mkdtempSync(path.join(os.tmpdir(), `${fixtureName}-`));
+        const name = path.basename(appPath);
+        const userDataPath = path.join(app.getPath('appData'), name);
+        defer(async () => {
+          await Promise.all([removeDir(appPath), removeDir(userDataPath)]);
+        });
+        fs.copyFileSync(path.join(fixturePath, 'main.js'), path.join(appPath, 'main.js'));
+        // No productName, which would replace the name in the userData path.
+        fs.writeFileSync(path.join(appPath, 'package.json'), JSON.stringify({ name, main: 'main.js' }));
+        return { appPath, userDataPath };
+      };
+
       // The app quits once it has written its session data.
-      const runApp = async (args: string[]) => {
+      const runApp = async (appPath: string, args: string[]) => {
         const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, ...args], { timeout: 20_000 });
         expect(code, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
       };
 
       it('writes to userData by default', async () => {
-        expect(hasSessionFiles(userDataPath)).toBe(false);
-        await runApp([]);
+        const { appPath, userDataPath } = makeApp();
+        await runApp(appPath, []);
         expect(hasSessionFiles(userDataPath)).toBe(true);
       });
 
       it('can be changed', async () => {
+        const { appPath, userDataPath } = makeApp();
+        const sessionDataPath = path.join(appPath, 'session-data');
+        await runApp(appPath, ['sessionData', sessionDataPath]);
         expect(hasSessionFiles(userDataPath)).toBe(false);
-        await runApp(['sessionData', tempBrowserDataPath]);
-        expect(hasSessionFiles(userDataPath)).toBe(false);
-        expect(hasSessionFiles(tempBrowserDataPath)).toBe(true);
+        expect(hasSessionFiles(sessionDataPath)).toBe(true);
       });
 
       it('changing userData affects default sessionData', async () => {
+        const { appPath, userDataPath } = makeApp();
+        const newUserDataPath = path.join(appPath, 'user-data');
+        await runApp(appPath, ['userData', newUserDataPath]);
         expect(hasSessionFiles(userDataPath)).toBe(false);
-        await runApp(['userData', tempBrowserDataPath]);
-        expect(hasSessionFiles(userDataPath)).toBe(false);
-        expect(hasSessionFiles(tempBrowserDataPath)).toBe(true);
+        expect(hasSessionFiles(newUserDataPath)).toBe(true);
       });
     });
   });
