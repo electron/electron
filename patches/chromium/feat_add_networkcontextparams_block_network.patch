@@ -39,10 +39,10 @@ index 977beefb1da303875f6ddf46b233316b11d17425..de5d631aef0201de6c00498197673f69
      // add console messages.
      mojo::Remote<mojom::URLLoaderClient>(std::move(client))
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba0757edcb 100644
+index 32f7c078fde3eb3dba84384c88b36300a01cc059..b7b39a43dfb222828db44f155cb54a7d864c7825 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1016,6 +1016,7 @@ NetworkContext::NetworkContext(
+@@ -1010,6 +1010,7 @@ NetworkContext::NetworkContext(
        std::move(url_loader_factory_for_cert_net_fetcher_receiver));
  
    SetBlockTrustTokens(params_->block_trust_tokens);
@@ -50,7 +50,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
  
    if (params_ && params_->http_cache_file_operations_factory) {
      http_cache_file_operations_factory_ =
-@@ -2207,6 +2208,9 @@ void NetworkContext::OnNewSCTAuditingReportSent() {
+@@ -2198,6 +2199,9 @@ void NetworkContext::OnNewSCTAuditingReportSent() {
  void NetworkContext::CreateUDPSocket(
      mojo::PendingReceiver<mojom::UDPSocket> receiver,
      mojo::PendingRemote<mojom::UDPSocketListener> listener) {
@@ -60,7 +60,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    socket_factory_->CreateUDPSocket(std::move(receiver), std::move(listener));
  }
  
-@@ -2220,6 +2224,10 @@ void NetworkContext::CreateRestrictedUDPSocket(
+@@ -2211,6 +2215,10 @@ void NetworkContext::CreateRestrictedUDPSocket(
      bool allow_multicast,
      bool allow_source_specific_multicast,
      CreateRestrictedUDPSocketCallback callback) {
@@ -71,7 +71,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    // SimpleHostResolver is transitively owned by |this|.
    socket_factory_->CreateRestrictedUDPSocket(
        addr, mode, traffic_annotation, std::move(params), std::move(receiver),
-@@ -2233,6 +2241,10 @@ void NetworkContext::CreateTCPServerSocket(
+@@ -2224,6 +2232,10 @@ void NetworkContext::CreateTCPServerSocket(
      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
      mojo::PendingReceiver<mojom::TCPServerSocket> receiver,
      CreateTCPServerSocketCallback callback) {
@@ -82,7 +82,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    socket_factory_->CreateTCPServerSocket(
        local_addr, std::move(options),
        static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation),
-@@ -2247,6 +2259,12 @@ void NetworkContext::CreateTCPConnectedSocket(
+@@ -2238,6 +2250,12 @@ void NetworkContext::CreateTCPConnectedSocket(
      mojo::PendingReceiver<mojom::TCPConnectedSocket> receiver,
      mojo::PendingRemote<mojom::SocketObserver> observer,
      CreateTCPConnectedSocketCallback callback) {
@@ -95,7 +95,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    socket_factory_->CreateTCPConnectedSocket(
        local_addr, remote_addr_list, std::move(tcp_connected_socket_options),
        traffic_annotation, std::move(receiver), std::move(observer),
-@@ -2258,6 +2276,10 @@ void NetworkContext::CreateTCPBoundSocket(
+@@ -2249,6 +2267,10 @@ void NetworkContext::CreateTCPBoundSocket(
      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
      mojo::PendingReceiver<mojom::TCPBoundSocket> receiver,
      CreateTCPBoundSocketCallback callback) {
@@ -106,7 +106,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    socket_factory_->CreateTCPBoundSocket(
        local_addr,
        static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation),
-@@ -2266,6 +2288,9 @@ void NetworkContext::CreateTCPBoundSocket(
+@@ -2257,6 +2279,9 @@ void NetworkContext::CreateTCPBoundSocket(
  
  void NetworkContext::CreateProxyResolvingSocketFactory(
      mojo::PendingReceiver<mojom::ProxyResolvingSocketFactory> receiver) {
@@ -116,7 +116,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    proxy_resolving_socket_factories_.Add(
        std::make_unique<ProxyResolvingSocketFactoryMojo>(url_request_context()),
        std::move(receiver));
-@@ -2425,6 +2450,7 @@ void NetworkContext::ResolveHost(
+@@ -2416,6 +2441,7 @@ void NetworkContext::ResolveHost(
                         .GetURL()
                   : host->get_scheme_host_port().GetURL();
    bool is_network_disallowed_for_restrictions_id =
@@ -124,7 +124,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
        (optional_parameters &&
         optional_parameters->network_restrictions_id.has_value() &&
         !IsHostResolutionForNetworkRestrictionsIdAndHostAllowed(
-@@ -2466,7 +2492,9 @@ void NetworkContext::CreateHostResolver(
+@@ -2457,7 +2483,9 @@ void NetworkContext::CreateHostResolver(
    net::HostResolver* internal_resolver = url_request_context_->host_resolver();
    std::unique_ptr<net::HostResolver> private_internal_resolver;
  
@@ -135,7 +135,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
        config_overrides.value() != net::DnsConfigOverrides()) {
      // If custom configuration is needed, create a separate internal resolver
      // with the specified configuration overrides. Because we are using a non-
-@@ -2842,13 +2870,16 @@ void NetworkContext::CreateP2PSocketManager(
+@@ -2833,13 +2861,16 @@ void NetworkContext::CreateP2PSocketManager(
      mojo::PendingReceiver<mojom::P2PTrustedSocketManager>
          trusted_socket_manager,
      mojo::PendingReceiver<mojom::P2PSocketManager> socket_manager_receiver) {
@@ -153,7 +153,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    socket_managers_[socket_manager.get()] = std::move(socket_manager);
  }
  #endif  // BUILDFLAG(IS_P2P_ENABLED)
-@@ -2856,6 +2887,9 @@ void NetworkContext::CreateP2PSocketManager(
+@@ -2847,6 +2878,9 @@ void NetworkContext::CreateP2PSocketManager(
  void NetworkContext::CreateMdnsResponder(
      mojo::PendingReceiver<mojom::MdnsResponder> responder_receiver) {
  #if BUILDFLAG(ENABLE_MDNS)
@@ -163,7 +163,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    if (!mdns_responder_manager_) {
      mdns_responder_manager_ = std::make_unique<MdnsResponderManager>();
    }
-@@ -3441,7 +3475,12 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -3432,7 +3466,12 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
              std::move(network_layer));
        }));
  
@@ -177,7 +177,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
      builder.set_host_mapping_rules(
          command_line->GetSwitchValueASCII(switches::kHostResolverRules));
    } else if (command_line->HasSwitch(switches::kHostRules)) {
-@@ -4223,6 +4262,10 @@ bool NetworkContext::IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
+@@ -4213,6 +4252,10 @@ bool NetworkContext::IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
      const GURL& url,
      const net::NetworkAnonymizationKey& network_anonymization_key,
      bool is_redirect) {
@@ -188,7 +188,7 @@ index aa7ba786080fb4dd1587f7db9f213da131197308..64c009aa4afacf39764763caae2cb1ba
    if (!base::FeatureList::IsEnabled(network::features::kConnectionAllowlists)) {
      return true;
    }
-@@ -4297,6 +4340,10 @@ bool NetworkContext::IsHostResolutionForNetworkRestrictionsIdAndHostAllowed(
+@@ -4287,6 +4330,10 @@ bool NetworkContext::IsHostResolutionForNetworkRestrictionsIdAndHostAllowed(
      const base::UnguessableToken& network_restrictions_id,
      const mojom::HostResolverHost& host,
      const net::NetworkAnonymizationKey& network_anonymization_key) {
