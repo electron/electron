@@ -4897,7 +4897,7 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
   const base::FilePath* path = nullptr;
 
   if (!save_as)
-    base::FindOrNull(saved_files_, url);
+    path = base::FindOrNull(saved_files_, url);
 
   if (path == nullptr) {
     file_dialog::DialogSettings settings;
