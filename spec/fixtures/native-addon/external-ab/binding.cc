@@ -1,5 +1,6 @@
+#include <memory>
+
 #include <node_api.h>
-#include <node_buffer.h>
 #include <v8.h>
 
 namespace {
@@ -17,17 +18,20 @@ napi_value CreateBuffer(napi_env env, napi_callback_info info) {
     data[i] = static_cast<uint8_t>(length);
   }
 
-  auto finalizer = [](char* data, void* hint) {
-    delete[] static_cast<uint8_t*>(reinterpret_cast<void*>(data));
+  auto deleter = [](void* data, size_t length, void* deleter_data) {
+    delete[] static_cast<uint8_t*>(data);
   };
 
-  // NOTE: Buffer API is invoked directly rather than
-  // napi version to trigger the FATAL error from V8.
-  v8::MaybeLocal<v8::Object> maybe = node::Buffer::New(
-      isolate, static_cast<char*>(reinterpret_cast<void*>(data)), length,
-      finalizer, nullptr);
+  // NOTE: the V8 API is invoked directly, rather than node::Buffer::New() or
+  // its napi equivalent, to trigger the FATAL error from V8: memory allocated
+  // outside the V8 sandbox cannot back an ArrayBuffer. Since Node.js 26,
+  // node::Buffer::New() copies such memory into the sandbox instead.
+  std::unique_ptr<v8::BackingStore> backing_store =
+      v8::ArrayBuffer::NewBackingStore(data, length, deleter, nullptr);
+  v8::Local<v8::ArrayBuffer> array_buffer =
+      v8::ArrayBuffer::New(isolate, std::move(backing_store));
 
-  return reinterpret_cast<napi_value>(*maybe.ToLocalChecked());
+  return reinterpret_cast<napi_value>(*array_buffer);
 }
 
 napi_value Init(napi_env env, napi_value exports) {
