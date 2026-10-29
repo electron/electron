@@ -16,6 +16,15 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Removed: `--experimental-transform-types` command-line switch
+
+Node.js 26 removed the `--experimental-transform-types` flag, so Electron no
+longer accepts it. Electron ignores it on its command line, and
+`ELECTRON_RUN_AS_NODE` exits with a "bad option" error, as Node.js does.
+Type stripping of TypeScript files is still enabled by default; compile
+TypeScript-only syntax such as `enum` and `namespace` with a TypeScript
+compiler or bundler instead.
+
 ### Behavior Changed: `--no-stdio-init` command-line switch is ignored
 
 The `--no-stdio-init` command-line switch no longer affects stdio initialization.
