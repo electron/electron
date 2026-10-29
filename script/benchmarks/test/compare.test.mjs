@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { collectSamples, compareTargets, findProblems } from '../compare.mjs';
+import { collectSamples, compareTargets, datadogSeries, findProblems } from '../compare.mjs';
 
 const COMPARE = fileURLToPath(new URL('../compare.mjs', import.meta.url));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'benchmarks-compare-test-'));
@@ -114,6 +114,26 @@ describe('findProblems', () => {
 
   it('does not require Chrome for Testing when it was skipped', () => {
     assert.deepEqual(problemsFor('skipped-cft', everyTarget(0).slice(0, 2), { targets: TARGETS.slice(0, 2) }), []);
+  });
+});
+
+describe('datadogSeries', () => {
+  it('stamps points at upload time for a run that never finished', () => {
+    // run.mjs was killed, so metadata.json has startedAt (hours ago) but no
+    // finishedAt.
+    const { dir, metadata } = writeResults('unfinished', everyTarget(0));
+    assert.equal(metadata.finishedAt, undefined);
+    const { samples } = collectSamples(dir, metadata);
+    const comparisons = compareTargets(samples, metadata.targets, { alpha: 0.05, minChange: 0.1 });
+    const before = Math.floor(Date.now() / 1000);
+    const series = datadogSeries({ metadata, samples, comparisons });
+    const after = Math.ceil(Date.now() / 1000);
+    assert.ok(series.length > 0);
+    for (const { points } of series) {
+      for (const { timestamp } of points) {
+        assert.ok(timestamp >= before && timestamp <= after, `${timestamp} is not between ${before} and ${after}`);
+      }
+    }
   });
 });
 

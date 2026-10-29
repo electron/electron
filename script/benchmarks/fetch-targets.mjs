@@ -4,7 +4,8 @@
 // Targets:
 //   candidate  Electron build under test (default: the latest nightly)
 //   baseline   Electron build it is compared against (default: the nightly
-//              before the candidate, or the previous release)
+//              before the candidate, or the previous release on the
+//              candidate's major line)
 //   cft        Chrome for Testing at the candidate's Chromium milestone
 //
 // Usage:
@@ -27,7 +28,10 @@ import { parseArgs } from 'node:util';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const RELEASES_JSON = 'https://releases.electronjs.org/releases.json';
-const NIGHTLIES_API = 'https://api.github.com/repos/electron/nightlies/releases?per_page=30';
+const NIGHTLIES_API = 'https://api.github.com/repos/electron/nightlies/releases';
+const NIGHTLIES_PER_PAGE = 100;
+// 20 pages of 100 is several years of nightlies.
+const NIGHTLIES_MAX_PAGES = 20;
 const CFT_JSON = 'https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json';
 const CFT_BUCKET = 'https://storage.googleapis.com/chrome-for-testing-public';
 
@@ -85,17 +89,39 @@ function unzip(zip, dir) {
   execFileSync('unzip', ['-q', '-o', zip, '-d', dir], { stdio: 'inherit' });
 }
 
-// Lists published nightlies, newest first.
-async function listNightlies() {
+// Lists published nightlies, newest first. Pages through the releases API
+// until `done(list)` returns true, the API runs out of releases, or `maxPages`
+// pages have been read.
+export async function listNightlies({ done = () => true, maxPages = NIGHTLIES_MAX_PAGES } = {}) {
   const headers = { Accept: 'application/vnd.github+json' };
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-  const releases = await fetchJson(NIGHTLIES_API, headers);
-  return releases
-    .filter(
-      (release) => !release.draft && release.published_at && /^v\d+\.\d+\.\d+-nightly\.\d+$/.test(release.tag_name)
-    )
-    .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))
-    .map((release) => ({ version: release.tag_name.slice(1), publishedAt: release.published_at }));
+  let list = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const releases = await fetchJson(`${NIGHTLIES_API}?per_page=${NIGHTLIES_PER_PAGE}&page=${page}`, headers);
+    list = list
+      .concat(
+        releases
+          .filter(
+            (release) =>
+              !release.draft && release.published_at && /^v\d+\.\d+\.\d+-nightly\.\d+$/.test(release.tag_name)
+          )
+          .map((release) => ({ version: release.tag_name.slice(1), publishedAt: release.published_at }))
+      )
+      .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+    if (releases.length < NIGHTLIES_PER_PAGE || done(list)) break;
+  }
+  return list;
+}
+
+// Returns the nightly published before `version`, paging back as far as needed.
+export async function previousNightly(version) {
+  const hasPredecessor = (list) => {
+    const index = list.findIndex((nightly) => nightly.version === version);
+    return index !== -1 && index + 1 < list.length;
+  };
+  const list = await listNightlies({ done: hasPredecessor });
+  if (!hasPredecessor(list)) throw new Error(`Cannot find the nightly before ${version}`);
+  return list[list.findIndex((nightly) => nightly.version === version) + 1].version;
 }
 
 function compareVersions(a, b) {
@@ -107,13 +133,54 @@ function compareVersions(a, b) {
   return 0;
 }
 
-// releases.json is ordered newest first; the previous release is the next
-// older non-nightly entry.
-function previousRelease(releases, version) {
-  const stable = releases.filter((release) => !isNightly(release.version));
-  const index = stable.findIndex((release) => release.version === version);
-  if (index === -1 || index + 1 >= stable.length) throw new Error(`No release before ${version} in releases.json`);
-  return stable[index + 1].version;
+function parseSemver(version) {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/);
+  if (!match) return null;
+  return { major: Number(match[1]), core: match.slice(1, 4).map(Number), prerelease: match[4]?.split('.') ?? [] };
+}
+
+// Semver precedence: 45.0.0-alpha.1 < 45.0.0-beta.2 < 45.0.0-beta.10 < 45.0.0.
+export function compareSemver(a, b) {
+  const pa = parseSemver(a);
+  const pb = parseSemver(b);
+  if (!pa || !pb) throw new Error(`Cannot compare ${a} and ${b}`);
+  for (let i = 0; i < 3; i++) {
+    if (pa.core[i] !== pb.core[i]) return pa.core[i] - pb.core[i];
+  }
+  // A release ranks above its prereleases.
+  if (!pa.prerelease.length || !pb.prerelease.length) return pb.prerelease.length - pa.prerelease.length;
+  for (let i = 0; i < Math.max(pa.prerelease.length, pb.prerelease.length); i++) {
+    const x = pa.prerelease[i];
+    const y = pb.prerelease[i];
+    if (x === undefined || y === undefined) return x === undefined ? -1 : 1;
+    if (x === y) continue;
+    const xNumeric = /^\d+$/.test(x);
+    const yNumeric = /^\d+$/.test(y);
+    if (xNumeric && yNumeric) return Number(x) - Number(y);
+    if (xNumeric !== yNumeric) return xNumeric ? -1 : 1;
+    return x < y ? -1 : 1;
+  }
+  return 0;
+}
+
+// The newest non-nightly release on the candidate's major line that is older
+// than it by semver, so both run the same Chromium milestone. A stable
+// X.0.0 is compared against the last X.0.0 prerelease; the first prerelease
+// of a major line has no default baseline. releases.json is ordered by date,
+// and several lines ship in the same week, so its order cannot be used.
+export function previousRelease(releases, version) {
+  const candidate = parseSemver(version);
+  if (!candidate) throw new Error(`Cannot parse version ${version}`);
+  const older = releases
+    .map((release) => release.version)
+    .filter((v) => !isNightly(v) && parseSemver(v)?.major === candidate.major && compareSemver(v, version) < 0)
+    .sort(compareSemver);
+  if (!older.length) {
+    throw new Error(
+      `No ${candidate.major}.x release before ${version} in releases.json; pass a baseline version explicitly`
+    );
+  }
+  return older[older.length - 1];
 }
 
 async function resolveVersions(args) {
@@ -124,13 +191,10 @@ async function resolveVersions(args) {
     console.warn(`[fetch-targets] could not read releases.json (${error.message})`);
   }
 
-  let nightlies;
-  const getNightlies = async () => (nightlies ??= await listNightlies());
-
   let candidate = args.candidate;
   let baseline = args.baseline;
   if (!candidate || candidate === 'latest-nightly') {
-    const [latest] = await getNightlies();
+    const [latest] = await listNightlies();
     if (!latest) throw new Error('No published nightlies found');
     candidate = latest.version;
     console.log(`[fetch-targets] latest nightly: ${candidate} (published ${latest.publishedAt})`);
@@ -141,10 +205,7 @@ async function resolveVersions(args) {
   }
   if (!baseline || baseline === 'previous') {
     if (isNightly(candidate)) {
-      const list = await getNightlies();
-      const index = list.findIndex((nightly) => nightly.version === candidate);
-      if (index === -1 || index + 1 >= list.length) throw new Error(`Cannot find the nightly before ${candidate}`);
-      baseline = list[index + 1].version;
+      baseline = await previousNightly(candidate);
     } else {
       baseline = previousRelease(releases, candidate);
     }

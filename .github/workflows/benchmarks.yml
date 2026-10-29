@@ -19,7 +19,7 @@ on:
         required: false
       baseline:
         type: string
-        description: 'Electron version to compare against (default: the nightly or release before the candidate)'
+        description: 'Electron version to compare against (default: the nightly before the candidate, or the previous release on its major line)'
         default: ''
         required: false
       rounds:
@@ -42,11 +42,10 @@ on:
     # days without a new nightly are skipped.
     - cron: '43 20 * * *'
 
+# No concurrency group: each run gets its own runner, and a group keeps only
+# one pending run, so queued bisect dispatches or a scheduled run waiting
+# behind a dispatch would be cancelled.
 permissions: {}
-
-concurrency:
-  group: electron-benchmarks-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   setup:

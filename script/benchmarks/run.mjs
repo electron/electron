@@ -203,6 +203,8 @@ async function killTree(child, graceMs) {
 
 // Invocations in flight, killed if run.mjs itself is stopped.
 const activeChildren = new Set();
+// Called with the signal name before run.mjs exits on a signal.
+let onStopSignal = () => {};
 
 // crossbench runs in its own process group, so a Ctrl+C or SIGTERM sent to
 // run.mjs would not reach it. Take its process tree down too.
@@ -216,6 +218,7 @@ function killActiveChildrenOnSignals() {
           signalGroup(child.pid, 'SIGKILL');
         }
       }
+      onStopSignal(signal);
       process.exit(128 + os.constants.signals[signal]);
     });
   }
@@ -340,6 +343,11 @@ async function main() {
     invocations: []
   };
   const writeMetadata = () => fs.writeFileSync(path.join(outDir, 'metadata.json'), JSON.stringify(metadata, null, 2));
+  onStopSignal = (signal) => {
+    metadata.finishedAt = new Date().toISOString();
+    metadata.stoppedBy = signal;
+    writeMetadata();
+  };
   console.log(
     `[run] host: ${metadata.cpuModel}, ${metadata.cpuCount} CPUs, ${metadata.kernel}, ${metadata.runnerName}`
   );

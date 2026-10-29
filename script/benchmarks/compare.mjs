@@ -237,8 +237,11 @@ const tag = (key, value) =>
     .replace(/^_+|_+$/g, '')
     .slice(0, 150)}`;
 
-export function datadogSeries({ metadata, samples, comparisons }) {
-  const timestamp = Math.round(Date.parse(metadata.finishedAt ?? metadata.startedAt) / 1000);
+// Points are stamped at upload time, as script/build-stats.mjs does: the v2
+// series intake rejects points more than an hour old, and a run cut off by a
+// timeout or cancellation can be hours past its start.
+export function datadogSeries({ metadata, samples, comparisons }, now = Date.now()) {
+  const timestamp = Math.round(now / 1000);
   const targets = Object.fromEntries(metadata.targets.map((target) => [target.id, target]));
   const common = [tag('platform', metadata.platform), tag('arch', metadata.arch), tag('cpu_model', metadata.cpuModel)];
   const series = [];
