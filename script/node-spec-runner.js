@@ -112,8 +112,12 @@ async function main() {
   if (args.validateDisabled) {
     const missing = [];
     for (const test of [...DISABLED_TESTS, ...FLAKY_TESTS]) {
-      const js = path.join(NODE_DIR, 'test', `${test}.js`);
-      const mjs = path.join(NODE_DIR, 'test', `${test}.mjs`);
+      // A WPT entry can name one case of a WPT test file, as
+      // wpt/<test file>/<case id>; the file is what has to exist.
+      const parts = test.split('/');
+      const file = parts[0] === 'wpt' ? parts.slice(0, 2).join('/') : test;
+      const js = path.join(NODE_DIR, 'test', `${file}.js`);
+      const mjs = path.join(NODE_DIR, 'test', `${file}.mjs`);
       if (!fs.existsSync(js) && !fs.existsSync(mjs)) {
         missing.push(test);
       }
