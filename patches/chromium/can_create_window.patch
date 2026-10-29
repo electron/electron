@@ -94,10 +94,10 @@ index 115c8589dd52daae3b3d0472bfb7c6113131c394..c1a08cef12a58935839bfa42f937b2ee
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 85185e7040f2db8d4f2c02cf319d98aab8849463..1a3167923d727e927ee2a41e372cf3ba7afd96d4 100644
+index 6e418ed89400dc7f6a2780628576e0ae69487c5e..b7608038ffdf94dda76262dfff391550d9c1f2ab 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -843,6 +843,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -844,6 +844,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -107,7 +107,7 @@ index 85185e7040f2db8d4f2c02cf319d98aab8849463..1a3167923d727e927ee2a41e372cf3ba
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 624b7e8b472c58f7357f152190a0d0863bd1e4e7..28f9b5f79ecda91b83c947b184fe45cd6337d1e1 100644
+index 16a483a869a90b518ff99109d8132cde20a6bef6..761b50183d6c392c7aa587a31bcf21ab589b5129 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -211,6 +211,7 @@ class TrustedURLLoaderHeaderClient;
