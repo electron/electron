@@ -500,7 +500,8 @@ const sha256HexSync = (buffer: Uint8Array) => getCrypto().createHash('sha256').u
 // Hashes off the JS thread; used by the asynchronous read paths so that
 // validating a block never stalls the event loop.
 const sha256HexAsync = async (buffer: Uint8Array) => {
-  const digest = await getCrypto().webcrypto.subtle.digest('SHA-256', buffer);
+  // Archive reads are never backed by a SharedArrayBuffer.
+  const digest = await getCrypto().webcrypto.subtle.digest('SHA-256', buffer as Uint8Array<ArrayBuffer>);
   return Buffer.from(digest).toString('hex');
 };
 
