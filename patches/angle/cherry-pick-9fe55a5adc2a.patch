@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Fri, 9 Oct 2026 02:33:55 +0800
+Subject: m156: Metal: Fix 2D array layer count check in
+ TextureMtl::redefineImage
+
+For MTLTextureType2DArray textures, MTLTexture.depth is always 1 while
+the layer count is stored in arrayLength. Substitute arrayLength into
+the depth component via GetTextureGLSize when comparing GL image
+extents in TextureMtl::redefineImage so layer-count-only redefinitions
+properly release stale storage and per-level views.
+
+Bug: chromium:568900535
+Fixed: chromium:573035000
+Change-Id: I9d0b6a36941d739fab15ab1fa37767946bc0441b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8542591
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+(cherry picked from commit 974b79ad146a3dca3d9a54e13f38519a8269964e)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8619958
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/metal/TextureMtl.mm b/src/libANGLE/renderer/metal/TextureMtl.mm
+index ab2813837e37098e06ca02be6e91d27692cc4f95..e60b91e796c13a3d00742f9ea3dc2d544b6bcd97 100644
+--- a/src/libANGLE/renderer/metal/TextureMtl.mm
++++ b/src/libANGLE/renderer/metal/TextureMtl.mm
+@@ -713,6 +713,19 @@ GLenum OverrideSwizzleValue(const gl::Context *context,
+     return levelTextureViews[level];
+ }
+ 
++// Returns the texture extents in GL terms, substituting arrayLength into depth for array textures
++// since MTLTexture stores layer count in arrayLength with depth == 1.
++gl::Extents GetTextureGLSize(const mtl::TextureRef &texture,
++                             const mtl::MipmapNativeLevel &nativeLevel)
++{
++    gl::Extents size = texture->size(nativeLevel);
++    if (texture->textureType() == MTLTextureType2DArray)
++    {
++        size.depth = static_cast<int>(texture->arrayLength());
++    }
++    return size;
++}
++
+ }  // namespace
+ 
+ // TextureMtl::NativeTextureWrapper implementation.
+@@ -799,6 +812,10 @@ uint32_t height(GLuint glLevel) const
+     uint32_t depth(GLuint glLevel) const { return mNativeTexture->depth(getNativeLevel(glLevel)); }
+ 
+     gl::Extents size(GLuint glLevel) const { return mNativeTexture->size(getNativeLevel(glLevel)); }
++    gl::Extents getGLSize(GLuint glLevel) const
++    {
++        return GetTextureGLSize(mNativeTexture, getNativeLevel(glLevel));
++    }
+ 
+     // Get width, height, depth, size at base level.
+     uint32_t widthAt0() const { return width(mBaseGLLevel); }
+@@ -2094,7 +2111,7 @@ uint32_t height(GLuint glLevel) const
+         // must release it.
+         ASSERT(mNativeTextureStorage->textureType() == mtl::GetTextureType(index.getType()));
+         if (mNativeTextureStorage->getFormat() != mtlFormat ||
+-            size != mNativeTextureStorage->size(glLevel))
++            size != mNativeTextureStorage->getGLSize(glLevel))
+         {
+             // Keep other images
+             deallocateNativeStorage(/*keepImages=*/true);
+@@ -2118,7 +2135,7 @@ uint32_t height(GLuint glLevel) const
+             imageDef.image->textureType() ==
+                 mtl::GetTextureType(GetTextureImageType(index.getType())) &&
+             imageDef.formatID == mNativeTextureStorage->getFormat().intendedFormatId &&
+-            imageDef.image->sizeAt0() == size)
++            GetTextureGLSize(imageDef.image, mtl::kZeroNativeMipLevel) == size)
+         {
+             // Keep it! (No-op)
+         }
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index da2ff614ab4a1cb9a181d36166edd4087378c3c6..cf6f9c844362718ee1342e2a0d6f107b20d66e36 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -9814,6 +9814,52 @@ TEST_P(Texture2DArrayTestES3, TextureArrayUseThenRedefineThenUse)
+     EXPECT_PIXEL_COLOR_EQ(px, py, GLColor::green);
+ }
+ 
++// Test that redefining level 0 of a multi-layer 2D array texture to 1 layer (with unchanged
++// width, height, and format) followed by glGenerateMipmap preserves the newly uploaded level 0
++// data and generates mipmaps from it.
++TEST_P(Texture2DArrayTestES3, RedefineBaseLevelLayerCountToOneThenGenerateMipmap)
++{
++    constexpr GLsizei kSize          = 8;
++    constexpr GLsizei kInitialLayers = 4;
++
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++
++    // Define level 0 with 4 layers filled with red and draw to materialize native storage.
++    const std::vector<GLColor> pixelsRed(kSize * kSize * kInitialLayers, GLColor::red);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kSize, kSize, kInitialLayers, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, pixelsRed.data());
++    ASSERT_GL_NO_ERROR();
++
++    glUseProgram(mProgram);
++    glUniform1i(mTextureArraySliceUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    ASSERT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Redefine level 0 with 1 layer (unchanged width, height, and format) filled with green.
++    const std::vector<GLColor> pixelsGreen(kSize * kSize * 1, GLColor::green);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kSize, kSize, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsGreen.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Generate mipmaps; this recreates storage for the full mip chain of the 1-layer array.
++    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
++    ASSERT_GL_NO_ERROR();
++
++    // Verify level 0 and level 1 contain green.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kSize, kSize, GLColor::green);
++
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 1, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kSize / 2, kSize / 2, GLColor::green);
++}
++
+ // Create a 2D array texture, use it, then redefine one level without changing dimensions.
+ TEST_P(Texture2DArrayTestES3, RedefineLevelData)
+ {

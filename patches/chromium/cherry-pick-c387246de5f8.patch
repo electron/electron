@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Wed, 21 Oct 2026 12:59:27 -0700
+Subject: [M156] [HLS] Disallow file:// HLS content
+
+Original change's description:
+> [HLS] Disallow file:// HLS content
+>
+> pages and scripts loaded from the file:// scheme aren't allowed to read
+> arbitrary data from other file:// urls (ie, you can't use fetch!), but
+> HLS was a vector around that, since it allows somewhat programmatic
+> access to individual bytes of a remote file, which could collectively
+> allow reading an entire local file.
+>
+> As a result, the only safe way to stop this is to disable hls content
+> from loading any file:// urls. It was already impossible to mix file://
+> and other schemes anyway.
+>
+> The only real place this was useful was ironically testing, which means
+> that we have to make some tweaks to the CrossOriginFileDataSourceWrapper
+> implementation to lie about the URL origin.
+>
+> Fixed: 572878518
+> Change-Id: I181db95da42ac7eaa35a655754405efe78ed8b91
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8587477
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1720224}
+
+(cherry picked from commit eda3f57fe1a0940f44a1b32520bfa950dba37cf5)
+
+Bug: 574750475,572878518
+Change-Id: I181db95da42ac7eaa35a655754405efe78ed8b91
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8614187
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#1403}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/media/filters/hls_data_source_provider_impl.cc b/media/filters/hls_data_source_provider_impl.cc
+index 4e1f8b7852f96edada37c79f9189fc3643b2604d..a31792814433dd64a07516b771d27b3c8bee8119 100644
+--- a/media/filters/hls_data_source_provider_impl.cc
++++ b/media/filters/hls_data_source_provider_impl.cc
+@@ -203,6 +203,23 @@ void HlsDataSourceProviderImpl::DataSourceInitialized(
+       if (!response_uri.SchemeIs("data")) {
+         stream->TrackOrigin(url::Origin::Create(response_uri));
+       }
++      if (response_uri.SchemeIs("file")) {
++        // For a base page loaded via the file:// protocol, the chrome network
++        // stack allows media content loaded directly via src=, but for security
++        // reasons, does not allow arbitrary reads from other file:// urls (ie,
++        // via JS using `fetch()`).
++        // Since HLS provides the ability to play local manifests with variable
++        // substitution, a file:// hosted playlist could theoretically make
++        // range requests to any arbitrary other file:// uri and test for
++        // playback.
++
++        // As a result, the only thing we can do is block HLS from using the
++        // file:// protocol entirely.
++        std::move(callback).Run(base::unexpected(
++            HlsDemuxerStatus{HlsDemuxerStatus::Codes::kInvalidContentScheme}));
++        TRACE_EVENT_END("media", GetTracingTrack(this));
++        return;
++      }
+       stream->SetPostRedirectUri(response_uri);
+     } else {
+       HlsDemuxerStatus error = {HlsDemuxerStatus::Codes::kNetworkReadError,
+diff --git a/media/filters/hls_demuxer_status.h b/media/filters/hls_demuxer_status.h
+index 5793cbf9331ceaa26327f1e2e98c6e2fa45d01a5..bc99919150453b58a527d1dd9dca3c8049ab44d1 100644
+--- a/media/filters/hls_demuxer_status.h
++++ b/media/filters/hls_demuxer_status.h
+@@ -76,8 +76,11 @@ struct HlsDemuxerStatusTraits {
+     // error during initialization.
+     kNoDataEverAppended = 18,
+ 
++    // the file:// data scheme is not allowed in HLS.
++    kInvalidContentScheme = 19,
++
+     // Keep this at the end and equal to the highest value ever used.
+-    kMaxValue = kNoDataEverAppended,
++    kMaxValue = kInvalidContentScheme,
+   };
+ 
+   static constexpr StatusGroupType Group() { return "HlsDemuxerStatus"; }
+@@ -122,6 +125,8 @@ struct HlsDemuxerStatusTraits {
+         return "Could not append data to ChunkDemuxer";
+       case Codes::kNoDataEverAppended:
+         return "Segment queue never had any data";
++      case Codes::kInvalidContentScheme:
++        return "The content scheme is disallowed in HLS.";
+     }
+   }
+ };
+diff --git a/media/test/pipeline_integration_test_base.cc b/media/test/pipeline_integration_test_base.cc
+index ab17286be503fd6423d46e52a52edd3eb4633867..c28294aebb39e6f38e21760a0d4b117e4298c04c 100644
+--- a/media/test/pipeline_integration_test_base.cc
++++ b/media/test/pipeline_integration_test_base.cc
+@@ -130,6 +130,8 @@ class CrossOriginFileDataSourceWrapper : public CrossOriginDataSource {
+   }
+   bool DidRedirect() const override { return file_data_source_.DidRedirect(); }
+   GURL GetUrlAfterRedirects() const override { return url_; }
++  GURL GetUrlDataOrigin() const override { return origin_; }
++  void SetUrlOrigin(GURL uri) { origin_ = std::move(uri); }
+   void StopPreloading() override { file_data_source_.StopPreloading(); }
+   void OnMediaPlaybackRateChanged(double playback_rate) override {
+     file_data_source_.OnMediaPlaybackRateChanged(playback_rate);
+@@ -160,6 +162,7 @@ class CrossOriginFileDataSourceWrapper : public CrossOriginDataSource {
+   }
+ 
+  private:
++  GURL origin_;
+   GURL url_;
+   FileDataSource file_data_source_;
+ };
+@@ -174,13 +177,16 @@ class TestDataSourceFactory : public CrossOriginDataSource::Factory {
+                   callback) override {
+     auto file_data_source =
+         std::make_unique<CrossOriginFileDataSourceWrapper>();
++    file_data_source->SetUrlOrigin(uri);
+     base::FilePath file_path(
+ #if BUILDFLAG(IS_WIN)
+         // Windows file paths can't start with '/' the way unix file paths can,
+-        // So we have to strip the leading one which comes from GetContent().
+-        base::UTF8ToWide(uri.GetContent().erase(0, 1))
++        // So we have to strip the leading `media.com/` from GetContent().
++        base::UTF8ToWide(uri.GetContent().erase(0, 10))
+ #else
+-        uri.GetContent()
++        // Linux/Mac file paths can start with '/' so we have to strip only the
++        // leading `media.com`.
++        uri.GetContent().erase(0, 9)
+ #endif
+     );
+     CHECK(file_data_source->Initialize(file_path))
+@@ -394,8 +400,8 @@ PipelineStatus PipelineIntegrationTestBase::StartPipelineWithHlsManifest(
+   hashing_enabled_ = true;
+ 
+   auto full_path = GetTestDataFilePath(filename);
+-  std::string file_url = "file://" + full_path.MaybeAsASCII();
+-  GURL manifest_root{file_url};
++  std::string file_url = full_path.MaybeAsASCII();
++  GURL manifest_root{"https://media.com/" + file_url};
+ 
+   auto multibuffer_factory = std::make_unique<TestDataSourceFactory>();
+   // HlsManifestDemuxerEngine requires a SequenceBound data source provider,
+diff --git a/tools/metrics/histograms/enums.xml b/tools/metrics/histograms/enums.xml
+index ae7c260894f74bdd34097402b25a633d39bb0395..356d608cb03eae4cf9671648db92bdce5912dffb 100644
+--- a/tools/metrics/histograms/enums.xml
++++ b/tools/metrics/histograms/enums.xml
+@@ -4890,6 +4890,7 @@ shown properly on the user-facing crash UI.
+   <int value="16" label="kInvalidLoadedRanges"/>
+   <int value="17" label="kCouldNotAppendData"/>
+   <int value="18" label="kNoDataEverAppended"/>
++  <int value="19" label="kInvalidContentScheme"/>
+ </enum>
+ 
+ <enum name="HpsTurnOnResult">

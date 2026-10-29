@@ -1,0 +1,357 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Manos Koukoutos <manoskouk@chromium.org>
+Date: Wed, 21 Oct 2026 14:17:36 +0000
+Subject: [M156] [turbofan] Emit dedicated operator for trusted-pointer loads
+
+Original change's description:
+> [turbofan] Emit dedicated operator for trusted-pointer loads
+>
+> Instead of emitting a trusted-pointer load as a series of instructions
+> in WasmGraphAssembler::BuildDecodeTrustedPointer, we emit a dedicated
+> operator for it (LoadTrustedPointerOperator), which is translated into
+> Turboshaft and then lowered in the instruction selector. This prevents
+> load elimination from erroneously eliminating the load to the pointer
+> handle.
+>
+> Fixed: 573378812
+> Change-Id: Ic651fe29cec26aa4b23039db481dee6dcabcb5c6
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8591942
+> Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+> Commit-Queue: Manos Koukoutos <manoskouk@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110863}
+
+(cherry picked from commit d4374eaec817692d144b16ade997040e60ee6139)
+
+Bug: 575703831,573378812
+Change-Id: Ic651fe29cec26aa4b23039db481dee6dcabcb5c6
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8619278
+Reviewed-by: Manos Koukoutos <manoskouk@chromium.org>
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Owners-Override: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Manos Koukoutos <manoskouk@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.6@{#43}
+Cr-Branched-From: b976f35da8356fcf4e5e176d1d810ba6a6f05718-refs/heads/15.6.75@{#1}
+Cr-Branched-From: a424b0597aab8e27f12ea4a700bae3961fa1a076-refs/heads/main@{#110135}
+
+diff --git a/src/compiler/common-operator.cc b/src/compiler/common-operator.cc
+index 37ab33d7f744d55d108f9527d32b169ea67b91f9..0bc7016d6aba1b75d334e8c46a9c50cb9236d45f 100644
+--- a/src/compiler/common-operator.cc
++++ b/src/compiler/common-operator.cc
+@@ -515,6 +515,32 @@ const ExitMachineGraphParameters& ExitMachineGraphParametersOf(
+   return OpParameter<ExitMachineGraphParameters>(op);
+ }
+ 
++#if V8_ENABLE_SANDBOX
++size_t hash_value(const LoadTrustedPointerParameters& params) {
++  return base::hash_combine(params.offset, params.tag);
++}
++
++V8_EXPORT_PRIVATE std::ostream& operator<<(
++    std::ostream& os, LoadTrustedPointerParameters params) {
++  return os << "offset=" << params.offset << ", tag.first=" << params.tag.first
++            << ", tag.last=" << params.tag.last;
++}
++
++class LoadTrustedPointerOperator final
++    : public Operator1<LoadTrustedPointerParameters> {
++ public:
++  LoadTrustedPointerOperator(int offset, IndirectPointerTagRange tag)
++      : Operator1<LoadTrustedPointerParameters>(
++            IrOpcode::kLoadTrustedPointer, Operator::kEliminatable,
++            "LoadTrustedPointer", 1, 1, 1, 1, 1, 0, {offset, tag}) {}
++};
++
++const Operator* CommonOperatorBuilder::LoadTrustedPointer(
++    int offset, IndirectPointerTagRange tag) {
++  return zone_->New<LoadTrustedPointerOperator>(offset, tag);
++}
++#endif  // V8_ENABLE_SANDBOX
++
+ #define COMMON_CACHED_OP_LIST(V)                          \
+   V(Plug, Operator::kNoProperties, 0, 0, 0, 1, 0, 0)      \
+   V(Dead, Operator::kFoldable, 0, 0, 0, 1, 1, 1)          \
+diff --git a/src/compiler/common-operator.h b/src/compiler/common-operator.h
+index 6499e23637c3746eb560a01419eecc305cc93abe..3a1188f3574f25a7484f822055e967c1f157d7a1 100644
+--- a/src/compiler/common-operator.h
++++ b/src/compiler/common-operator.h
+@@ -538,6 +538,20 @@ V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+ V8_EXPORT_PRIVATE const ExitMachineGraphParameters&
+ ExitMachineGraphParametersOf(const Operator* op) V8_WARN_UNUSED_RESULT;
+ 
++#if V8_ENABLE_SANDBOX
++struct LoadTrustedPointerParameters {
++  int offset;
++  IndirectPointerTagRange tag;
++
++  bool operator==(const LoadTrustedPointerParameters&) const = default;
++};
++
++size_t hash_value(const LoadTrustedPointerParameters& params);
++
++V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
++                                           LoadTrustedPointerParameters params);
++#endif  // V8_ENABLE_SANDBOX
++
+ // Interface for building common operators that can be used at any level of IR,
+ // including JavaScript, mid-level, and low-level.
+ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
+@@ -616,6 +630,9 @@ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
+   const Operator* HeapConstant(const Handle<HeapObject>&);
+   const Operator* CompressedHeapConstant(const Handle<HeapObject>&);
+   const Operator* TrustedHeapConstant(const Handle<HeapObject>&);
++#if V8_ENABLE_SANDBOX
++  const Operator* LoadTrustedPointer(int offset, IndirectPointerTagRange tag);
++#endif
+   const Operator* ObjectId(uint32_t);
+ 
+   const Operator* RelocatableInt32Constant(int32_t value,
+diff --git a/src/compiler/opcodes.h b/src/compiler/opcodes.h
+index de11918ad1383609a383f5e9698ba8e6a53b492b..d74406bfe7b02fce15675f6bcb4d084130b48b93 100644
+--- a/src/compiler/opcodes.h
++++ b/src/compiler/opcodes.h
+@@ -85,15 +85,16 @@
+   V(EnterMachineGraph)      \
+   V(ExitMachineGraph)
+ 
+-#define COMMON_OP_LIST(V)      \
+-  CONSTANT_OP_LIST(V)          \
+-  INNER_OP_LIST(V)             \
+-  V(Unreachable)               \
+-  V(DeadValue)                 \
+-  V(Dead)                      \
+-  V(Plug)                      \
+-  V(SLVerifierHint)            \
+-  V(MajorGCForCompilerTesting) \
++#define COMMON_OP_LIST(V)           \
++  CONSTANT_OP_LIST(V)               \
++  INNER_OP_LIST(V)                  \
++  V(Unreachable)                    \
++  V(DeadValue)                      \
++  V(Dead)                           \
++  V(Plug)                           \
++  V(SLVerifierHint)                 \
++  V(MajorGCForCompilerTesting)      \
++  IF_SANDBOX(V, LoadTrustedPointer) \
+   V(StaticAssert)
+ 
+ // Opcodes for JavaScript operators.
+diff --git a/src/compiler/simplified-lowering-verifier.cc b/src/compiler/simplified-lowering-verifier.cc
+index d288ed102b06ba7aa4181f2bec697c4aea34ef0d..6d41bbb8a324a69f3e08185c2394e5440cc9b32d 100644
+--- a/src/compiler/simplified-lowering-verifier.cc
++++ b/src/compiler/simplified-lowering-verifier.cc
+@@ -504,6 +504,7 @@ void SimplifiedLoweringVerifier::VisitNode(Node* node,
+       CASE(Dead)
+       CASE(Plug)
+       CASE(MajorGCForCompilerTesting)
++      IF_SANDBOX(CASE, LoadTrustedPointer)
+       CASE(StaticAssert)
+       // Simplified change operators
+       CASE(ChangeTaggedSignedToInt32)
+diff --git a/src/compiler/turbofan-typer.cc b/src/compiler/turbofan-typer.cc
+index 16fa4b6c44353b0dab8467464305564e94ee1a32..04df61211293163b3ac634210373a58525a1ba69 100644
+--- a/src/compiler/turbofan-typer.cc
++++ b/src/compiler/turbofan-typer.cc
+@@ -1297,6 +1297,9 @@ Type Typer::Visitor::TypeMajorGCForCompilerTesting(Node* node) {
+   UNREACHABLE();
+ }
+ Type Typer::Visitor::TypeStaticAssert(Node* node) { UNREACHABLE(); }
++#if V8_ENABLE_SANDBOX
++Type Typer::Visitor::TypeLoadTrustedPointer(Node* node) { UNREACHABLE(); }
++#endif
+ Type Typer::Visitor::TypeSLVerifierHint(Node* node) { UNREACHABLE(); }
+ 
+ // JS comparison operators.
+diff --git a/src/compiler/turboshaft/graph-builder.cc b/src/compiler/turboshaft/graph-builder.cc
+index 4864bf773c518191d1a21de96296ed10ebb1913a..5866bba154e0ffedc919ed69ea46232f27c12b05 100644
+--- a/src/compiler/turboshaft/graph-builder.cc
++++ b/src/compiler/turboshaft/graph-builder.cc
+@@ -1434,6 +1434,14 @@ OpIndex GraphBuilder::Process(
+       return __ Load(Map(node->InputAt(0)), Map(node->InputAt(1)),
+                      LoadOp::Kind::Trapping(), loaded_rep);
+     }
++#if V8_ENABLE_SANDBOX
++    case IrOpcode::kLoadTrustedPointer: {
++      auto params = OpParameter<LoadTrustedPointerParameters>(op);
++      return __ LoadTrustedPointer(Map(node->InputAt(0)),
++                                   LoadOp::Kind::TaggedBase(), params.tag,
++                                   params.offset + kHeapObjectTag);
++    }
++#endif
+ 
+     case IrOpcode::kStore:
+     case IrOpcode::kUnalignedStore: {
+diff --git a/src/compiler/verifier.cc b/src/compiler/verifier.cc
+index a4787d8391b8c0a25e6af4c84b1e9863432f0731..39d2dbced4979c211c69c3a1627d0220eaab4910 100644
+--- a/src/compiler/verifier.cc
++++ b/src/compiler/verifier.cc
+@@ -653,6 +653,11 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
+     case IrOpcode::kExitMachineGraph:
+       CheckValueInputIs(node, 0, Type::Machine());
+       break;
++#if V8_ENABLE_SANDBOX
++    case IrOpcode::kLoadTrustedPointer:
++      // TODO(manoskouk): what are the constraints here?
++      break;
++#endif
+ 
+     // JavaScript operators
+     // --------------------
+diff --git a/src/compiler/wasm-graph-assembler.cc b/src/compiler/wasm-graph-assembler.cc
+index c5c4dd9160d24620846ef6dee045b51d540ab66a..f4e55a54a118f79ebfbfa5e32079cb1ce45e1bad 100644
+--- a/src/compiler/wasm-graph-assembler.cc
++++ b/src/compiler/wasm-graph-assembler.cc
+@@ -242,55 +242,6 @@ Node* WasmGraphAssembler::BuildDecodeSandboxedExternalPointer(
+ #endif  // V8_ENABLE_SANDBOX
+ }
+ 
+-Node* WasmGraphAssembler::BuildDecodeTrustedPointer(
+-    Node* handle, IndirectPointerTagRange tag_range) {
+-#if V8_ENABLE_SANDBOX
+-  Node* index = Word32Shr(handle, Int32Constant(kTrustedPointerHandleShift));
+-  Node* offset = ChangeUint32ToUint64(
+-      Word32Shl(index, Int32Constant(kTrustedPointerTableEntrySizeLog2)));
+-  Node* table = Load(MachineType::Pointer(), LoadRootRegister(),
+-                     IsolateData::trusted_pointer_table_offset() +
+-                         Internals::kExternalEntityTableBasePointerOffset);
+-  Node* decoded_ptr = Load(MachineType::Pointer(), table, offset);
+-
+-  if (IsFastIndirectPointerTagRange(tag_range)) {
+-    uint64_t mask = ComputeUntaggingMaskForFastIndirectPointerTag(tag_range);
+-    decoded_ptr = WordAnd(decoded_ptr, IntPtrConstant(mask));
+-  } else {
+-    Node* tag =
+-        WordShr(decoded_ptr, IntPtrConstant(kTrustedPointerTableTagShift));
+-
+-    auto ok = MakeLabel();
+-    if (tag_range.Size() == 1) {
+-      // The common and simple case: we expect exactly one tag.
+-      Node* expected_tag = IntPtrConstant(tag_range.first);
+-      GotoIf(WordEqual(tag, expected_tag), &ok, BranchHint::kTrue);
+-      RuntimeAbort(AbortReason::kIndirectPointerTagMismatch);
+-      Goto(&ok);  // Unreachable, but needed for graph coherency.
+-    } else {
+-      // Range check.
+-      Node* diff = IntPtrSub(tag, IntPtrConstant(tag_range.first));
+-      GotoIf(Uint64LessThanOrEqual(
+-                 diff, IntPtrConstant(tag_range.last - tag_range.first)),
+-             &ok, BranchHint::kTrue);
+-      RuntimeAbort(AbortReason::kIndirectPointerTagMismatch);
+-      Goto(&ok);  // Unreachable, but needed for graph coherency.
+-    }
+-
+-    Bind(&ok);
+-    decoded_ptr =
+-        WordAnd(decoded_ptr, IntPtrConstant(kTrustedPointerTablePayloadMask));
+-  }
+-
+-  // We have to change the type of the result value to Tagged, so if the value
+-  // gets spilled on the stack, it will get processed by the GC.
+-  decoded_ptr = BitcastWordToTagged(decoded_ptr);
+-  return decoded_ptr;
+-#else
+-  UNREACHABLE();
+-#endif  // V8_ENABLE_SANDBOX
+-}
+-
+ Node* WasmGraphAssembler::BuildLoadExternalPointerFromObject(
+     Node* object, int field_offset, ExternalPointerTagRange tag_range,
+     Node* isolate_root) {
+@@ -408,38 +359,14 @@ Node* WasmGraphAssembler::LoadByteArrayElement(Node* byte_array,
+   return LoadFromObject(type, byte_array, offset);
+ }
+ 
+-Node* WasmGraphAssembler::LoadImmutableTrustedPointerFromObject(
+-    Node* object, int field_offset, IndirectPointerTagRange tag) {
+-  Node* offset = IntPtrConstant(field_offset);
+-#ifdef V8_ENABLE_SANDBOX
+-  Node* handle = LoadImmutableFromObject(MachineType::Uint32(), object, offset);
+-  return BuildDecodeTrustedPointer(handle, tag);
+-#else
+-  return LoadImmutableFromObject(MachineType::TaggedPointer(), object, offset);
+-#endif
+-}
+-
+ Node* WasmGraphAssembler::LoadTrustedPointerFromObject(
+     Node* object, int field_offset, IndirectPointerTagRange tag) {
+-  Node* offset = IntPtrConstant(field_offset);
+ #ifdef V8_ENABLE_SANDBOX
+-  Node* handle = LoadFromObject(MachineType::Uint32(), object, offset);
+-  return BuildDecodeTrustedPointer(handle, tag);
++  return AddNode(graph()->NewNode(common_.LoadTrustedPointer(field_offset, tag),
++                                  object, effect(), control()));
+ #else
+-  return LoadFromObject(MachineType::TaggedPointer(), object, offset);
+-#endif
+-}
+-
+-std::pair<Node*, Node*>
+-WasmGraphAssembler::LoadTrustedPointerFromObjectTrapOnNull(
+-    Node* object, int field_offset, IndirectPointerTagRange tag) {
+   Node* offset = IntPtrConstant(field_offset);
+-#ifdef V8_ENABLE_SANDBOX
+-  Node* handle = LoadTrapOnNull(MachineType::Uint32(), object, offset);
+-  return {handle, BuildDecodeTrustedPointer(handle, tag)};
+-#else
+-  Node* value = LoadTrapOnNull(MachineType::TaggedPointer(), object, offset);
+-  return {value, value};
++  return LoadFromObject(MachineType::TaggedPointer(), object, offset);
+ #endif
+ }
+ 
+@@ -465,7 +392,7 @@ Node* WasmGraphAssembler::LoadContextNoCellFromJSFunction(Node* js_function) {
+ 
+ Node* WasmGraphAssembler::LoadFunctionDataFromJSFunction(Node* js_function) {
+   Node* shared = LoadSharedFunctionInfo(js_function);
+-  return LoadImmutableTrustedPointerFromObject(
++  return LoadTrustedPointerFromObject(
+       shared,
+       offsetof(SharedFunctionInfo, trusted_function_data_) - kHeapObjectTag,
+       kWasmExportedFunctionDataIndirectPointerTag);
+@@ -624,7 +551,7 @@ Node* WasmGraphAssembler::StringPrepareForGetCodeunit(Node* string) {
+ 
+ Node* WasmGraphAssembler::LoadTrustedDataFromInstanceObject(
+     Node* instance_object) {
+-  return LoadImmutableTrustedPointerFromObject(
++  return LoadTrustedPointerFromObject(
+       instance_object,
+       offsetof(WasmInstanceObject, trusted_data_) - kHeapObjectTag,
+       kWasmTrustedInstanceDataIndirectPointerTag);
+diff --git a/src/compiler/wasm-graph-assembler.h b/src/compiler/wasm-graph-assembler.h
+index f10e0205091c7377b341958a9d6fc834030575a1..0737d7999e7d3c3bad8039295a42ad8448de7e3a 100644
+--- a/src/compiler/wasm-graph-assembler.h
++++ b/src/compiler/wasm-graph-assembler.h
+@@ -28,7 +28,8 @@ class WasmGraphAssembler : public GraphAssembler {
+  public:
+   WasmGraphAssembler(MachineGraph* mcgraph, Zone* zone)
+       : GraphAssembler(mcgraph, zone, BranchSemantics::kMachine),
+-        simplified_(zone) {}
++        simplified_(zone),
++        common_(zone) {}
+ 
+   // While CallBuiltin() translates to a direct call to the address of the
+   // builtin, CallBuiltinThroughJumptable instead jumps to a slot in a jump
+@@ -177,15 +178,8 @@ class WasmGraphAssembler : public GraphAssembler {
+                                            ExternalPointerTagRange tag_range,
+                                            Node* isolate_root);
+ 
+-  Node* LoadImmutableTrustedPointerFromObject(Node* object, int offset,
+-                                              IndirectPointerTagRange tag);
+   Node* LoadTrustedPointerFromObject(Node* object, int offset,
+                                      IndirectPointerTagRange tag);
+-  // Returns the load node (where the source position for the trap needs to be
+-  // set by the caller) and the result.
+-  std::pair<Node*, Node*> LoadTrustedPointerFromObjectTrapOnNull(
+-      Node* object, int offset, IndirectPointerTagRange tag);
+-  Node* BuildDecodeTrustedPointer(Node* handle, IndirectPointerTagRange tag);
+ 
+   Node* IsSmi(Node* object);
+ 
+@@ -345,6 +339,7 @@ class WasmGraphAssembler : public GraphAssembler {
+   }
+ 
+   SimplifiedOperatorBuilder simplified_;
++  CommonOperatorBuilder common_;
+ };
+ 
+ }  // namespace compiler

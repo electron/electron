@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ian Kilpatrick <ikilpatrick@chromium.org>
+Date: Fri, 23 Oct 2026 14:31:41 -0700
+Subject: [M156] [layout] Add move constructor and assignment operator to
+ Shelf.
+
+Original change's description:
+> [layout] Add move constructor and assignment operator to Shelf.
+>
+> This adds the missing move constructor & assignment operator to the
+> Shelf data-type.
+>
+> Additionally adds the copy assignment operator for completeness.
+>
+> Fixed: 574852698
+> Change-Id: Ief97ee317f7aba8d86b3c6cf920cb362efc679c5
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8633358
+> Reviewed-by: David Grogan <dgrogan@chromium.org>
+> Commit-Queue: Ian Kilpatrick <ikilpatrick@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1725253}
+
+(cherry picked from commit 5173a94262b618f50810938fa3d50b8a36a68886)
+
+Bug: 576949098,574852698
+Change-Id: Ief97ee317f7aba8d86b3c6cf920cb362efc679c5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8643432
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Ian Kilpatrick <ikilpatrick@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1499}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
+index e2f5e2b515356b7fd8fb2b4465cdb8d0af596ded..e17476b334a777e4a4ea2580b6bb48393efafb04 100644
+--- a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
++++ b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.cc
+@@ -615,7 +615,7 @@ void ExclusionSpaceInternal::DerivedGeometry::Add(
+                                    ? LayoutUnit::Max()
+                                    : shelf_copy->line_right;
+ 
+-        shelves_.insert(i + 1, new_shelf);
++        shelves_.insert(i + 1, std::move(new_shelf));
+       }
+ 
+       // It's safe to early exit out of this loop now. This exclusion won't
+diff --git a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
+index 2260e1265d2e5abb82cf37e19cae0f3511e454a2..f61f280586779aaf887847762e2e84849e0c2799 100644
+--- a/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
++++ b/third_party/blink/renderer/core/layout/exclusions/exclusion_space.h
+@@ -322,7 +322,8 @@ class CORE_EXPORT ExclusionSpaceInternal final
+                                : nullptr),
+           has_shape_exclusions(false) {}
+ 
+-    // The copy constructor explicitly copies the shape_exclusions member.
++    // The copy constructor and copy assignment operator explicitly copy the
++    // shape_exclusions member.
+     Shelf(const Shelf& other)
+         : block_offset(other.block_offset),
+           line_left(other.line_left),
+@@ -334,6 +335,22 @@ class CORE_EXPORT ExclusionSpaceInternal final
+                                      *other.shape_exclusions)
+                                : nullptr),
+           has_shape_exclusions(other.has_shape_exclusions) {}
++    Shelf(Shelf&&) noexcept = default;
++
++    Shelf& operator=(const Shelf& other) {
++      block_offset = other.block_offset;
++      line_left = other.line_left;
++      line_right = other.line_right;
++      line_left_edges = other.line_left_edges;
++      line_right_edges = other.line_right_edges;
++      shape_exclusions =
++          other.shape_exclusions
++              ? MakeGarbageCollected<ShapeExclusions>(*other.shape_exclusions)
++              : nullptr;
++      has_shape_exclusions = other.has_shape_exclusions;
++      return *this;
++    }
++    Shelf& operator=(Shelf&&) noexcept = default;
+ 
+     void Trace(Visitor* visitor) const { visitor->Trace(shape_exclusions); }
+ 

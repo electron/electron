@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Chapovalov <danilchap@webrtc.org>
+Date: Fri, 16 Oct 2026 16:35:33 +0200
+Subject: [M156] Fail EncodeFec when packets are passed radically out of order
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Fail EncodeFec when packets are passed radically out of order
+>
+> Bug: chromium:570927027
+> Change-Id: I9fd8d548e9e7935a4862dc95cb65548eba3b4c5f
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509462
+> Reviewed-by: Rasmus Brandt <brandtr@webrtc.org>
+> Commit-Queue: Danil Chapovalov <danilchap@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#48960}
+
+(cherry picked from commit d86ac8ab5e04c7efb8f474985e1bec1f82443a34)
+
+Bug: chromium:575704619,chromium:570927027
+Change-Id: I9fd8d548e9e7935a4862dc95cb65548eba3b4c5f
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/510520
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Åsa Persson <asapersson@webrtc.org>
+Reviewed-by: Rasmus Brandt <brandtr@webrtc.org>
+Reviewed-by: Åsa Persson <asapersson@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#6}
+Cr-Branched-From: 3225248425fe2b3cafe389465b94ebc24968d9ba-refs/heads/main@{#48737}
+
+diff --git a/modules/rtp_rtcp/source/forward_error_correction.cc b/modules/rtp_rtcp/source/forward_error_correction.cc
+index 0bb81a8ef0bf0c455f165d4c7e53bc59bc92e8e1..c3e4e22e13b078795c732f9f010cb095d9b57d0d 100644
+--- a/modules/rtp_rtcp/source/forward_error_correction.cc
++++ b/modules/rtp_rtcp/source/forward_error_correction.cc
+@@ -294,9 +294,13 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
+   size_t old_bit_index = 1;
+   // Insert zeros in the bit mask for every hole in the sequence.
+   while (media_packets_it != media_packets.end()) {
+-    if (new_bit_index == max_media_packets) {
+-      // We can only cover up to 48 packets.
+-      break;
++    if (new_bit_index >= max_media_packets) {
++      // `total_missing_seq_nums` calculation above should ensure all
++      // `media_packets` fit within the `max_media_packets`. That calculation is
++      // simple and fast normally, but wrong when sequence numbers wrap around
++      // a lot. This condition catches exactly that - when number of packets
++      // to protect turned to be larger than earlier estimated.
++      return -1;
+     }
+     uint16_t seq_num = ParseSequenceNumber((*media_packets_it)->data.data());
+     const int num_zeros_to_insert =
+@@ -305,8 +309,11 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
+       internal::InsertZeroColumns(num_zeros_to_insert, tmp_packet_masks_,
+                                   tmp_packet_mask_size, num_fec_packets,
+                                   new_bit_index);
++      new_bit_index += num_zeros_to_insert;
++      if (new_bit_index >= max_media_packets) {
++        return -1;
++      }
+     }
+-    new_bit_index += num_zeros_to_insert;
+     internal::CopyColumn(tmp_packet_masks_, tmp_packet_mask_size, packet_masks_,
+                          packet_mask_size_, num_fec_packets, new_bit_index,
+                          old_bit_index);

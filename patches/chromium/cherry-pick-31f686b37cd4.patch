@@ -1,0 +1,263 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Colin Blundell <blundell@chromium.org>
+Date: Thu, 22 Oct 2026 14:49:13 -0700
+Subject: [M156] blink: Fix ImageCaptureFrameGrabber UAF in OnVideoFrame
+
+Original change's description:
+> blink: Fix ImageCaptureFrameGrabber UAF in OnVideoFrame
+>
+> ImageCapture is an Oilpan GarbageCollected object that owns a
+> non-Oilpan ImageCaptureFrameGrabber helper [1], which is constructed,
+> used, and destroyed exclusively on the main thread. In grabFrame() [2],
+> ImageCaptureFrameGrabber::GrabFrame() connects a SingleShotFrameHandler
+> to the media stream track [3]. When a frame arrives on the IO thread,
+> SingleShotFrameHandler::OnVideoFrameOnIOThread() posts
+> ImageCaptureFrameGrabber::OnVideoFrame() back to the main thread task
+> runner bound with a WeakPtr<ImageCaptureFrameGrabber> [4] (so the
+> WeakPtr is only ever dereferenced and invalidated on the main thread).
+> Because nothing holds a Persistent<ImageCapture> while grabFrame() is
+> pending, ImageCapture becomes unreachable in Oilpan if JavaScript drops
+> its reference to the ImageCapture wrapper.
+>
+> This leads to a same-thread re-entrant UAF on the main thread:
+> 1. ImageCaptureFrameGrabber::OnVideoFrame() starts on the main thread
+>    [5] before Oilpan has swept the dead ImageCapture. base::WeakPtr
+>    only checks validity at callback entry; it does not keep
+>    ImageCaptureFrameGrabber alive while OnVideoFrame() is on the stack.
+> 2. OnVideoFrame() calls GetRasterContextProvider() [5] ->
+>    SharedGpuContext::ContextProviderWrapper() ->
+>    SharedGpuContext::CreateContextProviderIfNeeded() [6] ->
+>    RendererBlinkPlatformImpl::
+>    CreateSharedOffscreenGraphicsContext3DProvider() ->
+>    viz::Gpu::EstablishGpuChannelSync() [7] on the main thread.
+> 3. EstablishGpuChannelSync() calls EstablishRequest::FinishOnMain() ->
+>    Gpu::OnEstablishedGpuChannel() -> Gpu::RunEstablishCallbacks() [8],
+>    which synchronously runs any queued EstablishGpuChannel callbacks
+>    inline on the main thread before returning.
+> 4. A queued callback (e.g. from an earlier navigator.gpu.requestAdapter
+>    call [9]) runs inline on the main thread and resolves/rejects its
+>    promise, which allocates on the Oilpan heap and triggers Oilpan lazy
+>    sweeping synchronously on the main thread.
+> 5. Lazy sweeping runs ~ImageCapture() inline on the main thread,
+>    deleting frame_grabber_ while OnVideoFrame() is still on the stack.
+>    When GetRasterContextProvider() returns to OnVideoFrame(), "this" is
+>    dangling [5].
+>
+> We cannot simply bind OnVideoFrame() with WrapPersistent like
+> getPhotoCapabilities, getPhotoSettings, and takePhoto do:
+> - ImageCaptureFrameGrabber is not an Oilpan GarbageCollected class (it
+>   subclasses MediaStreamVideoSink and relies on ~MediaStreamVideoSink()
+>   to disconnect from the track), so WrapPersistent cannot be used on it.
+> - Routing OnVideoFrame() through ImageCapture with a CrossThreadHandle
+>   would break cancellation on ContextDestroyed(): whereas
+>   HeapMojoRemote automatically drops pending callbacks on
+>   ContextDestroyed(), OnVideoFrame() is posted from the IO thread via
+>   PostCrossThreadTask to a raw SingleThreadTaskRunner and relies on
+>   ImageCapture::ContextDestroyed() resetting frame_grabber_ (and
+>   invalidating its WeakPtr) to cancel any pending or already-posted
+>   frame grab.
+>
+> Instead, make ImageCaptureFrameGrabber RefCounted (single-threaded on
+> the main thread, shared only between ImageCapture and an actively
+> executing OnVideoFrame() call) and hold a local
+> scoped_refptr<ImageCaptureFrameGrabber> keep_alive on the stack across
+> OnVideoFrame().
+>
+> Note: The bug report's suggested patch also included a test for
+> ImageCapture::ContextDestroyed() running synchronously during
+> OnVideoFrame(), but auditing the EstablishGpuChannel() callers shows
+> that none of them can synchronously run JavaScript or detach a frame
+> (promise resolution uses V8DoNotRunMicrotasksScope), so synchronous
+> execution context destruction during OnVideoFrame() is not possible.
+>
+> [1] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:third_party/blink/renderer/modules/imagecapture/image_capture.h;l=180
+> [2] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:third_party/blink/renderer/modules/imagecapture/image_capture.cc;l=1689-1692
+> [3] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc;l=156-165
+> [4] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc;l=111-116
+> [5] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc;l=167-208
+> [6] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:third_party/blink/renderer/platform/graphics/gpu/shared_gpu_context.cc;l=154
+> [7] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:services/viz/public/cpp/gpu/gpu.cc;l=392-394
+> [8] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:services/viz/public/cpp/gpu/gpu.cc;l=462-488
+> [9] https://source.chromium.org/chromium/chromium/src/+/cbf97aa00afa4f6dedcababb7a71efd999986e4b:third_party/blink/renderer/modules/webgpu/gpu.cc;l=299-302
+>
+> Patch and regression test authored by OpenAI Codex Security (kylebot).
+>
+> Bug: 574027204
+> Change-Id: Ib937010017d6601e64d38838f62f14b3aa1b4497
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8588402
+> Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+> Commit-Queue: Colin Blundell <blundell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1722274}
+
+(cherry picked from commit adb8ef84f8fe2ae3fe8b3495d3e84626d17acf8a)
+
+Bug: 576526655,574027204
+Change-Id: Ib937010017d6601e64d38838f62f14b3aa1b4497
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8628929
+Commit-Queue: Colin Blundell <blundell@chromium.org>
+Owners-Override: Colin Blundell <blundell@chromium.org>
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#1456}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture.cc b/third_party/blink/renderer/modules/imagecapture/image_capture.cc
+index 4d35b562c2d90a3cc9a346c0eb578aa456363dc7..d193a30c88099709a34a764dc21319fb24dcf651 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture.cc
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture.cc
+@@ -1677,7 +1677,7 @@ ScriptPromise<ImageBitmap> ImageCapture::grabFrame(ScriptState* script_state) {
+ 
+   // Create |m_frameGrabber| the first time.
+   if (!frame_grabber_) {
+-    frame_grabber_ = std::make_unique<ImageCaptureFrameGrabber>();
++    frame_grabber_ = base::MakeRefCounted<ImageCaptureFrameGrabber>();
+   }
+ 
+   if (!frame_grabber_) {
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture.h b/third_party/blink/renderer/modules/imagecapture/image_capture.h
+index e477820ed9316a0ba110217228c8e9b68b77c344..2ce25e46e5b3615944d214922880df9564b59335 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture.h
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture.h
+@@ -5,9 +5,9 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_MODULES_IMAGECAPTURE_IMAGE_CAPTURE_H_
+ #define THIRD_PARTY_BLINK_RENDERER_MODULES_IMAGECAPTURE_IMAGE_CAPTURE_H_
+ 
+-#include <memory>
+ #include <optional>
+ 
++#include "base/memory/scoped_refptr.h"
+ #include "base/time/time.h"
+ #include "media/capture/mojom/image_capture.mojom-blink.h"
+ #include "third_party/blink/public/mojom/permissions/permission.mojom-blink.h"
+@@ -177,7 +177,7 @@ class MODULES_EXPORT ImageCapture final
+       MediaTrackConstraintSetType) const;
+ 
+   Member<MediaStreamTrack> stream_track_;
+-  std::unique_ptr<ImageCaptureFrameGrabber> frame_grabber_;
++  scoped_refptr<ImageCaptureFrameGrabber> frame_grabber_;
+   HeapMojoRemote<media::mojom::blink::ImageCapture> service_;
+ 
+   // Whether the user has granted permission for the user to control camera PTZ.
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc b/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
+index 44e1b8cc9b1c7f212d26aed0d8ee5dad36b9b5d8..0845c690e5a3d62ef31c92b814e6762be97b0542 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.cc
+@@ -168,6 +168,13 @@ void ImageCaptureFrameGrabber::OnVideoFrame(
+     ScriptPromiseResolver<ImageBitmap>* resolver) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+ 
++  // Hold a reference across `OnVideoFrame()` (`WeakPtr` only checks validity at
++  // callback entry). Creating or accessing the GPU context below can
++  // synchronously flush pending GPU channel callbacks, which may allocate on
++  // the Oilpan heap and trigger lazy sweeping of an unreachable `ImageCapture`
++  // owner (`~ImageCapture()`), dropping `ImageCapture::frame_grabber_`.
++  scoped_refptr<ImageCaptureFrameGrabber> keep_alive(this);
++
+   auto required_provider_info = CreateSnapshotProviderInfoForVideoFrame(*frame);
+ 
+   if (!cached_draw_info_ ||
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h b/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
+index 518590871bca09461b4b04b35776f4a33002f0a6..23c5eee51442d42fad008e916463dcb4d1919541 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture_frame_grabber.h
+@@ -17,6 +17,7 @@
+ #include "third_party/blink/renderer/platform/graphics/canvas_non_2d_resource_provider.h"
+ #include "third_party/blink/renderer/platform/graphics/canvas_snapshot_info.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cancellable_task.h"
++#include "third_party/blink/renderer/platform/wtf/ref_counted.h"
+ 
+ class SkImage;
+ 
+@@ -30,7 +31,9 @@ class MediaStreamComponent;
+ // called. This method receives an incoming media::VideoFrame on a background
+ // thread and converts it into the appropriate SkBitmap which is sent back to
+ // OnSkBitmap(). This class is single threaded throughout.
+-class ImageCaptureFrameGrabber final : public MediaStreamVideoSink {
++class ImageCaptureFrameGrabber final
++    : public RefCounted<ImageCaptureFrameGrabber>,
++      public MediaStreamVideoSink {
+  public:
+   // Helper class to ensure an ImageBitmap promise is always resolved.
+   class ScopedPromiseResolver;
+@@ -40,14 +43,14 @@ class ImageCaptureFrameGrabber final : public MediaStreamVideoSink {
+   ImageCaptureFrameGrabber(const ImageCaptureFrameGrabber&) = delete;
+   ImageCaptureFrameGrabber& operator=(const ImageCaptureFrameGrabber&) = delete;
+ 
+-  ~ImageCaptureFrameGrabber() override;
+-
+   void GrabFrame(MediaStreamComponent* component,
+                  ScriptPromiseResolver<ImageBitmap>* resolver,
+                  scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+                  base::TimeDelta timeout);
+ 
+  private:
++  friend class RefCounted<ImageCaptureFrameGrabber>;
++  ~ImageCaptureFrameGrabber() override;
+   // Internal class to receive, convert and forward one frame.
+   class SingleShotFrameHandler;
+ 
+diff --git a/third_party/blink/renderer/modules/imagecapture/image_capture_test.cc b/third_party/blink/renderer/modules/imagecapture/image_capture_test.cc
+index a0eafaa3be134b3cddb52afb917b0b7e004b4113..9574925c7296f5a41c3c97dd50ce89c712a2007d 100644
+--- a/third_party/blink/renderer/modules/imagecapture/image_capture_test.cc
++++ b/third_party/blink/renderer/modules/imagecapture/image_capture_test.cc
+@@ -6,10 +6,12 @@
+ #include "third_party/blink/renderer/modules/imagecapture/image_capture.h"
+ 
+ #include "base/functional/callback_helpers.h"
++#include "base/test/bind.h"
+ #include "base/time/time.h"
+ #include "media/base/video_frame.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/public/platform/web_graphics_context_3d_provider.h"
+ #include "third_party/blink/public/web/web_heap.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_function.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+@@ -36,6 +38,8 @@
+ #include "third_party/blink/renderer/modules/mediastream/mock_media_stream_track.h"
+ #include "third_party/blink/renderer/modules/mediastream/mock_video_capturer_source.h"
+ #include "third_party/blink/renderer/platform/bindings/script_state.h"
++#include "third_party/blink/renderer/platform/graphics/gpu/shared_gpu_context.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/testing/io_task_runner_testing_platform_support.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ 
+@@ -1611,6 +1615,38 @@ TEST_F(ImageCaptureTest, GrabFrameOfLiveTrackIsFulfilled) {
+   EXPECT_TRUE(tester.IsFulfilled());
+ }
+ 
++TEST_F(ImageCaptureTest, GrabFrameSurvivesOwnerCollectionDuringConversion) {
++  V8TestingScope scope;
++  SetupTrackMocks(scope);
++  track_->SetReadyState(V8MediaStreamTrackState::Enum::kLive);
++  track_->setEnabled(true);
++  track_->SetMuted(false);
++
++  WeakPersistent<ImageCapture> weak_image_capture(image_capture_.Get());
++  SharedGpuContext::Reset();
++  base::ScopedClosureRunner reset_context(
++      base::BindOnce(&SharedGpuContext::Reset));
++  SharedGpuContext::SetContextProviderFactoryForTesting(
++      base::BindLambdaForTesting(
++          [&]() -> std::unique_ptr<WebGraphicsContext3DProvider> {
++            // GPU channel initialization can run callbacks which trigger GC.
++            if (image_capture_) {
++              image_capture_.Clear();
++              WebHeap::CollectAllGarbageForTesting();
++              EXPECT_FALSE(weak_image_capture);
++            }
++            return nullptr;
++          }));
++
++  auto result = image_capture_->grabFrame(scope.GetScriptState());
++
++  ScriptPromiseTester tester(scope.GetScriptState(), result);
++  tester.WaitUntilSettled();
++  EXPECT_FALSE(weak_image_capture);
++  EXPECT_TRUE(tester.IsFulfilled());
++  EXPECT_EQ(0u, platform_track_->CountSinks());
++}
++
+ TEST_F(ImageCaptureTest, GrabFrameOfMutedTrackIsFulfilled) {
+   V8TestingScope scope;
+   SetupTrackMocks(scope);

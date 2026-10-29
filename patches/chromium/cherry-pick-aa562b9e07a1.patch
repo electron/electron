@@ -1,0 +1,223 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Tue, 20 Oct 2026 08:35:18 -0700
+Subject: [M156] HttpCache: prevent lock timeout overtaking explicit restart
+
+Original change's description:
+> HttpCache: prevent lock timeout overtaking explicit restart
+>
+> ...by cancelling it when queuing the restart. This can happen if our
+> thread is super-overloaded (which is worrisome)
+>
+> Bug: 569674221
+> Change-Id: Iaa3f12540534ca58c2446102d6b79e3566a557c1
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8578804
+> Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+> Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1720263}
+
+(cherry picked from commit ef5adf65e8dcd6202bbb4d17f91dd1774ff14446)
+
+Bug: 575704372,569674221
+Change-Id: Iaa3f12540534ca58c2446102d6b79e3566a557c1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613840
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1349}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/net/http/http_cache.cc b/net/http/http_cache.cc
+index 13ef0046a811ed079d453fc6a5f3da44a71bdf0a..fb45d1fd8c42100f55cddd3a22c3b923d04b874b 100644
+--- a/net/http/http_cache.cc
++++ b/net/http/http_cache.cc
+@@ -1437,6 +1437,13 @@ void HttpCache::DoomEntryValidationNoMatch(scoped_refptr<ActiveEntry> entry) {
+   // for the transaction to not be found in this entry.
+   for (HttpCache::Transaction* transaction : entry->add_to_entry_queue()) {
+     transaction->ResetCachePendingState();
++
++    // Cancel the timeout timer. Under extreme load that can end up firing
++    // before the task we post below, and our tasks expects us to be removed
++    // from the entry queue, which we might no longer be the case with the
++    // reversal.
++    transaction->CancelEntryLockTimeout();
++
+     TaskRunner(transaction->priority())
+         ->PostTask(FROM_HERE, base::BindOnce(transaction->cache_io_callback(),
+                                              ERR_CACHE_RACE));
+diff --git a/net/http/http_cache_transaction.h b/net/http/http_cache_transaction.h
+index b4375716f9853596af90138f07d9280d636decd1..bfd851453cb489dd499d42d43e55957777cb5472 100644
+--- a/net/http/http_cache_transaction.h
++++ b/net/http/http_cache_transaction.h
+@@ -182,6 +182,10 @@ class NET_EXPORT_PRIVATE HttpCache::Transaction : public HttpTransaction {
+   // added to an entry and the entry.
+   void ResetCachePendingState() { cache_pending_ = false; }
+ 
++  void CancelEntryLockTimeout() {
++    entry_lock_waiting_since_ = base::TimeTicks();
++  }
++
+   RequestPriority priority() const { return priority_; }
+   PartialData* partial() { return partial_.get(); }
+   bool is_truncated() { return truncated_; }
+diff --git a/net/http/http_cache_unittest.cc b/net/http/http_cache_unittest.cc
+index 0943611cfe640ce1289299a82e3eab3699b91656..d15b4084570b7881b158fb3e46d7fd59f6afbbd0 100644
+--- a/net/http/http_cache_unittest.cc
++++ b/net/http/http_cache_unittest.cc
+@@ -10821,7 +10821,8 @@ TEST_F(HttpCacheGetTest, IncompleteResourceFailedResumeDoomsEntry) {
+ 
+   transaction.request_headers = EXTRA_HEADER;
+   transaction.start_handler =
+-      base::BindLambdaForTesting([&](const HttpRequestInfo* request) -> Error {
++      base::BindLambdaForTesting([&](const HttpRequestInfo* request,
++                                     CompletionOnceCallback callback) -> Error {
+         std::optional<std::string_view> range_header =
+             request->extra_headers.GetHeaderView(HttpRequestHeaders::kRange);
+         if (!range_header) {
+@@ -17493,6 +17494,78 @@ class HttpCacheTestWithMockTime : public TestWithTaskEnvironment {
+             base::test::TaskEnvironment::TimeSource::MOCK_TIME) {}
+ };
+ 
++// Test for cache timeout triggering at strange time when a transaction
++// already had a restart queued since saved entry's validation failed.
++//
++// See crbug.com/569674221
++TEST_F(HttpCacheTestWithMockTime, LockTimeoutRace) {
++  MockHttpCache cache;
++
++  ScopedMockTransaction transaction(kSimpleGET_Transaction);
++  transaction.response_headers = "Cache-Control: max-age=0;\n ETag: 'a'\n";
++  transaction.test_mode = TEST_MODE_STUCK_READ;
++
++  // Request 1: gets stuck reading data.
++  MockHttpRequest request1(transaction);
++  std::unique_ptr<HttpTransaction> trans_stuck_in_data_phase;
++  {
++    TestCompletionCallback callback;
++    trans_stuck_in_data_phase = cache.CreateTransaction();
++
++    int rv = callback.GetResult(trans_stuck_in_data_phase->Start(
++        &request1, callback.callback(), NetLogWithSource()));
++    ASSERT_EQ(rv, OK);
++
++    TestCompletionCallback read_callback;
++    auto buf = base::MakeRefCounted<IOBufferWithSize>(256);
++    rv = trans_stuck_in_data_phase->Read(buf.get(), 256,
++                                         read_callback.callback());
++    ASSERT_EQ(rv, ERR_IO_PENDING);
++  }
++
++  // Request 2: paused in sending request; will try (and fail) validation
++  // once resumed.
++  base::RunLoop run_loop;
++  CompletionOnceCallback concurrent1_callback;
++  transaction.start_handler =
++      base::BindLambdaForTesting([&](const HttpRequestInfo* request,
++                                     CompletionOnceCallback callback) -> Error {
++        concurrent1_callback = std::move(callback);
++        run_loop.Quit();
++        return ERR_IO_PENDING;
++      });
++
++  MockHttpRequest request2(transaction);
++  std::unique_ptr<HttpTransaction> trans_concurrent_1;
++
++  TestCompletionCallback callback2;
++  trans_concurrent_1 = cache.CreateTransaction();
++
++  int rv = trans_concurrent_1->Start(&request2, callback2.callback(),
++                                     NetLogWithSource());
++  ASSERT_EQ(rv, ERR_IO_PENDING);
++
++  run_loop.Run();
++
++  // Request 3: to same URL; we resume request 2 once it returns from
++  // Start when it should be trying to be added to the entry.
++  MockHttpRequest request3(transaction);
++  std::unique_ptr<HttpTransaction> trans_concurrent_2;
++
++  TestCompletionCallback callback3;
++  trans_concurrent_2 = cache.CreateTransaction();
++
++  rv = trans_concurrent_2->Start(&request3, callback3.callback(),
++                                 NetLogWithSource());
++  ASSERT_EQ(rv, ERR_IO_PENDING);
++  std::move(concurrent1_callback).Run(net::OK);
++
++  // Advance past the timeline for cache lock, so it can beat the
++  // restart.
++  AdvanceClock(base::Seconds(30));
++  EXPECT_EQ(OK, callback2.WaitForResult());
++}
++
+ TEST_F(HttpCacheTestWithMockTime, InvalidationFilterTimeBoundaries) {
+   AddScopedFeatureList().InitAndEnableFeature(
+       net::features::kLogicalClearHttpCache);
+diff --git a/net/http/http_transaction_test_util.cc b/net/http/http_transaction_test_util.cc
+index 646dde5b55d8eb055de4a09e24d52ba385890427..88a416c616322129f8c6f2d6eb796390478d33c1 100644
+--- a/net/http/http_transaction_test_util.cc
++++ b/net/http/http_transaction_test_util.cc
+@@ -389,6 +389,10 @@ int MockNetworkTransaction::Read(IOBuffer* buf,
+   const MockTransaction* t = FindMockTransaction(current_request_.url);
+   DCHECK(t);
+ 
++  if (test_mode_ & TEST_MODE_STUCK_READ) {
++    return ERR_IO_PENDING;
++  }
++
+   CHECK(!done_reading_called_);
+   reading_ = true;
+ 
+@@ -517,8 +521,17 @@ int MockNetworkTransaction::StartInternal(HttpRequestInfo request,
+   if (t->start_handler) {
+     DCHECK_EQ(start_return_code, OK)
+         << "set either start_return_code or start_handler, not both";
+-    start_return_code = t->start_handler.Run(&current_request_);
++    start_return_code = t->start_handler.Run(
++        &current_request_, base::BindOnce(&MockNetworkTransaction::OnIOComplete,
++                                          weak_factory_.GetWeakPtr()));
++    if (start_return_code == ERR_IO_PENDING) {
++      // The `start_handler` is responsible for resuming us.
++      callback_ = std::move(callback);
++      next_state_ = State::CREATE_STREAM;
++      return ERR_IO_PENDING;
++    }
+   }
++
+   if (OK != start_return_code) {
+     if (test_mode_ & TEST_MODE_SYNC_NET_START) {
+       return start_return_code;
+diff --git a/net/http/http_transaction_test_util.h b/net/http/http_transaction_test_util.h
+index 3ce16255cf97e116afa907d88d502f1a381c6198..c830d6c9e5ad5eebe7551cb562a78181a9a1b1d5 100644
+--- a/net/http/http_transaction_test_util.h
++++ b/net/http/http_transaction_test_util.h
+@@ -52,14 +52,15 @@ struct HttpRequestInfo;
+ enum {
+   TEST_MODE_NORMAL = 0,
+   TEST_MODE_SYNC_NET_START = 1 << 0,
+-  TEST_MODE_SYNC_NET_READ  = 1 << 1,
++  TEST_MODE_SYNC_NET_READ = 1 << 1,
+   TEST_MODE_SYNC_CACHE_START = 1 << 2,
+-  TEST_MODE_SYNC_CACHE_READ  = 1 << 3,
+-  TEST_MODE_SYNC_CACHE_WRITE  = 1 << 4,
++  TEST_MODE_SYNC_CACHE_READ = 1 << 3,
++  TEST_MODE_SYNC_CACHE_WRITE = 1 << 4,
+   TEST_MODE_SYNC_ALL = (TEST_MODE_SYNC_NET_START | TEST_MODE_SYNC_NET_READ |
+                         TEST_MODE_SYNC_CACHE_START | TEST_MODE_SYNC_CACHE_READ |
+                         TEST_MODE_SYNC_CACHE_WRITE),
+-  TEST_MODE_SLOW_READ = 1 << 5
++  TEST_MODE_SLOW_READ = 1 << 5,
++  TEST_MODE_STUCK_READ = 1 << 6
+ };
+ 
+ using MockTransactionReadHandler = base::RepeatingCallback<
+@@ -71,7 +72,8 @@ using MockTransactionHandler =
+                                  std::string* response_headers,
+                                  std::string* response_data)>;
+ using MockTransactionStartHandler =
+-    base::RepeatingCallback<Error(const HttpRequestInfo* request)>;
++    base::RepeatingCallback<Error(const HttpRequestInfo* request,
++                                  CompletionOnceCallback callback)>;
+ 
+ // Default TransportInfo suitable for most MockTransactions.
+ // Describes a direct connection to (127.0.0.1, 80).

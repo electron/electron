@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Wed, 21 Oct 2026 14:00:02 +0000
+Subject: [M156] [wasm] Scan outgoing stack parameters from Wasm to builtins
+
+Original change's description:
+> [wasm] Scan outgoing stack parameters from Wasm to builtins
+>
+> When a Wasm function calls a builtin that passes tagged parameters on
+> the stack (e.g. TFS builtins with >= 4 parameters on ia32 such as
+> CallIndirectIC), the callee's StubFrame expects the caller frame to
+> scan those outgoing stack parameters during GC. Previously,
+> WasmFrame::Iterate skipped outgoing parameters for kWasmFunction frames.
+>
+> Check in WasmFrame::Iterate whether the callee is a builtin whose
+> CallInterfaceDescriptor allows stack scanning, and visit its
+> GetStackParameterCount() outgoing stack slots starting at sp().
+>
+> TAG=agy
+> CONV=96b1f648-2589-484a-a505-7ed7a444bec1
+>
+> Fixed: 574223268
+> Change-Id: Ie725f7e5bbf009434509e44c0ccfca428099403a
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8616353
+> Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+> Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+> Commit-Queue: Clemens Backes <clemensb@chromium.org>
+> Reviewed-by: Clemens Backes <clemensb@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111022}
+
+(cherry picked from commit 11a31ce52ce0b1b2b637929562ebbed8ea3dbb38)
+
+Bug: 576948957,574223268
+Change-Id: Ie725f7e5bbf009434509e44c0ccfca428099403a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8642475
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.6@{#49}
+Cr-Branched-From: b976f35da8356fcf4e5e176d1d810ba6a6f05718-refs/heads/15.6.75@{#1}
+Cr-Branched-From: a424b0597aab8e27f12ea4a700bae3961fa1a076-refs/heads/main@{#110135}
+
+diff --git a/src/execution/frames.cc b/src/execution/frames.cc
+index 51055f12e0ccbac3689fb6723e55fe82772b4ff5..12cadd2327239004b5be6e71ad6207dc196b4ff9 100644
+--- a/src/execution/frames.cc
++++ b/src/execution/frames.cc
+@@ -1903,10 +1903,35 @@ void WasmFrame::Iterate(RootVisitor* v) const {
+   bool has_tagged_outgoing_params =
+       wasm_code->kind() != wasm::WasmCode::kWasmFunction &&
+       wasm_code->kind() != wasm::WasmCode::kWasmToCapiWrapper;
+-  if (!InFastCCall() && has_tagged_outgoing_params) {
+-    FullObjectSlot parameters_base(&Memory<Address>(sp()));
+-    v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
+-                         parameters_limit);
++  if (!InFastCCall()) {
++    if (has_tagged_outgoing_params) {
++      FullObjectSlot parameters_base(&Memory<Address>(sp()));
++      v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
++                           parameters_limit);
++    } else if (wasm_code->kind() == wasm::WasmCode::kWasmFunction &&
++               callee_pc() != kNullAddress) {
++      // If a Wasm function calls a builtin with tagged stack parameters,
++      // visit those parameters. (Calls to other Wasm functions or to
++      // WasmToJsWrapperCSA have their tagged stack parameters visited by the
++      // callee frame instead.)
++      Builtin builtin =
++          OffHeapInstructionStream::TryLookupCode(isolate(), callee_pc());
++      if (Builtins::IsBuiltinId(builtin)) {
++        CallInterfaceDescriptor descriptor =
++            Builtins::CallInterfaceDescriptorFor(builtin);
++        DCHECK(!descriptor.AllowVarArgs());
++        if (!(descriptor.flags() & CallInterfaceDescriptorData::kNoStackScan)) {
++          int stack_params = descriptor.GetStackParameterCount();
++          DCHECK_IMPLIES(builtin == Builtin::kWasmToJsWrapperCSA,
++                         stack_params == 0);
++          if (stack_params > 0) {
++            FullObjectSlot parameters_base(&Memory<Address>(sp()));
++            v->VisitRootPointers(Root::kStackRoots, nullptr, parameters_base,
++                                 parameters_base + stack_params);
++          }
++        }
++      }
++    }
+   }
+ 
+   // Visit pointer spill slots and locals.
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index af6517a6a8f1caef9ffb1da9ab6ca50ca6c901a6..5974a6eb18b9b2df9f61c837b54ba2484f79c29e 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -2943,6 +2943,7 @@
+   'regress/wasm/regress-543901836': [SKIP],
+   'regress/wasm/regress-560536735': [SKIP],
+   'regress/wasm/regress-561660149': [SKIP],
++  'regress/wasm/regress-574223268': [SKIP],
+   'compiler/regress-347724915': [SKIP],
+   'regress/regress-crbug-418520151': [SKIP],
+   'regress/regress-535000102': [SKIP],
+diff --git a/test/mjsunit/regress/wasm/regress-574223268.js b/test/mjsunit/regress/wasm/regress-574223268.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..edbbaa76ede507a6fb556669bba7780a10b4c18a
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-574223268.js
+@@ -0,0 +1,55 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --stress-compaction
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++function buildModule(numTargets, tableSize = numTargets) {
++  const builder = new WasmModuleBuilder();
++  builder.addMemory(1, 1);
++  const sig_v_v = builder.addType(kSig_v_v);
++  const sig_v_i = builder.addType(kSig_v_i);
++  const funcs = [];
++  for (let i = 0; i < numTargets; i++) {
++    const f = builder.addFunction('f' + i, sig_v_v)
++        .addBody([
++          kExprI32Const, 0,
++          kExprI32Const, 42 + i,
++          kExprI32StoreMem, 0, 0,
++        ])
++        .exportFunc();
++    funcs.push(f.index);
++  }
++  builder.addFunction('call', sig_v_i)
++      .addBody([
++        kExprLocalGet, 0,
++        kExprCallIndirect, sig_v_v, kTableZero,
++      ])
++      .exportFunc();
++  builder.setTableBounds(tableSize, tableSize);
++  builder.addActiveElementSegment(0, wasmI32Const(0), funcs);
++  return builder.toModule();
++}
++
++// Fill the bootstrap trusted page(s) (which are marked never_evacuate) so that
++// subsequent trusted objects land on movable pages.
++const filler = [];
++const fillerModule = buildModule(1, 2000);
++for (let i = 0; i < 64; i++) {
++  filler.push(new WebAssembly.Instance(fillerModule));
++}
++
++const targetModule = buildModule(2);
++const instance = new WebAssembly.Instance(targetModule);
++
++// Compile both callees up front.
++instance.exports.f0();
++instance.exports.f1();
++// Make the call site monomorphic on target 0.
++instance.exports.call(0);
++// Force the monomorphic-miss FixedArray allocation inside CallIndirectIC to
++// trigger a compacting GC while WasmTrustedInstanceData is on the stack.
++%SimulateNewspaceFull();
++instance.exports.call(1);

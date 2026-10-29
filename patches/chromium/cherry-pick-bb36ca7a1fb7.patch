@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sangbaek Park <sangbaekpark@chromium.org>
+Date: Thu, 22 Oct 2026 11:32:35 -0700
+Subject: [M156] media: Fix UAF when MojoCdm is destroyed during
+ OnConnectionError
+
+Original change's description:
+> media: Fix UAF when MojoCdm is destroyed during OnConnectionError
+>
+> When a remote CDM connection error occurs, MojoCdm::OnConnectionError()
+> rejects all pending promises and calls
+> CdmSessionTracker::CloseRemainingSessions() by passing a reference to
+> its `session_closed_cb_` member.
+>
+> Running `session_closed_cb_` (or rejecting a pending promise) can
+> synchronously release the last reference to `MojoCdm` (for example,
+> when `MediaKeySession::OnSessionClosed()` disposes its session and drops
+> the last reference to `CdmSessionAdapter`). If `MojoCdm` is destroyed
+> mid-loop while multiple sessions are being closed, subsequent iterations
+> in `CdmSessionTracker::CloseRemainingSessions()` dereference the freed
+> `MojoCdm::session_closed_cb_`.
+>
+> Fix this by holding a `scoped_refptr<MojoCdm>` on the stack in
+> `MojoCdm::OnConnectionError()`, so `MojoCdm` stays alive until the
+> method returns.
+>
+> Bug: 573938968
+> Change-Id: I57a976035d2818ac621ee9bb7f7ab77a950f5ece
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8593547
+> Reviewed-by: Colin Blundell <blundell@chromium.org>
+> Commit-Queue: Sangbaek Park <sangbaekpark@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1722311}
+
+(cherry picked from commit 8b782807c92e9c9ef01d869adac351db43dd1612)
+
+Bug: 575705485,573938968
+Change-Id: I57a976035d2818ac621ee9bb7f7ab77a950f5ece
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8632774
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1445}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/media/mojo/clients/mojo_cdm.cc b/media/mojo/clients/mojo_cdm.cc
+index b454815669f476e387a9bc5e3a1c3f5aeb2d974a..3bfbf574b78383f9b0cded83b2133c8bcd537b58 100644
+--- a/media/mojo/clients/mojo_cdm.cc
++++ b/media/mojo/clients/mojo_cdm.cc
+@@ -123,6 +123,11 @@ void MojoCdm::OnConnectionError(uint32_t custom_reason,
+ 
+   remote_cdm_.reset();
+ 
++  // Keep `this` alive in case rejecting a promise or closing a session drops
++  // what would otherwise be the last reference to `this` while in the middle
++  // of looping through the remaining promises/sessions.
++  scoped_refptr<MojoCdm> self(this);
++
+   // As communication with the remote CDM is broken, reject any outstanding
+   // promises and close all the existing sessions.
+   cdm_promise_adapter_.Clear(CdmPromiseAdapter::ClearReason::kConnectionError);
+diff --git a/media/mojo/clients/mojo_cdm_unittest.cc b/media/mojo/clients/mojo_cdm_unittest.cc
+index d3b898d3223679789a83497b4ebbe9ec253a8c9b..efae1b148e2f17292a8667154a70e6c7716e0ae1 100644
+--- a/media/mojo/clients/mojo_cdm_unittest.cc
++++ b/media/mojo/clients/mojo_cdm_unittest.cc
+@@ -633,6 +633,21 @@ TEST_F(MojoCdmTest, SessionKeysChangeCB_Success) {
+   base::RunLoop().RunUntilIdle();
+ }
+ 
++TEST_F(MojoCdmTest, ConnectionError_DestroyCdmInSessionClosedCB) {
++  const std::string session_id_1 = "session1";
++  const std::string session_id_2 = "session2";
++  Initialize(SUCCESS);
++  CreateSessionAndExpect(session_id_1, SUCCESS);
++  CreateSessionAndExpect(session_id_2, SUCCESS);
++
++  EXPECT_CALL(cdm_client_,
++              OnSessionClosed(_, CdmSessionClosedReason::kInternalError))
++      .WillOnce(WithoutArgs([this]() { mojo_cdm_.reset(); }))
++      .WillOnce(Return());
++
++  ForceConnectionError();
++}
++
+ TEST_F(MojoCdmTest, NoDecryptor) {
+   Initialize(SUCCESS);
+   auto* cdm_context = mojo_cdm_->GetCdmContext();

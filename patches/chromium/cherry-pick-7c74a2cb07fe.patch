@@ -1,0 +1,327 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Tue, 20 Oct 2026 09:27:31 -0700
+Subject: [M156] Disable FEDisplacementMap acting as a backdrop-filter
+
+Original change's description:
+> Disable FEDisplacementMap acting as a backdrop-filter
+>
+> The background contents filtered by a CSS backdrop filter may contain
+> sensitive information, including but not limited to forms containing
+> user data or cross-origin image content. When the background is used as
+> the displacement map for an SVG FEDisplacementMap filter it becomes
+> possible to use timing attacks to determine the background, so the spec
+> says the filter must operate as a pass through when the map input is
+> cross-origin or otherwise should not be revealed.
+>
+> Unfortunately we cannot just taint all backdrop filters because doing so
+> disables them for HTML-in-Canvas. Instead, add tracking of "contains
+> backdrop" to the filter effect chain and use it in FEDisplacementMap to
+> enforce pass-through.
+>
+> Fixed: 540025369
+> Change-Id: Ib2b677cbaef36965c77261a79121c73c809f6822
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8395606
+> Reviewed-by: Stefan Zager <szager@chromium.org>
+> Commit-Queue: Stephen Chenney <schenney@chromium.org>
+> Auto-Submit: Stephen Chenney <schenney@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1722317}
+
+(cherry picked from commit 4a0ef6be08f440935e0a72fdc69806d830559491)
+
+Bug: 575570082,540025369
+Change-Id: Ib2b677cbaef36965c77261a79121c73c809f6822
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613529
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1351}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/paint/filter_effect_builder.cc b/third_party/blink/renderer/core/paint/filter_effect_builder.cc
+index 2e5ae85ce2d7c7148c8ce86bace0edbdca5c6eec..63393eb397b50ea8ac5ba6d93460133a25c6c585 100644
+--- a/third_party/blink/renderer/core/paint/filter_effect_builder.cc
++++ b/third_party/blink/renderer/core/paint/filter_effect_builder.cc
+@@ -364,6 +364,9 @@ FilterEffect* FilterEffectBuilder::BuildFilterEffect(
+       }
+       if (previous_effect->OriginTainted())
+         effect->SetOriginTainted();
++      if (previous_effect->ContainsBackdrop()) {
++        effect->SetContainsBackdrop();
++      }
+       previous_effect = effect;
+     }
+   }
+@@ -371,16 +374,21 @@ FilterEffect* FilterEffectBuilder::BuildFilterEffect(
+ }
+ 
+ CompositorFilterOperations FilterEffectBuilder::BuildFilterOperations(
+-    const FilterOperations& operations) const {
++    const FilterOperations& operations,
++    bool contains_backdrop) const {
+   InterpolationSpace current_interpolation_space = kInterpolationSpaceSRGB;
+ 
+   CompositorFilterOperations filters;
++  if (contains_backdrop) {
++    filters.SetContainsBackdrop();
++  }
+   for (FilterOperation* op : operations.Operations()) {
+     switch (op->GetType()) {
+       case FilterOperation::OperationType::kReference: {
+         auto& reference_operation = To<ReferenceFilterOperation>(*op);
+         Filter* reference_filter = BuildReferenceFilter(
+-            reference_operation, nullptr, nullptr, filters.OriginTainted());
++            reference_operation, nullptr, nullptr, filters.OriginTainted(),
++            filters.ContainsBackdrop());
+         if (reference_filter && reference_filter->LastEffect()) {
+           // Set the interpolation space for the source of the (sub)filter to
+           // match that of the previous primitive (or input).
+@@ -515,7 +523,8 @@ Filter* FilterEffectBuilder::BuildReferenceFilter(
+     const ReferenceFilterOperation& reference_operation,
+     FilterEffect* previous_effect,
+     SVGFilterGraphNodeMap* node_map,
+-    bool input_tainted) const {
++    bool input_tainted,
++    bool input_contains_backdrop) const {
+   SVGResource* resource = reference_operation.Resource();
+   auto* filter_element =
+       DynamicTo<SVGFilterElement>(resource ? resource->Target() : nullptr);
+@@ -554,6 +563,10 @@ Filter* FilterEffectBuilder::BuildReferenceFilter(
+   if (input_tainted || (previous_effect && previous_effect->OriginTainted())) {
+     result->GetSourceGraphic()->SetOriginTainted();
+   }
++  if (input_contains_backdrop ||
++      (previous_effect && previous_effect->ContainsBackdrop())) {
++    result->GetSourceGraphic()->SetContainsBackdrop();
++  }
+ 
+   if (!previous_effect)
+     previous_effect = result->GetSourceGraphic();
+diff --git a/third_party/blink/renderer/core/paint/filter_effect_builder.h b/third_party/blink/renderer/core/paint/filter_effect_builder.h
+index d09119bf236cb26855890a8bf24d9bbe222df7d6..4fdc6df06bf0a16646a647759d32d3232a766cdb 100644
+--- a/third_party/blink/renderer/core/paint/filter_effect_builder.h
++++ b/third_party/blink/renderer/core/paint/filter_effect_builder.h
+@@ -57,12 +57,14 @@ class CORE_EXPORT FilterEffectBuilder final {
+   Filter* BuildReferenceFilter(const ReferenceFilterOperation&,
+                                FilterEffect* previous_effect,
+                                SVGFilterGraphNodeMap* = nullptr,
+-                               bool input_tainted = false) const;
++                               bool input_tainted = false,
++                               bool input_contains_backdrop = false) const;
+ 
+   FilterEffect* BuildFilterEffect(const FilterOperations&,
+                                   bool input_tainted = false) const;
+   CompositorFilterOperations BuildFilterOperations(
+-      const FilterOperations&) const;
++      const FilterOperations&,
++      bool contains_backdrop = false) const;
+ 
+   void SetShorthandScale(float shorthand_scale) {
+     shorthand_scale_ = shorthand_scale;
+diff --git a/third_party/blink/renderer/core/paint/paint_layer.cc b/third_party/blink/renderer/core/paint/paint_layer.cc
+index 1761a336c0e932d98defaa0c5adc469754898c5d..8d31c36dd6ec3c2cffb141b875d4518d8f6e5d03 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer.cc
++++ b/third_party/blink/renderer/core/paint/paint_layer.cc
+@@ -2637,7 +2637,7 @@ void PaintLayer::UpdateCompositorFilterOperationsForBackdropFilter(
+       FilterEffectBuilder(reference_box, FilterViewport(), zoom,
+                           style.VisitedDependentColor(GetCSSPropertyColor()),
+                           style.UsedColorScheme(), nullptr, nullptr)
+-          .BuildFilterOperations(filter_operations);
++          .BuildFilterOperations(filter_operations, /*contains_backdrop=*/true);
+   // Note that |operations| may be empty here, if the |filter_operations| list
+   // contains only invalid filters (e.g. invalid reference filters). See
+   // https://crbug.com/983157 for details.
+diff --git a/third_party/blink/renderer/core/svg/graphics/filters/svg_filter_builder.cc b/third_party/blink/renderer/core/svg/graphics/filters/svg_filter_builder.cc
+index 4a81812e9e3f2ed1444f0b2e70210bc05527150c..556d6521a7c236d6aeb389e8bfeacbccee79bfe5 100644
+--- a/third_party/blink/renderer/core/svg/graphics/filters/svg_filter_builder.cc
++++ b/third_party/blink/renderer/core/svg/graphics/filters/svg_filter_builder.cc
+@@ -130,6 +130,11 @@ SVGFilterBuilder::SVGFilterBuilder(FilterEffect* source_graphic,
+       entry.value->SetOriginTainted();
+     }
+   }
++  if (source_graphic->ContainsBackdrop()) {
++    for (auto& entry : builtin_effects_) {
++      entry.value->SetContainsBackdrop();
++    }
++  }
+   AddBuiltinEffects();
+ }
+ 
+@@ -200,6 +205,9 @@ void SVGFilterBuilder::BuildGraph(
+         ResolveInterpolationSpace(color_interpolation));
+     if (effect->InputsTaintOrigin() || effect_element.TaintsOrigin())
+       effect->SetOriginTainted();
++    if (effect->InputsContainBackdrop()) {
++      effect->SetContainsBackdrop();
++    }
+ 
+     Add(AtomicString(effect_element.result()->CurrentValue()->Value()), effect);
+   }
+diff --git a/third_party/blink/renderer/platform/graphics/compositor_filter_operations.h b/third_party/blink/renderer/platform/graphics/compositor_filter_operations.h
+index c510899117139929f5d0426ffb685961fc6c0836..535ed43e40c3ecf7651d62e4294c645fd611c751 100644
+--- a/third_party/blink/renderer/platform/graphics/compositor_filter_operations.h
++++ b/third_party/blink/renderer/platform/graphics/compositor_filter_operations.h
+@@ -60,6 +60,9 @@ class PLATFORM_EXPORT CompositorFilterOperations {
+   void SetOriginTainted() { origin_tainted_ = true; }
+   bool OriginTainted() const { return origin_tainted_; }
+ 
++  void SetContainsBackdrop() { contains_backdrop_ = true; }
++  bool ContainsBackdrop() const { return contains_backdrop_; }
++
+   // For reference filters, this equality operator compares pointers of the
+   // image_filter fields instead of their values.
+   bool operator==(const CompositorFilterOperations&) const;
+@@ -70,6 +73,7 @@ class PLATFORM_EXPORT CompositorFilterOperations {
+   cc::FilterOperations filter_operations_;
+   gfx::RectF reference_box_;
+   bool origin_tainted_ = false;
++  bool contains_backdrop_ = false;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/graphics/filters/fe_displacement_map.cc b/third_party/blink/renderer/platform/graphics/filters/fe_displacement_map.cc
+index 92163f8b6fb38a4bdd3ac3a8b6b768d1cef5a147..248b9efc8aeb778ecd15b53c6ccce9c79d9d3594 100644
+--- a/third_party/blink/renderer/platform/graphics/filters/fe_displacement_map.cc
++++ b/third_party/blink/renderer/platform/graphics/filters/fe_displacement_map.cc
+@@ -110,8 +110,11 @@ sk_sp<PaintFilter> FEDisplacementMap::CreateImageFilter() {
+   // FEDisplacementMap must be a pass-through filter if
+   // the origin is tainted. See:
+   // https://drafts.fxtf.org/filter-effects/#fedisplacemnentmap-restrictions.
+-  if (InputEffect(1)->OriginTainted())
++  // Backdrop filters also are considered origin tainting for FEDisplacementMap
++  // because the backdrop may contain private information.
++  if (InputEffect(1)->OriginTainted() || InputEffect(1)->ContainsBackdrop()) {
+     return color;
++  }
+ 
+   sk_sp<PaintFilter> displ = paint_filter_builder::Build(
+       InputEffect(1), OperatingInterpolationSpace());
+diff --git a/third_party/blink/renderer/platform/graphics/filters/filter_effect.cc b/third_party/blink/renderer/platform/graphics/filters/filter_effect.cc
+index bcf20aa9e175716ea11036dab49776a045f40575..f0c75a94d5b96214e289eb4b1f79d95623e33705 100644
+--- a/third_party/blink/renderer/platform/graphics/filters/filter_effect.cc
++++ b/third_party/blink/renderer/platform/graphics/filters/filter_effect.cc
+@@ -32,11 +32,7 @@
+ 
+ namespace blink {
+ 
+-FilterEffect::FilterEffect(Filter* filter)
+-    : filter_(filter),
+-      clips_to_bounds_(true),
+-      origin_tainted_(false),
+-      operating_interpolation_space_(kInterpolationSpaceLinear) {
++FilterEffect::FilterEffect(Filter* filter) : filter_(filter) {
+   DCHECK(filter_);
+ }
+ 
+@@ -134,6 +130,15 @@ bool FilterEffect::InputsTaintOrigin() const {
+   return false;
+ }
+ 
++bool FilterEffect::InputsContainBackdrop() const {
++  for (const Member<FilterEffect>& effect : input_effects_) {
++    if (effect->ContainsBackdrop()) {
++      return true;
++    }
++  }
++  return false;
++}
++
+ sk_sp<PaintFilter> FilterEffect::CreateTransparentBlack() const {
+   sk_sp<cc::ColorFilter> color_filter =
+       cc::ColorFilter::MakeBlend(SkColors::kBlack, SkBlendMode::kClear);
+diff --git a/third_party/blink/renderer/platform/graphics/filters/filter_effect.h b/third_party/blink/renderer/platform/graphics/filters/filter_effect.h
+index ebb1ef6e923200717afc160ca165ddb9485e9ed9..246778f2c50e7fa3c97e4f6323df63474a6e3eca 100644
+--- a/third_party/blink/renderer/platform/graphics/filters/filter_effect.h
++++ b/third_party/blink/renderer/platform/graphics/filters/filter_effect.h
+@@ -125,6 +125,11 @@ class PLATFORM_EXPORT FilterEffect : public GarbageCollected<FilterEffect> {
+ 
+   bool InputsTaintOrigin() const;
+ 
++  bool ContainsBackdrop() const { return contains_backdrop_; }
++  void SetContainsBackdrop() { contains_backdrop_ = true; }
++
++  bool InputsContainBackdrop() const;
++
+  protected:
+   FilterEffect(Filter*);
+ 
+@@ -160,11 +165,13 @@ class PLATFORM_EXPORT FilterEffect : public GarbageCollected<FilterEffect> {
+ 
+   // Whether the effect should clip to its primitive region, or expand to use
+   // the combined region of its inputs.
+-  bool clips_to_bounds_;
++  bool clips_to_bounds_ = true;
++
++  bool origin_tainted_ = false;
+ 
+-  bool origin_tainted_;
++  bool contains_backdrop_ = false;
+ 
+-  InterpolationSpace operating_interpolation_space_;
++  InterpolationSpace operating_interpolation_space_ = kInterpolationSpaceLinear;
+ 
+   std::array<sk_sp<PaintFilter>, 4> image_filters_;
+ };
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/backdrop-filter-svg-displacement.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/backdrop-filter-svg-displacement.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e4f97a0d685e53b94f1eda28b5f27fc8980945f4
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/filter-effects/backdrop-filter-svg-displacement.html
+@@ -0,0 +1,35 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>backdrop-filter: An SVG feDisplacement filter is pass through</title>
++<link rel="help" href="https://drafts.fxtf.org/filter-effects-2/#BackdropFilterProperty">
++<link rel="match"  href="reference/backdrop-filter-svg-displacement-ref.html">
++
++<div class="whitebox"></div>
++<div class="filter"></div>
++
++<svg width="0" height="0">
++  <filter id="displacement">
++    <feFlood result="flood" flood-color="green" x="50" y="50" width="100" height="100"/>
++    <feDisplacementMap in2="SourceGraphic" in="flood" xChannelSelector="G" yChannelSelector="G" scale="20"/>
++  </filter>
++</svg>
++
++<style>
++.whitebox {
++  position: absolute;
++  background: white;
++  width: 100px;
++  height: 100px;
++  top: 50px;
++  left: 50px;
++}
++.filter {
++  background-color: transparent;
++  position: absolute;
++  width: 200px;
++  height: 200px;
++  top: 0px;
++  left: 0px;
++  backdrop-filter: url(#displacement);
++}
++</style>
+\ No newline at end of file
+diff --git a/third_party/blink/web_tests/external/wpt/css/filter-effects/reference/backdrop-filter-svg-displacement-ref.html b/third_party/blink/web_tests/external/wpt/css/filter-effects/reference/backdrop-filter-svg-displacement-ref.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..7fe6450e5a9389c1938b752507a5463d0be4c1cb
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/filter-effects/reference/backdrop-filter-svg-displacement-ref.html
+@@ -0,0 +1,15 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++
++<div class="greenbox"></div>
++
++<style>
++.greenbox {
++  position: absolute;
++  background: green;
++  width: 100px;
++  height: 100px;
++  top: 50px;
++  left: 50px;
++}
++</style>

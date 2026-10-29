@@ -1,0 +1,462 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Thu, 22 Oct 2026 13:04:03 -0400
+Subject: [M156] [SkSL:RP] Prevent slot count overflow in Raster Pipeline
+ codegen
+
+Original change's description:
+> [SkSL:RP] Prevent slot count overflow in Raster Pipeline codegen
+>
+> Guard SlotManager::createSlots against signed integer overflow using SkSafeMath and SkTFitsIn<int>, and fail codegen if any slot table (program, uniform, or immutable slots) overflows. Also guard temporary stack depth calculations in Program::tempStackMaxDepths and Program::Program against integer overflow and reject negative slot counts in Program::allocateSlotData.
+>
+> Bug: b/574776938
+> Bug: b/576194994
+> Change-Id: Iac9d0a729b78eb2af4195a0f6b47511344b40754
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1401636
+> Commit-Queue: Thomas Smith <thomsmit@google.com>
+> Auto-Submit: Thomas Smith <thomsmit@google.com>
+> Reviewed-by: Robert Phillips <robertphillips@google.com>
+
+(cherry picked from commit 0ef44edd0ec4498a1599e6987422bca461fdd6ab)
+
+Bug: 577337225,b/574776938,b/576194994
+Change-Id: Iac9d0a729b78eb2af4195a0f6b47511344b40754
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1405638
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp b/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
+index f85df4e5020d038706ade5439a7439516c083a72..686c5e1970617ada3d28b8aab5c08017bc73b72b 100644
+--- a/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
++++ b/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
+@@ -344,6 +344,18 @@ bool Builder::simplifyImmediateUnmaskedOp() {
+     return false;
+ }
+ 
++// This function is used to guard peephole optimization sites. If it fails, fInstructions adds both
++// both instructions, but the count goes over INT_MAX and is caught downstream.
++static bool add_into(int* target, int delta) {
++    SkSafeMath safe;
++    int sum = safe.addInt(*target, delta);
++    if (!safe) {
++        return false;
++    }
++    *target = sum;
++    return true;
++}
++
+ void Builder::discard_stack(int32_t count, int stackID) {
+     // If we pushed something onto the stack and then immediately discarded part of it, we can
+     // shrink or eliminate the push.
+@@ -356,8 +368,10 @@ void Builder::discard_stack(int32_t count, int stackID) {
+         switch (lastInstruction->fOp) {
+             case BuilderOp::discard_stack:
+                 // Our last op was actually a separate discard_stack; combine the discards.
+-                lastInstruction->fImmA += count;
+-                return;
++                if (add_into(&lastInstruction->fImmA, count)) {
++                    return;
++                }
++                break;
+ 
+             case BuilderOp::push_clone:
+             case BuilderOp::push_clone_from_stack:
+@@ -647,8 +661,9 @@ void Builder::push_constant_i(int32_t val, int count) {
+     if (count > 0) {
+         if (Instruction* lastInstruction = this->lastInstruction()) {
+             // If the previous op is pushing the same value, we can just push more of them.
+-            if (lastInstruction->fOp == BuilderOp::push_constant && lastInstruction->fImmB == val) {
+-                lastInstruction->fImmA += count;
++            if (lastInstruction->fOp == BuilderOp::push_constant &&
++                lastInstruction->fImmB == val &&
++                add_into(&lastInstruction->fImmA, count)) {
+                 return;
+             }
+         }
+@@ -659,8 +674,8 @@ void Builder::push_constant_i(int32_t val, int count) {
+ void Builder::push_duplicates(int count) {
+     if (Instruction* lastInstruction = this->lastInstruction()) {
+         // If the previous op is pushing a constant, we can just push more of them.
+-        if (lastInstruction->fOp == BuilderOp::push_constant) {
+-            lastInstruction->fImmA += count;
++        if (lastInstruction->fOp == BuilderOp::push_constant &&
++            add_into(&lastInstruction->fImmA, count)) {
+             return;
+         }
+     }
+@@ -688,9 +703,9 @@ void Builder::push_clone(int numSlots, int offsetFromStackTop) {
+     if (numSlots == 1 && offsetFromStackTop == 0) {
+         // ... and the previous op is pushing a constant...
+         if (Instruction* lastInstruction = this->lastInstruction()) {
+-            if (lastInstruction->fOp == BuilderOp::push_constant) {
++            if (lastInstruction->fOp == BuilderOp::push_constant &&
++                add_into(&lastInstruction->fImmA, 1)) {
+                 // ... we can just push more of them.
+-                lastInstruction->fImmA += 1;
+                 return;
+             }
+         }
+@@ -1284,7 +1299,7 @@ std::unique_ptr<Program> Builder::finish(int numValueSlots,
+                                      numImmutableSlots, fNumLabels, debugTrace);
+ }
+ 
+-static int stack_usage(const Instruction& inst) {
++static int stack_usage(const Instruction& inst, SkSafeMath* safe) {
+     switch (inst.fOp) {
+         case BuilderOp::push_condition_mask:
+         case BuilderOp::push_loop_mask:
+@@ -1323,20 +1338,20 @@ static int stack_usage(const Instruction& inst) {
+         case ALL_MULTI_SLOT_BINARY_OP_CASES:
+         case BuilderOp::discard_stack:
+         case BuilderOp::select:
+-            return -inst.fImmA;
++            return safe->subInt(0, inst.fImmA);
+ 
+         case ALL_N_WAY_TERNARY_OP_CASES:
+         case ALL_MULTI_SLOT_TERNARY_OP_CASES:
+-            return 2 * -inst.fImmA;
++            return safe->mulInt(-2, inst.fImmA);
+ 
+         case BuilderOp::swizzle_1:
+-            return 1 - inst.fImmA;  // consumes immA slots and emits a scalar
++            return safe->subInt(1, inst.fImmA);  // consumes immA slots and emits a scalar
+         case BuilderOp::swizzle_2:
+-            return 2 - inst.fImmA;  // consumes immA slots and emits a 2-slot vector
++            return safe->subInt(2, inst.fImmA);  // consumes immA slots and emits a 2-slot vector
+         case BuilderOp::swizzle_3:
+-            return 3 - inst.fImmA;  // consumes immA slots and emits a 3-slot vector
++            return safe->subInt(3, inst.fImmA);  // consumes immA slots and emits a 3-slot vector
+         case BuilderOp::swizzle_4:
+-            return 4 - inst.fImmA;  // consumes immA slots and emits a 4-slot vector
++            return safe->subInt(4, inst.fImmA);  // consumes immA slots and emits a 4-slot vector
+ 
+         case BuilderOp::dot_2_floats:
+             return -3;  // consumes two 2-slot vectors and emits one scalar
+@@ -1352,12 +1367,13 @@ static int stack_usage(const Instruction& inst) {
+         case BuilderOp::matrix_multiply_3:
+         case BuilderOp::matrix_multiply_4:
+             // consumes the left- and right-matrices; emits result over existing padding slots
+-            return -(inst.fImmA * inst.fImmB + inst.fImmC * inst.fImmD);
++            return safe->subInt(0, safe->addInt(safe->mulInt(inst.fImmA, inst.fImmB),
++                                                safe->mulInt(inst.fImmC, inst.fImmD)));
+ 
+         case BuilderOp::shuffle: {
+             int consumed = inst.fImmA;
+             int generated = inst.fImmB;
+-            return generated - consumed;
++            return safe->subInt(generated, consumed);
+         }
+         case ALL_SINGLE_SLOT_UNARY_OP_CASES:
+         case ALL_MULTI_SLOT_UNARY_OP_CASES:
+@@ -1367,6 +1383,11 @@ static int stack_usage(const Instruction& inst) {
+     }
+ }
+ 
++static int stack_usage(const Instruction& inst) {
++    SkSafeMath safe;
++    return stack_usage(inst, &safe);
++}
++
+ Program::StackDepths Program::tempStackMaxDepths() const {
+     // Count the number of separate temp stacks that the program uses.
+     int numStacks = 1;
+@@ -1379,9 +1400,14 @@ Program::StackDepths Program::tempStackMaxDepths() const {
+     largest.push_back_n(numStacks, 0);
+     current.push_back_n(numStacks, 0);
+ 
++    SkSafeMath safe;
+     for (const Instruction& inst : fInstructions) {
+         int stackID = inst.fStackID;
+-        current[stackID] += stack_usage(inst);
++        current[stackID] = safe.addInt(current[stackID], stack_usage(inst, &safe));
++        if (!safe) {
++            largest[stackID] = -1;
++            return largest;
++        }
+         largest[stackID] = std::max(current[stackID], largest[stackID]);
+         // If we assert here, the generated program has popped off the top of the stack.
+         SkASSERTF_RELEASE(current[stackID] >= 0, "unbalanced temp stack push/pop on stack");
+@@ -1410,9 +1436,18 @@ Program::Program(TArray<Instruction> instrs,
+         , fDebugTrace(debugTrace) {
+     fTempStackMaxDepths = this->tempStackMaxDepths();
+ 
++    SkSafeMath safe;
+     fNumTempStackSlots = 0;
+     for (const int depth : fTempStackMaxDepths) {
+-        fNumTempStackSlots += depth;
++        if (depth < 0) {
++            fNumTempStackSlots = -1;
++            break;
++        }
++        fNumTempStackSlots = safe.addInt(fNumTempStackSlots, depth);
++        if (!safe) {
++            fNumTempStackSlots = -1;
++            break;
++        }
+     }
+ 
+     if (fDebugTrace) {
+@@ -1673,6 +1708,13 @@ static void* context_bit_pun(intptr_t val) {
+ }
+ 
+ std::optional<Program::SlotData> Program::allocateSlotData(SkArenaAlloc* alloc) const {
++    if (fNumValueSlots < 0 ||
++        fNumUniformSlots < 0 ||
++        fNumTempStackSlots < 0 ||
++        fNumImmutableSlots < 0 ||
++        fNumLabels < 0) {
++        return std::nullopt;
++    }
+     // Allocate a contiguous slab of slot data for immutables, values, and stack entries.
+     const size_t N = SkOpts::raster_pipeline_highp_stride;
+     const int scalarWidth = 1 * sizeof(float);
+diff --git a/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp b/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp
+index 905455dbda028dd20166989f6073737e917d4e16..c0d87003a93c27aa13720196c4becae3672631d3 100644
+--- a/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp
++++ b/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp
+@@ -11,7 +11,9 @@
+ #include "include/core/SkSpan.h"
+ #include "include/private/SkEnumBitMask.h"
+ #include "include/private/SkTArray.h"
++#include "include/private/SkTFitsIn.h"
+ #include "include/private/SkTo.h"
++#include "src/core/SkSafeMath.h"
+ #include "src/core/SkStringView.h"
+ #include "src/core/SkTHash.h"
+ #include "src/core/SkUtils.h"
+@@ -139,9 +141,13 @@ public:
+     /** Returns the total number of slots consumed. */
+     int slotCount() const { return fSlotCount; }
+ 
++    /** Returns true if the slot count overflowed. */
++    bool overflowed() const { return fOverflowed; }
++
+ private:
+     THashMap<const IRNode*, SlotRange> fSlotMap;
+     int fSlotCount = 0;
++    bool fOverflowed = false;
+     std::vector<SlotDebugInfo>* fSlotDebugInfo;
+ };
+ 
+@@ -218,6 +224,13 @@ public:
+      */
+     int getFunctionDebugInfo(const FunctionDeclaration& decl);
+ 
++    /** Returns true if any slot table overflowed. */
++    bool hasOverflowed() const {
++        return fProgramSlots.overflowed() ||
++               fUniformSlots.overflowed() ||
++               fImmutableSlots.overflowed();
++    }
++
+     /** Returns true for variables with slots in fProgramSlots; immutables or uniforms are false. */
+     bool hasVariableSlots(const Variable& v) {
+         return !IsUniform(v) && !fImmutableVariables.contains(&v);
+@@ -1174,25 +1187,31 @@ SlotRange SlotManager::createSlots(std::string name,
+     if (nslots == 0) {
+         return {};
+     }
++    SkSafeMath safe;
++    size_t newSlotCount = safe.add(fSlotCount, nslots);
++    if (!safe || !SkTFitsIn<int>(newSlotCount)) {
++        fOverflowed = true;
++        return {0, SkToInt(std::min<size_t>(nslots, INT_MAX))};
++    }
+     if (fSlotDebugInfo) {
+         // Our debug slot-info table should have the same length as the actual slot table.
+         SkASSERT(fSlotDebugInfo->size() == (size_t)fSlotCount);
+ 
+         // Append slot names and types to our debug slot-info table.
+-        fSlotDebugInfo->reserve(fSlotCount + nslots);
++        fSlotDebugInfo->reserve(newSlotCount);
+         this->addSlotDebugInfo(name, type, pos, isFunctionReturnValue);
+ 
+         // Confirm that we added the expected number of slots.
+-        SkASSERT(fSlotDebugInfo->size() == (size_t)(fSlotCount + nslots));
++        SkASSERT(fSlotDebugInfo->size() == newSlotCount);
+     }
+ 
+     SlotRange result = {fSlotCount, (int)nslots};
+-    fSlotCount += nslots;
++    fSlotCount = SkToInt(newSlotCount);
+     return result;
+ }
+ 
+ std::optional<SlotRange> SlotManager::mapVariableToSlots(const Variable& v, SlotRange range) {
+-    SkASSERT(v.type().slotCount() == SkToSizeT(range.count));
++    SkASSERT(fOverflowed || v.type().slotCount() == SkToSizeT(range.count));
+     const SlotRange* existingEntry = fSlotMap.find(&v);
+     std::optional<SlotRange> originalRange = existingEntry ? std::optional(*existingEntry)
+                                                            : std::nullopt;
+@@ -1487,6 +1506,9 @@ std::optional<SlotRange> Generator::writeFunction(
+     // Set up a slot range dedicated to this function's return value.
+     SlotRange lastFunctionResult = fCurrentFunctionResult;
+     fCurrentFunctionResult = this->getFunctionSlots(callSite, function.declaration());
++    if (this->hasOverflowed()) {
++        return std::nullopt;
++    }
+ 
+     // Save off the return mask.
+     if (this->needsReturnMask(&function)) {
+@@ -1657,10 +1679,17 @@ bool Generator::writeGlobals() {
+         }
+     }
+ 
++    if (this->hasOverflowed()) {
++        return unsupported();
++    }
++
+     return true;
+ }
+ 
+ bool Generator::writeStatement(const Statement& s) {
++    if (this->hasOverflowed()) {
++        return unsupported();
++    }
+     switch (s.kind()) {
+         case Statement::Kind::kBlock:
+             // The debugger will stop on statements inside Blocks; there's no need for an additional
+@@ -3963,6 +3992,9 @@ bool Generator::pushVariableReferencePartial(const VariableReference& v, SlotRan
+     if (IsUniform(var)) {
+         // Push a uniform.
+         r = this->getUniformSlots(var);
++        if (this->hasOverflowed()) {
++            return unsupported();
++        }
+         SkASSERT(r.count == (int)var.type().slotCount());
+         r.index += subset.index;
+         r.count = subset.count;
+@@ -3980,6 +4012,9 @@ bool Generator::pushVariableReferencePartial(const VariableReference& v, SlotRan
+         }
+         // Push the immutable slot range.
+         r = this->getImmutableSlots(var);
++        if (this->hasOverflowed()) {
++            return unsupported();
++        }
+         SkASSERT(r.count == (int)var.type().slotCount());
+         r.index += subset.index;
+         r.count = subset.count;
+@@ -3987,6 +4022,9 @@ bool Generator::pushVariableReferencePartial(const VariableReference& v, SlotRan
+     } else {
+         // Push the variable.
+         r = this->getVariableSlots(var);
++        if (this->hasOverflowed()) {
++            return unsupported();
++        }
+         SkASSERT(r.count == (int)var.type().slotCount());
+         r.index += subset.index;
+         r.count = subset.count;
+@@ -4078,10 +4116,17 @@ bool Generator::writeProgram(const FunctionDefinition& function) {
+         fTraceMask->exit();
+     }
+ 
++    if (this->hasOverflowed()) {
++        return unsupported();
++    }
++
+     return true;
+ }
+ 
+ std::unique_ptr<RP::Program> Generator::finish() {
++    if (this->hasOverflowed()) {
++        return nullptr;
++    }
+     return fBuilder.finish(fProgramSlots.slotCount(),
+                            fUniformSlots.slotCount(),
+                            fImmutableSlots.slotCount(),
+diff --git a/tests/RasterPipelineCodeGeneratorTest.cpp b/tests/RasterPipelineCodeGeneratorTest.cpp
+index 63089e0e48f8463b1598db088c9c06c31ff45084..c8dde528584a22a6fb2fd0b31e14ecd80a1e9a52 100644
+--- a/tests/RasterPipelineCodeGeneratorTest.cpp
++++ b/tests/RasterPipelineCodeGeneratorTest.cpp
+@@ -380,3 +380,90 @@ DEF_TEST(SkSLRasterPipeline_ConvertProgram_b540157141, r) {
+             SkSL::MakeRasterPipelineProgram(*program, *main->definition());
+     REPORTER_ASSERT(r, rasterProg);
+ }
++
++DEF_TEST(SkSLRasterPipelineSlotCountWraparound, r) {
++    auto names = [](const char* prefix, int n) {
++        std::stringstream s;
++        for (int i = 0; i < n; ++i) {
++            if (i > 0) {
++                s << ",";
++            }
++            s << prefix << i;
++        }
++        return s.str();
++    };
++
++    // Struct E has 98,364 slots and struct G has 99,996 slots (both under kVariableSlotLimit).
++    // Without overflow protection in SlotManager::createSlots, 43,663 call sites of f() allocate
++    // 43,663 * 98,364 + 99,996 + 6 = 4,294,967,334 = 2^32 + 38 value slots, wrapping fSlotCount
++    // around 32-bit int to 38. Dynamic indexing via uniform `k` in `gg[k].e` emits a single
++    // push_slots_indirect instruction per call.
++    constexpr int kCalls = 43663;
++    std::stringstream str;
++    str << "struct A{float4x4 " << names("a", 64) << ";};";
++    str << "struct E{A " << names("b", 96) << ";float " << names("c", 60) << ";};";
++    str << "struct G{E e;float4x4 " << names("y", 102) << ";};";
++    str << "uniform int k;";
++    str << "G gg[1];";
++    str << "noinline E f(){return gg[k].e;}";
++    str << "half4 main(float2 p){if(k>0){";
++    for (int i = 0; i < kCalls; ++i) {
++        str << "f();";
++    }
++    str << "}return half4(0);}";
++    std::string src = str.str();
++
++    SkSL::Compiler compiler;
++    SkSL::ProgramSettings settings;
++    settings.fMaxVersionAllowed = SkSL::Version::k300;
++    std::unique_ptr<SkSL::Program> program =
++            compiler.convertProgram(SkSL::ProgramKind::kRuntimeShader, src, settings);
++    if (!program) {
++        ERRORF(r, "Unexpected error compiling program:\n%s", compiler.errorText().c_str());
++        return;
++    }
++    const SkSL::FunctionDeclaration* main = program->getFunction("main");
++    if (!main) {
++        ERRORF(r, "Program must have a 'main' function");
++        return;
++    }
++    std::unique_ptr<SkSL::RP::Program> rasterProg =
++            SkSL::MakeRasterPipelineProgram(*program, *main->definition());
++    REPORTER_ASSERT(r, !rasterProg);
++}
++
++DEF_TEST(SkSLRasterPipelineTempStackOverflow, r) {
++    SkArenaAlloc alloc(1000);
++    SkRasterPipeline pipeline(&alloc);
++
++    // 1. Single temp-stack depth overflowing int in tempStackMaxDepths().
++    {
++        SkSL::RP::Builder builder;
++        builder.init_lane_masks();
++        builder.pad_stack(INT_MAX);
++        builder.pad_stack(10);
++        builder.label(builder.nextLabelID());
++        builder.discard_stack(10);
++        builder.discard_stack(INT_MAX);
++        std::unique_ptr<SkSL::RP::Program> prog = builder.finish(
++                /*numValueSlots=*/0, /*numUniformSlots=*/0, /*numImmutableSlots=*/0);
++        REPORTER_ASSERT(r, prog);
++        REPORTER_ASSERT(r, !prog->appendStages(&pipeline, &alloc, /*callbacks=*/nullptr, {}));
++    }
++
++    // 2. Sum of multiple temp-stack depths wrapping past 2^32 in Program::Program().
++    {
++        SkSL::RP::Builder builder;
++        builder.init_lane_masks();
++        for (int stackID = 0; stackID < 5; ++stackID) {
++            builder.set_current_stack(stackID);
++            builder.pad_stack(1000000000);
++            builder.label(builder.nextLabelID());
++            builder.discard_stack(1000000000);
++        }
++        std::unique_ptr<SkSL::RP::Program> prog = builder.finish(
++                /*numValueSlots=*/0, /*numUniformSlots=*/0, /*numImmutableSlots=*/0);
++        REPORTER_ASSERT(r, prog);
++        REPORTER_ASSERT(r, !prog->appendStages(&pipeline, &alloc, /*callbacks=*/nullptr, {}));
++    }
++}

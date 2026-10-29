@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Wed, 21 Oct 2026 06:30:22 -0700
+Subject: Fix ImageContext thread safety
+
+SkiaOutputSurfaceImpl was resetting the ImageContextImpl SkImage in two
+places. This isn't thread safe as it's possible SkImage is being
+accessed on the GPU thread at the same time.
+
+First, before sending the ImageContextImpl to the GPU main thread to be
+deleted. This just wasn't needed.
+
+Second, it was resetting non-overlay render pass SkImages each time they
+were drawn. This was in case the render pass backing changed and a new
+SkImage was needed. SkiaRenderer::UpdateRenderPassTextures() already
+calls RemoveRenderPassResource() for any render pass backings that need
+to be reallocated which deletes the ImageContextImpl. A new
+ImageContextImpl and SkImage will be created in that case.
+
+Bug: 574030524
+Change-Id: Ic25d3d10daf8f719757a42d73710dbab7095328e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8608392
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Reviewed-by: Bo Liu <boliu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1723735}
+
+Electron adaptation notes (45-x-y): the external_use_client.h hunk that
+moves SetImage() and makes clear_image() protected conflicted because
+the 8078 branch still carries the paint_op_buffer()/clear_color()
+accessors between texture_infos() and the private section. Resolved by
+keeping those accessors and inserting the upstream SetImage()/protected
+clear_image() block after them. No other change; the
+skia_output_surface_impl.cc hunks applied verbatim.
+
+diff --git a/components/viz/service/display/external_use_client.h b/components/viz/service/display/external_use_client.h
+index 49f9636050404105ebada87add555fda0ced8cd7..cb278af910dbf7aadf756145fdbe26b566bdb96a 100644
+--- a/components/viz/service/display/external_use_client.h
++++ b/components/viz/service/display/external_use_client.h
+@@ -55,10 +55,9 @@ class VIZ_SERVICE_EXPORT ExternalUseClient {
+     virtual void OnContextLost();
+ 
+     //
+-    // Thread safety is guaranteed by these invariants: (a) only the compositor
+-    // thread modifies ImageContext, (b) ImageContext is not modified after
+-    // |image| is set, and (c) GPU thread only reads ImageContext after |image|
+-    // is set.
++    // Thread safety is guaranteed by these invariants: (a) only the viz thread
++    // modifies ImageContext, (b) ImageContext is not modified after |image| is
++    // set, and (c) GPU thread only reads ImageContext after |image| is set.
+     //
+     const gpu::Mailbox& mailbox() const { return mailbox_; }
+     uint32_t texture_target() const { return texture_target_; }
+@@ -87,11 +86,6 @@ class VIZ_SERVICE_EXPORT ExternalUseClient {
+ 
+     bool has_image() { return !!image_; }
+     sk_sp<SkImage> image() { return image_; }
+-    void SetImage(sk_sp<SkImage> image,
+-                  std::vector<GrBackendFormat> backend_formats);
+-    void SetImage(sk_sp<SkImage> image,
+-                  std::vector<skgpu::graphite::TextureInfo> texture_infos);
+-    void clear_image() { image_.reset(); }
+     const std::vector<GrBackendFormat>& backend_formats() {
+       return backend_formats_;
+     }
+@@ -110,10 +104,22 @@ class VIZ_SERVICE_EXPORT ExternalUseClient {
+       clear_color_ = color;
+     }
+ 
++    // SkImage and texture info MUST not be modified after they are initially
++    // set on the viz thread.
++    void SetImage(sk_sp<SkImage> image,
++                  std::vector<GrBackendFormat> backend_formats);
++    void SetImage(sk_sp<SkImage> image,
++                  std::vector<skgpu::graphite::TextureInfo> texture_infos);
++
++   protected:
++    // Resetting the image is only safe to do when ImageContext is no longer
++    // held on the viz thread, eg. during the destructor.
++    void clear_image() { image_.reset(); }
++
+    private:
+-    gpu::Mailbox mailbox_;
++    const gpu::Mailbox mailbox_;
+     std::vector<gpu::SyncToken> sync_tokens_;
+-    uint32_t texture_target_;
++    const uint32_t texture_target_;
+ 
+     const gfx::Size size_;
+     const SharedImageFormat format_;
+@@ -128,7 +134,7 @@ class VIZ_SERVICE_EXPORT ExternalUseClient {
+     // android video.
+     std::optional<gpu::VulkanYCbCrInfo> ycbcr_info_;
+ 
+-    // The promise image which is used on display thread.
++    // The promise image which is used on the GPU thread.
+     sk_sp<SkImage> image_;
+     std::vector<GrBackendFormat> backend_formats_;
+     std::vector<skgpu::graphite::TextureInfo> texture_infos_;
+diff --git a/components/viz/service/display_embedder/skia_output_surface_impl.cc b/components/viz/service/display_embedder/skia_output_surface_impl.cc
+index 79fb9a7b7d0ca1e31902e8f583d2ca5509610aef..a620eebf0c46d570c9be0248f098a048703aa809 100644
+--- a/components/viz/service/display_embedder/skia_output_surface_impl.cc
++++ b/components/viz/service/display_embedder/skia_output_surface_impl.cc
+@@ -840,16 +840,6 @@ SkCanvas* SkiaOutputSurfaceImpl::BeginPaintRenderPass(
+     current_paint_.emplace(characterization, mailbox, skip_draw_for_tests_);
+   }
+ 
+-  // We are going to overwrite the render pass when it is not for overlay, so we
+-  // need to reset the image_context and a new promise image will be created
+-  // when MakePromiseSkImageFromRenderPass() is called.
+-  if (!is_overlay) {
+-    auto it = render_pass_image_cache_.find(id);
+-    if (it != render_pass_image_cache_.end()) {
+-      it->second->clear_image();
+-    }
+-  }
+-
+   return current_paint_->canvas();
+ }
+ 
+@@ -949,12 +939,13 @@ sk_sp<SkImage> SkiaOutputSurfaceImpl::MakePromiseSkImageFromRenderPass(
+   if (!image_context) {
+     image_context =
+         std::make_unique<ImageContextImpl>(mailbox, size, format, color_space);
+-  }
+-  if (!image_context->has_image()) {
+     MakePromiseSkImageSinglePlane(image_context.get(), mipmap, false);
+     if (!image_context->has_image()) {
++      image_context.reset();
+       return nullptr;
+     }
++  } else {
++    CHECK(image_context->mailbox() == mailbox);
+   }
+   images_in_current_paint_.push_back(image_context.get());
+   return image_context->image();
+@@ -972,7 +963,6 @@ void SkiaOutputSurfaceImpl::RemoveRenderPassResource(
+     // If the render pass was only used for a copy request, there won't be a
+     // matching entry in |render_pass_image_cache_|.
+     if (it != render_pass_image_cache_.end()) {
+-      it->second->clear_image();
+       image_contexts.push_back(std::move(it->second));
+       render_pass_image_cache_.erase(it);
+     }

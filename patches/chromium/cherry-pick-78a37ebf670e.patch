@@ -1,0 +1,295 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Thu, 22 Oct 2026 18:53:55 -0700
+Subject: [M156] Forbid modifying weak LinkedHashSet during iteration
+
+Original change's description:
+> Forbid modifying weak LinkedHashSet during iteration
+>
+> LinkedHashSet::IteratorWrapper holds a HashMap iterator (map_iterator_)
+> to strongify WeakMember entries in value_to_index_ during conservative
+> GC. Modifying a HeapLinkedHashSet<WeakMember<T>> or
+> GCedHeapLinkedHashSet<WeakMember<T>> while an iterator is active can
+> rehash value_to_index_ and leave map_iterator_ pointing to the old
+> backing store.
+>
+> Call CheckModifications() from LinkedHashSet::IteratorWrapper when
+> IsWeakV<Value> is true, update documentation comments, and snapshot
+> weak LinkedHashSets before iterating in the following functions:
+> * DOMTaskSignal::SignalPriorityChange()
+> * Page::SetVisibilityState()
+> * LazyLoadMediaObserver::LoadAllImagesAndBlockLoadEvent()
+> * FullscreenController::NotifyFramesOfFullscreenEntry()
+>
+> Fixed: 575851252
+> Change-Id: I3eefbcf737ee04ebfdd9685565235877b9668042
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8618181
+> Reviewed-by: Keishi Hattori <keishi@chromium.org>
+> Auto-Submit: Kent Tamura <tkent@chromium.org>
+> Commit-Queue: Kent Tamura <tkent@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1724484}
+
+(cherry picked from commit db073cce765ddee969aaf0ef65d27bf841c47091)
+
+Bug: 576828678,575851252
+Change-Id: I3eefbcf737ee04ebfdd9685565235877b9668042
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8628402
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1464}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/frame/fullscreen_controller.cc b/third_party/blink/renderer/core/frame/fullscreen_controller.cc
+index 7541c0d782158a2e7cdaf3bac668b02405635499..8dfbe507b9f68768e470e7824b303468f46bfd1c 100644
+--- a/third_party/blink/renderer/core/frame/fullscreen_controller.cc
++++ b/third_party/blink/renderer/core/frame/fullscreen_controller.cc
+@@ -359,7 +359,9 @@ void FullscreenController::RestoreBackgroundColorOverride() {
+ void FullscreenController::NotifyFramesOfFullscreenEntry(bool granted) {
+   // Notify all pending local frames in order whether or not we successfully
+   // entered fullscreen.
+-  for (LocalFrame* frame : *pending_frames_) {
++  HeapVector<Member<LocalFrame>> pending_frames(*pending_frames_);
++  pending_frames_->clear();
++  for (LocalFrame* frame : pending_frames) {
+     if (frame) {
+       if (Document* document = frame->GetDocument()) {
+         Fullscreen::DidResolveEnterFullscreenRequest(*document, granted);
+@@ -377,7 +379,6 @@ void FullscreenController::NotifyFramesOfFullscreenEntry(bool granted) {
+       Fullscreen::DidResolveEnterFullscreenRequest(*document, granted);
+     }
+   }
+-  pending_frames_->clear();
+ }
+ 
+ void FullscreenController::EnterFullscreenCallback(bool granted) {
+diff --git a/third_party/blink/renderer/core/html/media/lazy_load_media_observer.cc b/third_party/blink/renderer/core/html/media/lazy_load_media_observer.cc
+index c2752e787f3a5fa369a7677820690e246d9d0e3b..62567b901989965e9e5ad12f21886f0bbc7cdbba 100644
+--- a/third_party/blink/renderer/core/html/media/lazy_load_media_observer.cc
++++ b/third_party/blink/renderer/core/html/media/lazy_load_media_observer.cc
+@@ -81,14 +81,13 @@ bool LazyLoadMediaObserver::LoadAllImagesAndBlockLoadEvent(
+     if (!IsDescendantOrSameDocument(element->GetDocument(), for_document)) {
+       continue;
+     }
+-    if (auto* image_element = DynamicTo<HTMLImageElement>(element)) {
+-      const_cast<HTMLImageElement*>(image_element)
+-          ->LoadDeferredImageBlockingLoad();
+-      resources_have_started_loading = true;
+-    }
+     to_be_unobserved.push_back(element);
+   }
+   for (Element* element : to_be_unobserved) {
++    if (auto* image_element = DynamicTo<HTMLImageElement>(element)) {
++      image_element->LoadDeferredImageBlockingLoad();
++      resources_have_started_loading = true;
++    }
+     lazy_load_intersection_observer_->unobserve(element);
+   }
+   return resources_have_started_loading;
+diff --git a/third_party/blink/renderer/core/page/page.cc b/third_party/blink/renderer/core/page/page.cc
+index 2f5e050eb910c2e86e3b59062ed4606a917bceb5..dce0c22ee0020ee0b1873d148912bdf8ef84f549 100644
+--- a/third_party/blink/renderer/core/page/page.cc
++++ b/third_party/blink/renderer/core/page/page.cc
+@@ -824,8 +824,12 @@ void Page::SetVisibilityState(
+   if (is_initial_state)
+     return;
+ 
+-  for (auto& observer : page_visibility_observer_set_) {
+-    observer->PageVisibilityChanged();
++  HeapVector<Member<PageVisibilityObserver>> observers(
++      page_visibility_observer_set_);
++  for (auto& observer : observers) {
++    if (page_visibility_observer_set_.Contains(observer)) {
++      observer->PageVisibilityChanged();
++    }
+   }
+ 
+   if (main_frame_) {
+diff --git a/third_party/blink/renderer/core/scheduler/dom_task_signal.cc b/third_party/blink/renderer/core/scheduler/dom_task_signal.cc
+index 89dad7af4f693a4e26154975bfbad11d3a1d264e..abc3f6786d7b5e3e9c988aea87aea7c4a5dd34a8 100644
+--- a/third_party/blink/renderer/core/scheduler/dom_task_signal.cc
++++ b/third_party/blink/renderer/core/scheduler/dom_task_signal.cc
+@@ -116,7 +116,8 @@ void DOMTaskSignal::SignalPriorityChange(V8TaskPriority::Enum priority,
+   const V8TaskPriority::Enum previous_priority = priority_;
+   priority_ = priority;
+ 
+-  for (AlgorithmHandle* handle : priority_change_algorithms_) {
++  HeapVector<Member<AlgorithmHandle>> algorithms(priority_change_algorithms_);
++  for (AlgorithmHandle* handle : algorithms) {
+     handle->GetAlgorithm()->Run();
+   }
+ 
+@@ -127,12 +128,13 @@ void DOMTaskSignal::SignalPriorityChange(V8TaskPriority::Enum priority,
+ 
+   if (auto* source_signal_manager = DynamicTo<SourceSignalCompositionManager>(
+           *priority_composition_manager_.Get())) {
+-    // Dependents can be added while dispatching events, but none are removed
+-    // since having an active iterator will strongify weak references, making
+-    // the following iteration safe. Signaling priority change on newly added
+-    // dependent signals has no effect since the new priority is already set.
+-    for (auto& abort_signal : source_signal_manager->GetDependentSignals()) {
+-      To<DOMTaskSignal>(abort_signal.Get())
++    // Dependents can be added while dispatching events. Signaling priority
++    // change on newly added dependent signals has no effect since the new
++    // priority is already set, so iterating a snapshot is sufficient.
++    HeapVector<Member<AbortSignal>> dependent_signals(
++        source_signal_manager->GetDependentSignals());
++    for (AbortSignal* abort_signal : dependent_signals) {
++      To<DOMTaskSignal>(abort_signal)
+           ->SignalPriorityChange(priority, exception_state);
+     }
+   }
+diff --git a/third_party/blink/renderer/platform/heap/test/weakness_marking_test.cc b/third_party/blink/renderer/platform/heap/test/weakness_marking_test.cc
+index c05b3f2ae5fbf55c8d28d533128871cf9b46d6e2..bfbf8c138304d9e2c4f02ddd790a116a94b59131 100644
+--- a/third_party/blink/renderer/platform/heap/test/weakness_marking_test.cc
++++ b/third_party/blink/renderer/platform/heap/test/weakness_marking_test.cc
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "base/test/gtest_util.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_hash_map.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_hash_set.h"
+@@ -229,6 +230,45 @@ TEST_F(WeaknessMarkingTest, StrongifyAlreadyMarkedOnBackingDuringIteration) {
+   CHECK_EQ(weak_set->size(), kNumberOfWeakEntries);
+ }
+ 
++TEST_F(WeaknessMarkingTest, StrongLinkedHashSetIteratorAcrossRehashAndGC) {
++  using StrongSet = GCedHeapLinkedHashSet<Member<IntegerObject>>;
++  Persistent<StrongSet> set = MakeGarbageCollected<StrongSet>();
++  Persistent<IntegerObject> first = MakeGarbageCollected<IntegerObject>(1);
++  set->insert(first.Get());
++  set->insert(MakeGarbageCollected<IntegerObject>(2));
++
++  size_t visited = 0;
++  for (auto it = set->begin(); it != set->end();) {
++    EXPECT_NE(it->Get(), nullptr);
++    if (visited == 0) {
++      // Trigger rehash of the underlying LinkedHashSet::value_to_index_ map.
++      for (int j = 10; j < 40; ++j) {
++        set->insert(MakeGarbageCollected<IntegerObject>(j));
++      }
++    }
++    ++it;
++    TestSupportingGC::ConservativelyCollectGarbage();
++    ++visited;
++  }
++  EXPECT_EQ(visited, 32u);
++}
++
++TEST_F(WeaknessMarkingTest, WeakLinkedHashSetModificationDuringIteration) {
++  using WeakSet = GCedHeapLinkedHashSet<WeakMember<IntegerObject>>;
++  Persistent<WeakSet> set = MakeGarbageCollected<WeakSet>();
++  Persistent<IntegerObject> first = MakeGarbageCollected<IntegerObject>(1);
++  Persistent<IntegerObject> second = MakeGarbageCollected<IntegerObject>(2);
++  set->insert(first.Get());
++  set->insert(second.Get());
++
++  auto it = set->begin();
++  EXPECT_EQ(it->Get(), first.Get());
++  set->insert(MakeGarbageCollected<IntegerObject>(3));
++  EXPECT_DCHECK_DEATH(++it);
++  EXPECT_DCHECK_DEATH(*it);
++  EXPECT_DCHECK_DEATH(it->Get());
++}
++
+ }  // namespace weakness_marking_test
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/wtf/hash_table.h b/third_party/blink/renderer/platform/wtf/hash_table.h
+index cf4e8a52255a96193b597ad2da80073cbf25ca3b..90dbf812b8a820c9cbab02b8573ab7e049fe326e 100644
+--- a/third_party/blink/renderer/platform/wtf/hash_table.h
++++ b/third_party/blink/renderer/platform/wtf/hash_table.h
+@@ -308,21 +308,21 @@ class HashTableConstIterator final
+ #endif
+   }
+ 
++ public:
++  constexpr HashTableConstIterator() = default;
++
+   void CheckModifications() const {
+ #if DCHECK_IS_ON()
+     // HashTable and collections that build on it do not support
+     // modifications while there is an iterator in use. The exception is
+-    // LinkedHashSet, which has its own iterators that tolerate modification
+-    // of the underlying set.
++    // non-weak LinkedHashSet, which has its own iterators that tolerate
++    // modification of the underlying set.
+ 
+     DCHECK_EQ(container_modifications_, container_->Modifications());
+     DCHECK(!container_->AccessForbidden());
+ #endif
+   }
+ 
+- public:
+-  constexpr HashTableConstIterator() = default;
+-
+   GetType Get() const {
+     CheckModifications();
+     return position_;
+@@ -777,8 +777,8 @@ class GC_PLUGIN_IGNORE("crbug.com/428987863") HashTable final {
+   void RegisterModification() { modifications_++; }
+   // HashTable and collections that build on it do not support modifications
+   // while there is an iterator in use. The exception is
+-  // LinkedHashSet, which has its own iterators that tolerate modification
+-  // of the underlying set.
++  // non-weak LinkedHashSet, which has its own iterators that tolerate
++  // modification of the underlying set.
+   void CheckModifications(int64_t mods) const {
+     DCHECK_EQ(mods, modifications_);
+   }
+diff --git a/third_party/blink/renderer/platform/wtf/linked_hash_set.h b/third_party/blink/renderer/platform/wtf/linked_hash_set.h
+index 3bf2c4e59edb94b8dc7148df40d8e1bc997a1203..29aa4bbe924a7dd7fb5bb34f10b312b350977836 100644
+--- a/third_party/blink/renderer/platform/wtf/linked_hash_set.h
++++ b/third_party/blink/renderer/platform/wtf/linked_hash_set.h
+@@ -47,6 +47,10 @@ namespace blink {
+ // long as you don't remove the current item. Moving items does not invalidate
+ // iterator, so that it may cause unexpected behavior (i.e. loop unexpectedly
+ // ends when moving the current item to last).
++// However, this does NOT apply to HeapLinkedHashSet<WeakMember<T>> and
++// GCedHeapLinkedHashSet<WeakMember<T>>: modifying a weak LinkedHashSet while an
++// iterator is active is not allowed because rehashing the underlying map
++// invalidates the internal iterator used to strongify weak entries during GC.
+ //
+ // Note: empty/deleted values as defined in HashTraits are not allowed.
+ template <typename ValueArg,
+@@ -96,15 +100,23 @@ class LinkedHashSet {
+     IteratorWrapper(const IteratorWrapper&) = default;
+     IteratorWrapper& operator=(const IteratorWrapper&) = default;
+ 
+-    const Value& operator*() const { return *iterator_; }
+-    const Value* operator->() const { return &*iterator_; }
++    const Value& operator*() const {
++      CheckModifications();
++      return *iterator_;
++    }
++    const Value* operator->() const {
++      CheckModifications();
++      return &*iterator_;
++    }
+ 
+     IteratorWrapper& operator++() {
++      CheckModifications();
+       ++iterator_;
+       return *this;
+     }
+ 
+     IteratorWrapper& operator--() {
++      CheckModifications();
+       --iterator_;
+       return *this;
+     }
+@@ -132,6 +144,12 @@ class LinkedHashSet {
+     IteratorWrapper(const T& it, const Map& map)
+         : iterator_(it), map_iterator_(map.begin()) {}
+ 
++    void CheckModifications() const {
++      if constexpr (IsWeakV<Value>) {
++        map_iterator_.impl_.CheckModifications();
++      }
++    }
++
+     // LinkedHashSet::list_ iterator.
+     T iterator_;
+ 

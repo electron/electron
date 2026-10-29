@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nathan Sanchez <nathanasanchez@google.com>
+Date: Tue, 13 Oct 2026 16:00:52 -0400
+Subject: [M156] [Ganesh] Ref resource in GrResourceCache when switching
+ UniqueKey
+
+Original change's description:
+> [Ganesh] Ref resource in GrResourceCache when switching UniqueKey
+>
+> This ensures the resource is referenced by the cache to ensure it is
+> transitioned out of the purgeable queue when refcount is 0.
+>
+> Bug: 570825067
+> Change-Id: I4942482ed8d42561e603952462336a1851918f8b
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1392837
+> Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+> Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+
+(cherry picked from commit 039111f1628723eb9171f4ff27e9d8386d3e3a86)
+
+Bug: 575705467,570825067
+Change-Id: I4942482ed8d42561e603952462336a1851918f8b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1400476
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/gpu/ganesh/GrResourceCache.cpp b/src/gpu/ganesh/GrResourceCache.cpp
+index 80727af5e4c0c2e38e598d4f701f7e3fe6e88099..2e1bae5180f526300331f08bf51c6a27d1217e24 100644
+--- a/src/gpu/ganesh/GrResourceCache.cpp
++++ b/src/gpu/ganesh/GrResourceCache.cpp
+@@ -295,8 +295,14 @@ void GrResourceCache::changeUniqueKey(GrGpuResource* resource, const skgpu::Uniq
+                 old->resourcePriv().isPurgeable()) {
+                 old->cacheAccess().release();
+             } else {
+-                // removeUniqueKey expects an external owner of the resource.
+-                this->removeUniqueKey(sk_ref_sp(old).get());
++                // GrResourceCache::removeUniqueKey() expects a non-zero refcount, we refcount with
++                // GrResourceCache::refResource() instead of sk_ref_sp since the first ref of a
++                // resource must be by the resource cache. In the case that this is the first ref
++                // on the resource, refResource() also transfers the resource to the unpurgeable
++                // queue, which is required as unref() expects the resource to be there.
++                this->refResource(old);
++                this->removeUniqueKey(old);
++                old->unref();
+             }
+         }
+         SkASSERT(nullptr == fUniqueHash.find(newKey));

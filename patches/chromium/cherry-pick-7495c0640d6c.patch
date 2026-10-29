@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Mon, 26 Oct 2026 10:25:12 -0700
+Subject: [M156] Change ImageContext access failure
+
+Original change's description:
+> Change ImageContext access failure
+>
+> When ImageContext fails to begin scoped access, clearing the SkImage
+> immediately before clearing the representation is not thread safe. The
+> SkImage and Ganesh/Graphite texture info are accessed on viz and GPU
+> threads concurrently.
+>
+> Resetting the SkImage immediately was added in
+> https://crrev.com/c/7261436 as SkImage held VkImageView and
+> representation held VkImage. The VkImage was destroyed before the
+> VkImageView which caused VVL errors. Instead of resetting the SkImage
+> immediately, don't reset the representation on begin access failure. In
+> the destructor reset the SkImage before the representation to avoid the
+> same type of problem.
+>
+> Bug: 574030524
+> Change-Id: I18f49f4517b7f42d8a6aa05b38bd2da3a4eceef3
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8609307
+> Reviewed-by: Bo Liu <boliu@chromium.org>
+> Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1722206}
+
+(cherry picked from commit 547eca8b5a33fd2f5b8ce73527b11f2b3bc7f9dc)
+
+Bug: 576526649,574030524
+Change-Id: I18f49f4517b7f42d8a6aa05b38bd2da3a4eceef3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8656726
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1595}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/components/viz/service/display_embedder/image_context_impl.cc b/components/viz/service/display_embedder/image_context_impl.cc
+index c09854d8cea7e8627168b61a61bbb7107a2030a9..c25b2de4b8238c759932b82352d8c8ce49b0a7b2 100644
+--- a/components/viz/service/display_embedder/image_context_impl.cc
++++ b/components/viz/service/display_embedder/image_context_impl.cc
+@@ -138,6 +138,9 @@ ImageContextImpl::ImageContextImpl(const gpu::Mailbox& mailbox,
+       is_for_render_pass_(true) {}
+ 
+ ImageContextImpl::~ImageContextImpl() {
++  // Destroy the SkImage before `representation_` as it's a view of the
++  // representation.
++  clear_image();
+   DeleteFallbackTextures();
+ }
+ 
+@@ -428,8 +431,6 @@ bool ImageContextImpl::BeginAccessIfNecessaryInternal(
+   representation_scoped_read_access_ =
+       representation_->BeginScopedReadAccess(begin_semaphores, end_semaphores);
+   if (!representation_scoped_read_access_) {
+-    clear_image();
+-    representation_ = nullptr;
+     DLOG(ERROR) << "Failed to fulfill the promise texture - SharedImage "
+                    "begin read access failed..";
+     return false;
+diff --git a/components/viz/service/display_embedder/image_context_impl.h b/components/viz/service/display_embedder/image_context_impl.h
+index a9e337adc54ace11675431c72e56f78ac16a2bb7..cbb0d0802fd609a3f17f58698301b3a2cc511272 100644
+--- a/components/viz/service/display_embedder/image_context_impl.h
++++ b/components/viz/service/display_embedder/image_context_impl.h
+@@ -123,7 +123,7 @@ class ImageContextImpl final : public ExternalUseClient::ImageContext {
+   const bool is_for_render_pass_ = false;
+   const bool raw_draw_if_possible_ = false;
+ 
+-  // Fallback in case we cannot produce a |representation_|.
++  // Fallback in case we cannot produce or access `representation_`.
+   raw_ptr<gpu::SharedContextState> fallback_context_state_ = nullptr;
+   std::vector<GrBackendTexture> fallback_textures_;
+   // Fallback textures used for fulfilling Graphite promise images. Owned by the

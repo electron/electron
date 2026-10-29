@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Fri, 23 Oct 2026 19:42:49 -0700
+Subject: [M156] Copy ListedElements before iterating in ConstructEntryList
+
+Original change's description:
+> Copy ListedElements before iterating in ConstructEntryList
+>
+> HTMLFormElement::ConstructEntryList and BuildSearchString iterate over
+> ListedElements() while calling AppendToFormData() on each control. For
+> <textarea>, AppendToFormData() forces a synchronous style and layout
+> update, which can mutate the DOM and clear listed_elements_ mid-loop.
+> Copy ListedElements() before iterating, matching HTMLFormElement::reset
+> and the HTML specification.
+>
+> Also guard ImageInputType::EnsurePrimaryContent() with InStyleRecalc(),
+> matching ImageInputType::SetUseFallbackContent(), so synchronous cached
+> image completion during layout tree attachment does not mutate the UA
+> shadow tree during style recalc.
+>
+> Fixed: 569286605
+> Change-Id: Ide74cfb742e8df43258883b11caf219e15d02d76
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613243
+> Reviewed-by: David Baron <dbaron@chromium.org>
+> Auto-Submit: Mason Freed <masonf@chromium.org>
+> Commit-Queue: Mason Freed <masonf@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1725339}
+
+(cherry picked from commit 32c2e2f4faf5f5c2caec109387500407924e52bc)
+
+Bug: 576948332,569286605
+Change-Id: Ide74cfb742e8df43258883b11caf219e15d02d76
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8647110
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1509}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/exported/web_searchable_form_data.cc b/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
+index b8478b8e2c1f99ea8156fdc4db9a6273ef6cbb07..a345c565a7bce49fd8dbd01a0acbebf54ed760d0 100644
+--- a/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
++++ b/third_party/blink/renderer/core/exported/web_searchable_form_data.cc
+@@ -186,7 +186,8 @@ bool BuildSearchString(const HTMLFormElement& form,
+                        const TextEncoding& encoding,
+                        const HTMLInputElement* text_element) {
+   bool is_element_found = false;
+-  for (ListedElement* item : form.ListedElements()) {
++  ListedElement::List elements(form.ListedElements());
++  for (ListedElement* item : elements) {
+     auto* control = DynamicTo<HTMLFormControlElement>(item);
+     if (!control)
+       continue;
+diff --git a/third_party/blink/renderer/core/html/forms/html_form_element.cc b/third_party/blink/renderer/core/html/forms/html_form_element.cc
+index b3611221ba58efc420f5fa627aa30b14a75b4a77..2e93f44b1f9bf1a4379283f7cffda88317e531af 100644
+--- a/third_party/blink/renderer/core/html/forms/html_form_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_form_element.cc
+@@ -1080,6 +1080,7 @@ void HTMLFormElement::ScheduleFormSubmission(const Event* event,
+       target_frame->ScheduleFormSubmission(scheduler, form_submission);
+ }
+ 
++// https://html.spec.whatwg.org/multipage/#constructing-the-form-data-set
+ FormData* HTMLFormElement::ConstructEntryList(Element* submitter,
+                                               const TextEncoding& encoding) {
+   if (is_constructing_entry_list_) {
+@@ -1092,7 +1093,10 @@ FormData* HTMLFormElement::ConstructEntryList(Element* submitter,
+     submitter->SetActivatedSubmit(true);
+   }
+ 
+-  for (ListedElement* control : ListedElements()) {
++  // Copy the element list because |AppendToFormData()| can update DOM
++  // structure.
++  ListedElement::List elements(ListedElements());
++  for (ListedElement* control : elements) {
+     DCHECK(control);
+     HTMLElement& element = control->ToHTMLElement();
+     if (!element.IsDisabledFormControl())
+diff --git a/third_party/blink/renderer/core/html/forms/image_input_type.cc b/third_party/blink/renderer/core/html/forms/image_input_type.cc
+index 12cb94bcf35c2a64987229320f88c9e668aa1c98..4b4c97e99e1501d46fa9a822eabb7e7bdb08fec1 100644
+--- a/third_party/blink/renderer/core/html/forms/image_input_type.cc
++++ b/third_party/blink/renderer/core/html/forms/image_input_type.cc
+@@ -251,6 +251,9 @@ void ImageInputType::EnsurePrimaryContent() {
+   if (!HasCreatedShadowSubtree()) {
+     return;
+   }
++  if (GetElement().GetDocument().InStyleRecalc()) {
++    return;
++  }
+   if (ShadowRoot* root = GetElement().UserAgentShadowRoot())
+     root->RemoveChildren();
+   CreateShadowSubtree();
+diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/form-submission-0/construct-entry-list-disassociate-crash.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/form-submission-0/construct-entry-list-disassociate-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..39a41671fe55970f54afd406eafdc5f4f2959043
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/semantics/forms/form-submission-0/construct-entry-list-disassociate-crash.html
+@@ -0,0 +1,39 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<link rel="author" href="mailto:masonf@chromium.org">
++<link rel="help" href="https://crbug.com/569286605">
++
++<style>
++input::-webkit-textfield-decoration-container {
++  content-visibility: hidden;
++  pointer-events: none;
++  height: 20px;
++}
++</style>
++<img id="img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
++<div contenteditable>
++  <input id="inp" type="search" alt="x" style="width: 100px; height: 20px">
++</div>
++<script>
++const img = document.getElementById('img');
++const inp = document.getElementById('inp');
++const rect = inp.getBoundingClientRect();
++const pos = document.caretPositionFromPoint(rect.right - 5, rect.top + 5);
++inp.type = 'image';
++const sr = pos.offsetNode;
++inp.src = '';
++
++window.onload = () => {
++  const doc2 = document.implementation.createHTMLDocument();
++  doc2.body.appendChild(inp);
++  inp.src = img.src;
++  inp.style.content = `url(${img.src})`;
++  document.body.appendChild(inp);
++
++  const form = document.createElement('form');
++  form.innerHTML = '<textarea name="a">x</textarea><input name="b" value="y">';
++  sr.appendChild(form);
++
++  new FormData(form);
++};
++</script>
