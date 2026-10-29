@@ -11,6 +11,7 @@ import {
   Menu
 } from 'electron/main';
 
+import * as dbus from 'dbus-native';
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
@@ -20,6 +21,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import { promisify } from 'node:util';
 import * as vm from 'node:vm';
 
 import { captureWithTabSourceId } from './lib/media-helpers.ts';
@@ -1742,6 +1744,75 @@ describe('webContents module', () => {
         expect(alive).toBe(true);
       }
     );
+  });
+
+  // Drives the DevTools "save" embedder message against the mock
+  // xdg-desktop-portal FileChooser that script/dbus_mock.py hosts on the fake
+  // session bus.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('DevTools save embedder message', { tags: ['serial'] }, () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+    let queueResponse: (uris: string[]) => Promise<void>;
+    let clearQueuedResponses: () => Promise<void>;
+
+    beforeAll(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+      queueResponse = promisify(mock.QueueResponse.bind(mock));
+      clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
+    });
+
+    afterAll(() => {
+      bus?.connection.end();
+    });
+
+    afterEach(closeAllWindows);
+
+    it('reuses the saved path for a repeat save of the same URL', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-save-'));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const target = path.join(dir, 'saved.txt');
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      const devtools = w.webContents.devToolsWebContents!;
+      await waitUntil(() => devtools.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+
+      const save = (content: string) =>
+        devtools.executeJavaScript(
+          `DevToolsAPI.sendMessageToEmbedder('save', ['devtools-save-test.txt', ${JSON.stringify(content)}, false, false], null)`
+        );
+      const readTarget = () => (fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : null);
+
+      await clearCalls();
+      await queueResponse([url.pathToFileURL(target).href]);
+      defer(() => clearQueuedResponses());
+
+      // The first save has no stored path, so it asks the portal for one.
+      await save('first');
+      await waitUntil(() => readTarget() === 'first');
+
+      // The second save of the same URL must write to the stored path
+      // without asking again.
+      await save('second');
+      await waitUntil(() => readTarget() === 'second');
+
+      const saveCalls = (await getCalls()).filter((call) => call[1] === 'SaveFile');
+      expect(saveCalls).toHaveLength(1);
+    });
   });
 
   describe('DevTools native integration', () => {
