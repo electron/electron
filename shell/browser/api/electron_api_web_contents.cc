@@ -5117,7 +5117,7 @@ void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("start", &start_adjust);
-    dict.Get("matchCase", &end_adjust);
+    dict.Get("end", &end_adjust);
   }
 
   // The selection menu is a Chrome-specific piece of UI.
@@ -6152,7 +6152,7 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
   const base::FilePath* path = nullptr;
 
   if (!save_as)
-    base::FindOrNull(saved_files_, url);
+    path = base::FindOrNull(saved_files_, url);
 
   if (path == nullptr) {
     file_dialog::DialogSettings settings;
@@ -6160,8 +6160,11 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
     settings.force_detached = offscreen_;
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
-    if (auto new_path = file_dialog::ShowSaveDialogSync(settings)) {
-      auto [iter, _] = saved_files_.try_emplace(url, std::move(*new_path));
+    // On Linux a cancelled dialog yields an empty path rather than nullopt.
+    if (auto new_path = file_dialog::ShowSaveDialogSync(settings);
+        new_path && !new_path->empty()) {
+      // A fresh pick (e.g. "Save as") replaces any path stored for |url|.
+      auto [iter, _] = saved_files_.insert_or_assign(url, std::move(*new_path));
       path = &iter->second;
     }
   }

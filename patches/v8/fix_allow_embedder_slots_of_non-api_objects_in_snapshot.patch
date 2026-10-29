@@ -17,7 +17,7 @@ IterateJSObjectBodyImpl() visits.
 This should be upstreamed.
 
 diff --git a/src/snapshot/serializer.cc b/src/snapshot/serializer.cc
-index 01401869d6ab6654b3a599d2480e02daf08dbde7..8b85d3268dc1a108401f453043328ffc6952d079 100644
+index 30af3c26e17e0a2e9641cee4f028443a9e2c5b91..ebbef7b6a0de16dfae33fd9293ab89bc7b7ab24c 100644
 --- a/src/snapshot/serializer.cc
 +++ b/src/snapshot/serializer.cc
 @@ -23,6 +23,7 @@
@@ -28,7 +28,7 @@ index 01401869d6ab6654b3a599d2480e02daf08dbde7..8b85d3268dc1a108401f453043328ffc
  #include "src/objects/map.h"
  #include "src/objects/objects-body-descriptors-inl.h"
  #include "src/objects/slots-inl.h"
-@@ -1275,8 +1276,8 @@ void Serializer::ObjectSerializer::VisitCppHeapPointer(
+@@ -1248,8 +1249,8 @@ void Serializer::ObjectSerializer::VisitCppHeapPointer(
    // We serialize the slot as initialized-but-unused slot.  The actual API
    // wrapper serialization is implemented in
    // `ContextSerializer::SerializeApiWrapperFields()`.
