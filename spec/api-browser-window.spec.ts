@@ -8513,7 +8513,7 @@ describe('BrowserWindow module', () => {
       });
       await ow.loadURL(
         'data:text/html,<select id="s" style="position:absolute;left:10px;top:10px;width:120px;height:24px">' +
-        '<option>one</option><option>two</option><option>three</option><option>four</option></select>'
+          '<option>one</option><option>two</option><option>three</option><option>four</option></select>'
       );
       ow.webContents.focus();
       const paintedBelowSelect = new Promise<void>((resolve) => {
@@ -8665,9 +8665,9 @@ describe('BrowserWindow module', () => {
         // painted page from a blank or stale window surface.
         await w.loadURL(
           'data:text/html,<body style="background: transparent; margin: 0">' +
-          '<div style="position: absolute; left: 60px; top: 60px; width: 60px; height: 60px; background: %23ffffff"></div>' +
-          '<div style="position: absolute; left: 180px; top: 60px; width: 60px; height: 60px; background: %23ff0000"></div>' +
-          '</body>'
+            '<div style="position: absolute; left: 60px; top: 60px; width: 60px; height: 60px; background: %23ffffff"></div>' +
+            '<div style="position: absolute; left: 180px; top: 60px; width: 60px; height: 60px; background: %23ff0000"></div>' +
+            '</body>'
         );
         w.focus();
         const captured = await expectDisplayPixelsEventually((pixels) => {
@@ -8879,10 +8879,10 @@ describe('BrowserWindow module', () => {
     // writes on a 10s timer. Testing builds can force both; otherwise poll.
     const flushPrefs = isTestingBindingAvailable()
       ? async () => {
-        const testing = process._linkedBinding('electron_common_testing');
-        testing.flushPendingWindowStateSaves();
-        await testing.commitPendingLocalStateWrites();
-      }
+          const testing = process._linkedBinding('electron_common_testing');
+          testing.flushPendingWindowStateSaves();
+          await testing.commitPendingLocalStateWrites();
+        }
       : null;
 
     const waitForPrefsUpdate = async (
