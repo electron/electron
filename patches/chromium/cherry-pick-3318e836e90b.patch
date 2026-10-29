@@ -1,0 +1,247 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Mon, 26 Oct 2026 12:55:08 -0700
+Subject: Harden Element attribute mutation methods against re-entrant changes
+
+Element::WillModifyAttribute() can run script both by pausing in the
+debugger (via probe::WillModifyDOMAttr) and when UpdateName() lazily
+initializes a frame's WindowProxy and synchronously invokes a
+page-defined setter (e.g. via chrome.loadTimes). If script mutates the
+element's attributes and reallocates or re-indexes
+UniqueElementData::attribute_vector_, references and indices into the
+attribute storage acquired before WillModifyAttribute() become invalid.
+
+While https://crrev.com/c/8510124 already hardened
+SetAttributeInternal() and RemoveAttributeInternal(), this CL:
+1. Checks in AppendAttributeInternal() whether WillModifyAttribute()
+   already added the attribute re-entrantly before appending.
+2. Copies id_attr and class_attr by value in DidMoveToNewDocument()
+   before calling SetIdAttribute() / setAttribute().
+3. Updates comments in SetAttributeInternal() and
+   RemoveAttributeInternal() and adds regression tests.
+
+Bug: 576203565, 575317938
+Change-Id: Ic63c0b5a15568a9c8d2331e7b49dde89e36b5283
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8633017
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Commit-Queue: Mason Freed <masonf@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1727352}
+
+Electron adaptation notes (44-x-y):
+Two of the four element.cc hunks only reword a comment that an earlier
+upstream change ("WillModifyAttribute() may pause in the debugger ...")
+introduced; that change is not on M152, so those comment-only hunks have no
+counterpart and were dropped. The two substantive hunks (re-entrant append
+guard in AppendAttributeInternal() and copying id/class AtomicStrings instead
+of holding references in the quirks-mode adoption path) were applied by hand
+unchanged. The new WPT file merged as-is.
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index c0a5f07503f6059d0a55c899297f99a91310049c..681dd55687031a49322d5bfd523871dc8be611c7 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -8183,7 +8183,15 @@ void Element::AppendAttributeInternal(const QualifiedName& name,
+   }
+   attribute_or_class_bloom_ |= FilterForAttribute(name);
+   UpdateSubtreeBloomFilterAfterInsert();
+-  EnsureUniqueElementData().Attributes().Append(name, value);
++  // WillModifyAttribute() may run script (e.g. by pausing in the debugger or
++  // lazily initializing a WindowProxy during UpdateName()) and add the
++  // attribute re-entrantly before we append it here.
++  if (wtf_size_t index = FindAttributeIndex(name); index != kNotFound)
++      [[unlikely]] {
++    EnsureUniqueElementData().Attributes().at(index).SetValue(value);
++  } else {
++    EnsureUniqueElementData().Attributes().Append(name, value);
++  }
+   if (reason !=
+       AttributeModificationReason::kBySynchronizationOfLazyAttribute) {
+     DidAddAttribute(name, value);
+@@ -12052,13 +12060,13 @@ void Element::DidMoveToNewDocument(Document& old_document) {
+     // this element's attributes, we shouldn't make UniqueElementData, and this
+     // element should point to the shareable one.
+ 
+-    if (const AtomicString& id_attr = GetIdAttribute()) {
++    if (AtomicString id_attr = GetIdAttribute()) {
+       if (!id_attr.ContainsNoAsciiUpper()) {
+         EnsureUniqueElementData();
+         SetIdAttribute(id_attr);
+       }
+     }
+-    if (const AtomicString& class_attr = GetClassAttribute()) {
++    if (AtomicString class_attr = GetClassAttribute()) {
+       if (!class_attr.ContainsNoAsciiUpper()) {
+         EnsureUniqueElementData();
+         // Going through setAttribute() to synchronize the attribute is only
+diff --git a/third_party/blink/web_tests/external/wpt/html/dom/documents/dom-tree-accessors/nameditem-setattribute-attr-mutation.html b/third_party/blink/web_tests/external/wpt/html/dom/documents/dom-tree-accessors/nameditem-setattribute-attr-mutation.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..79195e1f2ed0ec0f264bb027fc4750da4283f210
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/dom/documents/dom-tree-accessors/nameditem-setattribute-attr-mutation.html
+@@ -0,0 +1,165 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<link rel="author" href="mailto:masonf@chromium.org">
++<link rel="help" href="https://crbug.com/575317938">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++
++<div id="container"></div>
++<script>
++test((t) => {
++  const container = document.getElementById('container');
++
++  // Create a sandboxed iframe without allow-scripts so its script context
++  // is not initialized until AddNamedItem accesses its WindowProxy.
++  const sandbox = document.createElement('iframe');
++  sandbox.sandbox = 'allow-same-origin';
++  container.appendChild(sandbox);
++  t.add_cleanup(() => sandbox.remove());
++
++  const innerDoc = sandbox.contentDocument;
++  const img = innerDoc.createElement('img');
++  // An empty name attribute exists in the attribute vector at index 0,
++  // but does not register a named item on insertion, leaving the sandboxed
++  // frame's WindowProxy uninitialized.
++  img.setAttribute('name', '');
++  for (let i = 0; i < 7; i++) {
++    img.setAttribute('data-a' + i, 'v');
++  }
++  innerDoc.body.appendChild(img);
++
++  // Name the child frame 'chrome' so that when LocalWindowProxy::Initialize()
++  // runs DidCreateScriptContext, content::GetOrCreateChromeObject() looks up
++  // window.chrome on innerDoc's global, gets child.contentWindow via named
++  // frame access, and sets 'loadTimes' on it, invoking the JS setter below
++  // synchronously inside WillModifyAttribute().
++  const child = innerDoc.createElement('iframe');
++  child.name = 'chrome';
++  innerDoc.body.appendChild(child);
++
++  Object.defineProperty(child.contentWindow, 'loadTimes', {
++    configurable: true,
++    set() {
++      for (let i = 7; i < 20; i++) {
++        img.setAttribute('data-a' + i, 'v');
++      }
++    }
++  });
++
++  // Modifying the existing 'name' attribute calls WillModifyAttribute ->
++  // UpdateName -> AddNamedItem, which initializes the WindowProxy and invokes
++  // the loadTimes setter above, reallocating img's attribute vector.
++  img.setAttribute('name', 'target_item');
++  assert_equals(img.getAttribute('name'), 'target_item');
++  assert_equals(innerDoc.target_item, img);
++}, 'Reallocating attributes during WillModifyAttribute in SetAttributeInternal should not dangle or lose the new value');
++
++test((t) => {
++  const container = document.getElementById('container');
++
++  const sandbox = document.createElement('iframe');
++  sandbox.sandbox = 'allow-same-origin';
++  container.appendChild(sandbox);
++  t.add_cleanup(() => sandbox.remove());
++
++  const innerDoc = sandbox.contentDocument;
++  const img = innerDoc.createElement('img');
++  img.setAttribute('data-first', '1');
++  img.setAttribute('name', '');
++  for (let i = 0; i < 7; i++) {
++    img.setAttribute('data-a' + i, 'v');
++  }
++  innerDoc.body.appendChild(img);
++
++  // Name the child frame 'chrome' so that when LocalWindowProxy::Initialize()
++  // runs DidCreateScriptContext, content::GetOrCreateChromeObject() looks up
++  // window.chrome on innerDoc's global, gets child.contentWindow via named
++  // frame access, and sets 'loadTimes' on it, invoking the JS setter below
++  // synchronously inside WillModifyAttribute().
++  const child = innerDoc.createElement('iframe');
++  child.name = 'chrome';
++  innerDoc.body.appendChild(child);
++
++  let setterRan = false;
++  Object.defineProperty(child.contentWindow, 'loadTimes', {
++    configurable: true,
++    set() {
++      setterRan = true;
++      // Remove an earlier attribute so 'name' shifts from index 1 to index 0,
++      // and append enough attributes to reallocate the vector.
++      img.removeAttribute('data-first');
++      for (let i = 7; i < 20; i++) {
++        img.setAttribute('data-a' + i, 'v');
++      }
++    }
++  });
++
++  img.setAttribute('name', 'shifted_item');
++  if (setterRan) {
++    assert_equals(img.getAttribute('data-first'), null);
++  }
++  assert_equals(img.getAttribute('name'), 'shifted_item');
++  assert_equals(img.getAttribute('data-a0'), 'v');
++  assert_equals(innerDoc.shifted_item, img);
++}, 'Removing earlier attributes during WillModifyAttribute in SetAttributeInternal should update the re-validated index');
++
++test((t) => {
++  const container = document.getElementById('container');
++
++  const sandbox = document.createElement('iframe');
++  sandbox.sandbox = 'allow-same-origin';
++  container.appendChild(sandbox);
++  t.add_cleanup(() => sandbox.remove());
++
++  const innerDoc = sandbox.contentDocument;
++  const img = innerDoc.createElement('img');
++  innerDoc.body.appendChild(img);
++
++  // Name the child frame 'chrome' so that when LocalWindowProxy::Initialize()
++  // runs DidCreateScriptContext, content::GetOrCreateChromeObject() looks up
++  // window.chrome on innerDoc's global, gets child.contentWindow via named
++  // frame access, and sets 'loadTimes' on it, invoking the JS setter below
++  // synchronously inside WillModifyAttribute().
++  const child = innerDoc.createElement('iframe');
++  child.name = 'chrome';
++  innerDoc.body.appendChild(child);
++
++  Object.defineProperty(child.contentWindow, 'loadTimes', {
++    configurable: true,
++    set() {
++      img.setAttribute('name', 'inner_name');
++      for (let i = 0; i < 20; i++) {
++        img.setAttribute('data-a' + i, 'v');
++      }
++    }
++  });
++
++  img.setAttribute('name', 'outer_name');
++  assert_equals(img.getAttribute('name'), 'outer_name');
++  let nameAttrCount = 0;
++  for (const attr of img.attributes) {
++    if (attr.name === 'name') {
++      nameAttrCount++;
++    }
++  }
++  assert_equals(nameAttrCount, 1);
++}, 'Setting the same attribute re-entrantly during AppendAttributeInternal should not create duplicate attributes');
++
++test((t) => {
++  const container = document.getElementById('container');
++  const quirksFrame = document.createElement('iframe');
++  container.appendChild(quirksFrame);
++  t.add_cleanup(() => quirksFrame.remove());
++
++  const quirksDoc = quirksFrame.contentDocument;
++  quirksDoc.open();
++  quirksDoc.write('<div id="MyUpperId" class="MyUpperClass"></div>');
++  quirksDoc.close();
++  assert_equals(quirksDoc.compatMode, 'BackCompat');
++
++  const div = quirksDoc.getElementById('MyUpperId');
++  document.adoptNode(div);
++  assert_equals(div.id, 'MyUpperId');
++  assert_equals(div.className, 'MyUpperClass');
++}, 'Adopting an element with uppercase id and class between quirks and standards mode documents');
++</script>
