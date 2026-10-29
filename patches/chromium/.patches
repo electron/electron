@@ -172,3 +172,4 @@ feat_let_the_host_of_a_remote_nswindow_set_more_of_its_behavior.patch
 cherry-pick-431b8be6a111.patch
 add_entries_to_the_spki_blocklist.patch
 fix_handle_a_null_pending_call_in_dbus_objectproxy.patch
+cherry-pick-03493d4864ad.patch
