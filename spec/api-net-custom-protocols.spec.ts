@@ -1,4 +1,4 @@
-import { net, protocol } from 'electron/main';
+import { net, protocol, session } from 'electron/main';
 
 import { describe, expect, it } from 'vitest';
 
@@ -46,6 +46,45 @@ describe('net module custom protocols', () => {
     });
     const body = await net.fetch('file://foo').then((r) => r.text());
     expect(body).toBe('hello file://foo/');
+  });
+
+  describe('file: after an earlier request', () => {
+    const fileUrl = url.pathToFileURL(path.join(import.meta.dirname, 'fixtures', 'hello.txt')).toString();
+    // Range keeps these fetches on the URL loader, the path under test, even if plain file: GETs later bypass it.
+    const fetchText = async (ses: Electron.Session) =>
+      (await ses.fetch(fileUrl, { headers: { Range: 'bytes=0-' } }).then((r) => r.text())).trimEnd();
+
+    it('runs through intercept handlers added since', async () => {
+      const ses = session.fromPartition(`net-file-intercept-${Math.random()}`);
+      expect(await fetchText(ses)).toBe('hello world');
+      ses.protocol.interceptStringProtocol('file', (req, cb) => {
+        cb('intercepted ' + req.url);
+      });
+      defer(() => {
+        ses.protocol.uninterceptProtocol('file');
+      });
+      expect(await fetchText(ses)).toBe('intercepted ' + fileUrl);
+      ses.protocol.uninterceptProtocol('file');
+      expect(await fetchText(ses)).toBe('hello world');
+    });
+
+    it('triggers webRequest listeners added since, and not once removed', async () => {
+      const ses = session.fromPartition(`net-file-webrequest-${Math.random()}`);
+      await fetchText(ses);
+      const seen: string[] = [];
+      ses.webRequest.onBeforeRequest((details, cb) => {
+        seen.push(details.url);
+        cb({});
+      });
+      defer(() => {
+        ses.webRequest.onBeforeRequest(null);
+      });
+      await fetchText(ses);
+      expect(seen).toEqual([fileUrl]);
+      ses.webRequest.onBeforeRequest(null);
+      await fetchText(ses);
+      expect(seen).toEqual([fileUrl]);
+    });
   });
 
   it('can be redirected', async () => {
