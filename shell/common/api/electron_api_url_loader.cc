@@ -31,17 +31,16 @@
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/url_util.h"
-#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/net/client_certificate_responder_delegate.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
@@ -652,20 +651,12 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     const auto* const protocol_registry =
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
-    if (auto factory = protocol_registry->CreateRegisteredFactory(scheme)) {
-      return browser_context_->InterceptURLLoaderFactory(
-          network::SharedURLLoaderFactory::Create(
-              std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-                  std::move(factory))));
-    }
+    if (auto factory = protocol_registry->CreateRegisteredFactory(scheme))
+      return browser_context_->InterceptURLLoaderFactory(std::move(factory));
   }
 
-  if (url.SchemeIsFile()) {
-    return browser_context_->InterceptURLLoaderFactory(
-        network::SharedURLLoaderFactory::Create(
-            std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-                AsarURLLoaderFactory::Create())));
-  }
+  if (url.SchemeIsFile())
+    return browser_context_->GetFileURLLoaderFactory();
 
   return browser_context_->GetURLLoaderFactory();
 }
