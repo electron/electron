@@ -1,0 +1,204 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Fri, 9 Oct 2026 09:21:07 -0700
+Subject: Avoid holding Attribute& across WillModifyAttribute()
+
+WillModifyAttribute() invokes probe::WillModifyDOMAttr(), which can
+synchronously pause in the DevTools debugger when an attribute-modified
+DOM breakpoint is set on the element. While paused, the debugger client
+can evaluate script that mutates the element's attributes and
+reallocates the attribute vector backing.
+
+Look up EnsureUniqueElementData().Attributes() after
+WillModifyAttribute() in SetAttributeInternal() and
+RemoveAttributeInternal() instead of holding a raw Attribute& or
+MutableAttributeCollection across the call.
+
+Fixed: 568901032, 570796613
+Change-Id: I5c1c22d3ab80c4179fcf4ce3558660caf91fd57e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8510124
+Reviewed-by: David Baron <dbaron@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1715673}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 5566466ea59361a18df9731b1fdca785693a9292..82f341f4aa1d75eab4b68e2eede963fcd289ff7c 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -8069,8 +8069,7 @@ void Element::setAttributeNS(const AtomicString& namespace_uri,
+ 
+ void Element::RemoveAttributeInternal(wtf_size_t index,
+                                       AttributeModificationReason reason) {
+-  MutableAttributeCollection attributes =
+-      EnsureUniqueElementData().Attributes();
++  AttributeCollection attributes = GetElementData()->Attributes();
+   SECURITY_DCHECK(index < attributes.size());
+ 
+   QualifiedName name = attributes[index].GetName();
+@@ -8087,11 +8086,21 @@ void Element::RemoveAttributeInternal(wtf_size_t index,
+     }
+   }
+ 
++  MutableAttributeCollection mutable_attributes =
++      EnsureUniqueElementData().Attributes();
+   if (Attr* attr_node = AttrIfExists(name)) {
+-    DetachAttrNodeFromElementWithValue(attr_node, attributes[index].Value());
++    DetachAttrNodeFromElementWithValue(attr_node, value_being_removed);
+   }
+ 
+-  attributes.Remove(index);
++  // WillModifyAttribute() may pause in the debugger and allow script to mutate
++  // attributes, invalidating `index`.
++  if (index >= mutable_attributes.size() ||
++      mutable_attributes[index].GetName() != name) {
++    index = mutable_attributes.FindIndex(name);
++  }
++  if (index != kNotFound) {
++    mutable_attributes.Remove(index);
++  }
+ 
+   if (reason !=
+       AttributeModificationReason::kBySynchronizationOfLazyAttribute) {
+@@ -13507,14 +13516,25 @@ ALWAYS_INLINE void Element::SetAttributeInternal(
+       DidModifyAttribute(existing_attribute_name, new_value, new_value, reason);
+     }
+   } else {
+-    Attribute& new_attribute = EnsureUniqueElementData().Attributes().at(index);
+-    AtomicString existing_attribute_value = std::move(new_attribute.Value());
++    AtomicString existing_attribute_value = existing_attribute.Value();
+     if (reason !=
+         AttributeModificationReason::kBySynchronizationOfLazyAttribute) {
+       WillModifyAttribute(existing_attribute_name, existing_attribute_value,
+                           new_value);
+     }
+-    new_attribute.SetValue(new_value);
++    MutableAttributeCollection mutable_attributes =
++        EnsureUniqueElementData().Attributes();
++    // WillModifyAttribute() may pause in the debugger and allow script to
++    // mutate attributes, invalidating `index`.
++    if (index >= mutable_attributes.size() ||
++        mutable_attributes[index].GetName() != existing_attribute_name) {
++      index = mutable_attributes.FindIndex(existing_attribute_name);
++    }
++    if (index != kNotFound) {
++      mutable_attributes[index].SetValue(new_value);
++    } else {
++      mutable_attributes.Append(existing_attribute_name, new_value);
++    }
+     if (reason !=
+         AttributeModificationReason::kBySynchronizationOfLazyAttribute) {
+       DidModifyAttribute(existing_attribute_name, existing_attribute_value,
+diff --git a/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-attribute-modified-mutation-during-pause-expected.txt b/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-attribute-modified-mutation-during-pause-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8df20dab17593f2c654b2e19c2c375826ad14859
+--- /dev/null
++++ b/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-attribute-modified-mutation-during-pause-expected.txt
+@@ -0,0 +1,6 @@
++Tests reallocating element attribute vector while paused on an attribute-modified DOM breakpoint.
++t after grow: updated-after-grow
++t after shrink: updated-after-shrink
++t after remove during set: updated-after-remove
++has t after shrink during remove: false
++
+diff --git a/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-attribute-modified-mutation-during-pause.js b/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-attribute-modified-mutation-during-pause.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f98675eb6d7da166bac32d62f52395d418e337e0
+--- /dev/null
++++ b/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-attribute-modified-mutation-during-pause.js
+@@ -0,0 +1,95 @@
++(async function(/** @type {import('test_runner').TestRunner} */ testRunner) {
++  const {session, dp} = await testRunner.startHTML(
++      '<div id="target" a1="1" a2="2" a3="3" a4="4" a5="5" a6="6" a7="7" t="orig">Target</div>',
++      'Tests reallocating element attribute vector while paused on an attribute-modified DOM breakpoint.');
++
++  await dp.Debugger.enable();
++  await dp.DOM.enable();
++
++  const {result: doc} = await dp.DOM.getDocument({depth: 10});
++  const nodeId = doc.root.children[0].children[1].children[0].nodeId;
++  await dp.DOMDebugger.setDOMBreakpoint({nodeId, type: 'attribute-modified'});
++
++  let pausedPromise = dp.Debugger.oncePaused();
++  let evalPromise = session.evaluate(`(() => {
++    const el = document.getElementById('target');
++    el.setAttribute('t', 'updated-after-grow');
++    return el.getAttribute('t');
++  })()`);
++  await pausedPromise;
++  await dp.Runtime.evaluate({
++    expression: `(() => {
++      const el = document.getElementById('target');
++      for (let i = 0; i < 32; ++i) {
++        el.setAttribute('extra' + i, 'v');
++      }
++    })()`
++  });
++  await dp.Debugger.resume();
++  testRunner.log('t after grow: ' + await evalPromise);
++
++  pausedPromise = dp.Debugger.oncePaused();
++  evalPromise = session.evaluate(`(() => {
++    const el = document.getElementById('target');
++    el.setAttribute('t', 'updated-after-shrink');
++    return el.getAttribute('t');
++  })()`);
++  await pausedPromise;
++  await dp.Runtime.evaluate({
++    expression: `(() => {
++      const el = document.getElementById('target');
++      for (let i = 0; i < 32; ++i) {
++        el.removeAttribute('extra' + i);
++      }
++      for (let i = 1; i <= 7; ++i) {
++        el.removeAttribute('a' + i);
++      }
++    })()`
++  });
++  await dp.Debugger.resume();
++  testRunner.log('t after shrink: ' + await evalPromise);
++
++  pausedPromise = dp.Debugger.oncePaused();
++  evalPromise = session.evaluate(`(() => {
++    const el = document.getElementById('target');
++    el.setAttribute('t', 'updated-after-remove');
++    return el.getAttribute('t');
++  })()`);
++  await pausedPromise;
++  await dp.Runtime.evaluate(
++      {expression: `document.getElementById('target').removeAttribute('t')`});
++  await dp.Debugger.resume();
++  testRunner.log('t after remove during set: ' + await evalPromise);
++
++  await dp.DOMDebugger.removeDOMBreakpoint(
++      {nodeId, type: 'attribute-modified'});
++  await session.evaluate(`(() => {
++    const el = document.getElementById('target');
++    el.removeAttribute('t');
++    for (let i = 1; i <= 4; ++i) {
++      el.setAttribute('b' + i, '1');
++    }
++    el.setAttribute('t', 'to-remove');
++  })()`);
++  await dp.DOMDebugger.setDOMBreakpoint({nodeId, type: 'attribute-modified'});
++
++  pausedPromise = dp.Debugger.oncePaused();
++  evalPromise = session.evaluate(`(() => {
++    const el = document.getElementById('target');
++    el.removeAttribute('t');
++    return el.hasAttribute('t');
++  })()`);
++  await pausedPromise;
++  await dp.Runtime.evaluate({
++    expression: `(() => {
++      const el = document.getElementById('target');
++      for (let i = 1; i <= 4; ++i) {
++        el.removeAttribute('b' + i);
++      }
++    })()`
++  });
++  await dp.Debugger.resume();
++  testRunner.log('has t after shrink during remove: ' + await evalPromise);
++
++  testRunner.completeTest();
++})

@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Mon, 26 Oct 2026 13:49:46 +0000
+Subject: [turboshaft] Bound JS stack frame size to 4KB
+
+CodeGenerator::AssembleConstructFrame grows the stack frame for
+optimized JS functions (including OSR) with a single stack pointer
+decrement before the kJSFunctionEntry stack check runs. A frame larger
+than 4KB can therefore step over an OS stack guard page.
+
+Following Maglev (https://crrev.com/c/8137738), abort optimization in
+Pipeline::AllocateRegisters with BailoutReason::kFunctionTooBig when the
+total frame slot count exceeds 4KB.
+
+TAG=agy
+CONV=51ba317e-94b6-4660-b9fd-ed1d0735b6f1
+
+Fixed: 574660146
+Change-Id: Ie739ebec0b702efed0056dbd3ca87f172fc8dc7e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8631314
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111161}
+
+diff --git a/src/compiler/turboshaft/pipelines.cc b/src/compiler/turboshaft/pipelines.cc
+index 07c1bcf2c6b99b741054025d317ac53d64b490e8..2adfe63bc6766a08e58d2e7820aa91a1f2063162 100644
+--- a/src/compiler/turboshaft/pipelines.cc
++++ b/src/compiler/turboshaft/pipelines.cc
+@@ -84,6 +84,21 @@ bool Pipeline::AllocateRegisters(const RegisterConfiguration* config,
+ 
+   RUN_MAYBE_ABORT(DecideSpillingModePhase);
+   RUN_MAYBE_ABORT(AssignSpillSlotsPhase);
++
++  // The prologue grows the frame with a single stack pointer decrement, before
++  // the function entry stack check runs. A frame no larger than the smallest OS
++  // page cannot step over a guard page, so bail out rather than emit an
++  // unchecked stack pointer jump of arbitrary size.
++  // When replacing this bailout with a different strategy, consider doing the
++  // same in Maglev as well.
++  constexpr int kMaxStackSlots = 4 * KB / kSystemPointerSize;
++  if (data_->info()->IsOptimizing() &&
++      data_->frame()->GetTotalFrameSlotCount() > kMaxStackSlots) {
++    data_->info()->AbortOptimization(BailoutReason::kFunctionTooBig);
++    data()->ClearRegisterComponent();
++    return false;
++  }
++
+   RUN_MAYBE_ABORT(CommitAssignmentPhase);
+ 
+   // TODO(chromium:725559): remove this check once
+diff --git a/src/maglev/maglev-compiler.cc b/src/maglev/maglev-compiler.cc
+index b750dafa4515cc7e2efe09df044bd03c8c02b598..5a68df7b555b4ce876033a776362bd702613bae9 100644
+--- a/src/maglev/maglev-compiler.cc
++++ b/src/maglev/maglev-compiler.cc
+@@ -224,6 +224,8 @@ bool MaglevCompiler::Compile(LocalIsolate* local_isolate,
+   // FunctionEntryStackCheck runs. A frame no larger than the smallest OS page
+   // cannot step over a guard page, so bail out rather than emit an unchecked
+   // stack pointer jump of arbitrary size.
++  // When replacing this bailout with a different strategy, consider doing the
++  // same in Turboshaft as well.
+   if (graph->tagged_stack_slots() + graph->untagged_stack_slots() >
+       kMaxStackSlots) {
+     return false;
+diff --git a/test/mjsunit/turboshaft/regress-574660146.js b/test/mjsunit/turboshaft/regress-574660146.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc82a2684baaadb2dcbb7a4cf522819ea9ab5de0
+--- /dev/null
++++ b/test/mjsunit/turboshaft/regress-574660146.js
+@@ -0,0 +1,41 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbofan --no-maglev
++
++function cb() {
++  return arguments.length;
++}
++%NeverOptimizeFunction(cb);
++
++// Passing `kArgCount` distinct expressions to a non-inlined call keeps all of
++// them live simultaneously at the call site, requiring > 1024 stack slots
++// (> 4KB on both 32-bit and 64-bit targets) while keeping the bytecode small
++// enough to be compiled.
++const kArgCount = 1100;
++const args = Array.from({length: kArgCount}, (_, k) => `p ^ ${k + 1}`);
++
++function buildWideFrame(osr) {
++  return Function('x', 'cb', 'p', `
++    let result = 0;
++    for (let i = 0; i < 10; ++i) {
++      ${osr ? 'if (i === 5) %OptimizeOsr();' : ''}
++      if (x < 0) return cb(${args});
++      result = (x + i) | 0;
++    }
++    return result;
++  `);
++}
++
++const wide = buildWideFrame(false);
++%PrepareFunctionForOptimization(wide);
++assertEquals(kArgCount, wide(-1, cb, 1));
++assertEquals(10, wide(1, cb, 1));
++%OptimizeFunctionOnNextCall(wide);
++assertEquals(10, wide(1, cb, 1));
++
++const wideOsr = buildWideFrame(true);
++%PrepareFunctionForOptimization(wideOsr);
++assertEquals(kArgCount, wideOsr(-1, cb, 1));
++assertEquals(10, wideOsr(1, cb, 1));

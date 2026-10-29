@@ -1,0 +1,440 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Wed, 28 Oct 2026 20:10:36 -0700
+Subject: [M150-LTS][MediaStream] Fix UAF in
+ MediaStream(Audio|Video)Track::StopAndNotify
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Stopping a track stops the corresponding source if the track was the
+last one connected to the source. Stopping the source synchronously
+dispatches the `ended` event on other MediaStreamTrackImpls sharing
+that source, which runs script and can trigger an Oilpan GC.
+If nothing else references the MediaStreamComponentImpl owning
+the platform track, the compoenent's pre-finalizer
+(MediaStreamComponentImpl::Dispose) deletes the platform track while
+StopAndNotify() is still on the stack.
+
+In that case, the platform track destructor has already called Stop()
+(ending sinks and invalidating weak pointers), so check a `WeakPtr`
+acquired before stopping the track and return early if the platform
+track has been deleted.
+
+(The merge Conflicts were fixed when the CL was cherry-picked by the ChromeOS LTS Merging Team.)
+
+(cherry picked from commit 29268f92bbf3b2a2c5566bab2eb4d16b0e5bee49)
+
+Bug: 576215540
+Change-Id: I06e79a8afc1f5b23b2b903ca364b27c6c689ce0e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8626348
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1724620}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8667758
+Reviewed-by: Victor Savu <vsavu@google.com>
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4541}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/modules/mediastream/media_stream_track_impl_test.cc b/third_party/blink/renderer/modules/mediastream/media_stream_track_impl_test.cc
+index fec1479ae4b364cc8749343a974d0ce8a43f4857..4460feae8a00e241279fd138c531a67230ccde9d 100644
+--- a/third_party/blink/renderer/modules/mediastream/media_stream_track_impl_test.cc
++++ b/third_party/blink/renderer/modules/mediastream/media_stream_track_impl_test.cc
+@@ -24,6 +24,7 @@
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_media_stream_track_state.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_media_track_constraints.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_union_constrainlongrange_long.h"
++#include "third_party/blink/renderer/core/dom/events/event.h"
+ #include "third_party/blink/renderer/core/dom/events/native_event_listener.h"
+ #include "third_party/blink/renderer/core/frame/frame_test_helpers.h"
+ #include "third_party/blink/renderer/core/html/media/html_media_element.h"
+@@ -957,4 +958,107 @@ TEST_F(MediaStreamTrackImplTest, StopAudioTrackAfterSinkDestroyed) {
+   // The test passes if it doesn't crash.
+ }
+ 
++TEST_F(MediaStreamTrackImplTest, StopAudioTrackWhenEndedEventTriggersGC) {
++  V8TestingScope v8_scope;
++
++  Persistent<MediaStreamComponent> component = MakeMockAudioComponent();
++  MediaStreamAudioSource* source =
++      MediaStreamAudioSource::From(component->Source());
++  MediaStreamAudioTrack* platform_track =
++      MediaStreamAudioTrack::From(component.Get());
++  ASSERT_TRUE(source);
++  ASSERT_TRUE(platform_track);
++  EXPECT_TRUE(source->ConnectToInitializedTrack(component.Get()));
++
++  MediaStreamComponent* other_component =
++      MakeGarbageCollected<MediaStreamComponentImpl>(
++          component->Source(),
++          std::make_unique<MediaStreamAudioTrack>(/*is_local_track=*/true));
++  Persistent<MediaStreamTrackImpl> other_track =
++      MakeGarbageCollected<MediaStreamTrackImpl>(v8_scope.GetExecutionContext(),
++                                                 other_component);
++
++  Persistent<testing::StrictMock<MockEventListener>> event_listener =
++      MakeGarbageCollected<testing::StrictMock<MockEventListener>>();
++  other_track->addEventListener(event_type_names::kEnded, event_listener.Get());
++
++  base::WeakPtr<MediaStreamAudioTrack> weak_platform_track =
++      platform_track->GetWeakPtr();
++  // Precise GC (WebHeap::CollectAllGarbageForTesting) does not scan the C++
++  // stack and would otherwise collect the in-flight Event, which
++  // EventDispatcher holds only on the stack.
++  Persistent<Event> keep_event_alive;
++  EXPECT_CALL(*event_listener, Invoke(_, _))
++      .WillOnce([&](ExecutionContext*, Event* event) {
++        keep_event_alive = event;
++        component.Clear();
++        WebHeap::CollectAllGarbageForTesting();
++        EXPECT_FALSE(weak_platform_track);
++      });
++
++  bool callback_called = false;
++  platform_track->StopAndNotify(
++      blink::BindOnce([](bool* called) { *called = true; },
++                      base::Unretained(&callback_called)));
++  EXPECT_TRUE(callback_called);
++  EXPECT_FALSE(weak_platform_track);
++}
++
++TEST_F(MediaStreamTrackImplTest, StopVideoTrackWhenEndedEventTriggersGC) {
++  V8TestingScope v8_scope;
++
++  Persistent<MediaStreamComponent> component = MakeMockVideoComponent();
++  MediaStreamVideoSource* source =
++      MediaStreamVideoSource::GetVideoSource(component->Source());
++  MediaStreamVideoTrack* platform_track =
++      MediaStreamVideoTrack::From(component.Get());
++  ASSERT_TRUE(source);
++  ASSERT_TRUE(platform_track);
++
++  // A second track on the same source, with an 'ended' listener. Its platform
++  // track is stopped right away so that |platform_track| is the source's last
++  // track and stopping it stops the source.
++  MediaStreamComponent* other_component =
++      MakeGarbageCollected<MediaStreamComponentImpl>(
++          component->Source(),
++          std::make_unique<MediaStreamVideoTrack>(
++              source, MediaStreamVideoSource::ConstraintsOnceCallback(),
++              /*enabled=*/true));
++  MediaStreamVideoTrack::From(other_component)->Stop();
++  Persistent<MediaStreamTrackImpl> other_track =
++      MakeGarbageCollected<MediaStreamTrackImpl>(v8_scope.GetExecutionContext(),
++                                                 other_component);
++
++  Persistent<testing::StrictMock<MockEventListener>> event_listener =
++      MakeGarbageCollected<testing::StrictMock<MockEventListener>>();
++  other_track->addEventListener(event_type_names::kEnded, event_listener.Get());
++
++  base::WeakPtr<MediaStreamVideoTrack> weak_platform_track =
++      platform_track->GetWeakPtrForTesting();
++  // Precise GC (WebHeap::CollectAllGarbageForTesting) does not scan the C++
++  // stack and would otherwise collect the in-flight Event, which
++  // EventDispatcher holds only on the stack.
++  Persistent<Event> keep_event_alive;
++  EXPECT_CALL(*event_listener, Invoke(_, _))
++      .WillOnce([&](ExecutionContext*, Event* event) {
++        keep_event_alive = event;
++        component.Clear();
++        WebHeap::CollectAllGarbageForTesting();
++        EXPECT_FALSE(weak_platform_track);
++      });
++
++  bool callback_called = false;
++  platform_track->StopAndNotify(
++      blink::BindOnce([](bool* called) { *called = true; },
++                      base::Unretained(&callback_called)));
++  EXPECT_FALSE(weak_platform_track);
++  EXPECT_EQ(MediaStreamSource::kReadyStateEnded,
++            other_component->Source()->GetReadyState());
++
++  // MediaStreamVideoSource runs the callback once the source has actually
++  // stopped, which happens on a separate task.
++  test::RunPendingTasks();
++  EXPECT_TRUE(callback_called);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc b/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc
+index 39107eee73bc43d13e77677a792f4a691517ddb2..9dad1ea4ede284a80cd787c85a86596dbc116e12 100644
+--- a/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc
++++ b/third_party/blink/renderer/modules/mediastream/media_stream_video_track.cc
+@@ -1113,8 +1113,25 @@ void MediaStreamVideoTrack::StopAndNotify(base::OnceClosure callback) {
+   TRACE_EVENT("media", "MediaStreamVideoTrack::StopAndNotify");
+   DCHECK_CALLED_ON_VALID_THREAD(main_render_thread_checker_);
+   if (source_) {
+-    source_->RemoveTrack(this, std::move(callback));
+-    source_ = nullptr;
++    // MediaStreamVideoSource::RemoveTrack() stops the source if this was its
++    // last track. That synchronously fires 'ended' on other
++    // MediaStreamTrackImpls sharing the source, which runs script, which can
++    // trigger a GC. If nothing else references the MediaStreamComponentImpl
++    // owning |this|, its pre-finalizer deletes |this| while this frame is still
++    // on the stack. See https://crbug.com/576215540.
++    //
++    // Clear |source_| before calling RemoveTrack() so that the re-entrant
++    // Stop() call from ~MediaStreamVideoTrack() does not try to remove |this|
++    // from the source a second time. The destructor's Stop() call takes care
++    // of ending the sinks and stopping |refresh_timer_|, and |callback| is
++    // owned by the source once RemoveTrack() has been called, so there is
++    // nothing left to do here if |this| is gone.
++    base::WeakPtr<MediaStreamVideoTrack> weak_this = weak_factory_.GetWeakPtr();
++    MediaStreamVideoSource* source = std::exchange(source_, nullptr).get();
++    source->RemoveTrack(this, std::move(callback));
++    if (!weak_this) {
++      return;
++    }
+   } else if (callback) {
+     std::move(callback).Run();
+   }
+diff --git a/third_party/blink/renderer/modules/mediastream/media_stream_video_track.h b/third_party/blink/renderer/modules/mediastream/media_stream_video_track.h
+index ea3145b6025e6bf9ef7c7c774d798eeb038ca2f6..ee9fe1f550657e4c4d2a95dd7a1f6fcc87f285f5 100644
+--- a/third_party/blink/renderer/modules/mediastream/media_stream_video_track.h
++++ b/third_party/blink/renderer/modules/mediastream/media_stream_video_track.h
+@@ -199,6 +199,10 @@ class MODULES_EXPORT MediaStreamVideoTrack : public MediaStreamTrackPlatform {
+     is_screencast_ = is_screencast;
+   }
+ 
++  base::WeakPtr<MediaStreamVideoTrack> GetWeakPtrForTesting() {
++    return weak_factory_.GetWeakPtr();
++  }
++
+   MediaStreamTrackPlatform::StreamType Type() const override {
+     return MediaStreamTrackPlatform::StreamType::kVideo;
+   }
+diff --git a/third_party/blink/renderer/modules/mediastream/media_stream_video_track_test.cc b/third_party/blink/renderer/modules/mediastream/media_stream_video_track_test.cc
+index e3ef5f6f75483bcfc8bc00f0836c91a769bd0432..3b9e7949c42db59c77179204f2cfbd714d386bd7 100644
+--- a/third_party/blink/renderer/modules/mediastream/media_stream_video_track_test.cc
++++ b/third_party/blink/renderer/modules/mediastream/media_stream_video_track_test.cc
+@@ -15,6 +15,7 @@
+ #include "base/functional/callback_helpers.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/metrics/histogram_macros.h"
+ #include "base/run_loop.h"
+ #include "base/strings/utf_string_conversions.h"
+@@ -23,6 +24,7 @@
+ #include "base/test/gtest_util.h"
+ #include "base/test/metrics/histogram_tester.h"
+ #include "base/threading/thread_checker.h"
++#include "build/build_config.h"
+ #include "media/base/video_frame.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+@@ -378,6 +380,77 @@ TEST_F(MediaStreamVideoTrackTest, StopLastTrack) {
+   sink2.DisconnectFromTrack();
+ }
+ 
++class GarbageCollectingSourceObserver final
++    : public GarbageCollected<GarbageCollectingSourceObserver>,
++      public MediaStreamSource::Observer {
++ public:
++  explicit GarbageCollectingSourceObserver(base::OnceClosure on_state_changed)
++      : on_state_changed_(std::move(on_state_changed)) {}
++
++  void SourceChangedState() override {
++    if (on_state_changed_) {
++      std::move(on_state_changed_).Run();
++    }
++  }
++  void SourceChangedCaptureConfiguration() override {}
++  void SourceChangedCaptureHandle() override {}
++#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
++  void SourceChangedZoomLevel(int) override {}
++#endif
++
++  void Trace(Visitor* visitor) const override {
++    MediaStreamSource::Observer::Trace(visitor);
++  }
++
++ private:
++  base::OnceClosure on_state_changed_;
++};
++
++// Regression test for https://crbug.com/576215540: verifies that
++// MediaStreamVideoTrack::StopAndNotify() does not UAF if stopping the source
++// synchronously triggers garbage collection of the owning
++// MediaStreamComponentImpl and destroys the MediaStreamVideoTrack.
++TEST_F(MediaStreamVideoTrackTest,
++       StopAndNotifyComponentGarbageCollectedOnSourceStop) {
++  InitializeSource();
++  WebMediaStreamTrack track = CreateTrack();
++  MediaStreamVideoTrack* raw_track = MediaStreamVideoTrack::From(track);
++  ASSERT_TRUE(raw_track);
++  base::WeakPtr<MediaStreamVideoTrack> weak_track =
++      raw_track->GetWeakPtrForTesting();
++  ASSERT_TRUE(weak_track);
++  EXPECT_EQ(MediaStreamSource::kReadyStateLive,
++            stream_source()->GetReadyState());
++
++  bool observer_called = false;
++  Persistent<GarbageCollectingSourceObserver> observer =
++      MakeGarbageCollected<GarbageCollectingSourceObserver>(
++          base::BindLambdaForTesting([&]() {
++            observer_called = true;
++            // Drop the last reference to the MediaStreamComponentImpl owning
++            // |raw_track| and collect it, which destroys |raw_track| while
++            // StopAndNotify() is still on the stack.
++            track.Reset();
++            WebHeap::CollectAllGarbageForTesting();
++            EXPECT_FALSE(weak_track);
++          }));
++  stream_source()->AddObserver(observer.Get());
++
++  bool notify_callback_called = false;
++  raw_track->StopAndNotify(
++      base::BindLambdaForTesting([&]() { notify_callback_called = true; }));
++
++  EXPECT_TRUE(observer_called);
++  EXPECT_FALSE(weak_track);
++  EXPECT_EQ(MediaStreamSource::kReadyStateEnded,
++            stream_source()->GetReadyState());
++
++  // The source runs the callback once it has actually stopped, which happens
++  // on a separate task.
++  base::RunLoop().RunUntilIdle();
++  EXPECT_TRUE(notify_callback_called);
++}
++
+ TEST_F(MediaStreamVideoTrackTest, CheckTrackRequestsFrame) {
+   InitializeSource();
+   UpdateVideoSourceToRespondToRequestRefreshFrame();
+diff --git a/third_party/blink/renderer/platform/mediastream/media_stream_audio_test.cc b/third_party/blink/renderer/platform/mediastream/media_stream_audio_test.cc
+index 4fce3456290ee4ace2cf6f37897401bc4689dd67..fbba2dac50980f5f6f96c22b0307a2ad6919dc65 100644
+--- a/third_party/blink/renderer/platform/mediastream/media_stream_audio_test.cc
++++ b/third_party/blink/renderer/platform/mediastream/media_stream_audio_test.cc
+@@ -10,11 +10,14 @@
+ #include "base/compiler_specific.h"
+ #include "base/synchronization/lock.h"
+ #include "base/synchronization/waitable_event.h"
++#include "base/test/bind.h"
+ #include "base/test/task_environment.h"
+ #include "base/test/test_timeouts.h"
+ #include "base/threading/platform_thread.h"
+ #include "base/threading/thread_checker.h"
+ #include "base/time/time.h"
++#include "build/build_config.h"
++#include "build/buildflag.h"
+ #include "media/base/audio_bus.h"
+ #include "media/base/audio_glitch_info.h"
+ #include "media/base/audio_parameters.h"
+@@ -541,4 +544,72 @@ TEST(MediaStreamAudioTestStandalone, GetAudioFrameStats) {
+   }
+ }
+ 
++namespace {
++
++class GarbageCollectingSourceObserver final
++    : public GarbageCollected<GarbageCollectingSourceObserver>,
++      public MediaStreamSource::Observer {
++ public:
++  explicit GarbageCollectingSourceObserver(base::OnceClosure on_state_changed)
++      : on_state_changed_(std::move(on_state_changed)) {}
++
++  void SourceChangedState() override {
++    if (on_state_changed_) {
++      std::move(on_state_changed_).Run();
++    }
++  }
++  void SourceChangedCaptureConfiguration() override {}
++  void SourceChangedCaptureHandle() override {}
++#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
++  void SourceChangedZoomLevel(int) override {}
++#endif
++
++  void Trace(Visitor* visitor) const override {
++    MediaStreamSource::Observer::Trace(visitor);
++  }
++
++ private:
++  base::OnceClosure on_state_changed_;
++};
++
++}  // namespace
++
++// Regression test for https://crbug.com/576215540: verifies that
++// MediaStreamAudioTrack::StopAndNotify() does not UAF if stopping the source
++// synchronously triggers garbage collection of the owning
++// MediaStreamComponentImpl and destroys the MediaStreamAudioTrack.
++TEST_F(MediaStreamAudioTest,
++       StopAndNotifyComponentGarbageCollectedOnSourceStop) {
++  ASSERT_TRUE(source());
++  EXPECT_TRUE(source()->ConnectToInitializedTrack(audio_component_));
++  MediaStreamAudioTrack* raw_track = track();
++  ASSERT_TRUE(raw_track);
++  base::WeakPtr<MediaStreamAudioTrack> weak_track = raw_track->GetWeakPtr();
++  ASSERT_TRUE(weak_track);
++
++  FakeMediaStreamAudioSink sink;
++  raw_track->AddSink(&sink);
++  EXPECT_FALSE(sink.was_ended());
++
++  bool observer_called = false;
++  Persistent<GarbageCollectingSourceObserver> observer =
++      MakeGarbageCollected<GarbageCollectingSourceObserver>(
++          base::BindLambdaForTesting([&]() {
++            observer_called = true;
++            audio_component_ = nullptr;
++            WebHeap::CollectAllGarbageForTesting();
++            EXPECT_FALSE(weak_track);
++          }));
++  audio_source_->AddObserver(observer.Get());
++
++  bool notify_callback_called = false;
++  raw_track->StopAndNotify(
++      base::BindLambdaForTesting([&]() { notify_callback_called = true; }));
++
++  EXPECT_TRUE(observer_called);
++  EXPECT_TRUE(notify_callback_called);
++  EXPECT_TRUE(sink.was_ended());
++  EXPECT_FALSE(weak_track);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc b/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc
+index 04b9ba07fb1b75ff286d9650a9829cfe412ae0cc..953e5c0cb0572040f603ccedc0b40802bc3335ee 100644
+--- a/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc
++++ b/third_party/blink/renderer/platform/mediastream/media_stream_audio_track.cc
+@@ -138,8 +138,26 @@ void MediaStreamAudioTrack::StopAndNotify(base::OnceClosure callback) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   WebRtcLog(kTag, this, "%s()", __func__);
+ 
+-  if (!stop_callback_.is_null())
++  // Running |stop_callback_| (MediaStreamAudioSource::StopAudioDeliveryTo)
++  // stops the source if this was its last track. That synchronously fires
++  // 'ended' on other MediaStreamTrackImpls sharing the source, which runs
++  // script, which can trigger a GC. If nothing else references the
++  // MediaStreamComponentImpl owning |this|, its pre-finalizer deletes |this|
++  // while this frame is still on the stack. In that case
++  // ~MediaStreamAudioTrack() has already run Stop() (ending the sinks and
++  // invalidating weak pointers), so the only thing left to do is run
++  // |callback|, which UserMediaClient's request queue relies on to make
++  // progress. See https://crbug.com/576215540.
++  base::WeakPtr<MediaStreamAudioTrack> weak_this = GetWeakPtr();
++  if (!stop_callback_.is_null()) {
+     std::move(stop_callback_).Run();
++  }
++  if (!weak_this) {
++    if (callback) {
++      std::move(callback).Run();
++    }
++    return;
++  }
+ 
+   Vector<WebMediaStreamAudioSink*> sinks_to_end;
+   deliverer_.GetConsumerList(&sinks_to_end);
+@@ -148,8 +166,9 @@ void MediaStreamAudioTrack::StopAndNotify(base::OnceClosure callback) {
+     sink->OnReadyStateChanged(WebMediaStreamSource::kReadyStateEnded);
+   }
+ 
+-  if (callback)
++  if (callback) {
+     std::move(callback).Run();
++  }
+   weak_factory_.InvalidateWeakPtrs();
+ }
+ 
