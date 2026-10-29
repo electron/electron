@@ -4113,11 +4113,11 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     const testing = () => process._linkedBinding('electron_common_testing');
     // The hang monitor reports after kHungRendererDelay (15 s) plus a 1 s ping.
-    const hangAndPoke = async (w: BrowserWindow, ms = 0) => {
-      w.webContents
-        .executeJavaScript(ms ? `{ const end = Date.now() + ${ms}; while (Date.now() < end) {} }` : 'while (true) {}')
-        .catch(() => {});
-      await setTimeout(200);
+    // The key's own keydown handler hangs the page, so the key can't be acked
+    // before the hang starts. A sync XHR hang, as in the hidden-window test,
+    // would end at the simulated suspend, which fails pending requests.
+    const hangAndPoke = async (w: BrowserWindow) => {
+      await w.webContents.executeJavaScript("addEventListener('keydown', () => { while (true) {} })");
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
     };
 
