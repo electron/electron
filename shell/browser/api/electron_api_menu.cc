@@ -23,7 +23,9 @@
 #include "shell/browser/api/ui_event.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/menu_highlight_colors.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -394,6 +396,53 @@ void Menu::SetApplicationMenuFromJS(gin::Arguments* args) {
 }
 
 // static
+void Menu::SetHighlightColors(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::ErrorThrower thrower(isolate);
+  MenuHighlightColors colors;
+  v8::Local<v8::Value> options_value;
+  if (args->GetNext(&options_value) && !options_value->IsNullOrUndefined()) {
+    if (!options_value->IsObject()) {
+      thrower.ThrowTypeError("Options must be an object or null");
+      return;
+    }
+    // Reads the CSS color string at |key|; a missing key leaves |out| unset.
+    auto get_color = [&](const gin_helper::Dictionary& dict,
+                         std::string_view key, std::optional<SkColor>* out) {
+      v8::Local<v8::Value> value;
+      if (!dict.Get(key, &value) || value->IsUndefined())
+        return true;
+      std::string str;
+      if (gin::ConvertFromV8(isolate, value, &str))
+        *out = ParseCSSColor(str);
+      if (!*out) {
+        thrower.ThrowTypeError(base::StrCat({"Invalid color for '", key, "'"}));
+        return false;
+      }
+      return true;
+    };
+    gin_helper::Dictionary options(isolate, options_value.As<v8::Object>());
+    if (!get_color(options, "background", &colors.background) ||
+        !get_color(options, "foreground", &colors.foreground)) {
+      return;
+    }
+    v8::Local<v8::Value> dark_value;
+    if (options.Get("dark", &dark_value) && !dark_value->IsUndefined()) {
+      if (!dark_value->IsObject() || dark_value->IsNull()) {
+        thrower.ThrowTypeError("'dark' must be an object");
+        return;
+      }
+      gin_helper::Dictionary dark(isolate, dark_value.As<v8::Object>());
+      if (!get_color(dark, "background", &colors.dark_background) ||
+          !get_color(dark, "foreground", &colors.dark_foreground)) {
+        return;
+      }
+    }
+  }
+  SetMenuHighlightColors(colors);
+}
+
+// static
 void Menu::ChangeApplicationMenu(Menu* menu) {
   g_application_menu_was_set = true;
   if (menu)
@@ -575,6 +624,7 @@ void Initialize(v8::Local<v8::Object> exports,
   statics.SetMethod<&Menu::BuildFromTemplate>("buildFromTemplate");
   statics.SetMethod<&Menu::SetApplicationMenuFromJS>("setApplicationMenu");
   statics.SetMethod<&Menu::GetApplicationMenu>("getApplicationMenu");
+  statics.SetMethod<&Menu::SetHighlightColors>("setHighlightColors");
   statics.SetMethod<&electron::api::menu_roles::Defaults>("_roleDefaults");
 #if BUILDFLAG(IS_MAC)
   statics.SetMethod<&Menu::SendActionToFirstResponder>(
