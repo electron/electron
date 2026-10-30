@@ -1487,6 +1487,12 @@ describe('asar package', () => {
         const p = path.join(asarDir, 'a.asar', 'file4');
         await expectToThrowErrorWithCode(() => fs.promises.lstat(p), 'ENOENT');
       });
+
+      itremote('rejects rather than throws for an invalid path', async () => {
+        const url = new URL('https://example.com/x');
+        await expect(fs.promises.lstat(url)).rejects.toMatchObject({ code: 'ERR_INVALID_URL_SCHEME' });
+        await expect(fs.promises.stat(url)).rejects.toMatchObject({ code: 'ERR_INVALID_URL_SCHEME' });
+      });
     });
 
     describe('fs.realpathSync', () => {
