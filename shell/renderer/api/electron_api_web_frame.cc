@@ -44,6 +44,7 @@
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "shell/renderer/electron_render_frame_observer.h"
+#include "shell/renderer/inserted_css.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -673,11 +674,8 @@ class WebFrameRenderer final
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
-      return web_frame->ToWebLocalFrame()
-          ->GetDocument()
-          .InsertStyleSheet(blink::WebString::FromUtf8(css), nullptr,
-                            css_origin)
-          .Utf16();
+      return InsertStyleSheet(web_frame->ToWebLocalFrame()->GetDocument(), css,
+                              css_origin);
     }
     return {};
   }
@@ -689,12 +687,8 @@ class WebFrameRenderer final
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
-      // The key does not record the origin the sheet was inserted with, so
-      // remove it from both. Keys are unique, so at most one matches.
-      blink::WebDocument document = web_frame->ToWebLocalFrame()->GetDocument();
-      const blink::WebString web_key = blink::WebString::FromUtf16(key);
-      document.RemoveInsertedStyleSheet(web_key, blink::WebCssOrigin::kAuthor);
-      document.RemoveInsertedStyleSheet(web_key, blink::WebCssOrigin::kUser);
+      RemoveInsertedStyleSheet(web_frame->ToWebLocalFrame()->GetDocument(),
+                               key);
     }
   }
 
