@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 13:47:03 +0000
+Subject: fix: support pending trusted objects in snapshot serialization
+
+ObjectSerializer::Serialize() may defer a trusted object such as a
+RegExpData when it is first reached at the maximum recursion depth. The
+object is then registered as pending and a forward reference is emitted
+through the trusted pointer slot. A later trusted pointer to the same
+object, e.g. from a second JSRegExp that shares the RegExpData through
+the compilation cache, hit the CHECK in VisitTrustedPointer() which
+assumed pending objects can never be seen there, aborting
+node_mksnapshot.
+
+The deserializer already supports pending forward references through
+trusted pointer slots: ReadRegisterPendingForwardRef() records the
+trusted pointer reference descriptor, and SerializePrologue() emits
+kInitializeSelfTrustedPointer before resolving the pending object. So
+emit a forward reference for pending objects, the same way
+VisitPointers() does for tagged slots.
+
+https://chromium-review.googlesource.com/c/v8/v8/+/8559539 changed
+DescriptorArray sharing, which reshaped the startup snapshot object
+graph enough for a shared RegExpData to be deferred and then referenced
+again.
+
+This should be upstreamed.
+
+diff --git a/src/snapshot/serializer.cc b/src/snapshot/serializer.cc
+index ebbef7b6a0de16dfae33fd9293ab89bc7b7ab24c..cffe298927f12a4816f28d5509a6512ddc19be3a 100644
+--- a/src/snapshot/serializer.cc
++++ b/src/snapshot/serializer.cc
+@@ -1332,10 +1332,14 @@ void Serializer::ObjectSerializer::VisitTrustedPointer(
+   CHECK(IsHeapObject(*slot_value));
+   bytes_processed_so_far_ += kTrustedPointerSize;
+ 
+-  // Currently we cannot see pending objects here, but we may need to support
+-  // them in the future. They should already be supported by the deserializer.
+-  CHECK(!serializer_->SerializePendingObject(*slot_value));
+   sink_->Put(kTrustedPointerPrefix, "TrustedPointer");
++  // The referenced object may already be pending if an earlier reference to
++  // it was deferred by ObjectSerializer::Serialize(), e.g. a RegExpData shared
++  // by several JSRegExp objects that was first reached at the maximum
++  // recursion depth. Emit a forward reference in that case, as VisitPointers()
++  // does for tagged slots; the deserializer resolves it through the slot's
++  // reference descriptor, which already records the trusted pointer prefix.
++  if (serializer_->SerializePendingObject(*slot_value)) return;
+   serializer_->SerializeObject(slot_value, SlotType::kAnySlot);
+ #else
+   UNREACHABLE();
