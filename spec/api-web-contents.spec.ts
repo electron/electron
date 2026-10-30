@@ -11,6 +11,7 @@ import {
   Menu
 } from 'electron/main';
 
+import * as dbus from 'dbus-native';
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
@@ -20,6 +21,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import { promisify } from 'node:util';
 import * as vm from 'node:vm';
 
 import { captureWithTabSourceId } from './lib/media-helpers.ts';
@@ -1744,6 +1746,146 @@ describe('webContents module', () => {
     );
   });
 
+  // Drives the DevTools "save" embedder message against the mock
+  // xdg-desktop-portal FileChooser that script/dbus_mock.py hosts on the fake
+  // session bus.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('DevTools save embedder message', { tags: ['serial'] }, () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+    let queueResponse: (uris: string[]) => Promise<void>;
+    let clearQueuedResponses: () => Promise<void>;
+
+    beforeAll(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+      queueResponse = promisify(mock.QueueResponse.bind(mock));
+      clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
+    });
+
+    afterAll(() => {
+      bus?.connection.end();
+    });
+
+    afterEach(closeAllWindows);
+
+    const makeTempDir = () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-save-'));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      return dir;
+    };
+
+    const readFile = (file: string) => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null);
+
+    // Opens DevTools for a new window and records every savedURL and
+    // canceledSaveURL that the embedder sends to the frontend.
+    const openDevTools = async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      const devtools = w.webContents.devToolsWebContents!;
+      await waitUntil(() => devtools.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+      await devtools.executeJavaScript(`
+        window.saveEvents = [];
+        for (const name of ['savedURL', 'canceledSaveURL']) {
+          const original = DevToolsAPI[name];
+          DevToolsAPI[name] = function (...args) {
+            window.saveEvents.push([name, ...args]);
+            return original?.apply(this, args);
+          };
+        }
+        true;
+      `);
+      return devtools;
+    };
+
+    const save = (devtools: WebContents, saveURL: string, content: string, saveAs = false) =>
+      devtools.executeJavaScript(
+        `DevToolsAPI.sendMessageToEmbedder('save', [${JSON.stringify(saveURL)}, ${JSON.stringify(content)}, ${saveAs}, false], null)`
+      );
+
+    const saveEvents = (devtools: WebContents): Promise<string[][]> => devtools.executeJavaScript('window.saveEvents');
+
+    const saveFileCalls = async () => (await getCalls()).filter((call) => call[1] === 'SaveFile');
+
+    it('reuses the saved path for a repeat save of the same URL', async () => {
+      const target = path.join(makeTempDir(), 'saved.txt');
+      const devtools = await openDevTools();
+
+      await clearCalls();
+      await queueResponse([url.pathToFileURL(target).href]);
+      defer(() => clearQueuedResponses());
+
+      // The first save has no stored path, so it asks the portal for one.
+      await save(devtools, 'devtools-save-test.txt', 'first');
+      await waitUntil(() => readFile(target) === 'first');
+
+      // The second save of the same URL must write to the stored path
+      // without asking again.
+      await save(devtools, 'devtools-save-test.txt', 'second');
+      await waitUntil(() => readFile(target) === 'second');
+
+      expect(await saveFileCalls()).toHaveLength(1);
+    });
+
+    it('asks again after a cancelled save of the same URL', async () => {
+      const saveURL = 'devtools-cancel-test.txt';
+      const target = path.join(makeTempDir(), 'saved.txt');
+      const devtools = await openDevTools();
+
+      await clearCalls();
+      defer(() => clearQueuedResponses());
+
+      // Nothing is queued, so the portal cancels the first save.
+      await save(devtools, saveURL, 'first');
+      await waitUntil(async () => (await saveEvents(devtools)).length === 1);
+      expect(await saveEvents(devtools)).toEqual([['canceledSaveURL', saveURL]]);
+
+      // The cancel must not leave a stored path behind, so the next save
+      // asks the portal again and writes to the path it returns.
+      await queueResponse([url.pathToFileURL(target).href]);
+      await save(devtools, saveURL, 'second');
+      await waitUntil(() => readFile(target) === 'second');
+
+      expect(await saveFileCalls()).toHaveLength(2);
+    });
+
+    it('writes a "Save as" of an already saved URL to the newly picked path', async () => {
+      const saveURL = 'devtools-save-as-test.txt';
+      const dir = makeTempDir();
+      const first = path.join(dir, 'first.txt');
+      const second = path.join(dir, 'second.txt');
+      const devtools = await openDevTools();
+
+      await clearCalls();
+      defer(() => clearQueuedResponses());
+
+      await queueResponse([url.pathToFileURL(first).href]);
+      await save(devtools, saveURL, 'old');
+      await waitUntil(() => readFile(first) === 'old');
+
+      await queueResponse([url.pathToFileURL(second).href]);
+      await save(devtools, saveURL, 'new', true);
+      await waitUntil(async () => (await saveEvents(devtools)).length === 2);
+      expect((await saveEvents(devtools))[1]).toEqual(['savedURL', saveURL, second]);
+      await waitUntil(() => readFile(second) === 'new');
+
+      expect(readFile(first)).toBe('old');
+      expect(await saveFileCalls()).toHaveLength(2);
+    });
+  });
+
   describe('DevTools native integration', () => {
     afterEach(closeAllWindows);
 
@@ -2169,6 +2311,81 @@ describe('webContents module', () => {
       expect(shiftKey).toBe(true);
       expect(ctrlKey).toBe(true);
       expect(altKey).toBe(false);
+    });
+  });
+
+  describe('webContents.adjustSelection()', () => {
+    type Selection = { start: number; end: number };
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      w.webContents.focus();
+    });
+
+    afterEach(closeAllWindows);
+
+    const getSelection = (): Promise<Selection> =>
+      w.webContents.executeJavaScript(
+        '({ start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd })'
+      );
+
+    // Focuses an input holding "Hello World" and selects [start, end)
+    const select = async ({ start, end }: Selection) => {
+      await w.webContents.executeJavaScript(`{
+        const input = document.createElement('input');
+        input.value = 'Hello World';
+        document.body.appendChild(input);
+        input.focus();
+        input.setSelectionRange(${start}, ${end});
+      }`);
+      expect(await getSelection()).toEqual({ start, end });
+    };
+
+    // The adjustment reaches the renderer asynchronously, so poll for it
+    const expectSelection = async (expected: Selection) => {
+      let actual = await getSelection();
+      await waitUntil(
+        async () => {
+          actual = await getSelection();
+          return actual.start === expected.start && actual.end === expected.end;
+        },
+        { rate: 50, timeout: 2000 }
+      ).catch(() => {
+        // Fall through so the assertion below reports the selection we got
+      });
+      expect(actual).toEqual(expected);
+    };
+
+    it('moves only the start of the selection', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ start: 1 });
+      await expectSelection({ start: 1, end: 5 });
+    });
+
+    it('moves only the end of the selection', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ end: 6 });
+      await expectSelection({ start: 0, end: 11 });
+    });
+
+    it('moves both ends of the selection forward', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ start: 1, end: 5 });
+      await expectSelection({ start: 1, end: 10 });
+    });
+
+    it('moves the end of the selection backward', async () => {
+      await select({ start: 0, end: 11 });
+      w.webContents.adjustSelection({ start: 2, end: -3 });
+      await expectSelection({ start: 2, end: 8 });
+    });
+
+    it('moves both ends of the selection backward', async () => {
+      await select({ start: 6, end: 11 });
+      w.webContents.adjustSelection({ start: -6, end: -6 });
+      await expectSelection({ start: 0, end: 5 });
     });
   });
 
@@ -4038,11 +4255,11 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     const testing = () => process._linkedBinding('electron_common_testing');
     // The hang monitor reports after kHungRendererDelay (15 s) plus a 1 s ping.
-    const hangAndPoke = async (w: BrowserWindow, ms = 0) => {
-      w.webContents
-        .executeJavaScript(ms ? `{ const end = Date.now() + ${ms}; while (Date.now() < end) {} }` : 'while (true) {}')
-        .catch(() => {});
-      await setTimeout(200);
+    // The key's own keydown handler hangs the page, so the key can't be acked
+    // before the hang starts. A sync XHR hang, as in the hidden-window test,
+    // would end at the simulated suspend, which fails pending requests.
+    const hangAndPoke = async (w: BrowserWindow) => {
+      await w.webContents.executeJavaScript("addEventListener('keydown', () => { while (true) {} })");
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
     };
 
@@ -5634,6 +5851,38 @@ describe('webContents module', () => {
       expect(params.frame).toBeTypeOf('object');
       expect(params.x).toBeTypeOf('number');
       expect(params.y).toBeTypeOf('number');
+    });
+
+    it('releases the right-clicked node once the page removes it', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.webContents.executeJavaScript(`{
+        const target = document.createElement('div');
+        target.id = 'target';
+        target.style.cssText = 'position: fixed; inset: 0;';
+        target.payload = {};
+        document.body.append(target);
+        window.payloadRef = new WeakRef(target.payload);
+      }
+      undefined;`);
+
+      const contextMenu = once(w.webContents, 'context-menu');
+      const opts = { x: 10, y: 10, button: 'right' as const };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+      await contextMenu;
+
+      await w.webContents.executeJavaScript("document.getElementById('target').remove()");
+      // Move off the removed node so hover state doesn't keep it.
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 20, y: 20 });
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 30, y: 30 });
+      await setTimeout(100);
+
+      const collected = await w.webContents.executeJavaScript(`(async () => {
+        await gc({ type: 'major', execution: 'async' });
+        return window.payloadRef.deref() === undefined;
+      })()`);
+      expect(collected).toBe(true);
     });
 
     // Skipping due to lack of native click support.

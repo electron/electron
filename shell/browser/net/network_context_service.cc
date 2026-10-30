@@ -6,9 +6,9 @@
 
 #include <utility>
 
-#include "chrome/browser/browser_features.h"
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
+#include "content/public/common/content_features.h"
 #include "electron/fuses.h"
 #include "net/http/http_util.h"
 #include "net/net_buildflags.h"
@@ -69,7 +69,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
-          ElectronBrowserClient::Get()->GetApplicationLocale());
+          ElectronBrowserClient::Get()->GetApplicationLocale().tag_string());
 
   // Enable the HTTP cache.
   network_context_params->http_cache_enabled =

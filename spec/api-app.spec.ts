@@ -285,10 +285,15 @@ describe('app module', () => {
           appProcess.stdin.on('error', () => {});
           const exited = once(appProcess, 'exit');
           const output: string[] = [];
+          let sawQuit: () => void;
+          const quit = new Promise<void>((resolve) => {
+            sawQuit = resolve;
+          });
           const ready = new Promise<void>((resolve) => {
             readline.createInterface({ input: appProcess.stdout }).on('line', (line) => {
               output.push(line);
               if (line === 'ready') resolve();
+              if (line === 'quit') sawQuit();
             });
           });
 
@@ -300,10 +305,14 @@ describe('app module', () => {
 
           // The badge update reaches the session bus only after the D-Bus
           // thread has started the login1 call on the lost system bus. Without
-          // the fix, that call aborts the process first.
+          // the fix, that call aborts the process first. Wait for the app's
+          // 'quit' line too, since it can still be in the pipe at 'exit'.
           const first = await Promise.race([
             exited.then(() => 'exit'),
-            sessionBus.waitFor(/interface=com\.canonical\.Unity\.LauncherEntry; member=Update/).then(() => 'update')
+            Promise.all([
+              quit,
+              sessionBus.waitFor(/interface=com\.canonical\.Unity\.LauncherEntry; member=Update/)
+            ]).then(() => 'update')
           ]);
           if (first === 'update') appProcess.stdin.end('x');
 
@@ -1512,10 +1521,8 @@ describe('app module', () => {
     });
 
     describe('sessionData', () => {
-      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'set-path');
-      const appName = JSON.parse(fs.readFileSync(path.join(appPath, 'package.json'), 'utf8')).name;
-      const userDataPath = path.join(app.getPath('appData'), appName);
-      const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
+      const fixturePath = path.join(import.meta.dirname, 'fixtures', 'apps', 'set-path');
+      const fixtureName = JSON.parse(fs.readFileSync(path.join(fixturePath, 'package.json'), 'utf8')).name;
 
       const sessionFiles = ['Preferences', 'Code Cache', 'Local Storage', 'IndexedDB', 'Service Worker'];
       const hasSessionFiles = (dir: string) => {
@@ -1527,35 +1534,80 @@ describe('app module', () => {
         return true;
       };
 
-      beforeEach(() => {
-        fs.rmSync(userDataPath, { force: true, recursive: true });
-        fs.rmSync(tempBrowserDataPath, { force: true, recursive: true });
+      // Best effort, as nothing else uses the directory. On Windows, the child
+      // processes of a killed app can keep files open for a while after it
+      // exits, so keep trying for a few seconds, then report it and move on.
+      const removeDir = async (dir: string) => {
+        const deadline = Date.now() + 5000;
+        for (;;) {
+          try {
+            await fs.promises.rm(dir, { force: true, recursive: true });
+            return;
+          } catch (error) {
+            if (Date.now() > deadline) {
+              console.warn(`Could not remove ${dir}: ${error}`);
+              return;
+            }
+          }
+          await setTimeout(200);
+        }
+      };
+
+      // Sweeps up what earlier runs could not remove, leaving anything from the
+      // last hour alone in case another run is still using it.
+      beforeAll(async () => {
+        const cutoff = Date.now() - 60 * 60 * 1000;
+        const stale = [app.getPath('appData'), os.tmpdir()].flatMap((dir) =>
+          fs
+            .readdirSync(dir)
+            .filter((entry) => entry.startsWith(`${fixtureName}-`))
+            .map((entry) => path.join(dir, entry))
+            .filter((entry) => (fs.statSync(entry, { throwIfNoEntry: false })?.mtimeMs ?? cutoff) < cutoff)
+        );
+        await Promise.all(stale.map(removeDir));
       });
 
+      // Each test runs its own copy of the fixture under a name of its own, so
+      // its default userData directory (appData/<name>) is its own as well.
+      const makeApp = () => {
+        const appPath = fs.mkdtempSync(path.join(os.tmpdir(), `${fixtureName}-`));
+        const name = path.basename(appPath);
+        const userDataPath = path.join(app.getPath('appData'), name);
+        defer(async () => {
+          await Promise.all([removeDir(appPath), removeDir(userDataPath)]);
+        });
+        fs.copyFileSync(path.join(fixturePath, 'main.js'), path.join(appPath, 'main.js'));
+        // No productName, which would replace the name in the userData path.
+        fs.writeFileSync(path.join(appPath, 'package.json'), JSON.stringify({ name, main: 'main.js' }));
+        return { appPath, userDataPath };
+      };
+
       // The app quits once it has written its session data.
-      const runApp = async (args: string[]) => {
+      const runApp = async (appPath: string, args: string[]) => {
         const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, ...args], { timeout: 20_000 });
         expect(code, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
       };
 
       it('writes to userData by default', async () => {
-        expect(hasSessionFiles(userDataPath)).toBe(false);
-        await runApp([]);
+        const { appPath, userDataPath } = makeApp();
+        await runApp(appPath, []);
         expect(hasSessionFiles(userDataPath)).toBe(true);
       });
 
       it('can be changed', async () => {
+        const { appPath, userDataPath } = makeApp();
+        const sessionDataPath = path.join(appPath, 'session-data');
+        await runApp(appPath, ['sessionData', sessionDataPath]);
         expect(hasSessionFiles(userDataPath)).toBe(false);
-        await runApp(['sessionData', tempBrowserDataPath]);
-        expect(hasSessionFiles(userDataPath)).toBe(false);
-        expect(hasSessionFiles(tempBrowserDataPath)).toBe(true);
+        expect(hasSessionFiles(sessionDataPath)).toBe(true);
       });
 
       it('changing userData affects default sessionData', async () => {
+        const { appPath, userDataPath } = makeApp();
+        const newUserDataPath = path.join(appPath, 'user-data');
+        await runApp(appPath, ['userData', newUserDataPath]);
         expect(hasSessionFiles(userDataPath)).toBe(false);
-        await runApp(['userData', tempBrowserDataPath]);
-        expect(hasSessionFiles(userDataPath)).toBe(false);
-        expect(hasSessionFiles(tempBrowserDataPath)).toBe(true);
+        expect(hasSessionFiles(newUserDataPath)).toBe(true);
       });
     });
   });
@@ -2777,38 +2829,77 @@ describe('app module', () => {
     });
 
     it('affects dns lookup behavior', async () => {
-      // 1. resolve a domain name to check that things are working
-      await new Promise((resolve, reject) => {
-        electronNet
-          .request({
-            method: 'HEAD',
-            url: 'https://www.electronjs.org'
-          })
-          .on('response', resolve)
-          .on('error', reject)
-          .end();
+      const knownHost = 'configure-host-resolver.electron-spec.test';
+      // Minimal RFC 8484 DoH server: answers every A query with 127.0.0.1.
+      // It must not return NXDOMAIN for other names, because Chromium probes
+      // DoH servers with a query for www.gstatic.com and a NXDOMAIN probe
+      // response trips a DCHECK in the network service.
+      const dohServer = https.createServer(
+        {
+          key: fs.readFileSync(path.join(certPath, 'server.key')),
+          cert: fs.readFileSync(path.join(certPath, 'server.pem'))
+        },
+        async (req, res) => {
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk);
+          const query = Buffer.concat(chunks);
+          // Skip over the question name to its terminating zero-length label.
+          let offset = 12;
+          while (query[offset] !== 0) offset += query[offset] + 1;
+          const qtype = query.readUInt16BE(offset + 1);
+          const header = Buffer.alloc(12);
+          header.writeUInt16BE(query.readUInt16BE(0), 0);
+          header.writeUInt16BE(0x8180, 2);
+          header.writeUInt16BE(1, 4);
+          const answers: Buffer[] = [];
+          if (qtype === 1) {
+            header.writeUInt16BE(1, 6);
+            // Name pointer to the question, type A, class IN, TTL 60, 127.0.0.1.
+            answers.push(Buffer.from([0xc0, 0x0c, 0, 1, 0, 1, 0, 0, 0, 60, 0, 4, 127, 0, 0, 1]));
+          }
+          res.writeHead(200, { 'Content-Type': 'application/dns-message' });
+          res.end(Buffer.concat([header, query.subarray(12, offset + 5), ...answers]));
+        }
+      );
+      const { port: dohPort } = await listen(dohServer);
+      defer(async () => {
+        dohServer.closeAllConnections();
+        await new Promise((resolve) => dohServer.close(resolve));
       });
+      const server = http.createServer((req, res) => res.end('ok'));
+      const { port } = await listen(server);
+      defer(async () => {
+        server.closeAllConnections();
+        await new Promise((resolve) => server.close(resolve));
+      });
+      // The DoH server uses the self-signed fixture certificate.
+      session.defaultSession.setCertificateVerifyProc((req, cb) => cb(0));
+      defer(() => session.defaultSession.setCertificateVerifyProc(null));
+
+      const request = (host: string) =>
+        new Promise((resolve, reject) => {
+          electronNet
+            .request({ method: 'HEAD', url: `http://${host}:${port}/` })
+            .on('response', resolve)
+            .on('error', reject)
+            .end();
+        });
+
+      // 1. resolve a name that only the local DoH server knows about
+      app.configureHostResolver({
+        secureDnsMode: 'secure',
+        secureDnsServers: [`https://127.0.0.1:${dohPort}/dns-query`]
+      });
+      await expect(request(knownHost)).resolves.toMatchObject({ statusCode: 200 });
       // 2. change the host resolver configuration to something that will
       // always fail
       app.configureHostResolver({
         secureDnsMode: 'secure',
         secureDnsServers: ['https://127.0.0.1:1234']
       });
-      // 3. check that resolving domain names now fails
-      await expect(
-        new Promise((resolve, reject) => {
-          electronNet
-            .request({
-              method: 'HEAD',
-              // Needs to be a slightly different domain to above, otherwise the
-              // response will come from the cache.
-              url: 'https://electronjs.org'
-            })
-            .on('response', resolve)
-            .on('error', reject)
-            .end();
-        })
-      ).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
+      // 3. check that resolving domain names now fails. Use a different name
+      // so the result of step 1 cannot come from the host cache.
+      await expect(request(`other.${knownHost}`)).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
     });
   });
 
