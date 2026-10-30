@@ -1063,7 +1063,9 @@ if (electron_generate_js2c_code_cache) {
 
   # One generated cache per process flavor: V8's code-cache key includes
   # FlagList::Hash() over non-default flags, which differs per process type.
-  # The flag deltas below were captured from live processes.
+  # The flag deltas below were captured from live processes. Node.js adds
+  # --external-memory-max-reasonable-size=0 in every process that initializes
+  # it (ProcessGlobalArgsInternal in src/node.cc).
   # `node_builtins`: whether the flavor also carries a cache for Node's own
   # builtins, i.e. whether its processes bootstrap their Node.js environment
   # from scratch on this build instead of deserializing it from the embedded
@@ -1081,17 +1083,20 @@ if (electron_generate_js2c_code_cache) {
     {
       name = "renderer"
       flags = "--enable-sharedarraybuffer-per-context --rehash-snapshot " +
-              "--no-freeze-flags-after-init"
+              "--no-freeze-flags-after-init " +
+              "--external-memory-max-reasonable-size=0"
       node_builtins = true
     },
     {
       name = "utility"
-      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init " +
+              "--external-memory-max-reasonable-size=0"
       node_builtins = !node_use_node_snapshot
     },
     {
       name = "worker"
-      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init " +
+              "--external-memory-max-reasonable-size=0"
       node_builtins = false
     },
   ]
@@ -1104,7 +1109,8 @@ if (electron_generate_js2c_code_cache) {
     _js2c_cc_flavors += [
       {
         name = "browser"
-        flags = "--rehash-snapshot --no-freeze-flags-after-init"
+        flags = "--rehash-snapshot --no-freeze-flags-after-init " +
+                "--external-memory-max-reasonable-size=0"
         node_builtins = true
       },
     ]
@@ -1164,7 +1170,8 @@ if (electron_generate_js2c_code_cache) {
         # real node_snapshot is linked).
         rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
         "browser",
-        "--rehash-snapshot --no-freeze-flags-after-init",
+        "--rehash-snapshot --no-freeze-flags-after-init " +
+            "--external-memory-max-reasonable-size=0",
 
         # Processes created from the Node snapshot deserialize Node's builtins'
         # code cache from it.
