@@ -7,7 +7,6 @@
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
 #include <memory>
-#include <optional>
 #include <string>
 
 #include "base/containers/flat_map.h"
@@ -108,8 +107,7 @@ class InspectableWebContents
                            const std::string& headers,
                            int stream_id) override;
   void SetIsDocked(DispatchCallback callback, bool is_docked) override;
-  void OpenInNewTab(const std::string& url,
-                    const std::optional<std::string>& initiator_id) override;
+  void OpenInNewTab(const std::string& url) override;
   void OpenSearchResultsInNewTab(const std::string& query) override;
   void ShowItemInFolder(const std::string& file_system_path) override;
   void SaveToFile(const std::string& url,
