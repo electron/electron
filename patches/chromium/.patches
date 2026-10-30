@@ -171,14 +171,3 @@ fix_avoid_misaligned_char16_t_reads_in_crdtp_string_deserialization.patch
 feat_let_the_host_of_a_remote_nswindow_set_more_of_its_behavior.patch
 cherry-pick-431b8be6a111.patch
 fix_handle_a_null_pending_call_in_dbus_objectproxy.patch
-cherry-pick-6442ebe5.patch
-cherry-pick-23dd0d13.patch
-cherry-pick-f795cb52.patch
-cherry-pick-9d98906b.patch
-cherry-pick-e2075db3.patch
-cherry-pick-93f574f1.patch
-cherry-pick-d473602c.patch
-cherry-pick-c2129805.patch
-cherry-pick-de271843.patch
-cherry-pick-ccf9bb2b.patch
-cherry-pick-a21ce95c.patch
