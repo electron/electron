@@ -1,0 +1,300 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mingyu Lei <leimy@chromium.org>
+Date: Wed, 28 Oct 2026 02:07:14 -0700
+Subject: [M156] FSA: Add missing sensitive paths to the blocklist
+
+Original change's description:
+> FSA: Add missing sensitive paths to the blocklist
+>
+> Several sensitive locations are still reachable through File System
+> Access because they are missing from the sensitive-path blocklist, or
+> are only blocked on some platforms. Add them:
+>
+> - Block write access to */.git/config and */.git/modules on all
+>   platforms, alongside */.git/hooks. Reads stay allowed, so web Git
+>   clients can still read repository configuration.
+> - Block ~/.config on all platforms. It was only blocked on Linux,
+>   ChromeOS and Android.
+> - Block shell startup files in the home directory on all platforms,
+>   including the ones Git Bash reads on Windows.
+> - Block /dev on macOS, matching Linux.
+> - Block ~/.local/share, the legacy fontconfig files ~/.fonts.conf and
+>   ~/.fonts.conf.d, and the NSS database directory ~/.pki on Linux and
+>   ChromeOS.
+>
+> Bug: 572269631, 571913154, 569012015, 558362029
+> Bug: 569012543, 561996724, 559780982, 557367241
+> Test: unit_tests --gtest_filter=ChromeFileSystemAccessPermissionContextTest.*ConfirmSensitiveEntryAccess*
+> Change-Id: Ia6fe9e51807e8106fbc6ac69e28d550660e49b38
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8619619
+> Reviewed-by: Fergal Daly <fergal@chromium.org>
+> Commit-Queue: Mingyu Lei <leimy@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1724465}
+
+(cherry picked from commit d6f2c70dbb4cd97f6eaf62aed88c8f2e57ef3fce)
+
+Bug: 576948169,572269631,571913154,569012015,558362029,569012543,561996724,559780982,557367241
+Change-Id: Ia6fe9e51807e8106fbc6ac69e28d550660e49b38
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8674098
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1685}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+Electron adaptation notes (44-x-y):
+On this branch Electron's refactor_expose_file_system_access_blocklist.patch
+moves GenerateBlockPaths() and its kBlockPaths table out of
+chrome_file_system_access_permission_context.cc into the header, so the
+upstream hunks against the .cc do not apply. The same blocklist entries were
+added, verbatim, to the kBlockPaths table in
+chrome_file_system_access_permission_context.h instead. M152 still keeps the
+".git/hooks" rule inside the IS_WIN block; the new ".git/config" and
+".git/modules" rules are placed right after that block so they apply on every
+platform, as they do in the upstream table. The unittest hunks merged as-is.
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+index d4e78224612f1ac0b292061d1984760c2a7c9bb4..4e7212a00c4e7154618d553d4c36d1ecb5787910 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -579,6 +579,30 @@ class ChromeFileSystemAccessPermissionContext
+         // And limit access to ~/.gnupg as well.
+         BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
+                                   BlockType::kBlockAllChildren),
++        // ~/.config holds configuration for many cross-platform tools, so block
++        // it on all platforms, see crbug.com/569012015.
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".config"),
++                                  BlockType::kBlockAllChildren),
++        // Shell startup files in the home directory, including the ones read by
++        // Git Bash on Windows, see crbug.com/558362029.
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".bash_profile"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".bash_login"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".bashrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".profile"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zshenv"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zprofile"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zshrc"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".zlogin"),
++                                  BlockType::kBlockAllChildren),
+   #if BUILDFLAG(IS_WIN)
+         // Some Windows specific directories to block, basically all apps, the
+         // operating system itself, as well as configuration data for apps.
+@@ -606,12 +630,23 @@ class ChromeFileSystemAccessPermissionContext
+         BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
+                                 BlockType::kBlockWrite),
+   #endif
++        // Block write access to the repository config and to submodule git
++        // directories, which have their own hooks and config, see
++        // crbug.com/572269631 and crbug.com/571913154.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
++                                BlockType::kBlockWrite),
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
++                                BlockType::kBlockWrite),
+   #if BUILDFLAG(IS_MAC)
+         // Similar Mac specific blocks.
+         // Block access to /System/Volumes (internal system and container
+         // volumes).
+         BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/System/Volumes"),
+                                   BlockType::kBlockAllChildren),
++        // Block access to devices via /dev, matching Linux, see
++        // crbug.com/569012543.
++        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/dev"),
++                                  BlockType::kBlockAllChildren),
+         BlockPath::CreateRelative(base::DIR_APP_DATA,
+                                   BlockType::kBlockAllChildren),
+         // Block access to the current bundle directory.
+@@ -662,14 +697,25 @@ class ChromeFileSystemAccessPermissionContext
+                                   BlockType::kBlockAllChildren),
+         BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
+                                   BlockType::kBlockAllChildren),
+-        // And block all of ~/.config, matching the similar restrictions on mac
+-        // and windows.
+-        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".config"),
+-                                  BlockType::kBlockAllChildren),
+         // Block ~/.dbus as well, just in case, although there probably isn't much
+         // a website can do with access to that directory and its contents.
+         BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
+                                   BlockType::kBlockAllChildren),
++        // Block per-user application data, see crbug.com/561996724.
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".local/share"),
++                                  BlockType::kBlockAllChildren),
++        // Block the legacy per-user fontconfig configuration, see
++        // crbug.com/559780982. The current location is under ~/.config.
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".fonts.conf"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".fonts.conf.d"),
++                                  BlockType::kBlockAllChildren),
++        // Block the per-user NSS database, see crbug.com/557367241.
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".pki"),
++                                  BlockType::kBlockAllChildren),
+         // And block all of ~/.cache, matching the similar restrictions on mac
+         // and windows.
+         BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+index 67f0e25eaff5af95f3d3688fe36dc0d05743c3ba..7f11dcff61a570918edd3d6d33c162a065220e5e 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+@@ -821,9 +821,8 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+ 
+ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+        ConfirmSensitiveEntryAccess_ExplicitPathBlock) {
+-// Linux is the only OS where we have some blocked directories with explicit
+-// paths (as opposed to PathService provided paths).
+-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
++#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID) || \
++    BUILDFLAG(IS_MAC)
+   // /dev should be blocked.
+   EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
+                 permission_context(), PathInfo(FILE_PATH_LITERAL("/dev")),
+@@ -1128,6 +1127,101 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+ }
+ #endif
+ 
++// Testing that writes to */.git/config and */.git/modules are blocked, while
++// reads stay allowed.
++TEST_F(ChromeFileSystemAccessPermissionContextTest,
++       ConfirmSensitiveEntryAccess_GitConfigAndModulesWriteBlock) {
++#if defined(FILE_PATH_USES_DRIVE_LETTERS)
++  base::FilePath root(FILE_PATH_LITERAL("c:\\"));
++#else
++  base::FilePath root(FILE_PATH_LITERAL("/"));
++#endif
++  const base::FilePath git_dir =
++      root.Append(FILE_PATH_LITERAL("a")).Append(FILE_PATH_LITERAL(".git"));
++  const base::FilePath git_config = git_dir.Append(FILE_PATH_LITERAL("config"));
++  const base::FilePath git_modules =
++      git_dir.Append(FILE_PATH_LITERAL("modules"));
++  const base::FilePath submodule_dir =
++      git_modules.Append(FILE_PATH_LITERAL("sub"));
++
++  // .git/config is blocked for save and programmatic write.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(git_config), HandleType::kFile,
++                AccessTrigger::kSave),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(git_config), HandleType::kFile,
++                AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  // .git/config is not blocked for read.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(git_config), HandleType::kFile,
++                AccessTrigger::kOpen),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(git_config), HandleType::kFile,
++                AccessTrigger::kProgrammaticRead),
++            SensitiveDirectoryResult::kAllowed);
++  // Case variations of .git/config are blocked for programmatic write.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(root.Append(FILE_PATH_LITERAL("a"))
++                             .Append(FILE_PATH_LITERAL(".GIT"))
++                             .Append(FILE_PATH_LITERAL("CONFIG"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  // Other files under .git, and files named config outside of .git, are
++  // allowed.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(git_dir.Append(FILE_PATH_LITERAL("config.bak"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(root.Append(FILE_PATH_LITERAL("a"))
++                             .Append(FILE_PATH_LITERAL("config"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAllowed);
++
++  // .git/modules and everything inside it is blocked for save and programmatic
++  // write.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(git_modules),
++                HandleType::kDirectory, AccessTrigger::kSave),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(git_modules),
++                HandleType::kDirectory, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(submodule_dir.Append(FILE_PATH_LITERAL("hooks"))
++                             .Append(FILE_PATH_LITERAL("pre-commit"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(submodule_dir.Append(FILE_PATH_LITERAL("config"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  // .git/modules is not blocked for read.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(git_modules),
++                HandleType::kDirectory, AccessTrigger::kOpen),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(submodule_dir.Append(FILE_PATH_LITERAL("config"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticRead),
++            SensitiveDirectoryResult::kAllowed);
++  // The .git directory itself is still allowed for save.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(git_dir), HandleType::kDirectory,
++                AccessTrigger::kSave),
++            SensitiveDirectoryResult::kAllowed);
++}
++
+ #if BUILDFLAG(IS_ANDROID)
+ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+        ConfirmSensitiveEntryAccess_ContentUri) {
+@@ -1322,6 +1416,15 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+       {chrome::DIR_USER_DATA, nullptr, true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".ssh"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".config"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".bash_profile"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".bash_login"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".bashrc"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".profile"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".zshenv"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".zprofile"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".zshrc"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".zlogin"), true, false},
+ 
+ #if BUILDFLAG(IS_WIN)
+       {base::DIR_PROGRAM_FILES, nullptr, true, false},
+@@ -1335,6 +1438,7 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+ #endif
+ 
+ #if BUILDFLAG(IS_MAC)
++      {kNoBasePathKey, FILE_PATH_LITERAL("/dev"), true, false},
+       {base::DIR_APP_DATA, nullptr, true, false},
+       {chrome::DIR_OUTER_BUNDLE, nullptr, true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL("Applications"), true, false},
+@@ -1355,8 +1459,11 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+       {kNoBasePathKey, FILE_PATH_LITERAL("/sys"), true, false},
+       {kNoBasePathKey, FILE_PATH_LITERAL("/boot"), true, false},
+       {kNoBasePathKey, FILE_PATH_LITERAL("/etc"), true, false},
+-      {base::DIR_HOME, FILE_PATH_LITERAL(".config"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".local/share"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".fonts.conf"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".fonts.conf.d"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".pki"), true, false},
+ #endif
+ 
+ #if BUILDFLAG(IS_ANDROID)

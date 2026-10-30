@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fernando Fiori <ffiori@microsoft.com>
+Date: Mon, 26 Oct 2026 18:25:28 -0700
+Subject: [M156] [highlights] Keep hit-test range pointers stable
+
+Original change's description:
+> [highlights] Keep hit-test range pointers stable
+>
+> highlightsFromPoint() retains a reference to a Highlight range set entry
+> while computing its bounds. Geometry computation can run script that
+> adds ranges, reallocating the set's backing storage and leaving the
+> reference dangling.
+>
+> Copy the AbstractRange pointer before computing geometry, rather than
+> referencing the Member in the set. The set's iterators remain valid when
+> adding ranges, so this preserves live iteration while keeping the
+> current range safe to use.
+>
+> Bug: 576984708
+> Change-Id: Idfe994d6b6eb7985aab356e47df32f0b19ce61e2
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8640466
+> Reviewed-by: Stefan Zager <szager@chromium.org>
+> Commit-Queue: Fernando Fiori <ffiori@microsoft.com>
+> Cr-Commit-Position: refs/heads/main@{#1726331}
+
+(cherry picked from commit c85e9bbdf214926f3f4671a38610d24c377b76f5)
+
+Bug: 577336427,576984708
+Change-Id: Idfe994d6b6eb7985aab356e47df32f0b19ce61e2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8662618
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Fernando Fiori <ffiori@microsoft.com>
+Reviewed-by: Fernando Fiori <ffiori@microsoft.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1623}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/highlight/highlight_registry.cc b/third_party/blink/renderer/core/highlight/highlight_registry.cc
+index 485b31a366a0a3cb61428d4c33e1bc7024d073a5..e6aaf4d79d0239e1e26d486fc82a0ea46451ecc2 100644
+--- a/third_party/blink/renderer/core/highlight/highlight_registry.cc
++++ b/third_party/blink/renderer/core/highlight/highlight_registry.cc
+@@ -558,7 +558,7 @@ HeapVector<Member<HighlightHitResult>> HighlightRegistry::highlightsFromPoint(
+     CHECK(highlights_iterator != highlights_.end());
+     Highlight* highlight = highlights_iterator->Get()->highlight;
+     HeapVector<Member<AbstractRange>> highlight_ranges_hit;
+-    for (auto& abstract_range : highlight->GetRanges()) {
++    for (AbstractRange* abstract_range : highlight->GetRanges()) {
+       // If the range starts and ends in a different tree scope than the hit
+       // node (i.e., the range encloses a shadow tree), do not return it when
+       // the hit is on a node inside that shadow tree. Only consider ranges
+@@ -568,14 +568,14 @@ HeapVector<Member<HighlightHitResult>> HighlightRegistry::highlightsFromPoint(
+         continue;
+       }
+ 
+-      auto* node_range = DynamicTo<NodeRange>(abstract_range.Get());
++      auto* node_range = DynamicTo<NodeRange>(abstract_range);
+       if (node_range && node_range->startContainer()->GetTreeScope() !=
+                             hit_node->GetTreeScope()) {
+         continue;
+       }
+ 
+       std::optional<EphemeralRange> ephemeral_range =
+-          ResolveEphemeralRange(abstract_range.Get(), document);
++          ResolveEphemeralRange(abstract_range, document);
+       if (!ephemeral_range) {
+         continue;
+       }
+diff --git a/third_party/blink/renderer/core/highlight/highlight_registry_test.cc b/third_party/blink/renderer/core/highlight/highlight_registry_test.cc
+index 636aec0c66349c9ee91bda9e4445b51f4745d602..9a9f2d8eee28f2ec2088139da92b50c64cd79b28 100644
+--- a/third_party/blink/renderer/core/highlight/highlight_registry_test.cc
++++ b/third_party/blink/renderer/core/highlight/highlight_registry_test.cc
+@@ -12,6 +12,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_highlights_from_point_options.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_static_range_init.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/dom/node_range.h"
+ #include "third_party/blink/renderer/core/dom/range.h"
+ #include "third_party/blink/renderer/core/dom/static_range.h"
+ #include "third_party/blink/renderer/core/dom/text.h"
+@@ -1063,6 +1064,111 @@ TEST_F(HighlightsFromPointTest, HighlightsFromPointShadowRoot) {
+   EXPECT_EQ(highlight_hit_results_at_point.size(), 0u);
+ }
+ 
++namespace {
++
++// A range that, once armed, adds ranges to a Highlight the first time its end
++// offset is read. highlightsFromPoint() reads the end offset while resolving a
++// range's geometry, so this grows the range set at a point where the registry
++// is in the middle of iterating it, as would happen if script ran there.
++class HighlightGrowingRange final : public NodeRange {
++ public:
++  HighlightGrowingRange(Text* text, unsigned start_offset, unsigned end_offset)
++      : text_(text), start_offset_(start_offset), end_offset_(end_offset) {}
++
++  void GrowHighlightOnNextEndOffset(Highlight* highlight, unsigned count) {
++    highlight_to_grow_ = highlight;
++    count_to_add_ = count;
++  }
++  bool did_grow() const { return did_grow_; }
++
++  Node* startContainer() const override { return text_.Get(); }
++  unsigned startOffset() const override { return start_offset_; }
++  Node* endContainer() const override { return text_.Get(); }
++  unsigned endOffset() const override {
++    MaybeGrowHighlight();
++    return end_offset_;
++  }
++  bool collapsed() const override { return start_offset_ == end_offset_; }
++  bool IsStaticRange() const override { return false; }
++  Document& OwnerDocument() const override { return text_->GetDocument(); }
++
++  void Trace(Visitor* visitor) const override {
++    visitor->Trace(text_);
++    visitor->Trace(highlight_to_grow_);
++    ScriptWrappable::Trace(visitor);
++  }
++
++ private:
++  void MaybeGrowHighlight() const {
++    if (!highlight_to_grow_ || did_grow_) {
++      return;
++    }
++    did_grow_ = true;
++    for (unsigned i = 0; i < count_to_add_; ++i) {
++      highlight_to_grow_->addForBinding(
++          nullptr,
++          MakeGarbageCollected<Range>(text_->GetDocument(), text_.Get(), 0,
++                                      text_.Get(), 0),
++          ASSERT_NO_EXCEPTION);
++    }
++  }
++
++  Member<Text> text_;
++  unsigned start_offset_;
++  unsigned end_offset_;
++  Member<Highlight> highlight_to_grow_;
++  unsigned count_to_add_ = 0;
++  mutable bool did_grow_ = false;
++};
++
++}  // namespace
++
++// Regression test for crbug.com/576984708. Growing a Highlight's range set
++// reallocates its backing store, so highlightsFromPoint() must not hold on to
++// a reference to one of its entries while it resolves that range's geometry.
++TEST_F(HighlightsFromPointTest, RangeSetGrowsWhileResolvingRangeGeometry) {
++  GetDocument().body()->SetInnerHTMLWithoutTrustedTypes("1234");
++  auto* text = To<Text>(GetDocument().body()->firstChild());
++
++  auto* growing_range = MakeGarbageCollected<HighlightGrowingRange>(text, 0, 4);
++  auto* trailing_range =
++      MakeGarbageCollected<Range>(GetDocument(), text, 1, text, 3);
++  HeapVector<Member<AbstractRange>> range_vector;
++  range_vector.push_back(growing_range);
++  range_vector.push_back(trailing_range);
++  auto* highlight = Highlight::Create(range_vector);
++  HighlightRegistry* registry =
++      HighlightRegistry::From(*GetDocument().domWindow());
++  registry->SetForTesting(AtomicString("TestHighlight"), highlight);
++  UpdateAllLifecyclePhasesForTest();
++
++  // The center of |trailing_range|, which is inside both ranges.
++  gfx::Rect rect =
++      ComputeTextRect(EphemeralRange(Position(text, 1), Position(text, 3)));
++  const float x = rect.CenterPoint().x() / GetDocument().DevicePixelRatio();
++  const float y = rect.CenterPoint().y() / GetDocument().DevicePixelRatio();
++
++  const Member<AbstractRange>* const first_entry =
++      &*highlight->GetRanges().begin();
++  constexpr unsigned kRangesToAdd = 64;
++  growing_range->GrowHighlightOnNextEndOffset(highlight, kRangesToAdd);
++
++  HeapVector<Member<HighlightHitResult>> hit_results =
++      registry->highlightsFromPoint(x, y, nullptr);
++
++  ASSERT_TRUE(growing_range->did_grow());
++  EXPECT_EQ(highlight->size(), 2u + kRangesToAdd);
++  // The test is only meaningful if growing the set moved its backing store,
++  // which is what leaves references to its previous entries dangling.
++  EXPECT_NE(first_entry, &*highlight->GetRanges().begin());
++
++  ASSERT_EQ(hit_results.size(), 1u);
++  EXPECT_EQ(hit_results[0]->highlight(), highlight);
++  ASSERT_EQ(hit_results[0]->ranges().size(), 2u);
++  EXPECT_EQ(hit_results[0]->ranges()[0].Get(), growing_range);
++  EXPECT_EQ(hit_results[0]->ranges()[1].Get(), trailing_range);
++}
++
+ TEST_F(HighlightRegistryTest, LiveIterationBasic) {
+   GetDocument().body()->SetInnerHTMLWithoutTrustedTypes("1234");
+   auto* dom_window = GetDocument().domWindow();

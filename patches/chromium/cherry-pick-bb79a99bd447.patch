@@ -1,0 +1,1050 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Thu, 22 Oct 2026 15:33:17 -0700
+Subject: Don't send a cross-origin relatedTarget on a PointerEvent boundary
+ event, and add more general defense-in-depth for relatedTarget.
+
+This prevents exposing a Node from another origin as the relatedTarget
+on pointerout, pointerover, pointerleave, and pointerenter events.
+
+The relatedTarget is instead null, except that when the two documents
+have an inner/outer relationship in the frame hierarchy, the events in
+the outer document use the frame owner element (e.g., iframe) in that
+document that contains the inner document as the relatedTarget.
+
+Same-origin cross-document boundary events retain the existing behavior
+of exposing the related target Node across documents, which is tested in
+a tentative WPT.  It's possible that we should also change this
+behavior, though, depending on how other engines behave.
+
+This also includes a second defense-in-depth change to check
+relatedTarget for all event types (MouseEvent, PointerEvent, and
+FocusEvent) that report it to script (not just this particular
+dispatching path) and set it to null if it is a cross-origin node.
+
+Both of these behavior changes are guarded by the
+`ClearCrossOriginRelatedTarget` runtime-enabled feature (status:
+stable).
+
+As a followup (to roll out via the normal release branch and not be
+merged to older branches) I intend to change the cross-origin check to
+be just a cross-document check, which will match the behavior of other
+browser engines.  This two-stage change will reduce the compatibility
+risk of the change that needs merging.
+
+Fixed: 572556403
+Bug: 574379564, 574843953
+Force-WPT-Export: true
+Change-Id: I123aff9643f43fd2de45dae1586f4d2cb2d635a9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8611718
+Reviewed-by: Mustaq Ahmed <mustaq@chromium.org>
+Commit-Queue: David Baron <dbaron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725257}
+
+diff --git a/third_party/blink/renderer/core/events/focus_event.cc b/third_party/blink/renderer/core/events/focus_event.cc
+index 72b492c0e658bed9c84e3a169d2b2b3b33a8983f..e843393dd634aa7366a91987afdef90cc85e1d4e 100644
+--- a/third_party/blink/renderer/core/events/focus_event.cc
++++ b/third_party/blink/renderer/core/events/focus_event.cc
+@@ -72,6 +72,7 @@ void FocusEvent::Trace(Visitor* visitor) const {
+ }
+ 
+ DispatchEventResult FocusEvent::DispatchEvent(EventDispatcher& dispatcher) {
++  ClearCrossOriginRelatedTarget(dispatcher.GetNode(), related_target_);
+   GetEventPath().AdjustForRelatedTarget(dispatcher.GetNode(), relatedTarget());
+   return dispatcher.Dispatch();
+ }
+diff --git a/third_party/blink/renderer/core/events/mouse_event.cc b/third_party/blink/renderer/core/events/mouse_event.cc
+index 36288782130e43774994c12f60fe3ffde19a721a..7473086a3f16e285038ed735a9e00cfdf51bd9c8 100644
+--- a/third_party/blink/renderer/core/events/mouse_event.cc
++++ b/third_party/blink/renderer/core/events/mouse_event.cc
+@@ -24,10 +24,12 @@
+ 
+ #include "third_party/blink/public/common/input/web_pointer_properties.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_mouse_event_init.h"
++#include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/dom/events/event_dispatcher.h"
+ #include "third_party/blink/renderer/core/dom/events/event_path.h"
+ #include "third_party/blink/renderer/core/event_interface_names.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+@@ -135,7 +137,6 @@ MouseEvent::MouseEvent()
+     : position_type_(PositionType::kPosition),
+       button_(0),
+       buttons_(0),
+-      related_target_(nullptr),
+       synthetic_event_type_(kRealOrIndistinguishable) {}
+ 
+ MouseEvent::MouseEvent(const AtomicString& event_type,
+@@ -147,13 +148,13 @@ MouseEvent::MouseEvent(const AtomicString& event_type,
+     : UIEventWithKeyState(event_type, initializer, platform_time_stamp),
+       screen_x_(initializer->screenX()),
+       screen_y_(initializer->screenY()),
++      related_target_(initializer->relatedTarget()),
+       movement_delta_(initializer->movementX(), initializer->movementY()),
+       position_type_(synthetic_event_type == kPositionless
+                          ? PositionType::kPositionless
+                          : PositionType::kPosition),
+       button_(initializer->button()),
+       buttons_(initializer->buttons()),
+-      related_target_(initializer->relatedTarget()),
+       synthetic_event_type_(synthetic_event_type),
+       menu_source_type_(menu_source_type) {
+   InitCoordinates(initializer->clientX(), initializer->clientY(),
+@@ -396,6 +397,7 @@ void MouseEvent::Trace(Visitor* visitor) const {
+ }
+ 
+ DispatchEventResult MouseEvent::DispatchEvent(EventDispatcher& dispatcher) {
++  ClearCrossOriginRelatedTarget(dispatcher.GetNode(), related_target_);
+   // TODO(mustaq): Move click-specific code to `PointerEvent::DispatchEvent`.
+   GetEventPath().AdjustForRelatedTarget(dispatcher.GetNode(), relatedTarget());
+ 
+diff --git a/third_party/blink/renderer/core/events/mouse_event.h b/third_party/blink/renderer/core/events/mouse_event.h
+index 69f7e1fddabe56ceae1563c4eb471e221cc7d69a..b8de47bac78a946f78302c9f9531d023c3d474fa 100644
+--- a/third_party/blink/renderer/core/events/mouse_event.h
++++ b/third_party/blink/renderer/core/events/mouse_event.h
+@@ -203,6 +203,7 @@ class CORE_EXPORT MouseEvent : public UIEventWithKeyState {
+   double offset_x_ = 0;
+   double offset_y_ = 0;
+ 
++  Member<EventTarget> related_target_;
+   bool has_cached_relative_position_ = false;
+ 
+  private:
+@@ -234,7 +235,6 @@ class CORE_EXPORT MouseEvent : public UIEventWithKeyState {
+   PositionType position_type_;
+   int16_t button_;
+   uint16_t buttons_;
+-  Member<EventTarget> related_target_;
+   SyntheticEventType synthetic_event_type_;
+ 
+   // Only used for contextmenu events.
+diff --git a/third_party/blink/renderer/core/events/pointer_event.cc b/third_party/blink/renderer/core/events/pointer_event.cc
+index 677da5aca4b0184dcf8f30ea4278bd27965cad89..33f975b281f8815ed10606c8c168e52047e635c8 100644
+--- a/third_party/blink/renderer/core/events/pointer_event.cc
++++ b/third_party/blink/renderer/core/events/pointer_event.cc
+@@ -193,6 +193,7 @@ DispatchEventResult PointerEvent::DispatchEvent(EventDispatcher& dispatcher) {
+ 
+   DCHECK(!RawTarget() || RawTarget() != relatedTarget());
+ 
++  ClearCrossOriginRelatedTarget(dispatcher.GetNode(), related_target_);
+   GetEventPath().AdjustForRelatedTarget(dispatcher.GetNode(), relatedTarget());
+ 
+   return dispatcher.Dispatch();
+diff --git a/third_party/blink/renderer/core/events/ui_event.cc b/third_party/blink/renderer/core/events/ui_event.cc
+index b95fa8d362c10b407a1a0e8f6dfc419422f9184d..1876415e37af3c9770840777e2379e4bcd1495a1 100644
+--- a/third_party/blink/renderer/core/events/ui_event.cc
++++ b/third_party/blink/renderer/core/events/ui_event.cc
+@@ -22,8 +22,12 @@
+ 
+ #include "third_party/blink/renderer/core/events/ui_event.h"
+ 
++#include "third_party/blink/renderer/core/dom/node.h"
+ #include "third_party/blink/renderer/core/event_interface_names.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/input/input_device_capabilities.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ 
+ namespace blink {
+ 
+@@ -101,4 +105,23 @@ void UIEvent::Trace(Visitor* visitor) const {
+   Event::Trace(visitor);
+ }
+ 
++void UIEvent::ClearCrossOriginRelatedTarget(
++    const Node& target,
++    Member<EventTarget>& related_target) {
++  if (!RuntimeEnabledFeatures::ClearCrossOriginRelatedTargetEnabled() ||
++      !related_target) {
++    return;
++  }
++  const ExecutionContext* target_context = target.GetExecutionContext();
++  const ExecutionContext* related_context =
++      related_target->GetExecutionContext();
++  if (target_context && related_context && target_context != related_context) {
++    const SecurityOrigin* target_origin = target_context->GetSecurityOrigin();
++    const SecurityOrigin* related_origin = related_context->GetSecurityOrigin();
++    if (!target_origin->CanAccess(related_origin)) {
++      related_target = nullptr;
++    }
++  }
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/events/ui_event.h b/third_party/blink/renderer/core/events/ui_event.h
+index bf74086049c8f84aa9e1c1733cd304bdf0ba19a3..67b3a6da61388b1ade843bf2938eac41aba9b928 100644
+--- a/third_party/blink/renderer/core/events/ui_event.h
++++ b/third_party/blink/renderer/core/events/ui_event.h
+@@ -33,6 +33,7 @@
+ namespace blink {
+ 
+ class InputDeviceCapabilities;
++class Node;
+ 
+ // FIXME: Get rid of this type alias.
+ using AbstractView = DOMWindow;
+@@ -91,6 +92,12 @@ class CORE_EXPORT UIEvent : public Event {
+ 
+   void Trace(Visitor*) const override;
+ 
++ protected:
++  // Defense in depth: an event must never hand an EventTarget of a
++  // cross-origin ExecutionContext to the target's context via `relatedTarget`.
++  void ClearCrossOriginRelatedTarget(const Node& target,
++                                     Member<EventTarget>& related_target);
++
+  private:
+   Member<AbstractView> view_;
+   int detail_;
+diff --git a/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc b/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc
+index a597ad934cfc0a38f6c7b2a4c3712881229ef752..af2f9522665d8bc59280a64b035543523cec2977 100644
+--- a/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc
++++ b/third_party/blink/renderer/core/input/boundary_event_dispatcher.cc
+@@ -6,12 +6,44 @@
+ 
+ #include "third_party/blink/renderer/core/dom/flat_tree_traversal.h"
+ #include "third_party/blink/renderer/core/dom/node.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
++#include "third_party/blink/renderer/core/frame/frame.h"
++#include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/frame/local_frame.h"
++#include "third_party/blink/renderer/core/html/html_frame_owner_element.h"
+ #include "third_party/blink/renderer/core/input/event_handling_util.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ 
+ namespace blink {
+ 
+ namespace {
+ 
++HTMLFrameOwnerElement* FindFrameOwnerIfNested(
++    const ExecutionContext& possible_outer_context,
++    const ExecutionContext& possible_inner_context) {
++  const auto* possible_outer_window =
++      DynamicTo<LocalDOMWindow>(possible_outer_context);
++  const auto* possible_inner_window =
++      DynamicTo<LocalDOMWindow>(possible_inner_context);
++  if (!possible_outer_window || !possible_inner_window) {
++    return nullptr;
++  }
++  const Frame* possible_outer_frame = possible_outer_window->GetFrame();
++  const Frame* possible_inner_frame = possible_inner_window->GetFrame();
++  if (!possible_outer_frame || !possible_inner_frame) {
++    return nullptr;
++  }
++  const Frame* child_frame = possible_inner_frame;
++  while (child_frame && child_frame->Parent() != possible_outer_frame) {
++    child_frame = child_frame->Parent();
++  }
++  if (!child_frame) {
++    return nullptr;
++  }
++  return DynamicTo<HTMLFrameOwnerElement>(child_frame->Owner());
++}
++
+ void BuildAncestorChain(EventTarget* target,
+                         HeapVector<Member<Node>, 20>* ancestors) {
+   if (!event_handling_util::IsInDocument(target))
+@@ -59,6 +91,51 @@ void BoundaryEventDispatcher::SendBoundaryEvents(
+     EventTarget* exited_target,
+     bool original_exited_target_removed,
+     EventTarget* entered_target) {
++  // An EventTarget must never be exposed to a cross-origin ExecutionContext
++  // through `relatedTarget` (e.g. the touch pointer stream is owned by the
++  // local-root frame's PointerEventManager, which hit-tests through every
++  // same-process child frame).
++  // When the contexts have an inner/outer relationship in the frame hierarchy,
++  // the event in the outer document uses the frame owner (e.g. iframe) element
++  // that lives in that context as its relatedTarget. In other cases (e.g. for
++  // the event in the inner document, or sibling/cousin frames), the related
++  // target is null.
++  if (RuntimeEnabledFeatures::ClearCrossOriginRelatedTargetEnabled() &&
++      exited_target && entered_target) {
++    const ExecutionContext* exited_context =
++        exited_target->GetExecutionContext();
++    const ExecutionContext* entered_context =
++        entered_target->GetExecutionContext();
++    if (exited_context && entered_context &&
++        exited_context != entered_context) {
++      const SecurityOrigin* exited_origin = exited_context->GetSecurityOrigin();
++      const SecurityOrigin* entered_origin =
++          entered_context->GetSecurityOrigin();
++      if (!exited_origin->CanAccess(entered_origin) ||
++          !entered_origin->CanAccess(exited_origin)) {
++        EventTarget* exited_related_target =
++            FindFrameOwnerIfNested(*exited_context, *entered_context);
++        EventTarget* entered_related_target =
++            FindFrameOwnerIfNested(*entered_context, *exited_context);
++        SendBoundaryEventsSameOrigin(exited_target,
++                                     original_exited_target_removed,
++                                     exited_related_target);
++        SendBoundaryEventsSameOrigin(entered_related_target,
++                                     /*original_exited_target_removed=*/false,
++                                     entered_target);
++        return;
++      }
++    }
++  }
++
++  SendBoundaryEventsSameOrigin(exited_target, original_exited_target_removed,
++                               entered_target);
++}
++
++void BoundaryEventDispatcher::SendBoundaryEventsSameOrigin(
++    EventTarget* exited_target,
++    bool original_exited_target_removed,
++    EventTarget* entered_target) {
+   if (exited_target == entered_target && !original_exited_target_removed) {
+     return;
+   }
+diff --git a/third_party/blink/renderer/core/input/boundary_event_dispatcher.h b/third_party/blink/renderer/core/input/boundary_event_dispatcher.h
+index 1401a282de8e7e2be7c6599d6dfb0316ce556280..5f1e171fff4cb75c64e41a22170874d45e445baf 100644
+--- a/third_party/blink/renderer/core/input/boundary_event_dispatcher.h
++++ b/third_party/blink/renderer/core/input/boundary_event_dispatcher.h
+@@ -38,6 +38,10 @@ class BoundaryEventDispatcher {
+                         bool check_for_listener) = 0;
+ 
+  private:
++  void SendBoundaryEventsSameOrigin(EventTarget* exited_target,
++                                    bool original_exited_target_removed,
++                                    EventTarget* entered_target);
++
+   const AtomicString& over_event_;
+   const AtomicString& out_event_;
+   const AtomicString& enter_event_;
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index ceb5b98f2ce4a2eaf0ca3987e8f22d0e67aab31b..56481ace9953d715dc8bd18dd6922a1a3e26770c 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -1184,6 +1184,13 @@
+       name: "ClampWordBoundaryToContentEditableScope",
+       status: "stable",
+     },
++    {
++      // Killswitch for preventing cross-origin relatedTarget on boundary
++      // events.
++      // https://issues.chromium.org/issues/574379564
++      name: "ClearCrossOriginRelatedTarget",
++      status: "stable",
++    },
+     {
+       // Set currentTarget to null after dispatch for EventTarget.
+       // This was added in M142 and can be removed after M144.
+diff --git a/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html b/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..291b07dc9500bcd72784af73d1ea1b8d819755eb
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html
+@@ -0,0 +1,349 @@
++<!doctype html>
++<meta charset="utf-8">
++<title>Pointer boundary events across same-origin documents (tentative)</title>
++<!--
++
++Issue: https://github.com/w3c/pointerevents/issues/656
++
++This test is tentative because I'm not sure whether it's the correct behavior.
++It's possible that cross-document should be treated the same as cross-origin.
++
++pointerevent_boundary_events_cross_origin.html tests that the cross-origin
++cases do not expose the true relatedTarget node (which is required for
++security).  This test tests that the same-origin but cross-document cases do
++expose the relatedTarget node.
++
++-->
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script src="/resources/testdriver.js"></script>
++<script src="/resources/testdriver-actions.js"></script>
++<script src="/resources/testdriver-vendor.js"></script>
++<style>
++  html, body {
++    margin: 0;
++    padding: 0;
++    touch-action: none;
++  }
++  .target {
++    width: 100px;
++    height: 100px;
++    background: blue;
++    touch-action: none;
++  }
++  iframe {
++    width: 100px;
++    height: 100px;
++    border: none;
++    display: block;
++  }
++  #done {
++    display: block;
++    margin-top: 10px;
++    touch-action: none;
++  }
++</style>
++<body>
++<button id="done">Done</button>
++<script>
++'use strict';
++
++function loadIframe(iframe) {
++  return new Promise(resolve => {
++    iframe.srcdoc = `<!doctype html>
++      <style>
++        html, body { margin: 0; padding: 0; touch-action: none; }
++        #child-target { width: 100px; height: 100px; background: green; touch-action: none; }
++      </style>
++      <div id="child-target"></div>`;
++    iframe.onload = resolve;
++  });
++}
++
++async function tapDoneButton() {
++  const doneButton = document.getElementById('done');
++  const donePromise = new Promise(resolve => {
++    const onDone = () => {
++      doneButton.removeEventListener('pointerup', onDone);
++      doneButton.removeEventListener('click', onDone);
++      resolve();
++    };
++    doneButton.addEventListener('pointerup', onDone);
++    doneButton.addEventListener('click', onDone);
++  });
++  await new test_driver.Actions()
++    .addPointer('touchPointerDone', 'touch')
++    .pointerMove(0, 0, {origin: doneButton})
++    .pointerDown()
++    .pointerUp()
++    .send();
++  await donePromise;
++}
++
++promise_test(async t => {
++  const container = document.createElement('div');
++  document.body.appendChild(container);
++  t.add_cleanup(() => container.remove());
++
++  const parentTarget = document.createElement('div');
++  parentTarget.id = 'parent-target';
++  parentTarget.className = 'target';
++  container.appendChild(parentTarget);
++
++  const iframe = document.createElement('iframe');
++  iframe.id = 'iframe';
++  container.appendChild(iframe);
++
++  await loadIframe(iframe);
++  const childDoc = iframe.contentDocument;
++  const childTarget = childDoc.getElementById('child-target');
++
++  let parentEvents = [];
++  let childEvents = [];
++
++  parentTarget.addEventListener('pointerdown', e => {
++    e.target.releasePointerCapture(e.pointerId);
++  });
++  parentTarget.addEventListener('pointerout', e => {
++    parentEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++  parentTarget.addEventListener('pointerleave', e => {
++    parentEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++
++  childTarget.addEventListener('pointerover', e => {
++    childEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++  childTarget.addEventListener('pointerenter', e => {
++    childEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++
++  await new test_driver.Actions()
++    .addPointer('touchPointer', 'touch')
++    .pointerMove(0, 0, {origin: parentTarget})
++    .pointerDown()
++    .pointerMove(0, 0, {origin: iframe})
++    .pointerUp()
++    .send();
++
++  await tapDoneButton();
++
++  assert_equals(
++    parentEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerout from child-target,pointerleave from child-target"
++  );
++
++  assert_equals(
++    childEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerover from parent-target,pointerenter from parent-target"
++  );
++}, 'Parent to same-origin iframe: relatedTarget is exposed across documents');
++
++promise_test(async t => {
++  const container = document.createElement('div');
++  document.body.appendChild(container);
++  t.add_cleanup(() => container.remove());
++
++  const parentTarget = document.createElement('div');
++  parentTarget.id = 'parent-target';
++  parentTarget.className = 'target';
++  container.appendChild(parentTarget);
++
++  const iframe = document.createElement('iframe');
++  iframe.id = 'iframe';
++  container.appendChild(iframe);
++
++  await loadIframe(iframe);
++  const childDoc = iframe.contentDocument;
++  const childTarget = childDoc.getElementById('child-target');
++
++  let parentEvents = [];
++  let childEvents = [];
++
++  childTarget.addEventListener('pointerdown', e => {
++    e.target.releasePointerCapture(e.pointerId);
++  });
++  childTarget.addEventListener('pointerout', e => {
++    childEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++  childTarget.addEventListener('pointerleave', e => {
++    childEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++
++  parentTarget.addEventListener('pointerover', e => {
++    parentEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++  parentTarget.addEventListener('pointerenter', e => {
++    parentEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++
++  await new test_driver.Actions()
++    .addPointer('touchPointer', 'touch')
++    .pointerMove(0, 0, {origin: iframe})
++    .pointerDown()
++    .pointerMove(0, 0, {origin: parentTarget})
++    .pointerUp()
++    .send();
++
++  await tapDoneButton();
++
++  assert_equals(
++    childEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerout from parent-target,pointerleave from parent-target"
++  );
++
++  assert_equals(
++    parentEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerover from child-target,pointerenter from child-target"
++  );
++}, 'Same-origin iframe to parent: relatedTarget is exposed across documents');
++
++promise_test(async t => {
++  const container = document.createElement('div');
++  document.body.appendChild(container);
++  t.add_cleanup(() => container.remove());
++
++  const sib1 = document.createElement('iframe');
++  container.appendChild(sib1);
++
++  const sib2 = document.createElement('iframe');
++  container.appendChild(sib2);
++
++  await Promise.all([
++    new Promise(resolve => {
++      sib1.srcdoc = `<!doctype html>
++        <style>html, body { margin: 0; padding: 0; touch-action: none; }
++        #s1 { width: 100px; height: 100px; background: green; touch-action: none; }</style>
++        <div id="s1"></div>`;
++      sib1.onload = resolve;
++    }),
++    new Promise(resolve => {
++      sib2.srcdoc = `<!doctype html>
++        <style>html, body { margin: 0; padding: 0; touch-action: none; }
++        #s2 { width: 100px; height: 100px; background: red; touch-action: none; }</style>
++        <div id="s2"></div>`;
++      sib2.onload = resolve;
++    })
++  ]);
++
++  const s1 = sib1.contentDocument.getElementById('s1');
++  const s2 = sib2.contentDocument.getElementById('s2');
++
++  let s1Events = [];
++  let s2Events = [];
++
++  s1.addEventListener('pointerdown', e => {
++    e.target.releasePointerCapture(e.pointerId);
++  });
++  s1.addEventListener('pointerout', e => {
++    s1Events.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++  s1.addEventListener('pointerleave', e => {
++    s1Events.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++
++  s2.addEventListener('pointerover', e => {
++    s2Events.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++  s2.addEventListener('pointerenter', e => {
++    s2Events.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++
++  await new test_driver.Actions()
++    .addPointer('touchPointer', 'touch')
++    .pointerMove(0, 0, {origin: sib1})
++    .pointerDown()
++    .pointerMove(0, 0, {origin: sib2})
++    .pointerUp()
++    .send();
++
++  await tapDoneButton();
++
++  assert_equals(
++    s1Events.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerout from s2,pointerleave from s2"
++  );
++
++  assert_equals(
++    s2Events.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerover from s1,pointerenter from s1"
++  );
++}, 'Sibling same-origin iframes: relatedTarget is exposed across documents');
++
++promise_test(async t => {
++  const container = document.createElement('div');
++  document.body.appendChild(container);
++  t.add_cleanup(() => container.remove());
++
++  const topTarget = document.createElement('div');
++  topTarget.id = 'top-target-nested';
++  topTarget.className = 'target';
++  topTarget.style.background = 'cyan';
++  container.appendChild(topTarget);
++
++  const outerIframe = document.createElement('iframe');
++  container.appendChild(outerIframe);
++
++  await new Promise(resolve => {
++    outerIframe.srcdoc = `<!doctype html>
++      <style>html, body { margin: 0; padding: 0; touch-action: none; }
++      iframe { width: 100px; height: 100px; border: none; display: block; }</style>
++      <iframe id="inner-iframe" srcdoc="<!doctype html>
++        <style>html, body { margin: 0; padding: 0; touch-action: none; }
++        #deep { width: 100px; height: 100px; background: orange; touch-action: none; }</style>
++        <div id='deep'></div>"></iframe>`;
++    outerIframe.onload = () => {
++      const inner = outerIframe.contentDocument.getElementById('inner-iframe');
++      if (inner.contentDocument && inner.contentDocument.getElementById('deep')) {
++        resolve();
++      } else {
++        inner.onload = resolve;
++      }
++    };
++  });
++
++  const innerIframe = outerIframe.contentDocument.getElementById('inner-iframe');
++  const deepTarget = innerIframe.contentDocument.getElementById('deep');
++
++  let topEvents = [];
++  let deepEvents = [];
++
++  topTarget.addEventListener('pointerdown', e => {
++    e.target.releasePointerCapture(e.pointerId);
++  });
++  topTarget.addEventListener('pointerout', e => {
++    topEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++  topTarget.addEventListener('pointerleave', e => {
++    topEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++
++  deepTarget.addEventListener('pointerover', e => {
++    deepEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++  deepTarget.addEventListener('pointerenter', e => {
++    deepEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++  });
++
++  await new test_driver.Actions()
++    .addPointer('touchPointer', 'touch')
++    .pointerMove(0, 0, {origin: topTarget})
++    .pointerDown()
++    .pointerMove(0, 0, {origin: outerIframe})
++    .pointerUp()
++    .send();
++
++  await tapDoneButton();
++
++  assert_equals(
++    topEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerout from deep,pointerleave from deep"
++  );
++
++  assert_equals(
++    deepEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerover from top-target-nested,pointerenter from top-target-nested"
++  );
++}, 'Nested same-origin iframes: relatedTarget is exposed across documents');
++</script>
++</body>
+diff --git a/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_origin.html b/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_origin.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..c6b2ad1cf6a37aaee283c31a2752b820fc2fdacb
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/pointerevents/pointerevent_boundary_events_cross_origin.html
+@@ -0,0 +1,285 @@
++<!doctype html>
++<meta charset="utf-8">
++<title>Pointer boundary events across cross-origin documents</title>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script src="/resources/testdriver.js"></script>
++<script src="/resources/testdriver-actions.js"></script>
++<script src="/resources/testdriver-vendor.js"></script>
++<script src="/common/get-host-info.sub.js"></script>
++<style>
++  html, body {
++    margin: 0;
++    padding: 0;
++    touch-action: none;
++  }
++  .target {
++    width: 100px;
++    height: 100px;
++    background: blue;
++    touch-action: none;
++  }
++  iframe {
++    width: 100px;
++    height: 100px;
++    border: none;
++    display: block;
++  }
++  #done {
++    display: block;
++    margin-top: 10px;
++    touch-action: none;
++  }
++</style>
++<body>
++<button id="done">Done</button>
++<script>
++'use strict';
++
++const hostInfo = get_host_info();
++const REMOTE_ORIGIN = hostInfo.HTTP_REMOTE_ORIGIN;
++const REMOTE_ORIGIN_2 = hostInfo.HTTP_REMOTE_ORIGIN_WITH_DIFFERENT_PORT;
++const CHILD_PAGE = '/pointerevents/resources/pointerevent_boundary_events_cross_origin_child.html';
++
++let receivedMessages = [];
++window.addEventListener('message', e => {
++  if (e.data && e.data.source === 'boundary-event-test' && e.data.type !== 'child-ready') {
++    receivedMessages.push({
++      frameId: e.data.frameId,
++      type: e.data.type,
++      relatedTargetIsNull: e.data.relatedTargetIsNull
++    });
++  }
++});
++
++function loadChildFrame(iframe, src, readyFrameId) {
++  return new Promise(resolve => {
++    function onMsg(e) {
++      if (e.data && e.data.source === 'boundary-event-test' && e.data.type === 'child-ready' && e.data.frameId === readyFrameId) {
++        window.removeEventListener('message', onMsg);
++        resolve();
++      }
++    }
++    window.addEventListener('message', onMsg);
++    iframe.src = src;
++  });
++}
++
++async function tapDoneButton() {
++  const doneButton = document.getElementById('done');
++  const donePromise = new Promise(resolve => {
++    const onDone = () => {
++      doneButton.removeEventListener('pointerup', onDone);
++      doneButton.removeEventListener('click', onDone);
++      resolve();
++    };
++    doneButton.addEventListener('pointerup', onDone);
++    doneButton.addEventListener('click', onDone);
++  });
++  await new test_driver.Actions()
++    .addPointer('touchPointerDone', 'touch')
++    .pointerMove(0, 0, {origin: doneButton})
++    .pointerDown()
++    .pointerUp()
++    .send();
++  await donePromise;
++}
++
++promise_test(async t => {
++  receivedMessages = [];
++  const container = document.createElement('div');
++  document.body.appendChild(container);
++  t.add_cleanup(() => container.remove());
++
++  const parentTarget = document.createElement('div');
++  parentTarget.id = 'parent-target';
++  parentTarget.className = 'target';
++  container.appendChild(parentTarget);
++
++  const iframe = document.createElement('iframe');
++  iframe.id = 'iframe';
++  container.appendChild(iframe);
++
++  const childSrc = `${REMOTE_ORIGIN}${CHILD_PAGE}?frame_id=child&target_id=child-target`;
++  await loadChildFrame(iframe, childSrc, 'child');
++
++  let parentEvents = [];
++  parentTarget.addEventListener('pointerdown', e => {
++    e.target.releasePointerCapture(e.pointerId);
++  });
++  ['pointerout', 'pointerleave'].forEach(type => {
++    parentTarget.addEventListener(type, e => {
++      parentEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++    });
++  });
++
++  await new test_driver.Actions()
++    .addPointer('touchPointer', 'touch')
++    .pointerMove(0, 0, {origin: parentTarget})
++    .pointerDown()
++    .pointerMove(0, 0, {origin: iframe})
++    .pointerUp()
++    .send();
++
++  await tapDoneButton();
++
++  assert_equals(
++    parentEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerout from iframe,pointerleave from iframe"
++  );
++
++  assert_equals(JSON.stringify(receivedMessages), JSON.stringify([
++    { frameId: 'child', type: 'pointerover', relatedTargetIsNull: true },
++    { frameId: 'child', type: 'pointerenter', relatedTargetIsNull: true },
++    { frameId: 'child', type: 'pointerout', relatedTargetIsNull: true },
++    { frameId: 'child', type: 'pointerleave', relatedTargetIsNull: true }
++  ]), 'receivedMessages should match expected child events');
++}, 'Parent to iframe: relatedTarget in outer document is iframe, inner document is null');
++
++promise_test(async t => {
++  receivedMessages = [];
++  const container = document.createElement('div');
++  document.body.appendChild(container);
++  t.add_cleanup(() => container.remove());
++
++  const parentTarget = document.createElement('div');
++  parentTarget.id = 'parent-target';
++  parentTarget.className = 'target';
++  container.appendChild(parentTarget);
++
++  const iframe = document.createElement('iframe');
++  iframe.id = 'iframe';
++  container.appendChild(iframe);
++
++  const childSrc = `${REMOTE_ORIGIN}${CHILD_PAGE}?frame_id=child&target_id=child-target`;
++  await loadChildFrame(iframe, childSrc, 'child');
++
++  let parentEvents = [];
++  ['pointerover', 'pointerenter'].forEach(type => {
++    parentTarget.addEventListener(type, e => {
++      parentEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++    });
++  });
++
++  await new test_driver.Actions()
++    .addPointer('touchPointer', 'touch')
++    .pointerMove(0, 0, {origin: iframe})
++    .pointerDown()
++    .pointerMove(0, 0, {origin: parentTarget})
++    .pointerUp()
++    .send();
++
++  await tapDoneButton();
++
++  assert_equals(JSON.stringify(receivedMessages), JSON.stringify([
++    { frameId: 'child', type: 'pointerover', relatedTargetIsNull: true },
++    { frameId: 'child', type: 'pointerenter', relatedTargetIsNull: true },
++    { frameId: 'child', type: 'pointerout', relatedTargetIsNull: true },
++    { frameId: 'child', type: 'pointerleave', relatedTargetIsNull: true }
++  ]), 'receivedMessages should match expected child events');
++
++  assert_equals(
++    parentEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerover from iframe,pointerenter from iframe"
++  );
++}, 'Iframe to parent: relatedTarget in inner document is null, outer document is iframe');
++
++promise_test(async t => {
++  receivedMessages = [];
++  const container = document.createElement('div');
++  document.body.appendChild(container);
++  t.add_cleanup(() => container.remove());
++
++  const sib1 = document.createElement('iframe');
++  sib1.id = 'sib1';
++  container.appendChild(sib1);
++
++  const sib2 = document.createElement('iframe');
++  sib2.id = 'sib2';
++  container.appendChild(sib2);
++
++  const sib1Src = `${REMOTE_ORIGIN}${CHILD_PAGE}?frame_id=sib1&target_id=s1`;
++  const sib2Src = `${REMOTE_ORIGIN_2}${CHILD_PAGE}?frame_id=sib2&target_id=s2`;
++
++  await Promise.all([
++    loadChildFrame(sib1, sib1Src, 'sib1'),
++    loadChildFrame(sib2, sib2Src, 'sib2')
++  ]);
++
++  await new test_driver.Actions()
++    .addPointer('touchPointer', 'touch')
++    .pointerMove(0, 0, {origin: sib1})
++    .pointerDown()
++    .pointerMove(0, 0, {origin: sib2})
++    .pointerUp()
++    .send();
++
++  await tapDoneButton();
++
++  assert_equals(JSON.stringify(receivedMessages), JSON.stringify([
++    { frameId: 'sib1', type: 'pointerover', relatedTargetIsNull: true },
++    { frameId: 'sib1', type: 'pointerenter', relatedTargetIsNull: true },
++    { frameId: 'sib1', type: 'pointerout', relatedTargetIsNull: true },
++    { frameId: 'sib1', type: 'pointerleave', relatedTargetIsNull: true },
++    { frameId: 'sib2', type: 'pointerover', relatedTargetIsNull: true },
++    { frameId: 'sib2', type: 'pointerenter', relatedTargetIsNull: true },
++    { frameId: 'sib2', type: 'pointerout', relatedTargetIsNull: true },
++    { frameId: 'sib2', type: 'pointerleave', relatedTargetIsNull: true }
++  ]), 'receivedMessages should match expected sibling events');
++}, 'Sibling iframes: relatedTarget is null for both documents');
++
++promise_test(async t => {
++  receivedMessages = [];
++  const container = document.createElement('div');
++  document.body.appendChild(container);
++  t.add_cleanup(() => container.remove());
++
++  const topTarget = document.createElement('div');
++  topTarget.id = 'top-target-nested';
++  topTarget.className = 'target';
++  topTarget.style.background = 'cyan';
++  container.appendChild(topTarget);
++
++  const outerIframe = document.createElement('iframe');
++  outerIframe.id = 'outer-iframe';
++  container.appendChild(outerIframe);
++
++  const deepSrc = `${REMOTE_ORIGIN_2}${CHILD_PAGE}?frame_id=deep&target_id=deep`;
++  const outerSrc = `${REMOTE_ORIGIN}${CHILD_PAGE}?frame_id=outer&nested_parent=true&inner_src=${encodeURIComponent(deepSrc)}`;
++
++  await loadChildFrame(outerIframe, outerSrc, 'deep');
++
++  let topEvents = [];
++  topTarget.addEventListener('pointerdown', e => {
++    e.target.releasePointerCapture(e.pointerId);
++  });
++  ['pointerout', 'pointerleave'].forEach(type => {
++    topTarget.addEventListener(type, e => {
++      topEvents.push({ type: e.type, relatedTarget: e.relatedTarget });
++    });
++  });
++
++  await new test_driver.Actions()
++    .addPointer('touchPointer', 'touch')
++    .pointerMove(0, 0, {origin: topTarget})
++    .pointerDown()
++    .pointerMove(0, 0, {origin: outerIframe})
++    .pointerUp()
++    .send();
++
++  await tapDoneButton();
++
++  assert_equals(
++    topEvents.map(e => `${e.type} from ${e.relatedTarget.id}`).join(),
++    "pointerout from outer-iframe,pointerleave from outer-iframe"
++  );
++
++  assert_equals(JSON.stringify(receivedMessages), JSON.stringify([
++    { frameId: 'deep', type: 'pointerover', relatedTargetIsNull: true },
++    { frameId: 'deep', type: 'pointerenter', relatedTargetIsNull: true },
++    { frameId: 'deep', type: 'pointerout', relatedTargetIsNull: true },
++    { frameId: 'deep', type: 'pointerleave', relatedTargetIsNull: true }
++  ]), 'receivedMessages should match expected deep child events');
++}, 'Nested iframes: relatedTarget in outer document is outermost iframe, inner document is null');
++</script>
++</body>
+diff --git a/third_party/blink/web_tests/external/wpt/pointerevents/resources/pointerevent_boundary_events_cross_origin_child.html b/third_party/blink/web_tests/external/wpt/pointerevents/resources/pointerevent_boundary_events_cross_origin_child.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..5150c3efe0973ddf94d90bc1c749328b5710b5ee
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/pointerevents/resources/pointerevent_boundary_events_cross_origin_child.html
+@@ -0,0 +1,63 @@
++<!doctype html>
++<html>
++<head>
++  <meta charset="utf-8">
++  <style>
++    html, body {
++      margin: 0;
++      padding: 0;
++      touch-action: none;
++    }
++    .target {
++      width: 100px;
++      height: 100px;
++      touch-action: none;
++    }
++    #s1 { background: green; }
++    #s2 { background: red; }
++    #child-target { background: green; }
++    #deep { background: orange; }
++    iframe {
++      width: 100px;
++      height: 100px;
++      border: none;
++      display: block;
++    }
++  </style>
++</head>
++<body>
++  <div id="target" class="target"></div>
++  <script>
++    const params = new URLSearchParams(location.search);
++    const frameId = params.get('frame_id') || 'child';
++    const targetId = params.get('target_id') || 'child-target';
++    const isNestedParent = params.get('nested_parent') === 'true';
++
++    const targetEl = document.getElementById('target');
++    targetEl.id = targetId;
++
++    if (isNestedParent) {
++      targetEl.remove();
++      const innerIframe = document.createElement('iframe');
++      innerIframe.id = 'inner-iframe';
++      innerIframe.src = params.get('inner_src');
++      document.body.appendChild(innerIframe);
++    } else {
++      targetEl.addEventListener('pointerdown', e => {
++        e.target.releasePointerCapture(e.pointerId);
++      });
++      ['pointerover', 'pointerenter', 'pointerout', 'pointerleave'].forEach(type => {
++        targetEl.addEventListener(type, e => {
++          window.top.postMessage({
++            source: 'boundary-event-test',
++            frameId: frameId,
++            type: e.type,
++            relatedTargetIsNull: e.relatedTarget === null
++          }, '*');
++        });
++      });
++      window.top.postMessage({ source: 'boundary-event-test', frameId: frameId, type: 'child-ready' }, '*');
++    }
++  </script>
++</body>
++</html>

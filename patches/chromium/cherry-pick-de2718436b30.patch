@@ -1,0 +1,208 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Wed, 28 Oct 2026 01:36:38 -0700
+Subject: [M156] [CacheStorage] Remove obsolete legacy cache_dir migration
+
+Original change's description:
+> [CacheStorage] Remove obsolete legacy cache_dir migration
+>
+> `proto::CacheStorageIndex::Cache::cache_dir` was added in Chrome M48
+> (crrev.com/1414033002, October 2015), and its migration unit test was
+> removed in Chrome M56 (crrev.com/2407733004, October 2016).
+>
+> Remove the obsolete `!cache.has_cache_dir()` migration branch in
+> `SimpleCacheLoader::ReadAndMigrateIndexInPool()` that moved legacy
+> SHA-1-named directories via `base::Move()`, and instead return an empty
+> `proto::CacheStorageIndex` so `CacheStorage` starts fresh when an index
+> entry is missing `cache_dir`. Also remove the now-unused `HexedHash()`
+> helper and dangling `MigratedLegacyCacheDirectoryNameTest` friend
+> declaration.
+>
+> Bug: 577333729
+> Change-Id: I506c5635db3403c6548af07986ce50cd619ea7b3
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8650158
+> Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+> Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+> Commit-Queue: Ming-Ying Chung <mych@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1726719}
+
+(cherry picked from commit ff5f2bcd571e33a322513ac72b841041e7e57687)
+
+Bug: 578325287,577333729
+Change-Id: I506c5635db3403c6548af07986ce50cd619ea7b3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8667303
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#1683}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/content/browser/cache_storage/cache_storage.cc b/content/browser/cache_storage/cache_storage.cc
+index 6420c2b692f33f06b04b68f4f60457ed7fe4efce..dde706797c876c522bec94abc3a8d5c693296c1c 100644
+--- a/content/browser/cache_storage/cache_storage.cc
++++ b/content/browser/cache_storage/cache_storage.cc
+@@ -19,14 +19,12 @@
+ #include "base/files/memory_mapped_file.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+-#include "base/hash/sha1.h"
+ #include "base/location.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/ref_counted.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/numerics/safe_conversions.h"
+-#include "base/strings/string_number_conversions.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/string_view_util.h"
+ #include "base/strings/utf_string_conversions.h"
+@@ -62,11 +60,6 @@ namespace content {
+ 
+ namespace {
+ 
+-std::string HexedHash(const std::string& value) {
+-  std::string value_hash = base::SHA1HashString(value);
+-  return base::HexEncodeLower(value_hash);
+-}
+-
+ void SizeRetrievedFromAllCaches(std::unique_ptr<int64_t> accumulator,
+                                 CacheStorage::SizeCallback callback) {
+   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+@@ -532,7 +525,6 @@ class CacheStorage::SimpleCacheLoader : public CacheStorage::CacheLoader {
+   }
+ 
+  private:
+-  friend class MigratedLegacyCacheDirectoryNameTest;
+   ~SimpleCacheLoader() override = default;
+ 
+   // Iterates over the caches and deletes any directory not found in
+@@ -576,50 +568,28 @@ class CacheStorage::SimpleCacheLoader : public CacheStorage::CacheLoader {
+       index_last_modified = file_info.last_modified;
+     bool index_modified = false;
+ 
+-    // Look for caches that have no cache_dir. Give any such caches a directory
+-    // with a random name and move them there. Then, rewrite the index file.
+-    // Additionally invalidate the size of any index entries where the cache was
+-    // modified after the index (making it out-of-date). We'll assume that any
+-    // unmigrated index files predate the buckets integration and leave them in
+-    // the directory for first-party Cache Storage instances in the default
+-    // bucket.
++    // Invalidate the size of any index entries where the cache was modified
++    // after the index (making it out-of-date). We'll assume that any unmigrated
++    // index files predate the buckets integration and leave them in the
++    // directory for first-party Cache Storage instances in the default bucket.
+ 
+     for (int i = 0, max = index.cache_size(); i < max; ++i) {
+       const proto::CacheStorageIndex::Cache& cache = index.cache(i);
+-      if (cache.has_cache_dir()) {
+-        if (cache.has_size()) {
+-          base::FilePath cache_dir =
+-              directory_path.AppendASCII(cache.cache_dir());
+-          if (!GetFileInfo(cache_dir, &file_info) ||
+-              index_last_modified <= file_info.last_modified) {
+-            // Index is older than this cache, so invalidate index entries that
+-            // may change as a result of cache operations.
+-            index.mutable_cache(i)->clear_size();
+-          }
+-        }
+-      } else {
+-        // Find a new home for the caches that don't have a directory (legacy
+-        // caches) since they predate the change where u16string `cache_names`
+-        // were added.
+-        base::FilePath legacy_cache_path =
+-            directory_path.AppendASCII(HexedHash(cache.name()));
+-        std::string cache_dir;
+-        base::FilePath cache_path;
+-        do {
+-          cache_dir = base::Uuid::GenerateRandomV4().AsLowercaseString();
+-          cache_path = directory_path.AppendASCII(cache_dir);
+-        } while (base::PathExists(cache_path));
+-
+-        if (!base::Move(legacy_cache_path, cache_path)) {
+-          // If the move fails then the cache is in a bad state. Return an empty
+-          // index so that the CacheStorage can start fresh. The unreferenced
+-          // caches will be discarded later in initialization.
+-          return proto::CacheStorageIndex();
++      if (!cache.has_cache_dir()) {
++        // If `cache_dir` is missing, the index is in a bad state. Return an
++        // empty index so that the `CacheStorage` can start fresh. The
++        // unreferenced caches will be discarded later in initialization.
++        return proto::CacheStorageIndex();
++      }
++      if (cache.has_size()) {
++        base::FilePath cache_dir =
++            directory_path.AppendASCII(cache.cache_dir());
++        if (!GetFileInfo(cache_dir, &file_info) ||
++            index_last_modified <= file_info.last_modified) {
++          // Index is older than this cache, so invalidate index entries that
++          // may change as a result of cache operations.
++          index.mutable_cache(i)->clear_size();
+         }
+-
+-        index.mutable_cache(i)->set_cache_dir(cache_dir);
+-        index.mutable_cache(i)->clear_size();
+-        index_modified = true;
+       }
+     }
+ 
+diff --git a/content/browser/cache_storage/cache_storage_manager_unittest.cc b/content/browser/cache_storage/cache_storage_manager_unittest.cc
+index 7f03236a9276c9ac60bad838aa32437899e4f9ad..e080c9b8eee10167dfa6cc709aed659b6567cb69 100644
+--- a/content/browser/cache_storage/cache_storage_manager_unittest.cc
++++ b/content/browser/cache_storage/cache_storage_manager_unittest.cc
+@@ -32,6 +32,7 @@
+ #include "base/test/bind.h"
+ #include "base/test/gmock_expected_support.h"
+ #include "base/test/metrics/histogram_tester.h"
++#include "base/test/run_until.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "base/test/test_future.h"
+ #include "base/time/time.h"
+@@ -1701,6 +1702,49 @@ TEST_F(CacheStorageManagerTest, CacheSizePaddedAfterReopen) {
+   EXPECT_EQ(cache_size_before_close, Size(bucket_locator1_));
+ }
+ 
++// Check that an index entry missing `cache_dir` is treated as invalid so
++// `CacheStorage` starts fresh rather than migrating a legacy directory name.
++TEST_F(CacheStorageManagerTest, IndexMissingCacheDirStartsFresh) {
++  const std::u16string kCacheName = u"foo";
++  const GURL kFooURL = storage_key1_.origin().GetURL().Resolve("foo");
++
++  ASSERT_TRUE(Open(bucket_locator1_, kCacheName));
++  ASSERT_TRUE(CachePut(callback_cache_handle_.value(), kFooURL));
++  const base::FilePath cache_path =
++      CacheStorageCache::From(callback_cache_handle_)->path();
++  const base::FilePath storage_dir = cache_path.DirName();
++  const base::FilePath index_path =
++      storage_dir.AppendASCII(CacheStorage::kIndexFileName);
++  ASSERT_TRUE(FlushCacheStorageIndex(bucket_locator1_));
++  DestroyStorageManager();
++  disk_cache::FlushCacheThreadForTesting();
++
++  // Move the cache directory to the legacy SHA-1 hex path for "foo" and clear
++  // `cache_dir` from the index entry.
++  const base::FilePath legacy_cache_path =
++      storage_dir.AppendASCII("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33");
++  ASSERT_TRUE(base::Move(cache_path, legacy_cache_path));
++
++  std::string serialized_index;
++  proto::CacheStorageIndex index;
++  ASSERT_TRUE(base::ReadFileToString(index_path, &serialized_index));
++  ASSERT_TRUE(index.ParseFromString(serialized_index));
++  ASSERT_EQ(1, index.cache_size());
++  ASSERT_TRUE(index.cache(0).has_cache_dir());
++  index.mutable_cache(0)->clear_cache_dir();
++  ASSERT_TRUE(index.SerializeToString(&serialized_index));
++  ASSERT_TRUE(base::WriteFile(index_path, serialized_index));
++
++  // Reopen the manager and verify `CacheStorage` starts fresh and cleans up the
++  // unreferenced legacy directory.
++  CreateStorageManager();
++  EXPECT_EQ(0u, Keys(bucket_locator1_));
++  EXPECT_FALSE(Has(bucket_locator1_, kCacheName));
++  disk_cache::FlushCacheThreadForTesting();
++  EXPECT_TRUE(base::test::RunUntil(
++      [&]() { return !base::PathExists(legacy_cache_path); }));
++}
++
+ TEST_F(CacheStorageManagerTest, QuotaCorrectAfterReopen) {
+   const std::u16string kCacheName = u"foo";
+ 
