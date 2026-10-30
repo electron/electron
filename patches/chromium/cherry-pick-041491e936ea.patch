@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Mon, 19 Oct 2026 22:11:30 -0700
+Subject: views: Defer MenuRunnerImpl destruction when released in OnMenuClosed
+
+MenuRunnerImpl::OnMenuClosed cleared `controller_` before invoking
+ExecuteCommand and OnMenuClosed on the MenuDelegate. When a delegate
+reset its MenuRunner inside those callbacks while MenuController frames
+were active on the stack, MenuRunnerImpl::Release saw a null
+`controller_` and deleted `this` synchronously instead of calling
+DeferMenuRunnerDestruction, causing a UAF on MenuItemView.
+
+Keep the `controller_` WeakPtr across OnMenuClosed and invalidate
+`weak_factory_` when deferring destruction in Release.
+
+Bug: 574516887
+TAG=agy
+CONV=cced0104-bc4a-465a-9306-2ed8a06093b5
+
+Change-Id: I948b7f6217c4ca2c93d604d689b8f34c8d2dee30
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613791
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722585}
+
+Electron adaptation notes (43-x-y):
+menu_runner_unittest.cc did not merge on M150 and was left as-is; the
+menu_runner_impl.cc change is verbatim. Note: the M156/M157 branch merges of
+this change were reverted upstream because of a chrome/browser AppMenu
+regression (b/576555601, fixed separately on main); Electron does not
+compile chrome/browser.
+
+diff --git a/ui/views/controls/menu/menu_runner_impl.cc b/ui/views/controls/menu/menu_runner_impl.cc
+index 5636a2be48d81470f89414cf13e6cc408fcdbb13..36d21d2c9658cbc1d4244c1063f52289db991dd3 100644
+--- a/ui/views/controls/menu/menu_runner_impl.cc
++++ b/ui/views/controls/menu/menu_runner_impl.cc
+@@ -110,6 +110,9 @@ void MenuRunnerImpl::Release() {
+ 
+   bool is_stack_active = controller_ && controller_->IsStackActive();
+   if (is_stack_active) {
++    // Invlidate the menu runner's weakptrs now because the menu runner is
++    // considered deleted at this point.
++    weak_factory_.InvalidateWeakPtrs();
+     // Transfer ownership to controller.
+     controller_->DeferMenuRunnerDestruction(base::WrapUnique(this));
+     return;
+@@ -264,7 +267,6 @@ void MenuRunnerImpl::OnMenuClosed(NotifyType type,
+     return;
+   }
+   running_ = false;
+-  controller_ = nullptr;
+   if (menu_->GetDelegate()) {
+     // Executing the command may also delete this.
+     base::WeakPtr<MenuRunnerImpl> ref(weak_factory_.GetWeakPtr());

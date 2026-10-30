@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leo Lee <leolee@microsoft.com>
+Date: Wed, 21 Oct 2026 08:43:24 -0700
+Subject: [M150] [Editing] Copy id attribute when undoing a split
+
+Original change's description:
+> [Editing] Copy id attribute when undoing a split
+>
+> Undoing a split recovered the original element's id by holding a
+> reference returned from FastGetAttribute(). That reference points into
+> the source element's attribute storage, which the following
+> setAttribute() call can reallocate: setting the id notifies id
+> observers, which may run script that mutates the source element's
+> attributes before the value is consumed.
+>
+> Hold an owning AtomicString instead. This matches the ownership already
+> used in Element::InsertedInto() and Element::RemovedFrom().
+>
+> Bug: 570638833, 572546688
+> Change-Id: Iccbd5b7da12a64cd4f97cbc765bec4b9a37a1b86
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8564737
+> Reviewed-by: Dan Clark <daniec@microsoft.com>
+> Commit-Queue: Leo Lee <leolee@microsoft.com>
+> Cr-Commit-Position: refs/heads/main@{#1720011}
+
+(cherry picked from commit 278621c8ed4f9a399cf219a1acc98683ae9afb72)
+
+Bug: 575617076,570638833,572546688
+Change-Id: Iccbd5b7da12a64cd4f97cbc765bec4b9a37a1b86
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8615799
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Leo Lee <leolee@microsoft.com>
+Reviewed-by: Leo Lee <leolee@microsoft.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4498}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/core/dom/id_target_observer.h b/third_party/blink/renderer/core/dom/id_target_observer.h
+index 048c08a2f8f9973a7f9c0d889161ca296f3921bd..ec1e8f88922b7ed23f25805165bf2ef6a09d3d3c 100644
+--- a/third_party/blink/renderer/core/dom/id_target_observer.h
++++ b/third_party/blink/renderer/core/dom/id_target_observer.h
+@@ -26,6 +26,7 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_DOM_ID_TARGET_OBSERVER_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_DOM_ID_TARGET_OBSERVER_H_
+ 
++#include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/member.h"
+ #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+@@ -34,7 +35,7 @@ namespace blink {
+ 
+ class IdTargetObserverRegistry;
+ 
+-class IdTargetObserver : public GarbageCollected<IdTargetObserver> {
++class CORE_EXPORT IdTargetObserver : public GarbageCollected<IdTargetObserver> {
+  public:
+   virtual ~IdTargetObserver();
+   virtual void Trace(Visitor*) const;
+diff --git a/third_party/blink/renderer/core/editing/commands/split_element_command.cc b/third_party/blink/renderer/core/editing/commands/split_element_command.cc
+index 7c5670f9c36a1dbb2552bf4aed46a81b99192143..d96054c9b82c4d1ac16e31377d44d97c826242ce 100644
+--- a/third_party/blink/renderer/core/editing/commands/split_element_command.cc
++++ b/third_party/blink/renderer/core/editing/commands/split_element_command.cc
+@@ -90,8 +90,10 @@ void SplitElementCommand::DoUnapply() {
+   for (const auto& child : children)
+     element2_->InsertBefore(child, ref_child, IGNORE_EXCEPTION_FOR_TESTING);
+ 
+-  // Recover the id attribute of the original element.
+-  const AtomicString& id = element1_->FastGetAttribute(html_names::kIdAttr);
++  // Recover the id attribute of the original element. This must be a copy,
++  // not a reference: setAttribute() below notifies id observers, which can
++  // reallocate `element1_`'s attribute storage.
++  const AtomicString id = element1_->FastGetAttribute(html_names::kIdAttr);
+   if (!id.IsNull())
+     element2_->setAttribute(html_names::kIdAttr, id);
+ 
+diff --git a/third_party/blink/renderer/core/editing/commands/split_element_command_test.cc b/third_party/blink/renderer/core/editing/commands/split_element_command_test.cc
+index 18385f734415461e8ee81cd416e2532ea9b38cba..6b84e65c94bbf2b4dfe7b7d9acbaf3802cb44eb7 100644
+--- a/third_party/blink/renderer/core/editing/commands/split_element_command_test.cc
++++ b/third_party/blink/renderer/core/editing/commands/split_element_command_test.cc
+@@ -4,13 +4,53 @@
+ 
+ #include "third_party/blink/renderer/core/editing/commands/split_element_command.h"
+ 
++#include "third_party/blink/renderer/core/dom/id_target_observer.h"
++#include "third_party/blink/renderer/core/dom/id_target_observer_registry.h"
+ #include "third_party/blink/renderer/core/editing/commands/editing_state.h"
+ #include "third_party/blink/renderer/core/editing/testing/editing_test_base.h"
++#include "third_party/blink/renderer/core/html_names.h"
+ 
+ namespace blink {
+ 
+ class SplitElementCommandTest : public EditingTestBase {};
+ 
++namespace {
++
++// Appends attributes to `element` while an id change is being dispatched,
++// forcing its attribute storage to reallocate. This stands in for what
++// production does on this path: the id notification updates style and layout,
++// which synchronizes the source element's lazy style attribute and appends to
++// the same storage. Either way, any reference into that storage held by the
++// code dispatching the id change is invalidated.
++class AttributeReallocatingIdObserver final : public IdTargetObserver {
++ public:
++  AttributeReallocatingIdObserver(IdTargetObserverRegistry& registry,
++                                  const AtomicString& id,
++                                  Element* element)
++      : IdTargetObserver(registry, id), element_(element) {}
++
++  void IdTargetChanged() override {
++    // Enough appends to grow the attribute vector past its current capacity at
++    // least once, which frees the buffer it was using.
++    for (unsigned i = 0; i < 8; ++i) {
++      element_->setAttribute(
++          QualifiedName(g_null_atom, AtomicString(String::Number(i) + "pad"),
++                        g_null_atom),
++          AtomicString("1"));
++    }
++  }
++
++  void Trace(Visitor* visitor) const override {
++    visitor->Trace(element_);
++    IdTargetObserver::Trace(visitor);
++  }
++
++ private:
++  Member<Element> element_;
++};
++
++}  // namespace
++
+ // Tests that SplitElementCommand works. It splits an element at the
+ // passed child.
+ TEST_F(SplitElementCommandTest, Basic) {
+@@ -123,4 +163,57 @@ TEST_F(SplitElementCommandTest, NotCloneElementWithoutChildren) {
+   EXPECT_EQ(4u, firstChildAfterRedo->CountChildren());
+ }
+ 
++// Undoing a split restores the original element's id onto the element that the
++// split took it from. Dispatching that id change can run code that reallocates
++// the cloned element's attribute storage, so the undo must not hold a reference
++// into that storage while it does so. Regression test for crbug.com/572546688.
++//
++// Only meaningful under ASan: without the fix this reads freed memory, which an
++// unsanitized build will not notice.
++TEST_F(SplitElementCommandTest, UndoRestoresIdWhileAttributesAreReallocated) {
++  // The padding attributes put the element over AttributeVector's inline
++  // capacity of 4, so that its attributes live in a heap buffer that appending
++  // more attributes can reallocate.
++  SetBodyContent(
++      "<div contenteditable><blockquote id=split a=1 b=2 c=3 d=4 e=5>"
++      "a<br>b<br></blockquote></div>");
++  auto* div = To<ContainerNode>(GetDocument().body()->firstChild());
++  auto* blockquote = To<Element>(div->firstChild());
++  Node* at_child = blockquote->childNodes()->item(2);
++
++  SimpleEditCommand* command =
++      MakeGarbageCollected<SplitElementCommand>(blockquote, at_child);
++  EditingState editing_state;
++  command->DoApply(&editing_state);
++
++  // The split moved the id onto a clone inserted before `blockquote`.
++  auto* clone = To<Element>(div->firstChild());
++  ASSERT_NE(clone, blockquote);
++  ASSERT_EQ(AtomicString("split"),
++            clone->FastGetAttribute(html_names::kIdAttr));
++  ASSERT_TRUE(blockquote->FastGetAttribute(html_names::kIdAttr).IsNull());
++
++  // Move the clone off the shared, immutable attribute storage it was cloned
++  // with and onto a mutable, heap-allocated attribute vector.
++  clone->setAttribute(
++      QualifiedName(g_null_atom, AtomicString("f"), g_null_atom),
++      AtomicString("6"));
++
++  // Give `blockquote` an id of its own, so that restoring the original id
++  // replaces a value rather than adding one.
++  blockquote->setAttribute(html_names::kIdAttr, AtomicString("other"));
++
++  // Restoring the id notifies this observer, which reallocates the clone's
++  // attributes while the undo is still reading the id out of them.
++  MakeGarbageCollected<AttributeReallocatingIdObserver>(
++      GetDocument().EnsureIdTargetObserverRegistry(), AtomicString("split"),
++      clone);
++
++  command->DoUnapply();
++
++  EXPECT_EQ(AtomicString("split"),
++            blockquote->FastGetAttribute(html_names::kIdAttr));
++  EXPECT_EQ(1u, div->CountChildren());
++}
++
+ }  // namespace blink
