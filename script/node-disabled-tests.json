@@ -27,6 +27,7 @@
   "parallel/test-tls-cnnic-whitelist",
   "parallel/test-tls-off-thread-cert-loading",
   "parallel/test-trace-events",
+  "trace_events/test-trace-events",
   "parallel/test-webcrypto-keygen",
   "report/test-report-fatalerror-oomerror",
   "report/test-report-getreport",
