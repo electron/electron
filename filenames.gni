@@ -603,6 +603,8 @@ filenames = {
     "shell/browser/ui/inspectable_web_contents_view.h",
     "shell/browser/ui/inspectable_web_contents_view_delegate.cc",
     "shell/browser/ui/inspectable_web_contents_view_delegate.h",
+    "shell/browser/ui/menu_highlight_colors.cc",
+    "shell/browser/ui/menu_highlight_colors.h",
     "shell/browser/ui/message_box.h",
     "shell/browser/ui/tray_icon.cc",
     "shell/browser/ui/tray_icon.h",
