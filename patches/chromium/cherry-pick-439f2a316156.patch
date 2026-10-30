@@ -1,0 +1,250 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fergal Daly <fergal@chromium.org>
+Date: Tue, 27 Oct 2026 04:38:27 -0700
+Subject: [M156] Defer entry removal until database scan iterator is destroyed
+
+In DatabaseCheckHelper::ScanDatabase(), entries with invalid or missing
+backing files were previously removed via RemoveFileInfo() while
+iterating over the database. If RemoveFileInfo() encountered an error,
+HandleError() could close the underlying database instance while the
+iterator was still active.
+
+Best to view this change ignoring all whitespace.
+
+This change
+- scopes the iterator so that it is destroyed before any entries are removed.
+- collects IDs into a list for deferred deletion.
+- clears the helper's database pointer once the iterator is created.
+
+This differs from the AI fix by removing
+- validates that non-directory entries have a non-zero ID.
+
+While a reasonable change, this is not part of the security problem and
+so to minimize risk, I don't want to end up back-porting this
+unnecessary change.
+
+TAG=agy
+
+(cherry picked from commit 6438ea41e25396520b79d2713994852140713d78)
+
+Bug: 571156746,576122089
+Change-Id: Id09f403b5c0c6ab3a790f8e8ab21ab00525828cf
+Fixed: 571156746
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8604850
+Commit-Queue: Fergal Daly <fergal@chromium.org>
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Auto-Submit: Fergal Daly <fergal@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1722777}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8642609
+Reviewed-by: Fergal Daly <fergal@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#1644}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/storage/browser/file_system/sandbox_directory_database.cc b/storage/browser/file_system/sandbox_directory_database.cc
+index dc7e3b4a287ea83fcad8a4c7abe764f04b36ae33..d848acea43b53527954f650c2957fdd744a58073 100644
+--- a/storage/browser/file_system/sandbox_directory_database.cc
++++ b/storage/browser/file_system/sandbox_directory_database.cc
+@@ -192,86 +192,92 @@ bool DatabaseCheckHelper::ScanDatabase() {
+   // backing file.
+   int64_t max_file_id = -1;
+   std::set<FileId> file_ids;
++  std::vector<FileId> files_to_remove;
++  {
++    // Scope the iterator to ensure it is deleted before the database can be
++    // closed in RemoveFileInfo().
++    std::unique_ptr<leveldb::Iterator> itr(
++        db_->NewIterator(leveldb::ReadOptions()));
++    db_ = nullptr;
++    for (itr->SeekToFirst(); itr->Valid(); itr->Next()) {
++      std::string key = itr->key().ToString();
++      if (base::StartsWith(key, kChildLookupPrefix,
++                           base::CompareCase::SENSITIVE)) {
++        // key: "CHILD_OF:<parent_id>:<name>"
++        // value: "<child_id>"
++        ++num_hierarchy_links_in_db_;
++      } else if (key == kSandboxDirectoryLastFileIdKey) {
++        // key: "LAST_FILE_ID"
++        // value: "<last_file_id>"
++        if (last_file_id_ >= 0 ||
++            !base::StringToInt64(itr->value().ToString(), &last_file_id_)) {
++          return false;
++        }
+ 
+-  std::unique_ptr<leveldb::Iterator> itr(
+-      db_->NewIterator(leveldb::ReadOptions()));
+-  for (itr->SeekToFirst(); itr->Valid(); itr->Next()) {
+-    std::string key = itr->key().ToString();
+-    if (base::StartsWith(key, kChildLookupPrefix,
+-                         base::CompareCase::SENSITIVE)) {
+-      // key: "CHILD_OF:<parent_id>:<name>"
+-      // value: "<child_id>"
+-      ++num_hierarchy_links_in_db_;
+-    } else if (key == kSandboxDirectoryLastFileIdKey) {
+-      // key: "LAST_FILE_ID"
+-      // value: "<last_file_id>"
+-      if (last_file_id_ >= 0 ||
+-          !base::StringToInt64(itr->value().ToString(), &last_file_id_)) {
+-        return false;
+-      }
+-
+-      if (last_file_id_ < 0) {
+-        return false;
+-      }
+-    } else if (key == kSandboxDirectoryLastIntegerKey) {
+-      // key: "LAST_INTEGER"
+-      // value: "<last_integer>"
+-      if (last_integer_ >= 0 ||
+-          !base::StringToInt64(itr->value().ToString(), &last_integer_)) {
+-        return false;
+-      }
+-    } else {
+-      // key: "<entry_id>"
+-      // value: "<pickled FileInfo>"
+-      FileInfo file_info;
+-      if (!FileInfoFromPickle(
+-              base::PickleIterator::WithData(base::as_byte_span(itr->value())),
+-              &file_info)) {
+-        return false;
+-      }
+-
+-      FileId file_id = -1;
+-      if (!base::StringToInt64(key, &file_id) || file_id < 0) {
+-        return false;
+-      }
++        if (last_file_id_ < 0) {
++          return false;
++        }
++      } else if (key == kSandboxDirectoryLastIntegerKey) {
++        // key: "LAST_INTEGER"
++        // value: "<last_integer>"
++        if (last_integer_ >= 0 ||
++            !base::StringToInt64(itr->value().ToString(), &last_integer_)) {
++          return false;
++        }
++      } else {
++        // key: "<entry_id>"
++        // value: "<pickled FileInfo>"
++        FileInfo file_info;
++        if (!FileInfoFromPickle(base::PickleIterator::WithData(
++                                    base::as_byte_span(itr->value())),
++                                &file_info)) {
++          return false;
++        }
+ 
+-      if (max_file_id < file_id) {
+-        max_file_id = file_id;
+-      }
+-      if (!file_ids.insert(file_id).second) {
+-        return false;
+-      }
++        FileId file_id = -1;
++        if (!base::StringToInt64(key, &file_id) || file_id < 0) {
++          return false;
++        }
+ 
+-      if (file_info.is_directory()) {
+-        ++num_directories_in_db_;
+-        DCHECK(file_info.data_path.empty());
+-      } else {
+-        // Ensure any pair of file entry don't share their data_path.
+-        if (!files_in_db_.insert(file_info.data_path).second) {
++        if (max_file_id < file_id) {
++          max_file_id = file_id;
++        }
++        if (!file_ids.insert(file_id).second) {
+           return false;
+         }
+ 
+-        // Ensure the backing file exists as a normal file.
+-        base::File::Info platform_file_info;
+-        if (!base::GetFileInfo(path_.Append(file_info.data_path),
+-                               &platform_file_info) ||
+-            platform_file_info.is_directory ||
+-            platform_file_info.is_symbolic_link) {
+-          // leveldb::Iterator iterates a snapshot of the database.
+-          // So even after RemoveFileInfo() call, we'll visit hierarchy link
+-          // from |parent_id| to |file_id|.
+-          if (!dir_db_->RemoveFileInfo(file_id)) {
++        if (file_info.is_directory()) {
++          ++num_directories_in_db_;
++          DCHECK(file_info.data_path.empty());
++        } else {
++          // Ensure any pair of file entry don't share their data_path.
++          if (!files_in_db_.insert(file_info.data_path).second) {
+             return false;
+           }
+-          --num_hierarchy_links_in_db_;
+-          files_in_db_.erase(file_info.data_path);
+-        } else {
+-          ++num_files_in_db_;
++
++          // Ensure the backing file exists as a normal file.
++          base::File::Info platform_file_info;
++          if (!base::GetFileInfo(path_.Append(file_info.data_path),
++                                 &platform_file_info) ||
++              platform_file_info.is_directory ||
++              platform_file_info.is_symbolic_link) {
++            files_to_remove.push_back(file_id);
++            files_in_db_.erase(file_info.data_path);
++          } else {
++            ++num_files_in_db_;
++          }
+         }
+       }
+     }
+   }
+ 
++  for (FileId file_id : files_to_remove) {
++    if (!dir_db_->RemoveFileInfo(file_id)) {
++      return false;
++    }
++    --num_hierarchy_links_in_db_;
++  }
++
+   // TODO(tzik): Add constraint for |last_integer_| to avoid possible
+   // data path confliction on ObfuscatedFileUtil.
+   return max_file_id <= last_file_id_;
+diff --git a/storage/browser/file_system/sandbox_directory_database_unittest.cc b/storage/browser/file_system/sandbox_directory_database_unittest.cc
+index 3dcef3f021af44e72b947a86a6d1ba123a9e4844..05053a795138c8f5cdaf8019cc04b8485d8b2a53 100644
+--- a/storage/browser/file_system/sandbox_directory_database_unittest.cc
++++ b/storage/browser/file_system/sandbox_directory_database_unittest.cc
+@@ -135,6 +135,15 @@ class SandboxDirectoryDatabaseTest : public testing::Test {
+             .ok());
+   }
+ 
++  // Moves the database entry for |file_id| to |new_key|.
++  void ReplaceFileEntryKey(FileId file_id, const std::string& new_key) {
++    std::string old_key = base::NumberToString(file_id);
++    std::string value;
++    ASSERT_TRUE(db()->db_->Get(leveldb::ReadOptions(), old_key, &value).ok());
++    ASSERT_TRUE(db()->db_->Put(leveldb::WriteOptions(), new_key, value).ok());
++    ASSERT_TRUE(db()->db_->Delete(leveldb::WriteOptions(), old_key).ok());
++  }
++
+  protected:
+   // Common temp base for nondestructive uses.
+   base::ScopedTempDir base_;
+@@ -544,6 +553,23 @@ TEST_F(SandboxDirectoryDatabaseTest, TestConsistencyCheck_FileLost) {
+   EXPECT_TRUE(db()->IsFileSystemConsistent());
+ }
+ 
++TEST_F(SandboxDirectoryDatabaseTest,
++       TestConsistencyCheck_FileLostRemoveFailure) {
++  const base::FilePath::CharType kBackingFileName[] = FPL("hoge");
++  FileId file_id;
++  CreateFile(0, FPL("foo"), kBackingFileName, &file_id);
++
++  EXPECT_TRUE(db()->IsFileSystemConsistent());
++  ASSERT_TRUE(base::DeleteFile(path().Append(kBackingFileName)));
++
++  // Replace the canonical key with a non-canonical one so that ScanDatabase()
++  // visits the entry and attempts RemoveFileInfo(), which fails and closes the
++  // database via HandleError().
++  ReplaceFileEntryKey(file_id, "0" + base::NumberToString(file_id));
++
++  EXPECT_FALSE(db()->IsFileSystemConsistent());
++}
++
+ TEST_F(SandboxDirectoryDatabaseTest, TestConsistencyCheck_OrphanFile) {
+   CreateFile(0, FPL("foo"), FPL("hoge"), nullptr);
+ 
