@@ -51,7 +51,7 @@ Unsupported options are:
 --http-parser
 ```
 
-If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_OPTIONS` will be ignored. The fuse is disabled by default since Electron 46.
+If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_OPTIONS` will be ignored. The fuse is disabled by default since Electron 47.
 
 ### `NODE_EXTRA_CA_CERTS`
 
@@ -61,7 +61,7 @@ See [Node.js cli documentation](https://github.com/nodejs/node/blob/main/doc/api
 export NODE_EXTRA_CA_CERTS=/path/to/cert.pem 
 ```
 
-If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_EXTRA_CA_CERTS` will be ignored. The fuse is disabled by default since Electron 46.
+If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_EXTRA_CA_CERTS` will be ignored. The fuse is disabled by default since Electron 47.
 
 ### `GOOGLE_API_KEY`
 
@@ -104,7 +104,7 @@ you would when running the normal Node.js executable, with the exception of the 
 These flags are disabled owing to the fact that Electron uses BoringSSL instead of OpenSSL when building Node.js'
 `crypto` module, and so will not work as designed.
 
-If the [`runAsNode` fuse](../tutorial/fuses.md#runasnode) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored. The fuse is disabled by default since Electron 46.
+If the [`runAsNode` fuse](../tutorial/fuses.md#runasnode) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored. The fuse is disabled by default since Electron 47.
 
 ### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
 

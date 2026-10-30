@@ -25,7 +25,7 @@ on Windows).
 
 ### `runAsNode`
 
-**Default:** Disabled (enabled before Electron 46)
+**Default:** Disabled (enabled before Electron 47)
 
 **@electron/fuses:** `FuseV1Options.RunAsNode`
 
@@ -37,7 +37,7 @@ standalone Node.js process (e.g. a SQLite server process).
 
 ### `cookieEncryption`
 
-**Default:** Enabled (disabled before Electron 46)
+**Default:** Enabled (disabled before Electron 47)
 
 **@electron/fuses:** `FuseV1Options.EnableCookieEncryption`
 
@@ -55,7 +55,7 @@ later will make your cookie store corrupt and useless. Most apps should leave th
 
 ### `nodeOptions`
 
-**Default:** Disabled (enabled before Electron 46)
+**Default:** Disabled (enabled before Electron 47)
 
 **@electron/fuses:** `FuseV1Options.EnableNodeOptionsEnvironmentVariable`
 
@@ -67,7 +67,7 @@ Most apps should leave this fuse disabled.
 
 ### `nodeCliInspect`
 
-**Default:** Enabled when not packaged, disabled when packaged (enabled before Electron 46)
+**Default:** Enabled when not packaged, disabled when packaged (enabled before Electron 47)
 
 **@electron/fuses:** `FuseV1Options.EnableNodeCliInspectArguments`
 

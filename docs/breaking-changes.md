@@ -16,27 +16,6 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (47.0)
 
-### Removed: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
-
-The positional arguments of the `console-message` event on `WebContents`,
-deprecated in Electron 35, have been removed. Use the properties of the `Event`
-argument instead.
-
-```js
-// Removed
-webContents.on('console-message', (event, level, message, line, sourceId) => {})
-
-// Replace with:
-webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame }) => {})
-```
-
-Note that `level` on the `Event` is a string with possible values of `info`,
-`warning`, `error`, and `debug`.
-
-The `console-message` event on `<webview>` is unchanged.
-
-## Breaking API Changes (46.0)
-
 ### Default Changed: the `runAsNode` fuse is disabled by default
 
 The [`runAsNode`](tutorial/fuses.md#runasnode) fuse now defaults to disabled, so
@@ -83,6 +62,27 @@ no longer respect `--inspect`, `--inspect-brk` and related flags, or start the
 main process inspector on `SIGUSR1`, unless the fuse is enabled with
 `FuseV1Options.EnableNodeCliInspectArguments`. Running your app with the
 `electron` executable during development is unaffected.
+
+### Removed: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
+
+The positional arguments of the `console-message` event on `WebContents`,
+deprecated in Electron 35, have been removed. Use the properties of the `Event`
+argument instead.
+
+```js
+// Removed
+webContents.on('console-message', (event, level, message, line, sourceId) => {})
+
+// Replace with:
+webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame }) => {})
+```
+
+Note that `level` on the `Event` is a string with possible values of `info`,
+`warning`, `error`, and `debug`.
+
+The `console-message` event on `<webview>` is unchanged.
+
+## Breaking API Changes (46.0)
 
 ### Removed: `--experimental-transform-types` command-line switch
 
