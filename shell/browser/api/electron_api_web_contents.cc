@@ -186,7 +186,6 @@
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
-#include "third_party/blink/public/mojom/link_to_text/link_to_text.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/accessibility/platform/ax_platform.h"
@@ -2132,19 +2131,6 @@ void WebContents::OnReadAvailableTypes(
   // keeps the right-clicked node and its ancestors alive, even after the page
   // removes them.
   web_contents()->NotifyContextMenuClosed(GURL());
-
-  // Over selected text that isn't editable, Blink also starts generating a
-  // link-to-text selector, and its generator keeps the selection's nodes until
-  // the browser requests the selector or cancels. Chrome's menu requests it.
-  if (params.selection_text.empty() || params.is_editable)
-    return;
-  render_frame_host = content::RenderFrameHost::FromID(render_frame_host_id);
-  if (!render_frame_host)
-    return;
-  mojo::Remote<blink::mojom::TextFragmentReceiver> text_fragment_receiver;
-  render_frame_host->GetRemoteInterfaces()->GetInterface(
-      text_fragment_receiver.BindNewPipeAndPassReceiver());
-  text_fragment_receiver->Cancel();
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,
