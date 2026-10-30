@@ -5,8 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_
 
+#include <set>
 #include <string>
-#include <utility>
 
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
@@ -25,6 +25,7 @@ class BrowserContext;
 namespace extensions {
 
 class Extension;
+struct UnpackedExtensionLoadResult;
 
 // Handles extension loading and reloading using ExtensionRegistrar.
 class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
@@ -65,17 +66,15 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
  private:
   // If the extension loaded successfully, enables it. If it's an app, launches
   // it. If the load failed, updates ShellKeepAliveRequester.
-  void FinishExtensionReload(
-      const ExtensionId& old_extension_id,
-      std::pair<scoped_refptr<const Extension>, std::string> result);
+  void FinishExtensionReload(const ExtensionId& old_extension_id,
+                             UnpackedExtensionLoadResult result);
 
   void FinishExtensionLoad(
       base::OnceCallback<void(const Extension*, const std::string&)> cb,
-      std::pair<scoped_refptr<const Extension>, std::string> result);
+      UnpackedExtensionLoadResult result);
   void AddLoadedExtension(
       base::OnceCallback<void(const Extension*, const std::string&)> cb,
-      scoped_refptr<const Extension> extension,
-      const std::string& error_or_warnings);
+      UnpackedExtensionLoadResult result);
   void DoLoadExtensionForReload(const ExtensionId& extension_id,
                                 const base::FilePath& path);
 
@@ -106,6 +105,9 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
 
   // Holds keep-alives for relaunching apps.
   //   ShellKeepAliveRequester keep_alive_requester_;
+
+  // The extensions that have been loaded since launch.
+  std::set<ExtensionId> loaded_extension_ids_;
 
   // Indicates that we posted the (asynchronous) task to start reloading.
   // Used by ReloadExtension() to check whether ExtensionRegistrar calls
