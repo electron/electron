@@ -23,9 +23,7 @@ void ElectronBackgroundTracingMetricsProvider::RecordCoreSystemProfileMetrics(
     metrics::SystemProfileProto& system_profile_proto) {
   auto* browser_client = ElectronBrowserClient::Get();
   const std::string application_locale =
-      browser_client
-          ? std::string(browser_client->GetApplicationLocale().tag_string())
-          : std::string();
+      browser_client ? browser_client->GetApplicationLocale() : std::string();
 
   metrics::MetricsLog::RecordCoreSystemProfile(
       metrics::GetVersionString(),

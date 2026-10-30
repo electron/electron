@@ -69,7 +69,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
-          ElectronBrowserClient::Get()->GetApplicationLocale().tag_string());
+          ElectronBrowserClient::Get()->GetApplicationLocale());
 
   // Enable the HTTP cache.
   network_context_params->http_cache_enabled =
