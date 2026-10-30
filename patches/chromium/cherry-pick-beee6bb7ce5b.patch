@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Thu, 8 Oct 2026 01:45:06 -0700
+Subject: Ensure gradient data pointers remain safe to use
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch avoids holding a reference into `gradient_map_` across
+`BuildGradientData()`, which can modify the gradient map. Instead,
+look up the cached entry first and insert the newly built
+`GradientData` into `gradient_map_` afterward.
+
+Fixed: 570675085
+Change-Id: I9c6acde97024951a34b7a39bb8b8e146e07911e9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8527725
+Auto-Submit: Philip Rogers <pdr@chromium.org>
+Reviewed-by: Fredrik Söderquist <fs@opera.com>
+Commit-Queue: Fredrik Söderquist <fs@opera.com>
+Cr-Commit-Position: refs/heads/main@{#1714266}
+
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_gradient.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_gradient.cc
+index 028d4308611c60b342fe54aa6a32a70e7900840d..2332d684f51c09d33c2468261378ba84c0fd08bc 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_gradient.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_gradient.cc
+@@ -23,7 +23,9 @@
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_resource_gradient.h"
+ 
+ #include <memory>
++#include <utility>
+ 
++#include "base/check.h"
+ #include "third_party/blink/renderer/core/svg/gradient_attributes.h"
+ #include "third_party/blink/renderer/core/svg/svg_length.h"
+ #include "third_party/blink/renderer/core/svg/svg_length_context.h"
+@@ -152,10 +154,15 @@ bool LayoutSVGResourceGradient::ApplyShader(
+   NOT_DESTROYED();
+   ClearInvalidationMask();
+ 
+-  std::unique_ptr<GradientData>& gradient_data =
+-      gradient_map_.insert(&client, nullptr).stored_value->value;
+-  if (!gradient_data)
+-    gradient_data = BuildGradientData(reference_box);
++  auto iter = gradient_map_.find(&client);
++  GradientData* gradient_data =
++      (iter == gradient_map_.end() ? nullptr : iter->value.get());
++  if (!gradient_data) {
++    auto new_gradient_data = BuildGradientData(reference_box);
++    gradient_data = new_gradient_data.get();
++    CHECK(gradient_data);
++    gradient_map_.Set(&client, std::move(new_gradient_data));
++  }
+ 
+   if (!gradient_data->gradient)
+     return false;

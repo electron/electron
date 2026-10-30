@@ -1,0 +1,265 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexei Svitkine <asvitkine@chromium.org>
+Date: Tue, 20 Oct 2026 08:22:37 -0700
+Subject: Harden PersistentSystemProfile against corrupt segment sizes
+
+PersistentSystemProfile::RecordAllocator assumes that adopted
+system profile segments have a positive size aligned to the 4-byte
+RecordHeader boundary. If a corrupted or crafted persistent memory
+file contains a block whose size is not aligned, the remaining
+room calculation in WriteData() can underflow, resulting in an
+out-of-bounds write past the end of the segment.
+
+To prevent this:
+1. Validate in PersistentMemoryAllocator::GetBlock() that allocated
+   blocks have a non-empty payload size aligned to kAllocAlignment.
+2. Preserve the last valid segment reference in NextSegment() when
+   iteration reaches the end so failed allocations do not wrap
+   around to the first segment.
+3. Verify the cached segment size in GetAsArray() calls and reset
+   pre-existing segments when constructing a writer RecordAllocator.
+
+Bug: 574606539
+Change-Id: Ia34139ecce6ec62485817714e441fc9ab02edec1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8611276
+Reviewed-by: Roger McFarlane <rogerm@chromium.org>
+Commit-Queue: Alexei Svitkine <asvitkine@chromium.org>
+Auto-Submit: Alexei Svitkine <asvitkine@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722923}
+
+diff --git a/base/metrics/persistent_memory_allocator.cc b/base/metrics/persistent_memory_allocator.cc
+index 627729aaa5650f5aa506217efa15b892316d5137..022dcbb699a68a2db007ac9d681fcae063c0c5ce 100644
+--- a/base/metrics/persistent_memory_allocator.cc
++++ b/base/metrics/persistent_memory_allocator.cc
+@@ -955,7 +955,9 @@ PersistentMemoryAllocator::GetBlock(Reference ref,
+       return nullptr;
+     }
+     const uint32_t block_size = block->size;
+-    if (block_size < size) {
++    if (block_size < size || block_size <= sizeof(BlockHeader) ||
++        block_size % kAllocAlignment != 0) {
++      // The serialized `block_size` either underflows or misaligns the block.
+       return nullptr;
+     }
+     // Find a validate the end of the block.
+diff --git a/base/metrics/persistent_memory_allocator_unittest.cc b/base/metrics/persistent_memory_allocator_unittest.cc
+index be9f40c124b0a275fedccca9e85c3bda966ff8cb..de33013c32589d7632065dda6708115a8a694174 100644
+--- a/base/metrics/persistent_memory_allocator_unittest.cc
++++ b/base/metrics/persistent_memory_allocator_unittest.cc
+@@ -675,6 +675,22 @@ TEST_F(PersistentMemoryAllocatorTest, MaliciousTest) {
+   // Test where loop goes back to the beginning.
+   UNSAFE_TODO(header4[3]) = block1;
+   CountIterables();  // loop: 1-2-3-4-1
++
++  // Test where a block header has an unaligned or header-only size.
++  uint32_t* header1 =
++      reinterpret_cast<uint32_t*>(UNSAFE_TODO(mem_segment_.data() + block1));
++  const uint32_t original_size1 = *header1;
++  *header1 = 21;  // Not a multiple of kAllocAlignment (8).
++  EXPECT_EQ(nullptr, allocator_->GetAsObject<TestObject1>(block1));
++  EXPECT_EQ(nullptr, allocator_->GetAsArray<char>(
++                         block1, 1, PersistentMemoryAllocator::kSizeAny));
++  EXPECT_EQ(0U, allocator_->GetType(block1));
++
++  *header1 = 16;  // Equal to sizeof(BlockHeader), zero data bytes.
++  EXPECT_EQ(nullptr, allocator_->GetAsArray<char>(
++                         block1, 1, PersistentMemoryAllocator::kSizeAny));
++  EXPECT_EQ(0U, allocator_->GetType(block1));
++  *header1 = original_size1;
+ }
+ 
+ //----- LocalPersistentMemoryAllocator -----------------------------------------
+diff --git a/components/metrics/persistent_system_profile.cc b/components/metrics/persistent_system_profile.cc
+index 87dd0b61a08cf59bf6c351fb97f96ead42f00d8d..8673268eb9bd639f9f20be01cab9b3c80e0ecba3 100644
+--- a/components/metrics/persistent_system_profile.cc
++++ b/components/metrics/persistent_system_profile.cc
+@@ -43,6 +43,10 @@ constexpr char kFieldTrialDeletionSentinel[] = "";
+ 
+ static_assert(sizeof(RecordHeader) == sizeof(base::subtle::Atomic32),
+               "bad RecordHeader size");
++static_assert(base::PersistentMemoryAllocator::kAllocAlignment %
++                      sizeof(RecordHeader) ==
++                  0,
++              "RecordHeader size must divide kAllocAlignment");
+ 
+ // Calculate the size of a record based on the amount of data. This adds room
+ // for the record header and rounds up to the next multiple of the record-header
+@@ -62,6 +66,7 @@ PersistentSystemProfile::RecordAllocator::RecordAllocator(
+       alloc_reference_(0),
+       alloc_size_(0),
+       end_offset_(0) {
++  Reset();
+   AddSegment(min_size);
+ }
+ 
+@@ -83,8 +88,11 @@ void PersistentSystemProfile::RecordAllocator::Reset() {
+     RecordHeader* header =
+         reinterpret_cast<RecordHeader*>(allocator_->GetAsArray<char>(
+             alloc_reference_, kTypeIdSystemProfile, sizeof(RecordHeader)));
+-    DCHECK(header);
+-    base::subtle::NoBarrier_Store(&header->as_atomic, 0);
++    // `header` may be null if the underlying persistent memory is corrupted
++    // concurrently after `NextSegment()` validated the block.
++    if (header) {
++      base::subtle::NoBarrier_Store(&header->as_atomic, 0);
++    }
+   }
+ 
+   // Reset member variables.
+@@ -121,9 +129,8 @@ bool PersistentSystemProfile::RecordAllocator::HasMoreData() const {
+     return false;
+   }
+ 
+-  char* block =
+-      allocator_->GetAsArray<char>(alloc_reference_, kTypeIdSystemProfile,
+-                                   base::PersistentMemoryAllocator::kSizeAny);
++  char* block = allocator_->GetAsArray<char>(alloc_reference_,
++                                             kTypeIdSystemProfile, alloc_size_);
+   if (!block) {
+     return false;
+   }
+@@ -153,9 +160,13 @@ bool PersistentSystemProfile::RecordAllocator::Read(RecordType* type,
+ 
+ bool PersistentSystemProfile::RecordAllocator::NextSegment() const {
+   base::PersistentMemoryAllocator::Iterator iter(allocator_, alloc_reference_);
+-  alloc_reference_ = iter.GetNextOfType(kTypeIdSystemProfile, &alloc_size_);
++  uint32_t ref = iter.GetNextOfType(kTypeIdSystemProfile, &alloc_size_);
++  if (!ref) {
++    return false;
++  }
++  alloc_reference_ = ref;
+   end_offset_ = 0;
+-  return alloc_reference_ != 0;
++  return true;
+ }
+ 
+ bool PersistentSystemProfile::RecordAllocator::AddSegment(size_t min_size) {
+@@ -168,9 +179,6 @@ bool PersistentSystemProfile::RecordAllocator::AddSegment(size_t min_size) {
+     return true;
+   }
+ 
+-  DCHECK_EQ(0U, alloc_reference_);
+-  DCHECK_EQ(0U, end_offset_);
+-
+   size_t size =
+       std::max(CalculateRecordSize(min_size), kSystemProfileAllocSize);
+ 
+@@ -184,15 +192,15 @@ bool PersistentSystemProfile::RecordAllocator::AddSegment(size_t min_size) {
+ 
+   alloc_reference_ = ref;
+   alloc_size_ = new_alloc_size;
++  end_offset_ = 0;
+   return true;
+ }
+ 
+ bool PersistentSystemProfile::RecordAllocator::WriteData(RecordType type,
+                                                          const char** data,
+                                                          size_t* data_size) {
+-  char* block =
+-      allocator_->GetAsArray<char>(alloc_reference_, kTypeIdSystemProfile,
+-                                   base::PersistentMemoryAllocator::kSizeAny);
++  char* block = allocator_->GetAsArray<char>(alloc_reference_,
++                                             kTypeIdSystemProfile, alloc_size_);
+   if (!block) {
+     return false;  // It's bad if there is no accessible block.
+   }
+@@ -236,9 +244,8 @@ bool PersistentSystemProfile::RecordAllocator::ReadData(
+     std::string* record) const {
+   DCHECK_GT(alloc_size_, end_offset_);
+ 
+-  char* block =
+-      allocator_->GetAsArray<char>(alloc_reference_, kTypeIdSystemProfile,
+-                                   base::PersistentMemoryAllocator::kSizeAny);
++  char* block = allocator_->GetAsArray<char>(alloc_reference_,
++                                             kTypeIdSystemProfile, alloc_size_);
+   if (!block) {
+     *type = kUnusedSpace;
+     return true;  // No more data.
+diff --git a/components/metrics/persistent_system_profile_unittest.cc b/components/metrics/persistent_system_profile_unittest.cc
+index f8af2d57412ac532e267e8676e9a2ee24dafd8af..76fb6802e91dc959ebf506b8eae55e5aed3b3de3 100644
+--- a/components/metrics/persistent_system_profile_unittest.cc
++++ b/components/metrics/persistent_system_profile_unittest.cc
+@@ -288,5 +288,83 @@ TEST_F(PersistentSystemProfileTest, RecordCoreSystemProfile) {
+   EXPECT_EQ(decoded_profile.install_date(), 12345678U);
+ }
+ 
++TEST_F(PersistentSystemProfileTest, CorruptUnalignedSegmentSize) {
++  constexpr uint32_t kTypeIdSystemProfile = 0x330A7150;
++  base::LocalPersistentMemoryAllocator allocator(64 << 10, 0, "");
++  base::PersistentMemoryAllocator::Reference ref =
++      allocator.Allocate(32, kTypeIdSystemProfile);
++  ASSERT_NE(0U, ref);
++  allocator.MakeIterable(ref);
++
++  // Corrupt the block header's size to 21 bytes (16-byte BlockHeader + 5 bytes
++  // of data), which is not a multiple of kAllocAlignment.
++  auto* block_header = reinterpret_cast<uint32_t*>(UNSAFE_TODO(
++      const_cast<char*>(static_cast<const char*>(allocator.data())) + ref));
++  *block_header = 21;
++
++  PersistentSystemProfile profile;
++  profile.RegisterPersistentAllocator(&allocator);
++
++  SystemProfileProto proto;
++  proto.set_client_uuid(std::string(256, 'x'));
++  profile.SetSystemProfile(proto, /*complete=*/true);
++  profile.AddFieldTrial("trial", "group");
++
++  SystemProfileProto fetched;
++  EXPECT_FALSE(PersistentSystemProfile::HasSystemProfile(allocator));
++  EXPECT_FALSE(PersistentSystemProfile::GetSystemProfile(allocator, &fetched));
++}
++
++TEST_F(PersistentSystemProfileTest, FullAllocatorDoesNotWrapAround) {
++  // Create a small allocator with only enough room for a single 4 KiB segment.
++  base::LocalPersistentMemoryAllocator allocator(8 << 10, 0, "");
++  PersistentSystemProfile profile;
++  profile.RegisterPersistentAllocator(&allocator);
++
++  // Exhaust the rest of the allocator so no additional segments can be
++  // allocated when the first segment fills up.
++  while (allocator.Allocate(64, 12345) != 0) {
++  }
++
++  SystemProfileProto proto;
++  proto.set_client_uuid("test-client-uuid");
++  profile.SetSystemProfile(proto, /*complete=*/true);
++
++  // Repeatedly add field trials until the single 4 KiB segment is full and
++  // subsequent writes fail. Ensure this does not wrap around to overwrite the
++  // start of the first segment or trigger a DCHECK.
++  for (int i = 0; i < 300; ++i) {
++    profile.AddFieldTrial("TrialNameThatTakesUpSpace", "GroupName");
++  }
++
++  SystemProfileProto fetched;
++  ASSERT_TRUE(PersistentSystemProfile::GetSystemProfile(allocator, &fetched));
++  EXPECT_EQ("test-client-uuid", fetched.client_uuid());
++}
++
++TEST_F(PersistentSystemProfileTest, PreExistingNonZeroSegmentIsReset) {
++  constexpr uint32_t kTypeIdSystemProfile = 0x330A7150;
++  base::LocalPersistentMemoryAllocator allocator(64 << 10, 0, "");
++  base::PersistentMemoryAllocator::Reference ref =
++      allocator.Allocate(4 << 10, kTypeIdSystemProfile);
++  ASSERT_NE(0U, ref);
++  uint32_t* data = allocator.GetAsArray<uint32_t>(ref, kTypeIdSystemProfile, 1);
++  ASSERT_NE(nullptr, data);
++  *data = 0xDEADBEEF;
++  allocator.MakeIterable(ref);
++
++  PersistentSystemProfile profile;
++  profile.RegisterPersistentAllocator(&allocator);
++  EXPECT_FALSE(PersistentSystemProfile::HasSystemProfile(allocator));
++
++  SystemProfileProto proto;
++  proto.set_client_uuid("clean-uuid");
++  profile.SetSystemProfile(proto, /*complete=*/true);
++
++  SystemProfileProto fetched;
++  ASSERT_TRUE(PersistentSystemProfile::GetSystemProfile(allocator, &fetched));
++  EXPECT_EQ("clean-uuid", fetched.client_uuid());
++}
++
+ }  // namespace
+ }  // namespace metrics

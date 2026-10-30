@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fergal Daly <fergal@chromium.org>
+Date: Mon, 19 Oct 2026 04:02:15 -0700
+Subject: Fix lint in `DatabaseCheckHelper::ScanDirectory`.
+
+The follow-on CL will touch all of this code. Fixing the lint in advance
+makes the diff much simpler.
+
+Bug: 571156746
+Change-Id: I3448d75556808958f3d7a0b1193ddaee85898557
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8609351
+Commit-Queue: Fergal Daly <fergal@chromium.org>
+Reviewed-by: Fergal Daly <fergal@chromium.org>
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1721782}
+
+diff --git a/storage/browser/file_system/sandbox_directory_database.cc b/storage/browser/file_system/sandbox_directory_database.cc
+index e368ea7e998b58f27c1f0c2c5f2bc27810b7e3d1..dc7e3b4a287ea83fcad8a4c7abe764f04b36ae33 100644
+--- a/storage/browser/file_system/sandbox_directory_database.cc
++++ b/storage/browser/file_system/sandbox_directory_database.cc
+@@ -206,17 +206,20 @@ bool DatabaseCheckHelper::ScanDatabase() {
+       // key: "LAST_FILE_ID"
+       // value: "<last_file_id>"
+       if (last_file_id_ >= 0 ||
+-          !base::StringToInt64(itr->value().ToString(), &last_file_id_))
++          !base::StringToInt64(itr->value().ToString(), &last_file_id_)) {
+         return false;
++      }
+ 
+-      if (last_file_id_ < 0)
++      if (last_file_id_ < 0) {
+         return false;
++      }
+     } else if (key == kSandboxDirectoryLastIntegerKey) {
+       // key: "LAST_INTEGER"
+       // value: "<last_integer>"
+       if (last_integer_ >= 0 ||
+-          !base::StringToInt64(itr->value().ToString(), &last_integer_))
++          !base::StringToInt64(itr->value().ToString(), &last_integer_)) {
+         return false;
++      }
+     } else {
+       // key: "<entry_id>"
+       // value: "<pickled FileInfo>"
+@@ -228,21 +231,25 @@ bool DatabaseCheckHelper::ScanDatabase() {
+       }
+ 
+       FileId file_id = -1;
+-      if (!base::StringToInt64(key, &file_id) || file_id < 0)
++      if (!base::StringToInt64(key, &file_id) || file_id < 0) {
+         return false;
++      }
+ 
+-      if (max_file_id < file_id)
++      if (max_file_id < file_id) {
+         max_file_id = file_id;
+-      if (!file_ids.insert(file_id).second)
++      }
++      if (!file_ids.insert(file_id).second) {
+         return false;
++      }
+ 
+       if (file_info.is_directory()) {
+         ++num_directories_in_db_;
+         DCHECK(file_info.data_path.empty());
+       } else {
+         // Ensure any pair of file entry don't share their data_path.
+-        if (!files_in_db_.insert(file_info.data_path).second)
++        if (!files_in_db_.insert(file_info.data_path).second) {
+           return false;
++        }
+ 
+         // Ensure the backing file exists as a normal file.
+         base::File::Info platform_file_info;
+@@ -253,8 +260,9 @@ bool DatabaseCheckHelper::ScanDatabase() {
+           // leveldb::Iterator iterates a snapshot of the database.
+           // So even after RemoveFileInfo() call, we'll visit hierarchy link
+           // from |parent_id| to |file_id|.
+-          if (!dir_db_->RemoveFileInfo(file_id))
++          if (!dir_db_->RemoveFileInfo(file_id)) {
+             return false;
++          }
+           --num_hierarchy_links_in_db_;
+           files_in_db_.erase(file_info.data_path);
+         } else {
