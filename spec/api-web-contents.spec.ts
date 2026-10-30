@@ -5711,6 +5711,42 @@ describe('webContents module', () => {
       expect(params.y).toBeTypeOf('number');
     });
 
+    it('releases the right-clicked node once the page removes it', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      // The browser only delivers context-menu-closed notifications to a
+      // focused frame.
+      w.webContents.focus();
+      await waitUntil(() => w.webContents.executeJavaScript('document.hasFocus()'));
+      await w.webContents.executeJavaScript(`{
+        const target = document.createElement('div');
+        target.id = 'target';
+        target.style.cssText = 'position: fixed; inset: 0;';
+        target.payload = {};
+        document.body.append(target);
+        window.payloadRef = new WeakRef(target.payload);
+      }
+      undefined;`);
+
+      const contextMenu = once(w.webContents, 'context-menu');
+      const opts = { x: 10, y: 10, button: 'right' as const };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+      await contextMenu;
+
+      await w.webContents.executeJavaScript("document.getElementById('target').remove()");
+      // Move off the removed node so hover state doesn't keep it.
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 20, y: 20 });
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 30, y: 30 });
+      await setTimeout(100);
+
+      const collected = await w.webContents.executeJavaScript(`(async () => {
+        await gc({ type: 'major', execution: 'async' });
+        return window.payloadRef.deref() === undefined;
+      })()`);
+      expect(collected).toBe(true);
+    });
+
     // Skipping due to lack of native click support.
     it.skip('emits the correct number of times when right-clicked in page', async () => {
       const w = new BrowserWindow({ show: true });
