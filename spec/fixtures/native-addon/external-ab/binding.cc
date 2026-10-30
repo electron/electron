@@ -66,19 +66,18 @@ napi_value CreateBuffer(napi_env env, napi_callback_info info) {
   }
   BackingStoreSlot slot;
   new_backing_store(&slot, data, length, deleter, nullptr);
+#else
+  // Only call V8 exports without standard library types in their mangled
+  // names: Electron's libc++ (std::__Cr) does not match the one this addon is
+  // built with, and the return type is not part of the name here.
+  std::unique_ptr<v8::BackingStore> backing_store =
+      v8::ArrayBuffer::NewBackingStore(data, length, deleter, nullptr);
+#endif
   // Not reached: V8 raises a fatal error for the backing store above.
   napi_throw_error(env, nullptr,
                    "v8::ArrayBuffer::NewBackingStore did not raise a fatal "
                    "error");
   return NULL;
-#else
-  std::unique_ptr<v8::BackingStore> backing_store =
-      v8::ArrayBuffer::NewBackingStore(data, length, deleter, nullptr);
-  v8::Local<v8::ArrayBuffer> array_buffer =
-      v8::ArrayBuffer::New(isolate, std::move(backing_store));
-
-  return reinterpret_cast<napi_value>(*array_buffer);
-#endif
 }
 
 napi_value Init(napi_env env, napi_value exports) {
