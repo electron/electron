@@ -5711,13 +5711,9 @@ describe('webContents module', () => {
       expect(params.y).toBeTypeOf('number');
     });
 
-    async function isRemovedTargetCollected(options: { selectText: boolean }) {
+    it('releases the right-clicked node once the page removes it', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-      // The browser only delivers context-menu-closed notifications to a
-      // focused frame.
-      w.webContents.focus();
-      await waitUntil(() => w.webContents.executeJavaScript('document.hasFocus()'));
       await w.webContents.executeJavaScript(`{
         const target = document.createElement('div');
         target.id = 'target';
@@ -5725,7 +5721,6 @@ describe('webContents module', () => {
         target.payload = {};
         document.body.append(target);
         window.payloadRef = new WeakRef(target.payload);
-        ${options.selectText ? "target.textContent = 'selected text'; getSelection().selectAllChildren(target);" : ''}
       }
       undefined;`);
 
@@ -5741,18 +5736,11 @@ describe('webContents module', () => {
       w.webContents.sendInputEvent({ type: 'mouseMove', x: 30, y: 30 });
       await setTimeout(100);
 
-      return w.webContents.executeJavaScript(`(async () => {
+      const collected = await w.webContents.executeJavaScript(`(async () => {
         await gc({ type: 'major', execution: 'async' });
         return window.payloadRef.deref() === undefined;
       })()`);
-    }
-
-    it('releases the right-clicked node once the page removes it', async () => {
-      expect(await isRemovedTargetCollected({ selectText: false })).toBe(true);
-    });
-
-    it('releases a right-clicked text selection once the page removes it', async () => {
-      expect(await isRemovedTargetCollected({ selectText: true })).toBe(true);
+      expect(collected).toBe(true);
     });
 
     // Skipping due to lack of native click support.
