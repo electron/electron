@@ -908,10 +908,10 @@ index 98ab55b57996faac32c0f89b8c0b06be56fe59a7..83e8a277434b8e815c088c34f94b2125
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f26d694210e94f500c8dab69eb362f52336baf07..80c201e6f239f713491bf51303455909a93de3f5 100644
+index 5437dd059f1fb07260124f8e3ad62580c110fd44..39f2b02c8f423ee1b1319dfe72f9e0340fd14c80 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -388,6 +388,7 @@ viz_component("service") {
+@@ -390,6 +390,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -919,7 +919,7 @@ index f26d694210e94f500c8dab69eb362f52336baf07..80c201e6f239f713491bf51303455909
    }
  
    if (is_ios) {
-@@ -748,6 +749,7 @@ viz_source_set("unit_tests") {
+@@ -751,6 +752,7 @@ viz_source_set("unit_tests") {
        "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -1013,7 +1013,7 @@ index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 451984c8380c616ffeb5b789917127715b201652..107062cfd1f6fee436323b40a54e3aac226642de 100644
+index 65ce7bc123aa17ed21c9a50aa0bac110fed51463..ed9536b4b2d9ff308ef3e396ec4e11e98b3dcd1b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -396,6 +396,7 @@ source_set("browser") {
@@ -2309,7 +2309,7 @@ index 6f419c1255ad8e10e50a0de3bc9599a07e8d917e..8f93adfc525f98fb569f3dd63ff97883
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
-index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386f5cc231b 100644
+index 80635ccc3d7cfc768cc74a8d226f2432618ef280..59c3294dd606969debb05b04b455651cd1955e15 100644
 --- a/ui/display/mac/ca_display_link_mac.mm
 +++ b/ui/display/mac/ca_display_link_mac.mm
 @@ -21,15 +21,18 @@
@@ -2331,8 +2331,8 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
  
  // Undocumented SkyLight framework functions.
  // SLSGetDisplayLink() is a private function (SPI) that creates a CADisplayLink
-@@ -305,6 +308,15 @@ void RecordWindowServerEventPumpResult(
-       viz_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
+@@ -307,6 +310,15 @@ void RecordWindowServerEventPumpResult(
+ 
    weak_ptr_ = weak_factory_.GetWeakPtr();
  
 +#if IS_MAS_BUILD()
@@ -2347,7 +2347,7 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
    base::Thread::Options thread_options;
    thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
    thread_options.thread_type = base::ThreadType::kPresentation;
-@@ -314,6 +326,7 @@ void RecordWindowServerEventPumpResult(
+@@ -316,6 +328,7 @@ void RecordWindowServerEventPumpResult(
        FROM_HERE,
        base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
                       base::Unretained(this)));
@@ -2355,7 +2355,7 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
  }
  
  // In a standard out-of-process GPU scenario,
-@@ -331,6 +344,7 @@ void RecordWindowServerEventPumpResult(
+@@ -333,6 +346,7 @@ void RecordWindowServerEventPumpResult(
  
    shutdown_ = true;
  
@@ -2363,7 +2363,7 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
    // Send an empty message to wake up the thread and quit the while loop.
    // See WindowServerEventPumpThread::PumpWindowServerEvents() for details.
    CGSConnectionID connection_id = CGSMainConnectionID();
-@@ -354,10 +368,12 @@ void RecordWindowServerEventPumpResult(
+@@ -356,10 +370,12 @@ void RecordWindowServerEventPumpResult(
          << "CGSGetEventPort() in ~WindowServerEventPumpThread failed. Error: "
          << err;
    }
@@ -2374,9 +2374,9 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
  
 +#if !IS_MAS_BUILD()
  void WindowServerEventPumpThread::PumpWindowServerEvents() {
-   CGSConnectionID connection_id = CGSMainConnectionID();
-   // We haven't seen this happen in practice, but WebKit's implementation
-@@ -505,6 +521,7 @@ void RecordWindowServerEventPumpResult(
+   {
+     TRACE_EVENT0("gpu",
+@@ -514,6 +530,7 @@ void RecordWindowServerEventPumpResult(
      }
    }
  }

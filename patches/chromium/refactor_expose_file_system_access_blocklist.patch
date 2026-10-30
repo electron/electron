@@ -45,10 +45,10 @@ index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6
      "file_system_access_permission_context_factory.cc",
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..7f2621829843253fb64c81844aa38d6f306e4ea8
+index 0000000000000000000000000000000000000000..d888abf32d401d8aa931fac7f4d703e193352af8
 --- /dev/null
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
-@@ -0,0 +1,596 @@
+@@ -0,0 +1,600 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -277,6 +277,10 @@ index 0000000000000000000000000000000000000000..7f2621829843253fb64c81844aa38d6f
 +      // it on all platforms, see crbug.com/569012015.
 +      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".config"),
 +                                BlockType::kBlockAllChildren),
++      // ~/.cache holds caches and virtual environments for cross-platform
++      // tools, so block it on all platforms, see crbug.com/577400245.
++      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".cache"),
++                                BlockType::kBlockAllChildren),
 +      // Shell startup files in the home directory, including the ones read by
 +      // Git Bash on Windows, see crbug.com/558362029.
 +      BlockPath::CreateRelative(base::DIR_HOME,
@@ -440,8 +444,8 @@ index 0000000000000000000000000000000000000000..7f2621829843253fb64c81844aa38d6f
 +      // Block the per-user NSS database, see crbug.com/557367241.
 +      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".pki"),
 +                                BlockType::kBlockAllChildren),
-+      // And block all of ~/.cache, matching the similar restrictions on mac
-+      // and windows.
++      // Also block base::DIR_CACHE to cover $XDG_CACHE_HOME overrides on Linux
++      // and ChromeOS, and the app cache directory on Android.
 +      BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 +#endif
 +#if BUILDFLAG(IS_ANDROID)
@@ -646,10 +650,10 @@ index 0000000000000000000000000000000000000000..7f2621829843253fb64c81844aa38d6f
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index c75bab9ee5eead9a9a91231632fd33281ddb2624..d6dd4a80ab5b8524fed5e9d57143f51d19007103 100644
+index 11f70f0f70b448c146896c0f7f388e96f601315c..d6dd4a80ab5b8524fed5e9d57143f51d19007103 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -268,570 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
+@@ -268,574 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
  }
  #endif
  
@@ -849,6 +853,10 @@ index c75bab9ee5eead9a9a91231632fd33281ddb2624..d6dd4a80ab5b8524fed5e9d57143f51d
 -      // it on all platforms, see crbug.com/569012015.
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".config"),
 -                                BlockType::kBlockAllChildren),
+-      // ~/.cache holds caches and virtual environments for cross-platform
+-      // tools, so block it on all platforms, see crbug.com/577400245.
+-      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".cache"),
+-                                BlockType::kBlockAllChildren),
 -      // Shell startup files in the home directory, including the ones read by
 -      // Git Bash on Windows, see crbug.com/558362029.
 -      BlockPath::CreateRelative(base::DIR_HOME,
@@ -1012,8 +1020,8 @@ index c75bab9ee5eead9a9a91231632fd33281ddb2624..d6dd4a80ab5b8524fed5e9d57143f51d
 -      // Block the per-user NSS database, see crbug.com/557367241.
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".pki"),
 -                                BlockType::kBlockAllChildren),
--      // And block all of ~/.cache, matching the similar restrictions on mac
--      // and windows.
+-      // Also block base::DIR_CACHE to cover $XDG_CACHE_HOME overrides on Linux
+-      // and ChromeOS, and the app cache directory on Android.
 -      BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 -#endif
 -#if BUILDFLAG(IS_ANDROID)
