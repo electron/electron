@@ -4,6 +4,7 @@
 
 #include "shell/browser/javascript_environment.h"
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <utility>
@@ -13,6 +14,7 @@
 #include "base/compiler_specific.h"
 #include "base/containers/span.h"
 #include "base/logging.h"
+#include "base/no_destructor.h"
 #include "base/synchronization/lock.h"
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
@@ -49,49 +51,24 @@ namespace electron {
 namespace {
 
 #if defined(V8_ENABLE_SANDBOX)
-// V8's built-in in-sandbox allocator (behind ArrayBuffer::Allocator::
-// NewDefaultAllocator(), which Node uses for Buffers) is a slow fallback that
-// embedders are expected to replace; route it to gin's PartitionAlloc
-// partition inside the sandbox, as Blink does for renderers. Requests beyond
-// PartitionAlloc's single-allocation cap (~2 GiB) come straight from the
-// sandbox's address space instead.
-class InSandboxAllocator final : public v8::Allocator {
+// Serves allocations larger than PartitionAlloc's single-allocation cap
+// (partition_alloc::MaxAllocationSize(), 2 GiB - 2 MiB), which gin's array
+// buffer partition refuses, as whole pages of the V8 sandbox's address space.
+// Fresh sandbox pages are zero-filled, so this serves zeroed and uninitialized
+// requests alike. Shared by both allocators below. Thread-safe: V8 frees
+// backing stores on whichever thread drops the last reference.
+class SandboxPageAllocations {
  public:
-  void* Allocate(size_t size) override {
-    if (size > partition_alloc::MaxAllocationSize())
-      return AllocatePages(size);
-    return gin::ArrayBufferAllocator::SharedInstance()->Allocate(size);
-  }
-  void* AllocateUninitialized(size_t size) override {
-    if (size > partition_alloc::MaxAllocationSize())
-      return AllocatePages(size);
-    return gin::ArrayBufferAllocator::SharedInstance()->AllocateUninitialized(
-        size);
-  }
-  void* AllocateUninitializedOrCrash(size_t size) override {
-    void* result = AllocateUninitialized(size);
-    CHECK(result);
-    return result;
-  }
-  void Free(void* ptr) override {
-    if (!ptr)
-      return;
-    {
-      base::AutoLock lock(lock_);
-      auto it = pages_.find(ptr);
-      if (it != pages_.end()) {
-        v8::V8::GetSandboxAddressSpace()->FreePages(
-            reinterpret_cast<uintptr_t>(ptr), it->second);
-        pages_.erase(it);
-        return;
-      }
-    }
-    gin::ArrayBufferAllocator::SharedInstance()->Free(ptr, 0);
+  static SandboxPageAllocations& Get() {
+    static base::NoDestructor<SandboxPageAllocations> instance;
+    return *instance;
   }
 
- private:
-  // Fresh sandbox pages are zero-filled, so this serves both entry points.
-  void* AllocatePages(size_t size) {
+  static bool TooLargeForPartition(size_t size) {
+    return size > partition_alloc::MaxAllocationSize();
+  }
+
+  void* Allocate(size_t size) {
     v8::VirtualAddressSpace* space = v8::V8::GetSandboxAddressSpace();
     size_t granularity = space->allocation_granularity();
     size_t rounded = (size + granularity - 1) / granularity * granularity;
@@ -104,13 +81,100 @@ class InSandboxAllocator final : public v8::Allocator {
       return nullptr;
     base::AutoLock lock(lock_);
     pages_.emplace(reinterpret_cast<void*>(address), rounded);
+    live_.fetch_add(1, std::memory_order_release);
     return reinterpret_cast<void*>(address);
   }
 
+  // Frees |ptr| and returns true if it came from Allocate().
+  bool Free(void* ptr) {
+    // Most processes never make an allocation this large; keep their frees
+    // off the lock.
+    if (live_.load(std::memory_order_acquire) == 0)
+      return false;
+    base::AutoLock lock(lock_);
+    auto it = pages_.find(ptr);
+    if (it == pages_.end())
+      return false;
+    v8::V8::GetSandboxAddressSpace()->FreePages(
+        reinterpret_cast<uintptr_t>(ptr), it->second);
+    pages_.erase(it);
+    live_.fetch_sub(1, std::memory_order_relaxed);
+    return true;
+  }
+
+ private:
   base::Lock lock_;
   absl::flat_hash_map<void*, size_t> pages_ GUARDED_BY(lock_);
+  // The number of entries in |pages_|.
+  std::atomic<size_t> live_{0};
+};
+
+// The ArrayBuffer allocator of every JavascriptEnvironment isolate (browser
+// process, ELECTRON_RUN_AS_NODE, the utility-process node service): gin's
+// array buffer partition, which already lives inside the sandbox, with
+// requests beyond PartitionAlloc's cap served from sandbox pages. gin's
+// allocator alone would cap every ArrayBuffer at ~2 GiB. Blink's isolate
+// allocator for renderers allows larger ones too.
+class IsolateArrayBufferAllocator final : public v8::ArrayBuffer::Allocator {
+ public:
+  void* Allocate(size_t length) override {
+    if (SandboxPageAllocations::TooLargeForPartition(length))
+      return SandboxPageAllocations::Get().Allocate(length);
+    return gin::ArrayBufferAllocator::SharedInstance()->Allocate(length);
+  }
+  void* AllocateUninitialized(size_t length) override {
+    if (SandboxPageAllocations::TooLargeForPartition(length))
+      return SandboxPageAllocations::Get().Allocate(length);
+    return gin::ArrayBufferAllocator::SharedInstance()->AllocateUninitialized(
+        length);
+  }
+  void Free(void* data, size_t length) override {
+    if (!data || SandboxPageAllocations::Get().Free(data))
+      return;
+    gin::ArrayBufferAllocator::SharedInstance()->Free(data, length);
+  }
+};
+
+// V8's built-in in-sandbox allocator (behind ArrayBuffer::Allocator::
+// NewDefaultAllocator()) is a slow fallback that embedders are expected to
+// replace; route it to gin's PartitionAlloc partition inside the sandbox, as
+// Blink does for renderers, with the same page fallback as above. Node.js
+// reaches it through NewDefaultAllocator() for the isolates of worker_threads
+// (NodeArrayBufferAllocator).
+class InSandboxAllocator final : public v8::Allocator {
+ public:
+  void* Allocate(size_t size) override {
+    if (SandboxPageAllocations::TooLargeForPartition(size))
+      return SandboxPageAllocations::Get().Allocate(size);
+    return gin::ArrayBufferAllocator::SharedInstance()->Allocate(size);
+  }
+  void* AllocateUninitialized(size_t size) override {
+    if (SandboxPageAllocations::TooLargeForPartition(size))
+      return SandboxPageAllocations::Get().Allocate(size);
+    return gin::ArrayBufferAllocator::SharedInstance()->AllocateUninitialized(
+        size);
+  }
+  void* AllocateUninitializedOrCrash(size_t size) override {
+    void* result = AllocateUninitialized(size);
+    CHECK(result);
+    return result;
+  }
+  void Free(void* ptr) override {
+    if (!ptr || SandboxPageAllocations::Get().Free(ptr))
+      return;
+    gin::ArrayBufferAllocator::SharedInstance()->Free(ptr, 0);
+  }
 };
 #endif
+
+v8::ArrayBuffer::Allocator* GetIsolateArrayBufferAllocator() {
+#if defined(V8_ENABLE_SANDBOX)
+  static base::NoDestructor<IsolateArrayBufferAllocator> allocator;
+  return allocator.get();
+#else
+  return gin::ArrayBufferAllocator::SharedInstance();
+#endif
+}
 
 // Whether the V8 snapshot blob this process loaded (v8_context_snapshot.bin,
 // or in the browser process under the LoadBrowserProcessSpecificV8Snapshot
@@ -276,8 +340,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(
 
   v8::V8::InitializePlatform(platform_.get());
   gin::IsolateHolder::Initialize(
-      gin::IsolateHolder::kNonStrictMode,
-      gin::ArrayBufferAllocator::SharedInstance(),
+      gin::IsolateHolder::kNonStrictMode, GetIsolateArrayBufferAllocator(),
       nullptr /* external_reference_table */, js_flags,
       false /* disallow_v8_feature_flag_overrides */,
       nullptr /* fatal_error_callback */, nullptr /* oom_error_callback */,
