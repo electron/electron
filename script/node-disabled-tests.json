@@ -1,4 +1,5 @@
 [
+  "es-module/test-esm-wasm-jitless",
   "es-module/test-esm-wasm-source-phase-dynamic",
   "es-module/test-esm-wasm-source-phase-identity",
   "es-module/test-esm-wasm-source-phase-no-execute",
@@ -29,6 +30,8 @@
   "parallel/test-webcrypto-keygen",
   "report/test-report-fatalerror-oomerror",
   "report/test-report-getreport",
+  "report/test-report-process-timeout",
+  "report/test-report-process-timeout-worker",
   "report/test-report-signal",
   "report/test-report-uncaught-exception",
   "report/test-report-uncaught-exception-compat",
@@ -36,6 +39,14 @@
   "report/test-report-worker",
   "report/test-report-writereport",
   "sea/test-single-executable",
+  "wpt/test-wasm-jsapi/esm-integration/source-phase-string-builtins.tentative.any.html",
+  "wpt/test-wasm-jsapi/esm-integration/source-phase-string-builtins.tentative.any.worker.html",
+  "wpt/test-wasm-jsapi/esm-integration/source-phase-string-constants.tentative.any.html",
+  "wpt/test-wasm-jsapi/esm-integration/source-phase-string-constants.tentative.any.worker.html",
+  "wpt/test-wasm-jsapi/esm-integration/source-phase.tentative.any.html",
+  "wpt/test-wasm-jsapi/esm-integration/source-phase.tentative.any.worker.html",
+  "wpt/test-wasm-jsapi/module/moduleSource.tentative.any.html",
+  "wpt/test-wasm-jsapi/module/moduleSource.tentative.any.worker.html",
   "wpt/test-webcrypto",
   "wasm-allocation/test-wasm-allocation"
 ]
