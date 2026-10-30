@@ -7,10 +7,6 @@
 
 #include "extensions/renderer/extensions_renderer_client.h"
 
-namespace content {
-class RenderFrame;
-}
-
 namespace electron {
 
 class ElectronExtensionsRendererClient
@@ -28,10 +24,6 @@ class ElectronExtensionsRendererClient
   // extensions::ExtensionsRendererClient:
   bool IsIncognitoProcess() const override;
   int GetLowestIsolatedWorldId() const override;
-
-  void RunScriptsAtDocumentStart(content::RenderFrame* render_frame);
-  void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame);
-  void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame);
 };
 
 }  // namespace electron

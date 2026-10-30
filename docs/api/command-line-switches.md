@@ -355,7 +355,7 @@ Activate inspector on host:port and break at start of user script. Default host:
 
 Aliased to `--debug-brk=[host:]port`.
 
-#### `--inspect-brk-node[=[host:]port]`
+### `--inspect-brk-node[=[host:]port]`
 
 Activate inspector on `host:port` and break at start of the first internal
 JavaScript script executed when the inspector is available.
@@ -436,11 +436,6 @@ Affects the default output directory of [v8.setHeapSnapshotNearHeapLimit](https:
 ### `--no-experimental-global-navigator`
 
 Disable exposition of [Navigator API][] on the global scope from Node.js.
-
-### `--experimental-transform-types`
-
-Enables the [transformation](https://nodejs.org/api/typescript.html#type-stripping)
-of TypeScript-only syntax into JavaScript code.
 
 ## Chromium Flags
 

@@ -198,10 +198,6 @@ WebContents.prototype.goToOffset = function (index: number) {
   return this._goToOffset(index);
 };
 
-const consoleMessageDeprecated = deprecate.warnOnceMessage(
-  "'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead."
-);
-
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   this._windowOpenHandler = null;
@@ -424,10 +420,8 @@ WebContents.prototype._init = function () {
     openDialogs.clear();
   });
 
-  (this as NodeJS.EventEmitter).on('newListener', (eventName: string | symbol, listener: (...args: any[]) => void) => {
+  (this as NodeJS.EventEmitter).on('newListener', (eventName: string | symbol) => {
     if (eventName === 'console-message') {
-      // TODO(samuelmaddock): remove deprecated 'console-message' arguments
-      if (listener.length > 1) consoleMessageDeprecated();
       if (!this.isDestroyed()) this._setConsoleMessageObserved(true);
     }
   });

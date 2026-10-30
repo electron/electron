@@ -49,6 +49,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
+#include "shell/browser/ui/menu_highlight_colors.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
@@ -281,6 +282,11 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 
   ui::ColorProviderManager::Get().AppendColorProviderInitializer(
       base::BindRepeating(AddChromeColorMixers));
+#if BUILDFLAG(IS_WIN)
+  // Must run after the Chromium mixers so app-supplied colors take priority.
+  ui::ColorProviderManager::Get().AppendColorProviderInitializer(
+      base::BindRepeating(AddMenuHighlightColorMixer));
+#endif
 
   return GetExitCode();
 }

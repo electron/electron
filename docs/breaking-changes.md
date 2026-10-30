@@ -14,6 +14,27 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Breaking API Changes (47.0)
+
+### Removed: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
+
+The positional arguments of the `console-message` event on `WebContents`,
+deprecated in Electron 35, have been removed. Use the properties of the `Event`
+argument instead.
+
+```js
+// Removed
+webContents.on('console-message', (event, level, message, line, sourceId) => {})
+
+// Replace with:
+webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame }) => {})
+```
+
+Note that `level` on the `Event` is a string with possible values of `info`,
+`warning`, `error`, and `debug`.
+
+The `console-message` event on `<webview>` is unchanged.
+
 ## Breaking API Changes (46.0)
 
 ### Default Changed: the `runAsNode` fuse is disabled by default
@@ -62,6 +83,15 @@ no longer respect `--inspect`, `--inspect-brk` and related flags, or start the
 main process inspector on `SIGUSR1`, unless the fuse is enabled with
 `FuseV1Options.EnableNodeCliInspectArguments`. Running your app with the
 `electron` executable during development is unaffected.
+
+### Removed: `--experimental-transform-types` command-line switch
+
+Node.js 26 removed the `--experimental-transform-types` flag, so Electron no
+longer accepts it. Electron ignores it on its command line, and
+`ELECTRON_RUN_AS_NODE` exits with a "bad option" error, as Node.js does.
+Type stripping of TypeScript files is still enabled by default; compile
+TypeScript-only syntax such as `enum` and `namespace` with a TypeScript
+compiler or bundler instead.
 
 ### Behavior Changed: `--no-stdio-init` command-line switch is ignored
 

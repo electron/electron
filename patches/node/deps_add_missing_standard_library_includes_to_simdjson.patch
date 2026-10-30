@@ -19,7 +19,7 @@ We're still exploring ways to upstream this. This patch can be removed
 once Node.js vendors a simdjson release that includes these headers.
 
 diff --git a/deps/simdjson/simdjson.cpp b/deps/simdjson/simdjson.cpp
-index 71f443b3d2bb4394009600cde34935ec25eff30b..505dc6406f6e14858124a823170f9fbd2fb7c7d8 100644
+index 980bb83cefa4c7f349771ed4cdc4b23e2df1e295..c507ad6f8b88733f33aa8c85b189e1ad94fd66af 100644
 --- a/deps/simdjson/simdjson.cpp
 +++ b/deps/simdjson/simdjson.cpp
 @@ -3,6 +3,12 @@
@@ -36,7 +36,7 @@ index 71f443b3d2bb4394009600cde34935ec25eff30b..505dc6406f6e14858124a823170f9fbd
  /* begin file base.h */
  #ifndef SIMDJSON_SRC_BASE_H
 diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
-index 91b0fc22e5965ddb3378887867b5c5c951ae7226..919e9532f00092997710882a8b223e7b8c1f1096 100644
+index e89d1bc41bd27b542d8131944fdd7f079fcf4e7c..8b8afc00aa8779045602d898080fda3effc521d8 100644
 --- a/deps/simdjson/simdjson.h
 +++ b/deps/simdjson/simdjson.h
 @@ -4,6 +4,14 @@
