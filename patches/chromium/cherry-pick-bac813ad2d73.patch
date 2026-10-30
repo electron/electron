@@ -1,0 +1,298 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Tue, 27 Oct 2026 23:59:46 -0700
+Subject: [M150] [Quota] Remove obsolete QuotaDatabase::MoveLegacyDatabase()
+
+Original change's description:
+> [Quota] Remove obsolete QuotaDatabase::MoveLegacyDatabase()
+>
+> QuotaDatabase::MoveLegacyDatabase() was added in April 2022 (M103,
+> https://crrev.com/c/3513545) to copy <profile>/QuotaManager and its
+> journal into <profile>/WebStorage/. Because it used base::PathExists()
+> and base::CopyFile() without checking for symbolic links (and did not
+> check whether the destination journal path already existed), a symlink
+> at <profile>/WebStorage/QuotaManager-journal would be followed when
+> EnsureOpened() or RecoverOrRaze() ran in the browser process.
+>
+> Prior to M103, QuotaDatabase was at schema version 8, and support for
+> all schema versions < 10 has already been removed in
+> QuotaDatabaseMigrations::UpgradeSchema() (https://crrev.com/c/6990378),
+> meaning any pre-M103 database would immediately fail
+> EnsureDatabaseVersion() and be razed by ResetStorage() anyway.
+>
+> Remove MoveLegacyDatabase(), legacy_db_file_path_, and the obsolete
+> migration tests, and add a regression test verifying that legacy files
+> in the profile root are ignored and symlinks in WebStorage are not
+> followed.
+>
+> TAG=agy
+> CONV=c282eb5d-3306-47e1-a900-1422d5cccec6
+>
+> Bug: 575201795
+> Change-Id: I575201795c282eb5d330647e1a9001422d5cccec
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8620633
+> Reviewed-by: Mingyu Lei <leimy@chromium.org>
+> Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+> Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1725559}
+
+(cherry picked from commit 9fa038a48d028701aa36dc3a685307ee44e22738)
+
+Bug: 578759816,575201795
+Change-Id: I575201795c282eb5d330647e1a9001422d5cccec
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8664093
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4534}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/storage/browser/quota/quota_database.cc b/storage/browser/quota/quota_database.cc
+index 2e29a8559a5c0d5ef22565d8bb247b0d7c153e1d..54f2341e56ad335a428420a2ffa96ec099abd829 100644
+--- a/storage/browser/quota/quota_database.cc
++++ b/storage/browser/quota/quota_database.cc
+@@ -198,10 +198,7 @@ QuotaDatabase::QuotaDatabase(const base::FilePath& profile_path)
+       db_file_path_(
+           profile_path.empty()
+               ? base::FilePath()
+-              : storage_directory_->path().AppendASCII(kDatabaseName)),
+-      legacy_db_file_path_(profile_path.empty()
+-                               ? base::FilePath()
+-                               : profile_path.AppendASCII(kDatabaseName)) {
++              : storage_directory_->path().AppendASCII(kDatabaseName)) {
+   DETACH_FROM_SEQUENCE(sequence_checker_);
+ }
+ 
+@@ -977,18 +974,6 @@ QuotaError QuotaDatabase::EnsureOpened() {
+   db_->set_error_callback(base::BindRepeating(&QuotaDatabase::OnSqliteError,
+                                               base::Unretained(this)));
+ 
+-  // Migrate an existing database from the old path.
+-  if (!db_file_path_.empty() && !MoveLegacyDatabase()) {
+-    if (ResetStorage()) {
+-      // ResetStorage() has succeeded and database is already open.
+-      return QuotaError::kNone;
+-    }
+-    is_disabled_ = true;
+-    db_.reset();
+-    meta_table_.reset();
+-    return QuotaError::kDatabaseError;
+-  }
+-
+   if (!OpenDatabase() || !EnsureDatabaseVersion()) {
+     LOG(ERROR) << "Could not open the quota database, resetting.";
+     if (!db_file_path_.empty() && ResetStorage()) {
+@@ -1021,33 +1006,6 @@ void QuotaDatabase::OnSqliteError(int sqlite_error_code,
+   }
+ }
+ 
+-bool QuotaDatabase::MoveLegacyDatabase() {
+-  // Migration was added on 04/2022 (https://crrev.com/c/3513545).
+-  // Cleanup after enough time has passed.
+-  if (base::PathExists(db_file_path_) ||
+-      !base::PathExists(legacy_db_file_path_)) {
+-    return true;
+-  }
+-
+-  if (!base::CreateDirectory(db_file_path_.DirName()) ||
+-      !base::CopyFile(legacy_db_file_path_, db_file_path_)) {
+-    sql::Database::Delete(db_file_path_);
+-    return false;
+-  }
+-
+-  base::FilePath legacy_journal_path =
+-      sql::Database::JournalPath(legacy_db_file_path_);
+-  if (base::PathExists(legacy_journal_path) &&
+-      !base::CopyFile(legacy_journal_path,
+-                      sql::Database::JournalPath(db_file_path_))) {
+-    sql::Database::Delete(db_file_path_);
+-    return false;
+-  }
+-
+-  sql::Database::Delete(legacy_db_file_path_);
+-  return true;
+-}
+-
+ bool QuotaDatabase::OpenDatabase() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+@@ -1185,13 +1143,10 @@ bool QuotaDatabase::ResetStorage() {
+   meta_table_.reset();
+   db_.reset();
+ 
+-  sql::Database::Delete(legacy_db_file_path_);
+   sql::Database::Delete(db_file_path_);
+ 
+   // Explicit file deletion to try and get consistent deletion across platforms.
+-  base::DeleteFile(legacy_db_file_path_);
+   base::DeleteFile(db_file_path_);
+-  base::DeleteFile(sql::Database::JournalPath(legacy_db_file_path_));
+   base::DeleteFile(sql::Database::JournalPath(db_file_path_));
+ 
+   storage_directory_->Doom();
+diff --git a/storage/browser/quota/quota_database.h b/storage/browser/quota/quota_database.h
+index 3acec1189d23f77385747d8356a1c7c38f4a229d..a5b0955ab2bd17aae8214ec759451f05b63d474f 100644
+--- a/storage/browser/quota/quota_database.h
++++ b/storage/browser/quota/quota_database.h
+@@ -261,7 +261,6 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) QuotaDatabase {
+ 
+   QuotaError EnsureOpened();
+   void OnSqliteError(int sqlite_error_code, sql::Statement* statement);
+-  bool MoveLegacyDatabase();
+   bool OpenDatabase();
+   bool EnsureDatabaseVersion();
+   bool ResetStorage();
+@@ -285,7 +284,6 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) QuotaDatabase {
+ 
+   const std::unique_ptr<StorageDirectory> storage_directory_;
+   const base::FilePath db_file_path_;
+-  const base::FilePath legacy_db_file_path_;
+ 
+   std::unique_ptr<sql::Database> db_ GUARDED_BY_CONTEXT(sequence_checker_);
+   std::unique_ptr<sql::MetaTable> meta_table_
+diff --git a/storage/browser/quota/quota_database_unittest.cc b/storage/browser/quota/quota_database_unittest.cc
+index b13453f63a260d549f3cbe2391e42a47cadcc7c4..6c0d16a49484b1bd34cbb5d9d1c334708f748c3d 100644
+--- a/storage/browser/quota/quota_database_unittest.cc
++++ b/storage/browser/quota/quota_database_unittest.cc
+@@ -878,97 +878,57 @@ TEST_P(QuotaDatabaseTest, OpenCorruptedDatabase) {
+                                DatabaseResetReason::kOpenDatabase, 1);
+ }
+ 
+-TEST_P(QuotaDatabaseTest, QuotaDatabasePathMigration) {
++// Regression test for crbug.com/575201795: Ensure legacy database files in the
++// profile root are ignored and never copied through symlinks in WebStorage
++// during initial open or in-session `RecoverOrRaze()`.
++TEST_P(QuotaDatabaseTest, DoesNotMigrateLegacyDatabaseOrFollowSymlinks) {
+   const base::FilePath kLegacyFilePath =
+       ProfilePath().AppendASCII(kDatabaseName);
+-  BucketInitParams params(
+-      StorageKey::CreateFromStringForTesting("http://google/"),
+-      "google_bucket");
+-  // Create database, add bucket and close by leaving scope.
+-  {
+-    auto db = CreateDatabase(/*is_incognito=*/false);
+-    ASSERT_TRUE(db->UpdateOrCreateBucket(params, 0).has_value());
+-  }
+-  // Move db file paths to legacy file path for path migration test setup.
+-  {
+-    base::Move(DbPath(), kLegacyFilePath);
+-    base::Move(sql::Database::JournalPath(DbPath()),
+-               sql::Database::JournalPath(kLegacyFilePath));
+-  }
+-  // Reopen database, check that db is migrated to new path with bucket data.
+-  {
+-    auto db = CreateDatabase(/*is_incognito=*/false);
+-    EXPECT_TRUE(db->GetBucket(params.storage_key, params.name).has_value());
+-    EXPECT_FALSE(base::PathExists(kLegacyFilePath));
+-    EXPECT_TRUE(base::PathExists(DbPath()));
+-  }
+-}
++  const base::FilePath kLegacyJournalPath =
++      sql::Database::JournalPath(kLegacyFilePath);
++  ASSERT_TRUE(base::WriteFile(kLegacyFilePath, ""));
++  ASSERT_TRUE(base::WriteFile(kLegacyJournalPath, "planted_journal_payload"));
++
++#if BUILDFLAG(IS_POSIX)
++  const base::FilePath external_target =
++      ProfilePath().AppendASCII("external_target.txt");
++  ASSERT_TRUE(base::WriteFile(external_target, "original_content"));
++  ASSERT_TRUE(base::CreateDirectory(DbPath().DirName()));
++  ASSERT_TRUE(base::CreateSymbolicLink(
++      external_target, sql::Database::JournalPath(DbPath())));
++#endif  // BUILDFLAG(IS_POSIX)
+ 
+-// Test for crbug.com/1316581.
+-TEST_P(QuotaDatabaseTest, QuotaDatabasePathBadMigration) {
+-  const base::FilePath kLegacyFilePath =
+-      ProfilePath().AppendASCII(kDatabaseName);
+   BucketInitParams params(
+       StorageKey::CreateFromStringForTesting("http://google/"),
+       "google_bucket");
+-  // Create database, add bucket and close by leaving scope.
+-  {
+-    auto db = CreateDatabase(/*is_incognito=*/false);
+-    ASSERT_TRUE(db->UpdateOrCreateBucket(params, 0).has_value());
+-  }
+-  // Copy db file paths to legacy file path to mimic bad migration state.
+-  base::CopyFile(DbPath(), kLegacyFilePath);
+-
+-  // Reopen database, check that db is migrated and is in a good state.
+-  {
+-    auto db = CreateDatabase(/*is_incognito=*/false);
+-    EXPECT_TRUE(db->GetBucket(params.storage_key, params.name).has_value());
+-    EXPECT_TRUE(base::PathExists(DbPath()));
+-  }
+-}
+-
+-// Test for crbug.com/1322375.
+-//
+-// base::CreateDirectory behaves differently on Mac and allows directory
+-// migration to succeed when we expect failure.
+-#if !BUILDFLAG(IS_APPLE)
+-TEST_P(QuotaDatabaseTest, QuotaDatabaseDirectoryMigrationError) {
+-  const base::FilePath kLegacyFilePath =
+-      ProfilePath().AppendASCII(kDatabaseName);
+-  BucketInitParams google_params = BucketInitParams::ForDefaultBucket(
+-      StorageKey::CreateFromStringForTesting("http://google/"));
+-  BucketInitParams example_params = BucketInitParams::ForDefaultBucket(
+-      StorageKey::CreateFromStringForTesting("http://example/"));
+-  BucketId example_id;
+-  // Create database, add bucket and close by leaving scope.
+-  {
+-    auto db = CreateDatabase(/*is_incognito=*/false);
+-    // Create two buckets to check that ids are different after database reset.
+-    ASSERT_TRUE(db->UpdateOrCreateBucket(google_params, 0).has_value());
+-    ASSERT_OK_AND_ASSIGN(auto result,
+-                         db->UpdateOrCreateBucket(example_params, 0));
+-    example_id = result.id;
+-  }
+-  {
+-    // Delete database files to force a bad migration state.
+-    base::DeleteFile(DbPath());
+-    base::DeleteFile(sql::Database::JournalPath(DbPath()));
+-
+-    // Create a directory with the database file path to force directory
+-    // migration to fail.
+-    base::CreateDirectory(kLegacyFilePath);
+-  }
+-  {
+-    // Open database to trigger migration. Migration failure forces a database
+-    // reset.
+-    auto db = CreateDatabase(/*is_incognito=*/false);
+-    ASSERT_OK_AND_ASSIGN(auto result,
+-                         db->UpdateOrCreateBucket(example_params, 0));
+-    // Validate database reset by checking that bucket id doesn't match.
+-    EXPECT_NE(result.id, example_id);
+-  }
++  auto db = CreateDatabase(/*is_incognito=*/false);
++  ASSERT_TRUE(db->UpdateOrCreateBucket(params, 0).has_value());
++  EXPECT_TRUE(base::PathExists(DbPath()));
++  EXPECT_TRUE(base::PathExists(kLegacyFilePath));
++  EXPECT_TRUE(base::PathExists(kLegacyJournalPath));
++
++#if BUILDFLAG(IS_POSIX)
++  std::string target_contents;
++  ASSERT_TRUE(base::ReadFileToString(external_target, &target_contents));
++  EXPECT_EQ(target_contents, "original_content");
++
++  // Also test the in-session `RecoverOrRaze()` reopen path when the live
++  // database is unlinked and a journal symlink is planted.
++  ASSERT_TRUE(base::DeleteFile(DbPath()));
++  ASSERT_TRUE(base::DeleteFile(sql::Database::JournalPath(DbPath())));
++  ASSERT_TRUE(base::CreateSymbolicLink(
++      external_target, sql::Database::JournalPath(DbPath())));
++#endif  // BUILDFLAG(IS_POSIX)
++
++  EXPECT_TRUE(db->RecoverOrRaze(SQLITE_CORRUPT));
++  EXPECT_TRUE(db->UpdateOrCreateBucket(params, 0).has_value());
++  EXPECT_TRUE(base::PathExists(DbPath()));
++
++#if BUILDFLAG(IS_POSIX)
++  ASSERT_TRUE(base::ReadFileToString(external_target, &target_contents));
++  EXPECT_EQ(target_contents, "original_content");
++#endif  // BUILDFLAG(IS_POSIX)
+ }
+-#endif  // !BUILDFLAG(IS_APPLE)
+ 
+ TEST_P(QuotaDatabaseTest, UpdateOrCreateBucket_CorruptedDatabase) {
+   base::HistogramTester histograms;

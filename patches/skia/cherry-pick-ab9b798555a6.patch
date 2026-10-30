@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 26 Oct 2026 11:07:50 -0400
+Subject: [ganesh] Don't set texImageFormat for BGRA as RGBx
+
+GrGLCaps already set fExternalTexImageFormat = 0 (disabling writes)
+when using BGRA8 texture with the RGBA8 color type. However, BGRA8 as
+RGBx8 was configured to allow writes with RGBA8 data. This is allowed
+for GL but not GLES. For consistency with BGRA-as-RGBA, this treats
+BGRA-as-RGBx the same (instead of branching on the GL standard).
+
+Bug: b/577403270
+Change-Id: I70d01796f508139b5c62b735b1e2e18e32c6d612
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1405636
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Greg Daniel <egdaniel@google.com>
+
+diff --git a/src/gpu/ganesh/gl/GrGLCaps.cpp b/src/gpu/ganesh/gl/GrGLCaps.cpp
+index 49ef4c7718119d1ed5ac541a3c3f71bb1e50650c..a4ff204b7f7a3f77e563d1c1a8b6abc0896a6970 100644
+--- a/src/gpu/ganesh/gl/GrGLCaps.cpp
++++ b/src/gpu/ganesh/gl/GrGLCaps.cpp
+@@ -2195,7 +2195,7 @@ void GrGLCaps::initFormatTable(const GrGLContextInfo& ctxInfo, const GrGLInterfa
+                     auto& ioFormat = ctInfo.fExternalIOFormats[ioIdx++];
+                     ioFormat.fColorType = GrColorType::kRGB_888x;
+                     ioFormat.fExternalType = GR_GL_UNSIGNED_BYTE;
+-                    ioFormat.fExternalTexImageFormat = GR_GL_RGBA;
++                    ioFormat.fExternalTexImageFormat = 0;
+                     ioFormat.fExternalReadFormat = GR_GL_RGBA;
+                 }
+             }

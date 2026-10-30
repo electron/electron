@@ -1,0 +1,303 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Tue, 27 Oct 2026 22:33:38 -0700
+Subject: [M150] Avoid CopyDirectory fallback in StorageDirectory::DoomPath
+
+Original change's description:
+> Avoid CopyDirectory fallback in StorageDirectory::DoomPath
+>
+> Previously, StorageDirectory::DoomPath pre-created a temporary target
+> directory with base::CreateTemporaryDirInDir and then called
+> base::Move(path, doomed_dir). When `path` is a symbolic link, moving it
+> onto an existing directory fails `rename(2)` with EISDIR and falls back
+> to base::CopyDirectory, which follows the link.
+>
+> In addition:
+> - base::PathExists follows symlinks, so a dangling symlink at `path`
+>   returned early from DoomPath without being removed.
+> - EnumerateDoomedDirectories and EnumerateDoomedBuckets used
+>   base::FileEnumerator::DIRECTORIES, skipping doomed symlinks to files
+>   or nonexistent targets.
+> - QuotaDatabase::DeleteBucketData returned early on failure without
+>   clearing doomed bucket directories.
+>
+> This CL:
+> - Renames `path` onto a fresh `<name>-doomed-<uuid>` path without
+>   pre-creating the destination directory, using base::ReplaceFile on
+>   POSIX (so `rename(2)` does not fall back to CopyDirectory) and
+>   base::Move (after unlinking reparse points) on non-POSIX platforms,
+>   and checks base::IsLink so dangling symlinks are also doomed.
+> - Uses base::FileEnumerator::NAMES_ONLY in EnumerateDoomedDirectories
+>   and EnumerateDoomedBuckets so any doomed entry is passed to
+>   base::DeletePathRecursively.
+> - Calls ClearDoomedBuckets() on early-return error paths in
+>   QuotaDatabase::DeleteBucketData.
+>
+> TAG=agy
+> CONV=b03dcafb-e302-4850-a029-78a6d8b7c1b2
+>
+> Bug: 575202553
+> Change-Id: I575202553a7f4070f631e29a8b0ab2041285d940
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8603890
+> Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+> Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+> Commit-Queue: Ming-Ying Chung <mych@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1725545}
+
+(cherry picked from commit 71e66ee87824aafdddb32ec7971165f8aa7997cb)
+
+Bug: 578723218,575202553
+Change-Id: I575202553a7f4070f631e29a8b0ab2041285d940
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8673061
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4533}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/storage/browser/quota/quota_database.cc b/storage/browser/quota/quota_database.cc
+index 25a85d4fe99b30edb04de6cf9a2c8ca88be58dcf..2e29a8559a5c0d5ef22565d8bb247b0d7c153e1d 100644
+--- a/storage/browser/quota/quota_database.cc
++++ b/storage/browser/quota/quota_database.cc
+@@ -591,6 +591,7 @@ QuotaErrorOr<mojom::BucketTableEntryPtr> QuotaDatabase::DeleteBucketData(
+   // directory deletion fails. `storage_directory_` may be nullptr for
+   // in-memory only.
+   if (storage_directory_ && !storage_directory_->DoomBucket(bucket)) {
++    storage_directory_->ClearDoomedBuckets();
+     return base::unexpected(QuotaError::kFileOperationError);
+   }
+ 
+@@ -601,6 +602,9 @@ QuotaErrorOr<mojom::BucketTableEntryPtr> QuotaDatabase::DeleteBucketData(
+   statement.BindInt64(0, bucket.id.value());
+ 
+   if (!statement.Step()) {
++    if (storage_directory_) {
++      storage_directory_->ClearDoomedBuckets();
++    }
+     return base::unexpected(QuotaError::kDatabaseError);
+   }
+ 
+diff --git a/storage/browser/quota/quota_database_unittest.cc b/storage/browser/quota/quota_database_unittest.cc
+index da05e1d4a07b8d2080fe1fd39360e10b2009a892..b13453f63a260d549f3cbe2391e42a47cadcc7c4 100644
+--- a/storage/browser/quota/quota_database_unittest.cc
++++ b/storage/browser/quota/quota_database_unittest.cc
+@@ -14,6 +14,7 @@
+ 
+ #include "base/compiler_specific.h"
+ #include "base/containers/flat_map.h"
++#include "base/files/file_enumerator.h"
+ #include "base/files/file_util.h"
+ #include "base/files/scoped_temp_dir.h"
+ #include "base/functional/bind.h"
+@@ -815,6 +816,19 @@ TEST_P(QuotaDatabaseTest, DeleteBucketData) {
+ 
+     ASSERT_TRUE(db->DeleteBucketData(bucket).has_value());
+     ASSERT_FALSE(base::PathExists(bucket_path));
++
++    // Deleting a bucket that is missing from the database should still clean up
++    // its doomed directory on the error path.
++    ASSERT_TRUE(base::CreateDirectory(bucket_path));
++    ASSERT_TRUE(
++        base::WriteFile(bucket_path.AppendASCII("orphan"), "orphan_data"));
++    EXPECT_THAT(db->DeleteBucketData(bucket),
++                base::test::ErrorIs(QuotaError::kDatabaseError));
++    EXPECT_FALSE(base::PathExists(bucket_path));
++    base::FileEnumerator enumerator(
++        db->GetStoragePath(), /*recursive=*/false,
++        base::FileEnumerator::NAMES_ONLY, FILE_PATH_LITERAL("*-doomed-*"));
++    EXPECT_TRUE(enumerator.Next().empty());
+   }
+ }
+ 
+diff --git a/storage/browser/quota/storage_directory.cc b/storage/browser/quota/storage_directory.cc
+index 32f020c63d92f39c21f91a11f48d833a8de30880..0104de641d8beb1a843c3bae3ece7b38c9b5917b 100644
+--- a/storage/browser/quota/storage_directory.cc
++++ b/storage/browser/quota/storage_directory.cc
+@@ -8,6 +8,8 @@
+ #include "base/files/file_util.h"
+ #include "base/notreached.h"
+ #include "base/strings/strcat.h"
++#include "base/uuid.h"
++#include "build/build_config.h"
+ #include "components/services/storage/public/cpp/constants.h"
+ #include "storage/browser/quota/storage_directory_util.h"
+ 
+@@ -60,20 +62,43 @@ void StorageDirectory::ClearDoomedBuckets() {
+ }
+ 
+ bool StorageDirectory::DoomPath(const base::FilePath& path) {
+-  if (!base::PathExists(path))
++  if (!base::PathExists(path) && !base::IsLink(path)) {
+     return true;
+-
+-  base::FilePath doomed_dir;
+-  base::CreateTemporaryDirInDir(
+-      path.DirName(), base::StrCat({path.BaseName().value(), kDoomedPathName}),
+-      &doomed_dir);
++  }
++
++  // Atomically rename `path` onto a fresh name that does not exist yet.
++  //
++  // Do not pre-create the destination directory: when `rename(2)` fails (e.g.
++  // with `EISDIR` on POSIX because `path` has been swapped for a symlink and
++  // the destination already exists as a directory), `base::Move()` falls back
++  // to the symlink-following `base::CopyDirectory()` and copies the link target
++  // into the profile directory. On POSIX, `base::ReplaceFile()` performs a
++  // direct `rename(2)` without a copy fallback: a real directory moves as
++  // before, while a planted symlink is renamed without being followed and then
++  // unlinked by `ClearDoomed*()`. On Windows, `base::ReplaceFile()` creates a
++  // temporary backup file and calls Win32 `::ReplaceFile()` (which fails for
++  // directories and logs a failed `Windows.ReplaceFileResult` histogram sample
++  // before falling back to `::MoveFile()`), so remove reparse points directly
++  // and use `base::Move()` onto the non-existent `doomed_dir`.
++  base::FilePath doomed_dir = path.DirName().Append(base::StrCat(
++      {path.BaseName().value(), kDoomedPathName,
++       base::FilePath::FromASCII(
++           base::Uuid::GenerateRandomV4().AsLowercaseString())
++           .value()}));
++#if BUILDFLAG(IS_POSIX)
++  return base::ReplaceFile(path, doomed_dir, /*error=*/nullptr);
++#else
++  if (base::IsLink(path)) {
++    return base::DeletePathRecursively(path);
++  }
+   return base::Move(path, doomed_dir);
++#endif
+ }
+ 
+ std::set<base::FilePath> StorageDirectory::EnumerateDoomedDirectories() {
+   base::FileEnumerator enumerator(
+       web_storage_path_.DirName(),
+-      /*recursive=*/false, base::FileEnumerator::DIRECTORIES,
++      /*recursive=*/false, base::FileEnumerator::NAMES_ONLY,
+       base::StrCat(
+           {kWebStorageDirectory, kDoomedPathName, FILE_PATH_LITERAL("*")}));
+ 
+@@ -86,7 +111,7 @@ std::set<base::FilePath> StorageDirectory::EnumerateDoomedDirectories() {
+ 
+ std::set<base::FilePath> StorageDirectory::EnumerateDoomedBuckets() {
+   base::FileEnumerator enumerator(
+-      web_storage_path_, /*recursive=*/false, base::FileEnumerator::DIRECTORIES,
++      web_storage_path_, /*recursive=*/false, base::FileEnumerator::NAMES_ONLY,
+       base::StrCat(
+           {FILE_PATH_LITERAL("*"), kDoomedPathName, FILE_PATH_LITERAL("*")}));
+ 
+diff --git a/storage/browser/quota/storage_directory_unittest.cc b/storage/browser/quota/storage_directory_unittest.cc
+index 7d727ea36053d4b3c8abfac7b2f75155f80218b9..9337e4746a4e223797b9a4918a25a204ab1e1523 100644
+--- a/storage/browser/quota/storage_directory_unittest.cc
++++ b/storage/browser/quota/storage_directory_unittest.cc
+@@ -9,6 +9,7 @@
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
+ #include "base/files/scoped_temp_dir.h"
++#include "build/build_config.h"
+ #include "components/services/storage/public/cpp/buckets/bucket_locator.h"
+ #include "storage/browser/quota/quota_client_type.h"
+ #include "storage/browser/quota/storage_directory.h"
+@@ -168,4 +169,106 @@ TEST_F(StorageDirectoryTest, ClearMultipleDoomedBuckets) {
+   EXPECT_EQ(directories.size(), 0u);
+ }
+ 
++#if BUILDFLAG(IS_POSIX)
++TEST_F(StorageDirectoryTest, DoomAndClearBucketSymlinkDoesNotFollowTarget) {
++  base::FilePath external_dir =
++      temp_directory_.GetPath().AppendASCII("external_target");
++  ASSERT_TRUE(base::CreateDirectory(external_dir));
++  base::FilePath secret_file = external_dir.AppendASCII("secret.txt");
++  ASSERT_TRUE(base::WriteFile(secret_file, "secret_content"));
++
++  ASSERT_TRUE(storage_directory_->Create());
++
++  BucketLocator bucket(
++      BucketId(1),
++      blink::StorageKey::CreateFromStringForTesting("http://example/"),
++      /*is_default=*/false);
++  base::FilePath bucket_path =
++      CreateBucketPath(storage_directory_->path().DirName(), bucket);
++  ASSERT_TRUE(base::CreateSymbolicLink(external_dir, bucket_path));
++
++  ASSERT_TRUE(storage_directory_->DoomBucket(bucket));
++  EXPECT_FALSE(base::PathExists(bucket_path));
++  EXPECT_FALSE(base::IsLink(bucket_path));
++
++  std::set<base::FilePath> doomed_buckets =
++      storage_directory_->EnumerateDoomedBucketsForTesting();
++  ASSERT_EQ(doomed_buckets.size(), 1u);
++  // The doomed entry must be the renamed symlink itself, not a copied
++  // directory.
++  EXPECT_TRUE(base::IsLink(*doomed_buckets.begin()));
++
++  storage_directory_->ClearDoomedBuckets();
++  EXPECT_TRUE(storage_directory_->EnumerateDoomedBucketsForTesting().empty());
++
++  // The external target directory and file must remain untouched.
++  std::string contents;
++  EXPECT_TRUE(base::ReadFileToString(secret_file, &contents));
++  EXPECT_EQ(contents, "secret_content");
++}
++
++TEST_F(StorageDirectoryTest, DoomAndClearBucketFileAndBrokenSymlinks) {
++  base::FilePath external_file =
++      temp_directory_.GetPath().AppendASCII("external_file.txt");
++  ASSERT_TRUE(base::WriteFile(external_file, "file_content"));
++  base::FilePath nonexistent_target =
++      temp_directory_.GetPath().AppendASCII("nonexistent");
++
++  ASSERT_TRUE(storage_directory_->Create());
++
++  BucketLocator bucket1(
++      BucketId(1),
++      blink::StorageKey::CreateFromStringForTesting("http://example/"),
++      /*is_default=*/false);
++  BucketLocator bucket2(
++      BucketId(2),
++      blink::StorageKey::CreateFromStringForTesting("http://example/"),
++      /*is_default=*/false);
++
++  base::FilePath bucket1_path =
++      CreateBucketPath(storage_directory_->path().DirName(), bucket1);
++  base::FilePath bucket2_path =
++      CreateBucketPath(storage_directory_->path().DirName(), bucket2);
++  ASSERT_TRUE(base::CreateSymbolicLink(external_file, bucket1_path));
++  ASSERT_TRUE(base::CreateSymbolicLink(nonexistent_target, bucket2_path));
++
++  ASSERT_TRUE(storage_directory_->DoomBucket(bucket1));
++  ASSERT_TRUE(storage_directory_->DoomBucket(bucket2));
++  EXPECT_FALSE(base::IsLink(bucket1_path));
++  EXPECT_FALSE(base::IsLink(bucket2_path));
++
++  std::set<base::FilePath> doomed_buckets =
++      storage_directory_->EnumerateDoomedBucketsForTesting();
++  EXPECT_EQ(doomed_buckets.size(), 2u);
++
++  storage_directory_->ClearDoomedBuckets();
++  EXPECT_TRUE(storage_directory_->EnumerateDoomedBucketsForTesting().empty());
++  EXPECT_TRUE(base::PathExists(external_file));
++}
++
++TEST_F(StorageDirectoryTest, DoomAndClearStorageSymlinkDoesNotFollowTarget) {
++  base::FilePath external_dir =
++      temp_directory_.GetPath().AppendASCII("external_target");
++  ASSERT_TRUE(base::CreateDirectory(external_dir));
++  base::FilePath secret_file = external_dir.AppendASCII("secret.txt");
++  ASSERT_TRUE(base::WriteFile(secret_file, "secret_content"));
++
++  ASSERT_TRUE(
++      base::CreateSymbolicLink(external_dir, storage_directory_->path()));
++
++  ASSERT_TRUE(storage_directory_->Doom());
++  EXPECT_FALSE(base::IsLink(storage_directory_->path()));
++
++  std::set<base::FilePath> doomed_dirs =
++      storage_directory_->EnumerateDoomedDirectoriesForTesting();
++  ASSERT_EQ(doomed_dirs.size(), 1u);
++  EXPECT_TRUE(base::IsLink(*doomed_dirs.begin()));
++
++  storage_directory_->ClearDoomed();
++  EXPECT_TRUE(
++      storage_directory_->EnumerateDoomedDirectoriesForTesting().empty());
++  EXPECT_TRUE(base::PathExists(secret_file));
++}
++#endif  // BUILDFLAG(IS_POSIX)
++
+ }  // namespace storage
