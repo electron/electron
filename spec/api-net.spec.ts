@@ -1946,6 +1946,23 @@ describe('net module', () => {
           expect(await resp.text()).toBe(expected);
         });
 
+        test('rejects when a ReadableStream upload fails', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            request.resume();
+            request.on('end', () => response.end());
+          });
+          const body = new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('partial body'));
+              controller.error(new Error('upload failed'));
+            }
+          });
+
+          await expect(net.fetch(serverUrl, { method: 'POST', body, duplex: 'half' } as RequestInit)).rejects.toThrow(
+            'upload failed'
+          );
+        });
+
         test('can read response as an array buffer', async () => {
           const serverUrl = await respondOnce.toSingleURL((request, response) => {
             request.on('data', (chunk) => response.write(chunk));
