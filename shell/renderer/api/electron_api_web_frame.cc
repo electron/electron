@@ -689,8 +689,12 @@ class WebFrameRenderer final
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
-      web_frame->ToWebLocalFrame()->GetDocument().RemoveInsertedStyleSheet(
-          blink::WebString::FromUtf16(key));
+      // The key does not record the origin the sheet was inserted with, so
+      // remove it from both. Keys are unique, so at most one matches.
+      blink::WebDocument document = web_frame->ToWebLocalFrame()->GetDocument();
+      const blink::WebString web_key = blink::WebString::FromUtf16(key);
+      document.RemoveInsertedStyleSheet(web_key, blink::WebCssOrigin::kAuthor);
+      document.RemoveInsertedStyleSheet(web_key, blink::WebCssOrigin::kUser);
     }
   }
 

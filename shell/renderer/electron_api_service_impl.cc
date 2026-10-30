@@ -305,8 +305,12 @@ void ElectronApiServiceImpl::InsertCSS(const std::string& css,
 void ElectronApiServiceImpl::RemoveInsertedCSS(
     const std::u16string& key,
     RemoveInsertedCSSCallback callback) {
-  render_frame()->GetWebFrame()->GetDocument().RemoveInsertedStyleSheet(
-      blink::WebString::FromUtf16(key));
+  // The key does not record the origin the sheet was inserted with, so remove
+  // it from both. Keys are unique, so at most one matches.
+  blink::WebDocument document = render_frame()->GetWebFrame()->GetDocument();
+  const blink::WebString web_key = blink::WebString::FromUtf16(key);
+  document.RemoveInsertedStyleSheet(web_key, blink::WebCssOrigin::kAuthor);
+  document.RemoveInsertedStyleSheet(web_key, blink::WebCssOrigin::kUser);
   std::move(callback).Run();
 }
 
