@@ -14,7 +14,14 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
-import { defer, deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import {
+  defer,
+  deferKillUtilityProcess,
+  ifit,
+  isTestingBindingAvailable,
+  listen,
+  startRemoteControlApp
+} from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -183,25 +190,19 @@ describe('utilityProcess module', () => {
       expect(lines[0]).toBe('before exit');
     });
 
-    // 32-bit system will not have V8 Sandbox enabled.
-    // WoA testing does not have VS toolchain configured to build native addons.
-    ifit(!isWindowsOnArm)("emits 'error' when fatal error is triggered from V8", async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'external-ab-test.js'));
+    // Any V8 fatal error reaches the 'error' event; the testing binding
+    // raises one by failing a V8 API check.
+    ifit(isTestingBindingAvailable())("emits 'error' when fatal error is triggered from V8", async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'v8-fatal-error.js'));
+      deferKillUtilityProcess(child);
+      const exited = once(child, 'exit');
       const [type, location, report] = await once(child, 'error');
-      const [code] = await once(child, 'exit');
+      const [code] = await exited;
       expect(type).toBe('FatalError');
-      expect(location).toBe('v8_ArrayBuffer_NewBackingStore');
+      expect(location).toBe('v8::Object::SetInternalField()');
       const reportJSON = JSON.parse(report);
-      expect(reportJSON.header.trigger).toBe('v8_ArrayBuffer_NewBackingStore');
-      const addonPath = path.join(
-        require.resolve('@electron-ci/external-ab'),
-        '..',
-        '..',
-        'build',
-        'Release',
-        'external_ab.node'
-      );
-      expect(reportJSON.sharedObjects).toContain(path.toNamespacedPath(addonPath));
+      expect(reportJSON.header.trigger).toBe('v8::Object::SetInternalField()');
+      expect(reportJSON.header.event).toBe('Internal field out of bounds');
       expect(code).not.toBe(0);
     });
   });
