@@ -191,6 +191,7 @@
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
+#include "third_party/blink/public/mojom/link_to_text/link_to_text.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/accessibility/platform/ax_platform.h"
@@ -2840,13 +2841,28 @@ void WebContents::OnReadAvailableTypes(
   auto weak_this = WeakRef();
   Emit("context-menu", event_data);
 
+  if (!weak_this->Get() || !web_contents())
+    return;
+
   // Apps show their own menu, or none, in response to the event above, so
   // nothing reports the renderer's context menu closed the way Chrome's
   // RenderViewContextMenu does. Until it is, Blink's ContextMenuController
   // keeps the right-clicked node and its ancestors alive, even after the page
   // removes them.
-  if (weak_this->Get() && web_contents())
-    web_contents()->NotifyContextMenuClosed(GURL());
+  web_contents()->NotifyContextMenuClosed(GURL());
+
+  // Over selected text that isn't editable, Blink also starts generating a
+  // link-to-text selector, and its generator keeps the selection's nodes until
+  // the browser requests the selector or cancels. Chrome's menu requests it.
+  if (params.selection_text.empty() || params.is_editable)
+    return;
+  render_frame_host = content::RenderFrameHost::FromID(render_frame_host_id);
+  if (!render_frame_host)
+    return;
+  mojo::Remote<blink::mojom::TextFragmentReceiver> text_fragment_receiver;
+  render_frame_host->GetRemoteInterfaces()->GetInterface(
+      text_fragment_receiver.BindNewPipeAndPassReceiver());
+  text_fragment_receiver->Cancel();
 }
 
 void WebContents::DidReceiveFindReply(int request_id,
