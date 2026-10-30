@@ -2839,7 +2839,9 @@ describe('BrowserWindow module', () => {
 
         w.setMenuBarVisibility(false);
 
-        await w.loadURL('data:text/html,<script>window.lastKey = ""; window.addEventListener("keydown", e => window.lastKey = "down:" + e.key); window.addEventListener("keyup", e => window.lastKey = "up:" + e.key);</script>');
+        await w.loadURL(
+          'data:text/html,<script>window.lastKey = ""; window.addEventListener("keydown", e => window.lastKey = "down:" + e.key); window.addEventListener("keyup", e => window.lastKey = "up:" + e.key);</script>'
+        );
         expect(w.isMenuBarVisible(), 'menu bar should initially be hidden').toBe(false);
 
         const sendKey = async (
@@ -2850,10 +2852,9 @@ describe('BrowserWindow module', () => {
         ) => {
           w.webContents.sendInputEvent({ type, keyCode, modifiers });
           const prefix = type === 'rawKeyDown' ? 'down:' : 'up:';
-          await expect.poll(
-            () => w.webContents.executeJavaScript('window.lastKey'),
-            { timeout: 5000 }
-          ).toBe(`${prefix}${expectedDomKey}`);
+          await expect
+            .poll(() => w.webContents.executeJavaScript('window.lastKey'), { timeout: 5000 })
+            .toBe(`${prefix}${expectedDomKey}`);
         };
 
         // Multi-modifier sequence: Shift↓ + Alt↓ → Alt↑ + Shift↑
@@ -2871,12 +2872,14 @@ describe('BrowserWindow module', () => {
         await sendKey('rawKeyDown', 'Alt', 'Alt', ['alt']);
         await sendKey('keyUp', 'Alt', 'Alt', []);
 
-        await expect.poll(
-          () => w.isMenuBarVisible(),
-          { message: 'menu bar should become visible after single Alt', timeout: 5000 }
-        ).toBe(true);
+        await expect
+          .poll(() => w.isMenuBarVisible(), {
+            message: 'menu bar should become visible after single Alt',
+            timeout: 5000
+          })
+          .toBe(true);
       });
-    })
+    });
   });
 
   describe('BrowserWindow.capturePage(rect)', () => {
