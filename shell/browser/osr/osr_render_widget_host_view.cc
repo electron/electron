@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "base/location.h"
+#include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
 #include "base/notimplemented.h"
@@ -51,6 +52,15 @@
 namespace electron {
 
 namespace {
+
+// OSR has no OS window to clamp the root display surface size, so sizes
+// provided by the embedder are passed through to GPU composition unchanged.
+// When either dimension exceeds the backend's maxRenderTargetSize (D3D11's
+// D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION and Metal's maxTextureDimension are
+// both 16384), the Skia GrSurfaceCharacterization becomes invalid and the GPU
+// process crashes. SetSize clamps incoming sizes against this limit (scaled by
+// the device scale factor).
+constexpr int kMaxOsrSurfaceSize = 16384;
 
 ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   int button_flags = 0;
@@ -282,7 +292,18 @@ void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
 }
 
 void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
-  size_ = size;
+  // Clamp in pixel space (scaled by the device scale factor) so that the final
+  // root surface size never exceeds kMaxOsrSurfaceSize (see comment above).
+  const float dsf = std::max(offscreen_device_scale_factor_, 1.0f);
+  const int max_logical_size = base::ClampFloor<int>(kMaxOsrSurfaceSize / dsf);
+  gfx::Size clamped = size;
+  clamped.SetToMin(gfx::Size(max_logical_size, max_logical_size));
+  if (clamped != size) {
+    LOG(WARNING) << "OSR size clamped from " << size.ToString() << " to "
+                 << clamped.ToString() << " (limit " << kMaxOsrSurfaceSize
+                 << " px per dimension, dsf=" << dsf << ")";
+  }
+  size_ = clamped;
   SynchronizeVisualProperties();
 }
 
