@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index deea1749c31eb5aa08ab7cc64b2e58c40ac06405..ec12bec499f7b2691fcc16a869608fc175203e7a 100644
+index a1bf3a015e995be87f820cc8a8695aaf8fd98977..2296a38441d277b835c930321218691c30d6b106 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11215,7 +11215,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11241,7 +11241,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -71,7 +71,7 @@ index c1a08cef12a58935839bfa42f937b2ee65fb39d2..8894901c171f0e90951a3a6dd3aa4052
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index b7608038ffdf94dda76262dfff391550d9c1f2ab..526ae9488b03bd126fe54169a886658f1aee2887 100644
+index 704f5ab0f6f8a900176874bdc655dc064d653d54..500877ad786d1c6f5b8d54afa4db819b0b1cb285 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -853,6 +853,13 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -89,7 +89,7 @@ index b7608038ffdf94dda76262dfff391550d9c1f2ab..526ae9488b03bd126fe54169a886658f
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 5a49346f458aabb23ca6fac055200ea1ff134c62..b26cfb87554b47c00266eb64c3c7db797f044be2 100644
+index a350cdc6019c842898f54686850ba315f446a128..86f470c6b7f53bdb3c876c4acec743d018b5d50d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -63,6 +63,7 @@
@@ -148,10 +148,10 @@ index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c3e10e079c7a18ca3ba4fc7e0419e6309594475a..ce0f74ae0fc90fa83d7cba137fabab9501a239ca 100644
+index d19c9af023c0cccfd20a768bbd189cfc592283bb..3e85b7323ccc1d1f4472719de82a71bf71569699 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7223,6 +7223,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7219,6 +7219,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  
