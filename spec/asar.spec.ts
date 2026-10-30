@@ -3289,6 +3289,20 @@ describe('asar package', () => {
         }
       });
 
+      itremote('copies a directory tree without blocking the event loop', async () => {
+        const src = path.join(asarDir, 'a.asar');
+        for (const variant of ['callback', 'promises']) {
+          let immediateRan = false;
+          setImmediate(() => {
+            immediateRan = true;
+          });
+          const dest = tempPath();
+          if (variant === 'callback') await promisify(fs.cp)(src, dest, { recursive: true });
+          else await fs.promises.cp(src, dest, { recursive: true });
+          expect(immediateRan, variant).toBe(true);
+        }
+      });
+
       itremote('copies symlinks verbatim when asked, producing a self-contained tree', async () => {
         const src = path.join(asarDir, 'a.asar');
         for (const variant of ['sync', 'promises']) {

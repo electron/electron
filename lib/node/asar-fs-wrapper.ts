@@ -2396,7 +2396,23 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     mode?: number;
   }
 
+  // An existing symlink at the destination is replaced, anything else is an
+  // error, like node's native implementation.
+  const symlinkDestExistsError = (dest: string, name: string) =>
+    createError(AsarError.EXISTS, { asarPath: dest, filePath: name, syscall: 'cp' });
+
+  const fileDestExistsError = (destItem: string) =>
+    new ERR_FS_CP_EEXIST({
+      message: `${destItem} already exists`,
+      path: destItem,
+      syscall: 'cp',
+      errno: -17,
+      code: 'EEXIST'
+    });
+
   // Copies a directory tree out of an archive through the overrides above.
+  // fs.cpSync() uses this walk; copyAsarDir() below is the same walk for
+  // fs.cp() and fsPromises.cp(), through the asynchronous overrides.
   const copyAsarDirSync = (src: string, dest: string, options: AsarCopyDirOptions) => {
     const { force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps, mode } = options;
     const copyDir = (srcDir: string, destDir: string) => {
@@ -2409,13 +2425,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
           if (!dereference) {
             let target = fs.readlinkSync(srcItem);
             if (!verbatimSymlinks && !path.isAbsolute(target)) target = path.resolve(srcDir, target);
-            // Like node's native implementation: an existing symlink at the
-            // destination is replaced, anything else is an error.
             const existing = fs.lstatSync(destItem, { throwIfNoEntry: false });
             if (existing) {
-              if (!existing.isSymbolicLink()) {
-                throw createError(AsarError.EXISTS, { asarPath: dest, filePath: dirent.name, syscall: 'cp' });
-              }
+              if (!existing.isSymbolicLink()) throw symlinkDestExistsError(dest, dirent.name);
               fs.unlinkSync(destItem);
             }
             fs.symlinkSync(target, destItem);
@@ -2430,15 +2442,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         const destStat = fs.lstatSync(destItem, { throwIfNoEntry: false });
         if (destStat) {
           if (!force) {
-            if (errorOnExist) {
-              throw new ERR_FS_CP_EEXIST({
-                message: `${destItem} already exists`,
-                path: destItem,
-                syscall: 'cp',
-                errno: -17,
-                code: 'EEXIST'
-              });
-            }
+            if (errorOnExist) throw fileDestExistsError(destItem);
             continue;
           }
           fs.unlinkSync(destItem);
@@ -2458,6 +2462,66 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     copyDir(src, dest);
   };
 
+  const lstatIfExists = async (target: string) => {
+    try {
+      return await fs.promises.lstat(target);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      throw error;
+    }
+  };
+
+  // The asynchronous twin of copyAsarDirSync(), so that copying a tree out of
+  // an archive does not block the event loop, as node's thread pool job does
+  // not. Packed files are copied through the asynchronous copyFile override.
+  const copyAsarDir = async (src: string, dest: string, options: AsarCopyDirOptions) => {
+    const { force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps, mode } = options;
+    const copyDir = async (srcDir: string, destDir: string) => {
+      await fs.promises.mkdir(destDir, { recursive: true });
+      for (const dirent of (await fs.promises.readdir(srcDir, { withFileTypes: true })) as Dirent[]) {
+        const srcItem = path.join(srcDir, dirent.name);
+        const destItem = path.join(destDir, dirent.name);
+        let isDirectory = dirent.isDirectory();
+        if (dirent.isSymbolicLink()) {
+          if (!dereference) {
+            let target = await fs.promises.readlink(srcItem);
+            if (!verbatimSymlinks && !path.isAbsolute(target)) target = path.resolve(srcDir, target);
+            const existing = await lstatIfExists(destItem);
+            if (existing) {
+              if (!existing.isSymbolicLink()) throw symlinkDestExistsError(dest, dirent.name);
+              await fs.promises.unlink(destItem);
+            }
+            await fs.promises.symlink(target, destItem);
+            continue;
+          }
+          isDirectory = (await fs.promises.stat(srcItem)).isDirectory();
+        }
+        if (isDirectory) {
+          await copyDir(srcItem, destItem);
+          continue;
+        }
+        const destStat = await lstatIfExists(destItem);
+        if (destStat) {
+          if (!force) {
+            if (errorOnExist) throw fileDestExistsError(destItem);
+            continue;
+          }
+          await fs.promises.unlink(destItem);
+        }
+        await fs.promises.copyFile(srcItem, destItem, mode);
+        if (preserveTimestamps) {
+          const srcStat = await fs.promises.stat(srcItem);
+          await fs.promises.utimes(destItem, srcStat.atime, srcStat.mtime);
+        }
+      }
+      if (preserveTimestamps) {
+        const srcStat = await fs.promises.stat(srcDir);
+        await fs.promises.utimes(destDir, srcStat.atime, srcStat.mtime);
+      }
+    };
+    await copyDir(src, dest);
+  };
+
   binding.cpSyncCopyDir = function (...args: any[]) {
     const src = args[0];
     const dest = args[1];
@@ -2472,22 +2536,17 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   // fs.cp() and fsPromises.cp() copy a directory into a new destination with
-  // one native job that reads the source tree itself; copy trees out of
-  // archives with the walk above instead, reporting through `ondone` like the
-  // native job.
+  // one native job that walks the source tree on the thread pool; copy trees
+  // out of archives with the asynchronous walk above instead, reporting once
+  // through `ondone` like the native job.
   class AsarCpDirJob {
     ondone: ((error: Error | null) => void) | undefined;
-    constructor(private readonly copy: () => void) {}
+    constructor(private readonly copy: () => Promise<void>) {}
     run() {
-      process.nextTick(() => {
-        let error: Error | null = null;
-        try {
-          this.copy();
-        } catch (e) {
-          error = e as Error;
-        }
-        this.ondone!.call(this, error);
-      });
+      this.copy().then(
+        () => this.ondone!.call(this, null),
+        (error: Error) => this.ondone!.call(this, error)
+      );
     }
   }
 
@@ -2496,7 +2555,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const [src, dest, force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps, mode] = args;
     if (!splitPath(src).isAsar) return new OriginalCpDirJob(...args);
     return new AsarCpDirJob(() =>
-      copyAsarDirSync(src, dest, { force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps, mode })
+      copyAsarDir(src, dest, { force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps, mode })
     );
   };
 
