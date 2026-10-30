@@ -152,6 +152,20 @@ describe('dialog module', () => {
   describe('showMessageBox with signal', () => {
     afterEach(closeAllWindows);
 
+    it('returns the cancel response when the signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      const result = await dialog.showMessageBox({
+        signal: controller.signal,
+        message: 'i am message',
+        buttons: ['OK', 'Cancel'],
+        cancelId: 1
+      });
+
+      expect(result).toEqual({ response: 1, checkboxChecked: false });
+    });
+
     it('closes message box immediately', async () => {
       const controller = new AbortController();
       const signal = controller.signal;
