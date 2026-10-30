@@ -23,6 +23,11 @@ Also add Node's Perfetto tracing sources (node_tracing_perfetto_sources in
 node.gyp) and V8's tracing target to the GN libnode target, since the
 upstream GN build does not wire them up when v8_use_perfetto is set.
 
+Chromium does not ship the amalgamated perfetto.h SDK header, so include
+the Perfetto public headers Chromium provides instead, and skip defining
+Node's TrackEvent categories when Chromium's built-in categories are
+already in scope in the same translation unit.
+
 diff --git a/node.gni b/node.gni
 index 2266de3a399e4cdafb93cd930ec6128e6634c639..e7bf3a480e0d5f0e5e18727aa17b4f96dad772b4 100644
 --- a/node.gni
@@ -295,10 +300,10 @@ index 289b73e8c0ffcd3522e724744fce5bb25e2a4ed9..b07f4e5957b014434c890746f9472252
 +
 +#endif  // NODE_USE_PERFETTO_SDK
 diff --git a/src/tracing/agent_perfetto.h b/src/tracing/agent_perfetto.h
-index fc12b4d0f3f145a78c7651463fc77be58bac94f8..b773a4173be22ae8a39c21a55221c68ff0f9d882 100644
+index fc12b4d0f3f145a78c7651463fc77be58bac94f8..05084d390a17a02663e211678146f64456a375d6 100644
 --- a/src/tracing/agent_perfetto.h
 +++ b/src/tracing/agent_perfetto.h
-@@ -3,8 +3,11 @@
+@@ -3,8 +3,13 @@
  
  #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
  
@@ -308,10 +313,12 @@ index fc12b4d0f3f145a78c7651463fc77be58bac94f8..b773a4173be22ae8a39c21a55221c68f
 +#if NODE_USE_PERFETTO_SDK
 +
 +#include "node_mutex.h"
++#include "perfetto/tracing.h"
++#include "perfetto/tracing/core/trace_config.h"
  #include "tracing/trace_event_perfetto.h"
  #include "util.h"
  #include "uv.h"
-@@ -140,6 +143,8 @@ class PerfettoTracingAgent final : public Agent {
+@@ -140,6 +145,8 @@ class PerfettoTracingAgent final : public Agent {
  
  }  // namespace node::tracing
  
@@ -360,17 +367,36 @@ index 87227b95fd56162a9f577bed4d44bafd0f6a8701..158708f7797ac67c9ac49778b15d61e2
 +}  // namespace node::tracing
  #endif
 diff --git a/src/tracing/trace_event_perfetto.h b/src/tracing/trace_event_perfetto.h
-index 60add492d36ae0e99959209aff6a307b505d44c5..a2ba7b4b211b4c8f255d0af43b60634678bd077b 100644
+index 60add492d36ae0e99959209aff6a307b505d44c5..17b990455e7d6a791998ab304418c2566df2ceaa 100644
 --- a/src/tracing/trace_event_perfetto.h
 +++ b/src/tracing/trace_event_perfetto.h
-@@ -44,4 +44,8 @@ PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE(
+@@ -8,12 +8,15 @@
+ // For now most of Node.js uses legacy trace events.
+ #define PERFETTO_ENABLE_LEGACY_TRACE_EVENTS 1
+ 
+-#include "perfetto.h"
++#include "perfetto/tracing/traced_value.h"
++#include "perfetto/tracing/track_event.h"
++#include "perfetto/tracing/track_event_legacy.h"
+ 
+ #define TRACING_CATEGORY_NODE "node"
+ #define TRACING_CATEGORY_NODE1(one) TRACING_CATEGORY_NODE "." #one
+ #define TRACING_CATEGORY_NODE2(one, two) TRACING_CATEGORY_NODE "." #one "." #two
+ 
++#ifndef BASE_TRACE_EVENT_BUILTIN_CATEGORIES_H_
+ // List of categories used by built-in Node.js trace events.
+ // clang-format off
+ PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE(
+@@ -43,5 +46,10 @@ PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE(
+ // clang-format on
  
  PERFETTO_USE_CATEGORIES_FROM_NAMESPACE(node);
- 
++#endif
++
 +namespace node::tracing {
 +void RegisterPerfettoTrackEvent();
 +}  // namespace node::tracing
-+
+ 
  #endif  // SRC_TRACING_TRACE_EVENT_PERFETTO_H_
 diff --git a/unofficial.gni b/unofficial.gni
 index f88cf1a1c3d28eb81721dfbb136d1655d0616510..32965c9dd45da8f96aaf5e233a103f570e8bf11a 100644
