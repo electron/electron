@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Mon, 19 Oct 2026 10:51:37 -0700
+Subject: Improve memory allocation failure handling in OpenJPEG
+
+Propagate opj_malloc() failure in opj_copy_image_header() to the
+callers, so they can also fail early instead of continuing after the
+memory allocation failure.
+
+Credit to the bug reporter for providing this patch.
+
+Bug: 574061024
+Change-Id: Ifb53b384f4c0f0386794a76b1ff46e779e6849b7
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/161130
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+
+Electron adaptation notes (44-x-y):
+The upstream change also adds third_party/libopenjpeg/0053-opj_copy_image_header.patch,
+PDFium's record of the OpenJPEG source edits. That file is left out here because
+its blank unified-diff context lines are trailing whitespace that Electron's
+patch lint rejects; the image.c/image.h/j2k.c source changes it records are
+applied in full, and the README.pdfium entry listing it is kept.
+
+diff --git a/third_party/libopenjpeg/README.pdfium b/third_party/libopenjpeg/README.pdfium
+index c0650c69af3cea22302d3568019eb28d8c9ef98a..a7ba86a65196edc01f9aac517b123d5b4a87fd55 100644
+--- a/third_party/libopenjpeg/README.pdfium
++++ b/third_party/libopenjpeg/README.pdfium
+@@ -38,6 +38,7 @@ Local Modifications:
+ 0050-opj_pi_initialise_encode_overflow.patch: Cherry-pick https://github.com/uclouvain/openjpeg/pull/1619
+ 0051-opj_j2k_copy_default_double_free.patch: Fix a double free.
+ 0052-opj_j2k_copy_default_mcc_records.patch: Fix MCC records count.
++0053-opj_copy_image_header.patch: Propagate image header copy failures and validate component counts.
+ 
+ Note:
+ 
+diff --git a/third_party/libopenjpeg/image.c b/third_party/libopenjpeg/image.c
+index 017201a002b06bca69853a1039cbc65059e7d2fb..9af8a06019083f66832f1ca8b04669f27aeeb722 100644
+--- a/third_party/libopenjpeg/image.c
++++ b/third_party/libopenjpeg/image.c
+@@ -160,9 +160,10 @@ void opj_image_comp_header_update(opj_image_t * p_image_header,
+  * @param   p_image_src     the src image
+  * @param   p_image_dest    the dest image
+  *
++ * @return OPJ_TRUE if successful, OPJ_FALSE otherwise.
+  */
+-void opj_copy_image_header(const opj_image_t* p_image_src,
+-                           opj_image_t* p_image_dest)
++OPJ_BOOL opj_copy_image_header(const opj_image_t* p_image_src,
++                               opj_image_t* p_image_dest)
+ {
+     OPJ_UINT32 compno;
+ 
+@@ -170,6 +171,10 @@ void opj_copy_image_header(const opj_image_t* p_image_src,
+     assert(p_image_src != 00);
+     assert(p_image_dest != 00);
+ 
++    if (p_image_src->numcomps == 0 || !p_image_src->comps) {
++        return OPJ_FALSE;
++    }
++
+     p_image_dest->x0 = p_image_src->x0;
+     p_image_dest->y0 = p_image_src->y0;
+     p_image_dest->x1 = p_image_src->x1;
+@@ -193,7 +198,7 @@ void opj_copy_image_header(const opj_image_t* p_image_src,
+     if (!p_image_dest->comps) {
+         p_image_dest->comps = NULL;
+         p_image_dest->numcomps = 0;
+-        return;
++        return OPJ_FALSE;
+     }
+ 
+     for (compno = 0; compno < p_image_dest->numcomps; compno++) {
+@@ -212,7 +217,7 @@ void opj_copy_image_header(const opj_image_t* p_image_src,
+         if (!p_image_dest->icc_profile_buf) {
+             p_image_dest->icc_profile_buf = NULL;
+             p_image_dest->icc_profile_len = 0;
+-            return;
++            return OPJ_FALSE;
+         }
+         memcpy(p_image_dest->icc_profile_buf,
+                p_image_src->icc_profile_buf,
+@@ -221,7 +226,7 @@ void opj_copy_image_header(const opj_image_t* p_image_src,
+         p_image_dest->icc_profile_buf = NULL;
+     }
+ 
+-    return;
++    return OPJ_TRUE;
+ }
+ 
+ opj_image_t* OPJ_CALLCONV opj_image_tile_create(OPJ_UINT32 numcmpts,
+diff --git a/third_party/libopenjpeg/image.h b/third_party/libopenjpeg/image.h
+index bad83c61359b2f4cac5676bd435540637dec7e5e..95c8d1a7686a07b3e9176683c4ad8c76fac1037a 100644
+--- a/third_party/libopenjpeg/image.h
++++ b/third_party/libopenjpeg/image.h
+@@ -61,8 +61,8 @@ opj_image_t* opj_image_create0(void);
+ void opj_image_comp_header_update(opj_image_t * p_image,
+                                   const struct opj_cp* p_cp);
+ 
+-void opj_copy_image_header(const opj_image_t* p_image_src,
+-                           opj_image_t* p_image_dest);
++OPJ_BOOL opj_copy_image_header(const opj_image_t* p_image_src,
++                               opj_image_t* p_image_dest);
+ 
+ /*@}*/
+ 
+diff --git a/third_party/libopenjpeg/j2k.c b/third_party/libopenjpeg/j2k.c
+index 2835adbbb46a78317e7484288e4b857639cfa3fc..6ddbcba511874ce7ae0460c03ae602a484d58adc 100644
+--- a/third_party/libopenjpeg/j2k.c
++++ b/third_party/libopenjpeg/j2k.c
+@@ -8546,7 +8546,11 @@ OPJ_BOOL opj_j2k_read_header(opj_stream_private_t *p_stream,
+     }
+ 
+     /* Copy codestream image information to the output image */
+-    opj_copy_image_header(p_j2k->m_private_image, *p_image);
++    if (!opj_copy_image_header(p_j2k->m_private_image, *p_image)) {
++        opj_image_destroy(*p_image);
++        *p_image = NULL;
++        return OPJ_FALSE;
++    }
+ 
+     return OPJ_TRUE;
+ }
+@@ -12415,7 +12419,9 @@ OPJ_BOOL opj_j2k_decode(void * j2k,
+                         opj_event_mgr_t * p_manager)
+ {
+     opj_j2k_t* p_j2k = (opj_j2k_t*)j2k;
+-    if (!p_image) {
++    /* The tile decoder uses the codestream component indices. */
++    if (!p_image || !p_image->comps || !p_j2k->m_private_image ||
++            p_image->numcomps != p_j2k->m_private_image->numcomps) {
+         return OPJ_FALSE;
+     }
+ 
+@@ -12450,7 +12456,9 @@ OPJ_BOOL opj_j2k_decode(void * j2k,
+             return OPJ_FALSE;
+         }
+     }
+-    opj_copy_image_header(p_image, p_j2k->m_output_image);
++    if (!opj_copy_image_header(p_image, p_j2k->m_output_image)) {
++        return OPJ_FALSE;
++    }
+ 
+     /* customization of the decoding */
+     if (!opj_j2k_setup_decoding(p_j2k, p_manager)) {
+@@ -12479,7 +12487,7 @@ OPJ_BOOL opj_j2k_get_tile(void *j2k,
+     OPJ_UINT32 l_tile_x, l_tile_y;
+     opj_image_comp_t* l_img_comp;
+ 
+-    if (!p_image) {
++    if (!p_image || !p_image->comps || !p_j2k->m_private_image) {
+         opj_event_msg(p_manager, EVT_ERROR, "We need an image previously created.\n");
+         return OPJ_FALSE;
+     }
+@@ -12562,7 +12570,9 @@ OPJ_BOOL opj_j2k_get_tile(void *j2k,
+     if (!(p_j2k->m_output_image)) {
+         return OPJ_FALSE;
+     }
+-    opj_copy_image_header(p_image, p_j2k->m_output_image);
++    if (!opj_copy_image_header(p_image, p_j2k->m_output_image)) {
++        return OPJ_FALSE;
++    }
+ 
+     p_j2k->m_specific_param.m_decoder.m_tile_ind_to_dec = (OPJ_INT32)tile_index;
+ 
+@@ -12822,7 +12832,9 @@ OPJ_BOOL opj_j2k_start_compress(void *j2k,
+         opj_event_msg(p_manager, EVT_ERROR, "Failed to allocate image header.");
+         return OPJ_FALSE;
+     }
+-    opj_copy_image_header(p_image, p_j2k->m_private_image);
++    if (!opj_copy_image_header(p_image, p_j2k->m_private_image)) {
++        return OPJ_FALSE;
++    }
+ 
+     /* TODO_MSD: Find a better way */
+     if (p_image->comps) {
