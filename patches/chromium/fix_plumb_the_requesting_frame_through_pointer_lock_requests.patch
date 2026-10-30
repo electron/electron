@@ -152,10 +152,10 @@ index 5b87ed5def8b6ff737cdc59aa577fd49f7ab257a..a9b3a67e80a325079b9519da1a6436d5
    virtual void UnlockPointer(RenderWidgetHostImpl* render_widget_host) {}
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 3d47100a7171a798f7ec112c211ff4a89db58e7d..5e5ca5f5f7a9d34f3e3e61396ee3f83e9da96320 100644
+index 36de3a81299fd323732b5b927bc555c9f2d4de5d..d7d27717d92a762d1c519730c35075aed13e49c9 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -3714,6 +3714,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
+@@ -3732,6 +3732,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
  }
  
  void RenderWidgetHostImpl::RequestMouseLock(
@@ -163,7 +163,7 @@ index 3d47100a7171a798f7ec112c211ff4a89db58e7d..5e5ca5f5f7a9d34f3e3e61396ee3f83e
      bool from_user_gesture,
      bool unadjusted_movement,
      input::InputRouterImpl::RequestMouseLockCallback response) {
-@@ -3750,7 +3751,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
+@@ -3768,7 +3769,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
      return;
    }
  
@@ -327,7 +327,7 @@ index 7de83840a36f57d5fc965cf2d09130842d11ae79..5a70714f1e22053fffd6ae3752bf61ac
    }
  }
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.h b/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
-index 51ee92fa437e83c7ab15bef9b76a02e1cb52799e..721bd2febfbb5c70f3a46a86e0ea15c5bcbcf42d 100644
+index 3dac4effaa57aa6ae44a6b5dd8e369d1298d792c..1724b70bbe27eee2bbc981d90c55e2d2f2022067 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
 @@ -333,6 +333,7 @@ class CORE_EXPORT WebFrameWidgetImpl

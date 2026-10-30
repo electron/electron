@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d7ebd20e5a3a6850c13a0ea983fe92814c432344..1d919e7f233fe489398c98777079378feed2c977 100644
+index 40539b95914bc2110e8a795701b76826a5898ce4..e73001ff17f2dfd5049afb1e60432dbe2c896c84 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1161,6 +1161,7 @@ component("base") {
@@ -137,7 +137,7 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index f99309cc2e4e15f2bc1fb7d48099e7108627a5b3..7da8a80053470ae109b3f676f1a06640824f33c4 100644
+index 3619d263db489182fb2d8e8dd1b277328bbf584c..16d7e1501f7bb76955d721e720db0a3f25b7fc36 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 @@ -1032,6 +1032,7 @@ if (is_clang_or_gcc) {
@@ -1013,7 +1013,7 @@ index 8d9bb6d221f29b88f9a61c86ee0c663b978c7e5f..21909c75b067cac4f775ba076dc20418
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 65ce7bc123aa17ed21c9a50aa0bac110fed51463..ed9536b4b2d9ff308ef3e396ec4e11e98b3dcd1b 100644
+index 4f2a8497fb53dd781b97afdbd2513b0155c81f6f..044a70f8ba13cfa2a51c8a9acef69a035e293674 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -396,6 +396,7 @@ source_set("browser") {
@@ -1059,7 +1059,7 @@ index b90121c67e80a85f28af62fc10bb78e1a37dae2a..0511bc88df989b9aaf2938a2f2cb9320
    ui::AXTreeID parent_ax_tree_id_ = ui::AXTreeIDUnknown();
  
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 247318973ed1f315c0329a23152cdb5f21bdf228..2ec384e50339c09c08af0caaf35750eb0b748a28 100644
+index f0e7865671113e01d974eaf309bd733d5f1ed384..81599ed6309ff999045443a6e7c3553567d8c950 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -58,6 +58,7 @@
@@ -1081,7 +1081,7 @@ index 247318973ed1f315c0329a23152cdb5f21bdf228..2ec384e50339c09c08af0caaf35750eb
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1897,10 +1900,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1902,10 +1905,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1094,7 +1094,7 @@ index 247318973ed1f315c0329a23152cdb5f21bdf228..2ec384e50339c09c08af0caaf35750eb
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1975,9 +1980,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1980,9 +1985,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1106,7 +1106,7 @@ index 247318973ed1f315c0329a23152cdb5f21bdf228..2ec384e50339c09c08af0caaf35750eb
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2595,20 +2602,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2603,20 +2610,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8aab76534c35a11ff3678417f235cef67c69f8ed..a36431ad84569ebb7da44872824752b1d00a8bbd 100644
+index 1158515dfcb29979fe89c9f95334a25c755c2020..4dc45e60c334bbb610df12e87c4d94ff558f7b0d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index 8aab76534c35a11ff3678417f235cef67c69f8ed..a36431ad84569ebb7da44872824752b1
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3457,6 +3461,7 @@ test("content_unittests") {
+@@ -3458,6 +3462,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1289,7 +1289,7 @@ index 9e1af8c4ed42041d88a94277691cab2dd20f149f..8e8e00b960fd1359f63479edde6d6489
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index a75d7cad7cabb3c1e829cb8b12b40b364ec552e3..ad12449255a49326594c1de02753a4533e92980f 100644
+index d73f8e50af2722299724592b73c817034b8e3b3d..bd7748cbf0be3aab349aa8ad1590e6283c45c451 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -40,7 +40,9 @@
@@ -1369,10 +1369,10 @@ index 6ea6c1130663f04ee766750dde257f3cc701a5b0..355930d10267b8c2c95c320c6d154080
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 8667a1ba4f71a57f61915bb2588a338e5960a952..099a65446d90b10b021ac47d1c4e26b179e8e40b 100644
+index 9efc3ebf980c967e0fed2ee3a74417bfdd409096..80184dc247aa269d593fafbe09ef2a35ee2504f4 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -198,6 +198,7 @@ source_set("audio") {
+@@ -200,6 +200,7 @@ source_set("audio") {
        "CoreMedia.framework",
        "ScreenCaptureKit.framework",
      ]

@@ -38,7 +38,7 @@ ShouldBlockAccessToPath() allow plain subfolders of WSL home directories
 check.
 
 diff --git a/chrome/browser/file_system_access/BUILD.gn b/chrome/browser/file_system_access/BUILD.gn
-index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6eea230e6 100644
+index 0c1debacd07cb9b84a1615b5b17fb9e88d905806..c1666f79eff726895e886fa784dac9dac0ed42f0 100644
 --- a/chrome/browser/file_system_access/BUILD.gn
 +++ b/chrome/browser/file_system_access/BUILD.gn
 @@ -40,6 +40,7 @@ source_set("file_system_access") {
@@ -698,7 +698,7 @@ index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index fe5b89140f06b95ecf7dab7159fdb70abd7e933d..d6dd4a80ab5b8524fed5e9d57143f51d19007103 100644
+index 89545945194c5d8da8bf317f0fd9edff0435354d..749198de7db0a2627b24fb1c546e82a3c8f30b25 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -268,615 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
