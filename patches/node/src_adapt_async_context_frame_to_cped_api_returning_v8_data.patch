@@ -10,15 +10,24 @@ V2 APIs, which use v8::Data instead of v8::Value.
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8267927
 
 diff --git a/src/async_context_frame.cc b/src/async_context_frame.cc
-index d96f8ee95eb0d1d128f2af729d771e1a0c342b39..3e29674dbc00fe7901d07a59c96a5c5ad93ffa6e 100644
+index 2e63790457337577966b215993c3cbb257796b62..a2afd577d42534024a7aec3b4f619d27a8460159 100644
 --- a/src/async_context_frame.cc
 +++ b/src/async_context_frame.cc
 @@ -34,7 +34,7 @@ Scope::~Scope() {
  }
  
  Local<Value> current(Isolate* isolate) {
--  return isolate->GetContinuationPreservedEmbedderData();
+-  return isolate->GetContinuationPreservedEmbedderDataV2().As<Value>();
 +  return isolate->GetContinuationPreservedEmbedderData().As<Value>();
+ }
+ 
+ void set(Environment* env, Local<Value> value) {
+@@ -42,7 +42,7 @@ void set(Environment* env, Local<Value> value) {
+     return;
+   }
+ 
+-  env->isolate()->SetContinuationPreservedEmbedderDataV2(value);
++  env->isolate()->SetContinuationPreservedEmbedderData(value);
  }
  
  void set(Isolate* isolate, Local<Value> value) {
