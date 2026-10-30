@@ -501,6 +501,42 @@ describe('chrome extensions', () => {
         w.destroy();
       }
     });
+
+    it('supports chrome.storage.sync as a storage area separate from local', async () => {
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage-sync'));
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false }
+      });
+      try {
+        const p = once(ipcMain, 'storage-sync-result');
+        await w.loadURL(url);
+        const [, json] = await p;
+        const result = JSON.parse(json);
+        expect(result.error).toBeUndefined();
+        expect(result.change).toEqual({
+          key: { newValue: 'sync-value' },
+          other: { newValue: 'sync-other' }
+        });
+        expect(result.sync).toEqual({ key: 'sync-value', other: 'sync-other' });
+        expect(result.local).toEqual({ key: 'local-value' });
+        expect(result.syncAfterRemove).toEqual({ key: 'sync-value' });
+        expect(result.bytesInUse).toBeTypeOf('number');
+        expect(result.bytesInUse).toBeGreaterThan(0);
+        expect(result.perItemError).toBeTypeOf('string');
+        expect(result.perItemError).toContain('kQuotaBytesPerItem quota exceeded');
+        expect(result.syncAfterClear).toEqual({});
+        expect(result.localAfterSyncClear).toEqual({ key: 'local-value' });
+        expect(result.constants).toEqual({
+          QUOTA_BYTES: 102400,
+          QUOTA_BYTES_PER_ITEM: 8192,
+          MAX_ITEMS: 512
+        });
+      } finally {
+        w.destroy();
+      }
+    });
   });
 
   describe('chrome.webRequest', () => {
