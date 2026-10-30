@@ -6,7 +6,6 @@
 //   baseline   Electron build it is compared against (default: the nightly
 //              before the candidate, or the previous release on the
 //              candidate's major line)
-//   cft        Chrome for Testing at the candidate's Chromium milestone
 //
 // Electron versions and their Chromium versions come from @electron/fiddle-core
 // (releases.electronjs.org), and the Electron and chromedriver zips are
@@ -16,7 +15,7 @@
 //
 // Usage:
 //   node script/benchmarks/fetch-targets.mts --out <dir>
-//     [--candidate <version>] [--baseline <version>] [--cft auto|none|<version>]
+//     [--candidate <version>] [--baseline <version>]
 //     [--max-candidate-age-hours <n>]
 //
 // Versions are Electron versions without the leading "v", e.g. 45.1.0,
@@ -34,34 +33,10 @@ import { downloadArtifact } from '@electron/get';
 import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import type { Target, TargetsFile } from './lib/types.mts';
-import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
-
-const CFT_JSON = 'https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json';
-const CFT_BUCKET = 'https://storage.googleapis.com/chrome-for-testing-public';
-
-interface CftPlatform {
-  key: string;
-  binary: string;
-  exe: string;
-}
-
-function cftPlatform(platform: string, arch: string): CftPlatform {
-  if (platform === 'linux') return { key: 'linux64', binary: 'chrome', exe: '' };
-  if (platform === 'darwin') {
-    return {
-      key: arch === 'arm64' ? 'mac-arm64' : 'mac-x64',
-      binary: 'Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
-      exe: ''
-    };
-  }
-  return { key: arch === 'ia32' ? 'win32' : 'win64', binary: 'chrome.exe', exe: '.exe' };
-}
 
 const isNightly = (version: string) => version.includes('-nightly.');
 
@@ -152,14 +127,6 @@ async function loadVersions(cacheDir: string, needed: boolean): Promise<Versions
   }
 }
 
-// Downloads `url` to `dest`.
-async function download(url: string, dest: string) {
-  console.log(`[fetch-targets] downloading ${url}`);
-  const response = await fetch(url, { signal: AbortSignal.timeout(15 * 60_000) });
-  if (!response.ok || !response.body) throw new Error(`GET ${url} failed: ${response.status} ${response.statusText}`);
-  await pipeline(Readable.fromWeb(response.body as NodeReadableStream<Uint8Array>), fs.createWriteStream(dest));
-}
-
 async function fetchElectron(id: string, version: string, versions: Versions, outDir: string): Promise<Target> {
   const dir = path.join(outDir, id);
   fs.rmSync(dir, { recursive: true, force: true });
@@ -189,74 +156,7 @@ async function fetchElectron(id: string, version: string, versions: Versions, ou
     chromiumVersion = output.match(/ChromeDriver (\d+\.\d+\.\d+\.\d+)/)?.[1];
     if (!chromiumVersion) throw new Error(`Cannot determine the Chromium version of ${version}: ${output}`);
   }
-  return { id, kind: 'electron', electronVersion: version, chromiumVersion, binary, driver };
-}
-
-const compareDotted = (a: string, b: string) => {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
-  }
-  return 0;
-};
-
-interface CftEntry {
-  version: string;
-  downloads?: Record<string, { platform: string }[] | undefined>;
-}
-
-// Picks the Chrome for Testing build for `chromiumVersion`: an exact match if
-// one exists, otherwise the newest build with the same major version.
-async function resolveCft(chromiumVersion: string, key: string): Promise<string | null> {
-  try {
-    const response = await fetch(CFT_JSON, { signal: AbortSignal.timeout(60_000) });
-    if (!response.ok) throw new Error(`GET ${CFT_JSON} failed: ${response.status} ${response.statusText}`);
-    const { versions } = (await response.json()) as { versions: CftEntry[] };
-    const major = chromiumVersion.split('.')[0];
-    const hasDownload = (entry: CftEntry, name: string) => !!entry.downloads?.[name]?.some((d) => d.platform === key);
-    const usable = versions.filter(
-      (entry) =>
-        entry.version.split('.')[0] === major && hasDownload(entry, 'chrome') && hasDownload(entry, 'chromedriver')
-    );
-    const match =
-      usable.find((entry) => entry.version === chromiumVersion) ??
-      usable.sort((a, b) => compareDotted(b.version, a.version))[0];
-    if (match) return match.version;
-    console.warn(`[fetch-targets] no Chrome for Testing build for milestone ${major}`);
-    return null;
-  } catch (error) {
-    // Fall back to the exact version, which exists for most Chromium builds
-    // Electron ships, straight from the bucket.
-    console.warn(
-      `[fetch-targets] could not read the Chrome for Testing index (${errorMessage(error)}); trying ${chromiumVersion}`
-    );
-    const response = await fetch(`${CFT_BUCKET}/${chromiumVersion}/${key}/chrome-${key}.zip`, {
-      headers: { Range: 'bytes=0-0' },
-      signal: AbortSignal.timeout(60_000)
-    });
-    return response.ok ? chromiumVersion : null;
-  }
-}
-
-async function fetchCft(version: string, platform: CftPlatform, outDir: string): Promise<Target> {
-  const { key } = platform;
-  const dir = path.join(outDir, 'cft');
-  fs.mkdirSync(dir, { recursive: true });
-  // Chrome for Testing publishes no checksums; the bucket is HTTPS-only.
-  for (const name of ['chrome', 'chromedriver']) {
-    const zip = path.join(dir, `${name}-${key}.zip`);
-    await download(`${CFT_BUCKET}/${version}/${key}/${name}-${key}.zip`, zip);
-    unzip(zip, path.join(dir, name));
-    fs.rmSync(zip);
-  }
-  return {
-    id: 'cft',
-    kind: 'chrome',
-    chromiumVersion: version,
-    binary: path.join(dir, 'chrome', `chrome-${key}`, platform.binary),
-    driver: path.join(dir, 'chromedriver', `chromedriver-${key}`, `chromedriver${platform.exe}`)
-  };
+  return { id, electronVersion: version, chromiumVersion, binary, driver };
 }
 
 // crossbench cannot detect Electron from its path or parse `electron
@@ -264,16 +164,14 @@ async function fetchCft(version: string, platform: CftPlatform, outDir: string):
 // driver is Electron's own chromedriver, and the harness app is passed with
 // --app. Runs must use --headless (see README.md).
 export function browserConfig(target: Target, harnessApp: string) {
-  const flags = ['--no-sandbox'];
-  if (target.kind === 'electron') flags.push(`--app=${harnessApp}`);
   return {
     browsers: {
       [target.id]: {
         path: target.binary,
-        type: target.kind === 'electron' ? 'chromium' : 'chrome',
+        type: 'chromium',
         version: target.chromiumVersion,
         driver: target.driver,
-        flags
+        flags: ['--no-sandbox', `--app=${harnessApp}`]
       }
     }
   };
@@ -285,14 +183,13 @@ async function main() {
       out: { type: 'string' },
       candidate: { type: 'string' },
       baseline: { type: 'string' },
-      cft: { type: 'string', default: 'auto' },
       'harness-app': { type: 'string', default: path.join(import.meta.dirname, 'harness-app') },
       // Scheduled runs skip days without a new nightly.
       'max-candidate-age-hours': { type: 'string' }
     }
   });
   if (!args.out) throw new Error('--out is required');
-  for (const value of [args.candidate, args.baseline, args.cft]) {
+  for (const value of [args.candidate, args.baseline]) {
     if (value && !/^[\w.-]+$/.test(value)) throw new Error(`Invalid version: ${JSON.stringify(value)}`);
   }
 
@@ -324,16 +221,6 @@ async function main() {
   }
   fs.rmSync(path.join(outDir, 'downloads'), { recursive: true, force: true });
 
-  if (args.cft !== 'none') {
-    const cft = cftPlatform(platform, arch);
-    const cftVersion = args.cft === 'auto' ? await resolveCft(targets[0].chromiumVersion, cft.key) : args.cft;
-    if (cftVersion) {
-      targets.push(await fetchCft(cftVersion, cft, outDir));
-    } else {
-      console.warn('[fetch-targets] skipping Chrome for Testing: no matching build');
-    }
-  }
-
   const harnessApp = path.resolve(args['harness-app']);
   for (const target of targets) {
     target.browserConfig = path.join(outDir, `${target.id}.browser.json`);
@@ -342,9 +229,7 @@ async function main() {
   const targetsFile: TargetsFile = { platform, arch, targets };
   fs.writeFileSync(path.join(outDir, 'targets.json'), JSON.stringify(targetsFile, null, 2));
   for (const target of targets) {
-    console.log(
-      `[fetch-targets] ${target.id}: ${target.electronVersion ?? 'Chrome for Testing'} (Chromium ${target.chromiumVersion})`
-    );
+    console.log(`[fetch-targets] ${target.id}: ${target.electronVersion} (Chromium ${target.chromiumVersion})`);
   }
 }
 

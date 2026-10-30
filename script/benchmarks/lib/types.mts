@@ -1,8 +1,6 @@
 // Shapes of the files fetch-targets.mts, run.mts and compare.mts hand to each
 // other.
 
-export type TargetKind = 'electron' | 'chrome';
-
 // Features the harness app reports for one Electron version (see
 // harness-app/main.js --cb-capabilities).
 export type Capabilities = Partial<Record<string, boolean | string>>;
@@ -10,8 +8,7 @@ export type Capabilities = Partial<Record<string, boolean | string>>;
 // One build to benchmark, as written to targets.json.
 export interface Target {
   id: string;
-  kind: TargetKind;
-  electronVersion?: string;
+  electronVersion: string;
   chromiumVersion: string;
   binary: string;
   driver: string;
@@ -27,8 +24,7 @@ export interface TargetsFile {
 // The part of a target recorded in metadata.json.
 export interface TargetInfo {
   id: string;
-  kind: TargetKind;
-  electronVersion?: string;
+  electronVersion: string;
   chromiumVersion: string;
   capabilities?: Capabilities;
 }

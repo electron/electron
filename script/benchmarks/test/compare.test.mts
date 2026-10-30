@@ -16,9 +16,8 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'benchmarks-compare-test-'));
 after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
 const TARGETS: TargetInfo[] = [
-  { id: 'candidate', kind: 'electron', electronVersion: '47.0.0', chromiumVersion: '158.0.1.0' },
-  { id: 'baseline', kind: 'electron', electronVersion: '46.0.0', chromiumVersion: '157.0.1.0' },
-  { id: 'cft', kind: 'chrome', chromiumVersion: '158.0.1.0' }
+  { id: 'candidate', electronVersion: '47.0.0', chromiumVersion: '158.0.1.0' },
+  { id: 'baseline', electronVersion: '46.0.0', chromiumVersion: '157.0.1.0' }
 ];
 
 // Writes a results dir laid out like run.mts and crossbench leave it. Each
@@ -94,8 +93,7 @@ describe('collectSamples', () => {
     const { samples, rejected } = collectSamples(dir, metadata);
     assert.deepEqual(samples['loading.first_load.fcp'], {
       candidate: [101, 102],
-      baseline: [101, 102],
-      cft: [101, 102]
+      baseline: [101, 102]
     });
     assert.deepEqual(rejected, []);
   });
@@ -218,8 +216,8 @@ describe('memoryMeasures', () => {
 });
 
 describe('findProblems', () => {
-  const problemsFor = (name: string, invocations: TestInvocation[], options?: { targets?: TargetInfo[] }) => {
-    const { dir, metadata } = writeResults(name, invocations, options);
+  const problemsFor = (name: string, invocations: TestInvocation[]) => {
+    const { dir, metadata } = writeResults(name, invocations);
     const { samples } = collectSamples(dir, metadata);
     const comparisons = compareTargets(samples, metadata.targets, { alpha: 0.05, minChange: 0.1 });
     return findProblems(samples, comparisons, metadata.targets);
@@ -229,13 +227,9 @@ describe('findProblems', () => {
     assert.deepEqual(problemsFor('complete', everyTarget(0)), []);
   });
 
-  it('reports a required comparison without results', () => {
-    const problems = problemsFor('no-cft', everyTarget(0, { cft: { exitCode: 1, values: null } }));
-    assert.deepEqual(problems, ['vs_cft: no metric has results for both cft and candidate']);
-  });
-
-  it('does not require Chrome for Testing when it was skipped', () => {
-    assert.deepEqual(problemsFor('skipped-cft', everyTarget(0).slice(0, 2), { targets: TARGETS.slice(0, 2) }), []);
+  it('reports a comparison without results', () => {
+    const problems = problemsFor('no-baseline', everyTarget(0, { baseline: { exitCode: 1, values: null } }));
+    assert.deepEqual(problems, ['vs_baseline: no metric has results for both baseline and candidate']);
   });
 });
 

@@ -7,20 +7,18 @@ runs them every day against the latest nightly.
 
 Every run is a **paired comparison on one machine**. CI runners are shared cloud
 VMs that change hosts between jobs, so raw numbers from different runs are not
-comparable. Instead, one job downloads every build it compares and runs them
-interleaved (A, B, C, B, C, A, ...) on the same runner:
-
-* **candidate vs baseline**: the latest nightly against the previous one, or
-  any two versions when dispatched by hand. This catches regressions.
-* **candidate vs Chrome for Testing**: the same Chromium version in Chrome.
-  The difference is Electron's own overhead.
+comparable. Instead, one job downloads both Electron builds it compares, a
+candidate and a baseline, and runs them interleaved (A, B, B, A, ...) on the
+same runner. By default the candidate is the latest nightly and the baseline
+the nightly before it; any two versions can be compared when the workflow is
+dispatched by hand. This catches regressions between Electron versions.
 
 ## What is measured
 
 | Suite | Stories | Metrics |
 | --- | --- | --- |
 | `loading` | `first_load`, `reload` (warm process, same page) | FCP and `loadEventEnd` in ms; PSS in MiB after `first_load` (total, browser, renderer and GPU processes) |
-| `trace` | `first_load`, `resize` (Electron only), traced | FCP and LCP in ms; resize latency median and p90 in ms |
+| `trace` | `first_load`, `resize`, traced | FCP and LCP in ms; resize latency median and p90 in ms |
 | `file_loading` | 1,500 small classic scripts and ES modules, loaded through `file://`, `protocol.registerFileProtocol`, `protocol.handle` + `fs`, and `protocol.handle` + `net.fetch` | Navigation start to "all files evaluated" in ms, and the ratio of each custom protocol to `file://` |
 | `speedometer` | Speedometer 3.1 | Score |
 | `jetstream` | JetStream 2.2 | Score |
@@ -57,10 +55,6 @@ what PGO trains on and nothing is fetched from the network during a run.
 MotionMark is not included yet: the revision PGO pins no longer exposes the
 `window.benchmarkRunnerClient` global that crossbench's MotionMark probe reads.
 
-Chrome for Testing has no harness, so it skips `resize`, and it only runs the
-`file://` classic-script story because Chrome blocks module scripts from
-`file://`.
-
 Other crossbench probes are left out on purpose. `system.stats` forks `ps`
 every 100 ms for the whole run, which disturbs the timings, and only records
 system-wide text snapshots. `v8.log` and `profiling` (`perf`) are heavy
@@ -74,10 +68,9 @@ the CPU governor, which the CI VMs don't expose.
   [`@electron/fiddle-core`](https://github.com/electron/fiddle-core), installs
   each Electron build with fiddle-core's `Installer` and downloads the matching
   `chromedriver` with [`@electron/get`](https://github.com/electron/get). Both
-  are checked against the release's `SHASUMS256.txt`. It then downloads Chrome
-  for Testing at the candidate's Chromium version, and writes a crossbench
-  browser config per target and `targets.json`. Builds are for the host's
-  platform and architecture.
+  are checked against the release's `SHASUMS256.txt`. It then writes a
+  crossbench browser config per target and `targets.json`. Builds are for the
+  host's platform and architecture.
 * [`run.mts`](run.mts) installs crossbench at the pinned revision
   (`CROSSBENCH_REVISION`) into a virtualenv, serves the pages and press
   benchmarks, generates the page configs, and runs the rounds. It records the
@@ -95,8 +88,8 @@ the CPU governor, which the CI VMs don't expose.
   (`electron.perf.<metric>`) and relative changes in percent
   (`electron.perf.delta.<metric>`) to Datadog. Only invocations that exited
   with 0 and reported every repetition are used. It exits non-zero when there
-  are no usable results, or when candidate vs baseline (or vs Chrome for
-  Testing, unless it was skipped) has no comparable metric.
+  are no usable results, or when candidate vs baseline has no comparable
+  metric.
 * [`harness-app/`](harness-app) is the Electron app crossbench launches. It
   registers one custom scheme per file-loading strategy and exposes
   `cbHarness.setSize()` to the page. Features an older Electron version lacks
@@ -127,9 +120,8 @@ node script/benchmarks/compare.mts --results /tmp/bench/results --dry-run
 ```
 
 `--dry-run` prints the Datadog payload instead of sending it. Leave out
-`--candidate` and `--baseline` to compare the two latest nightlies, and pass
-`--cft none` to skip Chrome for Testing. The tests run with
-`node --test script/benchmarks/test/*.test.mts`.
+`--candidate` and `--baseline` to compare the two latest nightlies. The tests
+run with `node --test script/benchmarks/test/*.test.mts`.
 
 ## Caveats
 

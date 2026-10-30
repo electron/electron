@@ -1,6 +1,6 @@
 // Exposes the benchmark harness API to pages loaded in the host window.
 // Pages check for window.cbHarness and skip the scenario when it is missing
-// (in Chrome for Testing, or on Electron versions without contextBridge).
+// (on Electron versions without contextBridge).
 const { contextBridge, ipcRenderer } = require('electron');
 
 if (contextBridge && typeof ipcRenderer.invoke === 'function') {

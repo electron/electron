@@ -3,7 +3,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type { Capabilities, TargetKind } from './types.mts';
+import type { Capabilities } from './types.mts';
 
 // The file-loading strategies. Each custom scheme is registered by the
 // harness app (see harness-app/main.js) and only exists when the Electron
@@ -163,8 +163,7 @@ export function writeFileLoadingSite(root: string, count: number) {
   );
 }
 
-// Page configs for one target. `kind` is 'electron' or 'chrome';
-// `capabilities` comes from the harness app's --cb-capabilities output.
+// Page configs for one target. `capabilities` comes from the harness app's --cb-capabilities output.
 const hasPainted = "return performance.getEntriesByName('first-contentful-paint').length > 0";
 
 // One crossbench page action, e.g. { action: 'get', url, ready_state }.
@@ -172,14 +171,13 @@ type Action = Record<string, string>;
 type Pages = Record<string, Action[]>;
 
 interface PageConfigOptions {
-  kind: TargetKind;
   capabilities?: Capabilities;
   baseUrl: string;
   fileRoot: string;
   resizeCount?: number;
 }
 
-export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resizeCount = 20 }: PageConfigOptions) {
+export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, resizeCount = 20 }: PageConfigOptions) {
   const firstLoad: Action[] = [
     { action: 'get', url: `${baseUrl}/pages/index.html`, ready_state: 'complete' },
     { action: 'wait_for_condition', timeout: '20s', condition: hasPainted },
@@ -204,7 +202,7 @@ export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resize
 
   // Stories measured from a trace (TRACE_QUERIES), in their own invocation.
   const trace: Pages = { first_load: firstLoad };
-  if (kind === 'electron' && capabilities.setSize) {
+  if (capabilities.setSize) {
     trace.resize = [
       { action: 'get', url: `${baseUrl}/pages/resize.html`, ready_state: 'complete' },
       { action: 'wait', duration: '500ms' },
@@ -215,11 +213,8 @@ export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resize
 
   const fileLoading: Pages = {};
   for (const strategy of FILE_STRATEGIES) {
-    if (kind !== 'electron' && strategy.scheme !== 'file') continue;
     if (strategy.capability && !capabilities[strategy.capability]) continue;
     for (const fileKind of FILE_KINDS) {
-      // Chrome blocks module scripts from file:// (opaque origin CORS).
-      if (kind !== 'electron' && fileKind === 'module') continue;
       const page = `${fileRoot}/${fileKind}.html`;
       // crossbench's `get` only accepts well-known schemes, and file:// must
       // be a browser-initiated navigation, so custom schemes navigate from

@@ -2,8 +2,7 @@
 //
 // For every metric it takes one sample per round and target (the median of
 // that round's repetitions), then compares the candidate against the baseline
-// and against Chrome for Testing with Welch's t-test and the Mann-Whitney U
-// test. A change is flagged only when both tests give p < alpha AND the
+// with Welch's t-test and the Mann-Whitney U test. A change is flagged only when both tests give p < alpha AND the
 // medians differ by at least --min-change.
 //
 // Writes <results>/comparison.json and a Markdown table (to
@@ -67,8 +66,7 @@ const PRESS_RESULTS: Record<string, { file: string; keys: string[] }> = {
 };
 
 const COMPARISONS: ComparisonDefinition[] = [
-  { name: 'vs_baseline', reference: 'baseline', candidate: 'candidate', title: 'Candidate vs baseline' },
-  { name: 'vs_cft', reference: 'cft', candidate: 'candidate', title: 'Electron vs Chrome for Testing (same milestone)' }
+  { name: 'vs_baseline', reference: 'baseline', candidate: 'candidate', title: 'Candidate vs baseline' }
 ];
 
 const readJson = (file: string): any => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -283,16 +281,12 @@ export function collectSamples(resultsDir: string, metadata: RunMetadata): { sam
 const lowerIsBetter = (metric: string) => !metric.endsWith('.score');
 
 // Reasons the results can't be trusted as a whole: no samples at all, or a
-// required comparison without a single comparable metric. Candidate vs
-// baseline is always required; Electron vs Chrome for Testing only when a CfT
-// target was fetched (fetch-targets.mts --cft none skips it on purpose).
+// comparison without a single comparable metric.
 export function findProblems(samples: Samples, comparisons: Comparison[], targets: TargetInfo[]): string[] {
   const problems: string[] = [];
   if (Object.keys(samples).length === 0) problems.push('no usable benchmark results');
   const ids = new Set(targets.map((target) => target.id));
   for (const { name, reference, candidate } of COMPARISONS) {
-    const required = name === 'vs_baseline' || ids.has(reference);
-    if (!required) continue;
     const comparison = comparisons.find((c) => c.name === name);
     if (!comparison) {
       problems.push(`${name}: missing target ${ids.has(reference) ? candidate : reference}`);
@@ -327,9 +321,7 @@ export function compareTargets(
 }
 
 const describeTarget = (target: TargetInfo) =>
-  target.kind === 'electron'
-    ? `Electron ${target.electronVersion} (Chromium ${target.chromiumVersion})`
-    : `Chrome for Testing ${target.chromiumVersion}`;
+  `Electron ${target.electronVersion} (Chromium ${target.chromiumVersion})`;
 
 function formatValue(metric: string, value: number) {
   if (!Number.isFinite(value)) return 'n/a';
@@ -430,7 +422,7 @@ export function datadogSeries(
           ...common,
           tag('benchmark', metric.split('.')[0]),
           tag('target', id),
-          tag('electron_version', target.electronVersion ?? 'none'),
+          tag('electron_version', target.electronVersion),
           tag('chromium_version', target.chromiumVersion)
         ]
       });
@@ -453,7 +445,7 @@ export function datadogSeries(
           tag('comparison', comparison.name),
           tag('electron_version', candidate.electronVersion),
           tag('chromium_version', candidate.chromiumVersion),
-          tag('reference_version', reference.electronVersion ?? reference.chromiumVersion),
+          tag('reference_version', reference.electronVersion),
           tag('verdict', m.verdict)
         ]
       });

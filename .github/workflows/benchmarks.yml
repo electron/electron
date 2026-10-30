@@ -1,9 +1,8 @@
 name: Benchmarks
 
 # Runs the crossbench-based benchmarks in script/benchmarks/ (see its README):
-# the latest nightly against the previous nightly and against Chrome for
-# Testing at the same Chromium version, interleaved on one runner, with the
-# results sent to Datadog. Only paired results are meaningful; runners change
+# the latest nightly against the previous nightly, interleaved on one runner,
+# with the results sent to Datadog. Only paired results are meaningful; runners change
 # hosts between jobs, so don't compare raw values across runs.
 #
 # Dispatch with explicit versions to compare any two builds, for example to

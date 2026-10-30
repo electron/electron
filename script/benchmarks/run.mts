@@ -1,6 +1,6 @@
 // Runs the benchmark suites against every target in targets.json (written by
 // fetch-targets.mts), interleaved: each round runs every suite once per
-// target (A, B, C, then B, C, A, ...) so slow drift on the host affects all
+// target (A, B, then B, A, ...) so slow drift on the host affects all
 // targets equally. Results land in <out>/rounds/<round>/<suite>/<target>/ and
 // <out>/metadata.json; compare.mts turns them into a comparison.
 //
@@ -334,9 +334,9 @@ async function main() {
   const capabilities = new Map<string, Capabilities>();
   const pageConfigPaths = new Map<string, Record<string, string>>();
   for (const target of targets) {
-    const targetCapabilities = target.kind === 'electron' ? probeCapabilities(target, harnessApp, workDir) : {};
+    const targetCapabilities = probeCapabilities(target, harnessApp, workDir);
     capabilities.set(target.id, targetCapabilities);
-    const configs = pageConfigs({ kind: target.kind, capabilities: targetCapabilities, baseUrl, fileRoot });
+    const configs = pageConfigs({ capabilities: targetCapabilities, baseUrl, fileRoot });
     const paths: Record<string, string> = {};
     for (const [suite, config] of Object.entries(configs)) {
       if (Object.keys(config.pages).length === 0) continue;
@@ -354,9 +354,8 @@ async function main() {
     repeat,
     suites,
     fileCount,
-    targets: targets.map(({ id, kind, electronVersion, chromiumVersion }) => ({
+    targets: targets.map(({ id, electronVersion, chromiumVersion }) => ({
       id,
-      kind,
       electronVersion,
       chromiumVersion,
       capabilities: capabilities.get(id)
