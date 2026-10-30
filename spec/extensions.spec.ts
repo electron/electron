@@ -838,6 +838,22 @@ describe('chrome extensions', () => {
       expect(receivedMessage).toEqual({ some: 'message' });
     });
 
+    it('exposes the extension dynamicId as chrome.runtime.dynamicId in the background page', async () => {
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'lazy-background-page')
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`chrome-extension://${extension.id}/page-runtime-get-background.html`);
+      await w.webContents.executeJavaScript('window.completionPromise');
+      const backgroundDynamicId = await w.webContents.executeJavaScript(
+        'new Promise((resolve) => chrome.runtime.getBackgroundPage((bg) => resolve(bg.chrome.runtime.dynamicId)))'
+      );
+      expect(extension.dynamicId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(extension.dynamicId).not.toBe(extension.id);
+      expect(backgroundDynamicId).toBe(extension.dynamicId);
+    });
+
     it('has session in background page', async () => {
       const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
