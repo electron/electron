@@ -557,6 +557,14 @@ void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
       SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
 }
 
+// Fails a V8 API check: setting an internal field on a plain object, which
+// has none. V8 reports that through the isolate's fatal error handler with
+// location "v8::Object::SetInternalField()", so specs can exercise how each
+// process type handles V8 fatal errors.
+void TriggerV8FatalError(v8::Isolate* isolate) {
+  v8::Object::New(isolate)->SetInternalField(0, v8::Undefined(isolate));
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -609,6 +617,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&CommitPendingLocalStateWrites>(
       "commitPendingLocalStateWrites");
   dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
+  dict.SetMethod<&TriggerV8FatalError>("triggerV8FatalError");
 }
 
 }  // namespace
