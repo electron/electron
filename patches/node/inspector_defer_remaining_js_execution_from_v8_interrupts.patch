@@ -16,10 +16,10 @@ call into JS from an interrupt.
 Upstreamed at https://github.com/nodejs/node/pull/65397.
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 351033ebc10879a440f99667eddd4cc1cfe604a5..c22d6fc36b9cef4c15fe579bc3f9acf979528e8e 100644
+index 42ca96ffbf1c56a5f5050c929393873373bbd0db..113ad1e9ad57f926f271b84ddfd3d07ef17c1f14 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
-@@ -54,6 +54,7 @@ using crdtp::UberDispatcher;
+@@ -57,6 +57,7 @@ using crdtp::UberDispatcher;
  using crdtp::json::ConvertCBORToJSON;
  using crdtp::json::ConvertJSONToCBOR;
  using v8::Context;
@@ -27,7 +27,7 @@ index 351033ebc10879a440f99667eddd4cc1cfe604a5..c22d6fc36b9cef4c15fe579bc3f9acf9
  using v8::Function;
  using v8::HandleScope;
  using v8::Isolate;
-@@ -77,6 +78,53 @@ static Mutex start_io_thread_agents_mutex;
+@@ -80,6 +81,53 @@ static Mutex start_io_thread_agents_mutex;
  static std::vector<Agent*> start_io_thread_agents;
  static bool debug_signal_handler_started = false;
  
@@ -81,7 +81,7 @@ index 351033ebc10879a440f99667eddd4cc1cfe604a5..c22d6fc36b9cef4c15fe579bc3f9acf9
  static void RequestIoThreadStartOnAgents() {
    Mutex::ScopedLock lock(start_io_thread_agents_mutex);
    for (Agent* agent : start_io_thread_agents) agent->RequestIoThreadStart();
-@@ -462,6 +510,15 @@ class SameThreadInspectorSession : public InspectorSession {
+@@ -471,6 +519,15 @@ class SameThreadInspectorSession : public InspectorSession {
  
  void NotifyClusterWorkersDebugEnabled(Environment* env) {
    Isolate* isolate = env->isolate();
@@ -97,7 +97,7 @@ index 351033ebc10879a440f99667eddd4cc1cfe604a5..c22d6fc36b9cef4c15fe579bc3f9acf9
    HandleScope handle_scope(isolate);
  
    // Send message to enable debug in cluster workers
-@@ -974,54 +1031,40 @@ void Agent::SetupNetworkTracking(Local<Function> enable_function,
+@@ -988,54 +1045,40 @@ void Agent::SetupNetworkTracking(Local<Function> enable_function,
                                   Local<Function> disable_function) {
    parent_env_->set_inspector_enable_network_tracking(enable_function);
    parent_env_->set_inspector_disable_network_tracking(disable_function);
@@ -177,7 +177,7 @@ index 351033ebc10879a440f99667eddd4cc1cfe604a5..c22d6fc36b9cef4c15fe579bc3f9acf9
  }
  
  void Agent::WaitForDisconnect() {
-@@ -1072,7 +1115,7 @@ void Agent::RegisterAsyncHook(Isolate* isolate,
+@@ -1086,7 +1129,7 @@ void Agent::RegisterAsyncHook(Isolate* isolate,
  }
  
  void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
@@ -186,7 +186,7 @@ index 351033ebc10879a440f99667eddd4cc1cfe604a5..c22d6fc36b9cef4c15fe579bc3f9acf9
    SyncAsyncHookState();
  }
  
-@@ -1086,52 +1129,25 @@ void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
+@@ -1100,52 +1143,25 @@ void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
  // When it's not safe to call into JS, this is a no-op and we'll try again in
  // RegisterAsyncHook() (for 1) or from a scheduled immediate (for 2).
  void Agent::SyncAsyncHookState() {
@@ -307,10 +307,10 @@ index 5a1d1de26547bb437f4f86c2e1825d6eaf709e9d..bf76578e8c06a062b991937a2cca02b6
  };
  
 diff --git a/src/inspector_js_api.cc b/src/inspector_js_api.cc
-index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..fce28f4463d512eb3199108f298789b380e0a6a4 100644
+index 038287f32fceab45afbf09566abbf3dba07ea0dd..f6c72a767254c13aa15c8f79904c7e00a2f7f22c 100644
 --- a/src/inspector_js_api.cc
 +++ b/src/inspector_js_api.cc
-@@ -10,15 +10,21 @@
+@@ -12,15 +12,21 @@
  #include "v8.h"
  
  #include <memory>
@@ -332,7 +332,7 @@ index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..fce28f4463d512eb3199108f298789b3
  using v8::Global;
  using v8::HandleScope;
  using v8::Isolate;
-@@ -57,25 +63,16 @@ class JSBindingsConnection : public BaseObject {
+@@ -59,25 +65,16 @@ class JSBindingsConnection : public BaseObject {
   public:
    class JSBindingsSessionDelegate : public InspectorSessionDelegate {
     public:
@@ -361,7 +361,7 @@ index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..fce28f4463d512eb3199108f298789b3
      BaseObjectPtr<JSBindingsConnection> connection_;
    };
  
-@@ -85,7 +82,38 @@ class JSBindingsConnection : public BaseObject {
+@@ -87,7 +84,38 @@ class JSBindingsConnection : public BaseObject {
        : BaseObject(env, wrap), callback_(env->isolate(), callback) {
      Agent* inspector = env->inspector_agent();
      session_ = ConnectionType::Connect(
@@ -401,7 +401,7 @@ index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..fce28f4463d512eb3199108f298789b3
    }
  
    void OnMessage(Local<Value> value) {
-@@ -94,6 +122,63 @@ class JSBindingsConnection : public BaseObject {
+@@ -96,6 +124,63 @@ class JSBindingsConnection : public BaseObject {
      (void)result;
    }
  
@@ -465,7 +465,7 @@ index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..fce28f4463d512eb3199108f298789b3
    static void Bind(Environment* env, Local<Object> target) {
      Isolate* isolate = env->isolate();
      Local<FunctionTemplate> tmpl =
-@@ -154,6 +239,10 @@ class JSBindingsConnection : public BaseObject {
+@@ -156,6 +241,10 @@ class JSBindingsConnection : public BaseObject {
   private:
    std::unique_ptr<InspectorSession> session_;
    Global<Function> callback_;
