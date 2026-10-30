@@ -1655,7 +1655,7 @@ describe('node feature', () => {
       expect(code).toBe(0);
     });
 
-    it('will not transform TypeScript types without --experimental-transform-types', async () => {
+    it('does not transform TypeScript-only syntax', async () => {
       const child = childProcess.spawn(
         process.execPath,
         [path.join(fixtures, 'type-stripping', 'transform-types-node.ts')],
@@ -1665,15 +1665,6 @@ describe('node feature', () => {
       );
       const [code] = await once(child, 'exit');
       expect(code).not.toBe(0);
-    });
-
-    it('transforms TypeScript types with --experimental-transform-types', async () => {
-      const child = childProcess.spawn(process.execPath, [
-        '--experimental-transform-types',
-        path.join(fixtures, 'type-stripping', 'transform-types.ts')
-      ]);
-      const [code] = await once(child, 'exit');
-      expect(code).toBe(0);
     });
   });
 });

@@ -20,7 +20,7 @@ tag ranges used by Blink and gin, which share isolates with Node.js in
 renderer processes.
 
 diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
-index 745f2c0526fafc1079b94be875a9e5a519d3a794..f81b087ad21a28ec2385cd0cfae3177a470a2850 100644
+index 4db197d694f870c21fa6ef5cd8551aef0dde9b05..05fc90517ec5f6a7529e42f1822aef8c433b756a 100644
 --- a/src/cppgc_helpers-inl.h
 +++ b/src/cppgc_helpers-inl.h
 @@ -15,7 +15,7 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
@@ -31,9 +31,9 @@ index 745f2c0526fafc1079b94be875a9e5a519d3a794..f81b087ad21a28ec2385cd0cfae3177a
 +  v8::Object::Wrap<kNodeCppHeapPointerTag>(isolate, obj, wrappable);
    // Keep the layout consistent with BaseObjects.
    obj->SetAlignedPointerInInternalField(
-       kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc(), 0);
+       kEmbedderType,
 diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
-index f1363d5da78f7a3603fb4502489ecf2ee3483fdb..7baf7b11a68c2cbb83bd67a152be74a8533ecdb0 100644
+index 3dfd31bcb29e6072c45144d7f9f13d4d546b7fb8..e7facbf3c1455ad46de5cb986878e6df69b039f2 100644
 --- a/src/cppgc_helpers.h
 +++ b/src/cppgc_helpers.h
 @@ -19,6 +19,25 @@ class Environment;
@@ -63,10 +63,10 @@ index f1363d5da78f7a3603fb4502489ecf2ee3483fdb..7baf7b11a68c2cbb83bd67a152be74a8
   * This is a helper mixin with a BaseObject-like interface to help
   * implementing wrapper objects managed by V8's cppgc (Oilpan) library.
 diff --git a/src/env.cc b/src/env.cc
-index f86232b125d9967f3021348cf88f132c391b2e0e..f72aafe07c039c6d63b74c80cd252f830930d121 100644
+index 7dfdb406b409bdd8dfa6f88d61c9d2adc32e1474..38ba2c5a9b46e5429f0a3377685eb64d4ffc21b4 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -644,8 +644,7 @@ IsolateData::~IsolateData() {}
+@@ -659,8 +659,7 @@ IsolateData::~IsolateData() {
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
                         v8::Object::Wrappable* wrappable) {
@@ -77,10 +77,10 @@ index f86232b125d9967f3021348cf88f132c391b2e0e..f72aafe07c039c6d63b74c80cd252f83
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/unofficial.gni b/unofficial.gni
-index 1b95224d0555fd5d3ea2396535967d87631e0f91..a4cfd7fe8d80c96b11e33daff90e95b7581772be 100644
+index 619253a1ee26e289215022c6152229500952cfdc..f88cf1a1c3d28eb81721dfbb136d1655d0616510 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -73,6 +73,12 @@ template("node_gn_build") {
+@@ -83,6 +83,12 @@ template("node_gn_build") {
      defines = [
        "NODE_WANT_INTERNALS=1",
        "NODE_EMBEDDER_MODULE_VERSION=$node_module_version",
