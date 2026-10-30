@@ -41,10 +41,10 @@ index 3909e70dc1425c2cb02624f4b3017784a2ae6c9d..a57b92f02085d6392e6d9d0cc037df6b
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 5c2841e4199fc4695f48ae6f4ccb29634539e75b..1a6063067108b35b8bd71c02727618a720b06c0e 100644
+index 798e1387424342a3425463a78cffb218f624447f..e8697d0093e58652913cdffe538894b76cc63933 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -536,7 +536,8 @@ void SetFeatureFlags() {
+@@ -511,7 +511,8 @@ void SetFeatureFlags() {
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
                                 const std::string& js_command_line_flags,
                                 bool disallow_v8_feature_flag_overrides,
@@ -54,7 +54,7 @@ index 5c2841e4199fc4695f48ae6f4ccb29634539e75b..1a6063067108b35b8bd71c02727618a7
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -551,7 +552,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+@@ -526,7 +527,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
    }
    SetFlags(mode, js_command_line_flags);
  
@@ -65,10 +65,10 @@ index 5c2841e4199fc4695f48ae6f4ccb29634539e75b..1a6063067108b35b8bd71c02727618a7
    // Set this as early as possible in order to ensure OOM errors are reported
    // correctly.
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index 380fc73135cdc209b690c5b2ebe39cb1f4c683de..c880e5bec57882df2317e7a61108755b3377f173 100644
+index 1341b77198431e1c426bff043bdb2bbcf202c8ca..ec64afd9dd91b292604ca834a91b9cfbd52eb853 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
-@@ -33,7 +33,8 @@ class GIN_EXPORT V8Initializer {
+@@ -32,7 +32,8 @@ class GIN_EXPORT V8Initializer {
    static void Initialize(IsolateHolder::ScriptMode mode,
                           const std::string& js_command_line_flags,
                           bool disallow_v8_feature_flag_overrides,
