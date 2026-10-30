@@ -49,7 +49,7 @@ const getOrCreateArchive = (archivePath: string) => {
   }
 };
 
-const { getValidatedPath, getOptions, getDirent, getStatsFromBinding, stringToFlags } =
+const { getValidatedPath, getOptions, getDirent, getStatsFromBinding, stringToFlags, vfsState } =
   require('internal/fs/utils') as typeof import('@node/lib/internal/fs/utils');
 
 const { assignFunctionName } = require('internal/util') as typeof import('@node/lib/internal/util');
@@ -1555,6 +1555,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     if (options?.recursive) {
+      // Like Node's own readdir, let a mounted virtual file system answer
+      // first; the walk below only knows the real file system and archives.
+      const vfs = vfsState.handlers as any;
+      const vfsPromise = vfs === null ? undefined : vfs.readdir(pathArgument, options);
+      if (vfsPromise !== undefined) {
+        vfsPromise.then((result: any) => callback!(null, result), callback!);
+        return;
+      }
       readdirRecursive(pathArgument, options, callback);
       return;
     }
@@ -1590,6 +1598,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     if (options?.recursive) {
+      const vfs = vfsState.handlers as any;
+      const vfsPromise = vfs === null ? undefined : vfs.readdir(pathArgument, options);
+      if (vfsPromise !== undefined) return vfsPromise;
       return readdirRecursivePromises(pathArgument, options);
     }
 
@@ -1620,6 +1631,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     if (options?.recursive) {
+      const vfs = vfsState.handlers as any;
+      const vfsResult = vfs === null ? undefined : vfs.readdirSync(pathArgument, options);
+      if (vfsResult !== undefined) return vfsResult;
       return readdirSyncRecursive(pathArgument, options);
     }
 
