@@ -1,0 +1,279 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Mon, 26 Oct 2026 12:44:41 -0700
+Subject: [M156] Fix CopyOutputRequest check with OffsetTags
+
+Original change's description:
+> Fix CopyOutputRequest check with OffsetTags
+>
+> ResolvedFrameData makes a copy of all CompositorRenderPasses to modify
+> when there is an OffsetTag involved. CopyOutputRequests were not moved
+> to the copy but SurfaceAggregator checked the copy instead of original.
+> This resulted in not correctly marking the render pass as containing a
+> copy output request and not expanding damage. The CopyOutputRequest was
+> still moved from original CompositorRenderPass to AggregatedRenderPass
+> correctly.
+>
+> Bug: 574382050
+> Change-Id: I872479f72f05ee5d8b05a8ee7b5b1c4241cb6c28
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613476
+> Reviewed-by: Jonathan Ross <jonross@chromium.org>
+> Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1723797}
+
+(cherry picked from commit 115f38332946734ac034c86c2357cc87cc6e11b4)
+
+Bug: 576526581,574382050
+Change-Id: I872479f72f05ee5d8b05a8ee7b5b1c4241cb6c28
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8659018
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1604}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/components/viz/service/display/resolved_frame_data.cc b/components/viz/service/display/resolved_frame_data.cc
+index 2d917595a7300faea2de7c1a704fb8fd86d7fac4..82b3bdebdf80ec4afb973390e30bc260a2ac1bb1 100644
+--- a/components/viz/service/display/resolved_frame_data.cc
++++ b/components/viz/service/display/resolved_frame_data.cc
+@@ -91,6 +91,10 @@ const CompositorRenderPass& ResolvedPassData::render_pass() const {
+   return *fixed_.render_pass;
+ }
+ 
++bool ResolvedPassData::HasCopyOutputRequests() const {
++  return !fixed_.original_render_pass->copy_requests.empty();
++}
++
+ void ResolvedPassData::CopyAndResetPersistentPassData() {
+   previous_persistent_data_ = current_persistent_data_;
+   current_persistent_data_ = PersistentPassData();
+@@ -100,10 +104,12 @@ void ResolvedPassData::SetCompositorRenderPass(CompositorRenderPass* pass) {
+   CHECK(pass);
+   CHECK_EQ(pass->id, fixed_.render_pass_id);
+   fixed_.render_pass = pass;
++  fixed_.original_render_pass = pass;
+ }
+ 
+ void ResolvedPassData::ResetCompositorRenderPass() {
+   fixed_.render_pass = nullptr;
++  fixed_.original_render_pass = nullptr;
+ }
+ 
+ ResolvedFrameData::ResolvedFrameData(DisplayResourceProvider* resource_provider,
+@@ -211,6 +217,7 @@ void ResolvedFrameData::UpdateActiveFrame(
+     FixedPassData fixed;
+ 
+     fixed.render_pass = render_pass.get();
++    fixed.original_render_pass = render_pass.get();
+ 
+     AggregatedRenderPassId& remapped_id = aggregated_id_map_[render_pass->id];
+     if (remapped_id.is_null()) {
+@@ -345,8 +352,8 @@ void ResolvedFrameData::UpdateOffsetTags(OffsetTagLookupFn lookup_value_fn) {
+     // cleared elsewhere they can be reused.
+     CHECK_EQ(offset_tag_render_passes_.size(), resolved_passes_.size());
+     for (size_t i = 0; i < offset_tag_render_passes_.size(); ++i) {
+-      resolved_passes_[i].SetCompositorRenderPass(
+-          offset_tag_render_passes_[i].get());
++      resolved_passes_[i].fixed_.render_pass =
++          offset_tag_render_passes_[i].get();
+     }
+     // Skip running RecomputeOffsetTagDamage() since nothing changed since
+     // last frame and there is no added damage.
+diff --git a/components/viz/service/display/resolved_frame_data.h b/components/viz/service/display/resolved_frame_data.h
+index 250b0e205ab5879c0813864591c2bbe31f890a2b..eb97be1a755bfaf6e386c4b4ac0994789ddcf1d7 100644
+--- a/components/viz/service/display/resolved_frame_data.h
++++ b/components/viz/service/display/resolved_frame_data.h
+@@ -55,6 +55,10 @@ struct VIZ_SERVICE_EXPORT FixedPassData {
+   // destroyed during aggregation so the pointer will remain valid for the
+   // duration of aggregation (until it's set to null).
+   raw_ptr<CompositorRenderPass> render_pass = nullptr;
++  // Points to the original CompositorRenderPass held by the surface, which may
++  // differ from `render_pass` when `RebuildRenderPassesForOffsetTags()` makes a
++  // modified copy.
++  raw_ptr<const CompositorRenderPass> original_render_pass = nullptr;
+ 
+   // How many times this render pass is embedded by another render pass in the
+   // same frame.
+@@ -175,6 +179,11 @@ class VIZ_SERVICE_EXPORT ResolvedPassData {
+     return !fixed_.is_root && fixed_.embed_count == 0;
+   }
+ 
++  // Returns true if the original CompositorRenderPass in `Surface` has any
++  // CopyOutputRequests. Note that `render_pass().copy_requests` may be empty if
++  // `render_pass()` points to an OffsetTag-modified copy.
++  bool HasCopyOutputRequests() const;
++
+   AggregationPassData& aggregation() { return aggregation_; }
+   const AggregationPassData& aggregation() const { return aggregation_; }
+ 
+diff --git a/components/viz/service/display/surface_aggregator.cc b/components/viz/service/display/surface_aggregator.cc
+index 437fad4542a4ba3e8165541b89da47454b9929f5..b8eb615cbb14de4a239e7c2415ad638e6bebcf5c 100644
+--- a/components/viz/service/display/surface_aggregator.cc
++++ b/components/viz/service/display/surface_aggregator.cc
+@@ -2075,11 +2075,9 @@ gfx::Rect SurfaceAggregator::PrewalkSurface(ResolvedFrameData& resolved_frame,
+   }
+ 
+   for (auto& resolved_pass : resolved_frame.GetResolvedPasses()) {
+-    auto& render_pass = resolved_pass.render_pass();
+-
+     // Checking for copy requests need to be done after the prewalk because
+     // copy requests can get added after damage is computed.
+-    if (!render_pass.copy_requests.empty()) {
++    if (resolved_pass.HasCopyOutputRequests()) {
+       has_copy_requests_ = true;
+       MarkAndPropagateCopyRequestPasses(resolved_pass);
+     }
+diff --git a/components/viz/service/display/surface_aggregator_unittest.cc b/components/viz/service/display/surface_aggregator_unittest.cc
+index eadf13f2c7a811de5a0cc72543dfa01dee7d3aec..decc1f78bcc867f2bca4cbb9d6420837e11042d0 100644
+--- a/components/viz/service/display/surface_aggregator_unittest.cc
++++ b/components/viz/service/display/surface_aggregator_unittest.cc
+@@ -2352,6 +2352,120 @@ TEST_F(SurfaceAggregatorValidSurfaceTest, RootCopyRequest) {
+   EXPECT_THAT(original_pass_list[1]->copy_requests, testing::IsEmpty());
+ }
+ 
++// Verify that a render pass with a CopyOutputRequest on a surface that has a
++// non-zero OffsetTag value still marks the frame as having copy requests and
++// forces full damage on the copy request pass.
++TEST_F(SurfaceAggregatorValidSurfaceTest, CopyRequestWithOffsetTag) {
++  TestSurfaceIdAllocator provider_surface_id(child_sink_->frame_sink_id());
++
++  const OffsetTag tag = OffsetTag::CreateRandom();
++  const OffsetTagDefinition tag_def(
++      tag, SurfaceRange(provider_surface_id),
++      OffsetTagConstraints(-10.0f, 10.0f, -10.0f, 10.0f));
++
++  // Submit provider frame with a non-zero OffsetTagValue.
++  {
++    CompositorFrame provider_frame =
++        CompositorFrameBuilder()
++            .AddRenderPass(
++                RenderPassBuilder(kSurfaceSize)
++                    .AddSolidColorQuad(gfx::Rect(kSurfaceSize), SkColors::kRed))
++            .AddOffsetTagValue(OffsetTagValue{tag, gfx::Vector2dF(5.0f, 5.0f)})
++            .Build();
++    child_sink_->SubmitCompositorFrame(provider_surface_id.local_surface_id(),
++                                       std::move(provider_frame));
++  }
++
++  constexpr gfx::Rect child_pass_rect(20, 20);
++
++  // Frame 1: Full damage on root surface.
++  {
++    CompositorFrame root_frame =
++        CompositorFrameBuilder()
++            .AddRenderPass(
++                RenderPassBuilder(CompositorRenderPassId{1}, child_pass_rect)
++                    .AddSolidColorQuad(child_pass_rect, SkColors::kBlue))
++            .AddRenderPass(
++                RenderPassBuilder(CompositorRenderPassId{2}, kSurfaceSize)
++                    .AddRenderPassQuad(child_pass_rect,
++                                       CompositorRenderPassId{1})
++                    .AddSurfaceQuad(gfx::Rect(kSurfaceSize),
++                                    SurfaceRange(provider_surface_id))
++                    .SetQuadOffsetTag(tag))
++            .AddOffsetTagDefinition(tag_def)
++            .Build();
++    root_sink_->SubmitCompositorFrame(root_surface_id_.local_surface_id(),
++                                      std::move(root_frame));
++
++    auto aggregated_frame = AggregateFrame(root_surface_id_);
++    ASSERT_EQ(aggregated_frame.render_pass_list.size(), 2u);
++  }
++
++  // Frame 2: Root damage does not intersect `child_pass_rect` and no
++  // CopyOutputRequest. The child render pass has no damage.
++  {
++    constexpr gfx::Rect non_intersecting_damage(50, 50, 10, 10);
++    CompositorFrame root_frame =
++        CompositorFrameBuilder()
++            .AddRenderPass(
++                RenderPassBuilder(CompositorRenderPassId{1}, child_pass_rect)
++                    .SetDamageRect(gfx::Rect())
++                    .AddSolidColorQuad(child_pass_rect, SkColors::kBlue))
++            .AddRenderPass(
++                RenderPassBuilder(CompositorRenderPassId{2}, kSurfaceSize)
++                    .SetDamageRect(non_intersecting_damage)
++                    .AddRenderPassQuad(child_pass_rect,
++                                       CompositorRenderPassId{1})
++                    .AddSurfaceQuad(gfx::Rect(kSurfaceSize),
++                                    SurfaceRange(provider_surface_id))
++                    .SetQuadOffsetTag(tag))
++            .AddOffsetTagDefinition(tag_def)
++            .Build();
++    root_sink_->SubmitCompositorFrame(root_surface_id_.local_surface_id(),
++                                      std::move(root_frame));
++
++    auto aggregated_frame = AggregateFrame(root_surface_id_);
++    ASSERT_EQ(aggregated_frame.render_pass_list.size(), 2u);
++    EXPECT_THAT(aggregated_frame.render_pass_list[0]->copy_requests,
++                testing::IsEmpty());
++    EXPECT_EQ(aggregated_frame.render_pass_list[0]->damage_rect, gfx::Rect());
++  }
++
++  // Frame 3: Root damage does not intersect `child_pass_rect`, but a
++  // CopyOutputRequest targets the child render pass. The child render pass has
++  // full damage.
++  {
++    constexpr gfx::Rect non_intersecting_damage(50, 50, 10, 10);
++    CompositorFrame root_frame =
++        CompositorFrameBuilder()
++            .AddRenderPass(
++                RenderPassBuilder(CompositorRenderPassId{1}, child_pass_rect)
++                    .SetDamageRect(gfx::Rect())
++                    .AddStubCopyOutputRequest()
++                    .AddSolidColorQuad(child_pass_rect, SkColors::kBlue))
++            .AddRenderPass(
++                RenderPassBuilder(CompositorRenderPassId{2}, kSurfaceSize)
++                    .SetDamageRect(non_intersecting_damage)
++                    .AddRenderPassQuad(child_pass_rect,
++                                       CompositorRenderPassId{1})
++                    .AddSurfaceQuad(gfx::Rect(kSurfaceSize),
++                                    SurfaceRange(provider_surface_id))
++                    .SetQuadOffsetTag(tag))
++            .AddOffsetTagDefinition(tag_def)
++            .Build();
++    root_sink_->SubmitCompositorFrame(root_surface_id_.local_surface_id(),
++                                      std::move(root_frame));
++
++    auto aggregated_frame = AggregateFrame(root_surface_id_);
++    EXPECT_TRUE(aggregated_frame.has_copy_requests);
++    ASSERT_EQ(aggregated_frame.render_pass_list.size(), 2u);
++    EXPECT_THAT(aggregated_frame.render_pass_list[0]->copy_requests,
++                testing::SizeIs(1));
++    EXPECT_EQ(aggregated_frame.render_pass_list[0]->damage_rect,
++              child_pass_rect);
++  }
++}
++
+ TEST_F(SurfaceAggregatorValidSurfaceTest,
+        ShouldNotTakeRootCopyRequestIfTakeCopyRequestIsFalse) {
+   auto embedded_support = std::make_unique<CompositorFrameSinkSupport>(
+diff --git a/components/viz/test/compositor_frame_helpers.cc b/components/viz/test/compositor_frame_helpers.cc
+index 1f0fab5a5036e33032766ca3959e22bca7e91c18..e00d8a6175ba19252d40a44bdff17c27a186dad3 100644
+--- a/components/viz/test/compositor_frame_helpers.cc
++++ b/components/viz/test/compositor_frame_helpers.cc
+@@ -537,6 +537,12 @@ CompositorFrameBuilder& CompositorFrameBuilder::AddOffsetTagDefinition(
+   return *this;
+ }
+ 
++CompositorFrameBuilder& CompositorFrameBuilder::AddOffsetTagValue(
++    const OffsetTagValue& value) {
++  frame_->metadata.offset_tag_values.push_back(value);
++  return *this;
++}
++
+ CompositorFrameBuilder& CompositorFrameBuilder::AddContentFrameIntervalInfo(
+     const ContentFrameIntervalInfo& content_frame_interval_info) {
+   frame_->metadata.frame_interval_inputs.content_interval_info.push_back(
+diff --git a/components/viz/test/compositor_frame_helpers.h b/components/viz/test/compositor_frame_helpers.h
+index 7ed3eb60289d848a860f40ffe45cb4695608ab4b..0eaa14d54219bf98e9eb30bac819c5f3ecf2408f 100644
+--- a/components/viz/test/compositor_frame_helpers.h
++++ b/components/viz/test/compositor_frame_helpers.h
+@@ -298,6 +298,7 @@ class CompositorFrameBuilder {
+       const gfx::DelegatedInkMetadata& metadata);
+   CompositorFrameBuilder& AddOffsetTagDefinition(
+       const OffsetTagDefinition& definition);
++  CompositorFrameBuilder& AddOffsetTagValue(const OffsetTagValue& value);
+   CompositorFrameBuilder& AddContentFrameIntervalInfo(
+       const ContentFrameIntervalInfo& content_frame_interval_info);
+ 

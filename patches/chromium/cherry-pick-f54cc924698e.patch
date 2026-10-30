@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 27 Oct 2026 18:26:33 -0700
+Subject: [M150-LTS][webvtt] Make text-track pseudo-elements read-only
+
+Add `-webkit-user-modify: read-only !important` to the
+`video::-webkit-media-text-track-*` rules in `mediaControls.css` so
+author CSS cannot make internal WebVTT text-track elements in the user
+agent shadow root editable or focusable.
+
+Most other user agent shadow pseudo-elements in `html.css` and
+`input_multiple_fields.css` already set `-webkit-user-modify: read-only
+!important`.
+
+While it is also possible to enforce this in C++, pinning the property
+in the UA stylesheet is a safer and lower-risk fix for backporting.
+
+(cherry picked from commit 540347fff68cb796bd8e5c82835769a069126138)
+
+Fixed: 574412629
+Change-Id: Ibd85ec254e2d3639c6ced8891243954338f74b0d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8610568
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1722739}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8628527
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Reviewed-by: Victor Savu <vsavu@google.com>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4529}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/modules/media_controls/media_controls_impl_test.cc b/third_party/blink/renderer/modules/media_controls/media_controls_impl_test.cc
+index 926759c18cb17031634249d58e3debf844b4cc4a..9e4a435bd06e8813c2199063c4be2b84584004eb 100644
+--- a/third_party/blink/renderer/modules/media_controls/media_controls_impl_test.cc
++++ b/third_party/blink/renderer/modules/media_controls/media_controls_impl_test.cc
+@@ -27,9 +27,12 @@
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/settings.h"
+ #include "third_party/blink/renderer/core/geometry/dom_rect.h"
++#include "third_party/blink/renderer/core/html/html_head_element.h"
+ #include "third_party/blink/renderer/core/html/media/html_media_element.h"
+ #include "third_party/blink/renderer/core/html/media/html_video_element.h"
+ #include "third_party/blink/renderer/core/html/shadow/shadow_element_names.h"
++#include "third_party/blink/renderer/core/html/track/text_track.h"
++#include "third_party/blink/renderer/core/html/track/vtt/vtt_cue.h"
+ #include "third_party/blink/renderer/core/html_names.h"
+ #include "third_party/blink/renderer/core/input/event_handler.h"
+ #include "third_party/blink/renderer/core/layout/layout_object.h"
+@@ -1725,4 +1728,59 @@ TEST_F(MediaControlsImplTest, OverlayPlayButtonHidesWhenTooShort) {
+   EXPECT_TRUE(overlay_play_button->DoesFit());
+ }
+ 
++TEST_F(MediaControlsImplTest, TextTrackElementsAreReadOnly) {
++  GetDocument().head()->SetInnerHTMLWithoutTrustedTypes(R"HTML(
++    <style>
++      video::-webkit-media-text-track-container,
++      video::-webkit-media-text-track-region,
++      video::-webkit-media-text-track-region-container,
++      video::-webkit-media-text-track-display {
++        -webkit-user-modify: read-write;
++      }
++    </style>
++  )HTML");
++
++  auto& video = To<HTMLVideoElement>(*QuerySelector("video"));
++  LoadMediaWithDuration(10.0);
++  SetReady();
++  video.setCurrentTime(0.5);
++
++  TextTrack* track = video.addTextTrack(
++      V8TextTrackKind(V8TextTrackKind::Enum::kSubtitles), AtomicString("sub"),
++      AtomicString("en"), ASSERT_NO_EXCEPTION);
++  track->SetModeEnum(TextTrackMode::kShowing);
++
++  auto* cue = VTTCue::Create(GetDocument(), 0.0, 2.0, "cue text");
++  track->addCue(cue);
++  UpdateAllLifecyclePhasesForTest();
++
++  ShadowRoot* shadow_root = video.UserAgentShadowRoot();
++  ASSERT_TRUE(shadow_root);
++
++  Element* container = GetElementByShadowPseudoId(
++      *shadow_root, "-webkit-media-text-track-container");
++  ASSERT_TRUE(container);
++  auto* region = MakeGarbageCollected<HTMLDivElement>(GetDocument());
++  region->SetShadowPseudoId(AtomicString("-webkit-media-text-track-region"));
++  auto* region_container = MakeGarbageCollected<HTMLDivElement>(GetDocument());
++  region_container->SetShadowPseudoId(
++      AtomicString("-webkit-media-text-track-region-container"));
++  region->AppendChild(region_container);
++  container->AppendChild(region);
++  UpdateAllLifecyclePhasesForTest();
++
++  for (const char* pseudo_id :
++       {"-webkit-media-text-track-container", "-webkit-media-text-track-region",
++        "-webkit-media-text-track-region-container",
++        "-webkit-media-text-track-display"}) {
++    Element* element = GetElementByShadowPseudoId(*shadow_root, pseudo_id);
++    ASSERT_TRUE(element) << pseudo_id;
++    ASSERT_TRUE(element->GetComputedStyle()) << pseudo_id;
++    EXPECT_EQ(element->GetComputedStyle()->UsedUserModify(),
++              EUserModify::kReadOnly)
++        << pseudo_id;
++    EXPECT_FALSE(element->IsFocusable()) << pseudo_id;
++  }
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css b/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css
+index 9eeb2ca85c9349b662a14b4ef04d2379c589b4e3..eb8bf3547bf1cabe3cc760f9a72335dc49d8cfed 100644
+--- a/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css
++++ b/third_party/blink/renderer/modules/media_controls/resources/mediaControls.css
+@@ -1321,6 +1321,7 @@ video::-webkit-media-text-track-container {
+     text-indent: 0;
+     text-decoration: none;
+     pointer-events: none;
++    -webkit-user-modify: read-only !important;
+     user-select: none;
+     word-break: break-word;
+ }
+@@ -1341,6 +1342,7 @@ video::-webkit-media-text-track-region {
+     word-wrap: break-word;
+     overflow-wrap: break-word;
+     overflow: hidden;
++    -webkit-user-modify: read-only !important;
+ }
+ 
+ video::-webkit-media-text-track-region-container {
+@@ -1349,6 +1351,7 @@ video::-webkit-media-text-track-region-container {
+     display: flex;
+     flex-flow: column;
+     flex-direction: column;
++    -webkit-user-modify: read-only !important;
+ }
+ 
+ video::-webkit-media-text-track-region-container.scrolling {
+@@ -1361,6 +1364,7 @@ video::-webkit-media-text-track-display {
+     white-space: pre-wrap;
+     box-sizing: border-box;
+     flex: 0 0 auto;
++    -webkit-user-modify: read-only !important;
+ }
+ 
+ video::cue(:future) {

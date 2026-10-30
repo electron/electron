@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Tue, 27 Oct 2026 19:22:21 -0700
+Subject: [M150-LTS] Limit image request in
+ HTMLPlugInElement::CustomStyleForLayoutObject
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When the ComputedStyle is being ensured we shouldn't perform an image
+load.
+
+(cherry picked from commit f49d058c880110acd4479e6634cc8013e3f672cd)
+
+Fixed: 574101376, 575184164
+Change-Id: I7b678074d4496ef667f360cbab62ce7c459b4785
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8611107
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Auto-Submit: Fredrik Söderquist <fs@opera.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1722229}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8626969
+Reviewed-by: Fredrik Söderquist <fs@opera.com>
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Reviewed-by: Victor Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4531}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/core/html/html_plugin_element.cc b/third_party/blink/renderer/core/html/html_plugin_element.cc
+index 71d03d95080586e13c91b373d0abe991e7ce2785..fafc63545f15efe55b90f03962b78a1078144a62 100644
+--- a/third_party/blink/renderer/core/html/html_plugin_element.cc
++++ b/third_party/blink/renderer/core/html/html_plugin_element.cc
+@@ -35,6 +35,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/to_v8_traits.h"
+ #include "third_party/blink/renderer/core/css/css_property_names.h"
+ #include "third_party/blink/renderer/core/css/style_change_reason.h"
++#include "third_party/blink/renderer/core/css/style_recalc_context.h"
+ #include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/events/event.h"
+@@ -936,8 +937,9 @@ const ComputedStyle* HTMLPlugInElement::CustomStyleForLayoutObject(
+     const StyleRecalcContext& style_recalc_context) {
+   const ComputedStyle* style =
+       OriginalStyleForLayoutObject(style_recalc_context);
+-  if (IsImageType() && !GetLayoutObject() && style &&
+-      LayoutObjectIsNeeded(*style)) {
++  // Don't attempt a load if this computed style is for EnsureComputedStyle().
++  if (!style_recalc_context.is_ensuring_style && IsImageType() &&
++      !GetLayoutObject() && style && LayoutObjectIsNeeded(*style)) {
+     if (!image_loader_) {
+       image_loader_ = MakeGarbageCollected<HTMLImageLoader>(this);
+     }

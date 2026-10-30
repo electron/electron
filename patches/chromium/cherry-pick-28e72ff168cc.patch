@@ -1,0 +1,147 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ravjit Uppal <ravjit@chromium.org>
+Date: Mon, 26 Oct 2026 11:27:50 -0700
+Subject: [M150] [CE]Prevent crash when frame is detached during capability
+ element registration
+
+Original change's description:
+> [CE]Prevent crash when frame is detached during capability element registration
+>
+> Creating the embedded permission request descriptor can trigger layout
+> updates or script execution that detaches the frame or execution
+> context.
+>
+> This change invokes CreateEmbeddedPermissionRequestDescriptor earlier
+> and verifies that the frame, rendered state, receiver binding, and
+> execution context remain valid before proceeding with registration or
+> permission requests.
+>
+> Bug: 568730797
+> Change-Id: Icd2ac6cfc17a222620e31cbbab88cc31d7c86b7b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8572457
+> Reviewed-by: Joey Arhar <jarhar@chromium.org>
+> Reviewed-by: Thomas Nguyen <tungnh@chromium.org>
+> Auto-Submit: Ravjit Uppal <ravjit@chromium.org>
+> Commit-Queue: Ravjit Uppal <ravjit@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1719744}
+
+(cherry picked from commit 6563f89211c484d3cfb7866d875045d806e505a4)
+
+Bug: 576472582,568730797
+Change-Id: Icd2ac6cfc17a222620e31cbbab88cc31d7c86b7b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8653829
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4509}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/core/html/html_capability_element_base.cc b/third_party/blink/renderer/core/html/html_capability_element_base.cc
+index 739bed3b7f27fa24d3bbcc834f3e22c1651cedff..f60a8702fc33b36239a1277976560cfb6829b32d 100644
+--- a/third_party/blink/renderer/core/html/html_capability_element_base.cc
++++ b/third_party/blink/renderer/core/html/html_capability_element_base.cc
+@@ -662,13 +662,25 @@ bool HTMLCapabilityElementBase::MaybeRegisterPageEmbeddedPermissionControl() {
+     return false;
+   }
+ 
++  // `CreateEmbeddedPermissionRequestDescriptor()` computes `BoundsInWidget()`,
++  // which forces a synchronous style and layout update. That update can
++  // re-entrantly register this control, detach the frame, or change whether
++  // the element is rendered, so re-verify these conditions afterwards.
++  auto descriptor = CreateEmbeddedPermissionRequestDescriptor();
++  if (embedded_permission_control_receiver_.is_bound()) {
++    return true;
++  }
++  if (!GetDocument().GetFrame() || !IsRendered()) {
++    return false;
++  }
++
+   mojo::PendingRemote<EmbeddedPermissionControlClient> client;
+   embedded_permission_control_receiver_.Bind(
+       client.InitWithNewPipeAndPassReceiver(), GetTaskRunner());
+   CHECK(embedded_permission_control_receiver_.is_bound());
+   GetPermissionService()->RegisterPageEmbeddedPermissionControl(
+-      mojo::Clone(permission_descriptors_),
+-      CreateEmbeddedPermissionRequestDescriptor(), std::move(client));
++      mojo::Clone(permission_descriptors_), std::move(descriptor),
++      std::move(client));
+   return true;
+ }
+ 
+@@ -1026,9 +1038,15 @@ void HTMLCapabilityElementBase::RequestPageEmbededPermissions() {
+   CHECK_LE(permission_descriptors_.size(), 2U);
+   pending_request_created_ = base::TimeTicks::Now();
+ 
++  // `CreateEmbeddedPermissionRequestDescriptor()` forces a synchronous layout
++  // update, which may detach the frame or make the element unrendered.
++  auto descriptor = CreateEmbeddedPermissionRequestDescriptor();
++  if (!GetDocument().GetFrame() || !IsRendered()) {
++    return;
++  }
++
+   GetPermissionService()->RequestPageEmbeddedPermission(
+-      mojo::Clone(permission_descriptors_),
+-      CreateEmbeddedPermissionRequestDescriptor(),
++      mojo::Clone(permission_descriptors_), std::move(descriptor),
+       BindOnce(&HTMLCapabilityElementBase::OnEmbeddedPermissionsDecided,
+                WrapWeakPersistent(this)));
+ }
+diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/permission-element/geolocation-element/remove-iframe-during-register-crash.html b/third_party/blink/web_tests/external/wpt/html/semantics/permission-element/geolocation-element/remove-iframe-during-register-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..42f162494cae24aba26e2870030eab9e10541384
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/semantics/permission-element/geolocation-element/remove-iframe-during-register-crash.html
+@@ -0,0 +1,53 @@
++<!doctype html>
++<meta charset="utf-8">
++<title>Detaching iframe during geolocation registration layout should not crash</title>
++<link rel="help" href="https://github.com/WICG/PEPC/blob/main/explainer.md">
++<body>
++<svg width="0" height="0"><defs>
++<g id="a"><rect id="r" width="10" height="10" tabindex="0"/></g>
++<g id="b"><rect width="10" height="10" tabindex="0"/></g>
++</defs></svg>
++<dialog id="d"><svg width="20" height="20"><use id="v" href="#a"/></svg></dialog>
++<script>
++let useInstance = null;
++r.addEventListener('focus', (e) => {
++  useInstance = e.currentTarget;
++}, { once: true });
++
++d.show();
++
++const inner = document.createElement('iframe');
++if (useInstance) {
++  const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
++  fo.appendChild(inner);
++  useInstance.parentNode.appendChild(fo);
++} else {
++  document.body.appendChild(inner);
++}
++
++let inside = false;
++const iterator = {
++  next() { return new Promise(() => {}); },
++  get return() {
++    if (inside) {
++      inner.remove();
++    }
++  }
++};
++if (typeof Observable !== 'undefined' && document.when) {
++  Observable.from({ [Symbol.asyncIterator]() { return iterator; } })
++      .takeUntil(document.when('focusout'))
++      .subscribe({});
++}
++
++const doc = inner.contentDocument;
++const control = doc.createElement('geolocation');
++doc.body.appendChild(control);
++inner.contentWindow.getComputedStyle(control).color;
++
++v.setAttribute('href', '#b');
++inside = true;
++control.setAttribute('data-x', '1');
++inside = false;
++</script>
++</body>

@@ -1,0 +1,163 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 14 Oct 2026 15:37:46 +0200
+Subject: [M150] [maps] Synchronize concurrent GetPrototypeTransition in
+ TryUpdateNoLock
+
+Original change's description:
+> [maps] Synchronize concurrent GetPrototypeTransition in TryUpdateNoLock
+>
+> Make TransitionsAccessor::GetPrototypeTransition an instance method on
+> TransitionsAccessor and guard prototype transition cache lookups with
+> full_transition_array_access() when accessed concurrently from
+> MapUpdater::TryUpdateNoLock.
+>
+> This pairs with the full_transition_array_access() lock already held in
+> TransitionsAccessor::PutPrototypeTransition during compaction and new
+> entry publication, preventing concurrent readers from observing
+> partially-initialized maps or in-progress array compactions.
+>
+> Fixed: 568894515
+>
+> TAG=agy
+> CONV=d848b9e2-cbea-4f48-a8e4-dec738f151e6
+>
+> Change-Id: Ib04a65ac07c2c588cb9e3aecc412068e2902b9aa
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8576038
+> Commit-Queue: Jakob Linke <jgruber@chromium.org>
+> Auto-Submit: Igor Sheludko <ishell@chromium.org>
+> Reviewed-by: Jakob Linke <jgruber@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110759}
+
+(cherry picked from commit 5a4d7a78dbb4d7451e3925d6b3d1b68d261fad16)
+
+Bug: 576477206,568894515
+Change-Id: Ib04a65ac07c2c588cb9e3aecc412068e2902b9aa
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8657819
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#122}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index d62c94772f687ab1194cd424ee9b9de532a13289..f1437356d69e15ad32ce25ed022d3b7465db6810 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -385,8 +385,9 @@ std::optional<Tagged<Map>> MapUpdater::TryUpdateNoLock(Isolate* isolate,
+   }
+ 
+   if (root_map->prototype() != old_map->prototype()) {
+-    auto maybe_transition = TransitionsAccessor::GetPrototypeTransition(
+-        isolate, root_map, old_map->prototype());
++    auto maybe_transition =
++        TransitionsAccessor(isolate, root_map, IsConcurrent(cmode))
++            .GetPrototypeTransition(old_map->prototype());
+     if (!maybe_transition) {
+       return {};
+     }
+diff --git a/src/objects/transitions-inl.h b/src/objects/transitions-inl.h
+index af98848ced836ddfb8efd052d7017077213cdfc1..849a77fec47b4527b17915f8df278d14b7938a3a 100644
+--- a/src/objects/transitions-inl.h
++++ b/src/objects/transitions-inl.h
+@@ -399,6 +399,14 @@ MaybeHandle<Map> TransitionsAccessor::SearchSpecial(Isolate* isolate,
+   return MaybeHandle<Map>(result, isolate);
+ }
+ 
++// static
++std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
++    Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype) {
++  // This helper is supposed to be used only from the main thread.
++  DCHECK_EQ(ThreadId::Current(), isolate->thread_id());
++  return TransitionsAccessor(isolate, map).GetPrototypeTransition(prototype);
++}
++
+ // TODO(375937549): Convert to uint32_t.
+ int TransitionArray::number_of_transitions() const {
+   if (ulength().value() < kFirstIndex) return 0;
+diff --git a/src/objects/transitions.cc b/src/objects/transitions.cc
+index ec887071a14f638dd35e90e315677b959a56e0ba..1beb5a52efbc52b98ddf9136fd7c0583e3e3eda9 100644
+--- a/src/objects/transitions.cc
++++ b/src/objects/transitions.cc
+@@ -434,8 +434,8 @@ bool TransitionsAccessor::PutPrototypeTransition(Isolate* isolate,
+ 
+   const uint32_t header = TransitionArray::kProtoTransitionHeaderSize;
+ 
+-  DirectHandle<WeakFixedArray> cache(GetPrototypeTransitions(isolate, *map),
+-                                     isolate);
++  DirectHandle<WeakFixedArray> cache(
++      TransitionsAccessor(isolate, *map).GetPrototypeTransitions(), isolate);
+   const uint32_t cache_len = cache->ulength().value();
+   const uint32_t capacity = cache_len >= header ? cache_len - header : 0;
+   const uint32_t transitions =
+@@ -476,11 +476,13 @@ bool TransitionsAccessor::PutPrototypeTransition(Isolate* isolate,
+   return true;
+ }
+ 
+-// static
+ std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
+-    Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype) {
++    Tagged<Object> prototype) {
+   DisallowGarbageCollection no_gc;
+-  Tagged<WeakFixedArray> cache = GetPrototypeTransitions(isolate, map);
++  if (encoding() != kFullTransitionArray) return {};
++  base::MutexGuardIf guard(isolate_->full_transition_array_access(),
++                           concurrent_access_);
++  Tagged<WeakFixedArray> cache = GetPrototypeTransitions();
+   const uint32_t length = TransitionArray::NumberOfPrototypeTransitions(cache);
+   for (uint32_t i = 0; i < length; i++) {
+     Tagged<MaybeObject> target =
+@@ -497,19 +499,11 @@ std::optional<Tagged<Map>> TransitionsAccessor::GetPrototypeTransition(
+   return {};
+ }
+ 
+-// static
+-Tagged<WeakFixedArray> TransitionsAccessor::GetPrototypeTransitions(
+-    Isolate* isolate, Tagged<Map> map) {
+-  Tagged<MaybeObject> raw_transitions = map->raw_transitions(kAcquireLoad);
+-  if (GetEncoding(isolate, raw_transitions) != kFullTransitionArray) {
+-    return ReadOnlyRoots(isolate).empty_weak_fixed_array();
+-  }
+-  Tagged<TransitionArray> transition_array =
+-      GetTransitionArray(isolate, raw_transitions);
+-  if (!transition_array->HasPrototypeTransitions()) {
+-    return ReadOnlyRoots(isolate).empty_weak_fixed_array();
++Tagged<WeakFixedArray> TransitionsAccessor::GetPrototypeTransitions() {
++  if (!HasPrototypeTransitions()) {
++    return ReadOnlyRoots(isolate_).empty_weak_fixed_array();
+   }
+-  return transition_array->GetPrototypeTransitions();
++  return transitions()->GetPrototypeTransitions();
+ }
+ 
+ // static
+diff --git a/src/objects/transitions.h b/src/objects/transitions.h
+index 7fbe408531506d022bdec674f1713e8aaed7a00f..1108d73c4c3d1d803d29c778b193f56cb5283927 100644
+--- a/src/objects/transitions.h
++++ b/src/objects/transitions.h
+@@ -185,8 +185,13 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+   static bool PutPrototypeTransition(Isolate* isolate, DirectHandle<Map>,
+                                      DirectHandle<Object> prototype,
+                                      DirectHandle<Map> target_map);
+-  static std::optional<Tagged<Map>> GetPrototypeTransition(
++
++  std::optional<Tagged<Map>> GetPrototypeTransition(Tagged<Object> prototype);
++  // Convenient helper for calling from the main thread, for other cases
++  // use the instance method above.
++  static inline std::optional<Tagged<Map>> GetPrototypeTransition(
+       Isolate* isolate, Tagged<Map> map, Tagged<Object> prototype);
++
+   bool HasPrototypeTransitions();
+ 
+   // During the first-time Map::Update and Map::TryUpdate, the migration target
+@@ -267,8 +272,7 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+   static void SetPrototypeTransitions(
+       Isolate* isolate, DirectHandle<Map> map,
+       DirectHandle<WeakFixedArray> proto_transitions);
+-  static Tagged<WeakFixedArray> GetPrototypeTransitions(Isolate* isolate,
+-                                                        Tagged<Map> map);
++  Tagged<WeakFixedArray> GetPrototypeTransitions();
+ 
+   static void InsertHelper(Isolate* isolate, DirectHandle<Map> map,
+                            DirectHandle<Name> name, DirectHandle<Map> target,

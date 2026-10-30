@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Thu, 22 Oct 2026 05:14:20 +0000
+Subject: [M150-LTS] Fail EncodeFec when packets are passed radically out of
+ order
+
+Bug: chromium:570927027
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509462
+Reviewed-by: Rasmus Brandt <brandtr@webrtc.org>
+Commit-Queue: Danil Chapovalov <danilchap@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#48960}
+
+diff --git a/modules/rtp_rtcp/BUILD.gn b/modules/rtp_rtcp/BUILD.gn
+index 75bc1b77ce1010a808d07ae2caac379f718aee6a..cb0f94ba8e5b624c86e1739549c1cbb14abc34a6 100644
+--- a/modules/rtp_rtcp/BUILD.gn
++++ b/modules/rtp_rtcp/BUILD.gn
+@@ -690,6 +690,7 @@ if (rtc_include_tests) {
+       "../../call:rtp_receiver",
+       "../../common_video",
+       "../../common_video/test:utilities",
++      "../../rtc_base:byte_order",
+       "../../rtc_base:buffer",
+       "../../rtc_base:checks",
+       "../../rtc_base:copy_on_write_buffer",
+diff --git a/modules/rtp_rtcp/source/forward_error_correction.cc b/modules/rtp_rtcp/source/forward_error_correction.cc
+index 0bb81a8ef0bf0c455f165d4c7e53bc59bc92e8e1..c3e4e22e13b078795c732f9f010cb095d9b57d0d 100644
+--- a/modules/rtp_rtcp/source/forward_error_correction.cc
++++ b/modules/rtp_rtcp/source/forward_error_correction.cc
+@@ -294,9 +294,13 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
+   size_t old_bit_index = 1;
+   // Insert zeros in the bit mask for every hole in the sequence.
+   while (media_packets_it != media_packets.end()) {
+-    if (new_bit_index == max_media_packets) {
+-      // We can only cover up to 48 packets.
+-      break;
++    if (new_bit_index >= max_media_packets) {
++      // `total_missing_seq_nums` calculation above should ensure all
++      // `media_packets` fit within the `max_media_packets`. That calculation is
++      // simple and fast normally, but wrong when sequence numbers wrap around
++      // a lot. This condition catches exactly that - when number of packets
++      // to protect turned to be larger than earlier estimated.
++      return -1;
+     }
+     uint16_t seq_num = ParseSequenceNumber((*media_packets_it)->data.data());
+     const int num_zeros_to_insert =
+@@ -305,8 +309,11 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
+       internal::InsertZeroColumns(num_zeros_to_insert, tmp_packet_masks_,
+                                   tmp_packet_mask_size, num_fec_packets,
+                                   new_bit_index);
++      new_bit_index += num_zeros_to_insert;
++      if (new_bit_index >= max_media_packets) {
++        return -1;
++      }
+     }
+-    new_bit_index += num_zeros_to_insert;
+     internal::CopyColumn(tmp_packet_masks_, tmp_packet_mask_size, packet_masks_,
+                          packet_mask_size_, num_fec_packets, new_bit_index,
+                          old_bit_index);
+diff --git a/modules/rtp_rtcp/source/rtp_fec_unittest.cc b/modules/rtp_rtcp/source/rtp_fec_unittest.cc
+index 8548dd5ba1f6a4ddc81b3960c8d459fb0f0b72a2..ba11997116d92c8822470dd9c77860e9e83c83d2 100644
+--- a/modules/rtp_rtcp/source/rtp_fec_unittest.cc
++++ b/modules/rtp_rtcp/source/rtp_fec_unittest.cc
+@@ -25,14 +25,19 @@
+ #include "modules/rtp_rtcp/source/forward_error_correction.h"
+ #include "modules/rtp_rtcp/source/forward_error_correction_internal.h"
+ #include "modules/rtp_rtcp/source/ulpfec_header_reader_writer.h"
++#include "rtc_base/byte_order.h"
+ #include "rtc_base/checks.h"
+ #include "rtc_base/random.h"
++#include "test/gmock.h"
+ #include "test/gtest.h"
+ 
+ namespace webrtc {
+ 
+ namespace {
+ 
++using ::testing::IsEmpty;
++using ::testing::SizeIs;
++
+ // Transport header size in bytes. Assume UDP/IPv4 as a reasonable minimum.
+ constexpr size_t kTransportOverhead = 28;
+ 
+@@ -267,6 +272,48 @@ TYPED_TEST(RtpFecTest,
+   EXPECT_TRUE(this->generated_fec_packets_.empty());
+ }
+ 
++TYPED_TEST(RtpFecTest,
++           WillNotProtectMediaPacketsWithOutOfOrderWrappedSequenceNumbers) {
++  ForwardErrorCorrection::PacketList media_packets =
++      this->media_packet_generator_.ConstructMediaPackets(3);
++  ASSERT_THAT(media_packets, SizeIs(3));
++  // Set RTP sequence numbers.
++  auto it = media_packets.begin();
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 0);
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 47);
++  // Sequence number = 2^16 + 20 after wrap around become 20.
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 20);
++
++  std::list<ForwardErrorCorrection::Packet*> generated_fec_packets;
++  EXPECT_LT(this->fec_.EncodeFec(media_packets, /*protection_factor=*/127,
++                                 /*num_important_packets=*/3,
++                                 /*use_unequal_protection=*/false,
++                                 kFecMaskBursty, &generated_fec_packets),
++            0);
++  EXPECT_THAT(generated_fec_packets, IsEmpty());
++}
++
++TYPED_TEST(RtpFecTest,
++           WillNotProtectMediaPacketsWithOutOfOrderWrappedSequenceNumbers2) {
++  ForwardErrorCorrection::PacketList media_packets =
++      this->media_packet_generator_.ConstructMediaPackets(3);
++  ASSERT_THAT(media_packets, SizeIs(3));
++  // Set RTP sequence numbers.
++  auto it = media_packets.begin();
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 0);
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 46);
++  // Sequence number = 2^16 + 20 after wrap around become 20.
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 20);
++
++  std::list<ForwardErrorCorrection::Packet*> generated_fec_packets;
++  EXPECT_LT(this->fec_.EncodeFec(media_packets, /*protection_factor=*/127,
++                                 /*num_important_packets=*/3,
++                                 /*use_unequal_protection=*/false,
++                                 kFecMaskBursty, &generated_fec_packets),
++            0);
++  EXPECT_THAT(generated_fec_packets, IsEmpty());
++}
++
+ TYPED_TEST(RtpFecTest, FecRecoveryNoLoss) {
+   constexpr int kNumImportantPackets = 0;
+   constexpr bool kUseUnequalProtection = false;

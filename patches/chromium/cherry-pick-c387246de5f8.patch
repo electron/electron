@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Wed, 21 Oct 2026 12:59:27 -0700
+Subject: [M156] [HLS] Disallow file:// HLS content
+
+Original change's description:
+> [HLS] Disallow file:// HLS content
+>
+> pages and scripts loaded from the file:// scheme aren't allowed to read
+> arbitrary data from other file:// urls (ie, you can't use fetch!), but
+> HLS was a vector around that, since it allows somewhat programmatic
+> access to individual bytes of a remote file, which could collectively
+> allow reading an entire local file.
+>
+> As a result, the only safe way to stop this is to disable hls content
+> from loading any file:// urls. It was already impossible to mix file://
+> and other schemes anyway.
+>
+> The only real place this was useful was ironically testing, which means
+> that we have to make some tweaks to the CrossOriginFileDataSourceWrapper
+> implementation to lie about the URL origin.
+>
+> Fixed: 572878518
+> Change-Id: I181db95da42ac7eaa35a655754405efe78ed8b91
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8587477
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1720224}
+
+(cherry picked from commit eda3f57fe1a0940f44a1b32520bfa950dba37cf5)
+
+Bug: 574750475,572878518
+Change-Id: I181db95da42ac7eaa35a655754405efe78ed8b91
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8614187
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#1403}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+Electron adaptation notes (43-x-y):
+M150's HlsDataSourceProviderImpl has no GetUrlDataOrigin()/
+SetPostRedirectUri() plumbing in DataSourceInitialized(), so the file://
+block is applied to the segment request URI in ReadFromExistingStream()
+before a data source is created (a file:// response can only come from a
+file:// request), reporting ReadStatus::Codes::kError. The
+HlsDemuxerStatus::kInvalidContentScheme code and enums.xml entry are kept
+as upstream. The pipeline_integration_test_base.cc change was not carried
+over.
+
+diff --git a/media/filters/hls_data_source_provider_impl.cc b/media/filters/hls_data_source_provider_impl.cc
+index 370cc12fcdd586f308220060909e7723a23c9301..5e42cf21e8b96cd3f0a197e2b584a44ea513476e 100644
+--- a/media/filters/hls_data_source_provider_impl.cc
++++ b/media/filters/hls_data_source_provider_impl.cc
+@@ -111,6 +111,22 @@ void HlsDataSourceProviderImpl::ReadFromExistingStream(
+   if (stream->RequiresNextDataSource()) {
+     auto [new_uri, cache_mode, range_mode, encoding_mode] =
+         stream->GetNextSegmentURIAndCacheStatus();
++    if (new_uri.SchemeIs("file")) {
++      // For a base page loaded via the file:// protocol, the chrome network
++      // stack allows media content loaded directly via src=, but for security
++      // reasons, does not allow arbitrary reads from other file:// urls (ie,
++      // via JS using `fetch()`).
++      // Since HLS provides the ability to play local manifests with variable
++      // substitution, a file:// hosted playlist could theoretically make
++      // range requests to any arbitrary other file:// uri and test for
++      // playback.
++
++      // As a result, the only thing we can do is block HLS from using the
++      // file:// protocol entirely.
++      std::move(callback).Run({ReadStatus::Codes::kError,
++                               "HLS content cannot use the file:// scheme"});
++      return;
++    }
+     TRACE_EVENT_BEGIN("media", "HLS::CreateDataSource",
+                       perfetto::Track::FromPointer(this), "uri", new_uri);
+     data_source_factory_->Create(
+diff --git a/media/filters/hls_demuxer_status.h b/media/filters/hls_demuxer_status.h
+index 2fdc46353e8e7d769e1543b8be4530eec3b48667..dec55a6971a4065c153a8ba4a1ad769b82986804 100644
+--- a/media/filters/hls_demuxer_status.h
++++ b/media/filters/hls_demuxer_status.h
+@@ -76,8 +76,11 @@ struct HlsDemuxerStatusTraits {
+     // error during initialization.
+     kNoDataEverAppended = 18,
+ 
++    // the file:// data scheme is not allowed in HLS.
++    kInvalidContentScheme = 19,
++
+     // Keep this at the end and equal to the highest value ever used.
+-    kMaxValue = kNoDataEverAppended,
++    kMaxValue = kInvalidContentScheme,
+   };
+ 
+   static constexpr StatusGroupType Group() { return "HlsDemuxerStatus"; }
+@@ -122,6 +125,8 @@ struct HlsDemuxerStatusTraits {
+         return "Could not append data to ChunkDemuxer";
+       case Codes::kNoDataEverAppended:
+         return "Segment queue never had any data";
++      case Codes::kInvalidContentScheme:
++        return "The content scheme is disallowed in HLS.";
+     }
+   }
+ 
+diff --git a/tools/metrics/histograms/enums.xml b/tools/metrics/histograms/enums.xml
+index d1729ac141538a0a7ca722756510f5cdc37095fe..763216d7c5a96f5c8009c6289f4dd61e42d8105e 100644
+--- a/tools/metrics/histograms/enums.xml
++++ b/tools/metrics/histograms/enums.xml
+@@ -4756,6 +4756,7 @@ Called by update_net_error_codes.py.-->
+   <int value="16" label="kInvalidLoadedRanges"/>
+   <int value="17" label="kCouldNotAppendData"/>
+   <int value="18" label="kNoDataEverAppended"/>
++  <int value="19" label="kInvalidContentScheme"/>
+ </enum>
+ 
+ <enum name="HpsTurnOnResult">
