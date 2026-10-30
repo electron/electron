@@ -18,7 +18,7 @@ index cf4ba33f126de22443707f849f0c330cd78a0fbe..53104ee0b040653f6baa66c75d5df34e
      # on GTK.
      "//examples:peerconnection_client",
 diff --git a/ui/ozone/platform/x11/BUILD.gn b/ui/ozone/platform/x11/BUILD.gn
-index cd7bdec72924d137fff8ddf9021421412b72b222..7ebf82d6b824db359a502fc25744603a97c0514c 100644
+index 0cb263340be8b6dd3b89d452de67a4913e2a97f3..354dcbbe3e9238a9ace7a7376046a583b4fca334 100644
 --- a/ui/ozone/platform/x11/BUILD.gn
 +++ b/ui/ozone/platform/x11/BUILD.gn
 @@ -5,7 +5,7 @@
