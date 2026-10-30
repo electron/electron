@@ -59,6 +59,21 @@
 #include "shell/common/crash_keys.h"
 #endif
 
+// node_watchdog.h picks its POSIX or Windows members with Node's __POSIX__
+// define, which Node's own targets set and Electron's do not. Windows needs
+// <windows.h>, included above.
+#include "electron/push_and_undef_node_defines.h"
+#if BUILDFLAG(IS_POSIX) && !defined(__POSIX__)
+#define __POSIX__
+#define ELECTRON_DEFINED_POSIX_FOR_NODE_WATCHDOG
+#endif
+#include "third_party/electron_node/src/node_watchdog.h"
+#if defined(ELECTRON_DEFINED_POSIX_FOR_NODE_WATCHDOG)
+#undef __POSIX__
+#undef ELECTRON_DEFINED_POSIX_FOR_NODE_WATCHDOG
+#endif
+#include "electron/pop_node_defines.h"
+
 namespace {
 
 // Preparse Node.js cli options to pass to Node.js
