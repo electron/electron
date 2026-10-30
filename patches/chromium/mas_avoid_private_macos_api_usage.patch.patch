@@ -58,10 +58,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1dbe04fa17f42006afac37d062912ed1ef709957..4f4d61594aee602b9217eee43defe5b5e29dde3b 100644
+index 77ecbc3566405ac71eae3360ad28945d55b9e0cd..d098c5dfcc801298f1f4ca3eef21f3d56b822225 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1154,6 +1154,7 @@ component("base") {
+@@ -1161,6 +1161,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -137,10 +137,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index e96b4e6a0e2dfe30a9f132499f71e8ed1c3b59f2..f6b1c802fd5fa2d49315a41ce2d114d6f20f7064 100644
+index f99309cc2e4e15f2bc1fb7d48099e7108627a5b3..7da8a80053470ae109b3f676f1a06640824f33c4 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1033,6 +1033,7 @@ if (is_clang_or_gcc) {
+@@ -1032,6 +1032,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -420,10 +420,10 @@ index 212b93095214422112afd346e36cd2838891725b..80b417c1a022c287acae948b51d6f7c8
  
  using crypto::apple::KeychainV2;
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 8e61a19d40c2f2bfa01f0d434685b2c0c7ae1504..d5096225ce552147af1a273897364367c5e68e63 100644
+index d271e5f3b22857dc13ce6d8d5f78f42c7f1dc999..fc9827b494f0f801fb9e9ff791471ab28cd6adee 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
-@@ -81,6 +81,7 @@ component("app_shim") {
+@@ -83,6 +83,7 @@ component("app_shim") {
      "//components/crash/core/common",
      "//components/remote_cocoa/common:mojo",
      "//components/system_media_controls",
@@ -851,7 +851,7 @@ index 0e5d0e59d926ecd0ea53ef7c3eaaada1af40a044..e1093d964d4f27fd3222dfa2a216ef5f
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index d753945e9b9da51d4dcfa1061839d82c0ac8bc53..cba29ad496d89a536f65ba8fb140466ed134cabd 100644
+index 98ab55b57996faac32c0f89b8c0b06be56fe59a7..83e8a277434b8e815c088c34f94b21257ae8d631 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -894,7 +894,7 @@ index d753945e9b9da51d4dcfa1061839d82c0ac8bc53..cba29ad496d89a536f65ba8fb140466e
  }
  
  // Returns the display that the specified window is on.
-@@ -822,10 +830,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -753,10 +761,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -908,10 +908,10 @@ index d753945e9b9da51d4dcfa1061839d82c0ac8bc53..cba29ad496d89a536f65ba8fb140466e
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f26d694210e94f500c8dab69eb362f52336baf07..80c201e6f239f713491bf51303455909a93de3f5 100644
+index 5437dd059f1fb07260124f8e3ad62580c110fd44..39f2b02c8f423ee1b1319dfe72f9e0340fd14c80 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -388,6 +388,7 @@ viz_component("service") {
+@@ -390,6 +390,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -919,7 +919,7 @@ index f26d694210e94f500c8dab69eb362f52336baf07..80c201e6f239f713491bf51303455909
    }
  
    if (is_ios) {
-@@ -748,6 +749,7 @@ viz_source_set("unit_tests") {
+@@ -751,6 +752,7 @@ viz_source_set("unit_tests") {
        "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -1013,10 +1013,10 @@ index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8cc4642c45004cc0c8de4d952c78c2aa7f8e0f83..bb6e40d969682613ac459b6d1699aa208caa5685 100644
+index 65ce7bc123aa17ed21c9a50aa0bac110fed51463..ed9536b4b2d9ff308ef3e396ec4e11e98b3dcd1b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -384,6 +384,7 @@ source_set("browser") {
+@@ -396,6 +396,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index e93880ca23768d298e5aadcd12e0eb4f3a174170..93d5ae942fe314d0f4b37fe689beb32ba7612c9b 100644
+index 8aab76534c35a11ff3678417f235cef67c69f8ed..a36431ad84569ebb7da44872824752b1d00a8bbd 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index e93880ca23768d298e5aadcd12e0eb4f3a174170..93d5ae942fe314d0f4b37fe689beb32b
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3455,6 +3459,7 @@ test("content_unittests") {
+@@ -3457,6 +3461,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1289,7 +1289,7 @@ index 9e1af8c4ed42041d88a94277691cab2dd20f149f..8e8e00b960fd1359f63479edde6d6489
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 8940cda1ea6211df84da098078a1f90c66666013..335e42c54e5d6a9f591065519443e99c8bc49b91 100644
+index a75d7cad7cabb3c1e829cb8b12b40b364ec552e3..ad12449255a49326594c1de02753a4533e92980f 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -40,7 +40,9 @@
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index a96e9c9df209abba41bccf9d348eee89058b5f83..12942929d97d2bfff86fc43c506253934fd8e68e 100644
+index 208f82a8a9a15fb8525c9a63acc6e2a14418b348..0b2e73ac27b932377059ef806e471f0466e1ce48 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -2309,7 +2309,7 @@ index 6f419c1255ad8e10e50a0de3bc9599a07e8d917e..8f93adfc525f98fb569f3dd63ff97883
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
-index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386f5cc231b 100644
+index 80635ccc3d7cfc768cc74a8d226f2432618ef280..59c3294dd606969debb05b04b455651cd1955e15 100644
 --- a/ui/display/mac/ca_display_link_mac.mm
 +++ b/ui/display/mac/ca_display_link_mac.mm
 @@ -21,15 +21,18 @@
@@ -2331,8 +2331,8 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
  
  // Undocumented SkyLight framework functions.
  // SLSGetDisplayLink() is a private function (SPI) that creates a CADisplayLink
-@@ -305,6 +308,15 @@ void RecordWindowServerEventPumpResult(
-       viz_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
+@@ -307,6 +310,15 @@ void RecordWindowServerEventPumpResult(
+ 
    weak_ptr_ = weak_factory_.GetWeakPtr();
  
 +#if IS_MAS_BUILD()
@@ -2347,7 +2347,7 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
    base::Thread::Options thread_options;
    thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
    thread_options.thread_type = base::ThreadType::kPresentation;
-@@ -314,6 +326,7 @@ void RecordWindowServerEventPumpResult(
+@@ -316,6 +328,7 @@ void RecordWindowServerEventPumpResult(
        FROM_HERE,
        base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
                       base::Unretained(this)));
@@ -2355,7 +2355,7 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
  }
  
  // In a standard out-of-process GPU scenario,
-@@ -331,6 +344,7 @@ void RecordWindowServerEventPumpResult(
+@@ -333,6 +346,7 @@ void RecordWindowServerEventPumpResult(
  
    shutdown_ = true;
  
@@ -2363,7 +2363,7 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
    // Send an empty message to wake up the thread and quit the while loop.
    // See WindowServerEventPumpThread::PumpWindowServerEvents() for details.
    CGSConnectionID connection_id = CGSMainConnectionID();
-@@ -354,10 +368,12 @@ void RecordWindowServerEventPumpResult(
+@@ -356,10 +370,12 @@ void RecordWindowServerEventPumpResult(
          << "CGSGetEventPort() in ~WindowServerEventPumpThread failed. Error: "
          << err;
    }
@@ -2374,9 +2374,9 @@ index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386
  
 +#if !IS_MAS_BUILD()
  void WindowServerEventPumpThread::PumpWindowServerEvents() {
-   CGSConnectionID connection_id = CGSMainConnectionID();
-   // We haven't seen this happen in practice, but WebKit's implementation
-@@ -505,6 +521,7 @@ void RecordWindowServerEventPumpResult(
+   {
+     TRACE_EVENT0("gpu",
+@@ -514,6 +530,7 @@ void RecordWindowServerEventPumpResult(
      }
    }
  }
@@ -2466,10 +2466,10 @@ index 84060d2c442e2786e12d9837e0128bc4536d7d0b..933f2020ae89a02a39e21a7115b5f651
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 8826a46286029be6c4e6b9b6fcf3edb039b3be12..6d93048ea3d6d029e9d6252e12d1e97583aa282c 100644
+index c600a4827a6417eecef59f82f69efb5dfb3506c9..16bf0b0c22c673e32f99c12130d3a8380d1babf3 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -793,6 +793,8 @@ component("views") {
+@@ -801,6 +801,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2478,7 +2478,7 @@ index 8826a46286029be6c4e6b9b6fcf3edb039b3be12..6d93048ea3d6d029e9d6252e12d1e975
    }
  
    if (is_win) {
-@@ -1214,6 +1216,8 @@ source_set("test_support") {
+@@ -1215,6 +1217,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
@@ -2488,7 +2488,7 @@ index 8826a46286029be6c4e6b9b6fcf3edb039b3be12..6d93048ea3d6d029e9d6252e12d1e975
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index ae78821f982fa7c5cdf41b88c6419ac813cc50dc..e297e2645184ad2f27f563edab769eca2f1ae73f 100644
+index d24ff6f4e9a0682eed94575d0a04706e266c0b1f..b0165bb6396e20230ab53c9b9f64870ad90a90b7 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -21,6 +21,7 @@
@@ -2509,7 +2509,7 @@ index ae78821f982fa7c5cdf41b88c6419ac813cc50dc..e297e2645184ad2f27f563edab769eca
  @class NSView;
  
  namespace remote_cocoa {
-@@ -538,10 +541,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -551,10 +554,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
@@ -2523,7 +2523,7 @@ index ae78821f982fa7c5cdf41b88c6419ac813cc50dc..e297e2645184ad2f27f563edab769eca
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 74bbf49cd0c3e1d114a92f118e830ec91772bf29..839a159699bc3def84fd3ecd069fe344aef19c04 100644
+index ff0a55609d0ef4b7df3cfeeea45a52b1836c60d2..68f362eee5c00aacf6e6241b886e1c39b557e426 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -25,6 +25,7 @@
@@ -2534,7 +2534,7 @@ index 74bbf49cd0c3e1d114a92f118e830ec91772bf29..839a159699bc3def84fd3ecd069fe344
  #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
  #include "ui/accessibility/accessibility_features.h"
-@@ -376,8 +377,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -378,8 +379,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (in_process_ns_window_bridge_) {
      return gfx::NativeViewAccessible(in_process_ns_window_bridge_->ns_view());
    }
@@ -2547,7 +2547,7 @@ index 74bbf49cd0c3e1d114a92f118e830ec91772bf29..839a159699bc3def84fd3ecd069fe344
  }
  
  gfx::NativeViewAccessible
-@@ -393,8 +398,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -395,8 +400,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
          [in_process_ns_window_bridge_->ns_view() window]);
    }
  
@@ -2560,7 +2560,7 @@ index 74bbf49cd0c3e1d114a92f118e830ec91772bf29..839a159699bc3def84fd3ecd069fe344
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1725,9 +1734,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1793,9 +1802,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -2572,7 +2572,7 @@ index 74bbf49cd0c3e1d114a92f118e830ec91772bf29..839a159699bc3def84fd3ecd069fe344
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder) {
-@@ -1880,17 +1891,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1948,17 +1959,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -2593,7 +2593,7 @@ index 74bbf49cd0c3e1d114a92f118e830ec91772bf29..839a159699bc3def84fd3ecd069fe344
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1903,6 +1917,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1971,6 +1985,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);

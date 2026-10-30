@@ -197,6 +197,13 @@ Disables the Chromium [sandbox](https://www.chromium.org/developers/design-docum
 Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
 
+### --no-stdio-init
+
+This switch is deprecated and silently ignored, including in `ELECTRON_RUN_AS_NODE`
+mode. On Windows, Electron automatically skips Node.js stdio initialization when
+the `NUL` device cannot be opened. Remove this switch from application launch
+arguments; no replacement is needed.
+
 ### --ozone-platform=`platform` _Linux_
 
 Forces Electron to use a specific display backend instead of choosing one
@@ -348,7 +355,7 @@ Activate inspector on host:port and break at start of user script. Default host:
 
 Aliased to `--debug-brk=[host:]port`.
 
-#### `--inspect-brk-node[=[host:]port]`
+### `--inspect-brk-node[=[host:]port]`
 
 Activate inspector on `host:port` and break at start of the first internal
 JavaScript script executed when the inspector is available.

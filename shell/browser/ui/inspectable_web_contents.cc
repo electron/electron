@@ -813,7 +813,9 @@ void InspectableWebContents::SetIsDocked(DispatchCallback callback,
     std::move(callback).Run(nullptr);
 }
 
-void InspectableWebContents::OpenInNewTab(const std::string& url) {
+void InspectableWebContents::OpenInNewTab(
+    const std::string& url,
+    const std::optional<std::string>& initiator_id) {
   if (delegate_)
     delegate_->DevToolsOpenInNewTab(url);
 }
@@ -1359,7 +1361,7 @@ content::WebContents* InspectableWebContents::OpenURLFromTab(
     return devtools_web_contents;
   }
 
-  OpenInNewTab(params.url.spec());
+  OpenInNewTab(params.url.spec(), std::nullopt);
   return nullptr;
 }
 

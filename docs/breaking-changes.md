@@ -14,11 +14,63 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Breaking API Changes (47.0)
+
+### Removed: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
+
+The positional arguments of the `console-message` event on `WebContents`,
+deprecated in Electron 35, have been removed. Use the properties of the `Event`
+argument instead.
+
+```js
+// Removed
+webContents.on('console-message', (event, level, message, line, sourceId) => {})
+
+// Replace with:
+webContents.on('console-message', ({ level, message, lineNumber, sourceId, frame }) => {})
+```
+
+Note that `level` on the `Event` is a string with possible values of `info`,
+`warning`, `error`, and `debug`.
+
+The `console-message` event on `<webview>` is unchanged.
+
+### Deprecated: arguments in `did-fail-load`, `did-fail-provisional-load`, `did-frame-finish-load`, `did-frame-navigate` and `did-navigate-in-page` events on `WebContents`
+
+These `WebContents` events now provide their details on the `Event` argument,
+including the `frame` the event is about. The positional arguments, including
+`frameProcessId` and `frameRoutingId`, are deprecated.
+
+```js
+// Deprecated
+webContents.on(
+  'did-fail-load',
+  (event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId) => {}
+)
+webContents.on('did-frame-finish-load', (event, isMainFrame, frameProcessId, frameRoutingId) => {})
+webContents.on('did-navigate-in-page', (event, url, isMainFrame, frameProcessId, frameRoutingId) => {})
+
+// Replace with:
+webContents.on('did-fail-load', ({ errorCode, errorDescription, url, isMainFrame, frame }) => {})
+webContents.on('did-frame-finish-load', ({ isMainFrame, frame }) => {})
+webContents.on('did-navigate-in-page', ({ url, isMainFrame, frame }) => {})
+```
+
+`did-fail-provisional-load` provides the same properties as `did-fail-load`,
+and `did-frame-navigate` provides `url`, `httpResponseCode`, `httpStatusText`,
+`isMainFrame` and `frame`. The `frame` property is a
+[`WebFrameMain`](api/web-frame-main.md), which exposes the frame's
+`processId`, `routingId` and `frameToken`. It is `null` when the event has no
+frame, such as a `did-fail-load` for an invalid URL passed to
+`webContents.loadURL()`.
+
 ## Breaking API Changes (46.0)
 
-### Removed: `--no-stdio-init` command-line switch
+### Behavior Changed: `--no-stdio-init` command-line switch is ignored
 
-The `--no-stdio-init` command-line switch has been removed.
+The `--no-stdio-init` command-line switch no longer affects stdio initialization.
+It is still accepted and silently ignored, including in `ELECTRON_RUN_AS_NODE`
+mode, so existing launch arguments do not prevent startup.
 
 On Windows, Electron now automatically skips Node.js stdio initialization when
 the `NUL` device cannot be opened, instead of aborting startup. This applies to
@@ -124,35 +176,6 @@ header. To temporarily restore the old behavior for your whole app, disable the
 // main.js (right beneath your require/import statements)
 app.commandLine.appendSwitch('disable-features', 'DeprecateUnload')
 ```
-
-### Deprecated: arguments in `did-fail-load`, `did-fail-provisional-load`, `did-frame-finish-load`, `did-frame-navigate` and `did-navigate-in-page` events on `WebContents`
-
-These `WebContents` events now provide their details on the `Event` argument,
-including the `frame` the event is about. The positional arguments, including
-`frameProcessId` and `frameRoutingId`, are deprecated.
-
-```js
-// Deprecated
-webContents.on(
-  'did-fail-load',
-  (event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId) => {}
-)
-webContents.on('did-frame-finish-load', (event, isMainFrame, frameProcessId, frameRoutingId) => {})
-webContents.on('did-navigate-in-page', (event, url, isMainFrame, frameProcessId, frameRoutingId) => {})
-
-// Replace with:
-webContents.on('did-fail-load', ({ errorCode, errorDescription, url, isMainFrame, frame }) => {})
-webContents.on('did-frame-finish-load', ({ isMainFrame, frame }) => {})
-webContents.on('did-navigate-in-page', ({ url, isMainFrame, frame }) => {})
-```
-
-`did-fail-provisional-load` provides the same properties as `did-fail-load`,
-and `did-frame-navigate` provides `url`, `httpResponseCode`, `httpStatusText`,
-`isMainFrame` and `frame`. The `frame` property is a
-[`WebFrameMain`](api/web-frame-main.md), which exposes the frame's
-`processId`, `routingId` and `frameToken`. It is `null` when the event has no
-frame, such as a `did-fail-load` for an invalid URL passed to
-`webContents.loadURL()`.
 
 ## Breaking API Changes (45.0)
 

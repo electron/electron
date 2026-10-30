@@ -6,10 +6,10 @@ Subject: feat: add support for embedder snapshot validation
 IsValid is not exposed despite being commented as for embedders, this exposes something that works for us.
 
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 8a55d77540b0dd4d51bb3798f5af3123e131a6fb..599dd7828d5721c96fcfdbe11d97693548346fc0 100644
+index 1a6063067108b35b8bd71c02727618a720b06c0e..6ac0c4d180967c14ca7e41c08d6ca4d0019096e6 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -75,11 +75,23 @@ bool GenerateEntropy(unsigned char* buffer, size_t amount) {
+@@ -80,11 +80,23 @@ bool GenerateEntropy(unsigned char* buffer, size_t amount) {
    return true;
  }
  
@@ -33,7 +33,7 @@ index 8a55d77540b0dd4d51bb3798f5af3123e131a6fb..599dd7828d5721c96fcfdbe11d976935
    } else {
      data->data = nullptr;
      data->raw_size = 0;
-@@ -225,6 +237,10 @@ constexpr std::string_view kV8FlagParam = "V8FlagParam";
+@@ -250,6 +262,10 @@ constexpr std::string_view kV8FlagParam = "V8FlagParam";
  
  }  // namespace
  
@@ -45,18 +45,18 @@ index 8a55d77540b0dd4d51bb3798f5af3123e131a6fb..599dd7828d5721c96fcfdbe11d976935
   public:
    void Visit(const std::string& feature_name,
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index ec64afd9dd91b292604ca834a91b9cfbd52eb853..62e5c04e23a7f68b696c44f57981c3d491b284cc 100644
+index c880e5bec57882df2317e7a61108755b3377f173..810a6a29b85791968ab8a037b438895e7d9e235b 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
-@@ -9,6 +9,7 @@
- 
+@@ -10,6 +10,7 @@
  #include "base/files/file.h"
+ #include "base/files/file_path.h"
  #include "base/files/memory_mapped_file.h"
 +#include "base/functional/callback.h"
  #include "build/build_config.h"
  #include "gin/array_buffer.h"
  #include "gin/gin_export.h"
-@@ -26,6 +27,8 @@ class StartupData;
+@@ -27,6 +28,8 @@ class StartupData;
  
  namespace gin {
  

@@ -198,10 +198,6 @@ WebContents.prototype.goToOffset = function (index: number) {
   return this._goToOffset(index);
 };
 
-const consoleMessageDeprecated = deprecate.warnOnceMessage(
-  "'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead."
-);
-
 // TODO(samuelmaddock): remove the deprecated arguments of these frame events.
 const frameEventArgumentsDeprecated = new Map(
   Object.entries({
@@ -442,8 +438,6 @@ WebContents.prototype._init = function () {
 
   (this as NodeJS.EventEmitter).on('newListener', (eventName: string | symbol, listener: (...args: any[]) => void) => {
     if (eventName === 'console-message') {
-      // TODO(samuelmaddock): remove deprecated 'console-message' arguments
-      if (listener.length > 1) consoleMessageDeprecated();
       if (!this.isDestroyed()) this._setConsoleMessageObserved(true);
     }
     if (typeof eventName === 'string' && listener.length > 1) frameEventArgumentsDeprecated.get(eventName)?.();
