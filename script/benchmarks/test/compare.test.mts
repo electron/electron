@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { collectSamples, compareTargets, datadogSeries, findProblems } from '../compare.mts';
+import { collectSamples, compareTargets, datadogSeries, findProblems, memoryMeasures } from '../compare.mts';
 
 import type { RunMetadata, TargetInfo } from '../lib/types.mts';
 
@@ -22,8 +22,9 @@ const TARGETS: TargetInfo[] = [
 ];
 
 // Writes a results dir laid out like run.mts and crossbench leave it. Each
-// invocation gets a first_load story whose fcp has `values` (default: one
-// value per repetition) unless `values` is null.
+// invocation gets a first_load story whose performance.entries FCP has
+// `values` (default: one value per repetition), loadEventEnd 10 ms later and
+// a meminfo dump per value, unless `values` is null.
 interface TestInvocation {
   round: number;
   target: string;
@@ -58,7 +59,21 @@ function writeResults(
     const storyDir = path.join(dir, relativeDir, `chromium_${target}`, 'stories', 'first_load');
     fs.mkdirSync(storyDir, { recursive: true });
     const fcp = values ?? Array.from({ length: repeat }, (_, i) => 100 + round + i);
-    fs.writeFileSync(path.join(storyDir, 'js.json'), JSON.stringify({ fcp: { values: fcp } }));
+    fs.writeFileSync(
+      path.join(storyDir, 'performance.entries.json'),
+      JSON.stringify({
+        'paint/first-contentful-paint/startTime': { values: fcp },
+        'navigation/loadEventEnd': { values: fcp.map((value) => value + 10) }
+      })
+    );
+    fcp.forEach((_, repetition) => {
+      const meminfoDir = path.join(storyDir, String(repetition), '0_default', 'meminfo');
+      fs.mkdirSync(meminfoDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(meminfoDir, 'loaded.json'),
+        JSON.stringify({ processes: [{ pid: 1, name: '/opt/electron/electron', pss_total: 1024 }] })
+      );
+    });
   }
   fs.writeFileSync(path.join(dir, 'metadata.json'), JSON.stringify(metadata));
   return { dir, metadata };
@@ -106,6 +121,99 @@ describe('collectSamples', () => {
     assert.deepEqual(samples['loading.first_load.fcp'].baseline, [101]);
     assert.equal(rejected.length, 1);
     assert.match(rejected[0].reason, /loading\.first_load\.fcp \(2\/3 values\)/);
+  });
+});
+
+// Writes one trace-suite invocation: per repetition, the trace_processor
+// query results crossbench leaves in <story>/<rep>/0_default/trace_processor/.
+function writeTraceResults(name: string, runs: { pageLoad: object[]; resize?: object[] }[]) {
+  const dir = path.join(tmp, name);
+  const relativeDir = path.join('rounds', '0', 'trace', 'candidate');
+  const storiesDir = path.join(dir, relativeDir, 'chromium_candidate', 'stories');
+  runs.forEach(({ pageLoad, resize }, repetition) => {
+    const firstLoad = path.join(storiesDir, 'first_load', String(repetition), '0_default', 'trace_processor');
+    fs.mkdirSync(firstLoad, { recursive: true });
+    fs.writeFileSync(path.join(firstLoad, 'page_load.json'), JSON.stringify(pageLoad));
+    if (resize) {
+      const resizeDir = path.join(storiesDir, 'resize', String(repetition), '0_default', 'trace_processor');
+      fs.mkdirSync(resizeDir, { recursive: true });
+      fs.writeFileSync(path.join(resizeDir, 'resize.json'), JSON.stringify(resize));
+    }
+  });
+  const metadata: RunMetadata = {
+    startedAt: '2026-10-29T00:00:00.000Z',
+    platform: 'linux',
+    arch: 'x64',
+    cpuModel: 'test cpu',
+    cpuCount: 4,
+    runnerName: 'test',
+    crossbenchRevision: '0123456789abcdef',
+    rounds: 1,
+    repeat: runs.length,
+    targets: TARGETS,
+    invocations: [{ round: 0, suite: 'trace', target: 'candidate', exitCode: 0, repetitions: 2, dir: relativeDir }]
+  };
+  return { dir, metadata };
+}
+
+describe('trace suite', () => {
+  const resize = (values: (number | null)[]) => values.map((resize_ms, i) => ({ resize_ts: i, resize_ms }));
+
+  it('reads FCP, LCP and resize latency from the trace_processor results', () => {
+    const { dir, metadata } = writeTraceResults('trace-ok', [
+      { pageLoad: [{ fcp: 80, lcp: 90 }], resize: resize([30, 10, 20, 40, null]) },
+      { pageLoad: [{ fcp: 100, lcp: 110 }], resize: resize([50, 60, 70, 80, 90]) }
+    ]);
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.deepEqual(rejected, []);
+    assert.deepEqual(samples['trace.first_load.fcp'].candidate, [90]);
+    assert.deepEqual(samples['trace.first_load.lcp'].candidate, [100]);
+    // Per repetition: median 25 and 70, p90 40 and 90.
+    assert.deepEqual(samples['trace.resize.resize_median_ms'].candidate, [47.5]);
+    assert.deepEqual(samples['trace.resize.resize_p90_ms'].candidate, [65]);
+  });
+
+  it('leaves out a measure when a repetition has no trace result', () => {
+    const { dir, metadata } = writeTraceResults('trace-missing', [
+      { pageLoad: [{ fcp: 80, lcp: 90 }] },
+      { pageLoad: [] }
+    ]);
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.equal(samples['trace.first_load.fcp'], undefined);
+    assert.match(rejected[0].reason, /trace\.first_load\.fcp \(1\/2 values\)/);
+  });
+
+  it('reports a story whose trace has none of the expected events', () => {
+    const { dir, metadata } = writeTraceResults('trace-empty', [
+      { pageLoad: [{ fcp: 80, lcp: 90 }], resize: resize([]) },
+      { pageLoad: [{ fcp: 100, lcp: 110 }], resize: resize([]) }
+    ]);
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.deepEqual(samples['trace.first_load.fcp'].candidate, [90]);
+    assert.equal(samples['trace.resize.resize_median_ms'], undefined);
+    assert.match(rejected[0].reason, /trace\.resize\.resize_median_ms \(no values\)/);
+  });
+});
+
+describe('memoryMeasures', () => {
+  it('sums PSS per process type and ignores the meminfo shell', () => {
+    const app = '/opt/electron/electron';
+    const measures = memoryMeasures({
+      processes: [
+        { pid: 1, name: `${app} --app=/harness`, pss_total: 2048 },
+        { pid: 2, name: `${app} --type=renderer --enable-blink`, pss_total: 1024 },
+        { pid: 3, name: `${app} --type=renderer`, pss_total: 1024 },
+        { pid: 4, name: `${app} --type=gpu-process`, pss_total: 512 },
+        { pid: 5, name: `${app} --type=utility --utility-sub-type=network.mojom.NetworkService`, pss_total: 512 },
+        { pid: 6, name: `bash /tmp/meminfo.sh ${app}`, pss_total: 4096 }
+      ]
+    });
+    assert.deepEqual(measures, {
+      total_pss_mib: 5,
+      browser_pss_mib: 2,
+      renderer_pss_mib: 2,
+      gpu_pss_mib: 0.5
+    });
   });
 });
 

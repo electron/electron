@@ -23,47 +23,124 @@ export const FILE_STRATEGIES: FileStrategy[] = [
 
 export const FILE_KINDS = ['classic', 'module'];
 
-// Runs after every loading story. WebDriver awaits the returned promise, which
-// lets LCP (only exposed through PerformanceObserver) be read from the buffer.
-const METRICS_JS = `
-return new Promise((resolve) => {
-  const metrics = Object.assign({}, window.__cbMetrics || {});
-  const done = () => {
-    const nav = performance.getEntriesByType('navigation')[0];
-    if (nav) {
-      metrics.dom_content_loaded = nav.domContentLoadedEventEnd;
-      metrics.load_event_end = nav.loadEventEnd;
-    }
-    const fcp = performance.getEntriesByName('first-contentful-paint')[0];
-    if (fcp) metrics.fcp = fcp.startTime;
-    resolve(metrics);
-  };
-  const types = (window.PerformanceObserver && PerformanceObserver.supportedEntryTypes) || [];
-  if (!types.includes('largest-contentful-paint')) return done();
-  const timer = setTimeout(done, 1000);
-  new PerformanceObserver((list) => {
-    const entries = list.getEntries();
-    if (entries.length) metrics.lcp = entries[entries.length - 1].startTime;
-    clearTimeout(timer);
-    done();
-  }).observe({ type: 'largest-contentful-paint', buffered: true });
-});`;
+// Trace categories for the `trace` suite, kept to what the queries below need
+// so the traced runs stay close to the untraced ones:
+//   blink.user_timing  navigationStart and the page's cb-resize-* marks
+//   loading            firstContentfulPaint, largestContentfulPaint::Candidate
+//   benchmark          PipelineReporter (per-frame presentation timing)
+//   ui                 Widget::OnNativeWidgetSizeChanged
+export const TRACE_CATEGORIES = ['blink.user_timing', 'loading', 'benchmark', 'ui'];
 
-export function probeConfig() {
-  return { probes: { js: { js: METRICS_JS } } };
+// trace_processor queries crossbench runs on each traced repetition. Results
+// land in <run>/trace_processor/<name>.json as a list of rows.
+export const TRACE_QUERIES = {
+  // Navigation start to FCP and to the last LCP candidate of the last
+  // main-frame navigation that painted, leaving out crossbench's own data:
+  // URL pages.
+  page_load: `
+WITH
+  nav AS (
+    SELECT EXTRACT_ARG(arg_set_id, 'debug.data.navigationId') AS navigation_id, MIN(ts) AS ts
+    FROM slice
+    WHERE name = 'navigationStart'
+      AND EXTRACT_ARG(arg_set_id, 'debug.data.isOutermostMainFrame')
+      AND EXTRACT_ARG(arg_set_id, 'debug.data.documentLoaderURL') NOT LIKE 'data:%'
+    GROUP BY 1
+  ),
+  fcp AS (
+    SELECT EXTRACT_ARG(arg_set_id, 'debug.data.navigationId') AS navigation_id, MIN(ts) AS ts
+    FROM slice
+    WHERE name = 'firstContentfulPaint'
+    GROUP BY 1
+  ),
+  lcp AS (
+    SELECT EXTRACT_ARG(arg_set_id, 'debug.data.navigationId') AS navigation_id, MAX(ts) AS ts
+    FROM slice
+    WHERE name = 'largestContentfulPaint::Candidate'
+      AND EXTRACT_ARG(arg_set_id, 'debug.data.isOutermostMainFrame')
+    GROUP BY 1
+  )
+SELECT (fcp.ts - nav.ts) / 1e6 AS fcp, (lcp.ts - nav.ts) / 1e6 AS lcp
+FROM nav JOIN fcp USING (navigation_id) LEFT JOIN lcp USING (navigation_id)
+ORDER BY nav.ts DESC
+LIMIT 1`,
+  // One row per BrowserWindow.setSize() between the page's cb-resize-start
+  // and cb-resize-end marks: from the browser's native widget size change to
+  // the presentation of the first renderer frame begun after it.
+  resize: `
+WITH
+  bracket AS (
+    SELECT
+      (SELECT MIN(ts) FROM slice WHERE name = 'cb-resize-start') AS begin_ts,
+      (SELECT MAX(ts) FROM slice WHERE name = 'cb-resize-end') AS end_ts
+  ),
+  resizes AS (
+    SELECT s.ts, LEAD(s.ts) OVER (ORDER BY s.ts) AS next_ts
+    FROM slice s
+    JOIN thread_track tt ON s.track_id = tt.id
+    JOIN thread USING (utid)
+    JOIN process p USING (upid), bracket b
+    WHERE s.name = 'Widget::OnNativeWidgetSizeChanged' AND p.name = 'Browser'
+      AND s.ts BETWEEN b.begin_ts AND b.end_ts
+  ),
+  frames AS (
+    SELECT s.ts, s.ts + s.dur AS presented_ts
+    FROM slice s
+    JOIN process_track pt ON s.track_id = pt.id
+    JOIN process p USING (upid)
+    WHERE s.name = 'PipelineReporter' AND p.name = 'Renderer'
+      AND EXTRACT_ARG(s.arg_set_id, 'frame_reporter.state') IN ('STATE_PRESENTED_ALL', 'STATE_PRESENTED_PARTIAL')
+  )
+SELECT
+  r.ts AS resize_ts,
+  ((SELECT MIN(f.presented_ts) FROM frames f
+    WHERE f.ts >= r.ts AND (r.next_ts IS NULL OR f.ts < r.next_ts)) - r.ts) / 1e6 AS resize_ms
+FROM resizes r
+ORDER BY r.ts`
+};
+
+// crossbench probe config per suite. Everything the suites report comes from
+// crossbench's own probes:
+//   performance.entries  paint (FCP), navigation timing and performance.mark()
+//                        entries, read from the page after each story. The
+//                        file-loading pages mark 'files-loaded' themselves,
+//                        since only the page knows when all N files ran.
+//   meminfo              per-process PSS/RSS from /proc/<pid>/smaps_rollup,
+//                        taken by the `meminfo` action at the end of
+//                        loading/first_load (one shell call, after the timing).
+//   tracing              Chrome-style startup tracing (--trace-startup) for
+//                        the `trace` suite, and trace_processor to run
+//                        TRACE_QUERIES on each trace. A perfetto system trace
+//                        (the `perfetto` probe) misses renderer events from
+//                        before the renderer connects to traced. The trace
+//                        suite runs separately from the timed suites, so the
+//                        tracing overhead stays out of their numbers.
+export function probeConfigs(): Record<string, { probes: Record<string, unknown> }> {
+  return {
+    loading: { probes: { 'performance.entries': {}, meminfo: {} } },
+    file_loading: { probes: { 'performance.entries': {} } },
+    trace: {
+      probes: {
+        tracing: { preset: 'empty', categories: TRACE_CATEGORIES },
+        trace_processor: {
+          queries: Object.entries(TRACE_QUERIES).map(([name, sql]) => ({ name, sql: sql.trim() }))
+        }
+      }
+    }
+  };
 }
 
 const pad = '// padding to make each file about 300 bytes\n'.repeat(6);
 
 // Writes <root>/classic.html (N classic <script> tags) and <root>/module.html
-// (one module importing N modules), VS Code dev-build style. Both record the
-// time from navigation start to "all files evaluated" as files_loaded_ms.
+// (one module importing N modules), VS Code dev-build style. Both mark
+// 'files-loaded' once every file has been evaluated; the performance.entries
+// probe reads the mark's time since navigation start.
 export function writeFileLoadingSite(root: string, count: number) {
   fs.rmSync(root, { recursive: true, force: true });
   fs.mkdirSync(path.join(root, 'classic'), { recursive: true });
   fs.mkdirSync(path.join(root, 'module'), { recursive: true });
-  const done =
-    "performance.mark('files-loaded'); window.__cbMetrics = { files_loaded_ms: performance.getEntriesByName('files-loaded')[0].startTime };";
+  const done = "performance.mark('files-loaded');";
 
   const tags: string[] = [];
   const imports: string[] = [];
@@ -103,12 +180,14 @@ interface PageConfigOptions {
 }
 
 export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resizeCount = 20 }: PageConfigOptions) {
+  const firstLoad: Action[] = [
+    { action: 'get', url: `${baseUrl}/pages/index.html`, ready_state: 'complete' },
+    { action: 'wait_for_condition', timeout: '20s', condition: hasPainted },
+    { action: 'wait', duration: '1s' }
+  ];
   const loading: Pages = {
-    first_load: [
-      { action: 'get', url: `${baseUrl}/pages/index.html`, ready_state: 'complete' },
-      { action: 'wait_for_condition', timeout: '20s', condition: hasPainted },
-      { action: 'wait', duration: '1s' }
-    ],
+    // Memory is sampled once the page has painted and settled.
+    first_load: [...firstLoad, { action: 'meminfo', title: 'loaded' }],
     reload: [
       { action: 'get', url: `${baseUrl}/pages/index.html`, ready_state: 'complete' },
       { action: 'wait', duration: '1s' },
@@ -122,8 +201,11 @@ export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resize
       { action: 'wait', duration: '500ms' }
     ]
   };
+
+  // Stories measured from a trace (TRACE_QUERIES), in their own invocation.
+  const trace: Pages = { first_load: firstLoad };
   if (kind === 'electron' && capabilities.setSize) {
-    loading.resize = [
+    trace.resize = [
       { action: 'get', url: `${baseUrl}/pages/resize.html`, ready_state: 'complete' },
       { action: 'wait', duration: '500ms' },
       { action: 'js', script: `window.cbRunResize(${resizeCount});` },
@@ -154,12 +236,12 @@ export function pageConfigs({ kind, capabilities = {}, baseUrl, fileRoot, resize
         {
           action: 'wait_for_condition',
           timeout: '60s',
-          condition: `return location.protocol === '${strategy.scheme}:' && !!window.__cbMetrics && window.__cbMetrics.files_loaded_ms > 0`
+          condition: `return location.protocol === '${strategy.scheme}:' && performance.getEntriesByName('files-loaded').length > 0`
         },
         { action: 'wait', duration: '500ms' }
       ];
     }
   }
 
-  return { loading: { pages: loading }, file_loading: { pages: fileLoading } };
+  return { loading: { pages: loading }, trace: { pages: trace }, file_loading: { pages: fileLoading } };
 }

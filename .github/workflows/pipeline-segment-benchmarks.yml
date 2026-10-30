@@ -39,7 +39,7 @@ on:
         type: string
         description: 'Comma-separated suites to run'
         required: false
-        default: 'loading,file_loading,speedometer,jetstream'
+        default: 'loading,trace,file_loading,speedometer,jetstream'
       upload-to-datadog:
         type: boolean
         description: 'Send the results to Datadog'

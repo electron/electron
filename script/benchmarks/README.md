@@ -19,10 +19,37 @@ interleaved (A, B, C, B, C, A, ...) on the same runner:
 
 | Suite | Stories | Metrics |
 | --- | --- | --- |
-| `loading` | `first_load`, `reload` (warm process, same page), `resize` | FCP, LCP and `loadEventEnd` in ms; resize median and p90 in ms |
+| `loading` | `first_load`, `reload` (warm process, same page) | FCP and `loadEventEnd` in ms; PSS in MiB after `first_load` (total, browser, renderer and GPU processes) |
+| `trace` | `first_load`, `resize` (Electron only), traced | FCP and LCP in ms; resize latency median and p90 in ms |
 | `file_loading` | 1,500 small classic scripts and ES modules, loaded through `file://`, `protocol.registerFileProtocol`, `protocol.handle` + `fs`, and `protocol.handle` + `net.fetch` | Navigation start to "all files evaluated" in ms, and the ratio of each custom protocol to `file://` |
 | `speedometer` | Speedometer 3.1 | Score |
 | `jetstream` | JetStream 2.2 | Score |
+
+Every measure comes from one of crossbench's probes:
+
+* `performance.entries` reads paint timing (FCP), navigation timing and
+  `performance.mark()` entries from the page after each story. The
+  file-loading pages mark `files-loaded` themselves once every file has run,
+  because only the page knows when that is.
+* `meminfo` reads `/proc/<pid>/smaps_rollup` for every browser process, through
+  a `meminfo` action at the end of `first_load`, after the timing.
+* `tracing` records a Chrome-style startup trace (`--trace-startup`) with only
+  the categories the metrics need (`TRACE_CATEGORIES` in
+  [`lib/configs.mts`](lib/configs.mts)), and `trace_processor` runs
+  `TRACE_QUERIES` on each trace. A perfetto system trace (the `perfetto` probe)
+  is not used: it misses renderer events from before the renderer connects to
+  `traced`, including FCP.
+  * FCP and LCP: from the main frame's `navigationStart` to
+    `firstContentfulPaint` and to the last `largestContentfulPaint::Candidate`.
+  * Resize: `BrowserWindow.setSize()` from the browser's
+    `Widget::OnNativeWidgetSizeChanged` to the presentation of the first
+    renderer frame begun after it (the end of its `PipelineReporter`), 20 times
+    per run.
+
+Tracing slows the browser down, so the traced stories run in their own `trace`
+invocation and the `loading` and `file_loading` numbers are never traced. The
+`trace` suite's FCP is a cross-check of the untraced one and the only source of
+LCP, which `performance.entries` does not read.
 
 The press benchmarks are served locally from the WebKit revisions pinned in
 [`script/pgo/serve-benchmarks.js`](../pgo/serve-benchmarks.js), so they match
@@ -30,12 +57,15 @@ what PGO trains on and nothing is fetched from the network during a run.
 MotionMark is not included yet: the revision PGO pins no longer exposes the
 `window.benchmarkRunnerClient` global that crossbench's MotionMark probe reads.
 
-Resize is timed from `BrowserWindow.setSize()` to the second
-`requestAnimationFrame` at the new size. That floors at about two frames, so it
-only catches large regressions; a trace-based metric (`SetBounds` to the next
-presented frame) will replace it. Chrome for Testing has no harness, so it
-skips `resize`, and it only runs the `file://` classic-script story because
-Chrome blocks module scripts from `file://`.
+Chrome for Testing has no harness, so it skips `resize`, and it only runs the
+`file://` classic-script story because Chrome blocks module scripts from
+`file://`.
+
+Other crossbench probes are left out on purpose. `system.stats` forks `ps`
+every 100 ms for the whole run, which disturbs the timings, and only records
+system-wide text snapshots. `v8.log` and `profiling` (`perf`) are heavy
+diagnostics with no single number to compare, and `frequency` needs control of
+the CPU governor, which the CI VMs don't expose.
 
 ## How it works
 
@@ -92,7 +122,7 @@ node script/benchmarks/fetch-targets.mts --out /tmp/bench/targets \
   --candidate 47.0.0-nightly.20261028 --baseline 47.0.0-nightly.20261027
 xvfb-run -a node script/benchmarks/run.mts \
   --targets /tmp/bench/targets/targets.json --out /tmp/bench/results \
-  --rounds 3 --suites loading,file_loading --python python3.12
+  --rounds 3 --suites loading,trace,file_loading --python python3.12
 node script/benchmarks/compare.mts --results /tmp/bench/results --dry-run
 ```
 
@@ -109,6 +139,10 @@ node script/benchmarks/compare.mts --results /tmp/bench/results --dry-run
   so short runs never flag anything. The workflow defaults to 10 rounds.
 * Runs are headless, so paint and resize timings don't include a real
   compositor or GPU.
+* The trace queries depend on Chromium trace event names
+  (`Widget::OnNativeWidgetSizeChanged`, `PipelineReporter`,
+  `firstContentfulPaint`). If a Chromium roll renames one, the `trace` suite
+  reports no values for that metric and `compare.mts` lists it as incomplete.
 * Only Linux x64 runs today. Windows and macOS need more callers of
   `pipeline-segment-benchmarks.yml`, plus the Windows desktop workarounds from
   `pipeline-segment-pgo-collect.yml`.

@@ -6,7 +6,7 @@
 //
 // Usage (under Xvfb on Linux):
 //   node script/benchmarks/run.mts --targets <dir>/targets.json --out <dir>
-//     [--rounds 10] [--repeat 3] [--suites loading,file_loading,speedometer]
+//     [--rounds 10] [--repeat 3] [--suites loading,trace,file_loading,speedometer]
 //     [--file-count 1500] [--work-dir <dir>] [--python python3]
 import { type ChildProcess, execFile, execFileSync, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -15,7 +15,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { pageConfigs, probeConfig, writeFileLoadingSite } from './lib/configs.mts';
+import { pageConfigs, probeConfigs, writeFileLoadingSite } from './lib/configs.mts';
 
 import type { Capabilities, Invocation, RunMetadata, Target, TargetsFile } from './lib/types.mts';
 
@@ -28,7 +28,10 @@ const SERVE_BENCHMARKS = path.resolve(import.meta.dirname, '../pgo/serve-benchma
 export const CROSSBENCH_REPO = 'https://chromium.googlesource.com/crossbench';
 export const CROSSBENCH_REVISION = '18eb2497c6ab1d130e40512187a03a5c0cc79255';
 
-export const SUITES = ['loading', 'file_loading', 'speedometer', 'jetstream'];
+export const SUITES = ['loading', 'trace', 'file_loading', 'speedometer', 'jetstream'];
+
+// Suites driven by generated page configs and crossbench's `loading` benchmark.
+const PAGE_SUITES = ['loading', 'trace', 'file_loading'];
 
 // Press benchmarks are served from the same pinned WebKit checkouts PGO uses.
 // MotionMark is left out: the revision PGO pins no longer exposes the
@@ -284,7 +287,7 @@ async function main() {
       out: { type: 'string' },
       rounds: { type: 'string', default: '10' },
       repeat: { type: 'string', default: '3' },
-      suites: { type: 'string', default: 'loading,file_loading,speedometer' },
+      suites: { type: 'string', default: 'loading,trace,file_loading,speedometer' },
       'file-count': { type: 'string', default: '1500' },
       'work-dir': { type: 'string', default: path.join(os.tmpdir(), 'electron-benchmarks') },
       python: { type: 'string', default: 'python3' },
@@ -323,8 +326,11 @@ async function main() {
 
   const configDir = path.join(workDir, 'configs');
   fs.mkdirSync(configDir, { recursive: true });
-  const probeConfigPath = path.join(configDir, 'probe.json');
-  fs.writeFileSync(probeConfigPath, JSON.stringify(probeConfig(), null, 2));
+  const probeConfigPaths: Record<string, string> = {};
+  for (const [suite, config] of Object.entries(probeConfigs())) {
+    probeConfigPaths[suite] = path.join(configDir, `${suite}.probes.json`);
+    fs.writeFileSync(probeConfigPaths[suite], JSON.stringify(config, null, 2));
+  }
   const capabilities = new Map<string, Capabilities>();
   const pageConfigPaths = new Map<string, Record<string, string>>();
   for (const target of targets) {
@@ -377,14 +383,14 @@ async function main() {
           // Values each measure should have, checked by compare.mts. The
           // press benchmarks run once per invocation (crossbench's default).
           let repetitions = 1;
-          if (suite === 'loading' || suite === 'file_loading') {
+          if (PAGE_SUITES.includes(suite)) {
             repetitions = repeat;
             const pageConfig = pageConfigPaths.get(target.id)?.[suite];
             if (!pageConfig) continue;
             suiteArgs.push(
               'loading',
               `--page-config=${pageConfig}`,
-              `--probe-config=${probeConfigPath}`,
+              `--probe-config=${probeConfigPaths[suite]}`,
               '--separate',
               `--repeat=${repeat}`
             );

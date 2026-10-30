@@ -50,13 +50,17 @@ export interface Comparison extends ComparisonDefinition {
   metrics: MetricComparison[];
 }
 
-// Measures reported per story, from the js probe (loading suites) or the
-// benchmark's own result file (press benchmarks).
-function measuresFor(suite: string, story: string): string[] {
-  if (suite === 'file_loading') return ['files_loaded_ms'];
-  if (story === 'resize') return ['resize_median_ms', 'resize_p90_ms'];
-  return ['fcp', 'lcp', 'load_event_end'];
-}
+// Suites run through crossbench's `loading` benchmark with generated page
+// configs (see lib/configs.mts); each reports one value per repetition.
+const PAGE_SUITES = ['loading', 'trace', 'file_loading'];
+
+// Measures read from crossbench's performance.entries probe, which merges
+// every repetition of a story into <story>/performance.entries.json.
+const PERFORMANCE_ENTRIES: Record<string, Record<string, string>> = {
+  loading: { fcp: 'paint/first-contentful-paint/startTime', load_event_end: 'navigation/loadEventEnd' },
+  file_loading: { files_loaded_ms: 'mark/files-loaded/startTime' }
+};
+
 const PRESS_RESULTS: Record<string, { file: string; keys: string[] }> = {
   speedometer: { file: 'speedometer_3.1.json', keys: ['Score'] },
   jetstream: { file: 'jetstream_2.2.json', keys: ['Total/Score'] }
@@ -107,13 +111,12 @@ function collectInvocation(
     const storiesDir = path.join(resultDir, browserDir, 'stories');
     if (!fs.existsSync(storiesDir) || !fs.statSync(storiesDir).isDirectory()) continue;
     for (const story of fs.readdirSync(storiesDir)) {
-      const file = path.join(storiesDir, story, 'js.json');
-      if (!fs.existsSync(file)) continue;
-      const data = readJson(file);
-      for (const measure of measuresFor(suite, story)) {
+      const storyDir = path.join(storiesDir, story);
+      if (!fs.statSync(storyDir).isDirectory()) continue;
+      for (const [measure, values] of Object.entries(storyMeasures(suite, story, storyDir))) {
         const metric = `${suite}.${story}.${measure}`;
-        const values = valuesOf(data[measure]);
-        if (complete(metric, values)) metrics[metric] = median(values);
+        if (values.length === 0) incomplete.push(`${metric} (no values)`);
+        else if (complete(metric, values)) metrics[metric] = median(values);
       }
     }
   }
@@ -133,11 +136,121 @@ function collectInvocation(
   return { metrics, incomplete };
 }
 
+// The run directories of one story, one per repetition, in order:
+// <story>/<repetition>/<cache temperature>/.
+function runDirs(storyDir: string): string[] {
+  const dirs: string[] = [];
+  const repetitions = fs
+    .readdirSync(storyDir)
+    .filter((entry) => /^\d+$/.test(entry))
+    .sort((a, b) => Number(a) - Number(b));
+  for (const repetition of repetitions) {
+    const repetitionDir = path.join(storyDir, repetition);
+    for (const temperature of fs.readdirSync(repetitionDir).sort()) {
+      const runDir = path.join(repetitionDir, temperature);
+      if (fs.statSync(runDir).isDirectory()) dirs.push(runDir);
+    }
+  }
+  return dirs;
+}
+
+const readJsonIfExists = (file: string): any => (fs.existsSync(file) ? readJson(file) : undefined);
+const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+
+// The nearest-rank percentile of a sorted list.
+const percentile = (sorted: number[], p: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
+
+// Process type of one meminfo entry: the --type switch, 'browser' for the
+// main process, or undefined for processes that are not part of the browser
+// (the shell crossbench's meminfo script runs in matches its own pgrep).
+function processType(cmdline: string): string | undefined {
+  const program = path.basename(cmdline.trim().split(/\s+/)[0] ?? '');
+  if (/^(ba|da)?sh$/.test(program)) return undefined;
+  const type = /--type=(\S+)/.exec(cmdline)?.[1];
+  if (type) return type;
+  return program.includes('crashpad') ? 'crashpad' : 'browser';
+}
+
+// PSS in MiB per process type from one meminfo dump (smaps_rollup values
+// are in kB).
+export function memoryMeasures(dump: any): Record<string, number> {
+  const kb: Record<string, number> = { total: 0, browser: 0, renderer: 0, gpu: 0 };
+  for (const process of dump?.processes ?? []) {
+    const type = processType(String(process.name ?? ''));
+    if (!type || !isNumber(process.pss_total)) continue;
+    kb.total += process.pss_total;
+    if (type === 'browser') kb.browser += process.pss_total;
+    else if (type === 'renderer') kb.renderer += process.pss_total;
+    else if (type === 'gpu-process') kb.gpu += process.pss_total;
+  }
+  return Object.fromEntries(Object.entries(kb).map(([type, value]) => [`${type}_pss_mib`, value / 1024]));
+}
+
+const MEMORY_MEASURES = ['total_pss_mib', 'browser_pss_mib', 'renderer_pss_mib', 'gpu_pss_mib'];
+
+// Measures each story of a page suite reports. A story that reports none of
+// them (for example after a Chromium roll renamed a trace event) is listed as
+// incomplete instead of disappearing from the results.
+function expectedMeasures(suite: string, story: string): string[] {
+  if (suite === 'trace') return story === 'resize' ? ['resize_median_ms', 'resize_p90_ms'] : ['fcp', 'lcp'];
+  const measures = Object.keys(PERFORMANCE_ENTRIES[suite] ?? {});
+  return suite === 'loading' && story === 'first_load' ? [...measures, ...MEMORY_MEASURES] : measures;
+}
+
+// Values per measure (one per repetition) for one story of a page suite.
+function storyMeasures(suite: string, story: string, storyDir: string): Record<string, number[]> {
+  const measures: Record<string, number[]> = Object.fromEntries(
+    expectedMeasures(suite, story).map((measure) => [measure, []])
+  );
+  const add = (measure: string, value: unknown) => {
+    if (isNumber(value) && measures[measure]) measures[measure].push(value);
+  };
+
+  const entries = PERFORMANCE_ENTRIES[suite];
+  if (entries) {
+    const data = readJsonIfExists(path.join(storyDir, 'performance.entries.json'));
+    for (const [measure, key] of Object.entries(entries)) {
+      for (const value of valuesOf(data?.[key])) add(measure, value);
+    }
+  }
+
+  for (const runDir of runDirs(storyDir)) {
+    if (suite === 'loading') {
+      // One dump per run, from the `meminfo` action at the end of the story.
+      const meminfoDir = path.join(runDir, 'meminfo');
+      const dumps = fs.existsSync(meminfoDir) ? fs.readdirSync(meminfoDir).filter((f) => f.endsWith('.json')) : [];
+      if (dumps.length === 1) {
+        for (const [measure, value] of Object.entries(memoryMeasures(readJson(path.join(meminfoDir, dumps[0]))))) {
+          add(measure, value);
+        }
+      }
+    } else if (suite === 'trace') {
+      const tpDir = path.join(runDir, 'trace_processor');
+      if (story === 'resize') {
+        const rows: any[] = readJsonIfExists(path.join(tpDir, 'resize.json')) ?? [];
+        const latencies = rows
+          .map((row) => row.resize_ms)
+          .filter(isNumber)
+          .sort((a, b) => a - b);
+        if (latencies.length > 0) {
+          add('resize_median_ms', median(latencies));
+          add('resize_p90_ms', percentile(latencies, 0.9));
+        }
+      } else {
+        const [row] = readJsonIfExists(path.join(tpDir, 'page_load.json')) ?? [];
+        add('fcp', row?.fcp);
+        add('lcp', row?.lcp);
+      }
+    }
+  }
+  return measures;
+}
+
 // Repetitions one invocation should report per measure. run.mts records it;
 // older metadata only has the loading suites' --repeat.
 function expectedCountOf(invocation: Invocation, metadata: RunMetadata): number | undefined {
   if (Number.isInteger(invocation.repetitions)) return invocation.repetitions;
-  if (invocation.suite === 'loading' || invocation.suite === 'file_loading') return metadata.repeat;
+  if (PAGE_SUITES.includes(invocation.suite)) return metadata.repeat;
   return undefined;
 }
 
@@ -222,6 +335,7 @@ function formatValue(metric: string, value: number) {
   if (!Number.isFinite(value)) return 'n/a';
   if (metric.endsWith('.ratio_to_file')) return `${value.toFixed(2)}x`;
   if (metric.endsWith('.score')) return value.toFixed(2);
+  if (metric.endsWith('_mib')) return `${value.toFixed(1)} MiB`;
   return `${value.toFixed(1)} ms`;
 }
 
