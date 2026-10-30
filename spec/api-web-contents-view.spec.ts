@@ -659,42 +659,42 @@ describe('WebContentsView', () => {
     });
   });
 
-  describe('setInteractive', () => {
+  describe('setIgnoreMouseEvents', () => {
     afterEach(closeAllWindows);
 
     it('does not throw when toggled', () => {
       const v = new WebContentsView();
-      expect(() => v.setInteractive(false)).not.toThrow();
-      expect(() => v.setInteractive(true)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(false)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(true)).not.toThrow();
     });
 
     it('correctly records state when toggled', () => {
       const v = new WebContentsView();
-      expect(v.getInteractive()).toBe(true);
-      v.setInteractive(false);
-      expect(v.getInteractive()).toBe(false);
-      v.setInteractive(true);
-      expect(v.getInteractive()).toBe(true);
+      expect(v.getIgnoreMouseEvents()).toBe(false);
+      v.setIgnoreMouseEvents(true);
+      expect(v.getIgnoreMouseEvents()).toBe(true);
+      v.setIgnoreMouseEvents(false);
+      expect(v.getIgnoreMouseEvents()).toBe(false);
     });
 
     it('does not throw for a WebContentsView, before and after attach', async () => {
       const w = new BaseWindow({ show: false });
       const view = new WebContentsView();
-      expect(() => view.setInteractive(false)).not.toThrow(); // before attach
+      expect(() => view.setIgnoreMouseEvents(false)).not.toThrow(); // before attach
       w.contentView.addChildView(view);
-      expect(() => view.setInteractive(true)).not.toThrow(); // after attach
+      expect(() => view.setIgnoreMouseEvents(true)).not.toThrow(); // after attach
     });
 
     it('survives destroy/toggle churn', () => {
       const view = new WebContentsView();
-      view.setInteractive(false);
-      view.setInteractive(true);
-      view.setInteractive(false);
+      view.setIgnoreMouseEvents(false);
+      view.setIgnoreMouseEvents(true);
+      view.setIgnoreMouseEvents(false);
       view.webContents.destroy();
-      expect(() => view.setInteractive(true)).not.toThrow();
+      expect(() => view.setIgnoreMouseEvents(true)).not.toThrow();
     });
 
-    it('prevents interaction when setInteractive(false) is called', async function (ctx) {
+    it('prevents interaction when setIgnoreMouseEvents(false) is called', async function (ctx) {
       if (!robot) {
         ctx.skip();
       }
@@ -719,7 +719,7 @@ describe('WebContentsView', () => {
       w.contentView.addChildView(top);
       top.setBounds({ x: 0, y: 0, width: 400, height: 400 });
       await top.webContents.loadFile(path.join(fixturesPath, 'pages', 'click.html'), { query: { id: 'top' } });
-      top.setInteractive(false);
+      top.setIgnoreMouseEvents(true);
 
       w.focus();
 
@@ -732,10 +732,13 @@ describe('WebContentsView', () => {
       robot.moveMouse(x + Math.floor(width / 2), y + Math.floor(height / 2));
       robot.mouseClick();
 
-      const [, id] = await clickedPromise;
-      expect(id).toBe('bottom');
+      const data = await Promise.race([
+        clickedPromise,
+        new Promise<void>((resolve) => setTimeout(() => resolve(), 1000))
+      ]);
+      expect(data?.[1]).toBe('bottom');
 
-      top.setInteractive(true);
+      top.setIgnoreMouseEvents(false);
 
       await new Promise((resolve) => setTimeout(resolve, 250));
 
@@ -743,8 +746,11 @@ describe('WebContentsView', () => {
       robot.moveMouse(x + Math.floor(width / 2), y + Math.floor(height / 2));
       robot.mouseClick();
 
-      const [, id2] = await clickedPromise2;
-      expect(id2).toBe('top');
+      const data2 = await Promise.race([
+        clickedPromise2,
+        new Promise<void>((resolve) => setTimeout(() => resolve(), 1000))
+      ]);
+      expect(data2?.[1]).toBe('top');
     });
   });
 });

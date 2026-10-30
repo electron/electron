@@ -91,7 +91,7 @@ void SetViewHitTestable(NSView* view, bool hit_testable) {
 
 namespace electron::api {
 
-void WebContentsViewHost::ApplyInteractive(bool interactive) {
+void WebContentsViewHost::ApplyIgnoreMouseEvents(bool ignore) {
   if (!api_web_contents_ || !api_web_contents_->web_contents())
     return;
 
@@ -100,7 +100,7 @@ void WebContentsViewHost::ApplyInteractive(bool interactive) {
   if (!content_view)
     return;
 
-  SetViewHitTestable(content_view, interactive);
+  SetViewHitTestable(content_view, !ignore);
 }
 
 }  // namespace electron::api

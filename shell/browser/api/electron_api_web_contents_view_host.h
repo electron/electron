@@ -93,7 +93,7 @@ class WebContentsViewHost final : public View::Host,
 
   void RegisterDraggableRegionProvider(NativeWindow* window);
   void ApplyBorderRadius(std::optional<int> radius);
-  void ApplyInteractive(bool interactive);
+  void ApplyIgnoreMouseEvents(bool ignore);
 
   // DraggableRegionProvider:
   views::View* GetDraggableRegionView() override;
@@ -128,7 +128,7 @@ class WebContentsViewHost final : public View::Host,
   WebContents* GetLiveWebContents() const;
   WebContentsContainerView* container() const;
   InspectableWebContentsView* GetOwnedInspectableView() const;
-  void ReapplyInteractive();
+  void ReapplyIgnoreMouseEvents();
   void RemoveFromParent();
   void StopObservingWindow();
   void UnregisterDraggableRegionProvider();

@@ -204,7 +204,7 @@ void WebContentsViewHost::UnregisterDraggableRegionProvider() {
 }
 
 #if !BUILDFLAG(IS_MAC)
-void WebContentsViewHost::ApplyInteractive(bool interactive) {
+void WebContentsViewHost::ApplyIgnoreMouseEvents(bool ignore) {
   if (!api_web_contents_ || !api_web_contents_->web_contents())
     return;
 
@@ -212,8 +212,8 @@ void WebContentsViewHost::ApplyInteractive(bool interactive) {
   if (gfx::NativeView native_view =
           api_web_contents_->web_contents()->GetNativeView()) {
     native_view->SetEventTargetingPolicy(
-        interactive ? aura::EventTargetingPolicy::kTargetAndDescendants
-                    : aura::EventTargetingPolicy::kNone);
+        ignore ? aura::EventTargetingPolicy::kNone
+               : aura::EventTargetingPolicy::kTargetAndDescendants);
   }
 #endif
 }
@@ -235,7 +235,7 @@ int WebContentsViewHost::NonClientHitTest(const gfx::Point& point) {
   if (!inspectable_view || !view()->GetVisible())
     return HTNOWHERE;
   if (auto api_view = wrapper())
-    if (!api_view->GetInteractive())
+    if (api_view->GetIgnoreMouseEvents())
       return HTNOWHERE;
   if (auto* web_contents = GetLiveWebContents()) {
     // Convert the point to the contents view's coordinate space rather than
@@ -277,16 +277,16 @@ void WebContentsViewHost::RenderViewHostChanged(
     return;
   // A new RenderViewHost brings a new RenderWidgetHostView whose native view
   // does not carry the stored interactive state, and it may not exist yet, so
-  // re-apply on a later task. ReapplyInteractive targets the current native
-  // view, making this idempotent across further swaps.
+  // re-apply on a later task. ReapplyIgnoreMouseEvents targets the current
+  // native view, making this idempotent across further swaps.
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(&WebContentsViewHost::ReapplyInteractive,
+      FROM_HERE, base::BindOnce(&WebContentsViewHost::ReapplyIgnoreMouseEvents,
                                 weak_factory_.GetWeakPtr()));
 }
 
-void WebContentsViewHost::ReapplyInteractive() {
+void WebContentsViewHost::ReapplyIgnoreMouseEvents() {
   if (auto api_view = wrapper())
-    ApplyInteractive(api_view->GetInteractive());
+    ApplyIgnoreMouseEvents(api_view->GetIgnoreMouseEvents());
 }
 
 void WebContentsViewHost::OnChildViewRemoved(views::View* observed_view,
@@ -318,7 +318,7 @@ void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
   native_window->AddObserver(this);
   if (auto api_view = wrapper()) {
     ApplyBorderRadius(api_view->border_radius());
-    ApplyInteractive(api_view->GetInteractive());
+    ApplyIgnoreMouseEvents(api_view->GetIgnoreMouseEvents());
   }
   if (HasLivePage())
     ScheduleWindowControlsOverlayUpdate();
@@ -446,9 +446,10 @@ void WebContentsView::SetBorderRadius(int radius) {
   web_contents_view_host()->ApplyBorderRadius(border_radius());
 }
 
-void WebContentsView::SetInteractive(bool interactive) {
-  View::SetInteractive(interactive);
-  web_contents_view_host()->ApplyInteractive(View::GetInteractive());
+void WebContentsView::SetIgnoreMouseEvents(bool ignore) {
+  View::SetIgnoreMouseEvents(ignore);
+  web_contents_view_host()->ApplyIgnoreMouseEvents(
+      View::GetIgnoreMouseEvents());
 }
 
 void WebContentsView::RegisterDraggableRegionProvider(NativeWindow* window) {
@@ -553,7 +554,7 @@ void WebContentsView::FillObjectTemplate(v8::Isolate* isolate,
   gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod<&WebContentsView::SetBackgroundColor>("setBackgroundColor")
       .SetMethod<&WebContentsView::SetBorderRadius>("setBorderRadius")
-      .SetMethod<&WebContentsView::SetInteractive>("setInteractive")
+      .SetMethod<&WebContentsView::SetIgnoreMouseEvents>("setIgnoreMouseEvents")
       .SetProperty<&WebContentsView::GetWebContents>("webContents");
 }
 

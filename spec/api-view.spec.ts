@@ -289,26 +289,26 @@ describe('View', () => {
     });
   });
 
-  describe('setInteractive', () => {
+  describe('setIgnoreMouseEvents', () => {
     afterEach(closeAllWindows);
 
     it('does not throw when toggled on a view', () => {
       w = new BaseWindow({ show: false });
       const v = new View();
-      expect(() => v.setInteractive(false)).not.toThrow();
-      expect(() => v.setInteractive(true)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(false)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(true)).not.toThrow();
       w.setContentView(v);
-      expect(() => v.setInteractive(false)).not.toThrow();
-      expect(() => v.setInteractive(true)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(false)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(true)).not.toThrow();
     });
 
     it('correctly records state when toggled', () => {
       const v = new View();
-      expect(v.getInteractive()).toBe(true);
-      v.setInteractive(false);
-      expect(v.getInteractive()).toBe(false);
-      v.setInteractive(true);
-      expect(v.getInteractive()).toBe(true);
+      expect(v.getIgnoreMouseEvents()).toBe(false);
+      v.setIgnoreMouseEvents(true);
+      expect(v.getIgnoreMouseEvents()).toBe(true);
+      v.setIgnoreMouseEvents(false);
+      expect(v.getIgnoreMouseEvents()).toBe(false);
     });
   });
 });
