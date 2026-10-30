@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 13:30:36 +0000
+Subject: src: stop using removed v8 callback info Data() accessors
+
+V8 removed the deprecated `FunctionCallbackInfo<T>::Data()` and
+`PropertyCallbackInfo<T>::Data()` accessors in favour of `DataV2()`,
+which returns `v8::Local<v8::Data>` instead of `v8::Local<v8::Value>`.
+`WasmStreaming::Unpack()` now takes `Local<Data>` directly.
+
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8396808
+
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index 33ac5632781134d76f11143b24db1bc2db5b581a..df29e067147125ffa9e47b635a7b055842caf415 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -401,7 +401,7 @@ class CallbackBundle {
+     return cbdata;
+   }
+ 
+-  static CallbackBundle* FromCallbackData(v8::Local<v8::Value> data) {
++  static CallbackBundle* FromCallbackData(v8::Local<v8::Data> data) {
+     return reinterpret_cast<CallbackBundle*>(data.As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault));
+   }
+ 
+@@ -489,7 +489,7 @@ class FunctionCallbackWrapper {
+   explicit FunctionCallbackWrapper(
+       const v8::FunctionCallbackInfo<v8::Value>& cbinfo)
+       : cbinfo_(cbinfo),
+-        bundle_(CallbackBundle::FromCallbackData(cbinfo.Data())) {}
++        bundle_(CallbackBundle::FromCallbackData(cbinfo.DataV2())) {}
+ 
+   void InvokeCallback() {
+     napi_callback_info cbinfo_wrapper =
+diff --git a/src/node_locks.cc b/src/node_locks.cc
+index 4fca3a7df94e39422a83df0ad74604d854993a37..c58efbf55617c326d6e7439954a74b91cd541f32 100644
+--- a/src/node_locks.cc
++++ b/src/node_locks.cc
+@@ -130,7 +130,7 @@ static void OnLockCallbackFulfilled(const FunctionCallbackInfo<Value>& info) {
+   Environment* env = Environment::GetCurrent(info);
+ 
+   BaseObjectPtr<LockHolder> lock_holder{
+-      BaseObject::FromJSObject<LockHolder>(info.Data())};
++      BaseObject::FromJSObject<LockHolder>(info.DataV2().As<Value>())};
+   std::shared_ptr<Lock> lock = lock_holder->lock();
+ 
+   // Release the lock and continue processing the queue.
+@@ -144,7 +144,7 @@ static void OnLockCallbackRejected(const FunctionCallbackInfo<Value>& info) {
+   Environment* env = Environment::GetCurrent(info);
+ 
+   BaseObjectPtr<LockHolder> lock_holder{
+-      BaseObject::FromJSObject<LockHolder>(info.Data())};
++      BaseObject::FromJSObject<LockHolder>(info.DataV2().As<Value>())};
+   std::shared_ptr<Lock> lock = lock_holder->lock();
+ 
+   LockManager::GetCurrent()->ReleaseLockAndProcessQueue(
+@@ -154,13 +154,13 @@ static void OnLockCallbackRejected(const FunctionCallbackInfo<Value>& info) {
+ // Called when the promise returned from the user's callback resolves
+ static void OnIfAvailableFulfill(const FunctionCallbackInfo<Value>& info) {
+   HandleScope handle_scope(info.GetIsolate());
+-  USE(info.Data().As<Promise::Resolver>()->Resolve(
++  USE(info.DataV2().As<Value>().As<Promise::Resolver>()->Resolve(
+       info.GetIsolate()->GetCurrentContext(), info[0]));
+ }
+ 
+ // Called when the promise returned from the user's callback rejects
+ static void OnIfAvailableReject(const FunctionCallbackInfo<Value>& info) {
+-  USE(info.Data().As<Promise::Resolver>()->Reject(
++  USE(info.DataV2().As<Value>().As<Promise::Resolver>()->Reject(
+       info.GetIsolate()->GetCurrentContext(), info[0]));
+ }
+ 
+diff --git a/src/node_modules.cc b/src/node_modules.cc
+index d2337033fc1bf538f84c619add57bcc7d7b9f219..a6f25ec074db079e671f91c34f5f82ba154df177 100644
+--- a/src/node_modules.cc
++++ b/src/node_modules.cc
+@@ -718,7 +718,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
+   }
+   Environment* env = Environment::GetCurrent(context);
+ 
+-  node::Utf8Value url(isolate, info.Data());
++  node::Utf8Value url(isolate, info.DataV2().As<Value>());
+   auto file_url = ada::parse(url.ToStringView());
+   CHECK(file_url);
+   auto file_path = url::FileURLToPath(env, *file_url);
+diff --git a/src/node_util.cc b/src/node_util.cc
+index 04217d6dce9333cf0e5a1c6de711f49b93c46663..0c0166accfe1289bb98001852abe9767da684ae2 100644
+--- a/src/node_util.cc
++++ b/src/node_util.cc
+@@ -382,7 +382,7 @@ static void DefineLazyPropertiesGetter(
+   }
+ 
+   Realm* realm = Realm::GetCurrent(context);
+-  Local<Value> arg = info.Data();
++  Local<Value> arg = info.DataV2().As<Value>();
+   Local<Value> require_result;
+   if (!realm->builtin_module_require()
+            ->Call(context, Null(isolate), 1, &arg)
+diff --git a/src/node_wasm_web_api.cc b/src/node_wasm_web_api.cc
+index a49cab7fb620b7d3ca303212ef3bb505fffa9e75..d977793eb1369dafb728953d12afa93b82b5b4e5 100644
+--- a/src/node_wasm_web_api.cc
++++ b/src/node_wasm_web_api.cc
+@@ -157,7 +157,7 @@ void StartStreamingCompilation(const FunctionCallbackInfo<Value>& info) {
+ 
+   // Create the wrapper object.
+   std::shared_ptr<WasmStreaming> streaming =
+-      WasmStreaming::Unpack(info.GetIsolate(), info.Data());
++      WasmStreaming::Unpack(info.GetIsolate(), info.DataV2());
+   Environment* env = Environment::GetCurrent(info);
+   Local<Object> obj;
+   if (!WasmStreamingObject::Create(env, streaming).ToLocal(&obj)) {
+diff --git a/test/addons/worker-addon-exit/binding.cc b/test/addons/worker-addon-exit/binding.cc
+index 312534fa4c74403caf9281cd99b083411227146f..8c561652c5cfc8a1236e40be26166b418e22cd19 100644
+--- a/test/addons/worker-addon-exit/binding.cc
++++ b/test/addons/worker-addon-exit/binding.cc
+@@ -72,7 +72,7 @@ void MyObject::New(const FunctionCallbackInfo<Value>& args) {
+     // Invoked as plain function `MyObject(...)`, turn into construct call.
+     const int argc = 1;
+     Local<Value> argv[argc] = {args[0]};
+-    Local<Function> cons = args.Data()
++    Local<Function> cons = args.DataV2().As<Value>()
+                                .As<Object>()
+                                ->GetInternalField(0)
+                                .As<Value>()
+diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
+index 6a0cbefdb84b26ac0f37a90742c25a10662eaf41..0902d56a5d464f53ffce54934cad25186bdb95e9 100644
+--- a/test/cctest/test_environment.cc
++++ b/test/cctest/test_environment.cc
+@@ -825,7 +825,7 @@ TEST_F(EnvironmentTest, NestedMicrotaskQueue) {
+       context,
+       [](const v8::FunctionCallbackInfo<v8::Value>& info) {
+         IntVec* callback_calls = static_cast<IntVec*>(
+-            info.Data().As<v8::External>()->Value());
++            info.DataV2().As<v8::External>()->Value());
+         callback_calls->push_back(info[0].As<v8::Int32>()->Value());
+       },
+       v8::External::New(isolate_, static_cast<void*>(&callback_calls)))
