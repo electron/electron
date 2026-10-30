@@ -195,9 +195,10 @@ describe('utilityProcess module', () => {
     ifit(isTestingBindingAvailable())("emits 'error' when fatal error is triggered from V8", async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'v8-fatal-error.js'));
       deferKillUtilityProcess(child);
-      const exited = once(child, 'exit');
+      // events.once() rejects on 'error' for any other event, so only wait
+      // for 'exit' once the 'error' event has been received.
       const [type, location, report] = await once(child, 'error');
-      const [code] = await exited;
+      const [code] = await once(child, 'exit');
       expect(type).toBe('FatalError');
       expect(location).toBe('v8::Object::SetInternalField()');
       const reportJSON = JSON.parse(report);
