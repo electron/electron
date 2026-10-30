@@ -974,10 +974,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   // Paths outside archives keep fsPromises' own implementation, which does
-  // not go through a callback request.
+  // not go through a callback request. The wrapper is async so that an
+  // invalid path (such as a non-file: URL) rejects rather than throws.
   const { lstat: lstatPromise } = fs.promises;
   const promisifiedLstat = util.promisify(fs.lstat);
-  fs.promises.lstat = function (pathArgument: string, options: any) {
+  fs.promises.lstat = async function (pathArgument: string, options: any) {
     if (!splitPath(pathArgument).isAsar) return lstatPromise.apply(this, arguments);
     return promisifiedLstat(pathArgument, options);
   };
@@ -1034,7 +1035,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { stat: statPromise } = fs.promises;
   const promisifiedStat = util.promisify(fs.stat);
-  fs.promises.stat = function (pathArgument: string, options: any) {
+  fs.promises.stat = async function (pathArgument: string, options: any) {
     if (!splitPath(pathArgument).isAsar) return statPromise.apply(this, arguments);
     return promisifiedStat(pathArgument, options);
   };
