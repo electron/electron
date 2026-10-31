@@ -16,7 +16,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { emittedNTimes } from './lib/events-helpers.ts';
+import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
 import { containsText, readPDF } from './lib/pdf-helpers.ts';
 import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
@@ -622,6 +622,120 @@ describe('webFrameMain module', () => {
       const { mainFrame } = w.webContents;
       const frame = webFrameMain.fromFrameToken(mainFrame.processId, mainFrame.frameToken);
       expect(frame).toBe(mainFrame);
+    });
+  });
+
+  describe('WebContents frame events', () => {
+    it('provide the frame on did-frame-finish-load', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      // frame-with-frame-container.html, frame-with-frame.html, frame.html
+      const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
+      await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
+      const events = await didFrameFinishLoad;
+
+      const { mainFrame } = w.webContents;
+      const frames = events.map(([event]) => event.frame);
+      expect(frames).toContain(mainFrame);
+      expect(frames).toContain(mainFrame.frames[0]);
+      expect(frames).toContain(mainFrame.frames[0].frames[0]);
+      for (const [event, isMainFrame, frameProcessId, frameRoutingId] of events) {
+        expect(event.isMainFrame).toBe(isMainFrame);
+        expect(event.isMainFrame).toBe(event.frame === mainFrame);
+        expect(event.frame.processId).toBe(frameProcessId);
+        expect(event.frame.routingId).toBe(frameRoutingId);
+      }
+    });
+
+    it('provide the frame and navigation details on did-frame-navigate', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      const didFrameNavigate = emittedUntil(w.webContents, 'did-frame-navigate', (event: any) => !event.isMainFrame);
+      await w.loadFile(path.join(subframesPath, 'frame-container.html'));
+      const [event, url, httpResponseCode, httpStatusText, isMainFrame, frameProcessId, frameRoutingId] =
+        await didFrameNavigate;
+
+      const subframe = w.webContents.mainFrame.frames[0];
+      expect(event.frame).toBe(subframe);
+      expect(event.url).toBe(fileUrl('frame.html'));
+      expect(event.url).toBe(url);
+      expect(event.httpResponseCode).toBe(httpResponseCode);
+      expect(event.httpStatusText).toBe(httpStatusText);
+      expect(event.isMainFrame).toBe(false);
+      expect(isMainFrame).toBe(false);
+      expect(subframe.processId).toBe(frameProcessId);
+      expect(subframe.routingId).toBe(frameRoutingId);
+    });
+
+    it('provide the frame on did-navigate-in-page', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(subframesPath, 'frame.html'));
+
+      const didNavigateInPage = once(w.webContents, 'did-navigate-in-page');
+      w.webContents.executeJavaScript('location.hash = "frame-event"');
+      const [event, url, isMainFrame, frameProcessId, frameRoutingId] = await didNavigateInPage;
+
+      const { mainFrame } = w.webContents;
+      expect(event.frame).toBe(mainFrame);
+      expect(event.url).toBe(`${fileUrl('frame.html')}#frame-event`);
+      expect(event.url).toBe(url);
+      expect(event.isMainFrame).toBe(true);
+      expect(isMainFrame).toBe(true);
+      expect(mainFrame.processId).toBe(frameProcessId);
+      expect(mainFrame.routingId).toBe(frameRoutingId);
+    });
+
+    it('provide the frame on did-fail-provisional-load and did-fail-load', async () => {
+      const w = new BrowserWindow({ show: false });
+      const missingUrl = fileUrl('does-not-exist.html');
+
+      const didFailProvisionalLoad = once(w.webContents, 'did-fail-provisional-load');
+      const didFailLoad = once(w.webContents, 'did-fail-load');
+      await expect(w.loadURL(missingUrl)).rejects.toThrow();
+
+      const { mainFrame } = w.webContents;
+      for (const [event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId] of [
+        await didFailProvisionalLoad,
+        await didFailLoad
+      ]) {
+        expect(event.frame).toBe(mainFrame);
+        expect(event.errorCode).toBe(-6);
+        expect(event.errorCode).toBe(errorCode);
+        expect(event.errorDescription).toBe('ERR_FILE_NOT_FOUND');
+        expect(event.errorDescription).toBe(errorDescription);
+        expect(event.url).toBe(missingUrl);
+        expect(event.url).toBe(validatedURL);
+        expect(event.isMainFrame).toBe(true);
+        expect(isMainFrame).toBe(true);
+        expect(mainFrame.processId).toBe(frameProcessId);
+        expect(mainFrame.routingId).toBe(frameRoutingId);
+      }
+    });
+
+    it('provide the subframe on did-fail-load', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      const didFailLoad = once(w.webContents, 'did-fail-load');
+      w.loadFile(path.join(fixtures, 'api', 'did-fail-load-iframe.html'));
+      const [event] = await didFailLoad;
+
+      expect(event.isMainFrame).toBe(false);
+      expect(event.frame).not.toBeNull();
+      expect(event.frame.parent).toBe(w.webContents.mainFrame);
+    });
+
+    it('provide a null frame on did-fail-load when no frame was reached', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      const didFailLoad = once(w.webContents, 'did-fail-load');
+      await expect(w.loadURL('http://example:port')).rejects.toThrow();
+      const [event, ...args] = await didFailLoad;
+
+      expect(event.frame).toBeNull();
+      expect(event.errorCode).toBe(-300);
+      expect(event.errorDescription).toBe('ERR_INVALID_URL');
+      expect(event.isMainFrame).toBe(true);
+      expect(args).toEqual([event.errorCode, event.errorDescription, event.url, event.isMainFrame]);
     });
   });
 
