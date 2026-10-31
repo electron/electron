@@ -24,10 +24,6 @@
 #include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "shell/common/color_util.h"
-#endif
-
 namespace electron {
 
 namespace {
@@ -277,9 +273,11 @@ void MenuBar::UpdateViewColors() {
     button->SetUnderlineColor(textColor);
   }
 #elif BUILDFLAG(IS_WIN)
+  const SkColor underline_color =
+      root_view_->GetColorProvider()->GetColor(ui::kColorMenuItemForeground);
   for (views::View* child : GetChildrenInZOrder()) {
     auto* button = static_cast<SubmenuButton*>(child);
-    button->SetUnderlineColor(GetSysSkColor(COLOR_MENUTEXT));
+    button->SetUnderlineColor(underline_color);
   }
 #endif
 }
