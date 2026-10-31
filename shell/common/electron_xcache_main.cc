@@ -51,7 +51,8 @@ namespace {
 // them is part of the code-cache key. Keep in sync with the browser flavor of
 // electron_natives_codecache in BUILD.gn.
 constexpr char kDefaultV8Flags[] =
-    "--rehash-snapshot --no-freeze-flags-after-init";
+    "--rehash-snapshot --no-freeze-flags-after-init "
+    "--external-memory-max-reasonable-size=0";
 
 // v8/src/snapshot/snapshot.cc, SnapshotImpl.
 constexpr uint32_t kSnapNumContextsOffset = 0;
