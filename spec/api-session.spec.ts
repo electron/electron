@@ -14,6 +14,7 @@ import send from 'send';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
+import * as dgram from 'node:dgram';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -46,6 +47,231 @@ describe('session module', () => {
       const tmppath = app.getPath('temp');
       const ses = session.fromPath(tmppath);
       expect(ses.storagePath).toBe(tmppath);
+    });
+  });
+
+  describe('networkAccess option', () => {
+    let server: http.Server;
+    let serverUrl: string;
+    let connections = 0;
+    let partitionCount = 0;
+    const offlineSession = () =>
+      session.fromPartition(`offline-${process.pid}-${partitionCount++}`, { networkAccess: 'none' });
+    const blankPage = path.join(fixtures, 'pages', 'blank.html');
+
+    beforeAll(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.end('hello');
+      });
+      server.on('connection', () => {
+        connections++;
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    afterAll(() => {
+      server.close();
+    });
+
+    beforeEach(() => {
+      connections = 0;
+    });
+
+    afterEach(closeAllWindows);
+
+    it('rejects invalid values', () => {
+      expect(() => session.fromPartition('offline-invalid', { networkAccess: 'maybe' } as any)).toThrow(TypeError);
+      expect(() => session.fromPartition('offline-invalid', { networkAccess: 'maybe' } as any)).toThrow(
+        /networkAccess/
+      );
+    });
+
+    it('exposes the effective value via ses.networkAccess', () => {
+      expect(offlineSession().networkAccess).toBe('none');
+      expect(session.defaultSession.networkAccess).toBe('all');
+    });
+
+    it('throws when reusing a partition with a conflicting networkAccess', () => {
+      const name = `offline-conflict-${partitionCount++}`;
+      session.fromPartition(name);
+      expect(() => session.fromPartition(name, { networkAccess: 'none' })).toThrow(TypeError);
+      expect(() => session.fromPartition(name, { networkAccess: 'none' })).toThrow(/different networkAccess value/);
+    });
+
+    it('does not affect other sessions', async () => {
+      const response = await session.defaultSession.fetch(serverUrl);
+      expect(await response.text()).toBe('hello');
+      expect(connections).toBeGreaterThan(0);
+    });
+
+    it('fails navigations to network URLs', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
+      await expect(w.loadURL(serverUrl)).rejects.toHaveProperty('code', 'ERR_NETWORK_ACCESS_REVOKED');
+      expect(connections).toBe(0);
+    });
+
+    it('still loads file:// and custom protocol URLs', async () => {
+      const ses = offlineSession();
+      ses.protocol.handle(
+        'http-like',
+        () => new Response('<title>served</title>', { headers: { 'content-type': 'text/html' } })
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadFile(blankPage);
+      await w.loadURL('http-like://bundle/index.html');
+      expect(await w.webContents.executeJavaScript('document.title')).toBe('served');
+      const fetched = await w.webContents.executeJavaScript('fetch("http-like://bundle/data").then(r => r.text())');
+      expect(fetched).toBe('<title>served</title>');
+    });
+
+    it('still loads extension pages such as the PDF viewer', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
+      const readyToPrint = once(w.webContents, '-pdf-ready-to-print');
+      await w.loadFile(path.join(fixtures, 'cat.pdf'));
+      await readyToPrint;
+      expect(w.webContents.getURL()).toMatch(/^file:.*cat\.pdf$/);
+      expect(connections).toBe(0);
+    });
+
+    it('blocks protocol handlers that fetch through the session', async () => {
+      const ses = offlineSession();
+      ses.protocol.handle('http-like', async () => {
+        try {
+          await ses.fetch(serverUrl);
+          return new Response('reached the network');
+        } catch (e: any) {
+          return new Response(`blocked: ${e.message}`);
+        }
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL('http-like://bundle/index.html');
+      const body = await w.webContents.executeJavaScript('document.body.textContent');
+      expect(body).toMatch(/^blocked: .*ERR_NETWORK_ACCESS_REVOKED/);
+      expect(connections).toBe(0);
+    });
+
+    it('lets webRequest redirect a network URL to a local scheme before blocking', async () => {
+      const ses = offlineSession();
+      ses.protocol.handle(
+        'http-like',
+        () => new Response('<title>redirected</title>', { headers: { 'content-type': 'text/html' } })
+      );
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        if (details.url.startsWith(serverUrl)) {
+          callback({ redirectURL: 'http-like://bundle/index.html' });
+        } else {
+          callback({});
+        }
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      expect(await w.webContents.executeJavaScript('document.title')).toBe('redirected');
+      expect(connections).toBe(0);
+    });
+
+    it('blocks renderer network APIs', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
+      await w.loadFile(blankPage);
+      const wsUrl = serverUrl.replace('http://', 'ws://');
+      const results = await w.webContents.executeJavaScript(`(async () => {
+        const url = ${JSON.stringify(serverUrl)};
+        const results = {};
+        results.fetch = await fetch(url).then(() => 'ok', (e) => e.name);
+        results.xhr = await new Promise((resolve) => {
+          const xhr = new XMLHttpRequest();
+          xhr.onload = () => resolve('ok');
+          xhr.onerror = () => resolve('error');
+          xhr.open('GET', url);
+          xhr.send();
+        });
+        results.websocket = await new Promise((resolve) => {
+          const ws = new WebSocket(${JSON.stringify(wsUrl)});
+          ws.onopen = () => resolve('open');
+          ws.onerror = () => resolve('error');
+        });
+        results.image = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve('ok');
+          img.onerror = () => resolve('error');
+          img.src = url + '/image.png';
+        });
+        for (const rel of ['preconnect', 'dns-prefetch', 'prefetch']) {
+          const link = document.createElement('link');
+          link.rel = rel;
+          link.href = url + '/' + rel;
+          document.head.appendChild(link);
+        }
+        navigator.sendBeacon(url + '/beacon', 'data');
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return results;
+      })()`);
+      expect(results).toEqual({ fetch: 'TypeError', xhr: 'error', websocket: 'error', image: 'error' });
+      expect(connections).toBe(0);
+    });
+
+    it('blocks WebRTC', async () => {
+      const stun = dgram.createSocket('udp4');
+      let packets = 0;
+      stun.on('message', () => {
+        packets++;
+      });
+      await new Promise<void>((resolve) => stun.bind(0, '127.0.0.1', resolve));
+      const { port } = stun.address();
+      defer(() => stun.close());
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
+      await w.loadFile(blankPage);
+      const candidates = await w.webContents.executeJavaScript(`(async () => {
+        const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:127.0.0.1:${port}' }] });
+        const candidates = [];
+        pc.onicecandidate = (e) => { if (e.candidate) candidates.push(e.candidate.candidate); };
+        pc.createDataChannel('data');
+        await pc.setLocalDescription(await pc.createOffer());
+        await new Promise((resolve) => {
+          const done = () => { if (pc.iceGatheringState === 'complete') resolve(); };
+          pc.onicegatheringstatechange = done;
+          done();
+          setTimeout(resolve, 3000);
+        });
+        pc.close();
+        return candidates;
+      })()`);
+      expect(candidates).toEqual([]);
+      expect(packets).toBe(0);
+    });
+
+    it('blocks main process APIs that use the session', async () => {
+      const ses = offlineSession();
+      await expect(ses.fetch(serverUrl)).rejects.toThrow(/ERR_NETWORK_ACCESS_REVOKED/);
+
+      const requestError = await new Promise<Error>((resolve) => {
+        const request = net.request({ url: serverUrl, session: ses });
+        request.on('error', resolve);
+        request.end();
+      });
+      expect(requestError.message).toMatch(/ERR_NETWORK_ACCESS_REVOKED/);
+
+      const closeReason = await new Promise<string>((resolve) => {
+        const ws = new net.WebSocket(serverUrl.replace('http://', 'ws://'), { session: ses });
+        ws.addEventListener('close', (event) => resolve((event as CloseEvent).reason));
+      });
+      expect(closeReason).toMatch(/ERR_NETWORK_ACCESS_REVOKED/);
+
+      await expect(ses.resolveHost('localhost')).rejects.toThrow(/ERR_NETWORK_ACCESS_REVOKED/);
+      // The context is pinned to a DIRECT proxy config, so no PAC/WPAD/proxy
+      // can run for it even if one is configured.
+      await ses.setProxy({ proxyRules: 'http=10.0.0.1:8080' });
+      expect(await ses.resolveProxy('http://example.test')).toBe('DIRECT');
+      expect(() => ses.preconnect({ url: serverUrl })).toThrow(/networkAccess/);
+      expect(() => ses.downloadURL(serverUrl)).toThrow(/networkAccess/);
+      expect(() => ses.downloadURL('http-like://bundle/report.txt')).not.toThrow();
+      // A standard scheme intercepted by a handler is served in-process.
+      ses.protocol.handle('https', () => new Response('x'));
+      expect(() => ses.downloadURL('https://intercepted.invalid/report.txt')).not.toThrow();
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      expect(() => w.webContents.downloadURL(serverUrl)).toThrow(/networkAccess/);
+      expect(connections).toBe(0);
     });
   });
 
