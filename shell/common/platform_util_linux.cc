@@ -408,48 +408,64 @@ void OpenExternal(const GURL& url,
   }
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
+std::vector<std::string> GetTrashCommandPrefix() {
   auto env = base::Environment::Create();
-
-  // find the trash method
+  std::string is_snap = env->GetVar("SNAP").value_or("");
   std::string trash = env->GetVar(ELECTRON_TRASH).value_or("");
-  if (trash.empty()) {
-    // Determine desktop environment and set accordingly.
-    switch (base::nix::GetDesktopEnvironment(env.get())) {
-      case base::nix::DESKTOP_ENVIRONMENT_KDE4:
-      case base::nix::DESKTOP_ENVIRONMENT_KDE5:
-        trash = "kioclient5";
-        break;
-      case base::nix::DESKTOP_ENVIRONMENT_KDE3:
-      case base::nix::DESKTOP_ENVIRONMENT_KDE6:
-        trash = "kioclient";
-        break;
-      case base::nix::DESKTOP_ENVIRONMENT_OTHER:
-      case base::nix::DESKTOP_ENVIRONMENT_CINNAMON:
-      case base::nix::DESKTOP_ENVIRONMENT_DEEPIN:
-      case base::nix::DESKTOP_ENVIRONMENT_GNOME:
-      case base::nix::DESKTOP_ENVIRONMENT_PANTHEON:
-      case base::nix::DESKTOP_ENVIRONMENT_UKUI:
-      case base::nix::DESKTOP_ENVIRONMENT_UNITY:
-      case base::nix::DESKTOP_ENVIRONMENT_XFCE:
-      case base::nix::DESKTOP_ENVIRONMENT_LXQT:
-      case base::nix::DESKTOP_ENVIRONMENT_COSMIC:
-        // No DE-specific tool, falls through to `gio trash` below.
-        break;
+  // A runtime might want to override ELECTRON_TRASH, so don't
+  // use gio if ELECTRON_TRASH is non-empty
+  if (trash.empty() && (base::PathExists(base::FilePath("/.flatpak-info")) ||
+                        !is_snap.empty())) {
+    return {"gio", "trash"};
+  }
+
+  if (!trash.empty()) {
+    if (trash == "kioclient5" || trash == "kioclient") {
+      return {trash, "move"};  // MoveItemToTrash will add trash:/
+    } else if (trash == "trash-cli") {
+      return {"trash-put"};
+    } else if (trash == "gvfs-trash") {
+      return {"gvfs-trash"};  // deprecated, but still exists
+    } else {
+      return {"gio", "trash"};
     }
   }
 
-  // build the invocation
-  std::vector<std::string> argv;
-  const auto& filename = full_path.value();
-  if (trash == "kioclient5" || trash == "kioclient") {
-    argv = {trash, "move", filename, "trash:/"};
-  } else if (trash == "trash-cli") {
-    argv = {"trash-put", filename};
-  } else if (trash == "gvfs-trash") {
-    argv = {"gvfs-trash", filename};  // deprecated, but still exists
-  } else {
-    argv = {"gio", "trash", filename};
+  // And now, since we're likely not running inside of a sandbox
+  // (and nobody set ELECTRON_TRASH), pick out the per-desktop
+  // trash command. Default to gio.
+  switch (base::nix::GetDesktopEnvironment(env.get())) {
+    // MoveItemToTrash will add trash:/
+    case base::nix::DESKTOP_ENVIRONMENT_KDE4:
+    case base::nix::DESKTOP_ENVIRONMENT_KDE5:
+      return {"kioclient5", "move"};
+    case base::nix::DESKTOP_ENVIRONMENT_KDE3:
+    case base::nix::DESKTOP_ENVIRONMENT_KDE6:
+      return {"kioclient", "move"};
+    case base::nix::DESKTOP_ENVIRONMENT_OTHER:
+    case base::nix::DESKTOP_ENVIRONMENT_CINNAMON:
+    case base::nix::DESKTOP_ENVIRONMENT_DEEPIN:
+    case base::nix::DESKTOP_ENVIRONMENT_GNOME:
+    case base::nix::DESKTOP_ENVIRONMENT_PANTHEON:
+    case base::nix::DESKTOP_ENVIRONMENT_UKUI:
+    case base::nix::DESKTOP_ENVIRONMENT_UNITY:
+    case base::nix::DESKTOP_ENVIRONMENT_XFCE:
+    case base::nix::DESKTOP_ENVIRONMENT_LXQT:
+    case base::nix::DESKTOP_ENVIRONMENT_COSMIC:
+      return {"gio", "trash"};
+  }
+}
+
+bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
+  // Only needs to run once
+  static const base::NoDestructor<std::vector<std::string>> prefix(
+      GetTrashCommandPrefix());
+
+  std::vector<std::string> argv = *prefix;
+  argv.push_back(full_path.value());
+
+  if (argv.front() == "kioclient" || argv.front() == "kioclient5") {
+    argv.push_back("trash:/");
   }
 
   return XDGUtil(argv, base::FilePath(), true, /*focus_launched_process=*/false,
