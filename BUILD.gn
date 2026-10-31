@@ -719,6 +719,7 @@ source_set("electron_lib") {
   libs = []
 
   if (is_linux) {
+    deps += [ "//third_party/icu" ]
     defines += [ "GDK_DISABLE_DEPRECATION_WARNINGS" ]
   }
 
