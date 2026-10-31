@@ -353,13 +353,13 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
     }
 
     paths->emplace_back(base::SysNSStringToUTF8(path));
-    bookmarks->push_back(GetBookmarkDataFromNSURL(url));
+    if (bookmarks)
+      bookmarks->push_back(GetBookmarkDataFromNSURL(url));
   }
 }
 
 void ReadDialogPaths(NSOpenPanel* dialog, std::vector<base::FilePath>* paths) {
-  std::vector<std::string> ignored_bookmarks;
-  ReadDialogPathsWithBookmarks(dialog, paths, &ignored_bookmarks);
+  ReadDialogPathsWithBookmarks(dialog, paths, nullptr);
 }
 
 void ResolvePromiseInNextTick(gin_helper::Promise<v8::Local<v8::Value>> promise,
