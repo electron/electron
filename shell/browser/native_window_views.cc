@@ -27,6 +27,7 @@
 #include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/ui/views/content_view_targeter_delegate.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/web_contents_preferences.h"
@@ -47,6 +48,7 @@
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/webview.h"
+#include "ui/views/view_targeter.h"
 #include "ui/views/view_utils.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
@@ -575,6 +577,13 @@ void NativeWindowViews::SetContentView(views::View* view) {
   }
   set_content_view(view);
   focused_view_ = view;
+  // Make the content view hit-test transparent where none of its children
+  // covers the point, so that mouse targeting and accessibility hit-tests
+  // fall through to the WebContentsView that BrowserWindow places beneath
+  // it. Without this, the content view covers the whole window and wins
+  // every hit-test, leaving screen readers on an empty pane.
+  view->SetEventTargeter(std::make_unique<views::ViewTargeter>(
+      std::make_unique<ContentViewTargeterDelegate>()));
   root_view_.GetMainView()->AddChildViewRaw(content_view());
   FlushPendingRootLayout(root_view_.GetMainView());
 }
