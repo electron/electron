@@ -5,13 +5,15 @@
   Default is `false`.
 * `nodeIntegrationInWorker` boolean (optional) - Whether node integration is
   enabled in web workers. Default is `false`. Only workers created by a frame
-  that itself has access to Node.js (the main frame, or any frame when
+  that itself has access to Node.js (the main frame, a subframe that runs a
+  preload script registered with `allFrames`, or any frame when
   `nodeIntegrationInSubFrames` is enabled) get it. More about this can be found
   in [Multithreading](../../tutorial/multithreading.md).
-* `nodeIntegrationInSubFrames` boolean (optional) - Experimental option for
+* `nodeIntegrationInSubFrames` boolean (optional) _Deprecated_ - Experimental option for
   enabling Node.js support in sub-frames such as iframes and child windows. All your preloads will load for
   every iframe, you can use `process.isMainFrame` to determine if you are
-  in the main frame or not.
+  in the main frame or not. Use [`ses.registerPreloadScript()`](../session.md#sesregisterpreloadscriptscript)
+  with `allFrames: true` instead.
 * `preload` string (optional) - Specifies a script that will be loaded before other
   scripts run in the page. This script will always have access to node APIs
   no matter whether node integration is turned on or off. The value should

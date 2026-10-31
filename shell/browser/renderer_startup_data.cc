@@ -4,6 +4,7 @@
 
 #include "shell/browser/renderer_startup_data.h"
 
+#include <algorithm>
 #include <optional>
 #include <string>
 #include <utility>
@@ -119,13 +120,18 @@ mojom::RendererStartupDataPtr BuildInternal(
     const url::Origin* origin,
     const preload_code_cache::Scope& scope,
     std::vector<preload_code_cache::ServedPreload>* served,
-    bool sandboxed) {
+    bool sandboxed,
+    bool all_frames_only) {
   auto data = mojom::RendererStartupData::New();
 
   auto* session_prefs = SessionPreferences::FromBrowserContext(browser_context);
   if (session_prefs) {
     for (const auto& script : session_prefs->preload_scripts()) {
       if (script.script_type != type)
+        continue;
+      // A subframe's about:blank document is left without preloads, as with
+      // nodeIntegrationInSubFrames.
+      if (all_frames_only && (!script.all_frames || url.IsAboutBlank()))
         continue;
       if (!script.file_path.IsAbsolute())
         continue;
@@ -154,20 +160,23 @@ mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
                                     const GURL& url) {
   return BuildInternal(browser_context, type, url, /*origin=*/nullptr,
                        preload_code_cache::Scope(), nullptr,
-                       /*sandboxed=*/true);
+                       /*sandboxed=*/true, /*all_frames_only=*/false);
 }
 
 mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh,
                                             const GURL& url,
-                                            const url::Origin& origin) {
+                                            const url::Origin& origin,
+                                            bool all_frames_only) {
   const preload_code_cache::Scope scope =
       preload_code_cache::ScopeForFrame(rfh);
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   const bool sandboxed = IsFrameInSandboxedRenderer(rfh);
   std::vector<preload_code_cache::ServedPreload> served;
-  auto data = BuildInternal(rfh->GetBrowserContext(),
-                            PreloadScript::ScriptType::kWebFrame, url, &origin,
-                            scope, sandboxed ? &served : nullptr, sandboxed);
+  auto data =
+      BuildInternal(rfh->GetBrowserContext(),
+                    PreloadScript::ScriptType::kWebFrame, url, &origin, scope,
+                    sandboxed ? &served : nullptr, sandboxed, all_frames_only);
+  data->all_frames = all_frames_only && !data->preload_scripts.empty();
 
   // The per-WebContents webPreferences.preload runs last. May be absent for a
   // WebContents that never went through a BrowserWindow/webContents
@@ -175,7 +184,7 @@ mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh,
   // preload but still gets session preloads + env.
   auto* web_prefs = WebContentsPreferences::From(web_contents);
   std::optional<base::FilePath> preload;
-  if (web_prefs)
+  if (web_prefs && !all_frames_only)
     preload = web_prefs->GetPreloadPath();
   if (preload && preload->IsAbsolute()) {
     data->preload_scripts.push_back(ReadPreloadScript(
@@ -189,6 +198,22 @@ mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh,
   if (sandboxed)
     preload_code_cache::RecordServedPreloads(rfh, std::move(served));
   return data;
+}
+
+bool HasAllFramesPreload(content::RenderFrameHost* rfh) {
+  const GURL& url = rfh->GetLastCommittedURL();
+  if (url.IsAboutBlank())
+    return false;
+  auto* session_prefs =
+      SessionPreferences::FromBrowserContext(rfh->GetBrowserContext());
+  if (!session_prefs)
+    return false;
+  return std::ranges::any_of(
+      session_prefs->preload_scripts(), [&](const PreloadScript& script) {
+        return script.script_type == PreloadScript::ScriptType::kWebFrame &&
+               script.all_frames && script.file_path.IsAbsolute() &&
+               script.MatchesDocument(url, rfh->GetLastCommittedOrigin());
+      });
 }
 
 }  // namespace electron::renderer_startup_data

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron/main';
+import { app, BrowserWindow, ipcMain, session } from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -7,7 +7,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 
 import { emittedNTimes } from './lib/events-helpers.ts';
-import { ifdescribe, listen } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, listen } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 describe('renderer nodeIntegrationInSubFrames', () => {
@@ -219,6 +219,91 @@ describe('renderer nodeIntegrationInSubFrames', () => {
   });
 });
 
+describe('renderer allFrames preload scripts', () => {
+  for (const sandbox of [false, true]) {
+    describe(`with sandbox: ${sandbox}`, () => {
+      let w: BrowserWindow;
+      let ses: Electron.Session;
+
+      beforeEach(async () => {
+        await closeWindow(w);
+        ses = session.fromPartition(`all-frames-preload-${sandbox}`);
+        const id = ses.registerPreloadScript({
+          type: 'frame',
+          filePath: path.resolve(import.meta.dirname, 'fixtures/sub-frames/preload.js'),
+          allFrames: true
+        });
+        defer(() => ses.unregisterPreloadScript(id));
+        // No nodeIntegrationInSubFrames.
+        w = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          webPreferences: { sandbox, session: ses }
+        });
+      });
+
+      afterEach(async () => {
+        await closeWindow(w);
+        w = null as unknown as BrowserWindow;
+      });
+
+      it('loads the preload script in top level iframes', async () => {
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
+        w.loadFile(path.resolve(import.meta.dirname, 'fixtures/sub-frames/frame-container.html'));
+        const [event1, event2] = await detailsPromise;
+        expect(event1[0].senderFrame.frameToken).not.toBe(event2[0].senderFrame.frameToken);
+        expect(event1[0].senderFrame.frameToken).toBe(event1[2]);
+        expect(event2[0].senderFrame.frameToken).toBe(event2[2]);
+      });
+
+      it('loads the preload script in nested iframes', async () => {
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3);
+        w.loadFile(path.resolve(import.meta.dirname, 'fixtures/sub-frames/frame-with-frame-container.html'));
+        const [event1, event2, event3] = await detailsPromise;
+        const tokens = new Set([event1, event2, event3].map((event) => event[0].senderFrame.frameToken));
+        expect(tokens.size).toBe(3);
+        expect(event3[0].senderFrame.frameToken).toBe(event3[2]);
+      });
+
+      it('lets a subframe use ipcRenderer in both directions', async () => {
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3);
+        w.loadFile(path.resolve(import.meta.dirname, 'fixtures/sub-frames/frame-with-frame-container.html'));
+        const details = await detailsPromise;
+        const nested = details.find((event) => event[0].senderFrame.parent?.parent);
+        expect(nested).toBeDefined();
+        const pongPromise = once(ipcMain, 'preload-pong');
+        nested![0].reply('preload-ping');
+        const [, frameToken] = await pongPromise;
+        expect(frameToken).toBe(nested![0].senderFrame.frameToken);
+      });
+
+      it('does not run other preload scripts in subframes', async () => {
+        const preload = path.resolve(import.meta.dirname, 'fixtures/module/preload-location.js');
+        const id = ses.registerPreloadScript({ type: 'frame', filePath: preload });
+        defer(() => ses.unregisterPreloadScript(id));
+        await closeWindow(w);
+        // A separate file: with Node.js integration, require() caches a
+        // module by path, so the same file would only run once.
+        const webPreferencesPreload = path.resolve(import.meta.dirname, 'fixtures/module/preload-location-2.js');
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox, session: ses, preload: webPreferencesPreload }
+        });
+        const locations: string[] = [];
+        ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+        defer(() => ipcMain.removeAllListeners('preload-location'));
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
+        await w.loadFile(path.resolve(import.meta.dirname, 'fixtures/sub-frames/frame-container.html'));
+        await detailsPromise;
+        // The session preload and webPreferences.preload, in the main frame only.
+        const mainUrl = w.webContents.getURL();
+        expect(locations).toEqual([mainUrl, mainUrl]);
+      });
+    });
+  }
+});
+
 describe('subframe with non-standard schemes', () => {
   it('should not crash when changing subframe src to about:blank and back', async () => {
     const w = new BrowserWindow({ show: false, width: 400, height: 400 });
@@ -306,6 +391,34 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
       });
     });
   };
+
+  it('keeps a cross-site iframe sandboxed when it runs an allFrames preload', async () => {
+    const ses = session.fromPartition('cross-site-all-frames');
+    const id = ses.registerPreloadScript({
+      type: 'frame',
+      filePath: path.resolve(import.meta.dirname, 'fixtures/sub-frames/all-frames-sandbox-preload.js'),
+      matches: [`${new URL(crossSiteUrl).origin}/*`],
+      allFrames: true
+    });
+    defer(() => ses.unregisterPreloadScript(id));
+    w = new BrowserWindow({ show: false, webPreferences: { sandbox: false, session: ses } });
+
+    const preloadRan = once(ipcMain, 'all-frames-preload');
+    await w.loadURL(serverUrl);
+    const [event, href, sandboxed, canRequireFs] = await preloadRan;
+
+    // The preload ran in the cross-site frame, in the sandboxed preload
+    // environment.
+    const frame = w.webContents.mainFrame.frames.find((f) => f.name === 'frame')!;
+    expect(event.senderFrame.frameToken).toBe(frame.frameToken);
+    expect(href).toBe(new URL(crossSiteUrl).href);
+    expect(sandboxed).toBe(true);
+    expect(canRequireFs).toBe(false);
+
+    const metrics = app.getAppMetrics();
+    const entry = metrics.find((metric) => metric.pid === frame.osProcessId);
+    expect(entry && entry.sandboxed).toBe(true);
+  });
 
   generateSpecs('nodeIntegrationInSubFrames = false, sandbox = false', {
     nodeIntegrationInSubFrames: false,

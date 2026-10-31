@@ -4527,6 +4527,86 @@ describe('BrowserWindow module', () => {
             expect(locations).toEqual([`${url}/allowed/frame`, `${url}/allowed/page?child=/other/frame`]);
           });
 
+          it(`runs an allFrames preload in each frame matched by its own URL (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((request, response) => {
+              const child = new URL(request.url!, `http://${request.headers.host}`).searchParams.get('child');
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end(child ? `<iframe src="${child}"></iframe>` : '<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-all-frames-filters-${sandbox}`);
+            const id = ses.registerPreloadScript({
+              type: 'frame',
+              filePath: path.join(fixtures, 'module', 'preload-location.js'),
+              matches: [`${url}/allowed/*`],
+              allFrames: true
+            });
+            defer(() => ses.unregisterPreloadScript(id));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            // No nodeIntegrationInSubFrames.
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            // A matching frame in a non-matching page, then the reverse.
+            await w.loadURL(`${url}/other/page?child=/allowed/frame`);
+            await w.loadURL(`${url}/allowed/page?child=/other/frame`);
+            // A matching frame nested in a non-matching one.
+            const nested = encodeURIComponent('/other/middle?child=/allowed/leaf');
+            await w.loadURL(`${url}/other/page?child=${nested}`);
+            expect(locations).toEqual([
+              `${url}/allowed/frame`,
+              `${url}/allowed/page?child=/other/frame`,
+              `${url}/allowed/leaf`
+            ]);
+
+            // A subframe that moves on to a document that does not match no
+            // longer runs the preload.
+            await w.loadURL(`${url}/other/page?child=/allowed/frame`);
+            locations.length = 0;
+            const loaded = once(w.webContents, 'did-frame-finish-load');
+            await w.webContents.executeJavaScript(`document.querySelector('iframe').src = '/other/frame'`);
+            await loaded;
+            expect(w.webContents.mainFrame.frames[0].url).toBe(`${url}/other/frame`);
+            expect(locations).toEqual([]);
+          });
+
+          it(`runs only allFrames preloads in subframes (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((request, response) => {
+              const child = new URL(request.url!, `http://${request.headers.host}`).searchParams.get('child');
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end(child ? `<iframe src="${child}"></iframe>` : '<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-all-frames-only-${sandbox}`);
+            const preload = path.join(fixtures, 'module', 'preload-location.js');
+            const ids = [
+              ses.registerPreloadScript({ type: 'frame', filePath: preload }),
+              // Registered, but matches no frame on the page.
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: preload,
+                matches: [`${url}/none/*`],
+                allFrames: true
+              })
+            ];
+            defer(() => ids.forEach((id) => ses.unregisterPreloadScript(id)));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            // A separate file: with Node.js integration, require() caches a
+            // module by path, so the same file would only run once.
+            const webPreferencesPreload = path.join(fixtures, 'module', 'preload-location-2.js');
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: { sandbox, session: ses, preload: webPreferencesPreload }
+            });
+            await w.loadURL(`${url}/page?child=/frame`);
+            // The session preload and webPreferences.preload, in the main frame only.
+            expect(locations).toEqual([`${url}/page?child=/frame`, `${url}/page?child=/frame`]);
+          });
+
           it(`matches the final URL of a redirected navigation (sandbox: ${sandbox})`, async () => {
             const server = http.createServer((request, response) => {
               const to = new URL(request.url!, `http://${request.headers.host}`).searchParams.get('to');
@@ -4587,6 +4667,9 @@ describe('BrowserWindow module', () => {
               matchOriginAsFallback: true
             })
           ).toThrow(/the path must be '\/\*' when matchOriginAsFallback is set/);
+          expect(() => ses.registerPreloadScript({ type: 'service-worker', filePath, allFrames: true })).toThrow(
+            /'allFrames' is only supported for 'frame' scripts/
+          );
           expect(ses.getPreloadScripts()).toHaveLength(0);
         });
 
@@ -4606,6 +4689,21 @@ describe('BrowserWindow module', () => {
           });
           defer(() => ses.unregisterPreloadScript(id));
           expect(ses.getPreloadScripts().find((script) => script.id === id)).toMatchObject(filters);
+        });
+
+        it('returns allFrames from getPreloadScripts', () => {
+          const ses = session.fromPartition('preload-all-frames-get');
+          const filePath = path.join(fixtures, 'module', 'empty.js');
+          const ids = [
+            ses.registerPreloadScript({ type: 'frame', filePath, allFrames: true }),
+            ses.registerPreloadScript({ type: 'frame', filePath })
+          ];
+          defer(() => ids.forEach((id) => ses.unregisterPreloadScript(id)));
+          const [withAllFrames, withoutAllFrames] = ids.map((id) =>
+            ses.getPreloadScripts().find((script) => script.id === id)
+          );
+          expect(withAllFrames).toMatchObject({ allFrames: true });
+          expect(withoutAllFrames).not.toHaveProperty('allFrames');
         });
       });
 

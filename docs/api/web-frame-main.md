@@ -265,10 +265,12 @@ first one that is defined will be called, the rest will be ignored.
 3. `ipcMain.handle(channel)`
 
 In most cases, only the main frame of a WebContents can send or receive IPC
-messages. However, if the `nodeIntegrationInSubFrames` option is enabled, it is
-possible for child frames to send and receive IPC messages also. The
+messages. However, a child frame that runs a preload script registered with
+`allFrames` (see [`ses.registerPreloadScript()`](session.md#sesregisterpreloadscriptscript)),
+or any child frame when the deprecated `nodeIntegrationInSubFrames` option is
+enabled, can send and receive IPC messages also. The
 [`WebContents.ipc`](web-contents.md#contentsipc-readonly) interface may be more
-convenient when `nodeIntegrationInSubFrames` is not enabled.
+convenient when only the main frame sends IPC messages.
 
 #### `frame.url` _Readonly_
 

@@ -105,12 +105,15 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
+  // Or for a subframe that runs a preload registered with allFrames
   if (!ShouldLoadPreload(isolate, context, render_frame) ||
       !HasScriptsToInject(render_frame)) {
     return;
   }
 
-  injected_frames_.insert(render_frame);
+  injected_frames_.insert_or_assign(
+      render_frame,
+      render_frame->GetWebFrame()->GetScriptContextWorldId(context));
 
   v8::HandleScope handle_scope{isolate};
   v8::Context::Scope context_scope{context};
@@ -159,6 +162,14 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
   v8::HandleScope handle_scope{isolate};
   v8::Context::Scope context_scope{context};
   preload_environment::EmitProcessEvent(context, "exit");
+}
+
+std::optional<int> ElectronSandboxedRendererClient::GetEnvironmentWorldId(
+    content::RenderFrame* render_frame) const {
+  auto iter = injected_frames_.find(render_frame);
+  if (iter == injected_frames_.end())
+    return std::nullopt;
+  return iter->second;
 }
 
 void ElectronSandboxedRendererClient::EmitProcessEvent(
