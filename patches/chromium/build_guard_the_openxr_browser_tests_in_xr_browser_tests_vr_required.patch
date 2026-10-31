@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 13:16:13 +0000
+Subject: build: guard the OpenXR browser tests in xr_browser_tests_vr_required
+ on enable_openxr
+
+https://chromium-review.googlesource.com/c/chromium/src/+/8668230 extended
+the Windows-only block of OpenXR browser tests in xr_browser_tests_vr_required
+to Linux. That block depends on //device/vr:openxr_data, which is only defined
+when enable_openxr is true. On Windows enable_vr implies enable_openxr, but on
+Linux enable_vr is true even when checkout_openxr is false, so `gn gen` now
+fails with an unresolved dependency when OpenXR is not checked out:
+
+  //chrome/browser/vr:xr_browser_tests_vr_required needs //device/vr:openxr_data
+
+Electron does not check out OpenXR, so guard the block on enable_openxr, which
+restores the pre-existing (is_win implies enable_openxr) semantics.
+
+This should be upstreamed.
+
+diff --git a/chrome/browser/vr/BUILD.gn b/chrome/browser/vr/BUILD.gn
+index 1e20a06ad209ac5ddf06ad9e5d2f78314372ef5c..81d283d48e1f091083a6a53c1d713bc7f7168bbe 100644
+--- a/chrome/browser/vr/BUILD.gn
++++ b/chrome/browser/vr/BUILD.gn
+@@ -539,8 +539,11 @@ if (enable_vr) {
+ 
+       data_deps = []
+ 
+-      # Windows and Linux tests and dependencies.
+-      if (is_win || is_linux) {
++      # Windows and Linux tests and dependencies. These are OpenXR tests and
++      # depend on //device/vr:openxr_data, which only exists when
++      # enable_openxr is set, so guard them on it: on Linux, enable_vr can be
++      # true while enable_openxr is false (checkout_openxr = false).
++      if (enable_openxr && (is_win || is_linux)) {
+         # Infrastructure.
+         sources += [
+           "test/ui_utils.cc",
