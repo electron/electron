@@ -30,10 +30,10 @@ index 180ee8bd4c380b88b361fa8ad120a519503b2d0f..ba1964c6a2758c24e1bb4d254828131f
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 2d9ccfb50526d6f9eb37dedf901378f808ae3784..4bfbd80fe4536eb9a42797a923dcee89df49c1e7 100644
+index 30380b7ce26bbd394eddacc421f7b9f2f1b8a134..92630bc9df960467cc613d4e2f2ef18d8828fd81 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
-@@ -500,6 +500,17 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -503,6 +503,17 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // trials and enterprise policy).
    bool is_xslt_deprecation_banner_suppressed = false;
  

@@ -58,10 +58,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 40539b95914bc2110e8a795701b76826a5898ce4..e73001ff17f2dfd5049afb1e60432dbe2c896c84 100644
+index 2bcba777376a9134db64ae80f77f319e9ea571a8..6460b5b2db4a243dd7b054497044661cc76c0087 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1161,6 +1161,7 @@ component("base") {
+@@ -1162,6 +1162,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -1369,7 +1369,7 @@ index 6ea6c1130663f04ee766750dde257f3cc701a5b0..355930d10267b8c2c95c320c6d154080
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 9efc3ebf980c967e0fed2ee3a74417bfdd409096..80184dc247aa269d593fafbe09ef2a35ee2504f4 100644
+index 8c5e4e584c4794f2fb0b7f5df3894106c867c55f..36f22773269b8f64942449e188c5dd9ef5475c28 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -200,6 +200,7 @@ source_set("audio") {
@@ -2089,7 +2089,7 @@ index f0850f8dd184571bf1c3f7a5e26c6b719c6c1925..a74ebc91c325addedec9209cc3729949
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index 798a207f331d8e436398b979ff5ac6eaf3d40eb0..f30ff033b9d0d1ba1312569104eeccfdce5bcfe3 100644
+index 2d8480051a306ed170aa139f869eb05ae0035834..d9a5688a3a921fc28c541214430e84460bfdb59b 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -17,6 +17,7 @@
@@ -2309,7 +2309,7 @@ index 6f419c1255ad8e10e50a0de3bc9599a07e8d917e..8f93adfc525f98fb569f3dd63ff97883
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
-index 80635ccc3d7cfc768cc74a8d226f2432618ef280..59c3294dd606969debb05b04b455651cd1955e15 100644
+index 247a69d993c8ce38761265fae823ac85cd43c354..9aa09eebe63988c8a98d51f85ff935344dc968b9 100644
 --- a/ui/display/mac/ca_display_link_mac.mm
 +++ b/ui/display/mac/ca_display_link_mac.mm
 @@ -21,15 +21,18 @@
@@ -2346,7 +2346,7 @@ index 80635ccc3d7cfc768cc74a8d226f2432618ef280..59c3294dd606969debb05b04b455651c
 +#else
    base::Thread::Options thread_options;
    thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
-   thread_options.thread_type = base::ThreadType::kPresentation;
+   thread_options.thread_type = base::ThreadType::kBackground;
 @@ -316,6 +328,7 @@ void RecordWindowServerEventPumpResult(
        FROM_HERE,
        base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
@@ -2385,7 +2385,7 @@ index 80635ccc3d7cfc768cc74a8d226f2432618ef280..59c3294dd606969debb05b04b455651c
  void WindowServerEventPumpThread::DisableDisplayLink(Result failure) {
    // This may be called from the pump thread. Hop to the Viz thread, which owns
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e7040272d51abb4 100644
+index 1f38d4a312b761a227b85e6098de13fa8252c8e6..99103d0539d405be8f2e2f092e620a6894818e4e 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -29,6 +29,7 @@

@@ -440,7 +440,7 @@ index 83f8698e402e06e87767b975d0fe0da2b8b4a024..c3bdee1d24380285b6b1bb21d9201ceb
        return PROCESS_NOTIFIED;
      case NotifyChromeResult::kFailed:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 594f3bc08a4385c177fb488123cef79448e94850..28e5a18a19718b2e748ada6882341413a1ab0705 100644
+index 867212a387d878fe66071f691f03ab11f3efb35e..b7394c5ae1aec9f81cda2215ea40426841f16679 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
 @@ -11,6 +11,7 @@
@@ -461,7 +461,7 @@ index 594f3bc08a4385c177fb488123cef79448e94850..28e5a18a19718b2e748ada6882341413
 +    const base::raw_span<const uint8_t> additional_data) {
    TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
  
-   DCHECK(remote_window);
+   CHECK(remote_window, base::NotFatalUntil::M163);
 @@ -70,12 +73,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
      new_command_line.AppendSwitch(switches::kSourceAppId);
    }

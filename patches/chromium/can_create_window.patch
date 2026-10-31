@@ -12,10 +12,10 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f664c2f5e039134a6970ebc2e5cbd221b66f400b..fbac69efff8c2f88e9ab0477b63163e5d7c6cca4 100644
+index d34c5b4670994d3f557ba38dcf51092631e28ee3..76ce08a26dd1639b4c77d7543c758a1c715644cb 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11042,6 +11042,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11049,6 +11049,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -23,7 +23,7 @@ index f664c2f5e039134a6970ebc2e5cbd221b66f400b..fbac69efff8c2f88e9ab0477b63163e5
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
-@@ -11052,6 +11053,11 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11059,6 +11060,11 @@ void RenderFrameHostImpl::CreateNewWindow(
      return;
    }
  
@@ -36,7 +36,7 @@ index f664c2f5e039134a6970ebc2e5cbd221b66f400b..fbac69efff8c2f88e9ab0477b63163e5
    // important to do this before we return from the |opener_suppressed| case
    // below.
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ffd5dd6c3e60abbeb15c3372d2a911e51d19f844..c4222c2748b2ae20c2a6a3cd1a2d4b46f118f0c4 100644
+index 2e203b6da3f180e79bcf15e1ac810a2a63b7dabf..9f2defd0981741199e2a53b6c174fa630f8e7cf4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5834,6 +5834,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -79,7 +79,7 @@ index ffd5dd6c3e60abbeb15c3372d2a911e51d19f844..c4222c2748b2ae20c2a6a3cd1a2d4b46
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 115c8589dd52daae3b3d0472bfb7c6113131c394..c1a08cef12a58935839bfa42f937b2ee65fb39d2 100644
+index 6ee43e70f51467b0fb19b16ebdaa7bbc4aaa5499..6334636936118cc801e977be7a69e77044b5ddbc 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -623,6 +623,10 @@ struct CreateNewWindowParams {
@@ -188,10 +188,10 @@ index 7e0c703c677d356941c4dbefd2c814c9165c1234..5f86b3672448af0bfe7157390d3e0765
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 029a5d7632cdaceb64dd23e6c4c1dfd60e7b2f24..929836b23fc074baec4121ba3da513162273752a 100644
+index 6143bda22dbf07b67271fda256b29bb3be813cb5..daded44b846ed8ee90aad162e879748fcee5e459 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7160,6 +7160,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7161,6 +7161,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  
