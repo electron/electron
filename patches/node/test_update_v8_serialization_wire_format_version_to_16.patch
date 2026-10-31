@@ -6,6 +6,10 @@ Subject: test: update V8 serialization wire format version to 16
 V8 14.9 (Chromium 149) bumped the serialization wire format from
 version 15 to 16. Update the hardcoded expected bytes in the test.
 
+Chromium's V8 also passes the Wasm jsapi WPT subtest "Calling setter
+without argument" (global/value-get-set.any.js), which Node's V8 still
+fails, so drop it from the expected failures.
+
 Upstream Node will catch up on its next V8 roll; this patch can be
 removed then.
 
@@ -22,3 +26,21 @@ index 223c0fd550cd2a51692ed64164a5ea12df75750c..2c7a20b24f96e7bb6b93a5965ba49e32
  
    const desBuf = Buffer.from(desStr, 'hex');
    const des = new v8.DefaultDeserializer(desBuf);
+diff --git a/test/wpt/status/wasm/jsapi.json b/test/wpt/status/wasm/jsapi.json
+index 6f2bf9f83a9c88fa96e3903d11dbaf89230ce3a5..f1fed83943562f057bcc5f712c9db4b149ccb9f4 100644
+--- a/test/wpt/status/wasm/jsapi.json
++++ b/test/wpt/status/wasm/jsapi.json
+@@ -8,13 +8,6 @@
+   "esm-integration/v128-tdz.tentative.any.js": {
+     "skip": "v128 undefined Wasm bindings not yet supported in V8"
+   },
+-  "global/value-get-set.any.js": {
+-    "fail": {
+-      "expected": [
+-        "Calling setter without argument"
+-      ]
+-    }
+-  },
+   "exception/getArg.tentative.any.js": {
+     "skip": "track - still tentative / unsupported"
+   },

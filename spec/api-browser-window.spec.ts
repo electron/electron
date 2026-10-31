@@ -99,7 +99,7 @@ const expectCenteredBounds = (win: BrowserWindow, width: number, height: number)
   });
 };
 
-const isBeforeUnload = (event: Event, level: number, message: string) => {
+const isBeforeUnload = ({ message }: { message: string }) => {
   return message === 'beforeunload';
 };
 

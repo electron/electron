@@ -13,10 +13,10 @@ FallThrough method was also removed upstream; drop it here too.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7885632
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 31277a74d1f3d3c8b733bfe0a21b25b2d19a4bc4..351033ebc10879a440f99667eddd4cc1cfe604a5 100644
+index 22506e26b32c344668a90c8a845f788efdf2eaf2..42ca96ffbf1c56a5f5050c929393873373bbd0db 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
-@@ -328,21 +328,16 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -335,21 +335,16 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
  
      std::vector<uint8_t> cbor_buffer;
      ConvertJSONToCBOR(crdtp::SpanFrom(raw_message), &cbor_buffer);
@@ -42,7 +42,7 @@ index 31277a74d1f3d3c8b733bfe0a21b25b2d19a4bc4..351033ebc10879a440f99667eddd4cc1
    }
  
    void schedulePauseOnNextStatement(const std::string& reason) {
-@@ -435,13 +430,6 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -442,13 +437,6 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
      sendMessageToFrontend(json);
    }
  
@@ -54,5 +54,5 @@ index 31277a74d1f3d3c8b733bfe0a21b25b2d19a4bc4..351033ebc10879a440f99667eddd4cc1
 -  }
 -
    std::unique_ptr<protocol::RuntimeAgent> runtime_agent_;
+ #ifndef V8_USE_PERFETTO
    std::unique_ptr<protocol::TracingAgent> tracing_agent_;
-   std::unique_ptr<protocol::WorkerAgent> worker_agent_;
