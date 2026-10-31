@@ -5,12 +5,14 @@
 #ifndef ELECTRON_SHELL_BROWSER_BROWSER_H_
 #define ELECTRON_SHELL_BROWSER_BROWSER_H_
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -36,6 +38,10 @@ namespace gin_helper {
 template <typename T>
 class Promise;
 }  // namespace gin_helper
+
+namespace dbus_xdg {
+class Request;
+}  // namespace dbus_xdg
 
 namespace v8 {
 template <typename T>
@@ -171,7 +177,8 @@ class Browser : private WindowListObserver {
   bool SetBadgeCount(std::optional<int> count);
   [[nodiscard]] int badge_count() const { return badge_count_; }
 
-  void SetLoginItemSettings(LoginItemSettings settings);
+  v8::Local<v8::Promise> SetLoginItemSettings(v8::Isolate* isolate,
+                                              LoginItemSettings settings);
   v8::Local<v8::Value> GetLoginItemSettings(const LoginItemSettings& options);
 
 #if BUILDFLAG(IS_MAC)
@@ -390,6 +397,13 @@ class Browser : private WindowListObserver {
   bool was_launched_at_login_;
 #endif
 
+#if BUILDFLAG(IS_LINUX)
+  void FinishLoginItemPortalRequest(size_t request_id);
+
+  size_t next_login_item_request_id_ = 0;
+  std::map<size_t, std::unique_ptr<dbus_xdg::Request>> login_item_requests_;
+#endif
+
   base::DictValue about_panel_options_;
 
 #if BUILDFLAG(IS_WIN)
@@ -399,6 +413,10 @@ class Browser : private WindowListObserver {
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  base::WeakPtrFactory<Browser> login_item_weak_factory_{this};
 #endif
 };
 
