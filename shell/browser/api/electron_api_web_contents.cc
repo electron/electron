@@ -2119,7 +2119,18 @@ void WebContents::OnReadAvailableTypes(
       render_frame_host,
       !types.empty(),
   };
+  auto weak_this = WeakRef();
   Emit("context-menu", event_data);
+
+  if (!weak_this->Get() || !web_contents())
+    return;
+
+  // Apps show their own menu, or none, in response to the event above, so
+  // nothing reports the renderer's context menu closed the way Chrome's
+  // RenderViewContextMenu does. Until it is, Blink's ContextMenuController
+  // keeps the right-clicked node and its ancestors alive, even after the page
+  // removes them.
+  web_contents()->NotifyContextMenuClosed(GURL());
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,
