@@ -849,9 +849,9 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   std::unique_ptr<gin::ContextHolder> gin_context_holder;
   auto set_up_context = [&](v8::Local<v8::Context> ctx,
                             node::IsolateData* iso_data) {
-    ctx->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
-                                         static_cast<void*>(iso_data),
-                                         v8::kEmbedderDataTypeTagDefault);
+    ctx->SetAlignedPointerInEmbedderDataV2(kElectronContextEmbedderDataIndex,
+                                           static_cast<void*>(iso_data),
+                                           v8::kEmbedderDataTypeTagDefault);
     if (!gin::PerContextData::From(ctx)) {
       gin_context_holder = std::make_unique<gin::ContextHolder>(isolate);
       gin_context_holder->SetContext(ctx);
@@ -946,7 +946,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // Since we're about to free `isolate_data`, clear that entry
     v8::HandleScope handle_scope{isolate};
     gin_context_holder.reset();
-    context.Get(isolate)->SetAlignedPointerInEmbedderData(
+    context.Get(isolate)->SetAlignedPointerInEmbedderDataV2(
         kElectronContextEmbedderDataIndex, nullptr,
         v8::kEmbedderDataTypeTagDefault);
     context.Reset();

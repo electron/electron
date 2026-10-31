@@ -15,6 +15,14 @@ node_use_v8_platform = false
 
 v8_promise_internal_field_count = 1
 
+# v8::Context embedder data lives in a fixed-size array: the non-deprecated
+# setters (SetEmbedderDataV3, SetAlignedPointerInEmbedderDataV2) refuse to
+# grow it. Size it to cover every index in use, the largest being Node.js's
+# ContextEmbedderIndex::kContextTag (NODE_CONTEXT_TAG, 39) in
+# //third_party/electron_node/src/node_context_data.h. Electron's own
+# kElectronContextEmbedderDataIndex (5) and gin/Blink's indices are smaller.
+v8_embedder_data_array_size = 40
+
 # Args are evaluated before GN installs its script interpreter. Invoke the
 # hermetic Python executable directly to generate the ordinary V8 argument.
 _v8_embedder_override = getenv("ELECTRON_V8_EMBEDDER_STRING")

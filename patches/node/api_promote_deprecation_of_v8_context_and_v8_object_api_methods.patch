@@ -5,6 +5,13 @@ Subject: Promote deprecation of v8::Context and v8::Object API methods
 
 https://chromium-review.googlesource.com/c/v8/v8/+/7087956
 
+https://chromium-review.googlesource.com/c/v8/v8/+/8660938 then promoted
+Context::SetEmbedderData, Context::SetEmbedderDataV2 and
+Context::SetAlignedPointerInEmbedderData to V8_DEPRECATED. Their
+replacements, SetEmbedderDataV3 and SetAlignedPointerInEmbedderDataV2, no
+longer grow the context's EmbedderDataArray, so the array must be sized at
+build time (v8_embedder_data_array_size) to cover ContextEmbedderIndex.
+
 diff --git a/src/base_object-inl.h b/src/base_object-inl.h
 index 37d83e41b618a07aca98118260abe9618f11256d..26d5c1bd3c8191fce1d22b969996b6bf35ef6d3b 100644
 --- a/src/base_object-inl.h
@@ -72,7 +79,7 @@ index 5f04e7085f4246b673f8ea629d03cc8b02e93f2a..60d61aef3f8db2e1d43096de580c5127
  
  inline Environment* Environment::GetCurrent(
 diff --git a/src/env.cc b/src/env.cc
-index efda30eb1fb1c18bafd64eed46a6fc72e806a02b..beb700dbe9fabcfe7c154a4c9e0f3dd8c95bc52e 100644
+index efda30eb1fb1c18bafd64eed46a6fc72e806a02b..c121e232889028aa5a68d9da87f8e0dbbde138ac 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -704,13 +704,16 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
@@ -82,14 +89,15 @@ index efda30eb1fb1c18bafd64eed46a6fc72e806a02b..beb700dbe9fabcfe7c154a4c9e0f3dd8
 -  context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kEnvironment,
 -                                           this);
 -  context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kRealm, realm);
-+  context->SetAlignedPointerInEmbedderData(
++  context->SetAlignedPointerInEmbedderDataV2(
 +      ContextEmbedderIndex::kEnvironment, this, v8::kEmbedderDataTypeTagDefault);
-+  context->SetAlignedPointerInEmbedderData(
++  context->SetAlignedPointerInEmbedderDataV2(
 +      ContextEmbedderIndex::kRealm, realm, v8::kEmbedderDataTypeTagDefault);
  
    // ContextifyContexts will update this to a pointer to the native object.
-   context->SetAlignedPointerInEmbedderData(
+-  context->SetAlignedPointerInEmbedderData(
 -      ContextEmbedderIndex::kContextifyContext, nullptr);
++  context->SetAlignedPointerInEmbedderDataV2(
 +      ContextEmbedderIndex::kContextifyContext,
 +      nullptr,
 +      v8::kEmbedderDataTypeTagDefault);
@@ -104,14 +112,15 @@ index efda30eb1fb1c18bafd64eed46a6fc72e806a02b..beb700dbe9fabcfe7c154a4c9e0f3dd8
 -                                             nullptr);
 -    context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kRealm,
 -                                             nullptr);
-     context->SetAlignedPointerInEmbedderData(
+-    context->SetAlignedPointerInEmbedderData(
 -        ContextEmbedderIndex::kContextifyContext, nullptr);
++    context->SetAlignedPointerInEmbedderDataV2(
 +        ContextEmbedderIndex::kEnvironment,
 +        nullptr,
 +        v8::kEmbedderDataTypeTagDefault);
-+    context->SetAlignedPointerInEmbedderData(
++    context->SetAlignedPointerInEmbedderDataV2(
 +        ContextEmbedderIndex::kRealm, nullptr, v8::kEmbedderDataTypeTagDefault);
-+    context->SetAlignedPointerInEmbedderData(
++    context->SetAlignedPointerInEmbedderDataV2(
 +        ContextEmbedderIndex::kContextifyContext,
 +        nullptr,
 +        v8::kEmbedderDataTypeTagDefault);
@@ -189,12 +198,15 @@ index 6b35871d92ceb1b1eead21e328088cf87a10fa6e..57c96645fa0fdb7ed77c0a36c877b262
  
  int JSUDPWrap::RecvStart() {
 diff --git a/src/node_context_data.h b/src/node_context_data.h
-index d81c75daaae47b8b0b489cf357a32e437e7a6cf7..b0aab2f7b2538b6e2cacc9ffd52473b7b4ffff38 100644
+index d81c75daaae47b8b0b489cf357a32e437e7a6cf7..219d27e14f7c5a5fd2e3d80a749c285a660c5c34 100644
 --- a/src/node_context_data.h
 +++ b/src/node_context_data.h
-@@ -135,7 +135,8 @@ class ContextEmbedderTag {
+@@ -133,9 +133,10 @@ class ContextEmbedderTag {
+   static inline void TagNodeContext(v8::Local<v8::Context> context) {
+     // Used by ContextEmbedderTag::IsNodeContext to know that we are on a node
      // context.
-     context->SetAlignedPointerInEmbedderData(
+-    context->SetAlignedPointerInEmbedderData(
++    context->SetAlignedPointerInEmbedderDataV2(
          ContextEmbedderIndex::kContextTag,
 -        ContextEmbedderTag::kNodeContextTagPtr);
 +        ContextEmbedderTag::kNodeContextTagPtr,
@@ -213,7 +225,7 @@ index d81c75daaae47b8b0b489cf357a32e437e7a6cf7..b0aab2f7b2538b6e2cacc9ffd52473b7
        return false;
      }
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 469c85642e995024b354abaa67dd865933867fc7..1caa202e7c4a957e0ab58e5012ae424a5ff701a9 100644
+index 469c85642e995024b354abaa67dd865933867fc7..a1fe56629bb34b23605228a4ed2188767103be89 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -157,9 +157,12 @@ ContextifyContext::ContextifyContext(Environment* env,
@@ -221,16 +233,46 @@ index 469c85642e995024b354abaa67dd865933867fc7..1caa202e7c4a957e0ab58e5012ae424a
    // global object is finished.
    DCHECK_NULL(v8_context->GetAlignedPointerFromEmbedderData(
 -      ContextEmbedderIndex::kContextifyContext));
+-  v8_context->SetAlignedPointerInEmbedderData(
+-      ContextEmbedderIndex::kContextifyContext, this);
 +      ContextEmbedderIndex::kContextifyContext,
 +      v8::kEmbedderDataTypeTagDefault));
-   v8_context->SetAlignedPointerInEmbedderData(
--      ContextEmbedderIndex::kContextifyContext, this);
++  v8_context->SetAlignedPointerInEmbedderDataV2(
 +      ContextEmbedderIndex::kContextifyContext,
 +      this,
 +      v8::kEmbedderDataTypeTagDefault);
  }
  
  void ContextifyContext::InitializeGlobalTemplates(IsolateData* isolate_data) {
+@@ -261,21 +264,21 @@ ContextifyContext* ContextifyContext::New(Local<Context> v8_context,
+   // to the ContextifyContext wrapper which in turn internally references
+   // the context from its constructor.
+   if (sandbox_obj.IsEmpty()) {
+-    v8_context->SetEmbedderData(ContextEmbedderIndex::kSandboxObject,
+-                                v8::Undefined(env->isolate()));
++    v8_context->SetEmbedderDataV3(ContextEmbedderIndex::kSandboxObject,
++                                  v8::Undefined(env->isolate()));
+   } else {
+-    v8_context->SetEmbedderData(ContextEmbedderIndex::kSandboxObject,
+-                                sandbox_obj);
++    v8_context->SetEmbedderDataV3(ContextEmbedderIndex::kSandboxObject,
++                                  sandbox_obj);
+   }
+ 
+   // Delegate the code generation validation to
+   // node::ModifyCodeGenerationFromStrings.
+   v8_context->AllowCodeGenerationFromStrings(false);
+-  v8_context->SetEmbedderData(
++  v8_context->SetEmbedderDataV3(
+       ContextEmbedderIndex::kAllowCodeGenerationFromStrings,
+       options->allow_code_gen_strings);
+-  v8_context->SetEmbedderData(ContextEmbedderIndex::kAllowWasmCodeGeneration,
+-                              options->allow_code_gen_wasm);
++  v8_context->SetEmbedderDataV3(ContextEmbedderIndex::kAllowWasmCodeGeneration,
++                                options->allow_code_gen_wasm);
+ 
+   Utf8Value name_val(env->isolate(), options->name);
+   ContextInfo info(name_val.ToString());
 @@ -466,7 +469,8 @@ ContextifyContext* ContextifyContext::Get(Local<Object> object) {
    }
    return static_cast<ContextifyContext*>(
