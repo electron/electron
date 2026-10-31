@@ -85,6 +85,31 @@ const setupSaveDialogProperties = (properties: (keyof typeof SaveFileDialogPrope
   return dialogProperties;
 };
 
+type DialogType = 'open-dialog' | 'save-dialog' | 'message-box' | 'error-box' | 'certificate-trust-dialog';
+
+// Emits the app's 'dialog-opened' and 'dialog-closed' events around |show|,
+// which shows a dialog and returns its result, or a promise for it.
+const withDialogEvents = <T>(type: DialogType, window: BaseWindow | null | undefined, show: () => T): T => {
+  const details = { type, window: window ?? null };
+  const closed = () => {
+    app.emit('dialog-closed', { preventDefault() {} }, details);
+  };
+  app.emit('dialog-opened', { preventDefault() {} }, details);
+  let result: T;
+  try {
+    result = show();
+  } catch (error) {
+    closed();
+    throw error;
+  }
+  if (result instanceof Promise) {
+    result.then(closed, closed);
+  } else {
+    closed();
+  }
+  return result;
+};
+
 const saveDialog = (sync: boolean, window: BaseWindow | null, options?: SaveDialogOptions) => {
   checkAppInitialized();
 
@@ -121,7 +146,9 @@ const saveDialog = (sync: boolean, window: BaseWindow | null, options?: SaveDial
     properties: setupSaveDialogProperties(properties)
   };
 
-  return sync ? dialogBinding.showSaveDialogSync(settings) : dialogBinding.showSaveDialog(settings);
+  return withDialogEvents('save-dialog', window, () =>
+    sync ? dialogBinding.showSaveDialogSync(settings) : dialogBinding.showSaveDialog(settings)
+  );
 };
 
 const openDialog = (sync: boolean, window: BaseWindow | null, options?: OpenDialogOptions) => {
@@ -162,7 +189,9 @@ const openDialog = (sync: boolean, window: BaseWindow | null, options?: OpenDial
     properties: setupOpenDialogProperties(properties)
   };
 
-  return sync ? dialogBinding.showOpenDialogSync(settings) : dialogBinding.showOpenDialog(settings);
+  return withDialogEvents('open-dialog', window, () =>
+    sync ? dialogBinding.showOpenDialogSync(settings) : dialogBinding.showOpenDialog(settings)
+  );
 };
 
 const messageBox = (sync: boolean, window: BaseWindow | null, options?: MessageBoxOptions) => {
@@ -245,11 +274,9 @@ const messageBox = (sync: boolean, window: BaseWindow | null, options?: MessageB
     textWidth
   };
 
-  if (sync) {
-    return dialogBinding.showMessageBoxSync(settings);
-  } else {
-    return dialogBinding.showMessageBox(settings);
-  }
+  return withDialogEvents('message-box', window, () =>
+    sync ? dialogBinding.showMessageBoxSync(settings) : dialogBinding.showMessageBox(settings)
+  );
 };
 
 export function showOpenDialog(window: BaseWindow, options: OpenDialogOptions): OpenDialogReturnValue;
@@ -319,7 +346,7 @@ export function showMessageBoxSync(
 }
 
 export function showErrorBox(...args: any[]) {
-  return dialogBinding.showErrorBox(...args);
+  return withDialogEvents('error-box', null, () => dialogBinding.showErrorBox(...args));
 }
 
 export function showCertificateTrustDialog(
@@ -340,5 +367,7 @@ export function showCertificateTrustDialog(
 
   if (typeof message !== 'string') throw new TypeError('message must be a string');
 
-  return dialogBinding.showCertificateTrustDialog(window, certificate, message);
+  return withDialogEvents('certificate-trust-dialog', window, () =>
+    dialogBinding.showCertificateTrustDialog(window, certificate, message)
+  );
 }
