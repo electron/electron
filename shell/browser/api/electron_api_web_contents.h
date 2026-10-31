@@ -545,6 +545,24 @@ class WebContents final : public gin::Wrappable<WebContents>,
   using MediaPlayerInfo = content::WebContentsObserver::MediaPlayerInfo;
   void Observe(content::WebContents* contents);
 
+  // An openDevTools() that arrived while these contents were still being
+  // attached to their BrowserWindow, replayed from SetOwnerWindow(). Holds the
+  // caller's raw options rather than a resolved dock state: resolving it is
+  // exactly what has to wait for the owner.
+  struct PendingDevToolsOpen {
+    // Unset when no mode was passed, which differs from an explicit ''.
+    std::optional<std::string> mode;
+    bool activate = true;
+    std::string title;
+  };
+
+  // Resolves the dock state and shows DevTools right away. Callers that need
+  // the frontend immediately (inspectElement() and friends) use this directly
+  // rather than OpenDevTools(), which may defer.
+  void ShowDevToolsNow(const std::optional<std::string>& mode,
+                       bool activate,
+                       const std::string& title);
+
   base::flat_set<GURL> last_favicon_urls_;
 
   // Creates a InspectableWebContents object and takes ownership of
@@ -871,6 +889,12 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
+
+  // Whether these contents were created by a BrowserWindow. Unlike
+  // owner_window(), this is already known before SetOwnerWindow() runs.
+  bool owned_by_window_ = false;
+
+  std::optional<PendingDevToolsOpen> pending_devtools_open_;
 
   // Weather the guest view should be transparent
   bool guest_transparent_ = true;
