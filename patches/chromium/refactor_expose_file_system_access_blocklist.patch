@@ -31,8 +31,14 @@ As of 159.0.8129.0, it also carries the Vim startup rules (~/.vim, ~/vimfiles,
 ~/.vimrc, ~/_vimrc, ~/.gvimrc, ~/_gvimrc, ~/.exrc and ~/_exrc) and the .mvn
 kBlockWrite suffix rule added upstream in that version.
 
+As of 159.0.8131.0, it also carries the kFileSystemAccessAllowWslHomeSubfolders
+feature and the IsAllowedWslHomePath() exemption that lets
+ShouldBlockAccessToPath() allow plain subfolders of WSL home directories
+(\\wsl.localhost\<distro>\home\<user>\<child>) through the local UNC path
+check.
+
 diff --git a/chrome/browser/file_system_access/BUILD.gn b/chrome/browser/file_system_access/BUILD.gn
-index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6eea230e6 100644
+index 0c1debacd07cb9b84a1615b5b17fb9e88d905806..c1666f79eff726895e886fa784dac9dac0ed42f0 100644
 --- a/chrome/browser/file_system_access/BUILD.gn
 +++ b/chrome/browser/file_system_access/BUILD.gn
 @@ -40,6 +40,7 @@ source_set("file_system_access") {
@@ -45,10 +51,10 @@ index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6
      "file_system_access_permission_context_factory.cc",
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..d888abf32d401d8aa931fac7f4d703e193352af8
+index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71502aa97f
 --- /dev/null
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
-@@ -0,0 +1,600 @@
+@@ -0,0 +1,642 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -66,6 +72,7 @@ index 0000000000000000000000000000000000000000..d888abf32d401d8aa931fac7f4d703e1
 +#include "base/base_paths.h"
 +#include "base/check.h"
 +#include "base/check_op.h"
++#include "base/feature_list.h"
 +#include "base/files/file_path.h"
 +#include "base/files/file_util.h"
 +#include "base/logging.h"
@@ -166,6 +173,47 @@ index 0000000000000000000000000000000000000000..d888abf32d401d8aa931fac7f4d703e1
 +  }
 +
 +  return false;
++}
++
++// Kill switch for the WSL home exemption below, see crbug.com/573422635.
++BASE_FEATURE(kFileSystemAccessAllowWslHomeSubfolders,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
++// Returns true if `path` is inside a home directory of a WSL distribution, such
++// as \\wsl.localhost\Ubuntu\home\user\src, and not inside one of the home
++// directory's dot entries, such as .ssh or .bashrc, or its bin directory. The
++// home-relative rules resolve to drive-letter paths and cannot match WSL paths,
++// so `ShouldBlockAccessToPath()` rejects all other WSL paths through
++// `MaybeIsLocalUNCPath()`.
++bool IsAllowedWslHomePath(const base::FilePath& path) {
++  if (!base::FeatureList::IsEnabled(kFileSystemAccessAllowWslHomeSubfolders) ||
++      !path.IsNetwork() || path.ReferencesParent()) {
++    return false;
++  }
++
++  // {\\, wsl.localhost, <distro>, home, <user>, <child>, ...}. Linux paths are
++  // case-sensitive, so "home" must match exactly.
++  const std::vector<base::FilePath::StringType> components =
++      path.GetComponents();
++  if (components.size() < 6 ||
++      !base::FilePath::CompareEqualIgnoreCase(
++          components[1], FILE_PATH_LITERAL("wsl.localhost")) ||
++      components[3] != FILE_PATH_LITERAL("home")) {
++    return false;
++  }
++
++  // Rejects dot entries, and names that Windows path normalization can drop
++  // (".", " .", " "), which could make the path resolve to a home directory.
++  const auto is_plain_name = [](base::FilePath::StringViewType name) {
++    return !name.empty() && name.front() != FILE_PATH_LITERAL('.') &&
++           name.back() != FILE_PATH_LITERAL('.') &&
++           name.back() != FILE_PATH_LITERAL(' ');
++  };
++  // ~/bin is on the default PATH, and files created from Windows in WSL can be
++  // executable.
++  return is_plain_name(components[2]) && is_plain_name(components[4]) &&
++         is_plain_name(components[5]) &&
++         components[5] != FILE_PATH_LITERAL("bin");
 +}
 +#endif
 +
@@ -540,7 +588,7 @@ index 0000000000000000000000000000000000000000..d888abf32d401d8aa931fac7f4d703e1
 +#if BUILDFLAG(IS_WIN)
 +  // On Windows, local UNC paths are rejected, as UNC path can be written in a
 +  // way that can bypass the blocklist.
-+  if (MaybeIsLocalUNCPath(path)) {
++  if (MaybeIsLocalUNCPath(path) && !IsAllowedWslHomePath(path)) {
 +    return true;
 +  }
 +#endif
@@ -650,10 +698,10 @@ index 0000000000000000000000000000000000000000..d888abf32d401d8aa931fac7f4d703e1
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 11f70f0f70b448c146896c0f7f388e96f601315c..d6dd4a80ab5b8524fed5e9d57143f51d19007103 100644
+index 89545945194c5d8da8bf317f0fd9edff0435354d..749198de7db0a2627b24fb1c546e82a3c8f30b25 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -268,574 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
+@@ -268,615 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
  }
  #endif
  
@@ -747,6 +795,47 @@ index 11f70f0f70b448c146896c0f7f388e96f601315c..d6dd4a80ab5b8524fed5e9d57143f51d
 -  }
 -
 -  return false;
+-}
+-
+-// Kill switch for the WSL home exemption below, see crbug.com/573422635.
+-BASE_FEATURE(kFileSystemAccessAllowWslHomeSubfolders,
+-             base::FEATURE_ENABLED_BY_DEFAULT);
+-
+-// Returns true if `path` is inside a home directory of a WSL distribution, such
+-// as \\wsl.localhost\Ubuntu\home\user\src, and not inside one of the home
+-// directory's dot entries, such as .ssh or .bashrc, or its bin directory. The
+-// home-relative rules resolve to drive-letter paths and cannot match WSL paths,
+-// so `ShouldBlockAccessToPath()` rejects all other WSL paths through
+-// `MaybeIsLocalUNCPath()`.
+-bool IsAllowedWslHomePath(const base::FilePath& path) {
+-  if (!base::FeatureList::IsEnabled(kFileSystemAccessAllowWslHomeSubfolders) ||
+-      !path.IsNetwork() || path.ReferencesParent()) {
+-    return false;
+-  }
+-
+-  // {\\, wsl.localhost, <distro>, home, <user>, <child>, ...}. Linux paths are
+-  // case-sensitive, so "home" must match exactly.
+-  const std::vector<base::FilePath::StringType> components =
+-      path.GetComponents();
+-  if (components.size() < 6 ||
+-      !base::FilePath::CompareEqualIgnoreCase(
+-          components[1], FILE_PATH_LITERAL("wsl.localhost")) ||
+-      components[3] != FILE_PATH_LITERAL("home")) {
+-    return false;
+-  }
+-
+-  // Rejects dot entries, and names that Windows path normalization can drop
+-  // (".", " .", " "), which could make the path resolve to a home directory.
+-  const auto is_plain_name = [](base::FilePath::StringViewType name) {
+-    return !name.empty() && name.front() != FILE_PATH_LITERAL('.') &&
+-           name.back() != FILE_PATH_LITERAL('.') &&
+-           name.back() != FILE_PATH_LITERAL(' ');
+-  };
+-  // ~/bin is on the default PATH, and files created from Windows in WSL can be
+-  // executable.
+-  return is_plain_name(components[2]) && is_plain_name(components[4]) &&
+-         is_plain_name(components[5]) &&
+-         components[5] != FILE_PATH_LITERAL("bin");
 -}
 -#endif
 -
@@ -1115,7 +1204,7 @@ index 11f70f0f70b448c146896c0f7f388e96f601315c..d6dd4a80ab5b8524fed5e9d57143f51d
 -#if BUILDFLAG(IS_WIN)
 -  // On Windows, local UNC paths are rejected, as UNC path can be written in a
 -  // way that can bypass the blocklist.
--  if (MaybeIsLocalUNCPath(path)) {
+-  if (MaybeIsLocalUNCPath(path) && !IsAllowedWslHomePath(path)) {
 -    return true;
 -  }
 -#endif

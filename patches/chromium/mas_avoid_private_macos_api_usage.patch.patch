@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 77ecbc3566405ac71eae3360ad28945d55b9e0cd..d098c5dfcc801298f1f4ca3eef21f3d56b822225 100644
+index 40539b95914bc2110e8a795701b76826a5898ce4..e73001ff17f2dfd5049afb1e60432dbe2c896c84 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1161,6 +1161,7 @@ component("base") {
@@ -137,7 +137,7 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index f99309cc2e4e15f2bc1fb7d48099e7108627a5b3..7da8a80053470ae109b3f676f1a06640824f33c4 100644
+index 3619d263db489182fb2d8e8dd1b277328bbf584c..16d7e1501f7bb76955d721e720db0a3f25b7fc36 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 @@ -1032,6 +1032,7 @@ if (is_clang_or_gcc) {
@@ -979,10 +979,10 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb260bddb61 100644
+index 8d9bb6d221f29b88f9a61c86ee0c663b978c7e5f..21909c75b067cac4f775ba076dc204188392ef66 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -35,6 +35,7 @@
+@@ -36,6 +36,7 @@
  #import "content/public/browser/render_widget_host_view_mac_delegate.h"
  #include "content/public/browser/scoped_accessibility_mode.h"
  #include "content/public/common/content_features.h"
@@ -990,7 +990,7 @@ index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb2
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2501,15 +2502,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2562,15 +2563,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1013,7 +1013,7 @@ index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 65ce7bc123aa17ed21c9a50aa0bac110fed51463..ed9536b4b2d9ff308ef3e396ec4e11e98b3dcd1b 100644
+index 4f2a8497fb53dd781b97afdbd2513b0155c81f6f..044a70f8ba13cfa2a51c8a9acef69a035e293674 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -396,6 +396,7 @@ source_set("browser") {
@@ -1025,7 +1025,7 @@ index 65ce7bc123aa17ed21c9a50aa0bac110fed51463..ed9536b4b2d9ff308ef3e396ec4e11e9
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 3bc470d203b6275d812bcf8d425e7bc5e54b4404..9784dbc87dde79a904f26a3f35b47aad3f43a66c 100644
+index b90121c67e80a85f28af62fc10bb78e1a37dae2a..0511bc88df989b9aaf2938a2f2cb93206f2da07b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -26,6 +26,7 @@
@@ -1046,7 +1046,7 @@ index 3bc470d203b6275d812bcf8d425e7bc5e54b4404..9784dbc87dde79a904f26a3f35b47aad
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -725,9 +728,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -734,9 +737,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    bool pointer_lock_unadjusted_movement_ = false;
  
  
@@ -1059,7 +1059,7 @@ index 3bc470d203b6275d812bcf8d425e7bc5e54b4404..9784dbc87dde79a904f26a3f35b47aad
    ui::AXTreeID parent_ax_tree_id_ = ui::AXTreeIDUnknown();
  
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index d96670e866be63705f0cdee8c7d9291a3627f340..082a7197c3f7d596371ce05554fe3beacdf3e1b6 100644
+index f0e7865671113e01d974eaf309bd733d5f1ed384..81599ed6309ff999045443a6e7c3553567d8c950 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -58,6 +58,7 @@
@@ -1081,7 +1081,7 @@ index d96670e866be63705f0cdee8c7d9291a3627f340..082a7197c3f7d596371ce05554fe3bea
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1897,10 +1900,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1902,10 +1905,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1094,7 +1094,7 @@ index d96670e866be63705f0cdee8c7d9291a3627f340..082a7197c3f7d596371ce05554fe3bea
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1975,9 +1980,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1980,9 +1985,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1106,7 +1106,7 @@ index d96670e866be63705f0cdee8c7d9291a3627f340..082a7197c3f7d596371ce05554fe3bea
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2550,20 +2557,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2603,20 +2610,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8aab76534c35a11ff3678417f235cef67c69f8ed..a36431ad84569ebb7da44872824752b1d00a8bbd 100644
+index 1158515dfcb29979fe89c9f95334a25c755c2020..4dc45e60c334bbb610df12e87c4d94ff558f7b0d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index 8aab76534c35a11ff3678417f235cef67c69f8ed..a36431ad84569ebb7da44872824752b1
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3457,6 +3461,7 @@ test("content_unittests") {
+@@ -3458,6 +3462,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1289,7 +1289,7 @@ index 9e1af8c4ed42041d88a94277691cab2dd20f149f..8e8e00b960fd1359f63479edde6d6489
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index a75d7cad7cabb3c1e829cb8b12b40b364ec552e3..ad12449255a49326594c1de02753a4533e92980f 100644
+index d73f8e50af2722299724592b73c817034b8e3b3d..bd7748cbf0be3aab349aa8ad1590e6283c45c451 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -40,7 +40,9 @@
@@ -1369,10 +1369,10 @@ index 6ea6c1130663f04ee766750dde257f3cc701a5b0..355930d10267b8c2c95c320c6d154080
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 8667a1ba4f71a57f61915bb2588a338e5960a952..099a65446d90b10b021ac47d1c4e26b179e8e40b 100644
+index 9efc3ebf980c967e0fed2ee3a74417bfdd409096..80184dc247aa269d593fafbe09ef2a35ee2504f4 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -198,6 +198,7 @@ source_set("audio") {
+@@ -200,6 +200,7 @@ source_set("audio") {
        "CoreMedia.framework",
        "ScreenCaptureKit.framework",
      ]
@@ -1907,10 +1907,10 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-index 21aa5006a3cd8a2000ed446592118e045ac1592f..03b31de65d5e89d69032dd554e30a2b54511ba25 100644
+index 87756e81234a8a2552521a8be7cd5a23cbf30361..cd756f84fe3d4648c7b4a322f78c409b2904d7b8 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-@@ -41,6 +41,7 @@
+@@ -42,6 +42,7 @@
  #include "base/apple/foundation_util.h"
  #include "base/apple/scoped_cftyperef.h"
  #include "base/numerics/byte_conversions.h"
@@ -1918,7 +1918,7 @@ index 21aa5006a3cd8a2000ed446592118e045ac1592f..03b31de65d5e89d69032dd554e30a2b5
  #include "third_party/blink/renderer/platform/fonts/font_cache.h"
  #include "third_party/blink/renderer/platform/fonts/font_selection_types.h"
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
-@@ -64,8 +65,10 @@
+@@ -65,8 +66,10 @@
  // We don't need localized variation axis name, so we can use
  // `CTFontCopyVariationAxesInternal()` instead.
  // Request for public API: FB13788219.
@@ -1929,7 +1929,7 @@ index 21aa5006a3cd8a2000ed446592118e045ac1592f..03b31de65d5e89d69032dd554e30a2b5
  
  namespace blink {
  
-@@ -591,12 +594,16 @@ void ClampVariationValuesToFontAcceptableRange(
+@@ -592,12 +595,16 @@ void ClampVariationValuesToFontAcceptableRange(
    // we are enabling it only on MacOS 13+ because these are our benchmarking
    // platforms.
    NSArray* all_axes;

@@ -46,10 +46,10 @@ index 5e751bb0e254b6cd67b05c6bd2e677c074717099..c567a09c696413371ed732cc2f81d9b9
                  'internal-forced-visited-'
              ):
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index eaa63354092969ee3b984eede45f213d56924110..f8d1d9c5cb5c8b73e7162e3686e7b4fecb018434 100644
+index 424e3d2c4e26d6f187aea4cac910cf1545320746..b185c23cc53fbd08d9bef1ddaf07a0b81962d025 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -10402,6 +10402,27 @@
+@@ -10401,6 +10401,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -204,7 +204,7 @@ index 2976bcc89a26701aeb829c0fe0a205defe1e4997..85642753239137de0e4e8c8f4654f131
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 483495d170f0b719528064612969e9fc05078acc..e155e3fdcd489c6e832218558a56250955d63ff7 100644
+index a00df3712286de0c393e56c6485aed8c888acafb..d7f30f50275a2b799a2e9da0527c93d380ad0fb2 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1731,6 +1731,8 @@ component("platform") {
@@ -315,7 +315,7 @@ index 9d125de843259dae40e6b08eaf65ea3650435295..428219fb35d7a967dcaee91aa1c3628e
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 7709006c82d9304c718a9a152788138954bf3900..3a04fce5fd43f25a15798677623f496c0bfb31ca 100644
+index eb1b62bf0e7e5249cd9ab3ab9b4a93ca51d97438..0a7e6b2dc5ade89438691432a43f1bec243e4b37 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@

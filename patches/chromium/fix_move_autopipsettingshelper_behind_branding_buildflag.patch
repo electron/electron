@@ -121,7 +121,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 2786953a872abd331d777d64231adfd3b685e85e..9b9998cdcce0c183fe0d7c06331526492e6f64ed 100644
+index ad8cd28e110b069be8c11cacc0351feef036ab77..576889e2b5bf622319e6feea45467d5a9f7b3831 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -13,6 +13,7 @@
