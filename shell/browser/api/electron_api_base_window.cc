@@ -216,7 +216,9 @@ void BaseWindow::OnWindowClosed() {
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.
   MarkDestroyed();
+#if !defined(TOOLKIT_VIEWS)
   window_->FlushWindowState();
+#endif
   Emit("closed");
 
   parent_window_.Reset();
