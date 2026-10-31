@@ -552,42 +552,6 @@ describe('webRequest module', () => {
       expect(data).toBe('/header/received');
     });
 
-    it('can change the request headers on a custom protocol redirect', async () => {
-      protocol.registerStringProtocol('cors-blob', (req, callback) => {
-        if (req.url === 'cors-blob://fake-host/redirect') {
-          callback({
-            statusCode: 302,
-            headers: {
-              Location: 'cors-blob://fake-host'
-            }
-          });
-        } else {
-          let content = '';
-          if (req.headers.Accept === '*/*;test/header') {
-            content = 'header-received';
-          }
-          callback(content);
-        }
-      });
-
-      // Note that we need to do navigation every time after a protocol is
-      // registered or unregistered, otherwise the new protocol won't be
-      // recognized by current page when NetworkService is used.
-      await contents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
-
-      try {
-        ses.webRequest.onBeforeSendHeaders((details, callback) => {
-          const requestHeaders = details.requestHeaders;
-          requestHeaders.Accept = '*/*;test/header';
-          callback({ requestHeaders });
-        });
-        const { data } = await ajax('cors-blob://fake-host/redirect');
-        expect(data).toBe('header-received');
-      } finally {
-        protocol.unregisterProtocol('cors-blob');
-      }
-    });
-
     it('can change request origin', async () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders;
@@ -652,6 +616,91 @@ describe('webRequest module', () => {
         expect(details.requestHeaders).toEqual(originalRequestHeaders);
       });
       await ajax(defaultURL);
+    });
+
+    describe('custom protocol redirects', () => {
+      beforeAll(async () => {
+        protocol.registerStringProtocol('cors-blob', (req, callback) => {
+          if (req.url === 'cors-blob://fake-host/redirect') {
+            callback({ statusCode: 302, headers: { Location: 'cors-blob://fake-host/target' } });
+          } else {
+            callback(JSON.stringify(req.headers));
+          }
+        });
+
+        // Navigate after registering the protocol so NetworkService recognizes it.
+        await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
+      });
+
+      afterAll(() => {
+        protocol.unregisterProtocol('cors-blob');
+      });
+
+      async function headersOnRedirect(
+        initialHeaders: Record<string, string>,
+        onRedirect: (details: Electron.OnBeforeSendHeadersListenerDetails) => Electron.BeforeSendResponse
+      ): Promise<Record<string, string>> {
+        ses.webRequest.onBeforeSendHeaders((details, callback) => {
+          callback(
+            details.url === 'cors-blob://fake-host/target'
+              ? onRedirect(details)
+              : { requestHeaders: details.requestHeaders }
+          );
+        });
+        const { data } = await ajax('cors-blob://fake-host/redirect', { headers: initialHeaders });
+        return JSON.parse(data);
+      }
+
+      it('can change the request headers on a custom protocol redirect', async () => {
+        const headers = await headersOnRedirect({ Accept: 'text/plain' }, (details) => {
+          const { requestHeaders } = details;
+          requestHeaders.Accept = '*/*;test/header';
+          return { requestHeaders };
+        });
+        expect(headers).toHaveProperty('Accept', '*/*;test/header');
+      });
+
+      it('removes a request header on redirect', async () => {
+        let sawOriginal = false;
+        const headers = await headersOnRedirect({ Accept: 'text/plain' }, (details) => {
+          const { requestHeaders } = details;
+          sawOriginal = requestHeaders.Accept === 'text/plain';
+          delete requestHeaders.Accept;
+          return { requestHeaders };
+        });
+        expect(sawOriginal).toBe(true);
+        expect(headers).not.toHaveProperty('Accept');
+      });
+
+      it('preserves request headers on redirect when requestHeaders is omitted', async () => {
+        let sawRedirect = false;
+        const headers = await headersOnRedirect({ Accept: 'text/plain' }, () => {
+          sawRedirect = true;
+          return {};
+        });
+        expect(sawRedirect).toBe(true);
+        expect(headers).toHaveProperty('Accept', 'text/plain');
+      });
+
+      it('removes request headers on redirect when requestHeaders is empty', async () => {
+        let sawOriginal = false;
+        const headers = await headersOnRedirect({ Accept: 'text/plain' }, (details) => {
+          sawOriginal = details.requestHeaders.Accept === 'text/plain';
+          return { requestHeaders: {} };
+        });
+        expect(sawOriginal).toBe(true);
+        expect(headers).not.toHaveProperty('Accept');
+      });
+
+      it('adds and modifies request headers on redirect', async () => {
+        const headers = await headersOnRedirect({ Accept: 'text/plain' }, (details) => {
+          const { requestHeaders } = details;
+          requestHeaders.Accept = 'application/json';
+          requestHeaders['X-Add'] = 'added';
+          return { requestHeaders };
+        });
+        expect(headers).toMatchObject({ Accept: 'application/json', 'X-Add': 'added' });
+      });
     });
 
     it('works with file:// protocol', async () => {
