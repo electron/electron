@@ -49,7 +49,7 @@ index b7d0041d0737f7e0315216748e3a5908428c7d1c..b48efd7e1a611dddb5724d65d623c8a2
                                  get_trigger_async_id());
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(async_hooks),
 diff --git a/src/env.cc b/src/env.cc
-index f72aafe07c039c6d63b74c80cd252f830930d121..65df49c367c6a378ffe1931bf8afa6315388a446 100644
+index a4f5615f450ef4609fd17e2de3484d1c5e269c8b..0615453b5ebf955b96c81341597b5edd812d0d2a 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -686,8 +686,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
@@ -104,7 +104,7 @@ index 92c5fd8cb66f063e7cb4084b98500f28c60ec29a..d7fa3d8fdf23610917723b0bb808e19a
        (per_process::cli_options->use_largepages == "on" ||
         per_process::cli_options->use_largepages == "silent")) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 57eed79a77d49fd4c118313bbd352a029689940c..5801ee7773824a216cc6114fc602fd79071ebc28 100644
+index 38d4e4710b0ba763f680b550b0230778f4845643..cc11dfe518e9fa81ef889b3b92f46f24e240d229 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -1043,8 +1043,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {

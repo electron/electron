@@ -109,7 +109,7 @@ index 0cc09fd10e83e59852bbf9abfecd5e30622c0f02..12a1bde53574acb1a4cd91108fd4151f
    Local<Object> os_constants =
        Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 6efb4ec8391356f1141990e8f49aa2d3da3a8b0c..b03b19f4b6f84332766a3e1192235e0c53dbfcc1 100644
+index c32bb23c995de052495b47b25cf8b135e042bb9f..352d1f8bd82eed8042e4bb3dbc684f51284f272a 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -456,7 +456,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
