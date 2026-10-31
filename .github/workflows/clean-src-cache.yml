@@ -36,7 +36,7 @@ jobs:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root
+      options: --user root --umask 0022
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /mnt/win-cache:/mnt/win-cache
