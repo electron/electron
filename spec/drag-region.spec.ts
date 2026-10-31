@@ -53,7 +53,6 @@ const performDrag = async (
   const screenCenter = center(display.bounds);
 
   const start = w.getPosition() as [number, number];
-  const moved = once(w, 'move');
 
   // Extra events based on research from https://github.com/octalmage/robotjs/issues/389
   robot.moveMouse(winCenter.x, winCenter.y);
@@ -63,7 +62,14 @@ const performDrag = async (
   robot.dragMouse(screenCenter.x, screenCenter.y);
   robot.mouseToggle('up', 'left');
 
-  await Promise.race([moved, setTimeout(1000)]);
+  // The initial placement can emit a move event without changing position.
+  // Wait for the drag itself, including on Windows where it is processed later.
+  const deadline = Date.now() + 1000;
+  while (Date.now() < deadline) {
+    const position = w.getPosition();
+    if (position[0] !== start[0] || position[1] !== start[1]) break;
+    await setTimeout(10);
+  }
 
   const end = w.getPosition() as [number, number];
   return { start, end };
