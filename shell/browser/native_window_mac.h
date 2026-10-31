@@ -113,6 +113,7 @@ class NativeWindowMac : public NativeWindow,
   void SetContentProtection(bool enable) override;
   bool IsContentProtected() const override;
   void SetFocusable(bool focusable) override;
+  void SetActivable(bool activable) override;
   bool IsFocusable() const override;
   void SetParentWindow(NativeWindow* parent) override;
   content::DesktopMediaID GetDesktopMediaID() const override;
