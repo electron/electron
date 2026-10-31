@@ -43,11 +43,11 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
     - name: Install Dependencies
-      uses: ./src/electron/.github/actions/install-dependencies
+      uses: $/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
-      uses: ./src/electron/.github/actions/set-chromium-cookie
+      uses: $/.github/actions/set-chromium-cookie
     - name: Install Build Tools
-      uses: ./src/electron/.github/actions/install-build-tools
+      uses: $/.github/actions/install-build-tools
     - name: Get Chromium revision
       id: get-chromium-revision
       shell: bash
