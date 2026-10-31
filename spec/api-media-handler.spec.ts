@@ -132,8 +132,8 @@ describe('setDisplayMediaRequestHandler', () => {
       `,
         true
       );
-      expect(ok).to.be.true(message);
-      expect(preferredDisplaySurface).to.equal(expected);
+      expect(ok, message).toBe(true);
+      expect(preferredDisplaySurface).toBe(expected);
     });
   }
 

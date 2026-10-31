@@ -1206,6 +1206,14 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 
 #### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/51235
+    description: "Added `preferredDisplaySurface` to the handler's `request`."
+```
+-->
+
 * `handler` Function | null
   * `request` Object
     * `frame` [WebFrameMain](web-frame-main.md) | null - Frame that is requesting access to media.
