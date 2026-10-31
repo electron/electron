@@ -87,6 +87,9 @@ namespace electron::api {
 
 namespace {
 
+constexpr char kInvalidTabbingModeMessage[] =
+    "Invalid tabbing mode: expected 'automatic', 'preferred', or 'disallowed'.";
+
 // Reads |key| into |out| when the dictionary has it. Returns false when it is
 // there but is not a finite number that fits in an int, the same values the
 // gfx::Rect converter rejects.
@@ -758,6 +761,53 @@ v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
   return gin::ConvertToV8(isolate(), tabbing_id.value());
 }
 
+std::vector<BaseWindow*> BaseWindow::GetTabbedWindows() const {
+  std::vector<BaseWindow*> tabs;
+  const auto windows = BaseWindow::GetAllNative();
+  for (auto* native_window : window_->GetTabbedWindows()) {
+    for (auto* window : windows) {
+      if (window->window() == native_window) {
+        tabs.push_back(window);
+        break;
+      }
+    }
+  }
+  return tabs;
+}
+
+BaseWindow* BaseWindow::GetSelectedTab() const {
+  auto* selected = window_->GetSelectedTab();
+  if (!selected)
+    return nullptr;
+
+  for (auto* window : BaseWindow::GetAllNative()) {
+    if (window->window() == selected)
+      return window;
+  }
+  return nullptr;
+}
+
+std::string BaseWindow::GetTabbingMode() const {
+  switch (window_->GetTabbingMode()) {
+    case NativeWindow::TabbingMode::kAutomatic:
+      return "automatic";
+    case NativeWindow::TabbingMode::kPreferred:
+      return "preferred";
+    case NativeWindow::TabbingMode::kDisallowed:
+      return "disallowed";
+  }
+  return "disallowed";
+}
+
+void BaseWindow::SetTabbingMode(const std::string& mode, gin::Arguments* args) {
+  auto parsed = NativeWindow::ParseTabbingMode(mode);
+  if (!parsed) {
+    args->ThrowTypeError(kInvalidTabbingModeMessage);
+    return;
+  }
+  window_->SetTabbingMode(*parsed);
+}
+
 void BaseWindow::SetAspectRatio(const double aspect_ratio,
                                 gin::Arguments* const args) {
   gfx::Size extra_size;
@@ -968,8 +1018,9 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   args->GetNext(&options);
 
   std::string error_message;
-  if (!IsWindowNameValid(options, &error_message)) {
-    // Window name is already in use throw an error and do not create the window
+  if (!IsWindowNameValid(options, &error_message) ||
+      !IsTabbingModeValid(options, &error_message)) {
+    // Invalid options must not create a native window.
     args->ThrowTypeError(error_message);
     return nullptr;
   }
@@ -980,6 +1031,24 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   }
 
   return new BaseWindow(args, options);
+}
+
+// static
+bool BaseWindow::IsTabbingModeValid(const gin_helper::Dictionary& options,
+                                    std::string* error_message) {
+#if BUILDFLAG(IS_MAC)
+  v8::Local<v8::Value> value;
+  if (!options.Get(options::kTabbingMode, &value) || value->IsUndefined())
+    return true;
+
+  std::string mode;
+  if (!gin::ConvertFromV8(options.isolate(), value, &mode) ||
+      !NativeWindow::ParseTabbingMode(mode)) {
+    *error_message = kInvalidTabbingModeMessage;
+    return false;
+  }
+#endif
+  return true;
 }
 
 // static
@@ -1214,6 +1283,11 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod<&NativeWindow::MoveTabToNewWindow>("moveTabToNewWindow")
       .SetMethod<&NativeWindow::ToggleTabBar>("toggleTabBar")
       .SetMethod<&BaseWindow::AddTabbedWindow>("addTabbedWindow")
+      .SetMethod<&BaseWindow::GetTabbedWindows>("getTabbedWindows")
+      .SetMethod<&BaseWindow::GetSelectedTab>("getSelectedTab")
+      .SetMethod<&NativeWindow::SelectTab>("selectTab")
+      .SetProperty<&BaseWindow::GetTabbingMode, &BaseWindow::SetTabbingMode>(
+          "tabbingMode")
       .SetProperty<&BaseWindow::GetTabbingIdentifier>("tabbingIdentifier")
       .SetMethod<&NativeWindow::SetWindowButtonVisibility>(
           "setWindowButtonVisibility")
