@@ -745,6 +745,20 @@ describe('app module', () => {
         });
       });
     });
+
+    ifit(process.platform === 'linux')(
+      'does not set no_new_privs on the relaunched app',
+      { timeout: 120000 },
+      async () => {
+        const appPath = path.join(fixturesPath, 'api', 'relaunch-no-new-privs');
+        const child = cp.spawn(process.execPath, [appPath]);
+        defer(() => child.kill());
+        const [client] = await once(server!, 'connection');
+        const [data] = await once(client, 'data');
+        const expected = fs.readFileSync('/proc/self/status', 'utf8').match(/NoNewPrivs:\s*(\d)/)![1];
+        expect(String(data)).toBe(expected);
+      }
+    );
   });
 
   ifdescribe(process.platform === 'darwin')('app.setUserActivity(type, userInfo)', () => {

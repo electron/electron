@@ -113,6 +113,9 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
 #if BUILDFLAG(IS_POSIX)
   options.fds_to_remap.emplace_back(pipe_write_fd.get(),
                                     internal::kRelauncherSyncFD);
+#if BUILDFLAG(IS_LINUX)
+  options.allow_new_privs = true;
+#endif
   base::Process process = base::LaunchProcess(relaunch_argv, options);
 #elif BUILDFLAG(IS_WIN)
   base::Process process = base::LaunchProcess(
