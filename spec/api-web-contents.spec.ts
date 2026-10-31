@@ -2411,6 +2411,18 @@ describe('webContents module', () => {
       );
       expect(result).toBe('repeat');
     });
+
+    it('supports removing CSS inserted with the user origin', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const getBackgroundRepeat = 'getComputedStyle(document.body).backgroundRepeat';
+      const key = await w.webContents.insertCSS('body { background-repeat: round !important; }', {
+        cssOrigin: 'user'
+      });
+      expect(await w.webContents.executeJavaScript(getBackgroundRepeat)).toBe('round');
+      await w.webContents.removeInsertedCSS(key);
+      expect(await w.webContents.executeJavaScript(getBackgroundRepeat)).toBe('repeat');
+    });
   });
 
   describe('inspectElement()', () => {
