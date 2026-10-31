@@ -104,7 +104,7 @@ void SafeStorage::OnOsCryptReady(
   v8::HandleScope handle_scope(isolate);
 
   for (auto& pending : pending_availability_checks_) {
-    pending.Resolve(true);
+    pending.Resolve(encryptor_->IsEncryptionAvailable());
   }
   pending_availability_checks_.clear();
 
@@ -182,7 +182,7 @@ v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
   EnsureAsyncEncryptorRequested();
 
   if (encryptor_) {
-    promise.Resolve(true);
+    promise.Resolve(encryptor_->IsEncryptionAvailable());
     return handle;
   }
 
