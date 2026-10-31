@@ -28,10 +28,10 @@ again.
 This should be upstreamed.
 
 diff --git a/src/snapshot/serializer.cc b/src/snapshot/serializer.cc
-index ebbef7b6a0de16dfae33fd9293ab89bc7b7ab24c..cffe298927f12a4816f28d5509a6512ddc19be3a 100644
+index 22d526156392f70e85a7fb4b9b2a38d517f17ff2..5b5695d42249831eed984f25dbec415e6df9d826 100644
 --- a/src/snapshot/serializer.cc
 +++ b/src/snapshot/serializer.cc
-@@ -1332,10 +1332,14 @@ void Serializer::ObjectSerializer::VisitTrustedPointer(
+@@ -1354,10 +1354,14 @@ void Serializer::ObjectSerializer::VisitTrustedPointer(
    CHECK(IsHeapObject(*slot_value));
    bytes_processed_so_far_ += kTrustedPointerSize;
  

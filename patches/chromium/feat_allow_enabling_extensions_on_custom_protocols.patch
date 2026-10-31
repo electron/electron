@@ -58,7 +58,7 @@ index 28a3cac3756c7dab50819987ab0a924678042a43..12852d59969c81b75c26f678ae13f5fc
  //
  // Extension
 diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
-index 584b62da4957d43b334295dbaaa7091110f5d5d5..b3156dbe31b2f25555496b4f971f3137d9bb7b16 100644
+index f2059c089cd315543121ca8623120aa2a621ce2f..cd6be2960aa5ea8a57e76892f056782a171deab6 100644
 --- a/extensions/common/url_pattern.cc
 +++ b/extensions/common/url_pattern.cc
 @@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
@@ -73,7 +73,7 @@ index 584b62da4957d43b334295dbaaa7091110f5d5d5..b3156dbe31b2f25555496b4f971f3137
    return false;
  }
  
-@@ -401,6 +406,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
+@@ -410,6 +415,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
      }
    }
  
@@ -89,7 +89,7 @@ index 584b62da4957d43b334295dbaaa7091110f5d5d5..b3156dbe31b2f25555496b4f971f3137
  }
  
 diff --git a/extensions/common/url_pattern.h b/extensions/common/url_pattern.h
-index 0ceff6bf8d6968bbb3643e673e9ffd8886349297..411fb3b072bf584b2568a4c027d6232f9e42ebc7 100644
+index facd698b1ba30b3b4320f71f183defcbfdea556d..7700b774f5c3476e0cf8b77e24fd93cb6c78483f 100644
 --- a/extensions/common/url_pattern.h
 +++ b/extensions/common/url_pattern.h
 @@ -64,6 +64,9 @@ class URLPattern {
