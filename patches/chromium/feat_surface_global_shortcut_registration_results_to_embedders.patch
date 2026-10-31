@@ -18,11 +18,7 @@ already bound in the current session (no new bind is made then).
 A failed bind closes the session instead of recording the attempted
 IDs as bound in it, so that a later registration attempts a fresh bind
 and the "already bound in the current session" resolution stays
-accurate. Upstream's declined-shortcut handling (158.0.8118.0,
-https://chromium-review.googlesource.com/c/chromium/src/+/8527748) is
-kept: cancelled shortcuts are remembered as declined and the remaining
-ones are re-bound without them, which re-resolves their groups.
-(Upstream fixed the original stuck bind state differently in
+accurate. (Upstream fixed the original stuck bind state differently in
 158.0.8107.0, and the already-bound path moving bind_state_ to kBound
 is upstream as of 154.0.8023.0.)
 
@@ -52,7 +48,7 @@ index 4f996dce458e50cc00f556f7da5681d926c8dec8..6f0de8ce780defb9db80fbef1427256a
    virtual void PruneStaleCommands() {}
  
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..0aed04b054386972f03b816e0e0162c43bf6718d 100644
+index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..fa9ca1cc61a308c044b2b71bab167301a2317fec 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 @@ -116,6 +116,7 @@ void GlobalAcceleratorListenerLinux::OnServiceStarted(uint32_t version) {
@@ -174,7 +170,7 @@ index 0ec0cb9c3cca9d4eef091b75ef6d2ac72584d080..0aed04b054386972f03b816e0e0162c4
    if (GetIdsToBind().empty()) {
 -    // Everything was declined, so there's nothing to keep the session for.
 -    CloseSession();
-+    // Everything was declined, so there's nothing left to bind.
++    // Everything was declined, so there's nothing to bind again.
      return;
    }
  
