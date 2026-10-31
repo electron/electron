@@ -1,6 +1,6 @@
 const { app, BrowserWindow, BrowserView } = require('electron');
 
-const { expect } = require('chai');
+const { expect } = require('../../../lib/vitest-cjs.cjs');
 
 function createWindow() {
   // Create the browser window.
@@ -16,7 +16,7 @@ function createWindow() {
   view.webContents.destroy();
   view.setBounds({ x: 0, y: 0, width: 0, height: 0 });
   const bounds = view.getBounds();
-  expect(bounds).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 });
+  expect(bounds).toEqual({ x: 0, y: 0, width: 0, height: 0 });
   view.setBackgroundColor('#56cc5b10');
 }
 

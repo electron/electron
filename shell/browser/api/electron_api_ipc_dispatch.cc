@@ -182,9 +182,10 @@ void AddReturnValue(v8::Local<v8::Context> context,
 void ReplyImpl(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  if (!info.Data()->IsObject())
+  v8::Local<v8::Value> data = info.DataV2().As<v8::Value>();
+  if (!data->IsObject())
     return;
-  v8::Local<v8::Object> event = info.Data().As<v8::Object>();
+  v8::Local<v8::Object> event = data.As<v8::Object>();
   v8::Local<v8::Value> sender = GetProperty(context, event, "sender");
   if (!sender->IsObject())
     return;
@@ -325,7 +326,7 @@ void QueueInvokeReply(v8::Local<v8::Context> context,
 // [event, channel].
 void OnInvokeFulfilled(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
-  v8::Local<v8::Array> data = info.Data().As<v8::Array>();
+  v8::Local<v8::Array> data = info.DataV2().As<v8::Value>().As<v8::Array>();
   v8::Local<v8::Value> event, channel;
   if (data->Get(context, 0).ToLocal(&event) && event->IsObject() &&
       data->Get(context, 1).ToLocal(&channel)) {
@@ -335,7 +336,7 @@ void OnInvokeFulfilled(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 void OnInvokeRejected(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
-  v8::Local<v8::Array> data = info.Data().As<v8::Array>();
+  v8::Local<v8::Array> data = info.DataV2().As<v8::Value>().As<v8::Array>();
   v8::Local<v8::Value> event, channel;
   if (data->Get(context, 0).ToLocal(&event) && event->IsObject() &&
       data->Get(context, 1).ToLocal(&channel)) {

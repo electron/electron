@@ -9,6 +9,7 @@
 #include "ui/base/cocoa/nsmenu_additions.h"
 #include "ui/base/cocoa/nsmenuitem_additions.h"
 #include "ui/events/keycodes/keyboard_codes.h"
+#include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -24,6 +25,13 @@ bool WebContents::IsFocused() const {
     return false;
 
   if (type() != Type::kBackgroundPage) {
+    // A window in an app shim is key in the shim's process; its stand-in in
+    // this process never is.
+    if (auto* host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
+            web_contents()->GetTopLevelNativeWindow());
+        host && host->application_host()) {
+      return host->IsWindowKey() && view->HasFocus();
+    }
     auto window = [web_contents()->GetNativeView().GetNativeNSView() window];
     // On Mac the render widget host view does not lose focus when the window
     // loses focus so check if the top level window is the key window.
@@ -45,6 +53,15 @@ bool WebContents::PlatformHandleKeyboardEvent(
     return false;
 
   NSEvent* ns_event = event.os_event.Get();
+
+  // A window in an app shim: the key was pressed in the shim's process, and
+  // the menu it is a shortcut of is the shim's, not this app's.
+  if (auto* host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
+          source->GetTopLevelNativeWindow());
+      host && host->application_host()) {
+    return host->RedispatchKeyEvent(ns_event);
+  }
+
   // Send the event to the menu before sending it to the window
   if (ns_event.type == NSEventTypeKeyDown) {
     // If the keyboard event is a system shortcut, it's already sent to the

@@ -12,3 +12,12 @@ leak:third_party/fontconfig
 # GLib/GTK process-lifetime state (type system, quarks, theme and settings
 # caches) that is never freed by design.
 leak:libglib-2.0.so
+
+# base::PoissonAllocationSampler deliberately leaks its previous
+# sampled-address hash set when the set grows (see
+# PoissonAllocationSampler::BalanceAddressesHashSet), since lock-free
+# readers may still hold pointers to the old map. The heap-profiling
+# contentTracing specs are the first tests to actually engage the
+# sampler, so the initial 64-bucket set gets swapped out and reported.
+# One-time and bounded (~1KB per growth step).
+leak:base/sampling_heap_profiler/

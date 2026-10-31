@@ -5,14 +5,33 @@ import * as path from 'node:path';
 
 import { compareModules } from './compare.mjs';
 
-process.on('uncaughtException', (error) => {
+// Exit codes 0 and 1 tell the spec that every comparison ran,
+// 1 meaning that some found a difference.
+// Anything that keeps a comparison from finishing
+// exits with 2 and the error on stderr,
+// so the spec reports it at once
+// instead of timing out on an app that still waits for a child's result.
+function fail(error) {
   console.error(error);
-  process.exit(1);
-});
+  process.exit(2);
+}
+process.on('uncaughtException', fail);
+
+// Progress on stderr shows where a run that the spec had to kill was stuck.
+function step(name) {
+  console.error(`[import-require-parity +${Math.round(performance.now())}ms] ${name}`);
+}
 
 async function compareInUtilityProcess() {
   const child = utilityProcess.fork(path.join(import.meta.dirname, 'utility.mjs'));
-  const [problems] = await once(child, 'message');
+  const exited = once(child, 'exit');
+  const [problems] = await Promise.race([
+    once(child, 'message'),
+    exited.then(([code]) => {
+      throw new Error(`The utility process exited with code ${code} before reporting`);
+    })
+  ]);
+  step('utility process compared');
   child.kill();
   return problems;
 }
@@ -26,9 +45,16 @@ async function compareInRendererProcess() {
       contextIsolation: false
     }
   });
+  const failed = new Promise((resolve, reject) => {
+    window.webContents.once('preload-error', (event, preloadPath, error) => reject(error));
+    window.webContents.once('render-process-gone', (event, { reason }) => {
+      reject(new Error(`The renderer process is gone (${reason}) before reporting`));
+    });
+  });
   const result = once(ipcMain, 'parity');
-  await window.loadFile(path.join(import.meta.dirname, '..', 'empty.html'));
-  const [, problems] = await result;
+  const loaded = window.loadFile(path.join(import.meta.dirname, '..', 'empty.html'));
+  const [[, problems]] = await Promise.race([Promise.all([result, loaded]), failed]);
+  step('renderer process compared');
   window.destroy();
   return problems;
 }
@@ -38,11 +64,15 @@ async function compareInRendererProcess() {
 const results = {
   main: await compareModules(['electron', 'electron/main', 'electron/common'], import.meta.url)
 };
+step('main process compared');
 
-app.whenReady().then(async () => {
-  results.utility = await compareInUtilityProcess();
-  results.renderer = await compareInRendererProcess();
+app
+  .whenReady()
+  .then(async () => {
+    results.utility = await compareInUtilityProcess();
+    results.renderer = await compareInRendererProcess();
 
-  console.log(JSON.stringify(results));
-  app.exit(Object.values(results).flat().length === 0 ? 0 : 1);
-});
+    console.log(JSON.stringify(results));
+    app.exit(Object.values(results).flat().length === 0 ? 0 : 1);
+  })
+  .catch(fail);

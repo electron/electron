@@ -19,11 +19,23 @@ index ab7dc27de3e304f6d912d5834da47e3b4eb25495..b6c0fd4ceee989dac55c7d54e52fef18
      sources = gypi_values.ada_sources
    }
  }
+diff --git a/deps/ncrypto/unofficial.gni b/deps/ncrypto/unofficial.gni
+index dad4fbbf16f060a76bc7842135506f30aed7ffc0..d874d4b1e4079b392ba7652ea6bfc7de5e920626 100644
+--- a/deps/ncrypto/unofficial.gni
++++ b/deps/ncrypto/unofficial.gni
+@@ -26,6 +26,7 @@ template("ncrypto_gn_build") {
+   source_set(target_name) {
+     forward_variables_from(invoker, "*")
+     public_configs = [ ":ncrypto_config" ]
++    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
+     defines = [
+       "NCRYPTO_ENGINE_COMPAT=1",
+       "OPENSSL_SUPPRESS_DEPRECATED",
 diff --git a/unofficial.gni b/unofficial.gni
-index ca6fab3f2fa162c5292687e4218f7ea2c8bd4b46..1ccb4f3274b50f74e4ea5c309db155d7e0027560 100644
+index 938dae0fd95a0bb408f576b27a048b45a5131d0e..11063952c4395967e7c7969ad1c92e08e12686e1 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -143,7 +143,10 @@ template("node_gn_build") {
+@@ -154,7 +154,10 @@ template("node_gn_build") {
                              [ "node.gyp" ])
  
    source_set("libnode") {
@@ -35,10 +47,10 @@ index ca6fab3f2fa162c5292687e4218f7ea2c8bd4b46..1ccb4f3274b50f74e4ea5c309db155d7
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
-@@ -366,6 +369,7 @@ template("node_gn_build") {
-       "src/builtin_info.h",
+@@ -381,6 +384,7 @@ template("node_gn_build") {
+       "tools",
+       get_label_info(node_simdutf_path, "dir"),
      ]
-     include_dirs = [ "src", "tools" ]
 +    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
  
      if (!is_win) {

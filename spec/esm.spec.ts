@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -31,57 +31,57 @@ describe('esm', () => {
   describe('main process', () => {
     it('should load an esm entrypoint', async () => {
       const result = await runFixture(path.resolve(fixturePath, 'entrypoint.mjs'));
-      expect(result.code).to.equal(0);
-      expect(result.stdout).to.equal('ESM Launch, ready: false');
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBe('ESM Launch, ready: false');
     });
 
     it('should load an esm entrypoint based on type=module', async () => {
       const result = await runFixture(path.resolve(fixturePath, 'package'));
-      expect(result.code).to.equal(0);
-      expect(result.stdout).to.equal('ESM Package Launch, ready: false');
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBe('ESM Package Launch, ready: false');
     });
 
     it('should wait for a top-level await before declaring the app ready', async () => {
       const result = await runFixture(path.resolve(fixturePath, 'top-level-await.mjs'));
-      expect(result.code).to.equal(0);
-      expect(result.stdout).to.equal('Top level await, ready: false');
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBe('Top level await, ready: false');
     });
 
     it('should allow usage of pre-app-ready apis in top-level await', async () => {
       const result = await runFixture(path.resolve(fixturePath, 'pre-app-ready-apis.mjs'));
-      expect(result.code).to.equal(0);
+      expect(result.code).toBe(0);
     });
 
     it('should allow use of dynamic import', async () => {
       const result = await runFixture(path.resolve(fixturePath, 'dynamic.mjs'));
-      expect(result.code).to.equal(0);
-      expect(result.stdout).to.equal('Exit with app, ready: false');
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBe('Exit with app, ready: false');
     });
 
     it("import 'electron/lol' should throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-lol.mjs'));
-      expect(result.code).to.equal(1);
-      expect(result.stderr).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
+      expect(result.code).toBe(1);
+      expect(result.stderr).toMatch(/Error \[ERR_MODULE_NOT_FOUND\]/);
     });
 
     it("import 'electron/main' should not throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-main.mjs'));
-      expect(result.code).to.equal(0);
+      expect(result.code).toBe(0);
     });
 
     it("import 'electron/renderer' should not throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-renderer.mjs'));
-      expect(result.code).to.equal(0);
+      expect(result.code).toBe(0);
     });
 
     it("import 'electron/common' should not throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-common.mjs'));
-      expect(result.code).to.equal(0);
+      expect(result.code).toBe(0);
     });
 
     it("import 'electron/utility' should not throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-utility.mjs'));
-      expect(result.code).to.equal(0);
+      expect(result.code).toBe(0);
     });
   });
 
@@ -89,18 +89,30 @@ describe('esm', () => {
   // `require()` returns, so the two should expose exactly the same names bound
   // to exactly the same objects in every process type that can load ESM.
   describe('import / require parity', () => {
-    let results: Record<string, string[]> = {};
-
-    before(async () => {
-      const result = await runFixture(path.resolve(fixturePath, 'import-require-parity'));
-      expect(result.code).to.be.oneOf([0, 1], `fixture did not run to completion:\n${result.stderr}`);
-      results = JSON.parse(result.stdout.split('\n').pop()!);
-    });
+    // The fixture starts a main, a utility and a renderer process,
+    // so it is run once and shared by the tests below.
+    // It runs from the first test rather than a beforeAll hook,
+    // so that a run that fails or times out on a busy machine is retried
+    // like any other test (hooks are not);
+    // a failed run is forgotten so that the retry starts a fresh one.
+    let results: Promise<Record<string, string[]>> | null = null;
+    const getResults = () => {
+      results ??= (async () => {
+        const result = await runFixture(path.resolve(fixturePath, 'import-require-parity'));
+        expect([0, 1], `fixture did not run to completion:\n${result.stderr}`).toContain(result.code);
+        return JSON.parse(result.stdout.split('\n').pop()!);
+      })().catch((error) => {
+        results = null;
+        throw error;
+      });
+      return results;
+    };
 
     for (const processType of ['main', 'utility', 'renderer']) {
-      it(`exposes the same electron module to import and require() in the ${processType} process`, () => {
-        expect(results).to.have.property(processType);
-        expect(results[processType]).to.deep.equal([]);
+      it(`exposes the same electron module to import and require() in the ${processType} process`, async () => {
+        const parity = await getResults();
+        expect(parity).toHaveProperty([processType]);
+        expect(parity[processType]).toEqual([]);
       });
     }
   });
@@ -164,7 +176,7 @@ describe('esm', () => {
         );
 
         const exposedType = await webContents.executeJavaScript('typeof window.resolvePath');
-        expect(exposedType).to.equal('function');
+        expect(exposedType).toBe('function');
       });
 
       it('should delay load until the ESM import chain is complete', async () => {
@@ -180,7 +192,7 @@ describe('esm', () => {
         );
 
         const exposedType = await webContents.executeJavaScript('typeof window.resolvePath');
-        expect(exposedType).to.equal('function');
+        expect(exposedType).toBe('function');
       });
 
       it('should support a top-level await fetch blocking the page load', async () => {
@@ -196,7 +208,7 @@ describe('esm', () => {
         );
 
         const packageJson = await webContents.executeJavaScript('window.packageJson');
-        expect(packageJson).to.deep.equal(require('./fixtures/esm/package/package.json'));
+        expect(packageJson).toEqual(require('./fixtures/esm/package/package.json'));
       });
 
       const hostsUrl = pathToFileURL(
@@ -218,9 +230,9 @@ describe('esm', () => {
             error = err as Error;
           }
 
-          expect(error).to.not.equal(null);
+          expect(error).not.toBe(null);
           // This is a blink specific error message
-          expect(error?.message).to.include('Failed to fetch dynamically imported module');
+          expect(error?.message).toContain('Failed to fetch dynamically imported module');
         });
 
         it('should use Node.js ESM dynamic loader in the preload', async () => {
@@ -233,14 +245,14 @@ describe('esm', () => {
             }
           );
 
-          expect(preloadError).to.not.equal(null);
+          expect(preloadError).not.toBe(null);
           // This is a node.js specific error message
-          expect(preloadError!.toString()).to.include('Unknown file extension');
+          expect(preloadError!.toString()).toContain('Unknown file extension');
         });
 
         it('should use import.meta callback handling from Node.js for Node.js modules', async () => {
           const result = await runFixture(path.resolve(fixturePath, 'import-meta'));
-          expect(result.code).to.equal(0);
+          expect(result.code).toBe(0);
         });
       });
 
@@ -255,9 +267,9 @@ describe('esm', () => {
             }
           );
 
-          expect(preloadError).to.not.equal(null);
+          expect(preloadError).not.toBe(null);
           // This is a node.js specific error message
-          expect(preloadError!.toString()).to.include('Unknown file extension');
+          expect(preloadError!.toString()).toContain('Unknown file extension');
         });
 
         it('should use Blinks dynamic loader in the main world', async () => {
@@ -274,9 +286,9 @@ describe('esm', () => {
             error = err as Error;
           }
 
-          expect(error).to.not.equal(null);
+          expect(error).not.toBe(null);
           // This is a blink specific error message
-          expect(error?.message).to.include('Failed to fetch dynamically imported module');
+          expect(error?.message).toContain('Failed to fetch dynamically imported module');
         });
       });
     });
@@ -298,7 +310,7 @@ describe('esm', () => {
         );
 
         const globals = await webContents.executeJavaScript('globalThis.preloadNodeGlobals');
-        expect(globals).to.deep.equal({
+        expect(globals).toEqual({
           processType: 'object',
           bufferType: 'function',
           setImmediateType: 'function',
@@ -320,7 +332,7 @@ describe('esm', () => {
           setImmediateType: typeof setImmediate,
           globalType: typeof global
         })`);
-        expect(pageGlobals).to.deep.equal({
+        expect(pageGlobals).toEqual({
           preloadFinished: true,
           processType: 'undefined',
           bufferType: 'undefined',
@@ -335,36 +347,36 @@ describe('esm', () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/lol";', {
           sandbox: false
         });
-        expect(error).to.not.equal(null);
-        expect(error?.message).to.match(/Cannot find package 'electron'/);
+        expect(error).not.toBe(null);
+        expect(error?.message).toMatch(/Cannot find package 'electron'/);
       });
 
       it("import 'electron/main' should not throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/main";', {
           sandbox: false
         });
-        expect(error).to.equal(null);
+        expect(error).toBe(null);
       });
 
       it("import 'electron/renderer' should not throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/renderer";', {
           sandbox: false
         });
-        expect(error).to.equal(null);
+        expect(error).toBe(null);
       });
 
       it("import 'electron/common' should not throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/common";', {
           sandbox: false
         });
-        expect(error).to.equal(null);
+        expect(error).toBe(null);
       });
 
       it("import 'electron/utility' should not throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/utility";', {
           sandbox: false
         });
-        expect(error).to.equal(null);
+        expect(error).toBe(null);
       });
     });
   });

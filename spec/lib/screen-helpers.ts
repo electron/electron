@@ -1,6 +1,6 @@
 import { screen, desktopCapturer, type NativeImage } from 'electron';
 
-import { AssertionError } from 'chai';
+import { assert } from 'vitest';
 
 import { createArtifactWithRandomId } from './artifacts.ts';
 
@@ -213,7 +213,7 @@ export class ScreenCapture {
     if (gotExpectedResult) return;
 
     if (!frame || !point) {
-      throw new AssertionError(`Unable to capture ${this.describeTarget()} within ${ScreenCapture.TIMEOUT}ms`);
+      assert.fail(`Unable to capture ${this.describeTarget()} within ${ScreenCapture.TIMEOUT}ms`);
     }
 
     // Limit image to 720p to save on storage space
@@ -225,7 +225,7 @@ export class ScreenCapture {
     // Save the image as an artifact for better debugging
     const artifactName = await createArtifactWithRandomId((id) => `color-mismatch-${id}.png`, frame.toPNG());
 
-    throw new AssertionError(
+    assert.fail(
       `Expected color at (${point.x}, ${point.y}) of ${this.describeTarget()} to ${
         matchIsExpected ? 'match' : '*not* match'
       } '${expectedColor}', but got '${actualColor}'. See the artifact '${artifactName}' for more information.`
@@ -284,7 +284,7 @@ export async function captureDisplayPixels(): Promise<DisplayPixels | undefined>
 }
 
 /**
- * Keep capturing the primary display until `check` stops throwing chai
+ * Keep capturing the primary display until `check` stops throwing
  * assertion errors or `timeout` ms have passed, then let the last error out.
  * Resolves `false` without running `check` if the display cannot be captured.
  */
@@ -300,7 +300,7 @@ export async function expectDisplayPixelsEventually(
       check(pixels);
       return true;
     } catch (error) {
-      if (!(error instanceof AssertionError) || Date.now() > expiration) throw error;
+      if ((error as Error)?.name !== 'AssertionError' || Date.now() > expiration) throw error;
     }
     await nextFrameTime();
   }

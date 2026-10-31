@@ -1224,7 +1224,8 @@ changes:
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
     * `preferredDisplaySurface` string - The [`displaySurface`](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/displaySurface) the page asked for in `getDisplayMedia()`. Can be `monitor`, `window`, `browser` or `none`. `none` means the page did not ask for one.
   * `callback` Function
-    * `streams` Object
+    * `streams` Object | null - Pass `null` to deny the request, which rejects
+      the `getDisplayMedia()` promise with an `AbortError`.
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
         * `id` String - The id of the stream being granted. This will usually
           come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
@@ -1258,10 +1259,17 @@ const { session, desktopCapturer } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler(
   (request, callback) => {
-    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-      // Grant access to the first screen found.
-      callback({ video: sources[0] })
-    })
+    desktopCapturer.getSources({ types: ['screen'] }).then(
+      (sources) => {
+        // Grant access to the first screen found.
+        callback({ video: sources[0] })
+      },
+      () => {
+        // Deny the request if no sources could be retrieved, for example
+        // when the user cancels the PipeWire picker on Linux.
+        callback(null)
+      }
+    )
     // Use the system picker if available.
     // Note: this is currently experimental. If the system picker
     // is available, it will be used and the media request handler
@@ -1536,9 +1544,9 @@ Returns `string` - The user agent for this session.
 #### `ses.setSSLConfig(config)`
 
 * `config` Object
-  * `minVersion` string (optional) - Can be `tls1`, `tls1.1`, `tls1.2` or `tls1.3`. The
+  * `minVersion` string (optional) - Can be `tls1.2` or `tls1.3`. The
     minimum SSL version to allow when connecting to remote servers. Defaults to
-    `tls1`.
+    `tls1.2`.
   * `maxVersion` string (optional) - Can be `tls1.2` or `tls1.3`. The maximum SSL version
     to allow when connecting to remote servers. Defaults to `tls1.3`.
   * `disabledCipherSuites` Integer[] (optional) - List of cipher suites which
@@ -1622,7 +1630,40 @@ for `frame` context types.
 
 Registers preload script that will be executed in its associated context type in this session. For
 `frame` contexts, this will run prior to any preload defined in the web preferences of a
-WebContents.
+WebContents. In-page navigations do not rerun the preload script.
+
+URL filters can limit which documents or service workers a script runs in. They behave like
+[content script URL matching](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/content_scripts#matching_url_patterns).
+A script runs for a URL that meets all of these conditions:
+
+* It matches at least one pattern in `matches`, if set.
+* It matches at least one glob in `includeGlobs`, if set.
+* It does not match any pattern in `excludeMatches`.
+* It does not match any glob in `excludeGlobs`.
+
+The URL that the filters are matched against depends on the context type:
+
+* For `service-worker` contexts, it is the service worker's scope.
+* For `frame` contexts, it is the URL of the document being loaded, with these special cases:
+  * The initial empty document of a frame or popup is matched as `about:blank`. Set
+    `matchOriginAsFallback` to match such documents by the origin of the frame that created them
+    instead, for example to keep a script out of the `about:blank` popups of an excluded site.
+  * A `data:` URL loaded with `baseURLForDataURL` is matched by its base URL.
+  * The error page of a failed navigation is matched by the URL that failed to load.
+
+Throws an error if any of the URL patterns are invalid, or if `matches` or `includeGlobs` is an
+empty array.
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.registerPreloadScript({
+  type: 'frame',
+  filePath: '/path/to/preload.js',
+  matches: ['https://*.example.com/*'],
+  excludeGlobs: ['*/logout*']
+})
+```
 
 Returns `string` - The ID of the registered preload script.
 
@@ -1956,9 +1997,10 @@ const { app, session } = require('electron')
 
 app.whenReady().then(async () => {
   const netLog = session.fromPartition('some-partition').netLog
-  netLog.startLogging('/path/to/net-log')
+  const path = '/path/to/net-log'
+  await netLog.startLogging(path)
   // After some network events
-  const path = await netLog.stopLogging()
+  await netLog.stopLogging()
   console.log('Net-logs written to', path)
 })
 ```

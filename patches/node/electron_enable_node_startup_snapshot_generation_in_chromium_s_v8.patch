@@ -62,7 +62,7 @@ eliminating the Node bootstrap recompile.
   config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
-index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe5241076836a33b8fc 100644
+index 6220b9339265051156aaa6ff77a735c8e49c85e1..2266de3a399e4cdafb93cd930ec6128e6634c639 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -31,6 +31,13 @@ declare_args() {
@@ -79,7 +79,7 @@ index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe524107683
  # Equivalent of gyp file's configurations.
  declare_args() {
    # Enable the V8 inspector protocol for use with node.
-@@ -61,14 +68,21 @@ declare_args() {
+@@ -69,14 +76,21 @@ declare_args() {
    # default to https://nodejs.org/download/release/').
    node_release_urlbase = ""
  
@@ -90,7 +90,7 @@ index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe524107683
 -  # TODO(zcbenz): There are few broken things for now:
 -  #   1. cross-os compilation is not supported.
 -  #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
--  node_use_node_snapshot = false
+-  node_use_node_snapshot = (host_os == target_os) && !(host_cpu == "arm64" && target_cpu == "x64")
 +  # Embed a startup snapshot of the bootstrapped Node.js environment, and the
 +  # V8 code cache for the builtins that complements it, to speed up startup.
 +  # Neither contains machine code, so cross-arch builds can generate them, but
@@ -110,12 +110,12 @@ index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe524107683
    # Build with Amaro (TypeScript utils).
    node_use_amaro = true
 diff --git a/src/api/embed_helpers.cc b/src/api/embed_helpers.cc
-index c1bcb3948c4cf68b36dbb1ea985bfb02267ad724..b9ddc1e2139c1a3b869a27f088e6e64688efa0f0 100644
+index 051110c9c6e96b91fa966f9dc8cd3a161db6d0b2..7b78ed07d020c6553c9fdf449fa057e5daef54a3 100644
 --- a/src/api/embed_helpers.cc
 +++ b/src/api/embed_helpers.cc
 @@ -131,6 +131,15 @@ CommonEnvironmentSetup::CommonEnvironmentSetup(
-     isolate = impl_->isolate = Isolate::Allocate(GetOrCreateIsolateGroup());
-     platform->RegisterIsolate(isolate, loop);
+     params.cpp_heap =
+         v8::CppHeap::Create(platform, v8::CppHeapCreateParams{{}}).release();
  
 +    // Electron: extend an existing V8 startup snapshot rather than build the
 +    // heap from scratch (Electron's V8 has external startup data / the
@@ -129,35 +129,8 @@ index c1bcb3948c4cf68b36dbb1ea985bfb02267ad724..b9ddc1e2139c1a3b869a27f088e6e646
      impl_->snapshot_creator.emplace(isolate, params);
      isolate->SetCaptureStackTraceForUncaughtExceptions(
          true,
-diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index c1816d483d421135c265a08ca45d42e4b8423f29..f4094b05b0122377c826828457a842cde0acb2e8 100644
---- a/src/node_builtins.cc
-+++ b/src/node_builtins.cc
-@@ -686,12 +686,17 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
- 
- void BuiltinLoader::RefreshCodeCache(const std::vector<CodeCacheInfo>& in) {
-   RwLock::ScopedLock lock(code_cache_->mutex);
--  code_cache_->map.reserve(in.size());
--  DCHECK(code_cache_->map.empty());
-+  // Electron: this can be called more than once. Environment::Deserialize
-+  // feeds the Node startup snapshot's own code cache (node-internal builtins,
-+  // plus the electron/js2c/* bundles node_mksnapshot compiled while building
-+  // the snapshot), and Electron then feeds its build-time js2c cache for
-+  // those same electron/js2c/* bundles. The id sets overlap on the js2c
-+  // bundles, so merge additively (don't drop the node-internal entries) and
-+  // use insert_or_assign so the later, build-time entry wins for shared ids.
-+  // Both caches are built against this isolate, so either is valid.
-+  code_cache_->map.reserve(code_cache_->map.size() + in.size());
-   for (auto const& [id, data] : in) {
--    auto result = code_cache_->map.emplace(id, data);
--    USE(result.second);
--    DCHECK(result.second);
-+    code_cache_->map.insert_or_assign(id, data);
-   }
-   code_cache_->has_code_cache = true;
- }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 7055aa4c367adc8724f1a51ff3c09a9b6beeac9e..0cc09fd10e83e59852bbf9abfecd5e30622c0f02 100644
+index bd3b66414d18402c856e402ef393a571d9075f40..48cad3f83e2fc7cd8dbedb9d65b39216bd25634e 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
 @@ -1091,6 +1091,18 @@ void DefineCryptoConstants(Local<Object> target) {
@@ -238,11 +211,11 @@ index 664f878c0671db76cbf68116d224606243ddf501..4ed6d6ecf12ea92129f4d7b7fdb59bcb
    return nullptr;
  }
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index ae0613fdf35efcdb4b5917b9ecb3ad12d7bf4976..bc48096932b0a1004aec4317dc0c265bd6f1c045 100644
+index aa576d31ac383ec11ac5525cd729558f1b0d56e5..c4acd5d71d3e1551d7fbd1edfa07310823959477 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
-@@ -866,6 +866,19 @@ const std::vector<intptr_t>& SnapshotBuilder::CollectExternalReferences() {
-   return registry->external_references();
+@@ -899,6 +899,19 @@ const std::vector<intptr_t>& SnapshotBuilder::CollectExternalReferences() {
+   return references;
  }
  
 +// Electron: optional existing V8 startup snapshot that the snapshot creator
@@ -318,10 +291,10 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef98795cfab 100644
+index 1fad56169f5c813dd6f6216b6a1278e5415a5972..619253a1ee26e289215022c6152229500952cfdc 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -32,7 +32,22 @@ template("node_gn_build") {
+@@ -42,7 +42,22 @@ template("node_gn_build") {
      } else {
        defines += [ "HAVE_AMARO=0" ]
      }
@@ -345,7 +318,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
        defines += [ "NODE_USE_V8_PLATFORM=1" ]
      } else {
        defines += [ "NODE_USE_V8_PLATFORM=0" ]
-@@ -189,7 +204,10 @@ template("node_gn_build") {
+@@ -200,7 +215,10 @@ template("node_gn_build") {
      ]
  
      sources = [
@@ -357,7 +330,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
        "$root_gen_dir/electron_natives.cc",
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
-@@ -279,20 +297,12 @@ template("node_gn_build") {
+@@ -286,20 +304,12 @@ template("node_gn_build") {
      sources = [ "src/node_main.cc" ]
      deps = [
        ":libnode",
@@ -382,7 +355,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
      output_name = "node"
  
      if (is_apple) {
-@@ -308,12 +318,36 @@ template("node_gn_build") {
+@@ -315,12 +325,36 @@ template("node_gn_build") {
    if (node_use_node_snapshot) {
      if (current_toolchain == v8_snapshot_toolchain) {
        executable("node_mksnapshot") {
@@ -424,7 +397,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -328,26 +362,127 @@ template("node_gn_build") {
+@@ -335,26 +369,135 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -516,6 +489,10 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
 +      "$node_v8_path",
 +      "$node_v8_path:v8_libplatform",
 +    ]
++    if (node_use_openssl) {
++      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
++      deps += [ "$node_openssl_path" ]
++    }
 +    sources = [ "src/node_snapshot_stub.cc" ]
 +  }
 +
@@ -545,6 +522,10 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
 +      "$node_v8_path",
 +      "$node_v8_path:v8_libplatform",
 +    ]
++    if (node_use_openssl) {
++      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
++      deps += [ "$node_openssl_path" ]
++    }
 +    if (node_use_node_snapshot) {
 +      _run_node_mksnapshot = ":run_node_mksnapshot($default_toolchain)"
 +      sources = [ get_label_info(_run_node_mksnapshot, "target_gen_dir") +

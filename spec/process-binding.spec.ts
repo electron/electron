@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { closeAllWindows } from './lib/window-helpers.ts';
 
@@ -17,7 +17,7 @@ describe('process._linkedBinding', () => {
     it('cannot access electron_renderer bindings', () => {
       expect(() => {
         process._linkedBinding('electron_renderer_ipc');
-      }).to.throw(/No such binding was linked: electron_renderer_ipc/);
+      }).toThrow(/No such binding was linked: electron_renderer_ipc/);
     });
   });
 
@@ -29,7 +29,7 @@ describe('process._linkedBinding', () => {
       w.loadURL('about:blank');
       await expect(
         w.webContents.executeJavaScript("void process._linkedBinding('electron_browser_app')")
-      ).to.eventually.be.rejectedWith(/Script failed to execute/);
+      ).rejects.toThrow(/Script failed to execute/);
     });
 
     it('can access electron_common bindings', async () => {

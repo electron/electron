@@ -12,7 +12,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/per_context_template_data.h"
+#include "shell/common/gin_helper/function_template_cache.h"
 
 namespace gin_helper {
 
@@ -56,12 +56,8 @@ class EventEmitterMixin {
 
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
     auto* wrapper_info = &(static_cast<T*>(this)->kWrapperInfo);
-    auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
-                                              wrapper_info);
-
-    v8::Local<v8::FunctionTemplate> constructor;
-    if (data)
-      constructor = data->function_template.Get(isolate);
+    v8::Local<v8::FunctionTemplate> constructor =
+        GetCachedFunctionTemplate(isolate, wrapper_info);
 
     const char* class_name = static_cast<T*>(this)->GetClassName();
 
@@ -69,8 +65,7 @@ class EventEmitterMixin {
       constructor = v8::FunctionTemplate::New(isolate);
       constructor->SetClassName(gin::StringToV8(isolate, class_name));
       constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
-      if (data)
-        data->function_template.Reset(isolate, constructor);
+      SetCachedFunctionTemplate(isolate, wrapper_info, constructor);
     }
     return gin::ObjectTemplateBuilder(isolate, class_name,
                                       constructor->InstanceTemplate());

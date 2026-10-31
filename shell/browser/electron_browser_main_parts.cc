@@ -24,16 +24,13 @@
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_switches.h"
 #include "content/public/browser/browser_child_process_host_delegate.h"
-#include "content/public/browser/browser_child_process_host_iterator.h"
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/child_process_data.h"
 #include "content/public/browser/device_service.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
@@ -52,6 +49,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
+#include "shell/browser/ui/menu_highlight_colors.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
@@ -284,6 +282,11 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 
   ui::ColorProviderManager::Get().AppendColorProviderInitializer(
       base::BindRepeating(AddChromeColorMixers));
+#if BUILDFLAG(IS_WIN)
+  // Must run after the Chromium mixers so app-supplied colors take priority.
+  ui::ColorProviderManager::Get().AppendColorProviderInitializer(
+      base::BindRepeating(AddMenuHighlightColorMixer));
+#endif
 
   return GetExitCode();
 }
@@ -666,8 +669,7 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       base::BindOnce(&ExitOnSessionLoss),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
-  dbus_thread_linux::SetDisconnectedCallback(
-      base::BindRepeating(&ExitOnSessionLoss));
+  dbus_thread_linux::Initialize(base::BindRepeating(&ExitOnSessionLoss));
 
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();
@@ -705,26 +707,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // use case.
   // https://source.chromium.org/chromium/chromium/src/+/main:content/browser/browser_main_loop.cc;l=1086-1108
   //
-  // The following logic is based on
-  // https://source.chromium.org/chromium/chromium/src/+/main:content/browser/browser_process_io_thread.cc;l=127-159
-  //
-  // Although content::BrowserChildProcessHostIterator is only to be called from
-  // IO thread, it is safe to call from PostMainMessageLoopRun because thread
-  // restrictions have been lifted.
-  // https://source.chromium.org/chromium/chromium/src/+/main:content/browser/browser_main_loop.cc;l=1062-1078
-  for (content::BrowserChildProcessHostIterator it(
-           content::PROCESS_TYPE_UTILITY);
-       !it.Done(); ++it) {
-    if (it.GetDelegate()->GetServiceName() == node::mojom::NodeService::Name_) {
-      const base::Process& process = it.GetProcess();
-      if (!process.IsValid())
-        continue;
-      auto* utility_process_wrapper =
-          api::UtilityProcessWrapper::FromProcessId(process.Pid());
-      if (utility_process_wrapper)
-        utility_process_wrapper->Shutdown(0 /* exit_code */);
-    }
-  }
+  // This includes wrappers whose child is still launching; otherwise they
+  // would only be torn down with the heap, after Node.js has stopped.
+  api::UtilityProcessWrapper::ShutdownAll();
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
@@ -740,6 +725,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
+  content::DevToolsAgentHost::StopRemoteDebuggingServer();
 
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::GetInstance()->PostMainMessageLoopRun();

@@ -1,6 +1,6 @@
 import { net, session, BrowserWindow, type ClientRequestConstructorOptions } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as dns from 'node:dns';
 
@@ -14,14 +14,12 @@ describe('net module (session)', () => {
   beforeEach(() => {
     respondNTimes.routeFailure = false;
   });
-  afterEach(async function () {
+  afterEach(async (ctx) => {
     await session.defaultSession.clearCache();
-    if (respondNTimes.routeFailure && this.test) {
-      if (!this.test.isFailed()) {
-        throw new Error(
-          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
-        );
-      }
+    if (respondNTimes.routeFailure && ctx.task.result?.state !== 'fail') {
+      throw new Error(
+        'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+      );
     }
   });
 
@@ -54,7 +52,7 @@ describe('net module (session)', () => {
           });
           const response = await getResponse(request);
           await collectStreamBody(response);
-          expect(logInCount).to.equal(0, 'should not receive a login event, credentials should be cached');
+          expect(logInCount, 'should not receive a login event, credentials should be cached').toBe(0);
         });
 
         it('should share proxy credentials with WebContents', async () => {
@@ -89,9 +87,9 @@ describe('net module (session)', () => {
           });
           const response = await getResponse(request);
           const body = await collectStreamBody(response);
-          expect(response.statusCode).to.equal(200);
-          expect(body).to.equal('ok');
-          expect(logInCount).to.equal(0, 'should not receive a login event, credentials should be cached');
+          expect(response.statusCode).toBe(200);
+          expect(body).toBe('ok');
+          expect(logInCount, 'should not receive a login event, credentials should be cached').toBe(0);
         });
       });
     }
@@ -117,8 +115,8 @@ describe('net module (session)', () => {
           expect.fail();
         });
         const response = await getResponse(request);
-        expect(response.statusCode).to.equal(401);
-        expect(response.headers['www-authenticate']).to.equal('Basic realm="Foo"');
+        expect(response.statusCode).toBe(401);
+        expect(response.headers['www-authenticate']).toBe('Basic realm="Foo"');
       });
 
       it('should share proxy credentials with WebContents', async () => {
@@ -149,8 +147,8 @@ describe('net module (session)', () => {
         });
         const response = await getResponse(request);
         const body = await collectStreamBody(response);
-        expect(response.statusCode).to.equal(200);
-        expect(body).to.equal('ok');
+        expect(response.statusCode).toBe(200);
+        expect(body).toBe('ok');
       });
     });
   });
@@ -161,7 +159,7 @@ describe('net module (session)', () => {
       const cookieHeaderValue = 'test=12345';
       const customSession = session.fromPartition(`test-cookie-header-${Math.random()}`);
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
-        expect(request.headers[cookieHeaderName.toLowerCase()]).to.equal(cookieHeaderValue);
+        expect(request.headers[cookieHeaderName.toLowerCase()]).toBe(cookieHeaderValue);
         response.statusCode = 200;
         response.statusMessage = 'OK';
         response.end();
@@ -178,9 +176,9 @@ describe('net module (session)', () => {
         session: customSession
       });
       urlRequest.setHeader(cookieHeaderName, cookieHeaderValue);
-      expect(urlRequest.getHeader(cookieHeaderName)).to.equal(cookieHeaderValue);
+      expect(urlRequest.getHeader(cookieHeaderName)).toBe(cookieHeaderValue);
       const response = await getResponse(urlRequest);
-      expect(response.statusCode).to.equal(200);
+      expect(response.statusCode).toBe(200);
       await collectStreamBody(response);
     });
 
@@ -203,7 +201,7 @@ describe('net module (session)', () => {
         session: sess
       });
       const response = await getResponse(urlRequest);
-      expect(response.headers['x-cookie']).to.equal('undefined');
+      expect(response.headers['x-cookie']).toBe('undefined');
     });
 
     for (const extraOptions of [
@@ -231,7 +229,7 @@ describe('net module (session)', () => {
             ...extraOptions
           });
           const response = await getResponse(urlRequest);
-          expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieVal}`);
+          expect(response.headers['x-cookie']).toBe(`wild_cookie=${cookieVal}`);
         });
 
         it('should be able to use the sessions cookie store with set-cookie', async () => {
@@ -243,7 +241,7 @@ describe('net module (session)', () => {
           });
           const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
           let cookies = await sess.cookies.get({});
-          expect(cookies).to.have.lengthOf(0);
+          expect(cookies).toHaveLength(0);
           const urlRequest = net.request({
             url: serverUrl,
             session: sess,
@@ -251,8 +249,8 @@ describe('net module (session)', () => {
           });
           await collectStreamBody(await getResponse(urlRequest));
           cookies = await sess.cookies.get({});
-          expect(cookies).to.have.lengthOf(1);
-          expect(cookies[0]).to.deep.equal({
+          expect(cookies).toHaveLength(1);
+          expect(cookies[0]).toEqual({
             name: 'foo',
             value: 'bar',
             domain: '127.0.0.1',
@@ -276,18 +274,18 @@ describe('net module (session)', () => {
             }, 2);
             const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
             let cookies = await sess.cookies.get({});
-            expect(cookies).to.have.lengthOf(0);
+            expect(cookies).toHaveLength(0);
             const urlRequest = net.request({
               url: serverUrl,
               session: sess,
               ...extraOptions
             });
             const response = await getResponse(urlRequest);
-            expect(response.headers['x-cookie']).to.equal('undefined');
+            expect(response.headers['x-cookie']).toBe('undefined');
             await collectStreamBody(response);
             cookies = await sess.cookies.get({});
-            expect(cookies).to.have.lengthOf(1);
-            expect(cookies[0]).to.deep.equal({
+            expect(cookies).toHaveLength(1);
+            expect(cookies[0]).toEqual({
               name: 'same',
               value: 'site',
               domain: '127.0.0.1',
@@ -304,7 +302,7 @@ describe('net module (session)', () => {
               ...extraOptions
             });
             const response2 = await getResponse(urlRequest2);
-            expect(response2.headers['x-cookie']).to.equal('same=site');
+            expect(response2.headers['x-cookie']).toBe('same=site');
           });
         }
 
@@ -326,7 +324,7 @@ describe('net module (session)', () => {
           const cookie127Val = `${Date.now()}-127`;
           const cookieLocalVal = `${Date.now()}-local`;
           const localhostUrl = serverUrl.replace('127.0.0.1', 'localhost');
-          expect(localhostUrl).to.not.equal(serverUrl);
+          expect(localhostUrl).not.toBe(serverUrl);
           // cookies with lax or strict same-site settings will not
           // persist after redirects. no_restriction must be used
           await Promise.all([
@@ -350,7 +348,7 @@ describe('net module (session)', () => {
           });
           urlRequest.on('redirect', (status, method, url, headers) => {
             // The initial redirect response should have received the 127 value here
-            expect(headers['x-cookie'][0]).to.equal(`wild_cookie=${cookie127Val}`);
+            expect(headers['x-cookie'][0]).toBe(`wild_cookie=${cookie127Val}`);
             urlRequest.followRedirect();
           });
           const response = await getResponse(urlRequest);
@@ -360,7 +358,7 @@ describe('net module (session)', () => {
           // The request is then redirect to a localhost URL (different site)
           // Because we are using the session cookie store it should do the safe / secure thing
           // and attach the cookies for the new target domain
-          expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieLocalVal}`);
+          expect(response.headers['x-cookie']).toBe(`wild_cookie=${cookieLocalVal}`);
         });
       });
     }
@@ -388,14 +386,14 @@ describe('net module (session)', () => {
       const secureCookies = await sess.cookies.get({
         secure: true
       });
-      expect(secureCookies).to.have.lengthOf(1);
-      expect(secureCookies[0].name).to.equal('cookie1');
+      expect(secureCookies).toHaveLength(1);
+      expect(secureCookies[0].name).toBe('cookie1');
 
       const cookies = await sess.cookies.get({
         secure: false
       });
-      expect(cookies).to.have.lengthOf(1);
-      expect(cookies[0].name).to.equal('cookie2');
+      expect(cookies).toHaveLength(1);
+      expect(cookies[0].name).toBe('cookie2');
     });
 
     it('throws when an invalid domain is passed', async () => {
@@ -407,7 +405,7 @@ describe('net module (session)', () => {
           domain: 'wssss.iamabaddomain.fun',
           name: 'cookie1'
         })
-      ).to.eventually.be.rejectedWith(/The cookie was set with an invalid Domain attribute/);
+      ).rejects.toThrow(/The cookie was set with an invalid Domain attribute/);
     });
 
     it('should be able correctly filter out cookies that are session', async () => {
@@ -432,14 +430,14 @@ describe('net module (session)', () => {
       const sessionCookies = await sess.cookies.get({
         session: true
       });
-      expect(sessionCookies).to.have.lengthOf(1);
-      expect(sessionCookies[0].name).to.equal('cookie1');
+      expect(sessionCookies).toHaveLength(1);
+      expect(sessionCookies[0].name).toBe('cookie1');
 
       const cookies = await sess.cookies.get({
         session: false
       });
-      expect(cookies).to.have.lengthOf(1);
-      expect(cookies[0].name).to.equal('cookie2');
+      expect(cookies).toHaveLength(1);
+      expect(cookies[0].name).toBe('cookie2');
     });
 
     it('should be able correctly filter out cookies that are httpOnly', async () => {
@@ -465,14 +463,14 @@ describe('net module (session)', () => {
       const httpOnlyCookies = await sess.cookies.get({
         httpOnly: true
       });
-      expect(httpOnlyCookies).to.have.lengthOf(1);
-      expect(httpOnlyCookies[0].name).to.equal('cookie1');
+      expect(httpOnlyCookies).toHaveLength(1);
+      expect(httpOnlyCookies[0].name).toBe('cookie1');
 
       const cookies = await sess.cookies.get({
         httpOnly: false
       });
-      expect(cookies).to.have.lengthOf(1);
-      expect(cookies[0].name).to.equal('cookie2');
+      expect(cookies).toHaveLength(1);
+      expect(cookies[0].name).toBe('cookie2');
     });
 
     describe('webRequest', () => {
@@ -488,7 +486,7 @@ describe('net module (session)', () => {
               callback({ cancel: false });
             }
           );
-        }).to.throw('Invalid url pattern *://www.googleapis.com: Empty path.');
+        }).toThrow('Invalid url pattern *://www.googleapis.com: Empty path.');
 
         expect(() => {
           session.defaultSession.webRequest.onBeforeRequest(
@@ -497,7 +495,7 @@ describe('net module (session)', () => {
               callback({ cancel: false });
             }
           );
-        }).to.throw('Invalid url pattern *://blahblah.dev: Empty path.');
+        }).toThrow('Invalid url pattern *://blahblah.dev: Empty path.');
       });
 
       it('Should not throw when valid filters are passed', () => {
@@ -508,7 +506,7 @@ describe('net module (session)', () => {
               callback({ cancel: false });
             }
           );
-        }).to.not.throw();
+        }).not.toThrow();
       });
 
       it('Requests should be intercepted by webRequest module', async () => {
@@ -536,10 +534,10 @@ describe('net module (session)', () => {
         const urlRequest = net.request(`${serverUrl}${requestUrl}`);
         const response = await getResponse(urlRequest);
 
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
-        expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL');
-        expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module');
+        expect(requestIsRedirected, 'The server should receive a request to the forward URL').toBe(true);
+        expect(requestIsIntercepted, 'The request should be intercepted by the webRequest module').toBe(true);
       });
 
       it('should to able to create and intercept a request using a custom session object', async () => {
@@ -575,10 +573,10 @@ describe('net module (session)', () => {
           session: customSession
         });
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
-        expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL');
-        expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module');
+        expect(requestIsRedirected, 'The server should receive a request to the forward URL').toBe(true);
+        expect(requestIsIntercepted, 'The request should be intercepted by the webRequest module').toBe(true);
       });
 
       it('should to able to create and intercept a request using a custom partition name', async () => {
@@ -614,10 +612,10 @@ describe('net module (session)', () => {
           partition: customPartitionName
         });
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
-        expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL');
-        expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module');
+        expect(requestIsRedirected, 'The server should receive a request to the forward URL').toBe(true);
+        expect(requestIsIntercepted, 'The request should be intercepted by the webRequest module').toBe(true);
       });
 
       it('triggers webRequest handlers when bypassCustomProtocolHandlers', async () => {
@@ -628,8 +626,8 @@ describe('net module (session)', () => {
           cb({});
         });
         const body = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true }).then((r) => r.text());
-        expect(body).to.equal('hi');
-        expect(webRequestDetails).to.have.property('url', serverUrl);
+        expect(body).toBe('hi');
+        expect(webRequestDetails).toHaveProperty('url', serverUrl);
       });
     });
 
@@ -639,7 +637,7 @@ describe('net module (session)', () => {
           url: 'https://foo',
           session: 1 as any
         });
-      }).to.throw('`session` should be an instance of the Session class');
+      }).toThrow('`session` should be an instance of the Session class');
     });
 
     it('should throw if given an invalid partition option', () => {
@@ -648,7 +646,7 @@ describe('net module (session)', () => {
           url: 'https://foo',
           partition: 1 as any
         });
-      }).to.throw('`partition` should be a string');
+      }).toThrow('`partition` should be a string');
     });
 
     it('should throw if given a header value that is empty(null/undefined)', () => {
@@ -661,12 +659,12 @@ describe('net module (session)', () => {
             url: 'https://foo',
             headers: { foo: emptyValue as any }
           } as any);
-        }).to.throw(errorMsg);
+        }).toThrow(errorMsg);
 
         const request = net.request({ url: 'https://foo' });
         expect(() => {
           request.setHeader('foo', emptyValue as any);
-        }).to.throw(errorMsg);
+        }).toThrow(errorMsg);
       }
     });
   });
@@ -689,7 +687,7 @@ describe('net module (session)', () => {
       const response = await sess.fetch(serverUrl, {
         credentials: 'include'
       });
-      expect(response.headers.get('x-cookie')).to.equal(`wild_cookie=${cookieVal}`);
+      expect(response.headers.get('x-cookie')).toBe(`wild_cookie=${cookieVal}`);
     });
 
     describe('webRequest', () => {
@@ -702,7 +700,7 @@ describe('net module (session)', () => {
           cb({ cancel: true });
         });
 
-        await expect(net.fetch('https://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('https://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
 
       it('triggers webRequest handlers for intercepted https', async () => {
@@ -715,7 +713,7 @@ describe('net module (session)', () => {
           session.defaultSession.protocol.unhandle('https');
         });
 
-        await expect(net.fetch('https://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('https://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
 
       it('triggers webRequest handlers for file urls', async () => {
@@ -723,7 +721,7 @@ describe('net module (session)', () => {
           cb({ cancel: true });
         });
 
-        await expect(net.fetch('file://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('file://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
 
       it('triggers webRequest handlers for intercepted file urls', async () => {
@@ -736,7 +734,7 @@ describe('net module (session)', () => {
           session.defaultSession.protocol.unhandle('file');
         });
 
-        await expect(net.fetch('file://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('file://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
 
       it('triggers webRequest handlers for registered protocols', async () => {
@@ -749,7 +747,7 @@ describe('net module (session)', () => {
           session.defaultSession.protocol.unhandle('custom-protocol');
         });
 
-        await expect(net.fetch('custom-protocol://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('custom-protocol://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
     });
   });

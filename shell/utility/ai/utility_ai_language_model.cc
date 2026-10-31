@@ -710,7 +710,7 @@ void UtilityAILanguageModel::MeasureInputUsage(
 
     if (result->IsNumber() &&
         gin::ConvertFromV8(isolate, result, &input_tokens)) {
-      std::move(callback).Run(std::move(input_tokens));
+      std::move(callback).Run(input_tokens);
     } else if (result->IsNull()) {
       std::move(callback).Run(std::nullopt);
     } else {

@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <utility>
 
+#include "base/feature_list.h"
 #include "base/functional/bind.h"
+#include "base/memory/scoped_refptr.h"
 #include "chrome/browser/extensions/chrome_url_request_util.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_context.h"
@@ -24,6 +26,8 @@
 #include "extensions/browser/safe_browsing_delegate.h"
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
+#include "extensions/common/event_args.h"
+#include "extensions/common/extension_features.h"
 #include "extensions/common/features/feature_channel.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
@@ -166,6 +170,12 @@ bool ElectronExtensionsBrowserClient::CanExtensionCrossIncognito(
     const extensions::Extension* extension,
     content::BrowserContext* context) const {
   return false;
+}
+
+extensions::BrowserContextLifetimeTracker*
+ElectronExtensionsBrowserClient::GetBrowserContextLifetimeTracker() {
+  // Electron sessions have no off-the-record sibling to track.
+  return nullptr;
 }
 
 base::FilePath ElectronExtensionsBrowserClient::GetBundleResourcePath(
@@ -314,7 +324,7 @@ ElectronExtensionsBrowserClient::GetComponentExtensionResourceManager() {
 void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     extensions::events::HistogramValue histogram_value,
     const std::string& event_name,
-    base::ListValue args,
+    scoped_refptr<const extensions::EventArgs> args,
     bool dispatch_to_off_the_record_profiles) {
   if (!BrowserThread::CurrentlyOn(BrowserThread::UI)) {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -329,7 +339,12 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
   for (auto* browser_context : ElectronBrowserContext::BrowserContexts()) {
     extensions::EventRouter::Get(browser_context)
         ->BroadcastEvent(std::make_unique<extensions::Event>(
-            histogram_value, event_name, args.Clone()));
+            histogram_value, event_name,
+            base::FeatureList::IsEnabled(
+                extensions_features::kShareEventArgsOnDispatch)
+                ? args
+                : base::MakeRefCounted<extensions::EventArgs>(
+                      args->data.Clone())));
   }
 }
 
@@ -382,6 +397,18 @@ ElectronExtensionsBrowserClient::GetScriptExecutorForTab(
   return contents ? contents->script_executor() : nullptr;
 }
 
+void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
+    content::WebContents* web_contents,
+    int* tab_id,
+    int* window_id) {
+  // Tab ids are WebContents ids, the same ids chrome.tabs hands out. Electron
+  // has no window concept for extensions.
+  auto* contents =
+      web_contents ? electron::api::WebContents::From(web_contents) : nullptr;
+  *tab_id = contents ? contents->ID() : -1;
+  *window_id = -1;
+}
+
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
   if (!kiosk_delegate_)
     kiosk_delegate_ = std::make_unique<ElectronKioskDelegate>();
@@ -394,7 +421,8 @@ ElectronExtensionsBrowserClient::GetSafeBrowsingDelegate() {
 }
 
 std::string ElectronExtensionsBrowserClient::GetApplicationLocale() {
-  return ElectronBrowserClient::Get()->GetApplicationLocale();
+  return std::string(
+      ElectronBrowserClient::Get()->GetApplicationLocale().tag_string());
 }
 
 void ElectronExtensionsBrowserClient::RegisterBrowserInterfaceBindersForFrame(

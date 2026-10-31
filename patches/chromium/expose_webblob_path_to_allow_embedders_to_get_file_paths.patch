@@ -18,7 +18,7 @@ index 384a59138db11ea38028f844dd67e328ebffbe7b..f153997c2afccef1fa1b64ee5f162c28
    bool IsNull() const { return private_.IsNull(); }
  
 diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
-index 8ce1d068ed82755952b6f4137af3e65b020cf8e5..e20242ac24ffdeb6403f4536a79c76121c7ba6fc 100644
+index d9a54e5ca92d9e85093ad41d83a17b058d9f54b5..15910147b2cfef81a647211b200dc85c739abb0a 100644
 --- a/third_party/blink/renderer/core/exported/web_blob.cc
 +++ b/third_party/blink/renderer/core/exported/web_blob.cc
 @@ -41,6 +41,7 @@
@@ -30,7 +30,7 @@ index 8ce1d068ed82755952b6f4137af3e65b020cf8e5..e20242ac24ffdeb6403f4536a79c7612
  #include "third_party/blink/renderer/platform/file_metadata.h"
  #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
 @@ -84,6 +85,14 @@ WebString WebBlob::Uuid() {
-   return private_->Uuid();
+   return private_->GetBlobDataHandle()->GetUuidMayBlock();
  }
  
 +std::string WebBlob::Path() {

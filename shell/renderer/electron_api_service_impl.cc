@@ -10,7 +10,6 @@
 
 #include "gin/converter.h"
 #include "mojo/public/cpp/platform/platform_handle.h"
-#include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/api/electron_api_shared_texture.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/serialized_value_converter.h"
@@ -235,7 +234,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
   for (auto& port : message.ports) {
     ports.emplace_back(
         blink::WebMessagePortConverter::EntangleAndInjectMessagePortChannel(
-            isolate, context, std::move(port)));
+            isolate, context, port));
   }
 
   std::vector<v8::Local<v8::Value>> args = {message_value};
@@ -245,7 +244,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(
-    mojo::ScopedHandle file,
+    mojo::PlatformHandle file,
     TakeHeapSnapshotCallback callback) {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
@@ -253,14 +252,12 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
 
   ScopedAllowBlockingForElectron allow_blocking;
 
-  mojo::PlatformHandle platform_handle =
-      mojo::UnwrapPlatformHandle(std::move(file));
-  if (!platform_handle.is_valid()) {
+  if (!file.is_valid()) {
     LOG(ERROR) << "Unable to get the file handle from mojo.";
     std::move(callback).Run(false);
     return;
   }
-  base::File base_file(platform_handle.TakePlatformFile());
+  base::File base_file(file.TakePlatformFile());
 
   v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
   bool success = electron::TakeHeapSnapshot(isolate, &base_file);
@@ -344,7 +341,7 @@ void ReleaseReceivedSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Array> data = info.Data().As<v8::Array>();
+  v8::Local<v8::Array> data = info.DataV2().As<v8::Value>().As<v8::Array>();
   v8::Local<v8::Value> imported, texture_id, release;
   if (!data->Get(context, 0).ToLocal(&imported) || !imported->IsObject() ||
       !data->Get(context, 1).ToLocal(&texture_id) ||
@@ -378,7 +375,7 @@ void ReleaseReceivedSharedTexture(
              v8::Local<v8::Value> args[] = {
                  gin::StringToV8(
                      isolate, "IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN"),
-                 info.Data()};
+                 info.DataV2().As<v8::Value>()};
              v8::Local<v8::Value> result;
              if (invoke.As<v8::Function>()
                      ->Call(context, ipc_renderer, 2, args)

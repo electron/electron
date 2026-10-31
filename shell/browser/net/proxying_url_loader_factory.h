@@ -265,13 +265,15 @@ class ProxyingURLLoaderFactory
   // reference is guaranteed to be valid.
   //
   // In this way we can avoid using code from api namespace in this file.
-  const raw_ref<const HandlersMap> intercepted_handlers_;
+  const raw_ref<const HandlersMap, LeakedDanglingUntriaged>
+      intercepted_handlers_;
 
   const base::WeakPtr<ElectronBrowserContext> browser_context_;
 
   const int render_process_id_;
   const int frame_routing_id_;
-  raw_ptr<uint64_t> request_id_generator_;  // managed by ElectronBrowserClient
+  raw_ptr<uint64_t, LeakedDanglingUntriaged>
+      request_id_generator_;  // managed by ElectronBrowserClient
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;
   std::optional<int64_t> navigation_id_;
   mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;

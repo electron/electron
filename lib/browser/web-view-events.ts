@@ -7,7 +7,6 @@ export const webViewEvents: Record<string, readonly string[]> = {
   'did-start-loading': [],
   'did-stop-loading': [],
   'dom-ready': [],
-  'console-message': ['level', 'message', 'line', 'sourceId'],
   'context-menu': ['params'],
   'devtools-open-url': ['url'],
   'devtools-opened': [],

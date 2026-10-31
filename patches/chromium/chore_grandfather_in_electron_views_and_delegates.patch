@@ -10,10 +10,10 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index e0ce0ffb230380f8ad70a2645c1095adf6e31cf5..cb844ef8dc2ec8d129738aa4937ccb4a489e383e 100644
+index 9a873393387552a8949bee9c7d309de566767e57..e4d46104dac7602008dbe2c5e925c0eeb9bb3359 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
-@@ -77,6 +77,17 @@ namespace ash {
+@@ -78,6 +78,17 @@ namespace ash {
  class ArcNotificationContentView;
  }  // namespace ash
  
@@ -31,7 +31,7 @@ index e0ce0ffb230380f8ad70a2645c1095adf6e31cf5..cb844ef8dc2ec8d129738aa4937ccb4a
  namespace exo {
  class ShellSurfaceBase;
  }
-@@ -307,6 +318,12 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+@@ -284,6 +295,12 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
   public:
    class OwnedByClientPassKey {
     private:
@@ -45,7 +45,7 @@ index e0ce0ffb230380f8ad70a2645c1095adf6e31cf5..cb844ef8dc2ec8d129738aa4937ccb4a
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index b682cd059ddbfa73b6f50fb60d89cd4b15c41e84..b2502672cea585cd5006f847a2b0b70d9f843064 100644
+index 2365f88bddec11d282940f32255b79b4e4ede583..1ae62843509c30012d5b148100a09cb58d068979 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
 @@ -167,6 +167,12 @@ namespace crostini {

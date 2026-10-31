@@ -10,6 +10,7 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/app_shim_loader
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib

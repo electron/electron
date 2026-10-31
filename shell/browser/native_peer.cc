@@ -4,6 +4,7 @@
 
 #include "shell/browser/native_peer.h"
 
+#include <algorithm>
 #include <tuple>
 #include <utility>
 
@@ -22,6 +23,9 @@ namespace electron {
 namespace {
 
 struct QueueState {
+  // Non-trivial so NoDestructor accepts it when DCHECKs are off.
+  ~QueueState() {}  // NOLINT(modernize-use-equals-default)
+
   SEQUENCE_CHECKER(sequence_checker);
   bool release_scheduled = false;
   bool shutdown_started = false;
@@ -158,5 +162,15 @@ void NativePeerBase::DeleteQueuedPeersAfterIsolateDisposal() {
     std::ignore = peer.release();
   }
 }
+
+#if DCHECK_IS_ON()
+// static
+bool NativePeerBase::IsQueuedForTesting(uintptr_t wrapper_identity) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(GetQueueState().sequence_checker);
+  return std::ranges::any_of(QueuedPeers(), [&](const QueuedPeer& peer) {
+    return peer->WrapperIdentityForTesting() == wrapper_identity;
+  });
+}
+#endif
 
 }  // namespace electron

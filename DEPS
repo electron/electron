@@ -2,13 +2,13 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '156.0.8077.0',
+    '159.0.8130.0',
   'node_version':
-    'v24.21.0',
+    'v26.13.0',
   'nan_version':
     'a1b4ba8f4bf2f46d2f270dbbb7bc0af482dc3e32',
   'squirrel.mac_version':
-    'eb13da304858c9c48ba970a55ee4afec38a55863',
+    '5c9e2133c09d6f8e2e3c5a45c5b0ffc00448c58a',
   'reactiveobjc_version':
     '74ab5baccc6f7202c8ac69a8d1e152c29dc1ea76',
   'mantle_version':
@@ -86,15 +86,15 @@ deps = {
     'url': Var("squirrel_git") + '/Squirrel.Mac.git@' + Var("squirrel.mac_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/squirrel.mac/Carthage/Checkouts/ReactiveObjC': {
+  'src/third_party/squirrel.mac/vendor/ReactiveObjC': {
     'url': Var("reactiveobjc_git") + '/ReactiveObjC.git@' + Var("reactiveobjc_version"),
     'condition': 'process_deps'
   },
-  'src/third_party/squirrel.mac/Carthage/Checkouts/Mantle': {
+  'src/third_party/squirrel.mac/vendor/Mantle': {
     'url':  Var("mantle_git") + '/Mantle.git@' + Var("mantle_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/squirrel.mac/Carthage/Checkouts/Sparkle': {
+  'src/third_party/squirrel.mac/vendor/Sparkle': {
     'url': Var("sparkle_git") + '/Sparkle.git@' + Var("sparkle_version"),
     'condition': 'process_deps',
   },

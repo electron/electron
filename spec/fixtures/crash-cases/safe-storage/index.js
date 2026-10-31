@@ -1,6 +1,6 @@
 const { app, safeStorage } = require('electron');
 
-const { expect } = require('chai');
+const { expect } = require('../../../lib/vitest-cjs.cjs');
 
 async function expectRejection(promise, pattern) {
   let error;
@@ -9,13 +9,13 @@ async function expectRejection(promise, pattern) {
   } catch (e) {
     error = e;
   }
-  expect(error).to.be.an('error');
-  expect(error.message).to.match(pattern);
+  expect(error).toBeInstanceOf(Error);
+  expect(error.message).toMatch(pattern);
 }
 
 (async () => {
   if (!app.isReady()) {
-    expect(await safeStorage.isAsyncEncryptionAvailable()).to.equal(false);
+    expect(await safeStorage.isAsyncEncryptionAvailable()).toBe(false);
 
     await expectRejection(
       safeStorage.encryptStringAsync('plaintext'),
@@ -32,8 +32,8 @@ async function expectRejection(promise, pattern) {
   if (await safeStorage.isAsyncEncryptionAvailable()) {
     const plaintext = 'plaintext';
     const ciphertext = await safeStorage.encryptStringAsync(plaintext);
-    expect(Buffer.isBuffer(ciphertext)).to.equal(true);
-    expect((await safeStorage.decryptStringAsync(ciphertext)).result).to.equal(plaintext);
+    expect(Buffer.isBuffer(ciphertext)).toBe(true);
+    expect((await safeStorage.decryptStringAsync(ciphertext)).result).toBe(plaintext);
   }
 })()
   .then(app.quit)

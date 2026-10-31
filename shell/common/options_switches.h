@@ -14,6 +14,7 @@ namespace electron {
 namespace options {
 
 inline constexpr std::string_view kTitle = "title";
+inline constexpr std::string_view kAppShim = "appShim";
 inline constexpr std::string_view kIcon = "icon";
 inline constexpr std::string_view kFrame = "frame";
 inline constexpr std::string_view kShow = "show";
@@ -329,10 +330,6 @@ inline constexpr base::cstring_view kEnableAuthNegotiatePort =
 
 // If set, NTLM v2 is disabled for POSIX platforms.
 inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
-
-// If set, flag node::ProcessInitializationFlags::kNoStdioInitialization would
-// be set for node initialization.
-inline constexpr base::cstring_view kNoStdioInit = "no-stdio-init";
 
 }  // namespace switches
 

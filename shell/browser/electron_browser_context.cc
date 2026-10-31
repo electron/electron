@@ -30,7 +30,7 @@
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
-#include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/browser/loader/reconnectable_url_loader_factory.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -52,6 +52,7 @@
 #include "shell/browser/electron_preconnect_manager_delegate.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "shell/browser/media/media_device_id_salt.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/browser/protocol_registry.h"
@@ -393,7 +394,7 @@ ElectronBrowserContext::ElectronBrowserContext(
                  std::get_if<std::reference_wrapper<const base::FilePath>>(
                      &partition_location)) {
     const base::FilePath& partition_path = filepath_partition->get();
-    path_ = std::move(partition_path);
+    path_ = partition_path;
   }
 
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
@@ -419,13 +420,6 @@ ElectronBrowserContext::ElectronBrowserContext(
     extension_system->FinishInitialization();
   }
 #endif
-
-  // Subscribe to Network Service process gone notifications to reset the
-  // cached URLLoaderFactory when the Network Service crashes or restarts.
-  network_service_gone_subscription_ =
-      content::RegisterNetworkServiceProcessGoneHandler(base::BindRepeating(
-          &ElectronBrowserContext::OnNetworkServiceProcessGone,
-          weak_factory_.GetWeakPtr()));
 }
 
 ElectronBrowserContext::~ElectronBrowserContext() {
@@ -593,12 +587,6 @@ content::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   return preconnect_manager_.get();
 }
 
-void ElectronBrowserContext::OnNetworkServiceProcessGone(bool /* crashed */) {
-  // Clear the cached URLLoaderFactory so the next request creates a new one
-  // from the new NetworkContext.
-  url_loader_factory_.reset();
-}
-
 std::pair<network::URLLoaderFactoryBuilder,
           mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>
 ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
@@ -620,8 +608,21 @@ ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
 
 scoped_refptr<network::SharedURLLoaderFactory>
 ElectronBrowserContext::GetURLLoaderFactory() {
-  if (url_loader_factory_)
-    return url_loader_factory_;
+  // Like StoragePartitionImpl's browser process factory, rebuild the factory
+  // whenever the cached one has been disconnected, e.g. after the Network
+  // Service has crashed or restarted.
+  if (!url_loader_factory_) {
+    url_loader_factory_ =
+        base::MakeRefCounted<content::ReconnectableURLLoaderFactory>(
+            base::BindRepeating(&ElectronBrowserContext::CreateURLLoaderFactory,
+                                weak_factory_.GetWeakPtr()));
+  }
+  return url_loader_factory_;
+}
+
+void ElectronBrowserContext::CreateURLLoaderFactory(
+    mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   auto [factory_builder, header_client] = CreateURLLoaderFactoryBuilder();
 
@@ -635,11 +636,11 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   // the non-NetworkService implementation always has web security enabled.
   params->disable_web_security = false;
 
-  auto* storage_partition = GetDefaultStoragePartition();
-  url_loader_factory_ =
+  *out_factory =
       std::move(factory_builder)
-          .Finish(storage_partition->GetNetworkContext(), std::move(params));
-  return url_loader_factory_;
+          .Finish<mojo::PendingRemote<network::mojom::URLLoaderFactory>>(
+              GetDefaultStoragePartition()->GetNetworkContext(),
+              std::move(params));
 }
 
 void ElectronBrowserContext::InterceptedProtocolsChanged() {
@@ -651,8 +652,17 @@ void ElectronBrowserContext::InterceptedProtocolsChanged() {
 
 scoped_refptr<network::SharedURLLoaderFactory>
 ElectronBrowserContext::InterceptURLLoaderFactory(
-    scoped_refptr<network::SharedURLLoaderFactory> factory) {
-  return CreateURLLoaderFactoryBuilder().first.Finish(factory);
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> factory) {
+  return CreateURLLoaderFactoryBuilder().first.Finish(std::move(factory));
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+ElectronBrowserContext::GetFileURLLoaderFactory() {
+  if (!file_url_loader_factory_) {
+    file_url_loader_factory_ =
+        InterceptURLLoaderFactory(AsarURLLoaderFactory::Create());
+  }
+  return file_url_loader_factory_;
 }
 
 content::PushMessagingService*

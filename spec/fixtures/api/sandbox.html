@@ -52,7 +52,9 @@
         process.on('exit', () => {
           ipcRenderer.send('answer', currentLocation)
         })
-        location.assign('http://www.google.com')
+        // Navigate to another file:// page so the unload stays in this renderer
+        // and doesn't depend on reaching the internet.
+        location.assign(new URL('../pages/blank.html', location.href).href)
       },
       'window-open': () => {
         addEventListener('load', () => {

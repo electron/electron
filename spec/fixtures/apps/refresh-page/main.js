@@ -25,8 +25,8 @@ app.once('ready', async () => {
 
   protocol.handle('atom', (request) => {
     let { pathname } = new URL(request.url);
-    if (pathname === '/chai.js') {
-      pathname = path.resolve(__dirname, '../../../node_modules/chai/chai.js');
+    if (pathname === '/jquery.js') {
+      pathname = path.resolve(__dirname, '../../pages/jquery-3.6.0.min.js');
     } else {
       pathname = path.join(__dirname, pathname);
     }

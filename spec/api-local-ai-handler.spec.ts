@@ -1,6 +1,6 @@
 import { BrowserWindow, session, utilityProcess, webFrameMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { on, once } from 'node:events';
 import * as path from 'node:path';
@@ -85,13 +85,13 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('is unavailable if invalid value returned', async () => {
       await forkAndRegisterHandler('buggy-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
 
     it('returns "available" when handler reports available', async () => {
       await forkAndRegisterHandler('default-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
     });
 
     it('returns "available" when late registered handler reports available', async () => {
@@ -102,45 +102,45 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       });
       await sendControllableMessage(aiHandler, { command: 'set-handler' });
 
-      expect(await w.webContents.executeJavaScript('availability')).to.equal('available');
+      expect(await w.webContents.executeJavaScript('availability')).toBe('available');
     });
 
     it('returns "downloadable" when handler reports downloadable', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-availability', value: 'downloadable' });
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('downloadable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('downloadable');
     });
 
     it('returns "downloading" when handler reports downloading', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-availability', value: 'downloading' });
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('downloading');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('downloading');
     });
 
     it('returns "unavailable" when handler reports unavailable', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-availability', value: 'unavailable' });
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
 
     it('returns "unavailable" when the availability() promise rejects', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-availability', value: 'reject' });
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
 
     it('returns "unavailable" if the utility process dies', async () => {
       const aiHandler = await forkAndRegisterHandler('default-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
 
     it('returns "unavailable" if the utility process dies without ever setting a handler', async () => {
@@ -153,11 +153,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      expect(await w.webContents.executeJavaScript('availability')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('availability')).toBe('unavailable');
     });
 
     it('returns "unavailable" if not registered', async () => {
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
 
     it('passes options to the availability() call', async () => {
@@ -173,8 +173,8 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await w.webContents.executeJavaScript(`LanguageModel.availability(${JSON.stringify(options)})`);
       const [receivedMessage] = await message;
 
-      expect(receivedMessage.options).to.deep.equal(options);
-      expect(receivedMessage.type).to.equal('availability-called');
+      expect(receivedMessage.options).toEqual(options);
+      expect(receivedMessage.type).toBe('availability-called');
     });
   });
 
@@ -186,11 +186,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             `LanguageModel.create(${JSON.stringify(options)}).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       } else {
         await expect(
           w.webContents.executeJavaScript('LanguageModel.create().catch(err => { throw err.message; })')
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       }
     }
 
@@ -228,7 +228,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/unable to create/);
+      await expect(promise).rejects.toThrow(/unable to create/);
     });
 
     it('rejects if the utility process dies without ever setting a handler', async () => {
@@ -243,7 +243,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(w.webContents.executeJavaScript('pending')).to.eventually.be.rejectedWith(/unable? to create/);
+      await expect(w.webContents.executeJavaScript('pending')).rejects.toThrow(/unable? to create/);
     });
 
     it('rejects if the handler gets unregistered during creation', async () => {
@@ -256,7 +256,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/unable to create/);
+      await expect(promise).rejects.toThrow(/unable to create/);
     });
 
     it('creates a LanguageModel instance from a valid handler', async () => {
@@ -264,7 +264,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       expect(
         await w.webContents.executeJavaScript('LanguageModel.create().then(model => model instanceof LanguageModel)')
-      ).to.equal(true);
+      ).toBe(true);
     });
 
     it('creates a LanguageModel instance from a valid handler registered late', async () => {
@@ -277,7 +277,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       });
       await sendControllableMessage(aiHandler, { command: 'set-handler' });
 
-      expect(await w.webContents.executeJavaScript('pending')).to.equal(true);
+      expect(await w.webContents.executeJavaScript('pending')).toBe(true);
     });
 
     it('evicts the oldest pending binding when the max queue size is exceeded', async () => {
@@ -308,16 +308,14 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       }
 
       // The first window's create() should have been rejected (evicted from queue).
-      await expect(windows[0].webContents.executeJavaScript('success')).to.eventually.be.rejectedWith(
-        /unable to create/
-      );
+      await expect(windows[0].webContents.executeJavaScript('success')).rejects.toThrow(/unable to create/);
 
       // Set the handler so remaining pending bindings get flushed.
       await sendControllableMessage(aiHandler, { command: 'set-handler' });
 
       // The remaining windows should now succeed.
       for (let i = 1; i < 11; i++) {
-        expect(await windows[i].webContents.executeJavaScript('success')).to.equal(true);
+        expect(await windows[i].webContents.executeJavaScript('success')).toBe(true);
       }
     });
 
@@ -332,9 +330,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(`LanguageModel.create(${JSON.stringify(options)})`);
       });
 
-      expect(message.options).to.have.property('signal');
+      expect(message.options).toHaveProperty('signal');
       delete message.options.signal;
-      expect(message.options).to.deep.equal({
+      expect(message.options).toEqual({
         initialPrompts: options.initialPrompts.map((prompt) => ({ ...prompt, prefix: false }))
       });
     });
@@ -351,9 +349,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(`LanguageModel.create(${JSON.stringify(options)})`);
       });
 
-      expect(message.options).to.have.property('signal');
+      expect(message.options).toHaveProperty('signal');
       delete message.options.signal;
-      expect(message.options).to.deep.equal(options);
+      expect(message.options).toEqual(options);
     });
 
     it('plumbs the abort signal through', async () => {
@@ -365,10 +363,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create({ signal: AbortSignal.timeout(500) }).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.toBeNull();
     });
 
     it('does not crash the handler when several pending create() calls are aborted', async () => {
@@ -383,13 +381,13 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         'Promise.all([100, 200, 300].map(t => LanguageModel.create({ signal: AbortSignal.timeout(t) }).then(() => "resolved", err => err.message)))'
       );
       for (const result of results) {
-        expect(result).to.match(/signal timed out/);
+        expect(result).toMatch(/signal timed out/);
       }
 
       // The handler process must still be alive and responsive.
       await sendControllableMessage(aiHandler, { command: 'set-create', value: null });
-      expect(exited).to.be.false();
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(() => "ok")')).to.equal('ok');
+      expect(exited).toBe(false);
+      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(() => "ok")')).toBe('ok');
     });
 
     it('exposes contextUsage and contextWindow on the created model', async () => {
@@ -399,7 +397,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage, contextWindow: model.contextWindow }))'
         )
-      ).to.deep.equal({ contextUsage: 0, contextWindow: 12345 });
+      ).toEqual({ contextUsage: 0, contextWindow: 12345 });
     });
   });
 
@@ -411,13 +409,13 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(model => model.prompt(${JSON.stringify(prompt)}, ${JSON.stringify(options)})).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       } else {
         await expect(
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(model => model.prompt(${JSON.stringify(prompt)})).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       }
     }
 
@@ -442,7 +440,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); return model.prompt("Test") }).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during prompt', async () => {
@@ -458,7 +456,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the handler gets unregistered during prompt', async () => {
@@ -473,23 +471,23 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('returns a string response from the handler', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(
-        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
-      ).to.equal('foobar');
+      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).toBe(
+        'foobar'
+      );
     });
 
     it('returns a ReadableStream response from the handler', async () => {
       await forkAndRegisterHandler('streaming-language-model.js');
 
-      expect(
-        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
-      ).to.equal('Hello World');
+      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).toBe(
+        'Hello World'
+      );
     });
 
     it('passes string input to the handler', async () => {
@@ -499,7 +497,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript("LanguageModel.create().then(model => model.prompt('hello world'))");
       });
 
-      expect(message.input).to.deep.equal([
+      expect(message.input).toEqual([
         { role: 'user', content: [{ type: 'text', value: 'hello world' }], prefix: false }
       ]);
     });
@@ -518,7 +516,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         );
       });
 
-      expect(message.input).to.deep.equal(input.map((msg) => ({ ...msg, prefix: false })));
+      expect(message.input).toEqual(input.map((msg) => ({ ...msg, prefix: false })));
     });
 
     it('passes responseConstraint object to the handler', async () => {
@@ -532,7 +530,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         );
       });
 
-      expect(message.options.responseConstraint).to.deep.equal(responseConstraint);
+      expect(message.options.responseConstraint).toEqual(responseConstraint);
     });
 
     it('passes responseConstraint regex to the handler', async () => {
@@ -546,7 +544,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         );
       });
 
-      expect(message.options.responseConstraint).to.deep.equal(responseConstraint);
+      expect(message.options.responseConstraint).toEqual(responseConstraint);
     });
 
     it('plumbs the abort signal through', async () => {
@@ -558,10 +556,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => model.prompt("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.toBeNull();
     });
 
     it('updates contextUsage after a prompt', async () => {
@@ -571,12 +569,12 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))'
         )
-      ).to.deep.equal({ contextUsage: 0 });
+      ).toEqual({ contextUsage: 0 });
       expect(
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(async (model) => { await model.prompt("hello world"); return { contextUsage: model.contextUsage } })'
         )
-      ).to.deep.equal({ contextUsage: 10 });
+      ).toEqual({ contextUsage: 10 });
     });
   });
 
@@ -592,13 +590,13 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(async (model) => { const collect = ${collectStreamFn}; return collect(model.promptStreaming(${JSON.stringify(prompt)}, ${JSON.stringify(options)})); }).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       } else {
         await expect(
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(async (model) => { const collect = ${collectStreamFn}; return collect(model.promptStreaming(${JSON.stringify(prompt)})); }).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       }
     }
 
@@ -629,7 +627,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           `LanguageModel.create().then(async (model) => { model.destroy(); const collect = ${collectStream}; return collect(model.promptStreaming("Test")); }).catch(err => { throw err.message; })`
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during prompt', async () => {
@@ -645,7 +643,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the handler gets unregistered during prompt', async () => {
@@ -660,7 +658,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('returns a string response from the handler', async () => {
@@ -670,7 +668,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Hi")); })`
         )
-      ).to.equal('foobar');
+      ).toBe('foobar');
     });
 
     it('returns a ReadableStream response from the handler', async () => {
@@ -680,7 +678,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Hi")); })`
         )
-      ).to.equal('Hello World');
+      ).toBe('Hello World');
     });
 
     it('passes string input to the handler', async () => {
@@ -692,7 +690,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         );
       });
 
-      expect(message.input).to.deep.equal([
+      expect(message.input).toEqual([
         { role: 'user', content: [{ type: 'text', value: 'hello world' }], prefix: false }
       ]);
     });
@@ -711,7 +709,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         );
       });
 
-      expect(message.input).to.deep.equal(input.map((msg) => ({ ...msg, prefix: false })));
+      expect(message.input).toEqual(input.map((msg) => ({ ...msg, prefix: false })));
     });
 
     it('passes responseConstraint option to the handler', async () => {
@@ -725,7 +723,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         );
       });
 
-      expect(message.options.responseConstraint).to.deep.equal(responseConstraint);
+      expect(message.options.responseConstraint).toEqual(responseConstraint);
     });
 
     it('plumbs the abort signal through', async () => {
@@ -737,10 +735,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("test", { signal: AbortSignal.timeout(500) })); }).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.toBeNull();
     });
 
     it('updates contextUsage after a prompt', async () => {
@@ -750,12 +748,12 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))'
         )
-      ).to.deep.equal({ contextUsage: 0 });
+      ).toEqual({ contextUsage: 0 });
       expect(
         await w.webContents.executeJavaScript(
           `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; await collect(model.promptStreaming("hello world")); return { contextUsage: model.contextUsage }; })`
         )
-      ).to.deep.equal({ contextUsage: 10 });
+      ).toEqual({ contextUsage: 10 });
     });
   });
 
@@ -768,7 +766,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/error occurred/);
+      ).rejects.toThrow(/error occurred/);
     });
 
     it('rejects after the model has been destroyed', async () => {
@@ -778,7 +776,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); return model.append("Test") }).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during append', async () => {
@@ -794,7 +792,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the handler gets unregistered during append', async () => {
@@ -809,7 +807,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('appends a message without producing a response', async () => {
@@ -819,7 +817,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })'
         )
-      ).to.be.undefined();
+      ).toBeUndefined();
     });
 
     it('plumbs the abort signal through', async () => {
@@ -831,10 +829,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => model.append("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.toBeNull();
     });
 
     it('does not crash the handler when one of several pending append() calls is aborted', async () => {
@@ -855,11 +853,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           return aborted;
         })
       `);
-      expect(result).to.match(/aborted/);
+      expect(result).toMatch(/aborted/);
 
       // The handler process must still be alive and responsive.
       await sendControllableMessage(aiHandler, { command: 'set-append-response', value: null });
-      expect(exited).to.be.false();
+      expect(exited).toBe(false);
     });
 
     it('updates contextUsage after append', async () => {
@@ -869,12 +867,12 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))'
         )
-      ).to.deep.equal({ contextUsage: 0 });
+      ).toEqual({ contextUsage: 0 });
       expect(
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(async (model) => { await model.append("hello world"); return { contextUsage: model.contextUsage } })'
         )
-      ).to.deep.equal({ contextUsage: 5 });
+      ).toEqual({ contextUsage: 5 });
     });
   });
 
@@ -887,7 +885,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/usage cannot be calculated/);
+      ).rejects.toThrow(/usage cannot be calculated/);
     });
 
     it('rejects when handler promise rejects', async () => {
@@ -898,7 +896,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/usage cannot be calculated/);
+      ).rejects.toThrow(/usage cannot be calculated/);
     });
 
     it('rejects after the model has been destroyed', async () => {
@@ -908,7 +906,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); return model.measureContextUsage("Test") }).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during call', async () => {
@@ -924,7 +922,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejected();
+      await expect(promise).rejects.toThrow();
     });
 
     it('rejects if the handler gets unregistered during call', async () => {
@@ -939,7 +937,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejected();
+      await expect(promise).rejects.toThrow();
     });
 
     it('returns the token count for the given input', async () => {
@@ -949,7 +947,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.measureContextUsage("hello world"))'
         )
-      ).to.equal(42);
+      ).toBe(42);
     });
 
     // TODO(dsanders11): Upstream Chromium issue prevents this test from passing as
@@ -963,10 +961,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => model.measureContextUsage("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.toBeNull();
     });
   });
 
@@ -979,7 +977,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/cannot be cloned/);
+      ).rejects.toThrow(/cannot be cloned/);
     });
 
     it('rejects when clone() promise rejects', async () => {
@@ -990,7 +988,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/cannot be cloned/);
+      ).rejects.toThrow(/cannot be cloned/);
     });
 
     it('rejects after the original model has been destroyed', async () => {
@@ -1000,7 +998,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); return model.clone(); }).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during clone', async () => {
@@ -1016,7 +1014,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/cannot be cloned/);
+      await expect(promise).rejects.toThrow(/cannot be cloned/);
     });
 
     it('rejects if the handler gets unregistered during clone', async () => {
@@ -1031,7 +1029,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/cannot be cloned/);
+      await expect(promise).rejects.toThrow(/cannot be cloned/);
     });
 
     it('returns a new LanguageModel instance', async () => {
@@ -1041,7 +1039,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.clone()).then(cloned => cloned instanceof LanguageModel)'
         )
-      ).to.equal(true);
+      ).toBe(true);
     });
 
     it('preserves context from the original model', async () => {
@@ -1055,7 +1053,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           return { contextUsage: cloned.contextUsage, contextWindow: cloned.contextWindow };
         })
       `)
-      ).to.deep.equal({ contextUsage: 10, contextWindow: 12345 });
+      ).toEqual({ contextUsage: 10, contextWindow: 12345 });
     });
 
     it('plumbs the abort signal through', async () => {
@@ -1067,10 +1065,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => model.clone({ signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.toBeNull();
     });
   });
 
@@ -1083,10 +1081,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => { model.destroy(); return model.prompt("Test"); }).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/has been destroyed/);
+        ).rejects.toThrow(/has been destroyed/);
       });
 
-      expect(message).not.null();
+      expect(message).not.toBeNull();
     });
 
     it('aborts any in-progress prompt calls', async () => {
@@ -1102,8 +1100,8 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript('window._model.destroy()');
       });
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
-      expect(message).not.null();
+      await expect(promise).rejects.toThrow(/has been destroyed/);
+      expect(message).not.toBeNull();
     });
 
     it('aborts any in-progress append calls', async () => {
@@ -1121,8 +1119,8 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       await w.webContents.executeJavaScript('window._model.destroy()');
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
-      expect(message).not.null();
+      await expect(promise).rejects.toThrow(/has been destroyed/);
+      expect(message).not.toBeNull();
     });
 
     it('can be called multiple times without error', async () => {
@@ -1132,7 +1130,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); model.destroy(); model.destroy(); return true; })'
         )
-      ).to.equal(true);
+      ).toBe(true);
     });
   });
 
@@ -1140,19 +1138,19 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('rejects if handler returns a promise', async () => {
       await forkAndRegisterHandler('promise-handler-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
 
     it('rejects if handler returns a non-class value', async () => {
       await forkAndRegisterHandler('non-class-handler-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
 
     it('rejects if handler returns a class not extending LanguageModel', async () => {
       await forkAndRegisterHandler('non-language-model-handler.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
 
     it('receives webContentsId in the details object', async () => {
@@ -1162,7 +1160,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript('LanguageModel.availability()');
       });
 
-      expect(message.details).to.have.property('webContentsId', w.webContents.id);
+      expect(message.details).toHaveProperty('webContentsId', w.webContents.id);
     });
 
     it('receives securityOrigin in the details object', async () => {
@@ -1172,8 +1170,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript('LanguageModel.availability()');
       });
 
-      expect(message.details).to.have.property('securityOrigin');
-      expect(message.details.securityOrigin).to.be.a('string').and.not.be.empty();
+      expect(message.details).toHaveProperty('securityOrigin');
+      expect(message.details.securityOrigin).toBeTypeOf('string');
+      expect(message.details.securityOrigin).not.toHaveLength(0);
     });
 
     it('receives frameToken in the details object', async () => {
@@ -1183,9 +1182,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript('LanguageModel.availability()');
       });
 
-      expect(message.details).to.have.property('frameToken');
-      expect(message.details.frameToken).to.be.a('string').and.not.be.empty();
-      expect(message.details.frameToken).to.equal(w.webContents.mainFrame.frameToken);
+      expect(message.details).toHaveProperty('frameToken');
+      expect(message.details.frameToken).toBeTypeOf('string');
+      expect(message.details.frameToken).not.toHaveLength(0);
+      expect(message.details.frameToken).toBe(w.webContents.mainFrame.frameToken);
     });
 
     it('receives renderProcessId in the details object', async () => {
@@ -1195,9 +1195,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript('LanguageModel.availability()');
       });
 
-      expect(message.details).to.have.property('renderProcessId');
-      expect(message.details.renderProcessId).to.be.a('number');
-      expect(message.details.renderProcessId).to.equal(w.webContents.mainFrame.processId);
+      expect(message.details).toHaveProperty('renderProcessId');
+      expect(message.details.renderProcessId).toBeTypeOf('number');
+      expect(message.details.renderProcessId).toBe(w.webContents.mainFrame.processId);
     });
 
     it('provides a frameToken and renderProcessId that resolve to the calling frame', async () => {
@@ -1209,8 +1209,8 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       const { frameToken, renderProcessId } = message.details;
       const frame = webFrameMain.fromFrameToken(renderProcessId, frameToken);
-      expect(frame).to.not.be.null();
-      expect(frame!.frameToken).to.equal(w.webContents.mainFrame.frameToken);
+      expect(frame).not.toBeNull();
+      expect(frame!.frameToken).toBe(w.webContents.mainFrame.frameToken);
     });
 
     it('provides a frameToken and renderProcessId that resolve to a calling iframe', async () => {
@@ -1227,7 +1227,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await frameLoaded;
 
       const subframe = w.webContents.mainFrame.frames[0];
-      expect(subframe).to.not.be.undefined();
+      expect(subframe).not.toBeUndefined();
 
       // Trigger the Prompt API from within the iframe
       const message = await listenForMessage(aiHandler, 'handler-called', async () => {
@@ -1236,12 +1236,12 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       const { frameToken, renderProcessId } = message.details;
       const frame = webFrameMain.fromFrameToken(renderProcessId, frameToken);
-      expect(frame).to.not.be.null();
+      expect(frame).not.toBeNull();
 
       // The resolved frame is the iframe, not the main frame
-      expect(frame!.frameToken).to.equal(subframe.frameToken);
-      expect(frame!.frameToken).to.not.equal(w.webContents.mainFrame.frameToken);
-      expect(frame!.parent).to.equal(w.webContents.mainFrame);
+      expect(frame!.frameToken).toBe(subframe.frameToken);
+      expect(frame!.frameToken).not.toBe(w.webContents.mainFrame.frameToken);
+      expect(frame!.parent).toBe(w.webContents.mainFrame);
     });
 
     it('is called once per webContentsId and securityOrigin pair', async () => {
@@ -1251,7 +1251,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript('LanguageModel.availability()');
       });
 
-      expect(message.callCount).to.equal(1);
+      expect(message.callCount).toBe(1);
 
       // Calling availability again should not trigger the handler again
       await w.webContents.executeJavaScript('LanguageModel.availability()');
@@ -1270,21 +1270,21 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w2.webContents.executeJavaScript('LanguageModel.availability()');
       });
 
-      expect(message2.callCount).to.equal(2);
+      expect(message2.callCount).toBe(2);
     });
 
     it('rejects new bindings after handler is changed to return null', async () => {
       const aiHandler = await forkAndRegisterHandler('handler-details-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
 
       // Change the handler to return null for all new bindings
       await sendControllableMessage(aiHandler, { command: 'set-null-handler' });
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
 
       // Load a new page to get a fresh Prompt API binding
       await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
     });
   });
 
@@ -1292,21 +1292,21 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('provides default no-op implementations for all methods', async () => {
       await forkAndRegisterHandler('default-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
-      expect(
-        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
-      ).to.equal('');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
+      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).toBe(
+        ''
+      );
       expect(
         await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Hi"))')
-      ).to.be.undefined();
+      ).toBeUndefined();
       expect(
         await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("Hi"))')
-      ).to.equal(0);
+      ).toBe(0);
       expect(
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.clone()).then(cloned => cloned instanceof LanguageModel)'
         )
-      ).to.equal(true);
+      ).toBe(true);
     });
 
     it('can use the base LanguageModel class directly without subclassing', async () => {
@@ -1314,12 +1314,12 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       expect(
         await w.webContents.executeJavaScript('LanguageModel.create().then(model => model instanceof LanguageModel)')
-      ).to.equal(true);
+      ).toBe(true);
       expect(
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage, contextWindow: model.contextWindow }))'
         )
-      ).to.deep.equal({ contextUsage: 0, contextWindow: 0 });
+      ).toEqual({ contextUsage: 0, contextWindow: 0 });
     });
   });
 
@@ -1327,7 +1327,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('applies to all windows using the same session', async () => {
       await forkAndRegisterHandler('default-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
 
       const w2 = new BrowserWindow({
         show: false,
@@ -1337,7 +1337,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       });
       await w2.loadFile(path.join(fixtures, 'api', 'blank.html'));
 
-      expect(await w2.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+      expect(await w2.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
     });
 
     it('different sessions can use different handler processes', async () => {
@@ -1376,13 +1376,13 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       try {
         // basic-language-model returns 'foobar'
-        expect(
-          await w1.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
-        ).to.equal('foobar');
+        expect(await w1.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).toBe(
+          'foobar'
+        );
         // default-language-model returns ''
-        expect(
-          await w2.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
-        ).to.equal('');
+        expect(await w2.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).toBe(
+          ''
+        );
       } finally {
         ses1.registerLocalAIHandler(null);
         ses2.registerLocalAIHandler(null);
@@ -1425,15 +1425,15 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       try {
         // Both should be available
-        expect(await w1.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
-        expect(await w2.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+        expect(await w1.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
+        expect(await w2.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
 
         // Clear handler for session 1
         ses1.registerLocalAIHandler(null);
 
         // Session 1 should be unavailable, session 2 should still be available
-        expect(await w1.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
-        expect(await w2.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
+        expect(await w1.webContents.executeJavaScript('LanguageModel.availability()')).toBe('unavailable');
+        expect(await w2.webContents.executeJavaScript('LanguageModel.availability()')).toBe('available');
       } finally {
         ses1.registerLocalAIHandler(null);
         ses2.registerLocalAIHandler(null);

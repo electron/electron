@@ -10,7 +10,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "gin/converter.h"
 #include "gin/object_template_builder.h"
-#include "gin/per_context_data.h"
+#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/common/gin_converters/frame_converter.h"
@@ -33,7 +33,7 @@ v8::Local<v8::String> Symbol(v8::Isolate* isolate, std::string_view name) {
 template <typename T>
 void EnsureTemplate(v8::Isolate* isolate) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  gin::PerContextData* data = gin::PerContextData::From(context);
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   if (data && data->GetObjectTemplate(&T::kWrapperInfo).IsEmpty())
     T::GetConstructor(isolate, context, &T::kWrapperInfo);
 }

@@ -26,6 +26,13 @@ const netBinding = process._linkedBinding('electron_common_net');
 
 const supportedWebViewEvents = Object.keys(webViewEvents);
 
+const webViewConsoleMessageLevels: Record<Electron.WebContentsConsoleMessageEventParams['level'], number> = {
+  debug: 0,
+  info: 1,
+  warning: 2,
+  error: 3
+};
+
 const guestInstances = new Map<number, GuestInstance>();
 const embedderElementsMap = new Map<string, number>();
 
@@ -172,6 +179,17 @@ const createGuest = function (
       frameId: [event.processId, event.frameId],
       channel,
       args
+    });
+  });
+
+  // Dispatch guest's console messages to embedder. The <webview> event keeps
+  // its original shape, with `level` as an integer.
+  guest.on('console-message', function (event: Electron.Event<Electron.WebContentsConsoleMessageEventParams>) {
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'console-message', {
+      level: webViewConsoleMessageLevels[event.level],
+      message: event.message,
+      line: event.lineNumber,
+      sourceId: event.sourceId
     });
   });
 

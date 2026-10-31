@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Babenko-Sanders <dsanders11@ucsbalum.com>
+Date: Sat, 17 Oct 2026 23:08:16 -0700
+Subject: test: skip openssl config test under BoringSSL
+
+Signed-off-by: David Babenko-Sanders <dsanders11@ucsbalum.com>
+PR-URL: https://github.com/nodejs/node/pull/66780
+Reviewed-By: Filip Skokan <panva.ip@gmail.com>
+Reviewed-By: Richard Lau <richard.lau@ibm.com>
+Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
+(cherry picked from commit 4737802218efcbfcc02553531d8a5f2635ea8047)
+
+diff --git a/test/parallel/test-openssl-unreadable-config.js b/test/parallel/test-openssl-unreadable-config.js
+index 99681e0ecba0706c899928908723bae2e41ad34a..83d77d80e27a2b52810a1853e3c319eda842192f 100644
+--- a/test/parallel/test-openssl-unreadable-config.js
++++ b/test/parallel/test-openssl-unreadable-config.js
+@@ -10,6 +10,9 @@ const { spawnSync } = require('node:child_process');
+ 
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
++const { isBoringSSL } = require('../common/crypto');
++if (isBoringSSL)
++  common.skip('BoringSSL does not load a default configuration file');
+ if (!common.isLinux)
+   common.skip('linux only');
+ if (process.config.variables.node_shared_openssl)

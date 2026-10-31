@@ -42,6 +42,7 @@
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
+#include "third_party/blink/public/common/features.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_runtime_features.h"
 #include "third_party/blink/public/platform/web_security_origin.h"
@@ -95,14 +96,18 @@
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
+#include "extensions/common/switches.h"
 #include "extensions/renderer/api/core_extensions_renderer_api_provider.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/extension_localization_throttle.h"
 #include "extensions/renderer/extension_web_view_helper.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/electron_extensions_client.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_api_provider.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
+#include "third_party/blink/public/common/loader/url_loader_throttle.h"
+#include "third_party/blink/public/platform/url_loader_throttle_provider.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace electron {
@@ -111,6 +116,29 @@ content::RenderFrame* GetRenderFrame(v8::Isolate* const isolate,
                                      v8::Local<v8::Object> value);
 
 namespace {
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+// Localizes __MSG_*__ placeholders in stylesheets loaded from extensions.
+class ExtensionURLLoaderThrottleProvider
+    : public blink::URLLoaderThrottleProvider {
+ public:
+  // blink::URLLoaderThrottleProvider:
+  std::unique_ptr<blink::URLLoaderThrottleProvider> Clone() override {
+    return std::make_unique<ExtensionURLLoaderThrottleProvider>();
+  }
+  std::vector<std::unique_ptr<blink::URLLoaderThrottle>> CreateThrottles(
+      base::optional_ref<const blink::LocalFrameToken> local_frame_token,
+      const network::ResourceRequest& request) override {
+    std::vector<std::unique_ptr<blink::URLLoaderThrottle>> throttles;
+    if (auto throttle = extensions::ExtensionLocalizationThrottle::MaybeCreate(
+            local_frame_token, request.url)) {
+      throttles.push_back(std::move(throttle));
+    }
+    return throttles;
+  }
+  void SetOnline(bool is_online) override {}
+};
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 void SetIsWebView(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   gin_helper::Dictionary dict(isolate, object);
@@ -313,6 +341,18 @@ void RendererClientBase::RenderThreadStarted() {
 #endif
 }
 
+void RendererClientBase::SetRuntimeFeaturesDefaultsBeforeBlinkInitialization() {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Web platform features that are only exposed to extensions.
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          extensions::switches::kExtensionProcess) &&
+      base::FeatureList::IsEnabled(
+          blink::features::kClipboardOnExtensionServiceWorker)) {
+    blink::WebRuntimeFeatures::EnableClipboardOnExtensionServiceWorker(true);
+  }
+#endif
+}
+
 void RendererClientBase::ExposeInterfacesToBrowser(mojo::BinderMap* binders) {
   // NOTE: Do not add binders directly within this method. Instead, modify the
   // definition of |ExposeElectronRendererInterfacesToBrowser()| to ensure
@@ -421,7 +461,7 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (params.mime_type.Utf8() == pdf::kInternalPluginMimeType) {
-    *plugin = pdf::CreateInternalPlugin(std::move(params), render_frame, {});
+    *plugin = pdf::CreateInternalPlugin(params, render_frame, {});
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -518,6 +558,26 @@ void RendererClientBase::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_renderer_client_.get()->RunScriptsAtDocumentEnd(render_frame);
+#endif
+}
+
+std::unique_ptr<blink::URLLoaderThrottleProvider>
+RendererClientBase::CreateURLLoaderThrottleProvider(
+    blink::URLLoaderThrottleProviderType provider_type) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return std::make_unique<ExtensionURLLoaderThrottleProvider>();
+#else
+  return nullptr;
+#endif
+}
+
+bool RendererClientBase::ShouldNotifyServiceWorkerOnWebSocketActivity(
+    v8::Local<v8::Context> context) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return extensions::Dispatcher::ShouldNotifyServiceWorkerOnWebSocketActivity(
+      context);
+#else
+  return false;
 #endif
 }
 

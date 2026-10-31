@@ -129,7 +129,7 @@ page.
 <webview src="https://www.google.com/" nodeintegrationinsubframes></webview>
 ```
 
-A `boolean` for the experimental option for enabling NodeJS support in sub-frames such as iframes
+A `boolean` for the experimental option for enabling Node.js support in sub-frames such as iframes
 inside the `webview`. All your preloads will load for every iframe, you can
 use `process.isMainFrame` to determine if you are in the main frame or not.
 This option is disabled by default in the guest page.
@@ -479,7 +479,7 @@ Executes editing command `cut` in page.
 
 Executes editing command `copy` in page.
 
-#### `<webview>.centerSelection()`
+### `<webview>.centerSelection()`
 
 Centers the current text selection in page.
 
@@ -503,15 +503,15 @@ Executes editing command `selectAll` in page.
 
 Executes editing command `unselect` in page.
 
-#### `<webview>.scrollToTop()`
+### `<webview>.scrollToTop()`
 
 Scrolls to the top of the current `<webview>`.
 
-#### `<webview>.scrollToBottom()`
+### `<webview>.scrollToBottom()`
 
 Scrolls to the bottom of the current `<webview>`.
 
-#### `<webview>.adjustSelection(options)`
+### `<webview>.adjustSelection(options)`
 
 * `options` Object
   * `start` Number (optional) - Amount to shift the start index of the current selection.
@@ -1048,7 +1048,7 @@ Returns:
 
 Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
 
-#### Event: 'devtools-search-query'
+### Event: 'devtools-search-query'
 
 Returns:
 

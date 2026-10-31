@@ -74,6 +74,59 @@ const void* kElectronApiDownloadItemKey = &kElectronApiDownloadItemKey;
 gin::WrapperInfo DownloadItem::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronDownloadItem);
 
+// Owns the observer registration on the native item.
+// A garbage collection can find the wrapper unreachable
+// some time before sweeping finalizes it,
+// and the native item can still notify its observers in between,
+// so notifications reach the wrapper only through wrapper().
+class DownloadItem::ItemLifecycle final
+    : public NativePeer<DownloadItem>,
+      private download::DownloadItem::Observer {
+ public:
+  ItemLifecycle(DownloadItem* wrapper, download::DownloadItem* item)
+      : NativePeer<DownloadItem>(wrapper), download_item_(item) {
+    download_item_->AddObserver(this);
+    StartObservingShutdown();
+  }
+
+  download::DownloadItem* download_item() const {
+    return is_active() ? download_item_.get() : nullptr;
+  }
+
+ private:
+  ~ItemLifecycle() override = default;
+
+  // download::DownloadItem::Observer:
+  void OnDownloadUpdated(download::DownloadItem* item) override {
+    if (!is_active())
+      return;
+    if (auto api_item = wrapper())
+      api_item->OnDownloadUpdated(item);
+  }
+
+  void OnDownloadDestroyed(download::DownloadItem* item) override {
+    download_item_ = nullptr;
+    if (!is_active())
+      return;
+    if (auto api_item = wrapper())
+      api_item->OnDownloadDestroyed(item);
+  }
+
+  // NativePeer:
+  void TearDownNative() override {
+    if (!download_item_)
+      return;
+    // The wrapper was garbage collected, or the isolate is shutting down.
+    download_item_->RemoveObserver(this);
+    auto* item = download_item_.get();
+    download_item_ = nullptr;
+    // Remove() synchronously deletes the native item.
+    item->Remove();
+  }
+
+  raw_ptr<download::DownloadItem> download_item_;
+};
+
 // static
 DownloadItem* DownloadItem::FromDownloadItem(download::DownloadItem* item) {
   // ^- say that 7 times fast in a row
@@ -83,25 +136,21 @@ DownloadItem* DownloadItem::FromDownloadItem(download::DownloadItem* item) {
 }
 
 DownloadItem::DownloadItem(v8::Isolate* isolate, download::DownloadItem* item)
-    : download_item_(item), isolate_(isolate) {
-  download_item_->AddObserver(this);
-  download_item_->SetUserData(kElectronApiDownloadItemKey,
-                              std::make_unique<UserDataLink>(this));
+    : item_lifecycle_(
+          NativePeer<DownloadItem>::Create<ItemLifecycle>(this, item)),
+      isolate_(isolate) {
+  item->SetUserData(kElectronApiDownloadItemKey,
+                    std::make_unique<UserDataLink>(this));
 }
 
-DownloadItem::~DownloadItem() {
-  if (download_item_) {
-    // Destroyed by either garbage collection or destroy().
-    download_item_->RemoveObserver(this);
-    auto* download_item = download_item_.get();
-    download_item_ = nullptr;
-    // Remove() synchronously deletes the native item.
-    download_item->Remove();
-  }
+DownloadItem::~DownloadItem() = default;
+
+download::DownloadItem* DownloadItem::download_item() const {
+  return item_lifecycle_->download_item();
 }
 
 bool DownloadItem::CheckAlive() const {
-  if (!download_item_) {
+  if (!download_item()) {
     gin_helper::ErrorThrower(isolate_).ThrowError(
         "DownloadItem used after being destroyed");
     return false;
@@ -112,7 +161,7 @@ bool DownloadItem::CheckAlive() const {
 void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
   if (!CheckAlive())
     return;
-  if (download_item_->IsDone()) {
+  if (download_item()->IsDone()) {
     Emit("done", item->GetState());
     keep_alive_.Clear();
   } else {
@@ -121,74 +170,73 @@ void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
 }
 
 void DownloadItem::OnDownloadDestroyed(download::DownloadItem* /*item*/) {
-  download_item_ = nullptr;
   keep_alive_.Clear();
 }
 
 void DownloadItem::Pause() {
   if (!CheckAlive())
     return;
-  download_item_->Pause();
+  download_item()->Pause();
 }
 
 bool DownloadItem::IsPaused() const {
   if (!CheckAlive())
     return false;
-  return download_item_->IsPaused();
+  return download_item()->IsPaused();
 }
 
 void DownloadItem::Resume() {
   if (!CheckAlive())
     return;
-  download_item_->Resume(true /* user_gesture */);
+  download_item()->Resume(true /* user_gesture */);
 }
 
 bool DownloadItem::CanResume() const {
   if (!CheckAlive())
     return false;
-  return download_item_->CanResume();
+  return download_item()->CanResume();
 }
 
 void DownloadItem::Cancel() {
   if (!CheckAlive())
     return;
-  download_item_->Cancel(true);
+  download_item()->Cancel(true);
 }
 
 int64_t DownloadItem::GetCurrentBytesPerSecond() const {
   if (!CheckAlive())
     return 0;
-  return download_item_->CurrentSpeed();
+  return download_item()->CurrentSpeed();
 }
 
 int64_t DownloadItem::GetReceivedBytes() const {
   if (!CheckAlive())
     return 0;
-  return download_item_->GetReceivedBytes();
+  return download_item()->GetReceivedBytes();
 }
 
 int64_t DownloadItem::GetTotalBytes() const {
   if (!CheckAlive())
     return 0;
-  return download_item_->GetTotalBytes();
+  return download_item()->GetTotalBytes();
 }
 
 int DownloadItem::GetPercentComplete() const {
   if (!CheckAlive())
     return 0;
-  return download_item_->PercentComplete();
+  return download_item()->PercentComplete();
 }
 
 std::string DownloadItem::GetMimeType() const {
   if (!CheckAlive())
     return "";
-  return download_item_->GetMimeType();
+  return download_item()->GetMimeType();
 }
 
 bool DownloadItem::HasUserGesture() const {
   if (!CheckAlive())
     return false;
-  return download_item_->HasUserGesture();
+  return download_item()->HasUserGesture();
 }
 
 std::string DownloadItem::GetFilename() const {
@@ -196,7 +244,7 @@ std::string DownloadItem::GetFilename() const {
     return "";
   return base::UTF16ToUTF8(
       net::GenerateFileName(GetURL(), GetContentDisposition(), std::string(),
-                            download_item_->GetSuggestedFilename(),
+                            download_item()->GetSuggestedFilename(),
                             GetMimeType(), "download")
           .LossyDisplayName());
 }
@@ -204,33 +252,33 @@ std::string DownloadItem::GetFilename() const {
 std::string DownloadItem::GetContentDisposition() const {
   if (!CheckAlive())
     return "";
-  return download_item_->GetContentDisposition();
+  return download_item()->GetContentDisposition();
 }
 
 const GURL& DownloadItem::GetURL() const {
   if (!CheckAlive())
     return GURL::EmptyGURL();
-  return download_item_->GetURL();
+  return download_item()->GetURL();
 }
 
 std::string DownloadItem::GetInitiatorOrigin() const {
   if (!CheckAlive())
     return {};
   const std::optional<url::Origin>& initiator =
-      download_item_->GetRequestInitiator();
+      download_item()->GetRequestInitiator();
   return initiator ? initiator->Serialize() : std::string();
 }
 
 v8::Local<v8::Value> DownloadItem::GetURLChain() const {
   if (!CheckAlive())
     return {};
-  return gin::ConvertToV8(isolate_, download_item_->GetUrlChain());
+  return gin::ConvertToV8(isolate_, download_item()->GetUrlChain());
 }
 
 download::DownloadItem::DownloadState DownloadItem::GetState() const {
   if (!CheckAlive())
     return download::DownloadItem::IN_PROGRESS;
-  return download_item_->GetState();
+  return download_item()->GetState();
 }
 
 void DownloadItem::SetSavePath(const base::FilePath& path) {
@@ -253,25 +301,25 @@ void DownloadItem::SetSaveDialogOptions(
 std::string DownloadItem::GetLastModifiedTime() const {
   if (!CheckAlive())
     return "";
-  return download_item_->GetLastModifiedTime();
+  return download_item()->GetLastModifiedTime();
 }
 
 std::string DownloadItem::GetETag() const {
   if (!CheckAlive())
     return "";
-  return download_item_->GetETag();
+  return download_item()->GetETag();
 }
 
 double DownloadItem::GetStartTime() const {
   if (!CheckAlive())
     return 0;
-  return download_item_->GetStartTime().InSecondsFSinceUnixEpoch();
+  return download_item()->GetStartTime().InSecondsFSinceUnixEpoch();
 }
 
 double DownloadItem::GetEndTime() const {
   if (!CheckAlive())
     return 0;
-  return download_item_->GetEndTime().InSecondsFSinceUnixEpoch();
+  return download_item()->GetEndTime().InSecondsFSinceUnixEpoch();
 }
 
 // static

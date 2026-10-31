@@ -1,6 +1,6 @@
-import { net, protocol } from 'electron/main';
+import { net, protocol, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 import * as url from 'node:url';
@@ -10,9 +10,9 @@ import { defer } from './lib/spec-helpers.ts';
 describe('net module custom protocols', () => {
   it('can request file:// URLs', async () => {
     const resp = await net.fetch(url.pathToFileURL(path.join(import.meta.dirname, 'fixtures', 'hello.txt')).toString());
-    expect(resp.ok).to.be.true();
+    expect(resp.ok).toBe(true);
     // trimRight instead of asserting the whole string to avoid line ending shenanigans on WOA
-    expect((await resp.text()).trimRight()).to.equal('hello world');
+    expect((await resp.text()).trimRight()).toBe('hello world');
   });
 
   it('can make requests to custom protocols', async () => {
@@ -23,7 +23,7 @@ describe('net module custom protocols', () => {
       protocol.unregisterProtocol('electron-test');
     });
     const body = await net.fetch('electron-test://foo').then((r) => r.text());
-    expect(body).to.equal('hello electron-test://foo');
+    expect(body).toBe('hello electron-test://foo');
   });
 
   it('runs through intercept handlers', async () => {
@@ -34,7 +34,7 @@ describe('net module custom protocols', () => {
       protocol.uninterceptProtocol('http');
     });
     const body = await net.fetch('http://foo').then((r) => r.text());
-    expect(body).to.equal('hello http://foo/');
+    expect(body).toBe('hello http://foo/');
   });
 
   it('file: runs through intercept handlers', async () => {
@@ -45,7 +45,46 @@ describe('net module custom protocols', () => {
       protocol.uninterceptProtocol('file');
     });
     const body = await net.fetch('file://foo').then((r) => r.text());
-    expect(body).to.equal('hello file://foo/');
+    expect(body).toBe('hello file://foo/');
+  });
+
+  describe('file: after an earlier request', () => {
+    const fileUrl = url.pathToFileURL(path.join(import.meta.dirname, 'fixtures', 'hello.txt')).toString();
+    // Range keeps these fetches on the URL loader, the path under test, even if plain file: GETs later bypass it.
+    const fetchText = async (ses: Electron.Session) =>
+      (await ses.fetch(fileUrl, { headers: { Range: 'bytes=0-' } }).then((r) => r.text())).trimEnd();
+
+    it('runs through intercept handlers added since', async () => {
+      const ses = session.fromPartition(`net-file-intercept-${Math.random()}`);
+      expect(await fetchText(ses)).toBe('hello world');
+      ses.protocol.interceptStringProtocol('file', (req, cb) => {
+        cb('intercepted ' + req.url);
+      });
+      defer(() => {
+        ses.protocol.uninterceptProtocol('file');
+      });
+      expect(await fetchText(ses)).toBe('intercepted ' + fileUrl);
+      ses.protocol.uninterceptProtocol('file');
+      expect(await fetchText(ses)).toBe('hello world');
+    });
+
+    it('triggers webRequest listeners added since, and not once removed', async () => {
+      const ses = session.fromPartition(`net-file-webrequest-${Math.random()}`);
+      await fetchText(ses);
+      const seen: string[] = [];
+      ses.webRequest.onBeforeRequest((details, cb) => {
+        seen.push(details.url);
+        cb({});
+      });
+      defer(() => {
+        ses.webRequest.onBeforeRequest(null);
+      });
+      await fetchText(ses);
+      expect(seen).toEqual([fileUrl]);
+      ses.webRequest.onBeforeRequest(null);
+      await fetchText(ses);
+      expect(seen).toEqual([fileUrl]);
+    });
   });
 
   it('can be redirected', async () => {
@@ -62,7 +101,7 @@ describe('net module custom protocols', () => {
       protocol.unregisterProtocol('electron-test');
     });
     const body = await net.fetch('file://foo').then((r) => r.text());
-    expect(body).to.equal('hello electron-test://bar');
+    expect(body).toBe('hello electron-test://bar');
   });
 
   it('can be redirected from http to a custom scheme', async () => {
@@ -79,7 +118,7 @@ describe('net module custom protocols', () => {
       protocol.unregisterProtocol('electron-test');
     });
     const body = await net.fetch('http://foo').then((r) => r.text());
-    expect(body).to.equal('hello electron-test://bar');
+    expect(body).toBe('hello electron-test://bar');
   });
 
   it('can be redirected from file to file', async () => {
@@ -91,7 +130,7 @@ describe('net module custom protocols', () => {
       protocol.uninterceptProtocol('file');
     });
     const body = await net.fetch('file:///redirect-me').then((r) => r.text());
-    expect(body).to.equal('redirected-to file:///target');
+    expect(body).toBe('redirected-to file:///target');
   });
 
   it('should not follow redirect when redirect: error', async () => {
@@ -102,7 +141,7 @@ describe('net module custom protocols', () => {
     defer(() => {
       protocol.unregisterProtocol('electron-test');
     });
-    await expect(net.fetch('electron-test://redirect', { redirect: 'error' })).to.eventually.be.rejectedWith(
+    await expect(net.fetch('electron-test://redirect', { redirect: 'error' })).rejects.toThrow(
       "Attempted to redirect, but redirect policy was 'error'"
     );
   });
@@ -122,8 +161,8 @@ describe('net module custom protocols', () => {
       method: 'POST',
       body: bodyData
     });
-    expect(response.status).to.equal(200);
+    expect(response.status).toBe(200);
     await response.text();
-    expect(postedBodyData).to.equal(bodyData);
+    expect(postedBodyData).toBe(bodyData);
   });
 });

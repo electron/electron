@@ -32,7 +32,6 @@
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "gin/per_context_data.h"
-#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
@@ -46,7 +45,6 @@
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
-#include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "shell/common/process_util.h"
 #include "shell/common/world_ids.h"
@@ -431,7 +429,6 @@ bool IsAllowedOption(const std::string_view option) {
           "--inspect-publish-uid",
           "--experimental-network-inspection",
           "--experimental-inspector-network-resource",
-          "--experimental-transform-types",
       });
 
   // This should be aligned with what's possible to set via the process object.
@@ -672,15 +669,17 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
       args.push_back(option);
   }
 
-  // Node's setupEventsource() in lib/internal/process/pre_execution.js
-  // deletes globalThis.EventSource when --experimental-eventsource is not
-  // set, and unlike its sibling setup functions it does not check
-  // noBrowserGlobals. Pass the flag so Blink's EventSource is left alone;
-  // Node's own undici EventSource is never installed under
-  // kNoBrowserGlobals so there is no conflict.
+  // Node's setupEventsource() and removeWebWorkersIfDisabled() in
+  // lib/internal/process/pre_execution.js delete globalThis.EventSource and
+  // globalThis.Worker when --experimental-eventsource and
+  // --experimental-web-worker are not set, and unlike their sibling setup
+  // functions they do not check noBrowserGlobals. Pass the flags so Blink's
+  // EventSource and Worker are left alone; Node's own EventSource and Worker
+  // are never installed under kNoBrowserGlobals so there is no conflict.
   if (browser_env_ == BrowserEnvironment::kRenderer ||
       browser_env_ == BrowserEnvironment::kWorker) {
     args.push_back("--experimental-eventsource");
+    args.push_back("--experimental-web-worker");
   }
 
   return args;
@@ -734,18 +733,11 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
 
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kNoStdioInit)) {
-    process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
-  } else {
 #if BUILDFLAG(IS_WIN)
-    if (!platform_util::IsNulDeviceEnabled()) {
-      LOG(FATAL) << "Unable to open nul device needed for initialization,"
-                    "aborting startup. As a workaround, try starting with --"
-                 << switches::kNoStdioInit;
-    }
+  // Node.js aborts when it cannot replace missing stdio handles with NUL.
+  if (!platform_util::IsNulDeviceEnabled())
+    process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
 #endif
-  }
 
   std::shared_ptr<node::InitializationResult> result =
       node::InitializeOncePerProcess(
@@ -800,9 +792,6 @@ void NodeBindings::SetUpIsolate(v8::Isolate* const isolate) {
       browser_env_ == BrowserEnvironment::kUtility) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
-    // node::CreateEnvironment already added Node's listener if it built the
-    // environment from the Node snapshot; keep exactly one.
-    isolate->RemoveMessageListeners(node::errors::PerIsolateMessageListener);
   } else {
     // Blink expects the microtasks policy to be kScoped, but Node.js expects it
     // to be kExplicit. In the renderer, there can be many contexts within the
@@ -872,10 +861,9 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 
   // The Node startup snapshot's per-isolate data (templates, primordials)
   // is fed to CreateIsolateData so the bootstrap is deserialized.
-  auto snapshot_wrapper = from_snapshot
-                              ? node::SnapshotBuilder::GetEmbeddedSnapshotData()
-                                    ->AsEmbedderWrapper()
-                              : node::EmbedderSnapshotData::Pointer{};
+  auto snapshot_wrapper =
+      from_snapshot ? node::EmbedderSnapshotData::BuiltinSnapshotData()
+                    : node::EmbedderSnapshotData::Pointer{};
   auto* isolate_data =
       node::CreateIsolateData(isolate, uv_loop_, platform,
                               /*allocator=*/nullptr, snapshot_wrapper.get());
@@ -942,7 +930,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   if (browser_env_ == BrowserEnvironment::kBrowser ||
       browser_env_ == BrowserEnvironment::kRenderer) {
     if (on_app_code_ready) {
-      process.SetMethod("appCodeLoaded", std::move(*on_app_code_ready));
+      process.SetMethod("appCodeLoaded", *on_app_code_ready);
     } else {
       process.SetMethod("appCodeLoaded",
                         base::BindRepeating(&NodeBindings::SetAppCodeLoaded,
@@ -1223,18 +1211,6 @@ void OnNodePreload(node::Environment* env,
       env->principal_realm()) {
     return;
   }
-  // A Node.js worker's isolate has no gin::PerIsolateData, so gin never frees
-  // the callback holders created in it. Free them when the environment is torn
-  // down, which happens on the worker's thread after its JavaScript has ended.
-  if (!gin::PerIsolateData::From(env->isolate())) {
-    env->AddCleanupHook(
-        [](void* isolate) {
-          gin_helper::CallbackHolderBase::DisposeAllInIsolateWithoutGin(
-              static_cast<v8::Isolate*>(isolate));
-        },
-        env->isolate());
-  }
-
   // Set custom process properties.
   gin_helper::Dictionary dict(env->isolate(), process.As<v8::Object>());
   dict.SetReadOnly("resourcesPath", GetResourcesPath());

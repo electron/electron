@@ -16,7 +16,7 @@ runs:
         git config --global core.preloadindex true
         git config --global core.longpaths true
       fi
-      export BUILD_TOOLS_SHA=6c0834d9c052463a8834b02c11a6f8b4311990f2
+      export BUILD_TOOLS_SHA=f3e78a88737b61112ec69769b0d874dd441b4d8b
       # Both fetch over the network (the first `e` command clones depot_tools),
       # so retry them on transient failures.
       RETRY="$PWD/src/electron/script/actions/retry.sh"
@@ -28,7 +28,13 @@ runs:
       e d auto-update disable
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
         e d cipd.bat --version
-        cp "C:\Python311\python.exe" "C:\Python311\python3.exe"
+        # The python.org installer has no python3.exe. Unless the runner image
+        # already provides one, copy the system Python 3 that is on PATH,
+        # wherever it is installed.
+        if ! python3 -c '' > /dev/null 2>&1; then
+          python_dir=$(cygpath -u "$(python -c 'import os, sys; assert sys.version_info[0] == 3, sys.version; print(os.path.dirname(sys.executable))')")
+          cp "$python_dir/python.exe" "$python_dir/python3.exe"
+        fi
         # build-tools installs under the profile of whichever user the runner is
         # (ContainerAdministrator in the container image, a per-VM user on the
         # VM runners); USERPROFILE is what it uses and is already a Windows path.

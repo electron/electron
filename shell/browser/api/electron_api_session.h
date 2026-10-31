@@ -145,7 +145,7 @@ class Session final : public gin::Wrappable<Session>,
   void DownloadURL(const GURL& url, gin::Arguments* args);
   void CreateInterruptedDownload(const gin_helper::Dictionary& options);
   std::string RegisterPreloadScript(gin_helper::ErrorThrower thrower,
-                                    const PreloadScript& new_preload_script);
+                                    PreloadScript new_preload_script);
   void UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
                                const std::string& script_id);
   std::vector<PreloadScript> GetPreloadScripts() const;

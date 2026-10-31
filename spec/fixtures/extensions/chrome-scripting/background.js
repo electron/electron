@@ -45,6 +45,11 @@ const handleRequest = async (request, sender, sendResponse) => {
     }
 
     case 'registerContentScripts': {
+      // A retried test reuses this session, where the script from the earlier
+      // attempt is still registered and its id would be rejected as a duplicate.
+      const ids = ['session-script'];
+      const existing = await chrome.scripting.getRegisteredContentScripts({ ids });
+      if (existing.length > 0) await chrome.scripting.unregisterContentScripts({ ids });
       await chrome.scripting.registerContentScripts([
         {
           id: 'session-script',

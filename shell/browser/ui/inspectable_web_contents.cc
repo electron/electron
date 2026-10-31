@@ -27,6 +27,7 @@
 #include "build/util/chromium_git_revision.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/common/pref_names.h"
+#include "chrome/common/webui_url_constants.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -107,6 +108,25 @@ constexpr std::string_view kFrontendHostId = "id";
 constexpr std::string_view kFrontendHostMethod = "method";
 constexpr std::string_view kFrontendHostParams = "params";
 constexpr std::string_view kTitleFormat = "Developer Tools - %s";
+
+// Mirrors IsLocalDevToolsFrontendURL() in
+// chrome/browser/devtools/devtools_ui_bindings.cc: only the bundled, custom
+// and blank devtools:// frontends are trusted to access profile DevTools
+// settings and the other local-only embedder messages.
+bool IsLocalDevToolsFrontendURL(const GURL& url) {
+  if (!url.is_valid() || url.IsAboutBlank() ||
+      !url.SchemeIs(content::kChromeDevToolsScheme) ||
+      url.host() != chrome::kChromeUIDevToolsHost) {
+    return false;
+  }
+  std::string_view path = url.path();
+  if (path.starts_with('/')) {
+    path = path.substr(1);
+  }
+  return path.starts_with(chrome::kChromeUIDevToolsBundledPath) ||
+         path.starts_with(chrome::kChromeUIDevToolsCustomPath) ||
+         path.starts_with(chrome::kChromeUIDevToolsBlankPath);
+}
 
 const size_t kMaxMessageChunkSize = IPC::mojom::kChannelMaximumMessageSize / 4;
 
@@ -597,6 +617,13 @@ void InspectableWebContents::UpdateDevToolsZoomLevel(double level) {
   pref_service_->SetDouble(kDevToolsZoomPref, level);
 }
 
+bool InspectableWebContents::IsLocalFrontend() const {
+  content::WebContents* devtools_web_contents = GetDevToolsWebContents();
+  return devtools_web_contents &&
+         IsLocalDevToolsFrontendURL(
+             devtools_web_contents->GetLastCommittedURL());
+}
+
 void InspectableWebContents::ActivateWindow() {
   if (embedder_message_dispatcher_) {
     if (managed_devtools_web_contents_ && view_) {
@@ -786,7 +813,9 @@ void InspectableWebContents::SetIsDocked(DispatchCallback callback,
     std::move(callback).Run(nullptr);
 }
 
-void InspectableWebContents::OpenInNewTab(const std::string& url) {
+void InspectableWebContents::OpenInNewTab(
+    const std::string& url,
+    const std::optional<std::string>& initiator_id) {
   if (delegate_)
     delegate_->DevToolsOpenInNewTab(url);
 }
@@ -1332,7 +1361,7 @@ content::WebContents* InspectableWebContents::OpenURLFromTab(
     return devtools_web_contents;
   }
 
-  OpenInNewTab(params.url.spec());
+  OpenInNewTab(params.url.spec(), std::nullopt);
   return nullptr;
 }
 

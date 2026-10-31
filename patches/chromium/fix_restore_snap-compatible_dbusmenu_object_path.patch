@@ -29,7 +29,7 @@ adoption time has passed.
 Upstream snapd bug: https://bugs.launchpad.net/snapd/+bug/2161950
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index e6b0edeadb45114ef2c662e6187dcf16aa32353c..8e26bfc2c62265ed7b9137eca7fc98949a76da2f 100644
+index 33504ef7e51b988554ad8447467cdf9b41b590a3..99c12ee9f18a768b5724374ebe0046a1e5b8db36 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -71,7 +71,7 @@ const char kInterfaceStatusNotifierWatcher[] = "org.kde.StatusNotifierWatcher";

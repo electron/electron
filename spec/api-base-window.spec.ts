@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { BaseWindow, Menu, View, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { type EventEmitter, once } from 'node:events';
 
@@ -11,21 +11,21 @@ import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
 const expectBoundsEqual = (actual: any, expected: any) => {
   if (!isScaleFactorRounding()) {
-    expect(actual).to.deep.equal(expected);
+    expect(actual).toEqual(expected);
   } else if (Array.isArray(actual)) {
-    expect(actual[0]).to.be.closeTo(expected[0], 1);
-    expect(actual[1]).to.be.closeTo(expected[1], 1);
+    expect(Math.abs(actual[0] - expected[0])).toBeLessThanOrEqual(1);
+    expect(Math.abs(actual[1] - expected[1])).toBeLessThanOrEqual(1);
   } else {
-    expect(actual.x).to.be.closeTo(expected.x, 1);
-    expect(actual.y).to.be.closeTo(expected.y, 1);
-    expect(actual.width).to.be.closeTo(expected.width, 1);
-    expect(actual.height).to.be.closeTo(expected.height, 1);
+    expect(Math.abs(actual.x - expected.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(actual.y - expected.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(actual.width - expected.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(actual.height - expected.height)).toBeLessThanOrEqual(1);
   }
 };
 
 describe('BaseWindow module', () => {
   it('sets the correct class name on the prototype', () => {
-    expect(BaseWindow.prototype.constructor.name).to.equal('BaseWindow');
+    expect(BaseWindow.prototype.constructor.name).toBe('BaseWindow');
   });
 
   describe('BaseWindow constructor', () => {
@@ -35,12 +35,12 @@ describe('BaseWindow module', () => {
       expect(() => {
         const w = new BaseWindow();
         w.destroy();
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('creates a hidden window when show is false', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isVisible()).to.be.false('is visible');
+      expect(w.isVisible(), 'is visible').toBe(false);
     });
 
     it('honors the width and height options', () => {
@@ -64,9 +64,9 @@ describe('BaseWindow module', () => {
         const emitter: EventEmitter = w;
         const listener = () => {};
         emitter.on(eventName, listener);
-        expect(emitter.listeners(eventName)).to.include(listener);
+        expect(emitter.listeners(eventName)).toContain(listener);
         emitter.off(eventName, listener);
-        expect(emitter.listeners(eventName)).to.not.include(listener);
+        expect(emitter.listeners(eventName)).not.toContain(listener);
       });
     }
   };
@@ -98,7 +98,7 @@ describe('BaseWindow module', () => {
       w.on('closed', () => events.push('closed'));
       w.close();
       await closed;
-      expect(events).to.deep.equal(['close', 'closed']);
+      expect(events).toEqual(['close', 'closed']);
     });
 
     it('cancels the close when event.preventDefault() is called', () => {
@@ -107,7 +107,7 @@ describe('BaseWindow module', () => {
         e.preventDefault();
       });
       w.close();
-      expect(w.isDestroyed()).to.be.false('window is destroyed');
+      expect(w.isDestroyed(), 'window is destroyed').toBe(false);
     });
   });
 
@@ -122,7 +122,7 @@ describe('BaseWindow module', () => {
       const closed = once(w, 'closed');
       w.destroy();
       await closed;
-      expect(w.isDestroyed()).to.be.true('window is not destroyed');
+      expect(w.isDestroyed(), 'window is not destroyed').toBe(true);
     });
   });
 
@@ -133,8 +133,8 @@ describe('BaseWindow module', () => {
       const w1 = new BaseWindow({ show: false });
       const w2 = new BaseWindow({ show: false });
       const windows = BaseWindow.getAllWindows();
-      expect(windows).to.include(w1);
-      expect(windows).to.include(w2);
+      expect(windows).toContain(w1);
+      expect(windows).toContain(w2);
     });
   });
 
@@ -143,11 +143,11 @@ describe('BaseWindow module', () => {
 
     it('returns the window with the given id', () => {
       const w = new BaseWindow({ show: false });
-      expect(BaseWindow.fromId(w.id)).to.equal(w);
+      expect(BaseWindow.fromId(w.id)).toBe(w);
     });
 
     it('returns null for a nonexistent id', () => {
-      expect(BaseWindow.fromId(314159)).to.be.null('window');
+      expect(BaseWindow.fromId(314159), 'window').toBeNull();
     });
   });
 
@@ -157,8 +157,8 @@ describe('BaseWindow module', () => {
     it('is unique for each window', () => {
       const w1 = new BaseWindow({ show: false });
       const w2 = new BaseWindow({ show: false });
-      expect(w1.id).to.be.a('number');
-      expect(w2.id).to.not.equal(w1.id);
+      expect(w1.id).toBeTypeOf('number');
+      expect(w2.id).not.toBe(w1.id);
     });
   });
 
@@ -167,22 +167,22 @@ describe('BaseWindow module', () => {
 
     it('window has a content view by default', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.contentView).to.be.an.instanceOf(View);
+      expect(w.contentView).toBeInstanceOf(View);
     });
 
     it('BaseWindow.setContentView(view) replaces the content view', () => {
       const w = new BaseWindow({ show: false });
       const v = new View();
       w.setContentView(v);
-      expect(w.contentView).to.equal(v);
+      expect(w.contentView).toBe(v);
     });
 
     it('BaseWindow.getContentView() returns the current content view', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.getContentView()).to.equal(w.contentView);
+      expect(w.getContentView()).toBe(w.contentView);
       const v = new View();
       w.setContentView(v);
-      expect(w.getContentView()).to.equal(v);
+      expect(w.getContentView()).toBe(v);
     });
   });
 
@@ -191,13 +191,13 @@ describe('BaseWindow module', () => {
 
     it('returns false for a normal window', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isModal()).to.be.false('isModal');
+      expect(w.isModal(), 'isModal').toBe(false);
     });
 
     it('returns true for a modal child window', () => {
       const parent = new BaseWindow({ show: false });
       const child = new BaseWindow({ show: false, parent, modal: true });
-      expect(child.isModal()).to.be.true('isModal');
+      expect(child.isModal(), 'isModal').toBe(true);
     });
   });
 
@@ -207,26 +207,26 @@ describe('BaseWindow module', () => {
     it('parent option sets the parent window', () => {
       const parent = new BaseWindow({ show: false });
       const child = new BaseWindow({ show: false, parent });
-      expect(child.getParentWindow()).to.equal(parent);
-      expect(parent.getParentWindow()).to.be.null('parent window');
+      expect(child.getParentWindow()).toBe(parent);
+      expect(parent.getParentWindow(), 'parent window').toBeNull();
     });
 
     it('getChildWindows() returns the child windows', () => {
       const parent = new BaseWindow({ show: false });
-      expect(parent.getChildWindows()).to.have.lengthOf(0);
+      expect(parent.getChildWindows()).toHaveLength(0);
       const child = new BaseWindow({ show: false, parent });
-      expect(parent.getChildWindows()).to.deep.equal([child]);
+      expect(parent.getChildWindows()).toEqual([child]);
     });
 
     it('setParentWindow() attaches and detaches a parent at runtime', () => {
       const parent = new BaseWindow({ show: false });
       const w = new BaseWindow({ show: false });
       w.setParentWindow(parent);
-      expect(w.getParentWindow()).to.equal(parent);
-      expect(parent.getChildWindows()).to.deep.equal([w]);
+      expect(w.getParentWindow()).toBe(parent);
+      expect(parent.getChildWindows()).toEqual([w]);
       w.setParentWindow(null);
-      expect(w.getParentWindow()).to.be.null('parent window');
-      expect(parent.getChildWindows()).to.have.lengthOf(0);
+      expect(w.getParentWindow(), 'parent window').toBeNull();
+      expect(parent.getChildWindows()).toHaveLength(0);
     });
   });
 
@@ -245,7 +245,7 @@ describe('BaseWindow module', () => {
         const show = once(w, 'show');
         w.show();
         await show;
-        expect(w.isVisible()).to.be.true('is visible');
+        expect(w.isVisible(), 'is visible').toBe(true);
       });
     });
 
@@ -257,7 +257,7 @@ describe('BaseWindow module', () => {
         const hidden = once(w, 'hide');
         w.hide();
         await hidden;
-        expect(w.isVisible()).to.be.false('is visible');
+        expect(w.isVisible(), 'is visible').toBe(false);
       });
     });
   });
@@ -278,21 +278,21 @@ describe('BaseWindow module', () => {
         const focused = once(w, 'focus');
         w.show();
         await focused;
-        expect(w.isFocused()).to.be.true('is focused');
+        expect(w.isFocused(), 'is focused').toBe(true);
       });
     });
 
     describe('BaseWindow.hide()', () => {
       it('should defocus the window', () => {
         w.hide();
-        expect(w.isFocused()).to.be.false('is focused');
+        expect(w.isFocused(), 'is focused').toBe(false);
       });
     });
 
     describe('BaseWindow.showInactive()', () => {
       it('should not focus on the window', () => {
         w.showInactive();
-        expect(w.isFocused()).to.be.false('is focused');
+        expect(w.isFocused(), 'is focused').toBe(false);
       });
     });
 
@@ -304,7 +304,7 @@ describe('BaseWindow module', () => {
         const blurred = once(w, 'blur');
         w.blur();
         await blurred;
-        expect(w.isFocused()).to.be.false('is focused');
+        expect(w.isFocused(), 'is focused').toBe(false);
       });
     });
 
@@ -313,7 +313,7 @@ describe('BaseWindow module', () => {
         const focused = once(w, 'focus');
         w.show();
         await focused;
-        expect(BaseWindow.getFocusedWindow()).to.equal(w);
+        expect(BaseWindow.getFocusedWindow()).toBe(w);
       });
     });
   });
@@ -346,15 +346,15 @@ describe('BaseWindow module', () => {
       });
 
       it('throws when a field is not a number', () => {
-        expect(() => w.setBounds({ x: 'left' } as any)).to.throw(/conversion failure/);
-        expect(() => (w.setBounds as any)(null)).to.throw(/conversion failure/);
+        expect(() => w.setBounds({ x: 'left' } as any)).toThrow(/conversion failure/);
+        expect(() => (w.setBounds as any)(null)).toThrow(/conversion failure/);
       });
 
       it('rounds non-integer bounds', () => {
         w.setBounds({ x: 440.5, y: 225.1, width: 500.4, height: 400.9 });
 
         const bounds = w.getBounds();
-        expect(bounds).to.deep.equal({ x: 441, y: 225, width: 500, height: 401 });
+        expect(bounds).toEqual({ x: 441, y: 225, width: 500, height: 401 });
       });
 
       it('throws on non-finite or out-of-range bounds', () => {
@@ -366,7 +366,7 @@ describe('BaseWindow module', () => {
           { x: -1e10, y: -1e10, width: 100, height: 100 }
         ];
         for (const bounds of bad) {
-          expect(() => w.setBounds(bounds)).to.throw(/conversion failure/);
+          expect(() => w.setBounds(bounds)).toThrow(/conversion failure/);
         }
         expectBoundsEqual(w.getBounds(), before);
       });
@@ -400,7 +400,7 @@ describe('BaseWindow module', () => {
         const move = once(w, 'move');
         w.setPosition(pos[0], pos[1]);
         await move;
-        expect(w.getPosition()).to.deep.equal(pos);
+        expect(w.getPosition()).toEqual(pos);
       });
 
       // On Windows the moved event is only emitted when a user drag ends (WM_EXITSIZEMOVE), never for programmatic setPosition.
@@ -426,8 +426,8 @@ describe('BaseWindow module', () => {
 
     describe('BaseWindow.setMinimum/MaximumSize(width, height)', () => {
       it('sets the maximum and minimum size of the window', () => {
-        expect(w.getMinimumSize()).to.deep.equal([0, 0]);
-        expect(w.getMaximumSize()).to.deep.equal([0, 0]);
+        expect(w.getMinimumSize()).toEqual([0, 0]);
+        expect(w.getMaximumSize()).toEqual([0, 0]);
 
         w.setMinimumSize(100, 100);
         expectBoundsEqual(w.getMinimumSize(), [100, 100]);
@@ -447,8 +447,8 @@ describe('BaseWindow module', () => {
           minHeight: 300
         });
         const size = w1.getSize();
-        expect(size[0]).to.equal(300);
-        expect(size[1]).to.equal(300);
+        expect(size[0]).toBe(300);
+        expect(size[1]).toBe(300);
         w1.destroy();
       });
 
@@ -458,8 +458,8 @@ describe('BaseWindow module', () => {
         w.setSize(100, 100);
         await resize;
         const size = w.getSize();
-        expect(size[0]).to.be.at.least(300);
-        expect(size[1]).to.be.at.least(300);
+        expect(size[0]).toBeGreaterThanOrEqual(300);
+        expect(size[1]).toBeGreaterThanOrEqual(300);
       });
 
       it('enforces maximum size', async () => {
@@ -468,8 +468,8 @@ describe('BaseWindow module', () => {
         w.setSize(500, 500);
         await resize;
         const size = w.getSize();
-        expect(size[0]).to.be.at.most(200);
-        expect(size[1]).to.be.at.most(200);
+        expect(size[0]).toBeLessThanOrEqual(200);
+        expect(size[1]).toBeLessThanOrEqual(200);
       });
     });
 
@@ -481,7 +481,7 @@ describe('BaseWindow module', () => {
         const size = [456, 567];
         w.setContentSize(size[0], size[1]);
         await new Promise(setImmediate);
-        expect(w.getContentSize()).to.deep.equal(size);
+        expect(w.getContentSize()).toEqual(size);
       });
     });
 
@@ -502,7 +502,7 @@ describe('BaseWindow module', () => {
           { x: -1e10, y: -1e10, width: 100, height: 100 }
         ];
         for (const bounds of bad) {
-          expect(() => w.setContentBounds(bounds)).to.throw(/conversion failure/);
+          expect(() => w.setContentBounds(bounds)).toThrow(/conversion failure/);
         }
         expectBoundsEqual(w.getBounds(), before);
       });
@@ -541,11 +541,11 @@ describe('BaseWindow module', () => {
 
     it('returns true when the window is in normal state', async () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isNormal()).to.be.true('isNormal');
+      expect(w.isNormal(), 'isNormal').toBe(true);
       const shown = once(w, 'show');
       w.show();
       await shown;
-      expect(w.isNormal()).to.be.true('isNormal');
+      expect(w.isNormal(), 'isNormal').toBe(true);
     });
   });
 
@@ -555,44 +555,44 @@ describe('BaseWindow module', () => {
     describe('resizable state', () => {
       it('can be set with the resizable constructor option', () => {
         const w = new BaseWindow({ show: false, resizable: false });
-        expect(w.resizable).to.be.false('resizable');
+        expect(w.resizable, 'resizable').toBe(false);
       });
 
       it('can be changed with the property', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.resizable).to.be.true('resizable');
+        expect(w.resizable, 'resizable').toBe(true);
         w.resizable = false;
-        expect(w.resizable).to.be.false('resizable');
+        expect(w.resizable, 'resizable').toBe(false);
         w.resizable = true;
-        expect(w.resizable).to.be.true('resizable');
+        expect(w.resizable, 'resizable').toBe(true);
       });
 
       it('can be changed with the functions', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.isResizable()).to.be.true('resizable');
+        expect(w.isResizable(), 'resizable').toBe(true);
         w.setResizable(false);
-        expect(w.isResizable()).to.be.false('resizable');
+        expect(w.isResizable(), 'resizable').toBe(false);
         w.setResizable(true);
-        expect(w.isResizable()).to.be.true('resizable');
+        expect(w.isResizable(), 'resizable').toBe(true);
       });
     });
 
     describe('hasShadow state', () => {
       it('returns a boolean on all platforms', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.hasShadow()).to.be.a('boolean');
-        expect(w.shadow).to.be.a('boolean');
+        expect(w.hasShadow()).toBeTypeOf('boolean');
+        expect(w.shadow).toBeTypeOf('boolean');
       });
 
       // On Windows there's no shadow by default & it can't be changed dynamically.
       it('can be changed with the setHasShadow method', () => {
         const w = new BaseWindow({ show: false });
         w.setHasShadow(false);
-        expect(w.hasShadow()).to.be.false('hasShadow');
+        expect(w.hasShadow(), 'hasShadow').toBe(false);
         w.setHasShadow(true);
-        expect(w.hasShadow()).to.be.true('hasShadow');
+        expect(w.hasShadow(), 'hasShadow').toBe(true);
         w.setHasShadow(false);
-        expect(w.hasShadow()).to.be.false('hasShadow');
+        expect(w.hasShadow(), 'hasShadow').toBe(false);
       });
     });
 
@@ -600,20 +600,20 @@ describe('BaseWindow module', () => {
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
         w.setFullScreenable(false);
-        expect(w.isFullScreenable()).to.be.false('isFullScreenable');
+        expect(w.isFullScreenable(), 'isFullScreenable').toBe(false);
         w.setFullScreenable(true);
-        expect(w.isFullScreenable()).to.be.true('isFullScreenable');
+        expect(w.isFullScreenable(), 'isFullScreenable').toBe(true);
       });
     });
 
     describe('enabled state', () => {
       it('can be changed with setEnabled', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.isEnabled()).to.be.true('isEnabled');
+        expect(w.isEnabled(), 'isEnabled').toBe(true);
         w.setEnabled(false);
-        expect(w.isEnabled()).to.be.false('isEnabled');
+        expect(w.isEnabled(), 'isEnabled').toBe(false);
         w.setEnabled(true);
-        expect(w.isEnabled()).to.be.true('isEnabled');
+        expect(w.isEnabled(), 'isEnabled').toBe(true);
       });
     });
 
@@ -621,26 +621,26 @@ describe('BaseWindow module', () => {
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
         w.focusable = false;
-        expect(w.focusable).to.be.false('focusable');
+        expect(w.focusable, 'focusable').toBe(false);
         w.focusable = true;
-        expect(w.focusable).to.be.true('focusable');
+        expect(w.focusable, 'focusable').toBe(true);
       });
     });
 
     ifdescribe(process.platform === 'darwin')('excludedFromShownWindowsMenu state', () => {
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.excludedFromShownWindowsMenu).to.be.false('excludedFromShownWindowsMenu');
+        expect(w.excludedFromShownWindowsMenu, 'excludedFromShownWindowsMenu').toBe(false);
         w.excludedFromShownWindowsMenu = true;
-        expect(w.excludedFromShownWindowsMenu).to.be.true('excludedFromShownWindowsMenu');
+        expect(w.excludedFromShownWindowsMenu, 'excludedFromShownWindowsMenu').toBe(true);
       });
     });
 
     ifdescribe(process.platform === 'win32')('snapped state', () => {
       it('matches isSnapped()', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.snapped).to.be.a('boolean');
-        expect(w.snapped).to.equal(w.isSnapped());
+        expect(w.snapped).toBeTypeOf('boolean');
+        expect(w.snapped).toBe(w.isSnapped());
       });
     });
 
@@ -649,18 +649,18 @@ describe('BaseWindow module', () => {
       it('the getters return true and the setters are no-ops', () => {
         const w = new BaseWindow({ show: false });
         for (const state of ['minimizable', 'maximizable', 'closable', 'movable'] as const) {
-          expect(w[state]).to.be.true(state);
+          expect(w[state], state).toBe(true);
           w[state] = false;
-          expect(w[state]).to.be.true(state);
+          expect(w[state], state).toBe(true);
         }
         w.setMinimizable(false);
-        expect(w.isMinimizable()).to.be.true('isMinimizable');
+        expect(w.isMinimizable(), 'isMinimizable').toBe(true);
         w.setMaximizable(false);
-        expect(w.isMaximizable()).to.be.true('isMaximizable');
+        expect(w.isMaximizable(), 'isMaximizable').toBe(true);
         w.setClosable(false);
-        expect(w.isClosable()).to.be.true('isClosable');
+        expect(w.isClosable(), 'isClosable').toBe(true);
         w.setMovable(false);
-        expect(w.isMovable()).to.be.true('isMovable');
+        expect(w.isMovable(), 'isMovable').toBe(true);
       });
     });
   });
@@ -671,28 +671,28 @@ describe('BaseWindow module', () => {
     describe('autoHideMenuBar state', () => {
       it('can be set with the autoHideMenuBar constructor option', () => {
         const w = new BaseWindow({ show: false, autoHideMenuBar: true });
-        expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar');
-        expect(w.isMenuBarAutoHide()).to.be.true('isMenuBarAutoHide');
+        expect(w.autoHideMenuBar, 'autoHideMenuBar').toBe(true);
+        expect(w.isMenuBarAutoHide(), 'isMenuBarAutoHide').toBe(true);
       });
 
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar');
+        expect(w.autoHideMenuBar, 'autoHideMenuBar').toBe(false);
         w.setAutoHideMenuBar(true);
-        expect(w.isMenuBarAutoHide()).to.be.true('isMenuBarAutoHide');
+        expect(w.isMenuBarAutoHide(), 'isMenuBarAutoHide').toBe(true);
         w.autoHideMenuBar = false;
-        expect(w.isMenuBarAutoHide()).to.be.false('isMenuBarAutoHide');
+        expect(w.isMenuBarAutoHide(), 'isMenuBarAutoHide').toBe(false);
       });
     });
 
     describe('menuBarVisible state', () => {
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.menuBarVisible).to.be.true('menuBarVisible');
+        expect(w.menuBarVisible, 'menuBarVisible').toBe(true);
         w.setMenuBarVisibility(false);
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+        expect(w.isMenuBarVisible(), 'isMenuBarVisible').toBe(false);
         w.setMenuBarVisibility(true);
-        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+        expect(w.isMenuBarVisible(), 'isMenuBarVisible').toBe(true);
       });
     });
 
@@ -703,14 +703,14 @@ describe('BaseWindow module', () => {
         expect(() => {
           w.setMenu(menu);
           w.removeMenu();
-        }).to.not.throw();
+        }).not.toThrow();
       });
 
       it('does not throw when passing null', () => {
         const w = new BaseWindow({ show: false });
         expect(() => {
           w.setMenu(null);
-        }).to.not.throw();
+        }).not.toThrow();
       });
     });
   });
@@ -721,11 +721,11 @@ describe('BaseWindow module', () => {
 
     it('sets the window as always on top', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isAlwaysOnTop()).to.be.false('isAlwaysOnTop');
+      expect(w.isAlwaysOnTop(), 'isAlwaysOnTop').toBe(false);
       w.setAlwaysOnTop(true);
-      expect(w.isAlwaysOnTop()).to.be.true('isAlwaysOnTop');
+      expect(w.isAlwaysOnTop(), 'isAlwaysOnTop').toBe(true);
       w.setAlwaysOnTop(false);
-      expect(w.isAlwaysOnTop()).to.be.false('isAlwaysOnTop');
+      expect(w.isAlwaysOnTop(), 'isAlwaysOnTop').toBe(false);
     });
 
     it('causes the right value to be emitted on `always-on-top-changed`', async () => {
@@ -733,7 +733,7 @@ describe('BaseWindow module', () => {
       const alwaysOnTopChanged = once(w, 'always-on-top-changed') as Promise<[any, boolean]>;
       w.setAlwaysOnTop(true);
       const [, alwaysOnTop] = await alwaysOnTopChanged;
-      expect(alwaysOnTop).to.be.true('alwaysOnTop');
+      expect(alwaysOnTop, 'alwaysOnTop').toBe(true);
     });
   });
 
@@ -745,7 +745,7 @@ describe('BaseWindow module', () => {
       expect(() => {
         w.flashFrame(true);
         w.flashFrame(false);
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
@@ -757,7 +757,7 @@ describe('BaseWindow module', () => {
       expect(() => {
         w.setSkipTaskbar(true);
         w.setSkipTaskbar(false);
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
@@ -766,7 +766,7 @@ describe('BaseWindow module', () => {
 
     it('BaseWindow.isTabletMode() returns a boolean', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isTabletMode()).to.be.a('boolean');
+      expect(w.isTabletMode()).toBeTypeOf('boolean');
     });
 
     it('hooks and unhooks window messages', () => {
@@ -774,18 +774,18 @@ describe('BaseWindow module', () => {
       const firstMessage = 0x0400;
       const secondMessage = 0x0401;
 
-      expect(w.isWindowMessageHooked(firstMessage)).to.be.false('first message is hooked');
+      expect(w.isWindowMessageHooked(firstMessage), 'first message is hooked').toBe(false);
       w.hookWindowMessage(firstMessage, () => {});
       w.hookWindowMessage(secondMessage, () => {});
-      expect(w.isWindowMessageHooked(firstMessage)).to.be.true('first message is hooked');
-      expect(w.isWindowMessageHooked(secondMessage)).to.be.true('second message is hooked');
+      expect(w.isWindowMessageHooked(firstMessage), 'first message is hooked').toBe(true);
+      expect(w.isWindowMessageHooked(secondMessage), 'second message is hooked').toBe(true);
 
       w.unhookWindowMessage(firstMessage);
-      expect(w.isWindowMessageHooked(firstMessage)).to.be.false('first message is hooked');
-      expect(w.isWindowMessageHooked(secondMessage)).to.be.true('second message is hooked');
+      expect(w.isWindowMessageHooked(firstMessage), 'first message is hooked').toBe(false);
+      expect(w.isWindowMessageHooked(secondMessage), 'second message is hooked').toBe(true);
 
       w.unhookAllWindowMessages();
-      expect(w.isWindowMessageHooked(secondMessage)).to.be.false('second message is hooked');
+      expect(w.isWindowMessageHooked(secondMessage), 'second message is hooked').toBe(false);
     });
 
     it('BaseWindow.setOverlayIcon() accepts an image and null', () => {
@@ -793,23 +793,23 @@ describe('BaseWindow module', () => {
       expect(() => {
         w.setOverlayIcon(nativeImage.createEmpty(), 'test overlay');
         w.setOverlayIcon(null, '');
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('BaseWindow.setThumbarButtons() accepts an empty list', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.setThumbarButtons([])).to.be.a('boolean');
+      expect(w.setThumbarButtons([])).toBeTypeOf('boolean');
     });
 
     it('sets the thumbnail clip and tooltip', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.setThumbnailClip({ x: 0, y: 0, width: 100, height: 100 })).to.be.a('boolean');
-      expect(w.setThumbnailToolTip('BaseWindow thumbnail')).to.be.a('boolean');
+      expect(w.setThumbnailClip({ x: 0, y: 0, width: 100, height: 100 })).toBeTypeOf('boolean');
+      expect(w.setThumbnailToolTip('BaseWindow thumbnail')).toBeTypeOf('boolean');
     });
 
     it('BaseWindow.setBackgroundMaterial() accepts a supported material', () => {
       const w = new BaseWindow({ show: false });
-      expect(() => w.setBackgroundMaterial('none')).to.not.throw();
+      expect(() => w.setBackgroundMaterial('none')).not.toThrow();
     });
   });
 
@@ -818,7 +818,7 @@ describe('BaseWindow module', () => {
 
     it('does not throw', () => {
       const w = new BaseWindow({ show: false });
-      expect(() => w.invalidateShadow()).to.not.throw();
+      expect(() => w.invalidateShadow()).not.toThrow();
     });
   });
 
@@ -828,14 +828,14 @@ describe('BaseWindow module', () => {
     it('returns the value set with the backgroundColor option', () => {
       const backgroundColor = '#BBAAFF';
       const w = new BaseWindow({ show: false, backgroundColor });
-      expect(w.getBackgroundColor()).to.equal(backgroundColor);
+      expect(w.getBackgroundColor()).toBe(backgroundColor);
     });
 
     it('returns the value set with setBackgroundColor()', () => {
       const backgroundColor = '#AABBFF';
       const w = new BaseWindow({ show: false });
       w.setBackgroundColor(backgroundColor);
-      expect(w.getBackgroundColor()).to.equal(backgroundColor);
+      expect(w.getBackgroundColor()).toBe(backgroundColor);
     });
   });
 
@@ -844,27 +844,27 @@ describe('BaseWindow module', () => {
 
     it('makes a window with initial opacity', () => {
       const w = new BaseWindow({ show: false, opacity: 0.5 });
-      expect(w.getOpacity()).to.equal(0.5);
+      expect(w.getOpacity()).toBe(0.5);
     });
 
     it('allows setting the opacity', () => {
       const w = new BaseWindow({ show: false });
       expect(() => {
         w.setOpacity(0.0);
-        expect(w.getOpacity()).to.equal(0.0);
+        expect(w.getOpacity()).toBe(0.0);
         w.setOpacity(0.5);
-        expect(w.getOpacity()).to.equal(0.5);
+        expect(w.getOpacity()).toBe(0.5);
         w.setOpacity(1.0);
-        expect(w.getOpacity()).to.equal(1.0);
-      }).to.not.throw();
+        expect(w.getOpacity()).toBe(1.0);
+      }).not.toThrow();
     });
 
     it('clamps opacity to [0.0...1.0]', () => {
       const w = new BaseWindow({ show: false, opacity: 0.5 });
       w.setOpacity(100);
-      expect(w.getOpacity()).to.equal(1.0);
+      expect(w.getOpacity()).toBe(1.0);
       w.setOpacity(-100);
-      expect(w.getOpacity()).to.equal(0.0);
+      expect(w.getOpacity()).toBe(0.0);
     });
   });
 
@@ -881,7 +881,7 @@ describe('BaseWindow module', () => {
           { x: 0, y: 200, width: 1000, height: 100 }
         ]);
         w.setShape([]);
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
@@ -893,14 +893,14 @@ describe('BaseWindow module', () => {
       expect(() => {
         w.setProgressBar(0.5);
         w.setProgressBar(-1);
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('sets the progress using "paused" mode', () => {
       const w = new BaseWindow({ show: false });
       expect(() => {
         w.setProgressBar(0.5, { mode: 'paused' });
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
@@ -912,7 +912,7 @@ describe('BaseWindow module', () => {
       expect(() => {
         w.setIgnoreMouseEvents(true);
         w.setIgnoreMouseEvents(false);
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
@@ -927,7 +927,7 @@ describe('BaseWindow module', () => {
 
       // Check format 'window:1234:0'.
       const sourceId = w.getMediaSourceId();
-      expect(sourceId).to.match(/^window:\d+:\d+$/);
+      expect(sourceId).toMatch(/^window:\d+:\d+$/);
     });
   });
 
@@ -937,8 +937,8 @@ describe('BaseWindow module', () => {
     it('returns a non-empty buffer', () => {
       const w = new BaseWindow({ show: false });
       const handle = w.getNativeWindowHandle();
-      expect(handle).to.be.an.instanceOf(Buffer);
-      expect(handle.length).to.be.greaterThan(0);
+      expect(handle).toBeInstanceOf(Buffer);
+      expect(handle.length).toBeGreaterThan(0);
     });
   });
 
@@ -952,8 +952,8 @@ describe('BaseWindow module', () => {
       await shown;
       expect(() => {
         w.moveTop();
-      }).to.not.throw();
-      expect(w.isFocused()).to.be.false('is focused');
+      }).not.toThrow();
+      expect(w.isFocused(), 'is focused').toBe(false);
     });
   });
 
@@ -966,7 +966,7 @@ describe('BaseWindow module', () => {
       for (const sourceId of fakeSourceIds) {
         expect(() => {
           w.moveAbove(sourceId);
-        }).to.throw(/Invalid media source id/);
+        }).toThrow(/Invalid media source id/);
       }
     });
   });
@@ -976,16 +976,16 @@ describe('BaseWindow module', () => {
 
     it('can be set with the title constructor option', () => {
       const w = new BaseWindow({ show: false, title: 'mYtItLe' });
-      expect(w.title).to.equal('mYtItLe');
-      expect(w.getTitle()).to.equal('mYtItLe');
+      expect(w.title).toBe('mYtItLe');
+      expect(w.getTitle()).toBe('mYtItLe');
     });
 
     it('can be changed', () => {
       const w = new BaseWindow({ show: false });
       w.setTitle('NEW TITLE');
-      expect(w.getTitle()).to.equal('NEW TITLE');
+      expect(w.getTitle()).toBe('NEW TITLE');
       w.title = 'ANOTHER TITLE';
-      expect(w.title).to.equal('ANOTHER TITLE');
+      expect(w.title).toBe('ANOTHER TITLE');
     });
   });
 
@@ -994,11 +994,11 @@ describe('BaseWindow module', () => {
 
     it('can be set and retrieved', () => {
       const w = new BaseWindow({ show: false, title: 'mYtItLe' });
-      expect(w.accessibleTitle).to.equal('mYtItLe');
+      expect(w.accessibleTitle).toBe('mYtItLe');
       w.accessibleTitle = 'accessible title';
-      expect(w.accessibleTitle).to.equal('accessible title');
+      expect(w.accessibleTitle).toBe('accessible title');
       w.accessibleTitle = '';
-      expect(w.accessibleTitle).to.equal('mYtItLe');
+      expect(w.accessibleTitle).toBe('mYtItLe');
     });
   });
 });

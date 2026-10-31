@@ -14,6 +14,7 @@
 #include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
+#include "mojo/public/cpp/platform/platform_handle.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/common/api/api.mojom.h"
 
@@ -49,7 +50,7 @@ class ElectronApiServiceImpl
                electron::SerializedValue arguments) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
-  void TakeHeapSnapshot(mojo::ScopedHandle file,
+  void TakeHeapSnapshot(mojo::PlatformHandle file,
                         TakeHeapSnapshotCallback callback) override;
 
   // mojom::ElectronFrame

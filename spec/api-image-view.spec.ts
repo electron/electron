@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { BaseWindow, BrowserWindow, ImageView } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 
@@ -66,7 +66,7 @@ describe('ImageView', () => {
       height: image.getSize().height
     });
 
-    expect(w.contentView.children).to.include(view);
+    expect(w.contentView.children).toContain(view);
   });
 
   it('can be removed from a BrowserWindow', async () => {
@@ -76,11 +76,11 @@ describe('ImageView', () => {
     view.setImage(image);
 
     w.contentView.addChildView(view);
-    expect(w.contentView.children).to.include(view);
+    expect(w.contentView.children).toContain(view);
 
     await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'blank.html'));
 
     w.contentView.removeChildView(view);
-    expect(w.contentView.children).to.not.include(view);
+    expect(w.contentView.children).not.toContain(view);
   });
 });

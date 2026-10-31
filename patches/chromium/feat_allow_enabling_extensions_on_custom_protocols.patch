@@ -117,12 +117,12 @@ index 672b6fe2fd92c7f83272549a1f2b44c29c5dc674..a72d3d6790ddf89cec6016aeef0c309c
  
  // static
 diff --git a/url/url_util.cc b/url/url_util.cc
-index ef9e22679b6f79eabe4f49ee724e3f6d19db168c..3dfd30a9d5c8755636c947614657632805b67e1d 100644
+index cedfbaf417db8d244c80f051e03d5bed1030a944..339bd4d1340f94ae82ef41da3be937bd117dd55c 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -135,6 +135,9 @@ struct SchemeRegistry {
-   // Embedder schemes that have V8 code cache enabled in js and wasm scripts.
-   std::vector<std::string> code_cache_schemes = {};
+@@ -132,6 +132,9 @@ struct SchemeRegistry {
+       kMaterializedViewScheme,
+   };
  
 +  // Embedder schemes on which Chrome extensions can be used.
 +  std::vector<std::string> extension_schemes = {};
@@ -130,8 +130,8 @@ index ef9e22679b6f79eabe4f49ee724e3f6d19db168c..3dfd30a9d5c8755636c9476146576328
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -683,6 +686,15 @@ bool IsCodeCacheScheme(std::string_view scheme) {
-   return std::ranges::contains(GetCodeCacheSchemes(), scheme);
+@@ -667,6 +670,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+   return GetSchemeRegistry().empty_document_schemes;
  }
  
 +void AddExtensionScheme(std::string_view new_scheme) {
@@ -147,12 +147,12 @@ index ef9e22679b6f79eabe4f49ee724e3f6d19db168c..3dfd30a9d5c8755636c9476146576328
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index d84426a386cfac4746cc79700201d93967569f2b..9c96156b4fe30462a898a22a1db32041a1d22460 100644
+index e4070343fbbafed6c7ca187459f08e9e0d8f5c00..b635bce630e9785c6c0462fc4ac7038511ad1513 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
-@@ -125,6 +125,11 @@ COMPONENT_EXPORT(URL) void AddCodeCacheScheme(std::string_view new_scheme);
- COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCodeCacheSchemes();
- COMPONENT_EXPORT(URL) bool IsCodeCacheScheme(std::string_view scheme);
+@@ -115,6 +115,11 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
+ COMPONENT_EXPORT(URL) void AddEmptyDocumentScheme(std::string_view new_scheme);
+ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();
  
 +// Adds an application-defined scheme to the list of schemes on which Chrome
 +// extensions can be used.

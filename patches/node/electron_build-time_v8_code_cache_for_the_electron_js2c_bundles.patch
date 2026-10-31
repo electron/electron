@@ -39,17 +39,19 @@ a builtin code cache to environments that are not created from a
 snapshot.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index a4c62510ad9f8c2c77986ead1e17afd319adc496..c1816d483d421135c265a08ca45d42e4b8423f29 100644
+index 994b9b088de436a79a6de4e21ac21de373968f33..52741b8bcf2527337ea465aaa1ab3b65ed5e7316 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -1,4 +1,5 @@
+@@ -1,6 +1,7 @@
  #include "node_builtins.h"
+ #include <atomic>
+ #include <cstring>
 +#include "base/dcheck_is_on.h"
  #include "debug_utils-inl.h"
  #include "env-inl.h"
  #include "module_wrap.h"
-@@ -14,6 +15,43 @@
- namespace node {
+@@ -47,6 +48,43 @@ using v8::Value;
+ 
  namespace builtins {
  
 +// Electron, test-only (DCHECK builds): per-process record of whether each
@@ -89,10 +91,10 @@ index a4c62510ad9f8c2c77986ead1e17afd319adc496..c1816d483d421135c265a08ca45d42e4
 +  g_process_default_code_cache = cache;
 +}
 +
- using loader::HostDefinedOptions;
- using v8::Boolean;
- using v8::Context;
-@@ -48,6 +86,11 @@ BuiltinLoader::BuiltinLoader()
+ namespace {
+ std::atomic<bool> harvest_code_cache{true};
+ }  // namespace
+@@ -59,6 +97,11 @@ BuiltinLoader::BuiltinLoader()
      : config_(GetConfig()), code_cache_(std::make_shared<BuiltinCodeCache>()) {
    LoadJavaScriptSource();
    LoadEmbedderJavaScriptSource();
@@ -104,7 +106,7 @@ index a4c62510ad9f8c2c77986ead1e17afd319adc496..c1816d483d421135c265a08ca45d42e4
  #ifdef NODE_SHARED_BUILTIN_UNDICI_UNDICI_PATH
    AddExternalizedBuiltin("internal/deps/undici/undici",
                           STRINGIFY(NODE_SHARED_BUILTIN_UNDICI_UNDICI_PATH));
-@@ -403,6 +446,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
+@@ -426,6 +469,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
      DCHECK_EQ(this, optional_realm->env()->builtin_loader());
      RecordResult(builtin_source->id, result, optional_realm);
    }
@@ -112,7 +114,7 @@ index a4c62510ad9f8c2c77986ead1e17afd319adc496..c1816d483d421135c265a08ca45d42e4
  
    if (has_cache) {
      per_process::Debug(DebugCategory::CODE_CACHE,
-@@ -476,13 +520,47 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -500,13 +544,47 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
    Local<String> filename = OneByteString(isolate, filename_s);
    Local<String> source = builtin_source->source.ToStringChecked(isolate);
    ScriptOrigin origin(filename, 0, 0, true);
@@ -168,7 +170,7 @@ index a4c62510ad9f8c2c77986ead1e17afd319adc496..c1816d483d421135c265a08ca45d42e4
  
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 65b49b3469b83639a8b37469f24cd9208c70f47a..53bd0f168ba13deb58eb15a82450dad658df9622 100644
+index d65f2db8616709ddbe257e50394c97398128e8a1..bd0e49259ee772327b6bd67198bef6780f41467e 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -11,6 +11,8 @@
@@ -180,9 +182,9 @@ index 65b49b3469b83639a8b37469f24cd9208c70f47a..53bd0f168ba13deb58eb15a82450dad6
  #include "builtin_info.h"
  #include "node_external_reference.h"
  #include "node_mutex.h"
-@@ -135,6 +137,19 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
-       const std::vector<std::string>& lazy_builtins,
-       std::vector<CodeCacheInfo>* out);
+@@ -138,6 +140,19 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+   // same id. Can be called more than once (e.g. with the snapshot's code cache
+   // and then with caches an embedder built for further builtin ids).
    void RefreshCodeCache(const std::vector<CodeCacheInfo>& in);
 +  // Electron: a process-wide code cache every BuiltinLoader constructed
 +  // afterwards starts out with (the Environment's, the thread_local one that
@@ -198,9 +200,9 @@ index 65b49b3469b83639a8b37469f24cd9208c70f47a..53bd0f168ba13deb58eb15a82450dad6
 +  static void SetProcessDefaultCodeCache(
 +      const std::vector<CodeCacheInfo>* cache);
  
-   void CopySourceAndCodeCacheReferenceFrom(const BuiltinLoader* other);
- 
-@@ -240,6 +255,11 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+   // Whether builtins compiled without a cache serialize one for later
+   // consumers (worker threads copy it). See
+@@ -248,6 +263,11 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
    friend class ::PerProcessTest;
  };
  
@@ -213,10 +215,10 @@ index 65b49b3469b83639a8b37469f24cd9208c70f47a..53bd0f168ba13deb58eb15a82450dad6
  
  }  // namespace node
 diff --git a/unofficial.gni b/unofficial.gni
-index 76ed323dbc47da0fd3da5df271b58649630d8a51..504dd46249425a8e8396332bf061f1f75cdd9401 100644
+index 11063952c4395967e7c7969ad1c92e08e12686e1..1fad56169f5c813dd6f6216b6a1278e5415a5972 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -158,6 +158,11 @@ template("node_gn_build") {
+@@ -169,6 +169,11 @@ template("node_gn_build") {
        "//electron:electron_js2c",
        "deps/simdjson",
        "$node_v8_path",

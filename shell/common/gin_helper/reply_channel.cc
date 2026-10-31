@@ -82,7 +82,7 @@ gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
 }
 
 bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
-  return SendReplyImpl(isolate, callback_, std::move(arg));
+  return SendReplyImpl(isolate, callback_, arg);
 }
 
 void ReplyChannel::EnsureReplySent() {

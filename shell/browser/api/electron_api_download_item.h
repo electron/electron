@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
 
+#include <memory>
 #include <string>
 
 #include "base/files/file_path.h"
@@ -12,6 +13,7 @@
 #include "components/download/public/common/download_item.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/native_peer.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 
@@ -20,8 +22,7 @@ class GURL;
 namespace electron::api {
 
 class DownloadItem final : public gin::Wrappable<DownloadItem>,
-                           public gin_helper::EventEmitterMixin<DownloadItem>,
-                           private download::DownloadItem::Observer {
+                           public gin_helper::EventEmitterMixin<DownloadItem> {
  public:
   static DownloadItem* FromOrCreate(v8::Isolate* isolate,
                                     download::DownloadItem* item);
@@ -49,11 +50,15 @@ class DownloadItem final : public gin::Wrappable<DownloadItem>,
   DownloadItem& operator=(const DownloadItem&) = delete;
 
  private:
+  class ItemLifecycle;
+
+  // Null once the native item is gone or the peer is released.
+  download::DownloadItem* download_item() const;
   bool CheckAlive() const;
 
-  // download::DownloadItem::Observer
-  void OnDownloadUpdated(download::DownloadItem* item) override;
-  void OnDownloadDestroyed(download::DownloadItem* item) override;
+  // Forwarded by ItemLifecycle while this wrapper is reachable.
+  void OnDownloadUpdated(download::DownloadItem* item);
+  void OnDownloadDestroyed(download::DownloadItem* item);
 
   // JS API
   void Pause();
@@ -81,7 +86,7 @@ class DownloadItem final : public gin::Wrappable<DownloadItem>,
 
   base::FilePath save_path_;
   file_dialog::DialogSettings dialog_options_;
-  raw_ptr<download::DownloadItem> download_item_;
+  std::unique_ptr<ItemLifecycle, NativePeerBase::Deleter> item_lifecycle_;
 
   raw_ptr<v8::Isolate> isolate_;
 

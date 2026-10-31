@@ -83,6 +83,10 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
   virtual bool IsClosed() const;
+  // macOS: whether the window's NSWindow is in an app shim's process. What
+  // GetNativeWindow() names is then a stand-in that is never on screen, and
+  // nothing may be attached to it.
+  virtual bool IsInAppShim() const;
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() const = 0;
   virtual void Show() = 0;

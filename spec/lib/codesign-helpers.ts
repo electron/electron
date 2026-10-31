@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -110,7 +110,7 @@ export async function spawn(cmd: string, args: string[], opts: any = {}): Promis
     out += chunk.toString();
   });
   const [code, signal] = await once(child, 'exit');
-  expect(signal).to.equal(null);
+  expect(signal).toBe(null);
   return { code, out };
 }
 

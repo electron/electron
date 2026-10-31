@@ -1,0 +1,9 @@
+{
+  "name": "chrome-storage-service-worker",
+  "version": "1.0",
+  "permissions": ["storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "manifest_version": 3
+}

@@ -6,9 +6,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <list>
 #include <string>
 #include <vector>
 
+#include "base/containers/adapters.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -33,6 +35,7 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/display/types/display_constants.h"
+#include "ui/views/widget/root_view.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -331,6 +334,10 @@ void NativeWindow::FlushPendingRootLayout(views::View* view) {
 
 bool NativeWindow::IsClosed() const {
   return is_closed_;
+}
+
+bool NativeWindow::IsInAppShim() const {
+  return false;
 }
 
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
@@ -747,6 +754,37 @@ void NativeWindow::NotifyWindowMessage(UINT message,
 }
 #endif
 
+namespace {
+
+// The provider whose view is frontmost at |point|, which is in |view|'s
+// coordinates. That view gets the mouse events there, so only its draggable
+// regions apply: a WebContentsView stacked above another one hides the regions
+// under it. Views that are no provider's, which have no draggable regions,
+// leave the ones under them in effect.
+DraggableRegionProvider* FrontmostDraggableRegionProviderAt(
+    views::View* view,
+    const gfx::Point& point,
+    const std::list<raw_ptr<DraggableRegionProvider>>& providers) {
+  const views::View::Views children = view->GetChildrenInZOrder();
+  for (views::View* child : base::Reversed(children)) {
+    if (!child->GetVisible() || !child->GetCanProcessEventsWithinSubtree())
+      continue;
+    gfx::Point child_point = point;
+    views::View::ConvertPointToTarget(view, child, &child_point);
+    if (!child->HitTestPoint(child_point))
+      continue;
+    if (DraggableRegionProvider* provider =
+            FrontmostDraggableRegionProviderAt(child, child_point, providers)) {
+      return provider;
+    }
+  }
+  auto it = std::ranges::find(providers, view,
+                              &DraggableRegionProvider::GetDraggableRegionView);
+  return it == providers.end() ? nullptr : it->get();
+}
+
+}  // namespace
+
 int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 #if !BUILDFLAG(IS_MAC)
   // We need to ensure we account for resizing borders on Windows and Linux.
@@ -773,12 +811,9 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
   if (widget()->IsFullscreen())
     return HTNOWHERE;
 
-  for (DraggableRegionProvider* provider : draggable_region_providers_) {
-    int hit = provider->NonClientHitTest(point);
-    if (hit != HTNOWHERE)
-      return hit;
-  }
-  return HTNOWHERE;
+  DraggableRegionProvider* provider = FrontmostDraggableRegionProviderAt(
+      widget()->GetRootView(), point, draggable_region_providers_);
+  return provider ? provider->NonClientHitTest(point) : HTNOWHERE;
 }
 
 void NativeWindow::AddDraggableRegionProvider(

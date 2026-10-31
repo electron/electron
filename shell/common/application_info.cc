@@ -49,7 +49,7 @@ std::string BuildApplicationUserAgent() {
         "%s/%s Chrome/%s " ELECTRON_PRODUCT_NAME "/" ELECTRON_VERSION_STRING,
         name, browser->GetVersion(), CHROME_VERSION_STRING);
   }
-  return embedder_support::BuildUserAgentFromProduct(user_agent);
+  return embedder_support::BuildUnifiedPlatformUserAgentFromProduct(user_agent);
 }
 
 base::Lock& UserAgentLock() {

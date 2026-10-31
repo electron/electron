@@ -26,7 +26,7 @@ index d54f546de556b133200cc5b05cfaa2321fe1db53..a64d68ae59c404016f2519cee295f0ea
      const std::string_view& name,
      v8::Local<v8::Data> val) {
 diff --git a/gin/object_template_builder.h b/gin/object_template_builder.h
-index 8c22f65cda9eee442f1a3765ccf8e4d848a73a8e..0c13b9dcc7489087afa0fec9eb36143b1fb4da06 100644
+index 8129cb4ce7a8434c866ca43401ad1b203b1d3191..909bac4327f725cfecb0b43d19568c5437e1caaf 100644
 --- a/gin/object_template_builder.h
 +++ b/gin/object_template_builder.h
 @@ -50,6 +50,9 @@ class GIN_EXPORT ObjectTemplateBuilder {

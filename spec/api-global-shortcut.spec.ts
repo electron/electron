@@ -1,6 +1,6 @@
 import { globalShortcut } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { singleModifierCombinations, doubleModifierCombinations } from './lib/accelerator-helpers.ts';
 import { ifdescribe } from './lib/spec-helpers.ts';
@@ -16,13 +16,13 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
 
   describe('events', () => {
     it('is an event emitter', () => {
-      expect(globalShortcut.on).to.be.a('function');
-      expect(globalShortcut.removeListener).to.be.a('function');
+      expect(globalShortcut.on).toBeTypeOf('function');
+      expect(globalShortcut.removeListener).toBeTypeOf('function');
       const listener = () => {};
       globalShortcut.on('registration-resolved', listener);
-      expect(globalShortcut.listenerCount('registration-resolved')).to.equal(1);
+      expect(globalShortcut.listenerCount('registration-resolved')).toBe(1);
       globalShortcut.removeListener('registration-resolved', listener);
-      expect(globalShortcut.listenerCount('registration-resolved')).to.equal(0);
+      expect(globalShortcut.listenerCount('registration-resolved')).toBe(0);
     });
   });
 
@@ -31,33 +31,33 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
       const combinations = [...singleModifierCombinations, ...doubleModifierCombinations];
 
       combinations.forEach((accelerator) => {
-        expect(globalShortcut.isRegistered(accelerator)).to.be.false(`Initially registered for ${accelerator}`);
+        expect(globalShortcut.isRegistered(accelerator), `Initially registered for ${accelerator}`).toBe(false);
 
         globalShortcut.register(accelerator, () => {});
-        expect(globalShortcut.isRegistered(accelerator)).to.be.true(`Registration failed for ${accelerator}`);
+        expect(globalShortcut.isRegistered(accelerator), `Registration failed for ${accelerator}`).toBe(true);
 
         globalShortcut.unregister(accelerator);
-        expect(globalShortcut.isRegistered(accelerator)).to.be.false(`Unregistration failed for ${accelerator}`);
+        expect(globalShortcut.isRegistered(accelerator), `Unregistration failed for ${accelerator}`).toBe(false);
 
         globalShortcut.register(accelerator, () => {});
-        expect(globalShortcut.isRegistered(accelerator)).to.be.true(`Re-registration failed for ${accelerator}`);
+        expect(globalShortcut.isRegistered(accelerator), `Re-registration failed for ${accelerator}`).toBe(true);
 
         globalShortcut.unregisterAll();
-        expect(globalShortcut.isRegistered(accelerator)).to.be.false(`Re-unregistration failed for ${accelerator}`);
+        expect(globalShortcut.isRegistered(accelerator), `Re-unregistration failed for ${accelerator}`).toBe(false);
       });
     });
 
     it('returns true on successful registration', () => {
       const result = globalShortcut.register('CmdOrCtrl+Q', () => {});
-      expect(result).to.be.true();
+      expect(result).toBe(true);
     });
 
     it('can re-register the same accelerator without error', () => {
       globalShortcut.register('CmdOrCtrl+Z', () => {});
       expect(() => {
         globalShortcut.register('CmdOrCtrl+Z', () => {});
-      }).to.not.throw();
-      expect(globalShortcut.isRegistered('CmdOrCtrl+Z')).to.be.true();
+      }).not.toThrow();
+      expect(globalShortcut.isRegistered('CmdOrCtrl+Z')).toBe(true);
     });
   });
 
@@ -65,23 +65,23 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
     it('can register and unregister multiple accelerators', () => {
       const accelerators = ['CmdOrCtrl+X', 'CmdOrCtrl+Y'];
 
-      expect(globalShortcut.isRegistered(accelerators[0])).to.be.false('first initially unregistered');
-      expect(globalShortcut.isRegistered(accelerators[1])).to.be.false('second initially unregistered');
+      expect(globalShortcut.isRegistered(accelerators[0]), 'first initially unregistered').toBe(false);
+      expect(globalShortcut.isRegistered(accelerators[1]), 'second initially unregistered').toBe(false);
 
       globalShortcut.registerAll(accelerators, () => {});
 
-      expect(globalShortcut.isRegistered(accelerators[0])).to.be.true('first registration worked');
-      expect(globalShortcut.isRegistered(accelerators[1])).to.be.true('second registration worked');
+      expect(globalShortcut.isRegistered(accelerators[0]), 'first registration worked').toBe(true);
+      expect(globalShortcut.isRegistered(accelerators[1]), 'second registration worked').toBe(true);
 
       globalShortcut.unregisterAll();
 
-      expect(globalShortcut.isRegistered(accelerators[0])).to.be.false('first unregistered');
-      expect(globalShortcut.isRegistered(accelerators[1])).to.be.false('second unregistered');
+      expect(globalShortcut.isRegistered(accelerators[0]), 'first unregistered').toBe(false);
+      expect(globalShortcut.isRegistered(accelerators[1]), 'second unregistered').toBe(false);
     });
 
     it('returns true on successful registration', () => {
       const result = globalShortcut.registerAll(['CmdOrCtrl+Q', 'CmdOrCtrl+W'], () => {});
-      expect(result).to.be.true();
+      expect(result).toBe(true);
     });
 
     it('does not crash when registering media keys as global shortcuts', () => {
@@ -97,19 +97,19 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
 
       expect(() => {
         globalShortcut.registerAll(accelerators, () => {});
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
   describe('isRegistered', () => {
     it('returns false for an accelerator that was never registered', () => {
-      expect(globalShortcut.isRegistered('CmdOrCtrl+Shift+F9')).to.be.false();
+      expect(globalShortcut.isRegistered('CmdOrCtrl+Shift+F9')).toBe(false);
     });
 
     it('returns false after the accelerator is unregistered', () => {
       globalShortcut.register('CmdOrCtrl+J', () => {});
       globalShortcut.unregister('CmdOrCtrl+J');
-      expect(globalShortcut.isRegistered('CmdOrCtrl+J')).to.be.false();
+      expect(globalShortcut.isRegistered('CmdOrCtrl+J')).toBe(false);
     });
   });
 
@@ -117,7 +117,7 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
     it('does not throw when unregistering a non-registered accelerator', () => {
       expect(() => {
         globalShortcut.unregister('CmdOrCtrl+Shift+F8');
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('does not affect other registered shortcuts', () => {
@@ -127,9 +127,9 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
 
       globalShortcut.unregister('CmdOrCtrl+B');
 
-      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).to.be.true('A should still be registered');
-      expect(globalShortcut.isRegistered('CmdOrCtrl+B')).to.be.false('B should be unregistered');
-      expect(globalShortcut.isRegistered('CmdOrCtrl+C')).to.be.true('C should still be registered');
+      expect(globalShortcut.isRegistered('CmdOrCtrl+A'), 'A should still be registered').toBe(true);
+      expect(globalShortcut.isRegistered('CmdOrCtrl+B'), 'B should be unregistered').toBe(false);
+      expect(globalShortcut.isRegistered('CmdOrCtrl+C'), 'C should still be registered').toBe(true);
     });
   });
 
@@ -137,7 +137,7 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
     it('does not throw when no shortcuts are registered', () => {
       expect(() => {
         globalShortcut.unregisterAll();
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('unregisters all previously registered shortcuts', () => {
@@ -147,9 +147,9 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
 
       globalShortcut.unregisterAll();
 
-      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).to.be.false();
-      expect(globalShortcut.isRegistered('CmdOrCtrl+B')).to.be.false();
-      expect(globalShortcut.isRegistered('CmdOrCtrl+C')).to.be.false();
+      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).toBe(false);
+      expect(globalShortcut.isRegistered('CmdOrCtrl+B')).toBe(false);
+      expect(globalShortcut.isRegistered('CmdOrCtrl+C')).toBe(false);
     });
 
     it('allows re-registration after clearing all shortcuts', () => {
@@ -157,8 +157,8 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
       globalShortcut.unregisterAll();
 
       const result = globalShortcut.register('CmdOrCtrl+A', () => {});
-      expect(result).to.be.true();
-      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).to.be.true();
+      expect(result).toBe(true);
+      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).toBe(true);
     });
   });
 
@@ -168,35 +168,35 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
     });
 
     it('is not suspended by default', () => {
-      expect(globalShortcut.isSuspended()).to.be.false();
+      expect(globalShortcut.isSuspended()).toBe(false);
     });
 
     it('can suspend and resume shortcut handling', () => {
       globalShortcut.setSuspended(true);
-      expect(globalShortcut.isSuspended()).to.be.true();
+      expect(globalShortcut.isSuspended()).toBe(true);
 
       globalShortcut.setSuspended(false);
-      expect(globalShortcut.isSuspended()).to.be.false();
+      expect(globalShortcut.isSuspended()).toBe(false);
     });
 
     it('can be called multiple times with the same value', () => {
       globalShortcut.setSuspended(true);
       globalShortcut.setSuspended(true);
-      expect(globalShortcut.isSuspended()).to.be.true();
+      expect(globalShortcut.isSuspended()).toBe(true);
 
       globalShortcut.setSuspended(false);
       globalShortcut.setSuspended(false);
-      expect(globalShortcut.isSuspended()).to.be.false();
+      expect(globalShortcut.isSuspended()).toBe(false);
     });
 
     it('does not affect existing registrations', () => {
       globalShortcut.register('CmdOrCtrl+A', () => {});
 
       globalShortcut.setSuspended(true);
-      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).to.be.true();
+      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).toBe(true);
 
       globalShortcut.setSuspended(false);
-      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).to.be.true();
+      expect(globalShortcut.isRegistered('CmdOrCtrl+A')).toBe(true);
     });
   });
 });

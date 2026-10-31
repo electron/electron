@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 
@@ -26,7 +26,7 @@ describe('webUtils module', () => {
       const pathFromWebUtils = await w.webContents.executeJavaScript(
         'require("electron").webUtils.getPathForFile(new Blob([1, 2, 3]))'
       );
-      expect(pathFromWebUtils).to.equal('');
+      expect(pathFromWebUtils).toBe('');
     });
 
     it('reports the correct path for a File object', async () => {
@@ -54,7 +54,7 @@ describe('webUtils module', () => {
         const pathFromWebUtils = await w.webContents.executeJavaScript(
           'require("electron").webUtils.getPathForFile(document.querySelector("input").files[0])'
         );
-        expect(pathFromWebUtils).to.equal(import.meta.filename);
+        expect(pathFromWebUtils).toBe(import.meta.filename);
       } finally {
         debug.detach();
       }

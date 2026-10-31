@@ -464,8 +464,9 @@ action("electron_generate_node_defines") {
   script = "build/generate_node_defines.py"
 
   inputs = [
-    "//third_party/electron_node/src/tracing/trace_event_common.h",
     "//third_party/electron_node/src/tracing/trace_event.h",
+    "//third_party/electron_node/src/tracing/trace_event_legacy.h",
+    "//third_party/electron_node/src/tracing/trace_event_legacy_inl.h",
     "//third_party/electron_node/src/util.h",
   ]
 
@@ -475,6 +476,102 @@ action("electron_generate_node_defines") {
   ]
 
   args = [ rebase_path(target_gen_dir) ] + rebase_path(inputs)
+}
+
+action("electron_generate_preload_realm_bindings") {
+  script = "build/generate_preload_realm_bindings.py"
+
+  core_idl_files = [
+    "//third_party/blink/renderer/core/dom/abort_controller.idl",
+    "//third_party/blink/renderer/core/dom/abort_signal.idl",
+    "//third_party/blink/renderer/core/dom/dom_exception.idl",
+    "//third_party/blink/renderer/core/dom/events/custom_event.idl",
+    "//third_party/blink/renderer/core/dom/events/event.idl",
+    "//third_party/blink/renderer/core/dom/events/event_target.idl",
+    "//third_party/blink/renderer/core/dom/observable.idl",
+    "//third_party/blink/renderer/core/dom/quota_exceeded_error.idl",
+    "//third_party/blink/renderer/core/dom/subscriber.idl",
+    "//third_party/blink/renderer/core/dom/void_function.idl",
+    "//third_party/blink/renderer/core/events/error_event.idl",
+    "//third_party/blink/renderer/core/events/promise_rejection_event.idl",
+    "//third_party/blink/renderer/core/frame/universal_global_scope.idl",
+    "//third_party/blink/renderer/core/messaging/structured_serialize_options.idl",
+    "//third_party/blink/renderer/core/streams/byte_length_queuing_strategy.idl",
+    "//third_party/blink/renderer/core/streams/count_queuing_strategy.idl",
+    "//third_party/blink/renderer/core/streams/readable_byte_stream_controller.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_byob_reader.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_byob_request.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/readable_stream_default_reader.idl",
+    "//third_party/blink/renderer/core/streams/transform_stream.idl",
+    "//third_party/blink/renderer/core/streams/transform_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream_default_controller.idl",
+    "//third_party/blink/renderer/core/streams/writable_stream_default_writer.idl",
+    "//third_party/blink/renderer/core/url/url.idl",
+    "//third_party/blink/renderer/core/url/url_search_params.idl",
+    "//third_party/blink/renderer/core/url_pattern/url_pattern.idl",
+  ]
+  modules_idl_files = [
+    "//third_party/blink/renderer/modules/compression/compression_stream.idl",
+    "//third_party/blink/renderer/modules/compression/decompression_stream.idl",
+    "//third_party/blink/renderer/modules/encoding/text_decoder.idl",
+    "//third_party/blink/renderer/modules/encoding/text_decoder_stream.idl",
+    "//third_party/blink/renderer/modules/encoding/text_encoder.idl",
+    "//third_party/blink/renderer/modules/encoding/text_encoder_stream.idl",
+  ]
+  idl_file = "shell/renderer/preload_realm_global_scope.idl"
+  runtime_enabled_features =
+      "//third_party/blink/renderer/platform/runtime_enabled_features.json5"
+  wrapper_type_info_header =
+      "//third_party/blink/renderer/platform/bindings/wrapper_type_info.h"
+
+  inputs = [
+             idl_file,
+             runtime_enabled_features,
+             wrapper_type_info_header,
+           ] + core_idl_files + modules_idl_files
+
+  # Read Blink's own .pydeps files directly instead of using action_with_pydeps
+  # (which expects a checked-in build/generate_preload_realm_bindings.pydeps)
+  # so we automatically pick up upstream Blink bindings script changes on rolls
+  # without manually maintaining a duplicate .pydeps file in //electron.
+  _blink_scripts_dir = "//third_party/blink/renderer/bindings/scripts"
+  _pydeps_files = [
+    "$_blink_scripts_dir/collect_idl_files.pydeps",
+    "$_blink_scripts_dir/generate_bindings.pydeps",
+  ]
+  _pydeps_lines = []
+  foreach(_pydeps_file, _pydeps_files) {
+    _pydeps_lines += read_file(_pydeps_file, "list lines")
+  }
+  _pydeps_entries = filter_exclude(_pydeps_lines, [ "#*" ])
+  inputs +=
+      rebase_path(_pydeps_entries, ".", _blink_scripts_dir) + _pydeps_files
+
+  outputs = [
+    "$target_gen_dir/preload_realm/v8_preload_realm_global_scope.cc",
+    "$target_gen_dir/preload_realm/v8_preload_realm_global_scope.h",
+  ]
+
+  args =
+      [
+        "--root-src-dir",
+        rebase_path("//", root_build_dir),
+        "--root-gen-dir",
+        rebase_path(root_gen_dir, root_build_dir),
+        "--output-reldir",
+        rebase_path("$target_gen_dir/preload_realm", root_gen_dir),
+        "--idl-file",
+        rebase_path(idl_file, root_build_dir),
+        "--runtime-enabled-features",
+        rebase_path(runtime_enabled_features, root_build_dir),
+        "--wrapper-type-info-header",
+        rebase_path(wrapper_type_info_header, root_build_dir),
+        "--core-idl-files",
+      ] + rebase_path(core_idl_files, root_build_dir) +
+      [ "--modules-idl-files" ] + rebase_path(modules_idl_files, root_build_dir)
 }
 
 source_set("electron_lib") {
@@ -491,6 +588,7 @@ source_set("electron_lib") {
   deps = [
     ":electron_fuses",
     ":electron_generate_node_defines",
+    ":electron_generate_preload_realm_bindings",
     ":electron_js2c",
     ":electron_version_header",
     ":resources",
@@ -509,6 +607,7 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/common/notifications",
     "//components/cbor",
+    "//components/cdm/renderer",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:user_agent",
@@ -544,6 +643,7 @@ source_set("electron_lib") {
     "//gin",
     "//gpu/ipc/client",
     "//media/capture/mojom:video_capture",
+    "//media/cdm:cdm_paths",
     "//media/mojo/mojom",
     "//media/mojo/mojom:web_speech_recognition",
     "//net:extras",
@@ -554,13 +654,13 @@ source_set("electron_lib") {
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
+    "//services/tracing/public/cpp",
     "//services/video_capture/public/mojom:constants",
     "//services/viz/privileged/mojom/compositing",
     "//services/viz/public/mojom",
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/blink/public:blink_devtools_inspector_resources",
-    "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:libnode",
 
@@ -572,6 +672,7 @@ source_set("electron_lib") {
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
+    "//third_party/perfetto/protos/perfetto/config:cpp",
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
@@ -630,7 +731,8 @@ source_set("electron_lib") {
 
   deps += [ "//electron/build/config:generate_mas_config" ]
 
-  sources = filenames.lib_sources
+  sources = filenames.lib_sources +
+            get_target_outputs(":electron_generate_preload_realm_bindings")
   if (is_win) {
     sources += filenames.lib_sources_win
   }
@@ -645,6 +747,10 @@ source_set("electron_lib") {
   }
   if (!is_mac) {
     sources += filenames.lib_sources_views
+  }
+  if (is_debug || dcheck_always_on) {
+    sources += [ "shell/common/api/electron_api_testing.cc" ]
+    deps += [ "shell/common:v8_code_cache_test_helpers" ]
   }
 
   if (electron_generate_js2c_code_cache) {
@@ -664,13 +770,6 @@ source_set("electron_lib") {
     defines += [ "NODE_SHARED_MODE" ]
   }
 
-  if (enable_fake_location_provider) {
-    sources += [
-      "shell/browser/fake_location_provider.cc",
-      "shell/browser/fake_location_provider.h",
-    ]
-  }
-
   if (enable_prompt_api) {
     sources += [
       "shell/browser/ai/proxying_ai_manager.cc",
@@ -683,17 +782,15 @@ source_set("electron_lib") {
   }
 
   if (is_mac) {
-    # Disable C++ modules to resolve linking error when including MacOS SDK
-    # headers from third_party/electron_node/deps/uv/include/uv/darwin.h
-    # TODO(samuelmaddock): consider revisiting this in the future
-    use_libcxx_modules = false
-
     deps += [
+      "shell/common:app_shim",
       "//components/os_crypt/async/browser:keychain_key_provider",
       "//components/os_crypt/common:keychain_password_mac",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
+      "//mojo/core/embedder",
+      "//mojo/public/cpp/platform",
       "//ui/accelerated_widget_mac",
     ]
 
@@ -966,7 +1063,9 @@ if (electron_generate_js2c_code_cache) {
 
   # One generated cache per process flavor: V8's code-cache key includes
   # FlagList::Hash() over non-default flags, which differs per process type.
-  # The flag deltas below were captured from live processes.
+  # The flag deltas below were captured from live processes. Node.js adds
+  # --external-memory-max-reasonable-size=0 in every process that initializes
+  # it (ProcessGlobalArgsInternal in src/node.cc).
   # `node_builtins`: whether the flavor also carries a cache for Node's own
   # builtins, i.e. whether its processes bootstrap their Node.js environment
   # from scratch on this build instead of deserializing it from the embedded
@@ -984,17 +1083,20 @@ if (electron_generate_js2c_code_cache) {
     {
       name = "renderer"
       flags = "--enable-sharedarraybuffer-per-context --rehash-snapshot " +
-              "--no-freeze-flags-after-init"
+              "--no-freeze-flags-after-init " +
+              "--external-memory-max-reasonable-size=0"
       node_builtins = true
     },
     {
       name = "utility"
-      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init " +
+              "--external-memory-max-reasonable-size=0"
       node_builtins = !node_use_node_snapshot
     },
     {
       name = "worker"
-      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init " +
+              "--external-memory-max-reasonable-size=0"
       node_builtins = false
     },
   ]
@@ -1007,7 +1109,8 @@ if (electron_generate_js2c_code_cache) {
     _js2c_cc_flavors += [
       {
         name = "browser"
-        flags = "--rehash-snapshot --no-freeze-flags-after-init"
+        flags = "--rehash-snapshot --no-freeze-flags-after-init " +
+                "--external-memory-max-reasonable-size=0"
         node_builtins = true
       },
     ]
@@ -1067,7 +1170,8 @@ if (electron_generate_js2c_code_cache) {
         # real node_snapshot is linked).
         rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
         "browser",
-        "--rehash-snapshot --no-freeze-flags-after-init",
+        "--rehash-snapshot --no-freeze-flags-after-init " +
+            "--external-memory-max-reasonable-size=0",
 
         # Processes created from the Node snapshot deserialize Node's builtins'
         # code cache from it.
@@ -1261,6 +1365,20 @@ if (is_mac) {
     deps = [ ":electron_swiftshader_binaries" ]
   }
 
+  # The executable of an app shim. Apps copy it into the shim bundles they make;
+  # it links nothing from Electron and loads the host app's framework.
+  executable("electron_app_shim_loader") {
+    output_name = "app_shim_loader"
+    sources = [ "shell/app_shim/app_shim_loader_mac.mm" ]
+    frameworks = [ "Cocoa.framework" ]
+  }
+
+  bundle_data("electron_app_shim_loader_bundle_data") {
+    sources = [ "$root_out_dir/app_shim_loader" ]
+    outputs = [ "{{bundle_contents_dir}}/Helpers/{{source_file_part}}" ]
+    public_deps = [ ":electron_app_shim_loader" ]
+  }
+
   bundle_data("electron_crashpad_helper") {
     sources = [ "$root_out_dir/chrome_crashpad_handler" ]
 
@@ -1359,7 +1477,10 @@ if (is_mac) {
       ":electron_xibs",
     ]
     if (!is_mas_build) {
-      bundle_deps += [ ":electron_crashpad_helper" ]
+      bundle_deps += [
+        ":electron_app_shim_loader_bundle_data",
+        ":electron_crashpad_helper",
+      ]
     }
     info_plist = "shell/common/resources/mac/Info.plist"
 
@@ -1376,6 +1497,12 @@ if (is_mac) {
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
+
+      # The folder this framework is in, where its sibling frameworks are. The
+      # app's executable has it as an rpath too, but an app shim loads this
+      # framework from an executable in another bundle.
+      "-rpath",
+      "@loader_path/../../..",
 
       # Required for exporting all symbols of libuv.
       "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a",
@@ -2059,8 +2186,22 @@ action("libcxx_objects_zip") {
   args = rebase_path(outputs)
 }
 
+if (is_debug || dcheck_always_on) {
+  # Test runners receive these assets rather than a full V8 checkout.
+  copy("v8_code_cache_spec_assets") {
+    sources = [
+      "//v8/LICENSE",
+      "//v8/test/mjsunit/wasm/wasm-module-builder.js",
+    ]
+    outputs = [ "$root_gen_dir/electron/v8-code-cache/{{source_file_part}}" ]
+  }
+}
+
 group("electron") {
   public_deps = [ ":electron_app" ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
 }
 
 ##### node_headers
@@ -2132,6 +2273,9 @@ group("testing_build") {
     ":electron_mksnapshot_zip",
     ":node_headers",
   ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
   if (!is_mas_build) {
     public_deps += [ ":electron_xcache_zip" ]
   }

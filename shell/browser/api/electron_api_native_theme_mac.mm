@@ -8,17 +8,16 @@
 
 namespace electron::api {
 
-void NativeTheme::UpdateMacOSAppearanceForOverrideValue(
-    ui::NativeTheme::ThemeSource override) {
+void NativeTheme::UpdateMacOSAppearanceForOverrideValue(ThemeSource override) {
   NSAppearance* new_appearance;
   switch (override) {
-    case ui::NativeTheme::ThemeSource::kForcedDark:
+    case ThemeSource::kForcedDark:
       new_appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
       break;
-    case ui::NativeTheme::ThemeSource::kForcedLight:
+    case ThemeSource::kForcedLight:
       new_appearance = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
       break;
-    case ui::NativeTheme::ThemeSource::kSystem:
+    case ThemeSource::kSystem:
     default:
       new_appearance = nil;
       break;

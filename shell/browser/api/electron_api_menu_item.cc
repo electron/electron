@@ -575,7 +575,7 @@ void MenuItem::CallClick(v8::Isolate* isolate,
 // static
 void MenuItem::ClickThunk(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
-  MenuItem* item = FromV8(isolate, info.Data());
+  MenuItem* item = FromV8(isolate, info.DataV2().As<v8::Value>());
   if (!item)
     return;
   BaseWindow* window = BaseWindow::FromValue(isolate, info[1]);

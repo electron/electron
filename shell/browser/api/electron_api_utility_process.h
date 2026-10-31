@@ -72,6 +72,9 @@ class UtilityProcessWrapper final
 
   static UtilityProcessWrapper* Create(gin::Arguments* args);
   static UtilityProcessWrapper* FromProcessId(base::ProcessId pid);
+  // Shuts down every wrapper that has not terminated, including ones whose
+  // child is still launching. Called before Node.js stops at browser shutdown.
+  static void ShutdownAll();
 
 #if BUILDFLAG(ENABLE_PROMPT_API)
   void BindAIManager(std::optional<int32_t> web_contents_id,
@@ -99,6 +102,7 @@ class UtilityProcessWrapper final
  private:
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
+  void DispatchPendingMessages();
   void CloseStdioReadFds();
 
   void HandleTermination(uint32_t exit_code);

@@ -46,6 +46,12 @@ jobs:
       BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
+        sudo dscacheutil -flushcache
+        sudo killall -HUP mDNSResponder
     # Same workaround as pipeline-segment-electron-test.yml.
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -54,9 +60,9 @@ jobs:
         persist-credentials: false
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform != 'linux' }}
-      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
       with:
-        node-version: 22.21.x
+        node-version: 22.23.4
     # Installs only the @electron-ci/pgo workspace's dependencies (a focused
     # install takes seconds; a full yarn install takes minutes).
     - name: Install collection dependencies
@@ -64,7 +70,7 @@ jobs:
         cd src/electron
         node script/yarn.js workspaces focus @electron-ci/pgo --production
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: generated_artifacts_${{ inputs.artifact-key }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ inputs.target-arch }}
@@ -134,6 +140,41 @@ jobs:
           --work-dir /tmp/electron-pgo \
           --no-sandbox \
           --no-merge
+    # Same as pipeline-segment-electron-test.yml: on GitHub-hosted Windows
+    # runners the agent's terminal window sits in the foreground and covers
+    # most of the desktop. Windows' native occlusion tracking then marks the
+    # benchmark window beneath it as hidden, so it stops producing frames.
+    # Minimize it before collection runs.
+    - name: Minimize Runner Terminal Window (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: pwsh
+      run: |
+        Add-Type -Namespace ElectronCI -Name User32 -MemberDefinition @'
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string cls, string title);
+        '@
+        foreach ($cls in 'ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS') {
+          $h = [IntPtr]::Zero
+          while (($h = [ElectronCI.User32]::FindWindowEx([IntPtr]::Zero, $h, $cls, [NullString]::Value)) -ne [IntPtr]::Zero) {
+            if ([ElectronCI.User32]::IsWindowVisible($h) -and -not [ElectronCI.User32]::IsIconic($h)) {
+              # 6 = SW_MINIMIZE
+              [void][ElectronCI.User32]::ShowWindow($h, 6)
+              Write-Host ("Minimized {0} window 0x{1:X}" -f $cls, $h.ToInt64())
+            }
+          }
+        }
+    # Same as pipeline-segment-electron-test.yml.
+    - name: Dismiss first sign-in windows (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      timeout-minutes: 5
+      # Best effort: let collection run even if the window stays up.
+      continue-on-error: true
+      uses: ./src/electron/.github/actions/dismiss-windows-first-sign-in
+      with:
+        # Outlast the collect step's 330 minute timeout.
+        minimizer-seconds: 19800
     - name: Collect PGO Profile (win)
       if: ${{ inputs.target-platform == 'win' }}
       # Must exceed collect-profile.js's retry deadline (240 min, after which
@@ -154,7 +195,7 @@ jobs:
     # Upload partial results even when a workload failed.
     - name: Upload Profraw as Workflow Artifact
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: pgo-profraw-${{ inputs.target-platform }}-${{ inputs.target-arch }}
         path: src/out/Default/pgo-profraw/
@@ -166,7 +207,7 @@ jobs:
     # stack to DiagnosticReports - upload it so failures are diagnosable.
     - name: Upload Crash Reports (macos)
       if: ${{ failure() && inputs.target-platform == 'macos' }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: pgo-crash-reports-${{ inputs.target-platform }}-${{ inputs.target-arch }}
         path: |

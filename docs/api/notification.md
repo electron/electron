@@ -170,7 +170,7 @@ Notification.removeGroup('chat-thread-1')
   * `replyPlaceholder` string (optional) _macOS_ _Windows_ - The placeholder to write in the inline reply input field.
   * `sound` string (optional) _macOS_ - The name of the sound file to play when the notification is shown.
   * `urgency` string (optional) _Linux_ _Windows_ - The urgency level of the notification. Can be 'normal', 'critical', or 'low'.
-  * `actions` [NotificationAction[]](structures/notification-action.md) (optional) _macOS_ _Windows_ - Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation.
+  * `actions` [NotificationAction[]](structures/notification-action.md) (optional) - Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation.
   * `closeButtonText` string (optional) _macOS_ - A custom title for the close button of an alert. An empty string will cause the default localized text to be used.
   * `toastXml` string (optional) _Windows_ - A custom description of the Notification on Windows superseding all properties above. Provides full customization of design and behavior of the notification.
 
@@ -296,7 +296,7 @@ app.whenReady().then(() => {
 })
 ```
 
-#### Event: 'action' _macOS_ _Windows_
+#### Event: 'action'
 
 Returns:
 

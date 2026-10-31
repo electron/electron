@@ -14,7 +14,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/dictionary.h"
-#include "gin/per_context_data.h"
+#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_menu_item.h"
 #include "shell/browser/api/electron_api_menu_roles.h"
@@ -23,7 +23,9 @@
 #include "shell/browser/api/ui_event.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/menu_highlight_colors.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -394,6 +396,58 @@ void Menu::SetApplicationMenuFromJS(gin::Arguments* args) {
 }
 
 // static
+void Menu::SetHighlightColors(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::ErrorThrower thrower(isolate);
+  MenuHighlightColors colors;
+  v8::Local<v8::Value> options_value;
+  if (args->GetNext(&options_value) && !options_value->IsNullOrUndefined()) {
+    if (!options_value->IsObject()) {
+      thrower.ThrowTypeError("Options must be an object or null");
+      return;
+    }
+    gin_helper::Dictionary options(isolate, options_value.As<v8::Object>());
+    // Reads the optional |mode| ("light" or "dark") object and its CSS color
+    // strings; missing keys leave the corresponding color unset.
+    auto get_mode = [&](std::string_view mode,
+                        std::optional<SkColor>* background,
+                        std::optional<SkColor>* foreground) {
+      v8::Local<v8::Value> mode_value;
+      if (!options.Get(mode, &mode_value) || mode_value->IsUndefined())
+        return true;
+      if (!mode_value->IsObject()) {
+        thrower.ThrowTypeError(
+            base::StrCat({"'", mode, "' must be an object"}));
+        return false;
+      }
+      gin_helper::Dictionary dict(isolate, mode_value.As<v8::Object>());
+      auto get_color = [&](std::string_view key, std::optional<SkColor>* out) {
+        v8::Local<v8::Value> value;
+        if (!dict.Get(key, &value) || value->IsUndefined())
+          return true;
+        std::string str;
+        if (gin::ConvertFromV8(isolate, value, &str))
+          *out = ParseCSSColor(str);
+        if (!*out) {
+          thrower.ThrowTypeError(
+              base::StrCat({"Invalid color for '", mode, ".", key, "'"}));
+          return false;
+        }
+        return true;
+      };
+      return get_color("background", background) &&
+             get_color("foreground", foreground);
+    };
+    if (!get_mode("light", &colors.light_background,
+                  &colors.light_foreground) ||
+        !get_mode("dark", &colors.dark_background, &colors.dark_foreground)) {
+      return;
+    }
+  }
+  SetMenuHighlightColors(colors);
+}
+
+// static
 void Menu::ChangeApplicationMenu(Menu* menu) {
   g_application_menu_was_set = true;
   if (menu)
@@ -441,7 +495,7 @@ void Menu::InstallDefaultApplicationMenu(v8::Isolate* isolate) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   // Nothing need have touched electron.Menu yet; the wrappers created below
   // get their templates from the constructors.
-  gin::PerContextData* data = gin::PerContextData::From(context);
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   if (!data)
     return;
   if (data->GetObjectTemplate(&kWrapperInfo).IsEmpty())
@@ -576,6 +630,7 @@ void Initialize(v8::Local<v8::Object> exports,
   statics.SetMethod<&Menu::BuildFromTemplate>("buildFromTemplate");
   statics.SetMethod<&Menu::SetApplicationMenuFromJS>("setApplicationMenu");
   statics.SetMethod<&Menu::GetApplicationMenu>("getApplicationMenu");
+  statics.SetMethod<&Menu::SetHighlightColors>("setHighlightColors");
   statics.SetMethod<&electron::api::menu_roles::Defaults>("_roleDefaults");
 #if BUILDFLAG(IS_MAC)
   statics.SetMethod<&Menu::SendActionToFirstResponder>(

@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Thu, 15 Oct 2026 19:31:39 +0000
+Subject: test: skip rmSync permission error test when running as root
+
+test-fs-rmSync-special-char-additional-error.js (new in v24.22.0) makes
+a directory read-only and expects rmSync() to fail with EACCES. Root
+ignores directory permissions, so the removal succeeds and the cleanup
+chmod then throws ENOENT. Electron's Linux CI runs the Node.js suite as
+root; skip there like test-fs-rm.js already guards its permission block
+with process.getuid() !== 0.
+
+This should be upstreamed; remove the patch once Node.js carries the
+guard.
+
+Refs: https://github.com/nodejs/node/pull/64453
+
+diff --git a/test/parallel/test-fs-rmSync-special-char-additional-error.js b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+index 9b4de3c84d626fbbc4d537bd539276dc42d5f5c4..615a6128302efb9906bfce0bea93f93020477953 100644
+--- a/test/parallel/test-fs-rmSync-special-char-additional-error.js
++++ b/test/parallel/test-fs-rmSync-special-char-additional-error.js
+@@ -6,6 +6,9 @@ const fs = require('node:fs');
+ const path = require('node:path');
+ const { execSync } = require('child_process');
+ 
++if (!common.isWindows && process.getuid() === 0)
++  common.skip('as this test checks permission errors, it cannot run as root');
++
+ tmpdir.refresh(); // Prepare a clean temporary directory
+ 
+ function countOccurrences(haystack, needle) {

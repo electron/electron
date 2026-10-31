@@ -84,7 +84,6 @@ struct Converter<
 
 namespace {
 
-using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
 using HandleType = content::FileSystemAccessPermissionContext::HandleType;
 using GrantType = electron::FileSystemAccessPermissionContext::GrantType;
 using SensitiveEntryResult =
@@ -111,123 +110,6 @@ constexpr std::string_view kDisplayNameKey = "display-name";
 constexpr std::string_view kTimestampKey = "timestamp";
 
 constexpr base::TimeDelta kPermissionRevocationTimeout = base::Seconds(5);
-
-#if BUILDFLAG(IS_WIN)
-[[nodiscard]] constexpr bool ContainsInvalidDNSCharacter(
-    base::FilePath::StringType hostname) {
-  return !std::ranges::all_of(hostname, [](base::FilePath::CharType c) {
-    return (c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') ||
-           (c >= L'0' && c <= L'9') || (c == L'.') || (c == L'-');
-  });
-}
-
-bool MaybeIsLocalUNCPath(const base::FilePath& path) {
-  if (!path.IsNetwork()) {
-    return false;
-  }
-
-  const std::vector<base::FilePath::StringType> components =
-      path.GetComponents();
-
-  // Check for server name that could represent a local system. We only
-  // check for a very short list, as it is impossible to cover all different
-  // variants on Windows.
-  if (components.size() >= 2 &&
-      (base::FilePath::CompareEqualIgnoreCase(components[1],
-                                              FILE_PATH_LITERAL("localhost")) ||
-       components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
-       components[1] == FILE_PATH_LITERAL(".") ||
-       components[1] == FILE_PATH_LITERAL("?") ||
-       ContainsInvalidDNSCharacter(components[1]))) {
-    return true;
-  }
-
-  // In case we missed the server name check above, we also check for shares
-  // ending with '$' as they represent pre-defined shares, including the local
-  // drives.
-  for (size_t i = 2; i < components.size(); ++i) {
-    if (components[i].back() == L'$') {
-      return true;
-    }
-  }
-
-  return false;
-}
-#endif  // BUILDFLAG(IS_WIN)
-
-bool ShouldBlockAccessToPath(
-    base::FilePath path,
-    HandleType handle_type,
-    std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
-        extra_rules,
-    ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules) {
-  DCHECK(!path.empty());
-  DCHECK(path.IsAbsolute());
-
-  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePath(path);
-  for (auto& rule : extra_rules) {
-    rule.path =
-        ChromeFileSystemAccessPermissionContext::NormalizeFilePath(rule.path);
-  }
-
-#if BUILDFLAG(IS_WIN)
-  // On Windows, local UNC paths are rejected, as UNC path can be written in a
-  // way that can bypass the blocklist.
-  if (MaybeIsLocalUNCPath(path)) {
-    return true;
-  }
-#endif
-
-  base::FilePath nearest_ancestor;
-  BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
-  auto should_block_with_rule = [&](const base::FilePath& block_path,
-                                    BlockType block_type) -> bool {
-    if (path == block_path || path.IsParent(block_path)) {
-      VLOG(1) << "Blocking access to " << path << " because it is a parent of "
-              << block_path;
-      return true;
-    }
-
-    if (block_path.IsParent(path) &&
-        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block_path))) {
-      nearest_ancestor = block_path;
-      nearest_ancestor_block_type = block_type;
-    }
-    return false;
-  };
-
-  for (const auto* block_rules_ptr :
-       {&extra_rules, &block_path_rules.block_path_rules_}) {
-    for (const auto& block : *block_rules_ptr) {
-      if (should_block_with_rule(block.path, block.type)) {
-        return true;
-      }
-    }
-  }
-
-  // The path we're checking is not in a potentially blocked directory, or the
-  // nearest ancestor does not block access to its children. Grant access.
-  if (nearest_ancestor.empty() ||
-      nearest_ancestor_block_type == BlockType::kDontBlockChildren) {
-    VLOG(1) << "Not blocking access to " << path << " because it is inside "
-            << nearest_ancestor << " and it's kDontBlockChildren";
-    return false;
-  }
-
-  // The path we're checking is a file, and the nearest ancestor only blocks
-  // access to directories. Grant access.
-  if (handle_type == HandleType::kFile &&
-      nearest_ancestor_block_type == BlockType::kBlockNestedDirectories) {
-    VLOG(1) << "Not blocking access to " << path << " because it is inside "
-            << nearest_ancestor << " and it's kBlockNestedDirectories";
-    return false;
-  }
-
-  // The nearest ancestor blocks access to its children, so block access.
-  VLOG(1) << "Blocking access to " << path << " because it is inside "
-          << nearest_ancestor << " and it's kBlockAllChildren";
-  return true;
-}
 
 std::string GenerateLastPickedDirectoryKey(const std::string& id) {
   return id.empty() ? kDefaultLastPickedDirectoryKey
@@ -714,27 +596,36 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
       GetWeakPtr(), request_id, origin, path_info, handle_type, access_trigger,
       frame_id);
-  CheckPathAgainstBlocklist(path_info, handle_type,
+  CheckPathAgainstBlocklist(path_info, handle_type, access_trigger,
                             std::move(after_blocklist_check_callback));
 }
 
 void FileSystemAccessPermissionContext::CheckShouldBlockAccessToPathAndReply(
     base::FilePath path,
     HandleType handle_type,
+    AccessTrigger access_trigger,
     std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
         extra_rules,
     base::OnceCallback<void(bool)> callback,
     ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules) {
+  // Uses Chrome's own matcher so that suffix rules, kBlockWrite rules (which
+  // only apply to AccessTrigger::kSave and AccessTrigger::kProgrammaticWrite)
+  // and the Windows local UNC path checks stay in sync with upstream. The
+  // profile path is only consulted for ChromeOS profile-based rules.
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-      base::BindOnce(&ShouldBlockAccessToPath, path, handle_type, extra_rules,
-                     block_path_rules),
+      base::BindOnce(
+          &ChromeFileSystemAccessPermissionContext::ShouldBlockAccessToPath,
+          /*should_normalize_file_path=*/true, std::move(path), handle_type,
+          access_trigger, std::move(extra_rules), std::move(block_path_rules),
+          browser_context()->GetPath()),
       std::move(callback));
 }
 
 void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
     const content::PathInfo& path_info,
     HandleType handle_type,
+    AccessTrigger access_trigger,
     base::OnceCallback<void(bool)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // TODO(crbug.com/40101272): Figure out what external paths should be
@@ -757,9 +648,9 @@ void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
   if (is_block_path_rules_init_complete_) {
     // The rules initialization is completed, we can just post the task to a
     // anonymous blocking traits.
-    CheckShouldBlockAccessToPathAndReply(path_info.path, handle_type,
-                                         extra_rules, std::move(callback),
-                                         *block_path_rules_.get());
+    CheckShouldBlockAccessToPathAndReply(
+        path_info.path, handle_type, access_trigger, extra_rules,
+        std::move(callback), *block_path_rules_.get());
     return;
   }
   // The check must be performed after the rules initialization is done.
@@ -767,7 +658,7 @@ void FileSystemAccessPermissionContext::CheckPathAgainstBlocklist(
       base::BindOnce(&FileSystemAccessPermissionContext::
                          CheckShouldBlockAccessToPathAndReply,
                      weak_factory_.GetWeakPtr(), path_info.path, handle_type,
-                     extra_rules, std::move(callback))));
+                     access_trigger, extra_rules, std::move(callback))));
 }
 
 void FileSystemAccessPermissionContext::PerformAfterWriteChecks(

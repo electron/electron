@@ -38,6 +38,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "libplatform/libplatform.h"
@@ -50,7 +51,8 @@ namespace {
 // them is part of the code-cache key. Keep in sync with the browser flavor of
 // electron_natives_codecache in BUILD.gn.
 constexpr char kDefaultV8Flags[] =
-    "--rehash-snapshot --no-freeze-flags-after-init";
+    "--rehash-snapshot --no-freeze-flags-after-init "
+    "--external-memory-max-reasonable-size=0";
 
 // v8/src/snapshot/snapshot.cc, SnapshotImpl.
 constexpr uint32_t kSnapNumContextsOffset = 0;
@@ -70,10 +72,12 @@ constexpr uint32_t kSnapshotDataHeaderSize = 8;
 constexpr uint32_t kCacheMagicOffset = 0;
 constexpr uint32_t kCacheVersionHashOffset = 4;
 constexpr uint32_t kCacheSourceHashOffset = 8;
-constexpr uint32_t kCacheFlagHashOffset = 12;
-constexpr uint32_t kCacheRoChecksumOffset = 16;
-constexpr uint32_t kCachePayloadLengthOffset = 20;
-constexpr uint32_t kCacheHeaderSize = 32;
+constexpr uint32_t kCacheSourceHashSize = 32;
+constexpr uint32_t kCacheFlagHashOffset =
+    kCacheSourceHashOffset + kCacheSourceHashSize;
+constexpr uint32_t kCacheRoChecksumOffset = kCacheFlagHashOffset + 4;
+constexpr uint32_t kCachePayloadLengthOffset = kCacheRoChecksumOffset + 4;
+constexpr uint32_t kCacheHeaderSize = 56;
 
 uint32_t ReadU32(const char* p) {
   uint32_t v;
@@ -85,6 +89,17 @@ std::string Hex(uint32_t v) {
   char buf[16];
   std::snprintf(buf, sizeof(buf), "0x%08x", v);
   return buf;
+}
+
+std::string HexBytes(std::string_view bytes) {
+  constexpr char kDigits[] = "0123456789abcdef";
+  std::string out = "0x";
+  out.reserve(2 + bytes.size() * 2);
+  for (unsigned char byte : bytes) {
+    out += kDigits[byte >> 4];
+    out += kDigits[byte & 0xf];
+  }
+  return out;
 }
 
 // JSON string literal, quotes included.
@@ -235,7 +250,7 @@ bool ParseBlobAt(std::string_view data, size_t offset, BlobInfo* info) {
               static_cast<uInt>(b.size - kSnapRoChecksumOffset));
   b.checksum_ok = static_cast<uint32_t>(a) == ReadU32(p + kSnapChecksumOffset);
   b.ro_checksum = ReadU32(p + kSnapRoChecksumOffset);
-  *info = b;
+  *info = std::move(b);
   return true;
 }
 
@@ -639,7 +654,8 @@ int main(int argc, char* argv[]) {
               << Hex(ReadU32(h + kCacheMagicOffset)) << "\",\"versionHash\":\""
               << Hex(ReadU32(h + kCacheVersionHashOffset))
               << "\",\"sourceHash\":\""
-              << Hex(ReadU32(h + kCacheSourceHashOffset))
+              << HexBytes(std::string_view(h + kCacheSourceHashOffset,
+                                           kCacheSourceHashSize))
               << "\",\"flagHash\":\"" << Hex(flag_hash)
               << "\",\"roSnapshotChecksum\":\"" << Hex(ro_checksum)
               << "\",\"payloadLength\":"

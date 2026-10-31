@@ -28,6 +28,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
+#include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "url/gurl.h"
@@ -148,6 +149,10 @@ class ProtocolSourceURLLoaderFactory
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
       override {
+    if (IsCorsDisabledSchemeRequest(request)) {
+      FailCorsDisabledSchemeRequest(std::move(client));
+      return;
+    }
     std::optional<ProtocolSource::Match> match;
     if (request.method == "GET" || request.method == "HEAD")
       match = source_->Resolve(request.url);
@@ -157,6 +162,9 @@ class ProtocolSourceURLLoaderFactory
               network::URLLoaderCompletionStatus(net::ERR_FILE_NOT_FOUND));
       return;
     }
+    // The asar loader builds its own response head; see StartLoadingFile.
+    if (IsCrossOriginNoCorsRequest(request))
+      client = WrapClientForOpaqueResponse(std::move(client));
     network::ResourceRequest file_request = request;
     file_request.url = net::FilePathToFileURL(match->file);
     asar::CreateAsarURLLoader(file_request, std::move(loader),

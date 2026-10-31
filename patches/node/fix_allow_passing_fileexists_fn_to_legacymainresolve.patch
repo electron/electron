@@ -10,51 +10,46 @@ uses commonJS.
 We can fix this by allowing the C++ implementation of legacyMainResolve to use
 a fileExists function that does take Asar into account.
 
-diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index e7311af43237c9459263d15c6b10749b92a5b7d3..66f71c3845361cc380d89ec50472658b9336fb5c 100644
---- a/lib/internal/modules/esm/resolve.js
-+++ b/lib/internal/modules/esm/resolve.js
-@@ -28,11 +28,10 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
- const fs = require('fs');
+diff --git a/lib/internal/modules/helpers.js b/lib/internal/modules/helpers.js
+index 98d9e04d0c9a2b4f0208be742b5d31038247bfab..26cb56ad45295fcbd71d5d884fd034233c97bce9 100644
+--- a/lib/internal/modules/helpers.js
++++ b/lib/internal/modules/helpers.js
+@@ -29,7 +29,7 @@ const { validateString } = require('internal/validators');
+ const fs = require('fs'); // Import all of `fs` so that it can be monkey-patched.
+ const internalFS = require('internal/fs/utils');
+ const path = require('path');
+-const { pathToFileURL, fileURLToPath, URL } = require('internal/url');
++const { pathToFileURL, fileURLToPath, URL, toPathIfFileURL } = require('internal/url');
+ const assert = require('internal/assert');
+ 
  const { getOptionValue } = require('internal/options');
- // Do not eagerly grab .manifest, it may be in TDZ
--const { sep, posix: { relative: relativePosixPath }, resolve, join } = require('path');
--const { URL, pathToFileURL, fileURLToPath, isURL, URLParse } = require('internal/url');
-+const { sep, posix: { relative: relativePosixPath }, toNamespacedPath, resolve, join } = require('path');
-+const { URL, pathToFileURL, fileURLToPath, isURL, URLParse, toPathIfFileURL } = require('internal/url');
- const { getCWDURL, setOwnProperty } = require('internal/util');
- const { canParse: URLCanParse } = internalBinding('url');
--const { legacyMainResolve: FSLegacyMainResolve } = internalBinding('fs');
- const {
-   ERR_INPUT_TYPE_NOT_ALLOWED,
-   ERR_INVALID_ARG_TYPE,
-@@ -181,6 +180,11 @@ const legacyMainResolveExtensionsIndexes = {
-   kResolvedByPackageAndNode: 9,
- };
+@@ -69,6 +69,11 @@ let debug = require('internal/util/debuglog').debuglog('module', (fn) => {
+  */
+ const realpathCache = new SafeMap();
  
 +function fileExists(url) {
-+  const namespaced = toNamespacedPath(toPathIfFileURL(url));
++  const namespaced = path.toNamespacedPath(toPathIfFileURL(url));
 +  return internalFsBinding.internalModuleStat(namespaced) === 0;
 +}
 +
- /**
-  * Legacy CommonJS main resolution:
-  * 1. let M = pkg_url + (json main field)
-@@ -199,7 +203,7 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
- 
-   const baseStringified = isURL(base) ? base.href : base;
- 
--  const resolvedOption = FSLegacyMainResolve(pkgPath, packageConfig.main, baseStringified);
-+  const resolvedOption = internalFsBinding.legacyMainResolve(pkgPath, packageConfig.main, baseStringified, fileExists);
- 
-   const maybeMain = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ?
-     packageConfig.main || './' : '';
+ // Toggleable loader hooks for VFS support. Overrides that return
+ // `undefined` fall through to the pinned native implementation.
+ const nativeLoaderMethods = {
+@@ -78,7 +83,7 @@ const nativeLoaderMethods = {
+     [internalFS.realpathCacheKey]: realpathCache,
+   }),
+   legacyMainResolve: (pkgPath, main, base) =>
+-    internalFsBinding.legacyMainResolve(pkgPath, main, base),
++    internalFsBinding.legacyMainResolve(pkgPath, main, base, fileExists),
+   getFormatOfExtensionlessFile: (filePath) =>
+     internalFsBinding.getFormatOfExtensionlessFile(filePath),
+   readPackageJSON: (jsonPath, isESM, base, specifier) =>
 diff --git a/src/node_file.cc b/src/node_file.cc
-index a576b4a9d4ebbee73cd3ea038ab2d84210fcc21b..c2bc9dfaa6a0d10624362d217fe591d8465a6c3a 100644
+index 0bc7511ccb545c1b88606e097336a269c9d31482..a8ccbd2e2d71f9c60ae704dd2e1ba51f349f1212 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3943,13 +3943,25 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
- }
+@@ -5316,13 +5316,25 @@ class CpDirJob final : public AsyncWrap, public ThreadPoolWork {
+ };
  
  BindingData::FilePathIsFileReturnType BindingData::FilePathIsFile(
 -    Environment* env, const std::string& file_path) {
@@ -80,7 +75,7 @@ index a576b4a9d4ebbee73cd3ea038ab2d84210fcc21b..c2bc9dfaa6a0d10624362d217fe591d8
    uv_fs_t req;
  
    int rc = uv_fs_stat(env->event_loop(), &req, file_path.c_str(), nullptr);
-@@ -4007,6 +4019,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -5380,6 +5392,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
    std::optional<std::string> initial_file_path;
    std::string file_path;
  
@@ -92,7 +87,7 @@ index a576b4a9d4ebbee73cd3ea038ab2d84210fcc21b..c2bc9dfaa6a0d10624362d217fe591d8
    if (args.Length() >= 2 && args[1]->IsString()) {
      auto package_config_main = Utf8Value(isolate, args[1]).ToString();
  
-@@ -4027,7 +4044,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -5400,7 +5417,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
        BufferValue buff_file_path(isolate, local_file_path);
        ToNamespacedPath(env, &buff_file_path);
  
@@ -101,7 +96,7 @@ index a576b4a9d4ebbee73cd3ea038ab2d84210fcc21b..c2bc9dfaa6a0d10624362d217fe591d8
          case BindingData::FilePathIsFileReturnType::kIsFile:
            return args.GetReturnValue().Set(i);
          case BindingData::FilePathIsFileReturnType::kIsNotFile:
-@@ -4064,7 +4081,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -5437,7 +5454,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
      BufferValue buff_file_path(isolate, local_file_path);
      ToNamespacedPath(env, &buff_file_path);
  
@@ -111,7 +106,7 @@ index a576b4a9d4ebbee73cd3ea038ab2d84210fcc21b..c2bc9dfaa6a0d10624362d217fe591d8
          return args.GetReturnValue().Set(i);
        case BindingData::FilePathIsFileReturnType::kIsNotFile:
 diff --git a/src/node_file.h b/src/node_file.h
-index fab01a4c17b8083d2d8178d14f4d77be4f035bb7..f17f0e9451c27109ab32bded3f458a4732b0f34d 100644
+index 1e88f79d6fa8bd74cc5d5d4874d6b4f09069953e..e23c91d2a9d5d848beb5d858411f98bac693890e 100644
 --- a/src/node_file.h
 +++ b/src/node_file.h
 @@ -101,7 +101,8 @@ class BindingData : public SnapshotableObject {

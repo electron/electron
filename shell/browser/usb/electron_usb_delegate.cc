@@ -100,9 +100,7 @@ class ElectronUsbDelegate::ContextObservation
   ContextObservation(ElectronUsbDelegate* parent,
                      content::BrowserContext* browser_context)
       : parent_(parent), browser_context_(browser_context) {
-    auto* chooser_context = GetChooserContext(browser_context_);
-    if (chooser_context)
-      device_observation_.Observe(chooser_context);
+    device_observation_.Observe(GetChooserContext(browser_context_));
   }
   ContextObservation(ContextObservation&) = delete;
   ContextObservation& operator=(ContextObservation&) = delete;
@@ -143,7 +141,8 @@ class ElectronUsbDelegate::ContextObservation
   const raw_ptr<ElectronUsbDelegate> parent_;
 
   // Safe because `this` is destroyed when the context is lost.
-  const raw_ptr<content::BrowserContext> browser_context_;
+  const raw_ptr<content::BrowserContext, LeakedDanglingUntriaged>
+      browser_context_;
 
   base::ScopedObservation<UsbChooserContext, UsbChooserContext::DeviceObserver>
       device_observation_{this};

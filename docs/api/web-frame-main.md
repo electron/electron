@@ -344,10 +344,11 @@ See also how the [Page Visibility API](browser-window.md#page-visibility) is aff
 #### `frame.detached` _Readonly_
 
 A `Boolean` representing whether the frame is detached from the frame tree. If a frame is accessed
-while the corresponding page is running any [unload][] listeners, it may become detached as the
+while the corresponding page is running any [`pagehide`][pagehide] or [`unload`][unload] listeners, it may become detached as the
 newly navigated page replaced it in the frame tree.
 
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
 [`MessagePortMain`]: message-port-main.md
+[pagehide]: https://developer.mozilla.org/en-US/docs/Web/API/Window/pagehide_event
 [unload]: https://developer.mozilla.org/en-US/docs/Web/API/Window/unload_event

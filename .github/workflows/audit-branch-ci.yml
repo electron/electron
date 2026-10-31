@@ -17,9 +17,9 @@ jobs:
       contents: read
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22.17.x
+          node-version: 22.23.4
       - name: Sparse checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -73,6 +73,12 @@ jobs:
                   continue; // Skip the audit workflow itself
                 }
 
+                // Only consider runs which actually failed, since retries within a
+                // test run can create error annotations even when the run succeeded
+                if (checkRun.conclusion !== 'failure') {
+                  continue;
+                }
+
                 const annotations = (await github.rest.checks.listAnnotations({
                   owner: "electron",
                   repo: "electron",
@@ -85,11 +91,11 @@ jobs:
                       annotation_level === "failure" &&
                       !message.startsWith("Process completed with exit code") &&
                       !message.startsWith("Response status code does not indicate success") &&
-                      !message.startsWith("The hosted runner lost communication with the server") &&
                       !message.startsWith("Dependabot encountered an error performing the update") &&
                       !message.startsWith("The action 'Run Electron Tests' has timed out") &&
                       !message.startsWith("The operation was canceled") &&
                       !message.startsWith("Canceling since") &&
+                      !/runner lost communication with the server/.test(message) &&
                       !/curl 56 GnuTLS recv error/.test(message) &&
                       !/Could not resolve host/.test(message) &&
                       !/Unable to make request/.test(message) &&
@@ -161,7 +167,7 @@ jobs:
             await core.summary.write();
       - name: Upload audit results artifact
         if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: audit-results.md
           path: audit-results.md

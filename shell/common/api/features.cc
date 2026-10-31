@@ -18,10 +18,6 @@ bool IsPDFViewerEnabled() {
   return BUILDFLAG(ENABLE_PDF_VIEWER);
 }
 
-bool IsFakeLocationProviderEnabled() {
-  return BUILDFLAG(OVERRIDE_LOCATION_PROVIDER);
-}
-
 bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
@@ -50,8 +46,6 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod<&IsBuiltinSpellCheckerEnabled>("isBuiltinSpellCheckerEnabled");
   dict.SetMethod<&IsPDFViewerEnabled>("isPDFViewerEnabled");
-  dict.SetMethod<&IsFakeLocationProviderEnabled>(
-      "isFakeLocationProviderEnabled");
   dict.SetMethod<&IsPrintingEnabled>("isPrintingEnabled");
   dict.SetMethod<&IsPromptAPIEnabled>("isPromptAPIEnabled");
   dict.SetMethod<&IsComponentBuild>("isComponentBuild");

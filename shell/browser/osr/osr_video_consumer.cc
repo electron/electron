@@ -147,10 +147,10 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     texture.content_rect = content_rect;
     texture.color_space = info->color_space;
     texture.timestamp = info->timestamp.InMicroseconds();
-    texture.frame_count = info->metadata.capture_counter.value_or(0);
-    texture.capture_update_rect = info->metadata.capture_update_rect;
-    texture.source_size = info->metadata.source_size;
-    texture.region_capture_rect = info->metadata.region_capture_rect;
+    texture.frame_count = info->metadata.capture.counter.value_or(0);
+    texture.capture_update_rect = info->metadata.capture.update_rect;
+    texture.source_size = info->metadata.capture.source_size;
+    texture.region_capture_rect = info->metadata.capture.region_capture_rect;
     texture.widget_type = view_->GetWidgetType();
 
 #if BUILDFLAG(IS_WIN)
@@ -251,7 +251,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 
   // Since update_rect is already offset-ed with same origin of content_rect,
   // there's nothing more to do with the imported bitmap.
-  std::optional<gfx::Rect> update_rect = info->metadata.capture_update_rect;
+  std::optional<gfx::Rect> update_rect = info->metadata.capture.update_rect;
   if (!update_rect.has_value() || update_rect->IsEmpty()) {
     update_rect = content_rect;
   }

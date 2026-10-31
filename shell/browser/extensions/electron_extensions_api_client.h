@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_API_CLIENT_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_API_CLIENT_H_
 
+#include <map>
 #include <memory>
 
 #include "extensions/browser/api/extensions_api_client.h"
@@ -19,6 +20,12 @@ class ElectronExtensionsAPIClient : public ExtensionsAPIClient {
   ~ElectronExtensionsAPIClient() override;
 
   // ExtensionsAPIClient
+  void AddAdditionalValueStoreCaches(
+      content::BrowserContext* context,
+      const scoped_refptr<value_store::ValueStoreFactory>& factory,
+      SettingsChangedCallback observer,
+      std::map<settings_namespace::Namespace,
+               raw_ptr<ValueStoreCache, CtnExperimental>>* caches) override;
   MessagingDelegate* GetMessagingDelegate() override;
   void AttachWebContentsHelpers(
       content::WebContents* web_contents) const override;
@@ -28,9 +35,11 @@ class ElectronExtensionsAPIClient : public ExtensionsAPIClient {
   ManagementAPIDelegate* CreateManagementAPIDelegate() const override;
   std::unique_ptr<guest_view::GuestViewManagerDelegate>
   CreateGuestViewManagerDelegate() const override;
+  CookiesApiDelegate* GetCookiesApiDelegate() override;
 
  private:
   std::unique_ptr<ElectronMessagingDelegate> messaging_delegate_;
+  std::unique_ptr<CookiesApiDelegate> cookies_api_delegate_;
 };
 
 }  // namespace extensions

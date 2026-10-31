@@ -164,6 +164,9 @@ class ObservedURLLoader : public network::mojom::URLLoader,
     renderer_client_.set_disconnect_handler(std::move(on_disconnect));
     network_client_receiver_.set_disconnect_handler(base::BindOnce(
         &ObservedURLLoader::Finish, weak_factory_.GetWeakPtr(), std::nullopt));
+    // Observer events don't report uploadData, and the IO thread is still
+    // sending this body to the network.
+    request_.request_body = nullptr;
     UIThread()->PostTask(
         FROM_HERE, base::BindOnce(&api::WebRequest::ObservedRequestStarted,
                                   browser_context_, key_, render_process_id_,

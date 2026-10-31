@@ -8,7 +8,7 @@
 
 | Action Type | Platform Support | Usage of `text` | Default `text` | Limitations |
 |-------------|------------------|-----------------|----------------|-------------|
-| `button`    | macOS, Windows   | Used as the label for the button | "Show" on macOS (localized) if first `button`, otherwise empty; Windows uses provided `text` | macOS: Only the first one is used as primary; others shown as additional actions (hover). Incompatible with `hasReply` (beyond first ignored). |
+| `button`    | macOS, Windows, Linux | Used as the label for the button | "Show" on macOS (localized) if first `button`, otherwise empty; Windows uses provided `text`; Linux does not show a button without `text` | macOS: Only the first one is used as primary; others shown as additional actions (hover). Incompatible with `hasReply` (beyond first ignored). Linux: Requires a notification server with the `actions` capability. |
 | `selection` | Windows          | Used as the label for the submit button for the selection menu | "Select" | Requires an `items` array property specifying option labels. Emits the `action` event with `(index, selectedIndex)` where `selectedIndex` is the chosen option (>= 0). Ignored on platforms that do not support selection actions. |
 
 ### Button support on macOS
@@ -20,6 +20,15 @@ following criteria.
 * App has its `NSUserNotificationAlertStyle` set to `alert` in the `Info.plist`.
 
 If either of these requirements are not met the button won't appear.
+
+### Button support on Linux
+
+Buttons are shown only if the desktop's notification server advertises the
+`actions` [capability](https://specifications.freedesktop.org/notification/latest/protocol.html#command-get-capabilities).
+Otherwise the notification is shown without them.
+
+In a Flatpak or Snap sandbox, a notification that has buttons also shows its
+default action as a "Show" button, which emits `click`.
 
 ### Selection support on Windows
 

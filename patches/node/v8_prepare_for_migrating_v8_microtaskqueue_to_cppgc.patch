@@ -15,10 +15,10 @@ Will be removed when Node.js bumps to version of V8 that contains
 the API change.
 
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index b03b19f4b6f84332766a3e1192235e0c53dbfcc1..40d1cdc169603e7617639eb38b7767677aca08ce 100644
+index 3557ccc8a1981d5d2691272f8accaa8623ebe23b..d5cd2b0e60afba4620f9db681dc28bab84635837 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -127,7 +127,7 @@ ContextifyContext* ContextifyContext::New(Environment* env,
+@@ -155,7 +155,7 @@ ContextifyContext* ContextifyContext::New(Environment* env,
  
    MicrotaskQueue* queue =
        options->own_microtask_queue
@@ -27,7 +27,7 @@ index b03b19f4b6f84332766a3e1192235e0c53dbfcc1..40d1cdc169603e7617639eb38b776767
            : env->isolate()->GetCurrentContext()->GetMicrotaskQueue();
  
    Local<Context> v8_context;
-@@ -148,9 +148,7 @@ ContextifyContext::ContextifyContext(Environment* env,
+@@ -176,9 +176,7 @@ ContextifyContext::ContextifyContext(Environment* env,
                                       Local<Object> wrapper,
                                       Local<Context> v8_context,
                                       ContextOptions* options)
@@ -70,10 +70,10 @@ index 1066633daf65d430b5f46e1b226ee3cf70979c33..c7c39ae8c0632695d8b22023b8e6b1d1
  
  class ContextifyScript final : CPPGC_MIXIN(ContextifyScript) {
 diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index a219d512570136a9b1e940942b8426bf19d0d1f1..3e846a672900807ba8df19e626837ce18be503c4 100644
+index 5d9b57dd3186fb8912b7104e7f3790d15c4eb31a..e9a1fe4ff7e814a58e2f22fb0f9f3ad7a62db695 100644
 --- a/test/cctest/test_environment.cc
 +++ b/test/cctest/test_environment.cc
-@@ -706,15 +706,16 @@ TEST_F(EnvironmentTest, NestedMicrotaskQueue) {
+@@ -1061,15 +1061,16 @@ TEST_F(EnvironmentTest, NestedMicrotaskQueue) {
    const v8::HandleScope handle_scope(isolate_);
    const Argv argv;
  

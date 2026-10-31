@@ -26,9 +26,9 @@ class LibnotifyNotification : public Notification {
 
  private:
   void OnNotificationClosed(NotifyNotification* notification);
-  static void OnNotificationView(NotifyNotification* notification,
-                                 char* action,
-                                 gpointer user_data);
+  static void OnActionInvoked(NotifyNotification* notification,
+                              char* action,
+                              gpointer user_data);
 
   RAW_PTR_EXCLUSION NotifyNotification* notification_ = nullptr;
 

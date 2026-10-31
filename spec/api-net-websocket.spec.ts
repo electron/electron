@@ -1,6 +1,6 @@
 import { net, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 import { WebSocketServer, type WebSocket as WSWebSocket, type ServerOptions } from 'ws';
 
 import * as http from 'node:http';
@@ -41,38 +41,38 @@ function event<T = Event>(target: EventTarget, name: string): Promise<T> {
 describe('net.WebSocket', () => {
   describe('constructor', () => {
     it('throws on invalid URLs', () => {
-      expect(() => new net.WebSocket('not a url')).to.throw(/SyntaxError|Invalid URL/);
+      expect(() => new net.WebSocket('not a url')).toThrow(/SyntaxError|Invalid URL/);
     });
 
     it('throws on non-ws/wss/http/https schemes', () => {
-      expect(() => new net.WebSocket('ftp://example.com')).to.throw(DOMException);
+      expect(() => new net.WebSocket('ftp://example.com')).toThrow(DOMException);
     });
 
     it('throws on URLs with a fragment', () => {
-      expect(() => new net.WebSocket('ws://example.com/#frag')).to.throw(DOMException);
+      expect(() => new net.WebSocket('ws://example.com/#frag')).toThrow(DOMException);
     });
 
     it('rewrites http(s) to ws(s)', async () => {
       const { url } = await startWSServer((ws) => ws.close(1000));
       const ws = new net.WebSocket(url.replace('ws://', 'http://'));
       defer(() => ws.close());
-      expect(ws.url).to.match(/^ws:/);
+      expect(ws.url).toMatch(/^ws:/);
       await event(ws, 'close');
     });
 
     it('throws on invalid subprotocol tokens', () => {
-      expect(() => new net.WebSocket('ws://example.com', 'bad protocol')).to.throw(DOMException);
+      expect(() => new net.WebSocket('ws://example.com', 'bad protocol')).toThrow(DOMException);
     });
 
     it('throws on duplicate subprotocols', () => {
-      expect(() => new net.WebSocket('ws://example.com', ['a', 'a'])).to.throw(DOMException);
+      expect(() => new net.WebSocket('ws://example.com', ['a', 'a'])).toThrow(DOMException);
     });
 
     it('exposes readyState constants', () => {
-      expect(net.WebSocket.CONNECTING).to.equal(0);
-      expect(net.WebSocket.OPEN).to.equal(1);
-      expect(net.WebSocket.CLOSING).to.equal(2);
-      expect(net.WebSocket.CLOSED).to.equal(3);
+      expect(net.WebSocket.CONNECTING).toBe(0);
+      expect(net.WebSocket.OPEN).toBe(1);
+      expect(net.WebSocket.CLOSING).toBe(2);
+      expect(net.WebSocket.CLOSED).toBe(3);
     });
   });
 
@@ -84,15 +84,15 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url);
       defer(() => ws.close());
 
-      expect(ws.readyState).to.equal(net.WebSocket.CONNECTING);
+      expect(ws.readyState).toBe(net.WebSocket.CONNECTING);
       await event(ws, 'open');
-      expect(ws.readyState).to.equal(net.WebSocket.OPEN);
+      expect(ws.readyState).toBe(net.WebSocket.OPEN);
       ws.send('go');
       const closeEvent = await event<CloseEvent>(ws, 'close');
-      expect(ws.readyState).to.equal(net.WebSocket.CLOSED);
-      expect(closeEvent.code).to.equal(1000);
-      expect(closeEvent.reason).to.equal('done');
-      expect(closeEvent.wasClean).to.be.true();
+      expect(ws.readyState).toBe(net.WebSocket.CLOSED);
+      expect(closeEvent.code).toBe(1000);
+      expect(closeEvent.reason).toBe('done');
+      expect(closeEvent.wasClean).toBe(true);
     });
 
     it('reports the negotiated protocol', async () => {
@@ -102,7 +102,7 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url, ['chat', 'superchat']);
       defer(() => ws.close());
       await event(ws, 'open');
-      expect(ws.protocol).to.equal('chat');
+      expect(ws.protocol).toBe('chat');
       ws.close();
       await event(ws, 'close');
     });
@@ -113,11 +113,11 @@ describe('net.WebSocket', () => {
       ws.addEventListener('error', () => order.push('error'));
       ws.addEventListener('close', () => order.push('close'));
       const e = await event<CloseEvent>(ws, 'close');
-      expect(order).to.deep.equal(['error', 'close']);
-      expect(ws.readyState).to.equal(net.WebSocket.CLOSED);
+      expect(order).toEqual(['error', 'close']);
+      expect(ws.readyState).toBe(net.WebSocket.CLOSED);
       // Network-level failures surface the failure reason in CloseEvent.reason.
-      expect(e.code).to.equal(1006);
-      expect(e.reason).to.match(/net::ERR_\w+/);
+      expect(e.code).toBe(1006);
+      expect(e.reason).toMatch(/net::ERR_\w+/);
     });
 
     it('readyState is CLOSED inside the error handler', async () => {
@@ -127,16 +127,16 @@ describe('net.WebSocket', () => {
         stateInErrorHandler = ws.readyState;
       });
       await event(ws, 'close');
-      expect(stateInErrorHandler).to.equal(net.WebSocket.CLOSED);
+      expect(stateInErrorHandler).toBe(net.WebSocket.CLOSED);
     });
 
     it('can close while connecting', async () => {
       const ws = new net.WebSocket('ws://127.0.0.1:1');
       ws.close();
-      expect(ws.readyState).to.equal(net.WebSocket.CLOSING);
+      expect(ws.readyState).toBe(net.WebSocket.CLOSING);
       const e = await event<CloseEvent>(ws, 'close');
-      expect(e.code).to.equal(1006);
-      expect(e.wasClean).to.be.false();
+      expect(e.code).toBe(1006);
+      expect(e.wasClean).toBe(false);
     });
 
     it('validates close() arguments', async () => {
@@ -144,12 +144,12 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url);
       defer(() => ws.close());
       await event(ws, 'open');
-      expect(() => ws.close(1234)).to.throw(DOMException);
-      expect(() => ws.close(1000, 'x'.repeat(124))).to.throw(DOMException);
+      expect(() => ws.close(1234)).toThrow(DOMException);
+      expect(() => ws.close(1000, 'x'.repeat(124))).toThrow(DOMException);
       ws.close(3001, 'bye');
       const e = await event<CloseEvent>(ws, 'close');
-      expect(e.code).to.equal(3001);
-      expect(e.reason).to.equal('bye');
+      expect(e.code).toBe(3001);
+      expect(e.reason).toBe('bye');
     });
   });
 
@@ -163,8 +163,8 @@ describe('net.WebSocket', () => {
       await event(ws, 'open');
       ws.send('hello, 世界');
       const e = await event<MessageEvent>(ws, 'message');
-      expect(e.data).to.be.a('string');
-      expect(e.data).to.equal('hello, 世界');
+      expect(e.data).toBeTypeOf('string');
+      expect(e.data).toBe('hello, 世界');
       ws.close();
       await event(ws, 'close');
     });
@@ -178,8 +178,8 @@ describe('net.WebSocket', () => {
       await event(ws, 'open');
       ws.send(Buffer.from([1, 2, 3, 4]));
       const e = await event<MessageEvent>(ws, 'message');
-      expect(Buffer.isBuffer(e.data)).to.be.true();
-      expect([...e.data]).to.deep.equal([1, 2, 3, 4]);
+      expect(Buffer.isBuffer(e.data)).toBe(true);
+      expect([...e.data]).toEqual([1, 2, 3, 4]);
       ws.close();
       await event(ws, 'close');
     });
@@ -191,8 +191,8 @@ describe('net.WebSocket', () => {
       ws.binaryType = 'arraybuffer';
       await event(ws, 'open');
       const e = await event<MessageEvent>(ws, 'message');
-      expect(e.data).to.be.an.instanceOf(ArrayBuffer);
-      expect([...new Uint8Array(e.data)]).to.deep.equal([5, 6, 7]);
+      expect(e.data).toBeInstanceOf(ArrayBuffer);
+      expect([...new Uint8Array(e.data)]).toEqual([5, 6, 7]);
       ws.close();
       await event(ws, 'close');
     });
@@ -204,8 +204,8 @@ describe('net.WebSocket', () => {
       ws.binaryType = 'blob';
       await event(ws, 'open');
       const e = await event<MessageEvent>(ws, 'message');
-      expect(e.data).to.be.an.instanceOf(Blob);
-      expect([...new Uint8Array(await e.data.arrayBuffer())]).to.deep.equal([8, 9]);
+      expect(e.data).toBeInstanceOf(Blob);
+      expect([...new Uint8Array(await e.data.arrayBuffer())]).toEqual([8, 9]);
       ws.close();
       await event(ws, 'close');
     });
@@ -223,7 +223,7 @@ describe('net.WebSocket', () => {
       ws.send(big);
       const e = await event<MessageEvent>(ws, 'message');
       const [a, b, c] = e.data;
-      expect(a + (b << 8) + (c << 16)).to.equal(big.length);
+      expect(a + (b << 8) + (c << 16)).toBe(big.length);
       ws.close();
       await event(ws, 'close');
     });
@@ -235,8 +235,8 @@ describe('net.WebSocket', () => {
       defer(() => ws.close());
       await event(ws, 'open');
       const e = await event<MessageEvent>(ws, 'message');
-      expect((e.data as Buffer).length).to.equal(big.length);
-      expect((e.data as Buffer).equals(big)).to.be.true();
+      expect((e.data as Buffer).length).toBe(big.length);
+      expect((e.data as Buffer).equals(big)).toBe(true);
       ws.close();
       await event(ws, 'close');
     });
@@ -244,7 +244,7 @@ describe('net.WebSocket', () => {
     it('throws InvalidStateError when sending while CONNECTING', () => {
       const ws = new net.WebSocket('ws://127.0.0.1:1');
       defer(() => ws.close());
-      expect(() => ws.send('x')).to.throw(DOMException);
+      expect(() => ws.send('x')).toThrow(DOMException);
     });
 
     it('reports bufferedAmount', async () => {
@@ -252,7 +252,7 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url);
       defer(() => ws.close());
       await event(ws, 'open');
-      expect(ws.bufferedAmount).to.equal(0);
+      expect(ws.bufferedAmount).toBe(0);
       ws.close();
       await event(ws, 'close');
     });
@@ -264,9 +264,9 @@ describe('net.WebSocket', () => {
       await event(ws, 'open');
       ws.close();
       await event(ws, 'close');
-      expect(ws.readyState).to.equal(net.WebSocket.CLOSED);
+      expect(ws.readyState).toBe(net.WebSocket.CLOSED);
       ws.send('discarded');
-      expect(ws.bufferedAmount).to.equal(Buffer.byteLength('discarded'));
+      expect(ws.bufferedAmount).toBe(Buffer.byteLength('discarded'));
     });
 
     it('counts bytes queued behind an async Blob send in bufferedAmount', async () => {
@@ -279,7 +279,7 @@ describe('net.WebSocket', () => {
       // synchronously per the WebSocket spec.
       ws.send(new Blob(['four']));
       ws.send('three');
-      expect(ws.bufferedAmount).to.be.at.least(4 + 5);
+      expect(ws.bufferedAmount).toBeGreaterThanOrEqual(4 + 5);
       ws.close();
       await event(ws, 'close');
     });
@@ -305,7 +305,7 @@ describe('net.WebSocket', () => {
         };
         check();
       });
-      expect(received).to.deep.equal(['a', 'b', 'c', 'd', 'e']);
+      expect(received).toEqual(['a', 'b', 'c', 'd', 'e']);
       ws.close();
       await event(ws, 'close');
     });
@@ -321,7 +321,7 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url, { headers: { 'X-Custom': 'electron' } });
       defer(() => ws.close());
       await event(ws, 'close');
-      expect(headers['x-custom']).to.equal('electron');
+      expect(headers['x-custom']).toBe('electron');
     });
 
     it('defaults the Origin header to the http(s) origin of the WebSocket URL', async () => {
@@ -333,7 +333,7 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url);
       defer(() => ws.close());
       await event(ws, 'close');
-      expect(headers.origin).to.equal(url.replace('ws://', 'http://'));
+      expect(headers.origin).toBe(url.replace('ws://', 'http://'));
     });
 
     it('sends an Origin header when requested', async () => {
@@ -345,7 +345,7 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url, { origin: 'https://my-app.example' });
       defer(() => ws.close());
       await event(ws, 'close');
-      expect(headers.origin).to.equal('https://my-app.example');
+      expect(headers.origin).toBe('https://my-app.example');
     });
 
     it('sends session cookies when useSessionCookies is true', async () => {
@@ -359,7 +359,7 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url, { session: ses, useSessionCookies: true });
       defer(() => ws.close());
       await event(ws, 'close');
-      expect(headers.cookie).to.include('ws=cookie');
+      expect(headers.cookie).toContain('ws=cookie');
     });
 
     it('does not send session cookies by default', async () => {
@@ -373,7 +373,7 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url, { session: ses });
       defer(() => ws.close());
       await event(ws, 'close');
-      expect(headers.cookie).to.be.undefined();
+      expect(headers.cookie).toBeUndefined();
     });
   });
 
@@ -395,7 +395,7 @@ describe('net.WebSocket', () => {
       };
       ws.onclose = () => events.push('close');
       await event(ws, 'close');
-      expect(events).to.deep.equal(['open', 'message:ping', 'close']);
+      expect(events).toEqual(['open', 'message:ping', 'close']);
     });
 
     it('replaces a previously-assigned handler', async () => {
@@ -408,7 +408,7 @@ describe('net.WebSocket', () => {
       };
       ws.onopen = () => {};
       await event(ws, 'close');
-      expect(firstCalled).to.be.false();
+      expect(firstCalled).toBe(false);
     });
   });
 });

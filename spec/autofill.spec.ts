@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 
-import { expect } from 'chai';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -27,7 +27,7 @@ describe('autofill', { tags: ['serial'] }, () => {
     w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Enter' });
 
     const value = await w.webContents.executeJavaScript("document.querySelector('input').value");
-    expect(value).to.equal('Eric Clapton');
+    expect(value).toBe('Eric Clapton');
   });
 
   it('can be selected via keyboard for a <datalist> with time type', async () => {
@@ -45,7 +45,7 @@ describe('autofill', { tags: ['serial'] }, () => {
     w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab' });
 
     const value = await w.webContents.executeJavaScript("document.querySelector('input').value");
-    expect(value).to.equal('13:01');
+    expect(value).toBe('13:01');
   });
 
   // An OOPIF datalist case is not asserted here because

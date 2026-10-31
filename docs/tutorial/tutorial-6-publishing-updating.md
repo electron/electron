@@ -112,9 +112,9 @@ You also need to make the Publisher aware of your authentication token.
 By default, it will use the value stored in the `GITHUB_TOKEN` environment
 variable.
 
-### Running the publish command
+### Running the release command
 
-Add Forge's [publish command][] to your npm scripts.
+Add Forge's [release command][] to your npm scripts.
 
 ```json {6} title='package.json'
   //...
@@ -122,7 +122,7 @@ Add Forge's [publish command][] to your npm scripts.
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "release": "electron-forge release"
   },
   //...
 ```
@@ -131,7 +131,7 @@ This command will run your configured makers and publish the output distributabl
 GitHub release.
 
 ```sh npm2yarn
-npm run publish
+npm run release
 ```
 
 By default, this will only publish a single distributable for your host operating system and
@@ -227,8 +227,8 @@ rest of our docs and happy developing!
 [github releases]: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
 [git-tag]: https://git-scm.com/book/en/v2/Git-Basics-Tagging
 [new-pat]: https://github.com/settings/tokens/new
-[publish command]: https://www.electronforge.io/cli#publish
 [publisher]: https://www.electronforge.io/config/publishers
+[release command]: https://www.electronforge.io/cli#release
 [`publishergithubconfig`]: https://js.electronforge.io/interfaces/_electron_forge_publisher_github.PublisherGitHubConfig.html
 [`update-electron-app`]: https://github.com/electron/update-electron-app
 [update-server]: ./updates.md

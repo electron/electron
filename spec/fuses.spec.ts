@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
@@ -11,20 +11,20 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
     const child0 = spawn(process.execPath, ['-v'], { env: { NODE_OPTIONS: '-e 0' } });
     const [code0] = await once(child0, 'exit');
     // Should exit with 9 because -e is not allowed in NODE_OPTIONS
-    expect(code0).to.equal(9);
+    expect(code0).toBe(9);
     const child1 = spawn(process.execPath, ['--set-fuse-node_options=0', '-v'], { env: { NODE_OPTIONS: '-e 0' } });
     const [code1] = await once(child1, 'exit');
     // Should print the version and exit with 0
-    expect(code1).to.equal(0);
+    expect(code1).toBe(0);
   });
 
   it('disables --inspect flag when node_cli_inspect is 0', () => {
     const { status, stderr } = spawnSync(process.execPath, ['--set-fuse-node_cli_inspect=0', '--inspect', '-v'], {
       encoding: 'utf-8'
     });
-    expect(stderr).to.not.include('Debugger listening on ws://');
+    expect(stderr).not.toContain('Debugger listening on ws://');
     // Should print the version and exit with 0
-    expect(status).to.equal(0);
+    expect(status).toBe(0);
   });
 
   it('makes child_process.fork throw when run_as_node is 0', async () => {
@@ -40,7 +40,7 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
       },
       path.join(import.meta.dirname, 'fixtures', 'module', 'noop.js')
     );
-    expect(message).to.include('runAsNode fuse is disabled');
+    expect(message).toContain('runAsNode fuse is disabled');
   });
 
   it('disables fetching file:// URLs when grant_file_protocol_extra_privileges is 0', async () => {
@@ -55,7 +55,7 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
         },
         path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html')
       )
-    ).to.eventually.be.rejectedWith('Failed to fetch');
+    ).rejects.toThrow('Failed to fetch');
   });
 
   describe('cookie_encryption', () => {
@@ -97,11 +97,11 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
         };
       });
 
-      expect(result.cookieCount).to.equal(2);
-      expect(result.testCookieValue).to.equal('encrypted_value_12345');
-      expect(result.secureCookieValue).to.equal('secret_data_67890');
-      expect(result.secureCookieIsSecure).to.be.true();
-      expect(result.secureCookieIsHttpOnly).to.be.true();
+      expect(result.cookieCount).toBe(2);
+      expect(result.testCookieValue).toBe('encrypted_value_12345');
+      expect(result.secureCookieValue).toBe('secret_data_67890');
+      expect(result.secureCookieIsSecure).toBe(true);
+      expect(result.secureCookieIsHttpOnly).toBe(true);
     });
 
     it('persists cookies across sessions when enabled', async () => {
@@ -130,7 +130,7 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
         return cookie?.value;
       });
 
-      expect(result).to.equal('persist_me');
+      expect(result).toBe('persist_me');
     });
   });
 });

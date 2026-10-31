@@ -12,12 +12,14 @@
 
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
+#include "base/i18n/language_tag.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_process_host_observer.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/child_process_id.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
@@ -82,7 +84,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::NavigationThrottleRegistry& registry) override;
 
   // content::ContentBrowserClient:
-  std::string GetApplicationLocale() override;
+  base::i18n::LanguageTag GetApplicationLocale() override;
   bool* spare_renderer_compatible() { return &spare_renderer_compatible_; }
 
   // Ids handed out as webRequest details.id, shared by every proxy and gate.
@@ -106,6 +108,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
   bool DoesSiteRequireDedicatedProcess(content::BrowserContext* browser_context,
                                        const GURL& effective_site_url) override;
+  bool ShouldAllowCrossProcessSandboxedFrameForPrecursor(
+      content::BrowserContext* browser_context,
+      const GURL& precursor,
+      const GURL& url) override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
@@ -149,7 +155,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #endif
 
 #if BUILDFLAG(IS_MAC)
-  base::FilePath GetChildProcessPath(int child_flags) override;
+  base::FilePath GetChildProcessPath(
+      int child_flags,
+      content::ChildProcessId child_process_id) override;
   device::GeolocationSystemPermissionManager*
   GetGeolocationSystemPermissionManager() override;
 #endif
@@ -160,7 +168,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // certificate handling (see ClientCertificateResponderDelegate).
   base::OnceClosure SelectClientCertificate(
       content::BrowserContext* browser_context,
-      int process_id,
+      content::ChildProcessId process_id,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       net::ClientCertIdentityList client_certs,
@@ -225,8 +233,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
       std::vector<std::string>* additional_schemes) override;
-  std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
-      override;
   void ConfigureNetworkContextParams(
       content::BrowserContext* browser_context,
       bool in_memory,
@@ -279,6 +285,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
           handshake_client,
       WebSocketOptions options) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
+  bool HasWebRequestAPIProxy(content::BrowserContext* browser_context) override;
   void WillCreateURLLoaderFactory(
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,
@@ -353,6 +360,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const GURL& url,
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
+      bool do_not_prompt_for_login,
       content::GuestPageHolder* guest_page_holder,
       content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback)
       override;
@@ -374,6 +382,23 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool ShouldUseProcessPerSite(
       content::BrowserContext* browser_context,
       const content::SecurityPrincipal& security_principal) override;
+  content::AllowServiceWorkerResult AllowServiceWorker(
+      const GURL& scope,
+      const net::SiteForCookies& site_for_cookies,
+      const std::optional<url::Origin>& top_frame_origin,
+      const blink::StorageKey& storage_key,
+      const GURL& script_url,
+      content::BrowserContext* context) override;
+  bool MayDeleteServiceWorkerRegistration(
+      const GURL& scope,
+      content::BrowserContext* browser_context) override;
+  bool ShouldTryToUpdateServiceWorkerRegistration(
+      const GURL& scope,
+      content::BrowserContext* browser_context) override;
+  bool IsClipboardAllowedForServiceWorker(const url::Origin& origin) override;
+  bool AllowWorkerWriteToClipboard(
+      const url::Origin& origin,
+      content::BrowserContext* browser_context) override;
   void GetMediaDeviceIDSalt(
       content::RenderFrameHost* rfh,
       const net::SiteForCookies& site_for_cookies,
@@ -389,6 +414,13 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
+  void ProxyNonNetworkURLLoaderFactories(
+      content::BrowserContext* browser_context,
+      int render_process_id,
+      URLLoaderFactoryType type,
+      const std::optional<url::Origin>& request_initiator,
+      NonNetworkURLLoaderFactoryMap* factories);
+
   bool IsRendererSubFrame(content::ChildProcessId process_id) const;
 
   // What ShouldUseSpareRenderProcessHost() answers: set around

@@ -30,6 +30,7 @@
 // relauncher to set up its kqueue.
 
 #include "base/command_line.h"
+#include "base/files/file_path.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/process/process_handle.h"
@@ -55,7 +56,8 @@ using StringVector = base::CommandLine::StringVector;
 // successfully. Returns true on success, although some failures can occur
 // after this function returns true if, for example, they occur within the
 // relauncher process. Returns false when the relaunch definitely failed.
-bool RelaunchApp(const StringVector& argv);
+bool RelaunchApp(const StringVector& argv,
+                 const StringVector& relauncher_args = {});
 
 // Identical to RelaunchApp, but uses |helper| as the path to the relauncher
 // process, and allows additional arguments to be supplied to the relauncher
@@ -83,6 +85,11 @@ extern const int kRelauncherSyncFD;
 #endif
 
 #if BUILDFLAG(IS_WIN)
+// In |relauncher_args|: start the relaunched app with the user's normal
+// (medium integrity) token instead of the current, elevated one.
+inline constexpr base::CommandLine::CharType kRelauncherDeElevateArg[] =
+    FILE_PATH_LITERAL("--de-elevate");
+
 StringType GetWaitEventName(base::ProcessId pid);
 
 StringType ArgvToCommandLineString(const StringVector& argv);

@@ -254,6 +254,21 @@ void SetFromRenderer(content::RenderFrameHost* rfh,
   // first launch) just writes identical bytes twice; harmless and rare, and
   // SetFromRenderer() is UI-thread serialized so it's not a data race.
   Entry entry;
+  // Security note: |blob| is renderer-produced and stored without
+  // verification. This is intentional and matches Chromium's
+  // GeneratedCodeCache (content/browser/renderer_host/code_cache_host_impl.cc).
+  // The served-preload and source hash checks above only decide whether this
+  // write is accepted and which source hash it is filed under. They do not,
+  // and cannot, prove |blob| was compiled from that source (V8's CachedData
+  // source check is length-only). Containment comes from the key instead:
+  // entries are scoped to (BrowserContext, ProcessLock, preload id), with the
+  // lock taken from the browser-side RenderProcessHost (see ScopeForFrame()),
+  // so a write is only ever served back to frames in the same BrowserContext
+  // whose process has an equal ProcessLock. A compromised renderer can
+  // therefore only replace bytecode for its own principal's sandboxed preload,
+  // whose capabilities it already holds. Persistence across restarts is the
+  // accepted cost, as in Chromium. Serving an entry across a different
+  // BrowserContext or ProcessLock WOULD be a security bug.
   entry.source_hash = hash_it->second;
   entry.blob.assign(blob.begin(), blob.end());
 

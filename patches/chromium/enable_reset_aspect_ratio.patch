@@ -6,10 +6,10 @@ Subject: feat: enable setting aspect ratio to 0
 Make SetAspectRatio accept 0 as valid input, which would reset to null.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 8afd9e7b822883dfa3e6df895b9ee55d5fc73d2e..9b0b680679c9ec82c0ada53e557aa00e386b3d06 100644
+index bc8e826e5e3fbab4b1ad7a9839c3a3878ec7691f..b566443b3834bcd1a24791a629ff2f9651eca266 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -728,7 +728,7 @@ void DesktopWindowTreeHostWin::SetOpacity(float opacity) {
+@@ -765,7 +765,7 @@ void DesktopWindowTreeHostWin::SetOpacity(float opacity) {
  void DesktopWindowTreeHostWin::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {
@@ -19,10 +19,10 @@ index 8afd9e7b822883dfa3e6df895b9ee55d5fc73d2e..9b0b680679c9ec82c0ada53e557aa00e
                                     excluded_margin);
  }
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 42fd0087319f0ce9a15b327b52403607e08d092a..4715a7d9f2e845f9ffc8e84a6d7dc4a9d3483393 100644
+index c77bf0d64623c115158fe745dbb592a01fb6e1a5..4b0f71c72eb0fc77f24c4d6ec0a58421c77bcdd4 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -1119,8 +1119,11 @@ void HWNDMessageHandler::SetFullscreen(bool fullscreen,
+@@ -1195,8 +1195,11 @@ void HWNDMessageHandler::SetFullscreen(bool fullscreen,
  
  void HWNDMessageHandler::SetAspectRatio(float aspect_ratio,
                                          const gfx::Size& excluded_margin) {

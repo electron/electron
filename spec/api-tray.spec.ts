@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { Menu, Tray } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -22,44 +22,44 @@ describe('tray module', { tags: ['serial'] }, () => {
 
   describe('new Tray', () => {
     it('sets the correct class name on the prototype', () => {
-      expect(Tray.prototype.constructor.name).to.equal('Tray');
+      expect(Tray.prototype.constructor.name).toBe('Tray');
     });
 
     it('throws a descriptive error for a missing file', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray = new Tray(badPath);
-      }).to.throw(/Failed to load image from path (.+)/);
+      }).toThrow(/Failed to load image from path (.+)/);
     });
 
     ifit(process.platform !== 'linux')('throws a descriptive error if an invalid guid is given', () => {
       expect(() => {
         tray = new Tray(nativeImage.createEmpty(), 'I am not a guid');
-      }).to.throw('Invalid GUID format');
+      }).toThrow('Invalid GUID format');
     });
 
     ifit(process.platform !== 'linux')('accepts a valid guid', () => {
       expect(() => {
         tray = new Tray(nativeImage.createEmpty(), '0019A433-3526-48BA-A66C-676742C0FEFB');
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('is an instance of Tray', () => {
-      expect(tray).to.be.an.instanceOf(Tray);
+      expect(tray).toBeInstanceOf(Tray);
     });
   });
 
   ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {
     it('returns false by default', () => {
       const ignored = tray.getIgnoreDoubleClickEvents();
-      expect(ignored).to.be.false('ignored');
+      expect(ignored, 'ignored').toBe(false);
     });
 
     it('can be set to true', () => {
       tray.setIgnoreDoubleClickEvents(true);
 
       const ignored = tray.getIgnoreDoubleClickEvents();
-      expect(ignored).to.be.true('not ignored');
+      expect(ignored, 'not ignored').toBe(true);
     });
   });
 
@@ -67,24 +67,24 @@ describe('tray module', { tags: ['serial'] }, () => {
     it('accepts both null and Menu as parameters', () => {
       expect(() => {
         tray.setContextMenu(new Menu());
-      }).to.not.throw();
+      }).not.toThrow();
       expect(() => {
         tray.setContextMenu(null);
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
   describe('tray.destroy()', () => {
     it('destroys a tray', () => {
-      expect(tray.isDestroyed()).to.be.false('tray should not be destroyed');
+      expect(tray.isDestroyed(), 'tray should not be destroyed').toBe(false);
       tray.destroy();
 
-      expect(tray.isDestroyed()).to.be.true('tray should be destroyed');
+      expect(tray.isDestroyed(), 'tray should be destroyed').toBe(true);
     });
   });
 
   describe('tray.popUpContextMenu()', () => {
-    ifit(process.platform === 'win32')('can be called when menu is showing', async function () {
+    ifit(process.platform === 'win32')('can be called when menu is showing', async () => {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]));
       const timeout = setTimeout();
       tray.popUpContextMenu();
@@ -96,35 +96,35 @@ describe('tray module', { tags: ['serial'] }, () => {
       const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
       expect(() => {
         tray.popUpContextMenu(menu);
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('can be called with a position', () => {
       expect(() => {
         tray.popUpContextMenu({ x: 0, y: 0 } as any);
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('can be called with a menu and a position', () => {
       const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
       expect(() => {
         tray.popUpContextMenu(menu, { x: 0, y: 0 });
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('throws an error on invalid arguments', () => {
       expect(() => {
         tray.popUpContextMenu({} as any);
-      }).to.throw(/index 0/);
+      }).toThrow(/index 0/);
       const menu = Menu.buildFromTemplate([{ label: 'Test' }]);
       expect(() => {
         tray.popUpContextMenu(menu, {} as any);
-      }).to.throw(/index 1/);
+      }).toThrow(/index 1/);
     });
   });
 
   describe('tray.closeContextMenu()', () => {
-    ifit(process.platform === 'win32')('does not crash when called more than once', async function () {
+    ifit(process.platform === 'win32')('does not crash when called more than once', async () => {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]));
       const timeout = setTimeout();
       tray.popUpContextMenu();
@@ -139,9 +139,10 @@ describe('tray module', { tags: ['serial'] }, () => {
       tray.destroy();
     });
 
-    ifit(process.platform !== 'linux')('returns a bounds object', function () {
+    ifit(process.platform !== 'linux')('returns a bounds object', () => {
       const bounds = tray.getBounds();
-      expect(bounds).to.be.an('object').and.to.have.all.keys('x', 'y', 'width', 'height');
+      expect(bounds).toBeTypeOf('object');
+      expect(Object.keys(bounds).sort()).toEqual(['height', 'width', 'x', 'y']);
     });
   });
 
@@ -150,7 +151,7 @@ describe('tray module', { tags: ['serial'] }, () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray.setImage(badPath);
-      }).to.throw(/Failed to load image from path (.+)/);
+      }).toThrow(/Failed to load image from path (.+)/);
     });
 
     it('accepts empty image', () => {
@@ -163,7 +164,7 @@ describe('tray module', { tags: ['serial'] }, () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
         tray.setPressedImage(badPath);
-      }).to.throw(/Failed to load image from path (.+)/);
+      }).toThrow(/Failed to load image from path (.+)/);
     });
 
     it('accepts empty image', () => {
@@ -180,7 +181,7 @@ describe('tray module', { tags: ['serial'] }, () => {
           content: 'wow content',
           icon: badPath
         });
-      }).to.throw(/Failed to load image from path (.+)/);
+      }).toThrow(/Failed to load image from path (.+)/);
     });
 
     it('accepts an empty image', () => {
@@ -198,7 +199,7 @@ describe('tray module', { tags: ['serial'] }, () => {
       tray.setTitle(title);
       const newTitle = tray.getTitle();
 
-      expect(newTitle).to.equal(title);
+      expect(newTitle).toBe(title);
     });
 
     it('sets/gets empty title', () => {
@@ -206,38 +207,38 @@ describe('tray module', { tags: ['serial'] }, () => {
       tray.setTitle(title);
       const newTitle = tray.getTitle();
 
-      expect(newTitle).to.equal(title);
+      expect(newTitle).toBe(title);
     });
 
     it('can have an options object passed in', () => {
       expect(() => {
         tray.setTitle('Hello World!', {});
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('throws when the options parameter is not an object', () => {
       expect(() => {
         tray.setTitle('Hello World!', 'test' as any);
-      }).to.throw(/setTitle options must be an object/);
+      }).toThrow(/setTitle options must be an object/);
     });
 
     it('can have a font type option set', () => {
       expect(() => {
         tray.setTitle('Hello World!', { fontType: 'monospaced' });
         tray.setTitle('Hello World!', { fontType: 'monospacedDigit' });
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('throws when the font type is specified but is not a string', () => {
       expect(() => {
         tray.setTitle('Hello World!', { fontType: 5.4 as any });
-      }).to.throw(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
+      }).toThrow(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
     });
 
     it('throws on invalid font types', () => {
       expect(() => {
         tray.setTitle('Hello World!', { fontType: 'blep' as any });
-      }).to.throw(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
+      }).toThrow(/fontType must be one of 'monospaced' or 'monospacedDigit'/);
     });
   });
 });

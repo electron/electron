@@ -13,6 +13,8 @@
 #include "electron/electron_gtk_stubs.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
+#include "ui/color/system_theme.h"
+#include "ui/linux/linux_ui_factory.h"
 
 // The following utilities are pulled from
 // https://source.chromium.org/chromium/chromium/src/+/main:ui/gtk/select_file_dialog_linux_gtk.cc;l=44-75;drc=a03ba4ca94f75531207c3ea832d6a605cde77394
@@ -29,6 +31,11 @@ const char* GtkGettext(const char* str) {
 }
 
 }  // namespace
+
+bool IsGtkAvailable() noexcept {
+  // The GTK LinuxUiTheme exists only if GtkUi::Initialize() succeeded.
+  return ui::GetLinuxUiTheme(ui::SystemTheme::kGtk) != nullptr;
+}
 
 const char* GetCancelLabel() {
   static const char* cancel = GtkGettext("_Cancel");

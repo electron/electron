@@ -1,33 +1,43 @@
 import { shell } from 'electron/common';
 import { BrowserWindow, app } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit, listen } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('shell module', () => {
-  describe('shell.openExternal()', () => {
+  describe('shell.openExternal()', { tags: ['serial'] }, () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
 
-    after(function () {
-      this.timeout(60000);
-      if (process.env.CI && process.platform === 'win32') {
-        // Edge may cause issues with visibility tests, so make sure it is closed after testing.
-        const killEdge = 'Get-Process | Where Name -Like "msedge" | Stop-Process';
-        execSync(killEdge, { shell: 'powershell.exe' });
+    // On Windows, opening an http URL launches the default browser (Edge on
+    // CI), which then phones home. Use a throwaway per-user URL scheme whose
+    // handler requests the local test server instead, so ShellExecute is
+    // still exercised without starting a browser.
+    const winScheme = `electron-test-${randomBytes(4).toString('hex')}`;
+    const winSchemeKey = `HKCU\\Software\\Classes\\${winScheme}`;
+
+    afterAll(() => {
+      if (process.platform === 'win32') {
+        try {
+          execFileSync('reg', ['delete', winSchemeKey, '/f'], { stdio: 'ignore' });
+        } catch {
+          // The key was never created.
+        }
       }
     });
 
-    beforeEach(function () {
+    beforeEach(() => {
       envVars = {
         display: process.env.DISPLAY,
         de: process.env.DE,
@@ -68,7 +78,16 @@ describe('shell module', () => {
         server = http.createServer((req, res) => {
           res.end();
         });
-        url = (await listen(server)).url;
+        const { port } = await listen(server);
+        // The handler ignores the opened URL (%1), so nothing from it reaches
+        // the command line.
+        const curl = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'curl.exe');
+        const command = `${curl} -s -o NUL --noproxy 127.0.0.1 http://127.0.0.1:${port}/`;
+        execFileSync('reg', ['add', winSchemeKey, '/v', 'URL Protocol', '/d', '', '/f'], { stdio: 'ignore' });
+        execFileSync('reg', ['add', `${winSchemeKey}\\shell\\open\\command`, '/ve', '/d', command, '/f'], {
+          stdio: 'ignore'
+        });
+        url = `${winScheme}://open`;
         requestReceived = new Promise<void>((resolve) => server.on('connection', () => resolve()));
       }
       return { url, requestReceived };
@@ -81,7 +100,7 @@ describe('shell module', () => {
 
     ifit(process.platform === 'darwin')('throws when there is no application registered to open the URL', async () => {
       const url = `unknownscheme-${Date.now()}://test`;
-      await expect(shell.openExternal(url)).to.eventually.be.rejectedWith(/No application found to open URL/);
+      await expect(shell.openExternal(url)).rejects.toThrow(/No application found to open URL/);
     });
 
     it('opens an external link in the renderer', async () => {
@@ -104,11 +123,29 @@ describe('shell module', () => {
         const w = new BrowserWindow({ show: true });
 
         await once(w, 'focus');
-        expect(w.isFocused()).to.be.true();
+        // The browser launched by the earlier openExternal specs can still be
+        // coming to the front and take focus back from the new window, so wait
+        // until the window holds focus before checking that openExternal
+        // removes it.
+        await waitUntil(async () => {
+          if (!w.isFocused()) {
+            app.focus({ steal: true });
+            w.focus();
+            return false;
+          }
+          await setTimeout(250);
+          return w.isFocused();
+        });
+        expect(w.isFocused()).toBe(true);
 
-        await Promise.all<void>([shell.openExternal(url), once(w, 'blur') as Promise<any>]);
+        // Read the focus state when 'blur' arrives. By the time openExternal()
+        // also resolves, the activation requests made above or the browser
+        // finishing its launch can already have handed focus back to the
+        // window, which says nothing about whether opening the link removed it.
+        const focusedWhenBlurred = once(w, 'blur').then(() => w.isFocused());
+        await shell.openExternal(url);
 
-        expect(w.isFocused()).to.be.false();
+        expect(await focusedWhenBlurred).toBe(false);
       }
     );
   });
@@ -121,12 +158,12 @@ describe('shell module', () => {
       const filename = path.join(dir, 'temp-to-be-deleted');
       await fs.promises.writeFile(filename, 'dummy-contents');
       await shell.trashItem(filename);
-      expect(fs.existsSync(filename)).to.be.false();
+      expect(fs.existsSync(filename)).toBe(false);
     });
 
     it('throws when called with a nonexistent path', async () => {
       const filename = path.join(app.getPath('temp'), 'does-not-exist');
-      await expect(shell.trashItem(filename)).to.eventually.be.rejected();
+      await expect(shell.trashItem(filename)).rejects.toThrow();
     });
 
     it('works in the renderer process', async () => {
@@ -134,7 +171,7 @@ describe('shell module', () => {
       w.loadURL('about:blank');
       await expect(
         w.webContents.executeJavaScript("require('electron').shell.trashItem('does-not-exist')")
-      ).to.be.rejectedWith(/does-not-exist|Failed to move item|Failed to create FileOperation/);
+      ).rejects.toThrow(/does-not-exist|Failed to move item|Failed to create FileOperation/);
     });
   });
 
@@ -152,13 +189,13 @@ describe('shell module', () => {
     it('throws when failed', () => {
       expect(() => {
         shell.readShortcutLink('not-exist');
-      }).to.throw('Failed to read shortcut link');
+      }).toThrow('Failed to read shortcut link');
     });
 
     const fixtures = path.resolve(import.meta.dirname, 'fixtures');
     it('reads all properties of a shortcut', () => {
       const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'));
-      expect(shortcut).to.deep.equal(shortcutOptions);
+      expect(shortcut).toEqual(shortcutOptions);
     });
   });
 
@@ -170,38 +207,38 @@ describe('shell module', () => {
     });
 
     it('writes the shortcut', () => {
-      expect(shell.writeShortcutLink(tmpShortcut, { target: 'C:\\' })).to.be.true();
-      expect(fs.existsSync(tmpShortcut)).to.be.true();
+      expect(shell.writeShortcutLink(tmpShortcut, { target: 'C:\\' })).toBe(true);
+      expect(fs.existsSync(tmpShortcut)).toBe(true);
     });
 
     it('writes the shortcut with omitted operation (defaults to create)', () => {
-      expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).to.be.true();
-      expect(fs.existsSync(tmpShortcut)).to.be.true();
-      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+      expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).toBe(true);
+      expect(fs.existsSync(tmpShortcut)).toBe(true);
+      expect(shell.readShortcutLink(tmpShortcut)).toEqual(shortcutOptions);
 
       const newOptions = { ...shortcutOptions, description: 'new description' };
-      expect(shell.writeShortcutLink(tmpShortcut, newOptions)).to.be.true();
-      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(newOptions);
+      expect(shell.writeShortcutLink(tmpShortcut, newOptions)).toBe(true);
+      expect(shell.readShortcutLink(tmpShortcut)).toEqual(newOptions);
     });
 
     it('correctly sets the fields', () => {
-      expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).to.be.true();
-      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+      expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).toBe(true);
+      expect(shell.readShortcutLink(tmpShortcut)).toEqual(shortcutOptions);
     });
 
     it('updates the shortcut', () => {
-      expect(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions)).to.be.false();
-      expect(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions)).to.be.true();
-      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+      expect(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions)).toBe(false);
+      expect(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions)).toBe(true);
+      expect(shell.readShortcutLink(tmpShortcut)).toEqual(shortcutOptions);
       const change = { target: 'D:\\' };
-      expect(shell.writeShortcutLink(tmpShortcut, 'update', change)).to.be.true();
-      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal({ ...shortcutOptions, ...change });
+      expect(shell.writeShortcutLink(tmpShortcut, 'update', change)).toBe(true);
+      expect(shell.readShortcutLink(tmpShortcut)).toEqual({ ...shortcutOptions, ...change });
     });
 
     it('replaces the shortcut', () => {
-      expect(shell.writeShortcutLink(tmpShortcut, 'replace', shortcutOptions)).to.be.false();
-      expect(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions)).to.be.true();
-      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+      expect(shell.writeShortcutLink(tmpShortcut, 'replace', shortcutOptions)).toBe(false);
+      expect(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions)).toBe(true);
+      expect(shell.readShortcutLink(tmpShortcut)).toEqual(shortcutOptions);
       const change = {
         target: 'D:\\',
         description: 'description2',
@@ -212,8 +249,8 @@ describe('shell module', () => {
         iconIndex: 2,
         toastActivatorClsid: '{C51A3996-CAD9-4934-848B-16285D4A1496}'
       };
-      expect(shell.writeShortcutLink(tmpShortcut, 'replace', change)).to.be.true();
-      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(change);
+      expect(shell.writeShortcutLink(tmpShortcut, 'replace', change)).toBe(true);
+      expect(shell.readShortcutLink(tmpShortcut)).toEqual(change);
     });
   });
 });

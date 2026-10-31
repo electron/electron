@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -24,7 +24,7 @@ describe('contextBridge', () => {
   let server: http.Server;
   let serverUrl: string;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('');
@@ -32,7 +32,7 @@ describe('contextBridge', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after(async () => {
+  afterAll(async () => {
     if (server) await new Promise((resolve) => server.close(resolve));
     server = null as any;
   });
@@ -52,7 +52,7 @@ describe('contextBridge', () => {
     });
     w.loadFile(path.resolve(fixturesPath, 'empty.html'));
     const [, bound] = await once(ipcMain, 'context-bridge-bound');
-    expect(bound).to.equal(false);
+    expect(bound).toBe(false);
   });
 
   it('should be accessible when contextIsolation is enabled', async () => {
@@ -65,7 +65,7 @@ describe('contextBridge', () => {
     });
     w.loadFile(path.resolve(fixturesPath, 'empty.html'));
     const [, bound] = await once(ipcMain, 'context-bridge-bound');
-    expect(bound).to.equal(true);
+    expect(bound).toBe(true);
   });
 
   const generateTests = (useSandbox: boolean) => {
@@ -145,7 +145,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example;
         });
-        expect(result).to.equal(123);
+        expect(result).toBe(123);
       });
 
       it('should proxy numbers when exposed in isolated world', async () => {
@@ -155,7 +155,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example;
         }, 1004);
-        expect(result).to.equal(123);
+        expect(result).toBe(123);
       });
 
       it('should make global properties read-only', async () => {
@@ -166,7 +166,7 @@ describe('contextBridge', () => {
           root.example = 456;
           return root.example;
         });
-        expect(result).to.equal(123);
+        expect(result).toBe(123);
       });
 
       it('should proxy nested numbers', async () => {
@@ -178,7 +178,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myNumber;
         });
-        expect(result).to.equal(123);
+        expect(result).toBe(123);
       });
 
       it('should make properties unwriteable', async () => {
@@ -191,7 +191,7 @@ describe('contextBridge', () => {
           root.example.myNumber = 456;
           return root.example.myNumber;
         });
-        expect(result).to.equal(123);
+        expect(result).toBe(123);
       });
 
       it('should proxy strings', async () => {
@@ -201,7 +201,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example;
         });
-        expect(result).to.equal('my-words');
+        expect(result).toBe('my-words');
       });
 
       it('should proxy nested strings', async () => {
@@ -213,7 +213,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myString;
         });
-        expect(result).to.equal('my-words');
+        expect(result).toBe('my-words');
       });
 
       it('should proxy nested strings when exposed in isolated world', async () => {
@@ -225,7 +225,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myString;
         }, 1004);
-        expect(result).to.equal('my-words');
+        expect(result).toBe('my-words');
       });
 
       it('should proxy arrays', async () => {
@@ -235,7 +235,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return [root.example, Array.isArray(root.example)];
         });
-        expect(result).to.deep.equal([[123, 'my-words'], true]);
+        expect(result).toEqual([[123, 'my-words'], true]);
       });
 
       it('should proxy nested arrays', async () => {
@@ -247,7 +247,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myArr;
         });
-        expect(result).to.deep.equal([123, 'my-words']);
+        expect(result).toEqual([123, 'my-words']);
       });
 
       it('should make arrays immutable', async () => {
@@ -262,7 +262,7 @@ describe('contextBridge', () => {
             return true;
           }
         });
-        expect(immutable).to.equal(true);
+        expect(immutable).toBe(true);
       });
 
       it('should make nested arrays immutable', async () => {
@@ -279,7 +279,7 @@ describe('contextBridge', () => {
             return true;
           }
         });
-        expect(immutable).to.equal(true);
+        expect(immutable).toBe(true);
       });
 
       it('should proxy booleans', async () => {
@@ -289,7 +289,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example;
         });
-        expect(result).to.equal(true);
+        expect(result).toBe(true);
       });
 
       it('should proxy nested booleans', async () => {
@@ -301,7 +301,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myBool;
         });
-        expect(result).to.equal(true);
+        expect(result).toBe(true);
       });
 
       it('should proxy promises and resolve with the correct value', async () => {
@@ -311,7 +311,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example;
         });
-        expect(result).to.equal('i-resolved');
+        expect(result).toBe('i-resolved');
       });
 
       it('should proxy nested promises and resolve with the correct value', async () => {
@@ -323,7 +323,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myPromise;
         });
-        expect(result).to.equal('i-resolved');
+        expect(result).toBe('i-resolved');
       });
 
       it('should proxy promises and reject with the correct value', async () => {
@@ -338,7 +338,8 @@ describe('contextBridge', () => {
             return err;
           }
         });
-        expect(result).to.be.an.instanceOf(Error).with.property('message', 'i-rejected');
+        expect(result).toBeInstanceOf(Error);
+        expect(result).toHaveProperty('message', 'i-rejected');
       });
 
       it('should proxy nested promises and reject with the correct value', async () => {
@@ -355,7 +356,8 @@ describe('contextBridge', () => {
             return err;
           }
         });
-        expect(result).to.be.an.instanceOf(Error).with.property('message', 'i-rejected');
+        expect(result).toBeInstanceOf(Error);
+        expect(result).toHaveProperty('message', 'i-rejected');
       });
 
       it('should proxy promises and resolve with the correct value if it resolves later', async () => {
@@ -367,7 +369,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myPromise();
         });
-        expect(result).to.equal('delayed');
+        expect(result).toBe('delayed');
       });
 
       it('should proxy nested promises correctly', async () => {
@@ -379,7 +381,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.myPromise();
         });
-        expect(result).to.equal(123);
+        expect(result).toBe(123);
       });
 
       it('should proxy promises correctly when Function.prototype has been overridden in the main world', async () => {
@@ -406,7 +408,7 @@ describe('contextBridge', () => {
             });
           });
         });
-        expect(result).to.deep.equal({ observed: false, value: 'proxied-ok' });
+        expect(result).toEqual({ observed: false, value: 'proxied-ok' });
       });
 
       it('should proxy methods', async () => {
@@ -426,7 +428,7 @@ describe('contextBridge', () => {
             await root.example.getPromise()
           ];
         });
-        expect(result).to.deep.equal([123, 'help', false, 'promise']);
+        expect(result).toEqual([123, 'help', false, 'promise']);
       });
 
       it('should proxy functions', async () => {
@@ -436,7 +438,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings(async (root: any) => {
           return root.example();
         });
-        expect(result).equal('return-value');
+        expect(result).toBe('return-value');
       });
 
       it('should not double-proxy functions when they are returned to their origin side of the bridge', async () => {
@@ -447,7 +449,7 @@ describe('contextBridge', () => {
           const fn = () => null;
           return root.example(fn) === fn;
         });
-        expect(result).equal(true);
+        expect(result).toBe(true);
       });
 
       it('should proxy function arguments only once', async () => {
@@ -458,7 +460,7 @@ describe('contextBridge', () => {
           const obj = { foo: 1 };
           return root.example(obj, obj);
         });
-        expect(result).to.be.true();
+        expect(result).toBe(true);
       });
 
       it('should properly handle errors thrown in proxied functions', async () => {
@@ -474,7 +476,7 @@ describe('contextBridge', () => {
             return (e as Error).message;
           }
         });
-        expect(result).equal('oh no');
+        expect(result).toBe('oh no');
       });
 
       it('should throw instead of crashing when an array argument has a throwing getter', async () => {
@@ -514,7 +516,7 @@ describe('contextBridge', () => {
             root.example.echo([1, 2, 3])
           ];
         });
-        expect(result).to.deep.equal(['boom', 'nested boom', 3]);
+        expect(result).toEqual(['boom', 'nested boom', 3]);
       });
 
       it('should throw when an object argument has a throwing getter', async () => {
@@ -551,7 +553,7 @@ describe('contextBridge', () => {
           const errorError = getError(() => root.example.check(new CustomError()));
           return [objectError, errorError, root.example.called()];
         });
-        expect(result).to.deep.equal(['object boom', 'error boom', false]);
+        expect(result).toEqual(['object boom', 'error boom', false]);
       });
 
       it('should throw instead of crashing when a returned array has a throwing getter', async () => {
@@ -578,7 +580,7 @@ describe('contextBridge', () => {
           }
           return null;
         });
-        expect(result).to.equal('Uncaught Error: boom');
+        expect(result).toBe('Uncaught Error: boom');
       });
 
       it('should proxy methods that are callable multiple times', async () => {
@@ -590,7 +592,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings(async (root: any) => {
           return [root.example.doThing(), root.example.doThing(), root.example.doThing()];
         });
-        expect(result).to.deep.equal([123, 123, 123]);
+        expect(result).toEqual([123, 123, 123]);
       });
 
       it('should proxy methods in the reverse direction', async () => {
@@ -602,7 +604,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings(async (root: any) => {
           return root.example.callWithNumber((n: number) => n + 1);
         });
-        expect(result).to.equal(124);
+        expect(result).toBe(124);
       });
 
       it('should proxy promises in the reverse direction', async () => {
@@ -614,7 +616,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.getPromiseValue(Promise.resolve('my-proxied-value'));
         });
-        expect(result).to.equal('my-proxied-value');
+        expect(result).toBe('my-proxied-value');
       });
 
       it('should proxy objects with number keys', async () => {
@@ -628,7 +630,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings(async (root: any) => {
           return [root.example[1], root.example[2], root.example[3], Array.isArray(root.example)];
         });
-        expect(result).to.deep.equal([123, 456, 789, false]);
+        expect(result).toEqual([123, 456, 789, false]);
       });
 
       it('should not mutate the prototype when an object with an own __proto__ key is sent over the bridge', async () => {
@@ -653,7 +655,7 @@ describe('contextBridge', () => {
           });
           return root.example.receive(payload);
         });
-        expect(result).to.deep.equal([true, undefined, true, 1]);
+        expect(result).toEqual([true, undefined, true, 1]);
       });
 
       it('should not mutate the prototype when an object with an own __proto__ key is exposed', async () => {
@@ -674,7 +676,7 @@ describe('contextBridge', () => {
             root.example.data
           ];
         });
-        expect(result).to.deep.equal([true, undefined, true, 1]);
+        expect(result).toEqual([true, undefined, true, 1]);
       });
 
       it('it should proxy null', async () => {
@@ -686,7 +688,7 @@ describe('contextBridge', () => {
           // IPC does not
           return `${root.example}`;
         });
-        expect(result).to.deep.equal('null');
+        expect(result).toEqual('null');
       });
 
       it('it should proxy undefined', async () => {
@@ -698,7 +700,7 @@ describe('contextBridge', () => {
           // IPC does not
           return `${root.example}`;
         });
-        expect(result).to.deep.equal('undefined');
+        expect(result).toEqual('undefined');
       });
 
       it('it should proxy nested null and undefined correctly', async () => {
@@ -712,7 +714,7 @@ describe('contextBridge', () => {
           // IPC does not
           return root.example.values.map((val: any) => `${val}`);
         });
-        expect(result).to.deep.equal(['null', 'undefined']);
+        expect(result).toEqual(['null', 'undefined']);
       });
 
       it('should proxy symbols', async () => {
@@ -725,7 +727,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.isSymbol(root.symbol);
         });
-        expect(result).to.equal(true, 'symbols should be equal across contexts');
+        expect(result, 'symbols should be equal across contexts').toBe(true);
       });
 
       it('should proxy symbols such that symbol equality works', async () => {
@@ -739,7 +741,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.isSymbol(root.example.getSymbol());
         });
-        expect(result).to.equal(true, 'symbols should be equal across contexts');
+        expect(result, 'symbols should be equal across contexts').toBe(true);
       });
 
       it('should proxy symbols such that symbol key lookup works', async () => {
@@ -753,7 +755,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.getObject()[root.example.getSymbol()];
         });
-        expect(result).to.equal(123, 'symbols key lookup should work across contexts');
+        expect(result, 'symbols key lookup should work across contexts').toBe(123);
       });
 
       it('should proxy typed arrays', async () => {
@@ -763,7 +765,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return Object.getPrototypeOf(root.example) === Uint8Array.prototype;
         });
-        expect(result).equal(true);
+        expect(result).toBe(true);
       });
 
       it('should proxy regexps', async () => {
@@ -773,7 +775,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return Object.getPrototypeOf(root.example) === RegExp.prototype;
         });
-        expect(result).equal(true);
+        expect(result).toBe(true);
       });
 
       it('should proxy typed arrays and regexps through the serializer', async () => {
@@ -789,7 +791,7 @@ describe('contextBridge', () => {
             Object.getPrototypeOf(root.example.regexp) === RegExp.prototype
           ];
         });
-        expect(result).to.deep.equal([true, true]);
+        expect(result).toEqual([true, true]);
       });
 
       it('should handle recursive objects', async () => {
@@ -803,7 +805,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return [root.example.o.value, root.example.o.o.value, root.example.o.o.o.value];
         });
-        expect(result).to.deep.equal([135, 135, 135]);
+        expect(result).toEqual([135, 135, 135]);
       });
 
       it('should handle DOM elements', async () => {
@@ -819,7 +821,7 @@ describe('contextBridge', () => {
             typeof root.example.getElem().querySelector
           ];
         });
-        expect(result).to.deep.equal(['BODY', 'HTMLBodyElement', 'function']);
+        expect(result).toEqual(['BODY', 'HTMLBodyElement', 'function']);
       });
 
       it('should handle DOM elements going backwards over the bridge', async () => {
@@ -834,7 +836,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.getElemInfo(() => document.body);
         });
-        expect(result).to.deep.equal(['BODY', 'HTMLBodyElement', 'function']);
+        expect(result).toEqual(['BODY', 'HTMLBodyElement', 'function']);
       });
 
       it('should handle Blobs', async () => {
@@ -846,7 +848,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings(async (root: any) => {
           return [await root.example.getBlob().text()];
         });
-        expect(result).to.deep.equal(['abcd']);
+        expect(result).toEqual(['abcd']);
       });
 
       it('should handle Blobs going backwards over the bridge', async () => {
@@ -861,7 +863,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return root.example.getBlobText(() => new Blob(['12', '45']));
         });
-        expect(result).to.deep.equal(['1245']);
+        expect(result).toEqual(['1245']);
       });
 
       it('should handle VideoFrames', async () => {
@@ -880,7 +882,7 @@ describe('contextBridge', () => {
           frame.close();
           return info;
         });
-        expect(result).to.deep.equal(['VideoFrame', 16, 16, 0]);
+        expect(result).toEqual(['VideoFrame', 16, 16, 0]);
       });
 
       it('should handle VideoFrames going backwards over the bridge', async () => {
@@ -901,7 +903,7 @@ describe('contextBridge', () => {
             return new VideoFrame(canvas, { timestamp: 100 });
           });
         });
-        expect(result).to.deep.equal(['VideoFrame', 32, 32, 100]);
+        expect(result).toEqual(['VideoFrame', 32, 32, 100]);
       });
 
       // Can only run tests which use the GCRunner in non-sandboxed environments
@@ -922,18 +924,18 @@ describe('contextBridge', () => {
           await callWithBindings(async (root: any) => {
             root.GCRunner.run();
           });
-          expect((await getGCInfo()).trackedValues).to.equal(0);
+          expect((await getGCInfo()).trackedValues).toBe(0);
           await callWithBindings(async (root: any) => {
             const fn = root.example.getFunction();
             root.example.track(fn);
             root.x = [fn];
           });
-          expect((await getGCInfo()).trackedValues).to.equal(1);
+          expect((await getGCInfo()).trackedValues).toBe(1);
           await callWithBindings(async (root: any) => {
             root.x = [];
             root.GCRunner.run();
           });
-          expect((await getGCInfo()).trackedValues).to.equal(0);
+          expect((await getGCInfo()).trackedValues).toBe(0);
         });
       }
 
@@ -953,11 +955,11 @@ describe('contextBridge', () => {
             require('electron').ipcRenderer.send('window-ready-for-tasking');
           });
           const loadPromise = once(ipcMain, 'window-ready-for-tasking');
-          expect((await getGCInfo()).trackedValues).to.equal(0);
+          expect((await getGCInfo()).trackedValues).toBe(0);
           await callWithBindings((root: any) => {
             root.example.track(root.example.getFunction());
           });
-          expect((await getGCInfo()).trackedValues).to.equal(1);
+          expect((await getGCInfo()).trackedValues).toBe(1);
           await callWithBindings((root: any) => {
             root.location.reload();
           });
@@ -965,7 +967,7 @@ describe('contextBridge', () => {
           await forceGCOnWindow();
           // If this is ever "2" it means we leaked the exposed function and
           // therefore the entire context after a reload
-          expect((await getGCInfo()).trackedValues).to.equal(0);
+          expect((await getGCInfo()).trackedValues).toBe(0);
         });
       }
 
@@ -988,7 +990,7 @@ describe('contextBridge', () => {
         const result = await callWithBindings((root: any) => {
           return [root.example.attempt, root.example.getThrew()];
         });
-        expect(result).to.deep.equal([1, true]);
+        expect(result).toEqual([1, true]);
       });
 
       it('should work with complex nested methods and promises', async () => {
@@ -1005,7 +1007,7 @@ describe('contextBridge', () => {
             return third(() => Promise.resolve('final value'));
           });
         });
-        expect(result).to.equal('final value');
+        expect(result).toBe('final value');
       });
 
       it('should work with complex nested methods and promises attached directly to the global', async () => {
@@ -1021,7 +1023,7 @@ describe('contextBridge', () => {
             return third(() => Promise.resolve('final value'));
           });
         });
-        expect(result).to.equal('final value');
+        expect(result).toBe('final value');
       });
 
       it('should throw an error when recursion depth is exceeded', async () => {
@@ -1042,7 +1044,7 @@ describe('contextBridge', () => {
             return true;
           }
         });
-        expect(threw).to.equal(false);
+        expect(threw).toBe(false);
         threw = await callWithBindings((root: any) => {
           try {
             let a: any = [];
@@ -1055,7 +1057,7 @@ describe('contextBridge', () => {
             return true;
           }
         });
-        expect(threw).to.equal(true);
+        expect(threw).toBe(true);
       });
 
       it('should copy thrown errors into the other context', async () => {
@@ -1136,10 +1138,17 @@ describe('contextBridge', () => {
             resolveNotClonableIsError
           ];
         });
-        expect(result).to.deep.equal(
-          [true, true, true, true, true, true, true, true, true],
-          'should all be errors in the current context'
-        );
+        expect(result, 'should all be errors in the current context').toEqual([
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ]);
       });
 
       it('should not leak prototypes', async () => {
@@ -1271,7 +1280,7 @@ describe('contextBridge', () => {
           };
         });
         // Every protomatch should be true
-        expect(result.protoMatches).to.deep.equal(result.protoMatches.map(() => true));
+        expect(result.protoMatches).toEqual(result.protoMatches.map(() => true));
       });
 
       it('should not leak prototypes when attaching directly to the global', async () => {
@@ -1416,7 +1425,7 @@ describe('contextBridge', () => {
           };
         });
         // Every protomatch should be true
-        expect(result.protoMatches).to.deep.equal(result.protoMatches.map(() => true));
+        expect(result.protoMatches).toEqual(result.protoMatches.map(() => true));
       });
 
       ifdescribe(isTestingBindingAvailable())('internalContextBridge', () => {
@@ -1430,7 +1439,7 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               return root.open();
             });
-            expect(result).to.deep.equal({ you: 'are a wizard' });
+            expect(result).toEqual({ you: 'are a wizard' });
           });
 
           it('should override deep properties', async () => {
@@ -1443,7 +1452,7 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               return root.document.foo();
             });
-            expect(result).to.equal('I am foo');
+            expect(result).toBe('I am foo');
           });
         });
 
@@ -1463,8 +1472,8 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               return [root.isFun, root.foo.callCount()];
             });
-            expect(result[0]).to.equal(true);
-            expect(result[1]).to.equal(1);
+            expect(result[0]).toBe(true);
+            expect(result[1]).toBe(1);
           });
 
           it('should not make a setter if none is provided', async () => {
@@ -1475,7 +1484,7 @@ describe('contextBridge', () => {
               root.isFun = 123;
               return root.isFun;
             });
-            expect(result).to.equal(true);
+            expect(result).toBe(true);
           });
 
           it('should call the setter correctly', async () => {
@@ -1498,9 +1507,9 @@ describe('contextBridge', () => {
               root.isFun = 123;
               return root.foo.callArgs();
             });
-            expect(result).to.have.lengthOf(1);
-            expect(result[0]).to.have.lengthOf(1);
-            expect(result[0][0]).to.equal(123);
+            expect(result).toHaveLength(1);
+            expect(result[0]).toHaveLength(1);
+            expect(result[0][0]).toBe(123);
           });
         });
 
@@ -1516,7 +1525,7 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               return [root.thing.a, root.thing.b(), root.thing.c()];
             });
-            expect(result).to.deep.equal([123, 2, { d: 3 }]);
+            expect(result).toEqual([123, 2, { d: 3 }]);
           });
 
           it('should work with getters', async () => {
@@ -1530,7 +1539,7 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               return root.thing.foo;
             });
-            expect(result).to.equal('hi there');
+            expect(result).toBe('hi there');
           });
 
           it('should work with nested getters', async () => {
@@ -1548,7 +1557,7 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               return root.thing.foo.bar;
             });
-            expect(result).to.equal('hi there');
+            expect(result).toBe('hi there');
           });
 
           it('should work with setters', async () => {
@@ -1567,7 +1576,7 @@ describe('contextBridge', () => {
               root.thing.foo = 123;
               return root.thing.foo;
             });
-            expect(result).to.equal(124);
+            expect(result).toBe(124);
           });
 
           it('should work with nested getter / setter combos', async () => {
@@ -1590,7 +1599,7 @@ describe('contextBridge', () => {
               root.thing.thingy.foo = 123;
               return root.thing.thingy.foo;
             });
-            expect(result).to.equal(124);
+            expect(result).toBe(124);
           });
 
           it('should work with deep properties', async () => {
@@ -1606,7 +1615,7 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               return root.thing.a().foo;
             });
-            expect(result).to.equal('still here');
+            expect(result).toBe('still here');
           });
         });
       });
@@ -1655,7 +1664,7 @@ describe('contextBridge', () => {
               }
             });
           });
-          expect(result).to.deep.equal([
+          expect(result).toEqual([
             undefined,
             null,
             123,
@@ -1699,7 +1708,7 @@ describe('contextBridge', () => {
             // @ts-ignore
             return globalThis.result;
           }, 999);
-          expect(result).to.be.true();
+          expect(result).toBe(true);
         });
 
         it('safely clones returned objects', async () => {
@@ -1714,7 +1723,7 @@ describe('contextBridge', () => {
             // @ts-ignore
             return globalThis.safe;
           }, 999);
-          expect(result).to.be.true();
+          expect(result).toBe(true);
         });
 
         it('uses internal Function.prototype.toString', async () => {
@@ -1732,7 +1741,7 @@ describe('contextBridge', () => {
             // @ts-ignore
             return globalThis.hacked;
           });
-          expect(result).to.equal('nope');
+          expect(result).toBe('nope');
         });
       });
     });
@@ -1757,9 +1766,9 @@ describe('ContextBridgeMutability', () => {
     });
     await once(appProcess, 'close');
 
-    expect(output).to.include('some-modified-text');
-    expect(output).to.include('obj-modified-prop');
-    expect(output).to.include('1,2,5,3,4');
+    expect(output).toContain('some-modified-text');
+    expect(output).toContain('obj-modified-prop');
+    expect(output).toContain('1,2,5,3,4');
   });
 
   it('should make properties unwriteable and read-only if ContextBridgeMutability is off', async () => {
@@ -1772,8 +1781,8 @@ describe('ContextBridgeMutability', () => {
     });
     await once(appProcess, 'close');
 
-    expect(output).to.include('some-text');
-    expect(output).to.include('obj-prop');
-    expect(output).to.include('1,2,3,4');
+    expect(output).toContain('some-text');
+    expect(output).toContain('obj-prop');
+    expect(output).toContain('1,2,3,4');
   });
 });

@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 type ExpectedWarningMessage = RegExp | string;
 
@@ -23,13 +23,13 @@ async function expectWarnings(func: () => any, expected: { name: string; message
     await new Promise(process.nextTick);
     console.warn = originalWarn;
     process.off('warning' as any, warningListener);
-    expect(messages).to.have.lengthOf(expected.length);
+    expect(messages).toHaveLength(expected.length);
     for (const [idx, { name, message }] of messages.entries()) {
-      expect(name).to.equal(expected[idx].name);
+      expect(name).toBe(expected[idx].name);
       if (expected[idx].message instanceof RegExp) {
-        expect(message).to.match(expected[idx].message);
+        expect(message).toMatch(expected[idx].message);
       } else {
-        expect(message).to.equal(expected[idx].message);
+        expect(message).toBe(expected[idx].message);
       }
     }
   }

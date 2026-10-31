@@ -18,7 +18,7 @@
   "dependencies": {
     "@electron-internal/extract-zip": "^1.0.1",
     "@electron/get": "^5.0.0",
-    "@types/node": "^24.9.0"
+    "@types/node": "^26.6.5"
   },
   "engines": {
     "node": ">= 22.12.0"

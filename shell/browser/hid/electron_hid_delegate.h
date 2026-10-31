@@ -42,6 +42,8 @@ class ElectronHidDelegate : public content::HidDelegate {
       std::vector<blink::mojom::HidDeviceFilterPtr> filters,
       std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
       content::HidChooser::Callback callback) override;
+  bool IsHidAllowedForFrame(
+      content::RenderFrameHost* render_frame_host) override;
   bool CanRequestDevicePermission(content::BrowserContext* browser_context,
                                   content::RenderFrameHost* render_frame_host,
                                   const url::Origin& origin) override;

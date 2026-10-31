@@ -25,6 +25,11 @@ UsbChooserContextFactory::BuildServiceInstanceForBrowserContext(
       static_cast<electron::ElectronBrowserContext*>(context));
 }
 
+content::BrowserContext* UsbChooserContextFactory::GetBrowserContextToUse(
+    content::BrowserContext* context) const {
+  return context;
+}
+
 // static
 UsbChooserContextFactory* UsbChooserContextFactory::GetInstance() {
   static base::NoDestructor<UsbChooserContextFactory> instance;

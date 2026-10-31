@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -35,9 +35,9 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
         w.loadFile(path.resolve(import.meta.dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
         const [event1, event2] = await detailsPromise;
-        expect(event1[0].senderFrame.frameToken).to.not.equal(event2[0].senderFrame.frameToken);
-        expect(event1[0].senderFrame.frameToken).to.equal(event1[2]);
-        expect(event2[0].senderFrame.frameToken).to.equal(event2[2]);
+        expect(event1[0].senderFrame.frameToken).not.toBe(event2[0].senderFrame.frameToken);
+        expect(event1[0].senderFrame.frameToken).toBe(event1[2]);
+        expect(event2[0].senderFrame.frameToken).toBe(event2[2]);
       });
 
       it('should load preload scripts in nested iframes', async () => {
@@ -46,12 +46,12 @@ describe('renderer nodeIntegrationInSubFrames', () => {
           path.resolve(import.meta.dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`)
         );
         const [event1, event2, event3] = await detailsPromise;
-        expect(event1[0].senderFrame.frameToken).to.not.equal(event2[0].senderFrame.frameToken);
-        expect(event1[0].senderFrame.frameToken).to.not.equal(event3[0].senderFrame.frameToken);
-        expect(event2[0].senderFrame.frameToken).to.not.equal(event3[0].senderFrame.frameToken);
-        expect(event1[0].senderFrame.frameToken).to.equal(event1[2]);
-        expect(event2[0].senderFrame.frameToken).to.equal(event2[2]);
-        expect(event3[0].senderFrame.frameToken).to.equal(event3[2]);
+        expect(event1[0].senderFrame.frameToken).not.toBe(event2[0].senderFrame.frameToken);
+        expect(event1[0].senderFrame.frameToken).not.toBe(event3[0].senderFrame.frameToken);
+        expect(event2[0].senderFrame.frameToken).not.toBe(event3[0].senderFrame.frameToken);
+        expect(event1[0].senderFrame.frameToken).toBe(event1[2]);
+        expect(event2[0].senderFrame.frameToken).toBe(event2[2]);
+        expect(event3[0].senderFrame.frameToken).toBe(event3[2]);
       });
 
       it('should correctly reply to the main frame with using event.reply', async () => {
@@ -61,7 +61,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const pongPromise = once(ipcMain, 'preload-pong');
         event1[0].reply('preload-ping');
         const [, frameToken] = await pongPromise;
-        expect(frameToken).to.equal(event1[0].senderFrame.frameToken);
+        expect(frameToken).toBe(event1[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the main frame with using event.senderFrame.send', async () => {
@@ -71,7 +71,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const pongPromise = once(ipcMain, 'preload-pong');
         event1[0].senderFrame.send('preload-ping');
         const [, frameToken] = await pongPromise;
-        expect(frameToken).to.equal(event1[0].senderFrame.frameToken);
+        expect(frameToken).toBe(event1[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the sub-frames with using event.reply', async () => {
@@ -81,7 +81,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const pongPromise = once(ipcMain, 'preload-pong');
         event2[0].reply('preload-ping');
         const [, frameToken] = await pongPromise;
-        expect(frameToken).to.equal(event2[0].senderFrame.frameToken);
+        expect(frameToken).toBe(event2[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the sub-frames with using event.senderFrame.send', async () => {
@@ -91,7 +91,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const pongPromise = once(ipcMain, 'preload-pong');
         event2[0].senderFrame.send('preload-ping');
         const [, frameToken] = await pongPromise;
-        expect(frameToken).to.equal(event2[0].senderFrame.frameToken);
+        expect(frameToken).toBe(event2[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
@@ -103,7 +103,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const pongPromise = once(ipcMain, 'preload-pong');
         event3[0].reply('preload-ping');
         const [, frameToken] = await pongPromise;
-        expect(frameToken).to.equal(event3[0].senderFrame.frameToken);
+        expect(frameToken).toBe(event3[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the nested sub-frames with using event.senderFrame.send', async () => {
@@ -115,7 +115,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const pongPromise = once(ipcMain, 'preload-pong');
         event3[0].senderFrame.send('preload-ping');
         const [, frameToken] = await pongPromise;
-        expect(frameToken).to.equal(event3[0].senderFrame.frameToken);
+        expect(frameToken).toBe(event3[0].senderFrame.frameToken);
       });
 
       it('should not expose globals in main world', async () => {
@@ -128,9 +128,9 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         );
         for (const result of isolatedGlobals) {
           if (webPreferences.contextIsolation === undefined || webPreferences.contextIsolation) {
-            expect(result).to.be.undefined();
+            expect(result).toBeUndefined();
           } else {
-            expect(result).to.equal(true);
+            expect(result).toBe(true);
           }
         }
       });
@@ -239,7 +239,7 @@ describe('subframe with non-standard schemes', () => {
       })
     `);
 
-    expect(updatedSrc).to.equal('about:blank');
+    expect(updatedSrc).toBe('about:blank');
 
     const restoredSrc = await w.webContents.executeJavaScript(`
       new Promise((resolve, reject) => {
@@ -249,7 +249,7 @@ describe('subframe with non-standard schemes', () => {
       })
     `);
 
-    expect(restoredSrc).to.equal(originalSrc);
+    expect(restoredSrc).toBe(originalSrc);
   });
 });
 
@@ -259,7 +259,7 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
   let crossSiteUrl: string;
   let serverUrl: string;
 
-  before(async function () {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.end(`<iframe name="frame" src="${crossSiteUrl}" />`);
     });
@@ -267,7 +267,7 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
     crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
     server = null as unknown as http.Server;
   });
@@ -301,8 +301,8 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
         const sandboxMain = !!(webPreferences.sandbox || process.mas);
         const sandboxFrame = sandboxMain || !webPreferences.nodeIntegrationInSubFrames;
 
-        expect(isProcessSandboxed(pidMain)).to.equal(sandboxMain);
-        expect(isProcessSandboxed(pidFrame)).to.equal(sandboxFrame);
+        expect(isProcessSandboxed(pidMain)).toBe(sandboxMain);
+        expect(isProcessSandboxed(pidFrame)).toBe(sandboxFrame);
       });
     });
   };

@@ -237,6 +237,9 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
   class RequestFilter {
    public:
     RequestFilter(const RequestFilter&);
+    RequestFilter(RequestFilter&&);
+    RequestFilter& operator=(const RequestFilter&);
+    RequestFilter& operator=(RequestFilter&&);
     RequestFilter();
     ~RequestFilter();
 

@@ -58,7 +58,7 @@ bool CertFromData(const std::string& data,
   if (cert_list.empty())
     return false;
 
-  auto leaf_cert = cert_list.front();
+  const auto& leaf_cert = cert_list.front();
   if (!leaf_cert)
     return false;
 

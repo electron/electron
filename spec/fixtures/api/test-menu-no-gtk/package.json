@@ -1,0 +1,4 @@
+{
+  "name": "electron-test-menu-no-gtk",
+  "main": "main.js"
+}

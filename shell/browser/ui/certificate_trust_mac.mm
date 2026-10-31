@@ -96,7 +96,8 @@ v8::Local<v8::Promise> ShowCertificateTrust(
   SecTrustRef trust = nullptr;
   SecTrustCreateWithCertificates(cert_chain.get(), sec_policy, &trust);
 
-  NSWindow* window = parent_window
+  // A window in an app shim has no NSWindow here that could take the sheet.
+  NSWindow* window = parent_window && !parent_window->IsInAppShim()
                          ? parent_window->GetNativeWindow().GetNativeNSWindow()
                          : nil;
   auto msg = base::SysUTF8ToNSString(message);

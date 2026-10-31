@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as dns from 'node:dns';
 import * as http from 'node:http';
@@ -55,11 +55,14 @@ export async function collectStreamBody(response: Electron.IncomingMessage | htt
 
 export function collectStreamBodyBuffer(response: Electron.IncomingMessage | http.IncomingMessage) {
   return new Promise<Buffer>((resolve, reject) => {
-    response.on('error', reject);
-    (response as NodeJS.EventEmitter).on('aborted', reject);
+    // The two IncomingMessage types declare incompatible typed `on` overloads,
+    // so a call on the union does not resolve; listen through EventEmitter.
+    const stream = response as NodeJS.EventEmitter;
+    stream.on('error', reject);
+    stream.on('aborted', reject);
     const data: Buffer[] = [];
-    response.on('data', (chunk) => data.push(chunk));
-    response.on('end', (chunk?: Buffer) => {
+    stream.on('data', (chunk: Buffer) => data.push(chunk));
+    stream.on('end', (chunk?: Buffer) => {
       if (chunk) data.push(chunk);
       resolve(Buffer.concat(data));
     });

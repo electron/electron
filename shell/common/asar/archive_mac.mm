@@ -11,19 +11,21 @@
 #include <iomanip>
 #include <string>
 
-#include "base/apple/bundle_locations.h"
 #include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
 #include "base/files/file_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/asar/integrity_digest.h"
+#include "shell/common/mac/main_application_bundle.h"
 
 namespace asar {
 
 std::optional<base::FilePath> Archive::RelativePath() const {
+  // The outer app bundle, not base::apple::MainBundlePath(): in a helper
+  // process that is the helper's own bundle, which holds no archives.
   base::FilePath bundle_path = base::MakeAbsoluteFilePath(
-      base::apple::MainBundlePath().Append("Contents"));
+      electron::MainApplicationBundlePath().Append("Contents"));
 
   base::FilePath relative_path;
   if (!bundle_path.AppendRelativePath(path_, &relative_path))
@@ -37,7 +39,7 @@ std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   // Callers should have already asserted this
   CHECK(relative_path.has_value());
 
-  NSDictionary* integrity = [[NSBundle mainBundle]
+  NSDictionary* integrity = [electron::MainApplicationBundle()
       objectForInfoDictionaryKey:@"ElectronAsarIntegrity"];
 
   if (!IsIntegrityDictionaryValid(integrity))

@@ -105,6 +105,7 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/platform/platform_handle.h"
 #include "mojo/public/cpp/system/platform_handle.h"
+#include "net/base/net_errors.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/web_sandbox_flags.h"
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
@@ -199,6 +200,8 @@
 #include "ui/events/base_event_utils.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/widget.h"
+#include "url/gurl.h"
+#include "url/url_constants.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -291,20 +294,20 @@ struct Converter<WindowOpenDisposition> {
                                    WindowOpenDisposition val) {
     std::string_view disposition = "other";
     switch (val) {
-      case WindowOpenDisposition::CURRENT_TAB:
+      case WindowOpenDisposition::kCurrentTab:
         disposition = "default";
         break;
-      case WindowOpenDisposition::NEW_FOREGROUND_TAB:
+      case WindowOpenDisposition::kNewForegroundTab:
         disposition = "foreground-tab";
         break;
-      case WindowOpenDisposition::NEW_BACKGROUND_TAB:
+      case WindowOpenDisposition::kNewBackgroundTab:
         disposition = "background-tab";
         break;
-      case WindowOpenDisposition::NEW_POPUP:
-      case WindowOpenDisposition::NEW_WINDOW:
+      case WindowOpenDisposition::kNewPopup:
+      case WindowOpenDisposition::kNewWindow:
         disposition = "new-window";
         break;
-      case WindowOpenDisposition::SAVE_TO_DISK:
+      case WindowOpenDisposition::kSaveToDisk:
         disposition = "save-to-disk";
         break;
       default:
@@ -435,7 +438,7 @@ struct Converter<content::NavigationEntry*> {
         if (!page_state.IsValid())
           return false;
 
-        entry->SetPageState(std::move(page_state), restore_context.get());
+        entry->SetPageState(page_state, restore_context.get());
       }
     }
 
@@ -1101,16 +1104,6 @@ class WebContents::NativeLifecycle final
       return contents->SaveFrame(url, referrer, frame);
     return false;
   }
-  void FindReply(content::WebContents* source,
-                 int request_id,
-                 int matches,
-                 const gfx::Rect& selection,
-                 int active_match,
-                 bool final_update) override {
-    if (auto* contents = contents_.Get())
-      contents->FindReply(source, request_id, matches, selection, active_match,
-                          final_update);
-  }
   void RequestPointerLock(content::WebContents* source,
                           bool user_gesture,
                           bool last_unlocked_by_target) override {
@@ -1124,11 +1117,6 @@ class WebContents::NativeLifecycle final
   void LostPointerLock() override {
     if (auto* contents = contents_.Get())
       contents->LostPointerLock();
-  }
-  bool IsWaitingForPointerLockPrompt(content::WebContents* source) override {
-    if (auto* contents = contents_.Get())
-      return contents->IsWaitingForPointerLockPrompt(source);
-    return false;
   }
   void RequestKeyboardLock(content::WebContents* source,
                            bool esc_key_locked) override {
@@ -1447,6 +1435,15 @@ class WebContents::NativeLifecycle final
   void DidFinishNavigation(content::NavigationHandle* navigation) override {
     if (auto* contents = contents_.Get())
       contents->DidFinishNavigation(navigation);
+  }
+  void DidReceiveFindReply(int request_id,
+                           int matches,
+                           const gfx::Rect& selection,
+                           int active_match,
+                           bool final_update) override {
+    if (auto* contents = contents_.Get())
+      contents->DidReceiveFindReply(request_id, matches, selection,
+                                    active_match, final_update);
   }
   void WebContentsDestroyed() override {
     DisposeWebFrames();
@@ -1785,14 +1782,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
-  // Sandbox flags this WebContents must start with, e.g. inherited from a
-  // sandboxed frame that requested the window. Sandbox flags can only be
-  // added this way, never cleared.
-  uint32_t opener_sandbox_flags = 0;
-  options.Get("openerSandboxFlags", &opener_sandbox_flags);
-  const auto starting_sandbox_flags =
-      static_cast<network::mojom::WebSandboxFlags>(opener_sandbox_flags);
-
   const bool initially_shown = options.ValueOrDefault(options::kShow, true);
 
   // Obtain the session.
@@ -1844,7 +1833,6 @@ WebContents::WebContents(v8::Isolate* isolate,
     bool transparent = bc == SK_ColorTRANSPARENT;
 
     content::WebContents::CreateParams params{browser_context};
-    params.starting_sandbox_flags = starting_sandbox_flags;
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
         offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
@@ -1857,7 +1845,6 @@ WebContents::WebContents(v8::Isolate* isolate,
     view->SetWebContents(web_contents.get());
   } else {
     content::WebContents::CreateParams params{browser_context};
-    params.starting_sandbox_flags = starting_sandbox_flags;
     params.initially_hidden = !initially_shown;
     params.enable_wake_locks = !disable_wake_locks;
     base::AutoReset<bool> reset(
@@ -2156,6 +2143,12 @@ void WebContents::Destroy() {
   }
 }
 
+void WebContents::DestroyNow() {
+  if (disposing_ || destroyed_)
+    return;
+  Dispose();
+}
+
 void WebContents::Close(std::optional<gin_helper::Dictionary> options) {
   bool dispatch_beforeunload = false;
   if (options)
@@ -2193,20 +2186,7 @@ void WebContents::OnDidAddMessageToConsole(
   dict.Set("lineNumber", line_no);
   dict.Set("sourceId", source_id);
 
-  // TODO(samuelmaddock): remove the deprecated positional arguments.
-  EmitWithoutEvent("console-message", event_object, static_cast<int32_t>(level),
-                   message, line_no, source_id);
-}
-
-void WebContents::OnCreateWindow(
-    const GURL& target_url,
-    const content::Referrer& referrer,
-    const std::string& frame_name,
-    WindowOpenDisposition disposition,
-    const std::string& features,
-    const scoped_refptr<network::ResourceRequestBody>& body) {
-  Emit("-new-window", target_url, frame_name, disposition, features, referrer,
-       body);
+  EmitWithoutEvent("console-message", event_object);
 }
 
 void WebContents::WebContentsCreatedWithFullParams(
@@ -2215,13 +2195,25 @@ void WebContents::WebContentsCreatedWithFullParams(
     int opener_render_frame_id,
     const content::mojom::CreateNewWindowParams& params,
     content::WebContents* new_contents) {
+  AdoptChildWebContents(new_contents, params.target_url, params.frame_name,
+                        params.referrer.To<content::Referrer>(),
+                        params.raw_features, params.body);
+}
+
+void WebContents::AdoptChildWebContents(
+    content::WebContents* new_contents,
+    const GURL& url,
+    const std::string& frame_name,
+    const content::Referrer& referrer,
+    const std::string& raw_features,
+    const scoped_refptr<network::ResourceRequestBody>& body) {
   ChildWebContentsTracker::CreateForWebContents(new_contents);
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents);
-  tracker->url = params.target_url;
-  tracker->frame_name = params.frame_name;
-  tracker->referrer = params.referrer.To<content::Referrer>();
-  tracker->raw_features = params.raw_features;
-  tracker->body = params.body;
+  tracker->url = url;
+  tracker->frame_name = frame_name;
+  tracker->referrer = referrer;
+  tracker->raw_features = raw_features;
+  tracker->body = body;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -2391,6 +2383,8 @@ content::WebContents* WebContents::AddNewContents(
            window_features.bounds.width(), window_features.bounds.height(),
            tracker->url, tracker->frame_name, tracker->referrer,
            tracker->raw_features, tracker->body)) {
+    if (was_blocked)
+      *was_blocked = true;
     api_web_contents->Destroy();
   }
 
@@ -2403,13 +2397,13 @@ content::WebContents* WebContents::OpenURLFromTab(
     base::OnceCallback<void(content::NavigationHandle&)>
         navigation_handle_callback) {
   auto weak_this = WeakRef();
-  if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+  if (params.disposition != WindowOpenDisposition::kCurrentTab) {
     // A link opened into a new window (modifier-click, middle-click,
     // target=_blank form post routed here, ...) is a popup like window.open()
     // and is subject to the same embedder policy; see
     // ElectronBrowserClient::CanCreateWindow.
     auto* source_preferences = WebContentsPreferences::From(source);
-    if (source_preferences && source_preferences->ShouldDisablePopups())
+    if (!source_preferences || source_preferences->ShouldDisablePopups())
       return nullptr;
 
     using SandboxFlags = network::mojom::WebSandboxFlags;
@@ -2444,31 +2438,7 @@ content::WebContents* WebContents::OpenURLFromTab(
         inherited_sandbox_flags = flags;
       }
     }
-    // The new window's first navigation keeps the initiator's identity
-    // (origin, frame, site instance, user gesture) instead of being re-issued
-    // as a browser-initiated load, so Sec-Fetch-Site / SameSite, external
-    // protocol attribution and navigation events describe who asked for it.
-    auto navigate = base::BindRepeating(
-        [](const content::OpenURLParams& params, content::WebContents* target) {
-          if (!target)
-            return;
-          content::NavigationController::LoadURLParams load_params(params);
-          // The initiator may live in a different session than the window the
-          // app created; a SiteInstance cannot cross browser contexts.
-          if (load_params.source_site_instance &&
-              load_params.source_site_instance->GetBrowserContext() !=
-                  target->GetBrowserContext()) {
-            load_params.source_site_instance = nullptr;
-          }
-          load_params.frame_tree_node_id = {};
-          load_params.override_user_agent =
-              content::NavigationController::UA_OVERRIDE_INHERIT;
-          target->GetController().LoadURLWithParams(load_params);
-        },
-        params);
-    Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
-         params.post_data, static_cast<uint32_t>(inherited_sandbox_flags),
-         navigate);
+    OpenURLInNewWebContents(source, params, inherited_sandbox_flags);
     return nullptr;
   }
 
@@ -2500,6 +2470,55 @@ content::WebContents* WebContents::OpenURLFromTab(
 
   source->GetController().LoadURLWithParams(load_url_params);
   return source;
+}
+
+void WebContents::OpenURLInNewWebContents(
+    content::WebContents* source,
+    const content::OpenURLParams& params,
+    network::mojom::WebSandboxFlags sandbox_flags) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto weak_this = WeakRef();
+
+  // Build the window the way a renderer-created popup is built
+  // (OnWillCreateWindow -> WebContentsCreatedWithFullParams ->
+  // AddNewContents): the app's window-open handler decides first and leaves
+  // the child's webPreferences behind, the child is created in the opener's
+  // browser context with those preferences, and only then is it handed to JS.
+  pending_child_web_preferences_.Reset();
+  if (Emit("-will-add-new-contents", params.url, "", "", params.disposition,
+           params.referrer, params.post_data) ||
+      !weak_this->Get()) {
+    if (weak_this->Get())
+      pending_child_web_preferences_.Reset();
+    return;
+  }
+
+  content::WebContents::CreateParams create_params(source->GetBrowserContext());
+  create_params.starting_sandbox_flags = sandbox_flags;
+  MaybeOverrideCreateParamsForNewWindow(&create_params);
+  std::unique_ptr<content::WebContents> new_contents =
+      content::WebContents::Create(create_params);
+  AdoptChildWebContents(new_contents.get(), params.url, "", params.referrer, "",
+                        params.post_data);
+
+  bool was_blocked = false;
+  base::WeakPtr<content::WebContents> target = new_contents->GetWeakPtr();
+  AddNewContents(source, std::move(new_contents), params.url,
+                 params.disposition, *blink::mojom::WindowFeatures::New(),
+                 params.user_gesture, &was_blocked);
+  if (was_blocked || !target)
+    return;
+
+  // The first navigation keeps the initiator's identity (origin, frame, site
+  // instance, user gesture) instead of being re-issued as a browser-initiated
+  // load, so Sec-Fetch-Site / SameSite, external protocol attribution and
+  // navigation events describe who asked for it.
+  content::NavigationController::LoadURLParams load_params(params);
+  load_params.frame_tree_node_id = {};
+  load_params.override_user_agent =
+      content::NavigationController::UA_OVERRIDE_INHERIT;
+  target->GetController().LoadURLWithParams(load_params);
 }
 
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
@@ -2816,15 +2835,25 @@ void WebContents::OnReadAvailableTypes(
       render_frame_host,
       !types.empty(),
   };
+  auto weak_this = WeakRef();
   Emit("context-menu", event_data);
+
+  if (!weak_this->Get() || !web_contents())
+    return;
+
+  // Apps show their own menu, or none, in response to the event above, so
+  // nothing reports the renderer's context menu closed the way Chrome's
+  // RenderViewContextMenu does. Until it is, Blink's ContextMenuController
+  // keeps the right-clicked node and its ancestors alive, even after the page
+  // removes them.
+  web_contents()->NotifyContextMenuClosed(GURL());
 }
 
-void WebContents::FindReply(content::WebContents* web_contents,
-                            int request_id,
-                            int number_of_matches,
-                            const gfx::Rect& selection_rect,
-                            int active_match_ordinal,
-                            bool final_update) {
+void WebContents::DidReceiveFindReply(int request_id,
+                                      int number_of_matches,
+                                      const gfx::Rect& selection_rect,
+                                      int active_match_ordinal,
+                                      bool final_update) {
   if (!final_update)
     return;
 
@@ -2866,12 +2895,6 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
 void WebContents::LostPointerLock() {
   native_lifecycle_->exclusive_access_manager_->pointer_lock_controller()
       ->ExitExclusiveAccessToPreviousState();
-}
-
-bool WebContents::IsWaitingForPointerLockPrompt(
-    content::WebContents* web_contents) {
-  return native_lifecycle_->exclusive_access_manager_->pointer_lock_controller()
-      ->IsWaitingForPointerLockPrompt(web_contents);
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
@@ -3033,7 +3056,8 @@ void WebContents::HandleNewRenderFrame(
     const bool allow_subframes =
         web_preferences && web_preferences->AllowsNodeIntegrationInSubFrames();
     if (!render_frame_host->GetParent() || allow_subframes)
-      SendRendererStartupData(render_frame_host);
+      SendRendererStartupData(render_frame_host, GURL(url::kAboutBlankURL),
+                              render_frame_host->GetLastCommittedOrigin());
   }
 }
 
@@ -3487,10 +3511,24 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
-  SendRendererStartupData(rfh);
+  // loadURL(dataUrl, {baseURLForDataURL}) commits the data: URL as a document
+  // at the base URL, so match URL filters against that. Same condition as
+  // content::NavigationRequest::IsLoadDataWithBaseURL().
+  const GURL& base_url = navigation_handle->GetBaseURLForDataURL();
+  const bool is_load_data_with_base_url =
+      navigation_handle->IsInPrimaryMainFrame() &&
+      navigation_handle->GetNetErrorCode() == net::OK &&
+      url.SchemeIs(url::kDataScheme) && base_url.is_valid();
+
+  // Has a value whenever the navigation has a RenderFrameHost to commit in.
+  SendRendererStartupData(
+      rfh, is_load_data_with_base_url ? base_url : url,
+      navigation_handle->GetOriginToCommit().value_or(url::Origin()));
 }
 
-void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
+void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
+                                          const GURL& url,
+                                          const url::Origin& origin) {
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
@@ -3501,7 +3539,7 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::BuildForFrame(rfh);
+    data = renderer_startup_data::BuildForFrame(rfh, url, origin);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
@@ -3625,13 +3663,13 @@ void WebContents::DidFinishNavigation(
 }
 
 void WebContents::NotifyPageTitleUpdated(
-    content::NavigationEntry* entry,
+    const content::NavigationEntry* entry,
     bool from_same_document_history_navigation) {
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
-    auto title = entry->GetTitle();
-    auto url = entry->GetURL();
+    const auto& title = entry->GetTitle();
+    const auto& url = entry->GetURL();
     if (url.SchemeIsFile() && title.empty()) {
       final_title = base::UTF8ToUTF16(url.ExtractFileName());
       explicit_set = false;
@@ -3988,7 +4026,7 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
 
   GURL base_url_for_data_url;
   if (options.Get("baseURLForDataURL", &base_url_for_data_url)) {
-    params.base_url_for_data_url = base_url_for_data_url;
+    params.base_url_for_data_url = std::move(base_url_for_data_url);
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 
@@ -5088,7 +5126,7 @@ void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("start", &start_adjust);
-    dict.Get("matchCase", &end_adjust);
+    dict.Get("end", &end_adjust);
   }
 
   // The selection menu is a Chrome-specific piece of UI.
@@ -5112,7 +5150,6 @@ uint32_t WebContents::FindInPage(gin::Arguments* const args) {
     return 0;
   }
 
-  uint32_t request_id = ++find_in_page_request_id_;
   gin_helper::Dictionary dict;
   auto options = blink::mojom::FindOptions::New();
   if (args->GetNext(&dict)) {
@@ -5121,8 +5158,11 @@ uint32_t WebContents::FindInPage(gin::Arguments* const args) {
     dict.Get("findNext", &options->new_session);
   }
 
-  web_contents()->Find(request_id, search_text, std::move(options),
-                       /*skip_delay=*/false);
+  // The request id is allocated by content's FindRequestManager and delivered
+  // synchronously through the callback before Find() returns.
+  uint32_t request_id = 0;
+  web_contents()->Find(search_text, std::move(options), /*skip_delay=*/false,
+                       [&request_id](int id) { request_id = id; });
   return request_id;
 }
 
@@ -5824,8 +5864,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
       electron_renderer->BindNewPipeAndPassReceiver());
   auto* raw_ptr = electron_renderer.get();
   (*raw_ptr)->TakeHeapSnapshot(
-      mojo::WrapPlatformHandle(mojo::PlatformHandle(
-          base::ScopedPlatformFile(file.TakePlatformFile()))),
+      mojo::PlatformHandle(base::ScopedPlatformFile(file.TakePlatformFile())),
       base::BindOnce(
           [](mojo::Remote<mojom::ElectronRenderer>* ep,
              gin_helper::Promise<void> promise, bool success) {
@@ -5854,7 +5893,7 @@ void WebContents::PostMessage(v8::Isolate* isolate,
         "webContents has no main frame to post to");
     return;
   }
-  frame->PostMessage(isolate, channel, message, std::move(transfer));
+  frame->PostMessage(isolate, channel, message, transfer);
 }
 
 void WebContents::SendInternal(gin::Arguments* args) {
@@ -5932,6 +5971,19 @@ v8::Local<v8::Promise> WebContents::ExecuteJavaScriptInRenderer(
   }
 
   if (auto* renderer = MainFrameRenderer(isolate, promise)) {
+    if (has_user_gesture) {
+      // Activate the frame in the browser before the script runs, as
+      // RenderFrameHostImpl::ExecuteJavaScriptForTests() does. The renderer
+      // reports the activation too, but on the frame's channel-associated
+      // interfaces, so a request the script makes on its own Mojo pipe (such
+      // as FileSystemFileHandle.createWritable()) can reach the browser first
+      // and be refused for lacking user activation.
+      static_cast<content::RenderFrameHostImpl*>(
+          web_contents()->GetPrimaryMainFrame())
+          ->UpdateUserActivationState(
+              blink::mojom::UserActivationUpdateType::kNotifyActivation,
+              blink::mojom::UserActivationNotificationType::kWebScriptExec);
+    }
     renderer->ExecuteJavaScript(
         world_id, std::move(script_sources), has_user_gesture,
         WebFrameMain::BindPromiseToReply(std::move(promise)));
@@ -6109,7 +6161,7 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
   const base::FilePath* path = nullptr;
 
   if (!save_as)
-    base::FindOrNull(saved_files_, url);
+    path = base::FindOrNull(saved_files_, url);
 
   if (path == nullptr) {
     file_dialog::DialogSettings settings;
@@ -6117,8 +6169,11 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
     settings.force_detached = offscreen_;
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
-    if (auto new_path = file_dialog::ShowSaveDialogSync(settings)) {
-      auto [iter, _] = saved_files_.try_emplace(url, std::move(*new_path));
+    // On Linux a cancelled dialog yields an empty path rather than nullopt.
+    if (auto new_path = file_dialog::ShowSaveDialogSync(settings);
+        new_path && !new_path->empty()) {
+      // A fresh pick (e.g. "Save as") replaces any path stored for |url|.
+      auto [iter, _] = saved_files_.insert_or_assign(url, std::move(*new_path));
       path = &iter->second;
     }
   }

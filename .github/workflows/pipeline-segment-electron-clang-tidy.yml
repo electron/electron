@@ -50,6 +50,12 @@ jobs:
       TARGET_PLATFORM: ${{ inputs.target-platform }}
       ARTIFACT_KEY: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}_${{ inputs.target-arch }}
     steps:
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
+        sudo dscacheutil -flushcache
+        sudo killall -HUP mDNSResponder
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -139,7 +145,7 @@ jobs:
         cd src/electron
         git pack-refs
     - name: Download Out Gen Artifacts
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src/out/${{ env.ELECTRON_OUT_DIR }}/gen
@@ -163,7 +169,7 @@ jobs:
     - name: Run Clang-Tidy
       run: |
         e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build siso
-        export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\""
+        export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\" use_clang_modules=false"
         if [ "$TARGET_PLATFORM" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         fi
@@ -179,9 +185,9 @@ jobs:
           OUT=src/out/${ELECTRON_OUT_DIR}
           SQRL=src/third_party/squirrel.mac
           mkdir -p ${OUT}/{ReactiveObjC,Squirrel,Mantle}.framework/Headers
-          cp ${SQRL}/Carthage/Checkouts/ReactiveObjC/ReactiveObjC/*.h ${SQRL}/Carthage/Checkouts/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
+          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/*.h ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
           cp ${SQRL}/Squirrel/*.h ${OUT}/Squirrel.framework/Headers/
-          cp ${SQRL}/Carthage/Checkouts/Mantle/Mantle/include/*.h ${SQRL}/Carthage/Checkouts/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
+          cp ${SQRL}/vendor/Mantle/Mantle/include/*.h ${SQRL}/vendor/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
         fi
 
         e d python3 src/electron/script/gen-clang-tidy-ninja.py src/out/${ELECTRON_OUT_DIR}
@@ -189,7 +195,7 @@ jobs:
         e build --gen=off --target electron_clang_tidy -f clang_tidy.ninja -batch -k 0
     - name: Upload siso metrics
       if: always() && !cancelled()
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
       with:
         name: clang_tidy_siso_${{ env.ARTIFACT_KEY }}
         path: |

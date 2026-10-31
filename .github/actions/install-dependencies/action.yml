@@ -20,20 +20,22 @@ runs:
       cd src/electron
       node script/yarn.js install --immutable --mode=skip-build
       # Pre-seed the node-gyp header cache so the parallel native-addon
-      # builds below don't race on a cold cache. Linux build containers
-      # already ship a warm cache (electron/build-images#68), so only do
-      # this on macOS / Windows runners.
-      if [ "$(uname -s)" != "Linux" ]; then
-        for i in 1 2 3; do
-          if node node_modules/node-gyp/bin/node-gyp.js install; then
-            break
-          fi
-          if [ "$i" = "3" ]; then
-            echo "node-gyp header pre-seed failed after 3 attempts" >&2
-            exit 1
-          fi
-          echo "node-gyp header pre-seed failed (attempt $i), retrying in 5s..." >&2
-          sleep 5
-        done
-      fi
+      # builds below don't race on a cold cache: when the headers are missing,
+      # every concurrent node-gyp copies them into the shared devdir, truncating
+      # headers that an already-configured addon is compiling against.
+      # The Linux containers ship a pre-warmed cache (electron/build-images#68),
+      # but it is keyed by the Node version of the host that built the image,
+      # which does not always match the Node inside the container, so do this
+      # everywhere. --ensure makes it a no-op when the cache is already warm.
+      for i in 1 2 3; do
+        if node node_modules/node-gyp/bin/node-gyp.js install --ensure; then
+          break
+        fi
+        if [ "$i" = "3" ]; then
+          echo "node-gyp header pre-seed failed after 3 attempts" >&2
+          exit 1
+        fi
+        echo "node-gyp header pre-seed failed (attempt $i), retrying in 5s..." >&2
+        sleep 5
+      done
       node script/yarn.js install --immutable

@@ -65,7 +65,10 @@ app.whenReady().then(async () => {
     const utility = await withTimeout(
       new Promise((resolve) => {
         const child = utilityProcess.fork(UTIL_CHILD);
-        child.once('message', (m) => resolve(m));
+        child.once('message', (m) => {
+          child.postMessage('ack');
+          resolve(m);
+        });
       }),
       'utility'
     );

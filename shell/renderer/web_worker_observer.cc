@@ -37,8 +37,7 @@ bool IsPooledWorkletContext(v8::Local<v8::Context> context) {
   if (!ec)
     return false;
   return ec->IsAudioWorkletGlobalScope() || ec->IsPaintWorkletGlobalScope() ||
-         ec->IsAnimationWorkletGlobalScope() ||
-         ec->IsSharedStorageWorkletGlobalScope();
+         ec->IsAnimationWorkletGlobalScope();
 }
 
 }  // namespace
@@ -299,8 +298,8 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
     // not reuse the worker thread, so tear down the observer completely.
     //
     // For pooled worklet contexts (AudioWorklet, PaintWorklet,
-    // AnimationWorklet, SharedStorageWorklet — see
-    // blink::WorkletThreadHolder) the same NodeBindings must be reused
+    // AnimationWorklet — see blink::WorkletThreadHolder) the same
+    // NodeBindings must be reused
     // for the next context on the thread because Node.js cannot be
     // re-initialized on the same thread. Keep the observer alive and let
     // the next WorkerScriptReadyForEvaluation call

@@ -1,7 +1,7 @@
 import { app, dialog, BaseWindow, BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
 import * as dbus from 'dbus-native';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
@@ -19,39 +19,39 @@ describe('dialog module', () => {
     ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
         dialog.showOpenDialog({ title: 'i am title' });
-      }).to.not.throw();
+      }).not.toThrow();
 
       expect(() => {
         const w = new BrowserWindow();
         dialog.showOpenDialog(w, { title: 'i am title' });
-      }).to.not.throw();
+      }).not.toThrow();
 
       expect(() => {
         const w = new BaseWindow();
         dialog.showOpenDialog(w, { title: 'i am title' });
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('throws errors when the options are invalid', () => {
       expect(() => {
         dialog.showOpenDialog({ properties: false as any });
-      }).to.throw(/Properties must be an array/);
+      }).toThrow(/Properties must be an array/);
 
       expect(() => {
         dialog.showOpenDialog({ title: 300 as any });
-      }).to.throw(/Title must be a string/);
+      }).toThrow(/Title must be a string/);
 
       expect(() => {
         dialog.showOpenDialog({ buttonLabel: [] as any });
-      }).to.throw(/Button label must be a string/);
+      }).toThrow(/Button label must be a string/);
 
       expect(() => {
         dialog.showOpenDialog({ defaultPath: {} as any });
-      }).to.throw(/Default path must be a string/);
+      }).toThrow(/Default path must be a string/);
 
       expect(() => {
         dialog.showOpenDialog({ message: {} as any });
-      }).to.throw(/Message must be a string/);
+      }).toThrow(/Message must be a string/);
     });
   });
 
@@ -60,39 +60,39 @@ describe('dialog module', () => {
     ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
         dialog.showSaveDialog({ title: 'i am title' });
-      }).to.not.throw();
+      }).not.toThrow();
 
       expect(() => {
         const w = new BrowserWindow();
         dialog.showSaveDialog(w, { title: 'i am title' });
-      }).to.not.throw();
+      }).not.toThrow();
 
       expect(() => {
         const w = new BaseWindow();
         dialog.showSaveDialog(w, { title: 'i am title' });
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('throws errors when the options are invalid', () => {
       expect(() => {
         dialog.showSaveDialog({ title: 300 as any });
-      }).to.throw(/Title must be a string/);
+      }).toThrow(/Title must be a string/);
 
       expect(() => {
         dialog.showSaveDialog({ buttonLabel: [] as any });
-      }).to.throw(/Button label must be a string/);
+      }).toThrow(/Button label must be a string/);
 
       expect(() => {
         dialog.showSaveDialog({ defaultPath: {} as any });
-      }).to.throw(/Default path must be a string/);
+      }).toThrow(/Default path must be a string/);
 
       expect(() => {
         dialog.showSaveDialog({ message: {} as any });
-      }).to.throw(/Message must be a string/);
+      }).toThrow(/Message must be a string/);
 
       expect(() => {
         dialog.showSaveDialog({ nameFieldLabel: {} as any });
-      }).to.throw(/Name field label must be a string/);
+      }).toThrow(/Name field label must be a string/);
     });
   });
 
@@ -106,7 +106,7 @@ describe('dialog module', () => {
       () => {
         expect(() => {
           dialog.showMessageBox({ message: 'i am message' });
-        }).to.not.throw();
+        }).not.toThrow();
       }
     );
 
@@ -114,38 +114,38 @@ describe('dialog module', () => {
       expect(() => {
         const w = new BrowserWindow();
         dialog.showMessageBox(w, { message: 'i am message' });
-      }).to.not.throw();
+      }).not.toThrow();
 
       expect(() => {
         const w = new BaseWindow();
         dialog.showMessageBox(w, { message: 'i am message' });
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     it('throws errors when the options are invalid', () => {
       expect(() => {
         dialog.showMessageBox(undefined as any, { type: 'not-a-valid-type' as any, message: '' });
-      }).to.throw(/Invalid message box type/);
+      }).toThrow(/Invalid message box type/);
 
       expect(() => {
         dialog.showMessageBox(null as any, { buttons: false as any, message: '' });
-      }).to.throw(/Buttons must be an array/);
+      }).toThrow(/Buttons must be an array/);
 
       expect(() => {
         dialog.showMessageBox({ title: 300 as any, message: '' });
-      }).to.throw(/Title must be a string/);
+      }).toThrow(/Title must be a string/);
 
       expect(() => {
         dialog.showMessageBox({ message: [] as any });
-      }).to.throw(/Message must be a string/);
+      }).toThrow(/Message must be a string/);
 
       expect(() => {
         dialog.showMessageBox({ detail: 3.14 as any, message: '' });
-      }).to.throw(/Detail must be a string/);
+      }).toThrow(/Detail must be a string/);
 
       expect(() => {
         dialog.showMessageBox({ checkboxLabel: false as any, message: '' });
-      }).to.throw(/checkboxLabel must be a string/);
+      }).toThrow(/checkboxLabel must be a string/);
     });
   });
 
@@ -159,7 +159,7 @@ describe('dialog module', () => {
       const p = dialog.showMessageBox(w, { signal, message: 'i am message' });
       controller.abort();
       const result = await p;
-      expect(result.response).to.equal(0);
+      expect(result.response).toBe(0);
     });
 
     it('closes message box after a while', async () => {
@@ -170,7 +170,7 @@ describe('dialog module', () => {
       await setTimeout(500);
       controller.abort();
       const result = await p;
-      expect(result.response).to.equal(0);
+      expect(result.response).toBe(0);
     });
 
     it('does not crash when there is a defaultId but no buttons', async () => {
@@ -186,7 +186,7 @@ describe('dialog module', () => {
       });
       controller.abort();
       const result = await p;
-      expect(result.response).to.equal(0);
+      expect(result.response).toBe(0);
     });
 
     it('cancels message box', async () => {
@@ -201,7 +201,7 @@ describe('dialog module', () => {
       });
       controller.abort();
       const result = await p;
-      expect(result.response).to.equal(1);
+      expect(result.response).toBe(1);
     });
 
     it('cancels message box after a while', async () => {
@@ -217,7 +217,7 @@ describe('dialog module', () => {
       await setTimeout(500);
       controller.abort();
       const result = await p;
-      expect(result.response).to.equal(1);
+      expect(result.response).toBe(1);
     });
   });
 
@@ -225,15 +225,15 @@ describe('dialog module', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
         (dialog.showErrorBox as any)();
-      }).to.throw(/Insufficient number of arguments/);
+      }).toThrow(/Insufficient number of arguments/);
 
       expect(() => {
         dialog.showErrorBox(3 as any, 'four');
-      }).to.throw(/Error processing argument at index 0/);
+      }).toThrow(/Error processing argument at index 0/);
 
       expect(() => {
         dialog.showErrorBox('three', 4 as any);
-      }).to.throw(/Error processing argument at index 1/);
+      }).toThrow(/Error processing argument at index 1/);
     });
   });
 
@@ -241,15 +241,15 @@ describe('dialog module', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
         (dialog.showCertificateTrustDialog as any)();
-      }).to.throw(/options must be an object/);
+      }).toThrow(/options must be an object/);
 
       expect(() => {
         dialog.showCertificateTrustDialog({} as any);
-      }).to.throw(/certificate must be an object/);
+      }).toThrow(/certificate must be an object/);
 
       expect(() => {
         dialog.showCertificateTrustDialog({ certificate: {} as any, message: false as any });
-      }).to.throw(/message must be a string/);
+      }).toThrow(/message must be a string/);
     });
   });
 
@@ -258,7 +258,7 @@ describe('dialog module', () => {
     () => {
       let dialogHelper: any;
 
-      before(() => {
+      beforeAll(() => {
         dialogHelper = require('@electron-ci/dialog-helper');
       });
 
@@ -287,12 +287,12 @@ describe('dialog module', () => {
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
 
-          expect(info.type).to.equal('message-box');
-          expect(info.message).to.equal('Test message');
+          expect(info.type).toBe('message-box');
+          expect(info.message).toBe('Test message');
 
           const buttons = JSON.parse(info.buttons);
-          expect(buttons).to.include('OK');
-          expect(buttons).to.include('Cancel');
+          expect(buttons).toContain('OK');
+          expect(buttons).toContain('Cancel');
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           await p;
@@ -310,8 +310,8 @@ describe('dialog module', () => {
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
 
-          expect(info.message).to.equal('Main message');
-          expect(info.detail).to.equal('Extra detail text');
+          expect(info.message).toBe('Main message');
+          expect(info.detail).toBe('Extra detail text');
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           await p;
@@ -329,7 +329,7 @@ describe('dialog module', () => {
           dialogHelper.clickMessageBoxButton(handle, 1);
 
           const result = await p;
-          expect(result.response).to.equal(1);
+          expect(result.response).toBe(1);
         });
 
         it('returns the correct response when the last button is clicked', async () => {
@@ -344,7 +344,7 @@ describe('dialog module', () => {
           dialogHelper.clickMessageBoxButton(handle, 2);
 
           const result = await p;
-          expect(result.response).to.equal(2);
+          expect(result.response).toBe(2);
         });
 
         it('shows a single button when no buttons are specified', async () => {
@@ -357,14 +357,14 @@ describe('dialog module', () => {
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
 
-          expect(info.type).to.equal('message-box');
+          expect(info.type).toBe('message-box');
           // macOS adds a default "OK" button when none are specified.
           const buttons = JSON.parse(info.buttons);
-          expect(buttons).to.have.lengthOf(1);
+          expect(buttons).toHaveLength(1);
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           const result = await p;
-          expect(result.response).to.equal(0);
+          expect(result.response).toBe(0);
         });
 
         it('renders checkbox with the correct label and initial state', async () => {
@@ -380,12 +380,12 @@ describe('dialog module', () => {
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
 
-          expect(info.checkboxLabel).to.equal('Do not show again');
-          expect(info.checkboxChecked).to.be.false();
+          expect(info.checkboxLabel).toBe('Do not show again');
+          expect(info.checkboxChecked).toBe(false);
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           const result = await p;
-          expect(result.checkboxChecked).to.be.false();
+          expect(result.checkboxChecked).toBe(false);
         });
 
         it('returns checkboxChecked as true when checkbox is initially checked', async () => {
@@ -401,12 +401,12 @@ describe('dialog module', () => {
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
 
-          expect(info.checkboxLabel).to.equal('Remember my choice');
-          expect(info.checkboxChecked).to.be.true();
+          expect(info.checkboxLabel).toBe('Remember my choice');
+          expect(info.checkboxChecked).toBe(true);
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           const result = await p;
-          expect(result.checkboxChecked).to.be.true();
+          expect(result.checkboxChecked).toBe(true);
         });
 
         it('can toggle checkbox and returns updated state', async () => {
@@ -423,16 +423,16 @@ describe('dialog module', () => {
 
           // Verify initially unchecked.
           let info = dialogHelper.getDialogInfo(handle);
-          expect(info.checkboxChecked).to.be.false();
+          expect(info.checkboxChecked).toBe(false);
 
           // Click the checkbox to check it.
           dialogHelper.clickCheckbox(handle);
           info = dialogHelper.getDialogInfo(handle);
-          expect(info.checkboxChecked).to.be.true();
+          expect(info.checkboxChecked).toBe(true);
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           const result = await p;
-          expect(result.checkboxChecked).to.be.true();
+          expect(result.checkboxChecked).toBe(true);
         });
 
         it('strips access keys on macOS with normalizeAccessKeys', async () => {
@@ -449,10 +449,10 @@ describe('dialog module', () => {
 
           // On macOS, ampersands are stripped by normalizeAccessKeys.
           const buttons = JSON.parse(info.buttons);
-          expect(buttons).to.include('Save');
-          expect(buttons).to.include('Cancel');
-          expect(buttons).not.to.include('&Save');
-          expect(buttons).not.to.include('&Cancel');
+          expect(buttons).toContain('Save');
+          expect(buttons).toContain('Cancel');
+          expect(buttons).not.toContain('&Save');
+          expect(buttons).not.toContain('&Cancel');
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           await p;
@@ -471,11 +471,11 @@ describe('dialog module', () => {
 
           const info = dialogHelper.getDialogInfo(handle);
           const buttons = JSON.parse(info.buttons);
-          expect(buttons).to.deep.equal(['One', 'Two', 'Three']);
+          expect(buttons).toEqual(['One', 'Two', 'Three']);
 
           dialogHelper.clickMessageBoxButton(handle, 2);
           const result = await p;
-          expect(result.response).to.equal(2);
+          expect(result.response).toBe(2);
         });
 
         it('respects cancelId and returns it when cancelled via signal', async () => {
@@ -492,7 +492,7 @@ describe('dialog module', () => {
           controller.abort();
 
           const result = await p;
-          expect(result.response).to.equal(2);
+          expect(result.response).toBe(2);
         });
 
         it('works with all message box types', async () => {
@@ -516,8 +516,8 @@ describe('dialog module', () => {
             const handle = w.getNativeWindowHandle();
             const info = dialogHelper.getDialogInfo(handle);
 
-            expect(info.type).to.equal('message-box');
-            expect(info.message).to.equal(`Type: ${type}`);
+            expect(info.type).toBe('message-box');
+            expect(info.message).toBe(`Type: ${type}`);
 
             dialogHelper.clickMessageBoxButton(handle, 0);
             await p;
@@ -540,13 +540,13 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.type).to.equal('open-dialog');
+          expect(info.type).toBe('open-dialog');
 
           dialogHelper.cancelFileDialog(handle);
 
           const result = await p;
-          expect(result.canceled).to.be.true();
-          expect(result.filePaths).to.have.lengthOf(0);
+          expect(result.canceled).toBe(true);
+          expect(result.filePaths).toHaveLength(0);
         });
 
         it('sets a custom button label', async () => {
@@ -559,7 +559,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.prompt).to.equal('Select This');
+          expect(info.prompt).toBe('Select This');
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -575,7 +575,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.panelMessage).to.equal('Choose a file to import');
+          expect(info.panelMessage).toBe('Choose a file to import');
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -590,9 +590,9 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canChooseFiles).to.be.true();
-          expect(info.canChooseDirectories).to.be.false();
-          expect(info.allowsMultipleSelection).to.be.false();
+          expect(info.canChooseFiles).toBe(true);
+          expect(info.canChooseDirectories).toBe(false);
+          expect(info.allowsMultipleSelection).toBe(false);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -607,9 +607,9 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canChooseDirectories).to.be.true();
+          expect(info.canChooseDirectories).toBe(true);
           // openFile is not set, so canChooseFiles should be false
-          expect(info.canChooseFiles).to.be.false();
+          expect(info.canChooseFiles).toBe(false);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -624,8 +624,8 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canChooseFiles).to.be.true();
-          expect(info.canChooseDirectories).to.be.true();
+          expect(info.canChooseFiles).toBe(true);
+          expect(info.canChooseDirectories).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -640,7 +640,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.allowsMultipleSelection).to.be.true();
+          expect(info.allowsMultipleSelection).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -655,7 +655,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsHiddenFiles).to.be.true();
+          expect(info.showsHiddenFiles).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -670,7 +670,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsHiddenFiles).to.be.false();
+          expect(info.showsHiddenFiles).toBe(false);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -685,7 +685,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.resolvesAliases).to.be.false();
+          expect(info.resolvesAliases).toBe(false);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -700,7 +700,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.resolvesAliases).to.be.true();
+          expect(info.resolvesAliases).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -715,7 +715,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.treatsPackagesAsDirectories).to.be.true();
+          expect(info.treatsPackagesAsDirectories).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -730,7 +730,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canCreateDirectories).to.be.true();
+          expect(info.canCreateDirectories).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -747,7 +747,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.directory).to.equal(defaultDir);
+          expect(info.directory).toBe(defaultDir);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -774,16 +774,16 @@ describe('dialog module', () => {
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
 
-          expect(info.type).to.equal('open-dialog');
-          expect(info.prompt).to.equal('Pick');
-          expect(info.panelMessage).to.equal('Select items');
-          expect(info.canChooseFiles).to.be.true();
-          expect(info.canChooseDirectories).to.be.true();
-          expect(info.allowsMultipleSelection).to.be.true();
-          expect(info.showsHiddenFiles).to.be.true();
-          expect(info.canCreateDirectories).to.be.true();
-          expect(info.treatsPackagesAsDirectories).to.be.true();
-          expect(info.resolvesAliases).to.be.false();
+          expect(info.type).toBe('open-dialog');
+          expect(info.prompt).toBe('Pick');
+          expect(info.panelMessage).toBe('Select items');
+          expect(info.canChooseFiles).toBe(true);
+          expect(info.canChooseDirectories).toBe(true);
+          expect(info.allowsMultipleSelection).toBe(true);
+          expect(info.showsHiddenFiles).toBe(true);
+          expect(info.canCreateDirectories).toBe(true);
+          expect(info.treatsPackagesAsDirectories).toBe(true);
+          expect(info.resolvesAliases).toBe(false);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -803,9 +803,9 @@ describe('dialog module', () => {
           dialogHelper.acceptFileDialog(handle);
 
           const result = await p;
-          expect(result.canceled).to.be.false();
-          expect(result.filePaths).to.have.lengthOf(1);
-          expect(result.filePaths[0]).to.equal(targetDir);
+          expect(result.canceled).toBe(false);
+          expect(result.filePaths).toHaveLength(1);
+          expect(result.filePaths[0]).toBe(targetDir);
         });
       });
 
@@ -819,13 +819,13 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.type).to.equal('save-dialog');
+          expect(info.type).toBe('save-dialog');
 
           dialogHelper.cancelFileDialog(handle);
 
           const result = await p;
-          expect(result.canceled).to.be.true();
-          expect(result.filePath).to.equal('');
+          expect(result.canceled).toBe(true);
+          expect(result.filePath).toBe('');
         });
 
         it('can accept a save dialog with a filename', async () => {
@@ -843,8 +843,8 @@ describe('dialog module', () => {
           dialogHelper.acceptFileDialog(handle);
 
           const result = await p;
-          expect(result.canceled).to.be.false();
-          expect(result.filePath).to.equal(path.join(defaultDir, filename));
+          expect(result.canceled).toBe(false);
+          expect(result.filePath).toBe(path.join(defaultDir, filename));
         });
 
         it('sets a custom button label', async () => {
@@ -856,7 +856,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.prompt).to.equal('Export');
+          expect(info.prompt).toBe('Export');
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -871,7 +871,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.panelMessage).to.equal('Choose where to save');
+          expect(info.panelMessage).toBe('Choose where to save');
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -886,7 +886,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.nameFieldLabel).to.equal('Export As:');
+          expect(info.nameFieldLabel).toBe('Export As:');
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -901,7 +901,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.nameFieldValue).to.equal('my-document.txt');
+          expect(info.nameFieldValue).toBe('my-document.txt');
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -917,7 +917,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.directory).to.equal(defaultDir);
+          expect(info.directory).toBe(defaultDir);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -932,7 +932,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsTagField).to.be.false();
+          expect(info.showsTagField).toBe(false);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -945,7 +945,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsTagField).to.be.true();
+          expect(info.showsTagField).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -960,7 +960,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canCreateDirectories).to.be.true();
+          expect(info.canCreateDirectories).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -975,7 +975,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsHiddenFiles).to.be.true();
+          expect(info.showsHiddenFiles).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -988,7 +988,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsHiddenFiles).to.be.false();
+          expect(info.showsHiddenFiles).toBe(false);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -1003,7 +1003,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.treatsPackagesAsDirectories).to.be.true();
+          expect(info.treatsPackagesAsDirectories).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -1025,15 +1025,15 @@ describe('dialog module', () => {
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
 
-          expect(info.type).to.equal('save-dialog');
-          expect(info.prompt).to.equal('Save Now');
-          expect(info.panelMessage).to.equal('Pick a location');
-          expect(info.nameFieldLabel).to.equal('File Name:');
-          expect(info.nameFieldValue).to.equal('output.txt');
-          expect(info.directory).to.equal(defaultDir);
-          expect(info.showsTagField).to.be.false();
-          expect(info.showsHiddenFiles).to.be.true();
-          expect(info.canCreateDirectories).to.be.true();
+          expect(info.type).toBe('save-dialog');
+          expect(info.prompt).toBe('Save Now');
+          expect(info.panelMessage).toBe('Pick a location');
+          expect(info.nameFieldLabel).toBe('File Name:');
+          expect(info.nameFieldValue).toBe('output.txt');
+          expect(info.directory).toBe(defaultDir);
+          expect(info.showsTagField).toBe(false);
+          expect(info.showsHiddenFiles).toBe(true);
+          expect(info.canCreateDirectories).toBe(true);
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -1055,7 +1055,7 @@ describe('dialog module', () => {
     let getCalls: () => Promise<any[]>;
     let clearCalls: () => Promise<void>;
 
-    before(async () => {
+    beforeAll(async () => {
       bus = dbus.sessionBus();
       const service = bus.getService('org.freedesktop.portal.Desktop');
       const getInterface = promisify(service.getInterface.bind(service));
@@ -1064,7 +1064,7 @@ describe('dialog module', () => {
       clearCalls = promisify(mock.ClearCalls.bind(mock));
     });
 
-    after(() => {
+    afterAll(() => {
       bus?.connection.end();
     });
 
@@ -1091,7 +1091,7 @@ describe('dialog module', () => {
 
     async function getSingleCall(method: string) {
       const calls = (await getCalls()).filter((call) => call[1] === method);
-      expect(calls).to.have.lengthOf(1);
+      expect(calls).toHaveLength(1);
       return calls[0];
     }
 
@@ -1101,11 +1101,11 @@ describe('dialog module', () => {
         const { canceled } = await dialog.showSaveDialog({
           defaultPath: path.join(defaultDir, 'save-target.txt')
         });
-        expect(canceled).to.be.true();
+        expect(canceled).toBe(true);
 
         const options = getLoggedOptions(await getSingleCall('SaveFile'));
-        expect(options.current_name).to.equal('save-target.txt');
-        expect(getCurrentFolder(options)).to.equal(defaultDir);
+        expect(options.current_name).toBe('save-target.txt');
+        expect(getCurrentFolder(options)).toBe(defaultDir);
       });
 
       // https://github.com/electron/electron/issues/52051
@@ -1113,13 +1113,13 @@ describe('dialog module', () => {
         const { canceled } = await dialog.showSaveDialog({
           defaultPath: 'test.jpeg'
         });
-        expect(canceled).to.be.true();
+        expect(canceled).toBe(true);
 
         const options = getLoggedOptions(await getSingleCall('SaveFile'));
-        expect(options.current_name).to.equal('test.jpeg');
+        expect(options.current_name).toBe('test.jpeg');
         const currentFolder = getCurrentFolder(options);
-        expect(currentFolder).to.satisfy(path.isAbsolute);
-        expect([app.getPath('downloads'), app.getPath('home')]).to.include(currentFolder);
+        expect(currentFolder).toSatisfy(path.isAbsolute);
+        expect([app.getPath('downloads'), app.getPath('home')]).toContain(currentFolder);
       });
     });
 
@@ -1129,12 +1129,12 @@ describe('dialog module', () => {
           defaultPath: 'test.jpeg',
           properties: ['openFile']
         });
-        expect(canceled).to.be.true();
+        expect(canceled).toBe(true);
 
         const options = getLoggedOptions(await getSingleCall('OpenFile'));
         const currentFolder = getCurrentFolder(options);
-        expect(currentFolder).to.satisfy(path.isAbsolute);
-        expect([app.getPath('downloads'), app.getPath('home')]).to.include(currentFolder);
+        expect(currentFolder).toSatisfy(path.isAbsolute);
+        expect([app.getPath('downloads'), app.getPath('home')]).toContain(currentFolder);
       });
     });
   });
@@ -1144,7 +1144,7 @@ describe('dialog module', () => {
     () => {
       let dialogHelper: any;
 
-      before(() => {
+      beforeAll(() => {
         dialogHelper = require('@electron-ci/dialog-helper');
       });
 
@@ -1180,25 +1180,23 @@ describe('dialog module', () => {
         const handle = await waitForDialog(w);
         dialogHelper.clickMessageBoxButton(handle, 420);
         await setTimeout(500);
-        expect(resolvedEarly, 'dialog closed on an unknown button ID').to.equal(false);
-        expect(dialogHelper.getDialogInfo(handle).type).to.equal('message-box');
+        expect(resolvedEarly, 'dialog closed on an unknown button ID').toBe(false);
+        expect(dialogHelper.getDialogInfo(handle).type).toBe('message-box');
 
         // A real button still closes the dialog and returns its index. The
         // dialog runs on a separate STA thread, so rather than a single click
         // with a fixed deadline, re-inject the click until the dialog
-        // acknowledges it by closing.
-        await expect(
-          waitUntil(
-            () => {
-              dialogHelper.clickMessageBoxButton(handle, 1);
-              return dialogHelper.getDialogInfo(handle).type === 'none';
-            },
-            { rate: 100 }
-          ),
-          'a valid button click did not close the dialog; is kIDStart in dialog_helper_win.cc in sync with message_box_win.cc ?'
-        ).to.eventually.be.fulfilled();
+        // acknowledges it by closing. If this times out, check that kIDStart
+        // in dialog_helper_win.cc is in sync with message_box_win.cc.
+        await waitUntil(
+          () => {
+            dialogHelper.clickMessageBoxButton(handle, 1);
+            return dialogHelper.getDialogInfo(handle).type === 'none';
+          },
+          { rate: 100 }
+        );
         const result = await p;
-        expect(result.response).to.equal(1);
+        expect(result.response).toBe(1);
       });
     }
   );

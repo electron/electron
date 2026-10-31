@@ -4,6 +4,7 @@
 
 #include "shell/browser/extensions/electron_browser_context_keyed_service_factories.h"
 
+#include "extensions/browser/api/cookies/cookies_api.h"
 #include "extensions/browser/updater/update_service_factory.h"
 #include "shell/browser/extensions/electron_extension_system_factory.h"
 
@@ -13,6 +14,10 @@ void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
   // TODO(rockot): Remove this once UpdateService is supported across all
   // extensions embedders (and namely chrome.)
   UpdateServiceFactory::GetInstance();
+
+  // Dispatches chrome.cookies.onChanged. Embedders build this factory; it is
+  // not part of the //extensions list.
+  CookiesAPI::GetFactoryInstance();
 
   ElectronExtensionSystemFactory::GetInstance();
 }
