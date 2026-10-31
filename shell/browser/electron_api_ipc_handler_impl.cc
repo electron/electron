@@ -6,10 +6,12 @@
 
 #include <utility>
 
+#include "base/process/process.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+#include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "shell/browser/api/electron_api_ipc_dispatch.h"
 #include "shell/browser/api/electron_api_ipc_event.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -21,6 +23,49 @@
 #include "shell/common/v8_util.h"
 
 namespace electron {
+
+namespace {
+
+void OnProcessMemoryDump(
+    base::ProcessId pid,
+    mojom::ElectronApiIPC::GetProcessMemoryInfoCallback callback,
+    memory_instrumentation::mojom::RequestOutcome outcome,
+    std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump) {
+  if (outcome != memory_instrumentation::mojom::RequestOutcome::kSuccess) {
+    std::move(callback).Run(nullptr, "Failed to create memory dump");
+    return;
+  }
+  for (const auto& process_dump : dump->process_dumps()) {
+    if (process_dump.pid() != pid)
+      continue;
+    const auto& os_dump = process_dump.os_dump();
+    std::move(callback).Run(
+        mojom::ProcessMemoryInfo::New(os_dump.resident_set_kb,
+                                      os_dump.private_footprint_kb,
+                                      os_dump.shared_footprint_kb),
+        "");
+    return;
+  }
+  std::move(callback).Run(
+      nullptr, "Failed to find current process memory details in memory dump");
+}
+
+}  // namespace
+
+void ReplyWithProcessMemoryInfo(
+    content::RenderProcessHost* process,
+    mojom::ElectronApiIPC::GetProcessMemoryInfoCallback callback) {
+  if (!process || !process->GetProcess().IsValid()) {
+    std::move(callback).Run(nullptr, "Failed to create memory dump");
+    return;
+  }
+  const base::ProcessId pid = process->GetProcess().Pid();
+  memory_instrumentation::MemoryInstrumentation::GetInstance()
+      ->RequestGlobalDumpForPid(
+          pid, {},
+          base::BindOnce(&OnProcessMemoryDump, pid, std::move(callback)));
+}
+
 ElectronApiIPCHandlerImpl::ElectronApiIPCHandlerImpl(
     content::RenderFrameHost* frame_host,
     mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver)
@@ -125,6 +170,24 @@ void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
                           gin::ConvertToV8(isolate, arguments),
                           /*sync=*/true);
   }
+}
+
+void ElectronApiIPCHandlerImpl::GetProcessMemoryInfo(
+    GetProcessMemoryInfoCallback callback) {
+  content::RenderFrameHost* frame = GetRenderFrameHost();
+  ReplyWithProcessMemoryInfo(frame ? frame->GetProcess() : nullptr,
+                             std::move(callback));
+}
+
+void ElectronApiIPCHandlerImpl::PreloadError(const std::string& preload_path,
+                                             electron::SerializedValue error) {
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  if (!api_web_contents)
+    return;
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  api_web_contents->Emit("preload-error", preload_path,
+                         gin::ConvertToV8(isolate, error));
 }
 
 void ElectronApiIPCHandlerImpl::MessageHost(

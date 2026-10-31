@@ -66,6 +66,9 @@ class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
                    MessageSyncCallback callback) override;
   void MessageHost(const std::string& channel,
                    electron::SerializedValue arguments) override;
+  void GetProcessMemoryInfo(GetProcessMemoryInfoCallback callback) override;
+  void PreloadError(const std::string& preload_path,
+                    electron::SerializedValue error) override;
 
   base::WeakPtr<ElectronApiSWIPCHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
