@@ -2375,6 +2375,22 @@ describe('webContents module', () => {
       await w.webContents.removeInsertedCSS(key);
       expect(await w.webContents.executeJavaScript(getBackgroundRepeat)).toBe('repeat');
     });
+
+    it('removes user and author origin CSS independently', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const getStyle =
+        '(({ backgroundRepeat, backgroundAttachment }) => [backgroundRepeat, backgroundAttachment])(getComputedStyle(document.body))';
+      const userKey = await w.webContents.insertCSS('body { background-repeat: round !important; }', {
+        cssOrigin: 'user'
+      });
+      const authorKey = await w.webContents.insertCSS('body { background-attachment: fixed; }');
+      expect(await w.webContents.executeJavaScript(getStyle)).toEqual(['round', 'fixed']);
+      await w.webContents.removeInsertedCSS(userKey);
+      expect(await w.webContents.executeJavaScript(getStyle)).toEqual(['repeat', 'fixed']);
+      await w.webContents.removeInsertedCSS(authorKey);
+      expect(await w.webContents.executeJavaScript(getStyle)).toEqual(['repeat', 'scroll']);
+    });
   });
 
   describe('inspectElement()', () => {
