@@ -194,6 +194,13 @@ declare namespace Electron {
     interceptProtocol(scheme: string, handler: any): boolean;
   }
 
+  interface WebRequest {
+    _startFileFetch(options: Omit<NodeJS.CreateURLLoaderOptions, 'body'>): number | null;
+    _fileFetchBeforeRequest(id: number): Promise<{ error?: string; redirectURL?: string } | undefined>;
+    _fileFetchResponded(id: number, mimeType: string, lastModified: string): void;
+    _abortFileFetch(id: number): void;
+  }
+
   interface WebContents {
     on(
       event: '-add-new-contents',
