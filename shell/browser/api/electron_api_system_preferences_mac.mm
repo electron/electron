@@ -169,6 +169,17 @@ SkColor NSSystemColorToSkColor(NSColor* color) {
   return SkColor4f{gray_value, gray_value, gray_value, alpha_value}.toSkColor();
 }
 
+// Outside of drawing, dynamic colors resolve against the appearance the app
+// launched with, so resolve them against the current one instead.
+SkColor NSEffectiveAppearanceColorToSkColor(NSColor* color) {
+  __block SkColor sk_color;
+  [[NSApplication sharedApplication].effectiveAppearance
+      performAsCurrentDrawingAppearance:^{
+        sk_color = NSSystemColorToSkColor(color);
+      }];
+  return sk_color;
+}
+
 }  // namespace
 
 void SystemPreferences::PostNotification(const std::string& name,
@@ -429,7 +440,8 @@ void SystemPreferences::SetUserDefault(const std::string& name,
 
 std::string SystemPreferences::GetAccentColor() {
   NSColor* sysColor = [NSColor controlAccentColor];
-  return ToRGBAHex(NSSystemColorToSkColor(sysColor), false /* include_hash */);
+  return ToRGBAHex(NSEffectiveAppearanceColorToSkColor(sysColor),
+                   false /* include_hash */);
 }
 
 std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
@@ -458,7 +470,7 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
     return "";
   }
 
-  return ToRGBAHex(NSSystemColorToSkColor(sysColor));
+  return ToRGBAHex(NSEffectiveAppearanceColorToSkColor(sysColor));
 }
 
 bool SystemPreferences::CanPromptTouchID() {
@@ -600,7 +612,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   }
 
   if (sysColor)
-    return ToRGBAHex(NSSystemColorToSkColor(sysColor));
+    return ToRGBAHex(NSEffectiveAppearanceColorToSkColor(sysColor));
   return "";
 }
 

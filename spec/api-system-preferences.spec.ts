@@ -1,6 +1,6 @@
-import { systemPreferences } from 'electron/main';
+import { nativeTheme, systemPreferences } from 'electron/main';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
@@ -226,6 +226,20 @@ describe('systemPreferences module', () => {
         const sysColor = systemPreferences.getColor(color);
         expect(sysColor).toBeTypeOf('string');
       }
+    });
+
+    describe('when the appearance changes', () => {
+      afterEach(() => {
+        nativeTheme.themeSource = 'system';
+      });
+
+      it('returns the color for the current appearance', () => {
+        nativeTheme.themeSource = 'light';
+        const light = systemPreferences.getColor('window-background');
+        nativeTheme.themeSource = 'dark';
+        const dark = systemPreferences.getColor('window-background');
+        expect(dark).not.toBe(light);
+      });
     });
   });
 
