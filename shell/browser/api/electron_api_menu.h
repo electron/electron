@@ -60,6 +60,9 @@ class Menu : public gin::Wrappable<Menu>,
   static void SendActionToFirstResponder(const std::string& action);
 #endif
 
+  // Menu.setHighlightColors(options); a null |options| restores the defaults.
+  static void SetHighlightColors(gin::Arguments* args);
+
   ElectronMenuModel* model() const { return model_.get(); }
 
  protected:
