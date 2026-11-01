@@ -71,6 +71,10 @@ void ElectronFrameViewLinux::SetWantsFrame(bool wants_frame) {
   SchedulePaint();
 }
 
+gfx::Insets ElectronFrameViewLinux::GetRestoredDecorationInsets() const {
+  return GetRestoredFrameBorderInsets() + decoration_insets_;
+}
+
 void ElectronFrameViewLinux::CreateCaptionButtons() {
   if (!window_->IsWindowControlsOverlayEnabled())
     return;
@@ -168,6 +172,16 @@ int ElectronFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
       !efv_layout()->GetRestoredFrameBorderInsets().IsEmpty() ||
       GetWidget()->IsMaximized() || GetWidget()->IsFullscreen())
     return HTNOWHERE;
+
+  // Resize from the decorations the page draws, as a frame does from its
+  // border, except while tiled.
+  if (!decoration_insets_.IsEmpty()) {
+    if (IsTiled())
+      return HTNOWHERE;
+    return GetHTComponentForFrame(point, decoration_insets_,
+                                  kResizeAreaCornerSize, kResizeAreaCornerSize,
+                                  /*can_resize=*/true);
+  }
 
   return GetHTComponentForFrame(point, gfx::Insets(kResizeInsideBoundsSize),
                                 kResizeAreaCornerSize, kResizeAreaCornerSize,

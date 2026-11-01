@@ -12,6 +12,7 @@
 #include "base/memory/raw_ptr.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/base/metadata/metadata_header_macros.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/views/window/native_frame_view_linux.h"
 
 class CaptionButtonPlaceholderContainer;
@@ -44,8 +45,21 @@ class ElectronFrameViewLinux : public views::NativeFrameViewLinux {
   bool WantsFrame() const;
   void SetWantsFrame(bool wants_frame);
 
-  // Hit test for the internal resize band used when the frame has no
-  // external frame insets (e.g., translucent windows).
+  // Decorations the page draws around the visible window itself, such as a
+  // shadow in a transparent window. Unlike the frame border, they leave the
+  // client view covering the whole widget.
+  const gfx::Insets& decoration_insets() const { return decoration_insets_; }
+  void set_decoration_insets(const gfx::Insets& insets) {
+    decoration_insets_ = insets;
+  }
+
+  // Insets from the widget bounds to the visible window: the frame border,
+  // or the decorations the page draws.
+  gfx::Insets GetRestoredDecorationInsets() const;
+
+  // Hit test for the resize band used when the frame has no external frame
+  // insets (e.g., translucent windows): the decorations the page draws, or
+  // else an internal band.
   int ResizingBorderHitTest(const gfx::Point& point);
 
   // views::FrameViewLinux:
@@ -70,6 +84,8 @@ class ElectronFrameViewLinux : public views::NativeFrameViewLinux {
   raw_ptr<NativeWindowViews> window_;
 
   raw_ptr<FreedesktopNavButtonProvider> freedesktop_provider_ = nullptr;
+
+  gfx::Insets decoration_insets_;
 
   std::optional<SkColor> last_titlebar_background_;
   std::optional<SkColor> last_symbol_color_;

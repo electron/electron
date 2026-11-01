@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_base_window.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <optional>
@@ -13,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/strings/strcat.h"
 #include "base/task/single_thread_task_runner.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "gin/dictionary.h"
@@ -103,6 +105,16 @@ bool ReadCoordinate(gin_helper::Dictionary& dict,
     return false;
   *out = static_cast<float>(value);
   return true;
+}
+
+// Reads |key| into |out|. Returns false unless it is a non-negative integer
+// that fits in an int.
+bool ReadInset(gin_helper::Dictionary& dict, std::string_view key, int* out) {
+  v8::Local<v8::Value> field;
+  if (!dict.Get(key, &field) || !field->IsInt32())
+    return false;
+  *out = field.As<v8::Int32>()->Value();
+  return *out >= 0;
 }
 
 #if !BUILDFLAG(IS_MAC)
@@ -295,6 +307,10 @@ void BaseWindow::OnWindowMinimize() {
 
 void BaseWindow::OnWindowRestore() {
   Emit("restore");
+}
+
+void BaseWindow::OnWindowTiledStateChanged(const bool is_tiled) {
+  Emit("tiled-state-changed", is_tiled);
 }
 
 void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
@@ -581,6 +597,23 @@ void BaseWindow::SetBackgroundColor(const std::string& color_name) {
 
 std::string BaseWindow::GetBackgroundColor() const {
   return ToRGBHex(window_->GetBackgroundColor());
+}
+
+bool BaseWindow::SetDecorationInsets(v8::Local<v8::Object> insets,
+                                     gin::Arguments* const args) {
+  gin_helper::Dictionary dict(args->isolate(), insets);
+  int top = 0, left = 0, bottom = 0, right = 0;
+  const std::array<std::pair<std::string_view, int*>, 4U> fields{
+      {{"top", &top}, {"left", &left}, {"bottom", &bottom}, {"right", &right}}};
+  for (const auto& [key, value] : fields) {
+    if (!ReadInset(dict, key, value)) {
+      args->ThrowTypeError(
+          base::StrCat({"insets.", key, " must be a non-negative integer"}));
+      return false;
+    }
+  }
+  return window_->SetDecorationInsets(
+      gfx::Insets::TLBR(top, left, bottom, right));
 }
 
 void BaseWindow::SetIgnoreMouseEvents(bool ignore, gin::Arguments* const args) {
@@ -1088,6 +1121,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod<&NativeWindow::IsFullscreen>("isFullScreen")
       .SetProperty<&NativeWindow::IsFullscreen, &NativeWindow::SetFullScreen>(
           "fullScreen")
+      .SetMethod<&NativeWindow::IsTiled>("isTiled")
       .SetMethod<&BaseWindow::SetBounds>("setBounds")
       .SetMethod<&NativeWindow::GetBounds>("getBounds")
       .SetMethod<&NativeWindow::IsNormal>("isNormal")
@@ -1151,6 +1185,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod<&NativeWindow::IsTabletMode>("isTabletMode")
       .SetMethod<&BaseWindow::SetBackgroundColor>("setBackgroundColor")
       .SetMethod<&BaseWindow::GetBackgroundColor>("getBackgroundColor")
+      .SetMethod<&BaseWindow::SetDecorationInsets>("setDecorationInsets")
       .SetMethod<&NativeWindow::SetHasShadow>("setHasShadow")
       .SetMethod<&NativeWindow::HasShadow>("hasShadow")
       .SetProperty<&NativeWindow::HasShadow, &NativeWindow::SetHasShadow>(

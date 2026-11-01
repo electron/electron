@@ -78,6 +78,9 @@ class NativeWindowViews : public NativeWindow,
   bool IsMinimized() const override;
   void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() const override;
+#if BUILDFLAG(IS_LINUX)
+  bool IsTiled() const override;
+#endif
   void SetBounds(const gfx::Rect& bounds, bool animate) override;
   gfx::Rect GetBounds() const override;
   gfx::Rect GetContentBounds() const override;
@@ -123,6 +126,9 @@ class NativeWindowViews : public NativeWindow,
   bool IsKiosk() const override;
   bool IsTabletMode() const override;
   void SetBackgroundColor(SkColor color) override;
+#if BUILDFLAG(IS_LINUX)
+  bool SetDecorationInsets(const gfx::Insets& insets) override;
+#endif
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() const override;
   void SetOpacity(const double opacity) override;
@@ -164,6 +170,7 @@ class NativeWindowViews : public NativeWindow,
   // fit CSD, e.g. transparent outer regions for shadows and resize targets.
   gfx::Rect LogicalToWidgetBounds(const gfx::Rect& bounds) const;
   gfx::Rect WidgetToLogicalBounds(const gfx::Rect& bounds) const;
+  gfx::Insets GetRestoredFrameBorderInsets() const;
 
   void IncrementChildModals();
   void DecrementChildModals();
@@ -225,8 +232,6 @@ class NativeWindowViews : public NativeWindow,
   void set_overlay_symbol_color(std::optional<SkColor> color) {
     overlay_symbol_color_ = color;
   }
-
-  gfx::Insets GetRestoredFrameBorderInsets() const;
 
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
