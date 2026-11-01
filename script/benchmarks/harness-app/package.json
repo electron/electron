@@ -1,0 +1,7 @@
+{
+  "name": "electron-benchmark-harness",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "description": "Host app that crossbench drives through chromedriver for Electron benchmarks"
+}

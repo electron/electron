@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Electron benchmark: resize</title>
+<style>
+  body { margin: 0; font: 14px sans-serif; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px; }
+  .grid div { height: 40px; background: #9feaf9; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="grid" id="grid"></div>
+<script>
+  // Layout-heavy content so each resize does real relayout and paint work.
+  const grid = document.getElementById('grid');
+  for (let i = 0; i < 3000; i++) {
+    const cell = document.createElement('div');
+    cell.textContent = i;
+    grid.appendChild(cell);
+  }
+  const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // Steps the window between two sizes with BrowserWindow.setSize(). The
+  // latency itself is measured from the trace (see TRACE_QUERIES in
+  // lib/configs.mts): from the browser's Widget::OnNativeWidgetSizeChanged to
+  // the presentation of the renderer's first main frame after it. The marks
+  // bracket the resizes so the window's initial sizing is left out. Each step
+  // waits for the resize event, two frames and a short idle period, so the
+  // next resize never overlaps the previous one's frame.
+  window.cbRunResize = async (count) => {
+    if (!window.cbHarness) {
+      window.__cbResizeDone = true;
+      return;
+    }
+    performance.mark('cb-resize-start');
+    for (let i = 0; i < count; i++) {
+      const [width, height] = i % 2 ? [1280, 800] : [900, 600];
+      const resized = new Promise((resolve) => addEventListener('resize', resolve, { once: true }));
+      await window.cbHarness.setSize(width, height);
+      await resized;
+      await nextFrame();
+      await nextFrame();
+      await sleep(100);
+    }
+    performance.mark('cb-resize-end');
+    window.__cbResizeDone = true;
+  };
+</script>
+</body>
+</html>

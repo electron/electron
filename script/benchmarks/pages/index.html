@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Electron benchmark: first paint</title>
+<style>
+  body { font: 16px sans-serif; }
+  .hero { width: 640px; height: 240px; background: linear-gradient(90deg, #47848f, #2b2e3b); }
+</style>
+</head>
+<body>
+<h1>First paint and reload</h1>
+<div class="hero"></div>
+<p id="status">Loading...</p>
+<script>
+  // A little synchronous work so paint timing has something to wait for.
+  let sum = 0;
+  for (let i = 0; i < 3e6; i++) sum += Math.sqrt(i);
+  document.getElementById('status').textContent = 'done ' + Math.round(sum);
+</script>
+</body>
+</html>
