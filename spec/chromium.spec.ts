@@ -2385,6 +2385,45 @@ describe('chromium features', () => {
       expect(result).toBe('object function');
     });
 
+    it('gives node integration to the workers of subframes that run an allFrames preload', async () => {
+      const ses = session.fromPartition('worker-all-frames');
+      const blankUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'blank.html')).href;
+      const id = ses.registerPreloadScript({
+        type: 'frame',
+        filePath: path.join(fixturesPath, 'module', 'empty.js'),
+        matches: [blankUrl],
+        allFrames: true
+      });
+      defer(() => ses.unregisterPreloadScript(id));
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: ses,
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const probe = `new Promise((resolve) => {
+        const src = 'postMessage([typeof process, typeof require].join(" "))';
+        const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+      })`;
+      const addFrame = (src: string) =>
+        w.webContents.executeJavaScript(`new Promise((resolve) => {
+          const f = document.createElement('iframe');
+          f.src = ${JSON.stringify(src)};
+          f.onload = resolve;
+          document.body.appendChild(f);
+        })`);
+      // An iframe matched by the allFrames preload passes Node on to its workers...
+      await addFrame(blankUrl);
+      expect(await w.webContents.mainFrame.frames[0].executeJavaScript(probe)).toBe('object function');
+      // ...one that is not matched does not.
+      await addFrame(url.pathToFileURL(path.join(fixturesPath, 'pages', 'base-page.html')).href);
+      expect(await w.webContents.mainFrame.frames[1].executeJavaScript(probe)).toBe('undefined undefined');
+    });
+
     it('Worker does not have node integration when nodeIntegrationInWorker is disabled via setWindowOpenHandler', async () => {
       const w = new BrowserWindow({
         show: false,

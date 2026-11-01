@@ -416,6 +416,13 @@ void MaybeAppendSecureOriginsAllowlistSwitch(base::CommandLine* cmdline) {
   }
 }
 
+void BindElectronApiIPCForAllFramesPreload(
+    content::RenderFrameHost* render_frame_host,
+    mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver) {
+  if (renderer_startup_data::HasAllFramesPreload(render_frame_host))
+    ElectronApiIPCHandlerImpl::Create(render_frame_host, std::move(receiver));
+}
+
 }  // namespace
 
 // static
@@ -1921,6 +1928,13 @@ void ElectronBrowserClient::
                                                   std::move(receiver));
               },
               &render_frame_host));
+    } else {
+      // Any other subframe gets IPC only for a document that runs a preload
+      // registered with allFrames. The renderer binds the interface from the
+      // document's own script context, after the document has committed.
+      associated_registry.AddInterface<mojom::ElectronApiIPC>(
+          base::BindRepeating(&BindElectronApiIPCForAllFramesPreload,
+                              &render_frame_host));
     }
   }
 

@@ -1182,11 +1182,20 @@ std::string Session::RegisterPreloadScript(gin_helper::ErrorThrower thrower,
     }
   }
 
+  if (new_preload_script.all_frames &&
+      new_preload_script.script_type != PreloadScript::ScriptType::kWebFrame) {
+    thrower.ThrowError(
+        "Preload script 'allFrames' is only supported for 'frame' scripts.");
+    return "";
+  }
+
   if (std::string error; !new_preload_script.ParseUrlPatterns(&error)) {
     thrower.ThrowError(error);
     return "";
   }
 
+  if (new_preload_script.all_frames)
+    prefs->set_all_frames_preload_registered();
   preload_scripts.push_back(std::move(new_preload_script));
   // A service worker that starts after this point picks up the new preload
   // automatically — GetServiceWorkerStartupData() rebuilds from
