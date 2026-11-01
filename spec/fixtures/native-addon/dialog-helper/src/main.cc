@@ -1,9 +1,11 @@
 #include <js_native_api.h>
 #include <node_api.h>
 
+#include <cstring>
 #include <string>
 
 #include "dialog_helper.h"
+#include "print_dialog_watcher.h"
 
 namespace {
 
@@ -206,8 +208,40 @@ napi_value AcceptFileDialog(napi_env env, napi_callback_info info) {
   return result;
 }
 
+// startPrintDialogWatcher(action: 'print' | 'cancel', timeoutMs: number)
+// Arm before webContents.print() opens the system print dialog: the dialog
+// runs a modal loop, so the watcher (an NSTimer in NSRunLoopCommonModes on
+// macOS, a thread on Windows) must already be running to confirm or cancel it.
+napi_value StartPrintDialogWatcher(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value args[2];
+  napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+
+  char action[16];
+  size_t action_len;
+  napi_get_value_string_utf8(env, args[0], action, sizeof(action), &action_len);
+  int timeout_ms;
+  napi_get_value_int32(env, args[1], &timeout_ms);
+
+  print_dialog_watcher::StartWatching(strcmp(action, "print") == 0,
+                                      timeout_ms);
+  return NULL;
+}
+
+// stopPrintDialogWatcher() -> boolean: whether a dialog was dismissed since
+// startPrintDialogWatcher().
+napi_value StopPrintDialogWatcher(napi_env env, napi_callback_info info) {
+  napi_value result;
+  napi_get_boolean(env, print_dialog_watcher::StopWatching(), &result);
+  return result;
+}
+
 napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor descriptors[] = {
+      {"startPrintDialogWatcher", NULL, StartPrintDialogWatcher, NULL, NULL,
+       NULL, napi_enumerable, NULL},
+      {"stopPrintDialogWatcher", NULL, StopPrintDialogWatcher, NULL, NULL,
+       NULL, napi_enumerable, NULL},
       {"getDialogInfo", NULL, GetDialogInfo, NULL, NULL, NULL,
        napi_enumerable, NULL},
       {"clickMessageBoxButton", NULL, ClickMessageBoxButton, NULL, NULL, NULL,
