@@ -4796,6 +4796,25 @@ describe('webContents module', () => {
         await destroyed;
       });
     }
+
+    it('rejects capturePage re-entered during native destruction', async () => {
+      const contents = (webContents as typeof ElectronInternal.WebContents).create();
+      await contents.loadURL('about:blank');
+      contents.debugger.attach();
+
+      const pendingCommand = contents.debugger.sendCommand('Runtime.evaluate', {
+        expression: 'new Promise(() => {})',
+        awaitPromise: true
+      });
+      const captureAttempt = pendingCommand.catch(async (error: Error) => {
+        expect(error.message).toBe('target closed while handling command');
+        expect(contents.isDestroyed()).toBe(false);
+        await expect(contents.capturePage()).rejects.toThrow('WebContents is being destroyed');
+      });
+
+      contents.destroy();
+      await captureAttempt;
+    });
   });
 
   describe('did-change-theme-color event', () => {
