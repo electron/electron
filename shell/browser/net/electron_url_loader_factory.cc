@@ -734,9 +734,11 @@ void ElectronURLLoaderFactory::StartLoading(
       else
         data = response;
 
-      // |data| can be either a string, a buffer or a stream; |loader| relays
-      // an untouched net.fetch response's body without going through JS.
+      // |data| can be either a string, a buffer or a stream; |loader| and
+      // |fileBody| relay an untouched net.fetch response's body without going
+      // through JS.
       api::SimpleURLLoaderWrapper* fetch_loader = nullptr;
+      api::FileFetchBody* file_body = nullptr;
       if (!dict.IsEmpty() && dict.Get("loader", &fetch_loader) &&
           fetch_loader) {
         std::string prefix;
@@ -745,6 +747,9 @@ void ElectronURLLoaderFactory::StartLoading(
         }
         StartLoadingRelay(std::move(client), std::move(loader), std::move(head),
                           fetch_loader, std::move(prefix));
+      } else if (!dict.IsEmpty() && dict.Get("fileBody", &file_body) &&
+                 file_body) {
+        StartLoadingFetchedFile(std::move(client), std::move(head), *file_body);
       } else if (data->IsArrayBufferView()) {
         StartLoadingBuffer(std::move(client), std::move(head),
                            data.As<v8::ArrayBufferView>());
@@ -867,6 +872,20 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
 }
 
 // static
+void ElectronURLLoaderFactory::StartLoadingFetchedFile(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    network::mojom::URLResponseHeadPtr head,
+    api::FileFetchBody& body) {
+  std::optional<std::string> bytes = body.Take();
+  if (!bytes) {
+    mojo::Remote<network::mojom::URLLoaderClient>(std::move(client))
+        ->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
+  SendBody(std::move(client), std::move(head), std::move(*bytes));
+}
+
+// static
 void ElectronURLLoaderFactory::StartLoadingRelay(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
@@ -956,11 +975,18 @@ void ElectronURLLoaderFactory::SendContents(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     network::mojom::URLResponseHeadPtr head,
     std::string data) {
-  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-      std::move(client));
-
   // Add header to ignore CORS.
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
+  SendBody(std::move(client), std::move(head), std::move(data));
+}
+
+// static
+void ElectronURLLoaderFactory::SendBody(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    network::mojom::URLResponseHeadPtr head,
+    std::string data) {
+  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+      std::move(client));
 
   // Code below follows the pattern of data_url_loader_factory.cc, with the
   // pipe sized to the body (up to the network service's default).

@@ -2503,6 +2503,87 @@ describe('protocol module', () => {
       });
     });
 
+    describe('serving an untouched net.fetch file response', () => {
+      const page = '<!doctype html><title>page</title>';
+      let tmpDir: string;
+      let pageUrl: string;
+      beforeAll(() => {
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-file-'));
+        fs.writeFileSync(path.join(tmpDir, 'page.html'), page);
+        pageUrl = url.pathToFileURL(path.join(tmpDir, 'page.html')).toString();
+      });
+      afterAll(() => {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      });
+      afterEach(() => {
+        protocol.unhandle('test-scheme');
+      });
+
+      it("serves the file with the handler's headers and no CORS header", async () => {
+        protocol.handle('test-scheme', async () => {
+          const r = await net.fetch(pageUrl);
+          r.headers.set('x-handler', 'yes');
+          return r;
+        });
+        const r = await net.fetch('test-scheme://host/page');
+        expect(r.status).toBe(200);
+        expect(r.headers.get('content-type')).toBe('text/html');
+        expect(r.headers.get('x-handler')).toBe('yes');
+        expect(r.headers.get('last-modified')).toBe(fs.statSync(path.join(tmpDir, 'page.html')).mtime.toUTCString());
+        expect(r.headers.get('access-control-allow-origin')).toBeNull();
+        expect(await r.text()).toBe(page);
+      });
+
+      it('serves the file without reading it in JS', async () => {
+        let fetched: Response | undefined;
+        protocol.handle('test-scheme', async () => {
+          fetched = await net.fetch(pageUrl);
+          return fetched;
+        });
+        const r = await net.fetch('test-scheme://host/page');
+        expect(await r.text()).toBe(page);
+        expect(fetched!.bodyUsed).toBe(false);
+      });
+
+      it('serves the whole file to a Range request, as the handler answered it', async () => {
+        protocol.handle('test-scheme', () => net.fetch(pageUrl));
+        const r = await net.fetch('test-scheme://host/page', { headers: { Range: 'bytes=0-4' } });
+        expect(r.status).toBe(200);
+        expect(await r.text()).toBe(page);
+      });
+
+      ifit(process.platform !== 'win32')('serves a file whose name has a control character', async () => {
+        const name = path.join(tmpDir, 'tab\there.html');
+        fs.writeFileSync(name, page);
+        protocol.handle('test-scheme', () => net.fetch(url.pathToFileURL(name).toString()));
+        const r = await net.fetch('test-scheme://host/page');
+        expect(await r.text()).toBe(page);
+      });
+
+      it('serves a file the handler deletes once net.fetch() resolves', async () => {
+        const name = path.join(tmpDir, 'temp.html');
+        fs.writeFileSync(name, page);
+        protocol.handle('test-scheme', async () => {
+          try {
+            return await net.fetch(url.pathToFileURL(name).toString());
+          } finally {
+            fs.rmSync(name);
+          }
+        });
+        const r = await net.fetch('test-scheme://host/page');
+        expect(await r.text()).toBe(page);
+      });
+
+      it('goes through JS when the handler wraps the response', async () => {
+        protocol.handle('test-scheme', async () => {
+          const r = await net.fetch(pageUrl);
+          return new Response(r.body, r);
+        });
+        const r = await net.fetch('test-scheme://host/page');
+        expect(await r.text()).toBe(page);
+      });
+    });
+
     it('can receive simple request body', async () => {
       protocol.handle('test-scheme', (req) => new Response(req.body));
       defer(() => {

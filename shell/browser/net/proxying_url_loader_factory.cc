@@ -57,7 +57,22 @@ class NoOpHeaderClient final : public network::mojom::TrustedHeaderClient {
   }
 };
 
+constexpr int kInternalRedirectStatusCode = net::HTTP_TEMPORARY_REDIRECT;
+
 }  // namespace
+
+network::mojom::URLResponseHeadPtr CreateWebRequestRedirectHead(
+    const GURL& redirect_url) {
+  auto head = network::mojom::URLResponseHead::New();
+  head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
+      net::HttpUtil::AssembleRawHeaders(
+          absl::StrFormat("HTTP/1.1 %i Internal Redirect\n"
+                          "Location: %s\n"
+                          "Non-Authoritative-Reason: WebRequest API\n\n",
+                          kInternalRedirectStatusCode, redirect_url.spec())));
+  head->encoded_data_length = 0;
+  return head;
+}
 
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
     FollowRedirectParams() = default;
@@ -421,21 +436,12 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   header_client_receiver_.reset();
   target_loader_.reset();
 
-  constexpr int kInternalRedirectStatusCode = net::HTTP_TEMPORARY_REDIRECT;
-
   net::RedirectInfo redirect_info;
   redirect_info.status_code = kInternalRedirectStatusCode;
   redirect_info.new_method = request_.method;
   redirect_info.new_url = redirect_url_;
   redirect_info.new_site_for_cookies =
       net::SiteForCookies::FromUrl(redirect_url_);
-
-  auto head = network::mojom::URLResponseHead::New();
-  std::string headers = absl::StrFormat(
-      "HTTP/1.1 %i Internal Redirect\n"
-      "Location: %s\n"
-      "Non-Authoritative-Reason: WebRequest API\n\n",
-      kInternalRedirectStatusCode, redirect_url_.spec());
 
   // Cross-origin requests need to modify the Origin header to 'null'. Since
   // CorsURLLoader sets |request_initiator| to the Origin request header in
@@ -451,11 +457,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::
     // Reset the initiator to pretend tainted origin flag of the spec is set.
     request_.request_initiator = url::Origin();
   }
-  head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
-      net::HttpUtil::AssembleRawHeaders(headers));
-  head->encoded_data_length = 0;
 
-  current_response_ = std::move(head);
+  current_response_ = CreateWebRequestRedirectHead(redirect_url_);
   ContinueToBeforeRedirect(redirect_info, net::OK);
 }
 
