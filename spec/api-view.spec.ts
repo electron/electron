@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs';
 
-import { closeWindow } from './lib/window-helpers.ts';
+import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
 describe('View', () => {
   let w: BaseWindow;
@@ -286,6 +286,29 @@ describe('View', () => {
       expect(() => ImageView.prototype.setImage.call(v, nativeImage.createEmpty())).toThrow('Illegal invocation');
       expect(() => (WebContentsView.prototype.setBorderRadius as any).call(v, 1)).toThrow('Illegal invocation');
       expect(() => View.prototype.getBounds.call(nativeImage.createEmpty())).toThrow('Illegal invocation');
+    });
+  });
+
+  describe('setIgnoreMouseEvents', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw when toggled on a view', () => {
+      w = new BaseWindow({ show: false });
+      const v = new View();
+      expect(() => v.setIgnoreMouseEvents(false)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(true)).not.toThrow();
+      w.setContentView(v);
+      expect(() => v.setIgnoreMouseEvents(false)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(true)).not.toThrow();
+    });
+
+    it('correctly records state when toggled', () => {
+      const v = new View();
+      expect(v.getIgnoreMouseEvents()).toBe(false);
+      v.setIgnoreMouseEvents(true);
+      expect(v.getIgnoreMouseEvents()).toBe(true);
+      v.setIgnoreMouseEvents(false);
+      expect(v.getIgnoreMouseEvents()).toBe(false);
     });
   });
 });
