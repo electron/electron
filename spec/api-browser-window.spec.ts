@@ -3619,6 +3619,28 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('BrowserWindow.setInputRegion(rects)', () => {
+    afterEach(closeAllWindows);
+
+    it('allows setting the input region', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }]);
+        w.setInputRegion([
+          { x: 0, y: 0, width: 100, height: 100 },
+          { x: 0, y: 200, width: 1000, height: 100 }
+        ]);
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }], {
+          withinFrame: true
+        });
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }], {
+          includeMenuBar: true
+        });
+        w.setInputRegion([]);
+      }).not.toThrow();
+    });
+  });
+
   describe('"useContentSize" option', () => {
     afterEach(closeAllWindows);
     it('make window created with content size when used', () => {

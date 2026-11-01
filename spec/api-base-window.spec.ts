@@ -885,6 +885,167 @@ describe('BaseWindow module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('BaseWindow.setInputRegion(rects)', () => {
+    afterEach(closeAllWindows);
+
+    it('allows setting the input region', () => {
+      const w = new BaseWindow({ show: false });
+      expect(() => {
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }]);
+        w.setInputRegion([
+          { x: 0, y: 0, width: 100, height: 100 },
+          { x: 0, y: 200, width: 1000, height: 100 }
+        ]);
+        w.setInputRegion([]);
+      }).not.toThrow();
+    });
+
+    it('allows setting a frame-relative input region', () => {
+      const w = new BaseWindow({ show: false });
+      expect(() => {
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }], { withinFrame: true });
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }], { withinFrame: false });
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }], { includeInset: true });
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }], { includeMenuBar: true });
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }], {
+          includeInset: true,
+          includeMenuBar: true
+        });
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }], {
+          withinFrame: false,
+          includeInset: true
+        });
+        // Clips away entirely, so it must fall back to the default region.
+        w.setInputRegion([{ x: -1000, y: -1000, width: 10, height: 10 }], { withinFrame: true });
+        w.setInputRegion([], { withinFrame: true });
+      }).not.toThrow();
+    });
+
+    it('is unaffected by setIgnoreMouseEvents', () => {
+      const w = new BaseWindow({ show: false });
+      expect(() => {
+        w.setInputRegion([{ x: 0, y: 0, width: 100, height: 100 }]);
+        w.setIgnoreMouseEvents(true);
+        w.setIgnoreMouseEvents(false);
+        w.setInputRegion([]);
+      }).not.toThrow();
+    });
+  });
+
+  ifdescribe(process.platform === 'linux')('BaseWindow._getInputRegion()', () => {
+    afterEach(closeAllWindows);
+
+    const barMenu = () => Menu.buildFromTemplate([{ label: 'File', submenu: [{ label: 'Quit' }] }]);
+
+    const regionOf = (
+      w: BaseWindow,
+      rects: Electron.Rectangle[],
+      options?: Electron.InputRegionOptions
+    ): Electron.Rectangle[] => {
+      w.setInputRegion(rects, options);
+      return (w as any)._getInputRegion();
+    };
+
+    const rect = { x: 0, y: 0, width: 10, height: 10 };
+
+    it('shifts the region below the menu bar', () => {
+      const w = new BaseWindow({ show: true });
+      // The application menu is applied to new windows, so start without one.
+      w.setMenu(null);
+      const before = regionOf(w, [rect]);
+      w.setMenu(barMenu());
+      const after = regionOf(w, [rect]);
+
+      expect(before).toHaveLength(1);
+      expect(after).toHaveLength(1);
+      expect(after[0].x).toBe(before[0].x);
+      expect(after[0].y).toBeGreaterThan(before[0].y);
+      expect(after[0].width).toBe(rect.width);
+      expect(after[0].height).toBe(rect.height);
+    });
+
+    it('applies the menu bar shift when withinFrame is false', () => {
+      const w = new BaseWindow({ show: true });
+      w.setMenu(null);
+      const framedBefore = regionOf(w, [rect]);
+      const rawBefore = regionOf(w, [rect], { withinFrame: false });
+
+      w.setMenu(barMenu());
+      const framedAfter = regionOf(w, [rect]);
+      const rawAfter = regionOf(w, [rect], { withinFrame: false });
+
+      // The menu bar is chrome in both modes, so withinFrame must not change
+      // the shift it causes.
+      const shift = framedAfter[0].y - framedBefore[0].y;
+      expect(shift).toBeGreaterThan(0);
+      expect(rawAfter[0].y - rawBefore[0].y).toBe(shift);
+    });
+
+    it('adds the menu bar area when includeMenuBar is set', () => {
+      const w = new BaseWindow({ show: true });
+      w.setMenu(null);
+      const plain = regionOf(w, [rect]);
+      w.setMenu(barMenu());
+      const shifted = regionOf(w, [rect]);
+      const barHeight = shifted[0].y - plain[0].y;
+
+      const withBar = regionOf(w, [rect], { includeMenuBar: true });
+
+      expect(barHeight).toBeGreaterThan(0);
+      expect(withBar).toHaveLength(2);
+      const strip = withBar[1];
+      // The bar starts where the content starts without it.
+      expect(strip.y).toBe(plain[0].y);
+      expect(strip.height).toBe(barHeight);
+      expect(strip.width).toBeGreaterThan(0);
+    });
+
+    it('does not shift the region in a frameless window with a menu', () => {
+      const w = new BaseWindow({ frame: false, show: true });
+      const before = regionOf(w, [rect]);
+      w.setMenu(barMenu());
+      const after = regionOf(w, [rect]);
+
+      // Frameless windows have no in-window menu bar.
+      expect(after[0].y).toBe(before[0].y);
+    });
+
+    it('does not add a menu bar area in a frameless window', () => {
+      const w = new BaseWindow({ frame: false, show: true });
+      w.setMenu(barMenu());
+
+      const plain = regionOf(w, [rect]);
+      const withBar = regionOf(w, [rect], { includeMenuBar: true });
+
+      expect(withBar).toEqual(plain);
+    });
+
+    it('does not move the rects when includeInset is set', () => {
+      const w = new BaseWindow({ show: true });
+      w.setMenu(barMenu());
+
+      const plain = regionOf(w, [rect]);
+      const withInset = regionOf(w, [rect], { includeInset: true });
+
+      // includeInset only adds the frame margin; it never moves `rects`.
+      expect(withInset[0]).toEqual(plain[0]);
+    });
+
+    it('clears the region on reset', () => {
+      const w = new BaseWindow({ show: true });
+      expect(regionOf(w, [rect])).toHaveLength(1);
+      w.setInputRegion([]);
+      expect((w as any)._getInputRegion()).toHaveLength(0);
+    });
+
+    it('reports the ignore-mouse-events region', () => {
+      const w = new BaseWindow({ show: true });
+      regionOf(w, [rect]);
+      w.setIgnoreMouseEvents(true);
+      expect((w as any)._getInputRegion()).toEqual([{ x: 0, y: 0, width: 1, height: 1 }]);
+    });
+  });
+
   describe('BaseWindow.setProgressBar(progress)', () => {
     afterEach(closeAllWindows);
 

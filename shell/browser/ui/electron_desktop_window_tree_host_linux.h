@@ -78,6 +78,10 @@ class ElectronDesktopWindowTreeHostLinux
  private:
   void UpdateWindowState(ui::PlatformWindowState new_state);
 
+  // Applies the ignore-mouse-events region, the setInputRegion() region, or
+  // leaves the frame-hint pass's default in place.
+  void ApplyInputRegion();
+
   bool IsShowingFrame(ui::PlatformWindowState window_state) const;
 
   // Returns restored frame border insets regardless of current widget state.

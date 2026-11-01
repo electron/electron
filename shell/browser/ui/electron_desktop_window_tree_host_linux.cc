@@ -243,12 +243,108 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     }
   }
 
-  // setIgnoreMouseEvents(true): a 1x1 input region lets every click through
-  // to the window below (X11 input shape, Wayland wl_surface input region).
-  if (native_window_view_->ignore_mouse_events())
-    platform_window()->SetInputRegion(std::vector<gfx::Rect>{{0, 0, 1, 1}});
+  ApplyInputRegion();
 
   SizeConstraintsChanged();
+}
+
+void ElectronDesktopWindowTreeHostLinux::ApplyInputRegion() {
+  const auto& user_region = native_window_view_->input_region();
+  auto* fvl = native_window_view_->GetFrameViewLinux();
+
+  if (native_window_view_->ignore_mouse_events()) {
+    // A 1x1 input region lets every click through to the window below (X11
+    // input shape, Wayland wl_surface input region).
+    native_window_view_->SetAppliedInputRegionForTesting({{0, 0, 1, 1}});
+    platform_window()->SetInputRegion(std::vector<gfx::Rect>{{0, 0, 1, 1}});
+    return;
+  }
+
+  const auto& region_dip = user_region;
+  if (!region_dip.has_value()) {
+    // No user-specified region: keep whatever the frame-hint pass applied.
+    return;
+  }
+
+  if (region_dip->empty()) {
+    native_window_view_->SetAppliedInputRegionForTesting({});
+    platform_window()->SetInputRegion(std::nullopt);
+    return;
+  }
+
+  // Rects are relative to the content area; |withinFrame| also clips them to
+  // it, while without it they are relative to the window surface.
+  const bool within_frame = native_window_view_->input_region_within_frame();
+  const bool include_inset = native_window_view_->input_region_include_inset();
+  const bool include_menu_bar =
+      native_window_view_->input_region_include_menu_bar();
+
+  const gfx::Insets frame_insets =
+      fvl ? fvl->GetFrameBorderInsets() : gfx::Insets();
+  const gfx::Rect window_bounds(gfx::Point(),
+                                GetWidget()->GetWindowBoundsInScreen().size());
+  gfx::Rect frame_bounds = window_bounds;
+  frame_bounds.Inset(frame_insets);
+
+  // The menu bar occupies the top of the content, so rects start below it.
+  const int menu_bar_height = native_window_view_->GetVisibleMenuBarHeight();
+  gfx::Rect content_bounds = frame_bounds;
+  content_bounds.Inset(gfx::Insets::TLBR(menu_bar_height, 0, 0, 0));
+  if (content_bounds.IsEmpty()) {
+    // The window is smaller than its chrome; fall back to the whole frame.
+    content_bounds = frame_bounds;
+  }
+
+  const float scale = device_scale_factor();
+  std::vector<gfx::Rect> applied_dip;
+  std::vector<gfx::Rect> region_px;
+  applied_dip.reserve(region_dip->size() + (include_inset ? 4 : 0) + 1);
+  region_px.reserve(region_dip->size() + (include_inset ? 4 : 0) + 1);
+  const auto add_rect = [&](const gfx::Rect& rect) {
+    if (rect.IsEmpty())
+      return;
+    applied_dip.push_back(rect);
+    region_px.push_back(gfx::ScaleToEnclosingRect(rect, scale));
+  };
+  for (gfx::Rect rect_dip : *region_dip) {
+    if (within_frame) {
+      rect_dip.Offset(content_bounds.OffsetFromOrigin());
+      rect_dip.Intersect(content_bounds);
+    } else {
+      // The menu bar is chrome in both modes; only the frame margin differs.
+      rect_dip.Offset(0, menu_bar_height);
+    }
+    add_rect(rect_dip);
+  }
+
+  // The inset bands are added as their own rectangles; |rects| stay as set.
+  if (include_inset && !frame_insets.IsEmpty() && !frame_bounds.IsEmpty()) {
+    const int w = window_bounds.width();
+    // Top and bottom bands span the full width; the side bands fit between
+    // them.
+    add_rect({window_bounds.x(), window_bounds.y(), w, frame_insets.top()});
+    add_rect(
+        {window_bounds.x(), frame_bounds.bottom(), w, frame_insets.bottom()});
+    add_rect({window_bounds.x(), frame_bounds.y(), frame_insets.left(),
+              frame_bounds.height()});
+    add_rect({frame_bounds.right(), frame_bounds.y(), frame_insets.right(),
+              frame_bounds.height()});
+  }
+
+  if (include_menu_bar && menu_bar_height > 0 && !frame_bounds.IsEmpty()) {
+    add_rect({frame_bounds.x(), frame_bounds.y(), frame_bounds.width(),
+              menu_bar_height});
+  }
+
+  if (region_px.empty()) {
+    // The region was clipped away entirely; treat it like an empty region.
+    native_window_view_->SetAppliedInputRegionForTesting({});
+    platform_window()->SetInputRegion(std::nullopt);
+    return;
+  }
+
+  native_window_view_->SetAppliedInputRegionForTesting(applied_dip);
+  platform_window()->SetInputRegion(std::move(region_px));
 }
 
 void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
