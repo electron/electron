@@ -4,6 +4,13 @@
 
 #include "shell/browser/ui/cocoa/electron_ns_panel.h"
 
+// AppKit does not expose a public API for changing this after a window has
+// been created. macOS 27 no longer honors the nonactivating panel style-mask
+// workaround below when deciding whether a mouse click activates the app.
+@interface NSWindow (ElectronPanelActivation)
+- (void)_setPreventsActivation:(BOOL)preventsActivation;
+@end
+
 @implementation ElectronNSPanel
 
 @synthesize originalStyleMask;
@@ -12,6 +19,9 @@
           styleMask:(NSUInteger)styleMask {
   if (self = [super initWithShell:shell styleMask:styleMask]) {
     originalStyleMask = styleMask;
+    if (@available(macOS 27.0, *)) {
+      [self _setPreventsActivation:YES];
+    }
   }
   return self;
 }
