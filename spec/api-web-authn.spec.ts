@@ -330,6 +330,7 @@ describe("session 'select-webauthn-account' event", () => {
 
   afterEach(async () => {
     session.defaultSession.removeAllListeners('select-webauthn-account');
+    session.defaultSession.removeAllListeners('collect-webauthn-pin');
     try {
       w.webContents.debugger.detach();
     } catch {}
@@ -494,6 +495,27 @@ describe("session 'select-webauthn-account' event", () => {
     expect(result.ok).toBe(false);
     expect(result.name).toBe('NotAllowedError');
   });
+
+  // A 'collect-webauthn-pin' listener makes the delegate report PIN support
+  // to Chromium's FIDO layer (SupportsPIN). That must not change the outcome
+  // of requests an authenticator can satisfy with its own user verification —
+  // the PIN event only fires when a PIN exchange is actually required.
+  it('is not disturbed by a collect-webauthn-pin listener when no PIN is needed', async () => {
+    await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
+
+    let pinEventFired = false;
+    (w.webContents.session as NodeJS.EventEmitter).on('collect-webauthn-pin', (event, details, callback) => {
+      pinEventFired = true;
+      callback();
+    });
+    (w.webContents.session as NodeJS.EventEmitter).on('select-webauthn-account', (event, details, callback) => {
+      callback(details.accounts[0].credentialId);
+    });
+
+    const result = await getAssertion();
+    expect(result.ok).toBe(true);
+    expect(pinEventFired).toBe(false);
+  });
 });
 
 // https://github.com/electron/electron/issues/54317: a security key whose
@@ -581,6 +603,80 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
       `);
       expect(result).toEqual({ ok: false, name: 'NotAllowedError' });
       await warned;
+    });
+
+    describe("with a 'collect-webauthn-pin' listener", () => {
+      // The simulated key's PIN, see UvLockedPinSecurityKeyDiscovery.
+      const pin = '123456';
+
+      afterEach(() => {
+        session.defaultSession.removeAllListeners('collect-webauthn-pin');
+      });
+
+      const createCredential = () =>
+        w.webContents.executeJavaScript(`
+          navigator.credentials.create({
+            publicKey: {
+              rp: { id: 'localhost', name: 'Electron Spec' },
+              user: {
+                id: new TextEncoder().encode('user-1'),
+                name: 'alice@example.com',
+                displayName: 'Alice'
+              },
+              challenge: new Uint8Array(32),
+              pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+              authenticatorSelection: { userVerification: 'required' }
+            }
+          }).then(
+            c => ({ ok: true }),
+            e => ({ ok: false, name: e.name })
+          )
+        `);
+
+      // Answers each event with the next entry, recording the details it saw.
+      const answerWith = (entries: (string | undefined)[]) => {
+        const seen: any[] = [];
+        session.defaultSession.on('collect-webauthn-pin' as any, (event: any, details: any, callback: any) => {
+          seen.push({ ...details, frame: undefined });
+          callback(entries[seen.length - 1]);
+        });
+        return seen;
+      };
+
+      it('completes the request with the PIN from the listener', async () => {
+        const seen = answerWith([pin]);
+        expect(await createCredential()).toEqual({ ok: true });
+        expect(seen).toHaveLength(1);
+        // The simulated key's built-in user verification is locked, which is
+        // why Chromium falls back to the PIN.
+        expect(seen[0]).toMatchObject({
+          relyingPartyId: 'localhost',
+          reason: 'challenge',
+          error: 'internal-uv-locked'
+        });
+        expect(seen[0].attemptsRemaining).toBeGreaterThan(0);
+      });
+
+      it('asks again after a wrong PIN, with one attempt fewer', async () => {
+        const seen = answerWith(['654321', pin]);
+        expect(await createCredential()).toEqual({ ok: true });
+        expect(seen).toHaveLength(2);
+        expect(seen[1].error).toBe('wrong-pin');
+        expect(seen[1].attemptsRemaining).toBe(seen[0].attemptsRemaining - 1);
+      });
+
+      it('asks again after a PIN that is too short, without using an attempt', async () => {
+        const seen = answerWith(['12', pin]);
+        expect(await createCredential()).toEqual({ ok: true });
+        expect(seen).toHaveLength(2);
+        expect(seen[1].error).toBe('too-short');
+        expect(seen[1].attemptsRemaining).toBe(seen[0].attemptsRemaining);
+      });
+
+      it('rejects with NotAllowedError when the listener cancels', async () => {
+        answerWith([undefined]);
+        expect(await createCredential()).toEqual({ ok: false, name: 'NotAllowedError' });
+      });
     });
   }
 );
