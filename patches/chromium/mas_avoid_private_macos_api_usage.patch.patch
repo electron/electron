@@ -58,10 +58,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2bcba777376a9134db64ae80f77f319e9ea571a8..6460b5b2db4a243dd7b054497044661cc76c0087 100644
+index bbe77092117affaf5ba1ab236a5a17039b76b556..7083769e93259df211bdc4e239e9f2ad6c670fbe 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1162,6 +1162,7 @@ component("base") {
+@@ -1161,6 +1161,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -908,7 +908,7 @@ index 98ab55b57996faac32c0f89b8c0b06be56fe59a7..83e8a277434b8e815c088c34f94b2125
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 5437dd059f1fb07260124f8e3ad62580c110fd44..39f2b02c8f423ee1b1319dfe72f9e0340fd14c80 100644
+index 8c421bcd0f996754ad50e035df662dc8a61ccd46..c87ef5d09798c1ce14cd23e4715bf48c6264c7c2 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -390,6 +390,7 @@ viz_component("service") {
@@ -1265,7 +1265,7 @@ index 1158515dfcb29979fe89c9f95334a25c755c2020..4dc45e60c334bbb610df12e87c4d94ff
  
    if (is_chromeos) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 3899c88b9b44a0a81b018d183bc2cebd89c9b63c..134ec2948f521414fa5cd78f35c5d4a8ac4bf5a4 100644
+index b27f70c6ed67e25468b631715e30f11272f0716f..6b6022038ee4a7c84420f6feec7f4617a0648a86 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -219,6 +219,7 @@ static_library("web_test_browser") {
@@ -2171,7 +2171,7 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index e0fcd30792e12c1c7bc28470cd502a93e432de6c..dc516d885d7905e4ed46b03dd5e43f15c80add8f 100644
+index e0ca565e787fc1d9c868f1b6917fa43d922b8717..2f497a2f909bec1441f70804259a6b64ae2d5410 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -367,6 +367,13 @@ component("base") {
@@ -2415,7 +2415,7 @@ index 1f38d4a312b761a227b85e6098de13fa8252c8e6..99103d0539d405be8f2e2f092e620a68
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 24bc26eb55c2e611cfd3834bbd2e7abfb40d0077..b1d0c90041ac9ba06e34bf24a6200f2379500294 100644
+index 6275eea2ee96fee2a32a92466b75f0dff3b3a7aa..d97997a1a777b1295ba05ab49bfca0b1f54132ef 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -285,6 +285,8 @@ component("gfx") {
