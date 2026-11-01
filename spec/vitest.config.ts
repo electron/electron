@@ -14,6 +14,10 @@ const utils = require('../script/lib/utils.js');
 const specDir = import.meta.dirname;
 const electronPath: string = process.env.ELECTRON_SPEC_ELECTRON_PATH || utils.getAbsoluteElectronExec();
 process.env.ELECTRON_SPEC_ELECTRON_PATH = electronPath;
+// The Node.js running this vitest CLI, for specs that start a vitest run of
+// their own (spec/vitest-pool.spec.ts). Electron as Node.js may be a different
+// architecture than the installed node_modules.
+process.env.ELECTRON_SPEC_NODE_PATH ??= process.execPath;
 const electronArgs = process.env.ELECTRON_SPEC_WORKER_ARGS
   ? process.env.ELECTRON_SPEC_WORKER_ARGS.split(' ').filter(Boolean)
   : [];
@@ -70,6 +74,10 @@ process.env.ELECTRON_SPEC_WORKERS = String(maxWorkers);
 
 // Per test and per hook; sanitizer builds raise it (ELECTRON_SPEC_TIMEOUT).
 const timeout = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
+// How long a worker may take to quit (see quitTimeout in
+// vitest/electron-pool.ts): 5 seconds by default, more on sanitizer builds,
+// where printing a report during shutdown takes longer.
+const quitTimeout = timeout / 6;
 
 const reporters: (string | [string, Record<string, unknown>] | SpecTimingsReporter)[] = ['default'];
 if (process.env.GITHUB_ACTIONS === 'true') {
@@ -106,7 +114,7 @@ export default defineConfig({
       viteModuleRunner: false,
       nodeLoader: false
     },
-    pool: electronPool({ electronPath, specDir, electronArgs }),
+    pool: electronPool({ electronPath, specDir, electronArgs, quitTimeout }),
     // A fresh Electron process per spec file.
     isolate: true,
     globals: false,
@@ -121,7 +129,9 @@ export default defineConfig({
     // defer()-ed cleanup that still needs them.
     sequence: { hooks: 'list' },
     // Electron takes a moment to quit; a slow worker stop is not a failure.
-    teardownTimeout: 30_000,
+    // vitest logs a worker stop that outlasts this as a timeout, and the pool's
+    // stop() can take quitTimeout plus 5 s for the worker's output to drain.
+    teardownTimeout: Math.max(30_000, quitTimeout + 10_000),
     retry: isCI ? 3 : 0,
     allowOnly: !isCI,
     // A spec file may register no tests at all on some platform (a top level
@@ -151,7 +161,7 @@ export default defineConfig({
           name: SERIAL_TAG,
           // Also wait for earlier workers, including the parallel phase's, to
           // have quit: vitest does not.
-          pool: electronPool({ electronPath, specDir, electronArgs, exclusive: true }),
+          pool: electronPool({ electronPath, specDir, electronArgs, quitTimeout, exclusive: true }),
           // An empty list would fall back to the root include.
           include: serialFiles.length ? serialFiles : ['.none'],
           ...({ tagsFilter: [SERIAL_TAG] } as object),
