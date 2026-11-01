@@ -14,8 +14,11 @@ bool StructTraits<electron::mojom::SerializedValueDataView,
     Read(electron::mojom::SerializedValueDataView data,
          electron::SerializedValue* out) {
   mojo_base::BigBuffer buffer;
-  if (!data.ReadBuffer(&buffer) || data.size() > buffer.size())
+  if (!data.ReadBuffer(&buffer) ||
+      buffer.size() > electron::kMaxIpcSerializationBufferSize ||
+      data.size() > buffer.size()) {
     return false;
+  }
   *out = electron::SerializedValue(std::move(buffer), data.size());
   return true;
 }
