@@ -4,12 +4,14 @@
 
 #include "shell/browser/api/electron_api_desktop_capturer.h"
 
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "base/containers/flat_map.h"
 #include "base/memory/raw_ptr.h"
+#include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/time/time.h"
@@ -27,7 +29,6 @@
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
@@ -35,6 +36,7 @@
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 #include "ui/base/ozone_buildflags.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -52,6 +54,8 @@
 
 #if BUILDFLAG(IS_MAC)
 #include "base/strings/string_number_conversions.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
 #include "ui/base/cocoa/permissions_utils.h"
 #endif
 
@@ -591,9 +595,12 @@ void DesktopCapturer::HandleSuccess() {
   finished_ = true;
   deadline_.Stop();
 
+  Finish();
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  gin_helper::CallMethod(this, "_onfinished", captured_sources_);
+  v8::Local<v8::Value> sources = gin::ConvertToV8(isolate, captured_sources_);
+  for (auto& promise : std::exchange(promises_, {}))
+    promise.Resolve(sources);
 
   screen_capturer_.reset();
   window_capturer_.reset();
@@ -609,10 +616,11 @@ void DesktopCapturer::HandleFailure() {
   finished_ = true;
   deadline_.Stop();
 
+  Finish();
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-
-  gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
+  for (auto& promise : std::exchange(promises_, {}))
+    promise.Reject(gin::StringToV8(isolate, "Failed to get sources."));
 
   screen_capturer_.reset();
   window_capturer_.reset();
@@ -622,10 +630,105 @@ void DesktopCapturer::HandleFailure() {
   keep_alive_.Clear();
 }
 
+namespace {
+
+// Captures with promises still to settle.
+std::vector<cppgc::WeakPersistent<DesktopCapturer>>& RunningCaptures() {
+  static base::NoDestructor<std::vector<cppgc::WeakPersistent<DesktopCapturer>>>
+      running;
+  return *running;
+}
+
+// `persistMode` is 'transient' or 'persistent'; `restoreToken` is a string
+// and needs `persistMode`, since restoring a persistent grant as transient
+// ends it.
+bool ReadPersistOptions(const gin_helper::Dictionary& dict,
+                        DesktopCapturer::Options* options) {
+  v8::Local<v8::Value> persist_mode;
+  bool has_persist_mode = dict.Get("persistMode", &persist_mode) &&
+                          !persist_mode->IsNullOrUndefined();
+  if (has_persist_mode) {
+    std::string mode;
+    if (!gin::ConvertFromV8(dict.isolate(), persist_mode, &mode))
+      return false;
+    if (mode == "persistent")
+      options->persistent = true;
+    else if (mode != "transient")
+      return false;
+  }
+  v8::Local<v8::Value> restore_token;
+  if (dict.Get("restoreToken", &restore_token) &&
+      !restore_token->IsNullOrUndefined()) {
+    if (!gin::ConvertFromV8(dict.isolate(), restore_token,
+                            &options->restore_token))
+      return false;
+    if (!options->restore_token.empty() && !has_persist_mode)
+      return false;
+  }
+  return true;
+}
+
+}  // namespace
+
+void DesktopCapturer::Finish() {
+  std::erase_if(RunningCaptures(),
+                [this](const auto& capture) { return capture.Get() == this; });
+#if BUILDFLAG(IS_MAC)
+  for (NativeWindow* window : WindowList::GetWindows()) {
+    auto it = resizable_before_capture_.find(window->window_id());
+    if (it != resizable_before_capture_.end() &&
+        window->IsResizable() != it->second) {
+      window->SetResizable(it->second);
+    }
+  }
+  resizable_before_capture_.clear();
+#endif
+}
+
 // static
-DesktopCapturer* DesktopCapturer::Create(v8::Isolate* isolate) {
-  return cppgc::MakeGarbageCollected<DesktopCapturer>(
+v8::Local<v8::Promise> DesktopCapturer::GetSources(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  gin_helper::Dictionary dict;
+  std::vector<std::string> types;
+  if (!args->GetNext(&dict) || !dict.Get("types", &types)) {
+    promise.RejectWithErrorMessage("Invalid options");
+    return handle;
+  }
+  Options options;
+  options.capture_window = std::ranges::contains(types, "window");
+  options.capture_screen = std::ranges::contains(types, "screen");
+  dict.Get("thumbnailSize", &options.thumbnail_size);
+  dict.Get("fetchWindowIcons", &options.fetch_window_icons);
+  if (!ReadPersistOptions(dict, &options)) {
+    promise.RejectWithErrorMessage("Invalid options");
+    return handle;
+  }
+
+  for (const auto& weak_capturer : RunningCaptures()) {
+    DesktopCapturer* capturer = weak_capturer.Get();
+    if (capturer && capturer->options_ == options) {
+      capturer->promises_.push_back(std::move(promise));
+      return handle;
+    }
+  }
+
+  auto* capturer = cppgc::MakeGarbageCollected<DesktopCapturer>(
       isolate->GetCppHeap()->GetAllocationHandle());
+  capturer->options_ = options;
+  capturer->promises_.push_back(std::move(promise));
+  RunningCaptures().emplace_back(capturer);
+#if BUILDFLAG(IS_MAC)
+  for (NativeWindow* window : WindowList::GetWindows())
+    capturer->resizable_before_capture_[window->window_id()] =
+        window->IsResizable();
+#endif
+  capturer->StartHandling(options.capture_window, options.capture_screen,
+                          options.thumbnail_size, options.fetch_window_icons,
+                          options.persistent, options.restore_token);
+  return handle;
 }
 
 // static
@@ -650,8 +753,7 @@ std::string DesktopCapturer::GetRestoreToken(const std::string& source_id) {
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<DesktopCapturer>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("startHandling", &DesktopCapturer::StartHandling);
+  return gin::Wrappable<DesktopCapturer>::GetObjectTemplateBuilder(isolate);
 }
 
 void DesktopCapturer::Trace(cppgc::Visitor* visitor) const {
@@ -677,8 +779,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod<&electron::api::DesktopCapturer::Create>(
-      "createDesktopCapturer");
+  dict.SetMethod<&electron::api::DesktopCapturer::GetSources>("getSources");
   dict.SetMethod<
       &electron::api::DesktopCapturer::IsDisplayMediaSystemPickerAvailable>(
       "isDisplayMediaSystemPickerAvailable");

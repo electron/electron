@@ -52,9 +52,6 @@ process.exit = ((code: number | string | undefined | null) => {
 // Deliver IPC from renderers to ipcMain and friends.
 require('@electron/internal/browser/ipc-dispatch');
 
-// Load the RPC server.
-require('@electron/internal/browser/rpc-server');
-
 // Load the guest view manager.
 require('@electron/internal/browser/guest-view-manager');
 
