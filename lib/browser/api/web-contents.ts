@@ -198,6 +198,22 @@ WebContents.prototype.goToOffset = function (index: number) {
   return this._goToOffset(index);
 };
 
+// TODO(samuelmaddock): remove the deprecated arguments of these frame events.
+const frameEventArgumentsDeprecated = new Map(
+  Object.entries({
+    'did-fail-load': 'WebContentsDidFailLoadEventParams',
+    'did-fail-provisional-load': 'WebContentsDidFailProvisionalLoadEventParams',
+    'did-frame-finish-load': 'WebContentsDidFrameFinishLoadEventParams',
+    'did-frame-navigate': 'WebContentsDidFrameNavigateEventParams',
+    'did-navigate-in-page': 'WebContentsDidNavigateInPageEventParams'
+  }).map(([eventName, params]) => [
+    eventName,
+    deprecate.warnOnceMessage(
+      `'${eventName}' arguments are deprecated and will be removed. Please use Event<${params}> object instead.`
+    )
+  ])
+);
+
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   this._windowOpenHandler = null;
@@ -420,10 +436,11 @@ WebContents.prototype._init = function () {
     openDialogs.clear();
   });
 
-  (this as NodeJS.EventEmitter).on('newListener', (eventName: string | symbol) => {
+  (this as NodeJS.EventEmitter).on('newListener', (eventName: string | symbol, listener: (...args: any[]) => void) => {
     if (eventName === 'console-message') {
       if (!this.isDestroyed()) this._setConsoleMessageObserved(true);
     }
+    if (typeof eventName === 'string' && listener.length > 1) frameEventArgumentsDeprecated.get(eventName)?.();
   });
   (this as NodeJS.EventEmitter).on('removeListener', (eventName: string | symbol) => {
     if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {
