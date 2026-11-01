@@ -416,6 +416,11 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 
 void BaseWindow::SetContentView(View* view) {
   content_view_ = view;
+  // The content view is an empty container covering the whole window until
+  // the application adds children to it. Keep it out of the accessibility
+  // tree while it stays empty, so that screen readers report the window
+  // content instead of an empty pane.
+  content_view_->SetHideFromAccessibilityWhenChildless(true);
   window_->SetContentView(view->view());
 }
 
