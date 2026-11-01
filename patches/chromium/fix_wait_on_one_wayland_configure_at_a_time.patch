@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hunter Wittenborn <hunter.wittenborn@fyder.ai>
+Date: Tue, 27 Oct 2026 23:43:53 -0500
+Subject: fix: wait on one Wayland configure at a time
+
+WaylandWindow lets up to 3 applied configures wait for their frames at
+the same time. During an interactive resize:
+
+- The compositor sends a new size every few milliseconds, so several
+  sizes are in flight at once.
+- The renderer works on one resize at a time (RenderWidgetHostImpl's
+  visual_properties_ack_pending_), so it skips sizes.
+- viz unblocks the window frame for a skipped size as soon as a newer
+  page frame activates (SurfaceAllocationGroup::OnFirstSurfaceActivation)
+  and embeds the previous size's page frame in it
+  (FindLatestActiveSurfaceInRange).
+
+The window is then shown at one size with its page drawn at another. On
+GNOME Wayland, dragging a window's left edge makes page-drawn buttons,
+scrollbars and side panels at the right edge jitter.
+
+GTK only has one size in flight at a time, the newest:
+
+- It acks each configure on arrival and keeps only the latest size
+  [1][2].
+- It draws that size, then freezes until the compositor's frame
+  callback [3][4].
+
+Limiting WaylandWindow to 1 does the same here: it applies the newest
+configure only once the previous one's frame is done, skipping the
+sizes in between. The limit of 3 was added for Lacros [5], which
+doesn't seem to give a reason for the value.
+
+Measured on Ubuntu 26.04.1 (GNOME 50, Wayland) by counting recorded
+frames with misplaced page-drawn buttons during fast left-edge drags.
+Both setups used the default resize deadline, which Electron sets on
+Wayland. The counts fluctuate a lot between drags, so each setup ran
+three times:
+
+- 3 in flight: 2, 1 and 6 bad frames (9 of 822)
+- 1 in flight: 0, 0 and 0 bad frames (0 of 802)
+
+This patch should be upstreamed. It can be removed once Chromium waits
+on one configure at a time.
+
+[1]: https://gitlab.gnome.org/GNOME/gtk/-/blob/4.22.0/gdk/wayland/gdktoplevel-wayland.c#L680
+[2]: https://gitlab.gnome.org/GNOME/gtk/-/blob/4.22.0/gdk/wayland/gdktoplevel-wayland.c#L705
+[3]: https://gitlab.gnome.org/GNOME/gtk/-/blob/4.22.0/gdk/wayland/gdksurface-wayland.c#L457-476
+[4]: https://gitlab.gnome.org/GNOME/gtk/-/blob/4.22.0/gdk/wayland/gdksurface-wayland.c#L267-286
+[5]: https://chromium-review.googlesource.com/c/chromium/src/+/4074455/21/ui/ozone/platform/wayland/host/wayland_window.cc#1184
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_window.cc b/ui/ozone/platform/wayland/host/wayland_window.cc
+index 55347cf96ebcf517e8e719ab9dd71689dde6f86f..444fe5e1f9f3bf2221b3db208d590f1de5c06ab2 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window.cc
+@@ -1655,8 +1655,8 @@ void WaylandWindow::MaybeApplyLatestStateRequest(bool force) {
+         in_flight_requests_,
+         [](const StateRequest& req) { return req.applied; });
+ 
+-    // Allow at most 3 configure requests to be waited on at a time.
+-    constexpr int MAX_IN_FLIGHT_REQUESTS = 3;
++    // Allow at most 1 configure request to be waited on at a time.
++    constexpr int MAX_IN_FLIGHT_REQUESTS = 1;
+     if (in_flight_applied >= MAX_IN_FLIGHT_REQUESTS) {
+       applying_state_ = false;
+       return;
