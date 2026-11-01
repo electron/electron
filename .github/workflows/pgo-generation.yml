@@ -49,12 +49,9 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        persist-credentials: false
     - name: Get Build Image SHA
       id: set-output
-      uses: ./.github/actions/build-image-sha
+      uses: $/.github/actions/build-image-sha
       with:
         override: ${{ inputs.build-image-sha }}
 
@@ -84,7 +81,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
+      uses: $/.github/actions/checkout
 
   checkout-macos:
     needs: setup
@@ -111,7 +108,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
+      uses: $/.github/actions/checkout
       with:
         generate-sas-token: 'true'
         target-platform: macos
@@ -142,7 +139,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
+      uses: $/.github/actions/checkout
       with:
         generate-sas-token: 'true'
         target-platform: win
@@ -155,7 +152,7 @@ jobs:
     needs: setup
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     with:
       host: darwin-arm64
 
@@ -163,7 +160,7 @@ jobs:
     needs: setup
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     with:
       host: linux-amd64
 
@@ -171,7 +168,7 @@ jobs:
     needs: setup
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     with:
       host: windows-amd64
 
@@ -184,7 +181,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: $/.github/workflows/pipeline-segment-electron-build.yml
     cache-mode: read
     needs: [checkout-linux, build-siso-linux]
     with:
@@ -215,7 +212,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: $/.github/workflows/pipeline-segment-electron-build.yml
     cache-mode: read
     needs: [checkout-linux, build-siso-linux]
     with:
@@ -246,7 +243,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: $/.github/workflows/pipeline-segment-electron-build.yml
     cache-mode: read
     needs: [checkout-macos, build-siso-macos]
     with:
@@ -277,7 +274,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: $/.github/workflows/pipeline-segment-electron-build.yml
     cache-mode: read
     needs: [checkout-macos, build-siso-macos]
     with:
@@ -308,7 +305,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: $/.github/workflows/pipeline-segment-electron-build.yml
     cache-mode: read
     needs: [checkout-windows, build-siso-windows]
     with:
@@ -338,7 +335,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: $/.github/workflows/pipeline-segment-electron-build.yml
     cache-mode: read
     needs: [checkout-windows, build-siso-windows]
     with:
@@ -394,11 +391,11 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Install Dependencies
-      uses: ./src/electron/.github/actions/install-dependencies
+      uses: $/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
-      uses: ./src/electron/.github/actions/set-chromium-cookie
+      uses: $/.github/actions/set-chromium-cookie
     - name: Install Build Tools
-      uses: ./src/electron/.github/actions/install-build-tools
+      uses: $/.github/actions/install-build-tools
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -406,7 +403,7 @@ jobs:
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AKS
-      uses: ./src/electron/.github/actions/restore-cache-aks
+      uses: $/.github/actions/restore-cache-aks
     - name: Checkout Electron (after cache restore)
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -473,7 +470,7 @@ jobs:
   collect-linux-x64:
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    uses: $/.github/workflows/pipeline-segment-pgo-collect.yml
     cache-mode: read
     needs: [checkout-linux, build-linux-x64]
     with:
@@ -486,7 +483,7 @@ jobs:
   collect-linux-arm64:
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    uses: $/.github/workflows/pipeline-segment-pgo-collect.yml
     cache-mode: read
     needs: [checkout-linux, build-linux-arm64]
     with:
@@ -500,7 +497,7 @@ jobs:
   collect-macos-x64:
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    uses: $/.github/workflows/pipeline-segment-pgo-collect.yml
     cache-mode: read
     needs: build-macos-x64
     with:
@@ -512,7 +509,7 @@ jobs:
   collect-macos-arm64:
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    uses: $/.github/workflows/pipeline-segment-pgo-collect.yml
     cache-mode: read
     needs: build-macos-arm64
     with:
@@ -524,7 +521,7 @@ jobs:
   collect-windows-x64:
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    uses: $/.github/workflows/pipeline-segment-pgo-collect.yml
     cache-mode: read
     needs: build-windows-x64
     with:
@@ -536,7 +533,7 @@ jobs:
   collect-windows-arm64:
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    uses: $/.github/workflows/pipeline-segment-pgo-collect.yml
     cache-mode: read
     needs: build-windows-arm64
     with:
@@ -580,7 +577,7 @@ jobs:
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AKS
-      uses: ./src/electron/.github/actions/restore-cache-aks
+      uses: $/.github/actions/restore-cache-aks
     - name: Checkout Electron (after cache restore)
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:

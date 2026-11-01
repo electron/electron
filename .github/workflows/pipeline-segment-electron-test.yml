@@ -201,7 +201,7 @@ jobs:
         src/electron/script/actions/screencapture-nag-remover.sh -a /opt/hca/hosted-compute-agent
     - name: Setup SSH Debugging
       if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh || env.ACTIONS_STEP_DEBUG == 'true') }}
-      uses: ./src/electron/.github/actions/ssh-debug
+      uses: $/.github/actions/ssh-debug
       with:
         tunnel: 'true'
       env:
@@ -211,7 +211,7 @@ jobs:
         AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Set Chromium Git Cookie
-      uses: ./src/electron/.github/actions/set-chromium-cookie
+      uses: $/.github/actions/set-chromium-cookie
     - name: Load ASan specific environment variables
       if: ${{ inputs.is-asan == true }}
       run: |
@@ -248,7 +248,7 @@ jobs:
     # stops rewriting the file per step.
     - parallel:
         - name: Install Dependencies
-          uses: ./src/electron/.github/actions/install-dependencies
+          uses: $/.github/actions/install-dependencies
         - name: Get Depot Tools
           timeout-minutes: 5
           run: |
@@ -422,7 +422,7 @@ jobs:
       # Best effort: if the window stays up, the specs report what covers
       # them (describeWindowAtPoint) rather than failing here.
       continue-on-error: true
-      uses: ./src/electron/.github/actions/dismiss-windows-first-sign-in
+      uses: $/.github/actions/dismiss-windows-first-sign-in
       with:
         minimizer-seconds: 3600
 

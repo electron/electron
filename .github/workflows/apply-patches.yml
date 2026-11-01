@@ -28,7 +28,7 @@ jobs:
     # Check changed paths via the API instead of the path filter under the on: block
     # so that the output can be used to conditionally run the apply-patches job, which lets
     # the job be marked as a required status check (conditional skip counts as a success).
-    - uses: ./.github/actions/paths-filter
+    - uses: $/.github/actions/paths-filter
       id: filter
       with:
         filters: |
@@ -40,7 +40,7 @@ jobs:
             - '.github/siso-patches/**'
     - name: Set Build Image SHA
       id: build-image-sha
-      uses: ./.github/actions/build-image-sha
+      uses: $/.github/actions/build-image-sha
 
   apply-patches:
     needs: setup
@@ -76,7 +76,7 @@ jobs:
         git merge --squash FETCH_HEAD
         git commit -n -m "Squashed commits"
     - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
+      uses: $/.github/actions/checkout
       with:
         target-platform: linux
     - name: Upload Patch Conflict Fix
@@ -93,7 +93,7 @@ jobs:
   build-siso-macos:
     needs: setup
     if: ${{ needs.setup.outputs.has-siso-patches == 'true' }}
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
     with:
@@ -102,7 +102,7 @@ jobs:
   build-siso-linux:
     needs: setup
     if: ${{ needs.setup.outputs.has-siso-patches == 'true' }}
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
     with:
@@ -111,7 +111,7 @@ jobs:
   build-siso-windows:
     needs: setup
     if: ${{ needs.setup.outputs.has-siso-patches == 'true' }}
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
     with:
