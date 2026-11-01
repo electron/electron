@@ -45,7 +45,8 @@ Returns `number` - The current zoom factor.
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
-limits of 300% and 50% of original size, respectively.
+limits of 300% and 50% of original size, respectively. Has no effect when the
+zoom mode of the frame's `WebContents` is `disabled`.
 
 > [!NOTE]
 > The zoom policy at the Chromium level is same-origin, meaning that the

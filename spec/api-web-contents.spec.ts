@@ -3695,6 +3695,111 @@ describe('webContents module', () => {
       expect(w.webContents.getZoomLevel()).toBe(beforeLevel);
     });
 
+    it('disabled mode rejects webFrame.setZoomLevel() and keeps the renderer in sync', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      await w.loadURL('about:blank');
+
+      w.webContents.setZoomMode('disabled');
+      const baselineRatio = await w.webContents.executeJavaScript('window.devicePixelRatio');
+
+      // The renderer applies the zoom locally as well as sending it to the
+      // browser; both must agree that the request was rejected.
+      const rendererLevel = await w.webContents.executeJavaScript(`(() => {
+        const { webFrame } = require('electron');
+        webFrame.setZoomLevel(1);
+        return webFrame.getZoomLevel();
+      })()`);
+
+      expect(w.webContents.getZoomLevel()).toBe(0);
+      expect(rendererLevel).toBe(0);
+      expect(await w.webContents.executeJavaScript('window.devicePixelRatio')).toBe(baselineRatio);
+    });
+
+    it('default mode applies webFrame.setZoomLevel() in both browser and renderer', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      await w.loadURL('about:blank');
+
+      const baselineRatio = await w.webContents.executeJavaScript('window.devicePixelRatio');
+
+      const rendererLevel = await w.webContents.executeJavaScript(`(() => {
+        const { webFrame } = require('electron');
+        webFrame.setZoomLevel(1);
+        return webFrame.getZoomLevel();
+      })()`);
+
+      expect(w.webContents.getZoomLevel()).toBe(1);
+      expect(rendererLevel).toBe(1);
+      expect(await w.webContents.executeJavaScript('window.devicePixelRatio')).toBeGreaterThan(baselineRatio);
+    });
+
+    describe('when navigating to an origin that already has a stored zoom level', () => {
+      // Serves the same page as two different sites so a navigation between
+      // them is cross-site and replaces the primary main frame's
+      // RenderFrameHost. Uses its own in-memory session so per-host zoom
+      // levels stored by other tests cannot leak in.
+      const setUpZoomedOrigin = async () => {
+        const server = http.createServer((req, res) => {
+          res.end('hello');
+        });
+        const { url: originA } = await listen(server);
+        defer(() => server.close());
+        const originB = originA.replace('127.0.0.1', 'localhost');
+        const ses = session.fromPartition(`zoom-mode-navigation-${Date.now()}-${Math.random()}`);
+
+        // Store a per-host zoom level for origin B from a default-mode window.
+        const seed = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await seed.loadURL(originB);
+        seed.webContents.setZoomLevel(2);
+        expect(seed.webContents.getZoomLevel()).toBe(2);
+        seed.close();
+
+        return { originA, originB, ses };
+      };
+
+      const getDevicePixelRatio = (w: BrowserWindow): Promise<number> =>
+        w.webContents.executeJavaScript('window.devicePixelRatio');
+
+      it('default mode picks up the stored zoom level', async () => {
+        const { originA, originB, ses } = await setUpZoomedOrigin();
+
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadURL(originA);
+        expect(w.webContents.getZoomLevel()).toBe(0);
+        const baselineRatio = await getDevicePixelRatio(w);
+
+        await w.loadURL(originB);
+        expect(w.webContents.getZoomLevel()).toBe(2);
+        // Zoom level 2 is a zoom factor of 1.2^2 = 1.44.
+        await waitUntil(async () => Math.abs((await getDevicePixelRatio(w)) / baselineRatio - 1.44) < 0.01);
+      });
+
+      it('disabled mode stays at the default zoom level', async () => {
+        const { originA, originB, ses } = await setUpZoomedOrigin();
+
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadURL(originA);
+        w.webContents.setZoomMode('disabled');
+        expect(w.webContents.getZoomLevel()).toBe(0);
+        const baselineRatio = await getDevicePixelRatio(w);
+
+        await w.loadURL(originB);
+        expect(w.webContents.getZoomMode()).toBe('disabled');
+        expect(w.webContents.getZoomLevel()).toBe(0);
+        expect(Math.abs((await getDevicePixelRatio(w)) / baselineRatio - 1)).toBeLessThanOrEqual(0.01);
+
+        // The stored level must not creep back in later either.
+        w.webContents.setZoomLevel(1);
+        expect(w.webContents.getZoomLevel()).toBe(0);
+        expect(Math.abs((await getDevicePixelRatio(w)) / baselineRatio - 1)).toBeLessThanOrEqual(0.01);
+      });
+    });
+
     it('persists isolated mode across cross-document navigation', async () => {
       const server = http.createServer((req, res) => {
         res.end('hello');
