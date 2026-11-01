@@ -23,6 +23,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/isolated_world_ids.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
 #include "mojo/public/cpp/bindings/callback_helpers.h"
@@ -47,6 +48,10 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/extension_api_frame_id_map.h"
+#endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "shell/browser/printing/print_to_pdf.h"
@@ -627,6 +632,19 @@ std::string WebFrameMain::FrameToken() const {
   return frame_token.ToString();
 }
 
+std::string WebFrameMain::DocumentID() const {
+  if (!CheckRenderFrame())
+    return "";
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Extension APIs identify documents by this ID, so use theirs rather than
+  // minting a second one.
+  return extensions::ExtensionApiFrameIdMap::GetDocumentId(render_frame_host())
+      .ToString();
+#else
+  return "";
+#endif
+}
+
 base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
     return base::kNullProcessId;
@@ -866,6 +884,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty<&WebFrameMain::FrameTreeNodeID>("frameTreeNodeId")
       .SetProperty<&WebFrameMain::Name>("name")
       .SetProperty<&WebFrameMain::FrameToken>("frameToken")
+      .SetProperty<&WebFrameMain::DocumentID>("documentId")
       .SetProperty<&WebFrameMain::OSProcessID>("osProcessId")
       .SetProperty<&WebFrameMain::ProcessID>("processId")
       .SetProperty<&WebFrameMain::RoutingID>("routingId")
