@@ -9,6 +9,8 @@
 
 #include "base/containers/span.h"
 
+class SkBitmap;
+
 namespace base {
 class FilePath;
 }  // namespace base
@@ -21,6 +23,12 @@ namespace electron::util {
 
 bool PopulateImageSkiaRepsFromPath(gfx::ImageSkia* image,
                                    const base::FilePath& path);
+
+// Decodes `data` as PNG, then JPEG, then raw `width` x `height` N32 pixels.
+// Returns a null bitmap on failure. Safe to call on any thread.
+SkBitmap DecodeImageBuffer(base::span<const uint8_t> data,
+                           int width,
+                           int height);
 
 bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
                                base::span<const uint8_t> data,
