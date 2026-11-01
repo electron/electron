@@ -55,6 +55,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   static bool IsWindowNameValid(const gin_helper::Dictionary& options,
                                 std::string* error_message);
+  static bool IsTabbingModeValid(const gin_helper::Dictionary& options,
+                                 std::string* error_message);
 
   // False when the options name an app shim (macOS) that can't host a window.
   static bool IsAppShimValid(const gin_helper::Dictionary& options,
@@ -175,6 +177,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetBackgroundMaterial(const std::string& material);
 
   void AddTabbedWindow(NativeWindow* window, gin::Arguments* args);
+  std::vector<BaseWindow*> GetTabbedWindows() const;
+  BaseWindow* GetSelectedTab() const;
+  std::string GetTabbingMode() const;
+  void SetTabbingMode(const std::string& mode, gin::Arguments* args);
   v8::Local<v8::Value> GetTabbingIdentifier();
   void SetAspectRatio(double aspect_ratio, gin::Arguments* args);
   void PreviewFile(const std::string& path, gin::Arguments* args);
