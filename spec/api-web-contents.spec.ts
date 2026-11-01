@@ -1683,31 +1683,15 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).toBe(false);
     });
 
-    it('docks (not detached) when openDevTools() is called from web-contents-created', async () => {
-      // Example 1: open DevTools at WebContents creation time (owner_window still null).
+    it('allows docking when openDevTools() is called from web-contents-created', async () => {
+      // Opened at WebContents creation time, while owner_window() is still null.
+      // Asserting docking eligibility rather than the docked side: a mode-less
+      // open restores the last-used dock state, which may well be 'undocked'.
       app.once('web-contents-created', (_e, contents) => contents.openDevTools());
-      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+      const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
-      await waitUntil(async () => w.webContents.isDevToolsOpened());
 
-      // Docking is applied asynchronously after 'devtools-opened', so wait for the
-      // viewport to actually give up space. getContentSize() is the undocked
-      // reference: DevTools inset the page, not the window's content area.
-      const [contentWidth, contentHeight] = w.getContentSize();
-      const undocked = { width: contentWidth, height: contentHeight };
-      await waitUntil(async () => {
-        const viewport = await getViewportSize(w);
-        return classifyDock(undocked, viewport) !== 'none';
-      });
-
-      const withDevTools = await getViewportSize(w);
-      const closed = once(w.webContents, 'devtools-closed');
-      w.webContents.closeDevTools();
-      await closed;
-      const baseline = await getViewportSize(w);
-
-      // Docked to some side => one axis was smaller while DevTools were open.
-      expect(classifyDock(baseline, withDevTools)).not.toBe('none');
+      expect(await devToolsCanDock(w.webContents)).toBe(true);
     });
 
     it('docks bottom (last-used) when openDevTools() is called from dom-ready', async () => {
@@ -1926,6 +1910,71 @@ describe('webContents module', () => {
         contents.openDevTools({ mode: 'left' });
       });
       expect(await devToolsDockState(w)).toBe('bottom');
+    });
+
+    describe('for a window opened by the page', () => {
+      // A window.open() child is created, and announced through
+      // 'web-contents-created', before the '-add-new-contents' handlers give it a
+      // window. Opens one from `w`, calls `onCreated` at that point, and resolves
+      // with the child once its DevTools have opened.
+      async function openChild(w: BrowserWindow, onCreated: (contents: Electron.WebContents) => void) {
+        let child: Electron.WebContents | undefined;
+        let opened: Promise<unknown> | undefined;
+        app.once('web-contents-created', (_e, contents) => {
+          child = contents;
+          opened = once(contents, 'devtools-opened');
+          onCreated(contents);
+        });
+        w.webContents.executeJavaScript('window.open("about:blank")', true);
+        await waitUntil(() => opened !== undefined);
+        await opened;
+        return child!;
+      }
+
+      it('allows docking when openDevTools() is called from web-contents-created', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { show: false } }));
+        await w.loadURL('about:blank');
+
+        const child = await openChild(w, (contents) => contents.openDevTools());
+        expect(await devToolsCanDock(child)).toBe(true);
+      });
+
+      ifit(process.platform === 'win32' || process.platform === 'linux')(
+        'undocks with Window Controls Overlay when openDevTools() is called from web-contents-created',
+        async () => {
+          const w = new BrowserWindow({ show: false });
+          w.webContents.setWindowOpenHandler(() => ({
+            action: 'allow',
+            overrideBrowserWindowOptions: { show: false, titleBarStyle: 'hidden', titleBarOverlay: true }
+          }));
+          await w.loadURL('about:blank');
+
+          // Explicitly 'right', where the window controls sit; see
+          // openDevToolsWhileCreating() for why not the default.
+          const child = await openChild(w, (contents) => contents.openDevTools({ mode: 'right' }));
+          expect(await devToolsDockState(BrowserWindow.fromWebContents(child)!)).toBe('undocked');
+        }
+      );
+
+      it('opens DevTools detached when the child is never given a window', async () => {
+        // A createWindow handler may keep the contents out of any window. The
+        // deferred request must then run without an owner, not wait for one.
+        const w = new BrowserWindow({ show: false });
+        let guest: Electron.WebContents | undefined;
+        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', createWindow: () => guest! }));
+        await w.loadURL('about:blank');
+
+        const child = await openChild(w, (contents) => {
+          guest = contents;
+          contents.openDevTools();
+        });
+        expect(await devToolsCanDock(child)).toBe(false);
+
+        const destroyed = once(child, 'destroyed');
+        child.destroy(); // closeAllWindows() won't reach this one
+        await destroyed;
+      });
     });
   });
 

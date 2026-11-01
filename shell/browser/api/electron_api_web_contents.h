@@ -152,10 +152,15 @@ class WebContents final : public gin::Wrappable<WebContents>,
   // Create a new V8 wrapper for an existing |web_content|.
   //
   // The lifetime of |web_contents| will be managed by this class.
+  //
+  // |expects_owner_window| marks contents that are about to be given an owner
+  // window, before 'web-contents-created' reaches any listener; see
+  // owned_by_window_.
   static WebContents* CreateAndTake(
       v8::Isolate* isolate,
       std::unique_ptr<content::WebContents> web_contents,
-      Type type);
+      Type type,
+      bool expects_owner_window = false);
 
   // Get the api::WebContents associated with |web_contents|. Returns nullptr
   // if there is no associated wrapper.
@@ -563,6 +568,10 @@ class WebContents final : public gin::Wrappable<WebContents>,
                        bool activate,
                        const std::string& title);
 
+  // Runs a deferred openDevTools(), if there is one, with whatever owner window
+  // these contents have by now.
+  void FlushPendingDevToolsOpen();
+
   base::flat_set<GURL> last_favicon_urls_;
 
   // Creates a InspectableWebContents object and takes ownership of
@@ -886,10 +895,17 @@ class WebContents final : public gin::Wrappable<WebContents>,
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
 
-  // Whether these contents were created by a BrowserWindow. Unlike
-  // owner_window(), this is already known before SetOwnerWindow() runs.
+  // Whether an owner window is on its way: set for contents a BrowserWindow
+  // creates, and for window.open() children until AddNewContents() returns.
+  // Unlike owner_window(), this is already known while 'web-contents-created'
+  // runs, before SetOwnerWindow() does.
   bool owned_by_window_ = false;
 
+  // While a request is pending, isDevToolsOpened() returns false: nothing has
+  // been opened yet. It is replayed as soon as the owner arrives, or when the
+  // creation that promised one finishes without it, both synchronously, so this
+  // is only observable from inside a 'web-contents-created' listener —
+  // openDevTools(); isDevToolsOpened() is false there.
   std::optional<PendingDevToolsOpen> pending_devtools_open_;
 
   // Weather the guest view should be transparent

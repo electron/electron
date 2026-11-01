@@ -2357,8 +2357,10 @@ content::WebContents* WebContents::AddNewContents(
     type = Type::kOffScreen;
 
   v8::HandleScope handle_scope(isolate);
-  auto* api_web_contents =
-      CreateAndTake(isolate, std::move(new_contents), type);
+  // The '-add-new-contents' handlers below give the child its BrowserWindow,
+  // but 'web-contents-created' fires first, so tell it an owner is coming.
+  auto* api_web_contents = CreateAndTake(isolate, std::move(new_contents), type,
+                                         /*expects_owner_window=*/true);
 
   // Rebind the paint callback to the child WebContents. The
   // OffScreenWebContentsView was initially created with the parent's OnPaint
@@ -2385,6 +2387,7 @@ content::WebContents* WebContents::AddNewContents(
     api_web_contents->Destroy();
     return nullptr;
   }
+  auto weak_child = api_web_contents->WeakRef();
   if (Emit("-add-new-contents", wrapper, disposition, user_gesture,
            window_features.bounds.x(), window_features.bounds.y(),
            window_features.bounds.width(), window_features.bounds.height(),
@@ -2393,6 +2396,15 @@ content::WebContents* WebContents::AddNewContents(
     if (was_blocked)
       *was_blocked = true;
     api_web_contents->Destroy();
+  } else if (auto* child = weak_child->Get();
+             child && !child->IsDestroyed()) {
+    // The span in which an owner was promised ends here. If the handlers gave
+    // the child a window, a deferred openDevTools() has already run. If not —
+    // say a createWindow handler kept the contents out of any widget — don't
+    // leave that request, or later ones, waiting for an owner that may never
+    // come: the child now decides like any other unowned contents.
+    child->owned_by_window_ = false;
+    child->FlushPendingDevToolsOpen();
   }
 
   return nullptr;
@@ -3782,13 +3794,18 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
   if (osr_wcv)
     osr_wcv->SetNativeWindow(owner_window);
 
-  // Replay an openDevTools() that was waiting for this owner. Clear the request
-  // before showing, in case anything re-enters.
-  if (owner_window && pending_devtools_open_) {
-    PendingDevToolsOpen pending =
-        std::exchange(pending_devtools_open_, std::nullopt).value();
-    ShowDevToolsNow(pending.mode, pending.activate, pending.title);
-  }
+  // Replay an openDevTools() that was waiting for this owner.
+  if (owner_window)
+    FlushPendingDevToolsOpen();
+}
+
+void WebContents::FlushPendingDevToolsOpen() {
+  if (!pending_devtools_open_)
+    return;
+  // Clear the request before showing, in case anything re-enters.
+  PendingDevToolsOpen pending =
+      std::exchange(pending_devtools_open_, std::nullopt).value();
+  ShowDevToolsNow(pending.mode, pending.activate, pending.title);
 }
 
 content::WebContents* WebContents::GetWebContents() const {
@@ -4508,13 +4525,15 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
     }
   }
 
-  // BrowserWindow only wires up owner_window() part-way through its
-  // constructor, after the contents (and any 'web-contents-created' listener)
-  // already exist. Deciding now would depend on how early openDevTools() was
-  // called, and policies that need the window — the Window Controls Overlay
-  // check in ShowDevTools(), for one — would be skipped. So wait for the owner;
-  // SetOwnerWindow() replays this a few synchronous lines later. The first
-  // request wins, as it does once DevTools are open.
+  // A BrowserWindow only wires up owner_window() part-way through its
+  // constructor, and a window.open() child only once AddNewContents() has
+  // handed it to one — in both cases after the contents (and any
+  // 'web-contents-created' listener) already exist. Deciding now would depend
+  // on how early openDevTools() was called, and policies that need the window
+  // — the Window Controls Overlay check in ShowDevTools(), for one — would be
+  // skipped. So wait for the owner: SetOwnerWindow() replays this, and
+  // AddNewContents() runs it without one if the child never got a window. The
+  // first request wins, as it does once DevTools are open.
   if (owned_by_window_ && !owner_window()) {
     if (!pending_devtools_open_)
       pending_devtools_open_ = PendingDevToolsOpen{std::move(mode), activate,
@@ -6764,10 +6783,13 @@ void WebContents::InitializeJS(v8::Isolate* const isolate) {
 WebContents* WebContents::CreateAndTake(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> web_contents,
-    Type type) {
+    Type type,
+    bool expects_owner_window) {
   auto* contents = cppgc::MakeGarbageCollected<WebContents>(
       isolate->GetCppHeap()->GetAllocationHandle(), isolate,
       std::move(web_contents), type);
+  // Before InitializeJS(), which emits 'web-contents-created'.
+  contents->owned_by_window_ = expects_owner_window;
   contents->InitializeJS(isolate);
   return contents;
 }
