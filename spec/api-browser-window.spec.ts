@@ -771,6 +771,92 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('view-source line wrapping', () => {
+    afterEach(closeAllWindows);
+
+    it('persists the preference without crashing the renderer', async () => {
+      const server = http.createServer((_request, response) => {
+        response.setHeader('Content-Type', 'text/html');
+        response.end('<!doctype html><title>view source</title><p>some source text</p>');
+      });
+      const { url } = await listen(server);
+      const partition = `persist:view-source-line-wrap-${crypto.randomUUID()}`;
+      const sourceSession = session.fromPartition(partition);
+      const debuggedWebContents: WebContents[] = [];
+
+      const attachDebugger = (window: BrowserWindow) => {
+        window.webContents.debugger.attach('1.3');
+        debuggedWebContents.push(window.webContents);
+      };
+
+      const isLineWrapEnabled = async (window: BrowserWindow) => {
+        const { result, exceptionDetails } = await window.webContents.debugger.sendCommand('Runtime.evaluate', {
+          expression: "document.querySelector('table').classList.contains('line-wrap')",
+          returnByValue: true
+        });
+        if (exceptionDetails) throw new Error(exceptionDetails.text);
+        return result.value as boolean;
+      };
+
+      const clickLineWrap = async (window: BrowserWindow) => {
+        const wasEnabled = await isLineWrapEnabled(window);
+        const { exceptionDetails } = await window.webContents.debugger.sendCommand('Runtime.evaluate', {
+          expression: "document.querySelector('input[type=checkbox]').click()"
+        });
+        if (exceptionDetails) throw new Error(exceptionDetails.text);
+        await waitUntil(async () => (await isLineWrapEnabled(window)) !== wasEnabled);
+      };
+
+      try {
+        const firstWindow = new BrowserWindow({
+          show: false,
+          webPreferences: { session: sourceSession }
+        });
+        let renderProcessGone = false;
+        firstWindow.webContents.once('render-process-gone', () => {
+          renderProcessGone = true;
+        });
+
+        await firstWindow.loadURL(`view-source:${url}`);
+        attachDebugger(firstWindow);
+        expect(await isLineWrapEnabled(firstWindow)).toBe(false);
+
+        await clickLineWrap(firstWindow);
+        expect(renderProcessGone).toBe(false);
+        expect(firstWindow.webContents.isCrashed()).toBe(false);
+        expect(await isLineWrapEnabled(firstWindow)).toBe(true);
+
+        const firstReload = once(firstWindow.webContents, 'did-finish-load');
+        firstWindow.reload();
+        await firstReload;
+        expect(await isLineWrapEnabled(firstWindow)).toBe(true);
+
+        const secondWindow = new BrowserWindow({
+          show: false,
+          webPreferences: { session: sourceSession }
+        });
+        await secondWindow.loadURL(`view-source:${url}`);
+        attachDebugger(secondWindow);
+        expect(await isLineWrapEnabled(secondWindow)).toBe(true);
+
+        await clickLineWrap(secondWindow);
+        const secondReload = once(firstWindow.webContents, 'did-finish-load');
+        firstWindow.reload();
+        await secondReload;
+        expect(await isLineWrapEnabled(firstWindow)).toBe(false);
+      } finally {
+        for (const contents of debuggedWebContents) {
+          if (!contents.isDestroyed() && contents.debugger.isAttached()) contents.debugger.detach();
+        }
+        await closeAllWindows();
+        await new Promise<void>((resolve, reject) => {
+          server.close((error) => (error ? reject(error) : resolve()));
+          server.closeAllConnections();
+        });
+      }
+    });
+  });
+
   for (const sandbox of [false, true]) {
     describe(`navigation events${sandbox ? ' with sandbox' : ''}`, () => {
       let w: BrowserWindow;
