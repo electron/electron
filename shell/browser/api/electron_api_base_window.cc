@@ -1202,6 +1202,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
           "isHiddenInMissionControl")
       .SetMethod<&NativeWindow::SetHiddenInMissionControl>(
           "setHiddenInMissionControl")
+      .SetMethod<&NativeWindow::SetActivable>("setActivable")
 #endif
       .SetMethod<&NativeWindow::SetTouchBar>("_setTouchBarItems")
       .SetMethod<&NativeWindow::RefreshTouchBarItem>("_refreshTouchBarItem")
