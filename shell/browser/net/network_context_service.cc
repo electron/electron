@@ -131,9 +131,6 @@ void NetworkContextService::ConfigureNetworkContextParams(
   }
 
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params);
-
-  BrowserProcessImpl::ApplyProxyModeFromCommandLine(
-      browser_context_->in_memory_pref_store());
 }
 
 }  // namespace electron
