@@ -12,19 +12,19 @@ which returns `v8::Local<v8::Data>` instead of `v8::Local<v8::Value>`.
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8396808
 
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index 33ac5632781134d76f11143b24db1bc2db5b581a..df29e067147125ffa9e47b635a7b055842caf415 100644
+index ba1ab6f185113f704a821e5f8a930858ecd9cc16..59f80e66d69edc393d7b447342453d6f602c76ae 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
-@@ -401,7 +401,7 @@ class CallbackBundle {
+@@ -402,7 +402,7 @@ class CallbackBundle {
      return cbdata;
    }
  
 -  static CallbackBundle* FromCallbackData(v8::Local<v8::Value> data) {
 +  static CallbackBundle* FromCallbackData(v8::Local<v8::Data> data) {
-     return reinterpret_cast<CallbackBundle*>(data.As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault));
+     return reinterpret_cast<CallbackBundle*>(
+         data.As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault));
    }
- 
-@@ -489,7 +489,7 @@ class FunctionCallbackWrapper {
+@@ -491,7 +491,7 @@ class FunctionCallbackWrapper {
    explicit FunctionCallbackWrapper(
        const v8::FunctionCallbackInfo<v8::Value>& cbinfo)
        : cbinfo_(cbinfo),
@@ -33,6 +33,50 @@ index 33ac5632781134d76f11143b24db1bc2db5b581a..df29e067147125ffa9e47b635a7b0558
  
    void InvokeCallback() {
      napi_callback_info cbinfo_wrapper =
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index a6b4167ba08ca4ff6399b9cdd0eaa809eac339b8..efaf53ad2876d5a2176303b50517d9d961eef923 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -1261,7 +1261,7 @@ static void ImportMetaResolveLazyGetter(
+ 
+   // This should be createImportMetaResolve(). The loader argument is already
+   // bound at initialization time.
+-  Local<Value> args[] = {info.Data()};
++  Local<Value> args[] = {info.DataV2().As<Value>()};
+   Local<Value> ret;
+   if (!initializer
+            ->Call(context, Undefined(realm->isolate()), arraysize(args), args)
+@@ -1292,7 +1292,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
+   }
+   Environment* env = Environment::GetCurrent(context);
+ 
+-  node::Utf8Value url(isolate, info.Data());
++  node::Utf8Value url(isolate, info.DataV2().As<Value>());
+   auto file_url = ada::parse(url.ToStringView());
+   CHECK(file_url);
+   auto file_path = url::FileURLToPath(env, *file_url);
+diff --git a/src/node_ffi.cc b/src/node_ffi.cc
+index 0cce543e4695a2caaf6fa87bc05d2a0005eea83e..a3c193e8419bcc45e1605e580163504b5d8a7f54 100644
+--- a/src/node_ffi.cc
++++ b/src/node_ffi.cc
+@@ -589,7 +589,7 @@ void DynamicLibrary::Close(const FunctionCallbackInfo<Value>& args) {
+ 
+ void DynamicLibrary::InvokeFunction(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+-  FFIFunctionInfo* info = Unwrap<FFIFunctionInfo>(args.Data());
++  FFIFunctionInfo* info = Unwrap<FFIFunctionInfo>(args.DataV2().As<Value>());
+   CHECK_NOT_NULL(info);
+   FFIFunction* fn = info->fn.get();
+ 
+@@ -661,7 +661,7 @@ void DynamicLibrary::InvokeFunction(const FunctionCallbackInfo<Value>& args) {
+ 
+ void DynamicLibrary::InvokeFunctionSB(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+-  FFIFunctionInfo* info = Unwrap<FFIFunctionInfo>(args.Data());
++  FFIFunctionInfo* info = Unwrap<FFIFunctionInfo>(args.DataV2().As<Value>());
+   CHECK_NOT_NULL(info);
+   FFIFunction* fn = info->fn.get();
+ 
 diff --git a/src/node_locks.cc b/src/node_locks.cc
 index 4fca3a7df94e39422a83df0ad74604d854993a37..c58efbf55617c326d6e7439954a74b91cd541f32 100644
 --- a/src/node_locks.cc
@@ -71,19 +115,6 @@ index 4fca3a7df94e39422a83df0ad74604d854993a37..c58efbf55617c326d6e7439954a74b91
        info.GetIsolate()->GetCurrentContext(), info[0]));
  }
  
-diff --git a/src/node_modules.cc b/src/node_modules.cc
-index d2337033fc1bf538f84c619add57bcc7d7b9f219..a6f25ec074db079e671f91c34f5f82ba154df177 100644
---- a/src/node_modules.cc
-+++ b/src/node_modules.cc
-@@ -718,7 +718,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
-   }
-   Environment* env = Environment::GetCurrent(context);
- 
--  node::Utf8Value url(isolate, info.Data());
-+  node::Utf8Value url(isolate, info.DataV2().As<Value>());
-   auto file_url = ada::parse(url.ToStringView());
-   CHECK(file_url);
-   auto file_path = url::FileURLToPath(env, *file_url);
 diff --git a/src/node_util.cc b/src/node_util.cc
 index 04217d6dce9333cf0e5a1c6de711f49b93c46663..0c0166accfe1289bb98001852abe9767da684ae2 100644
 --- a/src/node_util.cc
@@ -124,15 +155,15 @@ index 312534fa4c74403caf9281cd99b083411227146f..8c561652c5cfc8a1236e40be26166b41
                                 ->GetInternalField(0)
                                 .As<Value>()
 diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index 6a0cbefdb84b26ac0f37a90742c25a10662eaf41..0902d56a5d464f53ffce54934cad25186bdb95e9 100644
+index e9a1fe4ff7e814a58e2f22fb0f9f3ad7a62db695..a350f4c9377c9d31a24ef6816e4918d4c5b789b9 100644
 --- a/test/cctest/test_environment.cc
 +++ b/test/cctest/test_environment.cc
-@@ -825,7 +825,7 @@ TEST_F(EnvironmentTest, NestedMicrotaskQueue) {
-       context,
-       [](const v8::FunctionCallbackInfo<v8::Value>& info) {
-         IntVec* callback_calls = static_cast<IntVec*>(
--            info.Data().As<v8::External>()->Value());
-+            info.DataV2().As<v8::External>()->Value());
-         callback_calls->push_back(info[0].As<v8::Int32>()->Value());
-       },
-       v8::External::New(isolate_, static_cast<void*>(&callback_calls)))
+@@ -1081,7 +1081,7 @@ TEST_F(EnvironmentTest, NestedMicrotaskQueue) {
+           context,
+           [](const v8::FunctionCallbackInfo<v8::Value>& info) {
+             IntVec* callback_calls =
+-                static_cast<IntVec*>(info.Data().As<v8::External>()->Value(
++                static_cast<IntVec*>(info.DataV2().As<v8::External>()->Value(
+                     v8::kExternalPointerTypeTagDefault));
+             callback_calls->push_back(info[0].As<v8::Int32>()->Value());
+           },
