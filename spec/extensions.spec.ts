@@ -106,6 +106,54 @@ describe('chrome extensions', () => {
     expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
   });
 
+  it('lets an extension disable and enable another with chrome.management.setEnabled', async () => {
+    const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+    const manager = await customSession.extensions.loadExtension(
+      path.join(fixtures, 'extensions', 'chrome-management')
+    );
+    const target = await customSession.extensions.loadExtension(
+      path.join(fixtures, 'extensions', 'mv3-service-worker')
+    );
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    await w.loadURL(`${manager.url}page.html`);
+    const setEnabled = (enabled: boolean) =>
+      w.webContents.executeJavaScript(`chrome.management.setEnabled('${target.id}', ${enabled})`);
+    const reportedEnabled = async () =>
+      (await w.webContents.executeJavaScript(`chrome.management.get('${target.id}')`)).enabled;
+
+    await setEnabled(false);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(false);
+    expect(await reportedEnabled()).toBe(false);
+
+    await setEnabled(true);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(true);
+    expect(await reportedEnabled()).toBe(true);
+
+    // The app can undo what an extension did.
+    await setEnabled(false);
+    customSession.extensions.enableExtension(target.id);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(true);
+  });
+
+  it('does not let chrome.management.setEnabled enable a Manifest V2 extension', async () => {
+    const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+    const manager = await customSession.extensions.loadExtension(
+      path.join(fixtures, 'extensions', 'chrome-management')
+    );
+    const target = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    await w.loadURL(`${manager.url}page.html`);
+
+    customSession.extensions.disableExtension(target.id);
+    await expect(
+      w.webContents.executeJavaScript(`chrome.management.setEnabled('${target.id}', true)`)
+    ).rejects.toThrow(/cannot be modified by user/);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(false);
+
+    customSession.extensions.enableExtension(target.id);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(true);
+  });
+
   describe('Chrome Web Store origin', () => {
     // The core //extensions feature files expose some APIs to web pages on the
     // Chrome Web Store origin. Electron does not support chrome.webstorePrivate

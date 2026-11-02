@@ -18,6 +18,7 @@
 #include "extensions/browser/api/management/management_api_constants.h"
 #include "extensions/browser/disable_reason.h"
 #include "extensions/browser/extension_prefs.h"
+#include "extensions/browser/extension_registrar.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_system.h"
 #include "extensions/common/api/management.h"
@@ -146,17 +147,9 @@ void ElectronManagementAPIDelegate::InstallOrLaunchReplacementWebApp(
 void ElectronManagementAPIDelegate::EnableExtension(
     content::BrowserContext* context,
     const extensions::ExtensionId& extension_id) const {
-  // const extensions::Extension* extension =
-  //     extensions::ExtensionRegistry::Get(context)->GetExtensionById(
-  //         extension_id, extensions::ExtensionRegistry::EVERYTHING);
-
-  // TODO(sentialx): we don't have ExtensionService
-  // If the extension was disabled for a permissions increase, the Management
-  // API will have displayed a re-enable prompt to the user, so we know it's
-  // safe to grant permissions here.
-  // extensions::ExtensionSystem::Get(context)
-  //     ->extension_service()
-  //     ->GrantPermissionsAndEnableExtension(extension);
+  // Electron never withholds an extension's manifest permissions, so there is
+  // nothing to grant before enabling.
+  extensions::ExtensionRegistrar::Get(context)->EnableExtension(extension_id);
 }
 
 void ElectronManagementAPIDelegate::DisableExtension(
@@ -164,11 +157,8 @@ void ElectronManagementAPIDelegate::DisableExtension(
     const extensions::Extension* source_extension,
     const extensions::ExtensionId& extension_id,
     extensions::disable_reason::DisableReason disable_reason) const {
-  // TODO(sentialx): we don't have ExtensionService
-  // extensions::ExtensionSystem::Get(context)
-  //     ->extension_service()
-  //     ->DisableExtensionWithSource(source_extension, extension_id,
-  //                                  disable_reason);
+  extensions::ExtensionRegistrar::Get(context)->DisableExtensionWithSource(
+      source_extension, extension_id, disable_reason);
 }
 
 bool ElectronManagementAPIDelegate::UninstallExtension(
