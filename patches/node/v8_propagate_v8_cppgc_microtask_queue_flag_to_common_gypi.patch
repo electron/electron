@@ -18,7 +18,7 @@ Will be removed when Node.js bumps to version of V8 that contains
 the API change.
 
 diff --git a/common.gypi b/common.gypi
-index 980ed5208829378567347549e1d7afc34c185207..94612a0d95561fb8361024c38379ed4450fa21c6 100644
+index 2278b296c02ec655dc08d4eb75bd1cc46860b276..8efd211d5cee359c062627e7349ebbc358902911 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -95,6 +95,7 @@
