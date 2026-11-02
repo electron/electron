@@ -157,7 +157,7 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(callbackError?.message).toBe('video.id is not a valid source id');
   });
 
-  ifit(process.platform === 'darwin' && desktopCapturer.isDisplayMediaSystemPickerAvailable())(
+  ifit(process.platform === 'darwin' && process._linkedBinding('electron_browser_desktop_capturer').isDisplayMediaSystemPickerAvailable())(
     'frees the system picker when the requesting renderer crashes',
     async () => {
       const testing = process._linkedBinding('electron_common_testing');
