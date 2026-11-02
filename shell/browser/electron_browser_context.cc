@@ -44,7 +44,9 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_media_capture_id.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "gin/arguments.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
@@ -809,9 +811,19 @@ class SystemPickerRequest
 
   void OnCreated(content::DesktopMediaID::Id session_id) {
     session_id_ = session_id;
-    // Failed before the picker reported its session, so close it now.
-    if (!callback_)
+    // Failed before the picker reported its session: close it now, and only
+    // now release the slot, since the picker rejects an Open() until the
+    // close has been posted.
+    if (!callback_) {
       CloseSystemPickerSession(type_, session_id);
+      ClearPending();
+    }
+  }
+
+  // For the picker's own cancel/error callbacks: no session will follow.
+  void FailFromPicker(blink::mojom::MediaStreamRequestResult result) {
+    picker_done_ = true;
+    Fail(result);
   }
 
   void OnSelected(webrtc::DesktopCapturer::Source source) {
@@ -883,7 +895,9 @@ class SystemPickerRequest
     // stream must be closed or the picker stays active.
     if (session_id_)
       CloseSystemPickerSession(type_, *session_id_);
-    ClearPending();
+    // Keep the slot while an Open() is in flight; OnCreated releases it.
+    if (session_id_ || picker_done_)
+      ClearPending();
     std::move(callback_).Run(blink::mojom::StreamDevicesSet(), result, nullptr);
   }
 
@@ -900,7 +914,10 @@ class SystemPickerRequest
   friend class base::DeleteHelper<SystemPickerRequest>;
 
   ~SystemPickerRequest() {
-    Fail(blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
+    // The picker dropped its callbacks, so nothing is in flight any more.
+    FailFromPicker(
+        blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
+    ClearPending();
   }
 
   void ClearPending() {
@@ -914,18 +931,23 @@ class SystemPickerRequest
       content::DesktopMediaID::TYPE_NONE;
   content::MediaResponseCallback callback_;
   std::optional<content::DesktopMediaID::Id> session_id_;
+  bool picker_done_ = false;
   base::WeakPtrFactory<SystemPickerRequest> weak_factory_{this};
 };
 
 // Lives as long as the requesting document, so navigating away or closing the
 // frame fails a request the picker hasn't answered and closes its session.
 class SystemPickerRequestOwner
-    : public content::DocumentUserData<SystemPickerRequestOwner> {
+    : public content::DocumentUserData<SystemPickerRequestOwner>,
+      public content::WebContentsObserver {
  public:
-  ~SystemPickerRequestOwner() override {
-    if (request_)
-      request_->Fail(
-          blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
+  ~SystemPickerRequestOwner() override { FailRequest(); }
+
+  // DocumentUserData outlives a crashed renderer until the next navigation
+  // (crbug.com/1099237), so the crash itself has to free the picker.
+  void RenderFrameDeleted(content::RenderFrameHost* rfh) override {
+    if (rfh == &render_frame_host())
+      FailRequest();
   }
 
  private:
@@ -934,7 +956,16 @@ class SystemPickerRequestOwner
 
   SystemPickerRequestOwner(content::RenderFrameHost* rfh,
                            base::WeakPtr<SystemPickerRequest> request)
-      : DocumentUserData(rfh), request_(std::move(request)) {}
+      : DocumentUserData(rfh),
+        WebContentsObserver(content::WebContents::FromRenderFrameHost(rfh)),
+        request_(std::move(request)) {}
+
+  void FailRequest() {
+    if (request_)
+      request_->Fail(
+          blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
+    request_.reset();
+  }
 
   base::WeakPtr<SystemPickerRequest> request_;
 };
@@ -1167,12 +1198,13 @@ bool ElectronBrowserContext::ChooseDisplayMediaDevice(
             base::BindPostTask(
                 runner,
                 base::BindOnce(
-                    &SystemPickerRequest::Fail, state,
+                    &SystemPickerRequest::FailFromPicker, state,
                     blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED)),
             base::BindPostTask(
-                runner, base::BindOnce(&SystemPickerRequest::Fail, state,
-                                       blink::mojom::MediaStreamRequestResult::
-                                           FAILED_DUE_TO_SHUTDOWN_OTHER))));
+                runner,
+                base::BindOnce(&SystemPickerRequest::FailFromPicker, state,
+                               blink::mojom::MediaStreamRequestResult::
+                                   FAILED_DUE_TO_SHUTDOWN_OTHER))));
     return true;
   }
   if (!display_media_request_handler_)

@@ -20,7 +20,7 @@ This could be upstreamed if Chrome ever wants a combined picker, but
 Chrome itself has no caller for it today.
 
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index 1fd5abc969b6bf85c9b519f20334748d19c8a4cb..b4a0785991360b4d579876abe0d9e3733e430bdc 100644
+index 1fd5abc969b6bf85c9b519f20334748d19c8a4cb..243e0b5d9f5f906ccbdb1e9cb411fc46dececbc5 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
 @@ -414,7 +414,8 @@ void API_AVAILABLE(macos(14.0))
@@ -33,7 +33,7 @@ index 1fd5abc969b6bf85c9b519f20334748d19c8a4cb..b4a0785991360b4d579876abe0d9e373
    if (@available(macOS 14.0, *)) {
      if (picker_callback_) {
        // The system picker is already showing for another request; reject this
-@@ -479,7 +480,17 @@ void API_AVAILABLE(macos(14.0))
+@@ -479,7 +480,19 @@ void API_AVAILABLE(macos(14.0))
      }
      config.excludedWindowIDs = excluded_window_ids;
      NSNumber* max_stream_count = @(kMaxContentShareCountValue.Get());
@@ -48,11 +48,13 @@ index 1fd5abc969b6bf85c9b519f20334748d19c8a4cb..b4a0785991360b4d579876abe0d9e373
 +      [picker present];
 +      VLOG(1) << "NSCPM::Open: Show combined picker for source id = "
 +              << active_picker_source_id_;
++      // No UMA value exists for the combined picker; later Log*ToUma calls
++      // report TYPE_NONE as a window picker.
 +    } else if (type == DesktopMediaID::Type::TYPE_SCREEN) {
        config.allowedPickerModes = SCContentSharingPickerModeSingleDisplay;
        picker.defaultConfiguration = config;
        picker.maximumStreamCount = max_stream_count;
-@@ -614,7 +625,10 @@ void API_AVAILABLE(macos(14.0))
+@@ -614,7 +627,10 @@ void API_AVAILABLE(macos(14.0))
    Source source;
    source.id = session_id;
    if (@available(macOS 15.2, *)) {
