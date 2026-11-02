@@ -14,6 +14,7 @@
 #include "components/value_store/value_store_factory.h"
 #include "components/value_store/value_store_factory_impl.h"
 #include "extensions/browser/extension_system.h"
+#include "extensions/browser/management_policy.h"
 
 namespace base {
 class FilePath;
@@ -97,6 +98,8 @@ class ElectronExtensionSystem : public ExtensionSystem {
   std::unique_ptr<QuotaService> quota_service_;
   std::unique_ptr<UserScriptManager> user_script_manager_;
   std::unique_ptr<AppSorting> app_sorting_;
+  // Declared before the policy, which keeps a pointer to it.
+  std::unique_ptr<ManagementPolicy::Provider> manifest_v2_policy_provider_;
   std::unique_ptr<ManagementPolicy> management_policy_;
 
   std::unique_ptr<ElectronExtensionLoader> extension_loader_;

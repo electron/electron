@@ -4,8 +4,12 @@
 
 #include "shell/browser/api/electron_api_extensions.h"
 
+#include "base/strings/strcat.h"
 #include "chrome/browser/browser_process.h"
+#include "extensions/browser/disable_reason.h"
+#include "extensions/browser/extension_registrar.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
 #include "gin/object_template_builder.h"
@@ -99,6 +103,50 @@ void Extensions::RemoveExtension(const std::string& extension_id) {
   extension_system->RemoveExtension(extension_id);
 }
 
+const extensions::Extension* Extensions::GetUserExtension(
+    gin_helper::ErrorThrower thrower,
+    const std::string& extension_id) {
+  const extensions::Extension* extension =
+      extensions::ExtensionRegistry::Get(browser_context())
+          ->GetInstalledExtension(extension_id);
+  if (!extension) {
+    thrower.ThrowError(
+        base::StrCat({"No extension with ID '", extension_id, "'"}));
+    return nullptr;
+  }
+  if (extensions::Manifest::IsComponentLocation(extension->location())) {
+    thrower.ThrowError(base::StrCat(
+        {"Extension '", extension_id, "' is built in and cannot be changed"}));
+    return nullptr;
+  }
+  return extension;
+}
+
+void Extensions::EnableExtension(gin_helper::ErrorThrower thrower,
+                                 const std::string& extension_id) {
+  if (!GetUserExtension(thrower, extension_id))
+    return;
+  extensions::ExtensionRegistrar::Get(browser_context())
+      ->EnableExtension(extension_id);
+}
+
+void Extensions::DisableExtension(gin_helper::ErrorThrower thrower,
+                                  const std::string& extension_id) {
+  if (!GetUserExtension(thrower, extension_id))
+    return;
+  extensions::ExtensionRegistrar::Get(browser_context())
+      ->DisableExtension(extension_id,
+                         {extensions::disable_reason::DISABLE_USER_ACTION});
+}
+
+bool Extensions::IsExtensionEnabled(const std::string& extension_id) {
+  // A terminated extension is enabled but crashed; it is in neither the
+  // enabled nor the disabled set until it reloads.
+  auto* registry = extensions::ExtensionRegistry::Get(browser_context());
+  return registry->enabled_extensions().Contains(extension_id) ||
+         registry->terminated_extensions().Contains(extension_id);
+}
+
 v8::Local<v8::Value> Extensions::GetExtension(v8::Isolate* isolate,
                                               const std::string& extension_id) {
   auto* registry = extensions::ExtensionRegistry::Get(browser_context());
@@ -148,6 +196,9 @@ gin::ObjectTemplateBuilder Extensions::GetObjectTemplateBuilder(
              isolate)
       .SetMethod("loadExtension", &Extensions::LoadExtension)
       .SetMethod("removeExtension", &Extensions::RemoveExtension)
+      .SetMethod("enableExtension", &Extensions::EnableExtension)
+      .SetMethod("disableExtension", &Extensions::DisableExtension)
+      .SetMethod("isExtensionEnabled", &Extensions::IsExtensionEnabled)
       .SetMethod("getExtension", &Extensions::GetExtension)
       .SetMethod("getAllExtensions", &Extensions::GetAllExtensions);
 }

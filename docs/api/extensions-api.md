@@ -23,6 +23,7 @@ Emitted after an extension is loaded. This occurs whenever an extension is
 added to the "enabled" set of extensions. This includes:
 
 * Extensions being loaded from `Extensions.loadExtension`.
+* Extensions being enabled with `Extensions.enableExtension`.
 * Extensions being reloaded:
   * from a crash.
   * if the extension requested it ([`chrome.runtime.reload()`](https://developer.chrome.com/extensions/runtime#method-reload)).
@@ -35,7 +36,7 @@ Returns:
 * `extension` [Extension](structures/extension.md)
 
 Emitted after an extension is unloaded. This occurs when
-`Session.removeExtension` is called.
+`Extensions.removeExtension` or `Extensions.disableExtension` is called.
 
 #### Event: 'extension-ready'
 
@@ -106,6 +107,49 @@ This API does not support loading packed (.crx) extensions.
 * `extensionId` string - ID of extension to remove
 
 Unloads an extension.
+
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
+
+#### `extensions.disableExtension(extensionId)`
+
+* `extensionId` string - ID of extension to disable
+
+Disables a loaded extension. Its background page or service worker is stopped
+and its content scripts are no longer injected. The extension stays loaded, so
+it is still returned by `getExtension` and `getAllExtensions`, and can be
+turned back on with `enableExtension`.
+
+The disabled state is stored with the session and outlives the app: an
+extension that is disabled stays disabled when it is passed to `loadExtension`
+again, including after a restart, until `enableExtension` is called.
+
+Throws an error if no extension with the given ID is loaded.
+
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
+
+#### `extensions.enableExtension(extensionId)`
+
+* `extensionId` string - ID of extension to enable
+
+Enables an extension that was disabled with `disableExtension`. Does nothing if
+the extension is already enabled.
+
+Throws an error if no extension with the given ID is loaded.
+
+> [!NOTE]
+> This API cannot be called before the `ready` event of the `app` module
+> is emitted.
+
+#### `extensions.isExtensionEnabled(extensionId)`
+
+* `extensionId` string - ID of extension to query
+
+Returns `boolean` - Whether the extension with the given ID is loaded and
+enabled.
 
 > [!NOTE]
 > This API cannot be called before the `ready` event of the `app` module

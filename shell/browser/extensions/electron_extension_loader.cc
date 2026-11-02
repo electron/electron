@@ -33,6 +33,7 @@
 #include "extensions/common/constants.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/file_util.h"
+#include "extensions/common/manifest.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handlers/background_info.h"
 #include "third_party/blink/public/common/service_worker/service_worker_status_code.h"
@@ -290,8 +291,8 @@ bool ElectronExtensionLoader::CanEnableExtension(const Extension* extension) {
 }
 
 bool ElectronExtensionLoader::CanDisableExtension(const Extension* extension) {
-  // Extensions cannot be disabled by the user.
-  return false;
+  // Component extensions such as the PDF viewer are part of Electron itself.
+  return !Manifest::IsComponentLocation(extension->location());
 }
 
 void ElectronExtensionLoader::GrantActivePermissions(

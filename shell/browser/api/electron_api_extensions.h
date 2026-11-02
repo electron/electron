@@ -9,6 +9,7 @@
 #include "extensions/browser/extension_registry_observer.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/error_thrower.h"
 
 namespace electron {
 
@@ -39,6 +40,11 @@ class Extensions final : public gin::Wrappable<Extensions>,
                                        const base::FilePath& extension_path,
                                        gin::Arguments* args);
   void RemoveExtension(const std::string& extension_id);
+  void EnableExtension(gin_helper::ErrorThrower thrower,
+                       const std::string& extension_id);
+  void DisableExtension(gin_helper::ErrorThrower thrower,
+                        const std::string& extension_id);
+  bool IsExtensionEnabled(const std::string& extension_id);
   v8::Local<v8::Value> GetExtension(v8::Isolate* isolate,
                                     const std::string& extension_id);
   v8::Local<v8::Value> GetAllExtensions(v8::Isolate* isolate);
@@ -60,6 +66,12 @@ class Extensions final : public gin::Wrappable<Extensions>,
   content::BrowserContext* browser_context() const {
     return browser_context_.get();
   }
+
+  // Returns the installed extension that an app may enable or disable.
+  // Throws and returns nullptr for unknown IDs and component extensions.
+  const extensions::Extension* GetUserExtension(
+      gin_helper::ErrorThrower thrower,
+      const std::string& extension_id);
 
   const raw_ptr<content::BrowserContext> browser_context_;
 };

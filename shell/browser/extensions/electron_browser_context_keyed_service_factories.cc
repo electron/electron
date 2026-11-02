@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/electron_browser_context_keyed_service_factories.h"
 
 #include "extensions/browser/api/cookies/cookies_api.h"
+#include "extensions/browser/manifest_v2_handler.h"
 #include "extensions/browser/updater/update_service_factory.h"
 #include "shell/browser/extensions/electron_extension_system_factory.h"
 
@@ -18,6 +19,12 @@ void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
   // Dispatches chrome.cookies.onChanged. Embedders build this factory; it is
   // not part of the //extensions list.
   CookiesAPI::GetFactoryInstance();
+
+  // Chromium disables Manifest V2 extensions when this service starts. It is
+  // created on first use unless its factory is built, and extension functions
+  // do use it, so build it here: the service then starts with the session,
+  // before an app can have loaded any extension.
+  ManifestV2Handler::GetFactory();
 
   ElectronExtensionSystemFactory::GetInstance();
 }
