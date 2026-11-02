@@ -24,15 +24,13 @@ Take some time to anticipate how the API might evolve, and design the API in suc
 One key technique for future-proofing APIs is to pass options to method as an object, rather than as positional arguments. This is both more readable and allows flexibility to accommodate future changes. In particular, removing arguments from a method which takes its options positionally is not possible without introducing backwards incompatible changes.
 
 ```typescript
-// Bad:
-
-function whatever(a: string, b?: boolean) {
+// Bad: positional arguments make it hard to add or remove arguments in future
+function bad(a: string, b?: boolean) {
   /* ... */
 }
 
-// Good:
-
-function whatever(opts: { a: string; b?: boolean }) {
+// Good: options dictionaries make it easy to add new options without breaking changes
+function good(opts: { a: string; b?: boolean }) {
   /* ... */
 }
 ```
@@ -87,15 +85,17 @@ If your code is asynchronous, it should return a Promise rather than taking a ca
 For example:
 
 ```javascript
-const win = new BrowserWindow(options)
+const win = new BrowserWindow()
 const result = await win.webContents.executeJavaScript('void 0')
 ```
 
 Subscription-style APIs that returns results multiple times should still be implemented with callbacks.
 
-```typescript
+```javascript
 // Use callback if results are provided multiple times.
-win.hookWindowMessage('MESSAGE', (...args) => {
+const win = new BrowserWindow()
+const WM_COPYDATA = 0x4a
+win.hookWindowMessage(WM_COPYDATA, (...args) => {
   // ...
 })
 ```
@@ -156,7 +156,7 @@ If an API is designed to accept an array of items, consider providing methods of
 
 In the case of isolated components (e.g. third-party libraries), one might want to add a single item rather than replacing existings items.
 
-```javascript
+```typescript @ts-expect-error=[9,10,12,16]
 // Bad: third-party libraries can only replace registered schemes
 protocol.registerSchemesAsPrivileged([
   {
@@ -212,7 +212,7 @@ There are 2 styles for creating instances of classes:
 const { BrowserWindow, nativeImage } = require('electron')
 
 // Constructor
-const w = new BrowserWindow(options)
+const w = new BrowserWindow()
 
 // Factory method
 nativeImage.createFromPath('/path')
@@ -225,14 +225,12 @@ If the class has an inheritance relationship with other public classes, a constr
 For example:
 
 ```javascript
-const { BrowserWindow, TopLevelWindow } = require('electron')
-const win = new BrowserWindow(options)
-```
+const { BrowserWindow, BaseWindow } = require('electron')
+const win = new BrowserWindow()
 
-This enables users to detect inheritance relationships between classes.
+// This enables users to detect inheritance relationships between classes.
 
-```javascript
-if (win instanceof TopLevelWindow) {
+if (win instanceof BaseWindow) {
   // ...
 }
 ```
@@ -267,7 +265,10 @@ If an API of the class returns a _non-assignable_ `Object`, and the returned obj
 For example:
 
 ```javascript
-const win = new BrowserWindow(options)
+import assert from 'node:assert'
+import { BrowserWindow } from 'electron'
+
+const win = new BrowserWindow()
 assert.strictEqual(win.webContents, win.webContents)
 assert.strictEqual(win.webContents.session, win.webContents.session)
 assert.strictEqual(win.webContents.debugger, win.webContents.debugger)
@@ -277,9 +278,11 @@ If an API of the class returns [non-primitives][primitive], and the returned val
 
 For example:
 
-```javascript
+```typescript @ts-expect-error=[5,6]
+import { BrowserWindow, BrowserView } from 'electron'
+
 // Should NOT do these, as they have no effect.
-const win = new BrowserWindow(options)
+const win = new BrowserWindow()
 win.bounds.x = 42
 win.browserViews.push(new BrowserView())
 ```
@@ -291,7 +294,10 @@ If an API of the class accepts options, or may accept option in future, it shoul
 For example:
 
 ```javascript
-const win = new BrowserWindow(options)
+import { BrowserWindow } from 'electron'
+const win = new BrowserWindow()
+const bounds = { x: 123, y: 123, width: 123, height: 123 }
+const animate = true
 win.setBounds(bounds, animate)
 ```
 
@@ -304,7 +310,7 @@ If the type of the value being set/get is [primitive][primitive], it should be a
 For example:
 
 ```javascript
-const win = new BrowserWindow(options)
+const win = new BrowserWindow()
 win.setTitle('str')
 console.log(win.getTitle())
 // Property also works.
