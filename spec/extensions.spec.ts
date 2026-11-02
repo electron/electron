@@ -145,9 +145,9 @@ describe('chrome extensions', () => {
     await w.loadURL(`${manager.url}page.html`);
 
     customSession.extensions.disableExtension(target.id);
-    await expect(
-      w.webContents.executeJavaScript(`chrome.management.setEnabled('${target.id}', true)`)
-    ).rejects.toThrow(/cannot be modified by user/);
+    await expect(w.webContents.executeJavaScript(`chrome.management.setEnabled('${target.id}', true)`)).rejects.toThrow(
+      /cannot be modified by user/
+    );
     expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(false);
 
     customSession.extensions.enableExtension(target.id);
