@@ -51,6 +51,9 @@ PATHS_TO_SKIP = [
   # Skip because these are outputs that we don't need.
   'resources/inspector',
   'gen/third_party/blink/public/devtools_protocol/types',
+  # Blink build time validation results.
+  'gen/third_party/blink/renderer/bindings/check_generated_file_list_results.txt',
+  'gen/third_party/blink/renderer/bindings/validate_web_idl_results.txt',
   'gen/third_party/chromium-bidi/src',
   'gen/third_party/devtools-frontend/src',
   'gen/ui/webui',
