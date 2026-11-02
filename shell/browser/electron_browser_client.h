@@ -12,6 +12,7 @@
 
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
+#include "base/i18n/language_tag.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/content_browser_client.h"
@@ -83,7 +84,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::NavigationThrottleRegistry& registry) override;
 
   // content::ContentBrowserClient:
-  std::string GetApplicationLocale() override;
+  base::i18n::LanguageTag GetApplicationLocale() override;
   bool* spare_renderer_compatible() { return &spare_renderer_compatible_; }
 
   // Ids handed out as webRequest details.id, shared by every proxy and gate.
