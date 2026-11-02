@@ -158,22 +158,24 @@ In the case of isolated components (e.g. third-party libraries), one might want 
 
 ```javascript
 // Bad: third-party libraries can only replace registered schemes
-protocol.registerSchemesAsPrivileged([{
-	scheme: "app",
-	privileges: { standard: true }
-}]);
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: { standard: true }
+  }
+])
 // Good: third-party libraries can create, read, update, and delete items
-if (protocol.getPrivilegedSchemes().includes((scheme) => scheme.scheme === "app")) {
-	protocol.unregisterSchemeAsPrivileged("app");
+if (protocol.getPrivilegedSchemes().includes((scheme) => scheme.scheme === 'app')) {
+  protocol.unregisterSchemeAsPrivileged('app')
 }
 protocol.registerSchemeAsPrivileged({
-	scheme: "app",
-	privileges: { standard: true }
-});
+  scheme: 'app',
+  privileges: { standard: true }
+})
 protocol.updatePrivilegedScheme({
-	scheme: "app",
-	privileges: { secure: true }
-});
+  scheme: 'app',
+  privileges: { secure: true }
+})
 ```
 
 ### Return null when no result from lookup functions
