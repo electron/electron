@@ -17,7 +17,7 @@ As of 159.0.8129.0, it also carries the Vim startup rules (~/.vim, ~/vimfiles,
 kBlockWrite suffix rule added upstream in that version.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 05ee182cf840bc925697a2bfa3d1c281579296c4..e3e7e4a739d02b48059bce874de182a000f47730 100644
+index 05ee182cf840bc925697a2bfa3d1c281579296c4..e89bdf795648d2c3d1de37e387bd7e3183f00562 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
