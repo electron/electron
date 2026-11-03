@@ -9,8 +9,8 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
-#include "shell/browser/api/electron_api_session.h"
-#include "shell/common/gin_converters/frame_converter.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "v8/include/v8.h"
 
@@ -29,13 +29,11 @@ void NetworkHintsHandlerImpl::Preconnect(const url::SchemeHostPort& url,
   if (!frame_host) {
     return;
   }
-  gin::WeakCell<electron::api::Session>* session =
-      electron::api::Session::FromBrowserContext(
-          frame_host->GetBrowserContext());
-  if (session && session->Get()) {
-    session->Get()->Emit("preconnect", url.GetURL(), allow_credentials,
-                         frame_host);
-  }
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  auto* frame = electron::api::WebFrameMain::From(isolate, frame_host);
+  if (frame)
+    frame->Emit("preconnect", url.GetURL(), allow_credentials);
 }
 
 void NetworkHintsHandlerImpl::Create(

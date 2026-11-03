@@ -3212,12 +3212,68 @@ describe('BrowserWindow module', () => {
 
     it('parses <link rel=preconnect>', async () => {
       w = new BrowserWindow({ show: true });
-      const p = once(w.webContents.session, 'preconnect');
+      const p = once(w.webContents.mainFrame, 'preconnect');
       w.loadURL(url + '/link');
-      const [, preconnectUrl, allowCredentials, frame] = await p;
+      const [, preconnectUrl, allowCredentials] = await p;
+      expect(preconnectUrl).toBe('http://example.com/');
+      expect(allowCredentials, 'allowCredentials').toBe(true);
+    });
+
+    it('forwards preconnect hints to the deprecated session event', async () => {
+      w = new BrowserWindow({ show: true });
+      const p = once(w.webContents.session, 'preconnect');
+      const framePreconnect = once(w.webContents.mainFrame, 'preconnect');
+      w.loadURL(url + '/link');
+      const [[event, preconnectUrl, allowCredentials, frame], frameArgs] = await Promise.all([p, framePreconnect]);
       expect(preconnectUrl).toBe('http://example.com/');
       expect(allowCredentials, 'allowCredentials').toBe(true);
       expect(frame).toBe(w.webContents.mainFrame);
+      expect(frameArgs).toEqual([event, preconnectUrl, allowCredentials]);
+    });
+
+    for (const crossOrigin of [false, true]) {
+      it(`emits preconnect on the requesting ${crossOrigin ? 'cross-origin' : 'same-origin'} subframe only`, async () => {
+        w = new BrowserWindow({ show: false });
+        await w.loadURL(url);
+        let mainFramePreconnects = 0;
+        w.webContents.mainFrame.on('preconnect', () => mainFramePreconnects++);
+        const preconnect = new Promise<[string, boolean, WebFrameMain]>((resolve) => {
+          w.webContents.on('frame-created', (_event, { frame }) => {
+            if (!frame?.parent) return;
+            frame.once('preconnect', (_event, preconnectUrl, allowCredentials) => {
+              resolve([preconnectUrl, allowCredentials, frame]);
+            });
+          });
+        });
+        const frameUrl = `${crossOrigin ? url.replace('127.0.0.1', 'localhost') : url}/link`;
+        await w.webContents.executeJavaScript(`
+          const frame = document.createElement('iframe');
+          frame.src = ${JSON.stringify(frameUrl)};
+          document.body.appendChild(frame);
+        `);
+        const [preconnectUrl, allowCredentials, frame] = await preconnect;
+        expect(preconnectUrl).toBe('http://example.com/');
+        expect(allowCredentials).toBe(true);
+        expect(frame.parent).toBe(w.webContents.mainFrame);
+        expect(mainFramePreconnects).toBe(0);
+      });
+    }
+
+    it('can destroy the requesting frame from a preconnect listener', async () => {
+      w = new BrowserWindow({ show: false });
+      const frame = w.webContents.mainFrame;
+      const preconnect = new Promise<void>((resolve) => {
+        frame.prependOnceListener('preconnect', () => {
+          w.destroy();
+          resolve();
+        });
+      });
+      const load = w.loadURL(url + '/link').catch((error: Error) => {
+        expect(error.message).toContain('ERR_ABORTED');
+      });
+      await preconnect;
+      await load;
+      expect(frame.isDestroyed()).toBe(true);
     });
   });
 

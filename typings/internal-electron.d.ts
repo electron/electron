@@ -125,6 +125,7 @@ declare namespace Electron {
   }
 
   interface WebFrameMain {
+    _init(): void;
     _transferSharedTexture(transfer: any, textureId: string, args: any[]): Promise<Electron.SharedTextureSyncToken>;
     _lifecycleStateForTesting: string;
   }
