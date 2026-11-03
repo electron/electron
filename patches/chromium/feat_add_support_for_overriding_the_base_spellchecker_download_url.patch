@@ -9,7 +9,7 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index f2a10504550ef67a73d1dc863a61352ba9cd2142..b0b386411dd32f5b7d2c11bee0b8abf4f0ff6add 100644
+index db88601fb7e8a7aadd52b1bfd113f2c49ac4f33f..54d29e96e94359e091a69d9a43faa1a24ea5530e 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 @@ -55,6 +55,8 @@ GURL& GetDownloadUrlForTesting() {
@@ -34,7 +34,7 @@ index f2a10504550ef67a73d1dc863a61352ba9cd2142..b0b386411dd32f5b7d2c11bee0b8abf4
      return GetDownloadUrlForTesting();
 @@ -277,6 +283,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    std::string bdict_file = dictionary_file_.path.BaseName().MaybeAsASCII();
-   DCHECK(!bdict_file.empty());
+   CHECK(!bdict_file.empty(), base::NotFatalUntil::M163);
  
 +  if (*g_base_download_url_override != GURL())
 +    return GURL(g_base_download_url_override->spec() + base::ToLowerASCII(bdict_file));

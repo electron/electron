@@ -14,7 +14,7 @@ Reviewed-By: Anna Henningsen <anna@addaleax.net>
 (cherry picked from commit 0401a2d083bbfa2a816cb2906597a3df7d69b20a)
 
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
-index f5aff2f65fe6b9f48cf970ab3e7c57cfe4885f85..3a5108db01568649089c08ee6e3a34d91f136e3f 100644
+index 7d8d056620c4c6d8692646273e822def1aa21156..6c2adc826571daf07798c9aed941a0c8e11e89e2 100644
 --- a/src/node_wasi.cc
 +++ b/src/node_wasi.cc
 @@ -234,7 +234,7 @@ void WASI::New(const FunctionCallbackInfo<Value>& args) {

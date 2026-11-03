@@ -1487,6 +1487,12 @@ describe('asar package', () => {
         const p = path.join(asarDir, 'a.asar', 'file4');
         await expectToThrowErrorWithCode(() => fs.promises.lstat(p), 'ENOENT');
       });
+
+      itremote('rejects rather than throws for an invalid path', async () => {
+        const url = new URL('https://example.com/x');
+        await expect(fs.promises.lstat(url)).rejects.toMatchObject({ code: 'ERR_INVALID_URL_SCHEME' });
+        await expect(fs.promises.stat(url)).rejects.toMatchObject({ code: 'ERR_INVALID_URL_SCHEME' });
+      });
     });
 
     describe('fs.realpathSync', () => {
@@ -3067,14 +3073,21 @@ describe('asar package', () => {
           const stale = fs.openSync(p, 'r');
           originalFs.closeSync(stale);
           let fd: number;
+          let handle: any;
           if (variant === 'sync') fd = fs.openSync(real, 'r');
           else if (variant === 'async') fd = await promisify(fs.open)(real, 'r');
-          else fd = (await fs.promises.open(real, 'r')).fd;
+          else {
+            handle = await fs.promises.open(real, 'r');
+            fd = handle.fd;
+          }
           const buffer = Buffer.alloc(17);
           expect(fs.readSync(fd, buffer, 0, 17, 0)).toBe(17);
           expect(buffer.toString()).toBe('real-file-content');
           expect(fs.fstatSync(fd).size).toBe(17);
-          if (variant !== 'handle') fs.closeSync(fd);
+          // Since Node.js 26 a FileHandle left for garbage collection to close
+          // is an uncaught error.
+          if (handle) await handle.close();
+          else fs.closeSync(fd);
           // A packed open that gets the same number again works too.
           const again = fs.openSync(p, 'r');
           expect(fs.readFileSync(again).toString()).toBe('file1\n');
@@ -3279,6 +3292,20 @@ describe('asar package', () => {
           expect(fs.readlinkSync(path.join(dest, 'link2')), variant).toBe(path.join(src, 'dir1'));
           expect(fs.lstatSync(path.join(dest, 'dir1', 'link2')).isSymbolicLink(), variant).toBe(true);
           expect(fs.readlinkSync(path.join(dest, 'dir1', 'link2')), variant).toBe(path.join(src, 'dir1'));
+        }
+      });
+
+      itremote('copies a directory tree without blocking the event loop', async () => {
+        const src = path.join(asarDir, 'a.asar');
+        for (const variant of ['callback', 'promises']) {
+          let immediateRan = false;
+          setImmediate(() => {
+            immediateRan = true;
+          });
+          const dest = tempPath();
+          if (variant === 'callback') await promisify(fs.cp)(src, dest, { recursive: true });
+          else await fs.promises.cp(src, dest, { recursive: true });
+          expect(immediateRan, variant).toBe(true);
         }
       });
 
@@ -4232,22 +4259,24 @@ describe('asar package', () => {
       originalFs.createReadStream(path.join(asarDir, 'a.asar'));
     });
 
-    itremote('can recursively delete a directory with an asar file in itremote using rmdirSync', () => {
+    itremote('can recursively delete a directory with an asar file in itremote using rmSync', () => {
       const deleteDir = path.join(asarDir, 'deleteme');
       fs.mkdirSync(deleteDir);
 
       const originalFs = require('node:original-fs');
-      originalFs.rmdirSync(deleteDir, { recursive: true });
+      originalFs.copyFileSync(path.join(asarDir, 'a.asar'), path.join(deleteDir, 'a.asar'));
+      originalFs.rmSync(deleteDir, { recursive: true });
 
       expect(fs.existsSync(deleteDir)).toBe(false);
     });
 
-    itremote('can recursively delete a directory with an asar file in itremote using promises.rmdir', async () => {
+    itremote('can recursively delete a directory with an asar file in itremote using promises.rm', async () => {
       const deleteDir = path.join(asarDir, 'deleteme');
       fs.mkdirSync(deleteDir);
 
       const originalFs = require('node:original-fs');
-      await originalFs.promises.rmdir(deleteDir, { recursive: true });
+      originalFs.copyFileSync(path.join(asarDir, 'a.asar'), path.join(deleteDir, 'a.asar'));
+      await originalFs.promises.rm(deleteDir, { recursive: true });
 
       expect(fs.existsSync(deleteDir)).toBe(false);
     });

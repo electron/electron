@@ -238,11 +238,10 @@ void WebContentsPermissionHelper::RequestPermission(
     base::DictValue details) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
-  auto origin = requesting_frame->GetLastCommittedOrigin().GetURL();
   permission_manager->RequestPermissionWithDetails(
       content::PermissionDescriptorUtil::
           CreatePermissionDescriptorForPermissionType(permission),
-      requesting_frame, origin, user_gesture, std::move(details),
+      requesting_frame, user_gesture, std::move(details),
       base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
@@ -380,8 +379,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
         content::PermissionDescriptorUtil::
             CreatePermissionDescriptorForPermissionType(
                 blink::PermissionType::OPEN_EXTERNAL),
-        requesting_frame, requester->origin.GetURL(), user_gesture,
-        std::move(details),
+        requesting_frame, user_gesture, std::move(details),
         base::BindOnce(&OnPermissionResponse, std::move(callback)));
     return;
   }

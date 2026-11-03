@@ -71,7 +71,6 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void RequestPermissionWithDetails(
       blink::mojom::PermissionDescriptorPtr permission,
       content::RenderFrameHost* render_frame_host,
-      const GURL& requesting_origin,
       bool user_gesture,
       base::DictValue details,
       StatusCallback response_callback);
@@ -143,10 +142,6 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
       content::RenderProcessHost* render_process_host,
       const GURL& worker_origin) override;
-  content::PermissionResult GetPermissionResultForEmbeddedRequester(
-      const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
-      content::RenderFrameHost* render_frame_host,
-      const url::Origin& requesting_origin) override;
 
  private:
   class PendingRequest;

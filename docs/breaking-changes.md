@@ -64,7 +64,25 @@ and `did-frame-navigate` provides `url`, `httpResponseCode`, `httpStatusText`,
 frame, such as a `did-fail-load` for an invalid URL passed to
 `webContents.loadURL()`.
 
+### Removed: `top-level-storage-access` permission
+
+Chromium has removed the `top-level-storage-access` permission type, so it is
+no longer a possible `permission` value in
+[`ses.setPermissionRequestHandler(handler)`](api/session.md#sessetpermissionrequesthandlerhandler)
+or [`ses.setPermissionCheckHandler(handler)`](api/session.md#sessetpermissioncheckhandlerhandler).
+Web content lost the ability to trigger this permission in Electron 46 when
+`document.requestStorageAccessFor` was removed.
+
 ## Breaking API Changes (46.0)
+
+### Removed: `--experimental-transform-types` command-line switch
+
+Node.js 26 removed the `--experimental-transform-types` flag, so Electron no
+longer accepts it. Electron ignores it on its command line, and
+`ELECTRON_RUN_AS_NODE` exits with a "bad option" error, as Node.js does.
+Type stripping of TypeScript files is still enabled by default; compile
+TypeScript-only syntax such as `enum` and `namespace` with a TypeScript
+compiler or bundler instead.
 
 ### Behavior Changed: `--no-stdio-init` command-line switch is ignored
 

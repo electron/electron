@@ -14,3 +14,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     .then(sendResponse);
   return true;
 });
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message !== 'get-managed') return;
+  chrome.storage.managed.get().then(sendResponse);
+  return true;
+});

@@ -1064,7 +1064,6 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `speaker-selection` - Request to enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `system-wake-lock` - Request to keep the system awake without keeping the screen on (a system wake lock).
-    * `top-level-storage-access` - Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Request access to USB devices via the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
     * `vr` - Request access to virtual reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
     * `web-app-installation` - Request to install a web app via the [Web Install API](https://github.com/WICG/web-install).
@@ -1162,7 +1161,6 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
     * `speaker-selection` - Enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `system-wake-lock` - Keep the system awake without keeping the screen on (a system wake lock).
-    * `top-level-storage-access` - Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
     * `vr` - Access virtual reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
     * `web-app-installation` - Install a web app via the [Web Install API](https://github.com/WICG/web-install).
