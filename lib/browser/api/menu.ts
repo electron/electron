@@ -205,6 +205,8 @@ Menu.getApplicationMenu = () => applicationMenu;
 
 Menu.sendActionToFirstResponder = bindings.sendActionToFirstResponder;
 
+Menu.setHighlightColors = bindings.setHighlightColors;
+
 // set application menu with a preexisting menu
 Menu.setApplicationMenu = function (menu: MenuType) {
   if (menu && menu.constructor !== Menu) {
