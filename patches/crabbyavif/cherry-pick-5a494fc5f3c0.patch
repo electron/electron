@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vignesh Venkat <vigneshv@google.com>
+Date: Mon, 5 Oct 2026 17:09:43 -0700
+Subject: decoder: Always sync avifDecoder after NextImage/NthImage
+
+The Rust decoder may reallocate or release the planes of its
+image before failing, for example when one grid cell of a
+progressive image is decoded and the next one returns
+WaitingOnIo with allowIncremental unset. The C API returned
+early in that case without updating decoder->image, leaving
+it pointing to freed memory.
+
+Always update the avifDecoder from the Rust decoder, even on
+failure.
+
+Bug: 568818122
+PiperOrigin-RevId: 993997849
+
+Electron adaptation notes (43-x-y):
+The early-return block in crabby_avifDecoderNextImage/NthImage is formatted differently on this branch (res.is_err() / res.as_ref().err().unwrap() and settings assigned via into()); the whole block was removed exactly as upstream does so rust_decoder_to_avifDecoder() always runs. No other changes. The upstream commit also adds the binary test fixture tests/data/poc_b_568818122.avif; Electron's patch export does not carry binary files, so that test-only fixture is not included (c_api_tests are not built by Electron).
+
+diff --git a/c_api_tests/incremental_tests.cc b/c_api_tests/incremental_tests.cc
+index e3048bcab8edc4786543e4fb53f4016ed91dd602..9ce4ff8b82b2b437572c3bc01cac40bf4e38e443 100644
+--- a/c_api_tests/incremental_tests.cc
++++ b/c_api_tests/incremental_tests.cc
+@@ -350,6 +350,62 @@ TEST(ProgressiveTest, PartialData) {
+   EXPECT_EQ(avifDecoderNthImage(decoder.get(), 0), AVIF_RESULT_OK);
+ }
+ 
++TEST(ProgressiveTest, LayeredGridPartialData) {
++  // poc_b_568818122.avif is the first 554 bytes of a 598-byte AVIF file whose
++  // primary item is a 63x100 grid made of 2 layered 64x64 cells, one above the
++  // other. Layer 1 of the lower cell is missing.
++  auto file_data =
++      testutil::read_file(get_file_name("poc_b_568818122.avif").c_str());
++  ASSERT_EQ(file_data.size(), 554u);
++  constexpr size_t kFullSize = 598;
++
++  PartialData data = {/*available=*/{file_data.data(), file_data.size()},
++                      /*fullSize=*/kFullSize,
++                      /*nonpersistent_bytes=*/nullptr,
++                      /*num_nonpersistent_bytes=*/0};
++  avifIO io = {/*destroy=*/nullptr,    PartialRead,
++               /*write=*/nullptr,      kFullSize,
++               /*is_persistent=*/true, &data};
++  DecoderPtr decoder(avifDecoderCreate());
++  ASSERT_NE(decoder, nullptr);
++  avifDecoderSetIO(decoder.get(), &io);
++  decoder->allowProgressive = AVIF_TRUE;
++
++  ASSERT_EQ(avifDecoderParse(decoder.get()), AVIF_RESULT_OK);
++  EXPECT_EQ(decoder->imageCount, 2);
++
++  avifExtent extent0;
++  ASSERT_EQ(avifDecoderNthImageMaxExtent(decoder.get(), 0, &extent0),
++            AVIF_RESULT_OK);
++  avifExtent extent1;
++  ASSERT_EQ(avifDecoderNthImageMaxExtent(decoder.get(), 1, &extent1),
++            AVIF_RESULT_OK);
++  ASSERT_LE(extent0.offset + extent0.size, file_data.size());
++  ASSERT_GT(extent1.offset + extent1.size, file_data.size());
++
++  // Decode the first layer completely.
++  data.available.size = extent0.offset + extent0.size;
++  ASSERT_EQ(avifDecoderNthImage(decoder.get(), 0), AVIF_RESULT_OK);
++  EXPECT_EQ(decoder->image->width, 63u);
++  EXPECT_EQ(decoder->image->height, 100u);
++
++  // Do something with the decoded pixels to make sure that the
++  // |decoder->image->planes| are valid.
++  AvifRgbImage rgb(decoder->image, /*rgbDepth=*/8, AVIF_RGB_FORMAT_RGBA);
++  EXPECT_EQ(avifImageYUVToRGB(decoder->image, &rgb), AVIF_RESULT_OK);
++
++  // Make all the bytes of the file available, so the first cell of layer 1
++  // decodes (reallocating the internal image planes) while the second cell
++  // returns WAITING_ON_IO.
++  data.available.size = file_data.size();
++  EXPECT_EQ(avifDecoderNthImage(decoder.get(), 1), AVIF_RESULT_WAITING_ON_IO);
++  EXPECT_EQ(avifDecoderDecodedRowCount(decoder.get()), 64u);
++
++  // Do something with the decoded pixels to make sure that the
++  // |decoder->image->planes| are valid.
++  EXPECT_EQ(avifImageYUVToRGB(decoder->image, &rgb), AVIF_RESULT_OK);
++}
++
+ }  // namespace
+ }  // namespace avif
+ 
+diff --git a/src/capi/decoder.rs b/src/capi/decoder.rs
+index 0410070fd4a86dc17c0e6d86a2543d7a9e5f1a1d..35e8f1ac8691b4f4d02a6cbeec09957d68665e55 100644
+--- a/src/capi/decoder.rs
++++ b/src/capi/decoder.rs
+@@ -294,22 +294,8 @@ pub unsafe extern "C" fn crabby_avifDecoderNextImage(decoder: *mut avifDecoder)
+     let rust_decoder = rust_decoder(decoder);
+     rust_decoder.settings = deref_const!(decoder).into();
+ 
+-    let previous_decoded_row_count = rust_decoder.decoded_row_count();
+-
+     let res = rust_decoder.next_image();
+     deref_mut!(decoder).diag.set_from_result(&res);
+-    let mut early_return = false;
+-    if res.is_err() {
+-        early_return = true;
+-        if rust_decoder.settings.allow_incremental
+-            && matches!(res.as_ref().err().unwrap(), AvifError::WaitingOnIo)
+-        {
+-            early_return = previous_decoded_row_count == rust_decoder.decoded_row_count();
+-        }
+-    }
+-    if early_return {
+-        return res.into();
+-    }
+     rust_decoder_to_avifDecoder(rust_decoder, deref_mut!(decoder));
+     res.into()
+ }
+@@ -326,27 +312,8 @@ pub unsafe extern "C" fn crabby_avifDecoderNthImage(
+     let rust_decoder = rust_decoder(decoder);
+     rust_decoder.settings = deref_const!(decoder).into();
+ 
+-    let previous_decoded_row_count = rust_decoder.decoded_row_count();
+-    let image_index = (rust_decoder.image_index() + 1) as u32;
+-
+     let res = rust_decoder.nth_image(frameIndex);
+     deref_mut!(decoder).diag.set_from_result(&res);
+-    let mut early_return = false;
+-    if res.is_err() {
+-        early_return = true;
+-        if rust_decoder.settings.allow_incremental
+-            && matches!(res.as_ref().err().unwrap(), AvifError::WaitingOnIo)
+-        {
+-            if image_index != frameIndex {
+-                early_return = false;
+-            } else {
+-                early_return = previous_decoded_row_count == rust_decoder.decoded_row_count();
+-            }
+-        }
+-    }
+-    if early_return {
+-        return res.into();
+-    }
+     rust_decoder_to_avifDecoder(rust_decoder, deref_mut!(decoder));
+     res.into()
+ }

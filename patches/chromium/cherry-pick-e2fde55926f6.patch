@@ -1,0 +1,382 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommy Steimel <steimel@chromium.org>
+Date: Fri, 9 Oct 2026 10:49:55 -0700
+Subject: Media Session: Track picture-in-picture state per player
+
+Previously, `MediaSessionController::IsMediaSessionNeeded()` checked
+`WebContentsImpl::HasPictureInPictureVideo()`, and
+`MediaSessionControllersManager::PictureInPictureStateChanged()`
+notified all controllers in the `WebContents` when Picture-in-Picture
+state changed. As a result, any muted (`has_audio = false`) media player
+in the `WebContents` would be added to `MediaSessionImpl` whenever
+another player in the tab was in Picture-in-Picture.
+
+This change tracks `is_in_picture_in_picture_` per
+`MediaSessionController` and plumbs the `MediaPlayerId` from
+`PictureInPictureSession` through
+`VideoPictureInPictureWindowControllerImpl` and
+`MediaWebContentsObserver` to `MediaSessionControllersManager`, so only
+the player actually in Picture-in-Picture is added to the media session
+on that basis.
+
+Bug: 568999538
+Change-Id: Ie6ed8fab4a5ee786c9b21fe700e763acb43c4244
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8531793
+Commit-Queue: Tommy Steimel <steimel@chromium.org>
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1715775}
+
+Electron adaptation notes (43-x-y):
+Context conflicts only: this branch's MediaWebContentsObserver has no OnAudibilityBypassRevoked() and MediaSessionController has no is_video_frame_available_ member (both upstream-only context lines), so only the new OnPictureInPictureStateChanged() declaration and is_in_picture_in_picture_ member were added. All other hunks applied unchanged.
+
+diff --git a/content/browser/media/media_web_contents_observer.cc b/content/browser/media/media_web_contents_observer.cc
+index 2b7eba100b3734b66ac25307e9e57fe514ea4c05..6ec08725f98462a7cd6aa9e4445ef56ac88e8ae6 100644
+--- a/content/browser/media/media_web_contents_observer.cc
++++ b/content/browser/media/media_web_contents_observer.cc
+@@ -334,10 +334,11 @@ MediaWebContentsObserver::GetFullscreenVideoMediaPlayerId() const {
+   return fullscreen_player_;
+ }
+ 
+-void MediaWebContentsObserver::MediaPictureInPictureChanged(
++void MediaWebContentsObserver::OnPictureInPictureStateChanged(
++    const MediaPlayerId& player_id,
+     bool is_picture_in_picture) {
+   session_controllers_manager_->PictureInPictureStateChanged(
+-      is_picture_in_picture);
++      player_id, is_picture_in_picture);
+ }
+ 
+ void MediaWebContentsObserver::DidUpdateAudioMutingState(bool muted) {
+diff --git a/content/browser/media/media_web_contents_observer.h b/content/browser/media/media_web_contents_observer.h
+index c00bd80393030d05823ad2113e5d449f2e0f3cb3..fed08333a5eaa818b6c4d550765888e406c0ef3e 100644
+--- a/content/browser/media/media_web_contents_observer.h
++++ b/content/browser/media/media_web_contents_observer.h
+@@ -120,12 +120,15 @@ class CONTENT_EXPORT MediaWebContentsObserver
+   // WebContentsObserver implementation.
+   void WebContentsDestroyed() override;
+   void RenderFrameDeleted(RenderFrameHost* render_frame_host) override;
+-  void MediaPictureInPictureChanged(bool is_picture_in_picture) override;
+   void DidUpdateAudioMutingState(bool muted) override;
+   void DidStartNavigation(NavigationHandle* navigation_handle) override;
+   void RenderFrameHostChanged(RenderFrameHost* old_host,
+                               RenderFrameHost* new_host) override;
+ 
++  // Called when entering/leaving Picture-in-Picture for the given media player.
++  void OnPictureInPictureStateChanged(const MediaPlayerId& player_id,
++                                      bool is_picture_in_picture);
++
+   // MediaPlayerObserverClient implementation.
+   void GetHasPlayedBefore(GetHasPlayedBeforeCallback callback) override;
+ 
+diff --git a/content/browser/media/session/media_session_controller.cc b/content/browser/media/session/media_session_controller.cc
+index 38d3946d95845970f834aa44f83564909d0fcea0..2841d247cd00069c34115c8e3ff8577849ae5f0b 100644
+--- a/content/browser/media/session/media_session_controller.cc
++++ b/content/browser/media/session/media_session_controller.cc
+@@ -203,6 +203,7 @@ void MediaSessionController::OnPlaybackPaused(bool reached_end_of_stream) {
+ 
+ void MediaSessionController::PictureInPictureStateChanged(
+     bool is_picture_in_picture) {
++  is_in_picture_in_picture_ = is_picture_in_picture;
+   AddOrRemovePlayer();
+ }
+ 
+@@ -250,8 +251,9 @@ void MediaSessionController::OnVideoVisibilityChanged(
+ }
+ 
+ bool MediaSessionController::IsMediaSessionNeeded() const {
+-  if (web_contents_->HasPictureInPictureVideo())
++  if (is_in_picture_in_picture_) {
+     return true;
++  }
+ 
+   if (!is_playback_in_progress_)
+     return false;
+diff --git a/content/browser/media/session/media_session_controller.h b/content/browser/media/session/media_session_controller.h
+index 92abafb5667eb6d72fe39d8a53a82a7be9c37c58..890b9a383cb18775ce67b774f70c17be497ecd7c 100644
+--- a/content/browser/media/session/media_session_controller.h
++++ b/content/browser/media/session/media_session_controller.h
+@@ -149,6 +149,7 @@ class CONTENT_EXPORT MediaSessionController
+   bool has_audio_ = false;
+   bool has_video_ = false;
+   bool is_picture_in_picture_available_ = false;
++  bool is_in_picture_in_picture_ = false;
+   bool has_sufficiently_visible_video_ = false;
+   std::string audio_output_sink_id_ =
+       media::AudioDeviceDescription::kDefaultDeviceId;
+diff --git a/content/browser/media/session/media_session_controller_unittest.cc b/content/browser/media/session/media_session_controller_unittest.cc
+index d95ab6aa401224c567d2e3b083ec9e2ae4888b34..d98622ecc6c2c6ab99a6b7c3e5e073a992afd3d4 100644
+--- a/content/browser/media/session/media_session_controller_unittest.cc
++++ b/content/browser/media/session/media_session_controller_unittest.cc
+@@ -12,7 +12,9 @@
+ #include "content/browser/media/media_web_contents_observer.h"
+ #include "content/browser/media/session/audio_focus_delegate.h"
+ #include "content/browser/media/session/media_session_impl.h"
++#include "content/browser/media/session/mock_media_session_service_impl.h"
+ #include "content/public/browser/media_device_id.h"
++#include "content/public/test/navigation_simulator.h"
+ #include "content/test/mock_agent_scheduling_group_host.h"
+ #include "content/test/test_render_view_host.h"
+ #include "content/test/test_web_contents.h"
+@@ -707,6 +709,7 @@ TEST_F(MediaSessionControllerTest,
+ TEST_F(MediaSessionControllerTest,
+        AddPlayerInitiallyPictureInPictureWithNoAudio) {
+   contents()->SetHasPictureInPictureVideo(true);
++  controller_->PictureInPictureStateChanged(true);
+ 
+   controller_->SetMetadata(
+       /* has_audio = */ false, /* has_video = */ true,
+@@ -720,6 +723,49 @@ TEST_F(MediaSessionControllerTest,
+   EXPECT_FALSE(media_session()->IsActive());
+ }
+ 
++TEST_F(MediaSessionControllerTest,
++       SubframePlayerWithNoAudioNotAddedWhenMainFrameInPictureInPicture) {
++  contents()->GetPrimaryMainFrame()->InitializeRenderFrameIfNeeded();
++  contents()->NavigateAndCommit(GURL("http://www.example.com"));
++  id_ = MediaPlayerId(contents()->GetPrimaryMainFrame()->GetGlobalId(), 0);
++  controller_ = CreateController();
++
++  TestRenderFrameHost* subframe =
++      contents()->GetPrimaryMainFrame()->AppendChild("subframe");
++  subframe = static_cast<TestRenderFrameHost*>(
++      NavigationSimulator::NavigateAndCommitFromDocument(
++          GURL("http://www.other.com"), subframe));
++  MockMediaSessionServiceImpl subframe_service(subframe);
++  subframe_service.EnableAction(
++      media_session::mojom::MediaSessionAction::kToggleMicrophone);
++
++  // Main frame player is playing with audio and enters Picture-in-Picture,
++  // without a MediaSessionService on the main frame.
++  controller_->SetMetadata(
++      /*has_audio=*/true, /*has_video=*/true,
++      media::MediaContentType::kPersistent);
++  ASSERT_TRUE(controller_->OnPlaybackStarted());
++  contents()->SetHasPictureInPictureVideo(true);
++  controller_->PictureInPictureStateChanged(true);
++  ASSERT_TRUE(media_session()->IsActive());
++  ASSERT_FALSE(media_session()->ShouldRouteAction(
++      media_session::mojom::MediaSessionAction::kToggleMicrophone));
++
++  // A muted (no-audio) player in the cross-origin subframe starts playing.
++  // Because it is not the Picture-in-Picture player and has no audio, it must
++  // not be added to the MediaSession, and the subframe's MediaSessionService
++  // must not be routed.
++  MediaPlayerId subframe_player_id(subframe->GetGlobalId(), 0);
++  auto subframe_controller =
++      std::make_unique<MediaSessionController>(subframe_player_id, contents());
++  subframe_controller->SetMetadata(
++      /*has_audio=*/false, /*has_video=*/true,
++      media::MediaContentType::kPersistent);
++  ASSERT_TRUE(subframe_controller->OnPlaybackStarted());
++  EXPECT_FALSE(media_session()->ShouldRouteAction(
++      media_session::mojom::MediaSessionAction::kToggleMicrophone));
++}
++
+ TEST_F(MediaSessionControllerTest,
+        AddPlayerWhenStartingRemotePlaybackWithNoAudio) {
+   controller_->SetMetadata(
+diff --git a/content/browser/media/session/media_session_controllers_manager.cc b/content/browser/media/session/media_session_controllers_manager.cc
+index af2f16a3a16063e659d2eac42891248564ea7977..dc3e7d6f9f342bc18057b5a4e83dcc2ee9ebd6ac 100644
+--- a/content/browser/media/session/media_session_controllers_manager.cc
++++ b/content/browser/media/session/media_session_controllers_manager.cc
+@@ -89,12 +89,22 @@ void MediaSessionControllersManager::OnMediaPositionStateChanged(
+ }
+ 
+ void MediaSessionControllersManager::PictureInPictureStateChanged(
++    const MediaPlayerId& id,
+     bool is_picture_in_picture) {
+-  if (!IsMediaSessionEnabled())
++  if (!IsMediaSessionEnabled()) {
+     return;
++  }
+ 
+-  for (auto& entry : controllers_map_)
+-    entry.second->PictureInPictureStateChanged(is_picture_in_picture);
++  if (!is_picture_in_picture) {
++    auto it = controllers_map_.find(id);
++    if (it != controllers_map_.end()) {
++      it->second->PictureInPictureStateChanged(false);
++    }
++    return;
++  }
++
++  MediaSessionController* const controller = FindOrCreateController(id);
++  controller->PictureInPictureStateChanged(true);
+ }
+ 
+ void MediaSessionControllersManager::WebContentsMutedStateChanged(bool muted) {
+diff --git a/content/browser/media/session/media_session_controllers_manager.h b/content/browser/media/session/media_session_controllers_manager.h
+index 57bf1a599b8b6f4bb9869bd76bc0a93ecc182b02..fee954af87889679c8682905de486b8fc4d35ecc 100644
+--- a/content/browser/media/session/media_session_controllers_manager.h
++++ b/content/browser/media/session/media_session_controllers_manager.h
+@@ -67,9 +67,10 @@ class CONTENT_EXPORT MediaSessionControllersManager {
+       const MediaPlayerId& id,
+       const media_session::MediaPosition& position);
+ 
+-  // Called when entering/leaving Picture-in-Picture for the associated
+-  // WebContents.
+-  void PictureInPictureStateChanged(bool is_picture_in_picture);
++  // Called when entering/leaving Picture-in-Picture for the given media
++  // player.
++  void PictureInPictureStateChanged(const MediaPlayerId& id,
++                                    bool is_picture_in_picture);
+ 
+   // Called when the WebContents was muted or unmuted.
+   void WebContentsMutedStateChanged(bool muted);
+diff --git a/content/browser/media/session/media_session_controllers_manager_unittest.cc b/content/browser/media/session/media_session_controllers_manager_unittest.cc
+index 4121a665bcc0d315302b6276fcaabcb9a77fc442..89eeaa90d1a7fb81e144b827845bf7764008b141 100644
+--- a/content/browser/media/session/media_session_controllers_manager_unittest.cc
++++ b/content/browser/media/session/media_session_controllers_manager_unittest.cc
+@@ -360,6 +360,41 @@ TEST_P(MediaSessionControllersManagerTest,
+   observer.WaitForExpectedActions(GetDefaultActions());
+ }
+ 
++TEST_P(MediaSessionControllersManagerTest,
++       PictureInPictureStateChangedOnlyAffectsTargetPlayer) {
++  if (!IsMediaSessionEnabled()) {
++    return;
++  }
++
++  // Player 1 is paused in the main frame.
++  manager_->OnMetadata(media_player_id_, /*has_audio=*/true, /*has_video=*/true,
++                       media::MediaContentType::kPersistent);
++  EXPECT_TRUE(manager_->RequestPlay(media_player_id_));
++  manager_->OnPause(media_player_id_, /*reached_end_of_stream=*/false);
++  ASSERT_FALSE(media_session()->IsActive());
++
++  // Player 2 is playing without audio. It should not activate the session.
++  manager_->OnMetadata(media_player_id2_, /*has_audio=*/false,
++                       /*has_video=*/true,
++                       media::MediaContentType::kPersistent);
++  EXPECT_TRUE(manager_->RequestPlay(media_player_id2_));
++  EXPECT_FALSE(media_session()->IsActive());
++
++  // Player 1 enters Picture-in-Picture while still paused. Player 2 must not be
++  // added to the MediaSession, so the session remains inactive (paused).
++  manager_->PictureInPictureStateChanged(media_player_id_, true);
++  EXPECT_FALSE(media_session()->IsActive());
++  EXPECT_TRUE(media_session()->IsControllable());
++
++  // Player 2 entering Picture-in-Picture while playing activates the session.
++  manager_->PictureInPictureStateChanged(media_player_id_, false);
++  manager_->PictureInPictureStateChanged(media_player_id2_, true);
++  EXPECT_TRUE(media_session()->IsActive());
++
++  manager_->PictureInPictureStateChanged(media_player_id2_, false);
++  EXPECT_FALSE(media_session()->IsActive());
++}
++
+ TEST_P(MediaSessionControllersManagerTest, SufficientlyVisibleVideo) {
+   if (!IsMediaSessionEnabled()) {
+     return;
+diff --git a/content/browser/picture_in_picture/picture_in_picture_session.cc b/content/browser/picture_in_picture/picture_in_picture_session.cc
+index e482df7eb49ee84f1cd6eb6c4c3a4ecf99f0542f..2a43f62200855017e93f5af92a15aa1e548253a1 100644
+--- a/content/browser/picture_in_picture/picture_in_picture_session.cc
++++ b/content/browser/picture_in_picture/picture_in_picture_session.cc
+@@ -28,6 +28,7 @@ PictureInPictureSession::PictureInPictureSession(
+       &PictureInPictureSession::OnConnectionError, base::Unretained(this)));
+   media_player_remote_.set_disconnect_handler(base::BindOnce(
+       &PictureInPictureSession::OnPlayerGone, base::Unretained(this)));
++  NotifyPictureInPictureStateChanged(true);
+ }
+ 
+ PictureInPictureSession::~PictureInPictureSession() {
+@@ -44,8 +45,10 @@ void PictureInPictureSession::Update(
+     const viz::SurfaceId& surface_id,
+     const gfx::Size& natural_size,
+     bool show_play_pause_button) {
++  NotifyPictureInPictureStateChanged(false);
+   player_id_ =
+       MediaPlayerId(service_->render_frame_host().GetGlobalId(), player_id);
++  NotifyPictureInPictureStateChanged(true);
+ 
+   media_player_remote_.reset();
+   media_player_remote_.Bind(std::move(player_remote));
+@@ -62,10 +65,22 @@ void PictureInPictureSession::UpdateMediaPosition(
+ }
+ 
+ void PictureInPictureSession::OnPlayerGone() {
++  if (!is_stopping_) {
++    NotifyPictureInPictureStateChanged(false);
++  }
+   player_id_.reset();
+   GetController().SetPlaybackControlsVisibility(false);
+ }
+ 
++void PictureInPictureSession::NotifyPictureInPictureStateChanged(
++    bool is_picture_in_picture) {
++  if (!player_id_.has_value()) {
++    return;
++  }
++  GetController().OnPictureInPictureStateChanged(*player_id_,
++                                                 is_picture_in_picture);
++}
++
+ void PictureInPictureSession::NotifyWindowResized(const gfx::Size& size) {
+   observer_->OnWindowSizeChanged(size);
+ }
+@@ -85,6 +100,7 @@ void PictureInPictureSession::Disconnect() {
+     return;
+ 
+   is_stopping_ = true;
++  NotifyPictureInPictureStateChanged(false);
+   observer_->OnStopped();
+ }
+ 
+@@ -99,6 +115,7 @@ void PictureInPictureSession::StopInternal(StopCallback callback) {
+   DCHECK(!is_stopping_);
+ 
+   is_stopping_ = true;
++  NotifyPictureInPictureStateChanged(false);
+ 
+   // `OnStopped()` should only be called if there is no callback to run, as a
+   // contract in the API.
+diff --git a/content/browser/picture_in_picture/picture_in_picture_session.h b/content/browser/picture_in_picture/picture_in_picture_session.h
+index ed1d75efa6afdcea396964f8aac8ca9639385ecf..9d74a296c7b57e0dbe8c2aa2b50735e9e5a05fd1 100644
+--- a/content/browser/picture_in_picture/picture_in_picture_session.h
++++ b/content/browser/picture_in_picture/picture_in_picture_session.h
+@@ -88,6 +88,8 @@ class PictureInPictureSession : public blink::mojom::PictureInPictureSession {
+   // media player is destroyed while the session is still active.
+   void OnPlayerGone();
+ 
++  void NotifyPictureInPictureStateChanged(bool is_picture_in_picture);
++
+   // Returns the WebContentsImpl associated with this Picture-in-Picture
+   // session. It relies on the WebContents associated with the |service_|.
+   WebContentsImpl* GetWebContentsImpl();
+diff --git a/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.cc b/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.cc
+index 469b47ea31e1837fb6dd121aeaa8af1ab1a1f177..b3931847e4be716ed588e046fa584b7872500bf8 100644
+--- a/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.cc
++++ b/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.cc
+@@ -423,6 +423,15 @@ void VideoPictureInPictureWindowControllerImpl::SetPlaybackControlsVisibility(
+   }
+ }
+ 
++void VideoPictureInPictureWindowControllerImpl::OnPictureInPictureStateChanged(
++    const MediaPlayerId& player_id,
++    bool is_picture_in_picture) {
++  if (WebContentsImpl* web_contents = GetWebContentsImpl()) {
++    web_contents->media_web_contents_observer()->OnPictureInPictureStateChanged(
++        player_id, is_picture_in_picture);
++  }
++}
++
+ void VideoPictureInPictureWindowControllerImpl::SkipAd() {
+   if (media_session_action_skip_ad_handled_)
+     MediaSession::Get(web_contents())->SkipAd();
+diff --git a/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.h b/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.h
+index debab962915e3676cb37efceb56199cb0d1fcbf9..d7ca841a5da3c159790b3b414713defc38518d9c 100644
+--- a/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.h
++++ b/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.h
+@@ -131,6 +131,11 @@ class CONTENT_EXPORT VideoPictureInPictureWindowControllerImpl
+   // Called to show or hide the playback controls.
+   void SetPlaybackControlsVisibility(bool is_visible);
+ 
++  // Called by PictureInPictureSession when a media player enters or leaves
++  // Picture-in-Picture.
++  void OnPictureInPictureStateChanged(const MediaPlayerId& player_id,
++                                      bool is_picture_in_picture);
++
+   // Called by PictureInPictureServiceImpl when a session request is received.
+   // The call should return the |session_remote| and |window_size| as out
+   // params. A failure to create the session should be expressed with an empty

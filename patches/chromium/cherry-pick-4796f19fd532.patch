@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Chapovalov <danilchap@chromium.org>
+Date: Mon, 2 Nov 2026 16:19:47 -0800
+Subject: [M150] Do not unsubscribe EmptyNetworkManager when not subscribed
+
+Original change's description:
+> Do not unsubscribe EmptyNetworkManager when not subscribed
+>
+> Bug: chromium:577403757
+> Change-Id: I17c0c04e6deb581a2fbb0d6cfd932f8d4a1db94e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8669310
+> Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+> Commit-Queue: Danil Chapovalov <danilchap@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1729489}
+
+(cherry picked from commit dde853af4bf85070c66f88ba822e512494688975)
+
+Bug: 580667721,chromium:577403757
+Change-Id: I17c0c04e6deb581a2fbb0d6cfd932f8d4a1db94e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8710812
+Pure-Cherry-Pick: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4555}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/platform/p2p/empty_network_manager.cc b/third_party/blink/renderer/platform/p2p/empty_network_manager.cc
+index d742aaff48515d6d20c608b8d4538b993a5946a8..6b316d730e16292158cc1672e0713f90ff727e47 100644
+--- a/third_party/blink/renderer/platform/p2p/empty_network_manager.cc
++++ b/third_party/blink/renderer/platform/p2p/empty_network_manager.cc
+@@ -30,7 +30,8 @@ EmptyNetworkManager::EmptyNetworkManager(
+ 
+ EmptyNetworkManager::~EmptyNetworkManager() {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+-  if (network_manager_for_signaling_thread_) {
++  if (network_manager_for_signaling_thread_ != nullptr &&
++      subscribe_networks_changed_called_) {
+     network_manager_for_signaling_thread_->UnsubscribeNetworksChanged(this);
+   }
+ }

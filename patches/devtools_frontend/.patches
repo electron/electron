@@ -1,2 +1,10 @@
 chore_expose_ui_to_allow_electron_to_set_dock_side.patch
 feat_allow_enabling_extension_panels_on_custom_protocols.patch
+cherry-pick-91f0dd0b4ed4.patch
+cherry-pick-c2153bf24a44.patch
+cherry-pick-6c25c4672f7e.patch
+cherry-pick-82b871b8ea9c.patch
+cherry-pick-fe0866266df5.patch
+cherry-pick-6ddb961d96ce.patch
+cherry-pick-0ab6cb7a3582.patch
+cherry-pick-c637ae5f74a6.patch

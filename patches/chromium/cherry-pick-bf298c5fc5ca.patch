@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Fri, 9 Oct 2026 14:11:53 -0700
+Subject: [html-in-canvas] Keep MailboxTextureBacking single-threaded
+
+In nested html-in-canvas scenarios, GetCanvasSnapshot recorded a nested
+canvas snapshot without first making it unaccelerated. When transferred
+to worker threads via ElementImage, a single-threaded
+MailboxTextureBacking object bound to the main thread's GPU context
+could be used on worker threads, causing multiple threads to
+simultaneously use the main thread's unsynchronized
+RasterContextProvider. This patch ensures GetCanvasSnapshot only draws
+an unaccelerated snapshot, similar to the non-nested case in
+HTMLCanvasElement::PaintInternal.
+
+To harden against this issue, the existing MailboxTextureBacking thread
+checks have been converted to CHECKS, and have been expanded.
+
+Fixed: 569129173
+Change-Id: Ide09e9375da36ba55bf3dca69d5eb1d2811112c7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8549355
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Auto-Submit: Philip Rogers <pdr@chromium.org>
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716006}
+
+Electron adaptation notes (43-x-y):
+This branch has neither the nested-canvas snapshot helper in LocalFrameView (GetCanvasSnapshot) nor MailboxTextureBacking::Bind()/Unbind(), so those hunks have no counterpart and were dropped; the remaining MailboxTextureBacking changes (ThreadCheckerImpl member and CHECK-level thread checks in the destructor, GetSkImageViaReadback() and readPixels()) applied unchanged. The new web test did not merge and was dropped (test-only).
+
+diff --git a/third_party/blink/renderer/platform/graphics/mailbox_texture_backing.cc b/third_party/blink/renderer/platform/graphics/mailbox_texture_backing.cc
+index 6bb8412a3680e3c2a5afb8c54bd41a2233c006c5..48a849414562e356e68c6882a5dd609d3593d96d 100644
+--- a/third_party/blink/renderer/platform/graphics/mailbox_texture_backing.cc
++++ b/third_party/blink/renderer/platform/graphics/mailbox_texture_backing.cc
+@@ -34,7 +34,7 @@ MailboxTextureBacking::MailboxTextureBacking(
+ }
+ 
+ MailboxTextureBacking::~MailboxTextureBacking() {
+-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  CHECK(thread_checker_.CalledOnValidThread());
+   gpu::raster::RasterInterface* ri = context_provider_->RasterInterface();
+   // Update the sync token for MailboxRef.
+   ri->WaitSyncTokenCHROMIUM(mailbox_ref_->sync_token().GetConstData());
+@@ -52,7 +52,7 @@ gpu::Mailbox MailboxTextureBacking::GetMailbox() const {
+ }
+ 
+ sk_sp<SkImage> MailboxTextureBacking::GetSkImageViaReadback() {
+-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  CHECK(thread_checker_.CalledOnValidThread());
+   // TODO(jochin): Consider doing some caching and using discardable memory.
+   sk_sp<SkData> image_pixels =
+       TryAllocateSkData(sk_image_info_.computeMinByteSize());
+@@ -78,7 +78,7 @@ bool MailboxTextureBacking::readPixels(const SkImageInfo& dst_info,
+                                        size_t dst_row_bytes,
+                                        int src_x,
+                                        int src_y) {
+-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  CHECK(thread_checker_.CalledOnValidThread());
+   gpu::raster::RasterInterface* ri = context_provider_->RasterInterface();
+   return ri->ReadbackImagePixels(GetMailbox(), dst_info,
+                                  static_cast<GLuint>(dst_info.minRowBytes()),
+diff --git a/third_party/blink/renderer/platform/graphics/mailbox_texture_backing.h b/third_party/blink/renderer/platform/graphics/mailbox_texture_backing.h
+index 9473bafc67e7ab9e9265e13edd8da179a3ddbc66..f8eeea7c8281c7fc656dea5b2a188fae742f3afe 100644
+--- a/third_party/blink/renderer/platform/graphics/mailbox_texture_backing.h
++++ b/third_party/blink/renderer/platform/graphics/mailbox_texture_backing.h
+@@ -48,7 +48,7 @@ class MailboxTextureBacking : public TextureBacking {
+   std::unique_ptr<gpu::RasterScopedAccess> scoped_access_;
+   const SkImageInfo sk_image_info_;
+   scoped_refptr<viz::RasterContextProvider> context_provider_;
+-  THREAD_CHECKER(thread_checker_);
++  base::ThreadCheckerImpl thread_checker_;
+ };
+ 
+ }  // namespace blink

@@ -1,0 +1,299 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Fri, 30 Oct 2026 03:09:44 +0000
+Subject: [M150-LTS] Fix UAF in
+ TransitionPseudoElementData::ClearPseudoElements
+
+Move transition_containers_ into a local map before disposing entries
+in TransitionPseudoElementData::ClearPseudoElements, and release
+column_pseudo_elements_ and transition_data_ before clearing them in
+PseudoElementData::ClearPseudoElements so re-entrant lookups or
+mutations cannot invalidate an active iterator.
+
+Also prevent PseudoElements from being registered in TreeScope ID or
+name maps in Element::UpdateId and Element::UpdateName, and ensure
+HitTestResult::GetPosition uses inner_node_ rather than a PseudoElement
+when ChildPaintBlockedByDisplayLock is true.
+
+Fixed: 576169244
+Bug: 576169244
+Change-Id: I3d412dd2defa1eb3149d1d1fa254a8a367571f4c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8634694
+Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Commit-Queue: Noam Rosenthal <nrosenthal@google.com>
+Cr-Commit-Position: refs/heads/main@{#1726202}
+(cherry picked from commit 554e3951f46e8a68f49fd6c7a6ff65a0b3f435fd)
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index a8a2244eba7275d8875d0de7aaa1a15343a89e73..ad5fe7dacab04a6373a30609b94d6555e674323b 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -11665,7 +11665,7 @@ bool Element::HasNamedNodeMap() const {
+ 
+ inline void Element::UpdateName(const AtomicString& old_name,
+                                 const AtomicString& new_name) {
+-  if (!IsInDocumentTree()) {
++  if (!IsInDocumentTree() || IsPseudoElement()) {
+     return;
+   }
+ 
+@@ -11681,7 +11681,7 @@ inline void Element::UpdateName(const AtomicString& old_name,
+ 
+ inline void Element::UpdateId(const AtomicString& old_id,
+                               const AtomicString& new_id) {
+-  if (!IsInTreeScope()) {
++  if (!IsInTreeScope() || IsPseudoElement()) {
+     return;
+   }
+ 
+@@ -11696,6 +11696,9 @@ inline void Element::UpdateId(const AtomicString& old_id,
+ inline void Element::UpdateId(TreeScope& scope,
+                               const AtomicString& old_id,
+                               const AtomicString& new_id) {
++  if (IsPseudoElement()) {
++    return;
++  }
+   DCHECK(IsInTreeScope());
+   DCHECK_NE(old_id, new_id);
+ 
+@@ -13000,6 +13003,13 @@ void Element::UpdateTransitionPseudoElements(
+     return;
+   }
+ 
++  if (ChildStyleRecalcBlockedByDisplayLock()) {
++    GetDisplayLockContext()->NotifyChildStyleRecalcWasBlocked(
++        style_recalc_change.EnsureAtLeast(
++            StyleRecalcChange::kUpdatePseudoElements));
++    return;
++  }
++
+   switch (GetPseudoId()) {
+     case kPseudoIdViewTransition: {
+       for (const AtomicString& name :
+diff --git a/third_party/blink/renderer/core/dom/pseudo_element_data.h b/third_party/blink/renderer/core/dom/pseudo_element_data.h
+index c323c7778726ed69c69ba1aab3580db6e2fba13f..7af27dfbfb1166947d2817a43a139f3a3aa11df5 100644
+--- a/third_party/blink/renderer/core/dom/pseudo_element_data.h
++++ b/third_party/blink/renderer/core/dom/pseudo_element_data.h
+@@ -152,15 +152,15 @@ inline void PseudoElementData::ClearPseudoElements() {
+   SetPseudoElement(kPseudoIdScrollButtonInlineEnd, nullptr);
+   SetPseudoElement(kPseudoIdScrollButtonBlockEnd, nullptr);
+   SetPseudoElement(kPseudoIdOverscrollAreaParent, nullptr);
+-  if (column_pseudo_elements_) {
+-    for (ColumnPseudoElement* column_pseudo_element : *column_pseudo_elements_) {
++  if (ColumnPseudoElementsVector* columns = column_pseudo_elements_.Release()) {
++    for (ColumnPseudoElement* column_pseudo_element : *columns) {
+       column_pseudo_element->Dispose();
+     }
+-    column_pseudo_elements_->clear();
++    columns->clear();
+   }
+-  if (transition_data_) {
+-    transition_data_->ClearPseudoElements();
+-    transition_data_ = nullptr;
++  if (TransitionPseudoElementData* transition_data =
++          transition_data_.Release()) {
++    transition_data->ClearPseudoElements();
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/core/dom/transition_pseudo_element_data.h b/third_party/blink/renderer/core/dom/transition_pseudo_element_data.h
+index 480c7f087db0b1be40b7263eeedb8ebf81297500..10e6aba95e63459ca722a95d51add64e63711ee7 100644
+--- a/third_party/blink/renderer/core/dom/transition_pseudo_element_data.h
++++ b/third_party/blink/renderer/core/dom/transition_pseudo_element_data.h
+@@ -75,9 +75,11 @@ inline void TransitionPseudoElementData::ClearPseudoElements() {
+                        ? transition_incoming_image_->GetPseudoArgument()
+                        : g_null_atom);
+ 
+-  for (auto& entry : transition_containers_)
++  HeapHashMap<AtomicString, Member<PseudoElement>> containers;
++  std::swap(containers, transition_containers_);
++  for (auto& entry : containers) {
+     entry.value->Dispose();
+-  transition_containers_.clear();
++  }
+ }
+ 
+ inline void TransitionPseudoElementData::SetPseudoElement(
+diff --git a/third_party/blink/renderer/core/layout/hit_test_result.cc b/third_party/blink/renderer/core/layout/hit_test_result.cc
+index a83201158baade65b4999d33b5fabec9b582ed2a..75b720386f3fb37b5c3834b005b69f99c22413b9 100644
+--- a/third_party/blink/renderer/core/layout/hit_test_result.cc
++++ b/third_party/blink/renderer/core/layout/hit_test_result.cc
+@@ -218,8 +218,13 @@ PositionWithAffinity HitTestResult::GetPosition() const {
+   // the node as the position. This is because we don't paint contents of the
+   // element. Furthermore, any caret adjustments below can access layout-dirty
+   // state in the subtree of this object.
+-  if (layout_object->ChildPaintBlockedByDisplayLock())
+-    return PositionWithAffinity(Position(*node, 0), TextAffinity::kDefault);
++  if (layout_object->ChildPaintBlockedByDisplayLock()) {
++    const Node* anchor = node;
++    if (const auto* pseudo = DynamicTo<PseudoElement>(node)) {
++      anchor = &pseudo->UltimateOriginatingElement();
++    }
++    return PositionWithAffinity(Position(*anchor, 0), TextAffinity::kDefault);
++  }
+ 
+   if (node->IsPseudoElement()) {
+     // Pseudo-elements can't serve as caret anchors.
+@@ -270,12 +275,19 @@ PositionWithAffinity HitTestResult::GetPositionForInnerNodeOrImageMapImage()
+   // the node as the position. This is because we don't paint contents of the
+   // element. Furthermore, any caret adjustments below can access layout-dirty
+   // state in the subtree of this object.
+-  if (layout_object->ChildPaintBlockedByDisplayLock())
+-    return PositionWithAffinity(Position(*node, 0), TextAffinity::kDefault);
++  if (layout_object->ChildPaintBlockedByDisplayLock()) {
++    const Node* anchor = node;
++    if (const auto* pseudo = DynamicTo<PseudoElement>(node)) {
++      anchor = &pseudo->UltimateOriginatingElement();
++    }
++    return PositionWithAffinity(Position(*anchor, 0), TextAffinity::kDefault);
++  }
+ 
+   PositionWithAffinity position = layout_object->PositionForPoint(LocalPoint());
+-  if (position.IsNull())
+-    return PositionWithAffinity(FirstPositionInOrBeforeNode(*node));
++  if (position.IsNull()) {
++    return PositionWithAffinity(
++        FirstPositionInOrBeforeNode(*InnerNodeOrImageMapImage()));
++  }
+   return position;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/view_transition/view_transition_test.cc b/third_party/blink/renderer/core/view_transition/view_transition_test.cc
+index e0adbe6df9b9358dc779faa433ec3eecaf4af474..0323ae9398c6fb65541b4de1414fe0e990bc22e5 100644
+--- a/third_party/blink/renderer/core/view_transition/view_transition_test.cc
++++ b/third_party/blink/renderer/core/view_transition/view_transition_test.cc
+@@ -1795,4 +1795,70 @@ TEST_P(ViewTransitionTest, AutoResizeMismatchedSizes) {
+   EXPECT_EQ(GetState(transition), State::kAborted);
+ }
+ 
++TEST_P(ViewTransitionTest, ClearPseudoElementsWithNestedStyleUpdate) {
++  SetHtmlInnerHTML(R"HTML(
++    <style>
++      #a { view-transition-name: a; }
++      #b { view-transition-name: b; }
++      #c { view-transition-name: c; }
++      #d { view-transition-name: d; }
++      html.hide-vt::view-transition { display: none; }
++    </style>
++    <input id="inp" list="dl">
++    <datalist id="dl"><option id="opt" value="x" disabled></option></datalist>
++    <div id="a"></div>
++    <div id="b"></div>
++    <div id="c"></div>
++    <div id="d"></div>
++  )HTML");
++
++  UpdateAllLifecyclePhasesForTest();
++
++  ScriptState* script_state = GetScriptState();
++  ScriptState::Scope scope(script_state);
++
++  auto start_setup_lambda =
++      [](const v8::FunctionCallbackInfo<v8::Value>& info) {};
++  auto start_setup_callback =
++      v8::Function::New(script_state->GetContext(), start_setup_lambda, {})
++          .ToLocalChecked();
++
++  ViewTransitionSupplement::startViewTransition(
++      script_state, GetDocument(),
++      V8ViewTransitionCallback::Create(start_setup_callback),
++      ASSERT_NO_EXCEPTION);
++
++  UpdateAllLifecyclePhasesAndFinishDirectives();
++  test::RunPendingTasks();
++  UpdateAllLifecyclePhasesAndFinishDirectives();
++
++  Element* html = GetDocument().documentElement();
++  PseudoElement* vt = html->GetPseudoElement(kPseudoIdViewTransition);
++  ASSERT_TRUE(vt);
++
++  Element* inp = GetDocument().getElementById(AtomicString("inp"));
++  Element* opt = GetDocument().getElementById(AtomicString("opt"));
++  ASSERT_TRUE(inp);
++  ASSERT_TRUE(opt);
++
++  inp->Focus();
++
++  for (const char* name : {"root", "a", "b", "c", "d"}) {
++    PseudoElement* group =
++        vt->GetPseudoElement(kPseudoIdViewTransitionGroup, AtomicString(name));
++    ASSERT_TRUE(group);
++    group->setAttribute(html_names::kIdAttr, AtomicString("dl"));
++  }
++
++  opt->removeAttribute(html_names::kDisabledAttr);
++  html->classList().Add(AtomicString("hide-vt"));
++
++  // Disposing a pseudo-element with id="dl" notifies IdTargetObserverRegistry,
++  // which triggers a synchronous nested style and layout update from
++  // TextFieldInputType::ListAttributeTargetChanged while ClearPseudoElements
++  // is iterating over transition_containers_.
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_FALSE(html->GetPseudoElement(kPseudoIdViewTransition));
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-view-transitions/clear-pseudo-elements-nested-style-update.html b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/clear-pseudo-elements-nested-style-update.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..f72bcebe0174b97767f90cb1e1e78c3b466216a2
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/clear-pseudo-elements-nested-style-update.html
+@@ -0,0 +1,57 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<link rel="author" href="mailto:masonf@chromium.org">
++<link rel="help" href="https://crbug.com/576169244">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++
++<style>
++  #a { view-transition-name: a; }
++  #b { view-transition-name: b; }
++  #c { view-transition-name: c; }
++  #d { view-transition-name: d; }
++  ::view-transition {
++    position: static;
++    display: block;
++    width: 100vw;
++    height: 100vh;
++    pointer-events: auto;
++  }
++  ::view-transition-group(*) {
++    position: static;
++    display: block;
++    width: 100vw;
++    height: 100vh;
++    transform: none;
++    animation: none;
++    pointer-events: auto;
++    content-visibility: hidden;
++  }
++  html.hide-vt::view-transition {
++    display: none;
++  }
++</style>
++<div id="a">a</div>
++<div id="b">b</div>
++<div id="c">c</div>
++<div id="d">d</div>
++<input id="inp" list="dl">
++<datalist id="dl">
++  <option id="opt" value="x" disabled></option>
++</datalist>
++<script>
++promise_test(async t => {
++  const transition = document.startViewTransition(() => {
++    c.style.viewTransitionName = "e";
++  });
++  await transition.ready;
++  const pos = document.caretPositionFromPoint(10, 10);
++  if (pos && pos.offsetNode) {
++    inp.focus();
++    pos.offsetNode.id = "dl";
++    opt.disabled = false;
++  }
++  document.documentElement.classList.add("hide-vt");
++  getComputedStyle(document.documentElement).color;
++}, "Clearing view-transition pseudo-elements with nested style update should not crash");
++</script>

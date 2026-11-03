@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Tue, 29 Sep 2026 15:45:09 -0700
+Subject: [MediaSource] Tighten range_for_next_append_ check in FreeBuffers()
+
+Ensure the deleted GOP belongs to range_for_next_append_ and matches the
+last appended decode timestamp before preserving it for the next append.
+
+Fixed: 565681451
+Change-Id: I04096a6e87d4b9fdaa39d8ba46a0463feade3fc4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8479054
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1707555}
+
+Electron adaptation notes (43-x-y):
+Applied after the [M150-LTS] GOP-keyframe FreeBuffers() fix (cherry-pick-4835226ebff5), which on this branch already replaced the condition this hunk modifies; the resulting condition is the combined form upstream main has after both fixes (range_for_next_append_ / current_range / GOP keyframe / end timestamp / decode timestamp). The unit test hunk did not merge and was dropped (test-only).
+
+diff --git a/media/filters/source_buffer_stream.cc b/media/filters/source_buffer_stream.cc
+index 1423297ff5b5a8f72caea14ba872ba33a47e7adf..2cc8ac58c1a41b861808ac7da73a24b703e6f6e9 100644
+--- a/media/filters/source_buffer_stream.cc
++++ b/media/filters/source_buffer_stream.cc
+@@ -1018,8 +1018,12 @@ size_t SourceBufferStream::FreeBuffers(size_t total_bytes_to_free,
+ 
+     // Check to see if we've just deleted the GOP that was last appended.
+     base::TimeDelta end_timestamp = buffers.back()->timestamp();
+-    if (buffers.front()->timestamp() == last_appended_gop_keyframe_timestamp_ &&
+-        end_timestamp == last_appended_buffer_timestamp_) {
++    if (range_for_next_append_ != ranges_.end() &&
++        current_range == range_for_next_append_->get() &&
++        buffers.front()->timestamp() == last_appended_gop_keyframe_timestamp_ &&
++        end_timestamp == last_appended_buffer_timestamp_ &&
++        buffers.back()->GetDecodeTimestamp() ==
++            last_appended_buffer_decode_timestamp_) {
+       DCHECK(last_appended_buffer_timestamp_ != kNoTimestamp);
+       DCHECK(last_appended_gop_keyframe_timestamp_ != kNoTimestamp);
+       DCHECK(!new_range_for_append);

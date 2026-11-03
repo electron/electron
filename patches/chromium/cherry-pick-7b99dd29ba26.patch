@@ -1,0 +1,687 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 12 Oct 2026 17:48:14 -0700
+Subject: Key media UrlIndex by requesting SecurityOrigin
+
+Include the requesting document's SecurityOrigin in UrlData::KeyType so
+that cross-origin documents sharing a renderer process (such as Android
+WebView with SiteIsolation disabled) cannot reuse or merge cached
+UrlData entries and their origin-clean state across origins.
+
+Fixed: 571058818
+Change-Id: I8e17a3cb018a43137a3ca3ac4eae9ea756b17b87
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8543392
+Reviewed-by: Jordan Bayles <jophba@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717208}
+
+Electron adaptation notes (43-x-y):
+This branch's WebMediaPlayerImpl is still constructed from a WebLocalFrame (no FrameScheduler/SecurityOrigin constructor parameters, and DemuxerManager takes no origin), so the constructor keeps its signature and the new security_origin_ member is initialized from frame_->GetSecurityOrigin(); the media-log origin line keeps the branch's url::Origin form. UrlData gained only the security_origin() accessor (this branch has no data_origin() accessor to re-order). All UrlIndex/UrlData key changes and the GetByUrl() call sites applied unchanged.
+
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+index 87566d42b0d8b56c637173d9d205fa93abe115b1..add01c572d2194984fd69297ffd753ac86c4a4bc 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+@@ -129,16 +129,17 @@ class TestUrlData : public UrlData {
+  public:
+   TestUrlData(const KURL& url,
+               CorsMode cors_mode,
+-              base::WeakPtr<UrlIndex> url_index,
+               UrlData::CacheMode cache_mode,
+-              scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+-              media::DataSource::EncodingMode encoding_mode =
+-                  media::DataSource::EncodingMode::kIdentity)
++              scoped_refptr<const SecurityOrigin> security_origin,
++              media::DataSource::EncodingMode encoding_mode,
++              base::WeakPtr<UrlIndex> url_index,
++              scoped_refptr<base::SingleThreadTaskRunner> task_runner)
+       : UrlData(url,
+                 cors_mode,
++                cache_mode,
++                std::move(security_origin),
+                 encoding_mode,
+                 url_index,
+-                cache_mode,
+                 task_runner),
+         block_shift_(url_index->block_shift()),
+         task_runner_(std::move(task_runner)) {}
+@@ -178,11 +179,12 @@ class TestUrlIndex : public UrlIndex {
+       const KURL& url,
+       UrlData::CorsMode cors_mode,
+       UrlData::CacheMode cache_mode,
++      scoped_refptr<const SecurityOrigin> security_origin,
+       media::DataSource::EncodingMode encoding_mode) override {
+     NotifyNewUrlData(url, cors_mode, cache_mode);
+     last_url_data_ = base::MakeRefCounted<TestUrlData>(
+-        url, cors_mode, weak_factory_.GetWeakPtr(), cache_mode, task_runner_,
+-        encoding_mode);
++        url, cors_mode, cache_mode, std::move(security_origin), encoding_mode,
++        weak_factory_.GetWeakPtr(), task_runner_);
+     return last_url_data_;
+   }
+ 
+@@ -272,7 +274,8 @@ class MultiBufferDataSourceTest : public testing::Test {
+     KURL url(url_string);
+     media_log_ = std::make_unique<NiceMock<media::MockMediaLog>>();
+     data_source_ = std::make_unique<MockMultiBufferDataSource>(
+-        task_runner_, url_index_.GetByUrl(url, cors_mode, UrlData::kNormal),
++        task_runner_,
++        url_index_.GetByUrl(url, cors_mode, UrlData::kNormal, security_origin_),
+         media_log_.get(), &host_);
+     data_source_->SetPreload(preload_);
+ 
+@@ -518,6 +521,8 @@ class MultiBufferDataSourceTest : public testing::Test {
+   NiceMock<MockResourceFetchContext> fetch_context_;
+   const scoped_refptr<base::SingleThreadTaskRunner> task_runner_ =
+       task_environment_.GetMainThreadTaskRunner();
++  scoped_refptr<const SecurityOrigin> security_origin_ =
++      SecurityOrigin::CreateUniqueOpaque();
+   TestUrlIndex url_index_{&fetch_context_, task_runner_};
+ 
+   std::unique_ptr<media::MediaLog> media_log_;
+@@ -1068,7 +1073,7 @@ TEST_F(MultiBufferDataSourceTest, Http_ShareData) {
+   MockMultiBufferDataSource source2(
+       task_runner_,
+       url_index_.GetByUrl(KURL(kHttpUrl), UrlData::CORS_UNSPECIFIED,
+-                          UrlData::kNormal),
++                          UrlData::kNormal, security_origin_),
+       media_log_.get(), &host2);
+   source2.SetPreload(preload_);
+ 
+@@ -1099,7 +1104,7 @@ TEST_F(MultiBufferDataSourceTest, Http_ShareData_AtLeastOneProgress) {
+   MockMultiBufferDataSource source2(
+       task_runner_,
+       url_index_.GetByUrl(KURL(kHttpUrl), UrlData::CORS_UNSPECIFIED,
+-                          UrlData::kNormal),
++                          UrlData::kNormal, security_origin_),
+       media_log_.get(), &host2);
+   source2.SetPreload(preload_);
+   source2.Initialize(base::DoNothing());
+@@ -1538,7 +1543,8 @@ TEST_F(MultiBufferDataSourceTest, SeekPastEOF) {
+   media_log_ = std::make_unique<NiceMock<media::MockMediaLog>>();
+   data_source_ = std::make_unique<MockMultiBufferDataSource>(
+       task_runner_,
+-      url_index_.GetByUrl(url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal),
++      url_index_.GetByUrl(url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal,
++                          security_origin_),
+       media_log_.get(), &host_);
+   data_source_->SetPreload(preload_);
+ 
+@@ -1674,7 +1680,7 @@ TEST_F(MultiBufferDataSourceTest, PreserveCachingModeAfterRedirect) {
+     auto data_source = std::make_unique<MockMultiBufferDataSource>(
+         task_runner_,
+         url_index_.GetByUrl(start, UrlData::CORS_UNSPECIFIED,
+-                            UrlData::kCacheDisabled),
++                            UrlData::kCacheDisabled, security_origin_),
+         media_log_.get(), &host_);
+     data_source->SetPreload(preload_);
+     auto response_generator =
+@@ -1704,7 +1710,8 @@ TEST_F(MultiBufferDataSourceTest, PreserveCachingModeAfterRedirect) {
+     EXPECT_CALL(url_index_, NotifyNewUrlData(start, _, UrlData::kNormal));
+     auto data_source = std::make_unique<MockMultiBufferDataSource>(
+         task_runner_,
+-        url_index_.GetByUrl(start, UrlData::CORS_UNSPECIFIED, UrlData::kNormal),
++        url_index_.GetByUrl(start, UrlData::CORS_UNSPECIFIED, UrlData::kNormal,
++                            security_origin_),
+         media_log_.get(), &host_);
+     data_source->SetPreload(preload_);
+     auto response_generator =
+@@ -1734,7 +1741,7 @@ TEST_F(MultiBufferDataSourceTest, PreserveCachingModeAfterRedirect) {
+     auto data_source = std::make_unique<MockMultiBufferDataSource>(
+         task_runner_,
+         url_index_.GetByUrl(start, UrlData::CORS_UNSPECIFIED,
+-                            UrlData::kCacheDisabled),
++                            UrlData::kCacheDisabled, security_origin_),
+         media_log_.get(), &host_);
+     data_source->SetPreload(preload_);
+     auto response_generator =
+@@ -2018,7 +2025,8 @@ TEST_F(MultiBufferDataSourceTest, Http_CheckLoadingTransition) {
+   media_log_ = std::make_unique<NiceMock<media::MockMediaLog>>();
+   data_source_ = std::make_unique<MockMultiBufferDataSource>(
+       task_runner_,
+-      url_index_.GetByUrl(url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal),
++      url_index_.GetByUrl(url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal,
++                          security_origin_),
+       media_log_.get(), &host_);
+   data_source_->SetPreload(preload_);
+ 
+@@ -2135,8 +2143,9 @@ TEST_F(MultiBufferDataSourceTest, FactoryCreation) {
+   MultiBufferDataSource::Factory factory(
+       std::move(media_log),
+       base::BindRepeating(
+-          [](UrlIndex* url_index, const GURL& url,
+-             media::DataSource::CacheMode cache_mode,
++          [](UrlIndex* url_index,
++             scoped_refptr<const SecurityOrigin> security_origin,
++             const GURL& url, media::DataSource::CacheMode cache_mode,
+              media::DataSource::EncodingMode encoding_mode,
+              base::OnceCallback<void(scoped_refptr<UrlData>)> cb) {
+             std::move(cb).Run(url_index->GetByUrl(
+@@ -2144,9 +2153,9 @@ TEST_F(MultiBufferDataSourceTest, FactoryCreation) {
+                 cache_mode == media::DataSource::CacheMode::kBypassCache
+                     ? UrlData::kCacheDisabled
+                     : UrlData::kNormal,
+-                encoding_mode));
++                std::move(security_origin), encoding_mode));
+           },
+-          base::Unretained(&url_index_)),
++          base::Unretained(&url_index_), security_origin_),
+       /*is_audio_element=*/true,
+       /*preload=*/media::DataSource::METADATA,
+       base::BindRepeating(
+@@ -2172,9 +2181,10 @@ TEST_F(MultiBufferDataSourceTest, FactoryCreation) {
+   EXPECT_EQ(GetPreload(mb_source), media::DataSource::METADATA);
+   EXPECT_TRUE(GetIsClientAudioElement(mb_source));
+ 
+-  CallOnRedirected(mb_source, url_index_.GetByUrl(KURL(kHttpDifferentOriginUrl),
+-                                                  UrlData::CORS_UNSPECIFIED,
+-                                                  UrlData::kNormal));
++  CallOnRedirected(mb_source,
++                   url_index_.GetByUrl(KURL(kHttpDifferentOriginUrl),
++                                       UrlData::CORS_UNSPECIFIED,
++                                       UrlData::kNormal, security_origin_));
+   EXPECT_TRUE(redirect_called);
+ }
+ 
+@@ -2184,8 +2194,9 @@ TEST_F(MultiBufferDataSourceTest, FactoryCreationDefault) {
+       /*media_log=*/std::move(media_log),
+       /*get_url_data=*/
+       base::BindRepeating(
+-          [](UrlIndex* url_index, const GURL& url,
+-             media::DataSource::CacheMode cache_mode,
++          [](UrlIndex* url_index,
++             scoped_refptr<const SecurityOrigin> security_origin,
++             const GURL& url, media::DataSource::CacheMode cache_mode,
+              media::DataSource::EncodingMode encoding_mode,
+              base::OnceCallback<void(scoped_refptr<UrlData>)> cb) {
+             std::move(cb).Run(url_index->GetByUrl(
+@@ -2193,9 +2204,9 @@ TEST_F(MultiBufferDataSourceTest, FactoryCreationDefault) {
+                 cache_mode == media::DataSource::CacheMode::kBypassCache
+                     ? UrlData::kCacheDisabled
+                     : UrlData::kNormal,
+-                encoding_mode));
++                std::move(security_origin), encoding_mode));
+           },
+-          base::Unretained(&url_index_)),
++          base::Unretained(&url_index_), security_origin_),
+       /*is_audio_element=*/false,
+       /*preload=*/media::DataSource::METADATA, base::DoNothing(), nullptr,
+       task_runner_);
+@@ -2220,9 +2231,10 @@ TEST_F(MultiBufferDataSourceTest, FactoryCreationDefault) {
+   EXPECT_FALSE(GetIsClientAudioElement(mb_source));
+ 
+   // Should not crash if tainted_source_cb is not set.
+-  CallOnRedirected(mb_source, url_index_.GetByUrl(KURL(kHttpDifferentPathUrl),
+-                                                  UrlData::CORS_UNSPECIFIED,
+-                                                  UrlData::kNormal));
++  CallOnRedirected(mb_source,
++                   url_index_.GetByUrl(KURL(kHttpDifferentPathUrl),
++                                       UrlData::CORS_UNSPECIFIED,
++                                       UrlData::kNormal, security_origin_));
+ }
+ 
+ TEST_F(MultiBufferDataSourceTest, Http_RedirectToCachedUrlWithStopPreloading) {
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 270e33221a8c3884724038c7498cfc0eaf99e4c2..cfa32f824d80f77f2d9818bdede7a1b0694e07f6 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -262,7 +262,8 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+ 
+   if (!redirects_to_.IsEmpty()) {
+     destination_url_data = url_data_->url_index()->GetByUrl(
+-        redirects_to_, cors_mode_, url_data_->cache_lookup_mode());
++        redirects_to_, cors_mode_, url_data_->cache_lookup_mode(),
++        url_data_->security_origin(), url_data_->encoding_mode());
+     redirects_to_ = KURL();
+   }
+ 
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index 47dcc2ec1c46703e535295d3c8658d546a45f6b1..a9c7f36893b4f8d1fbda3e6611162c1545eeaa7e 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -94,8 +94,9 @@ class ResourceMultiBufferDataProviderTest : public testing::Test {
+                   media::DataSource::EncodingMode encoding_mode =
+                       media::DataSource::EncodingMode::kIdentity) {
+     url_ = KURL(url);
+-    url_data_ = url_index_->GetByUrl(url_, UrlData::CORS_UNSPECIFIED,
+-                                     UrlData::kNormal, encoding_mode);
++    url_data_ =
++        url_index_->GetByUrl(url_, UrlData::CORS_UNSPECIFIED, UrlData::kNormal,
++                             security_origin_, encoding_mode);
+     url_data_->set_etag(kEtag);
+     DCHECK(url_data_);
+     url_data_->OnRedirect(
+@@ -222,6 +223,8 @@ class ResourceMultiBufferDataProviderTest : public testing::Test {
+   int32_t first_position_;
+ 
+   NiceMock<MockResourceFetchContext> fetch_context_;
++  scoped_refptr<const SecurityOrigin> security_origin_ =
++      SecurityOrigin::CreateUniqueOpaque();
+   std::unique_ptr<UrlIndex> url_index_;
+   scoped_refptr<UrlData> url_data_;
+   scoped_refptr<UrlData> redirected_to_;
+@@ -373,6 +376,7 @@ TEST_F(ResourceMultiBufferDataProviderTest, TestRedirects) {
+   Start();
+   Redirect(kHttpRedirect);
+   FullResponse(1024);
++  EXPECT_EQ(url_data_->security_origin(), security_origin_);
+   StopWhenLoad();
+ }
+ 
+@@ -535,8 +539,8 @@ TEST_F(ResourceMultiBufferDataProviderTest, DestructedUrlIndexStartViaReader) {
+   url_index_ = std::make_unique<UrlIndex>(
+       &fetch_context_, task_environment_.GetMainThreadTaskRunner());
+   url_ = KURL(kHttpUrl);
+-  url_data_ =
+-      url_index_->GetByUrl(url_, UrlData::CORS_UNSPECIFIED, UrlData::kNormal);
++  url_data_ = url_index_->GetByUrl(url_, UrlData::CORS_UNSPECIFIED,
++                                   UrlData::kNormal, security_origin_);
+ 
+   std::unique_ptr<MultiBufferReader> reader;
+   url_data_->OnRedirect(blink::BindOnce(
+diff --git a/third_party/blink/renderer/platform/media/url_index.cc b/third_party/blink/renderer/platform/media/url_index.cc
+index 710face490a9b9fecca7209e04b8aae987165979..1559034678f0936d78fa8dd94fd934a6fea6f664 100644
+--- a/third_party/blink/renderer/platform/media/url_index.cc
++++ b/third_party/blink/renderer/platform/media/url_index.cc
+@@ -51,27 +51,42 @@ void ResourceMultiBuffer::OnEmpty() {
+   url_data_->OnEmpty();
+ }
+ 
++// static
++UrlData::KeyType UrlData::MakeKey(
++    const KURL& url,
++    scoped_refptr<const SecurityOrigin> security_origin,
++    CorsMode cors_mode,
++    media::DataSource::EncodingMode encoding_mode) {
++  return std::make_pair(
++      url, std::make_pair(std::move(security_origin),
++                          std::make_pair(cors_mode, encoding_mode)));
++}
++
+ UrlData::UrlData(base::PassKey<UrlIndex>,
+                  const KURL& url,
+                  CorsMode cors_mode,
++                 CacheMode cache_lookup_mode,
++                 scoped_refptr<const SecurityOrigin> security_origin,
+                  media::DataSource::EncodingMode encoding_mode,
+                  base::WeakPtr<UrlIndex> url_index,
+-                 CacheMode cache_lookup_mode,
+                  scoped_refptr<base::SingleThreadTaskRunner> task_runner)
+     : UrlData(url,
+               cors_mode,
++              cache_lookup_mode,
++              std::move(security_origin),
+               encoding_mode,
+               url_index,
+-              cache_lookup_mode,
+               std::move(task_runner)) {}
+ 
+ UrlData::UrlData(const KURL& url,
+                  CorsMode cors_mode,
++                 CacheMode cache_lookup_mode,
++                 scoped_refptr<const SecurityOrigin> security_origin,
+                  media::DataSource::EncodingMode encoding_mode,
+                  base::WeakPtr<UrlIndex> url_index,
+-                 CacheMode cache_lookup_mode,
+                  scoped_refptr<base::SingleThreadTaskRunner> task_runner)
+     : url_(url),
++      security_origin_(std::move(security_origin)),
+       cors_mode_(cors_mode),
+       has_access_control_(false),
+       url_index_(url_index),
+@@ -80,13 +95,15 @@ UrlData::UrlData(const KURL& url,
+       cacheable_(false),
+       cache_lookup_mode_(cache_lookup_mode),
+       encoding_mode_(encoding_mode),
+-      multibuffer_(this, url_index_->block_shift(), std::move(task_runner)) {}
++      multibuffer_(this, url_index_->block_shift(), std::move(task_runner)) {
++  CHECK(security_origin_);
++}
+ 
+ UrlData::~UrlData() = default;
+ 
+ UrlData::KeyType UrlData::key() const {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+-  return std::make_pair(url(), std::make_pair(cors_mode(), encoding_mode()));
++  return MakeKey(url(), security_origin(), cors_mode(), encoding_mode());
+ }
+ 
+ void UrlData::set_valid_until(base::Time valid_until) {
+@@ -98,6 +115,7 @@ void UrlData::MergeFrom(const scoped_refptr<UrlData>& other) {
+   // We're merging from another UrlData that refers to the *same*
+   // resource, so when we merge the metadata, we can use the most
+   // optimistic values.
++  CHECK(security_origin_->IsSameOriginWith(other->security_origin_.get()));
+   if (ValidateDataOrigin(other->data_origin_.value_or(KURL()))) {
+     DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+     valid_until_ = std::max(valid_until_, other->valid_until_);
+@@ -282,26 +300,30 @@ scoped_refptr<UrlData> UrlIndex::GetByUrl(
+     const KURL& url,
+     UrlData::CorsMode cors_mode,
+     UrlData::CacheMode cache_mode,
++    scoped_refptr<const SecurityOrigin> security_origin,
+     media::DataSource::EncodingMode encoding_mode) {
+   if (cache_mode == UrlData::kNormal) {
+     auto i = indexed_data_.find(
+-        std::make_pair(url, std::make_pair(cors_mode, encoding_mode)));
++        UrlData::MakeKey(url, security_origin, cors_mode, encoding_mode));
+     if (i != indexed_data_.end() && i->value->Valid()) {
+       return i->value;
+     }
+   }
+ 
+-  return NewUrlData(url, cors_mode, cache_mode, encoding_mode);
++  return NewUrlData(url, cors_mode, cache_mode, std::move(security_origin),
++                    encoding_mode);
+ }
+ 
+ scoped_refptr<UrlData> UrlIndex::NewUrlData(
+     const KURL& url,
+     UrlData::CorsMode cors_mode,
+     UrlData::CacheMode cache_lookup_mode,
++    scoped_refptr<const SecurityOrigin> security_origin,
+     media::DataSource::EncodingMode encoding_mode) {
+   return base::MakeRefCounted<UrlData>(
+-      base::PassKey<UrlIndex>(), url, cors_mode, encoding_mode,
+-      weak_factory_.GetWeakPtr(), cache_lookup_mode, task_runner_);
++      base::PassKey<UrlIndex>(), url, cors_mode, cache_lookup_mode,
++      std::move(security_origin), encoding_mode, weak_factory_.GetWeakPtr(),
++      task_runner_);
+ }
+ 
+ namespace {
+diff --git a/third_party/blink/renderer/platform/media/url_index.h b/third_party/blink/renderer/platform/media/url_index.h
+index df99163f90e540d8ec3eb0b94fd3dd456e07de9e..b1671e82e5b0abbd17b841c753bf361b1b7e5ff3 100644
+--- a/third_party/blink/renderer/platform/media/url_index.h
++++ b/third_party/blink/renderer/platform/media/url_index.h
+@@ -23,6 +23,7 @@
+ #include "third_party/blink/renderer/platform/platform_export.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl_hash.h"
++#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_map.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_traits.h"
+ #include "third_party/blink/renderer/platform/wtf/ref_counted.h"
+@@ -73,8 +74,15 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // Keep in sync with WebMediaPlayer::CorsMode.
+   enum CorsMode { CORS_UNSPECIFIED, CORS_ANONYMOUS, CORS_USE_CREDENTIALS };
+   enum CacheMode { kNormal, kCacheDisabled };
+-  using KeyType =
+-      std::pair<KURL, std::pair<CorsMode, media::DataSource::EncodingMode>>;
++  using KeyType = std::pair<
++      KURL,
++      std::pair<scoped_refptr<const SecurityOrigin>,
++                std::pair<CorsMode, media::DataSource::EncodingMode>>>;
++
++  static KeyType MakeKey(const KURL& url,
++                         scoped_refptr<const SecurityOrigin> security_origin,
++                         CorsMode cors_mode,
++                         media::DataSource::EncodingMode encoding_mode);
+ 
+   // `url_index` is a WeakPtr since while UrlData objects are created by the
+   // UrlIndex they are not owned by the UrlIndex until after the network load
+@@ -83,9 +91,10 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   UrlData(base::PassKey<UrlIndex>,
+           const KURL& url,
+           CorsMode cors_mode,
++          CacheMode cache_lookup_mode,
++          scoped_refptr<const SecurityOrigin> security_origin,
+           media::DataSource::EncodingMode encoding_mode,
+           base::WeakPtr<UrlIndex> url_index,
+-          CacheMode cache_lookup_mode,
+           scoped_refptr<base::SingleThreadTaskRunner> task_runner);
+   UrlData(const UrlData&) = delete;
+   UrlData& operator=(const UrlData&) = delete;
+@@ -93,6 +102,10 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // Accessors
+   const KURL& url() const { return url_; }
+ 
++  const scoped_refptr<const SecurityOrigin>& security_origin() const {
++    return security_origin_;
++  }
++
+   // Cross-origin access mode
+   CorsMode cors_mode() const { return cors_mode_; }
+ 
+@@ -200,9 +213,10 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+  protected:
+   UrlData(const KURL& url,
+           CorsMode cors_mode,
++          CacheMode cache_lookup_mode,
++          scoped_refptr<const SecurityOrigin> security_origin,
+           media::DataSource::EncodingMode encoding_mode,
+           base::WeakPtr<UrlIndex> url_index,
+-          CacheMode cache_lookup_mode,
+           scoped_refptr<base::SingleThreadTaskRunner> task_runner);
+   virtual ~UrlData();
+ 
+@@ -218,6 +232,9 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // the same url.
+   const KURL url_;
+ 
++  // Requesting document's security origin.
++  const scoped_refptr<const SecurityOrigin> security_origin_;
++
+   // Origin of the data, should only be different from the
+   // url_.DeprecatedGetOriginAsURL() when service workers are involved.
+   std::optional<KURL> data_origin_;
+@@ -301,6 +318,7 @@ class PLATFORM_EXPORT UrlIndex {
+       const KURL& url,
+       UrlData::CorsMode cors_mode,
+       UrlData::CacheMode cache_mode,
++      scoped_refptr<const SecurityOrigin> security_origin,
+       media::DataSource::EncodingMode encoding_mode =
+           media::DataSource::EncodingMode::kIdentity);
+ 
+@@ -339,6 +357,7 @@ class PLATFORM_EXPORT UrlIndex {
+       const KURL& url,
+       UrlData::CorsMode cors_mode,
+       UrlData::CacheMode cache_lookup_mode,
++      scoped_refptr<const SecurityOrigin> security_origin,
+       media::DataSource::EncodingMode encoding_mode);
+ 
+   raw_ptr<ResourceFetchContext> fetch_context_;
+diff --git a/third_party/blink/renderer/platform/media/url_index_unittest.cc b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+index aef76f2f5ae79b916ef63e6c034273b696da591c..a5b0b6a7a6221e3b6a6827f24c375ec5ba90ab9d 100644
+--- a/third_party/blink/renderer/platform/media/url_index_unittest.cc
++++ b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+@@ -28,8 +28,8 @@ class UrlIndexTest : public testing::Test {
+ 
+   scoped_refptr<UrlData> GetByUrl(const KURL& url,
+                                   UrlData::CorsMode cors_mode) {
+-    scoped_refptr<UrlData> ret =
+-        url_index_->GetByUrl(url, cors_mode, UrlData::kNormal);
++    scoped_refptr<UrlData> ret = url_index_->GetByUrl(
++        url, cors_mode, UrlData::kNormal, security_origin_);
+     EXPECT_EQ(ret->url(), url);
+     EXPECT_EQ(ret->cors_mode(), cors_mode);
+     return ret;
+@@ -37,6 +37,8 @@ class UrlIndexTest : public testing::Test {
+ 
+  protected:
+   base::test::SingleThreadTaskEnvironment task_environment_;
++  scoped_refptr<const SecurityOrigin> security_origin_ =
++      SecurityOrigin::CreateUniqueOpaque();
+   std::unique_ptr<UrlIndex> url_index_;
+ };
+ 
+@@ -169,14 +171,16 @@ TEST_F(UrlIndexTest, GetByUrlCacheDisabled) {
+   UrlData::CorsMode cors = UrlData::CORS_UNSPECIFIED;
+ 
+   scoped_refptr<UrlData> url_data =
+-      url_index_->GetByUrl(url, cors, UrlData::kNormal);
++      url_index_->GetByUrl(url, cors, UrlData::kNormal, security_origin_);
+   url_data->Use();
+   url_data->set_range_supported();
+   EXPECT_TRUE(url_data->Valid());
+   url_index_->TryInsert(url_data);
+ 
+-  EXPECT_EQ(url_data, url_index_->GetByUrl(url, cors, UrlData::kNormal));
+-  EXPECT_NE(url_data, url_index_->GetByUrl(url, cors, UrlData::kCacheDisabled));
++  EXPECT_EQ(url_data, url_index_->GetByUrl(url, cors, UrlData::kNormal,
++                                           security_origin_));
++  EXPECT_NE(url_data, url_index_->GetByUrl(url, cors, UrlData::kCacheDisabled,
++                                           security_origin_));
+ }
+ 
+ TEST_F(UrlIndexTest, ValidateDataOrigin) {
+@@ -228,9 +232,9 @@ TEST_F(UrlIndexTest, AllowGzip) {
+   KURL url("http://foo.bar.com");
+ 
+   // 1. Get UrlData with kAllowGzip and insert it into index.
+-  scoped_refptr<UrlData> a =
+-      url_index_->GetByUrl(url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal,
+-                           media::DataSource::EncodingMode::kAllowGzip);
++  scoped_refptr<UrlData> a = url_index_->GetByUrl(
++      url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal, security_origin_,
++      media::DataSource::EncodingMode::kAllowGzip);
+   EXPECT_EQ(a->encoding_mode(), media::DataSource::EncodingMode::kAllowGzip);
+   a->Use();
+   a->set_range_supported();
+@@ -238,16 +242,16 @@ TEST_F(UrlIndexTest, AllowGzip) {
+   EXPECT_EQ(a, url_index_->TryInsert(a));
+ 
+   // 2. Get UrlData with kIdentity (should be a cache miss / new instance).
+-  scoped_refptr<UrlData> b =
+-      url_index_->GetByUrl(url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal,
+-                           media::DataSource::EncodingMode::kIdentity);
++  scoped_refptr<UrlData> b = url_index_->GetByUrl(
++      url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal, security_origin_,
++      media::DataSource::EncodingMode::kIdentity);
+   EXPECT_EQ(b->encoding_mode(), media::DataSource::EncodingMode::kIdentity);
+   EXPECT_NE(a, b);
+ 
+   // 3. Get UrlData with kAllowGzip again (should be a cache hit, returns 'a').
+-  scoped_refptr<UrlData> c =
+-      url_index_->GetByUrl(url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal,
+-                           media::DataSource::EncodingMode::kAllowGzip);
++  scoped_refptr<UrlData> c = url_index_->GetByUrl(
++      url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal, security_origin_,
++      media::DataSource::EncodingMode::kAllowGzip);
+   EXPECT_EQ(a, c);
+ 
+   // 4. Insert 'b' (kIdentity) into the index.
+@@ -257,10 +261,60 @@ TEST_F(UrlIndexTest, AllowGzip) {
+   EXPECT_EQ(b, url_index_->TryInsert(b));
+ 
+   // 5. Get UrlData with kIdentity again (should be a cache hit, returns 'b').
+-  scoped_refptr<UrlData> d =
+-      url_index_->GetByUrl(url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal,
+-                           media::DataSource::EncodingMode::kIdentity);
++  scoped_refptr<UrlData> d = url_index_->GetByUrl(
++      url, UrlData::CORS_UNSPECIFIED, UrlData::kNormal, security_origin_,
++      media::DataSource::EncodingMode::kIdentity);
+   EXPECT_EQ(b, d);
+ }
+ 
++TEST_F(UrlIndexTest, SecurityOriginIsolation) {
++  KURL url("http://foo.bar.com/video.mp4");
++  auto origin1 = SecurityOrigin::CreateFromString("http://foo.bar.com");
++  auto origin2 = SecurityOrigin::CreateFromString("http://attacker.com");
++
++  scoped_refptr<UrlData> a = url_index_->GetByUrl(url, UrlData::CORS_ANONYMOUS,
++                                                  UrlData::kNormal, origin1);
++  a->Use();
++  a->set_range_supported();
++  a->set_is_cors_cross_origin(false);
++  EXPECT_TRUE(a->Valid());
++  EXPECT_EQ(a, url_index_->TryInsert(a));
++
++  // Same-origin lookup hits the cached entry.
++  EXPECT_EQ(a, url_index_->GetByUrl(
++                   url, UrlData::CORS_ANONYMOUS, UrlData::kNormal,
++                   SecurityOrigin::CreateFromString("http://foo.bar.com")));
++
++  // Cross-origin lookup does not reuse the cached entry from origin1.
++  scoped_refptr<UrlData> b = url_index_->GetByUrl(url, UrlData::CORS_ANONYMOUS,
++                                                  UrlData::kNormal, origin2);
++  EXPECT_NE(a, b);
++
++  // Inserting `b` does not merge into or overwrite `a`.
++  b->Use();
++  b->set_range_supported();
++  b->set_is_cors_cross_origin(true);
++  EXPECT_TRUE(b->Valid());
++  EXPECT_EQ(b, url_index_->TryInsert(b));
++  EXPECT_EQ(a, url_index_->GetByUrl(url, UrlData::CORS_ANONYMOUS,
++                                    UrlData::kNormal, origin1));
++  EXPECT_FALSE(a->is_cors_cross_origin());
++  EXPECT_EQ(b, url_index_->GetByUrl(url, UrlData::CORS_ANONYMOUS,
++                                    UrlData::kNormal, origin2));
++  EXPECT_TRUE(b->is_cors_cross_origin());
++
++  // Distinct opaque origins also do not reuse each other's cached entries.
++  auto opaque1 = SecurityOrigin::CreateUniqueOpaque();
++  auto opaque2 = SecurityOrigin::CreateUniqueOpaque();
++  scoped_refptr<UrlData> c = url_index_->GetByUrl(url, UrlData::CORS_ANONYMOUS,
++                                                  UrlData::kNormal, opaque1);
++  c->Use();
++  c->set_range_supported();
++  EXPECT_EQ(c, url_index_->TryInsert(c));
++  EXPECT_EQ(c, url_index_->GetByUrl(url, UrlData::CORS_ANONYMOUS,
++                                    UrlData::kNormal, opaque1));
++  EXPECT_NE(c, url_index_->GetByUrl(url, UrlData::CORS_ANONYMOUS,
++                                    UrlData::kNormal, opaque2));
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/media/web_media_player_impl.cc b/third_party/blink/renderer/platform/media/web_media_player_impl.cc
+index cb483e4555a3039bec570cac1da921b75796bff2..c7ad7fdfc861cf7d228005440f8c418df3575f4d 100644
+--- a/third_party/blink/renderer/platform/media/web_media_player_impl.cc
++++ b/third_party/blink/renderer/platform/media/web_media_player_impl.cc
+@@ -105,6 +105,7 @@
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/worker_pool.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
++#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_std.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+@@ -490,6 +491,7 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
+           std::move(demuxer_override))),
+       tick_clock_(base::DefaultTickClock::GetInstance()),
+       url_index_(url_index),
++      security_origin_(frame_->GetSecurityOrigin()),
+       raster_context_provider_(std::move(raster_context_provider)),
+       vfc_task_runner_(std::move(video_frame_compositor_task_runner)),
+       compositor_(std::move(compositor)),
+@@ -984,7 +986,8 @@ void WebMediaPlayerImpl::DoLoad(LoadType load_type,
+       main_task_runner_,
+       url_index_->GetByUrl(
+           url, static_cast<UrlData::CorsMode>(cors_mode),
+-          is_cache_disabled ? UrlData::kCacheDisabled : UrlData::kNormal),
++          is_cache_disabled ? UrlData::kCacheDisabled : UrlData::kNormal,
++          security_origin_),
+       media_log_.get(), buffered_data_source_host_.get(),
+       blink::BindRepeating(&WebMediaPlayerImpl::NotifyDownloading, weak_this_));
+ 
+@@ -1745,7 +1748,8 @@ void WebMediaPlayerImpl::GetUrlData(
+   DCHECK(main_task_runner_->BelongsToCurrentThread());
+   auto url_data = url_index_->GetByUrl(
+       KURL(gurl), static_cast<UrlData::CorsMode>(cors_mode_),
+-      TranslateCacheMode(is_cache_disabled_, cache_mode), encoding_mode);
++      TranslateCacheMode(is_cache_disabled_, cache_mode), security_origin_,
++      encoding_mode);
+   std::move(cb).Run(std::move(url_data));
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/media/web_media_player_impl.h b/third_party/blink/renderer/platform/media/web_media_player_impl.h
+index e8c7095a88c7237d4cdefbf3fefcf32740117e09..3f4a1cd6ad128ed4b4884618b006fe1fa3015514 100644
+--- a/third_party/blink/renderer/platform/media/web_media_player_impl.h
++++ b/third_party/blink/renderer/platform/media/web_media_player_impl.h
+@@ -95,6 +95,7 @@ namespace blink {
+ class BufferedDataSourceHostImpl;
+ class PowerStatusHelper;
+ class KURL;
++class SecurityOrigin;
+ class ThreadSafeBrowserInterfaceBrokerProxy;
+ class UrlIndex;
+ class VideoDecodeStatsReporter;
+@@ -887,6 +888,7 @@ class PLATFORM_EXPORT WebMediaPlayerImpl
+ 
+   std::unique_ptr<BufferedDataSourceHostImpl> buffered_data_source_host_;
+   raw_ptr<UrlIndex> url_index_ = nullptr;
++  const scoped_refptr<const SecurityOrigin> security_origin_;
+   scoped_refptr<viz::RasterContextProvider> raster_context_provider_;
+ 
+   // Video rendering members.

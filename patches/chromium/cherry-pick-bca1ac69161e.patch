@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Fri, 30 Oct 2026 03:31:41 +0000
+Subject: [M150-LTS] gpu: Reject empty rects in CopySharedImageHelper
+
+CopySharedImageHelper only checked that source and destination rects
+were contained in the image bounds, which an empty rect always is.
+
+For CopySharedImage() with an empty source rect and a non-empty
+destination rect, the GPU->GPU path calls SkCanvas::drawImageRect(),
+which returns early without recording any draw because
+!fillable(src). The function still marks the destination rect as
+cleared via SetClearedRect(), so an uncleared destination SharedImage
+ends up reporting pixels as cleared that were never written, exposing
+uninitialized GPU memory to later readers. Empty rects on the
+CPU-upload path (SkSurface::writePixels()) are similarly silent
+no-ops.
+
+Reject empty rects with GL_INVALID_VALUE in CopyPixelsToTexture(),
+CopySharedImage() (source and destination),
+CopySharedImageToGLTexture(), ReadPixels() and ReadPixelsYUV(), and
+CHECK against them in GraphiteImageReadPixels(), whose only caller,
+ReadPixels(), now rejects them first.
+
+Bug: 574376940
+Change-Id: I31da31311aa5a88ba77243098c6c819ca7cfb4e2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8660038
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1728573}
+(cherry picked from commit 295fab38e752ddea60f45ad85a48513657749749)
+
+diff --git a/gpu/command_buffer/service/copy_shared_image_helper.cc b/gpu/command_buffer/service/copy_shared_image_helper.cc
+index 57ce9f77fd6e2c37c7fa2a2386bf3e3501bfbe9e..8e913150d605eb939717decfa0182144379ebc41 100644
+--- a/gpu/command_buffer/service/copy_shared_image_helper.cc
++++ b/gpu/command_buffer/service/copy_shared_image_helper.cc
+@@ -164,7 +164,7 @@ bool CopyPixelsToTexture(
+ 
+   gfx::Size source_size = source_shared_image->size();
+   gfx::Rect source_rect(x, y, width, height);
+-  if (!gfx::Rect(source_size).Contains(source_rect)) {
++  if (source_rect.IsEmpty() || !gfx::Rect(source_size).Contains(source_rect)) {
+     return false;
+   }
+ 
+@@ -273,7 +273,7 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImage(
+ 
+   gfx::Size dest_size = dest_shared_image->size();
+   gfx::Rect dest_rect(xoffset, yoffset, dst_width, dst_height);
+-  if (!gfx::Rect(dest_size).Contains(dest_rect)) {
++  if (dest_rect.IsEmpty() || !gfx::Rect(dest_size).Contains(dest_rect)) {
+     return base::unexpected(GLError(GL_INVALID_VALUE, "CopySharedImage",
+                                     "destination texture bad dimensions."));
+   }
+@@ -372,7 +372,7 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImage(
+ 
+   gfx::Size source_size = source_shared_image->size();
+   gfx::Rect source_rect(x, y, src_width, src_height);
+-  if (!gfx::Rect(source_size).Contains(source_rect)) {
++  if (source_rect.IsEmpty() || !gfx::Rect(source_size).Contains(source_rect)) {
+     return base::unexpected(GLError(GL_INVALID_VALUE, "CopySharedImage",
+                                     "source texture bad dimensions."));
+   }
+@@ -532,7 +532,7 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImageToGLTexture(
+ 
+   gfx::Size source_size = source_shared_image->size();
+   gfx::Rect source_rect(src_x, src_y, width, height);
+-  if (!gfx::Rect(source_size).Contains(source_rect)) {
++  if (source_rect.IsEmpty() || !gfx::Rect(source_size).Contains(source_rect)) {
+     return base::unexpected<GLError>(GLError(GL_INVALID_VALUE,
+                                              "CopySharedImageToGLTexture",
+                                              "source texture bad dimensions."));
+diff --git a/gpu/command_buffer/service/raster_decoder_unittest.cc b/gpu/command_buffer/service/raster_decoder_unittest.cc
+index 038e47c67ec522d25f62df0e5e13449da04827f4..43dc14eff3c66942a36107d9fdd6d04c94b6a67f 100644
+--- a/gpu/command_buffer/service/raster_decoder_unittest.cc
++++ b/gpu/command_buffer/service/raster_decoder_unittest.cc
+@@ -402,6 +402,78 @@ TEST_F(RasterDecoderOOPTest, CopyTexSubImage2DSizeMismatch) {
+     EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
+     EXPECT_EQ(representation->ClearedRect(), gfx::Rect(1, 1, 1, 1));
+   }
++
++  {
++    // Empty source rect (zero width) with non-empty dest rect.
++    auto& cmd = *GetImmediateAs<cmds::CopySharedImageINTERNALImmediate>();
++    cmd.Init(0, 0, 0, 0, 0, 1, 2, 2, mailboxes);
++    EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++    EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++    EXPECT_EQ(representation->ClearedRect(), gfx::Rect(1, 1, 1, 1));
++  }
++
++  {
++    // Empty dest rect (zero height) with non-empty source rect.
++    auto& cmd = *GetImmediateAs<cmds::CopySharedImageINTERNALImmediate>();
++    cmd.Init(0, 0, 0, 0, 1, 1, 2, 0, mailboxes);
++    EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++    EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++    EXPECT_EQ(representation->ClearedRect(), gfx::Rect(1, 1, 1, 1));
++  }
++}
++
++TEST_F(RasterDecoderOOPTest, CopySharedImageEmptyRect) {
++  context_state_->set_need_context_state_reset(true);
++  gpu::Mailbox source_texture_mailbox =
++      CreateMailbox(viz::SinglePlaneFormat::kRGBA_8888,
++                    /*width=*/2, /*height=*/2,
++                    /*cleared=*/true);
++  GLbyte mailboxes[sizeof(gpu::Mailbox) * 2];
++  CopyMailboxes(mailboxes, source_texture_mailbox, client_texture_mailbox_);
++
++  SharedImageRepresentationFactory repr_factory(shared_image_manager(),
++                                                nullptr);
++  auto representation =
++      repr_factory.ProduceSkia(client_texture_mailbox_, context_state_.get());
++  ASSERT_TRUE(representation);
++  EXPECT_FALSE(representation->IsCleared());
++
++  auto& cmd = *GetImmediateAs<cmds::CopySharedImageINTERNALImmediate>();
++
++  // Empty source width with non-empty destination rect.
++  cmd.Init(0, 0, 0, 0, 0, 2, 2, 2, mailboxes);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++  EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++  EXPECT_EQ(representation->ClearedRect(), gfx::Rect());
++  EXPECT_FALSE(representation->IsCleared());
++
++  // Empty source height with non-empty destination rect.
++  cmd.Init(0, 0, 0, 0, 2, 0, 2, 2, mailboxes);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++  EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++  EXPECT_EQ(representation->ClearedRect(), gfx::Rect());
++  EXPECT_FALSE(representation->IsCleared());
++
++  // Empty destination width with non-empty source rect.
++  cmd.Init(0, 0, 0, 0, 2, 2, 0, 2, mailboxes);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++  EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++  EXPECT_EQ(representation->ClearedRect(), gfx::Rect());
++  EXPECT_FALSE(representation->IsCleared());
++
++  // Empty destination height with non-empty source rect.
++  cmd.Init(0, 0, 0, 0, 2, 2, 2, 0, mailboxes);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++  EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++  EXPECT_EQ(representation->ClearedRect(), gfx::Rect());
++  EXPECT_FALSE(representation->IsCleared());
++
++  // Both source and destination rects empty.
++  cmd.Init(1, 1, 0, 0, 0, 0, 0, 0, mailboxes);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++  EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++  EXPECT_EQ(representation->ClearedRect(), gfx::Rect());
++  EXPECT_FALSE(representation->IsCleared());
+ }
+ 
+ TEST_F(RasterDecoderOOPTest, CopyTexSubImage2DTwiceClearsUnclearedTexture) {

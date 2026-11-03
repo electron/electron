@@ -1,0 +1,234 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Mon, 5 Oct 2026 14:17:37 +0200
+Subject: [maglev] Only treat PREVIOUS_INDEX loads from InitialValue as
+ non-aliasing
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+KnownNodeAspects caches context slot values in `loaded_context_slots_`
+keyed by `(ValueNode* context, int offset)`. When
+`may_have_aliasing_contexts_ != kAlways`, a store to `(ctx_1, offset)`
+only updates `(ctx_1, offset)` without invalidating `(ctx_2, offset)`
+for `ctx_2 != ctx_1`. This is only sound if two distinct `ValueNode*`
+pointers cannot point to the same runtime Context object.
+
+Previously, UpdateMayHaveAliasingContexts walked chains of
+`LoadContextSlotNoCells(PREVIOUS_INDEX)` to their root `context` before
+switching on `context->opcode()`, assuming that a `PREVIOUS_INDEX` walk
+shares the aliasing properties of its root. However, this is only valid
+when the root is `InitialValue(<context>)` (the single incoming context
+of the top-level compilation unit, whose `PREVIOUS_INDEX` walks are
+deduplicated in `loaded_context_constants_`). For any other root — such
+as an allocated context (`CreateFunctionContext` / `InlinedAllocation`)
+or a `HeapConstant` — the parent context can already be represented in
+the graph by a separate direct `ValueNode*`, causing two distinct
+`ValueNode*` pointers (`A` and `A'`) to alias the same runtime Context.
+
+For example, consider `outer` (context `A`) creating a context with `x`,
+`mid` (context `B`, with `B.previous = A`) creating a large context and
+returning a small closure `f` that writes `x = 2`, and `outer` calling
+`f()`:
+
+  function outer() {
+    let x = 1;                  // lives in context A
+    function mid() {
+      let a0 = 0, ...;          // lives in context B (B.previous == A)
+      return function f() {
+        x = 2;                  // writes A[x] via B.previous
+      };
+    }
+    let g = mid();
+    x = 1;
+    g();
+    return x;
+  }
+
+1. During graph building of `outer`, context `A` is allocated:
+
+     A: InlinedAllocation(ctx_outer)
+
+2. In Turbolev, `MaglevInliner` pops call sites in priority order
+   (small functions before regular ones) and does not run
+   `MaglevGraphOptimizer` between inlining steps. When `f` (small) is
+   inlined *before* `mid` (large), `g` is still the call result of
+   `mid()`, so `f`'s context is an opaque load `B'` (aliasing `B`), and
+   `MinimizeContextChainDepth` cannot fold `f`'s `PREVIOUS_INDEX` hop
+   `A'` (aliasing `A`):
+
+     B': LoadTaggedField(g, JSFunction::kContextOffset)
+           |
+           v  LoadContextSlotNoCells(PREVIOUS_INDEX)
+     A': LoadContextSlotNoCells(B', PREVIOUS_INDEX)
+           |
+           v
+         StoreContextSlotNoCells(A', slot_x, 2)
+
+3. Next, `mid` is inlined. `mid` allocates context `B` with parent `A`
+   and returns `FastCreateClosure(f, context = B)`:
+
+     A:  InlinedAllocation(ctx_outer)
+           ^
+           |  stored at PREVIOUS_INDEX
+     B:  InlinedAllocation(ctx_mid)
+
+4. After inlining finishes, `MaglevGraphOptimizer` runs alongside
+   `RecomputeKnownNodeAspectsProcessor`. It folds `B'` (loading
+   `f.context_`) to `B`, and updates `A'`'s input in place from `B'` to
+   `B`:
+
+     A:  InlinedAllocation(ctx_outer)       <-- outer stores x=1, loads x
+           ^
+           |  previous
+     B:  InlinedAllocation(ctx_mid)
+           |
+           v  LoadContextSlotNoCells(PREVIOUS_INDEX)
+     A': LoadContextSlotNoCells(B, PREVIOUS_INDEX) <-- f stores x=2
+
+   Now `A` and `A'` are two distinct `ValueNode*` pointers that both
+   refer to `ctx_outer` at runtime:
+
+     loaded_context_slots_ before g():
+       (A,  slot_x) -> SmiConstant(1)
+
+     StoreContextSlotNoCells(A', slot_x, 2) inside g():
+       UpdateMayHaveAliasingContexts(A') walks A' -> B
+       (InlinedAllocation), sees kInlinedAllocation, and leaves
+       may_have_aliasing_contexts_ == kNever!
+
+     loaded_context_slots_ after g():
+       (A,  slot_x) -> SmiConstant(1)   // STALE! Not invalidated!
+       (A', slot_x) -> SmiConstant(2)
+
+   When `outer` subsequently loads `x` from `A`, it folds to the stale
+   `1` instead of `2`.
+
+A similar bug occurs if `B'` folds to `B = HeapConstant(ctx_mid)` while
+`A = HeapConstant(ctx_outer)` is also in the graph: walking `A'` to `B`
+classifies both `A'` and `A` as `kOnlyLoadsRelativeToConstant`, which
+merges to `kOnlyLoadsRelativeToConstant` rather than `kAlways`.
+
+Move `Opcode::kLoadContextSlotNoCells` into the switch in
+KnownNodeAspects::UpdateMayHaveAliasingContexts and only treat
+`PREVIOUS_INDEX` chains as `kOnlyLoadsRelativeToCurrentContext` when
+their root is `InitialValue`, setting `kAlways` for any other root.
+
+TAG=agy
+CONV=c9ce3129-2d19-4376-ad8c-4c205f441233
+
+Fixed: 568010379
+Change-Id: Id416e6b69f76ed6732a4215a99557e90834200a2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8502244
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110318}
+
+Electron adaptation notes (43-x-y):
+On this branch the ContextSlotLoadsAlias enumerator is still named kYes (upstream renamed it to kAlways); the new assignment uses kYes.
+
+diff --git a/src/maglev/maglev-known-node-aspects.cc b/src/maglev/maglev-known-node-aspects.cc
+index 1e68402761ca47e46042c232aa6069c820f1a466..e3f3ef927df9fbcaf2304e88a14726344995baeb 100644
+--- a/src/maglev/maglev-known-node-aspects.cc
++++ b/src/maglev/maglev-known-node-aspects.cc
+@@ -280,23 +280,33 @@ void KnownNodeAspects::UpdateMayHaveAliasingContexts(
+     ValueNode* context) {
+   if (may_have_aliasing_contexts_ == ContextSlotLoadsAlias::kYes) return;
+ 
+-  while (true) {
+-    if (auto load_prev_ctxt = context->TryCast<LoadContextSlotNoCells>()) {
+-      DCHECK_EQ(load_prev_ctxt->offset(),
+-                Context::OffsetOfElementAt(Context::PREVIOUS_INDEX));
+-      // Recurse until we find the root.
+-      context = load_prev_ctxt->input(0).node();
+-      continue;
+-    }
+-    break;
+-  }
+-
+   switch (context->opcode()) {
+     case Opcode::kInitialValue:
+       may_have_aliasing_contexts_ = ContextSlotLoadsAliasMerge(
+           may_have_aliasing_contexts_,
+           ContextSlotLoadsAlias::kOnlyLoadsRelativeToCurrentContext);
+       break;
++    case Opcode::kLoadContextSlotNoCells: {
++      do {
++        LoadContextSlotNoCells* load_prev_ctxt =
++            context->Cast<LoadContextSlotNoCells>();
++        DCHECK_EQ(load_prev_ctxt->offset(),
++                  Context::OffsetOfElementAt(Context::PREVIOUS_INDEX));
++        context = load_prev_ctxt->input(0).node();
++      } while (context->Is<LoadContextSlotNoCells>());
++      // Walking PREVIOUS_INDEX loads is only non-aliasing if rooted at the
++      // incoming context InitialValue, since any other root (such as an
++      // allocated context or a HeapConstant) can have its parent context
++      // represented directly by a distinct ValueNode in the graph.
++      if (context->Is<InitialValue>()) {
++        may_have_aliasing_contexts_ = ContextSlotLoadsAliasMerge(
++            may_have_aliasing_contexts_,
++            ContextSlotLoadsAlias::kOnlyLoadsRelativeToCurrentContext);
++      } else {
++        may_have_aliasing_contexts_ = ContextSlotLoadsAlias::kYes;
++      }
++      break;
++    }
+     case Opcode::kHeapConstant:
+       may_have_aliasing_contexts_ = ContextSlotLoadsAliasMerge(
+           may_have_aliasing_contexts_,
+diff --git a/test/mjsunit/turbolev/regress-568010379.js b/test/mjsunit/turbolev/regress-568010379.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..eaa39a1c7e53ba4218e316ebdd7777ffa45d16b8
+--- /dev/null
++++ b/test/mjsunit/turbolev/regress-568010379.js
+@@ -0,0 +1,48 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbolev
++
++function noop(a) {
++  let r = a + 1;
++  r = r + 2;
++  r = r + 3;
++  r = r + 4;
++  r = r + 5;
++  r = r + 6;
++  r = r + 7;
++  return r;
++}
++
++function dummy() {}
++
++function outer(trigger) {
++  let x = 1;
++  function mid() {
++    let a0 = 0, a1 = 1, a2 = 2, a3 = 3, a4 = 4,
++        a5 = 5, a6 = 6, a7 = 7, a8 = 8, a9 = 9,
++        a10 = 10, a11 = 11, a12 = 12, a13 = 13, a14 = 14;
++    return function f() {
++      x = 2;
++      return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7 +
++             a8 + a9 + a10 + a11 + a12 + a13 + a14;
++    };
++  }
++
++  let box = { fn: dummy };
++  box.fn = mid();
++  x = 1;
++  noop(trigger);
++  let g = box.fn;
++  g();
++  return x;
++}
++
++%PrepareFunctionForOptimization(noop);
++%PrepareFunctionForOptimization(outer);
++for (let i = 0; i < 10; i++) {
++  assertEquals(2, outer(i));
++}
++%OptimizeFunctionOnNextCall(outer);
++assertEquals(2, outer(10));

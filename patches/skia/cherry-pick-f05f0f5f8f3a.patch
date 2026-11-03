@@ -1,0 +1,462 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Tue, 27 Oct 2026 00:02:27 -0400
+Subject: [M150] [Ganesh] Do not drop subset clamp for nearest filtering on
+ touching edges
+
+Original change's description:
+> [Ganesh] Do not drop subset clamp for nearest filtering on touching edges
+>
+> safe_to_ignore_subset_rect() assumed that with nearest filtering and no
+> AA "the sampler shouldn't overshoot" a local quad whose edge coincides
+> with the subset edge. On real hardware, texture units convert scaled
+> coordinates to fixed-point with round-to-nearest (e.g. D3D11 >= 8
+> fractional bits, Vulkan subTexelPrecisionBits >= 4), snapping coordinates
+> close to the boundary onto the texel just outside the subset when
+> magnified above 2^precision.
+>
+> This change:
+> 1. Replaces the touching-edges bypass in safe_to_ignore_subset_rect()
+>    with a check for 1:1 scale and integer relative translation
+>    (including 90/180/270 degree rotations and flips). Under 1:1 integer
+>    translations, sample centers land on exact half-integers in texel
+>    space (at least 0.5 texels from any subset edge), making nearest
+>    sampling safe from overshoot without shader clamping.
+> 2. Lifts the safe_to_ignore_subset_rect() check into TextureOp::Make()
+>    so non-kSrcOver draws (which fall back to FillRectOp) also drop
+>    subset clamping on 1:1 integer draws.
+> 3. Fixes the nearest-filter domain safety check in GrTextureEffect::
+>    Sampling() to verify that r.fShaderClamp contains domain, preventing
+>    incorrect removal of shader clamping for fractional domains near
+>    the subset boundary.
+> 4. Updates Device_drawTexture to buffer safeBounds by kLinearInset for
+>    all filters on approx-fit proxies, ensuring kFast is upgraded to
+>    kStrict when the src rect reaches the proxy boundary.
+> 5. Adds TextureOpNearestSubsetOvershootTest to verify nearest-neighbor
+>    sampling against subset edges across magnification, 1:1 integer
+>    and fractional translations, rotations, flips, and approx proxies.
+>
+> Bug: 576937680
+> Change-Id: Ia9964dcf38c5454bcff6425e36e09bde19f7dc9a
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1405576
+> Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+> Commit-Queue: Greg Daniel <egdaniel@google.com>
+
+(cherry picked from commit 7836c908116e5ffeb016c769831e6244f9aca335)
+
+Bug: 579637916,576937680
+Change-Id: Ia9964dcf38c5454bcff6425e36e09bde19f7dc9a
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1411676
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/gpu/ganesh/Device_drawTexture.cpp b/src/gpu/ganesh/Device_drawTexture.cpp
+index 763a57b6baf5c749dba14fc87febc6a24822082f..f4e1663e2579b7dd8704fbd13b7ac60a06ee9a44 100644
+--- a/src/gpu/ganesh/Device_drawTexture.cpp
++++ b/src/gpu/ganesh/Device_drawTexture.cpp
+@@ -188,9 +188,10 @@ void draw_texture(skgpu::ganesh::SurfaceDrawContext* sdc,
+     // rect would access pixels outside the proxy's content area without the constraint.
+     if (constraint != SkCanvas::kStrict_SrcRectConstraint && !proxy->isFunctionallyExact()) {
+         // Conservative estimate of how much a coord could be outset from src rect:
+-        // 1/2 pixel for AA and 1/2 pixel for linear filtering
+-        float buffer = 0.5f * (aaFlags != GrQuadAAFlags::kNone) +
+-                       GrTextureEffect::kLinearInset * (filter == GrSamplerState::Filter::kLinear);
++        // 1/2 pixel for AA and 1/2 pixel for filtering. Linear filtering uses a 1/2 pixel kernel,
++        // and nearest filtering under high magnification can snap onto the texel just outside the
++        // subset due to limited sub-texel precision (e.g. Vulkan: subTexelPrecisionBits >= 4).
++        float buffer = 0.5f * (aaFlags != GrQuadAAFlags::kNone) + GrTextureEffect::kLinearInset;
+         SkRect safeBounds = proxy->getBoundsRect();
+         safeBounds.inset(buffer, buffer);
+         if (!safeBounds.contains(srcRect)) {
+diff --git a/src/gpu/ganesh/effects/GrTextureEffect.cpp b/src/gpu/ganesh/effects/GrTextureEffect.cpp
+index e29d42acaded6b0a88ebc0d073662bb768e2d0f7..ac30c4b1f35d596da84f69e62a6e8c0023f17e17 100644
+--- a/src/gpu/ganesh/effects/GrTextureEffect.cpp
++++ b/src/gpu/ganesh/effects/GrTextureEffect.cpp
+@@ -146,18 +146,15 @@ GrTextureEffect::Sampling::Sampling(const GrSurfaceProxy& proxy,
+         bool domainIsSafe = false;
+         if (filter == Filter::kNearest) {
+             Span isubset{std::floor(subset.fA), std::ceil(subset.fB)};
+-            if (domain.fA > isubset.fA && domain.fB < isubset.fB) {
+-                domainIsSafe = true;
+-            }
+             // This inset prevents sampling neighboring texels that could occur when
+             // texture coords fall exactly at texel boundaries (depending on precision
+             // and GPU-specific snapping at the boundary).
+             r.fShaderClamp = isubset.makeInset(0.5f + kInsetEpsilon);
+         } else {
+             r.fShaderClamp = subset.makeInset(linearFilterInset + kInsetEpsilon);
+-            if (r.fShaderClamp.contains(domain)) {
+-                domainIsSafe = true;
+-            }
++        }
++        if (r.fShaderClamp.contains(domain)) {
++            domainIsSafe = true;
+         }
+         if (!alwaysUseShaderTileMode && domainIsSafe) {
+             // The domain of coords that will be used won't access texels outside of the subset.
+diff --git a/src/gpu/ganesh/ops/TextureOp.cpp b/src/gpu/ganesh/ops/TextureOp.cpp
+index de5c3db1f041a713372c95e41c683273c1bc03bb..96a521ae52526839ac60e05d7cf34997cfccb689 100644
+--- a/src/gpu/ganesh/ops/TextureOp.cpp
++++ b/src/gpu/ganesh/ops/TextureOp.cpp
+@@ -194,18 +194,47 @@ int proxy_run_count(const GrTextureSetEntry set[], int count) {
+ 
+ bool safe_to_ignore_subset_rect(GrAAType aaType, GrSamplerState::Filter filter,
+                                 const DrawQuad& quad, const SkRect& subsetRect) {
+-    // If both the device and local quad are both axis-aligned, and filtering is off, the local quad
+-    // can push all the way up to the edges of the the subset rect and the sampler shouldn't
+-    // overshoot. Unfortunately, antialiasing adds enough jitter that we can only rely on this in
+-    // the non-antialiased case.
+     SkRect localBounds = quad.fLocal.bounds();
++
++    // If both the device and local quad are axis-aligned, filtering is off, the local quad
++    // is contained within the subset, and the mapping between device and local coordinates
++    // is a 1:1 integer translation (including 90/180/270 degree rotations and flips),
++    // fragment sample centers are guaranteed to land on exact half-integers in texel space
++    // (at least 0.5 texels away from any subset edge), so nearest-neighbor sampling cannot
++    // overshoot.
+     if (aaType == GrAAType::kNone &&
+         filter == GrSamplerState::Filter::kNearest &&
+         quad.fDevice.quadType() == GrQuad::Type::kAxisAligned &&
+         quad.fLocal.quadType() == GrQuad::Type::kAxisAligned &&
+         subsetRect.contains(localBounds)) {
+-
+-        return true;
++        float locDx = quad.fLocal.x(2) - quad.fLocal.x(0);
++        float locDy = quad.fLocal.y(1) - quad.fLocal.y(0);
++        if (locDx != 0.f && locDy != 0.f) {
++            auto is1to1 = [](float dev0, float devD, float loc0, float locD) {
++                return (locD ==  devD && SkScalarIsInt(dev0 - loc0)) ||
++                       (locD == -devD && SkScalarIsInt(dev0 + loc0));
++            };
++
++            // Check non-rotated or 180-degree rotated (with or without flip)
++            float devDx = quad.fDevice.x(2) - quad.fDevice.x(0);
++            float devDy = quad.fDevice.y(1) - quad.fDevice.y(0);
++            if (devDx != 0.f && devDy != 0.f) {
++                if (is1to1(quad.fDevice.x(0), devDx, quad.fLocal.x(0), locDx) &&
++                    is1to1(quad.fDevice.y(0), devDy, quad.fLocal.y(0), locDy)) {
++                    return true;
++                }
++            } else {
++                // Check 90 or 270 degree rotation (axes swapped)
++                devDx = quad.fDevice.x(1) - quad.fDevice.x(0);
++                devDy = quad.fDevice.y(2) - quad.fDevice.y(0);
++                if (devDx != 0.f && devDy != 0.f) {
++                    if (is1to1(quad.fDevice.y(0), devDy, quad.fLocal.x(0), locDx) &&
++                        is1to1(quad.fDevice.x(0), devDx, quad.fLocal.y(0), locDy)) {
++                        return true;
++                    }
++                }
++            }
++        }
+     }
+ 
+     // If the local quad is inset by at least 0.5 pixels into the subset rect's bounds, the
+@@ -454,18 +483,11 @@ private:
+                                    &aaType, &quad->fEdgeFlags);
+         fMetadata.fAAType = static_cast<uint16_t>(aaType);
+ 
+-        // We expect our caller to have already caught this optimization.
++        // We expect our caller to have already caught these optimizations.
+         SkASSERT(!subsetRect ||
+                  !subsetRect->contains(proxyView.proxy()->backingStoreBoundsRect()));
+-
+-        // We may have had a strict constraint with nearest filter solely due to possible AA bloat.
+-        // Try to identify cases where the subsetting isn't actually necessary, and skip it.
+-        if (subsetRect) {
+-            if (safe_to_ignore_subset_rect(aaType, filter, *quad, *subsetRect)) {
+-                subsetRect = nullptr;
+-                fMetadata.fSubset = static_cast<uint16_t>(Subset::kNo);
+-            }
+-        }
++        SkASSERT(!subsetRect ||
++                 !safe_to_ignore_subset_rect(aaType, filter, *quad, *subsetRect));
+ 
+         // Normalize src coordinates and the subset (if set)
+         NormalizationParams params = proxy_normalization_params(proxyView.proxy(),
+@@ -1203,6 +1225,13 @@ GrOp::Owner TextureOp::Make(GrRecordingContext* context,
+         }
+     }
+ 
++    GrQuadUtils::ResolveAAType(aaType, quad->fEdgeFlags, quad->fDevice,
++                               &aaType, &quad->fEdgeFlags);
++
++    if (subset && safe_to_ignore_subset_rect(aaType, filter, *quad, *subset)) {
++        subset = nullptr;
++    }
++
+     if (blendMode == SkBlendMode::kSrcOver) {
+         return TextureOpImpl::Make(context, std::move(proxyView), std::move(textureXform), filter,
+                                    mm, color, saturate, aaType, std::move(quad), subset);
+diff --git a/tests/TextureOpTest.cpp b/tests/TextureOpTest.cpp
+index cf5dc5fd49f411492670452b744077dfe0c33a37..b86c2c9d969b51ff6cd0e16a340006fd2d51bcaf 100644
+--- a/tests/TextureOpTest.cpp
++++ b/tests/TextureOpTest.cpp
+@@ -6,18 +6,26 @@
+  */
+ 
+ #include "include/core/SkAlphaType.h"
++#include "include/core/SkBitmap.h"
+ #include "include/core/SkBlendMode.h"
++#include "include/core/SkCanvas.h"
++#include "include/core/SkColor.h"
++#include "include/core/SkImage.h"
++#include "include/core/SkImageInfo.h"
+ #include "include/core/SkMatrix.h"
++#include "include/core/SkPaint.h"
+ #include "include/core/SkRect.h"
+ #include "include/core/SkRefCnt.h"
+ #include "include/core/SkSamplingOptions.h"
+ #include "include/core/SkSize.h"
++#include "include/core/SkSurface.h"
+ #include "include/core/SkTypes.h"
+ #include "include/gpu/GpuTypes.h"
+ #include "include/gpu/ganesh/GrBackendSurface.h"
+ #include "include/gpu/ganesh/GrDirectContext.h"
+ #include "include/gpu/ganesh/GrRecordingContext.h"
+ #include "include/gpu/ganesh/GrTypes.h"
++#include "include/gpu/ganesh/SkSurfaceGanesh.h"
+ #include "include/private/gpu/ganesh/GrTypesPriv.h"
+ #include "src/base/SkArenaAlloc.h"
+ #include "src/gpu/SkBackingFit.h"
+@@ -32,7 +40,9 @@
+ #include "src/gpu/ganesh/GrSamplerState.h"
+ #include "src/gpu/ganesh/GrSurfaceProxy.h"
+ #include "src/gpu/ganesh/GrSurfaceProxyView.h"
++#include "src/gpu/ganesh/SurfaceDrawContext.h"
+ #include "src/gpu/ganesh/geometry/GrQuad.h"
++#include "src/gpu/ganesh/image/SkImage_Ganesh.h"
+ #include "src/gpu/ganesh/ops/GrOp.h"
+ #include "src/gpu/ganesh/ops/OpsTask.h"
+ #include "src/gpu/ganesh/ops/TextureOp.h"
+@@ -168,3 +178,229 @@ DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(TextureOpTest, reporter, ctxInfo, CtsEnfo
+ 
+     chain1.deleteOps();
+ }
++
++// Test that TextureOp does not overshoot a strict subset edge during nearest-neighbor
++// magnification sampling (crbug.com/576937680). Due to limited sub-texel precision
++// in hardware texture units (8-bit for D3D11, 4-bit for Vulkan), round-to-nearest snaps
++// coordinates close to the boundary to the adjacent texel unless clamped in the shader.
++DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(TextureOpNearestSubsetOvershootTest,
++                                       reporter,
++                                       ctxInfo,
++                                       CtsEnforcement::kNever) {
++    GrDirectContext* dContext = ctxInfo.directContext();
++
++    // Create a source surface where the left half [0, 0, 4, 4] is BLUE and the right
++    // half [4, 0, 8, 4] is RED.
++    SkImageInfo srcInfo = SkImageInfo::MakeN32Premul(8, 4);
++    auto srcSurface = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes, srcInfo);
++    if (!srcSurface) {
++        return;
++    }
++    srcSurface->getCanvas()->clear(SK_ColorRED);
++    SkPaint bluePaint;
++    bluePaint.setColor(SK_ColorBLUE);
++    bluePaint.setBlendMode(SkBlendMode::kSrc);
++    srcSurface->getCanvas()->drawRect(SkRect::MakeWH(4, 4), bluePaint);
++
++    sk_sp<SkImage> srcImage = srcSurface->makeImageSnapshot();
++
++    // Create a destination surface with width 2048 (512x magnification of width 4,
++    // which exceeds 8-bit precision: 2048 / 4 = 512 > 256).
++    const int dstW = 2048;
++    const int dstH = 4;
++    SkImageInfo dstInfo = SkImageInfo::MakeN32Premul(dstW, dstH);
++    auto dstSurface = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes, dstInfo);
++    if (!dstSurface) {
++        return;
++    }
++    dstSurface->getCanvas()->clear(SK_ColorTRANSPARENT);
++
++    // Draw the subset [0, 0, 4, 4] with strict constraint, nearest filtering, and no AA.
++    SkPaint paint;
++    paint.setAntiAlias(false);
++    dstSurface->getCanvas()->drawImageRect(
++            srcImage,
++            SkRect::MakeWH(4, 4),
++            SkRect::MakeWH(dstW, dstH),
++            SkSamplingOptions(SkFilterMode::kNearest),
++            &paint,
++            SkCanvas::kStrict_SrcRectConstraint);
++
++    // Read back the rightmost column (x = dstW - 1).
++    // If the subset clamp was improperly ignored, the sampler snaps to texel 4 (RED).
++    // With proper clamping, it samples texel 3 (BLUE).
++    SkBitmap bm;
++    bm.allocN32Pixels(1, 1);
++    REPORTER_ASSERT(reporter, dstSurface->readPixels(bm, dstW - 1, 0));
++    REPORTER_ASSERT(reporter, bm.getColor(0, 0) == SK_ColorBLUE);
++
++    // Test 1:1 integer draw (should hit fast path and safely sample BLUE at x = 3).
++    auto dstSurface1to1 = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes,
++                                                   SkImageInfo::MakeN32Premul(4, 4));
++    if (dstSurface1to1) {
++        dstSurface1to1->getCanvas()->clear(SK_ColorTRANSPARENT);
++        dstSurface1to1->getCanvas()->drawImageRect(
++                srcImage,
++                SkRect::MakeWH(4, 4),
++                SkRect::MakeWH(4, 4),
++                SkSamplingOptions(SkFilterMode::kNearest),
++                &paint,
++                SkCanvas::kStrict_SrcRectConstraint);
++        REPORTER_ASSERT(reporter, dstSurface1to1->readPixels(bm, 3, 0));
++        REPORTER_ASSERT(reporter, bm.getColor(0, 0) == SK_ColorBLUE);
++    }
++
++    // Test 1:1 draw with non-integer relative translation placing pixel center close to
++    // subset edge. The subset clamp must be retained to prevent sampling outside the subset.
++    auto dstSurfaceFrac = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes,
++                                                   SkImageInfo::MakeN32Premul(4, 4));
++    if (dstSurfaceFrac) {
++        dstSurfaceFrac->getCanvas()->clear(SK_ColorTRANSPARENT);
++        dstSurfaceFrac->getCanvas()->drawImageRect(
++                srcImage,
++                SkRect::MakeXYWH(4, 0, 4, 4),
++                SkRect::MakeXYWH(0.5001f, 0.f, 4.f, 4.f),
++                SkSamplingOptions(SkFilterMode::kNearest),
++                &paint,
++                SkCanvas::kStrict_SrcRectConstraint);
++        for (int x = 0; x < 4; ++x) {
++            REPORTER_ASSERT(reporter, dstSurfaceFrac->readPixels(bm, x, 0));
++            REPORTER_ASSERT(reporter, bm.getColor(0, 0) == SK_ColorRED);
++        }
++    }
++
++    // Test 1:1 draw where both src and dst have matching fractional offsets (integer relative
++    // translation, e.g. dst.left - src.left == 0). Fast path is safe and samples BLUE.
++    auto dstSurfaceMatchingFrac = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes,
++                                                           SkImageInfo::MakeN32Premul(4, 4));
++    if (dstSurfaceMatchingFrac) {
++        dstSurfaceMatchingFrac->getCanvas()->clear(SK_ColorTRANSPARENT);
++        dstSurfaceMatchingFrac->getCanvas()->drawImageRect(
++                srcImage,
++                SkRect::MakeXYWH(0.25f, 0.f, 3.f, 4.f),
++                SkRect::MakeXYWH(0.25f, 0.f, 3.f, 4.f),
++                SkSamplingOptions(SkFilterMode::kNearest),
++                &paint,
++                SkCanvas::kStrict_SrcRectConstraint);
++        for (int x = 0; x < 3; ++x) {
++            REPORTER_ASSERT(reporter, dstSurfaceMatchingFrac->readPixels(bm, x, 0));
++            REPORTER_ASSERT(reporter, bm.getColor(0, 0) == SK_ColorBLUE);
++        }
++    }
++
++    // Test 1:1 draw with a horizontal flip (e.g. canvas scale(-1, 1)).
++    // Fast path is safe and samples BLUE across all 4 pixels.
++    auto dstSurfaceFlipped = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes,
++                                                      SkImageInfo::MakeN32Premul(4, 4));
++    if (dstSurfaceFlipped) {
++        dstSurfaceFlipped->getCanvas()->clear(SK_ColorTRANSPARENT);
++        dstSurfaceFlipped->getCanvas()->save();
++        dstSurfaceFlipped->getCanvas()->translate(4.f, 0.f);
++        dstSurfaceFlipped->getCanvas()->scale(-1.f, 1.f);
++        dstSurfaceFlipped->getCanvas()->drawImageRect(
++                srcImage,
++                SkRect::MakeWH(4, 4),
++                SkRect::MakeWH(4, 4),
++                SkSamplingOptions(SkFilterMode::kNearest),
++                &paint,
++                SkCanvas::kStrict_SrcRectConstraint);
++        dstSurfaceFlipped->getCanvas()->restore();
++        for (int x = 0; x < 4; ++x) {
++            REPORTER_ASSERT(reporter, dstSurfaceFlipped->readPixels(bm, x, 0));
++            REPORTER_ASSERT(reporter, bm.getColor(0, 0) == SK_ColorBLUE);
++        }
++    }
++
++    // Test 1:1 draw with a 90-degree rotation.
++    // Fast path is safe and samples BLUE across all 4 pixels.
++    auto dstSurfaceRot90 = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes,
++                                                    SkImageInfo::MakeN32Premul(4, 4));
++    if (dstSurfaceRot90) {
++        dstSurfaceRot90->getCanvas()->clear(SK_ColorTRANSPARENT);
++        dstSurfaceRot90->getCanvas()->save();
++        dstSurfaceRot90->getCanvas()->rotate(90.f);
++        dstSurfaceRot90->getCanvas()->translate(0.f, -4.f);
++        dstSurfaceRot90->getCanvas()->drawImageRect(
++                srcImage,
++                SkRect::MakeWH(4, 4),
++                SkRect::MakeWH(4, 4),
++                SkSamplingOptions(SkFilterMode::kNearest),
++                &paint,
++                SkCanvas::kStrict_SrcRectConstraint);
++        dstSurfaceRot90->getCanvas()->restore();
++        for (int y = 0; y < 4; ++y) {
++            for (int x = 0; x < 4; ++x) {
++                REPORTER_ASSERT(reporter, dstSurfaceRot90->readPixels(bm, x, y));
++                REPORTER_ASSERT(reporter, bm.getColor(0, 0) == SK_ColorBLUE);
++            }
++        }
++    }
++
++    // Test 1:1 draw with a 270-degree rotation.
++    // Fast path is safe and samples BLUE across all 4 pixels.
++    auto dstSurfaceRot270 = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes,
++                                                     SkImageInfo::MakeN32Premul(4, 4));
++    if (dstSurfaceRot270) {
++        dstSurfaceRot270->getCanvas()->clear(SK_ColorTRANSPARENT);
++        dstSurfaceRot270->getCanvas()->save();
++        dstSurfaceRot270->getCanvas()->rotate(270.f);
++        dstSurfaceRot270->getCanvas()->translate(-4.f, 0.f);
++        dstSurfaceRot270->getCanvas()->drawImageRect(
++                srcImage,
++                SkRect::MakeWH(4, 4),
++                SkRect::MakeWH(4, 4),
++                SkSamplingOptions(SkFilterMode::kNearest),
++                &paint,
++                SkCanvas::kStrict_SrcRectConstraint);
++        dstSurfaceRot270->getCanvas()->restore();
++        for (int y = 0; y < 4; ++y) {
++            for (int x = 0; x < 4; ++x) {
++                REPORTER_ASSERT(reporter, dstSurfaceRot270->readPixels(bm, x, y));
++                REPORTER_ASSERT(reporter, bm.getColor(0, 0) == SK_ColorBLUE);
++            }
++        }
++    }
++
++    // Test approx-fit proxy with kFast constraint is upgraded to kStrict and does not overshoot.
++    auto approxSDC = skgpu::ganesh::SurfaceDrawContext::Make(
++            dContext,
++            GrColorType::kRGBA_8888,
++            nullptr,
++            SkBackingFit::kApprox,
++            SkISize::Make(8, 4),
++            SkSurfaceProps(),
++            "ApproxSDC",
++            1,
++            skgpu::Mipmapped::kNo,
++            skgpu::Protected::kNo,
++            kTopLeft_GrSurfaceOrigin);
++    if (approxSDC) {
++        approxSDC->clear(SkPMColor4f{1.f, 0.f, 0.f, 1.f});
++        GrPaint blueGrPaint;
++        blueGrPaint.setColor4f(SkPMColor4f{0.f, 0.f, 1.f, 1.f});
++        approxSDC->drawRect(nullptr, std::move(blueGrPaint), GrAA::kNo, SkMatrix::I(),
++                            SkRect::MakeWH(4, 4));
++
++        sk_sp<SkImage> approxImage = sk_make_sp<SkImage_Ganesh>(
++                sk_ref_sp(dContext),
++                kNeedNewImageUniqueID,
++                approxSDC->readSurfaceView(),
++                srcInfo.colorInfo());
++
++        auto dstSurfaceApprox = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes, dstInfo);
++        if (dstSurfaceApprox) {
++            dstSurfaceApprox->getCanvas()->clear(SK_ColorTRANSPARENT);
++            dstSurfaceApprox->getCanvas()->drawImageRect(
++                    approxImage,
++                    SkRect::MakeWH(4, 4),
++                    SkRect::MakeWH(dstW, dstH),
++                    SkSamplingOptions(SkFilterMode::kNearest),
++                    &paint,
++                    SkCanvas::kFast_SrcRectConstraint);
++            REPORTER_ASSERT(reporter, dstSurfaceApprox->readPixels(bm, dstW - 1, 0));
++            REPORTER_ASSERT(reporter, bm.getColor(0, 0) == SK_ColorBLUE);
++        }
++    }
++}
++
++

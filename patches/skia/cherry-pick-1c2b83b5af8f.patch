@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Mon, 26 Oct 2026 13:22:08 -0400
+Subject: [graphite] Fix PaintParamsKey comparison operator
+
+* The PaintParamsKey operator== incorrectly memcmp on the element count of
+the data, not the size in bytes of the data.
+
+Bug: b/573263908
+Change-Id: I96119d616fcd0d44aae5940b22317a76c6c6164e
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1405816
+Auto-Submit: Thomas Smith <thomsmit@google.com>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+
+Electron adaptation notes (43-x-y):
+This branch's Skia has no SK_UNSAFE_TODO macro, so the memcmp call is written without it; the fix itself (compare fData.size_bytes() instead of fData.size()) is unchanged.
+
+diff --git a/src/gpu/graphite/PaintParamsKey.h b/src/gpu/graphite/PaintParamsKey.h
+index b448fe34191108fc423a47645ff058751ec0140a..12d0538100e776dc3af281764ebc59968d2a6e84 100644
+--- a/src/gpu/graphite/PaintParamsKey.h
++++ b/src/gpu/graphite/PaintParamsKey.h
+@@ -112,7 +112,7 @@ public:
+ 
+     bool operator==(const PaintParamsKey& that) const {
+         return fData.size() == that.fData.size() &&
+-               !memcmp(fData.data(), that.fData.data(), fData.size());
++               !memcmp(fData.data(), that.fData.data(), fData.size_bytes());
+     }
+     bool operator!=(const PaintParamsKey& that) const { return !(*this == that); }
+ 

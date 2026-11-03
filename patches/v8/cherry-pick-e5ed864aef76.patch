@@ -1,0 +1,214 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
+Date: Mon, 19 Oct 2026 09:55:48 +0000
+Subject: [M150-LTS][modules] Do not cache star exports after linking
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Only cache star-exported bindings into Module::exports() while the
+module is still linking (status <= kLinking). Once a module is linked,
+mutating its export table can invalidate LoadIC handler indices on an
+already-finalized JSModuleNamespace or JSDeferredModuleNamespace, and
+can pollute exports when a later cyclic dynamic import fails to link.
+
+Also check both normal and deferred namespaces in ExportsFinalized()
+and assert !ExportsFinalized() in Module::set_exports().
+
+TAG=agy
+CONV=67e5398e-04e3-4d05-9f15-4cb1a89b653b
+Bug: 574038247
+
+Change-Id: I09dc9032f240067826710ddf9ad31838971090b7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8603629
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110901}
+(cherry picked from commit 137e7f93d730ffb014c50967e1a1c1c9ace186a5)
+
+diff --git a/src/heap/factory.cc b/src/heap/factory.cc
+index fbe5f7c7c69b3f0ace50ed7dfb51a173abca0ff3..31ce7b83a0b63a33af9426444f73a2e0c526e263 100644
+--- a/src/heap/factory.cc
++++ b/src/heap/factory.cc
+@@ -3961,15 +3961,15 @@ DirectHandle<SourceTextModule> Factory::NewSourceTextModule(
+       New(source_text_module_map(), AllocationType::kOld));
+   DisallowGarbageCollection no_gc;
+   module->set_code(*sfi);
++  module->set_status(Module::kUnlinked);
++  module->set_module_namespace(roots.undefined_value(), SKIP_WRITE_BARRIER);
++  module->set_deferred_module_namespace(roots.undefined_value(),
++                                        SKIP_WRITE_BARRIER);
+   module->set_exports(*exports);
+   module->set_regular_exports(*regular_exports);
+   module->set_regular_imports(*regular_imports);
+   module->set_hash(isolate()->GenerateIdentityHash(Smi::kMaxValue));
+-  module->set_module_namespace(roots.undefined_value(), SKIP_WRITE_BARRIER);
+-  module->set_deferred_module_namespace(roots.undefined_value(),
+-                                        SKIP_WRITE_BARRIER);
+   module->set_requested_modules(*requested_modules);
+-  module->set_status(Module::kUnlinked);
+   module->set_exception(roots.the_hole_value(), SKIP_WRITE_BARRIER);
+   module->set_top_level_capability(roots.undefined_value(), SKIP_WRITE_BARRIER);
+   module->set_import_meta(roots.the_hole_value(), kReleaseStore,
+diff --git a/src/objects/module-inl.h b/src/objects/module-inl.h
+index 61a2bbc8f1d226bbc43908c760edca29f4468b45..5a5c5af6a6ee8ddcc29060bddff33514cabc911a 100644
+--- a/src/objects/module-inl.h
++++ b/src/objects/module-inl.h
+@@ -8,6 +8,7 @@
+ #include "src/objects/module.h"
+ // Include the non-inl header before the rest of the headers.
+ 
++#include "src/objects/cell-inl.h"
+ #include "src/objects/scope-info.h"
+ #include "src/objects/source-text-module.h"
+ #include "src/objects/string-inl.h"
+@@ -172,6 +173,7 @@ void SourceTextModule::DecrementPendingAsyncDependencies() {
+ 
+ Tagged<ObjectHashTable> Module::exports() const { return exports_.load(); }
+ void Module::set_exports(Tagged<ObjectHashTable> value, WriteBarrierMode mode) {
++  CHECK(!ExportsFinalized());
+   exports_.store(this, value, mode);
+ }
+ 
+@@ -197,6 +199,16 @@ void Module::set_deferred_module_namespace(
+   deferred_module_namespace_.store(this, value, mode);
+ }
+ 
++bool Module::ExportsFinalized() const {
++  bool res =
++      (!IsUndefined(module_namespace()) &&
++       IsJSModuleNamespace(Cast<Cell>(module_namespace())->value())) ||
++      (!IsUndefined(deferred_module_namespace()) &&
++       IsJSModuleNamespace(Cast<Cell>(deferred_module_namespace())->value()));
++  DCHECK_IMPLIES(res, status() >= kLinking);
++  return res;
++}
++
+ Tagged<Module> JSModuleNamespace::module() const { return module_.load(); }
+ 
+ void JSModuleNamespace::set_module(Tagged<Module> value,
+diff --git a/src/objects/module.h b/src/objects/module.h
+index 1691fa0a780503f250e62582817267bafe671ff2..5588054a1526fedecc783e677b9d277831b8b186 100644
+--- a/src/objects/module.h
++++ b/src/objects/module.h
+@@ -110,6 +110,11 @@ V8_OBJECT class Module : public HeapObject {
+   inline void set_exception(Tagged<Object> value,
+                             WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+ 
++  // Once a module namespace (normal or deferred) has been created in
++  // GetModuleNamespace, all star exports have been fetched and {exports} is
++  // finalized (must not be mutated or rehashed as ICs index into it).
++  inline bool ExportsFinalized() const;
++
+   inline Tagged<UnionOf<JSPromise, Undefined>> top_level_capability() const;
+   inline void set_top_level_capability(
+       Tagged<UnionOf<JSPromise, Undefined>> value,
+diff --git a/src/objects/source-text-module.cc b/src/objects/source-text-module.cc
+index c4cda5fe48c2752c8c958f2f1c2cf71e8aa1940a..5d7ff9ec78c3d80814ba658b03358aaff72a12dc 100644
+--- a/src/objects/source-text-module.cc
++++ b/src/objects/source-text-module.cc
+@@ -364,11 +364,14 @@ MaybeHandle<Cell> SourceTextModule::ResolveExportUsingStarExports(
+ 
+     if (!unique_cell.is_null()) {
+       // Found a unique star export for this name.
+-      Handle<ObjectHashTable> exports(module->exports(), isolate);
+-      DCHECK(IsTheHole(exports->Lookup(export_name)));
+-      exports =
+-          ObjectHashTable::Put(isolate, exports, export_name, unique_cell);
+-      module->set_exports(*exports);
++      if (module->status() <= kLinking) {
++        DCHECK(!module->ExportsFinalized());
++        Handle<ObjectHashTable> exports(module->exports(), isolate);
++        DCHECK(IsTheHole(exports->Lookup(export_name)));
++        exports =
++            ObjectHashTable::Put(isolate, exports, export_name, unique_cell);
++        module->set_exports(*exports);
++      }
+       return unique_cell;
+     }
+   }
+@@ -766,8 +769,7 @@ void SourceTextModule::FetchStarExports(Isolate* isolate,
+   DCHECK_GE(module->status(), Module::kLinking);
+ 
+   // Shortcut.
+-  if (!IsUndefined(module->module_namespace()) &&
+-      IsJSModuleNamespace(Cast<Cell>(module->module_namespace())->value())) {
++  if (module->ExportsFinalized()) {
+     return;
+   }
+ 
+diff --git a/test/mjsunit/regress/regress-574038247.js b/test/mjsunit/regress/regress-574038247.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d35372f23effcf80278fa2f640208e4a0b6c5b02
+--- /dev/null
++++ b/test/mjsunit/regress/regress-574038247.js
+@@ -0,0 +1,68 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --bundle
++
++// JS_BUNDLE_MODULE:c1.mjs
++export const x = 1;
++
++// JS_BUNDLE_MODULE:c2.mjs
++export const x = 2;
++
++// JS_BUNDLE_MODULE:p.mjs
++export * from "n.mjs";
++export * from "c1.mjs";
++
++// JS_BUNDLE_MODULE:n.mjs
++export * from "p.mjs";
++
++// JS_BUNDLE_MODULE:outer.mjs
++export * from "m.mjs";
++export * from "p.mjs";
++export * from "c2.mjs";
++
++// JS_BUNDLE_MODULE:m.mjs
++const a = 1;
++export { a, a as b, a as c, a as d, a as e };
++export * from "outer.mjs";
++export * from "n.mjs";
++
++// JS_BUNDLE_MODULE:trigger.mjs
++import { x } from "outer.mjs";
++
++// JS_BUNDLE_MODULE:outer_no_ns.mjs
++export * from "m_no_ns.mjs";
++export * from "p.mjs";
++export * from "c2.mjs";
++
++// JS_BUNDLE_MODULE:m_no_ns.mjs
++export const a = 1;
++export * from "outer_no_ns.mjs";
++export * from "n.mjs";
++
++// JS_BUNDLE_MODULE:trigger_no_ns.mjs
++import { x } from "outer_no_ns.mjs";
++
++// JS_BUNDLE_MODULE:import_x_from_m_no_ns.mjs
++import { x } from "m_no_ns.mjs";
++
++// JS_BUNDLE_MODULE_ENTRYPOINT
++import * as ns from "m.mjs";
++import { a } from "m_no_ns.mjs";
++
++assertEquals(1, a);
++
++function read(o) {
++  return o.a + o.b + o.c + o.d + o.e;
++}
++
++for (let i = 0; i < 12; i++) {
++  assertEquals(5, read(ns));
++}
++
++await assertThrowsAsync(import("trigger.mjs"), SyntaxError);
++assertEquals(5, read(ns));
++
++await assertThrowsAsync(import("trigger_no_ns.mjs"), SyntaxError);
++await assertThrowsAsync(import("import_x_from_m_no_ns.mjs"), SyntaxError);

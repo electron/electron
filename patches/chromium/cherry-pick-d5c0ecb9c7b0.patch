@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Tue, 29 Sep 2026 11:29:05 -0700
+Subject: Block WebSocketConnector creation in PDF renderer processes
+
+Reject blink.mojom.WebSocketConnector binding requests from PDF-isolated
+frames in RenderFrameHostImpl::CreateWebSocketConnector() with
+mojo::ReportBadMessage(). A PDF renderer commits the serving origin but
+is not permitted to access that origin's data or cookies; allowing it to
+create a WebSocketConnector would attach the origin's cookies (including
+HttpOnly cookies) to WebSocket handshakes.
+
+Bug: 566683019
+Change-Id: I2aecd84c9548c3d1f617b0042808773899a7a19f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8471069
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1707308}
+
+Electron adaptation notes (43-x-y):
+This branch's CreateWebSocketConnector() has neither the MHTML-document check nor the storage_access_api_status local that surround the new check upstream; the IsPdf() ReportBadMessage guard was inserted at the top of the function as upstream. The browser test hunk did not merge and was dropped (test-only).
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 1d1a6360fb6c2a62eb6eeb9af2ab15378b62da79..6df23679d1522c85ea7d6af3f6fb31135c3f81b4 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -14849,6 +14849,10 @@ void RenderFrameHostImpl::BindMediaRemoterFactoryReceiver(
+ 
+ void RenderFrameHostImpl::CreateWebSocketConnector(
+     mojo::PendingReceiver<blink::mojom::WebSocketConnector> receiver) {
++  if (GetSiteInstance()->IsPdf()) {
++    mojo::ReportBadMessage("WebSockets are not allowed in PDF documents.");
++    return;
++  }
+   mojo::MakeSelfOwnedReceiver(
+       std::make_unique<WebSocketConnectorImpl>(
+           GlobalRenderFrameHostId(GetProcess()->GetID(), routing_id_),

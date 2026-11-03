@@ -1,0 +1,422 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Sartori <antoniosartori@chromium.org>
+Date: Mon, 12 Oct 2026 10:19:06 -0700
+Subject: [Permissions] Do not use the visible URL for opaque main frame
+ origins
+
+PermissionUtil::GetLastCommittedOriginAsURL() fell back to the
+WebContents' visible URL when the primary main frame's committed
+origin serialized to an empty URL. However, while a navigation is
+pending, the visible URL is the navigation's target and not the URL of
+the current document.
+
+Derive the URL only from the committed origin instead. For opaque
+primary main frame origins, keep supporting sandboxed documents by
+using the precursor origin, which is empty if there is none.
+
+Fixed: 571195939, 571960472, 553148542
+Change-Id: If1aaa62234dd4f88fea1bcc83976a362042db208
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8537646
+Reviewed-by: Judith Hemp <hempjudith@google.com>
+Commit-Queue: Antonio Sartori <antoniosartori@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716886}
+
+Electron adaptation notes (43-x-y):
+Context conflict only: this branch's GetLastCommittedOriginAsURL() fallback used web_contents->GetVisibleURL() without DeprecatedGetOriginAsURL(); the whole block is replaced by the upstream logic as in the fix. components/permissions/permission_manager_unittest.cc did not merge and was dropped (test-only; components/permissions is not compiled by Electron).
+
+diff --git a/components/permissions/BUILD.gn b/components/permissions/BUILD.gn
+index ee22f6c384f3c883793ca1611e254b117369e235..0672209afa293095fe4dc91bc1d97cc2fd924f64 100644
+--- a/components/permissions/BUILD.gn
++++ b/components/permissions/BUILD.gn
+@@ -362,6 +362,7 @@ source_set("unit_tests") {
+       "permission_manager_unittest.cc",
+       "permission_request_manager_unittest.cc",
+       "permission_uma_util_unittest.cc",
++      "permission_util_unittest.cc",
+       "resolvers/content_setting_permission_resolver_unittest.cc",
+     ]
+   }
+diff --git a/components/permissions/DEPS b/components/permissions/DEPS
+index 102fa88bbddbd134991f4d725c8122dd344fcff3..73e27755f01e29362b2e7e3c57b6be4758f57884 100644
+--- a/components/permissions/DEPS
++++ b/components/permissions/DEPS
+@@ -65,3 +65,9 @@ include_rules = [
+   "+ui/gfx",
+   "+ui/strings/grit/ui_strings.h"
+ ]
++
++specific_include_rules = {
++  "permission_util_unittest\.cc": [
++    "+net/http/http_response_headers.h",
++  ],
++}
+diff --git a/components/permissions/permission_context_unittest.cc b/components/permissions/permission_context_unittest.cc
+index 9f412cee3f76f1f63a266c9391f0b371851c0cc7..51ff4a01897e6b6634726028d24a72ddc14018f8 100644
+--- a/components/permissions/permission_context_unittest.cc
++++ b/components/permissions/permission_context_unittest.cc
+@@ -1210,8 +1210,7 @@ TEST_F(PermissionContextBaseTests,
+           NOTIFICATIONS>(/*enable_app_level_notification_permission=*/
+                          false);
+   GURL url("https://example.test");
+-  controller().LoadURL(url, content::Referrer(), ui::PAGE_TRANSITION_TYPED,
+-                       std::string());
++  SetUpUrl(url);
+ 
+   const PermissionRequestID id(
+       web_contents()->GetPrimaryMainFrame()->GetGlobalId(),
+diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
+index 5a1a292f06e29a1a87ead9e77fe666ca659da1ba..a49d820cd14b92b85ac732f5509e15cf62c67518 100644
+--- a/components/permissions/permission_util.cc
++++ b/components/permissions/permission_util.cc
+@@ -453,9 +453,9 @@ GURL PermissionUtil::GetLastCommittedOriginAsURL(
+     content::RenderFrameHost* render_frame_host) {
+   CHECK(render_frame_host);
+ 
++#if BUILDFLAG(IS_ANDROID)
+   content::WebContents* web_contents =
+       content::WebContents::FromRenderFrameHost(render_frame_host);
+-#if BUILDFLAG(IS_ANDROID)
+   // If `allow_universal_access_from_file_urls` flag is enabled, a file:/// can
+   // change its url via history.pushState/replaceState to any other url,
+   // including about:blank. To avoid user confusion we should always use a
+@@ -470,13 +470,14 @@ GURL PermissionUtil::GetLastCommittedOriginAsURL(
+   }
+ #endif
+ 
+-  GURL origin = render_frame_host->GetLastCommittedOrigin().GetURL();
+-  if (origin.is_empty() && render_frame_host->IsInPrimaryMainFrame()) {
+-    if (!web_contents->GetVisibleURL().is_empty()) {
+-      origin = web_contents->GetVisibleURL();
+-    }
++  const url::Origin& origin = render_frame_host->GetLastCommittedOrigin();
++  if (origin.opaque() && render_frame_host->IsInPrimaryMainFrame()) {
++    // For historical reasons we are supporting permission grants to sandboxed
++    // documents.
++    // TODO(https://crbug.com/571135408): Revisit this logic.
++    return origin.GetTupleOrPrecursorTupleIfOpaque().GetURL();
+   }
+-  return origin;
++  return origin.GetURL();
+ }
+ 
+ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+diff --git a/components/permissions/permission_util_unittest.cc b/components/permissions/permission_util_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..ca4f030c1424ac8befb7e76a9fe68074e2df63d8
+--- /dev/null
++++ b/components/permissions/permission_util_unittest.cc
+@@ -0,0 +1,138 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "components/permissions/permission_util.h"
++
++#include <memory>
++
++#include "content/public/browser/render_frame_host.h"
++#include "content/public/browser/web_contents.h"
++#include "content/public/test/navigation_simulator.h"
++#include "content/public/test/test_renderer_host.h"
++#include "net/http/http_response_headers.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "url/gurl.h"
++#include "url/origin.h"
++
++namespace permissions {
++
++// Due to dependency issues, `PermissionUtil::GetLastCommittedOriginAsURL()` is
++// duplicated in content/browser/permissions/permission_util.cc. Keep these
++// tests in sync with content/browser/permissions/permission_util_unittest.cc.
++class PermissionUtilGetLastCommittedOriginAsURLTest
++    : public content::RenderViewHostTestHarness {
++ protected:
++  // Navigates the primary main frame of `web_contents()` to `url`, served with
++  // a `Content-Security-Policy: sandbox` header, so that the committed document
++  // has an opaque origin whose precursor is the origin of `url`.
++  content::RenderFrameHost* NavigateAndCommitSandboxed(const GURL& url) {
++    auto navigation = content::NavigationSimulator::CreateBrowserInitiated(
++        url, web_contents());
++    navigation->SetResponseHeaders(net::HttpResponseHeaders::TryToCreate(
++        "HTTP/1.1 200 OK\nContent-Security-Policy: sandbox\n\n"));
++    navigation->Commit();
++    return navigation->GetFinalRenderFrameHost();
++  }
++
++  content::RenderFrameHost* AppendChildAndNavigate(
++      content::RenderFrameHost* parent,
++      const GURL& url) {
++    content::RenderFrameHost* child =
++        content::RenderFrameHostTester::For(parent)->AppendChild("child");
++    content::RenderFrameHostTester::For(child)->InitializeRenderFrameIfNeeded();
++    return content::NavigationSimulator::NavigateAndCommitFromDocument(url,
++                                                                       child);
++  }
++};
++
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, MainFrame) {
++  NavigateAndCommit(GURL("https://example.com/path?query#ref"));
++
++  EXPECT_EQ(GURL("https://example.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(main_rfh()));
++}
++
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, SameOriginSubframe) {
++  NavigateAndCommit(GURL("https://example.com/"));
++  content::RenderFrameHost* child =
++      AppendChildAndNavigate(main_rfh(), GURL("https://example.com/child"));
++
++  EXPECT_EQ(GURL("https://example.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(child));
++}
++
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, CrossOriginSubframe) {
++  NavigateAndCommit(GURL("https://example.com/"));
++  content::RenderFrameHost* child =
++      AppendChildAndNavigate(main_rfh(), GURL("https://other.com/child"));
++
++  EXPECT_EQ(GURL("https://other.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(child));
++}
++
++// Opaque subframes never inherit their precursor origin.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, OpaqueSubframe) {
++  NavigateAndCommit(GURL("https://example.com/"));
++  content::RenderFrameHost* child =
++      AppendChildAndNavigate(main_rfh(), GURL("data:text/html,child"));
++  ASSERT_TRUE(child->GetLastCommittedOrigin().opaque());
++
++  EXPECT_EQ(GURL(), PermissionUtil::GetLastCommittedOriginAsURL(child));
++}
++
++// A sandboxed primary main frame is mapped to its precursor origin.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, SandboxedMainFrame) {
++  content::RenderFrameHost* rfh =
++      NavigateAndCommitSandboxed(GURL("https://example.com/path"));
++  ASSERT_TRUE(rfh->GetLastCommittedOrigin().opaque());
++
++  EXPECT_EQ(GURL("https://example.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(rfh));
++}
++
++// A sandboxed primary main frame keeps using its own precursor origin while a
++// navigation to another origin is pending.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest,
++       SandboxedMainFrameWithPendingNavigation) {
++  content::RenderFrameHost* rfh =
++      NavigateAndCommitSandboxed(GURL("https://example.com/path"));
++  ASSERT_TRUE(rfh->GetLastCommittedOrigin().opaque());
++
++  const GURL pending_url("https://other.com/");
++  auto navigation = content::NavigationSimulator::CreateBrowserInitiated(
++      pending_url, web_contents());
++  navigation->Start();
++  ASSERT_EQ(pending_url, web_contents()->GetVisibleURL());
++  ASSERT_EQ(rfh, web_contents()->GetPrimaryMainFrame());
++
++  EXPECT_EQ(GURL("https://example.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(rfh));
++}
++
++// The initial empty document has an opaque origin without a precursor.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, InitialEmptyDocument) {
++  ASSERT_TRUE(main_rfh()->GetLastCommittedOrigin().opaque());
++
++  EXPECT_EQ(GURL(), PermissionUtil::GetLastCommittedOriginAsURL(main_rfh()));
++}
++
++// Regression test for https://crbug.com/571195939: the visible URL of a pending
++// navigation must not be used as the origin of the still-committed opaque
++// initial empty document.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest,
++       InitialEmptyDocumentWithPendingNavigation) {
++  content::RenderFrameHost* rfh = main_rfh();
++  ASSERT_TRUE(rfh->GetLastCommittedOrigin().opaque());
++
++  const GURL pending_url("https://example.com/");
++  auto navigation = content::NavigationSimulator::CreateBrowserInitiated(
++      pending_url, web_contents());
++  navigation->Start();
++  ASSERT_EQ(pending_url, web_contents()->GetVisibleURL());
++  ASSERT_EQ(rfh, web_contents()->GetPrimaryMainFrame());
++
++  EXPECT_EQ(GURL(), PermissionUtil::GetLastCommittedOriginAsURL(rfh));
++}
++
++}  // namespace permissions
+diff --git a/content/browser/permissions/permission_util.cc b/content/browser/permissions/permission_util.cc
+index 23ae649b5a37191a0243d1b356a38ef6a4de0a4c..dcb317cac60c0d96efe32c69ddf155e005b2eb54 100644
+--- a/content/browser/permissions/permission_util.cc
++++ b/content/browser/permissions/permission_util.cc
+@@ -71,9 +71,9 @@ GURL PermissionUtil::GetLastCommittedOriginAsURL(
+     content::RenderFrameHost* render_frame_host) {
+   CHECK(render_frame_host);
+ 
++#if BUILDFLAG(IS_ANDROID)
+   content::WebContents* web_contents =
+       content::WebContents::FromRenderFrameHost(render_frame_host);
+-#if BUILDFLAG(IS_ANDROID)
+   // If `allow_universal_access_from_file_urls` flag is enabled, a file:/// can
+   // change its url via history.pushState/replaceState to any other url,
+   // including about:blank. To avoid user confusion we should always use a
+@@ -88,13 +88,14 @@ GURL PermissionUtil::GetLastCommittedOriginAsURL(
+   }
+ #endif
+ 
+-  GURL origin = render_frame_host->GetLastCommittedOrigin().GetURL();
+-  if (origin.is_empty() && render_frame_host->IsInPrimaryMainFrame()) {
+-    if (!web_contents->GetVisibleURL().is_empty()) {
+-      origin = web_contents->GetVisibleURL();
+-    }
++  const url::Origin& origin = render_frame_host->GetLastCommittedOrigin();
++  if (origin.opaque() && render_frame_host->IsInPrimaryMainFrame()) {
++    // For historical reasons we are supporting permission grants to sandboxed
++    // documents.
++    // TODO(https://crbug.com/571135408): Revisit this logic.
++    return origin.GetTupleOrPrecursorTupleIfOpaque().GetURL();
+   }
+-  return origin;
++  return origin.GetURL();
+ }
+ 
+ bool PermissionUtil::IsDomainOverride(
+diff --git a/content/browser/permissions/permission_util_unittest.cc b/content/browser/permissions/permission_util_unittest.cc
+index 954b0b94a6f8348e9b4e0830c3fd3948fcdf0bda..36ecd390443d22d1166ed969ccf8af45f6a2bde5 100644
+--- a/content/browser/permissions/permission_util_unittest.cc
++++ b/content/browser/permissions/permission_util_unittest.cc
+@@ -4,11 +4,17 @@
+ 
+ #include "content/browser/permissions/permission_util.h"
+ 
++#include <memory>
++
+ #include "base/test/scoped_feature_list.h"
+ #include "content/public/browser/permission_descriptor_util.h"
++#include "content/public/browser/render_frame_host.h"
++#include "content/public/browser/web_contents.h"
++#include "content/public/test/navigation_simulator.h"
+ #include "content/public/test/test_browser_context.h"
+ #include "content/public/test/test_renderer_host.h"
+ #include "content/public/test/web_contents_tester.h"
++#include "net/http/http_response_headers.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/mojom/permissions/permission.mojom-forward.h"
+@@ -264,4 +270,117 @@ TEST_F(PermissionUtilTest,
+                 blink::mojom::PermissionStatus::ASK, nullptr));
+ }
+ 
++class PermissionUtilGetLastCommittedOriginAsURLTest
++    : public RenderViewHostTestHarness {
++ protected:
++  // Navigates the primary main frame of `web_contents()` to `url`, served with
++  // a `Content-Security-Policy: sandbox` header, so that the committed document
++  // has an opaque origin whose precursor is the origin of `url`.
++  RenderFrameHost* NavigateAndCommitSandboxed(const GURL& url) {
++    auto navigation =
++        NavigationSimulator::CreateBrowserInitiated(url, web_contents());
++    navigation->SetResponseHeaders(net::HttpResponseHeaders::TryToCreate(
++        "HTTP/1.1 200 OK\nContent-Security-Policy: sandbox\n\n"));
++    navigation->Commit();
++    return navigation->GetFinalRenderFrameHost();
++  }
++
++  RenderFrameHost* AppendChildAndNavigate(RenderFrameHost* parent,
++                                          const GURL& url) {
++    RenderFrameHost* child =
++        RenderFrameHostTester::For(parent)->AppendChild("child");
++    RenderFrameHostTester::For(child)->InitializeRenderFrameIfNeeded();
++    return NavigationSimulator::NavigateAndCommitFromDocument(url, child);
++  }
++};
++
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, MainFrame) {
++  NavigateAndCommit(GURL("https://example.com/path?query#ref"));
++
++  EXPECT_EQ(GURL("https://example.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(main_rfh()));
++}
++
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, SameOriginSubframe) {
++  NavigateAndCommit(GURL("https://example.com/"));
++  RenderFrameHost* child =
++      AppendChildAndNavigate(main_rfh(), GURL("https://example.com/child"));
++
++  EXPECT_EQ(GURL("https://example.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(child));
++}
++
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, CrossOriginSubframe) {
++  NavigateAndCommit(GURL("https://example.com/"));
++  RenderFrameHost* child =
++      AppendChildAndNavigate(main_rfh(), GURL("https://other.com/child"));
++
++  EXPECT_EQ(GURL("https://other.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(child));
++}
++
++// Opaque subframes never inherit their precursor origin.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, OpaqueSubframe) {
++  NavigateAndCommit(GURL("https://example.com/"));
++  RenderFrameHost* child =
++      AppendChildAndNavigate(main_rfh(), GURL("data:text/html,child"));
++  ASSERT_TRUE(child->GetLastCommittedOrigin().opaque());
++
++  EXPECT_EQ(GURL(), PermissionUtil::GetLastCommittedOriginAsURL(child));
++}
++
++// A sandboxed primary main frame is mapped to its precursor origin.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, SandboxedMainFrame) {
++  RenderFrameHost* rfh =
++      NavigateAndCommitSandboxed(GURL("https://example.com/path"));
++  ASSERT_TRUE(rfh->GetLastCommittedOrigin().opaque());
++
++  EXPECT_EQ(GURL("https://example.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(rfh));
++}
++
++// A sandboxed primary main frame keeps using its own precursor origin while a
++// navigation to another origin is pending.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest,
++       SandboxedMainFrameWithPendingNavigation) {
++  RenderFrameHost* rfh =
++      NavigateAndCommitSandboxed(GURL("https://example.com/path"));
++  ASSERT_TRUE(rfh->GetLastCommittedOrigin().opaque());
++
++  const GURL pending_url("https://other.com/");
++  auto navigation =
++      NavigationSimulator::CreateBrowserInitiated(pending_url, web_contents());
++  navigation->Start();
++  ASSERT_EQ(pending_url, web_contents()->GetVisibleURL());
++  ASSERT_EQ(rfh, web_contents()->GetPrimaryMainFrame());
++
++  EXPECT_EQ(GURL("https://example.com/"),
++            PermissionUtil::GetLastCommittedOriginAsURL(rfh));
++}
++
++// The initial empty document has an opaque origin without a precursor.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest, InitialEmptyDocument) {
++  ASSERT_TRUE(main_rfh()->GetLastCommittedOrigin().opaque());
++
++  EXPECT_EQ(GURL(), PermissionUtil::GetLastCommittedOriginAsURL(main_rfh()));
++}
++
++// Regression test for https://crbug.com/571195939: the visible URL of a pending
++// navigation must not be used as the origin of the still-committed opaque
++// initial empty document.
++TEST_F(PermissionUtilGetLastCommittedOriginAsURLTest,
++       InitialEmptyDocumentWithPendingNavigation) {
++  RenderFrameHost* rfh = main_rfh();
++  ASSERT_TRUE(rfh->GetLastCommittedOrigin().opaque());
++
++  const GURL pending_url("https://example.com/");
++  auto navigation =
++      NavigationSimulator::CreateBrowserInitiated(pending_url, web_contents());
++  navigation->Start();
++  ASSERT_EQ(pending_url, web_contents()->GetVisibleURL());
++  ASSERT_EQ(rfh, web_contents()->GetPrimaryMainFrame());
++
++  EXPECT_EQ(GURL(), PermissionUtil::GetLastCommittedOriginAsURL(rfh));
++}
++
+ }  // namespace content

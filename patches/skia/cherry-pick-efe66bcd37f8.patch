@@ -1,0 +1,170 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Thu, 22 Oct 2026 14:34:37 -0400
+Subject: [M150] Fix potential heap OOB write in SkRgnBuilder for conic paths
+
+Original change's description:
+> Fix potential heap OOB write in SkRgnBuilder for conic paths
+>
+> SkRgnBuilder::init pre-allocates a fixed-size working buffer based on
+> the path's vertical span and the worst-case number of X-transitions per
+> scanline (computed by count_path_runtype_values).
+>
+> Previously, verb_to_max_edges budgeted at most 2 edges for kConic_Verb.
+> However, SkEdgeBuilder and SkEdgeClipper approximate each conic by
+> subdividing it into up to 2^kMaxConicToQuadPOW2 (32) quadratics, each of
+> which can be chopped at its Y-extremum into up to 2 monotonic edges.
+> When a conic is subdivided near a scanline center, floating-point
+> rounding across the subdivided quads can cause multiple segments from a
+> single conic to cross the same scanline, exceeding the pre-allocated
+> transition budget and writing out-of-bounds in SkRgnBuilder::blitH.
+>
+> Update verb_to_max_edges to budget 2 << SkConic::kMaxConicToQuadPOW2
+> (64) edges per conic, and use SkSafeMath when accumulating maxEdges in
+> count_path_runtype_values to guard against integer overflow.
+>
+> Bug: b/569674218
+> Change-Id: Ie8b0bb19e40f042586391e7b1b1f30c939a8f9c4
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1393037
+> Commit-Queue: Robert Phillips <robertphillips@google.com>
+> Auto-Submit: Thomas Smith <thomsmit@google.com>
+> Reviewed-by: Robert Phillips <robertphillips@google.com>
+
+(cherry picked from commit 50a301ac1cb67f2870c39b7b45f3f0af586f25d7)
+
+Bug: 579652250,b/569674218
+Change-Id: Ie8b0bb19e40f042586391e7b1b1f30c939a8f9c4
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1411656
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/core/SkGeometry.cpp b/src/core/SkGeometry.cpp
+index a76bb69f66b70654ae7f5cd629b33d6041bc802c..c4c3958e9b79b1c4f5a7328d1919409609110c54 100644
+--- a/src/core/SkGeometry.cpp
++++ b/src/core/SkGeometry.cpp
+@@ -1482,9 +1482,6 @@ bool SkConic::asQuadTol(SkScalar tol) const {
+     return (x * x + y * y) <= tol * tol;
+ }
+ 
+-// Limit the number of suggested quads to approximate a conic
+-#define kMaxConicToQuadPOW2     5
+-
+ static inline bool bad_conic_w(float w) {
+     return w < 0 || !SkIsFinite(w);
+ }
+diff --git a/src/core/SkGeometry.h b/src/core/SkGeometry.h
+index 11cd5cd7938c53befb8499685efff7068b7711d5..2fec82e0bdae58e0e2d8a5f40a23e65e72e3925f 100644
+--- a/src/core/SkGeometry.h
++++ b/src/core/SkGeometry.h
+@@ -372,6 +372,9 @@ struct SkConic {
+     void computeAsQuadError(SkVector* err) const;
+     bool asQuadTol(SkScalar tol) const;
+ 
++    // Limit the number of suggested quads to approximate a conic
++    static constexpr int kMaxConicToQuadPOW2 = 5;
++
+     /**
+      *  return the power-of-2 number of quads needed to approximate this conic
+      *  with a sequence of quads. Will be >= 0.
+diff --git a/src/core/SkRegion_path.cpp b/src/core/SkRegion_path.cpp
+index 23098ebbf45e97361b7d02e2652621265344e922..1109078c20eeb6fc5abd176fd337fc8b75975dd6 100644
+--- a/src/core/SkRegion_path.cpp
++++ b/src/core/SkRegion_path.cpp
+@@ -23,6 +23,7 @@
+ #include "src/base/SkSafeMath.h"
+ #include "src/base/SkTSort.h"
+ #include "src/core/SkBlitter.h"
++#include "src/core/SkGeometry.h"
+ #include "src/core/SkPathPriv.h"
+ #include "src/core/SkRegionPriv.h"
+ #include "src/core/SkScan.h"
+@@ -280,7 +281,14 @@ static unsigned verb_to_max_edges(SkPathVerb verb) {
+         0,  //  kMove_Verb
+         1,  //  kLine_Verb
+         2,  //  kQuad_VerbB
+-        2,  //  kConic_VerbB
++        // While a true conic section crosses a horizontal scanline at most twice, SkEdgeBuilder/
++        // SkEdgeClipper approximate each conic by subdividing it into up to 2^kMaxConicToQuadPOW2
++        // quads, each of which can be chopped at its Y-extremum into up to 2 monotonic edges. When
++        // a non-monotonic conic is subdivided near a scanline center, floating-point rounding and
++        // the conic-to-quad approximation can cause the subdivided quads to oscillate above and
++        // below that scanline, producing up to 2 * 2^kMaxConicToQuadPOW2 active edges on a single
++        // scanline.
++        2 << SkConic::kMaxConicToQuadPOW2,  //  kConic_VerbB
+         3,  //  kCubic_Verb
+         0,  //  kClose_Verb
+     };
+@@ -289,8 +297,9 @@ static unsigned verb_to_max_edges(SkPathVerb verb) {
+     return gPathVerbToMaxEdges[index];
+ }
+ 
+-// If returns 0, ignore itop and ibot
++// If returns <= 0, ignore itop and ibot
+ static int count_path_runtype_values(const SkPath& path, int* itop, int* ibot) {
++    SkSafeMath safe;
+     int maxEdges = 0;
+     SkScalar    top = SkIntToScalar(SK_MaxS16);
+     SkScalar    bot = SkIntToScalar(SK_MinS16);
+@@ -300,7 +309,7 @@ static int count_path_runtype_values(const SkPath& path, int* itop, int* ibot) {
+         const SkPathVerb verb = rec->fVerb;
+         const SkSpan<const SkPoint> pts = rec->fPoints;
+ 
+-        maxEdges += verb_to_max_edges(verb);
++        maxEdges = safe.addInt(maxEdges, verb_to_max_edges(verb));
+ 
+         int lastIndex = verb_to_initial_last_index(verb);
+         if (lastIndex > 0) {
+@@ -319,6 +328,9 @@ static int count_path_runtype_values(const SkPath& path, int* itop, int* ibot) {
+             }
+         }
+     }
++    if (!safe) {
++        return -1;
++    }
+     if (0 == maxEdges) {
+         return 0;   // we have only moves+closes
+     }
+@@ -403,6 +415,9 @@ bool SkRegion::setPath(const SkPath& path, const SkRegion& clip) {
+     //  compute worst-case rgn-size for the path
+     int pathTop, pathBot;
+     int pathTransitions = count_path_runtype_values(path, &pathTop, &pathBot);
++    if (pathTransitions < 0) {
++        return this->setEmpty();
++    }
+     if (0 == pathTransitions) {
+         return check_inverse_on_empty_return(this, path, clip);
+     }
+diff --git a/tests/RegionTest.cpp b/tests/RegionTest.cpp
+index bff07a704e281cc850c80f606f431156931ede82..19ff20cdd545cc6106875da632e1a1fcd39a1997 100644
+--- a/tests/RegionTest.cpp
++++ b/tests/RegionTest.cpp
+@@ -707,3 +707,27 @@ DEF_TEST(Region_setRects, reporter) {
+     }
+     test("100_rects_grid", grid);
+ }
++
++DEF_TEST(Region_ConicMaxEdges, reporter) {
++    // Regression test ensuring SkRegion::setPath budgets enough storage when conics
++    // are subdivided into up to 2^kMaxConicToQuadPOW2 quads near a scanline center.
++    // Note: The specific floating-point constants below only trigger the 32-span
++    // subdivision when SK_SUPPORT_LEGACY_CONIC_CHOP is enabled (as in Chromium).
++    SkPathBuilder builder;
++    for (int j = 0; j < 4; ++j) {
++        const float x = 8.0f + 700.0f * j;
++        builder.moveTo(x, -7000.0f);
++        builder.arcTo({x, 0.0f}, {x + 695.1203002929688f, -8192.0f}, 296.45477294921875f);
++    }
++    builder.moveTo(0.0f, 6e10f);
++    builder.lineTo(9.0f, 6e10f);
++
++    SkMatrix m = SkMatrix::Scale(1.0f, 1.7029898324860682e-11f);
++    m.postTranslate(0.0f, 1.5f);
++    SkPath path = builder.detach().makeTransform(m);
++
++    SkRegion clip(SkIRect::MakeWH(2800, 4));
++    SkRegion rgn;
++    rgn.setPath(path, clip);
++}
++

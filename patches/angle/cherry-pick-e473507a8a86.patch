@@ -1,0 +1,266 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Amirali Abdolrashidi <abdolrashidi@google.com>
+Date: Mon, 26 Oct 2026 18:29:01 -0700
+Subject: Vulkan: Sync dirty disabled active attributes
+
+  Currently when a vertex array is being synced at draw, it only
+sets the disabled inactive attributes to empty buffer. However,
+in cases, if an attribute is disabled after a draw call and there
+is a multidraw call with zero counts, it does not sync the attribute
+correctly due to the cleanup being deferred, which is skipped entirely
+when the multidraw is treated as a no-op later. This leads to the
+backend keeping the pointer for the data buffer, even if it is freed
+before the next draw call, which can lead to use-after-free errors.
+
+This change makes sure even the active disabled attributes are also
+synced to empty buffers, removing the UAF risk.
+
+* Updated VertexArrayVk::syncState() so syncDirtyDisabledAttribs()
+  is used for disabled active attributes as well as inactive ones.
+
+* Added unit tests to MultiDrawTest:
+  * StaleSlot*WithSameLocations
+  * StaleSlot*WithDifferentLocations
+
+  * Each draws with a program, disables one of its attributes, then
+    multidraws with 0 vertices, switches to another similar program,
+    deletes the buffer corresponding to the disabled attributes, and
+    draws. The tests should not crash.
+
+Bug: chromium:573933450
+Bug: chromium:571059182
+Change-Id: I69f89addc8b500398c488c1e2ddc4d67c3505066
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8666698
+Commit-Queue: Amirali Abdolrashidi <abdolrashidi@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+
+Electron adaptation notes (43-x-y):
+src/tests/angle_end2end_tests_expectations.txt: test-expectation hunk did not merge against this branch's file and was dropped (test-only). VertexArrayVk.cpp and MultiDrawTest.cpp applied unchanged.
+
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index 48ad8283f91b232caf6cfde4638ddc5ea9b2f3ff..a12438558fbcf15cc730cfbc2243b7320e526ba8 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -1105,11 +1105,8 @@ angle::Result VertexArrayVk::syncState(const gl::Context *context,
+            prevEnabledNowDisabledAttribBits);
+     if (prevEnabledNowDisabledAttribBits.any())
+     {
+-        // disabled attributes maybe active or inactive. We only need to set to empty buffer for
+-        // inactive ones.
+-        const gl::AttributesMask disabledInactiveAttribBits =
+-            prevEnabledNowDisabledAttribBits & ~context->getActiveDefaultAttribsMask();
+-        syncDirtyDisabledAttribs(contextVk, disabledInactiveAttribBits);
++        // Sync the disabled attributes, active or inactive.
++        syncDirtyDisabledAttribs(contextVk, prevEnabledNowDisabledAttribBits);
+ 
+         // default attributes handler will update active attributes.
+         const gl::AttributesMask defaultAttribBits =
+diff --git a/src/tests/gl_tests/MultiDrawTest.cpp b/src/tests/gl_tests/MultiDrawTest.cpp
+index 866371718587e516bef753ae38dc3372dd9c4e45..8802eb2003441daacc4d5f25f0a345e84f25abbf 100644
+--- a/src/tests/gl_tests/MultiDrawTest.cpp
++++ b/src/tests/gl_tests/MultiDrawTest.cpp
+@@ -858,6 +858,203 @@ TEST_P(MultiDrawTest, MultiDrawArraysThenDrawArrays)
+     checkDrawResult(DrawIDOptionOverride::NoDrawID);
+ }
+ 
++// Tests that disabling a vertex attribute after drawing, issuing a zero-count multi-draw, and then
++// switching to another similar program with similar attribute locations and drawing does not crash.
++TEST_P(MultiDrawTest, StaleSlotAfterDisableZeroCountMultiDrawProgramSwitchWithSameLocations)
++{
++    ANGLE_SKIP_TEST_IF(!requestMultiDrawExtension());
++
++    constexpr char kVS1[] = R"(
++attribute vec2 a;
++varying vec2 v;
++void main()
++{
++    v = a;
++    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
++    gl_PointSize = 1.0;
++})";
++    constexpr char kVS2[] = R"(
++attribute vec2 b;
++varying vec2 v;
++void main()
++{
++    v = b;
++    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
++    gl_PointSize = 1.0;
++})";
++    constexpr char kFS[]  = R"(
++precision mediump float;
++uniform vec4 u_color;
++varying vec4 v;
++void main()
++{
++    gl_FragColor = u_color;
++})";
++
++    // Use CompileProgram with callbacks to bind attribute locations before linking. If bound after
++    // linking, it might mask the bug by assigning locations intended to be inactive, such as Slot 0
++    // in Program 2, to active attributes and not trigger the bug.
++    GLuint program1 = CompileProgram(kVS1, kFS, [](GLuint p) {
++        glBindAttribLocation(p, 0, "a");
++        glBindAttribLocation(p, 1, "b");
++    });
++    ASSERT_NE(program1, 0u);
++
++    GLuint program2 = CompileProgram(kVS2, kFS, [](GLuint p) {
++        glBindAttribLocation(p, 0, "a");
++        glBindAttribLocation(p, 1, "b");
++    });
++    ASSERT_NE(program2, 0u);
++
++    // Set up the vertex attribute buffer for attribute 0.
++    std::vector<GLfloat> unusedData(1024, 0.0f);
++    GLBuffer buf;
++    glBindBuffer(GL_ARRAY_BUFFER, buf);
++    glBufferData(GL_ARRAY_BUFFER, unusedData.size() * sizeof(GLfloat), unusedData.data(),
++                 GL_STATIC_DRAW);
++    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glEnableVertexAttribArray(0);
++
++    glBindBuffer(GL_ARRAY_BUFFER, 0);
++
++    // Use the first program to draw red.
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glViewport(0, 0, 1, 1);
++
++    glUseProgram(program1);
++    GLint colorLoc = glGetUniformLocation(program1, "u_color");
++    ASSERT_NE(colorLoc, -1);
++    glUniform4f(colorLoc, 1.0f, 0.0f, 0.0f, 1.0f);
++    glDrawArrays(GL_POINTS, 0, 1);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    ASSERT_GL_NO_ERROR();
++
++    // Disable attribute 0 while it is still active in Program 1, and multi-draw with a zero count.
++    const GLint first   = 0;
++    const GLsizei count = 0;
++    glDisableVertexAttribArray(0);
++    glMultiDrawArraysANGLE(GL_TRIANGLES, &first, &count, 1);
++    ASSERT_GL_NO_ERROR();
++
++    // Switch to the second program in which location 0 is inactive, and delete the buffer.
++    glUseProgram(program2);
++    buf.reset();
++    ASSERT_GL_NO_ERROR();
++
++    // Use the second program to draw green.
++    colorLoc = glGetUniformLocation(program2, "u_color");
++    ASSERT_NE(colorLoc, -1);
++    glUniform4f(colorLoc, 0.0f, 1.0f, 0.0f, 1.0f);
++
++    glDrawArrays(GL_POINTS, 0, 1);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++
++    glDeleteProgram(program1);
++    glDeleteProgram(program2);
++}
++
++// Tests that disabling a vertex attribute after drawing, issuing a zero-count multi-draw, and then
++// switching to another similar program with different attribute locations and drawing does not
++// crash.
++TEST_P(MultiDrawTest, StaleSlotAfterDisableZeroCountMultiDrawProgramSwitchWithDifferentLocations)
++{
++    ANGLE_SKIP_TEST_IF(!requestMultiDrawExtension());
++
++    constexpr char kVS1[] = R"(
++attribute vec2 a;
++attribute vec2 b;
++void main()
++{
++    gl_Position = vec4(a + b, 0.0, 1.0);
++})";
++    constexpr char kVS2[] = R"(
++attribute vec2 a;
++attribute vec2 c;
++void main()
++{
++    gl_Position = vec4(a + c, 0.0, 1.0);
++})";
++    constexpr char kFS[]  = R"(
++precision mediump float;
++uniform vec4 u_color;
++void main()
++{
++    gl_FragColor = u_color;
++})";
++
++    // Use CompileProgram with callbacks to bind attribute locations before linking. If bound after
++    // linking, it might mask the bug by assigning locations intended to be inactive, such as Slot 1
++    // in Program 2, to active attributes and not trigger the bug.
++    GLuint program1 = CompileProgram(kVS1, kFS, [](GLuint p) {
++        glBindAttribLocation(p, 0, "a");
++        glBindAttribLocation(p, 1, "b");
++    });
++    ASSERT_NE(program1, 0u);
++
++    GLuint program2 = CompileProgram(kVS2, kFS, [](GLuint p) {
++        glBindAttribLocation(p, 0, "a");
++        glBindAttribLocation(p, 2, "c");
++    });
++    ASSERT_NE(program2, 0u);
++
++    // Set up vertex attribute buffers with the same data.
++    std::vector<GLfloat> posData = {-0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f,
++                                    -0.5f, 0.5f,  0.5f, -0.5f, 0.5f,  0.5f};
++    GLBuffer buf1;
++    glBindBuffer(GL_ARRAY_BUFFER, buf1);
++    glBufferData(GL_ARRAY_BUFFER, posData.size() * sizeof(GLfloat), posData.data(), GL_STATIC_DRAW);
++    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glEnableVertexAttribArray(0);
++
++    GLBuffer buf2;
++    glBindBuffer(GL_ARRAY_BUFFER, buf2);
++    glBufferData(GL_ARRAY_BUFFER, posData.size() * sizeof(GLfloat), posData.data(), GL_STATIC_DRAW);
++    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glEnableVertexAttribArray(1);
++
++    glBindBuffer(GL_ARRAY_BUFFER, 0);
++
++    // Use the first program to draw red to the screen.
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    glUseProgram(program1);
++    GLint colorLoc = glGetUniformLocation(program1, "u_color");
++    ASSERT_NE(colorLoc, -1);
++    glUniform4f(colorLoc, 1.0f, 0.0f, 0.0f, 1.0f);
++    glDrawArrays(GL_TRIANGLES, 0, 6);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::red);
++    ASSERT_GL_NO_ERROR();
++
++    // Disable attribute 1 while it is still active in Program 1, and multi-draw with a zero count.
++    const GLint first   = 0;
++    const GLsizei count = 0;
++    glDisableVertexAttribArray(1);
++    glMultiDrawArraysANGLE(GL_TRIANGLES, &first, &count, 1);
++    ASSERT_GL_NO_ERROR();
++
++    // Switch to the second program in which location 1 is inactive, and delete the buffer for the
++    // disabled attribute.
++    glUseProgram(program2);
++    buf2.reset();
++    ASSERT_GL_NO_ERROR();
++
++    // Use the second program to draw green to the center of the screen. The disabled vec2 attribute
++    // should be interpreted as 0 in the shader.
++    colorLoc = glGetUniformLocation(program2, "u_color");
++    ASSERT_NE(colorLoc, -1);
++    glUniform4f(colorLoc, 0.0f, 1.0f, 0.0f, 1.0f);
++
++    glDrawArrays(GL_TRIANGLES, 0, 6);
++    EXPECT_PIXEL_RECT_EQ(kWidth / 4, kHeight / 4, kWidth / 2, kHeight / 2, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++
++    glDeleteProgram(program1);
++    glDeleteProgram(program2);
++}
++
+ // Tests basic functionality of glMultiDrawArraysIndirectEXT
+ TEST_P(MultiDrawIndirectTest, MultiDrawArraysIndirect)
+ {
