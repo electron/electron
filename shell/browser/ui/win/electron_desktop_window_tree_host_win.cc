@@ -158,8 +158,10 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEventForCaption(
 }
 
 bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
-  // The message path is filtered in PreHandleMSG; this catches the leave a
-  // Chrome_RenderWidgetHostHWND relays past it.
+  // Every leave Chromium maps to kMouseExited gets here, whether the OS sent
+  // it to this window or a Chrome_RenderWidgetHostHWND relayed it, and after
+  // Chromium has reset its tracking state. See
+  // ShouldSwallowForwardedMouseLeave().
   if (event->type() == ui::EventType::kMouseExited &&
       native_window_view_->ShouldSwallowForwardedMouseLeave()) {
     return true;
