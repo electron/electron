@@ -29,7 +29,7 @@ For more documentation on Layout Managers, see the [Chromium docs](https://chrom
 * `includeHostInsetsInLayout` boolean (optional) - Whether to include host insets in the layout. Use when e.g. the host has an
    empty border and you want to treat that empty space as part of the interior margin of the host view. Most useful
    in conjunction with `collapseMargins` so child margins can overlap with the host's insets. Defaults to `false`.
-* `ignoreDefaultMainAxisMargins` boolean - Whether host |interior_margin| overrides default child margins at the
+* `ignoreDefaultMainAxisMargins` boolean - Whether host `interiorMargin` overrides default child margins at the
   leading and trailing edge of the host view. Defaults to `false`.
 * `flexAllocationOrder` string (optional) - Order in which the host's child views receive their flex allocation. Setting to
   reverse is useful when, for example, you want views to drop out left-to-right when there's insufficient space to
