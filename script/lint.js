@@ -426,7 +426,7 @@ const LINTERS = [
             }
 
             if (codeBlock.lang === 'typescript') {
-              console.log(`${filename}:${line} Use 'typescript' as code block language identifier instead of 'ts'`);
+              console.log(`${filename}:${line} Use 'ts' as code block language identifier instead of 'typescript'`);
               errors = true;
             }
 
