@@ -1,0 +1,317 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 28 Sep 2026 17:34:07 -0400
+Subject: Translator: Fix name collision for long struct names
+
+The known issue with struct name collisions turned out to be
+exploitable, so the hashing solution alluded to in the comments is
+implemented in this change.
+
+Bug: chromium:566398391
+Change-Id: I7953241159ec3917c79e6ff07044186b84bd579d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8480635
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/common/string_utils.cpp b/src/common/string_utils.cpp
+index a6d3062367cef1fdaa51b89dc4fc292ab5028ab2..75342715c9acc32a6f7ef71d0fcfcb5ebcd17229 100644
+--- a/src/common/string_utils.cpp
++++ b/src/common/string_utils.cpp
+@@ -392,4 +392,22 @@ std::vector<uint8_t> HexStringToUintVector(const std::string_view &hexStr)
+     return bin;
+ }
+ 
++std::string UintStreamToHexString(angle::Span<const uint8_t> uintStream)
++{
++    std::string result;
++    result.reserve(uintStream.size() * 2 + 1);
++
++    static constexpr std::array<char, 16> kNibbleToHex = {
++        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
++    };
++
++    for (uint8_t u : uintStream)
++    {
++        result += kNibbleToHex[u >> 4];
++        result += kNibbleToHex[u & 0xF];
++    }
++
++    return result;
++}
++
+ }  // namespace angle
+diff --git a/src/common/string_utils.h b/src/common/string_utils.h
+index b6c13d261a69a0908fda4bcfdf61ac4a2bd11a2b..0d9ed6785cbbce24e4d851534781db2f2e19dc27 100644
+--- a/src/common/string_utils.h
++++ b/src/common/string_utils.h
+@@ -15,6 +15,7 @@
+ #include <vector>
+ 
+ #include "common/Optional.h"
++#include "common/span.h"
+ 
+ namespace angle
+ {
+@@ -123,6 +124,7 @@ std::vector<std::string> GetCachedStringsFromEnvironmentVarOrAndroidProperty(
+ bool NamesMatchWithWildcard(const char *glob, const char *name);
+ 
+ std::vector<uint8_t> HexStringToUintVector(const std::string_view &hexStr);
++std::string UintStreamToHexString(angle::Span<const uint8_t> uintStream);
+ }  // namespace angle
+ 
+ #endif  // LIBANGLE_STRING_UTILS_H_
+diff --git a/src/common/string_utils_unittest.cpp b/src/common/string_utils_unittest.cpp
+index c72d134886c1e7f0a2ff7a2942d4518c3c0e9b16..f95d000fa03cf5d6c9b2fc349b9aeae29cdcb29f 100644
+--- a/src/common/string_utils_unittest.cpp
++++ b/src/common/string_utils_unittest.cpp
+@@ -241,6 +241,98 @@ TEST(StringUtilsTest, NamesMatchWithWildcard)
+     EXPECT_TRUE(NamesMatchWithWildcard("ASD*", "ASDF*"));
+ }
+ 
++// Test HexStringToUintVector
++TEST(StringUtilsTest, HexStringToUintVector)
++{
++    {
++        constexpr std::string_view kHex        = "";
++        constexpr std::vector<uint8_t> kExpect = {};
++        EXPECT_EQ(HexStringToUintVector(kHex), kExpect);
++    }
++
++    {
++        constexpr std::string_view kHex    = "0";
++        const std::vector<uint8_t> kExpect = {0};
++        EXPECT_EQ(HexStringToUintVector(kHex), kExpect);
++    }
++
++    {
++        constexpr std::string_view kHex    = "a";
++        const std::vector<uint8_t> kExpect = {0xA};
++        EXPECT_EQ(HexStringToUintVector(kHex), kExpect);
++    }
++
++    {
++        constexpr std::string_view kHex    = "B";
++        const std::vector<uint8_t> kExpect = {0xB};
++        EXPECT_EQ(HexStringToUintVector(kHex), kExpect);
++    }
++
++    {
++        constexpr std::string_view kHex    = "2C";
++        const std::vector<uint8_t> kExpect = {0x2C};
++        EXPECT_EQ(HexStringToUintVector(kHex), kExpect);
++    }
++
++    {
++        constexpr std::string_view kHex    = "902";
++        const std::vector<uint8_t> kExpect = {0x90, 0x02};
++        EXPECT_EQ(HexStringToUintVector(kHex), kExpect);
++    }
++
++    {
++        constexpr std::string_view kHex    = "12F0BC875DE7A460";
++        const std::vector<uint8_t> kExpect = {0x12, 0xF0, 0xBC, 0x87, 0x5D, 0xE7, 0xA4, 0x60};
++        EXPECT_EQ(HexStringToUintVector(kHex), kExpect);
++    }
++}
++
++// Test UintStreamToHexString
++TEST(StringUtilsTest, UintStreamToHexString)
++{
++    {
++        constexpr std::array<uint8_t, 0> kStream = {};
++        constexpr std::string_view kExpect       = "";
++        EXPECT_EQ(UintStreamToHexString(kStream), kExpect);
++    }
++
++    {
++        const std::array<uint8_t, 1> kStream = {0};
++        constexpr std::string_view kExpect   = "00";
++        EXPECT_EQ(UintStreamToHexString(kStream), kExpect);
++    }
++
++    {
++        const std::array<uint8_t, 1> kStream = {0xA};
++        constexpr std::string_view kExpect   = "0A";
++        EXPECT_EQ(UintStreamToHexString(kStream), kExpect);
++    }
++
++    {
++        const std::array<uint8_t, 1> kStream = {0xB};
++        constexpr std::string_view kExpect   = "0B";
++        EXPECT_EQ(UintStreamToHexString(kStream), kExpect);
++    }
++
++    {
++        const std::array<uint8_t, 1> kStream = {0x2C};
++        constexpr std::string_view kExpect   = "2C";
++        EXPECT_EQ(UintStreamToHexString(kStream), kExpect);
++    }
++
++    {
++        const std::array<uint8_t, 2> kStream = {0x90, 0x02};
++        constexpr std::string_view kExpect   = "9002";
++        EXPECT_EQ(UintStreamToHexString(kStream), kExpect);
++    }
++
++    {
++        const std::array<uint8_t, 8> kStream = {0x12, 0xF0, 0xBC, 0x87, 0x5D, 0xE7, 0xA4, 0x60};
++        constexpr std::string_view kExpect   = "12F0BC875DE7A460";
++        EXPECT_EQ(UintStreamToHexString(kStream), kExpect);
++    }
++}
++
+ // Note: ReadFileToString is harder to test
+ 
+ class BeginsWithTest : public testing::Test
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 19b41ef6abfdfe3d1343706915b0db20455ea287..f753ab60892bd523cad611f036edae9847be2add 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -17,6 +17,7 @@
+ #include "common/unsafe_buffers.h"
+ #include "compiler/translator/Compiler.h"
+ 
++#include <anglebase/sha1.h>
+ #include <stdarg.h>
+ #include <stdio.h>
+ 
+@@ -482,15 +483,30 @@ TIntermDeclaration *RenameAndDeclareStruct(TSymbolTable *symbolTable,
+     // always for simplicity.  +1 for the NUL terminator.
+     //
+     // If appending ID and the name is too long, cut off the end of the name.  The ID makes it
+-    // unique.
++    // unique.  Where _0 is used, long names are hashed to avoid collision.
+     constexpr uint32_t kAppendExtraChars = 1 + 11;  // underscore + 32-bit number
+-    const ImmutableString name(
+-        structure->name().data(),
+-        std::min<size_t>(structure->name().length(), kESSLMaxIdentifierLength - kAppendExtraChars));
+ 
+     ImmutableStringBuilder builder(structure->name().length() + kAppendExtraChars);
+-    builder << name << "_"
+-            << (scope == StructureOriginalScope::Global ? 0 : structure->uniqueId().get());
++    if (scope == StructureOriginalScope::Global &&
++        structure->name().length() > kESSLMaxIdentifierLength - kAppendExtraChars)
++    {
++        angle::base::SecureHashAlgorithm hasher;
++        hasher.Init();
++        hasher.Update(structure->name().data(), structure->name().length());
++        hasher.Final();
++        // SAFETY: The SHA1 hasher guarantees that the returned digest is kSHA1Length bytes.
++        const std::string hashed = angle::UintStreamToHexString(
++            ANGLE_UNSAFE_BUFFERS(angle::Span(hasher.Digest(), angle::base::kSHA1Length)));
++        builder << "struct" << ImmutableString(hashed.c_str(), hashed.size()) << "_0";
++    }
++    else
++    {
++        const ImmutableString name(structure->name().data(),
++                                   std::min<size_t>(structure->name().length(),
++                                                    kESSLMaxIdentifierLength - kAppendExtraChars));
++        builder << name << "_"
++                << (scope == StructureOriginalScope::Global ? 0 : structure->uniqueId().get());
++    }
+     structure->setName(builder);
+ 
+     TType *namedType = new TType(structure, true);
+diff --git a/src/compiler/translator/ir/src/output/ir_to_legacy.cpp b/src/compiler/translator/ir/src/output/ir_to_legacy.cpp
+index ed09180defc06e8e6d286133b153f2f832eb401c..a22f974a8ae0fcd7953fbe756ec3274567a4f2be 100644
+--- a/src/compiler/translator/ir/src/output/ir_to_legacy.cpp
++++ b/src/compiler/translator/ir/src/output/ir_to_legacy.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include "compiler/translator/ir/src/output/legacy.rs.h"
+ 
++#include "common/hash_utils.h"
+ #include "compiler/translator/BaseTypes.h"
+ #include "compiler/translator/Compiler.h"
+ #include "compiler/translator/ImmutableStringBuilder.h"
+@@ -17,6 +18,7 @@
+ #include "compiler/translator/tree_util/IntermNode_util.h"
+ #include "compiler/translator/util.h"
+ 
++#include <anglebase/sha1.h>
+ #include <vector>
+ 
+ namespace sh
+@@ -46,16 +48,30 @@ ImmutableString Str(const SymbolName &name)
+     //
+     // Note: this is technically not true for global structs, which get appended _0 instead of _id
+     // because they might need to match between shaders.  If two structs have a very long name and
+-    // they differ only in the last characters, this causes a name collision and the shader fails
+-    // compilation in the backend.  If this ever becomes a practical issue, those long names can be
+-    // hashed to become smaller.
+-    builder << ImmutableString(
+-        name.name.data(),
+-        std::min<size_t>(name.name.length(), kESSLMaxIdentifierLength - appendExtraChars));
+-    if (appendId)
++    // they differ only in the last characters, this could cause a name collision, so long names are
++    // hashed instead.
++    if (appendId && name.id == 0 &&
++        name.name.length() > kESSLMaxIdentifierLength - appendExtraChars)
+     {
+-        builder << '_';
+-        builder << name.id;
++        angle::base::SecureHashAlgorithm hasher;
++        hasher.Init();
++        hasher.Update(name.name.data(), name.name.length());
++        hasher.Final();
++        // SAFETY: The SHA1 hasher guarantees that the returned digest is kSHA1Length bytes.
++        const std::string hashed = angle::UintStreamToHexString(
++            ANGLE_UNSAFE_BUFFERS(angle::Span(hasher.Digest(), angle::base::kSHA1Length)));
++        builder << "struct" << ImmutableString(hashed.c_str(), hashed.size()) << "_0";
++    }
++    else
++    {
++        builder << ImmutableString(
++            name.name.data(),
++            std::min<size_t>(name.name.length(), kESSLMaxIdentifierLength - appendExtraChars));
++        if (appendId)
++        {
++            builder << '_';
++            builder << name.id;
++        }
+     }
+     return builder;
+ }
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index be7e534a8d98f2579c700a02b43acc0cba36db8e..98c4b28b7098e8e681447fde319dde2b17f2452e 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -1496,6 +1496,38 @@ void main()
+     }
+ }
+ 
++// Test that defining structs with long names and a common prefix works.
++TEST_P(GLSLTest_ES3, LongStructNameCollision)
++{
++    for (uint32_t prefixLength : {64, 1011, 1012, 1013, 1023})
++    {
++        const std::string prefix(prefixLength, 'p');
++        const std::string struct1 = prefix + std::string(1024 - prefixLength, '1');
++        const std::string struct2 = prefix + std::string(1024 - prefixLength, '2');
++        const std::string fs = R"(#version 300 es
++precision highp float;
++struct )" + struct1 + R"( { vec4 s; };
++struct )" + struct2 + R"( { vec4 s; };
++uniform )" + struct1 + R"( u1;
++uniform )" + struct2 + R"( u2;
++out vec4 color;
++void main()
++{
++    color = u1.s + u2.s;
++})";
++
++        ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), fs.c_str());
++        glUseProgram(program);
++
++        glUniform4f(glGetUniformLocation(program, "u1.s"), 1, 0, 0, 0.6);
++        glUniform4f(glGetUniformLocation(program, "u2.s"), 0, 1, 0, 0.5);
++
++        drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::yellow);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
+ // Test that inactive uniforms of struct type don't cause any errors.
+ TEST_P(GLSLTest, InactiveStructUniform)
+ {

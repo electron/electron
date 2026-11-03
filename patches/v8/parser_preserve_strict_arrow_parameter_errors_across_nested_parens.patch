@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 7 Oct 2026 15:23:48 +0200
+Subject: [parser] Preserve strict arrow parameter errors across nested parens
+
+In ExpressionScope::RecordStrictModeParameterError, when already in
+strict mode, record the declaration error directly on the current
+ArrowHeadParsingScope rather than storing it in
+next_arrow_function_info_.strict_parameter_error_location. Previously,
+when an arrow parameter like 'eval' or 'arguments' in strict mode was
+followed by a parenthesized expression or call in a default initializer
+(e.g. '(eval, a = (1)) => eval'), the inner ArrowHeadParsingScope cleared
+next_arrow_function_info_ and lost the outer arrow parameter error.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Iea3a60944db7ce9d7c35c42bcf64896934c04af0
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8530707
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110408}
+(cherry picked from commit e413d37c5ad79cdc068110633151a7b0ac10c233)
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index a448a4e50682811ac82956690005ffa7ee98960d..4114e9d3f00a4ee6238154f18f74dd59cc9ef962 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -197,6 +197,8 @@ class ExpressionScope {
+       } else {
+         parser_->parameters_->set_strict_parameter_error(loc, message);
+       }
++    } else if (is_strict(parser_->language_mode())) {
++      AsArrowHeadParsingScope()->RecordDeclarationError(loc, message);
+     } else {
+       parser_->next_arrow_function_info_.strict_parameter_error_location = loc;
+       parser_->next_arrow_function_info_.strict_parameter_error_message =
+diff --git a/test/mjsunit/regress/regress-567222737-4.js b/test/mjsunit/regress/regress-567222737-4.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..df82d1520a5cf3eaffe1ddf3090e50d16f5a37d7
+--- /dev/null
++++ b/test/mjsunit/regress/regress-567222737-4.js
+@@ -0,0 +1,21 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++"use strict";
++
++assertThrows(() => eval("((eval, a = (1)) => eval)(42)"), SyntaxError);
++assertThrows(() => eval("((arguments, a = (1)) => arguments)(42)"), SyntaxError);
++assertThrows(() => eval("((eval, a = () => {}) => eval)(42)"), SyntaxError);
++assertThrows(() => eval("((eval, a = async(1)) => eval)(42)"), SyntaxError);
++assertThrows(() => eval("(async (eval, a = (1)) => eval)(42)"), SyntaxError);
++assertThrows(() => eval("(async (arguments, a = (1)) => arguments)(42)"), SyntaxError);
++
++// Also test lazy compilation (PreParser).
++assertThrows(() => eval("function f() { const g = (eval, a = (1)) => eval; }"), SyntaxError);
++assertThrows(() => eval("function f() { const g = async (eval, a = (1)) => eval; }"), SyntaxError);
++
++// Valid strict-mode arrow functions with parenthesized eval/arguments in default
++// initializers or comma expressions must still succeed.
++assertEquals(typeof ((a = (eval)) => a)(), "function");
++assertEquals((eval, (a = (1)) => a)(), 1);

@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Tue, 29 Sep 2026 11:29:05 -0700
+Subject: Block WebSocketConnector creation in PDF renderer processes
+
+Reject blink.mojom.WebSocketConnector binding requests from PDF-isolated
+frames in RenderFrameHostImpl::CreateWebSocketConnector() with
+mojo::ReportBadMessage(). A PDF renderer commits the serving origin but
+is not permitted to access that origin's data or cookies; allowing it to
+create a WebSocketConnector would attach the origin's cookies (including
+HttpOnly cookies) to WebSocket handshakes.
+
+Bug: 566683019
+Change-Id: I2aecd84c9548c3d1f617b0042808773899a7a19f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8471069
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1707308}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 4982f8eadf0d3f05c9357f8be44606c4164fadac..5988a4287e251471d625a2ab7aabdf73a2602906 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -14938,6 +14938,10 @@ void RenderFrameHostImpl::CreateWebSocketConnector(
+     mojo::ReportBadMessage("WebSockets are not allowed in MHTML documents.");
+     return;
+   }
++  if (GetSiteInstance()->IsPdf()) {
++    mojo::ReportBadMessage("WebSockets are not allowed in PDF documents.");
++    return;
++  }
+   mojo::MakeSelfOwnedReceiver(
+       std::make_unique<WebSocketConnectorImpl>(
+           GlobalRenderFrameHostId(GetProcess()->GetID(), routing_id_),

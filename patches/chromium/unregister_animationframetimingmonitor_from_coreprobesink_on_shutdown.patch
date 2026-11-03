@@ -1,0 +1,133 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michal Mocny <mmocny@chromium.org>
+Date: Thu, 8 Oct 2026 12:49:03 -0700
+Subject: Unregister AnimationFrameTimingMonitor from CoreProbeSink on Shutdown
+
+Original change's description:
+> Unregister AnimationFrameTimingMonitor from CoreProbeSink on Shutdown
+>
+> AnimationFrameTimingMonitor registers itself with its CoreProbeSink at
+> construction, but Shutdown() only removed its TaskTimeObserver without
+> calling CoreProbeSink::RemoveAnimationFrameTimingMonitor().
+>
+> When a local root frame is detached inside a FrameRelatedTask probe
+> (such as LocalFrame::PostMessageEvent), WebFrameWidgetImpl::Close()
+> shuts down the AnimationFrameTimingMonitor and resets local_root_.
+> Because the monitor remained registered in CoreProbeSink,
+> ~FrameRelatedTask() still invoked Did() -> OnMainThreadTaskCompleted() ->
+> client_->ReportLongTaskTiming() on the closed widget. Similarly,
+> WasHidden()/WasShown() leaked old monitors in CoreProbeSink.
+>
+> Store a Member<CoreProbeSink> on AnimationFrameTimingMonitor, remove the
+> monitor from CoreProbeSink in Shutdown(), and guard
+> OnMainThreadTaskCompleted() on enabled_.
+>
+> Bug: 566506819
+> Change-Id: Id45e22c00637548cfc6ba651a07b57d66a6a6964
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8507254
+> Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+> Commit-Queue: Michal Mocny <mmocny@chromium.org>
+> Auto-Submit: Michal Mocny <mmocny@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1709995}
+
+(cherry picked from commit 0f12a22f12637fe370ae7eba0a4f653b4c386356)
+
+Bug: 570373310,566506819
+Change-Id: Id45e22c00637548cfc6ba651a07b57d66a6a6964
+
+diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+index 8645bb965c98be339c3ac478edc5c38096995fb8..761fcc263a9b894083caeb94d5af99aa5106e510 100644
+--- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
++++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+@@ -52,15 +52,21 @@ constexpr base::TimeDelta kCongestionThreshold = base::Milliseconds(200);
+ 
+ AnimationFrameTimingMonitor::AnimationFrameTimingMonitor(Client& client,
+                                                          CoreProbeSink* sink)
+-    : client_(client) {
++    : client_(client), probe_sink_(sink) {
+   Thread::Current()->AddTaskTimeObserver(this);
+-  sink->AddAnimationFrameTimingMonitor(this);
++  if (probe_sink_) {
++    probe_sink_->AddAnimationFrameTimingMonitor(this);
++  }
+   enabled_ = true;
+ }
+ 
+ void AnimationFrameTimingMonitor::Shutdown() {
+   enabled_ = false;
+   frame_handling_input_ = nullptr;
++  if (probe_sink_) {
++    probe_sink_->RemoveAnimationFrameTimingMonitor(this);
++    probe_sink_ = nullptr;
++  }
+   Thread::Current()->RemoveTaskTimeObserver(this);
+ }
+ 
+@@ -267,6 +273,9 @@ void AnimationFrameTimingMonitor::OnMainThreadTaskCompleted(
+     base::TimeTicks start_time,
+     base::TimeTicks end_time,
+     LocalFrame* frame) {
++  if (!enabled_) {
++    return;
++  }
+   HeapVector<Member<ScriptTimingInfo>> scripts;
+ 
+   bool did_pause = false;
+@@ -627,6 +636,7 @@ void AnimationFrameTimingMonitor::Trace(Visitor* visitor) const {
+   visitor->Trace(current_scripts_);
+   visitor->Trace(frame_handling_input_);
+   visitor->Trace(task_attributed_window_);
++  visitor->Trace(probe_sink_);
+ }
+ 
+ BASE_FEATURE(kAlwaysLogLOAFURL, base::FEATURE_DISABLED_BY_DEFAULT);
+diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
+index 9524f478b454f8a182d810325f7f117a8616c43f..23a92766d5043b1f9a80fdc236e517801ae11c88 100644
+--- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
++++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
+@@ -170,6 +170,7 @@ class CORE_EXPORT AnimationFrameTimingMonitor final
+   std::optional<PendingScriptInfo> pending_script_info_;
+   HashMap<size_t, PendingScriptInfo> user_entry_points_;
+   Client& client_;
++  Member<CoreProbeSink> probe_sink_;
+ 
+   enum class State {
+     // No task running, no pending frames.
+diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor_test.cc b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor_test.cc
+index 09bf65d46676ea1f7dc988c4c8a5b413e858bd12..8b3a4ab5dead48e7ca5da6e5f4b04f2068ab638a 100644
+--- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor_test.cc
++++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor_test.cc
+@@ -7,6 +7,7 @@
+ #include "base/test/run_until.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "third_party/blink/public/web/web_script_source.h"
++#include "third_party/blink/renderer/core/core_probe_sink.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+ #include "third_party/blink/renderer/core/testing/sim/sim_compositor.h"
+ #include "third_party/blink/renderer/core/testing/sim/sim_request.h"
+@@ -123,4 +124,25 @@ TEST_F(AnimationFrameTimingMonitorTest,
+   TestAttributionWithFeatureFlag("custom://example.com", true);
+ }
+ 
++TEST_F(AnimationFrameTimingMonitorTest,
++       DetachChildLocalRootDuringFrameRelatedTask) {
++  InitializeRemote();
++  LocalFrame* frame = LocalFrameRoot().GetFrame();
++  CoreProbeSink* probe_sink = frame->GetProbeSink();
++  ASSERT_TRUE(probe_sink->HasAnimationFrameTimingMonitors());
++
++  {
++    probe::FrameRelatedTask probe(frame->DomWindow());
++    constexpr char kLongScript[] = R"JS(
++      const start = performance.now();
++      while (performance.now() - start < 60) {}
++    )JS";
++    LocalFrameRoot().ExecuteScript(
++        WebScriptSource(WebString::FromUtf8(kLongScript)));
++
++    LocalFrameRoot().Detach();
++    EXPECT_FALSE(probe_sink->HasAnimationFrameTimingMonitors());
++  }
++}
++
+ }  // namespace blink

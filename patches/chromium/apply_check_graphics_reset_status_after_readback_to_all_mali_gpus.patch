@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Thu, 29 Oct 2026 11:15:26 -0700
+Subject: Apply check_graphics_reset_status_after_readback to all Mali GPUs
+
+Broaden gl_renderer matching for
+check_graphics_reset_status_after_readback from Mali-G.* to Mali.* so
+the workaround applies to all Mali GPUs.
+
+Fixed: 558111285
+Change-Id: Id8814e4557fa6450444de4a43a7cceb2da61d184
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8684861
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+Cr-Commit-Position: refs/heads/main@{#1730544}
+
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 41d8b5ac88bbb3557d2065a9552b1720fdc29c19..80ffd084b3ce735fba2c70d46d140df9188182a2 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3998,7 +3998,7 @@
+         "type": "android"
+       },
+       "gl_vendor": "ARM.*",
+-      "gl_renderer": "Mali-G.*",
++      "gl_renderer": "Mali.*",
+       "features": [
+         "check_graphics_reset_status_after_readback"
+       ]

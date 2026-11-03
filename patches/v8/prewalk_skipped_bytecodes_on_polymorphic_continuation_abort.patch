@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Thu, 22 Oct 2026 11:12:36 +0200
+Subject: Prewalk skipped bytecodes on polymorphic continuation abort
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When a polymorphic property-load continuation aborts partway through
+(e.g. inside `receiver.f(class extends (gate(), holder.q) {})` after
+entering the class scope),
+AdvanceThroughContinuationForPolymorphicPropertyLoad previously advanced
+the bytecode iterator to the end of the continuation without calling
+PrewalkBytecode(). Any skipped PopContext bytecodes were missed, leaving
+the nested scope active and causing dead-code scanning of a subsequent
+SuspendGenerator to record stale ScopeInfo on the generator resume
+target.
+
+Call PrewalkBytecode() while advancing through the remaining
+continuation bytecodes so scope tracking stays balanced on abort.
+
+TAG=agy
+CONV=4bf6ecf3-e753-4d9e-8c12-a7a17c20edad
+
+Fixed: 574021176
+Change-Id: I737499eab18f8954db3b116e11a950af3f085943
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8625128
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111075}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index b37673efb47cbc9328b2ea445666739741ae9151..763d20b2e55247d7a1c30a4134fc07c0a17ad2f0 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -6503,6 +6503,7 @@ void MaglevGraphBuilder::AdvanceThroughContinuationForPolymorphicPropertyLoad(
+   while (iterator_.current_offset() < continuation.last_continuation) {
+     iterator_.Advance();
+     UpdateSourceAndBytecodePosition(iterator_.current_offset());
++    PrewalkBytecode();
+   }
+ }
+ 
+diff --git a/test/mjsunit/maglev/regress-574021176.js b/test/mjsunit/maglev/regress-574021176.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..780b5b1c8cfa3154fc48ef14b23acba332bcbc14
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-574021176.js
+@@ -0,0 +1,44 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++let g = () => class {};
++
++function* gen(o) {
++  // Context-allocated, maybe-assigned variable so the function context uses a
++  // ContextCell for `x`.
++  let x = 42;
++  () => x = 0;
++
++  // Polymorphic property load with a call continuation. The class literal
++  // pushes a `CLASS_SCOPE` context (needed for `super.x`) before evaluating
++  // `extends g()` and pops it after defining the class. When `g()` aborts in
++  // every polymorphic arm, skipping the rest of the continuation must still pop
++  // that `CLASS_SCOPE`.
++  o.f(class extends g() {
++    constructor() {
++      super.x;
++    }
++  });
++
++  // In dead code after all polymorphic arms abort, `SuspendGenerator` records
++  // `current_scope_info_` on the `ResumeGenerator` merge state.
++  yield;
++
++  // Loads `x` using the `ScopeInfo` from the resume merge state (which must be
++  // the generator's `FUNCTION_SCOPE` with cells, not the leaked `CLASS_SCOPE`).
++  return x;
++}
++
++const suspended = gen({f() {}});
++suspended.next();
++
++g = class {};
++%PrepareFunctionForOptimization(gen);
++assertThrows(() => gen({f() {}}).next(), TypeError);
++assertThrows(() => gen({a: 1, f() {}}).next(), TypeError);
++
++%OptimizeFunctionOnNextCall(gen);
++assertEquals(42, suspended.next().value);

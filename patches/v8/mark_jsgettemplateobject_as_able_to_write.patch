@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Vitale <mrcvtl@chromium.org>
+Date: Tue, 27 Oct 2026 11:02:40 +0000
+Subject: Mark JSGetTemplateObject as able to write
+
+JSGetTemplateObject was marked as Operator::kEliminatable (which
+includes kNoWrite), allowing LoadElimination to keep known maps across
+it and eliminate subsequent CheckMaps nodes. However, the first
+evaluation of a tagged template literal in a realm freezes the template
+array, which copies its map and calls JSObject::OptimizeAsPrototype on
+Array.prototype, migrating a dictionary-mode Array.prototype back to
+fast properties.
+
+Remove Operator::kNoWrite from JSGetTemplateObject (using
+Operator::kNoDeopt | Operator::kNoThrow instead) and keep its control
+input when lowering to Builtin::kGetTemplateObject in JSGenericLowering.
+
+Fixed: 574339635
+Change-Id: I4477388e8a76abe330ceab265b84cbec6a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8668745
+Auto-Submit: Marco Vitale <mrcvtl@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111259}
+
+diff --git a/src/compiler/js-generic-lowering.cc b/src/compiler/js-generic-lowering.cc
+index 24e3ec9c360239805290645dc01816e1a587b152..1a0984f3ae828c6e92e4f0ddb933637f4d78b836 100644
+--- a/src/compiler/js-generic-lowering.cc
++++ b/src/compiler/js-generic-lowering.cc
+@@ -762,9 +762,6 @@ void JSGenericLowering::LowerJSGetTemplateObject(Node* node) {
+   SharedFunctionInfoRef shared = p.shared();
+   TemplateObjectDescriptionRef description = p.description();
+ 
+-  DCHECK_EQ(node->op()->ControlInputCount(), 1);
+-  node->RemoveInput(NodeProperties::FirstControlIndex(node));
+-
+   static_assert(JSGetTemplateObjectNode::FeedbackVectorIndex() == 0);
+   node->InsertInput(zone(), 0, jsgraph()->ConstantNoHole(shared, broker()));
+   node->InsertInput(zone(), 1,
+diff --git a/src/compiler/js-operator.cc b/src/compiler/js-operator.cc
+index 144869943faeb4011e727ff36bf1d65cb38dcf64..c8b7e6265ab804971234c3723b8f918a45da219d 100644
+--- a/src/compiler/js-operator.cc
++++ b/src/compiler/js-operator.cc
+@@ -1611,7 +1611,7 @@ const Operator* JSOperatorBuilder::GetTemplateObject(
+   GetTemplateObjectParameters parameters(description, shared, feedback);
+   return zone()->New<Operator1<GetTemplateObjectParameters>>(  // --
+       IrOpcode::kJSGetTemplateObject,                          // opcode
+-      Operator::kEliminatable,                                 // properties
++      Operator::kNoDeopt | Operator::kNoThrow,                 // properties
+       "JSGetTemplateObject",                                   // name
+       1, 1, 1, 1, 1, 0,                                        // counts
+       parameters);                                             // parameter
+diff --git a/test/mjsunit/compiler/regress-574339635.js b/test/mjsunit/compiler/regress-574339635.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f131352bccf4cd600016f4b835d2031db93250e4
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-574339635.js
+@@ -0,0 +1,37 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --turbofan --allow-natives-syntax
++
++const P = Array.prototype;
++const Obj = Object;
++let s;
++
++function foo(o, t) {
++  o[0];
++  let r = 0;
++  if (t) r = Obj`hello`;
++  const v = o.x;
++  s = r;
++  return v;
++}
++
++new WeakMap().set(P, 1);
++for (const _ in []) {}
++P[0] = 1;
++P.x = 1;
++Object.defineProperty(P, "x", {value: 1.5, enumerable: false});
++
++%PrepareFunctionForOptimization(foo);
++foo(P, false); foo(P, false); foo(P, false);
++%OptimizeFunctionOnNextCall(foo);
++assertEquals(1.5, foo(P, false));
++
++for (let i = 0; i < 400; i += 3) {
++  P["p" + i] = "x";
++  P["p" + (i + 1)] = "corrupted";
++  P["p" + (i + 2)] = 0;
++}
++
++assertEquals(1.5, foo(P, true));

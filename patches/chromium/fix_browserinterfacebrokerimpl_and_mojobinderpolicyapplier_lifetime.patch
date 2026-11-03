@@ -1,0 +1,500 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: HuanPo Lin <robertlin@chromium.org>
+Date: Mon, 5 Oct 2026 06:46:29 -0700
+Subject: Fix BrowserInterfaceBrokerImpl and MojoBinderPolicyApplier lifetime
+ with kLazyBrowserInterfaceBroker
+
+When `features::kLazyBrowserInterfaceBroker` is enabled,
+`RenderFrameHostImpl::broker_holder_` is created lazily and may be
+destroyed before prerender activation (e.g., when
+`TearDownMojoConnection()` is called on a subframe). Previously, this
+caused two issues during prerendering: 1.
+`BrowserInterfaceBrokerImpl::GetInterface()` passed
+   `base::Unretained(this)` callbacks to `MojoBinderPolicyApplier`
+   under the assumption that the broker always outlived the policy
+   applier. Destroying `broker_holder_` before activation left dangling
+   deferred callbacks in `MojoBinderPolicyApplier` (causing a UAF upon
+   activation) and triggered `CHECK(broker_holder_)` in
+   `RendererDidActivateForPrerendering()`.
+2. `mojo_binder_policy_applier_` was created inside
+   `CreateBrokerHolder()`, and `broker_holder_` was reset whenever the
+   `BrowserInterfaceBroker` receiver was rebound, unintentionally
+   resetting `MojoBinderPolicyApplier` state (such as
+   `Mode::kPrepareToGrantAll`).
+
+This CL fixes these issues by:
+- Calling `policy_applier_->DropDeferredBinders()` in
+  `~BrowserInterfaceBrokerImpl()` so pending callbacks targeting the
+  broker are dropped upon destruction.
+- Clearing `deferred_sync_binders_` in
+  `MojoBinderPolicyApplier::DropDeferredBinders()`.
+- Initializing `mojo_binder_policy_applier_` in the
+  `RenderFrameHostImpl` constructor when prerendering, and preserving
+  `broker_holder_` across `BrowserInterfaceBroker` receiver rebinds.
+- Guarding `broker_holder_` accesses in
+  `RendererDidActivateForPrerendering()` and `DidCommitNavigation()`.
+
+Bug: 567216197
+Change-Id: Iedebe68f081d1b8baa2b9fb8d8459f600cb5bb4d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8486426
+Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
+Reviewed-by: Lingqi Chi <lingqi@chromium.org>
+Reviewed-by: Calder Kitagawa <ckitagawa@chromium.org>
+Commit-Queue: Huanpo Lin <robertlin@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1711231}
+
+diff --git a/content/browser/browser_interface_broker_impl.h b/content/browser/browser_interface_broker_impl.h
+index fb6f6d17cc18d0f5db0dbb4e6ef8b63d0797f405..c8fcfbadc5f78a97f6e1e836176903a45951e8eb 100644
+--- a/content/browser/browser_interface_broker_impl.h
++++ b/content/browser/browser_interface_broker_impl.h
+@@ -46,6 +46,12 @@ class BrowserInterfaceBrokerImpl : public blink::mojom::BrowserInterfaceBroker {
+     internal::PopulateBinderMapWithContext(host, &binder_map_with_context_);
+   }
+ 
++  ~BrowserInterfaceBrokerImpl() override {
++    if (policy_applier_) {
++      policy_applier_->DropDeferredBinders();
++    }
++  }
++
+   // Disallows copy and move operations.
+   BrowserInterfaceBrokerImpl(const BrowserInterfaceBrokerImpl& other) = delete;
+   BrowserInterfaceBrokerImpl& operator=(
+@@ -60,7 +66,8 @@ class BrowserInterfaceBrokerImpl : public blink::mojom::BrowserInterfaceBroker {
+       BindInterface(std::move(receiver));
+     } else {
+       std::string interface_name = receiver.interface_name().value();
+-      // base::Unretained is safe because `this` outlives `policy_applier_`.
++      // base::Unretained is safe because `~BrowserInterfaceBrokerImpl()` drops
++      // all deferred binders from `policy_applier_` upon destruction.
+       policy_applier_->ApplyPolicyToNonAssociatedBinder(
+           interface_name,
+           base::BindOnce(&BrowserInterfaceBrokerImpl::BindInterface,
+@@ -102,9 +109,9 @@ class BrowserInterfaceBrokerImpl : public blink::mojom::BrowserInterfaceBroker {
+   mojo::BinderMap binder_map_;
+   mojo::BinderMapWithContext<InterfaceBinderContext> binder_map_with_context_;
+ 
+-  // The lifetime of `policy_applier_` is managed by the owner of this instance.
+-  // The owner should call `ReleaseMojoBinderPolicies()` when it destroys the
+-  // applier.
++  // The lifetime of `policy_applier_` is managed by the owner of this instance,
++  // and `policy_applier_` must outlive this instance unless the owner calls
++  // `ReleaseMojoBinderPolicies()` before destroying the applier.
+   raw_ptr<MojoBinderPolicyApplier> policy_applier_ = nullptr;
+ };
+ 
+diff --git a/content/browser/mojo_binder_policy_applier.cc b/content/browser/mojo_binder_policy_applier.cc
+index a6afe878f215fef417b06d86360c392f0dbdf6f4..291c8eae612aba989f255605b46cafb0f05718c3 100644
+--- a/content/browser/mojo_binder_policy_applier.cc
++++ b/content/browser/mojo_binder_policy_applier.cc
+@@ -173,6 +173,7 @@ void MojoBinderPolicyApplier::GrantAll() {
+ 
+ void MojoBinderPolicyApplier::DropDeferredBinders() {
+   deferred_binders_.clear();
++  deferred_sync_binders_.clear();
+ }
+ 
+ MojoBinderNonAssociatedPolicy
+diff --git a/content/browser/mojo_binder_policy_applier.h b/content/browser/mojo_binder_policy_applier.h
+index 763609c929a17be901586dc208e38c5a4f1c8437..cb144775f2bdcb74b77ea6f0ae8f81fa5fdf69bc 100644
+--- a/content/browser/mojo_binder_policy_applier.h
++++ b/content/browser/mojo_binder_policy_applier.h
+@@ -34,8 +34,9 @@ class CONTENT_EXPORT MojoBinderPolicyApplier {
+     // strictly according to the pre-set policies.
+     kEnforce,
+     // If the page is about to activate, MojoBinderPolicyApplier will switch to
+-    // the kPrepareToGrantAll mode, and all non-kGrant binders will be
+-    // deferred.
++    // the kPrepareToGrantAll mode. In this mode, kGrant, kCancel, kUnexpected,
++    // and synchronous kDefer binders are granted immediately, while other
++    // kDefer binders continue to be deferred until GrantAll() is called.
+     kPrepareToGrantAll,
+     // In the kGrantAll mode, MojoBinderPolicyApplier grants all binding
+     // requests regardless of their policies.
+@@ -70,13 +71,15 @@ class CONTENT_EXPORT MojoBinderPolicyApplier {
+   // interface.
+   // - In kEnforce mode:
+   //   - kGrant: Runs `binder_callback` immediately.
+-  //   - kDefer: Saves `binder_callback` and runs it when GrantAll() is called.
++  //   - kDefer: Saves `binder_callback` and runs it when GrantAll() is called,
++  //     or when PrepareToGrantAll() is called if the interface declares sync
++  //     methods.
+   //   - kCancel: Drops `binder_callback` and runs `cancel_callback_`.
+-  //   - kUnexpected: Unimplemented now.
++  //   - kUnexpected: Reports a bad message and runs `cancel_callback_`.
+   // - In the kPrepareToGrantAll mode:
+-  //   - kGrant: Runs `binder_callback` immediately.
+-  //   - kDefer, kCancel and kUnexpected: Saves `binder_callback` and runs it
+-  //   when GrantAll() is called.
++  //   - kGrant, kCancel and kUnexpected: Runs `binder_callback` immediately.
++  //   - kDefer: Saves `binder_callback` and runs it when GrantAll() is called,
++  //     or runs it immediately if the interface declares sync methods.
+   // - In the kGrantAll mode: this always runs the callback immediately.
+   void ApplyPolicyToNonAssociatedBinder(const std::string& interface_name,
+                                         base::OnceClosure binder_callback);
+@@ -98,7 +101,8 @@ class CONTENT_EXPORT MojoBinderPolicyApplier {
+   // requests, i.e., it stops applying the policies.
+ 
+   void GrantAll();
+-  // Deletes all deferred binders without running them.
++  // Deletes all deferred binders (including `deferred_sync_binders_`) without
++  // running them.
+   void DropDeferredBinders();
+ 
+  private:
+diff --git a/content/browser/mojo_binder_policy_applier_unittest.cc b/content/browser/mojo_binder_policy_applier_unittest.cc
+index a78c43615a4c7ff3d68b60e3b0865c959f041fa6..9a7ca376dafc8bbc092ce41c85a36fd73d91b8f6 100644
+--- a/content/browser/mojo_binder_policy_applier_unittest.cc
++++ b/content/browser/mojo_binder_policy_applier_unittest.cc
+@@ -108,6 +108,10 @@ class MojoBinderPolicyApplierTest : public testing::Test,
+     return policy_applier_.deferred_binders_;
+   }
+ 
++  std::vector<base::OnceClosure>& deferred_sync_binders() {
++    return policy_applier_.deferred_sync_binders_;
++  }
++
+   // Calls MojoBinderPolicyApplier::GrantAll() inside a Mojo message dispatch
+   // stack.
+   void RunGrantAll() {
+@@ -349,7 +353,8 @@ TEST_F(MojoBinderPolicyApplierTest, BindInterfacesAfterResolving) {
+   EXPECT_EQ(0U, deferred_binders().size());
+ }
+ 
+-// Verifies that DropDeferredBinders() deletes all deferred binders.
++// Verifies that DropDeferredBinders() deletes all deferred binders, including
++// deferred sync binders.
+ TEST_F(MojoBinderPolicyApplierTest, DropDeferredBinders) {
+   // Initialize Mojo interfaces.
+   mojo::Remote<mojom::TestInterfaceForDefer> defer_remote;
+@@ -363,10 +368,23 @@ TEST_F(MojoBinderPolicyApplierTest, DropDeferredBinders) {
+       base::BindOnce(&TestReceiverCollector::BindDeferInterface,
+                      base::Unretained(&collector_),
+                      defer_receiver.As<mojom::TestInterfaceForDefer>()));
++
++  bool sync_binder_called = false;
++  policy_applier_.ApplyPolicyToNonAssociatedBinder(
++      "blink.mojom.NotificationService",
++      base::BindLambdaForTesting([&]() { sync_binder_called = true; }));
++
+   EXPECT_FALSE(collector_.IsDeferReceiverBound());
++  EXPECT_FALSE(sync_binder_called);
+   EXPECT_EQ(1U, deferred_binders().size());
++  EXPECT_EQ(1U, deferred_sync_binders().size());
++
+   policy_applier_.DropDeferredBinders();
+   EXPECT_EQ(0U, deferred_binders().size());
++  EXPECT_EQ(0U, deferred_sync_binders().size());
++
++  policy_applier_.PrepareToGrantAll();
++  EXPECT_FALSE(sync_binder_called);
+   RunGrantAll();
+   EXPECT_FALSE(collector_.IsDeferReceiverBound());
+ }
+diff --git a/content/browser/preloading/prerender/prerender_browsertest.cc b/content/browser/preloading/prerender/prerender_browsertest.cc
+index e0d6fd325519694e6d53522bd92c480af3293e69..a20d122a66f6babcf8bb254cb39ebe3b5251aa22 100644
+--- a/content/browser/preloading/prerender/prerender_browsertest.cc
++++ b/content/browser/preloading/prerender/prerender_browsertest.cc
+@@ -119,6 +119,7 @@
+ #include "mojo/public/cpp/bindings/receiver_set.h"
+ #include "mojo/public/cpp/bindings/remote_set.h"
+ #include "mojo/public/cpp/system/functions.h"
++#include "mojo/public/cpp/test_support/fake_message_dispatch_context.h"
+ #include "net/base/url_util.h"
+ #include "net/dns/mock_host_resolver.h"
+ #include "net/http/http_request_headers.h"
+@@ -7597,6 +7598,137 @@ IN_PROC_BROWSER_TEST_F(PrerenderBrowserTest, MojoCapabilityControl_LoosenMode) {
+   }
+ }
+ 
++class PrerenderLazyBrowserInterfaceBrokerBrowserTest
++    : public PrerenderBrowserTest,
++      public testing::WithParamInterface<bool> {
++ public:
++  PrerenderLazyBrowserInterfaceBrokerBrowserTest() {
++    if (GetParam()) {
++      feature_list_.InitAndEnableFeature(features::kLazyBrowserInterfaceBroker);
++    } else {
++      feature_list_.InitAndDisableFeature(
++          features::kLazyBrowserInterfaceBroker);
++    }
++  }
++
++ private:
++  base::test::ScopedFeatureList feature_list_;
++};
++
++INSTANTIATE_TEST_SUITE_P(All,
++                         PrerenderLazyBrowserInterfaceBrokerBrowserTest,
++                         testing::Bool());
++
++// Tests that tearing down the Mojo connection on a prerendering frame (which
++// destroys `broker_holder_` when `kLazyBrowserInterfaceBroker` is enabled)
++// drops pending deferred binders and does not cause a use-after-free or CHECK
++// failure when the prerendered page is subsequently activated.
++IN_PROC_BROWSER_TEST_P(
++    PrerenderLazyBrowserInterfaceBrokerBrowserTest,
++    MojoCapabilityControl_TearDownMojoConnectionBeforeActivation) {
++  MojoCapabilityControlTestContentBrowserClient test_browser_client;
++
++  const GURL initial_url = GetUrl("/empty.html");
++  const GURL prerendering_url = GetUrl("/page_with_iframe.html");
++
++  ASSERT_TRUE(NavigateToURL(shell(), initial_url));
++  PrerenderHostId host_id = AddPrerender(prerendering_url);
++  RenderFrameHostImpl* main_rfh = GetPrerenderedMainFrameHost(host_id);
++  ASSERT_GE(main_rfh->child_count(), 1U);
++  RenderFrameHostImpl* child_rfh = main_rfh->child_at(0U)->current_frame_host();
++
++  base::RunLoop run_loop;
++
++  // Queue a kDefer interface request on the main frame.
++  mojo::Remote<mojom::TestInterfaceForDefer> main_defer_remote;
++  main_rfh->browser_interface_broker_receiver_for_testing()
++      .internal_state()
++      ->impl()
++      ->GetInterface(main_defer_remote.BindNewPipeAndPassReceiver());
++  main_defer_remote->Ping(run_loop.QuitClosure());
++
++  // Queue a kDefer interface request and a sync kDefer interface request on the
++  // child frame.
++  mojo::Remote<mojom::TestInterfaceForDefer> child_defer_remote;
++  child_rfh->browser_interface_broker_receiver_for_testing()
++      .internal_state()
++      ->impl()
++      ->GetInterface(child_defer_remote.BindNewPipeAndPassReceiver());
++  mojo::MessagePipe sync_defer_pipe;
++  child_rfh->browser_interface_broker_receiver_for_testing()
++      .internal_state()
++      ->impl()
++      ->GetInterface(
++          mojo::GenericPendingReceiver("blink.mojom.NotificationService",
++                                       std::move(sync_defer_pipe.handle0)));
++
++  EXPECT_EQ(test_browser_client.GetDeferReceiverSetSize(), 0U);
++
++  // Tear down the child frame's Mojo connection before activation. When
++  // `kLazyBrowserInterfaceBroker` is enabled, this resets `broker_holder_` and
++  // destroys `BrowserInterfaceBrokerImpl`, which must drop all deferred binders
++  // (including `deferred_sync_binders_`) rather than leaving dangling
++  // `base::Unretained` callbacks.
++  child_rfh->TearDownMojoConnection();
++  EXPECT_EQ(child_rfh->has_broker_holder_for_testing(), !GetParam());
++
++  // Simulate prerender activation on both frames.
++  mojo::FakeMessageDispatchContext fake_dispatch_context;
++  main_rfh->RendererWillActivateForPrerendering();
++  child_rfh->RendererWillActivateForPrerendering();
++  main_rfh->RendererDidActivateForPrerendering();
++  child_rfh->RendererDidActivateForPrerendering();
++
++  run_loop.Run();
++  EXPECT_EQ(test_browser_client.GetDeferReceiverSetSize(),
++            GetParam() ? 1U : 2U);
++}
++
++// Tests that rebinding the BrowserInterfaceBroker receiver during prerendering
++// preserves the existing `BrokerHolder` and `MojoBinderPolicyApplier` state
++// (such as `Mode::kPrepareToGrantAll`).
++IN_PROC_BROWSER_TEST_P(
++    PrerenderLazyBrowserInterfaceBrokerBrowserTest,
++    MojoCapabilityControl_RebindPreservesBrokerAndPolicyApplier) {
++  const GURL initial_url = GetUrl("/empty.html");
++  const GURL prerendering_url = GetUrl("/empty.html?prerender1");
++
++  ASSERT_TRUE(NavigateToURL(shell(), initial_url));
++  PrerenderHostId host_id = AddPrerender(prerendering_url);
++  RenderFrameHostImpl* main_rfh = GetPrerenderedMainFrameHost(host_id);
++
++  blink::mojom::BrowserInterfaceBroker* initial_broker =
++      main_rfh->browser_interface_broker_receiver_for_testing()
++          .internal_state()
++          ->impl();
++  ASSERT_NE(initial_broker, nullptr);
++
++  // Switch the policy applier to `Mode::kPrepareToGrantAll`.
++  main_rfh->RendererWillActivateForPrerendering();
++
++  // Rebind the BrowserInterfaceBroker receiver.
++  ASSERT_TRUE(main_rfh->ResetBrowserInterfaceBrokerReceiverForTesting());
++  EXPECT_TRUE(main_rfh->has_broker_holder_for_testing());
++  mojo::Remote<blink::mojom::BrowserInterfaceBroker> remote_broker;
++  main_rfh->BindBrowserInterfaceBrokerReceiver(
++      remote_broker.BindNewPipeAndPassReceiver());
++
++  // The broker instance and policy applier mode (`kPrepareToGrantAll`) should
++  // be preserved across the rebind, so a `kCancel` interface request should be
++  // granted rather than canceling prerendering.
++  EXPECT_EQ(main_rfh->browser_interface_broker_receiver_for_testing()
++                .internal_state()
++                ->impl(),
++            initial_broker);
++  mojo::Remote<mojom::TestInterfaceForCancel> cancel_remote;
++  remote_broker->GetInterface(cancel_remote.BindNewPipeAndPassReceiver());
++  remote_broker.FlushForTesting();
++  EXPECT_TRUE(HasHostForUrl(prerendering_url));
++
++  mojo::FakeMessageDispatchContext fake_dispatch_context;
++  main_rfh->RendererDidActivateForPrerendering();
++}
++
+ // Test that prerenders triggered by speculation rules are canceled when a
+ // background timeout timer is fired.
+ void PrerenderBrowserTest::TestCancelPrerendersWhenTimeout(
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 5988a4287e251471d625a2ab7aabdf73a2602906..f31d1b3888e282ad6a50d1350670982a11199d47 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -2656,6 +2656,15 @@ RenderFrameHostImpl::RenderFrameHostImpl(
+     set_nav_entry_id(parent_->nav_entry_id());
+   }
+ 
++  if (frame_tree_->is_prerendering()) {
++    // TODO(crbug.com/40150746): Check the prerendering page is
++    // same-origin to the prerender trigger page.
++    mojo_binder_policy_applier_ =
++        MojoBinderPolicyApplier::CreateForSameOriginPrerendering(base::BindOnce(
++            &RenderFrameHostImpl::CancelPrerenderingByMojoBinderPolicy,
++            base::Unretained(this)));
++  }
++
+   if (!base::FeatureList::IsEnabled(features::kLazyBrowserInterfaceBroker)) {
+     CreateBrokerHolder();
+   }
+@@ -5119,8 +5128,9 @@ void RenderFrameHostImpl::RendererDidActivateForPrerendering() {
+     // As per `ReleaseMojoBinderPolicies` method requirement, the policy applier
+     // owner should call the method when destroying the object, so we first
+     // need to call this method before resetting the unique pointer.
+-    CHECK(broker_holder_);
+-    broker_holder_->broker().ReleaseMojoBinderPolicies();
++    if (broker_holder_) {
++      broker_holder_->broker().ReleaseMojoBinderPolicies();
++    }
+     mojo_binder_policy_applier_.reset();
+   }
+ }
+@@ -10089,12 +10099,20 @@ void RenderFrameHostImpl::SetCloseListener(
+ void RenderFrameHostImpl::BindBrowserInterfaceBrokerReceiver(
+     mojo::PendingReceiver<blink::mojom::BrowserInterfaceBroker> receiver) {
+   // TODO(crbug.com/458719426): Move this call to SetUpMojoConnection.
+-  if (base::FeatureList::IsEnabled(features::kLazyBrowserInterfaceBroker)) {
++  if (base::FeatureList::IsEnabled(features::kLazyBrowserInterfaceBroker) &&
++      !broker_holder_) {
+     CreateBrokerHolder();
+   }
+ 
+   CHECK(receiver.is_valid());
+   if (frame_tree()->is_prerendering()) {
++    CHECK(mojo_binder_policy_applier_)
++        << "prerendering pages should have a policy applier";
++  }
++  // Check `mojo_binder_policy_applier_` separately from `is_prerendering()`, as
++  // the policy applier remains alive during prerender activation until
++  // `RendererDidActivateForPrerendering()` is called.
++  if (mojo_binder_policy_applier_) {
+     // RenderFrameHostImpl will rebind the receiver end of
+     // BrowserInterfaceBroker if it receives a new one sent from renderer
+     // processes. It happens when renderer processes navigate to a new document,
+@@ -10102,8 +10120,6 @@ void RenderFrameHostImpl::BindBrowserInterfaceBrokerReceiver(
+     // RenderFrameHostImpl::DidCommitNavigation(). So before binding a new
+     // receiver end of BrowserInterfaceBroker, RenderFrameHostImpl should drop
+     // all deferred binders to avoid connecting Mojo pipes with old documents.
+-    CHECK(mojo_binder_policy_applier_)
+-        << "prerendering pages should have a policy applier";
+     mojo_binder_policy_applier_->DropDeferredBinders();
+   }
+ 
+@@ -10116,11 +10132,7 @@ bool RenderFrameHostImpl::ResetBrowserInterfaceBrokerReceiverForTesting() {
+   if (!broker_holder_) {
+     return true;
+   }
+-  bool is_valid = broker_holder_->broker_receiver().Unbind().is_valid();
+-  if (base::FeatureList::IsEnabled(features::kLazyBrowserInterfaceBroker)) {
+-    broker_holder_.reset();
+-  }
+-  return is_valid;
++  return broker_holder_->broker_receiver().Unbind().is_valid();
+ }
+ 
+ void RenderFrameHostImpl::BindAssociatedInterfaceProviderReceiver(
+@@ -14036,13 +14048,7 @@ void RenderFrameHostImpl::CreateBrokerHolder() {
+   CHECK(!broker_holder_);
+ 
+   broker_holder_.emplace(this);
+-  if (frame_tree_->is_prerendering()) {
+-    // TODO(crbug.com/40150746): Check the prerendering page is
+-    // same-origin to the prerender trigger page.
+-    mojo_binder_policy_applier_ =
+-        MojoBinderPolicyApplier::CreateForSameOriginPrerendering(base::BindOnce(
+-            &RenderFrameHostImpl::CancelPrerenderingByMojoBinderPolicy,
+-            base::Unretained(this)));
++  if (mojo_binder_policy_applier_) {
+     broker_holder_->broker().ApplyMojoBinderPolicies(
+         mojo_binder_policy_applier_.get());
+   }
+@@ -17571,15 +17577,8 @@ void RenderFrameHostImpl::DidCommitNavigation(
+   }
+ 
+   if (interface_params) {
+-    if (base::FeatureList::IsEnabled(features::kLazyBrowserInterfaceBroker)) {
+-      // Reset the broker holder so it is entirely re-created in
+-      // BindBrowserInterfaceBrokerReceiver.
+-      broker_holder_.reset();
+-    } else {
+-      CHECK(broker_holder_);
+-      if (broker_holder_->broker_receiver().is_bound()) {
+-        broker_holder_->broker_receiver().reset();
+-      }
++    if (broker_holder_) {
++      broker_holder_->broker_receiver().reset();
+     }
+     BindBrowserInterfaceBrokerReceiver(
+         std::move(interface_params->browser_interface_broker_receiver));
+@@ -17593,8 +17592,9 @@ void RenderFrameHostImpl::DidCommitNavigation(
+     // hence possibly from a different security origin, will no longer be
+     // dispatched.
+     if (!frame_tree_node_->is_on_initial_empty_document()) {
+-      CHECK(broker_holder_);
+-      broker_holder_->broker_receiver().reset();
++      if (broker_holder_) {
++        broker_holder_->broker_receiver().reset();
++      }
+       bad_message::ReceivedBadMessage(
+           process, bad_message::RFH_INTERFACE_PROVIDER_MISSING);
+ 
+diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
+index c85b75f85e308f0107d4ad9ffeb474bc5d905e6f..4f30aab16ffe2f3f54232d914f1f7629f62a1f6e 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.h
++++ b/content/browser/renderer_host/render_frame_host_impl.h
+@@ -1830,7 +1830,9 @@ class CONTENT_EXPORT RenderFrameHostImpl
+     CHECK(broker_holder_);
+     return broker_holder_->broker_receiver();
+   }
+-  bool has_broker_holder_for_testing() { return broker_holder_.has_value(); }
++  bool has_broker_holder_for_testing() const {
++    return broker_holder_.has_value();
++  }
+   const blink::mojom::LocalResourceLoaderConfigPtr&
+   local_resource_loader_config_for_testing() const {
+     return local_resource_loader_config_;
+@@ -5101,6 +5103,10 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   // and AssociatedInterfaceRegistry before invoking their binders.
+   // Currently, it is non-null pointer only if this RenderFrameHost is being
+   // prerendered.
++  //
++  // NOTE: `mojo_binder_policy_applier_` must be declared before
++  // `broker_holder_` so that it outlives `BrowserInterfaceBrokerImpl`, whose
++  // destructor calls `DropDeferredBinders()` on `mojo_binder_policy_applier_`.
+   std::unique_ptr<MojoBinderPolicyApplier> mojo_binder_policy_applier_;
+ 
+   // IPC-friendly token that represents this host.
+@@ -5583,6 +5589,8 @@ class CONTENT_EXPORT RenderFrameHostImpl
+     BrowserInterfaceBrokerImpl<RenderFrameHostImpl, RenderFrameHost*> broker_;
+     mojo::Receiver<blink::mojom::BrowserInterfaceBroker> broker_receiver_;
+   };
++  // Must be declared after `mojo_binder_policy_applier_` so that `broker_` is
++  // destroyed before `mojo_binder_policy_applier_`.
+   std::optional<BrokerHolder> broker_holder_;
+ 
+   // The listener should be moved from the `NavigationRequest` when committing

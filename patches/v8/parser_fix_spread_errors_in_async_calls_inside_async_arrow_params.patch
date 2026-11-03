@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Sat, 17 Oct 2026 05:40:53 +0200
+Subject: [parser] Fix spread errors in async() calls inside async arrow params
+
+In ParserBase::ParseArguments, record rest-parameter errors
+(kRestDefaultInitializer and kParamAfterRest) using
+RecordDeclarationError on the current ArrowHeadParsingScope rather than
+RecordAsyncArrowParametersError. Those errors apply only to the current
+arrow head if it turns out to be an arrow parameter list, not to
+enclosing async arrow heads when the current call turns out to be a
+normal 'async(...)' call expression.
+
+Also check the scope chain flags on the walked scope rather than 'this'
+in RecordAsyncArrowParametersError and RecordParameterInitializerError.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I86b6a36510027100f823ff12d94e5d0dbdff0ff3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8524457
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110971}
+(cherry picked from commit 87fabc80d7d4467b215ecc21e1ee4c32a799ecca)
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index a1adbe8091a6d74d42d08f6e2666f0da3357ed5a..8d93d383afe80c5dc4fdeccfaaf17ae71d66890e 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -169,7 +169,7 @@ class ExpressionScope {
+                                        MessageTemplate message) {
+     ExpressionScope* scope = this;
+     while (!scope->IsCertainlyParameterDeclaration()) {
+-      if (!has_possible_parameter_in_scope_chain_) return;
++      if (!scope->has_possible_parameter_in_scope_chain_) return;
+       if (scope->CanBeParameterDeclaration()) {
+         scope->AsArrowHeadParsingScope()->RecordDeclarationError(loc, message);
+       }
+@@ -519,7 +519,10 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
+                                        MessageTemplate message) {
+     for (ExpressionScopeT* scope = this; scope != nullptr;
+          scope = scope->parent()) {
+-      if (!has_async_arrow_in_scope_chain_) break;
++      if (!scope->CanBeExpression() ||
++          !scope->AsExpressionParsingScope()->has_async_arrow_in_scope_chain_) {
++        break;
++      }
+       if (scope->type_ ==
+           ExpressionScopeT::kMaybeAsyncArrowParameterDeclaration) {
+         scope->AsArrowHeadParsingScope()->RecordDeclarationError(loc, message);
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index c1ce697e9cf3cf619f566cc3838b135915962039..fdafa15ff0319a6ac996cfbe5e9d465b6288df15 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -3204,11 +3204,11 @@ void ParserBase<Impl>::ParseArguments(
+       if (is_spread) {
+         expression_scope()->RecordNonSimpleParameter();
+         if (argument->IsAssignment()) {
+-          expression_scope()->RecordAsyncArrowParametersError(
++          expression_scope()->RecordDeclarationError(
+               scanner()->location(), MessageTemplate::kRestDefaultInitializer);
+         }
+         if (peek() == Token::kComma) {
+-          expression_scope()->RecordAsyncArrowParametersError(
++          expression_scope()->RecordDeclarationError(
+               scanner()->peek_location(), MessageTemplate::kParamAfterRest);
+         }
+       }
+diff --git a/test/mjsunit/regress/regress-567222737-5.js b/test/mjsunit/regress/regress-567222737-5.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d96c8f169d3b4a9bf1efb769b3a51dbb6bde2129
+--- /dev/null
++++ b/test/mjsunit/regress/regress-567222737-5.js
+@@ -0,0 +1,30 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// A call to `async(...)` with spread arguments inside an async arrow function's
++// parameter initializer should not record rest-parameter errors on the outer
++// async arrow head.
++{
++  let async = (...args) => args;
++
++  let f1 = async (a = async(...[1, 2], 3)) => a;
++  f1().then(v => assertEquals([1, 2, 3], v));
++
++  let b;
++  let f2 = async (a = async(...b = [4, 5])) => a;
++  f2().then(v => {
++    assertEquals([4, 5], v);
++    assertEquals([4, 5], b);
++  });
++
++  // Top-level/eagerly parsed versions:
++  let f3 = (async (a = async(...[6, 7], 8)) => a);
++  f3().then(v => assertEquals([6, 7, 8], v));
++}
++
++// Actual invalid rest parameters in async arrow heads must still be rejected.
++assertThrows("async (...a, b) => {}", SyntaxError);
++assertThrows("async (...a = [1]) => {}", SyntaxError);
++assertThrows("async (x = async (...a, b) => {}) => {}", SyntaxError);
++assertThrows("async (x = async (...a = [1]) => {}) => {}", SyntaxError);

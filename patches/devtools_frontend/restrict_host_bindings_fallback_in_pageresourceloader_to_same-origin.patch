@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Somsikov <dsv@chromium.org>
+Date: Tue, 29 Sep 2026 08:32:35 -0700
+Subject: Restrict host bindings fallback in PageResourceLoader to same-origin
+ initiators
+
+When loading a resource through the target fails, fallback to loading via host bindings is now blocked for cross-origin initiators relative to the primary page target. If the initiator is cross-origin or CSP must be enforced, the error is rethrown instead of continuing to host bindings.
+
+Additionally, improve frame ID resolution for worker initiators by reading parentFrameId from TargetInfo while traversing up to the frame target.
+
+Bug: 562238690
+Change-Id: I20b8c049e0a956c46b39b56978604260435c633d
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8485869
+Commit-Queue: Philip Pfaffe <pfaffe@chromium.org>
+Auto-Submit: Danil Somsikov <dsv@chromium.org>
+Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+
+diff --git a/front_end/core/sdk/PageResourceLoader.ts b/front_end/core/sdk/PageResourceLoader.ts
+index c32738b3e47fc405b512ae3db2ab9b51b59ad86f..a26aaed37d33dcab76b3b10c7eee74cac9b2c152 100644
+--- a/front_end/core/sdk/PageResourceLoader.ts
++++ b/front_end/core/sdk/PageResourceLoader.ts
+@@ -316,6 +316,29 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+     }
+   }
+ 
++  #resolveFrameTarget(initiator: PageResourceLoadInitiator): {
++    frameTarget: Target|null,
++    frameId: Protocol.Page.FrameId|null,
++  } {
++    let frameTarget: Target|null = initiator.target;
++    let parentFrameId: Protocol.Page.FrameId|null = null;
++    while (frameTarget && !frameTarget.model(ResourceTreeModel)) {
++      parentFrameId = parentFrameId ?? frameTarget.targetInfo()?.parentFrameId ?? null;
++      frameTarget = frameTarget.parentTarget();
++    }
++    const frameId = initiator.frameId ?? parentFrameId ?? frameTarget?.model(ResourceTreeModel)?.mainFrame?.id ?? null;
++    return {frameTarget, frameId};
++  }
++
++  #isSameOriginWithPrimaryPage(frameTarget: Target|null, frameId: Protocol.Page.FrameId|null): boolean {
++    const primaryFrame = this.#targetManager.primaryPageTarget()?.model(ResourceTreeModel)?.mainFrame;
++    const initiatorFrame = frameId ? frameTarget?.model(ResourceTreeModel)?.frameForId(frameId) : null;
++    if (!primaryFrame || !initiatorFrame) {
++      return false;
++    }
++    return initiatorFrame.securityOrigin().isSameOriginWith(primaryFrame.securityOrigin());
++  }
++
+   private async dispatchLoad(
+       url: Platform.DevToolsPath.UrlString, initiator: PageResourceLoadInitiator, isBinary: boolean): Promise<{
+     success: boolean,
+@@ -338,11 +361,12 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+     if (eligibleForLoadFromTarget) {
+       let mustEnforceCSP = false;
+       const isHttp = parsedURL.scheme === 'http' || parsedURL.scheme === 'https';
+-      if (isHttp && initiator.target) {
+-        const networkManager = initiator.target.model(NetworkManager);
++      const {frameTarget, frameId} = this.#resolveFrameTarget(initiator);
++      if (isHttp && frameTarget) {
++        const networkManager = frameTarget.model(NetworkManager);
+         if (networkManager) {
+-          let status = await networkManager.getSecurityIsolationStatus(initiator.frameId);
+-          if (!status && initiator.frameId) {
++          let status = await networkManager.getSecurityIsolationStatus(frameId);
++          if (!status && frameId) {
+             status = await networkManager.getSecurityIsolationStatus(null);
+           }
+           if (status?.csp) {
+@@ -364,7 +388,8 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+       } catch (e) {
+         if (e instanceof Error) {
+           Host.userMetrics.developerResourceLoaded(Host.UserMetrics.DeveloperResourceLoaded.LOAD_THROUGH_PAGE_FAILURE);
+-          if (mustEnforceCSP || e.message.includes('CSP violation')) {
++          if (mustEnforceCSP || !this.#isSameOriginWithPrimaryPage(frameTarget, frameId) ||
++              e.message.includes('CSP violation')) {
+             return {
+               success: false,
+               content: '',

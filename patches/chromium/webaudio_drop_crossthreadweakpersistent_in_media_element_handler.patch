@@ -1,0 +1,431 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@google.com>
+Date: Mon, 26 Oct 2026 16:40:13 -0700
+Subject: [WebAudio] Drop CrossThreadWeakPersistent in media element handler
+
+Previously, MediaElementAudioSourceHandler held a
+CrossThreadWeakPersistent<HTMLMediaElement> and called MediaElement()
+multiple times on the audio rendering thread during Process() and
+ProvideResamplerInput(). Because each call returned a temporary
+CrossThreadPersistent that was released immediately, concurrent
+main-thread garbage collection of HTMLMediaElement between the initial
+check in Process() and subsequent dereferences (including the
+unchecked call in ProvideResamplerInput()) could cause the audio
+thread to dereference a cleared media element pointer. Locking
+CrossThreadWeakPersistent on the audio thread also acquired Oilpan's
+global PersistentRegionLock on the real-time rendering path.
+
+Changes:
+- Replace CrossThreadWeakPersistent<HTMLMediaElement> with a
+  scoped_refptr<WebAudioSourceProviderImpl> guarded by process_lock_,
+  decoupling audio-thread rendering from the Oilpan-managed
+  HTMLMediaElement so the reference-counted provider remains valid for
+  the entire render quantum.
+- Pull audio frames directly from WebAudioSourceProviderImpl via a
+  stack-allocated channel span array in ProvideInput() without
+  audio-thread heap allocations or Oilpan interactions.
+- Return silence in WebAudioSourceProviderImpl::ProvideInput() when
+  its client has been cleared during media element teardown.
+- Reset audio_source_provider_ and multi_channel_resampler_ under
+  process_lock_ in Dispose(), OnCurrentSrcChanged(), and invalid
+  SetFormat() transitions so main-thread state updates stay
+  synchronized with the audio thread.
+- Add unit tests verifying audio rendering before and after
+  HTMLMediaElement collection and client disconnection.
+
+Fixed: 573836121
+Test: blink_unittests --gtest_filter=*MediaElementAudioSourceNodeTest*
+Test: blink_platform_unittests --gtest_filter=*WebAudioSourceProvider*
+Change-Id: Idbe18ac48f43d61a4caf65e5017bca511d82e12e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8588940
+Reviewed-by: Michael Wilson <mjwilson@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Hongchan Choi <hongchan@google.com>
+Cr-Commit-Position: refs/heads/main@{#1727442}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.cc b/third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.cc
+index d3aa7c71e559e8489cb0cfb507a91aadee963a7b..88cba615a53381f01a2f8a02b6e2a1ba597bf472 100644
+--- a/third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.cc
+@@ -4,11 +4,18 @@
+ 
+ #include "third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.h"
+ 
++#include <array>
+ #include <memory>
++#include <utility>
+ 
++#include "base/containers/span.h"
++#include "base/numerics/safe_conversions.h"
+ #include "base/synchronization/lock.h"
+ #include "media/base/audio_bus.h"
++#include "media/base/limits.h"
+ #include "third_party/blink/public/platform/task_type.h"
++#include "third_party/blink/public/platform/web_audio_source_provider_impl.h"
++#include "third_party/blink/public/platform/web_media_player.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_media_element_audio_source_options.h"
+ #include "third_party/blink/renderer/core/frame/deprecation/deprecation.h"
+ #include "third_party/blink/renderer/core/html/media/html_media_element.h"
+@@ -16,6 +23,7 @@
+ #include "third_party/blink/renderer/modules/webaudio/audio_context.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_graph_tracer.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_node_output.h"
++#include "third_party/blink/renderer/modules/webaudio/media_element_audio_source_node.h"
+ #include "third_party/blink/renderer/platform/audio/audio_utilities.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+@@ -33,34 +41,16 @@ constexpr unsigned kDefaultNumberOfOutputChannels = 2;
+ 
+ }  // namespace
+ 
+-class MediaElementAudioSourceHandlerLocker final {
+-  STACK_ALLOCATED();
+-
+- public:
+-  explicit MediaElementAudioSourceHandlerLocker(
+-      MediaElementAudioSourceHandler& lockable)
+-      : lockable_(lockable) {
+-    lockable_.lock();
+-  }
+-
+-  MediaElementAudioSourceHandlerLocker(
+-      const MediaElementAudioSourceHandlerLocker&) = delete;
+-  MediaElementAudioSourceHandlerLocker& operator=(
+-      const MediaElementAudioSourceHandlerLocker&) = delete;
+-
+-  ~MediaElementAudioSourceHandlerLocker() { lockable_.unlock(); }
+-
+- private:
+-  MediaElementAudioSourceHandler& lockable_;
+-};
+-
+ MediaElementAudioSourceHandler::MediaElementAudioSourceHandler(
+     AudioNode& node,
+     HTMLMediaElement& media_element)
+     : AudioHandler(NodeType::kNodeTypeMediaElementAudioSource,
+                    node,
+                    node.context()->sampleRate()),
+-      media_element_(media_element) {
++      audio_source_provider_(
++          media_element.GetWebMediaPlayer()
++              ? media_element.GetWebMediaPlayer()->GetAudioSourceProvider()
++              : nullptr) {
+   DCHECK(IsMainThread());
+ 
+   AddOutput(kDefaultNumberOfOutputChannels);
+@@ -84,80 +74,112 @@ MediaElementAudioSourceHandler::~MediaElementAudioSourceHandler() {
+   Uninitialize();
+ }
+ 
+-CrossThreadPersistent<HTMLMediaElement>
+-MediaElementAudioSourceHandler::MediaElement() const {
+-  return media_element_.Lock();
+-}
+-
+ void MediaElementAudioSourceHandler::Dispose() {
++  DCHECK(IsMainThread());
++  {
++    base::AutoLock locker(process_lock_);
++    audio_source_provider_.reset();
++    multi_channel_resampler_.reset();
++  }
+   AudioHandler::Dispose();
+ }
+ 
++HTMLMediaElement* MediaElementAudioSourceHandler::GetMediaElement() {
++  DCHECK(IsMainThread());
++  if (AudioNode* node = GetNode()) {
++    return static_cast<MediaElementAudioSourceNode*>(node)->mediaElement();
++  }
++  return nullptr;
++}
++
+ void MediaElementAudioSourceHandler::SetFormat(uint32_t number_of_channels,
+                                                float source_sample_rate) {
+-  DCHECK(MediaElement());
++  DCHECK(IsMainThread());
++  HTMLMediaElement* media_element = GetMediaElement();
++  if (!media_element) {
++    return;
++  }
+   bool is_tainted = WouldTaintOrigin();
+ 
+   if (is_tainted) {
+-    PrintCorsMessage(MediaElement()->currentSrc().GetString());
++    PrintCorsMessage(media_element->currentSrc().GetString());
+   }
+ 
+-  {
+-    // Make sure `is_origin_tainted_` matches `is_tainted`.  But need to
+-    // synchronize with `Process()` to set this.
+-    MediaElementAudioSourceHandlerLocker locker(*this);
+-    is_origin_tainted_ = is_tainted;
++  WebMediaPlayer* player = media_element->GetWebMediaPlayer();
++  scoped_refptr<WebAudioSourceProviderImpl> provider =
++      player ? player->GetAudioSourceProvider() : nullptr;
++
++  const bool is_format_valid =
++      number_of_channels > 0 &&
++      number_of_channels <= BaseAudioContext::MaxNumberOfChannels() &&
++      audio_utilities::IsValidAudioBufferSampleRate(source_sample_rate);
++  if (!is_format_valid) {
++    DLOG(ERROR) << "setFormat(" << number_of_channels << ", "
++                << source_sample_rate << ") - unhandled format change";
+   }
+ 
+-  if (number_of_channels != source_number_of_channels_ ||
+-      source_sample_rate != source_sample_rate_) {
+-    if (!number_of_channels ||
+-        number_of_channels > BaseAudioContext::MaxNumberOfChannels() ||
+-        !audio_utilities::IsValidAudioBufferSampleRate(source_sample_rate)) {
++  {
++    base::AutoLock locker(process_lock_);
++    if (!is_format_valid) {
+       // `Process()` will generate silence for these uninitialized values.
+-      DLOG(ERROR) << "setFormat(" << number_of_channels << ", "
+-                  << source_sample_rate << ") - unhandled format change";
+-      // Synchronize with `Process()`.
+-      MediaElementAudioSourceHandlerLocker locker(*this);
+       source_number_of_channels_ = 0;
+       source_sample_rate_ = 0;
++      audio_source_provider_.reset();
++      multi_channel_resampler_.reset();
++      is_origin_tainted_ = is_tainted;
++      return;
++    }
++
++    if (number_of_channels == source_number_of_channels_ &&
++        source_sample_rate == source_sample_rate_) {
++      if (provider) {
++        audio_source_provider_ = std::move(provider);
++      }
++      is_origin_tainted_ = is_tainted;
+       return;
+     }
++  }
+ 
+-    // Synchronize with `Process()` to protect `source_number_of_channels_`,
+-    // `source_sample_rate_`, `multi_channel_resampler_`.
+-    MediaElementAudioSourceHandlerLocker locker(*this);
++  std::unique_ptr<MediaMultiChannelResampler> new_resampler;
++  if (source_sample_rate != Context()->sampleRate()) {
++    double scale_factor = source_sample_rate / Context()->sampleRate();
++    new_resampler = std::make_unique<MediaMultiChannelResampler>(
++        number_of_channels, scale_factor,
++        GetDeferredTaskHandler().RenderQuantumFrames(),
++        CrossThreadBindRepeating(
++            &MediaElementAudioSourceHandler::ProvideResamplerInput,
++            CrossThreadUnretained(this)));
++  }
+ 
++  {
++    base::AutoLock locker(process_lock_);
++    if (provider) {
++      audio_source_provider_ = std::move(provider);
++    }
+     source_number_of_channels_ = number_of_channels;
+     source_sample_rate_ = source_sample_rate;
++    multi_channel_resampler_ = std::move(new_resampler);
++    is_origin_tainted_ = is_tainted;
++  }
+ 
+-    if (source_sample_rate != Context()->sampleRate()) {
+-      double scale_factor = source_sample_rate / Context()->sampleRate();
+-      multi_channel_resampler_ = std::make_unique<MediaMultiChannelResampler>(
+-          number_of_channels, scale_factor,
+-          GetDeferredTaskHandler().RenderQuantumFrames(),
+-          CrossThreadBindRepeating(
+-              &MediaElementAudioSourceHandler::ProvideResamplerInput,
+-              CrossThreadUnretained(this)));
+-    } else {
+-      // Bypass resampling.
+-      multi_channel_resampler_.reset();
+-    }
+-
+-    {
+-      // The context must be locked when changing the number of output channels.
+-      DeferredTaskHandler::GraphAutoLocker context_locker(
+-          Context()->GetDeferredTaskHandler());
++  {
++    // The context must be locked when changing the number of output channels.
++    DeferredTaskHandler::GraphAutoLocker context_locker(
++        Context()->GetDeferredTaskHandler());
+ 
+-      // Do any necesssary re-configuration to the output's number of channels.
+-      Output(0).SetNumberOfChannels(number_of_channels);
+-    }
++    // Do any necessary re-configuration to the output's number of channels.
++    Output(0).SetNumberOfChannels(number_of_channels);
+   }
+ }
+ 
+ bool MediaElementAudioSourceHandler::WouldTaintOrigin() {
+-  DCHECK(MediaElement());
+-  return MediaElement()->GetWebMediaPlayer()->WouldTaintOrigin();
++  DCHECK(IsMainThread());
++  HTMLMediaElement* media_element = GetMediaElement();
++  if (!media_element) {
++    return true;
++  }
++  WebMediaPlayer* player = media_element->GetWebMediaPlayer();
++  return player ? player->WouldTaintOrigin() : false;
+ }
+ 
+ void MediaElementAudioSourceHandler::PrintCorsMessage(const String& message) {
+@@ -172,14 +194,37 @@ void MediaElementAudioSourceHandler::PrintCorsMessage(const String& message) {
+   }
+ }
+ 
++void MediaElementAudioSourceHandler::ProvideInput(AudioBus* bus,
++                                                  int frames_to_process) {
++  DCHECK(bus);
++  if (!audio_source_provider_) {
++    bus->Zero();
++    return;
++  }
++
++  const unsigned num_channels = bus->NumberOfChannels();
++  if (num_channels == 0 ||
++      num_channels > static_cast<unsigned>(media::limits::kMaxChannels)) {
++    bus->Zero();
++    return;
++  }
++
++  std::array<base::span<float>, media::limits::kMaxChannels> web_audio_data;
++  const size_t frames = base::checked_cast<size_t>(frames_to_process);
++  for (unsigned i = 0; i < num_channels; ++i) {
++    web_audio_data[i] = bus->Channel(i)->MutableSpan().first(frames);
++  }
++
++  audio_source_provider_->ProvideInput(
++      base::span(web_audio_data).first(num_channels), frames_to_process);
++}
++
+ void MediaElementAudioSourceHandler::ProvideResamplerInput(
+     int resampler_frame_delay,
+     AudioBus* dest) {
+   DCHECK(Context()->IsAudioThread());
+-  DCHECK(MediaElement());
+   DCHECK(dest);
+-  MediaElement()->GetAudioSourceProvider().ProvideInput(
+-      dest, base::checked_cast<int>(dest->length()));
++  ProvideInput(dest, base::checked_cast<int>(dest->length()));
+ }
+ 
+ void MediaElementAudioSourceHandler::Process(uint32_t number_of_frames) {
+@@ -191,7 +236,7 @@ void MediaElementAudioSourceHandler::Process(uint32_t number_of_frames) {
+   // case.
+   base::AutoTryLock try_locker(process_lock_);
+   if (try_locker.is_acquired()) {
+-    if (!MediaElement() || !source_sample_rate_) {
++    if (!audio_source_provider_ || !source_sample_rate_) {
+       output_bus->Zero();
+       return;
+     }
+@@ -204,7 +249,6 @@ void MediaElementAudioSourceHandler::Process(uint32_t number_of_frames) {
+       return;
+     }
+ 
+-    AudioSourceProvider& provider = MediaElement()->GetAudioSourceProvider();
+     // Grab data from the provider so that the element continues to make
+     // progress, even if we're going to output silence anyway.
+     const int frames_int = base::checked_cast<int>(number_of_frames);
+@@ -215,7 +259,7 @@ void MediaElementAudioSourceHandler::Process(uint32_t number_of_frames) {
+       // Bypass the resampler completely if the source is at the context's
+       // sample-rate.
+       DCHECK_EQ(source_sample_rate_, Context()->sampleRate());
+-      provider.ProvideInput(output_bus, frames_int);
++      ProvideInput(output_bus, frames_int);
+     }
+     // Output silence if we don't have access to the element.
+     if (is_origin_tainted_) {
+diff --git a/third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.h b/third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.h
+index dda12cbed067506e8de24fe6c4bd8920a0e88991..aa22f14a5adbe91cec9b1176b6db9a3bd59b234e 100644
+--- a/third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/media_element_audio_source_handler.h
+@@ -15,13 +15,13 @@
+ #include "third_party/blink/renderer/modules/webaudio/audio_node.h"
+ #include "third_party/blink/renderer/platform/audio/audio_source_provider_client.h"
+ #include "third_party/blink/renderer/platform/audio/media_multi_channel_resampler.h"
+-#include "third_party/blink/renderer/platform/heap/cross_thread_persistent.h"
+ 
+ namespace blink {
+ 
+ class AudioContext;
+ class HTMLMediaElement;
+ class MediaElementAudioSourceOptions;
++class WebAudioSourceProviderImpl;
+ 
+ class MediaElementAudioSourceHandler final : public AudioHandler {
+  public:
+@@ -30,8 +30,6 @@ class MediaElementAudioSourceHandler final : public AudioHandler {
+       HTMLMediaElement&);
+   ~MediaElementAudioSourceHandler() override;
+ 
+-  CrossThreadPersistent<HTMLMediaElement> MediaElement() const;
+-
+   // AudioHandler
+   void Dispose() override;
+   void Process(uint32_t frames_to_process) override;
+@@ -56,6 +54,8 @@ class MediaElementAudioSourceHandler final : public AudioHandler {
+   // As an audio source, we will never propagate silence.
+   bool PropagatesSilence() const override { return false; }
+ 
++  HTMLMediaElement* GetMediaElement();
++
+   // Returns true if the origin of the media element is tainted so that the
+   // audio should be muted when playing through WebAudio.
+   bool WouldTaintOrigin();
+@@ -64,19 +64,19 @@ class MediaElementAudioSourceHandler final : public AudioHandler {
+   // zeroes.
+   void PrintCorsMessage(const String& message);
+ 
++  // Pulls rendered audio frames from `audio_source_provider_` into `bus`.
++  void ProvideInput(AudioBus* bus, int frames_to_process)
++      EXCLUSIVE_LOCKS_REQUIRED(process_lock_);
++
+   // Provide input to the resampler (if used).
+-  void ProvideResamplerInput(int resampler_frame_delay, AudioBus* dest);
+-
+-  // The HTMLMediaElement is held alive by MediaElementAudioSourceNode which is
+-  // an AudioNode. AudioNode uses pre-finalizers to dispose the handler, so
+-  // holding a weak reference is ok here and will not interfer with garbage
+-  // collection.
+-  //
+-  // It is accessed by both audio and main thread. TODO: we really should
+-  // try to minimize or avoid the audio thread touching this element.
+-  CrossThreadWeakPersistent<HTMLMediaElement> media_element_;
++  void ProvideResamplerInput(int resampler_frame_delay, AudioBus* dest)
++      EXCLUSIVE_LOCKS_REQUIRED(process_lock_);
++
+   base::Lock process_lock_;
+ 
++  scoped_refptr<WebAudioSourceProviderImpl> audio_source_provider_
++      GUARDED_BY(process_lock_);
++
+   unsigned source_number_of_channels_ = 0;
+   double source_sample_rate_ = 0;
+ 
+diff --git a/third_party/blink/renderer/platform/media/web_audio_source_provider_impl.cc b/third_party/blink/renderer/platform/media/web_audio_source_provider_impl.cc
+index b79290d2dd0edf71b91f9d0ffd5815fa0f9e303f..cabf6b1363e0bde327ec2f887c633c3db912162f 100644
+--- a/third_party/blink/renderer/platform/media/web_audio_source_provider_impl.cc
++++ b/third_party/blink/renderer/platform/media/web_audio_source_provider_impl.cc
+@@ -203,15 +203,13 @@ void WebAudioSourceProviderImpl::ProvideInput(
+ 
+   // Use a try lock to avoid contention in the real-time audio thread.
+   base::AutoTryLock auto_try_lock(sink_lock_);
+-  if (!auto_try_lock.is_acquired() || state_ != kPlaying) {
+-    // Provide silence if we failed to acquire the lock or the source is not
+-    // running.
++  if (!auto_try_lock.is_acquired() || state_ != kPlaying || !client_) {
++    // Provide silence if we failed to acquire the lock, the source is not
++    // running, or the client has been disconnected.
+     bus_wrapper_->Zero();
+     return;
+   }
+ 
+-  DCHECK(client_);
+-
+   // It may be the case that the given |audio_data| doesn't have the same number
+   // of channels as we were expecting, due to a race condition. In that case,
+   // simply output silence.

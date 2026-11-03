@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Wed, 28 Oct 2026 20:14:52 -0700
+Subject: Mark Opaque XR framebuffers as incomplete on session end
+
+Ensures that Opaque framebuffers created by WebXR are always marked
+as incomplete at the end of an XR frame, even if the session ended
+during the frame.
+
+As an additional guard against accessing orphaned shared image
+texture handles via an opaque framebuffer, ensure that the color
+textures are detached from the framebuffer when the frame ends.
+
+Fixed: 578670966
+Change-Id: I67525e51b7eaf7cac5703ba2f2c9bd604aa53b38
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8665766
+Reviewed-by: Brian Sheedy <bsheedy@chromium.org>
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729896}
+
+diff --git a/third_party/blink/renderer/modules/xr/xr_webgl_layer.cc b/third_party/blink/renderer/modules/xr/xr_webgl_layer.cc
+index 6b18cc65f5ddbf37a96cc2438eda5983a74df773..751d1d2bbe9d32e519c80367b0e27c99198c13cc 100644
+--- a/third_party/blink/renderer/modules/xr/xr_webgl_layer.cc
++++ b/third_party/blink/renderer/modules/xr/xr_webgl_layer.cc
+@@ -350,17 +350,17 @@ void XRWebGLLayer::OnFrameStart() {
+ }
+ 
+ void XRWebGLLayer::OnFrameEnd() {
+-  // The session might have ended in the middle of the frame. Only perform the
+-  // main work of OnFrameEnd if it's still valid. Otherwise, simply ensure the
+-  // shared image access is properly ended.
+-  if (session()->ended()) {
+-    DoneWithSharedBuffer();
+-    return;
+-  }
+-
+   if (framebuffer_) {
+     framebuffer_->MarkOpaqueBufferComplete(false);
+ 
++    // The session might have ended in the middle of the frame. Only perform the
++    // main work of OnFrameEnd if it's still valid. Otherwise, simply ensure the
++    // shared image access is properly ended.
++    if (session()->ended()) {
++      DoneWithSharedBuffer();
++      return;
++    }
++
+     // Submit the frame to the XR compositor.
+     if (session()->immersive()) {
+       bool framebuffer_dirty = framebuffer_->HaveContentsChanged();
+diff --git a/third_party/blink/renderer/platform/graphics/gpu/xr_webgl_drawing_buffer.cc b/third_party/blink/renderer/platform/graphics/gpu/xr_webgl_drawing_buffer.cc
+index f0c8643d994eb019908e4c71c6c7fd6cf27099d5..0de143fa7da50423b3d760b731c2327724273563 100644
+--- a/third_party/blink/renderer/platform/graphics/gpu/xr_webgl_drawing_buffer.cc
++++ b/third_party/blink/renderer/platform/graphics/gpu/xr_webgl_drawing_buffer.cc
+@@ -338,6 +338,14 @@ XRWebGLDrawingBuffer::DoneWithSharedBuffer() {
+     gl->DiscardFramebufferEXT(GL_FRAMEBUFFER, 2, kAttachments);
+   }
+ 
++  // Detach the shared buffer from the framebuffer to prevent access to an
++  // orphaned attachment.
++  gl->BindFramebuffer(GL_FRAMEBUFFER, WantExplicitResolve()
++                                          ? resolved_framebuffer_
++                                          : framebuffer_);
++  gl->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                           0, 0);
++
+   // Always bind to the default framebuffer as a hint to the GPU to start
+   // rendering now.
+   gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
+diff --git a/third_party/blink/web_tests/external/wpt/webxr/xrWebGLLayer_opaque_framebuffer.https.html b/third_party/blink/web_tests/external/wpt/webxr/xrWebGLLayer_opaque_framebuffer.https.html
+index f0d63de501545f3626e3af10fab6994b662e7baa..643ca36c88c6275ad2b234c1bd0f962fb1fe8f23 100644
+--- a/third_party/blink/web_tests/external/wpt/webxr/xrWebGLLayer_opaque_framebuffer.https.html
++++ b/third_party/blink/web_tests/external/wpt/webxr/xrWebGLLayer_opaque_framebuffer.https.html
+@@ -110,8 +110,17 @@ let testFunction =
+   session.requestAnimationFrame((time, xrFrame) => {
+     // Framebuffer status must be complete inside of a XR frame callback.
+     assert_equals(gl.checkFramebufferStatus(gl.FRAMEBUFFER), gl.FRAMEBUFFER_COMPLETE);
+-    // Finished.
+-    resolve();
++
++    session.end().then(() => {
++      // Framebuffer status must be unsupported after the session ends.
++      assert_equals(gl.checkFramebufferStatus(gl.FRAMEBUFFER), gl.FRAMEBUFFER_UNSUPPORTED);
++
++      gl.clear(gl.COLOR_BUFFER_BIT);
++      assert_equals(gl.getError(), gl.INVALID_FRAMEBUFFER_OPERATION);
++
++      // Finished.
++      resolve();
++    });
+   });
+ });
+ 

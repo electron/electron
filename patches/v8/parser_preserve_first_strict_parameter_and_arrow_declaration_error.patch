@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Sat, 17 Oct 2026 05:40:29 +0200
+Subject: [parser] Preserve first strict parameter and arrow declaration error
+
+Previously, `ParserFormalParameters::set_strict_parameter_error`,
+`ExpressionScope::RecordStrictModeParameterError`, and
+`ArrowHeadParsingScope::RecordDeclarationError` unconditionally
+overwrote any previously recorded error location and message.
+
+As a result, eager functions and arrow functions with multiple strict
+parameter errors (such as `(function(implements, eval) { "use strict"; })`
+or `(implements, eval) => { "use strict"; }`) or multiple arrow
+parameter declaration errors (such as `([a.b], 1) => {}`) reported the
+last error in the parameter list instead of the first, and disagreed
+with lazy function parsing.
+
+Keep the first recorded error when one is already valid.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I8da7bfc3cfc748577d02972add4ac30ab0629c4b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8524471
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110969}
+(cherry picked from commit 7f9cb9e3417da81c2b58c3ec6007b1000c30eab1)
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index 6c401e44b11a30a9d1d0ea8389709e88194f21eb..a1adbe8091a6d74d42d08f6e2666f0da3357ed5a 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -211,7 +211,8 @@ class ExpressionScope {
+       }
+     } else if (is_strict(parser_->language_mode())) {
+       AsArrowHeadParsingScope()->RecordDeclarationError(loc, message);
+-    } else {
++    } else if (!parser_->next_arrow_function_info_
++                    .strict_parameter_error_location.IsValid()) {
+       parser_->next_arrow_function_info_.strict_parameter_error_location = loc;
+       parser_->next_arrow_function_info_.strict_parameter_error_message =
+           message;
+diff --git a/src/parsing/parser.h b/src/parsing/parser.h
+index 0a52155db3bc87cb9a4add034e72d63c8db4b417..9c01866602ff8d33a8435a5a0567e0c817fc11cd 100644
+--- a/src/parsing/parser.h
++++ b/src/parsing/parser.h
+@@ -79,6 +79,7 @@ struct ParserFormalParameters : FormalParametersBase {
+ 
+   void set_strict_parameter_error(const Scanner::Location& loc,
+                                   MessageTemplate message) {
++    if (strict_error_loc.IsValid()) return;
+     strict_error_loc = loc;
+     strict_error_message = message;
+   }
+diff --git a/test/mjsunit/es6/regress-strict-param-error-order.js b/test/mjsunit/es6/regress-strict-param-error-order.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ca6c794d29b76bc413d0ab51400f48ef2906e2dd
+--- /dev/null
++++ b/test/mjsunit/es6/regress-strict-param-error-order.js
+@@ -0,0 +1,32 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Strict mode parameter errors and arrow declaration errors should report
++// the first error encountered in the parameter list rather than overwriting
++// it with later errors.
++
++assertThrows(
++    () => eval('(function f(implements, eval) { "use strict"; })'),
++    SyntaxError,
++    "Unexpected strict mode reserved word");
++assertThrows(
++    () => eval('(implements, eval) => { "use strict"; }'),
++    SyntaxError,
++    "Unexpected strict mode reserved word");
++assertThrows(
++    () => eval('(function f(eval, implements) { "use strict"; })'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval('(eval, implements) => { "use strict"; }'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval("([a.b], 1) => {}"),
++    SyntaxError,
++    "Illegal property in declaration context");
++assertThrows(
++    () => eval("function* g() { (b = yield a, 1) => {}; }"),
++    SyntaxError,
++    "Yield expression not allowed in formal parameter");

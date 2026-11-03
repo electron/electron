@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin Ellis <kevers@google.com>
+Date: Fri, 30 Oct 2026 07:18:00 -0700
+Subject: Forbid AnimationTrigger behavior map mutations during compositor
+ updates
+
+`AnimationTrigger` guards against re-entrant mutations to
+`animation_behavior_map_` during `PerformActivate`,
+`PerformDeactivate`,and `TimelineTrigger::HandlePostTripAdd`.
+However, `UpdateCompositorTriggerAnimations` also iterates over
+`animation_behavior_map_` without asserting that the map is not
+mutated, and `UpdateBehaviorMap` lacked a direct `CHECK`.
+
+* Renamed `is_activating_or_deactivating_` to
+  `forbid_behavior_map_updates_` to reflect the invariant being
+  enforced, set it via `base::AutoReset` in
+  `UpdateCompositorTriggerAnimations`
+* Added a `CHECK` in `UpdateBehaviorMap`.
+* Removed a duplicate `GetCompositorAnimation()`call in
+  `UpdateCompositorTriggerAnimations`.
+
+The underlying source of the rogue mutation is addressed in
+https://chromium-review.git.corp.google.com/c/chromium/src/+/8674102.
+
+Bug: 575318807
+Change-Id: I38f8323d2254291b18512dc67ba732223972bdf4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8674765
+Reviewed-by: David A <awogbemila@chromium.org>
+Commit-Queue: Kevin Ellis <kevers@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1731422}
+
+diff --git a/third_party/blink/renderer/core/animation/animation_trigger.cc b/third_party/blink/renderer/core/animation/animation_trigger.cc
+index 71b041bb67f47284746128f6d621db49a2554ba1..246cdd7c5a7167569fe8f43f4b364c9c8703e490 100644
+--- a/third_party/blink/renderer/core/animation/animation_trigger.cc
++++ b/third_party/blink/renderer/core/animation/animation_trigger.cc
+@@ -269,7 +269,7 @@ void AnimationTrigger::addAnimation(
+     V8AnimationTriggerBehavior activate_behavior,
+     V8AnimationTriggerBehavior deactivate_behavior,
+     ExceptionState& exception_state) {
+-  CHECK(!is_activating_or_deactivating_);
++  CHECK(!forbid_behavior_map_updates_);
+ 
+   if (!animation) {
+     return;
+@@ -300,7 +300,7 @@ void AnimationTrigger::addAnimation(
+ }
+ 
+ void AnimationTrigger::removeAnimation(Animation* animation) {
+-  CHECK(!is_activating_or_deactivating_);
++  CHECK(!forbid_behavior_map_updates_);
+ 
+   if (!animation) {
+     return;
+@@ -342,13 +342,14 @@ void AnimationTrigger::DidRemoveAnimation(Animation* animation) {}
+ void AnimationTrigger::UpdateBehaviorMap(Animation& animation,
+                                          Behavior activate_behavior,
+                                          Behavior deactivate_behavior) {
++  CHECK(!forbid_behavior_map_updates_);
+   animation_behavior_map_.Set(
+       &animation, std::make_pair<>(activate_behavior, deactivate_behavior));
+ }
+ 
+ void AnimationTrigger::PerformActivate(
+     std::optional<base::TimeDelta> async_activate_time) {
+-  base::AutoReset<bool> is_activating(&is_activating_or_deactivating_, true);
++  base::AutoReset<bool> forbid_updates(&forbid_behavior_map_updates_, true);
+ 
+   for (auto [animation, behaviors] : animation_behavior_map_) {
+     if (HasPausedCSSPlayState(animation)) {
+@@ -364,7 +365,7 @@ void AnimationTrigger::PerformActivate(
+ 
+ void AnimationTrigger::PerformDeactivate(
+     std::optional<base::TimeDelta> async_deactivate_time) {
+-  base::AutoReset<bool> is_deactivating(&is_activating_or_deactivating_, true);
++  base::AutoReset<bool> forbid_updates(&forbid_behavior_map_updates_, true);
+ 
+   for (auto [animation, behaviors] : animation_behavior_map_) {
+     if (HasPausedCSSPlayState(animation)) {
+@@ -382,6 +383,7 @@ void AnimationTrigger::PerformDeactivate(
+ void AnimationTrigger::UpdateCompositorTriggerAnimations(
+     const PaintArtifactCompositor* paint_artifact_compositor) {
+   CHECK(compositor_trigger_);
++  base::AutoReset<bool> forbid_updates(&forbid_behavior_map_updates_, true);
+ 
+   std::vector<cc::AnimationTrigger::AnimationData> animation_data;
+   for (auto& [animation, behaviors] : animation_behavior_map_) {
+@@ -398,7 +400,6 @@ void AnimationTrigger::UpdateCompositorTriggerAnimations(
+     }
+ 
+     CompositorAnimation* compositor_anim = animation->GetCompositorAnimation();
+-    compositor_anim = animation->GetCompositorAnimation();
+     DCHECK(compositor_anim);
+     cc::Animation* cc_animation = compositor_anim->CcAnimation();
+     DCHECK(cc_animation);
+diff --git a/third_party/blink/renderer/core/animation/animation_trigger.h b/third_party/blink/renderer/core/animation/animation_trigger.h
+index 40bbef8d77fcb8d400951c3462df43f9b0f4aaa2..f7d9038a7242a745ea0dbe9def1e145063d198ee 100644
+--- a/third_party/blink/renderer/core/animation/animation_trigger.h
++++ b/third_party/blink/renderer/core/animation/animation_trigger.h
+@@ -111,9 +111,9 @@ class CORE_EXPORT AnimationTrigger : public ScriptWrappable,
+   // thread version is cloned from this.
+   scoped_refptr<cc::AnimationTrigger> compositor_trigger_;
+ 
+-  // Set to true during PerformActivate and PerformDeactivate to prevent
+-  // mutations of the behavior map.
+-  bool is_activating_or_deactivating_ = false;
++  // Set to true while iterating or acting on `animation_behavior_map_` to
++  // prevent re-entrant mutations of the map.
++  bool forbid_behavior_map_updates_ = false;
+ 
+  private:
+   virtual void WillAddAnimation(Animation* animation,
+diff --git a/third_party/blink/renderer/core/animation/timeline_trigger.cc b/third_party/blink/renderer/core/animation/timeline_trigger.cc
+index aeb0f24a5b7d361b6cc03ac4308bf8124b7bd92e..ca5bd42c774a6c4f96ac5daf27b1b5d5a490cfac 100644
+--- a/third_party/blink/renderer/core/animation/timeline_trigger.cc
++++ b/third_party/blink/renderer/core/animation/timeline_trigger.cc
+@@ -135,8 +135,7 @@ void TimelineTrigger::HandlePostTripAdd(Animation* animation,
+   if (old_behavior_for_current_state != new_behavior_for_current_state) {
+     // We are retroactively activating or deactivating the animation. The same
+     // restrictions on activation/deactivation should apply.
+-    base::AutoReset<bool> is_activating_or_deactivating(
+-        &is_activating_or_deactivating_, true);
++    base::AutoReset<bool> forbid_updates(&forbid_behavior_map_updates_, true);
+     PerformBehavior(*animation, *new_behavior_for_current_state,
+                     /*async_event_time=*/std::nullopt, exception_state);
+     animation->UpdateIfNecessary();

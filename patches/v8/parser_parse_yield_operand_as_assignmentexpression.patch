@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 7 Oct 2026 16:30:54 +0200
+Subject: [parser] Parse yield operand as AssignmentExpression
+
+The operand of a `YieldExpression` is unconditionally an
+`AssignmentExpression` and cannot be a destructuring pattern or arrow
+parameter list.
+
+Previously, `ParseYieldExpression` called
+`ParseAssignmentExpressionCoverGrammar()`, leaving expression errors in
+the operand (such as `{a = 42}`) unvalidated in the enclosing scope, so
+an outer `[yield {a = 42}] = []` cleared the expression error during
+`ValidateAsPattern()` and reported `Invalid destructuring assignment
+target` instead of `Invalid shorthand property initializer`.
+
+Use `ParseAssignmentExpression()` instead.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I1ce6800cb60e844b20138583f11946dfce00cafc
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8529450
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110412}
+(cherry picked from commit 8232f38f92c2553033e7aaaad45b1018552d246b)
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 8e39a908795a2ef2ad3c39f8e7d9b1f0d613cfb8..00f8acb75c3c59c81323c04682066241fdcb91fc 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -3472,7 +3472,7 @@ ParserBase<Impl>::ParseYieldExpression() {
+         // Delegating yields require an RHS; fall through.
+         [[fallthrough]];
+       default:
+-        expression = ParseAssignmentExpressionCoverGrammar();
++        expression = ParseAssignmentExpression();
+         break;
+     }
+   }
+diff --git a/test/mjsunit/es6/regress-yield-expression-scope.js b/test/mjsunit/es6/regress-yield-expression-scope.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..22efcaa4211e4266bf3782d19cda768adddab166
+--- /dev/null
++++ b/test/mjsunit/es6/regress-yield-expression-scope.js
+@@ -0,0 +1,19 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// YieldExpression operands are unconditionally AssignmentExpressions and
++// should validate expression errors before outer pattern validation.
++
++assertThrows(
++    () => eval("function* g() { [yield {a = 42}] = []; }"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("function* g() { [yield* {a = 42}] = []; }"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("function* g() { ({x: yield {a = 42}} = {}); }"),
++    SyntaxError,
++    "Invalid shorthand property initializer");

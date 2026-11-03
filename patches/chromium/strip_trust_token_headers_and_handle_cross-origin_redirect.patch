@@ -1,0 +1,443 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aykut Bulut <aykutb@chromium.org>
+Date: Wed, 7 Oct 2026 12:09:15 -0700
+Subject: Strip Trust Token headers and handle cross-origin redirect
+
+When a network request initiated with Private State Token operations
+undergoes a cross-origin redirect, sensitive request headers attached
+for the initial issuer must not be forwarded to the redirect target.
+In addition, the Trust Token interceptor must handle the redirect to
+ensure that responses from the redirect target cannot be processed or
+stored into the original issuer's token storage.
+
+This change:
+- Strips TrustTokensRequestHeaders in URLLoader upon receiving a
+  cross-origin redirect.
+- Calls OnCrossOriginRedirect on TrustTokenUrlLoaderInterceptor during
+  cross-origin redirects and recording a kBadResponse status.
+- Fails FinalizeOperation immediately if called after a cross-origin
+  redirect, ensuring the operation error is propagated to Blink and
+  rejects the fetch promise with OperationError.
+- Updates unit tests in services_unittests and browser test
+  expectations in content_browsertests.
+
+TAG=agy
+CONV=dad9888e-9089-463a-b3b7-faf759ed4a42
+
+Fixed: 502385220
+Change-Id: I6e6319d62e23f0dbf45444c113292cc8755d455b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8422009
+Reviewed-by: mmenke <mmenke@chromium.org>
+Commit-Queue: Aykut Bulut <aykutb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1713710}
+
+diff --git a/content/browser/network/trust_token_browsertest.cc b/content/browser/network/trust_token_browsertest.cc
+index 40ff9e8b20ef289f94dd8a0e787f25200a3b2aa3..8dd61066473a25b746222a9aa46dc9388667e1ea 100644
+--- a/content/browser/network/trust_token_browsertest.cc
++++ b/content/browser/network/trust_token_browsertest.cc
+@@ -900,16 +900,16 @@ IN_PROC_BROWSER_TEST_F(
+   EXPECT_EQ(2, access_count_);
+ }
+ 
+-// When an issuance request is made in no-cors mode, a cross-origin redirect
+-// from issuer A to issuer B should result in recycling the original issuance
+-// request, obtaining issuer A tokens on success.
++// When an issuance request is made in no-cors mode and the issuer responds
++// with a cross-origin redirect, the request headers attached for the original
++// issuer must be removed before following the redirect, so the operation
++// fails.
+ //
+ // Note: For more on the interaction between Trust Tokens and redirects, see the
+ // "Handling redirects" section in the design doc
+ // https://docs.google.com/document/d/1TNnya6B8pyomDK2F1R9CL3dY10OAmqWlnCxsWyOBDVQ/edit#heading=h.5erfr3uo012t
+-IN_PROC_BROWSER_TEST_F(
+-    TrustTokenBrowsertest,
+-    NoCorsModeCrossOriginRedirectIssuanceUsesOriginalOriginAsIssuer) {
++IN_PROC_BROWSER_TEST_F(TrustTokenBrowsertest,
++                       NoCorsModeCrossOriginRedirectIssuanceFails) {
+   ProvideRequestHandlerKeyCommitmentsToNetworkService({"a.test"});
+ 
+   GURL start_url = server_.GetURL("a.test", "/title1.html");
+@@ -923,13 +923,14 @@ IN_PROC_BROWSER_TEST_F(
+                              .catch(error => error.name);)";
+ 
+   EXPECT_EQ(
+-      "Success",
++      "OperationError",
+       EvalJs(shell(),
+              JsReplace(command,
+                        server_.GetURL("a.test", "/cross-site/b.test/issue"))));
+ 
+-  EXPECT_EQ(true, EvalJs(shell(), JsReplace("document.hasPrivateToken($1);",
+-                                            IssuanceOriginFromHost("a.test"))));
++  EXPECT_EQ(false,
++            EvalJs(shell(), JsReplace("document.hasPrivateToken($1);",
++                                      IssuanceOriginFromHost("a.test"))));
+   EXPECT_EQ(false,
+             EvalJs(shell(), JsReplace("document.hasPrivateToken($1);",
+                                       IssuanceOriginFromHost("b.test"))));
+@@ -1401,18 +1402,16 @@ IN_PROC_BROWSER_TEST_F(
+   EXPECT_EQ(6, access_count_);
+ }
+ 
+-// When a redemption request is made in no-cors mode, a cross-origin redirect
+-// from issuer A to issuer B should result in recycling the original redemption
+-// request, obtaining an issuer A redemption record on success.
++// When a redemption request is made in no-cors mode and the issuer responds
++// with a cross-origin redirect, the request headers attached for the original
++// issuer must be removed before following the redirect. As a result, the
++// redirect target sees no redemption request and the operation fails.
+ //
+-// Note: This isn't necessarily the behavior we'll end up wanting here; the test
+-// serves to document how redemption and redirects currently interact.  For more
+-// on the interaction between Trust Tokens and redirects, see the "Handling
+-// redirects" section in the design doc
++// Note: For more on the interaction between Trust Tokens and redirects, see the
++// "Handling redirects" section in the design doc
+ // https://docs.google.com/document/d/1TNnya6B8pyomDK2F1R9CL3dY10OAmqWlnCxsWyOBDVQ/edit#heading=h.5erfr3uo012t
+-IN_PROC_BROWSER_TEST_F(
+-    TrustTokenBrowsertest,
+-    NoCorsModeCrossOriginRedirectRedemptionUsesOriginalOriginAsIssuer) {
++IN_PROC_BROWSER_TEST_F(TrustTokenBrowsertest,
++                       NoCorsModeCrossOriginRedirectRedemptionFails) {
+   ProvideRequestHandlerKeyCommitmentsToNetworkService({"a.test"});
+ 
+   ASSERT_TRUE(NavigateToURL(shell(), server_.GetURL("a.test", "/title1.html")));
+@@ -1423,15 +1422,17 @@ IN_PROC_BROWSER_TEST_F(
+                         operation: 'token-request' } })
+         .then(()=>'Success'); )"));
+ 
+-  // `mode: 'no-cors'` on redemption has the effect that that redirecting a
+-  // request will maintain the request's Trust Tokens state.
+-  EXPECT_EQ("Success", EvalJs(shell(), R"(
++  // The redirect target receives no Sec-Private-State-Token request header, so
++  // the redemption response is empty and the operation fails.
++  EXPECT_EQ("OperationError", EvalJs(shell(), R"(
+       fetch('/cross-site/b.test/redeem',
+         { mode: 'no-cors',
+           privateToken: { version: 1,
+                         operation: 'token-redemption' } })
+-        .then(()=>'Success'); )"));
++        .then(()=>'Success').catch(err => err.name); )"));
+ 
++  // When a signing operation fails, it isn't fatal, so the requests
++  // should always get sent successfully.
+   EXPECT_EQ("Success",
+             EvalJs(shell(), JsReplace(R"(
+       fetch('/sign',
+@@ -1442,14 +1443,11 @@ IN_PROC_BROWSER_TEST_F(
+         .then(()=>'Success'); )",
+                                       IssuanceOriginFromHost("a.test"))));
+ 
+-  EXPECT_THAT(
+-      request_handler_.last_incoming_signed_request(),
+-      Optional(AllOf(
+-          HasHeader(network::kTrustTokensRequestHeaderSecRedemptionRecord),
+-          HasHeader(network::kTrustTokensSecTrustTokenVersionHeader))));
++  // There shouldn't have been an a.test redemption record attached to the
++  // request.
++  EXPECT_THAT(request_handler_.last_incoming_signed_request(),
++              Optional(ReflectsSigningFailure()));
+ 
+-  // When a signing operation fails, it isn't fatal, so the requests
+-  // should always get sent successfully.
+   EXPECT_EQ("Success",
+             EvalJs(shell(), JsReplace(R"(
+       fetch('/sign',
+@@ -1465,49 +1463,11 @@ IN_PROC_BROWSER_TEST_F(
+   EXPECT_THAT(request_handler_.last_incoming_signed_request(),
+               Optional(ReflectsSigningFailure()));
+ 
+-  // Expect four accesses, two for issuance and two for redemption.
++  // Expect four accesses: one for issuance, one for redemption, and two for
++  // signing.
+   EXPECT_EQ(4, access_count_);
+ }
+ 
+-// When a redemption request is made in no-cors mode, a cross-origin redirect
+-// from issuer A to issuer B should result in recycling the original redemption
+-// request and, in particular, sending the same token.
+-//
+-// Note: This isn't necessarily the behavior we'll end up wanting here; the test
+-// serves to document how redemption and redirects currently interact.
+-IN_PROC_BROWSER_TEST_F(
+-    TrustTokenBrowsertest,
+-    NoCorsModeCrossOriginRedirectRedemptionRecyclesSameRedemptionRequest) {
+-  // Have issuance provide only a single token so that, if the redemption logic
+-  // searches for a new token after redirect, the redemption will fail.
+-  TrustTokenRequestHandler::Options options;
+-  options.batch_size = 1;
+-  request_handler_.UpdateOptions(std::move(options));
+-
+-  ProvideRequestHandlerKeyCommitmentsToNetworkService({"a.test"});
+-
+-  ASSERT_TRUE(NavigateToURL(shell(), server_.GetURL("a.test", "/title1.html")));
+-
+-  EXPECT_EQ("Success", EvalJs(shell(), R"(
+-      fetch('/issue',
+-        { privateToken: { version: 1,
+-                        operation: 'token-request' } })
+-        .then(()=>'Success'); )"));
+-
+-  // The redemption should succeed after the redirect, yielding an a.test
+-  // redemption record (the redemption record correctly corresponding to a.test
+-  // is covered by a prior test case).
+-  EXPECT_EQ("Success", EvalJs(shell(), R"(
+-      fetch('/cross-site/b.test/redeem',
+-        { mode: 'no-cors',
+-          privateToken: { version: 1,
+-                        operation: 'token-redemption' } })
+-        .then(()=>'Success'); )"));
+-
+-  // Expect two accesses, one for issuance and one for redemption.
+-  EXPECT_EQ(2, access_count_);
+-}
+-
+ IN_PROC_BROWSER_TEST_F(TrustTokenBrowsertest,
+                        SigningRequiresRedemptionRecordInStorage) {
+   ProvideRequestHandlerKeyCommitmentsToNetworkService({"a.test"});
+diff --git a/services/network/trust_tokens/trust_token_url_loader_interceptor.cc b/services/network/trust_tokens/trust_token_url_loader_interceptor.cc
+index 9c2ace8ca43f9e11a4dcae0c7d81ff47e0245d3d..037eadf6d8c2767e51602c2e87f1720cd18a0e33 100644
+--- a/services/network/trust_tokens/trust_token_url_loader_interceptor.cc
++++ b/services/network/trust_tokens/trust_token_url_loader_interceptor.cc
+@@ -189,9 +189,22 @@ void TrustTokenUrlLoaderInterceptor::OnDoneBeginningOperation(
+   std::move(callback).Run(base::unexpected(err));
+ }
+ 
++void TrustTokenUrlLoaderInterceptor::OnCrossOriginRedirect() {
++  status_ = mojom::TrustTokenOperationStatus::kBadResponse;
++  if (dev_tools_report_callback_getter_ && helper_) {
++    MaybeSendTrustTokenOperationResultToDevTools();
++  }
++  operation_failed_due_to_cross_origin_redirect_ = true;
++}
++
+ void TrustTokenUrlLoaderInterceptor::FinalizeOperation(
+     net::HttpResponseHeaders& response_headers,
+     base::OnceCallback<void(net::Error)> callback) {
++  if (operation_failed_due_to_cross_origin_redirect_) {
++    std::move(callback).Run(net::ERR_TRUST_TOKEN_OPERATION_FAILED);
++    return;
++  }
++
+   // Finalize should only be called if the Begin step completed successfully
+   // and required sending the request.
+   CHECK(status_);
+diff --git a/services/network/trust_tokens/trust_token_url_loader_interceptor.h b/services/network/trust_tokens/trust_token_url_loader_interceptor.h
+index 265f3cac34c2aa7d84d958ce5edd098b4682a9c6..cfb028a25500f8a31fcf39995b420856c4b1a000 100644
+--- a/services/network/trust_tokens/trust_token_url_loader_interceptor.h
++++ b/services/network/trust_tokens/trust_token_url_loader_interceptor.h
+@@ -95,6 +95,12 @@ class TrustTokenUrlLoaderInterceptor {
+   void FinalizeOperation(net::HttpResponseHeaders& response_headers,
+                          base::OnceCallback<void(net::Error)> callback);
+ 
++  // Handles a cross-origin redirect. This flags the operation as failed so that
++  // incoming response headers from the redirect target will not be processed,
++  // sets the operation status to kBadResponse, and ensures that
++  // FinalizeOperation immediately fails.
++  void OnCrossOriginRedirect();
++
+   // Returns the status of the last Trust Token operation step executed.
+   const std::optional<mojom::TrustTokenOperationStatus>& status() const {
+     return status_;
+@@ -143,6 +149,7 @@ class TrustTokenUrlLoaderInterceptor {
+   // Stores the status of the last completed Trust Token step (Begin or
+   // Finalize).
+   std::optional<mojom::TrustTokenOperationStatus> status_;
++  bool operation_failed_due_to_cross_origin_redirect_ = false;
+   base::WeakPtrFactory<TrustTokenUrlLoaderInterceptor> weak_ptr_factory_{this};
+ };
+ 
+diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
+index 0d727f210ad18c8da9a9d0f6b9cc4bca84382af2..ca78a35281f710015831bbeb0cbe1304acf3bbfb 100644
+--- a/services/network/url_loader.cc
++++ b/services/network/url_loader.cc
+@@ -108,6 +108,7 @@
+ #include "services/network/public/cpp/resource_request.h"
+ #include "services/network/public/cpp/sri_message_signatures.h"
+ #include "services/network/public/cpp/synthetic_response_util.h"
++#include "services/network/public/cpp/trust_token_http_headers.h"
+ #include "services/network/public/mojom/client_security_state.mojom.h"
+ #include "services/network/public/mojom/cookie_access_observer.mojom.h"
+ #include "services/network/public/mojom/cookie_manager.mojom.h"
+@@ -1047,6 +1048,18 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
+         net::CookieSettingOverride::kStorageAccessGrantEligibleViaHeader);
+     url_request_->cookie_setting_overrides().Remove(
+         net::CookieSettingOverride::kStorageAccessGrantEligible);
++
++    // Request headers added by `trust_token_interceptor_` are computed for the
++    // initial request origin and must not be sent to a different origin. In
++    // addition, `trust_token_interceptor_` must handle the cross-origin
++    // redirect so that subsequent responses are not processed against the
++    // initial request origin and the operation fails.
++    if (trust_token_interceptor_) {
++      for (std::string_view header : TrustTokensRequestHeaders()) {
++        url_request_->RemoveRequestHeaderByName(header);
++      }
++      trust_token_interceptor_->OnCrossOriginRedirect();
++    }
+   }
+ 
+   DCHECK_EQ(emitted_devtools_raw_request_, emitted_devtools_raw_response_);
+diff --git a/services/network/url_loader_unittest.cc b/services/network/url_loader_unittest.cc
+index ddad8eec2ab818021f93091ff850d35224ea85ab..1a79a406d13a3828036c165dac86ef4b16fd794c 100644
+--- a/services/network/url_loader_unittest.cc
++++ b/services/network/url_loader_unittest.cc
+@@ -115,6 +115,7 @@
+ #include "services/network/public/cpp/ip_address_space_util.h"
+ #include "services/network/public/cpp/loading_params.h"
+ #include "services/network/public/cpp/resource_request.h"
++#include "services/network/public/cpp/trust_token_http_headers.h"
+ #include "services/network/public/mojom/cookie_access_observer.mojom.h"
+ #include "services/network/public/mojom/early_hints.mojom.h"
+ #include "services/network/public/mojom/http_raw_headers.mojom.h"
+@@ -6798,6 +6799,9 @@ class MockTrustTokenRequestHelper : public TrustTokenRequestHelper {
+     std::optional<net::HttpRequestHeaders> headers;
+     if (result == mojom::TrustTokenOperationStatus::kOk) {
+       headers.emplace();
++      headers->SetHeader(kTrustTokensSecTrustTokenHeader, "mock-pst-value");
++      headers->SetHeader(kTrustTokensSecTrustTokenVersionHeader,
++                         "mock-pst-version");
+     }
+ 
+     switch (operation_synchrony_) {
+@@ -7353,6 +7357,104 @@ TEST_P(URLLoaderSyncOrAsyncTrustTokenOperationTest,
+           test_server()->GetOrigin(), test_server()->GetOrigin(), true)));
+ }
+ 
++// Request headers attached by the Trust Tokens helper should not be forwarded
++// to a cross-origin redirect target.
++TEST_P(URLLoaderSyncOrAsyncTrustTokenOperationTest,
++       RemovesTrustTokenHeadersOnCrossOriginRedirect) {
++  GURL url = test_server()->GetURL(
++      "/server-redirect?" +
++      test_server()->GetURL("other.test", "/echo").spec());
++  ResourceRequest request = CreateResourceRequest("GET", url);
++  request.trust_token_params =
++      OptionalTrustTokenParams(mojom::TrustTokenParams::New());
++
++  base::RunLoop delete_run_loop;
++  mojo::Remote<mojom::URLLoader> loader;
++  std::unique_ptr<URLLoader> url_loader;
++  context().mutable_factory_params().process_id =
++      OriginatingProcessId::browser();
++
++  URLLoaderOptions url_loader_options;
++  url_loader_options.trust_token_helper_factory =
++      std::make_unique<MockTrustTokenRequestHelperFactory>(
++          mojom::TrustTokenOperationStatus::kOk /* on_begin */,
++          std::nullopt /* on_finalize */, GetParam(),
++          &outbound_trust_token_operation_was_successful_);
++  url_loader = url_loader_options.MakeURLLoader(
++      context(), DeleteLoaderCallback(&delete_run_loop, &url_loader),
++      loader.BindNewPipeAndPassReceiver(), request, client()->CreateRemote());
++
++  client()->RunUntilRedirectReceived();
++
++  const auto& request_headers1 = sent_request().headers;
++  EXPECT_NE(request_headers1.end(),
++            request_headers1.find(kTrustTokensSecTrustTokenHeader));
++  EXPECT_NE(request_headers1.end(),
++            request_headers1.find(kTrustTokensSecTrustTokenVersionHeader));
++
++  loader->FollowRedirect(/*headers_update_params=*/{},
++                         /*new_url=*/std::nullopt);
++  client()->RunUntilComplete();
++  delete_run_loop.Run();
++
++  const auto& request_headers2 = sent_request().headers;
++  EXPECT_EQ(request_headers2.end(),
++            request_headers2.find(kTrustTokensSecTrustTokenHeader));
++  EXPECT_EQ(request_headers2.end(),
++            request_headers2.find(kTrustTokensSecTrustTokenVersionHeader));
++
++  EXPECT_EQ(client()->completion_status().error_code,
++            net::ERR_TRUST_TOKEN_OPERATION_FAILED);
++  EXPECT_EQ(client()->completion_status().trust_token_operation_status,
++            mojom::TrustTokenOperationStatus::kBadResponse);
++}
++
++// Request headers attached by the Trust Tokens helper should be retained on a
++// same-origin redirect.
++TEST_P(URLLoaderSyncOrAsyncTrustTokenOperationTest,
++       RetainsTrustTokenHeadersOnSameOriginRedirect) {
++  GURL url = test_server()->GetURL("/server-redirect?" +
++                                   test_server()->GetURL("/echo").spec());
++  ResourceRequest request = CreateResourceRequest("GET", url);
++  request.trust_token_params =
++      OptionalTrustTokenParams(mojom::TrustTokenParams::New());
++
++  base::RunLoop delete_run_loop;
++  mojo::Remote<mojom::URLLoader> loader;
++  std::unique_ptr<URLLoader> url_loader;
++  context().mutable_factory_params().process_id =
++      OriginatingProcessId::browser();
++
++  URLLoaderOptions url_loader_options;
++  url_loader_options.trust_token_helper_factory =
++      std::make_unique<MockTrustTokenRequestHelperFactory>(
++          mojom::TrustTokenOperationStatus::kOk /* on_begin */,
++          mojom::TrustTokenOperationStatus::kOk /* on_finalize */, GetParam(),
++          &outbound_trust_token_operation_was_successful_);
++  url_loader = url_loader_options.MakeURLLoader(
++      context(), DeleteLoaderCallback(&delete_run_loop, &url_loader),
++      loader.BindNewPipeAndPassReceiver(), request, client()->CreateRemote());
++
++  client()->RunUntilRedirectReceived();
++
++  const auto& request_headers1 = sent_request().headers;
++  EXPECT_NE(request_headers1.end(),
++            request_headers1.find(kTrustTokensSecTrustTokenHeader));
++  EXPECT_NE(request_headers1.end(),
++            request_headers1.find(kTrustTokensSecTrustTokenVersionHeader));
++
++  loader->FollowRedirect(/*headers_update_params=*/{},
++                         /*new_url=*/std::nullopt);
++  client()->RunUntilComplete();
++  delete_run_loop.Run();
++
++  const auto& request_headers2 = sent_request().headers;
++  EXPECT_NE(request_headers2.end(),
++            request_headers2.find(kTrustTokensSecTrustTokenHeader));
++  EXPECT_NE(request_headers2.end(),
++            request_headers2.find(kTrustTokensSecTrustTokenVersionHeader));
++}
++
+ TEST_F(URLLoaderTest, OnRawRequestClientSecurityStateFactory) {
+   MockDevToolsObserver devtools_observer;
+   ResourceRequest request =
+diff --git a/third_party/blink/web_tests/wpt_internal/trust-tokens/trust-token-api-e2e.https.html b/third_party/blink/web_tests/wpt_internal/trust-tokens/trust-token-api-e2e.https.html
+index 022dce476a5918b64e0e241c23dbc164db236d34..e6120199d9608c8178ad57111d2142f9576e2631 100644
+--- a/third_party/blink/web_tests/wpt_internal/trust-tokens/trust-token-api-e2e.https.html
++++ b/third_party/blink/web_tests/wpt_internal/trust-tokens/trust-token-api-e2e.https.html
+@@ -105,4 +105,30 @@
+         });
+     }, 'Token issuance fails with missing issuer keys.');
+ 
++    promise_test(function (t) {
++        const host_info = get_host_info();
++        const redirect_url = '/common/redirect.py?location=' +
++            encodeURIComponent(host_info.HTTPS_REMOTE_ORIGIN + '/common/blank.html');
++
++        return promise_rejects_dom(t, 'OperationError', fetch(redirect_url, {
++            mode: 'no-cors',
++            privateToken: { version: 1, operation: 'token-request' }
++        }));
++    }, 'Cross-origin redirect in no-cors mode fails token issuance with OperationError.');
++
++    promise_test(async function (t) {
++        // Ensure there is a token available to redeem so that BeginOperation succeeds
++        // and sends the request to the network rather than failing locally with kResourceExhausted.
++        await issue_token();
++
++        const host_info = get_host_info();
++        const redirect_url = '/common/redirect.py?location=' +
++            encodeURIComponent(host_info.HTTPS_REMOTE_ORIGIN + '/common/blank.html');
++
++        return promise_rejects_dom(t, 'OperationError', fetch(redirect_url, {
++            mode: 'no-cors',
++            privateToken: { version: 1, operation: 'token-redemption', refreshPolicy: 'refresh' }
++        }));
++    }, 'Cross-origin redirect in no-cors mode fails token redemption with OperationError.');
++
+ </script>

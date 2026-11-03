@@ -1,0 +1,198 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Fri, 2 Oct 2026 02:28:35 -0700
+Subject: Disallow percentage in calc() for <length>
+
+We should not allow values such as calc(4px * sign(10%)) as a valid
+<length>.
+
+Adjusted test_invalid_length() tests lacking a calc() wrapper which
+made them incorrectly pass without the changes here.
+
+This CL also disallows percentage in <length> for these cases:
+
+calc(4px * sign(10% / 10%)
+calc(4px * (10% / 10%))
+
+There are open issues against the spec:
+
+https://github.com/w3c/csswg-drafts/issues/14300
+https://github.com/w3c/csswg-drafts/issues/12204
+https://github.com/w3c/csswg-drafts/issues/10017
+
+The two latter aligns with the current Firefox Nightly.
+
+It should be noted that we already disallowed percentages for other
+value types such as <angle> and <resolution>.
+
+Fixes a UAF issue where CalcHandles() are accessed from multiple
+threads computing length values in a canvas worker thread.
+
+Turn DCHECK() into CHECK() for IsMainThread() to crash instead of
+doing cross thread access to CalcHandles().
+
+Bug: 416644951, 567611695
+Change-Id: I1e4be23733b3139d16986e3848323a99248f72f1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8482545
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: David Baron <dbaron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1709882}
+
+diff --git a/third_party/blink/renderer/core/css/css_primitive_value_test.cc b/third_party/blink/renderer/core/css/css_primitive_value_test.cc
+index f8154fd9de7ab050142f2249882d404d129668cf..a3b78c5eafd5c7c05f07666d83361d2ec75a23f9 100644
+--- a/third_party/blink/renderer/core/css/css_primitive_value_test.cc
++++ b/third_party/blink/renderer/core/css/css_primitive_value_test.cc
+@@ -148,7 +148,9 @@ TEST_F(CSSPrimitiveValueTest, Zooming) {
+ 
+ TEST_F(CSSPrimitiveValueTest,
+        ConvertToLengthTypedArithmeticCancelsTimeAndPercent) {
+-  const CSSPrimitiveValue* value = ParseValue("calc(10px * 1% * 1s / 1% / 1s)");
++  const CSSPrimitiveValue* value = To<CSSPrimitiveValue>(
++      css_test_helpers::ParseValue(GetDocument(), "<length-percentage>",
++                                   "calc(10px * 1% * 1s / 1% / 1s)"));
+ 
+   CSSToLengthConversionData conversion_data(/*element=*/nullptr);
+   Length length = value->ConvertToLength(conversion_data);
+diff --git a/third_party/blink/renderer/core/css/properties/css_parsing_utils.cc b/third_party/blink/renderer/core/css/properties/css_parsing_utils.cc
+index dc17350219c6377207d59d4a320ec510d3fb8ab4..1b3f709c3eb68668e91fa3117a9879012ccc123a 100644
+--- a/third_party/blink/renderer/core/css/properties/css_parsing_utils.cc
++++ b/third_party/blink/renderer/core/css/properties/css_parsing_utils.cc
+@@ -1105,7 +1105,7 @@ class MathFunctionParser {
+       const CSSParserContext& context,
+       CSSParserLocalContext& local_context,
+       CSSPrimitiveValue::ValueRange value_range,
+-      const Flags parsing_flags = Flags({Flag::AllowPercent}),
++      const Flags parsing_flags = Flags(),
+       CSSAnchorQueryTypes allowed_anchor_queries = kCSSAnchorQueryTypesNone,
+       const CSSColorChannelMap& color_channel_map = {})
+       : stream_(&stream), savepoint_(stream.Save()) {
+@@ -1241,7 +1241,11 @@ CSSPrimitiveValue* ConsumeIntegerOrNumberCalc(
+     return value;
+   }
+ 
+-  MathFunctionParser math_parser(stream, context, local_context, value_range);
++  using enum CSSMathExpressionNode::Flag;
++  using Flags = CSSMathExpressionNode::Flags;
++
++  MathFunctionParser math_parser(stream, context, local_context, value_range,
++                                 Flags({AllowPercent}));
+   if (const CSSMathFunctionValue* calculation = math_parser.Value()) {
+     if (calculation->Category() != kCalcNumber) {
+       return nullptr;
+@@ -1272,7 +1276,10 @@ CSSPrimitiveValue* ConsumeNumber(CSSParserTokenStream& stream,
+         stream.ConsumeIncludingWhitespace().NumericValue(),
+         token.GetUnitType());
+   }
+-  MathFunctionParser math_parser(stream, context, local_context, value_range);
++  using enum CSSMathExpressionNode::Flag;
++  using Flags = CSSMathExpressionNode::Flags;
++  MathFunctionParser math_parser(stream, context, local_context, value_range,
++                                 Flags({AllowPercent}));
+   if (const CSSMathFunctionValue* calculation = math_parser.Value()) {
+     if (calculation->Category() != kCalcNumber) {
+       return nullptr;
+@@ -1407,7 +1414,10 @@ CSSPrimitiveValue* ConsumePercent(CSSParserTokenStream& stream,
+         stream.ConsumeIncludingWhitespace().NumericValue(),
+         CSSPrimitiveValue::UnitType::kPercentage);
+   }
+-  MathFunctionParser math_parser(stream, context, local_context, value_range);
++  using enum CSSMathExpressionNode::Flag;
++  using Flags = CSSMathExpressionNode::Flags;
++  MathFunctionParser math_parser(stream, context, local_context, value_range,
++                                 Flags({AllowPercent}));
+   if (const CSSMathFunctionValue* calculation = math_parser.Value()) {
+     if (calculation->Category() == kCalcPercent) {
+       return math_parser.ConsumeValue();
+@@ -1574,8 +1584,7 @@ static CSSPrimitiveValue* ConsumeMathFunctionAngle(
+     const CSSParserContext& context,
+     CSSParserLocalContext& local_context) {
+   MathFunctionParser math_parser(stream, context, local_context,
+-                                 CSSPrimitiveValue::ValueRange::kAll,
+-                                 CSSMathExpressionNode::Flags());
++                                 CSSPrimitiveValue::ValueRange::kAll);
+   if (const CSSMathFunctionValue* calculation = math_parser.Value()) {
+     if (calculation->Category() != kCalcAngle) {
+       return nullptr;
+@@ -1616,8 +1625,7 @@ CSSPrimitiveValue* ConsumeTime(CSSParserTokenStream& stream,
+     }
+     return nullptr;
+   }
+-  MathFunctionParser math_parser(stream, context, local_context, value_range,
+-                                 CSSMathExpressionNode::Flags());
++  MathFunctionParser math_parser(stream, context, local_context, value_range);
+   if (const CSSMathFunctionValue* calculation = math_parser.Value()) {
+     if (calculation->Category() == kCalcTime) {
+       return math_parser.ConsumeValue();
+@@ -1645,8 +1653,7 @@ CSSPrimitiveValue* ConsumeResolution(CSSParserTokenStream& stream,
+   }
+ 
+   MathFunctionParser math_parser(stream, context, local_context,
+-                                 CSSPrimitiveValue::ValueRange::kNonNegative,
+-                                 CSSMathExpressionNode::Flags());
++                                 CSSPrimitiveValue::ValueRange::kNonNegative);
+   const CSSMathFunctionValue* math_value = math_parser.Value();
+   if (math_value && math_value->IsResolution()) {
+     return math_parser.ConsumeValue();
+@@ -3007,7 +3014,10 @@ static CSSPrimitiveValue* ConsumeGradientAngleOrPercent(
+   if (token.GetType() == kPercentageToken) {
+     return ConsumePercent(stream, context, local_context, value_range);
+   }
+-  MathFunctionParser math_parser(stream, context, local_context, value_range);
++  using enum CSSMathExpressionNode::Flag;
++  using Flags = CSSMathExpressionNode::Flags;
++  MathFunctionParser math_parser(stream, context, local_context, value_range,
++                                 Flags({AllowPercent}));
+   if (const CSSMathFunctionValue* calculation = math_parser.Value()) {
+     CalculationResultCategory category = calculation->Category();
+     if (category == kCalcAngle || category == kCalcPercent ||
+diff --git a/third_party/blink/renderer/platform/geometry/length.cc b/third_party/blink/renderer/platform/geometry/length.cc
+index ccbbf2917aa9088d14c85a7db133fee40d2fa7c4..400cf67893ed840abab2d7e2502d578be9bf4e51 100644
+--- a/third_party/blink/renderer/platform/geometry/length.cc
++++ b/third_party/blink/renderer/platform/geometry/length.cc
+@@ -122,7 +122,7 @@ class CalculationValueHandleMap
+ };
+ 
+ static CalculationValueHandleMap& CalcHandles() {
+-  DCHECK(IsMainThread());
++  CHECK(IsMainThread());
+   DEFINE_STATIC_LOCAL(Persistent<CalculationValueHandleMap>, handle_map,
+                       (MakeGarbageCollected<CalculationValueHandleMap>()));
+   return *handle_map;
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-values/signs-abs-invalid.html b/third_party/blink/web_tests/external/wpt/css/css-values/signs-abs-invalid.html
+index f0e88adb517b8dc1fa38c594aa39594a3e760ff4..4cedfc99b06435457b7ed8add07a46c9889ca7cb 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-values/signs-abs-invalid.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-values/signs-abs-invalid.html
+@@ -71,8 +71,8 @@ test_invalid_number('abs(1%)');
+ test_invalid_number('sign(10px + 5rad)');
+ test_invalid_number('sign(10%)');
+ test_invalid_length('abs(10%)');
+-test_invalid_length('1px * sign(10%)');
+-test_invalid_length('1px * sign(1em + 10%)');
+-test_invalid_length_percentage('1px * sign(10px + 5rad)');
++test_invalid_length('calc(1px * sign(10%))');
++test_invalid_length('calc(1px * sign(1em + 10%))');
++test_invalid_length_percentage('calc(1px * sign(10px + 5rad))');
+ test_invalid_length('calc(100% + abs(1vmin * 10%))');
+ </script>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/canvas-context/chrome-567611695-crash.html b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/canvas-context/chrome-567611695-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..2109914e45aa40cad3d024a8728cf19c98270254
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/canvas-context/chrome-567611695-crash.html
+@@ -0,0 +1,16 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<title>Chrome issue 567611695</title>
++<link rel="help" href="https://crbug.com/567611695">
++<script>
++  const w = new Worker(URL.createObjectURL(new Blob([`
++    const x = new OffscreenCanvas(1, 1).getContext('2d');
++    x.filter = 'blur(calc(1px * sign(1%))) ';
++    x.fillRect(0, 0, 1, 1);
++    postMessage(0);
++  `])));
++  w.onmessage = () => {
++    w.terminate();
++    document.documentElement.className = "";
++  };
++</script>

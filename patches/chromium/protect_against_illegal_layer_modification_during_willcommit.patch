@@ -1,0 +1,385 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Tue, 27 Oct 2026 11:34:04 -0700
+Subject: Protect against illegal layer modification during WillCommit
+
+Original change's description:
+> [HiC] Protect against illegal layer modification during WillCommit
+>
+> This guards against a call path wherein JS code running in a paint event
+> handler can synchronously try to remove a cc::Layer from the layer tree
+> (which is forbidden). With this change, LayerTreeHost maintains a list
+> of layers that that should be removed as soon as the commit is finished.
+>
+> Fixed: 576097084,510426944
+> Change-Id: I42e444e977cc9178d169169b766e9aab271a00e8
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8641078
+> Reviewed-by: Philip Rogers <pdr@chromium.org>
+> Commit-Queue: Stefan Zager <szager@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1727394}
+
+(cherry picked from commit 63d3b40075f34bcac9fe09b23aa63e1379d34ba1)
+
+Bug: 578326081,576097084,510426944
+Change-Id: I42e444e977cc9178d169169b766e9aab271a00e8
+
+diff --git a/cc/layers/layer.h b/cc/layers/layer.h
+index 014cd2c5d986b0e00b45d4d90a83adb1dcd1541d..9dfa5c62a4855a2d81f05556cefc4af92787625a 100644
+--- a/cc/layers/layer.h
++++ b/cc/layers/layer.h
+@@ -781,6 +781,11 @@ class CC_EXPORT Layer : public base::RefCounted<Layer>,
+   // default layers are not snapped.
+   virtual bool IsSnappedToPixelGridInTarget() const;
+ 
++  // Disconnects any external client held by a subclass. When called while
++  // attached to a LayerTreeHost during `in_will_commit()`, subclasses must only
++  // clear their main-thread client pointer without modifying commit state.
++  virtual void ClearClient() {}
++
+   // Internal method that is called when a Layer is attached to a LayerTreeHost.
+   // This would happen when
+   // a) the Layer is added to an existing Layer tree that is attached to a
+diff --git a/cc/layers/picture_layer.cc b/cc/layers/picture_layer.cc
+index 9537cc5e0e302ea7888df769ea84d89e6933c8ef..8031e1538cfa05840e04ae0b33fcff25d549203b 100644
+--- a/cc/layers/picture_layer.cc
++++ b/cc/layers/picture_layer.cc
+@@ -173,6 +173,9 @@ sk_sp<const SkPicture> PictureLayer::GetPicture() const {
+ 
+ void PictureLayer::ClearClient() {
+   client_ = nullptr;
++  if (IsAttached() && layer_tree_host()->in_will_commit()) {
++    return;
++  }
+   UpdateDrawsContent();
+ }
+ 
+diff --git a/cc/layers/picture_layer.h b/cc/layers/picture_layer.h
+index 5299b3b337263d78e1857e4a9428a8747c016d1d..dd45078337474547be273d0d9ccbcdd2a7780f40 100644
+--- a/cc/layers/picture_layer.h
++++ b/cc/layers/picture_layer.h
+@@ -28,7 +28,7 @@ class CC_EXPORT PictureLayer : public Layer {
+   PictureLayer(const PictureLayer&) = delete;
+   PictureLayer& operator=(const PictureLayer&) = delete;
+ 
+-  void ClearClient();
++  void ClearClient() override;
+ 
+   void SetIsBackdropFilterMask(bool is_backdrop_filter_mask);
+   bool is_backdrop_filter_mask() const { return is_backdrop_filter_mask_; }
+diff --git a/cc/layers/texture_layer.cc b/cc/layers/texture_layer.cc
+index 667f3a444d23d6622f656a7c84c0fecb3540bed5..42ba24f30f81a2e8c7b637034c2c6a6fead53f74 100644
+--- a/cc/layers/texture_layer.cc
++++ b/cc/layers/texture_layer.cc
+@@ -18,6 +18,7 @@
+ #include "cc/base/simple_enclosed_region.h"
+ #include "cc/layers/texture_layer_client.h"
+ #include "cc/layers/texture_layer_impl.h"
++#include "cc/trees/layer_tree_host.h"
+ #include "cc/trees/layer_tree_impl.h"
+ 
+ namespace cc {
+@@ -42,6 +43,9 @@ TextureLayer::~TextureLayer() = default;
+ 
+ void TextureLayer::ClearClient() {
+   client_.Write(*this) = nullptr;
++  if (IsAttached() && layer_tree_host()->in_will_commit()) {
++    return;
++  }
+   ClearTexture();
+   UpdateDrawsContent();
+ }
+diff --git a/cc/layers/texture_layer.h b/cc/layers/texture_layer.h
+index bc8c38e505105652648e62ad40822bf6cfd8830e..9375a057d99358e2027781ae262e5340d464ac7c 100644
+--- a/cc/layers/texture_layer.h
++++ b/cc/layers/texture_layer.h
+@@ -91,8 +91,10 @@ class CC_EXPORT TextureLayer : public Layer {
+   TextureLayer(const TextureLayer&) = delete;
+   TextureLayer& operator=(const TextureLayer&) = delete;
+ 
+-  // Resets the client, which also resets the texture.
+-  void ClearClient();
++  // Resets the client, which also resets the texture (unless called while
++  // attached during `LayerTreeHost::in_will_commit()`, in which case only the
++  // client pointer is cleared).
++  void ClearClient() override;
+ 
+   // Resets the texture.
+   void ClearTexture();
+diff --git a/cc/layers/texture_layer_unittest.cc b/cc/layers/texture_layer_unittest.cc
+index 43816f466d6817747f82f142e87fc0d643e59ee3..bb776484e78405d0a27dc50bc07eebd9798da326 100644
+--- a/cc/layers/texture_layer_unittest.cc
++++ b/cc/layers/texture_layer_unittest.cc
+@@ -1920,5 +1920,80 @@ class TextureLayerUpdateAfterPaintEventTest : public LayerTreeTest,
+ };
+ 
+ SINGLE_AND_MULTI_THREAD_TEST_F(TextureLayerUpdateAfterPaintEventTest);
++
++class TextureLayerDisposeDuringWillCommitTest : public LayerTreeTest,
++                                                TextureLayerClient {
++ public:
++  bool PrepareTransferableResource(
++      viz::TransferableResource* resource,
++      viz::ReleaseCallback* release_callback) override {
++    ++num_transferred_resources_;
++    *resource = viz::TransferableResource();
++    return true;
++  }
++
++  void SetupTree() override {
++    SetInitialRootBounds(gfx::Size(100, 100));
++    LayerTreeTest::SetupTree();
++    texture_layer_ = TextureLayer::Create(
++        this, TextureLayer::PrepareResourceBehavior::kAfterPaintEvent);
++    texture_layer_->SetIsDrawable(true);
++    texture_layer_->SetContentsOpaque(true);
++    texture_layer_->SetBounds(gfx::Size(100, 100));
++    texture_layer_->SetBackgroundColor(SkColors::kRed);
++    layer_tree_host()->root_layer()->AddChild(texture_layer_);
++    texture_layer_id_ = static_cast<uint32_t>(texture_layer_->id());
++    if (layer_tree_host()->IsUsingLayerLists()) {
++      CopyProperties(layer_tree_host()->root_layer(), texture_layer_.get());
++    }
++  }
++
++  void BeginTest() override { PostSetNeedsCommitToMainThread(); }
++
++  void WillBeginMainFrame() override {
++    if (num_commits_ == 0) {
++      texture_layer_->SetNeedsDisplayRect({0, 0, 7, 11});
++    }
++  }
++
++  void WillCommit(const CommitState& cs) override {
++    if (num_commits_ == 0) {
++      EXPECT_TRUE(layer_tree_host()->in_will_commit());
++      ASSERT_TRUE(texture_layer_);
++      TextureLayer* raw_layer = texture_layer_.get();
++      layer_tree_host()->ScheduleLayerForPostCommitDisposal(texture_layer_);
++      texture_layer_->ClearClient();
++      texture_layer_ = nullptr;
++      // Removal from the layer tree is deferred until the commit completes.
++      EXPECT_NE(raw_layer->parent(), nullptr);
++      EXPECT_EQ(raw_layer->layer_tree_host(), layer_tree_host());
++    }
++  }
++
++  void DidCommit() override {
++    ++num_commits_;
++    if (num_commits_ == 1) {
++      EXPECT_EQ(num_transferred_resources_.load(), 0u);
++      EXPECT_EQ(layer_tree_host()->LayerById(texture_layer_id_), nullptr);
++    }
++  }
++
++  void CommitCompleteOnThread(LayerTreeHostImpl* host_impl) override {
++    if (host_impl->sync_tree()->source_frame_number() == 0) {
++      EXPECT_NE(host_impl->sync_tree()->LayerById(texture_layer_id_), nullptr);
++    } else {
++      EXPECT_EQ(host_impl->sync_tree()->LayerById(texture_layer_id_), nullptr);
++      EndTest();
++    }
++  }
++
++ private:
++  int num_commits_ = 0;
++  uint32_t texture_layer_id_ = 0;
++  scoped_refptr<TextureLayer> texture_layer_;
++  std::atomic<uint32_t> num_transferred_resources_ = 0u;
++};
++
++SINGLE_AND_MULTI_THREAD_TEST_F(TextureLayerDisposeDuringWillCommitTest);
+ }  // namespace
+ }  // namespace cc
+diff --git a/cc/trees/layer_tree_host.cc b/cc/trees/layer_tree_host.cc
+index 2aa7fe4c721b833691e2f7b52e2dae1adf383bc8..b7f5663f3d1c48852ca5b4a9a467a8e01bc72141 100644
+--- a/cc/trees/layer_tree_host.cc
++++ b/cc/trees/layer_tree_host.cc
+@@ -277,6 +277,7 @@ LayerTreeHost::~LayerTreeHost() {
+   // Clear any references into the LayerTreeHost.
+   mutator_host()->SetMutatorHostDelegate(nullptr);
+ 
++  layers_to_dispose_.clear();
+   if (root_layer()) {
+     root_layer()->SetLayerTreeHost(nullptr);
+ 
+@@ -565,6 +566,7 @@ void LayerTreeHost::CommitComplete(int source_frame_number,
+   if (!in_commit()) {
+     mutator_host()->RemoveStaleTimelines();
+     mutator_host()->RemoveStaleTriggers();
++    DisposeLayersAfterCommit();
+   }
+   if (commit_completion_event_ && commit_completion_event_->IsSignaled())
+     WaitForCommitCompletion(/* for_protected_sequence */ false);
+@@ -576,6 +578,27 @@ void LayerTreeHost::CommitComplete(int source_frame_number,
+   }
+ }
+ 
++void LayerTreeHost::ScheduleLayerForPostCommitDisposal(
++    scoped_refptr<Layer> layer) {
++  DCHECK(IsMainThread());
++  CHECK(inside_will_commit_);
++  DCHECK(layer);
++  DCHECK_EQ(layer->layer_tree_host(), this);
++  layers_to_dispose_.push_back(std::move(layer));
++}
++
++void LayerTreeHost::DisposeLayersAfterCommit() {
++  DCHECK(IsMainThread());
++  CHECK(!inside_will_commit_);
++  if (layers_to_dispose_.empty()) {
++    return;
++  }
++  LayerList layers = std::move(layers_to_dispose_);
++  for (auto& layer : layers) {
++    layer->RemoveFromParent();
++  }
++}
++
+ void LayerTreeHost::NotifyImageDecodeFinished(int request_id,
+                                               bool decode_succeeded) {
+   DCHECK(IsMainThread());
+@@ -1298,6 +1321,8 @@ void LayerTreeHost::UpdateBrowserControlsState(
+ }
+ 
+ void LayerTreeHost::AnimateLayers(base::TimeTicks monotonic_time) {
++  DisposeLayersAfterCommit();
++
+   std::unique_ptr<MutatorEvents> events = mutator_host()->CreateEvents();
+ 
+   AnimationTickResult tick_result = mutator_host()->TickAnimations(
+diff --git a/cc/trees/layer_tree_host.h b/cc/trees/layer_tree_host.h
+index 7daa72a870d3afbd115508b2dc10de74702cd532..a271c2e0b5e696b9c3ff1d09cb8f9a11186dacb7 100644
+--- a/cc/trees/layer_tree_host.h
++++ b/cc/trees/layer_tree_host.h
+@@ -717,6 +717,8 @@ class CC_EXPORT LayerTreeHost : public MutatorHostDelegate {
+ 
+   bool in_will_commit() const { return inside_will_commit_; }
+ 
++  void ScheduleLayerForPostCommitDisposal(scoped_refptr<Layer> layer);
++
+   bool in_commit() const {
+     return commit_completion_event_ && !commit_completion_event_->IsSignaled();
+   }
+@@ -1062,6 +1064,7 @@ class CC_EXPORT LayerTreeHost : public MutatorHostDelegate {
+   bool DoUpdateLayers();
+   std::unique_ptr<CommitState> ActivateCommitState();
+   void WaitForCommitCompletion(bool for_protected_sequence) const;
++  void DisposeLayersAfterCommit();
+ 
+   void UpdateDeferMainFrameUpdateInternal();
+   void UpdatePauseRenderingInternal();
+@@ -1120,6 +1123,10 @@ class CC_EXPORT LayerTreeHost : public MutatorHostDelegate {
+   // modified.
+   bool inside_will_commit_ = false;
+ 
++  // Layers queued during `WillCommit` to be detached and cleaned up once the
++  // commit completes.
++  LayerList layers_to_dispose_;
++
+   // Set to force a commit during BeginMainFrame even if there are no actual
+   // rendering changes, to ensure the bits in CommitState are propagated.
+   bool force_commit_for_propagation_ = true;
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc b/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
+index f23c7bd89d1cfa3e30c257cfc1bb6f112564edf5..3efecea0afa97c7bedc687ae24a3632fa9da57dd 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
+@@ -1627,7 +1627,14 @@ void HTMLCanvasElement::SetNeedsPushProperties() {
+ }
+ 
+ void HTMLCanvasElement::DiscardResources() {
+-  ResetLayer();
++  if (auto* host = cc_layer_ ? cc_layer_->layer_tree_host() : nullptr;
++      host && host->in_will_commit()) {
++    host->ScheduleLayerForPostCommitDisposal(cc_layer_);
++    cc_layer_->ClearClient();
++    cc_layer_ = nullptr;
++  } else {
++    ResetLayer();
++  }
+   UpdateMemoryUsage();
+   dirty_rect_ = gfx::Rect();
+ }
+diff --git a/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/onpaint-detach-canvas-gc-crash.html b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/onpaint-detach-canvas-gc-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..248e8cc5127ec3ac48d30f3990e95bfba5edd9ae
+--- /dev/null
++++ b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/onpaint-detach-canvas-gc-crash.html
+@@ -0,0 +1,66 @@
++<!DOCTYPE html>
++<title>Garbage-collecting a detached canvas during WillCommit should not crash</title>
++<link rel="help" href="https://github.com/WICG/html-in-canvas">
++<link rel="help" href="https://crbug.com/576097084">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++
++<canvas id="canvas1" width="200" height="200" content="drawable"></canvas>
++<canvas id="canvas2" width="200" height="200" content="drawable"></canvas>
++
++<script>
++  'use strict';
++
++  function waitForOneFrame() {
++    return new Promise(resolve => {
++      requestAnimationFrame(() => {
++        setTimeout(resolve, 0);
++      });
++    });
++  }
++
++  promise_test(async t => {
++    let weakRef;
++    (() => {
++      let other_canvas = document.createElement('canvas');
++      other_canvas.setAttribute('content', 'drawable');
++      other_canvas.width = 200;
++      other_canvas.height = 200;
++      document.body.appendChild(other_canvas);
++      let ctx = other_canvas.getContext('2d');
++      ctx.fillStyle = 'blue';
++      ctx.fillRect(0, 0, 200, 200);
++      weakRef = new WeakRef(other_canvas);
++
++      // canvas2 is later in document order, so its paint event fires first.
++      canvas2.onpaint = () => {
++        paintOrder.push('canvas2');
++        if (other_canvas) {
++          other_canvas.remove();
++          other_canvas = null;
++          document.body.offsetTop;
++        }
++      };
++    })();
++
++    // Wait a frame so other_canvas is composited and attached to LayerTreeHost.
++    await waitForOneFrame();
++
++    let paintOrder = [];
++    let collectedDuringOnpaint = false;
++
++    // canvas1 fires second, after canvas2's stack frame has exited.
++    canvas1.onpaint = () => {
++      paintOrder.push('canvas1');
++      self.gc();
++      collectedDuringOnpaint = (weakRef.deref() === undefined);
++    };
++
++    canvas1.requestPaint();
++    canvas2.requestPaint();
++
++    await waitForOneFrame();
++    assert_array_equals(paintOrder, ['canvas2', 'canvas1']);
++    assert_true(collectedDuringOnpaint, 'other_canvas should be collected during onpaint');
++  }, 'Detaching and garbage-collecting a composited canvas during WillCommit does not crash');
++</script>
+diff --git a/third_party/blink/web_tests/wpt_internal/lint.ignore b/third_party/blink/web_tests/wpt_internal/lint.ignore
+index 5ade1d313e80ad1d4454ff756a24b60936c9d77d..6592a0b80c55478ddd7ba51dfd5ba9f2e880a2e0 100644
+--- a/third_party/blink/web_tests/wpt_internal/lint.ignore
++++ b/third_party/blink/web_tests/wpt_internal/lint.ignore
+@@ -68,6 +68,7 @@ TESTHARNESS-IN-OTHER-TYPE: html/semantics/embedded-content/the-iframe-element/if
+ TESTHARNESS-IN-OTHER-TYPE: geolocation-api/window-close-crash.https.html
+ TESTHARNESS-IN-OTHER-TYPE: geolocation-api/clear-watch-invalid-id-crash.https.html
+ TESTHARNESS-IN-OTHER-TYPE: geolocation-api/remove-remote-context-in-error-callback-crash.https.html
++TESTHARNESS-IN-OTHER-TYPE: html/canvas/drawElementImage/onpaint-detach-canvas-gc-crash.html
+ HTML INVALID SYNTAX: webxr/events_deviceconnect.https.html
+ HTML INVALID SYNTAX: webxr/xr_view_projection_detached.https.html
+ 
