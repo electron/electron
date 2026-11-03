@@ -234,10 +234,13 @@ app.on('window-all-closed', function () {
 })
 ```
 
-#### Event: 'preconnect'
+#### Event: 'preconnect' _Deprecated_
 
 <!--
 ```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/55573
+    breaking-changes-header: deprecated-preconnect-event-on-session
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added the trailing `frame` argument."
@@ -256,6 +259,10 @@ Returns:
 
 Emitted when a render process requests preconnection to a URL, generally due to
 a [resource hint](https://w3c.github.io/resource-hints/).
+
+**Deprecated:** Use the [`preconnect` event on `WebFrameMain`](web-frame-main.md#event-preconnect)
+instead. Preconnection hints belong to the requesting frame, and are no longer
+emitted after that frame has been destroyed.
 
 #### Event: 'spellcheck-dictionary-initialized'
 

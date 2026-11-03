@@ -87,6 +87,26 @@ _This class is not exported from the `'electron'` module. It is only available a
 
 Emitted when the document is loaded.
 
+#### Event: 'preconnect'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/55573
+```
+-->
+
+Returns:
+
+* `event` Event
+* `preconnectUrl` string - The URL being requested for preconnection by the frame.
+* `allowCredentials` boolean - True if the frame is requesting that the
+  connection include credentials (see the
+  [spec](https://w3c.github.io/resource-hints/#preconnect) for more details).
+
+Emitted when this frame requests preconnection to a URL, generally due to
+a [resource hint](https://w3c.github.io/resource-hints/).
+
 ### Instance Methods
 
 #### `frame.executeJavaScript(code[, userGesture])`
