@@ -29,7 +29,9 @@ hunspell_dictionaries = [
   "//third_party/hunspell_dictionaries/lt-LT-3-0.bdic",
   "//third_party/hunspell_dictionaries/lv-LV-3-0.bdic",
   "//third_party/hunspell_dictionaries/nb-NO-3-1.bdic",
+  "//third_party/hunspell_dictionaries/nb-NO-4-0.bdic",
   "//third_party/hunspell_dictionaries/nl-NL-3-1.bdic",
+  "//third_party/hunspell_dictionaries/nn-NO-1-0.bdic",
   "//third_party/hunspell_dictionaries/pl-PL-3-0.bdic",
   "//third_party/hunspell_dictionaries/pt-BR-3-1.bdic",
   "//third_party/hunspell_dictionaries/pt-PT-3-0.bdic",
@@ -52,6 +54,8 @@ hunspell_dictionaries = [
 hunspell_licenses = [
   "//third_party/hunspell_dictionaries/COPYING",
   "//third_party/hunspell_dictionaries/COPYING.Apache",
+  "//third_party/hunspell_dictionaries/COPYING.CC-BY-4.0",
+  "//third_party/hunspell_dictionaries/COPYING.CLARIN-PUB-BY",
   "//third_party/hunspell_dictionaries/COPYING.GPL3",
   "//third_party/hunspell_dictionaries/COPYING.LESSER",
   "//third_party/hunspell_dictionaries/COPYING.LGPL",
