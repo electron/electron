@@ -22,7 +22,15 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { parseBasicAuth } from './lib/net-helpers.ts';
-import { defer, deferKillUtilityProcess, ifit, listen, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
+import {
+  defer,
+  deferKillUtilityProcess,
+  ifit,
+  isTestingBindingAvailable,
+  listen,
+  spawnAndWait,
+  waitUntil
+} from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('session module', () => {
@@ -957,22 +965,21 @@ describe('session module', () => {
       }
     });
 
-    it('survives a network service restart when a proxy switch is set', { timeout: 60000 }, async () => {
-      const appPath = path.join(fixtures, 'api', 'set-proxy-network-service-restart');
-      const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [appPath], { timeout: 30_000 });
-      const details = `stdout:\n${stdout}\nstderr:\n${stderr}`;
-      expect({ code, signal }, details).toEqual({ code: 0, signal: null });
-      expect(JSON.parse(stdout), details).toEqual({
-        before: {
+    ifit(isTestingBindingAvailable())(
+      'survives a network service restart when a proxy switch is set',
+      { timeout: 60000 },
+      async () => {
+        const appPath = path.join(fixtures, 'api', 'set-proxy-network-service-restart');
+        const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [appPath], { timeout: 30_000 });
+        const details = `stdout:\n${stdout}\nstderr:\n${stderr}`;
+        expect({ code, signal }, details).toEqual({ code: 0, signal: null });
+        const proxies = {
           own: 'PROXY session-proxy.invalid:2222',
           inherited: 'PROXY switch-proxy.invalid:1111'
-        },
-        after: {
-          own: ['PROXY session-proxy.invalid:2222'],
-          inherited: ['PROXY switch-proxy.invalid:1111']
-        }
-      });
-    });
+        };
+        expect(JSON.parse(stdout), details).toEqual({ before: proxies, after: proxies });
+      }
+    );
   });
 
   describe('ses.resolveHost(host)', () => {
