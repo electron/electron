@@ -35,6 +35,15 @@ Note that `level` on the `Event` is a string with possible values of `info`,
 
 The `console-message` event on `<webview>` is unchanged.
 
+### Removed: `top-level-storage-access` permission
+
+Chromium has removed the `top-level-storage-access` permission type, so it is
+no longer a possible `permission` value in
+[`ses.setPermissionRequestHandler(handler)`](api/session.md#sessetpermissionrequesthandlerhandler)
+or [`ses.setPermissionCheckHandler(handler)`](api/session.md#sessetpermissioncheckhandlerhandler).
+Web content lost the ability to trigger this permission in Electron 46 when
+`document.requestStorageAccessFor` was removed.
+
 ## Breaking API Changes (46.0)
 
 ### Removed: `--experimental-transform-types` command-line switch
