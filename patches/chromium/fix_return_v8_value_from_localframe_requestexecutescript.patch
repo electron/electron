@@ -73,7 +73,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..13284f693f406cea171e450af7784a44
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 45287da176a65edcce625ec8b5422a35f8369238..384ecfdd04e8b570297d79f488a28478581a342f 100644
+index 1910e7ecdadcd688d068e6c38577c5e459b4921b..6ea1f88a9ac2199e8269548b4a0f1f76b72e19ca 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3379,6 +3379,7 @@ void LocalFrame::RequestExecuteScript(
@@ -95,7 +95,7 @@ index 45287da176a65edcce625ec8b5422a35f8369238..384ecfdd04e8b570297d79f488a28478
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index 11ed5990a70dc779e712edfc9a2aecbaf6112043..daa9460548dd8075d86688e61a8ef3ff6abaa3ad 100644
+index e0244fb02f2aae1496f471542c85efdb5e4a1cf3..6c80dbb79b0a45188b62f7d6a063ccec568bdde3 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
 @@ -867,6 +867,7 @@ class CORE_EXPORT LocalFrame final
@@ -331,7 +331,7 @@ index 50314789281a449b4c0cc0eed49b8d49857eded8..b3eb2b5859503531cb885947a0481ad6
        mojom::blink::WantResultOption::kWantResult, wait_for_promise,
        /*script_injector_id=*/WebString());
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 2bbe2e1076bc00caa9b280908ff6600fde9ca9aa..689b9ca0aa1708b67c8694f98e539797740864c9 100644
+index 52ab07391c337646948c49aaaf8b4c88854fd7be..7dbec5693edabefb93ac82b22b43d28b5470b5b2 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1212,6 +1212,7 @@ void WebLocalFrameImpl::RequestExecuteScript(

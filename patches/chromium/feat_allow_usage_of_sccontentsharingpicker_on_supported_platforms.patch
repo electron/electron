@@ -328,10 +328,10 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 5a8818515c11dba057426224da3537634eddae68..e28f82f070f9019974b20754984f9a031638635d 100644
+index f5ae612041759a1623314bafac908bacb4136c86..e30bb74d7fe673e00b9b11092f92347c09c13002 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -320,8 +320,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -321,8 +321,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -349,7 +349,7 @@ index 5a8818515c11dba057426224da3537634eddae68..e28f82f070f9019974b20754984f9a03
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -337,6 +345,8 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -338,6 +346,8 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
  
@@ -358,7 +358,7 @@ index 5a8818515c11dba057426224da3537634eddae68..e28f82f070f9019974b20754984f9a03
        // All cases other than tab capture or Aura desktop/window capture.
        TRACE_EVENT_INSTANT(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
                            "UsingDesktopCapturer");
-@@ -359,7 +369,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -361,7 +371,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        start_capture_closure = base::BindOnce(
            &InProcessVideoCaptureDeviceLauncher::
                DoStartDesktopCaptureOnDeviceThread,

@@ -58,10 +58,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index bbe77092117affaf5ba1ab236a5a17039b76b556..7083769e93259df211bdc4e239e9f2ad6c670fbe 100644
+index 8c8b6ce2177d1dc55230073a1e8da241288761bd..963fd3d8c9b8c65bc00a9cc5bedbfd991903651a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1161,6 +1161,7 @@ component("base") {
+@@ -1168,6 +1168,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -660,7 +660,7 @@ index 48f47bf3eeb8464d1c3925f0f73f62c790cac2f0..b7b2b7c1b7e99927012ce1676cc753b2
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 0e5d0e59d926ecd0ea53ef7c3eaaada1af40a044..e1093d964d4f27fd3222dfa2a216ef5f5dffe3b5 100644
+index 1f9c6eec8642bccb4833ab746f172aeb86890429..0255317e03629f0030335593b184ab81f387ddd8 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -24,6 +24,7 @@
@@ -806,7 +806,7 @@ index 0e5d0e59d926ecd0ea53ef7c3eaaada1af40a044..e1093d964d4f27fd3222dfa2a216ef5f
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -959,9 +995,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -966,9 +1002,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -818,7 +818,7 @@ index 0e5d0e59d926ecd0ea53ef7c3eaaada1af40a044..e1093d964d4f27fd3222dfa2a216ef5f
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -1028,6 +1066,7 @@ - (void)reallySaveRestorableState {
+@@ -1035,6 +1073,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -826,7 +826,7 @@ index 0e5d0e59d926ecd0ea53ef7c3eaaada1af40a044..e1093d964d4f27fd3222dfa2a216ef5f
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -1040,6 +1079,7 @@ - (void)invalidateRestorableState {
+@@ -1047,6 +1086,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -834,7 +834,7 @@ index 0e5d0e59d926ecd0ea53ef7c3eaaada1af40a044..e1093d964d4f27fd3222dfa2a216ef5f
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -1218,6 +1258,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1225,6 +1265,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -842,7 +842,7 @@ index 0e5d0e59d926ecd0ea53ef7c3eaaada1af40a044..e1093d964d4f27fd3222dfa2a216ef5f
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -1235,6 +1276,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1242,6 +1283,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -979,10 +979,10 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 8d9bb6d221f29b88f9a61c86ee0c663b978c7e5f..21909c75b067cac4f775ba076dc204188392ef66 100644
+index 0eaae733fcfd50fa9143ba918854bc63f92fc4dd..b6a19cc288fb5e56dc4ed91623d67dea3c569375 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -36,6 +36,7 @@
+@@ -37,6 +37,7 @@
  #import "content/public/browser/render_widget_host_view_mac_delegate.h"
  #include "content/public/browser/scoped_accessibility_mode.h"
  #include "content/public/common/content_features.h"
@@ -990,7 +990,7 @@ index 8d9bb6d221f29b88f9a61c86ee0c663b978c7e5f..21909c75b067cac4f775ba076dc20418
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2562,15 +2563,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2573,15 +2574,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1013,7 +1013,7 @@ index 8d9bb6d221f29b88f9a61c86ee0c663b978c7e5f..21909c75b067cac4f775ba076dc20418
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4f2a8497fb53dd781b97afdbd2513b0155c81f6f..044a70f8ba13cfa2a51c8a9acef69a035e293674 100644
+index ab04d2b981423bd25e59fb88aa7574d712c51027..b2ede32b049721a7fbef34b5cfbe546143320687 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -396,6 +396,7 @@ source_set("browser") {
@@ -1059,7 +1059,7 @@ index b90121c67e80a85f28af62fc10bb78e1a37dae2a..0511bc88df989b9aaf2938a2f2cb9320
    ui::AXTreeID parent_ax_tree_id_ = ui::AXTreeIDUnknown();
  
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index f0e7865671113e01d974eaf309bd733d5f1ed384..81599ed6309ff999045443a6e7c3553567d8c950 100644
+index a15dab29852ae95db3b03bb2700f639b5e3c7b8e..abbf6b063389900845358bf4b053fd26dc48cf56 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -58,6 +58,7 @@
@@ -1070,7 +1070,7 @@ index f0e7865671113e01d974eaf309bd733d5f1ed384..81599ed6309ff999045443a6e7c35535
  #include "media/base/media_switches.h"
  #include "skia/ext/platform_canvas.h"
  #include "skia/ext/skia_utils_mac.h"
-@@ -317,8 +318,10 @@ void SendVisibleTimeRequestToDelegatedFrameHost(
+@@ -320,8 +321,10 @@ void SendVisibleTimeRequestToDelegatedFrameHost(
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -1081,7 +1081,7 @@ index f0e7865671113e01d974eaf309bd733d5f1ed384..81599ed6309ff999045443a6e7c35535
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1902,10 +1905,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1905,10 +1908,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1094,7 +1094,7 @@ index f0e7865671113e01d974eaf309bd733d5f1ed384..81599ed6309ff999045443a6e7c35535
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1980,9 +1985,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1983,9 +1988,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1106,7 +1106,7 @@ index f0e7865671113e01d974eaf309bd733d5f1ed384..81599ed6309ff999045443a6e7c35535
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2603,20 +2610,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2606,20 +2613,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 1158515dfcb29979fe89c9f95334a25c755c2020..4dc45e60c334bbb610df12e87c4d94ff558f7b0d 100644
+index 004d194a21ba0061d2f6f2218719171a8a2fcb75..8f1a9b7bcbbb31fc15b8e2de15dc722b7991fb56 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 1158515dfcb29979fe89c9f95334a25c755c2020..4dc45e60c334bbb610df12e87c4d94ff
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2060,6 +2063,7 @@ test("content_browsertests") {
+@@ -2062,6 +2065,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",

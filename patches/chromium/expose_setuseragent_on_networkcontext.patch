@@ -33,11 +33,11 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 6becf1c78329f8f65be79cfe259ce3d8aa4243b2..32f7c078fde3eb3dba84384c88b36300a01cc059 100644
+index 6732ff269a38d9573bebf7ff703f12e01e4a2793..09e86e581d18640412e5c7ca390049380b73e550 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -2132,6 +2132,13 @@ void NetworkContext::SetNetworkConditions(
-                                       std::move(network_conditions));
+@@ -2475,6 +2475,13 @@ NetworkContext::GetIsolatedTransactionFactory(
+   return it->second->factory_handle;
  }
  
 +void NetworkContext::SetUserAgent(const std::string& new_user_agent) {
@@ -51,24 +51,24 @@ index 6becf1c78329f8f65be79cfe259ce3d8aa4243b2..32f7c078fde3eb3dba84384c88b36300
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 09a708a38234415fb72484bb191d9d54f0fdb3bf..11da33b45cfa37ec313d4de5b2c09111a5ef9186 100644
+index 6867b717a8ce3b0bdbae494eefd2a84d97028bf5..7cd4a6092761dc55bce0e57685f24252e5832cab 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -363,6 +363,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -383,6 +383,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   GetIsolatedTransactionFactory(
        const base::UnguessableToken& throttling_profile_id,
-       const base::UnguessableToken& throttling_client_id,
-       std::vector<mojom::MatchedNetworkConditionsPtr> conditions) override;
+       const GURL& url);
 +  void SetUserAgent(const std::string& new_user_agent) override;
    void SetAcceptLanguage(const std::string& new_accept_language) override;
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e0ab461f672fbd0da5c71774ae5b66af6feea751..c05b24a4fe489a32d084c81ea86c53d794d23379 100644
+index 5a5517af1bc220d5575f0be7e350e6d18e4dd75c..432e58a85ffab42156081af33653bde2b39c9c10 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1464,6 +1464,9 @@ interface NetworkContext {
-                        mojo_base.mojom.UnguessableToken throttling_client_id,
-                        array<MatchedNetworkConditions> conditions);
+@@ -1497,6 +1497,9 @@ interface NetworkContext {
+   ClearSocketLayerNetworkConditions(
+       mojo_base.mojom.UnguessableToken throttling_profile_id);
  
 +  // Updates the user agent to be used for requests.
 +  SetUserAgent(string new_user_agent);
@@ -77,13 +77,13 @@ index e0ab461f672fbd0da5c71774ae5b66af6feea751..c05b24a4fe489a32d084c81ea86c53d7
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index 45d146ce2808a0fc66941ca8f941a0a4e4ea0572..7d3a4c80043d9349cff06c4a4bc59793077c40e7 100644
+index 7199c942a7ef854b2bfb86e86c17bf89152f39fc..f6f25d4898cd63de8bc9236c9e0faf761a37372d 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
-@@ -175,6 +175,7 @@ class TestNetworkContext : public mojom::NetworkContext {
-       const base::UnguessableToken& throttling_profile_id,
-       const base::UnguessableToken& throttling_client_id,
-       std::vector<mojom::MatchedNetworkConditionsPtr>) override {}
+@@ -182,6 +182,7 @@ class TestNetworkContext : public mojom::NetworkContext {
+       double upload_throughput_bytes_per_second) override {}
+   void ClearSocketLayerNetworkConditions(
+       const base::UnguessableToken& throttling_profile_id) override {}
 +  void SetUserAgent(const std::string& new_user_agent) override {}
    void SetAcceptLanguage(const std::string& new_accept_language) override {}
    void SetEnableReferrers(bool enable_referrers) override {}

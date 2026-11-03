@@ -23,7 +23,7 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index e1093d964d4f27fd3222dfa2a216ef5f5dffe3b5..9dc1e8a18b599813391e0e6ceee18fea7af3cc6c 100644
+index 0255317e03629f0030335593b184ab81f387ddd8..8a0a31e94f63616f23ba791f0ab6a82e448a9f9c 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -250,6 +250,7 @@ @implementation NativeWidgetMacNSWindow {
