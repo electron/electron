@@ -23,7 +23,7 @@ Take some time to anticipate how the API might evolve, and design the API in suc
 
 One key technique for future-proofing APIs is to pass options to method as an object, rather than as positional arguments. This is both more readable and allows flexibility to accommodate future changes. In particular, removing arguments from a method which takes its options positionally is not possible without introducing backwards incompatible changes.
 
-```typescript
+```ts
 // Bad: positional arguments make it hard to add or remove arguments in future
 function bad(a: string, b?: boolean) {
   /* ... */
@@ -156,7 +156,7 @@ If an API is designed to accept an array of items, consider providing methods of
 
 In the case of isolated components (e.g. third-party libraries), one might want to add a single item rather than replacing existings items.
 
-```typescript @ts-expect-error=[9,10,12,16]
+```ts @ts-expect-error=[9,10,12,16]
 // Bad: third-party libraries can only replace registered schemes
 protocol.registerSchemesAsPrivileged([
   {
@@ -278,7 +278,7 @@ If an API of the class returns [non-primitives][primitive], and the returned val
 
 For example:
 
-```typescript @ts-expect-error=[5,6]
+```ts @ts-expect-error=[5,6]
 import { BrowserWindow, BrowserView } from 'electron'
 
 // Should NOT do these, as they have no effect.
