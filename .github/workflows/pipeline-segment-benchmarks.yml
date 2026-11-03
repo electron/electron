@@ -47,7 +47,7 @@ on:
         default: false
       skip-stale-nightly:
         type: boolean
-        description: 'Skip the run when the latest nightly is more than a day old'
+        description: 'Skip the run when the latest nightly was published more than 25 hours ago'
         required: false
         default: false
     secrets:
@@ -97,11 +97,15 @@ jobs:
         CANDIDATE: ${{ inputs.candidate }}
         BASELINE: ${{ inputs.baseline }}
         SKIP_STALE_NIGHTLY: ${{ inputs.skip-stale-nightly }}
+        # Reads the nightly's publish time from electron/nightlies.
+        GITHUB_TOKEN: ${{ github.token }}
+      # The scheduled run is daily. A nightly is benchmarked by the first run
+      # after it is published; the extra hour allows for the run starting late.
       run: |
         args=(--out "$RUNNER_TEMP/benchmark-targets")
         if [ -n "$CANDIDATE" ]; then args+=(--candidate "$CANDIDATE"); fi
         if [ -n "$BASELINE" ]; then args+=(--baseline "$BASELINE"); fi
-        if [ "$SKIP_STALE_NIGHTLY" = "true" ]; then args+=(--max-candidate-age-hours 24); fi
+        if [ "$SKIP_STALE_NIGHTLY" = "true" ]; then args+=(--max-candidate-age-hours 25); fi
         node script/benchmarks/fetch-targets.mts "${args[@]}"
     - name: Run Benchmarks (linux)
       if: ${{ inputs.target-platform == 'linux' && steps.fetch.outputs.skip != 'true' }}

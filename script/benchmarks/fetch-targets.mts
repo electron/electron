@@ -90,20 +90,65 @@ export function releaseAgeHours(versions: Versions, version: string, now = Date.
   return (now - Date.parse(`${date}T00:00:00Z`)) / 3_600_000;
 }
 
+// When the GitHub release of a nightly in electron/nightlies was published, in
+// milliseconds since the epoch.
+export async function nightlyPublishedAt(version: string, fetchImpl: typeof fetch = fetch): Promise<number> {
+  const headers: Record<string, string> = {
+    accept: 'application/vnd.github+json',
+    'x-github-api-version': '2022-11-28'
+  };
+  if (process.env.GITHUB_TOKEN) headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  const response = await fetchImpl(`https://api.github.com/repos/electron/nightlies/releases/tags/v${version}`, {
+    headers
+  });
+  if (!response.ok) throw new Error(`GitHub returned ${response.status} for the v${version} release`);
+  const { published_at: publishedAt } = (await response.json()) as { published_at?: string | null };
+  const time = Date.parse(publishedAt ?? '');
+  if (Number.isNaN(time)) throw new Error(`the v${version} release has no publish time`);
+  return time;
+}
+
+// Hours since the nightly `version` was published. Falls back to its release
+// date (see releaseAgeHours) when GitHub cannot be asked.
+export async function nightlyAgeHours(
+  versions: Versions,
+  version: string,
+  now = Date.now(),
+  fetchImpl: typeof fetch = fetch
+): Promise<number | undefined> {
+  try {
+    const publishedAt = await nightlyPublishedAt(version, fetchImpl);
+    console.log(`[fetch-targets] ${version} was published at ${new Date(publishedAt).toISOString()}`);
+    return (now - publishedAt) / 3_600_000;
+  } catch (error) {
+    console.warn(
+      `[fetch-targets] could not read when ${version} was published (${errorMessage(error)}); using its release date`
+    );
+    return releaseAgeHours(versions, version, now);
+  }
+}
+
 interface ResolveArgs {
   candidate?: string;
   baseline?: string;
   maxCandidateAgeHours?: number;
 }
 
-export function resolveVersions(versions: Versions, args: ResolveArgs, now = Date.now()) {
+export async function resolveVersions(
+  versions: Versions,
+  args: ResolveArgs,
+  now = Date.now(),
+  fetchImpl: typeof fetch = fetch
+): Promise<{ candidate: string; baseline: string } | { skip: string }> {
   let { candidate, baseline } = args;
   if (!candidate || candidate === 'latest-nightly') {
     candidate = latestNightly(versions);
-    const age = releaseAgeHours(versions, candidate, now);
     console.log(`[fetch-targets] latest nightly: ${candidate} (released ${versions.getReleaseInfo(candidate)?.date})`);
-    if (args.maxCandidateAgeHours !== undefined && age !== undefined && age > args.maxCandidateAgeHours) {
-      return { skip: `the latest nightly is ${Math.round(age)} hours old` };
+    if (args.maxCandidateAgeHours !== undefined) {
+      const age = await nightlyAgeHours(versions, candidate, now, fetchImpl);
+      if (age !== undefined && age > args.maxCandidateAgeHours) {
+        return { skip: `the latest nightly is ${Math.round(age)} hours old` };
+      }
     }
   }
   if (!baseline || baseline === 'previous') {
@@ -184,7 +229,8 @@ async function main() {
       candidate: { type: 'string' },
       baseline: { type: 'string' },
       'harness-app': { type: 'string', default: path.join(import.meta.dirname, 'harness-app') },
-      // Scheduled runs skip days without a new nightly.
+      // Scheduled runs skip a nightly published longer ago than this, so each
+      // nightly is benchmarked once.
       'max-candidate-age-hours': { type: 'string' }
     }
   });
@@ -198,7 +244,7 @@ async function main() {
   const { platform, arch } = process;
   const explicit = (value?: string) => !!value && value !== 'latest-nightly' && value !== 'previous';
   const versions = await loadVersions(outDir, !(explicit(args.candidate) && explicit(args.baseline)));
-  const resolved = resolveVersions(versions, {
+  const resolved = await resolveVersions(versions, {
     candidate: args.candidate,
     baseline: args.baseline,
     maxCandidateAgeHours:
