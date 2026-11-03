@@ -38,6 +38,10 @@ class NetworkContextService : public KeyedService {
       cert_verifier::mojom::CertVerifierCreationParams*
           cert_verifier_creation_params);
 
+  void FlushProxyConfigMonitorForTesting() {
+    proxy_config_monitor_.FlushForTesting();
+  }
+
  private:
   raw_ptr<ElectronBrowserContext> browser_context_;
   ProxyConfigMonitor proxy_config_monitor_;
