@@ -956,6 +956,23 @@ describe('session module', () => {
         expect(proxy).toBe(`PROXY myproxy:${proxyPort}`);
       }
     });
+
+    it('survives a network service restart when a proxy switch is set', { timeout: 60000 }, async () => {
+      const appPath = path.join(fixtures, 'api', 'set-proxy-network-service-restart');
+      const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [appPath], { timeout: 30_000 });
+      const details = `stdout:\n${stdout}\nstderr:\n${stderr}`;
+      expect({ code, signal }, details).toEqual({ code: 0, signal: null });
+      expect(JSON.parse(stdout), details).toEqual({
+        before: {
+          own: 'PROXY session-proxy.invalid:2222',
+          inherited: 'PROXY switch-proxy.invalid:1111'
+        },
+        after: {
+          own: ['PROXY session-proxy.invalid:2222'],
+          inherited: ['PROXY switch-proxy.invalid:1111']
+        }
+      });
+    });
   });
 
   describe('ses.resolveHost(host)', () => {
