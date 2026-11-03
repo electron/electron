@@ -1,4 +1,4 @@
-import { BrowserWindow, type WebPreferences } from 'electron/main';
+import { BrowserWindow, session, type WebPreferences } from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -26,6 +26,10 @@ describe('security warnings', () => {
   let serverUrl: string;
 
   beforeAll(async () => {
+    // CI agents may route traffic through an HTTP proxy, which would bypass
+    // the host-resolver-rules mapping for localhost2.
+    await session.defaultSession.setProxy({ mode: 'direct' });
+
     // Create HTTP Server
     server = http.createServer(async (request, response) => {
       const uri = new URL(request.url!, `http://${request.headers.host}`).pathname!;
@@ -51,10 +55,11 @@ describe('security warnings', () => {
     serverUrl = `http://localhost2:${(await listen(server)).port}`;
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     // Close server
     server.close();
     server = null as unknown as any;
+    await session.defaultSession.setProxy({ mode: 'system' });
   });
 
   afterEach(async () => {
