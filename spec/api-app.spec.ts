@@ -326,6 +326,18 @@ describe('app module', () => {
     }
   );
 
+  describe('app.quit()', () => {
+    it('exits cleanly after a renderer preconnect hint', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'quit-after-preconnect');
+      const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [appPath], { timeout: 20_000 });
+      const message = `code=${code} signal=${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`;
+      expect(stdout, message).toContain('preconnect observed');
+      expect(signal, message).toBeNull();
+      expect(code, message).toBe(0);
+      expect(stderr, message).not.toContain('dangling pointer at exit');
+    });
+  });
+
   describe('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
