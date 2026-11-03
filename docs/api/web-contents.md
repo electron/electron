@@ -226,7 +226,7 @@ Returns:
     Only defined when the window is being created by a form that set
     `target=_blank`.
   * `disposition` string - Can be `default`, `foreground-tab`,
-    `background-tab`, `new-window` or `other`. Corresponds to the manner
+    `background-tab`, `new-window`, `save-to-disk` or `other`. Corresponds to the manner
     an associated link was clicked. See Chromium's
     [WindowOpenDisposition](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/window_open_disposition.h).
     * `default` - Indicates Chromium deems in-window navigation valid
@@ -234,6 +234,7 @@ Returns:
     * `foreground-tab` - Corresponds to a left click or shift + middle click.
     * `background-tab` - Corresponds to a middle click or ctrl/cmd + click.
     * `new-window` - Corresponds to a shift + left click.
+    * `save-to-disk` - Corresponds to an alt + click.
     * `other` - A catch-all for the remaining Chromium dispositions not
       handled by Electron.
 
@@ -1473,7 +1474,7 @@ Ignore application menu shortcuts while this web contents is focused.
     * `frameName` string - Name of the window provided in `window.open()`
     * `features` string - Comma separated list of window features provided to `window.open()`.
     * `disposition` string - Can be `default`, `foreground-tab`,
-      `background-tab`, `new-window` or `other`. Corresponds to the manner
+      `background-tab`, `new-window`, `save-to-disk` or `other`. Corresponds to the manner
       an associated link was clicked. See Chromium's
       [WindowOpenDisposition](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/window_open_disposition.h).
       * `default` - Indicates Chromium deems in-window navigation valid
@@ -1481,6 +1482,7 @@ Ignore application menu shortcuts while this web contents is focused.
       * `foreground-tab` - Corresponds to a left click or shift + middle click.
       * `background-tab` - Corresponds to a middle click or ctrl/cmd + click.
       * `new-window` - Corresponds to a shift + left click.
+      * `save-to-disk` - Corresponds to an alt + click.
       * `other` - A catch-all for the remaining Chromium dispositions not
         handled by Electron.
     * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
