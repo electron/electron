@@ -84,14 +84,14 @@ If your code is asynchronous, it should return a Promise rather than taking a ca
 
 For example:
 
-```javascript
+```js
 const win = new BrowserWindow()
 const result = await win.webContents.executeJavaScript('void 0')
 ```
 
 Subscription-style APIs that returns results multiple times should still be implemented with callbacks.
 
-```javascript
+```js
 // Use callback if results are provided multiple times.
 const win = new BrowserWindow()
 const WM_COPYDATA = 0x4a
@@ -191,7 +191,7 @@ If a module exports only one class, the module's name should be the class's name
 
 For example:
 
-```javascript
+```js
 const { BrowserWindow } = require('electron')
 ```
 
@@ -199,7 +199,7 @@ If a module includes methods or more than one class, the module's name should be
 
 For example:
 
-```javascript
+```js
 const { nativeImage } = require('electron')
 nativeImage.createEmpty()
 ```
@@ -208,7 +208,7 @@ nativeImage.createEmpty()
 
 There are 2 styles for creating instances of classes:
 
-```javascript
+```js
 const { BrowserWindow, nativeImage } = require('electron')
 
 // Constructor
@@ -224,7 +224,7 @@ If the class has an inheritance relationship with other public classes, a constr
 
 For example:
 
-```javascript
+```js
 const { BrowserWindow, BaseWindow } = require('electron')
 const win = new BrowserWindow()
 
@@ -241,7 +241,7 @@ If the class accepts different kinds of parameters with options, consider using 
 
 For example:
 
-```javascript
+```js
 // Using module methods
 const { nativeImage } = require('electron')
 nativeImage.createFromNamedImage('NSImageNameListViewTemplate', [-1, 0, 1])
@@ -264,7 +264,7 @@ If an API of the class returns a _non-assignable_ `Object`, and the returned obj
 
 For example:
 
-```javascript
+```js
 import assert from 'node:assert'
 import { BrowserWindow } from 'electron'
 
@@ -293,7 +293,7 @@ If an API of the class accepts options, or may accept option in future, it shoul
 
 For example:
 
-```javascript
+```js
 import { BrowserWindow } from 'electron'
 const win = new BrowserWindow()
 const bounds = { x: 123, y: 123, width: 123, height: 123 }
@@ -309,7 +309,7 @@ If the type of the value being set/get is [primitive][primitive], it should be a
 
 For example:
 
-```javascript
+```js
 const win = new BrowserWindow()
 win.setTitle('str')
 console.log(win.getTitle())
