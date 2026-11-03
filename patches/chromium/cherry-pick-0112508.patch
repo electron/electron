@@ -1,0 +1,384 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Thu, 29 Oct 2026 04:05:08 -0700
+Subject: Stop notifying observers if NavigationRequest is deleted
+
+On Android, a WebContentsObserver can synchronously delete the
+NavigationRequest from DidStartNavigation(), DidRedirectNavigation()
+or ReadyToCommitNavigation(), e.g. when a WebView app calls
+stopLoading() from its navigation callback. https://crrev.com/c/7781148
+made NavigationRequest handle this, but WebContentsImpl still notified
+the remaining observers with the deleted NavigationHandle.
+
+Add NotifyObserversUntilNavigationDeleted(), which stops notifying
+observers once the NavigationRequest is deleted, and use it for those
+notifications. The remaining observers still get DidFinishNavigation(),
+which is called when the NavigationRequest is deleted.
+
+TAG=agy
+CONV=59af5a80-ec88-4c69-8bed-b903325efcfe
+
+Bug: 574791491, 504574017
+Change-Id: I637aa49362d68c06c29e70bf8ed0d516340c3455
+Fixed: 574791491
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8640537
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Reviewed-by: Nate Fischer <ntfschr@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1730145}
+
+diff --git a/android_webview/javatests/src/org/chromium/android_webview/test/AwNavigationTest.java b/android_webview/javatests/src/org/chromium/android_webview/test/AwNavigationTest.java
+index 1c652108bba4aad9a309d7e0fa5d14ed4e4551b0..a704cd637c43b5371833d01d31294c7da2e69ce5 100644
+--- a/android_webview/javatests/src/org/chromium/android_webview/test/AwNavigationTest.java
++++ b/android_webview/javatests/src/org/chromium/android_webview/test/AwNavigationTest.java
+@@ -18,6 +18,7 @@ import org.junit.runner.RunWith;
+ import org.junit.runners.Parameterized;
+ import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+ 
++import org.chromium.android_webview.AwContents;
+ import org.chromium.android_webview.AwNavigation;
+ import org.chromium.android_webview.AwNavigationState;
+ import org.chromium.android_webview.AwPage;
+@@ -419,4 +420,85 @@ mWebServer.setResponse("/page1.html", "<html><body>Page 1</body></html>", null);
+                 "Start time should be before or equal to finish time",
+                 startTime <= timeAfterFinished);
+     }
++
++    /** Calls stopLoading() from onNavigationStarted() or onNavigationRedirected(). */
++    private static class StopLoadingNavigationListener extends TestAwNavigationListener {
++        private final AwContents mAwContents;
++        private final boolean mStopOnRedirect;
++
++        StopLoadingNavigationListener(AwContents awContents, boolean stopOnRedirect) {
++            super(new CallbackHelper());
++            mAwContents = awContents;
++            mStopOnRedirect = stopOnRedirect;
++        }
++
++        @Override
++        public void onNavigationStarted(AwNavigationState navigationState) {
++            super.onNavigationStarted(navigationState);
++            if (!mStopOnRedirect) mAwContents.stopLoading();
++        }
++
++        @Override
++        public void onNavigationRedirected(
++                AwNavigationState navigationState,
++                Map<String, String> responseHeaders,
++                int statusCode) {
++            super.onNavigationRedirected(navigationState, responseHeaders, statusCode);
++            if (mStopOnRedirect) mAwContents.stopLoading();
++        }
++    }
++
++    private void doTestStopLoadingInNavigationCallback(boolean stopOnRedirect) throws Throwable {
++        AwContents awContents = mTestContainerView.getAwContents();
++        String page1Url =
++                mWebServer.setResponse("/page1.html", "<html><body>Page 1</body></html>", null);
++        String page2Url =
++                mWebServer.setResponse("/page2.html", "<html><body>Page 2</body></html>", null);
++        mActivityTestRule.loadUrlSync(
++                awContents, mContentsClient.getOnPageFinishedHelper(), page1Url);
++        AwNavigation page1Navigation = mNavigationListener.getLastCompletedNavigation();
++        // Wait for page 1's onNavigationVisible(), so that listeners added below don't get it.
++        AwActivityTestRule.pollInstrumentationThread(
++                () -> page1Navigation.equals(mNavigationListener.getLastVisibleNavigation()));
++
++        // Added after `mNavigationListener`, so `mNavigationListener` gets each callback before
++        // the navigation is stopped. Listeners added after `stopper` would currently get
++        // onNavigationCompleted() before onNavigationStarted() (https://crbug.com/577964537).
++        StopLoadingNavigationListener stopper =
++                new StopLoadingNavigationListener(awContents, stopOnRedirect);
++        ThreadUtils.runOnUiThreadBlocking(
++                () -> awContents.getNavigationClient().addListener(stopper));
++
++        mActivityTestRule.loadUrlAsync(
++                awContents,
++                stopOnRedirect ? mWebServer.setRedirect("/redirect.html", page2Url) : page2Url);
++        AwActivityTestRule.pollInstrumentationThread(
++                () -> {
++                    AwNavigation navigation = mNavigationListener.getLastCompletedNavigation();
++                    return navigation != null && !navigation.equals(page1Navigation);
++                });
++
++        // The navigation was stopped, and the WebView stays on the previous page.
++        Assert.assertFalse(mNavigationListener.getLastCompletedNavigation().didCommit());
++        Assert.assertEquals(
++                page1Url,
++                ThreadUtils.runOnUiThreadBlocking(() -> awContents.getLastCommittedUrl()));
++    }
++
++    // Tests that calling stopLoading() from onNavigationStarted() doesn't crash and keeps the
++    // WebView on the previous page.
++    @Test
++    @SmallTest
++    @Feature({"AndroidWebView"})
++    public void testStopLoadingInOnNavigationStarted() throws Throwable {
++        doTestStopLoadingInNavigationCallback(/* stopOnRedirect= */ false);
++    }
++
++    // Same as above, but calls stopLoading() from onNavigationRedirected().
++    @Test
++    @SmallTest
++    @Feature({"AndroidWebView"})
++    public void testStopLoadingInOnNavigationRedirected() throws Throwable {
++        doTestStopLoadingInNavigationCallback(/* stopOnRedirect= */ true);
++    }
+ }
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 7413685c0e27fda238136bf82cdcbe88c909d779..34f994fdedcaa3bdba4cd541d6c933124c9e4e73 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -1197,6 +1197,28 @@ void WebContentsImpl::WebContentsObserverList::RemoveObserver(
+   observers_.RemoveObserver(observer);
+ }
+ 
++void WebContentsImpl::WebContentsObserverList::
++    NotifyObserversUntilNavigationDeleted(
++        NavigationObserverMethod observer_method,
++        NavigationHandle* navigation_handle) {
++  TRACE_EVENT0(
++      TRACE_DISABLED_BY_DEFAULT("content.verbose"),
++      "WebContentsObserverList::NotifyObserversUntilNavigationDeleted");
++  base::AutoReset<bool> scope(&is_notifying_observers_, true);
++  base::WeakPtr<NavigationRequest> weak_navigation_request =
++      NavigationRequest::From(navigation_handle)->GetWeakPtr();
++  for (WebContentsObserver& observer : observers_) {
++    TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
++                 "Dispatching WebContentsObserver callback");
++    (observer.*observer_method)(navigation_handle);
++    if (!weak_navigation_request) {
++      // An observer deleted the NavigationRequest. Don't notify the remaining
++      // observers, as they would get a dangling NavigationHandle.
++      return;
++    }
++  }
++}
++
+ // WebContentsImpl -------------------------------------------------------------
+ 
+ namespace {
+@@ -8096,8 +8118,10 @@ void WebContentsImpl::DidStartNavigation(NavigationHandle* navigation_handle) {
+   const GURL url = navigation_handle->GetURL();
+ 
+   base::ElapsedTimer duration;
+-  observers_.NotifyObservers(&WebContentsObserver::DidStartNavigation,
+-                             navigation_handle);
++  // On Android, a WebView app can delete the NavigationRequest here, e.g. by
++  // calling stopLoading() from onNavigationStarted().
++  observers_.NotifyObserversUntilNavigationDeleted(
++      &WebContentsObserver::DidStartNavigation, navigation_handle);
+   // WARNING: DO NOT use |navigation_handle| after this point. An observer may
+   // have destroyed the NavigationRequest, rendering the pointer invalid. See
+   // crbug.com/504574017. We set `navigation_handle` to nullptr here to prevent
+@@ -8148,8 +8172,10 @@ void WebContentsImpl::DidRedirectNavigation(
+ 
+   {
+     SCOPED_UMA_HISTOGRAM_TIMER("WebContentsObserver.DidRedirectNavigation");
+-    observers_.NotifyObservers(&WebContentsObserver::DidRedirectNavigation,
+-                               navigation_handle);
++    // On Android, a WebView app can delete the NavigationRequest here, e.g. by
++    // calling stopLoading() from onNavigationRedirected().
++    observers_.NotifyObserversUntilNavigationDeleted(
++        &WebContentsObserver::DidRedirectNavigation, navigation_handle);
+   }
+   // WARNING: DO NOT use |navigation_handle| after this point. An observer may
+   // have destroyed the NavigationRequest, rendering the pointer invalid. See
+@@ -8194,8 +8220,12 @@ void WebContentsImpl::ReadyToCommitNavigation(
+     }
+   }
+ 
+-  observers_.NotifyObservers(&WebContentsObserver::ReadyToCommitNavigation,
+-                             navigation_handle);
++  // Observers can also delete the NavigationRequest at this point on Android
++  // (which lacks `is_safe_to_delete_` protections), so use
++  // NotifyObserversUntilNavigationDeleted() instead of NotifyObservers() here
++  // as well.
++  observers_.NotifyObserversUntilNavigationDeleted(
++      &WebContentsObserver::ReadyToCommitNavigation, navigation_handle);
+   // WARNING: DO NOT use |navigation_handle| after this point. An observer may
+   // have destroyed the NavigationRequest, rendering the pointer invalid. See
+   // crbug.com/504574017. We set `navigation_handle` to nullptr here to prevent
+@@ -8256,6 +8286,10 @@ void WebContentsImpl::DidFinishNavigation(NavigationHandle* navigation_handle) {
+ 
+   {
+     SCOPED_UMA_HISTOGRAM_TIMER("WebContentsObserver.DidFinishNavigation");
++    // All observers need this to clean up. Unlike in DidStartNavigation(), an
++    // observer can't delete the NavigationRequest here (even from
++    // onNavigationCompleted() in Android WebView apps), since this
++    // NavigationRequest's owner has already released it.
+     observers_.NotifyObservers(&WebContentsObserver::DidFinishNavigation,
+                                navigation_handle);
+   }
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index dc69b349e0529126c34baf325f75a436b5069c68..9af8059a17e5282c5e0f53ce4c37f128f6092e9e 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1921,6 +1921,11 @@ class CONTENT_EXPORT WebContentsImpl
+   // observer set.
+   class WebContentsObserverList {
+    public:
++    // A WebContentsObserver method that takes a NavigationHandle, e.g.
++    // &WebContentsObserver::DidStartNavigation.
++    using NavigationObserverMethod =
++        void (WebContentsObserver::*)(NavigationHandle*);
++
+     WebContentsObserverList();
+     ~WebContentsObserverList();
+ 
+@@ -1942,6 +1947,22 @@ class CONTENT_EXPORT WebContentsImpl
+ 
+     bool is_notifying_observers() { return is_notifying_observers_; }
+ 
++    // Like NotifyObservers(), but stops if an observer deletes the
++    // NavigationRequest for `navigation_handle` (e.g. a WebView app calling
++    // stopLoading() from its navigation callback on Android), since the
++    // remaining observers would get a dangling NavigationHandle.
++    //
++    // Note that the remaining observers still get DidFinishNavigation() when
++    // the NavigationRequest is deleted, so they see DidFinishNavigation()
++    // without e.g. DidStartNavigation(). Before this was added, they got
++    // DidFinishNavigation() first and then this call with a dangling
++    // NavigationHandle, so the ordering was already broken in this case.
++    // TODO(crbug.com/577957421): Remove this once observers can't delete the
++    // NavigationRequest synchronously.
++    void NotifyObserversUntilNavigationDeleted(
++        NavigationObserverMethod observer_method,
++        NavigationHandle* navigation_handle);
++
+     // Exposed to deal with IPC message handlers which need to stop iteration
+     // early.
+     const base::ObserverList<
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index f7b99799ab3bd8fc2c6ef1d87fa8b137e1af621b..030d0a93e2b01015c2a20d96b8b580da2c95813e 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -1400,6 +1400,128 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
+   EXPECT_NEAR(initial_browser_scale_1, initial_renderer_scale_1, kEpsilon);
+   EXPECT_NEAR(initial_browser_scale_2, initial_renderer_scale_2, kEpsilon);
+ }
++
++namespace {
++
++// Stops the WebContents when it gets the navigation callback specified by
++// `stop_at`, which synchronously deletes the NavigationRequest. This simulates
++// e.g. an Android WebView app calling stopLoading() synchronously from its
++// navigation callback.
++class StopLoadingObserver : public WebContentsObserver {
++ public:
++  enum class StopAt { kStart, kRedirect };
++
++  StopLoadingObserver(WebContents* web_contents, StopAt stop_at)
++      : WebContentsObserver(web_contents), stop_at_(stop_at) {}
++
++  void DidStartNavigation(NavigationHandle*) override {
++    MaybeStop(StopAt::kStart);
++  }
++  void DidRedirectNavigation(NavigationHandle*) override {
++    MaybeStop(StopAt::kRedirect);
++  }
++
++  // Note that for `StopAt::kStart`, DidStartNavigation() is called
++  // synchronously from LoadURL(), so `run_loop_` might already be quit before
++  // this is called, in which case this returns immediately.
++  void WaitForStop() { run_loop_.Run(); }
++
++ private:
++  void MaybeStop(StopAt stop_at) {
++    if (stop_at != stop_at_) {
++      return;
++    }
++    web_contents()->Stop();
++    run_loop_.Quit();
++  }
++
++  const StopAt stop_at_;
++  base::RunLoop run_loop_;
++};
++
++// Counts the navigation callbacks it gets. Doesn't access the
++// NavigationHandle, since it might be dangling if the observer list keeps
++// notifying observers after the NavigationRequest got deleted.
++class NavigationCallbackCounter : public WebContentsObserver {
++ public:
++  explicit NavigationCallbackCounter(WebContents* web_contents)
++      : WebContentsObserver(web_contents) {}
++
++  void DidStartNavigation(NavigationHandle*) override { ++did_start_count_; }
++  void DidRedirectNavigation(NavigationHandle*) override {
++    ++did_redirect_count_;
++  }
++  void DidFinishNavigation(NavigationHandle*) override { ++did_finish_count_; }
++
++  int did_start_count() const { return did_start_count_; }
++  int did_redirect_count() const { return did_redirect_count_; }
++  int did_finish_count() const { return did_finish_count_; }
++
++ private:
++  int did_start_count_ = 0;
++  int did_redirect_count_ = 0;
++  int did_finish_count_ = 0;
++};
++
++}  // namespace
++
++// Tests that if an observer deletes the NavigationRequest in
++// DidStartNavigation(), the observers after it are not notified with the
++// deleted NavigationHandle. They still get DidFinishNavigation(), which is safe
++// because it's called from the NavigationRequest's destructor after its owner
++// released it, so it can't be deleted again from there. This can only happen
++// on Android, as other platforms CHECK that the NavigationRequest is not
++// deleted at this point. See https://crbug.com/574791491.
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       NavigationDeletedInDidStartNavigation) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  EXPECT_TRUE(
++      NavigateToURL(shell(), embedded_test_server()->GetURL("/title1.html")));
++
++  // `stopper` is added before `counter`, so it is notified first.
++  StopLoadingObserver stopper(shell()->web_contents(),
++                              StopLoadingObserver::StopAt::kStart);
++  NavigationCallbackCounter counter(shell()->web_contents());
++
++  shell()->LoadURL(embedded_test_server()->GetURL("/title2.html"));
++  stopper.WaitForStop();
++
++  // `counter` does not get notified in DidStartNavigation because the
++  // NavigationRequest is deleted by `stopper`.
++  EXPECT_EQ(0, counter.did_start_count());
++  EXPECT_EQ(1, counter.did_finish_count());
++  EXPECT_FALSE(static_cast<WebContentsImpl*>(shell()->web_contents())
++                   ->GetPrimaryFrameTree()
++                   .root()
++                   ->navigation_request());
++}
++
++// Same as above, but deletes the NavigationRequest in DidRedirectNavigation().
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       NavigationDeletedInDidRedirectNavigation) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  EXPECT_TRUE(
++      NavigateToURL(shell(), embedded_test_server()->GetURL("/title1.html")));
++
++  StopLoadingObserver stopper(shell()->web_contents(),
++                              StopLoadingObserver::StopAt::kRedirect);
++  NavigationCallbackCounter counter(shell()->web_contents());
++
++  shell()->LoadURL(embedded_test_server()->GetURL(
++      "/server-redirect?" +
++      embedded_test_server()->GetURL("/title2.html").spec()));
++  stopper.WaitForStop();
++
++  // `counter` does not get notified in DidRedirectNavigation because the
++  // NavigationRequest is deleted by `stopper`.
++  EXPECT_EQ(1, counter.did_start_count());
++  EXPECT_EQ(0, counter.did_redirect_count());
++  EXPECT_EQ(1, counter.did_finish_count());
++  EXPECT_FALSE(static_cast<WebContentsImpl*>(shell()->web_contents())
++                   ->GetPrimaryFrameTree()
++                   .root()
++                   ->navigation_request());
++}
+ #endif  // BUILDFLAG(IS_ANDROID)
+ 
+ // Test that a direct navigation to a view-source URL works.
