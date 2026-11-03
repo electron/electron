@@ -8,7 +8,7 @@ Subject: desktop_media_list.patch
 * Ensure "OnRefreshComplete()" even if there are no items in the list
 
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 7658533954500b2930cf90f1017e691e54f34bf6..ca7550a61f9c78bf6544ccb18588fc0210fcfc55 100644
+index 56376b8d6fba06cb7cf18bf953fb79abf45c4f5e..34b9dea6b0042d7a9f08a2e2236b1eeb3c0b1307 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -216,10 +216,14 @@ content::DesktopMediaID::Id GetUpdatedWindowId(

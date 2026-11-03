@@ -17,7 +17,7 @@ which removed range-requests-supported on non-http protocols. See https://issues
 for more information.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index c8bf3c17b4c996e959445a1a1f3d3b8b01fe4389..ddfb6b0c26d662649377ffe478268190ad034a00 100644
+index 5b7160cce836b2482d482ef1bb06dc7a47a1d5d4..a3871bed20230cc0d55992342070ee6d2edbdd65 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -12,8 +12,10 @@
@@ -74,10 +74,10 @@ index c8bf3c17b4c996e959445a1a1f3d3b8b01fe4389..ddfb6b0c26d662649377ffe478268190
  
  void MultiBufferDataSource::SetReader(
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
-index d8b35e069a9fcf449b2bbad200f1797dd86a2d21..e2b3dab172faa3f97f433e1e891afc4697ca8a5a 100644
+index 10b4d778d54e0945f41a4636f811f053d1a28d75..2a990fbe2a08bcc8f2afcb324c7bddda564086de 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
-@@ -19,6 +19,7 @@
+@@ -20,6 +20,7 @@
  #include "media/base/data_source.h"
  #include "media/base/ranges.h"
  #include "media/base/tuneable.h"
@@ -85,7 +85,7 @@ index d8b35e069a9fcf449b2bbad200f1797dd86a2d21..e2b3dab172faa3f97f433e1e891afc46
  #include "third_party/blink/renderer/platform/media/buffered_data_source_host_impl.h"
  #include "third_party/blink/renderer/platform/media/url_index.h"
  #include "third_party/blink/renderer/platform/platform_export.h"
-@@ -37,6 +38,8 @@ namespace blink {
+@@ -38,6 +39,8 @@ namespace blink {
  class BufferedDataSourceHost;
  class MultiBufferReader;
  
@@ -94,7 +94,7 @@ index d8b35e069a9fcf449b2bbad200f1797dd86a2d21..e2b3dab172faa3f97f433e1e891afc46
  // A data source capable of loading URLs and buffering the data using an
  // in-memory sliding window.
  //
-@@ -111,6 +114,8 @@ class PLATFORM_EXPORT MultiBufferDataSource
+@@ -112,6 +115,8 @@ class PLATFORM_EXPORT MultiBufferDataSource
      return url_data_->mime_type();
    }
  

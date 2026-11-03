@@ -89,6 +89,15 @@ any effect. See
 [Chromium's intent to remove discussion](https://groups.google.com/a/chromium.org/g/blink-dev/c/bqHGZYHWxnQ)
 for more information.
 
+### Removed: `top-level-storage-access` permission
+
+Chromium has removed the `top-level-storage-access` permission type, so it is
+no longer a possible `permission` value in
+[`ses.setPermissionRequestHandler(handler)`](api/session.md#sessetpermissionrequesthandlerhandler)
+or [`ses.setPermissionCheckHandler(handler)`](api/session.md#sessetpermissioncheckhandlerhandler).
+Web content already lost the ability to trigger this permission when
+`document.requestStorageAccessFor` was removed.
+
 ### Behavior Changed: `unload` event handlers no longer run on http(s) pages by default
 
 Chromium now [deprecates the `unload` event](https://developer.chrome.com/docs/web-platform/deprecating-unload)

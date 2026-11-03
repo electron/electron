@@ -34,7 +34,7 @@ return the root initiator ExecutionContext).
 Pending upstream crbug.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 41a5db4e019084d47763a43bd548b29faa070660..49206eb36d5d4dff4e2c26691f39ecb6db6f0f09 100644
+index a36f486739192acd6e126fa0de35db961b7f9a44..91e5afdfa207901b63627c8ab40995747b74d550 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -450,10 +450,7 @@ static void PromiseRejectHandlerInWorker(v8::PromiseRejectMessage data) {
