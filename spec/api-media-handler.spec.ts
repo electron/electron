@@ -157,37 +157,38 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(callbackError?.message).toBe('video.id is not a valid source id');
   });
 
-  ifit(process.platform === 'darwin' && process._linkedBinding('electron_browser_desktop_capturer').isDisplayMediaSystemPickerAvailable())(
-    'frees the system picker when the requesting renderer crashes',
-    async () => {
-      const testing = process._linkedBinding('electron_common_testing');
-      testing.setSystemPickerStubForTesting(true);
-      try {
-        const ses = session.fromPartition('' + Math.random());
-        ses.setDisplayMediaRequestHandler(() => {}, { useSystemPicker: true });
-        const pick = (w: BrowserWindow) => w.webContents.executeJavaScript(
+  ifit(
+    process.platform === 'darwin' &&
+      process._linkedBinding('electron_browser_desktop_capturer').isDisplayMediaSystemPickerAvailable()
+  )('frees the system picker when the requesting renderer crashes', async () => {
+    const testing = process._linkedBinding('electron_common_testing');
+    testing.setSystemPickerStubForTesting(true);
+    try {
+      const ses = session.fromPartition('' + Math.random());
+      ses.setDisplayMediaRequestHandler(() => {}, { useSystemPicker: true });
+      const pick = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(
           'navigator.mediaDevices.getDisplayMedia({ video: true }).then(() => "ok", e => e.name)',
           true
         );
-        const a = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-        await a.loadURL(serverUrl);
-        pick(a).catch(() => {});
-        await waitUntil(() => testing.getSystemPickerStubOpenCount() === 1);
+      const a = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await a.loadURL(serverUrl);
+      pick(a).catch(() => {});
+      await waitUntil(() => testing.getSystemPickerStubOpenCount() === 1);
 
-        const gone = once(a.webContents, 'render-process-gone');
-        a.webContents.forcefullyCrashRenderer();
-        await gone;
+      const gone = once(a.webContents, 'render-process-gone');
+      a.webContents.forcefullyCrashRenderer();
+      await gone;
 
-        const b = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-        await b.loadURL(serverUrl);
-        pick(b).catch(() => {});
-        // B reaches the picker instead of being turned away with AbortError.
-        await waitUntil(() => testing.getSystemPickerStubOpenCount() === 2);
-      } finally {
-        testing.setSystemPickerStubForTesting(false);
-      }
+      const b = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await b.loadURL(serverUrl);
+      pick(b).catch(() => {});
+      // B reaches the picker instead of being turned away with AbortError.
+      await waitUntil(() => testing.getSystemPickerStubOpenCount() === 2);
+    } finally {
+      testing.setSystemPickerStubForTesting(false);
     }
-  );
+  });
 
   it('successfully returns a capture handle', async () => {
     let w: BrowserWindow | null = null;
