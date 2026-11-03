@@ -13,7 +13,7 @@
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/logging.h"
-#include "base/memory/raw_ptr_exclusion.h"
+#include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -81,8 +81,7 @@ struct CommonButtonID {
 struct TaskDialogCallbackData {
   // Storage for the dialog's HWND, shared with CloseMessageBox across threads
   // under GetHWNDLock(). Null when the caller does not track the HWND.
-  // Not a raw_ptr<> because it points at an HWND owned elsewhere.
-  RAW_PTR_EXCLUSION HWND* target = nullptr;
+  raw_ptr<HWND> target = nullptr;
   // The button IDs created for this dialog. Clicks for any other ID
   // are treated as external/injected and ignored.
   base::flat_set<int> button_ids;
