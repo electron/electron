@@ -32,7 +32,10 @@ export function parseHeapSnapshot(data) {
 export function takeHeapSnapshot() {
   const stream = getHeapSnapshot();
   stream.pause();
-  return parseHeapSnapshot(stream.read());
+  // Since Node.js 26, read() returns one buffered chunk at a time; read the
+  // whole snapshot in one call, as test/common/heap.js does.
+  stream.read(0);
+  return parseHeapSnapshot(stream.read(stream.readableLength));
 }
 
 const toParsedSnapshot = (snapshot) => (snapshot.firstEdge ? snapshot : parseHeapSnapshot(snapshot));

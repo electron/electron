@@ -1025,10 +1025,6 @@ Returns:
   * `lineNumber` Integer - Line number in the log source
   * `sourceId` string - URL of the log source
   * `frame` WebFrameMain - Frame that logged the message
-* `level` Integer _Deprecated_ - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
-* `message` string _Deprecated_ - The actual console message
-* `line` Integer _Deprecated_ - The line number of the source that triggered this console message
-* `sourceId` string _Deprecated_
 
 Emitted when the associated window logs a console message.
 

@@ -287,7 +287,7 @@ __metadata:
     "@octokit/rest": "npm:^22.0.1"
     "@sentry/cli": "npm:3.6.2"
     "@types/minimist": "npm:^1.2.5"
-    "@types/node": "npm:^24.9.0"
+    "@types/node": "npm:^26.6.5"
     "@types/stream-json": "npm:^1.7.8"
     folder-hash: "npm:^4.1.2"
     husky: "npm:^9.1.7"
@@ -319,12 +319,6 @@ __metadata:
 "@electron-ci/echo@npm:*, @electron-ci/echo@workspace:spec/fixtures/native-addon/echo":
   version: 0.0.0-use.local
   resolution: "@electron-ci/echo@workspace:spec/fixtures/native-addon/echo"
-  languageName: unknown
-  linkType: soft
-
-"@electron-ci/external-ab@npm:*, @electron-ci/external-ab@workspace:spec/fixtures/native-addon/external-ab":
-  version: 0.0.0-use.local
-  resolution: "@electron-ci/external-ab@workspace:spec/fixtures/native-addon/external-ab"
   languageName: unknown
   linkType: soft
 
@@ -1695,7 +1689,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^24.9.0":
+"@types/node@npm:*":
   version: 24.9.1
   resolution: "@types/node@npm:24.9.1"
   dependencies:
@@ -1710,6 +1704,15 @@ __metadata:
   dependencies:
     undici-types: "npm:~6.19.2"
   checksum: 10c0/f6a3c90c6745881d47f8dae7eb39d0dd6df9a4060c8f1ab7004690f60b9b183d862c9c6b380b9e8d5a17dd670ac7b19d6318f24c170897c85a9729f9804f47cf
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^26.6.5":
+  version: 26.6.5
+  resolution: "@types/node@npm:26.6.5"
+  dependencies:
+    undici-types: "npm:~8.9.0"
+  checksum: 10c0/4f791f69466ace7842c09e7bef96cb1ddbb65cf3db916ef7e84f0e2b2a17220b6b816dc7539d01520cadfb17ed7169b8214910900493e0a83be8bc7d124ec20a
   languageName: node
   linkType: hard
 
@@ -2411,7 +2414,6 @@ __metadata:
   dependencies:
     "@electron-ci/dialog-helper": "npm:*"
     "@electron-ci/echo": "npm:*"
-    "@electron-ci/external-ab": "npm:*"
     "@electron-ci/is-valid-window": "npm:*"
     "@electron-ci/mouse-input": "npm:*"
     "@electron-ci/object-wrap": "npm:*"
@@ -5011,6 +5013,13 @@ __metadata:
   version: 7.16.0
   resolution: "undici-types@npm:7.16.0"
   checksum: 10c0/3033e2f2b5c9f1504bdc5934646cb54e37ecaca0f9249c983f7b1fc2e87c6d18399ebb05dc7fd5419e02b2e915f734d872a65da2e3eeed1813951c427d33cc9a
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~8.9.0":
+  version: 8.9.0
+  resolution: "undici-types@npm:8.9.0"
+  checksum: 10c0/51c712c20c087368f62c6fc0f2bc49fa76bfe5dec28ff01584bb677ff29b0622569783c02d43e151143808c48c0503f804093bd2c491b10f2a830138034cb451
   languageName: node
   linkType: hard
 

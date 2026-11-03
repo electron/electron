@@ -11,11 +11,11 @@ import { emittedUntil } from './lib/events-helpers.ts';
 import { listen } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
-const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
+const messageContainsSecurityWarning = ({ message }: { message: string }) => {
   return message.includes('Electron Security Warning');
 };
 
-const isLoaded = (event: Event, level: number, message: string) => {
+const isLoaded = ({ message }: { message: string }) => {
   return message === 'loaded';
 };
 
