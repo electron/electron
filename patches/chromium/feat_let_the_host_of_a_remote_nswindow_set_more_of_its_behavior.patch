@@ -26,7 +26,7 @@ it ever does.
 Co-Authored-By: Claude <noreply@anthropic.com>
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-index 288e823ac343f2337f8f74f413db3080b9b948bc..047187bcd254eebe64522b6050b6af86696cdd89 100644
+index 266cdef605606dbab077f4cfb5f2c7b3765d3655..284e6a3c29d7f969f554fd157eeaaeb3787279e2 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 @@ -320,6 +320,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
@@ -40,10 +40,10 @@ index 288e823ac343f2337f8f74f413db3080b9b948bc..047187bcd254eebe64522b6050b6af86
    void MakeFirstResponder() override;
    void SortSubviews(
        const std::vector<uint64_t>& associated_subview_ids) override;
-@@ -475,6 +479,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
-   std::unique_ptr<CocoaWindowMoveLoop> window_move_loop_;
-   ui::mojom::ModalType modal_type_ = ui::mojom::ModalType::kNone;
-   bool is_translucent_window_ = false;
+@@ -483,6 +487,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+   bool is_tooltip_ = false;
+   bool window_initialized_ = false;
+   bool is_tracked_by_occlusion_checker_ = false;
 +  // Set by SetFullscreenable(); takes the place of what the size constraints
 +  // would decide.
 +  std::optional<bool> fullscreenable_override_;
@@ -52,10 +52,10 @@ index 288e823ac343f2337f8f74f413db3080b9b948bc..047187bcd254eebe64522b6050b6af86
  
    raw_ptr<NativeWidgetNSWindowBridge> parent_ =
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 387a021fbaf4378fec227dde1c2301322f52bfb8..4e62afc9086d471d160bd171dda166193270d3fb 100644
+index 5ee7a2a8dde4d4ff2c79ad147ef32e9448478ca7..43a8ceb0d688e9aa5dbc3e95ecf9cf47840b19bf 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -1563,6 +1563,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1596,6 +1596,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    gfx::ApplyNSWindowSizeConstraints(window_, min_size, max_size,
                                      shows_resize_controls,
                                      shows_fullscreen_controls);
@@ -63,7 +63,7 @@ index 387a021fbaf4378fec227dde1c2301322f52bfb8..4e62afc9086d471d160bd171dda16619
  }
  
  void NativeWidgetNSWindowBridge::OnShowAnimationComplete() {
-@@ -1978,7 +1979,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2011,7 +2012,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  void NativeWidgetNSWindowBridge::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {
@@ -75,7 +75,7 @@ index 387a021fbaf4378fec227dde1c2301322f52bfb8..4e62afc9086d471d160bd171dda16619
    [window_delegate_ setAspectRatio:aspect_ratio.width() / aspect_ratio.height()
                      excludedMargin:excluded_margin];
  }
-@@ -2058,6 +2062,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2091,6 +2095,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    [window_ setIgnoresMouseEvents:ignores_mouse_events];
  }
  
@@ -223,10 +223,10 @@ index caffbfc6c7f700ec0c8178a34caefb3c23cfa693..727cc258653545e0dc382e02b5f77412
    MakeFirstResponder();
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index f00c5cb2b2244da449cac337f689baf5af5b1338..c2c16075a7e983d08071b0f69a0d409fff84fc3c 100644
+index e5f155cfbcab8c4448c0c17edf0e30bea55a2fa6..c76e6ce417a9a80c54a5a13291bc45813a3b4f6a 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -943,8 +943,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -945,8 +945,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (@available(macOS 14, *)) {
      if (application_host_ &&
          new_state == WindowVisibilityState::kShowAndActivateWindow) {
