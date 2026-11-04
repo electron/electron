@@ -58,7 +58,7 @@ app.whenReady().then(() => {
 })
 ```
 
-### `new BrowserView([options])` _Experimental_ _Deprecated_
+### `new BrowserView([options])` _Deprecated_
 
 <!--
 ```YAML history
@@ -75,7 +75,7 @@ deprecated:
 
 Objects created with `new BrowserView` have the following properties:
 
-#### `view.webContents` _Experimental_ _Deprecated_
+#### `view.webContents` _Deprecated_
 
 <!--
 ```YAML history
@@ -91,7 +91,7 @@ A [`WebContents`](web-contents.md) object owned by this view.
 
 Objects created with `new BrowserView` have the following instance methods:
 
-#### `view.setAutoResize(options)` _Experimental_ _Deprecated_
+#### `view.setAutoResize(options)` _Deprecated_
 
 <!--
 ```YAML history
@@ -115,7 +115,7 @@ deprecated:
   * `vertical` boolean (optional) - If `true`, the view's y position and height will grow
     and shrink proportionally with the window. `false` by default.
 
-#### `view.setBounds(bounds)` _Experimental_ _Deprecated_
+#### `view.setBounds(bounds)` _Deprecated_
 
 <!--
 ```YAML history
@@ -129,7 +129,7 @@ deprecated:
 
 Resizes and moves the view to the supplied bounds relative to the window.
 
-#### `view.getBounds()` _Experimental_ _Deprecated_
+#### `view.getBounds()` _Deprecated_
 
 <!--
 ```YAML history
@@ -143,7 +143,7 @@ Returns [`Rectangle`](structures/rectangle.md)
 
 The `bounds` of this BrowserView instance as `Object`.
 
-#### `view.setBackgroundColor(color)` _Experimental_ _Deprecated_
+#### `view.setBackgroundColor(color)` _Deprecated_
 
 <!--
 ```YAML history
