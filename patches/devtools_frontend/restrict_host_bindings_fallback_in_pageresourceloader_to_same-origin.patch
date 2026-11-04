@@ -15,11 +15,14 @@ Commit-Queue: Philip Pfaffe <pfaffe@chromium.org>
 Auto-Submit: Danil Somsikov <dsv@chromium.org>
 Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
 
+Electron adaptation notes (44-x-y):
+ResourceTreeFrame.securityOrigin is a getter returning string|null on this branch (no SecurityOrigin class), so #isSameOriginWithPrimaryPage() compares the serialized origin strings instead, failing closed for null and opaque origins (no host).
+
 diff --git a/front_end/core/sdk/PageResourceLoader.ts b/front_end/core/sdk/PageResourceLoader.ts
-index c32738b3e47fc405b512ae3db2ab9b51b59ad86f..a26aaed37d33dcab76b3b10c7eee74cac9b2c152 100644
+index c32738b3e47fc405b512ae3db2ab9b51b59ad86f..dfdd584aafdf17b1e6caf12f19219d70823c02d3 100644
 --- a/front_end/core/sdk/PageResourceLoader.ts
 +++ b/front_end/core/sdk/PageResourceLoader.ts
-@@ -316,6 +316,29 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+@@ -316,6 +316,37 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
      }
    }
  
@@ -43,13 +46,21 @@ index c32738b3e47fc405b512ae3db2ab9b51b59ad86f..a26aaed37d33dcab76b3b10c7eee74ca
 +    if (!primaryFrame || !initiatorFrame) {
 +      return false;
 +    }
-+    return initiatorFrame.securityOrigin().isSameOriginWith(primaryFrame.securityOrigin());
++    // On this branch `securityOrigin` is a getter returning the serialized origin
++    // string rather than a SecurityOrigin object. Fail closed like upstream's
++    // SecurityOrigin.isSameOriginWith(): opaque or unknown origins ("null", "",
++    // "file://", "data:", ...) have no host and never match.
++    const initiatorOrigin = initiatorFrame.securityOrigin;
++    if (!initiatorOrigin || !Common.ParsedURL.ParsedURL.fromString(initiatorOrigin)?.host) {
++      return false;
++    }
++    return initiatorOrigin.toLowerCase() === primaryFrame.securityOrigin?.toLowerCase();
 +  }
 +
    private async dispatchLoad(
        url: Platform.DevToolsPath.UrlString, initiator: PageResourceLoadInitiator, isBinary: boolean): Promise<{
      success: boolean,
-@@ -338,11 +361,12 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+@@ -338,11 +369,12 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
      if (eligibleForLoadFromTarget) {
        let mustEnforceCSP = false;
        const isHttp = parsedURL.scheme === 'http' || parsedURL.scheme === 'https';
@@ -66,7 +77,7 @@ index c32738b3e47fc405b512ae3db2ab9b51b59ad86f..a26aaed37d33dcab76b3b10c7eee74ca
              status = await networkManager.getSecurityIsolationStatus(null);
            }
            if (status?.csp) {
-@@ -364,7 +388,8 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+@@ -364,7 +396,8 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
        } catch (e) {
          if (e instanceof Error) {
            Host.userMetrics.developerResourceLoaded(Host.UserMetrics.DeveloperResourceLoaded.LOAD_THROUGH_PAGE_FAILURE);
