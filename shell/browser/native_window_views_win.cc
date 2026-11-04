@@ -19,18 +19,16 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/win_frame_view.h"
-#include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "skia/ext/skia_utils_win.h"
-#include "ui/aura/window.h"
-#include "ui/base/win/internal_constants.h"
+#include "ui/base/view_prop.h"
+#include "ui/base/win/window_event_target.h"
 #include "ui/color/win/accent_color_observer.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/resize_utils.h"
-#include "ui/gfx/win/hwnd_util.h"
 
 // Must be included after other Windows headers.
 #include <UIAutomationClient.h>
@@ -307,38 +305,9 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
   }
 
   switch (message) {
-    // A click-through window (see SetForwardMouseMessages) is invisible to
-    // ::WindowFromPoint(), which Chromium uses to tell a genuine mouse leave
-    // from one it reports for a window the cursor never left. While forwarding,
-    // enter/leave comes from the low level mouse hook instead, so drop the OS
-    // reported leave -- but only while the cursor is still inside the window.
-    // Dropping it also strands Chromium's cached tracking state, which
-    // SetForwardMouseMessages() re-arms when it stops.
     case WM_MOUSELEAVE:
     case WM_NCMOUSELEAVE: {
-      if (!forwarding_mouse_messages_)
-        return false;
-
-      HWND hwnd = GetAcceleratedWidget();
-      if (!hwnd)
-        return false;
-
-      POINT cursor = {};
-      ::GetCursorPos(&cursor);
-      return PointToClientAndInRect(hwnd, &cursor);
-    }
-
-    case WM_PARENTNOTIFY: {
-      // Chromium creates a dummy window per web content container (see
-      // LegacyRenderWidgetHostHWND), so a window can have several of them; this
-      // is also how the replacements are discovered after a navigation or a
-      // renderer crash.
-      if (LOWORD(w_param) == WM_CREATE) {
-        RememberLegacyWindow(reinterpret_cast<HWND>(l_param));
-      } else if (LOWORD(w_param) == WM_DESTROY) {
-        legacy_windows_.erase(reinterpret_cast<HWND>(l_param));
-      }
-      return false;
+      return ShouldSwallowForwardedMouseLeave();
     }
 
     // Screen readers send WM_GETOBJECT in order to get the accessibility
@@ -700,46 +669,6 @@ void NativeWindowViews::SetRoundedCorners(bool rounded) {
     LOG(WARNING) << "Failed to set rounded corners to " << rounded;
 }
 
-void NativeWindowViews::RememberLegacyWindow(HWND legacy_window) {
-  if (!legacy_window || legacy_windows_.contains(legacy_window))
-    return;
-
-  // Only the dummy windows Chromium creates for the web content containers arm
-  // mouse tracking for forwarded messages; see LegacyRenderWidgetHostHWND.
-  if (gfx::GetClassName(legacy_window) !=
-      std::wstring(ui::kLegacyRenderWidgetHostHwnd)) {
-    return;
-  }
-
-  legacy_windows_.insert(legacy_window);
-  if (forwarding_mouse_messages_) {
-    SetWindowSubclass(legacy_window, SubclassProc, 1,
-                      reinterpret_cast<DWORD_PTR>(this));
-  }
-}
-
-void NativeWindowViews::UpdateLegacyWindowSubclasses() {
-  for (auto it = legacy_windows_.begin(); it != legacy_windows_.end();) {
-    // Erasing only invalidates iterators to the erased element, and |it| has
-    // already moved past it.
-    HWND legacy_window = *(it++);
-
-    // A renderer crash takes its legacy windows with it; anything gone by now
-    // can be forgotten.
-    if (!::IsWindow(legacy_window)) {
-      legacy_windows_.erase(legacy_window);
-      continue;
-    }
-
-    if (forwarding_mouse_messages_) {
-      SetWindowSubclass(legacy_window, SubclassProc, 1,
-                        reinterpret_cast<DWORD_PTR>(this));
-    } else {
-      RemoveWindowSubclass(legacy_window, SubclassProc, 1);
-    }
-  }
-}
-
 void NativeWindowViews::OnForwardedMouseMove(const gfx::Point& screen_point) {
   HWND hwnd = GetAcceleratedWidget();
   if (!hwnd)
@@ -774,13 +703,16 @@ void NativeWindowViews::FlushForwardedMouseEvent() {
   if (!forwarding_mouse_messages_ || widget_destroyed_)
     return;
 
-  aura::Window* window = GetNativeWindow();
-  if (!window)
+  HWND hwnd = GetAcceleratedWidget();
+  if (!hwnd)
     return;
 
-  auto* desktop_window_tree_host =
-      static_cast<ElectronDesktopWindowTreeHostWin*>(window->GetHost());
-  if (!desktop_window_tree_host)
+  // The dispatcher that owns this HWND: the same one a
+  // Chrome_RenderWidgetHostHWND relays its own messages to.
+  auto* event_target =
+      reinterpret_cast<ui::WindowEventTarget*>(ui::ViewProp::GetValue(
+          hwnd, ui::WindowEventTarget::kWin32InputEventTarget));
+  if (!event_target)
     return;
 
   // Update the tracked state before dispatching: the dispatch runs page code,
@@ -790,15 +722,17 @@ void NativeWindowViews::FlushForwardedMouseEvent() {
       pending_forwarded_point_.value_or(last_forwarded_point_);
   cursor_inside_window_ = pending_forwarded_point_.has_value();
 
+  if (!cursor_inside_window_ && !was_inside)
+    return;
+
   // Dispatching the equivalent of the messages a click-through window never
-  // gets keeps hover state, draggable regions and input routing working.
-  if (cursor_inside_window_) {
-    desktop_window_tree_host->DispatchSyntheticMouseMessage(WM_MOUSEMOVE,
-                                                            point);
-  } else if (was_inside) {
-    desktop_window_tree_host->DispatchSyntheticMouseMessage(WM_MOUSELEAVE,
-                                                            point);
-  }
+  // gets keeps hover state, draggable regions and input routing working, and
+  // going through the dispatcher reuses Chromium's pipeline instead of
+  // hand-building a CHROME_MSG.
+  bool handled = false;
+  event_target->HandleMouseMessage(
+      cursor_inside_window_ ? WM_MOUSEMOVE : WM_MOUSELEAVE, 0,
+      MAKELPARAM(point.x(), point.y()), &handled);
 }
 
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {
@@ -817,10 +751,6 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     cursor_inside_window_ = hwnd && ::GetCursorPos(&cursor) &&
                             PointToClientAndInRect(hwnd, &cursor);
 
-    // The OS reports a mouse leave for a click-through window while the cursor
-    // is still inside it, which has to be filtered out; see |SubclassProc|.
-    UpdateLegacyWindowSubclasses();
-
     if (!mouse_hook_) {
       mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, nullptr, 0);
     }
@@ -831,20 +761,17 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     // Stop filtering mouse leave messages and forget where the cursor was, so
     // that the next time forwarding is enabled the state is rebuilt from
     // scratch.
-    UpdateLegacyWindowSubclasses();
+    mouse_forwarding_weak_factory_.InvalidateWeakPtrs();
+    forwarded_event_pending_ = false;
     pending_forwarded_point_.reset();
     cursor_inside_window_ = false;
 
-    // The leaves swallowed by the subclasses just removed, and by the filter in
-    // PreHandleMSG, ended the one-shot OS tracking (see
+    // The leaves swallowed above ended the one-shot OS tracking (see
     // |RearmMouseLeaveTracking|). Re-arm it now that nothing consumes the leave
     // anymore, otherwise a later genuine leave is never reported and elements
     // stay stuck in their hovered state after setIgnoreMouseEvents(false).
     // See https://github.com/electron/electron/issues/51521.
     RearmMouseLeaveTracking(GetAcceleratedWidget(), TME_LEAVE);
-    for (HWND legacy_window : legacy_windows_) {
-      RearmMouseLeaveTracking(legacy_window, TME_LEAVE);
-    }
 
     if (forwarding_windows_->empty()) {
       // If UnhookWindowsHookEx fails, the hook is still installed in the
@@ -866,28 +793,23 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   }
 }
 
-LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
-                                                 UINT msg,
-                                                 WPARAM w_param,
-                                                 LPARAM l_param,
-                                                 UINT_PTR subclass_id,
-                                                 DWORD_PTR ref_data) {
-  if (msg == WM_MOUSELEAVE) {
-    auto* window = reinterpret_cast<NativeWindowViews*>(ref_data);
-    // This window is the one that arms mouse tracking for forwarded messages,
-    // and LegacyRenderWidgetHostHWND relays its mouse leave to the parent
-    // without going through PreHandleMSG, so consuming it here is the only way
-    // to keep the renderer from seeing a leave for a window the cursor never
-    // left (see PreHandleMSG for why the OS reports one at all). Unfiltered, it
-    // makes apps that exit forwarding from a mouseleave handler flicker;
-    // enter/leave for the web contents comes from the low level mouse hook
-    // instead, see FlushForwardedMouseEvent.
-    if (window->forwarding_mouse_messages_) {
-      return 0;
-    }
-  }
+// A Chrome_RenderWidgetHostHWND relays its mouse leave here with
+// ui::WindowEventTarget::HandleMouseMessage(), which bypasses PreHandleMSG.
+// A click-through window is invisible to ::WindowFromPoint(), so that leave
+// claims the cursor left a window it never left; genuine enter/leave comes
+// from the low level mouse hook instead, see FlushForwardedMouseEvent().
+bool NativeWindowViews::ShouldSwallowForwardedMouseLeave() const {
+  if (!forwarding_mouse_messages_)
+    return false;
 
-  return DefSubclassProc(hwnd, msg, w_param, l_param);
+  HWND hwnd = GetAcceleratedWidget();
+  if (!hwnd)
+    return false;
+
+  POINT cursor = {};
+  if (!::GetCursorPos(&cursor))
+    return false;  // Position unknown: leave the decision to Chromium.
+  return PointToClientAndInRect(hwnd, &cursor);
 }
 
 LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
