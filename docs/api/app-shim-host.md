@@ -98,7 +98,7 @@ nothing:
 * `win.setEnabled()`
 * `win.flashFrame()` (use [`shim.bounce()`](#shimbouncetype-experimental) instead)
 * `win.setProgressBar()`
-* `win.setHasShadow()` (the `hasShadow` constructor option is honored)
+* `win.setHasShadow()`
 * `win.setRepresentedFilename()`
 * `win.setDocumentEdited()`
 * `win.setHiddenInMissionControl()`
