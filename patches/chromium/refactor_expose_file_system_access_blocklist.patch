@@ -408,7 +408,7 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 05ee182cf840bc925697a2bfa3d1c281579296c4..bb06f4b51bb0bf8270c4cc6193bbbb17597b477e 100644
+index 05ee182cf840bc925697a2bfa3d1c281579296c4..53eb33076332cc9ff7dfb0b75387fabff239bf67 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -433,7 +433,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..bb06f4b51bb0bf8270c4cc6193bbbb17
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,320 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,325 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -582,6 +582,11 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..bb06f4b51bb0bf8270c4cc6193bbbb17
 +        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
 +                                BlockType::kBlockWrite),
 +        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
++                                BlockType::kBlockWrite),
++        // Block write access to */.mvn, which holds Maven project and JVM
++        // configuration (such as jvm.config, maven.config, and extensions.xml),
++        // see crbug.com/578500839.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".mvn"),
 +                                BlockType::kBlockWrite),
 +  #if BUILDFLAG(IS_WIN)
 +        // Some Windows specific directories to block, basically all apps, the
