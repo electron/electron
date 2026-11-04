@@ -6,6 +6,7 @@ import { describe, it } from 'node:test';
 
 import {
   latestNightly,
+  nightlyPublishedAt,
   previousNightly,
   previousRelease,
   releaseAgeHours,
@@ -91,44 +92,126 @@ describe('nightlies', () => {
   });
 });
 
-describe('resolveVersions', () => {
-  const evening = (date: string) => Date.parse(`${date}T20:43:00Z`);
+// A fetch that answers GitHub's release-by-tag API from `published`, keyed by
+// tag, and records the requests.
+function mockFetch(published: Record<string, string>) {
+  const requests: { url: string; headers: Record<string, string> }[] = [];
+  const fetchImpl = (async (url: string, init?: RequestInit) => {
+    requests.push({ url, headers: (init?.headers ?? {}) as Record<string, string> });
+    const tag = url.split('/').at(-1)!;
+    if (!(tag in published)) return new Response('{"message":"Not Found"}', { status: 404 });
+    return Response.json({ tag_name: tag, published_at: published[tag] });
+  }) as typeof fetch;
+  return { fetchImpl, requests };
+}
 
-  it('compares the latest nightly against the one before it', () => {
-    assert.deepEqual(resolveVersions(versions, {}, evening('2026-10-29')), {
+const failingFetch = (async () => {
+  throw new Error('network down');
+}) as typeof fetch;
+
+describe('resolveVersions', () => {
+  const evening = (date: string) => Date.parse(`${date}T20:48:00Z`);
+  const { fetchImpl } = mockFetch({
+    'v47.0.0-nightly.20261029': '2026-10-29T17:00:00Z',
+    'v47.0.0-nightly.20261028': '2026-10-28T17:00:00Z'
+  });
+
+  it('compares the latest nightly against the one before it', async () => {
+    assert.deepEqual(await resolveVersions(versions, {}, evening('2026-10-29'), failingFetch), {
       candidate: '47.0.0-nightly.20261029',
       baseline: '47.0.0-nightly.20261028'
     });
   });
 
-  it('uses the previous release on the major line for a release candidate', () => {
-    assert.deepEqual(resolveVersions(versions, { candidate: '45.1.0' }), { candidate: '45.1.0', baseline: '45.0.2' });
+  it('uses the previous release on the major line for a release candidate', async () => {
+    assert.deepEqual(await resolveVersions(versions, { candidate: '45.1.0' }), {
+      candidate: '45.1.0',
+      baseline: '45.0.2'
+    });
   });
 
-  it('keeps explicit versions', () => {
-    assert.deepEqual(resolveVersions(versions, { candidate: '45.1.0', baseline: '44.3.2' }), {
+  it('keeps explicit versions', async () => {
+    assert.deepEqual(await resolveVersions(versions, { candidate: '45.1.0', baseline: '44.3.2' }), {
       candidate: '45.1.0',
       baseline: '44.3.2'
     });
   });
 
-  it("runs on the evening of a nightly's release day", () => {
-    assert.equal(releaseAgeHours(versions, '47.0.0-nightly.20261029', evening('2026-10-29')), 20.716666666666665);
-    const resolved = resolveVersions(versions, { maxCandidateAgeHours: 24 }, evening('2026-10-29'));
-    assert.equal('skip' in resolved, false);
+  it('runs on the evening a nightly is published', async () => {
+    const resolved = await resolveVersions(versions, { maxCandidateAgeHours: 25 }, evening('2026-10-29'), fetchImpl);
+    assert.deepEqual(resolved, { candidate: '47.0.0-nightly.20261029', baseline: '47.0.0-nightly.20261028' });
   });
 
-  it('skips a day without a new nightly', () => {
-    const resolved = resolveVersions(versions, { maxCandidateAgeHours: 24 }, evening('2026-10-30'));
-    assert.deepEqual(resolved, { skip: 'the latest nightly is 45 hours old' });
+  it('skips the next day when there is no new nightly', async () => {
+    const resolved = await resolveVersions(versions, { maxCandidateAgeHours: 25 }, evening('2026-10-30'), fetchImpl);
+    assert.deepEqual(resolved, { skip: 'the latest nightly is 28 hours old' });
   });
 
-  it('does not skip an explicit candidate', () => {
-    const resolved = resolveVersions(
+  it('runs the day after a nightly published after the evening run', async () => {
+    // 47.0.0-nightly.20261030 was published at 23:42 UTC on its release day,
+    // after that evening's run had found only 20261029.
+    const late = new BaseVersions([
+      ...versions.versions.map((ver) => versions.getReleaseInfo(ver)!),
+      { ...versions.getReleaseInfo('47.0.0-nightly.20261029')!, version: '47.0.0-nightly.20261030', date: '2026-10-30' }
+    ]);
+    const { fetchImpl: lateFetch } = mockFetch({
+      'v47.0.0-nightly.20261030': '2026-10-30T23:42:00Z',
+      'v47.0.0-nightly.20261029': '2026-10-29T17:00:00Z'
+    });
+    assert.deepEqual(await resolveVersions(versions, { maxCandidateAgeHours: 25 }, evening('2026-10-30'), lateFetch), {
+      skip: 'the latest nightly is 28 hours old'
+    });
+    // By its release date it would be 45 hours old here and never run.
+    assert.deepEqual(await resolveVersions(late, { maxCandidateAgeHours: 25 }, evening('2026-10-31'), lateFetch), {
+      candidate: '47.0.0-nightly.20261030',
+      baseline: '47.0.0-nightly.20261029'
+    });
+    assert.deepEqual(await resolveVersions(late, { maxCandidateAgeHours: 25 }, evening('2026-11-01'), lateFetch), {
+      skip: 'the latest nightly is 45 hours old'
+    });
+  });
+
+  it("falls back to the nightly's release date when GitHub cannot be asked", async () => {
+    assert.equal(releaseAgeHours(versions, '47.0.0-nightly.20261029', evening('2026-10-29')), 20.8);
+    const missing = mockFetch({}).fetchImpl;
+    for (const fetchImpl of [failingFetch, missing]) {
+      const runs = await resolveVersions(versions, { maxCandidateAgeHours: 25 }, evening('2026-10-29'), fetchImpl);
+      assert.equal('skip' in runs, false);
+      const skips = await resolveVersions(versions, { maxCandidateAgeHours: 25 }, evening('2026-10-30'), fetchImpl);
+      assert.deepEqual(skips, { skip: 'the latest nightly is 45 hours old' });
+    }
+  });
+
+  it('does not skip an explicit candidate', async () => {
+    const resolved = await resolveVersions(
       versions,
-      { candidate: '47.0.0-nightly.20261026', maxCandidateAgeHours: 24 },
-      evening('2026-10-30')
+      { candidate: '47.0.0-nightly.20261026', maxCandidateAgeHours: 25 },
+      evening('2026-10-30'),
+      failingFetch
     );
     assert.deepEqual(resolved, { candidate: '47.0.0-nightly.20261026', baseline: '46.0.0-nightly.20261005' });
+  });
+});
+
+describe('nightlyPublishedAt', () => {
+  it('reads the release by tag, with GITHUB_TOKEN when set', async () => {
+    const { fetchImpl, requests } = mockFetch({ 'v47.0.0-nightly.20261029': '2026-10-29T17:00:00Z' });
+    const saved = process.env.GITHUB_TOKEN;
+    process.env.GITHUB_TOKEN = 'test-token';
+    try {
+      assert.equal(await nightlyPublishedAt('47.0.0-nightly.20261029', fetchImpl), Date.parse('2026-10-29T17:00:00Z'));
+    } finally {
+      if (saved === undefined) delete process.env.GITHUB_TOKEN;
+      else process.env.GITHUB_TOKEN = saved;
+    }
+    assert.equal(
+      requests[0].url,
+      'https://api.github.com/repos/electron/nightlies/releases/tags/v47.0.0-nightly.20261029'
+    );
+    assert.equal(requests[0].headers.authorization, 'Bearer test-token');
+  });
+
+  it('fails for a missing release', async () => {
+    await assert.rejects(nightlyPublishedAt('47.0.0-nightly.20261031', mockFetch({}).fetchImpl), /404/);
   });
 });
