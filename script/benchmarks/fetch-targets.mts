@@ -230,7 +230,8 @@ async function main() {
       baseline: { type: 'string' },
       'harness-app': { type: 'string', default: path.join(import.meta.dirname, 'harness-app') },
       // Scheduled runs skip a nightly published longer ago than this, so each
-      // nightly is benchmarked once.
+      // nightly is normally benchmarked once; a nightly published within an
+      // hour before a run can be benchmarked twice.
       'max-candidate-age-hours': { type: 'string' }
     }
   });

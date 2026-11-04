@@ -99,8 +99,10 @@ jobs:
         SKIP_STALE_NIGHTLY: ${{ inputs.skip-stale-nightly }}
         # Reads the nightly's publish time from electron/nightlies.
         GITHUB_TOKEN: ${{ github.token }}
-      # The scheduled run is daily. A nightly is benchmarked by the first run
-      # after it is published; the extra hour allows for the run starting late.
+      # The scheduled run is daily, so a nightly is normally benchmarked once,
+      # by the first run after it is published; the extra hour allows for the
+      # run starting late. A nightly published within an hour before a run can
+      # be benchmarked twice.
       run: |
         args=(--out "$RUNNER_TEMP/benchmark-targets")
         if [ -n "$CANDIDATE" ]; then args+=(--candidate "$CANDIDATE"); fi

@@ -5,8 +5,9 @@ Scripts that measure Electron's performance with
 benchmark runner. The [Benchmarks workflow](../../.github/workflows/benchmarks.yml)
 runs them every day against the latest nightly. A scheduled run is skipped
 when the latest nightly's GitHub release was published more than 25 hours
-earlier, so each nightly is benchmarked by the first daily run after it is
-published.
+earlier, so each nightly is normally benchmarked once, by the first daily run
+after it is published; a nightly published within an hour before a run can be
+benchmarked twice.
 
 Every run is a **paired comparison on one machine**. CI runners are shared cloud
 VMs that change hosts between jobs, so raw numbers from different runs are not
