@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Liberato <liberato@chromium.org>
+Date: Tue, 6 Oct 2026 17:14:50 +0000
+Subject: avformat/mov: keep frag_index.current on its fragment in
+ update_frag_index()
+
+Bug: 566251701
+Change-Id: I1f5da04b71eb3785e3e224bbd27837970a1f5d4b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/8523942
+Reviewed-by: Syed AbuTalib <lowkey@google.com>
+Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+
+diff --git a/libavformat/mov.c b/libavformat/mov.c
+index f8571559229ad0176c60ac671badaf607e81ff22..a2b16b9d3821d0a67ab618887a7cf704837ed86a 100644
+--- a/libavformat/mov.c
++++ b/libavformat/mov.c
+@@ -1916,6 +1916,9 @@ static int update_frag_index(MOVContext *c, int64_t offset)
+     if (index < c->frag_index.nb_items)
+         memmove(c->frag_index.item + index + 1, c->frag_index.item + index,
+                 (c->frag_index.nb_items - index) * sizeof(*c->frag_index.item));
++    if (index <= c->frag_index.current) {
++        c->frag_index.current++;
++    }
+ 
+     item = &c->frag_index.item[index];
+     item->headers_read = 0;

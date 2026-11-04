@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Wed, 7 Oct 2026 16:21:30 -0700
+Subject: Crash on incrementing counter overflow in cc animations
+
+This follows the same strategy used for cc::Layer:
+
+https://chromium-review.googlesource.com/c/chromium/src/+/8301512
+
+Fixed: 567321055
+Change-Id: I2ba92217dd3c79ec08f85401f276384878e7b672
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8527158
+Auto-Submit: Stefan Zager <szager@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1713984}
+
+diff --git a/cc/animation/animation_id_provider.cc b/cc/animation/animation_id_provider.cc
+index 4868eb1317e1d0b45fac8c4a2f7fe029c8e7fb3a..65266b8abcf1d8d7791d436ee050669606b05318 100644
+--- a/cc/animation/animation_id_provider.cc
++++ b/cc/animation/animation_id_provider.cc
+@@ -2,11 +2,27 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-#include "base/atomic_sequence_num.h"
+ #include "cc/animation/animation_id_provider.h"
+ 
++#include <limits>
++
++#include "base/atomic_sequence_num.h"
++#include "base/check_op.h"
++
+ namespace cc {
+ 
++namespace {
++
++int GetNextId(base::AtomicSequenceNumber& seq) {
++  // Animation IDs start from 1.
++  int prev = seq.GetNext();
++  CHECK_GE(prev, 0);
++  CHECK_LT(prev, std::numeric_limits<int>::max());
++  return prev + 1;
++}
++
++}  // namespace
++
+ base::AtomicSequenceNumber g_next_keyframe_model_id;
+ base::AtomicSequenceNumber g_next_group_id;
+ base::AtomicSequenceNumber g_next_timeline_id;
+@@ -14,25 +30,23 @@ base::AtomicSequenceNumber g_next_animation_id;
+ base::AtomicSequenceNumber g_next_animation_trigger_id;
+ 
+ int AnimationIdProvider::NextKeyframeModelId() {
+-  // Animation IDs start from 1.
+-  return g_next_keyframe_model_id.GetNext() + 1;
++  return GetNextId(g_next_keyframe_model_id);
+ }
+ 
+ int AnimationIdProvider::NextGroupId() {
+-  // Animation group IDs start from 1.
+-  return g_next_group_id.GetNext() + 1;
++  return GetNextId(g_next_group_id);
+ }
+ 
+ int AnimationIdProvider::NextTimelineId() {
+-  return g_next_timeline_id.GetNext() + 1;
++  return GetNextId(g_next_timeline_id);
+ }
+ 
+ int AnimationIdProvider::NextAnimationId() {
+-  return g_next_animation_id.GetNext() + 1;
++  return GetNextId(g_next_animation_id);
+ }
+ 
+ int AnimationIdProvider::NextAnimationTriggerId() {
+-  return g_next_animation_trigger_id.GetNext() + 1;
++  return GetNextId(g_next_animation_trigger_id);
+ }
+ 
+ }  // namespace cc

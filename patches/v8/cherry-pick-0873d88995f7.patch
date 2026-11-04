@@ -1,0 +1,333 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raphael Herouart <rherouart@chromium.org>
+Date: Tue, 27 Oct 2026 18:38:28 +0100
+Subject: [M156] [runtime] Check prototypes and exceptions in
+ SetPrototypeProperties
+
+Original change's description:
+> [runtime] Check prototypes and exceptions in SetPrototypeProperties
+>
+> `IsDefaultFunctionPrototype` accepted dictionary-mode `JSTypedArray` and
+> `JSPrimitiveWrapper` objects. `Runtime_SetPrototypeProperties` then took
+> the fast path on exotic receivers and bypassed `JSTypedArray` index
+> invariants.
+>
+> `Runtime_SetPrototypeProperties` also called `.Check()` on fallible
+> property writes. When `SetDataProperty`, `TransitionAndWriteDataProperty`,
+> or `SetAccessor` threw an exception, V8 crashed in `v8::FromJust`.
+>
+> This CL makes three changes:
+> - Check that default function prototypes have `JS_OBJECT_TYPE` and empty
+>   elements.
+> - Use `SetPrototypePropertiesSlow` for functions without a prototype
+>   property and for exotic, shared, intercepted, or access-checked
+>   prototypes.
+> - Propagate exceptions from `SetDataProperty`,
+>   `TransitionAndWriteDataProperty`, and `SetAccessor`.
+>
+> Fixed: 578083257, 577944790
+> Change-Id: I205775a804901a4de48833d9bb5b239dc74550b1
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8669314
+> Commit-Queue: Raphael Herouart <rherouart@chromium.org>
+> Reviewed-by: Igor Sheludko <ishell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111237}
+
+(cherry picked from commit 7fd7eec11ef644c7d38ba516bcfac45042860bbe)
+
+Bug: 579235436,578083257,577944790
+Change-Id: I205775a804901a4de48833d9bb5b239dc74550b1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8679879
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.6@{#57}
+Cr-Branched-From: b976f35da8356fcf4e5e176d1d810ba6a6f05718-refs/heads/15.6.75@{#1}
+Cr-Branched-From: a424b0597aab8e27f12ea4a700bae3961fa1a076-refs/heads/main@{#110135}
+
+diff --git a/src/runtime/runtime-literals.cc b/src/runtime/runtime-literals.cc
+index 312f5ddcf9042085422649765a8fafaca1914be6..4a3cfca512defade70e15bdc8f7501eff0348573 100644
+--- a/src/runtime/runtime-literals.cc
++++ b/src/runtime/runtime-literals.cc
+@@ -856,6 +856,14 @@ static bool IsDefaultFunctionPrototype(DirectHandle<JSObject> js_proto,
+   // Object function prototype's map.
+   Tagged<Map> proto_map = js_proto->map();
+ 
++  // Check that the prototype is a plain JSObject with no elements.
++  if (proto_map->instance_type() != JS_OBJECT_TYPE) {
++    return false;
++  }
++  if (js_proto->elements() != ReadOnlyRoots(isolate).empty_fixed_array()) {
++    return false;
++  }
++
+   // Check that given function.prototype object has a default initial state:
+   // it's extensible.
+   if (!proto_map->is_extensible()) {
+@@ -868,13 +876,24 @@ static bool IsDefaultFunctionPrototype(DirectHandle<JSObject> js_proto,
+   }
+ 
+   // it has exactly one "constructor" property installed.
+-  if (js_proto->property_dictionary()->NumberOfElements() != 1) {
+-    return false;
+-  }
+-  if (js_proto->property_dictionary()
+-          ->FindEntry(isolate, isolate->factory()->constructor_string())
+-          .is_not_found()) {
+-    return false;
++  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
++    if (js_proto->property_dictionary_swiss()->NumberOfElements() != 1) {
++      return false;
++    }
++    if (js_proto->property_dictionary_swiss()
++            ->FindEntry(isolate, isolate->factory()->constructor_string())
++            .is_not_found()) {
++      return false;
++    }
++  } else {
++    if (js_proto->property_dictionary()->NumberOfElements() != 1) {
++      return false;
++    }
++    if (js_proto->property_dictionary()
++            ->FindEntry(isolate, isolate->factory()->constructor_string())
++            .is_not_found()) {
++      return false;
++    }
+   }
+ 
+   // its prototype is the original and unmodified Object.prototype object.
+@@ -907,7 +926,7 @@ RUNTIME_FUNCTION(Runtime_SetPrototypeProperties) {
+   }
+ 
+   DirectHandle<JSFunction> acc_fun = Cast<JSFunction>(obj);
+-  if (!acc_fun->has_prototype_slot()) {
++  if (!acc_fun->has_prototype_slot() || !acc_fun->has_prototype_property()) {
+     RETURN_RESULT_OR_FAILURE(
+         isolate, SetPrototypePropertiesSlow(isolate, context, obj,
+                                             object_boilerplate_description,
+@@ -937,18 +956,21 @@ RUNTIME_FUNCTION(Runtime_SetPrototypeProperties) {
+                                             feedback_cell_array, current_slot));
+   }
+ 
+-  if (IsSpecialReceiverMap(js_proto->map())) {
+-    RETURN_RESULT_OR_FAILURE(
+-        isolate, SetPrototypePropertiesSlow(isolate, context, obj,
+-                                            object_boilerplate_description,
+-                                            feedback_cell_array, current_slot));
+-  }
+-
+-  if (!JSObject::IsExtensible(isolate, js_proto)) {
+-    RETURN_RESULT_OR_FAILURE(
+-        isolate, SetPrototypePropertiesSlow(isolate, context, obj,
+-                                            object_boilerplate_description,
+-                                            feedback_cell_array, current_slot));
++  // Use the slow path for exotic receivers, interceptors, or access checks.
++  {
++    Tagged<Map> js_proto_map = js_proto->map();
++    if (IsCustomElementsReceiverMap(js_proto_map) ||
++        IsJSTypedArrayMap(js_proto_map) ||
++        IsAlwaysSharedSpaceJSObjectMap(js_proto_map) ||
++        js_proto_map->is_access_check_needed() ||
++        js_proto_map->has_named_interceptor() ||
++        js_proto_map->has_indexed_interceptor() ||
++        !JSObject::IsExtensible(isolate, js_proto)) {
++      RETURN_RESULT_OR_FAILURE(
++          isolate, SetPrototypePropertiesSlow(
++                       isolate, context, obj, object_boilerplate_description,
++                       feedback_cell_array, current_slot));
++    }
+   }
+ 
+   bool is_default_func_prototype =
+@@ -977,13 +999,14 @@ RUNTIME_FUNCTION(Runtime_SetPrototypeProperties) {
+         DirectHandle<AccessorInfo> accessor_info =
+             isolate->factory()->lazy_closure_accessor();
+ 
+-        JSObject::SetAccessor(js_proto, name, accessor_info,
+-                              PropertyAttributes::NONE)
+-            .Check();
++        RETURN_FAILURE_ON_EXCEPTION(
++            isolate, JSObject::SetAccessor(js_proto, name, accessor_info,
++                                           PropertyAttributes::NONE));
+       } else {
+-        Object::TransitionAndWriteDataProperty(
+-            &it, value, NONE, Just(kDontThrow), StoreOrigin::kNamed)
+-            .Check();
++        MAYBE_RETURN(
++            Object::TransitionAndWriteDataProperty(
++                &it, value, NONE, Just(kDontThrow), StoreOrigin::kNamed),
++            ReadOnlyRoots(isolate).exception());
+       }
+       result = value;
+     }
+@@ -1029,7 +1052,8 @@ RUNTIME_FUNCTION(Runtime_SetPrototypeProperties) {
+           current_slot++;
+         }
+         it.UpdateProtector();
+-        Object::SetDataProperty(&it, value).Check();
++        MAYBE_RETURN(Object::SetDataProperty(&it, value),
++                     ReadOnlyRoots(isolate).exception());
+       } else {
+         value = InstantiateIfSharedFunctionInfo(
+             context, isolate, js_proto, value, feedback_cell_array,
+@@ -1042,13 +1066,15 @@ RUNTIME_FUNCTION(Runtime_SetPrototypeProperties) {
+           // doesn't invalidate protectors, so do it here for e.g. `then` or
+           // `next` added to a watched prototype.
+           it.UpdateProtector();
+-          JSObject::SetAccessor(js_proto, Cast<Name>(key), accessor_info,
+-                                PropertyAttributes::NONE)
+-              .Check();
++          RETURN_FAILURE_ON_EXCEPTION(
++              isolate,
++              JSObject::SetAccessor(js_proto, Cast<Name>(key), accessor_info,
++                                    PropertyAttributes::NONE));
+         } else {
+-          Object::TransitionAndWriteDataProperty(
+-              &it, value, NONE, Just(kDontThrow), StoreOrigin::kNamed)
+-              .Check();
++          MAYBE_RETURN(
++              Object::TransitionAndWriteDataProperty(
++                  &it, value, NONE, Just(kDontThrow), StoreOrigin::kNamed),
++              ReadOnlyRoots(isolate).exception());
+         }
+       }
+       result = value;
+diff --git a/test/mjsunit/opt-proto-seq/regress-577944790.js b/test/mjsunit/opt-proto-seq/regress-577944790.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e01a1280d53f3229688ac2b398c9423f76de73ec
+--- /dev/null
++++ b/test/mjsunit/opt-proto-seq/regress-577944790.js
+@@ -0,0 +1,65 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --mock-arraybuffer-allocator
++
++// Test exception propagation when a TypedArray prototype rejects a BigInt store.
++(function testLargeTypedArrayStoreException() {
++  let ta;
++  try {
++    ta = new Int8Array(4294967296);
++  } catch (e) {
++    assertInstanceof(e, RangeError);
++    return;
++  }
++
++  assertThrows(() => {
++    function F() {}
++    F.prototype = ta;
++    F.prototype['4294967295'] = 1n;
++    F.prototype.named = 1;
++  }, TypeError);
++
++  assertEquals(undefined, ta.named);
++})();
++
++// Test exception propagation when valueOf throws during a TypedArray store.
++(function testLargeTypedArrayValueOfException() {
++  let ta;
++  try {
++    ta = new Uint8Array(4294967296);
++  } catch (e) {
++    assertInstanceof(e, RangeError);
++    return;
++  }
++
++  const badValue = {
++    valueOf() {
++      throw new URIError();
++    },
++  };
++
++  assertThrows(() => {
++    function F() {}
++    F.prototype = ta;
++    F.prototype['4294967295'] = badValue;
++    F.prototype.named = 2;
++  }, URIError);
++
++  assertEquals(undefined, ta.named);
++})();
++
++// Test exception propagation on a small BigInt64Array prototype.
++(function testBigIntTypedArrayStoreException() {
++  const ta = new BigInt64Array(4);
++
++  assertThrows(() => {
++    function F() {}
++    F.prototype = ta;
++    F.prototype['4294967295'] = 1;
++    F.prototype.named = 3;
++  }, TypeError);
++
++  assertEquals(undefined, ta.named);
++})();
+diff --git a/test/mjsunit/opt-proto-seq/regress-578083257.js b/test/mjsunit/opt-proto-seq/regress-578083257.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..30e50a33d98e11ae0da781ac573ccff73bb19aa3
+--- /dev/null
++++ b/test/mjsunit/opt-proto-seq/regress-578083257.js
+@@ -0,0 +1,63 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Create a dictionary-mode TypedArray that mimics a default function prototype.
++function makeDictionaryTypedArray() {
++  const ta = new Uint8Array(4);
++  ta.temp = 1;
++  delete ta.temp;
++  ta.constructor = Object;
++  Object.setPrototypeOf(ta, Object.prototype);
++  return ta;
++}
++
++// Test integer indices above kMaxElementIndex on a TypedArray prototype.
++(function testTypedArrayLargeIntegerIndices() {
++  const ta = makeDictionaryTypedArray();
++  function F() {}
++  F.prototype = ta;
++  F.prototype['4294967295'] = 1;
++  F.prototype['4294967296'] = 2;
++  F.prototype.named = 3;
++
++  assertEquals(undefined, Object.getOwnPropertyDescriptor(ta, '4294967295'));
++  assertEquals(undefined, Object.getOwnPropertyDescriptor(ta, '4294967296'));
++  assertEquals(undefined, ta['4294967295']);
++  assertEquals(undefined, ta['4294967296']);
++  assertEquals(3, ta.named);
++})();
++
++// Test canonical numeric index strings on a TypedArray prototype.
++(function testTypedArraySpecialNumericIndices() {
++  const ta = makeDictionaryTypedArray();
++  function F() {}
++  F.prototype = ta;
++  F.prototype['1.5'] = 1;
++  F.prototype['-0'] = 2;
++  F.prototype.named = 3;
++
++  assertEquals(undefined, Object.getOwnPropertyDescriptor(ta, '1.5'));
++  assertEquals(undefined, Object.getOwnPropertyDescriptor(ta, '-0'));
++  assertEquals(undefined, ta['1.5']);
++  assertEquals(undefined, ta['-0']);
++  assertEquals(3, ta.named);
++})();
++
++// Test a dictionary-mode String wrapper as a function prototype.
++(function testStringWrapperPrototype() {
++  const wrapper = new String('abc');
++  wrapper.temp = 1;
++  delete wrapper.temp;
++  wrapper.constructor = Object;
++  Object.setPrototypeOf(wrapper, Object.prototype);
++
++  function F() {}
++  F.prototype = wrapper;
++  F.prototype.first = 10;
++  F.prototype.second = 20;
++
++  assertEquals(10, wrapper.first);
++  assertEquals(20, wrapper.second);
++  assertEquals('a', wrapper[0]);
++})();

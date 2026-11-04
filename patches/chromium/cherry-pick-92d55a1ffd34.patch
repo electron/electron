@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Phan <andyphan@chromium.org>
+Date: Mon, 5 Oct 2026 18:38:16 -0700
+Subject: [PDF] Do not expose PDF extension frames during script execution
+
+When OOPIF PDF is enabled, do not expose the PDF extension frame or any
+of its child frames during script execution. Previously, only child
+frames of the PDF extension frame were skipped, allowing <webview>
+embedders to execute scripts in the PDF extension frame.
+
+TAG=agy
+CONV=0f8d9e7b-e4c8-4b43-96fd-250f83a6073f
+
+Bug: 497950736
+Change-Id: I9decea66f6635d3d2946531d04c046fdc2179a58
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8503978
+Commit-Queue: Andy Phan <andyphan@chromium.org>
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1711898}
+
+diff --git a/chrome/browser/apps/guest_view/web_view_browsertest.cc b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+index 7d20b222860192392e0df96e6d831928144e65d6..222bacf0b9fea7be6b9229768b191eba00688795 100644
+--- a/chrome/browser/apps/guest_view/web_view_browsertest.cc
++++ b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+@@ -5455,6 +5455,40 @@ IN_PROC_BROWSER_TEST_P(WebViewPdfTest, Shim_TestDialogInPdf) {
+   TestHelper("testDialogInPdf", "web_view/shim", NO_TEST_SERVER);
+ }
+ 
++// Test that <webview>.executeScript({allFrames: true}) on a guest page
++// embedding a PDF does not execute scripts in the PDF extension frame or the
++// PDF content frame.
++IN_PROC_BROWSER_TEST_P(WebViewPdfTest, ExecuteScriptInEmbeddedPdf) {
++  SKIP_FOR_MPARCH();  // TODO(crbug.com/40202416): Enable test for MPArch.
++  if (!UseOopif()) {
++    GTEST_SKIP();
++  }
++
++  TestHelper("testExecuteScriptInEmbeddedPdf", "web_view/shim",
++             NEEDS_TEST_SERVER);
++
++  content::RenderFrameHost* web_view_rfh =
++      GetGuestViewManager()->WaitForSingleGuestRenderFrameHostCreated();
++  ASSERT_TRUE(web_view_rfh);
++
++  // Make sure the PDF loaded.
++  ASSERT_TRUE(WaitUntilPdfLoaded(content::ChildFrameAt(web_view_rfh, 0)));
++
++  // Execute script to gather path names in all frames of the <webview>.
++  static constexpr char kScript[] = R"(
++    new Promise(resolve => {
++      const webview = document.querySelector('webview');
++      webview.executeScript(
++          {code: 'window.location.pathname;', allFrames: true}, resolve);
++    });
++  )";
++
++  // The PDF extension frame and the PDF content frame should not be included.
++  EXPECT_THAT(content::EvalJs(GetEmbedderWebContents(), kScript).ExtractList(),
++              testing::UnorderedElementsAre("/page_with_embedded_pdf.html",
++                                            "/pdf/test.pdf"));
++}
++
+ // TODO(crbug.com/40268279): Stop testing both modes after OOPIF PDF viewer
+ // launches.
+ INSTANTIATE_TEST_SUITE_P(/* no prefix */,
+diff --git a/chrome/test/data/extensions/platform_apps/web_view/shim/main.js b/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
+index 2875e3903875f911518c5c114576ac50b0d4ee94..5426920b9a335cee62fa62e118538f00b41d21b6 100644
+--- a/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
++++ b/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
+@@ -3265,6 +3265,17 @@ function testDialogInPdf() {
+   document.body.appendChild(webview);
+ }
+ 
++// Test that <webview>.executeScript({allFrames: true}) on a guest page
++// embedding a PDF does not execute scripts in the PDF extension frame or the
++// PDF content frame.
++function testExecuteScriptInEmbeddedPdf() {
++  let webview = document.createElement('webview');
++  webview.onloadstop = embedder.test.succeed;
++  webview.onloadabort = embedder.test.fail;
++  webview.src = embedder.baseGuestURL + '/page_with_embedded_pdf.html';
++  document.body.appendChild(webview);
++}
++
+ // This test verifies that mailto links are enabled.
+ function testMailtoLink() {
+   var webview = new WebView();
+@@ -4238,6 +4249,7 @@ embedder.test.testList = {
+   'testPDFInWebview': testPDFInWebview,
+   'testNavigateToPDFInWebview': testNavigateToPDFInWebview,
+   'testDialogInPdf': testDialogInPdf,
++  'testExecuteScriptInEmbeddedPdf': testExecuteScriptInEmbeddedPdf,
+   'testMailtoLink': testMailtoLink,
+   'testRendererNavigationRedirectWhileUnattached':
+       testRendererNavigationRedirectWhileUnattached,
+diff --git a/extensions/browser/script_executor.cc b/extensions/browser/script_executor.cc
+index 2ad16a8b573a74a0c0ace0a8e2a267579959d21c..8f889305e1f9e8d39e91623583ef8aeeca94f7b5 100644
+--- a/extensions/browser/script_executor.cc
++++ b/extensions/browser/script_executor.cc
+@@ -193,15 +193,12 @@ class Handler : public content::WebContentsObserver {
+ 
+ #if BUILDFLAG(ENABLE_PDF)
+     if (chrome_pdf::features::IsOopifPdfEnabled()) {
+-      // Don't expose any child frames of the PDF extension frame, such as the
+-      // PDF content frame.
+-      content::RenderFrameHost* parent = frame->GetParent();
+-      if (parent) {
+-        const url::Origin& origin = parent->GetLastCommittedOrigin();
+-        if (origin.scheme() == extensions::kExtensionScheme &&
+-            origin.host() == extension_misc::kPdfExtensionId) {
+-          return content::RenderFrameHost::FrameIterationAction::kSkipChildren;
+-        }
++      // Don't expose the PDF extension frame or any of its children, such as
++      // the PDF content frame.
++      const url::Origin& origin = frame->GetLastCommittedOrigin();
++      if (origin.scheme() == extensions::kExtensionScheme &&
++          origin.host() == extension_misc::kPdfExtensionId) {
++        return content::RenderFrameHost::FrameIterationAction::kSkipChildren;
+       }
+     }
+ #endif  // BUILDFLAG(ENABLE_PDF)

@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bienvenu <davidbienvenu@chromium.org>
+Date: Thu, 15 Oct 2026 09:39:51 -0700
+Subject: [M157] Use WindowTracker in NativeWindowOcclusionTrackerWin
+
+Original change's description:
+> Use WindowTracker in NativeWindowOcclusionTrackerWin
+>
+> Use WindowTracker when updating occlusion states.
+>
+> Bug: 570029317
+> Change-Id: Ia0f58e66c22a492235c5013084e57e2b7594da5c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8560011
+> Reviewed-by: Chris Davis <chrdavis@microsoft.com>
+> Reviewed-by: Jesse McKenna <jessemckenna@google.com>
+> Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1718265}
+
+(cherry picked from commit 1775ec03a1389c3b2a0f3d3fba3dbe7d5b9f0632)
+
+Bug: 573868208,570029317
+Change-Id: Ia0f58e66c22a492235c5013084e57e2b7594da5c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8587915
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8103@{#125}
+Cr-Branched-From: e7baefea94b4a90087e3043e4a8effec33c2025f-refs/heads/main@{#1717349}
+
+Electron adaptation notes (45-x-y): 45-x-y predates the Windows native
+occlusion refactor ("Improve native occlusion tracking on Windows",
+commit 49af5f7e9dc58, 2 Oct 2026) that maps each HWND to a set of aura
+windows and added hwnd_widget_to_app_root_map_ and OnMinimizeEnd(). On this
+branch hwnd_root_window_map_ maps an HWND to a single root Window and
+UpdateOcclusionState() already re-looks the window up per iteration, so the
+only place that walks the registered windows while calling back into them
+is MarkNonIconicWindowsOccluded(). The fix is ported there: the windows are
+snapshotted into a WindowTracker first, popped one at a time, and skipped if
+they were destroyed or unregistered (hwnd_root_window_map_ no longer maps
+their HWND to them) by an earlier notification, mirroring the upstream
+WindowTracker + registration check. The UpdateOcclusionState() and
+OnMinimizeEnd() hunks have no counterpart here. The new
+native_window_occlusion_tracker_win_unittest.cc was not taken (file does
+not exist on this branch).
+
+diff --git a/ui/aura/native_window_occlusion_tracker_win.cc b/ui/aura/native_window_occlusion_tracker_win.cc
+index 27cb7f79df34586b28fd53b5e8c1af993d73f421..6c41e2fc62bda52342169b4eadd9e62f3b2834c2 100644
+--- a/ui/aura/native_window_occlusion_tracker_win.cc
++++ b/ui/aura/native_window_occlusion_tracker_win.cc
+@@ -22,6 +22,7 @@
+ #include "base/task/task_traits.h"
+ #include "base/task/thread_pool.h"
+ #include "ui/aura/window_occlusion_tracker.h"
++#include "ui/aura/window_tracker.h"
+ #include "ui/aura/window_tree_host.h"
+ #include "ui/base/ui_base_features.h"
+ #include "ui/gfx/geometry/skia_conversions.h"
+@@ -301,11 +302,20 @@ void NativeWindowOcclusionTrackerWin::OnSuspend() {
+ void NativeWindowOcclusionTrackerWin::MarkNonIconicWindowsOccluded() {
+   // Set all visible root windows as occluded. If not visible,
+   // set them as hidden.
++  WindowTracker windows;
+   for (const auto& root_window_hwnd_pair : hwnd_root_window_map_) {
+-    root_window_hwnd_pair.second->GetHost()->SetNativeWindowOcclusionState(
+-        ::IsIconic(root_window_hwnd_pair.first)
+-            ? Window::OcclusionState::HIDDEN
+-            : Window::OcclusionState::OCCLUDED,
++    windows.Add(root_window_hwnd_pair.second);
++  }
++  while (!windows.windows().empty()) {
++    Window* window = windows.Pop();
++    const HWND hwnd = window->GetHost()->GetAcceleratedWidget();
++    const auto it = hwnd_root_window_map_.find(hwnd);
++    if (it == hwnd_root_window_map_.end() || it->second != window) {
++      continue;
++    }
++    window->GetHost()->SetNativeWindowOcclusionState(
++        ::IsIconic(hwnd) ? Window::OcclusionState::HIDDEN
++                         : Window::OcclusionState::OCCLUDED,
+         {});
+   }
+ }

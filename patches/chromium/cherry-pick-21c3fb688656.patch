@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michal Mocny <mmocny@chromium.org>
+Date: Mon, 5 Oct 2026 06:01:35 -0700
+Subject: Guard OnWorkerTaskCompleted and clear Member fields on Shutdown
+
+Follow-up cleanup to AnimationFrameTimingMonitor::Shutdown():
+- Add an enabled_ guard to OnWorkerTaskCompleted() for consistency with
+  OnMainThreadTaskCompleted() so worker tasks completing after
+  Shutdown() are ignored.
+- Clear current_frame_timing_info_, current_scripts_,
+  congestion_scripts_, and task_attributed_window_ in Shutdown() so GC
+  can reclaim referenced objects sooner.
+
+Bug: 566506819
+Change-Id: I65ea95b83008425a7df8ec49cd94d5c76a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8498065
+Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+Commit-Queue: Michal Mocny <mmocny@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1711207}
+
+diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+index 9a6ebb758327df4f461b2962e9452c258298e068..f8686d1e751329eaa07906d49211ff2489147724 100644
+--- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
++++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+@@ -79,7 +79,11 @@ AnimationFrameTimingMonitor::AnimationFrameTimingMonitor(Client& client,
+ 
+ void AnimationFrameTimingMonitor::Shutdown() {
+   enabled_ = false;
++  current_frame_timing_info_.Clear();
++  current_scripts_.clear();
++  congestion_scripts_.clear();
+   frame_handling_input_ = nullptr;
++  task_attributed_window_ = nullptr;
+   if (probe_sink_) {
+     probe_sink_->RemoveAnimationFrameTimingMonitor(this);
+     probe_sink_ = nullptr;
+@@ -310,6 +314,9 @@ void AnimationFrameTimingMonitor::OnWorkerTaskCompleted(
+     base::TimeTicks start_time,
+     base::TimeTicks end_time,
+     base::TimeTicks desired_execution_time) {
++  if (!enabled_) {
++    return;
++  }
+   entry_point_depth_ = 0;
+   pending_script_info_ = std::nullopt;
+   current_task_start_ = base::TimeTicks();

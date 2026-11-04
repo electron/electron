@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Liberato <liberato@chromium.org>
+Date: Mon, 5 Oct 2026 21:11:34 +0000
+Subject: avformat/mov: zero uninitialized tts_data realloc slack
+
+When an edit list triggers mov_fix_index() on a track whose stts/ctts
+sample total is smaller than stsz sample_count, add_tts_entry() grows
+tts_data via av_fast_realloc() without zeroing the realloc slack beyond
+tts_count. If a subsequent moof/trun fragment is parsed for the same
+track, mov_read_trun() previously only zeroed bytes above
+old_allocated_size before setting tts_count = sti->nb_index_entries,
+promoting the uninitialized realloc slack between the old tts_count and
+old_allocated_size into live time-to-sample entries.
+
+Fix this by:
+1. Zeroing newly allocated slack in add_tts_entry() when av_fast_realloc
+   grows the buffer.
+2. Zeroing from sc->tts_count * sizeof(*sc->tts_data) to
+   sc->tts_allocated_size in mov_read_trun() before updating tts_count.
+
+Bug: 568986882
+Change-Id: I6fdd3dffded9d57c062c4f9b4c086585881baf55
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/8515641
+Reviewed-by: Syed AbuTalib <lowkey@google.com>
+Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
+
+diff --git a/libavformat/mov.c b/libavformat/mov.c
+index ee70800a7142a8820ff01d56dad2eb1effdd9abb..f8571559229ad0176c60ac671badaf607e81ff22 100644
+--- a/libavformat/mov.c
++++ b/libavformat/mov.c
+@@ -4391,6 +4391,7 @@ static int add_tts_entry(MOVTimeToSample **tts_data, unsigned int *tts_count, un
+ {
+     MOVTimeToSample *tts_buf_new;
+     const size_t min_size_needed = (*tts_count + 1) * sizeof(MOVTimeToSample);
++    const size_t old_allocated_size = *allocated_size;
+     const size_t requested_size =
+         min_size_needed > *allocated_size ?
+         FFMAX(min_size_needed, 2 * (*allocated_size)) :
+@@ -4405,6 +4406,10 @@ static int add_tts_entry(MOVTimeToSample **tts_data, unsigned int *tts_count, un
+         return -1;
+ 
+     *tts_data = tts_buf_new;
++    if (*allocated_size > old_allocated_size) {
++        memset((uint8_t*)tts_buf_new + old_allocated_size, 0,
++               *allocated_size - old_allocated_size);
++    }
+ 
+     tts_buf_new[*tts_count].count = count;
+     tts_buf_new[*tts_count].offset = offset;
+@@ -6375,7 +6380,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+     sti->index_entries= new_entries;
+ 
+     requested_size = (sti->nb_index_entries + entries) * sizeof(*sc->tts_data);
+-    old_allocated_size = sc->tts_allocated_size;
++    old_allocated_size = sc->tts_count * sizeof(*sc->tts_data);
+     tts_data = av_fast_realloc(sc->tts_data, &sc->tts_allocated_size,
+                                 requested_size);
+     if (!tts_data)
+@@ -6385,8 +6390,10 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+     // In case there were samples without time to sample entries, ensure they get
+     // zero valued entries. This ensures clips which mix boxes with and
+     // without time to sample entries don't pickup uninitialized data.
+-    memset((uint8_t*)(sc->tts_data) + old_allocated_size, 0,
+-           sc->tts_allocated_size - old_allocated_size);
++    if (sc->tts_allocated_size > old_allocated_size) {
++        memset((uint8_t*)(sc->tts_data) + old_allocated_size, 0,
++               sc->tts_allocated_size - old_allocated_size);
++    }
+ 
+     if (index_entry_pos < sti->nb_index_entries) {
+         // Make hole in index_entries and tts_data for new samples

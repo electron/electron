@@ -1,0 +1,222 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Liberato <liberato@google.com>
+Date: Thu, 22 Oct 2026 15:48:11 -0700
+Subject: [M156] [PiP] Prevent UAF in EnterVideoPictureInPicture on Document
+ PiP child
+
+Original change's description:
+> [PiP] Prevent UAF in EnterVideoPictureInPicture on Document PiP child
+>
+> When a video inside a Document Picture-in-Picture child WebContents
+> requests video Picture-in-Picture (for example, from an iframe inside
+> the Document PiP window), BrowserWebContentsDelegate forwards the
+> request to PictureInPictureWindowManager::EnterVideoPictureInPicture.
+> Because the active DocumentPictureInPictureWindowControllerImpl's
+> GetWebContents() is the opener rather than the Document PiP child,
+> EnterVideoPictureInPicture called CloseWindowInternal() to close the
+> active Document PiP window before calling CreateWindowInternal() with
+> the requesting WebContents.
+>
+> When a JavaScript dialog (such as alert()) is active in the Document PiP
+> window, RenderFrameHostImpl::IsPageReadyToBeClosed() returns true and
+> ClosePage() synchronously destroys the Document PiP child WebContents
+> inside CloseWindowInternal(), causing a browser-process
+> heap-use-after-free when CreateWindowInternal() subsequently uses the
+> freed WebContents pointer (and in callers on the stack owned by that
+> WebContents).
+>
+> This CL fixes the issue with defense-in-depth: 1. In
+> PictureInPictureWindowManager::EnterVideoPictureInPicture, reject
+>    requests where web_contents is the active Document PiP child
+>    WebContents (GetChildWebContents() == web_contents) with
+>    PictureInPictureResult::kNotSupported before closing the existing
+>    window, matching Blink's policy that video PiP is disabled inside
+>    Document PiP windows.
+> 2. Guard web_contents with a base::WeakPtr across CloseWindowInternal()
+>    in PictureInPictureWindowManager::EnterVideoPictureInPicture and
+>    across EnterPictureInPicture() in
+>    VideoPictureInPictureWindowControllerImpl::StartSession, returning
+>    kNotSupported if closing an existing PiP window synchronously
+>    destroys the requesting WebContents.
+>
+> Verification:
+> - Reproduced the pre-fix crash in PictureInPictureWindowManagerTest
+>   when CloseWindowInternal() synchronously destroys the requesting
+>   WebContents.
+> - Verified all 24 tests in PictureInPictureWindowManagerTest.* pass
+>   with the fix, including two new regression tests
+>   (EnterVideoPipRejectedForDocumentPipChildWebContents and
+>   EnterVideoPipFromClosingWindowDoesNotUseFreedWebContents).
+>
+> TAG=agy
+> CONV=92a3460f-772c-456b-8012-eabd7007ea05
+>
+> Bug: 565681453
+> Change-Id: I4e844ad215bf6878f5638a4c0fa605f9411d5d5f
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8563859
+> Reviewed-by: Frank Liberato <liberato@chromium.org>
+> Auto-Submit: Frank Liberato <liberato@google.com>
+> Reviewed-by: Tommy Steimel <steimel@chromium.org>
+> Commit-Queue: Frank Liberato <liberato@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1717305}
+
+(cherry picked from commit 7261550390cedbc54ff67371dbcc32ff592f921d)
+
+Bug: 573452343,565681453
+Change-Id: I4e844ad215bf6878f5638a4c0fa605f9411d5d5f
+
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
+index 5838047b94e7638cbe29aa3a2d9ca1234baa9cb1..6371f604c2ea63c2baa76a212100f6d7986619e0 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
++++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
+@@ -200,6 +200,13 @@ void PictureInPictureWindowManager::EnterDocumentPictureInPicture(
+ content::PictureInPictureResult
+ PictureInPictureWindowManager::EnterVideoPictureInPicture(
+     content::WebContents* web_contents) {
++  // A Document Picture-in-Picture child WebContents cannot enter video
++  // Picture-in-Picture. Reject the request before closing the existing
++  // window, which would close `web_contents` itself.
++  if (web_contents && GetChildWebContents() == web_contents) {
++    return content::PictureInPictureResult::kNotSupported;
++  }
++
+   // Create or update |pip_window_controller_| for the current WebContents, if
+   // it is a WebContents based video PIP.
+   if (!pip_window_controller_ ||
+@@ -207,8 +214,14 @@ PictureInPictureWindowManager::EnterVideoPictureInPicture(
+       !pip_window_controller_->GetWebContents()->HasPictureInPictureVideo()) {
+     // If there was already a video PiP controller, close the existing window
+     // before creating the next one.
+-    if (pip_window_controller_)
++    if (pip_window_controller_) {
++      base::WeakPtr<content::WebContents> weak_web_contents =
++          web_contents->GetWeakPtr();
+       CloseWindowInternal();
++      if (!weak_web_contents) {
++        return content::PictureInPictureResult::kNotSupported;
++      }
++    }
+ 
+     CreateWindowInternal(web_contents);
+   }
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
+index 52377ebff207b5e8d6d14c144b73fc68e7927904..4fcbfb36ad341d30ec3de5b080620c710a37b5b0 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
++++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
+@@ -75,8 +75,9 @@ class PictureInPictureWindowManager {
+   //
+   // This mode is triggered through WebContentsDelegate::EnterPictureInPicture,
+   // and the default implementation of that fails with a kNotSupported
+-  // result. For compatibility, this method must also return a
+-  // content::PictureInPictureResult even though it doesn't fail.
++  // result. This method also returns kNotSupported if `web_contents` is a
++  // Document Picture-in-Picture child WebContents or is destroyed while closing
++  // an existing Picture-in-Picture window.
+   content::PictureInPictureResult EnterVideoPictureInPicture(
+       content::WebContents*);
+ 
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager_unittest.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager_unittest.cc
+index 7a9bb2d57c26babb41a42e86682337f47e26707f..79c3bb36030c1f0bd96ac0cfddcc1dff77910915 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager_unittest.cc
++++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager_unittest.cc
+@@ -10,6 +10,7 @@
+ #include "chrome/test/base/chrome_render_view_host_test_harness.h"
+ #include "content/public/browser/picture_in_picture_window_controller.h"
+ #include "content/public/browser/web_contents.h"
++#include "content/public/browser/web_contents_delegate.h"
+ #include "content/public/test/mock_video_picture_in_picture_window_controller_impl.h"
+ #include "extensions/buildflags/buildflags.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+@@ -122,6 +123,8 @@ class PictureInPictureWindowManagerTest
+     return child_web_contents_.get();
+   }
+ 
++  void ResetChildWebContents() { child_web_contents_.reset(); }
++
+   content::MockVideoPictureInPictureWindowControllerImpl*
+   mock_video_picture_in_picture_controller() const {
+     return mock_video_picture_in_picture_controller_.get();
+@@ -235,6 +238,59 @@ TEST_F(PictureInPictureWindowManagerTest, OnEnterVideoPictureInPicture) {
+   picture_in_picture_window_manager->EnterVideoPictureInPicture(web_contents());
+ }
+ 
++TEST_F(PictureInPictureWindowManagerTest,
++       EnterVideoPipRejectedForDocumentPipChildWebContents) {
++  PictureInPictureWindowManager* picture_in_picture_window_manager =
++      PictureInPictureWindowManager::GetInstance();
++
++  MockPictureInPictureWindowController document_pip_controller;
++  ON_CALL(document_pip_controller, GetWebContents())
++      .WillByDefault(testing::Return(web_contents()));
++  ON_CALL(document_pip_controller, GetChildWebContents())
++      .WillByDefault(testing::Return(child_web_contents()));
++
++  picture_in_picture_window_manager->EnterPictureInPictureWithController(
++      &document_pip_controller);
++
++  // Entering video PiP from the Document PiP child WebContents must be
++  // rejected without closing the active Document PiP window.
++  EXPECT_CALL(document_pip_controller, Close).Times(0);
++  EXPECT_EQ(content::PictureInPictureResult::kNotSupported,
++            picture_in_picture_window_manager->EnterVideoPictureInPicture(
++                child_web_contents()));
++  EXPECT_EQ(child_web_contents(),
++            picture_in_picture_window_manager->GetChildWebContents());
++
++  EXPECT_CALL(document_pip_controller, Close(/*should_pause_video=*/false));
++  EXPECT_TRUE(picture_in_picture_window_manager->ExitPictureInPicture());
++}
++
++TEST_F(PictureInPictureWindowManagerTest,
++       EnterVideoPipFromClosingWindowDoesNotUseFreedWebContents) {
++  PictureInPictureWindowManager* picture_in_picture_window_manager =
++      PictureInPictureWindowManager::GetInstance();
++
++  MockPictureInPictureWindowController existing_controller;
++  ON_CALL(existing_controller, GetWebContents())
++      .WillByDefault(testing::Return(web_contents()));
++  ON_CALL(existing_controller, GetChildWebContents())
++      .WillByDefault(testing::Return(nullptr));
++
++  picture_in_picture_window_manager->EnterPictureInPictureWithController(
++      &existing_controller);
++
++  // Simulate closing the existing PiP window synchronously destroying the
++  // requesting WebContents.
++  EXPECT_CALL(existing_controller, Close(/*should_pause_video=*/false))
++      .WillOnce([this](bool) { ResetChildWebContents(); });
++
++  content::WebContents* requesting_contents = child_web_contents();
++  EXPECT_EQ(content::PictureInPictureResult::kNotSupported,
++            picture_in_picture_window_manager->EnterVideoPictureInPicture(
++                requesting_contents));
++  EXPECT_FALSE(picture_in_picture_window_manager->IsInPictureInPicture());
++}
++
+ #if !BUILDFLAG(IS_ANDROID)
+ TEST_F(PictureInPictureWindowManagerTest, RespectsMinAndMaxSize) {
+   // The max window size should be 80% of the screen.
+diff --git a/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.cc b/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.cc
+index 60cf783dc7d4d2a35732935b0283fd2bfc71d119..e7b7e052c9218b85fd7db1da7f62e72111cc63f0 100644
+--- a/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.cc
++++ b/content/browser/picture_in_picture/video_picture_in_picture_window_controller_impl.cc
+@@ -7,6 +7,7 @@
+ #include <set>
+ #include <utility>
+ 
++#include "base/memory/weak_ptr.h"
+ #include "components/viz/common/surfaces/surface_id.h"
+ #include "content/browser/media/media_web_contents_observer.h"
+ #include "content/browser/media/session/media_session_impl.h"
+@@ -316,7 +317,11 @@ PictureInPictureResult VideoPictureInPictureWindowControllerImpl::StartSession(
+   WebContentsDelegate* delegate = web_contents()->GetDelegate();
+   if (delegate && (IsImmersive() ? delegate->IsImmersivePlaybackEnabled()
+                                  : delegate->IsPictureInPictureEnabled())) {
++    base::WeakPtr<WebContents> weak_web_contents = web_contents()->GetWeakPtr();
+     result = GetWebContentsImpl()->EnterPictureInPicture();
++    if (!weak_web_contents) {
++      return PictureInPictureResult::kNotSupported;
++    }
+   }
+ 
+   // Picture-in-Picture may not be supported by all embedders, so we should only

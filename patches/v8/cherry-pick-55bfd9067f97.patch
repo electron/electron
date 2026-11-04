@@ -1,0 +1,153 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
+Date: Mon, 26 Oct 2026 14:53:29 +0000
+Subject: [M156] [maps] Normalize non-extensible root maps in MapUpdater
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [maps] Normalize non-extensible root maps in MapUpdater
+>
+> A root map can already be non-extensible when an elements kind
+> transition omits inserting a transition (e.g., transitioning to
+> DICTIONARY_ELEMENTS). If a subsequent integrity level or private field
+> transition is attached to such a root map, MapUpdater cannot replay the
+> transition from an extensible root map and must normalize instead.
+>
+> TAG=agy
+> CONV=b2af50ad-4380-4966-80da-f8f3e87cb3aa
+> Bug: 577318603
+>
+> Change-Id: I651e387796c78c02c1d060e4d1c51303ad141e9b
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8657167
+> Commit-Queue: Igor Sheludko <ishell@chromium.org>
+> Reviewed-by: Igor Sheludko <ishell@chromium.org>
+> Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111215}
+
+(cherry picked from commit 7587a107c12c2fa695c6f4b8ea0c455866dcfd28)
+
+Bug: 578797598,577318603
+Change-Id: I651e387796c78c02c1d060e4d1c51303ad141e9b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8685761
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.6@{#59}
+Cr-Branched-From: b976f35da8356fcf4e5e176d1d810ba6a6f05718-refs/heads/15.6.75@{#1}
+Cr-Branched-From: a424b0597aab8e27f12ea4a700bae3961fa1a076-refs/heads/main@{#110135}
+
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index f1437356d69e15ad32ce25ed022d3b7465db6810..84999a3a34da86a4d016193e08944da9b0b70fc4 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -400,7 +400,9 @@ std::optional<Tagged<Map>> MapUpdater::TryUpdateNoLock(Isolate* isolate,
+   ElementsKind to_kind = old_map->elements_kind();
+ 
+   IntegrityLevelTransitionInfo info(old_map);
+-  if (root_map->is_extensible() != old_map->is_extensible()) {
++  if (!root_map->is_extensible() && old_map != root_map) {
++    return {};
++  } else if (root_map->is_extensible() != old_map->is_extensible()) {
+     DCHECK(!old_map->is_extensible());
+     DCHECK(root_map->is_extensible());
+     info = DetectIntegrityLevelTransitions(old_map, isolate, &no_gc, cmode);
+@@ -412,7 +414,7 @@ std::optional<Tagged<Map>> MapUpdater::TryUpdateNoLock(Isolate* isolate,
+     DCHECK(to_kind == DICTIONARY_ELEMENTS ||
+            to_kind == SLOW_STRING_WRAPPER_ELEMENTS ||
+            IsTypedArrayOrRabGsabTypedArrayElementsKind(to_kind) ||
+-           IsAnyHoleyNonextensibleElementsKind(to_kind));
++           IsAnyNonextensibleElementsKind(to_kind));
+     to_kind = info.integrity_level_source_map->elements_kind();
+   }
+   if (from_kind != to_kind) {
+@@ -622,6 +624,8 @@ MapUpdater::State MapUpdater::FindRootMap() {
+           direct_handle(root_map_->prototype(), isolate_),
+           root_map_->instance_type())) {
+     return Normalize("Normalize_NotEquivalent");
++  } else if (!root_map_->is_extensible() && *old_map_ != *root_map_) {
++    return Normalize("Normalize_PrivateSymbolsOnNonExtensible");
+   } else if (old_map_->is_extensible() != root_map_->is_extensible()) {
+     DCHECK(!old_map_->is_extensible());
+     DCHECK(root_map_->is_extensible());
+diff --git a/test/mjsunit/regress/regress-577318603.js b/test/mjsunit/regress/regress-577318603.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e89da01965850fdb9ac1fa3d8a88272531bc0745
+--- /dev/null
++++ b/test/mjsunit/regress/regress-577318603.js
+@@ -0,0 +1,74 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --no-js-nonextensible-applies-to-private
++
++class Base {
++  constructor(o) {
++    return o;
++  }
++}
++
++class InstallPrivateField extends Base {
++  #p = 1;
++  static setP(o, v) {
++    o.#p = v;
++  }
++  static getP(o) {
++    return o.#p;
++  }
++}
++
++// Private field added onto a non-extensible root map before Object.seal.
++{
++  const obj = new Date();
++  obj[0] = 1;
++  obj.x = 1;
++
++  Object.preventExtensions(obj);
++  Object.defineProperty(obj, 0, { enumerable: false });
++
++  new InstallPrivateField(obj);
++  Object.seal(obj);
++  InstallPrivateField.setP(obj, 1.5);
++
++  assertEquals(1.5, InstallPrivateField.getP(obj));
++  assertFalse(Object.getOwnPropertyDescriptor(obj, 'x').configurable);
++}
++
++// Object.seal on a non-extensible root map before adding a private field.
++{
++  const obj = new Date();
++  obj[0] = 1;
++  obj.x = 1;
++
++  Object.preventExtensions(obj);
++  Object.defineProperty(obj, 0, { enumerable: false });
++
++  Object.seal(obj);
++  new InstallPrivateField(obj);
++  InstallPrivateField.setP(obj, 1.5);
++
++  assertEquals(1.5, InstallPrivateField.getP(obj));
++  assertFalse(Object.getOwnPropertyDescriptor(obj, 'x').configurable);
++}
++
++// Constness generalization of a root-map property after Object.seal on a
++// non-extensible dictionary-elements root map must not drop the seal
++// transition.
++{
++  const obj = new Date();
++  obj[0] = 1;
++  obj.x = 1;
++
++  Object.preventExtensions(obj);
++  Object.defineProperty(obj, 0, { enumerable: false });
++
++  Object.seal(obj);
++  obj.x = 2;
++
++  assertEquals(2, obj.x);
++  assertTrue(Object.isSealed(obj));
++  assertFalse(Object.getOwnPropertyDescriptor(obj, 'x').configurable);
++}

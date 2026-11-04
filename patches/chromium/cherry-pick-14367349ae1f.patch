@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tianyi Hu <oscarhuthu@gmail.com>
+Date: Wed, 7 Oct 2026 11:58:04 -0700
+Subject: Ignore OpenURL requests without a frame tree id during prerendering
+
+Navigator::RequestOpenURL() needs a frame_tree_node_id to route requests
+from prerendering frames to the correct frame tree. Replace the DCHECK
+with an early return when that id is missing.
+
+A synthetic click in a prerendering page can reach this path, so ignore
+the request without terminating the renderer. Keep support for these
+requests as separate work.
+
+Add a regression test in PrerenderBrowserTest to check that the request
+starts no navigation and that the prerendered page remains live and can
+still be activated.
+
+Browser test not run locally; no configured build output is available.
+
+Validation: git cl format; presubmit with PRESUBMIT_SKIP_NETWORK=1.
+Test: PrerenderBrowserTest.OpenURLFromPrerenderingMainFrame
+Bug: 492163889
+Change-Id: I511cb40abe8dbdd89b5b5e4df512be703f350663
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7662224
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Commit-Queue: Tianyi Hu <oscarhuthu@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#1713693}
+
+diff --git a/content/browser/preloading/prerender/prerender_browsertest.cc b/content/browser/preloading/prerender/prerender_browsertest.cc
+index 0e1de500d2082a17c1bdb369e348b5a658ee0a6c..a417db9af8e52b420df9b062ba95f9a9b5c4b6b0 100644
+--- a/content/browser/preloading/prerender/prerender_browsertest.cc
++++ b/content/browser/preloading/prerender/prerender_browsertest.cc
+@@ -71,6 +71,7 @@
+ #include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/common/content_navigation_policy.h"
+ #include "content/common/features.h"
++#include "content/common/frame.mojom.h"
+ #include "content/common/input/synthetic_tap_gesture.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_thread.h"
+@@ -111,6 +112,7 @@
+ #include "content/public/test/test_utils.h"
+ #include "content/public/test/theme_change_waiter.h"
+ #include "content/public/test/url_loader_interceptor.h"
++#include "content/public/test/web_contents_observer_test_utils.h"
+ #include "content/shell/browser/shell.h"
+ #include "content/shell/browser/shell_browser_context.h"
+ #include "content/test/content_browser_test_utils_internal.h"
+@@ -137,6 +139,7 @@
+ #include "third_party/blink/public/common/loader/loader_constants.h"
+ #include "third_party/blink/public/common/navigation/preloading_headers.h"
+ #include "third_party/blink/public/mojom/browser_interface_broker.mojom.h"
++#include "third_party/blink/public/mojom/frame/frame.mojom.h"
+ #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
+ #include "third_party/blink/public/mojom/page/display_cutout.mojom.h"
+ #include "ui/color/color_id.h"
+@@ -10613,6 +10616,52 @@ IN_PROC_BROWSER_TEST_F(PrerenderBrowserTest, EmbedderPrerenderToNonHttpUrl) {
+       PrerenderFinalStatus::kInvalidSchemeNavigation, 1);
+ }
+ 
++// OpenURL requests from a prerendering main frame are ignored without
++// terminating the renderer. Regression test for crbug.com/492163889.
++IN_PROC_BROWSER_TEST_F(PrerenderBrowserTest, OpenURLFromPrerenderingMainFrame) {
++  const GURL initial_url = GetUrl("/title1.html");
++  ASSERT_TRUE(NavigateToURL(shell(), initial_url));
++
++  const GURL prerender_url = GetUrl("/title2.html");
++  PrerenderHostId host_id = AddPrerender(prerender_url);
++  auto* prerender_rfh = GetPrerenderedMainFrameHost(host_id);
++  ASSERT_TRUE(prerender_rfh);
++  ASSERT_EQ(prerender_rfh->lifecycle_state(),
++            RenderFrameHostLifecycleStateImpl::kPrerendering);
++  ASSERT_FALSE(prerender_rfh->GetParentOrOuterDocument());
++
++  const auto prerender_rfh_id = prerender_rfh->GetGlobalId();
++
++  {
++    NavigationStartObserver navigation_observer(
++        web_contents(), base::BindLambdaForTesting([](NavigationHandle*) {
++          ADD_FAILURE() << "The OpenURL request should be ignored";
++        }));
++    auto params = blink::mojom::OpenURLParams::New();
++    params->url = GetUrl("/title3.html");
++    params->disposition = WindowOpenDisposition::CURRENT_TAB;
++    params->should_replace_current_entry = false;
++    params->user_gesture = true;
++    params->initiator_state_token =
++        prerender_rfh->current_initiator_state_token();
++    params->initiator_document_token = prerender_rfh->GetDocumentToken();
++    static_cast<mojom::FrameHost*>(prerender_rfh)->OpenURL(std::move(params));
++    EXPECT_TRUE(WaitForLoadStop(web_contents()));
++    EXPECT_EQ(initial_url, web_contents()->GetLastCommittedURL());
++  }
++
++  auto* remaining_prerender_rfh = GetPrerenderedMainFrameHost(host_id);
++  ASSERT_TRUE(remaining_prerender_rfh);
++  EXPECT_TRUE(remaining_prerender_rfh->IsRenderFrameLive());
++  EXPECT_EQ(prerender_url, remaining_prerender_rfh->GetLastCommittedURL());
++
++  // The ignored request must leave the prerendered page usable for activation.
++  NavigatePrimaryPage(prerender_url);
++  EXPECT_EQ(prerender_rfh_id,
++            web_contents()->GetPrimaryMainFrame()->GetGlobalId());
++  EXPECT_EQ(prerender_url, web_contents()->GetLastCommittedURL());
++}
++
+ // Ensures WebContents::OpenURL targeting a frame in a prerendered host will
+ // successfully navigate that frame.
+ IN_PROC_BROWSER_TEST_F(PrerenderBrowserTest, OpenURLInPrerenderingFrame) {
+diff --git a/content/browser/renderer_host/navigator.cc b/content/browser/renderer_host/navigator.cc
+index ee261a528ed0a82ad23c9b11361afd2fadd2f6ae..eb85c946344c2fb254eddbc3dd3b6ff1f4f9775c 100644
+--- a/content/browser/renderer_host/navigator.cc
++++ b/content/browser/renderer_host/navigator.cc
+@@ -1117,12 +1117,15 @@ void Navigator::RequestOpenURL(
+         render_frame_host->frame_tree_node()->frame_tree_node_id();
+   }
+ 
+-  // Prerendering frames need to have an FTN id set, so OpenURL() can find
+-  // the correct frame tree for the navigation. Due to the above logic, that
+-  // means this function currently can't be called for prerendering main frames.
+-  DCHECK(render_frame_host->lifecycle_state() !=
+-             RenderFrameHostLifecycleStateImpl::kPrerendering ||
+-         frame_tree_node_id);
++  // Prerendering frames need an FTN id so OpenURL() can find the correct frame
++  // tree. Allow requests with an FTN id, such as WindowClient.navigate() on an
++  // iframe in a prerendering page. Ignore requests without one, which can occur
++  // after a synthetic click in a prerendering page.
++  if (render_frame_host->lifecycle_state() ==
++          RenderFrameHostLifecycleStateImpl::kPrerendering &&
++      !frame_tree_node_id) {
++    return;
++  }
+ 
+   OpenURLParams params = OpenURLParams::CreateRendererInitiated(
+       url, disposition, ui::PAGE_TRANSITION_LINK, referrer,

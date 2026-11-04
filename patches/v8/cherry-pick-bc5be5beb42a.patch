@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 7 Oct 2026 14:01:02 +0200
+Subject: [parser] Validate expression before rewriting invalid for-in/of LHS
+
+In `for (g({x = z}) in {})`, `g(...)` is a legacy non-eager error. The
+expression scope that handles this pattern (rewrites it to a runtime
+error) however discards any "inner" error when it's going to rewrite it
+(`mark_verified()`). That causes divergence between the preparser and
+the parser.
+
+In this example `x = z` isn't valid, and should have a higher-priority
+early error. Use `ValidateExpression` instead to promote the error.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I124bf4f6bb39f61a9e565150d7f3e1356e64523e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8524495
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110494}
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index 4114e9d3f00a4ee6238154f18f74dd59cc9ef962..548861525312159c7efed49ecc14a129a28f8587 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -527,7 +527,7 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
+       ValidateExpression();
+       return expression;
+     }
+-    this->mark_verified();
++    ValidateExpression();
+     const bool early_error = false;
+     return this->parser()->RewriteInvalidReferenceExpression(
+         expression, beg_pos, end_pos, MessageTemplate::kInvalidLhsInFor,
+diff --git a/test/mjsunit/regress/regress-567222737.js b/test/mjsunit/regress/regress-567222737.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..025e64d1dd4395e5523cfba6956c7d0d68792e1e
+--- /dev/null
++++ b/test/mjsunit/regress/regress-567222737.js
+@@ -0,0 +1,52 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --expose-gc --stress-flush-code
++
++// CoverInitializedName inside a call expression on the LHS of for-in/of must
++// be rejected as a SyntaxError even though legacy web compatibility defers the
++// invalid LHS ReferenceError for call expressions to runtime.
++assertThrows("for (g({x = 1}) in {}) {}", SyntaxError);
++assertThrows("for (g({x = 1}) of []) {}", SyntaxError);
++assertThrows("async function f() { for await (g({x = 1}) of []) {} }", SyntaxError);
++
++// Valid call expressions on the LHS of for-in/of should still parse and throw
++// ReferenceError at runtime.
++let count = 0;
++function g() {
++  count++;
++}
++assertThrows(() => {
++  for (g({x: 1}) in {a: 1}) {}
++}, ReferenceError);
++assertEquals(1, count);
++
++assertThrows(() => {
++  for (g({x: 1}) of [1]) {}
++}, ReferenceError);
++assertEquals(2, count);
++
++// Ensure lazy vs. eager parsing of an inner function containing a call target
++// with CoverInitializedName in a for-in header cannot cause a ContextCell
++// mutability mismatch.
++assertThrows(() => {
++  Function(`
++    function maker() {
++      return (() => {
++        let x = 1, z = 2;
++        function getter() { return x; }
++        function inner() {
++          for (g({x = z}) in {}) {}
++        }
++        return getter;
++      });
++    }
++    const outer = maker();
++    const get1 = outer();
++    get1();
++    gc();
++    const get2 = outer();
++    get2();
++  `)();
++}, SyntaxError);

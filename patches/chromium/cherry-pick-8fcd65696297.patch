@@ -1,0 +1,650 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mike West <mkwst@chromium.org>
+Date: Mon, 12 Oct 2026 01:15:22 -0700
+Subject: [Web Bundles] Support signature-based SRI.
+
+When implementing Signature-based SRI, we missed the web bundle
+URLLoader specialization. This CL ensures that the relevant headers are
+processed in `WebBundleURLLoaderFactory::SendResponseToLoader`, and adds
+unit and web platform tests to lock in the behavior.
+
+Bug: 566857543
+Change-Id: Id3497f215e1916a67287484a7eb2ab2aa4db404e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8548513
+Commit-Queue: Mike West <mkwst@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716596}
+
+diff --git a/services/network/web_bundle/web_bundle_url_loader_factory.cc b/services/network/web_bundle/web_bundle_url_loader_factory.cc
+index f822884d71d7d0b580bde9701adbdda4b33146e7..24f9817ccaf3cb8e891de2b0db82bd6e87a5a93f 100644
+--- a/services/network/web_bundle/web_bundle_url_loader_factory.cc
++++ b/services/network/web_bundle/web_bundle_url_loader_factory.cc
+@@ -31,6 +31,8 @@
+ #include "services/network/public/cpp/orb/orb_api.h"
+ #include "services/network/public/cpp/record_ontransfersizeupdate_utils.h"
+ #include "services/network/public/cpp/resource_request.h"
++#include "services/network/public/cpp/sri_message_signatures.h"
++#include "services/network/public/cpp/unencoded_digests.h"
+ #include "services/network/public/mojom/early_hints.mojom.h"
+ #include "services/network/public/mojom/http_raw_headers.mojom.h"
+ #include "services/network/public/mojom/url_loader.mojom.h"
+@@ -198,14 +200,7 @@ class WebBundleURLLoaderFactory::URLLoader : public mojom::URLLoader {
+             base::Time request_start_time,
+             base::TimeTicks request_start_time_ticks,
+             base::OnceCallback<void(URLLoader*)> disconnected_callback)
+-      : url_(request.url),
+-        bundle_url_(request.web_bundle_token_params->bundle_url),
+-        request_mode_(request.mode),
+-        request_initiator_(request.request_initiator),
+-        request_destination_(request.destination),
+-        request_headers_(request.headers),
+-
+-        is_trusted_(request.trusted_params),
++      : request_(request),
+         receiver_(this, std::move(loader)),
+         client_(std::move(client)),
+         trusted_header_client_(std::move(trusted_header_client)),
+@@ -224,19 +219,22 @@ class WebBundleURLLoaderFactory::URLLoader : public mojom::URLLoader {
+   URLLoader(const URLLoader&) = delete;
+   URLLoader& operator=(const URLLoader&) = delete;
+ 
+-  const GURL& url() const { return url_; }
+-  const GURL& bundle_url() const { return bundle_url_; }
+-  const mojom::RequestMode& request_mode() const { return request_mode_; }
++  const ResourceRequest& request() const { return request_; }
++  const GURL& url() const { return request_.url; }
++  const GURL& bundle_url() const {
++    return request_.web_bundle_token_params->bundle_url;
++  }
++  mojom::RequestMode request_mode() const { return request_.mode; }
+   const net::HttpRequestHeaders& request_headers() const {
+-    return request_headers_;
++    return request_.headers;
+   }
+ 
+   const std::optional<url::Origin>& request_initiator() const {
+-    return request_initiator_;
++    return request_.request_initiator;
+   }
+ 
+   mojom::RequestDestination request_destination() const {
+-    return request_destination_;
++    return request_.destination;
+   }
+ 
+   base::WeakPtr<URLLoader> GetWeakPtr() {
+@@ -296,7 +294,7 @@ class WebBundleURLLoaderFactory::URLLoader : public mojom::URLLoader {
+     CompleteBlockedResponse(net::OK, std::nullopt);
+   }
+ 
+-  bool is_trusted() const { return is_trusted_; }
++  bool is_trusted() const { return request_.trusted_params.has_value(); }
+ 
+   void CompleteBlockedResponse(
+       int error_code,
+@@ -343,14 +341,7 @@ class WebBundleURLLoaderFactory::URLLoader : public mojom::URLLoader {
+ 
+   void OnMojoDisconnect() { deleteThis(); }
+ 
+-  const GURL url_;
+-  const GURL bundle_url_;
+-  mojom::RequestMode request_mode_;
+-  std::optional<url::Origin> request_initiator_;
+-  mojom::RequestDestination request_destination_;
+-  net::HttpRequestHeaders request_headers_;
+-  std::optional<std::string> devtools_request_id_;
+-  const bool is_trusted_;
++  const ResourceRequest request_;
+   mojo::Receiver<mojom::URLLoader> receiver_;
+   mojo::Remote<mojom::URLLoaderClient> client_;
+   mojo::Remote<mojom::TrustedHeaderClient> trusted_header_client_;
+@@ -848,6 +839,11 @@ void WebBundleURLLoaderFactory::SendResponseToLoader(
+   response_head->load_timing = loader->load_timing();
+   loader->SetBodyLength(payload_length);
+ 
++  if (response_head->headers) {
++    response_head->unencoded_digests =
++        ParseUnencodedDigestsFromHeaders(*response_head->headers);
++  }
++
+   // Enforce the Cross-Origin-Resource-Policy (CORP) header.
+   //
+   // TODO(crbug.com/333708501)
+@@ -866,6 +862,18 @@ void WebBundleURLLoaderFactory::SendResponseToLoader(
+     return;
+   }
+ 
++  // Enforce SRI-compliant HTTP Message Signature headers.
++  //
++  // https://wicg.github.io/signature-based-sri/
++  if (std::optional<mojom::BlockedByResponseReason> blocked_reason =
++          MaybeBlockResponseForSRIMessageSignature(
++              loader->request(), *response_head,
++              loader->request().expected_public_keys)) {
++    loader->CompleteBlockedResponse(net::ERR_BLOCKED_BY_RESPONSE,
++                                    blocked_reason);
++    return;
++  }
++
+   // Enforce ad-auction-only signals -- the renderer process isn't allowed
+   // to read auction-only signals for ad auctions; only the browser process
+   // is allowed to read those, and only the browser process can issue trusted
+diff --git a/services/network/web_bundle/web_bundle_url_loader_factory_unittest.cc b/services/network/web_bundle/web_bundle_url_loader_factory_unittest.cc
+index 7816a35bcd3491082093f5f9a5adb03a67e7b44c..27ca4d77a1e538031249ca017e01ee9437c0a0ad 100644
+--- a/services/network/web_bundle/web_bundle_url_loader_factory_unittest.cc
++++ b/services/network/web_bundle/web_bundle_url_loader_factory_unittest.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "services/network/web_bundle/web_bundle_url_loader_factory.h"
+ 
++#include "base/base64.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/test/metrics/histogram_tester.h"
+ #include "base/test/task_environment.h"
+@@ -15,6 +16,7 @@
+ #include "mojo/public/cpp/system/functions.h"
+ #include "net/traffic_annotation/network_traffic_annotation_test_helper.h"
+ #include "services/network/public/cpp/resource_request.h"
++#include "services/network/public/mojom/blocked_by_response_reason.mojom.h"
+ #include "services/network/public/mojom/cross_origin_embedder_policy.mojom.h"
+ #include "services/network/public/mojom/url_loader.mojom.h"
+ #include "services/network/public/mojom/url_loader_factory.mojom.h"
+@@ -666,4 +668,175 @@ TEST_F(WebBundleURLLoaderFactoryRequireCorpTest, ClonedReporterDestruction) {
+   EXPECT_THAT(coep_reports(), ::testing::ElementsAre(GURL(kCrossOriginJsUrl)));
+ }
+ 
++TEST_F(WebBundleURLLoaderFactoryTest, UnencodedDigestParsed) {
++  constexpr char kValidDigestHeader[] =
++      "sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:";
++  web_package::WebBundleBuilder builder;
++  builder.AddExchange(kResourceUrl,
++                      {{":status", "200"},
++                       {"content-type", "application/json"},
++                       {"unencoded-digest", kValidDigestHeader}},
++                      R"({"hello": "world"})");
++  builder.AddExchange(kResourceUrl2,
++                      {{":status", "200"},
++                       {"content-type", "application/json"},
++                       {"unencoded-digest", "malformed-digest"}},
++                      R"({"hello": "world"})");
++  WriteBundle(builder.CreateBundle());
++  FinishWritingBundle();
++
++  auto valid_request = StartRequest(GURL(kResourceUrl), kResourceRequestId);
++  valid_request.client->RunUntilComplete();
++  EXPECT_EQ(net::OK, valid_request.client->completion_status().error_code);
++  ASSERT_TRUE(valid_request.client->response_head()->unencoded_digests);
++  EXPECT_EQ(
++      1u,
++      valid_request.client->response_head()->unencoded_digests->digests.size());
++  EXPECT_TRUE(
++      valid_request.client->response_head()->unencoded_digests->issues.empty());
++
++  auto malformed_request =
++      StartRequest(GURL(kResourceUrl2), kResourceRequestId2);
++  malformed_request.client->RunUntilComplete();
++  EXPECT_EQ(net::OK, malformed_request.client->completion_status().error_code);
++  ASSERT_TRUE(malformed_request.client->response_head()->unencoded_digests);
++  EXPECT_TRUE(malformed_request.client->response_head()
++                  ->unencoded_digests->digests.empty());
++  EXPECT_FALSE(malformed_request.client->response_head()
++                   ->unencoded_digests->issues.empty());
++}
++
++TEST_F(WebBundleURLLoaderFactoryTest, SRIMessageSignatureValid) {
++  constexpr char kPublicKey[] = "JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=";
++  constexpr char kValidDigestHeader[] =
++      "sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:";
++  constexpr char kValidSignatureInputHeader[] =
++      "signature=(\"unencoded-digest\";sf);"
++      "keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";"
++      "tag=\"ed25519-integrity\"";
++  constexpr char kValidSignatureHeader[] =
++      "signature=:SbCdPUyjc0IBJjFbVRWs81ucEUcFz87b37nQ63d6kDW+/"
++      "JvDmET6O5cSdwlddePvlwemLdaWFuY6pQGO+hrkAg==:";
++
++  web_package::WebBundleBuilder builder;
++  builder.AddExchange(kResourceUrl,
++                      {{":status", "200"},
++                       {"content-type", "application/json"},
++                       {"unencoded-digest", kValidDigestHeader},
++                       {"signature-input", kValidSignatureInputHeader},
++                       {"signature", kValidSignatureHeader}},
++                      R"({"hello": "world"})");
++  WriteBundle(builder.CreateBundle());
++  FinishWritingBundle();
++
++  network::ResourceRequest request =
++      CreateRequest(GURL(kResourceUrl), kResourceRequestId);
++  std::optional<std::vector<uint8_t>> decoded_key =
++      base::Base64Decode(kPublicKey);
++  ASSERT_TRUE(decoded_key.has_value());
++  request.expected_public_keys = {*decoded_key};
++
++  auto result = StartRequest(request);
++  result.client->RunUntilComplete();
++
++  EXPECT_EQ(net::OK, result.client->completion_status().error_code);
++  ASSERT_TRUE(result.client->response_head()->unencoded_digests);
++  EXPECT_EQ(1u,
++            result.client->response_head()->unencoded_digests->digests.size());
++  std::string body;
++  EXPECT_TRUE(mojo::BlockingCopyToString(result.client->response_body_release(),
++                                         &body));
++  EXPECT_EQ(R"({"hello": "world"})", body);
++}
++
++TEST_F(WebBundleURLLoaderFactoryTest, SRIMessageSignatureInvalidBlocked) {
++  constexpr char kValidDigestHeader[] =
++      "sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:";
++  constexpr char kValidSignatureInputHeader[] =
++      "signature=(\"unencoded-digest\";sf);"
++      "keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";"
++      "tag=\"ed25519-integrity\"";
++  constexpr char kInvalidSignatureHeader[] =
++      "signature=:gHim9e5Pk2H7c9BStOmxSmkyc8+ioZgoxynu3d4INAT4dwfj"
++      "5LhvaV9DFnEQ9p7C0hzW4o4Qpkm5aApd6WLLCw==:";
++
++  web_package::WebBundleBuilder builder;
++  builder.AddExchange(kResourceUrl,
++                      {{":status", "200"},
++                       {"content-type", "application/json"},
++                       {"unencoded-digest", kValidDigestHeader},
++                       {"signature-input", kValidSignatureInputHeader},
++                       {"signature", kInvalidSignatureHeader}},
++                      R"({"hello": "world"})");
++  WriteBundle(builder.CreateBundle());
++  FinishWritingBundle();
++
++  auto result = StartRequest(GURL(kResourceUrl), kResourceRequestId);
++  result.client->RunUntilComplete();
++
++  EXPECT_EQ(net::ERR_BLOCKED_BY_RESPONSE,
++            result.client->completion_status().error_code);
++  EXPECT_EQ(mojom::BlockedByResponseReason::kSRIMessageSignatureMismatch,
++            result.client->completion_status().blocked_by_response_reason);
++}
++
++TEST_F(WebBundleURLLoaderFactoryTest,
++       SRIMessageSignatureExpectedPublicKeyMismatchOrMissingBlocked) {
++  constexpr char kOtherPublicKey[] =
++      "xDnP380zcL4rJ76rXYjeHlfMyPZEOqpJYjsjEppbuXE=";
++  constexpr char kValidDigestHeader[] =
++      "sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:";
++  constexpr char kValidSignatureInputHeader[] =
++      "signature=(\"unencoded-digest\";sf);"
++      "keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";"
++      "tag=\"ed25519-integrity\"";
++  constexpr char kValidSignatureHeader[] =
++      "signature=:SbCdPUyjc0IBJjFbVRWs81ucEUcFz87b37nQ63d6kDW+/"
++      "JvDmET6O5cSdwlddePvlwemLdaWFuY6pQGO+hrkAg==:";
++
++  web_package::WebBundleBuilder builder;
++  // Signed with kPublicKey, not kOtherPublicKey.
++  builder.AddExchange(kResourceUrl,
++                      {{":status", "200"},
++                       {"content-type", "application/json"},
++                       {"unencoded-digest", kValidDigestHeader},
++                       {"signature-input", kValidSignatureInputHeader},
++                       {"signature", kValidSignatureHeader}},
++                      R"({"hello": "world"})");
++  // Unsigned response.
++  builder.AddExchange(
++      kResourceUrl2, {{":status", "200"}, {"content-type", "application/json"}},
++      R"({"hello": "world"})");
++  WriteBundle(builder.CreateBundle());
++  FinishWritingBundle();
++
++  std::optional<std::vector<uint8_t>> other_key =
++      base::Base64Decode(kOtherPublicKey);
++  ASSERT_TRUE(other_key.has_value());
++
++  // 1. Signed with a different public key than expected -> blocked.
++  network::ResourceRequest wrong_key_request =
++      CreateRequest(GURL(kResourceUrl), kResourceRequestId);
++  wrong_key_request.expected_public_keys = {*other_key};
++  auto wrong_key_result = StartRequest(wrong_key_request);
++  wrong_key_result.client->RunUntilComplete();
++  EXPECT_EQ(net::ERR_BLOCKED_BY_RESPONSE,
++            wrong_key_result.client->completion_status().error_code);
++  EXPECT_EQ(
++      mojom::BlockedByResponseReason::kSRIMessageSignatureMismatch,
++      wrong_key_result.client->completion_status().blocked_by_response_reason);
++
++  // 2. Unsigned response when client requires public key integrity -> blocked.
++  network::ResourceRequest unsigned_request =
++      CreateRequest(GURL(kResourceUrl2), kResourceRequestId2);
++  unsigned_request.expected_public_keys = {*other_key};
++  auto unsigned_result = StartRequest(unsigned_request);
++  unsigned_result.client->RunUntilComplete();
++  EXPECT_EQ(net::ERR_BLOCKED_BY_RESPONSE,
++            unsigned_result.client->completion_status().error_code);
++  EXPECT_EQ(
++      mojom::BlockedByResponseReason::kSRIMessageSignatureMismatch,
++      unsigned_result.client->completion_status().blocked_by_response_reason);
++}
++
+ }  // namespace network
+diff --git a/third_party/blink/web_tests/external/wpt/web-bundle/resources/sri-message-signatures-bundle.py b/third_party/blink/web_tests/external/wpt/web-bundle/resources/sri-message-signatures-bundle.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..00da3a81565b744a03bf7dadfc60ef4b72ff652f
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/web-bundle/resources/sri-message-signatures-bundle.py
+@@ -0,0 +1,194 @@
++import struct
++
++
++def _cbor_head(major: int, val: int) -> bytes:
++    if val < 24:
++        return struct.pack(">B", (major << 5) | val)
++    if val <= 0xFF:
++        return struct.pack(">BB", (major << 5) | 24, val)
++    if val <= 0xFFFF:
++        return struct.pack(">BH", (major << 5) | 25, val)
++    if val <= 0xFFFFFFFF:
++        return struct.pack(">BI", (major << 5) | 26, val)
++    return struct.pack(">BQ", (major << 5) | 27, val)
++
++
++def _cbor_uint(val: int) -> bytes:
++    return _cbor_head(0, val)
++
++
++def _cbor_bytes(data: bytes) -> bytes:
++    return _cbor_head(2, len(data)) + data
++
++
++def _cbor_text(text: str) -> bytes:
++    data = text.encode("utf-8")
++    return _cbor_head(3, len(data)) + data
++
++
++def _cbor_array(items: list[bytes]) -> bytes:
++    return _cbor_head(4, len(items)) + b"".join(items)
++
++
++def _cbor_map(entries: list[tuple[bytes, bytes]]) -> bytes:
++    sorted_entries = sorted(entries, key=lambda kv: (len(kv[0]), kv[0]))
++    return _cbor_head(5, len(sorted_entries)) + b"".join(
++        k + v for k, v in sorted_entries
++    )
++
++
++def _build_web_bundle(exchanges: list[tuple[str, dict[str, str], bytes]]) -> bytes:
++    encoded_responses = []
++    index_locations = []
++    offset = 0
++
++    for url, headers, payload in exchanges:
++        header_map = _cbor_map(
++            [
++                (_cbor_bytes(k.encode("utf-8")), _cbor_bytes(v.encode("utf-8")))
++                for k, v in headers.items()
++            ]
++        )
++        encoded_response = _cbor_array([_cbor_bytes(header_map), _cbor_bytes(payload)])
++        index_locations.append((url, offset, len(encoded_response)))
++        offset += len(encoded_response)
++        encoded_responses.append(encoded_response)
++
++    initial_offset = len(_cbor_head(4, len(encoded_responses)))
++    index_section = _cbor_map(
++        [
++            (
++                _cbor_text(url),
++                _cbor_array([_cbor_uint(pos + initial_offset), _cbor_uint(length)]),
++            )
++            for url, pos, length in index_locations
++        ]
++    )
++    responses_section = _cbor_array(encoded_responses)
++
++    section_lengths = _cbor_array(
++        [
++            _cbor_text("index"),
++            _cbor_uint(len(index_section)),
++            _cbor_text("responses"),
++            _cbor_uint(len(responses_section)),
++        ]
++    )
++    sections = _cbor_array([index_section, responses_section])
++
++    bundle = bytearray(
++        _cbor_array(
++            [
++                _cbor_bytes("🌐📦".encode("utf-8")),
++                _cbor_bytes(b"b2\x00\x00"),
++                _cbor_bytes(section_lengths),
++                sections,
++                _cbor_bytes(b"\x00" * 8),
++            ]
++        )
++    )
++    bundle[-8:] = struct.pack(">Q", len(bundle))
++    return bytes(bundle)
++
++
++# Test constants from https://www.rfc-editor.org/rfc/rfc9421.html#name-example-ed25519-test-key
++# and https://wicg.github.io/signature-based-sri/#examples.
++PUBLIC_KEY = "JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs="
++
++JSON_BODY = b'{"hello": "world"}'
++JSON_DIGEST = "sha-256=:X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=:"
++JSON_SIGNATURE_INPUT = (
++    f'signature=("unencoded-digest";sf);keyid="{PUBLIC_KEY}";tag="sri"'
++)
++JSON_VALID_SIGNATURE = (
++    "signature=:gHim9e5Pk2H7c9BStOmxSmkyc8+ioZgoxynu3d4INAT4dwfj"
++    "5LhvaV9DFnEQ9p7C0hzW4o4Qpkm5aApd6WLLCw==:"
++)
++INVALID_SIGNATURE = (
++    "signature=:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
++    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==:"
++)
++
++SCRIPT_EXECUTE_BODY = b"window.hello = `world`;"
++SCRIPT_EXECUTE_DIGEST = "sha-256=:PZJ+9CdAAIacg7wfUe4t/RkDQJVKM0mCZ2K7qiRhHFc=:"
++SCRIPT_EXECUTE_VALID_SIGNATURE = (
++    "signature=:A1wOGCGrcfN34uMe2Umt7hJ6Su1MQFUL1QuT5nmk1R8I761e"
++    "XUt2Zv4D5fOt1h1+4DlHPiA1FVwfJLbwlWnpBw==:"
++)
++
++SCRIPT_BLOCK_BODY = b"assert_unreached(`This code should not execute.`);"
++SCRIPT_BLOCK_DIGEST = "sha-256=:FUSFR1N3vTmSGbI7q9jaMbHq+ogNeBfpznOIufaIfpc=:"
++
++
++def main(request, response):
++    exchanges = [
++        (
++            "valid-signature.json",
++            {
++                ":status": "200",
++                "content-type": "application/json",
++                "unencoded-digest": JSON_DIGEST,
++                "signature-input": JSON_SIGNATURE_INPUT,
++                "signature": JSON_VALID_SIGNATURE,
++            },
++            JSON_BODY,
++        ),
++        (
++            "invalid-signature.json",
++            {
++                ":status": "200",
++                "content-type": "application/json",
++                "unencoded-digest": JSON_DIGEST,
++                "signature-input": JSON_SIGNATURE_INPUT,
++                "signature": INVALID_SIGNATURE,
++            },
++            JSON_BODY,
++        ),
++        (
++            "tampered-body.json",
++            {
++                ":status": "200",
++                "content-type": "application/json",
++                "unencoded-digest": JSON_DIGEST,
++                "signature-input": JSON_SIGNATURE_INPUT,
++                "signature": JSON_VALID_SIGNATURE,
++            },
++            b'{"hello": "tampered"}',
++        ),
++        (
++            "unsigned.json",
++            {
++                ":status": "200",
++                "content-type": "application/json",
++            },
++            JSON_BODY,
++        ),
++        (
++            "valid-signature.js",
++            {
++                ":status": "200",
++                "content-type": "application/javascript",
++                "unencoded-digest": SCRIPT_EXECUTE_DIGEST,
++                "signature-input": JSON_SIGNATURE_INPUT,
++                "signature": SCRIPT_EXECUTE_VALID_SIGNATURE,
++            },
++            SCRIPT_EXECUTE_BODY,
++        ),
++        (
++            "invalid-signature.js",
++            {
++                ":status": "200",
++                "content-type": "application/javascript",
++                "unencoded-digest": SCRIPT_BLOCK_DIGEST,
++                "signature-input": JSON_SIGNATURE_INPUT,
++                "signature": INVALID_SIGNATURE,
++            },
++            SCRIPT_BLOCK_BODY,
++        ),
++    ]
++
++    headers = [
++        (b"Content-Type", b"application/webbundle"),
++        (b"X-Content-Type-Options", b"nosniff"),
++    ]
++    return (200, headers, _build_web_bundle(exchanges))
+diff --git a/third_party/blink/web_tests/external/wpt/web-bundle/subresource-loading/sri-message-signatures.https.tentative.html b/third_party/blink/web_tests/external/wpt/web-bundle/subresource-loading/sri-message-signatures.https.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..3f0aea585608aec1bf186802fd91d3fdbe1711eb
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/web-bundle/subresource-loading/sri-message-signatures.https.tentative.html
+@@ -0,0 +1,117 @@
++<!DOCTYPE html>
++<title>Signature-based SRI for WebBundle subresource loading</title>
++<link rel="help" href="https://wicg.github.io/signature-based-sri/" />
++<link
++  rel="help"
++  href="https://github.com/WICG/webpackage/blob/main/explainers/subresource-loading.md"
++/>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<body>
++  <script type="webbundle">
++    {
++      "source": "../resources/sri-message-signatures-bundle.py",
++      "resources": [
++        "../resources/valid-signature.json",
++        "../resources/invalid-signature.json",
++        "../resources/tampered-body.json",
++        "../resources/unsigned.json",
++        "../resources/valid-signature.js",
++        "../resources/invalid-signature.js"
++      ]
++    }
++  </script>
++  <script>
++    "use strict";
++
++    setup(() => {
++      assert_true(HTMLScriptElement.supports("webbundle"));
++    });
++
++    const kValidKey = "JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=";
++    const kInvalidKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
++
++    promise_test(async () => {
++      const response = await fetch("../resources/valid-signature.json", {
++        integrity: `ed25519-${kValidKey}`,
++      });
++      assert_equals(response.status, 200);
++      assert_equals(await response.text(), '{"hello": "world"}');
++    }, "Subresource fetch with valid signature and matching integrity loads.");
++
++    promise_test(async (t) => {
++      await promise_rejects_js(
++        t,
++        TypeError,
++        fetch("../resources/valid-signature.json", {
++          integrity: `ed25519-${kInvalidKey}`,
++        })
++      );
++    }, "Subresource fetch with valid signature and mismatched integrity is blocked.");
++
++    promise_test(async (t) => {
++      await promise_rejects_js(
++        t,
++        TypeError,
++        fetch("../resources/invalid-signature.json")
++      );
++    }, "Subresource fetch with invalid signature is blocked without client integrity.");
++
++    promise_test(async (t) => {
++      await promise_rejects_js(
++        t,
++        TypeError,
++        fetch("../resources/invalid-signature.json", {
++          integrity: `ed25519-${kValidKey}`,
++        })
++      );
++    }, "Subresource fetch with invalid signature and matching keyid is blocked.");
++
++    promise_test(async (t) => {
++      await promise_rejects_js(
++        t,
++        TypeError,
++        fetch("../resources/tampered-body.json", {
++          integrity: `ed25519-${kValidKey}`,
++        })
++      );
++    }, "Subresource fetch with valid signature over mismatched Unencoded-Digest body is blocked.");
++
++    promise_test(async (t) => {
++      const unguarded = await fetch("../resources/unsigned.json");
++      assert_equals(unguarded.status, 200);
++
++      await promise_rejects_js(
++        t,
++        TypeError,
++        fetch("../resources/unsigned.json", {
++          integrity: `ed25519-${kValidKey}`,
++        })
++      );
++    }, "Unsigned subresource fetch loads without integrity, but is blocked when signature integrity is required.");
++
++    promise_test(async (t) => {
++      window.hello = undefined;
++      await new Promise((resolve, reject) => {
++        const s = document.createElement("script");
++        s.src = "../resources/valid-signature.js";
++        s.integrity = `ed25519-${kValidKey}`;
++        s.onload = resolve;
++        s.onerror = t.unreached_func("Validly signed script should load.");
++        document.body.appendChild(s);
++      });
++      assert_equals(window.hello, "world");
++    }, "Subresource script with valid signature and matching integrity executes.");
++
++    promise_test(async (t) => {
++      await new Promise((resolve) => {
++        const s = document.createElement("script");
++        s.src = "../resources/invalid-signature.js";
++        s.integrity = `ed25519-${kValidKey}`;
++        s.onload = t.unreached_func("Invalidly signed script should not execute.");
++        s.onerror = resolve;
++        document.body.appendChild(s);
++      });
++    }, "Subresource script with invalid signature and matching keyid is blocked.");
++  </script>
++</body>

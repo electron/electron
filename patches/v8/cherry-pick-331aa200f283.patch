@@ -1,0 +1,211 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 9 Oct 2026 09:13:59 +0200
+Subject: [parser] Fix arrow head declaration and pattern error validation
+
+In `ArrowHeadParsingScope::ValidateAndCreateScope`, returning early on
+`declaration_error_location.IsValid()` before calling `ValidatePattern()`
+caused later declaration errors (such as `1` in `([...a, b], 1) => {}`)
+to take precedence over earlier pattern errors. In addition, not
+returning early when `ValidatePattern()` reported an error caused
+subsequent duplicate parameter declarations (`([a, a], [1]) => {}`) to
+overwrite the earlier pattern error.
+
+Similarly, when `ParseArrowParametersWithRest` failed early on a rest
+parameter error (`...1`, `...z = 1`, `...z, w`), `ParsePrimaryExpression`
+fell through to `maybe_arrow.ValidateExpression()`, which falsely
+reported expression errors from valid earlier parameters
+(`({a = 42}, ...z = 1) => {}`) and ignored earlier parameter declaration
+or pattern errors (`(1, ...z = 1) => {}`, `([...a, b], ...z = 1) => {}`).
+
+Always validate both declaration and pattern errors in
+`ArrowHeadParsingScope`, return early on error before declaring
+parameters, and validate earlier parameters as declarations when
+`ParseArrowParametersWithRest` fails.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I7ae4b1da1ccb34e867a44bea864cf48e78d4ce69
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8538074
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110502}
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index 548861525312159c7efed49ecc14a129a28f8587..5225dab956946765da1269e7ac13ec361da7beed 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -292,9 +292,7 @@ class ExpressionScope {
+     return static_cast<ExpressionParsingScope<Types>*>(this);
+   }
+ 
+-#ifdef DEBUG
+   bool has_error() const { return parser_->has_error(); }
+-#endif
+ 
+   bool CanBeExpression() const {
+     return base::IsInRange(type_, kExpression,
+@@ -726,6 +724,24 @@ class AccumulationScope {
+ #endif
+   }
+ 
++  void ValidateDeclaration() {
++    if (scope_ == nullptr) return;
++    if (!scope_->IsArrowHeadParsingScope()) {
++      ValidateExpression();
++      return;
++    }
++    DCHECK(!scope_->is_verified());
++    Accumulate();
++    copy_back(ExpressionParsingScope<Types>::kPatternIndex);
++    scope_->AsArrowHeadParsingScope()->ValidateDeclaration();
++#ifdef DEBUG
++    scope_->clear_verified();
++#endif
++    scope_->clear(ExpressionParsingScope<Types>::kPatternIndex);
++    clear(ExpressionParsingScope<Types>::kExpressionIndex);
++    clear(ExpressionParsingScope<Types>::kPatternIndex);
++  }
++
+   ~AccumulationScope() {
+     if (scope_ == nullptr) return;
+     Accumulate();
+@@ -744,6 +760,11 @@ class AccumulationScope {
+     scope_->locations_[entry] = locations_[entry];
+   }
+ 
++  void clear(int entry) {
++    messages_[entry] = MessageTemplate::kNone;
++    locations_[entry] = Scanner::Location::invalid();
++  }
++
+   ExpressionParsingScope<Types>* scope_;
+   MessageTemplate messages_[2];
+   Scanner::Location locations_[2];
+@@ -788,15 +809,19 @@ class ArrowHeadParsingScope : public ExpressionParsingScope<Types> {
+     this->parent()->MergeVariableList(this->variable_list());
+   }
+ 
+-  DeclarationScope* ValidateAndCreateScope() {
++  void ValidateDeclaration() {
+     DCHECK(!this->is_verified());
+-    DeclarationScope* result = this->parser()->NewFunctionScope(kind());
+     if (declaration_error_location.IsValid()) {
+       ExpressionScope<Types>::Report(declaration_error_location,
+                                      declaration_error_message);
+-      return result;
+     }
+     this->ValidatePattern();
++  }
++
++  DeclarationScope* ValidateAndCreateScope() {
++    DeclarationScope* result = this->parser()->NewFunctionScope(kind());
++    ValidateDeclaration();
++    if (this->has_error()) return result;
+ 
+     if (!has_simple_parameter_list_) result->SetHasNonSimpleParameters();
+     VariableKind kind = PARAMETER_VARIABLE;
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index fd8b2fced5fc524745c89e852d2de0c4edfb8098..5305ed619cb0b925255a95bfb81838efd999c2e6 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -2400,21 +2400,24 @@ ParserBase<Impl>::ParseArrowParametersWithRest(
+   Scanner::Location ellipsis = scanner()->location();
+   int pattern_pos = peek_position();
+   ExpressionT pattern = ParseBindingPattern();
+-  ClassifyArrowParameter(accumulation_scope, pattern_pos, pattern);
++  if (!pattern->IsFailureExpression()) {
++    ClassifyArrowParameter(accumulation_scope, pattern_pos, pattern);
++  }
+ 
+   expression_scope()->RecordNonSimpleParameter();
+ 
+   if (V8_UNLIKELY(peek() == Token::kAssign)) {
+     ReportMessage(MessageTemplate::kRestDefaultInitializer);
++  } else if (V8_UNLIKELY(peek() == Token::kComma)) {
++    ReportMessage(MessageTemplate::kParamAfterRest);
++  }
++  if (has_error()) {
++    accumulation_scope->ValidateDeclaration();
+     return impl()->FailureExpression();
+   }
+ 
+   ExpressionT spread =
+       factory()->NewSpread(pattern, ellipsis.beg_pos, pattern_pos);
+-  if (V8_UNLIKELY(peek() == Token::kComma)) {
+-    ReportMessage(MessageTemplate::kParamAfterRest);
+-    return impl()->FailureExpression();
+-  }
+ 
+   expression_scope()->SetInitializers(seen_variables, peek_position());
+ 
+diff --git a/test/mjsunit/es6/regress-arrow-head-pattern-error-order.js b/test/mjsunit/es6/regress-arrow-head-pattern-error-order.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..10e80fedbada9c05b692b397304a5746aac76844
+--- /dev/null
++++ b/test/mjsunit/es6/regress-arrow-head-pattern-error-order.js
+@@ -0,0 +1,61 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// ArrowHeadParsingScope must validate both declaration and pattern errors so
++// the earliest error in source order is reported, and must not overwrite
++// earlier errors or validate expression errors when rest parameter parsing
++// fails.
++
++assertThrows(
++    () => eval("([...a, b], 1) => {}"),
++    SyntaxError,
++    "Rest element must be last element");
++assertThrows(
++    () => eval("({...a, b}, 1) => {}"),
++    SyntaxError,
++    "Rest element must be last element");
++assertThrows(
++    () => eval("([...a, b], [c.d]) => {}"),
++    SyntaxError,
++    "Rest element must be last element");
++assertThrows(
++    () => eval("([a, a], [...b, c]) => {}"),
++    SyntaxError,
++    "Rest element must be last element");
++assertThrows(
++    () => eval("([a, a], [1]) => {}"),
++    SyntaxError,
++    "Invalid destructuring assignment target");
++assertThrows(
++    () => eval("({a = 42}, ...z = 1) => {}"),
++    SyntaxError,
++    "Rest parameter may not have a default initializer");
++assertThrows(
++    () => eval("({a = 42}, ...z, w) => {}"),
++    SyntaxError,
++    "Rest parameter must be last formal parameter");
++assertThrows(
++    () => eval("(1, ...z = 1) => {}"),
++    SyntaxError,
++    "Invalid destructuring assignment target");
++assertThrows(
++    () => eval("([a.b], ...z = 1) => {}"),
++    SyntaxError,
++    "Illegal property in declaration context");
++assertThrows(
++    () => eval("([...a, b], ...z = 1) => {}"),
++    SyntaxError,
++    "Rest element must be last element");
++assertThrows(
++    () => eval("(1, ...z, w) => {}"),
++    SyntaxError,
++    "Invalid destructuring assignment target");
++assertThrows(
++    () => eval("({a = 42}, ...1) => {}"),
++    SyntaxError,
++    "Unexpected number");
++assertThrows(
++    () => eval("(1, ...2) => {}"),
++    SyntaxError,
++    "Invalid destructuring assignment target");

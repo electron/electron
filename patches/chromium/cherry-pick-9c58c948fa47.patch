@@ -1,0 +1,1327 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrew Williams <awillia@chromium.org>
+Date: Tue, 29 Sep 2026 09:25:45 -0700
+Subject: GPU: Check graphics reset status before delivering readback results
+
+On Mali GPUs, a device reset that occurs while a readback is blocked
+can release the wait with no GL error while the destination was never
+written by the GPU. The robustness reset status is already latched by
+the time the blocked call returns, but the decoders only poll it at
+the next MakeCurrent, one command too late, so unwritten destination
+bytes are delivered to the client with a success result.
+
+Poll the sticky reset status at the readback delivery points -- the
+synchronous ReadPixels result publish and the async readback
+completion on both command decoders, and the raster/shared-image
+readback publishes (RasterDecoder ARGB and YUV, and the passthrough
+ReadbackARGBImagePixels path) -- and refuse delivery on a non-clean
+status: scrub the shared-memory destination, leave the result
+unsuccessful, and lose the context. Per OpenGL ES 3.2 sec. 2.3.2,
+commands on a context after a graphics reset generate CONTEXT_LOST
+and do not have side effects such as writing readback results; this
+applies that behavior at every point where readback bytes become
+client-visible. It is the same CheckResetStatus() poll the decoders
+already trust at MakeCurrent, moved to delivery.
+
+Gated behind the check_graphics_reset_status_after_readback
+workaround on Android ARM Mali GPUs. Unit tests coverage added to
+better ensure no major behavioral changes, and the patch was tested
+against repro steps from each of the bugs linked below to ensure
+they fix the issue.
+
+Bug: 552550589, 550525698, 550996500, 555394151, 558111285
+Change-Id: I311e77d251667a3f7ddb21f185512cb6e00f358f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8475151
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Andrew Williams <awillia@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1707168}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 37a9c2a19318b9262f72c4963605d4493e50b856..954cdc18b999c8f917b73555e765d60e78d26e01 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -11623,6 +11623,16 @@ void GLES2DecoderImpl::FinishReadPixels(GLsizei width,
+   }
+ 
+   if (buffer != 0) {
++    // The fence completed, but if the context was reset while the readback was
++    // queued, the pack buffer's backing store was never written by the GPU and
++    // mapping it would deliver uninitialized driver memory. Drop the result,
++    // so `pixels` keeps its previous renderer-provided content and success is
++    // never set.
++    if (workarounds().check_graphics_reset_status_after_readback &&
++        !WasContextLost() && CheckResetStatus()) {
++      group_->LoseContexts(error::kUnknown);
++      return;
++    }
+     api()->glBindBufferFn(GL_PIXEL_PACK_BUFFER, buffer);
+     void* data;
+     if (features().map_buffer_range) {
+@@ -11759,6 +11769,14 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
+     }
+   }
+ 
++  // Destination window in shared memory (when pixels_shm_id != 0); kept for
++  // the reset-status scrub below because the readback loops advance `pixels`.
++  // SAFETY: `pixels` was returned by GetSharedMemoryAs validated for exactly
++  // `pixels_size` bytes.
++  base::span<uint8_t> pixels_dest =
++      pixels ? UNSAFE_BUFFERS(base::span(pixels, pixels_size))
++             : base::span<uint8_t>();
++
+   Result* result = nullptr;
+   if (result_shm_id != 0) {
+     result = GetSharedMemoryAs<Result*>(
+@@ -12045,6 +12063,20 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
+       api()->glReadPixelsFn(x, y, width, height, format, type, pixels);
+     }
+   }
++  // Some drivers complete a readback where the GPU work was discarded by a
++  // queue-group fatal as if it succeeded, then CPU-copy a never-written driver
++  // staging surface into the destination with no GL error. The reset is latched
++  // by ARB/EXT_robustness before the blocked read returns, so polling here is
++  // decisive; after a reset the context is "unusable for almost all purposes"
++  // (ES 3.2 sec. 2.3.2) and the result must not be delivered. Scrub the
++  // shared-memory destination the driver may already have written.
++  if (pixels_shm_id != 0 &&
++      workarounds().check_graphics_reset_status_after_readback &&
++      !WasContextLost() && CheckResetStatus()) {
++    std::ranges::fill(pixels_dest, 0);
++    group_->LoseContexts(error::kUnknown);
++    return error::kLostContext;
++  }
+   if (pixels_shm_id != 0) {
+     GLenum error = LOCAL_PEEK_GL_ERROR(func_name);
+     if (error == GL_NO_ERROR) {
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+index 252a43be0ee0ae0427f68afbbbf3171ea4470c3b..4e65d1f0636f3e9d83e370eabb368052fc0a6e90 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+@@ -2616,6 +2616,18 @@ error::Error GLES2DecoderPassthroughImpl::ProcessReadPixels(bool did_finish) {
+         break;
+       }
+ 
++      // If the context was reset while this readback was queued, the pack
++      // buffer's backing store was never written; mapping it may deliver
++      // uninitialized driver memory on certain GPUs. The sync readback lane is
++      // covered inside ANGLE (checkGraphicsResetStatusAfterReadback).
++      if (feature_info_->workarounds()
++              .check_graphics_reset_status_after_readback &&
++          !WasContextLost() && CheckResetStatus()) {
++        pending_read_pixels_.pop_front();
++        group_->LoseContexts(error::kUnknown);
++        return error::kLostContext;
++      }
++
+       api()->glBindBufferFn(GL_PIXEL_PACK_BUFFER,
+                             pending_read_pixels.buffer_service_id);
+       void* data = nullptr;
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
+index 4aeff350172a90c2db85a4fedf4f6811ec0ca026..36cdddd2b62ae2e39c6485773b879c9445cdfbc1 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
+@@ -2585,6 +2585,33 @@ error::Error GLES2DecoderPassthroughImpl::DoReadbackARGBImagePixelsINTERNAL(
+       helper.ReadPixels(src_x, src_y, plane_index, row_bytes, dst_info,
+                         pixel_address, std::move(source_shared_image));
+ 
++  // A device reset that occurs while the readback executes can complete it
++  // without error while the destination was never written on certain GPUs. This
++  // readback runs on `lazy_context_`'s shared context (current
++  // under `smc` above), so poll that context's reset status; the decoder's
++  // own CheckResetStatus() requires the decoder context to be current. On a
++  // latched reset, scrub the destination and lose the context instead of
++  // delivering unwritten allocation contents.
++  auto* readback_context_state = lazy_context_->shared_context_state();
++  if (feature_info_->workarounds().check_graphics_reset_status_after_readback &&
++      !readback_context_state->context_lost() &&
++      readback_context_state->CheckResetStatus(/*needs_gl=*/false)) {
++    // SAFETY: `pixel_address` was validated against shared memory for
++    // exactly `byte_size` bytes when the readback was set up above.
++    std::ranges::fill(UNSAFE_BUFFERS(base::span(
++                          static_cast<uint8_t*>(pixel_address), byte_size)),
++                      0);
++    InsertError(GL_INVALID_OPERATION,
++                "readback aborted: device reset detected");
++    // CheckResetStatus() above latched the robustness verdict on
++    // `readback_context_state`; carry it over rather than flattening to
++    // kUnknown, matching what the raster decoder's observer path reports
++    // for the same event.
++    MarkContextLost(*readback_context_state->context_lost_reason());
++    group_->LoseContexts(error::kUnknown);
++    return error::kLostContext;
++  }
++
+   if (!helper_result.has_value()) {
+     InsertError(helper_result.error().gl_error, helper_result.error().msg);
+   } else {
+@@ -2612,7 +2639,32 @@ error::Error GLES2DecoderPassthroughImpl::DoReadPixels(GLint x,
+                  feature_info_->gl_version_info().is_es3);
+   api()->glReadPixelsRobustANGLEFn(x, y, width, height, format, type, bufsize,
+                                    length, columns, rows, pixels);
+-  *success = CheckErrorCallbackState() ? 0 : 1;
++  bool had_error = CheckErrorCallbackState();
++  // A device reset that occurs while this call is blocked can release the
++  // wait with no GL error and a destination the GPU never wrote — or, when
++  // ANGLE's own readback reset check is active, with a context-lost error
++  // after the destination was already written. In either case, if the
++  // robustness extension reports a reset, scrub the destination and lose
++  // the context instead of leaving unwritten allocation contents
++  // client-visible.
++  if (feature_info_->workarounds().check_graphics_reset_status_after_readback &&
++      !WasContextLost() && CheckResetStatus()) {
++    if (bound_buffers_[GL_PIXEL_PACK_BUFFER] == 0 && pixels && bufsize > 0) {
++      // `*length` is reported by the now-untrusted GL stack; scrub the full
++      // Chrome-validated destination window rather than trusting the report
++      // for coverage (an under-report would leave driver bytes in place).
++      // SAFETY: the caller validated `pixels` against shared memory for
++      // exactly `bufsize` bytes before issuing the read.
++      std::ranges::fill(
++          UNSAFE_BUFFERS(base::span(static_cast<uint8_t*>(pixels),
++                                    static_cast<size_t>(bufsize))),
++          0);
++    }
++    *success = 0;
++    group_->LoseContexts(error::kUnknown);
++    return error::kLostContext;
++  }
++  *success = had_error ? 0 : 1;
+   return error::kNoError;
+ }
+ 
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_framebuffers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_framebuffers.cc
+index eacc23e6c4176b68655802652a74ff5f4a886f80..785c351cf7f6ba5df0e7afd9ebd5ef9b3394a91f 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_framebuffers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_framebuffers.cc
+@@ -171,6 +171,55 @@ TEST_F(GLES2DecoderPassthroughTest, ReadPixelsOutOfRange) {
+   }
+ }
+ 
++// With check_graphics_reset_status_after_readback enabled and no reset
++// reported, the synchronous ReadPixels path must deliver results unchanged.
++// The rejection leg requires a driver that latches a reset while the read is
++// blocked and is exercised on-device; ANGLE's NULL backend cannot forge one.
++class GLES2DecoderPassthroughResetCheckTest
++    : public GLES2DecoderPassthroughTest {
++ public:
++  GLES2DecoderPassthroughResetCheckTest() {
++    workarounds_for_test_.check_graphics_reset_status_after_readback = true;
++  }
++};
++
++// Tests that the passthrough ReadPixels path delivers results normally with
++// `check_graphics_reset_status_after_readback` enabled on a healthy driver.
++TEST_F(GLES2DecoderPassthroughResetCheckTest,
++       ReadPixelsWithResetCheckWorkaroundDeliversResult) {
++  auto* result = GetSharedMemoryAs<cmds::ReadPixels::Result*>();
++  uint32_t result_shm_id = shared_memory_id_;
++  uint32_t result_shm_offset = kSharedMemoryOffset;
++  uint32_t pixels_shm_id = shared_memory_id_;
++  uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
++  // SAFETY: shared memory extends past Result by at least the 4-byte pixel.
++  base::span<uint8_t> dest =
++      UNSAFE_BUFFERS(base::span(reinterpret_cast<uint8_t*>(result + 1), 4u));
++
++  cmds::ClearColor clear_color_cmd;
++  clear_color_cmd.Init(0.0f, 1.0f, 0.0f, 1.0f);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(clear_color_cmd));
++  cmds::Clear clear_cmd;
++  clear_cmd.Init(GL_COLOR_BUFFER_BIT);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(clear_cmd));
++
++  // Sentinel bytes; the NULL backend overwrites in-bounds readback bytes
++  // with a constant non-zero value (see FramebufferNULL::readPixels).
++  std::ranges::fill(dest, 1);
++
++  cmds::ReadPixels cmd;
++  cmd.Init(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixels_shm_id,
++           pixels_shm_offset, result_shm_id, result_shm_offset, false);
++  result->success = 0;
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_TRUE(result->success);
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++  EXPECT_FALSE(GetDecoder()->WasContextLost());
++  for (int i = 0; i < 4; ++i) {
++    EXPECT_EQ(42u, dest[i]) << "readback byte " << i << " not delivered";
++  }
++}
++
+ TEST_F(GLES3DecoderPassthroughTest, ReadPixelsAsync) {
+   auto* result = GetSharedMemoryAs<cmds::ReadPixels::Result*>();
+   const GLsizei kWidth = 4;
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
+index a3407a7a99c8fc3d28b47a4c5ae9069e4dd21246..c21086b3fd3db2da12eed2d52305f524f9d5be72 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
+@@ -464,5 +464,66 @@ TEST_F(GLES2DecoderPassthroughTest,
+   shared_image.reset();
+ }
+ 
++// With check_graphics_reset_status_after_readback enabled and no reset
++// reported, the shared-image readback path must behave exactly as without the
++// workaround: no context loss, no denial. The rejection leg requires a driver
++// that latches a reset and is exercised on-device; ANGLE's NULL backend cannot
++// forge one.
++class GLES2DecoderPassthroughReadbackResetCheckTest
++    : public GLES2DecoderPassthroughTest {
++ public:
++  GLES2DecoderPassthroughReadbackResetCheckTest() {
++    workarounds_for_test_.check_graphics_reset_status_after_readback = true;
++  }
++};
++
++// Tests that the shared-image ReadbackARGB path does not deny on a healthy
++// driver with the workaround enabled; the gate polls the lazy shared
++// context's reset status.
++TEST_F(GLES2DecoderPassthroughReadbackResetCheckTest,
++       ReadbackARGBImagePixelsWithResetCheckWorkaroundDoesNotDeny) {
++  MemoryTypeTracker memory_tracker(nullptr);
++  Mailbox mailbox = Mailbox::Generate();
++  auto shared_image = GetSharedImageManager()->Register(
++      AllocateTextureAndCreateSharedImage(
++          mailbox, viz::SinglePlaneFormat::kRGBA_8888, gfx::Size(4, 4),
++          gfx::ColorSpace::CreateSRGB(), kTopLeft_GrSurfaceOrigin,
++          kPremul_SkAlphaType, SHARED_IMAGE_USAGE_GLES2_READ),
++      &memory_tracker);
++
++  // Shm layout at kSharedMemoryOffset: Result, then the mailbox, then the
++  // pixel destination. color_space_offset == mailbox_offset encodes "no
++  // color space".
++  using Cmd = cmds::ReadbackARGBImagePixelsINTERNAL;
++  constexpr uint32_t kMailboxOffset = 16;
++  constexpr uint32_t kPixelsOffset = 32;
++  constexpr GLuint kDstWidth = 2;
++  constexpr GLuint kDstHeight = 2;
++  constexpr GLuint kRowBytes = 8;
++
++  auto* result = GetSharedMemoryAs<Cmd::Result*>();
++  *result = 0;
++  // SAFETY: shared memory extends past kMailboxOffset by a full mailbox.
++  UNSAFE_BUFFERS(base::span(GetSharedMemoryAs<uint8_t*>() + kMailboxOffset,
++                            sizeof(mailbox.name)))
++      .copy_from(base::as_byte_span(mailbox.name));
++
++  Cmd cmd;
++  cmd.Init(/*src_x=*/0, /*src_y=*/0, /*plane_index=*/0, kDstWidth, kDstHeight,
++           kRowBytes, kRGBA_8888_SkColorType, kPremul_SkAlphaType,
++           shared_memory_id_, kSharedMemoryOffset,
++           /*color_space_offset=*/kMailboxOffset, kPixelsOffset,
++           kMailboxOffset);
++
++  // The gate must not deny on a healthy (NULL-backend) driver: the command
++  // may fail for unrelated backend reasons, but never with kLostContext,
++  // and the context must survive.
++  error::Error err = ExecuteCmd(cmd);
++  EXPECT_NE(error::kLostContext, err);
++  EXPECT_FALSE(GetDecoder()->WasContextLost());
++
++  shared_image.reset();
++}
++
+ }  // namespace gles2
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
+index 016c31e7c3dc05e04f58d535adb720e411d09512..7a11a7c4aaeb5e09bdcc73b8ac784e05e77bd0f8 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
+@@ -2329,7 +2329,8 @@ void GLES2DecoderPassthroughTestBase::SetUp() {
+   // Ensure we're running with Null Backend.
+   ASSERT_EQ(gl::GetANGLEImplementation(), gl::ANGLEImplementation::kNull);
+ 
+-  scoped_refptr<gles2::FeatureInfo> feature_info = new gles2::FeatureInfo();
++  scoped_refptr<gles2::FeatureInfo> feature_info =
++      new gles2::FeatureInfo(workarounds_for_test_, GpuFeatureInfo());
+   group_ = MakeRefCounted<gles2::ContextGroup>(
+       gpu_preferences_, /*memory_tracker=*/nullptr, &shader_translator_cache_,
+       &framebuffer_completeness_cache_, feature_info,
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.h b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.h
+index dd35e7616bd7c44b670bd390945ae4be6870fc6e..bbe626d54815f5072be4facf6b1a0ea9443b7abc 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.h
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.h
+@@ -1011,6 +1011,10 @@ class GLES2DecoderPassthroughTestBase : public testing::Test,
+ 
+   uint32_t immediate_buffer_[64];
+ 
++  // Consumed at FeatureInfo construction in SetUp(); tests that need a
++  // driver-bug workaround set this in their constructor, before SetUp runs.
++  GpuDriverBugWorkarounds workarounds_for_test_;
++
+  private:
+   ContextType context_type_;
+   GpuPreferences gpu_preferences_;
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
+index 57f116f7cc19def601e184f72f2de4f80cfb909e..00b9c156a1f6756c2f360fe449c474bafdf45ee9 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
+@@ -617,7 +617,10 @@ void GLES2DecoderTest::CheckReadPixelsOutOfRange(GLint in_read_x,
+   uint32_t result_shm_offset = kSharedMemoryOffset;
+   uint32_t pixels_shm_id = shared_memory_id_;
+   uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
+-  void* dest = UNSAFE_TODO(&result[1]);
++  // SAFETY: shared memory extends past Result by at least the pixel window.
++  base::span<uint8_t> dest = UNSAFE_BUFFERS(
++      base::span(reinterpret_cast<uint8_t*>(result + 1),
++                 static_cast<size_t>(kWidth * kHeight * kBytesPerPixel)));
+ 
+   EXPECT_CALL(*gl_, GetError())
+       .WillOnce(Return(GL_NO_ERROR))
+@@ -662,7 +665,7 @@ void GLES2DecoderTest::CheckReadPixelsOutOfRange(GLint in_read_x,
+   UNSAFE_TODO(memset(pack.data(), kInitialMemoryValue, kPackAlignment));
+   for (GLint yy = 0; yy < in_read_height; ++yy) {
+     const int8_t* row = static_cast<const int8_t*>(
+-        emu.ComputePackAlignmentAddress(0, yy, in_read_width, dest));
++        emu.ComputePackAlignmentAddress(0, yy, in_read_width, dest.data()));
+     GLint y = in_read_y + yy;
+     if (y < 0 || y >= kHeight) {
+       UNSAFE_TODO(EXPECT_EQ(0, memcmp(zero.data(), row, unpadded_row_size)));
+@@ -720,7 +723,10 @@ TEST_P(GLES2DecoderTest, ReadPixels) {
+   uint32_t result_shm_offset = kSharedMemoryOffset;
+   uint32_t pixels_shm_id = shared_memory_id_;
+   uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
+-  void* dest = UNSAFE_TODO(&result[1]);
++  // SAFETY: shared memory extends past Result by at least the pixel window.
++  base::span<uint8_t> dest = UNSAFE_BUFFERS(
++      base::span(reinterpret_cast<uint8_t*>(result + 1),
++                 static_cast<size_t>(kWidth * kHeight * kBytesPerPixel)));
+   EXPECT_CALL(*gl_, GetError())
+       .WillOnce(Return(GL_NO_ERROR))
+       .WillOnce(Return(GL_NO_ERROR))
+@@ -746,7 +752,8 @@ TEST_P(GLES2DecoderTest, ReadPixels) {
+   EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
+   for (GLint yy = 0; yy < kHeight; ++yy) {
+     EXPECT_TRUE(emu.CompareRowSegment(
+-        0, yy, kWidth, emu.ComputePackAlignmentAddress(0, yy, kWidth, dest)));
++        0, yy, kWidth,
++        emu.ComputePackAlignmentAddress(0, yy, kWidth, dest.data())));
+   }
+ }
+ 
+@@ -1041,6 +1048,276 @@ TEST_P(GLES2DecoderManualInitTest, ReadPixels2LargeRowLengthWorkaround) {
+   EXPECT_EQ(GL_NO_ERROR, GetGLError());
+ }
+ 
++// Tests that a blocking ReadPixels whose GPU work was discarded by a device
++// reset does not deliver a result: the mocked driver completes the read but
++// reports GL_GUILTY_CONTEXT_RESET on the post-read robustness poll (the
++// crbug.com/552550589 report shape). Per ES 3.2 sec. 2.3.2, commands after a
++// reset must not have side effects. We expect no success, a zeroed
++// destination, kLostContext, and a guilty context loss.
++TEST_P(GLES2DecoderManualInitTest, ReadPixelsResetStatusWorkaroundGuilty) {
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.check_graphics_reset_status_after_readback = true;
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  init.extensions = "GL_KHR_robustness";
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLsizei kWidth = 5;
++  const GLsizei kHeight = 3;
++  const GLint kBytesPerPixel = 4;
++  const GLint kPackAlignment = 4;
++  static const uint8_t kSrcPixels[kWidth * kHeight * kBytesPerPixel] = {
++      12, 13, 14, 255, 18, 19, 18, 255, 19, 12, 13, 255, 14, 18, 19, 255,
++      18, 19, 13, 255, 29, 28, 23, 255, 22, 21, 22, 255, 21, 29, 28, 255,
++      23, 22, 21, 255, 22, 21, 28, 255, 31, 34, 39, 255, 37, 32, 37, 255,
++      32, 31, 34, 255, 39, 37, 32, 255, 37, 32, 34, 255};
++
++  surface_->SetSize(gfx::Size(INT_MAX, INT_MAX));
++
++  ReadPixelsEmulator emu(kWidth, kHeight, kBytesPerPixel, kSrcPixels,
++                         kSrcPixels, kPackAlignment);
++  auto* result = GetSharedMemoryAs<cmds::ReadPixels::Result*>();
++  uint32_t result_shm_id = shared_memory_id_;
++  uint32_t result_shm_offset = kSharedMemoryOffset;
++  uint32_t pixels_shm_id = shared_memory_id_;
++  uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
++  // SAFETY: the fixture's shared memory extends well past Result; the tests
++  // address exactly the pixel window that the command below is issued with.
++  base::span<uint8_t> dest = UNSAFE_BUFFERS(
++      base::span(reinterpret_cast<uint8_t*>(result + 1),
++                 static_cast<size_t>(kWidth * kHeight * kBytesPerPixel)));
++
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_,
++              ReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, _))
++      .WillOnce(Invoke(&emu, &ReadPixelsEmulator::ReadPixels));
++  // The workaround polls the reset status after the native read; the driver
++  // reports the latched queue-group fatal.
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB())
++      .WillOnce(Return(GL_GUILTY_CONTEXT_RESET));
++  // Losing this context broadcasts to the rest of the group.
++  EXPECT_CALL(*mock_decoder_, MarkContextLost(error::kUnknown)).Times(1);
++
++  cmds::ReadPixels cmd;
++  cmd.Init(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels_shm_id,
++           pixels_shm_offset, result_shm_id, result_shm_offset, false);
++  result->success = 0;
++  EXPECT_EQ(error::kLostContext, ExecuteCmd(cmd));
++
++  // Delivery must be refused: success unset, context lost as guilty, and the
++  // shared-memory destination scrubbed (the emulator had written kSrcPixels).
++  EXPECT_EQ(0u, result->success);
++  EXPECT_TRUE(decoder_->WasContextLost());
++  EXPECT_TRUE(decoder_->WasContextLostByRobustnessExtension());
++  const uint32_t kPixelsSize = kWidth * kHeight * kBytesPerPixel;
++  for (uint32_t i = 0; i < kPixelsSize; ++i) {
++    EXPECT_EQ(0u, dest[i]) << "byte " << i << " not scrubbed";
++  }
++
++  // Consume the latched context-loss decoder error so the fixture can shut
++  // down cleanly (same pattern as GLES2DecoderLostContextTest).
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_CONTEXT_LOST_KHR))
++      .RetiresOnSaturation();
++  cmds::GetError error_cmd;
++  error_cmd.Init(shared_memory_id_, shared_memory_offset_);
++  EXPECT_EQ(error::kLostContext, ExecuteCmd(error_cmd));
++}
++
++// Tests that readback delivery is byte-identical when the workaround is
++// enabled and no reset is reported. This ensures
++// `check_graphics_reset_status_after_readback` does not regress healthy
++// readbacks.
++TEST_P(GLES2DecoderManualInitTest, ReadPixelsResetStatusWorkaroundNoReset) {
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.check_graphics_reset_status_after_readback = true;
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  init.extensions = "GL_KHR_robustness";
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLsizei kWidth = 5;
++  const GLsizei kHeight = 3;
++  const GLint kBytesPerPixel = 4;
++  const GLint kPackAlignment = 4;
++  static const uint8_t kSrcPixels[kWidth * kHeight * kBytesPerPixel] = {
++      12, 13, 14, 255, 18, 19, 18, 255, 19, 12, 13, 255, 14, 18, 19, 255,
++      18, 19, 13, 255, 29, 28, 23, 255, 22, 21, 22, 255, 21, 29, 28, 255,
++      23, 22, 21, 255, 22, 21, 28, 255, 31, 34, 39, 255, 37, 32, 37, 255,
++      32, 31, 34, 255, 39, 37, 32, 255, 37, 32, 34, 255};
++
++  surface_->SetSize(gfx::Size(INT_MAX, INT_MAX));
++
++  ReadPixelsEmulator emu(kWidth, kHeight, kBytesPerPixel, kSrcPixels,
++                         kSrcPixels, kPackAlignment);
++  auto* result = GetSharedMemoryAs<cmds::ReadPixels::Result*>();
++  uint32_t result_shm_id = shared_memory_id_;
++  uint32_t result_shm_offset = kSharedMemoryOffset;
++  uint32_t pixels_shm_id = shared_memory_id_;
++  uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
++  // SAFETY: shared memory extends past Result by at least the pixel window.
++  base::span<uint8_t> dest = UNSAFE_BUFFERS(
++      base::span(reinterpret_cast<uint8_t*>(result + 1),
++                 static_cast<size_t>(kWidth * kHeight * kBytesPerPixel)));
++
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_,
++              ReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, _))
++      .WillOnce(Invoke(&emu, &ReadPixelsEmulator::ReadPixels));
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB()).WillOnce(Return(GL_NO_ERROR));
++
++  cmds::ReadPixels cmd;
++  cmd.Init(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels_shm_id,
++           pixels_shm_offset, result_shm_id, result_shm_offset, false);
++  result->success = 0;
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_EQ(1u, result->success);
++  EXPECT_FALSE(decoder_->WasContextLost());
++  for (GLint yy = 0; yy < kHeight; ++yy) {
++    EXPECT_TRUE(emu.CompareRowSegment(
++        0, yy, kWidth,
++        emu.ComputePackAlignmentAddress(0, yy, kWidth, dest.data())));
++  }
++}
++
++// Same shape as ReadPixelsResetStatusWorkaroundNoReset, but with the
++// workaround disabled: the decoder must not query the reset status on the
++// readback path at all (GetGraphicsResetStatusARB is expected exactly zero
++// times), and delivery must be byte-identical to the pre-workaround behavior.
++TEST_P(GLES2DecoderManualInitTest, ReadPixelsNoResetPollWithoutWorkaround) {
++  // Guard-silence: without the workaround the decoder must not poll the reset
++  // status on the readback path (StrictMock enforces Times(0)).
++  gpu::GpuDriverBugWorkarounds workarounds;
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  init.extensions = "GL_KHR_robustness";
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLsizei kWidth = 2;
++  const GLsizei kHeight = 2;
++  const GLint kBytesPerPixel = 4;
++  const GLint kPackAlignment = 4;
++  static const uint8_t kSrcPixels[kWidth * kHeight * kBytesPerPixel] = {
++      1, 2, 3, 255, 4, 5, 6, 255, 7, 8, 9, 255, 10, 11, 12, 255};
++
++  surface_->SetSize(gfx::Size(INT_MAX, INT_MAX));
++
++  ReadPixelsEmulator emu(kWidth, kHeight, kBytesPerPixel, kSrcPixels,
++                         kSrcPixels, kPackAlignment);
++  auto* result = GetSharedMemoryAs<cmds::ReadPixels::Result*>();
++  // SAFETY: shared memory extends past Result by at least the pixel window.
++  base::span<uint8_t> dest = UNSAFE_BUFFERS(
++      base::span(reinterpret_cast<uint8_t*>(result + 1),
++                 static_cast<size_t>(kWidth * kHeight * kBytesPerPixel)));
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB()).Times(0);
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_,
++              ReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, _))
++      .WillOnce(Invoke(&emu, &ReadPixelsEmulator::ReadPixels));
++
++  cmds::ReadPixels cmd;
++  cmd.Init(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, shared_memory_id_,
++           kSharedMemoryOffset + sizeof(*result), shared_memory_id_,
++           kSharedMemoryOffset, false);
++  result->success = 0;
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_EQ(1u, result->success);
++  EXPECT_FALSE(decoder_->WasContextLost());
++  for (GLint yy = 0; yy < kHeight; ++yy) {
++    EXPECT_TRUE(emu.CompareRowSegment(
++        0, yy, kWidth,
++        emu.ComputePackAlignmentAddress(0, yy, kWidth, dest.data())));
++  }
++}
++
++// Same shape as ReadPixelsResetStatusWorkaroundGuilty, but reading from a user
++// framebuffer object (the report's actual shape) rather than the
++// backbuffer; the decoder's read-target validation walks a different path.
++TEST_P(GLES2DecoderManualInitTest,
++       ReadPixelsFromFramebufferResetStatusWorkaroundGuilty) {
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.check_graphics_reset_status_after_readback = true;
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  init.extensions = "GL_KHR_robustness";
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLsizei kWidth = 4;
++  const GLsizei kHeight = 4;
++  const GLint kBytesPerPixel = 4;
++  const GLint kPackAlignment = 4;
++  static const uint8_t kSrcPixels[kWidth * kHeight * kBytesPerPixel] = {
++      1,  2,  3,  255, 4,  5,  6,  255, 7,  8,  9,  255, 10, 11, 12, 255,
++      13, 14, 15, 255, 16, 17, 18, 255, 19, 20, 21, 255, 22, 23, 24, 255,
++      25, 26, 27, 255, 28, 29, 30, 255, 31, 32, 33, 255, 34, 35, 36, 255,
++      37, 38, 39, 255, 40, 41, 42, 255, 43, 44, 45, 255, 46, 47, 48, 255};
++
++  // Read source: a texture-backed user framebuffer (the readback that
++  // follows a framebuffer clear reads through this path).
++  DoBindTexture(GL_TEXTURE_2D, client_texture_id_, kServiceTextureId);
++  DoTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA,
++               GL_UNSIGNED_BYTE, shared_memory_id_, kSharedMemoryOffset);
++  DoBindFramebuffer(GL_FRAMEBUFFER, client_framebuffer_id_,
++                    kServiceFramebufferId);
++  DoFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         client_texture_id_, kServiceTextureId, 0, GL_NO_ERROR);
++  EXPECT_CALL(*gl_, CheckFramebufferStatusEXT(GL_READ_FRAMEBUFFER))
++      .WillOnce(Return(GL_FRAMEBUFFER_COMPLETE))
++      .RetiresOnSaturation();
++
++  ReadPixelsEmulator emu(kWidth, kHeight, kBytesPerPixel, kSrcPixels,
++                         kSrcPixels, kPackAlignment);
++  auto* result = GetSharedMemoryAs<cmds::ReadPixels::Result*>();
++  uint32_t result_shm_id = shared_memory_id_;
++  uint32_t result_shm_offset = kSharedMemoryOffset;
++  uint32_t pixels_shm_id = shared_memory_id_;
++  uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
++  // SAFETY: the fixture's shared memory extends well past Result; the tests
++  // address exactly the pixel window that the command below is issued with.
++  base::span<uint8_t> dest = UNSAFE_BUFFERS(
++      base::span(reinterpret_cast<uint8_t*>(result + 1),
++                 static_cast<size_t>(kWidth * kHeight * kBytesPerPixel)));
++
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_,
++              ReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, _))
++      .WillOnce(Invoke(&emu, &ReadPixelsEmulator::ReadPixels));
++  // The workaround polls the reset status after the native read; the driver
++  // reports the queue-group fatal latched while the read was blocked.
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB())
++      .WillOnce(Return(GL_GUILTY_CONTEXT_RESET));
++  EXPECT_CALL(*mock_decoder_, MarkContextLost(error::kUnknown)).Times(1);
++
++  cmds::ReadPixels cmd;
++  cmd.Init(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels_shm_id,
++           pixels_shm_offset, result_shm_id, result_shm_offset, false);
++  result->success = 0;
++  EXPECT_EQ(error::kLostContext, ExecuteCmd(cmd));
++
++  // Delivery refused: success unset, context lost by robustness, and the
++  // shared-memory destination scrubbed (the emulator had written kSrcPixels).
++  EXPECT_EQ(0u, result->success);
++  EXPECT_TRUE(decoder_->WasContextLost());
++  EXPECT_TRUE(decoder_->WasContextLostByRobustnessExtension());
++  const uint32_t kPixelsSize = kWidth * kHeight * kBytesPerPixel;
++  for (uint32_t i = 0; i < kPixelsSize; ++i) {
++    EXPECT_EQ(0u, dest[i]) << "byte " << i << " not scrubbed";
++  }
++
++  // Consume the latched context-loss error so the fixture shuts down cleanly
++  // (same tail as ReadPixelsResetStatusWorkaroundGuilty).
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_CONTEXT_LOST_KHR))
++      .RetiresOnSaturation();
++  cmds::GetError error_cmd;
++  error_cmd.Init(shared_memory_id_, shared_memory_offset_);
++  EXPECT_EQ(error::kLostContext, ExecuteCmd(error_cmd));
++}
++
+ TEST_P(GLES2DecoderManualInitTest, ReadPixels2AlignmentWorkaround) {
+   gpu::GpuDriverBugWorkarounds workarounds;
+   workarounds.pack_parameters_workaround_with_pack_buffer = true;
+@@ -1155,6 +1432,173 @@ TEST_P(GLES2DecoderManualInitTest,
+   EXPECT_EQ(GL_NO_ERROR, GetGLError());
+ }
+ 
++// Tests that a readback of a level defined by copyTexImage2D is refused
++// after a reset. This is the crbug.com/558111285 producer: the level is
++// marked defined from synchronous success while the driver's asynchronous
++// copy can still be discarded by a queue-group kill (ES 3.2 sec. 2.3.2). We
++// expect kLostContext, no success, and a scrubbed destination.
++TEST_P(GLES2DecoderManualInitTest,
++       ReadPixelsAfterCopyTexImage2DRefusedOnReset) {
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.check_graphics_reset_status_after_readback = true;
++  InitState init;
++  init.gl_version = "OpenGL ES 2.0";
++  init.extensions = "GL_KHR_robustness";
++  init.has_alpha = true;
++  init.request_alpha = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLuint kFBOClientTextureId = 4100;
++  const GLuint kFBOServiceTextureId = 4101;
++  const GLsizei kSize = 4;
++  const GLint kBytesPerPixel = 4;
++  const GLint kPackAlignment = 4;
++  static const uint8_t kSrcPixels[kSize * kSize * kBytesPerPixel] = {
++      1,  2,  3,  255, 4,  5,  6,  255, 7,  8,  9,  255, 10, 11, 12, 255,
++      13, 14, 15, 255, 16, 17, 18, 255, 19, 20, 21, 255, 22, 23, 24, 255,
++      25, 26, 27, 255, 28, 29, 30, 255, 31, 32, 33, 255, 34, 35, 36, 255,
++      37, 38, 39, 255, 40, 41, 42, 255, 43, 44, 45, 255, 46, 47, 48, 255};
++
++  EXPECT_CALL(*gl_, GenTextures(_, _))
++      .WillOnce(SetArgPointee<1>(kFBOServiceTextureId))
++      .RetiresOnSaturation();
++  GenHelper<cmds::GenTexturesImmediate>(kFBOClientTextureId);
++  DoBindTexture(GL_TEXTURE_2D, kFBOClientTextureId, kFBOServiceTextureId);
++
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_,
++              CopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, kSize, kSize, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++  cmds::CopyTexImage2D copy_cmd;
++  copy_cmd.Init(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, kSize, kSize);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(copy_cmd));
++
++  DoBindFramebuffer(GL_FRAMEBUFFER, client_framebuffer_id_,
++                    kServiceFramebufferId);
++  DoFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         kFBOClientTextureId, kFBOServiceTextureId, 0,
++                         GL_NO_ERROR);
++  // ES2 context: the read framebuffer binding is GL_FRAMEBUFFER.
++  EXPECT_CALL(*gl_, CheckFramebufferStatusEXT(GL_FRAMEBUFFER))
++      .WillOnce(Return(GL_FRAMEBUFFER_COMPLETE))
++      .RetiresOnSaturation();
++
++  ReadPixelsEmulator emu(kSize, kSize, kBytesPerPixel, kSrcPixels, kSrcPixels,
++                         kPackAlignment);
++  auto* result = GetSharedMemoryAs<cmds::ReadPixels::Result*>();
++  uint32_t result_shm_id = shared_memory_id_;
++  uint32_t result_shm_offset = kSharedMemoryOffset;
++  uint32_t pixels_shm_id = shared_memory_id_;
++  uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
++  // SAFETY: the fixture's shared memory extends well past Result; the tests
++  // address exactly the pixel window that the command below is issued with.
++  base::span<uint8_t> dest = UNSAFE_BUFFERS(
++      base::span(reinterpret_cast<uint8_t*>(result + 1),
++                 static_cast<size_t>(kSize * kSize * kBytesPerPixel)));
++
++  // The native read completes (the driver wrote into shm), but the reset
++  // latched while it was blocked: delivery must be refused and the
++  // destination scrubbed.
++  EXPECT_CALL(*gl_,
++              ReadPixels(0, 0, kSize, kSize, GL_RGBA, GL_UNSIGNED_BYTE, _))
++      .WillOnce(Invoke(&emu, &ReadPixelsEmulator::ReadPixels));
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB())
++      .WillOnce(Return(GL_GUILTY_CONTEXT_RESET));
++  EXPECT_CALL(*mock_decoder_, MarkContextLost(error::kUnknown)).Times(1);
++
++  result->success = 0;
++  cmds::ReadPixels cmd;
++  cmd.Init(0, 0, kSize, kSize, GL_RGBA, GL_UNSIGNED_BYTE, pixels_shm_id,
++           pixels_shm_offset, result_shm_id, result_shm_offset, false);
++  EXPECT_EQ(error::kLostContext, ExecuteCmd(cmd));
++  EXPECT_EQ(0u, result->success);
++  EXPECT_TRUE(decoder_->WasContextLost());
++  EXPECT_TRUE(decoder_->WasContextLostByRobustnessExtension());
++  const uint32_t kPixelsSize = kSize * kSize * kBytesPerPixel;
++  for (uint32_t i = 0; i < kPixelsSize; ++i) {
++    EXPECT_EQ(0u, dest[i]) << "byte " << i << " not scrubbed";
++  }
++
++  // Consume the latched context-loss decoder error so the fixture can shut
++  // down cleanly (same tail as ReadPixelsResetStatusWorkaroundGuilty).
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_CONTEXT_LOST_KHR))
++      .RetiresOnSaturation();
++  cmds::GetError error_cmd;
++  error_cmd.Init(shared_memory_id_, shared_memory_offset_);
++  EXPECT_EQ(error::kLostContext, ExecuteCmd(error_cmd));
++}
++
++// Same shape as ReadPixelsAfterCopyTexImage2DRefusedOnReset, but with no reset
++// reported: delivery must be unchanged. This ensures the workaround does
++// not regress copyTexImage2D-sourced readbacks.
++TEST_P(GLES2DecoderManualInitTest,
++       ReadPixelsAfterCopyTexImage2DDeliveredWhenNoReset) {
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.check_graphics_reset_status_after_readback = true;
++  InitState init;
++  init.gl_version = "OpenGL ES 2.0";
++  init.extensions = "GL_KHR_robustness";
++  init.has_alpha = true;
++  init.request_alpha = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLuint kFBOClientTextureId = 4100;
++  const GLuint kFBOServiceTextureId = 4101;
++  const GLsizei kSize = 4;
++
++  EXPECT_CALL(*gl_, GenTextures(_, _))
++      .WillOnce(SetArgPointee<1>(kFBOServiceTextureId))
++      .RetiresOnSaturation();
++  GenHelper<cmds::GenTexturesImmediate>(kFBOClientTextureId);
++  DoBindTexture(GL_TEXTURE_2D, kFBOClientTextureId, kFBOServiceTextureId);
++
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_,
++              CopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, kSize, kSize, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++  cmds::CopyTexImage2D copy_cmd;
++  copy_cmd.Init(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, kSize, kSize);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(copy_cmd));
++
++  DoBindFramebuffer(GL_FRAMEBUFFER, client_framebuffer_id_,
++                    kServiceFramebufferId);
++  DoFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         kFBOClientTextureId, kFBOServiceTextureId, 0,
++                         GL_NO_ERROR);
++  // ES2 context: the read framebuffer binding is GL_FRAMEBUFFER.
++  EXPECT_CALL(*gl_, CheckFramebufferStatusEXT(GL_FRAMEBUFFER))
++      .WillOnce(Return(GL_FRAMEBUFFER_COMPLETE))
++      .RetiresOnSaturation();
++
++  EXPECT_CALL(*gl_,
++              ReadPixels(0, 0, kSize, kSize, GL_RGBA, GL_UNSIGNED_BYTE, _))
++      .Times(1)
++      .RetiresOnSaturation();
++  // AnyNumber so this test also passes on trees without the gate (the
++  // falsification negative): zero polls is acceptable, a poll must see
++  // NO_ERROR.
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB())
++      .Times(AnyNumber())
++      .WillRepeatedly(Return(GL_NO_ERROR));
++
++  auto* result = GetSharedMemoryAs<cmds::ReadPixels::Result*>();
++  uint32_t result_shm_id = shared_memory_id_;
++  uint32_t result_shm_offset = kSharedMemoryOffset;
++  uint32_t pixels_shm_id = shared_memory_id_;
++  uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
++  result->success = 0;
++  cmds::ReadPixels cmd;
++  cmd.Init(0, 0, kSize, kSize, GL_RGBA, GL_UNSIGNED_BYTE, pixels_shm_id,
++           pixels_shm_offset, result_shm_id, result_shm_offset, false);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_EQ(1u, result->success);
++  EXPECT_FALSE(decoder_->WasContextLost());
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++}
++
+ TEST_P(GLES2DecoderRGBBackbufferTest, ReadPixelsNoAlphaBackbuffer) {
+   const GLsizei kWidth = 3;
+   const GLsizei kHeight = 3;
+@@ -1174,7 +1618,10 @@ TEST_P(GLES2DecoderRGBBackbufferTest, ReadPixelsNoAlphaBackbuffer) {
+   uint32_t result_shm_offset = kSharedMemoryOffset;
+   uint32_t pixels_shm_id = shared_memory_id_;
+   uint32_t pixels_shm_offset = kSharedMemoryOffset + sizeof(*result);
+-  void* dest = UNSAFE_TODO(&result[1]);
++  // SAFETY: shared memory extends past Result by at least the pixel window.
++  base::span<uint8_t> dest = UNSAFE_BUFFERS(
++      base::span(reinterpret_cast<uint8_t*>(result + 1),
++                 static_cast<size_t>(kWidth * kHeight * kBytesPerPixel)));
+   EXPECT_CALL(*gl_, GetError())
+       .WillOnce(Return(GL_NO_ERROR))
+       .WillOnce(Return(GL_NO_ERROR))
+@@ -1198,7 +1645,8 @@ TEST_P(GLES2DecoderRGBBackbufferTest, ReadPixelsNoAlphaBackbuffer) {
+   EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
+   for (GLint yy = 0; yy < kHeight; ++yy) {
+     EXPECT_TRUE(emu.CompareRowSegment(
+-        0, yy, kWidth, emu.ComputePackAlignmentAddress(0, yy, kWidth, dest)));
++        0, yy, kWidth,
++        emu.ComputePackAlignmentAddress(0, yy, kWidth, dest.data())));
+   }
+ }
+ 
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index e5770e00d1b11793b3278b1ccaf91c18bffb3b92..04ee7a3f6c3532ec5c3e2888df69f5c410ce6938 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -2459,6 +2459,23 @@ void RasterDecoderImpl::DoReadbackARGBImagePixelsINTERNAL(
+   auto helper_result =
+       helper.ReadPixels(src_x, src_y, plane_index, row_bytes, dst_info,
+                         pixel_address, std::move(source_shared_image));
++  // A device reset that occurs while the readback executes can complete it
++  // without error while the destination was never written on certain GPUs. If
++  // the robustness extension reports a reset, scrub the destination and refuse
++  // to publish the result instead of delivering unwritten allocation
++  // contents. CheckResetStatus() marks the context lost when it returns
++  // true.
++  if (workarounds().check_graphics_reset_status_after_readback &&
++      !WasContextLost() && CheckResetStatus()) {
++    // SAFETY: `pixel_address` was validated against shared memory for
++    // exactly `byte_size` bytes earlier in this function.
++    std::ranges::fill(UNSAFE_BUFFERS(base::span(
++                          static_cast<uint8_t*>(pixel_address), byte_size)),
++                      0);
++    LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, "glReadbackImagePixels",
++                       "readback aborted: device reset detected");
++    return;
++  }
+   if (!helper_result.has_value()) {
+     LOCAL_SET_GL_ERROR(helper_result.error().gl_error,
+                        helper_result.error().function_name.c_str(),
+@@ -2726,6 +2743,18 @@ void RasterDecoderImpl::DoReadbackYUVImagePixelsINTERNAL(
+     return;
+   }
+ 
++  // Refuse to deliver readback results after a device reset — a reset can fire
++  // the async-read completion over never-written buffers. The plane
++  // destinations have not been written yet on this path, so there is nothing to
++  // scrub; the shm result stays 0. CheckResetStatus() marks the context lost
++  // when it returns true.
++  if (workarounds().check_graphics_reset_status_after_readback &&
++      !WasContextLost() && CheckResetStatus()) {
++    LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, "glReadbackYUVImagePixels",
++                       "readback aborted: device reset detected");
++    return;
++  }
++
+   auto& async_result = yuv_result.async_result;
+   libyuv::I420Copy(static_cast<const uint8_t*>(async_result->data(0)),
+                    async_result->rowBytes(0),
+diff --git a/gpu/command_buffer/service/raster_decoder_unittest_context_lost.cc b/gpu/command_buffer/service/raster_decoder_unittest_context_lost.cc
+index aefb8c1592d549fc74a730ce09c6ec0c5e1897fa..6acb0264a113baa37c4bf47de6af10aad0b233b8 100644
+--- a/gpu/command_buffer/service/raster_decoder_unittest_context_lost.cc
++++ b/gpu/command_buffer/service/raster_decoder_unittest_context_lost.cc
+@@ -3,8 +3,12 @@
+ // found in the LICENSE file.
+ 
+ #include "gpu/command_buffer/common/raster_cmd_format.h"
++#include "gpu/command_buffer/common/shared_image_info.h"
++#include "gpu/command_buffer/common/shared_image_usage.h"
++#include "gpu/command_buffer/service/memory_tracking.h"
+ #include "gpu/command_buffer/service/query_manager.h"
+ #include "gpu/command_buffer/service/raster_decoder_unittest_base.h"
++#include "gpu/command_buffer/service/shared_image/test_image_backing.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/gl/gl_mock.h"
+ 
+@@ -268,5 +272,153 @@ INSTANTIATE_TEST_SUITE_P(Service,
+                          RasterDecoderLostContextTest,
+                          ::testing::Bool());
+ 
++// The readback delivery gate must refuse to publish results after a device
++// reset, and must stay silent otherwise. The shared image is registered with
++// can_access=false so the readback command reaches the delivery gate without
++// Skia touching the StrictMock GL interface; the gate runs after the copy
++// helper regardless of the helper's outcome.
++class RasterDecoderReadbackResetTest : public RasterDecoderManualInitTest {
++ protected:
++  // Shared client-visible tail for the healthy-path guards: the command
++  // completes without denial -- no Result, no byte delivered from the
++  // inaccessible backing, no context loss; the copy helper's INVALID_VALUE
++  // is read so the fixture's no-unread-errors teardown check holds.
++  void ExpectHealthyNonDelivery(const Mailbox& mailbox) {
++    EXPECT_EQ(error::kNoError, IssueReadback(mailbox));
++    EXPECT_EQ(0u, *Result());
++    for (uint32_t i = 0; i < kPixelBytes; ++i) {
++      EXPECT_EQ(0xAAu, Pixels()[i])
++          << "pixel byte " << i << " unexpectedly modified";
++    }
++    EXPECT_FALSE(decoder_->WasContextLost());
++    EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++  }
++
++  static constexpr GLuint kDstWidth = 2;
++  static constexpr GLuint kDstHeight = 2;
++  static constexpr GLuint kRowBytes = 8;
++  static constexpr uint32_t kPixelBytes = kRowBytes * kDstHeight;
++  // Shm layout at the shared memory base: Result, then pixel destination.
++  static constexpr uint32_t kPixelsOffset = 16;
++
++  void Init(bool with_workaround) {
++    InitState init;
++    init.extensions.push_back("GL_KHR_robustness");
++    init.workarounds.check_graphics_reset_status_after_readback =
++        with_workaround;
++    InitDecoder(init);
++  }
++
++  Mailbox CreateInaccessibleSharedImage() {
++    Mailbox mailbox = Mailbox::Generate();
++    auto backing = std::make_unique<TestImageBacking>(
++        mailbox,
++        SharedImageInfo(viz::SinglePlaneFormat::kRGBA_8888, gfx::Size(4, 4),
++                        gfx::ColorSpace::CreateSRGB(), kTopLeft_GrSurfaceOrigin,
++                        kPremul_SkAlphaType, SHARED_IMAGE_USAGE_RASTER_READ,
++                        "TestLabel"),
++        /*estimated_size=*/64);
++    backing->SetCleared();
++    backing->set_can_access(false);
++    factory_ref_ =
++        shared_image_manager()->Register(std::move(backing), &memory_tracker_);
++    return mailbox;
++  }
++
++  error::Error IssueReadback(const Mailbox& mailbox) {
++    auto& cmd =
++        *GetImmediateAs<cmds::ReadbackARGBImagePixelsINTERNALImmediate>();
++    // color_space_offset == pixels_offset encodes "no color space".
++    cmd.Init(/*src_x=*/0, /*src_y=*/0, /*plane_index=*/0, kDstWidth, kDstHeight,
++             kRowBytes, kRGBA_8888_SkColorType, kPremul_SkAlphaType,
++             shared_memory_id_, shared_memory_offset_,
++             /*color_space_offset=*/kPixelsOffset,
++             /*pixels_offset=*/kPixelsOffset, mailbox.name);
++    return ExecuteImmediateCmd(cmd, sizeof(mailbox.name));
++  }
++
++  uint32_t* Result() { return GetSharedMemoryAs<uint32_t*>(); }
++  base::span<uint8_t> Pixels() {
++    // SAFETY: the fixture's shared memory extends past `kPixelsOffset` by at
++    // least `kPixelBytes`; every test addresses exactly that window.
++    return UNSAFE_BUFFERS(
++        base::span(GetSharedMemoryAs<uint8_t*>() + kPixelsOffset, kPixelBytes));
++  }
++
++  MemoryTypeTracker memory_tracker_{nullptr};
++  std::unique_ptr<SharedImageRepresentationFactoryRef> factory_ref_;
++};
++
++// Tests that the raster decoder refuses ReadbackARGB delivery when the
++// robustness status reports a reset latched during the readback -- the
++// canvas-lane crossing of crbug.com/555394151 (ES 3.2 sec. 2.3.2). We
++// expect kLostContext, Result left at zero, a scrubbed destination,
++// INVALID_OPERATION, and a guilty loss via the SharedContextState observer
++// path.
++TEST_P(RasterDecoderReadbackResetTest,
++       ReadbackARGBImagePixelsGuiltyResetDeniesResultDelivery) {
++  Init(/*with_workaround=*/true);
++  Mailbox mailbox = CreateInaccessibleSharedImage();
++  *Result() = 0;
++  std::ranges::fill(Pixels(), 0xAA);
++
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB())
++      .WillOnce(Return(GL_GUILTY_CONTEXT_RESET_KHR));
++
++  EXPECT_EQ(error::kLostContext, IssueReadback(mailbox));
++  EXPECT_EQ(0u, *Result());
++  for (uint32_t i = 0; i < kPixelBytes; ++i) {
++    EXPECT_EQ(0u, Pixels()[i]) << "pixel byte " << i << " not scrubbed";
++  }
++  EXPECT_TRUE(decoder_->WasContextLost());
++  EXPECT_TRUE(decoder_->WasContextLostByRobustnessExtension());
++  EXPECT_EQ(error::kGuilty, GetContextLostReason());
++  // The gate reports the denial as INVALID_OPERATION; read it so the
++  // fixture's no-unread-errors teardown check holds.
++  EXPECT_EQ(GL_INVALID_OPERATION, GetGLError());
++}
++
++// Tests that healthy raster readbacks are delivered unchanged with the
++// workaround enabled.
++TEST_P(RasterDecoderReadbackResetTest,
++       ReadbackARGBImagePixelsNoResetDoesNotDeny) {
++  Init(/*with_workaround=*/true);
++  Mailbox mailbox = CreateInaccessibleSharedImage();
++  *Result() = 0;
++  std::ranges::fill(Pixels(), 0xAA);
++
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB())
++      .Times(::testing::AtMost(1))
++      .WillRepeatedly(Return(GL_NO_ERROR));
++
++  // The inaccessible test backing makes the copy helper fail with a GL
++  // error, but the gate must not fire.
++  ExpectHealthyNonDelivery(mailbox);
++}
++
++// Same as ReadbackARGBImagePixelsNoResetDoesNotDeny, but with the
++// workaround off: the readback path must issue no reset-status query at
++// all.
++TEST_P(RasterDecoderReadbackResetTest,
++       ReadbackARGBImagePixelsWithoutWorkaroundDoesNotQueryResetStatus) {
++  Init(/*with_workaround=*/false);
++  Mailbox mailbox = CreateInaccessibleSharedImage();
++  *Result() = 0;
++  std::ranges::fill(Pixels(), 0xAA);
++
++  EXPECT_CALL(*gl_, GetError()).WillRepeatedly(Return(GL_NO_ERROR));
++  EXPECT_CALL(*gl_, GetGraphicsResetStatusARB()).Times(0);
++
++  ExpectHealthyNonDelivery(mailbox);
++}
++
++// Note: The suite parameter is RasterDecoderTestBase's
++// ignore_cached_state_for_test_.
++INSTANTIATE_TEST_SUITE_P(Service,
++                         RasterDecoderReadbackResetTest,
++                         ::testing::Bool());
++
+ }  // namespace raster
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/tests/gl_readback_unittest.cc b/gpu/command_buffer/tests/gl_readback_unittest.cc
+index 0fe967be57b1b54168628fcabee283e35095eb75..3338987830c8cfac7850f6d97208f7ed3f83c57d 100644
+--- a/gpu/command_buffer/tests/gl_readback_unittest.cc
++++ b/gpu/command_buffer/tests/gl_readback_unittest.cc
+@@ -26,6 +26,7 @@
+ #include "build/build_config.h"
+ #include "gpu/command_buffer/tests/gl_manager.h"
+ #include "gpu/command_buffer/tests/gl_test_utils.h"
++#include "gpu/config/gpu_driver_bug_workarounds.h"
+ #include "gpu/config/gpu_test_config.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+@@ -415,4 +416,190 @@ TEST_F(GLReadbackTest, PackLargeRowLengthSeparatelyPackBuffer) {
+ #endif
+ }
+ 
++// check_graphics_reset_status_after_readback must not change readback behavior
++// on a healthy context. The rejection leg requires a driver that
++// force-completes discarded work across a queue-group fatal and is exercised
++// on-device; conformant drivers never report a reset here.
++class GLReadbackResetCheckTest : public testing::TestWithParam<bool> {
++ protected:
++  void SetUp() override {
++    GpuDriverBugWorkarounds workarounds;
++    workarounds.check_graphics_reset_status_after_readback = GetParam();
++    gl_.InitializeWithWorkarounds(GLManager::Options(), workarounds);
++  }
++  void TearDown() override { gl_.Destroy(); }
++  GLManager gl_;
++};
++
++// Tests end to end that a healthy blocking ReadPixels into client memory is
++// byte-exact with the workaround both on and off via the suite parameter.
++// This ensures check_graphics_reset_status_after_readback changes nothing
++// outside its trigger (crbug.com/552550589).
++TEST_P(GLReadbackResetCheckTest, ReadPixelsClientMemoryUnaffected) {
++  glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++  glClear(GL_COLOR_BUFFER_BIT);
++  uint8_t pixels[4] = {1, 2, 3, 4};
++  glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++  EXPECT_EQ(0u, pixels[0]);
++  EXPECT_EQ(255u, pixels[1]);
++  EXPECT_EQ(0u, pixels[2]);
++  EXPECT_EQ(255u, pixels[3]);
++}
++
++// Same shape as ReadPixelsClientMemoryUnaffected, but with an explicit flush
++// between produce and read (delivery after a pipeline break).
++TEST_P(GLReadbackResetCheckTest,
++       ReadPixelsAfterClearAndFlushDeliversClearColor) {
++  // A full FBO clear + flush followed by a blocking readback is the sequence
++  // from crbug.com/550525698. With the reset-status check enabled and a
++  // healthy context, the readback must deliver the clear color unchanged.
++  GLuint texture = 0;
++  glGenTextures(1, &texture);
++  glBindTexture(GL_TEXTURE_2D, texture);
++  const uint8_t kRed[4] = {255, 0, 0, 255};
++  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               kRed);
++
++  GLuint fbo = 0;
++  glGenFramebuffers(1, &fbo);
++  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         texture, 0);
++  ASSERT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++            glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++  glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++  glClear(GL_COLOR_BUFFER_BIT);
++  glFlush();
++
++  uint8_t pixel[4] = {1, 2, 3, 4};
++  glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++  EXPECT_EQ(0u, pixel[0]);
++  EXPECT_EQ(0u, pixel[1]);
++  EXPECT_EQ(255u, pixel[2]);
++  EXPECT_EQ(255u, pixel[3]);
++
++  glDeleteFramebuffers(1, &fbo);
++  glDeleteTextures(1, &texture);
++}
++
++// Readbacks of freshly generated mip levels must deliver the generated content
++// on a healthy context with check_graphics_reset_status_after_readback enabled.
++// The rejection leg (the generation transfer discarded by a queue-group fatal
++// while the readback is blocked) requires affected hardware and is exercised
++// on-device. Level-1 framebuffer attachment requires ES3.
++INSTANTIATE_TEST_SUITE_P(Service, GLReadbackResetCheckTest, ::testing::Bool());
++
++class GLReadbackResetCheckES3Test : public testing::TestWithParam<bool> {
++ protected:
++  void SetUp() override {
++    GpuDriverBugWorkarounds workarounds;
++    workarounds.check_graphics_reset_status_after_readback = GetParam();
++    GLManager::Options options;
++    options.context_type = CONTEXT_TYPE_OPENGLES3;
++    gl_.InitializeWithWorkarounds(options, workarounds);
++  }
++  void TearDown() override { gl_.Destroy(); }
++  GLManager gl_;
++};
++
++// Tests that a generateMipmap-defined level (the crbug.com/550996500
++// producer) reads back correctly on ES3, with the workaround on and off
++// via the suite parameter.
++TEST_P(GLReadbackResetCheckES3Test, GenerateMipmapLevelReadbackUnaffected) {
++  if (!gl_.IsInitialized()) {
++    LOG(INFO) << "ES3 context unavailable, skipping.";
++    return;
++  }
++  constexpr GLsizei kSize = 8;
++  std::vector<uint8_t> blue(kSize * kSize * 4);
++  for (size_t i = 0; i < blue.size(); i += 4) {
++    blue[i + 0] = 0;
++    blue[i + 1] = 0;
++    blue[i + 2] = 255;
++    blue[i + 3] = 255;
++  }
++  GLuint texture = 0;
++  glGenTextures(1, &texture);
++  glBindTexture(GL_TEXTURE_2D, texture);
++  glTexStorage2DEXT(GL_TEXTURE_2D, /*levels=*/2, GL_RGBA8, kSize, kSize);
++  glTexSubImage2D(GL_TEXTURE_2D, /*level=*/0, /*xoffset=*/0, /*yoffset=*/0,
++                  kSize, kSize, GL_RGBA, GL_UNSIGNED_BYTE, blue.data());
++
++  glGenerateMipmap(GL_TEXTURE_2D);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  GLuint fbo = 0;
++  glGenFramebuffers(1, &fbo);
++  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         texture, /*level=*/1);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++  ASSERT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++            glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++  uint8_t pixel[4] = {1, 2, 3, 4};
++  glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++  EXPECT_EQ(0u, pixel[0]);
++  EXPECT_EQ(0u, pixel[1]);
++  EXPECT_EQ(255u, pixel[2]);
++  EXPECT_EQ(255u, pixel[3]);
++}
++
++// Tests end to end that a copyTexImage2D-defined level reads back exactly
++// with the workaround forced on, on both decoders (crbug.com/558111285).
++TEST_F(GLReadbackTest, ReadPixelsAfterCopyTexImage2DWithResetCheckWorkaround) {
++  const GLsizei kSize = 64;
++  GLManager::Options options;
++  options.size = gfx::Size(kSize, kSize);
++  GpuDriverBugWorkarounds workarounds;
++  workarounds.check_graphics_reset_status_after_readback = true;
++  gl_.Destroy();
++  gl_.InitializeWithWorkarounds(options, workarounds);
++  if (!gl_.IsInitialized()) {
++    return;
++  }
++
++  const uint8_t kExpectedColor[4] = {65, 128, 192, 255};
++
++  glClearColor(kExpectedColor[0] / 255.0f, kExpectedColor[1] / 255.0f,
++               kExpectedColor[2] / 255.0f, kExpectedColor[3] / 255.0f);
++  glClear(GL_COLOR_BUFFER_BIT);
++
++  GLuint texture = 0;
++  glGenTextures(1, &texture);
++  glBindTexture(GL_TEXTURE_2D, texture);
++  glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, kSize, kSize, 0);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  GLuint fbo = 0;
++  glGenFramebuffers(1, &fbo);
++  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         texture, 0);
++  ASSERT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++            glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++  uint8_t actual[4] = {0};
++  glReadPixels(kSize / 2, kSize / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, actual);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  EXPECT_EQ(kExpectedColor[0], actual[0]);
++  EXPECT_EQ(kExpectedColor[1], actual[1]);
++  EXPECT_EQ(kExpectedColor[2], actual[2]);
++  EXPECT_EQ(kExpectedColor[3], actual[3]);
++
++  glDeleteFramebuffers(1, &fbo);
++  glDeleteTextures(1, &texture);
++}
++
++INSTANTIATE_TEST_SUITE_P(Service,
++                         GLReadbackResetCheckES3Test,
++                         ::testing::Bool());
++
+ }  // namespace gpu
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 2ee50145b362d6f6cc23af593e4650223844e9c3..d6259cf4992d8e463fcc32929912ff597a6238d7 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -4007,6 +4007,19 @@
+       "features": [
+         "d3d12_encode_packed_format_dpb_sizing"
+       ]
++    },
++    {
++      "id": 503,
++      "cr_bugs": [550525698, 550996500, 552550589, 555394151, 558111285],
++      "description": "Readbacks interrupted by a GPU reset can complete without error on Mali and deliver unwritten memory; check the reset status before delivering readback results",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "ARM.*",
++      "gl_renderer": "Mali-G.*",
++      "features": [
++        "check_graphics_reset_status_after_readback"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 0fa7cfa4d5f8a9b2df30d028bb9085ec89173d4e..ae2138bd75cb2a38a658965bcb55d82d4c57d334 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -2,6 +2,7 @@ adjust_src_dst_region_for_blitframebuffer
+ avoid_one_component_egl_images
+ avoid_stencil_buffers
+ check_egl_fence_before_wait
++check_graphics_reset_status_after_readback
+ check_ycbcr_studio_g22_left_p709_for_nv12_support
+ d3d12_encode_packed_format_dpb_sizing
+ disable_2d_canvas_auto_flush

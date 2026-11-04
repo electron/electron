@@ -1,0 +1,294 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Olivier Li <olivierli@google.com>
+Date: Mon, 5 Oct 2026 03:37:45 -0700
+Subject: CacheStorage: Treat opaque responses as credentialed for CORP
+
+Force `request_include_credentials = true` for opaque responses read
+from CacheStorage, disabling the COEP:credentialless CORP exemption for
+cached opaque responses.
+
+The Fetch and Service Worker specs do not define how a cached opaque
+response preserves or verifies the originating request's credentials
+mode, making the COEP:credentialless CORP exemption unenforceable
+across CacheStorage. Until the spec is updated, we keep the upstream
+`external/wpt` tests unmodified and record the 16 resulting subtest
+changes in Chromium-side `-expected.txt` baselines.
+
+Bug: 499181801
+Change-Id: Id775f824cefe6e00ee4ea74e68691bfe083a87f2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8504130
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Reviewed-by: Eriko Kurimoto <elkurin@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Auto-Submit: Olivier Li Shing Tat-Dupuis <olivierli@google.com>
+Cr-Commit-Position: refs/heads/main@{#1711147}
+
+diff --git a/content/browser/cache_storage/cache_storage.proto b/content/browser/cache_storage/cache_storage.proto
+index 9f7cc60ef0212e1a83827cf82d5e368102e746d0..916f53f7bd1d295a52030e74fbf9883dd0357e21 100644
+--- a/content/browser/cache_storage/cache_storage.proto
++++ b/content/browser/cache_storage/cache_storage.proto
+@@ -79,6 +79,11 @@ message CacheResponse {
+   optional string request_method = 14;
+   optional int64 padding = 15;
+   optional int64 side_data_padding = 16;
++  // Renderer-supplied via cache.put() and therefore NOT trustworthy: a
++  // compromised renderer can claim a credentialed response was
++  // credentialless. Read it through CreateResponse() in
++  // cache_storage_cache.cc, which sanitizes it for opaque responses, rather
++  // than consuming this field directly.
+   optional bool request_include_credentials = 17;
+   optional bool timing_allow_passed = 18;
+   optional bool has_range_requested = 19;
+diff --git a/content/browser/cache_storage/cache_storage_cache.cc b/content/browser/cache_storage/cache_storage_cache.cc
+index 68b3487af0870d2d63834aebf313a0dcbbd84ca9..0fe6847ee5383a7dde79f0e3515464c6bdff14d8 100644
+--- a/content/browser/cache_storage/cache_storage_cache.cc
++++ b/content/browser/cache_storage/cache_storage_cache.cc
+@@ -16,6 +16,7 @@
+ #include "base/barrier_closure.h"
+ #include "base/compiler_specific.h"
+ #include "base/containers/flat_map.h"
++#include "base/feature_list.h"
+ #include "base/files/file_path.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+@@ -43,6 +44,7 @@
+ #include "content/browser/cache_storage/cache_storage_scheduler.h"
+ #include "content/browser/cache_storage/cache_storage_trace_utils.h"
+ #include "content/common/background_fetch/background_fetch_types.h"
++#include "content/common/features.h"
+ #include "crypto/hmac.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+@@ -489,10 +491,21 @@ blink::mojom::FetchAPIResponsePtr CreateResponse(
+   network::mojom::FetchResponseType response_type =
+       ProtoResponseTypeToFetchResponseType(metadata.response().response_type());
+ 
++  // The stored `request_include_credentials` bit is supplied by the renderer
++  // via cache.put(), so it cannot be trusted for opaque responses, whose
++  // original credential mode is not otherwise observable. When the feature is
++  // enabled we treat them as credentialed, which disables the
++  // COEP:credentialless CORP exemption. This is the only place the stored bit
++  // is consumed, so sanitizing here covers every entry, including ones written
++  // before the feature was enabled.
++  bool stored_include_credentials =
++      !metadata.response().has_request_include_credentials() ||
++      metadata.response().request_include_credentials();
+   bool request_include_credentials =
+-      metadata.response().has_request_include_credentials()
+-          ? metadata.response().request_include_credentials()
+-          : true;
++      stored_include_credentials ||
++      (response_type == network::mojom::FetchResponseType::kOpaque &&
++       base::FeatureList::IsEnabled(
++           features::kCacheStorageOpaqueResponseCredentialedForCorp));
+ 
+   // Default to true for existing cache entries stored before this field was
+   // introduced. Downstream loaders will still check Timing-Allow-Origin headers
+@@ -2054,6 +2067,11 @@ void CacheStorageCache::PutDidCreateEntry(
+         bucket_locator_, response_metadata, put_context->side_data_blob_size);
+   }
+   response_metadata->set_side_data_padding(side_data_padding);
++  // Stored verbatim: this value is renderer-supplied via cache.put() and is
++  // not trusted. It is sanitized on read in CreateResponse(), which is the
++  // only consumer, so that disabling
++  // kCacheStorageOpaqueResponseCredentialedForCorp fully restores the previous
++  // behaviour for already-stored entries.
+   response_metadata->set_request_include_credentials(
+       put_context->response->request_include_credentials);
+   response_metadata->set_timing_allow_passed(
+diff --git a/content/browser/cache_storage/cache_storage_cache_unittest.cc b/content/browser/cache_storage/cache_storage_cache_unittest.cc
+index 30512b4aa66e96bf55d443b1694da3f47e1f944a..f6680b02812f6ffe9fcacd4bead360541f37145c 100644
+--- a/content/browser/cache_storage/cache_storage_cache_unittest.cc
++++ b/content/browser/cache_storage/cache_storage_cache_unittest.cc
+@@ -2145,6 +2145,20 @@ TEST_P(CacheStorageCacheTestP, PutResponseType) {
+       TestResponseType(network::mojom::FetchResponseType::kOpaqueRedirect));
+ }
+ 
++// CreateResponse() forces `request_include_credentials` to true for opaque
++// responses, because the stored bit is renderer-supplied and an opaque
++// response's credential mode is not otherwise observable. Every other response
++// type must keep the value it was stored with.
++TEST_P(CacheStorageCacheTestP, NonOpaqueResponsePreserved) {
++  blink::mojom::FetchAPIResponsePtr response = CreateBlobBodyResponse();
++  ASSERT_NE(response->response_type,
++            network::mojom::FetchResponseType::kOpaque);
++  response->request_include_credentials = false;
++  EXPECT_TRUE(Put(body_request_, std::move(response)));
++  EXPECT_TRUE(Match(body_request_));
++  EXPECT_FALSE(callback_response_->request_include_credentials);
++}
++
+ TEST_P(CacheStorageCacheTestP, PutWithSideData) {
+   blink::mojom::FetchAPIResponsePtr response = CreateBlobBodyResponse();
+ 
+diff --git a/content/common/features.cc b/content/common/features.cc
+index ef6fbcc30de1c11b78002c89e85d49d4062a6a7a..3eb121c7f9066881fd8ebee0ac0b8a46186aab46 100644
+--- a/content/common/features.cc
++++ b/content/common/features.cc
+@@ -151,6 +151,13 @@ BASE_FEATURE(kCancelCompositionWhenWindowLosesFocus,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ #endif  // BUILDFLAG(IS_MAC)
+ 
++// When enabled, forces opaque CacheStorage responses to be treated as
++// credentialed for the Cross-Origin-Resource-Policy (CORP) check.
++// TODO(crbug.com/568759904): Update the Fetch and Service Worker specs and
++// corresponding WPTs.
++BASE_FEATURE(kCacheStorageOpaqueResponseCredentialedForCorp,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // When enabled, CDP method Page.captureScreenshot will increment
+ // the LocalSurfaceId instead of waiting for ForceRedraw to complete.
+ // This should avoid a possible stall due to frames not being presented.
+diff --git a/content/common/features.h b/content/common/features.h
+index ef24cbfec5a19af42b9865adcb0a328a6afbc1c8..ff67a7a529ef266b3bae9c92ff7c8a2d937f5385 100644
+--- a/content/common/features.h
++++ b/content/common/features.h
+@@ -68,6 +68,8 @@ BASE_DECLARE_FEATURE(kBeforeUnloadBrowserResponseQueue);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kCachedFirstRectAllowRangeOutsideSelection);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kCancelCompositionWhenWindowLosesFocus);
+ #endif  // BUILDFLAG(IS_MAC)
++CONTENT_EXPORT BASE_DECLARE_FEATURE(
++    kCacheStorageOpaqueResponseCredentialedForCorp);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kCDPScreenshotNewSurface);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kClearPendingUrlOnNonEmptyCompositorFrame);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kCodeCacheDeletionWithoutFilter);
+diff --git a/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_dedicated_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_dedicated_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..54d12a0a4cab91958d7612dfd1bfd8250cb28f94
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_dedicated_worker-expected.txt
+@@ -0,0 +1,7 @@
++This is a testharness.js-based test.
++[FAIL] [dedicated_worker] unsafe-none => credentialless (omit)
++  assert_equals: expected "retrieved" but got "error"
++[FAIL] [dedicated_worker] credentialless => credentialless
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_document-expected.txt b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_document-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..67ff1a03b6abb1fd3e5565339ce20ee7e599983c
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_document-expected.txt
+@@ -0,0 +1,7 @@
++This is a testharness.js-based test.
++[FAIL] [document] unsafe-none => credentialless (omit)
++  assert_equals: expected "retrieved" but got "error"
++[FAIL] [document] credentialless => credentialless
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_service_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_service_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6b3164de992b5603b54c465c3ab22ee8b7b1da6d
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_service_worker-expected.txt
+@@ -0,0 +1,7 @@
++This is a testharness.js-based test.
++[FAIL] [service_worker] unsafe-none => credentialless (omit)
++  assert_equals: expected "retrieved" but got "error"
++[FAIL] [service_worker] credentialless => credentialless
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_shared_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_shared_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..c17a7a4cc459f19ae9a7968dda00686b5d85eb69
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/credentialless/cache-storage.https.window_shared_worker-expected.txt
+@@ -0,0 +1,7 @@
++This is a testharness.js-based test.
++[FAIL] [shared_worker] unsafe-none => credentialless (omit)
++  assert_equals: expected "retrieved" but got "error"
++[FAIL] [shared_worker] credentialless => credentialless
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_dedicated_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_dedicated_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..05b5f5b8d22ea0c63cbf17db1e9c77224bc5cebd
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_dedicated_worker-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] [dedicated_worker] isolate-and-credentialless => isolate-and-credentialless
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_document-expected.txt b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_document-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7c0975a30ac2b4792786d833ebd737b1b89c3848
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_document-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] [document] isolate-and-credentialless => isolate-and-credentialless
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_service_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_service_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..f8dbf9e61efd067eff158566ab3f6498a8b6188b
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_service_worker-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] [service_worker] isolate-and-credentialless => isolate-and-credentialless
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_shared_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_shared_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..d32a140e96ad06f0e99107c46a3438b6e4737c18
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window_shared_worker-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] [shared_worker] isolate-and-credentialless => isolate-and-credentialless
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_dedicated_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_dedicated_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b8b25ce831f3fbafb46964af54172b37dc4df71b
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_dedicated_worker-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] [dedicated_worker] none => isolate-and-credentialless (omit)
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_document-expected.txt b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_document-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..d88b6079bcaa85dd256e6a4504dc882cb2392d91
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_document-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] [document] none => isolate-and-credentialless (omit)
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_service_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_service_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..2d04e2426567bf3b0fe69cfe7ccd6d3581fd95bd
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_service_worker-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] [service_worker] none => isolate-and-credentialless (omit)
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_shared_worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_shared_worker-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3a7a27b0600c780c820742933079437458d0bb3f
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window_shared_worker-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] [shared_worker] none => isolate-and-credentialless (omit)
++  assert_equals: expected "retrieved" but got "error"
++Harness: the test ran to completion.
++

@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin Babbitt <kbabbitt@microsoft.com>
+Date: Mon, 5 Oct 2026 15:50:11 -0700
+Subject: [HiC] Use unvisited color for image map focus rings
+
+Fixed: 569005114
+Change-Id: I553cfe7658105dbed102923d39ca0db6fa15452e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8516997
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Commit-Queue: Kevin Babbitt <kbabbitt@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1711767}
+
+diff --git a/third_party/blink/renderer/core/paint/image_painter.cc b/third_party/blink/renderer/core/paint/image_painter.cc
+index a6cde4b1d4abf1fe976de51cdd49bcf67b8071e6..fb0313151a36e0080f89ecd903e2152c9fe7b899 100644
+--- a/third_party/blink/renderer/core/paint/image_painter.cc
++++ b/third_party/blink/renderer/core/paint/image_painter.cc
+@@ -5,6 +5,7 @@
+ #include "third_party/blink/renderer/core/paint/image_painter.h"
+ 
+ #include "third_party/blink/renderer/core/animation/css/css_image_animations.h"
++#include "third_party/blink/renderer/core/css/properties/longhands.h"
+ #include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
+@@ -27,6 +28,7 @@
+ #include "third_party/blink/renderer/core/paint/timing/paint_timing_detector.h"
+ #include "third_party/blink/renderer/platform/geometry/path.h"
+ #include "third_party/blink/renderer/platform/geometry/path_builder.h"
++#include "third_party/blink/renderer/platform/graphics/color.h"
+ #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
+ #include "third_party/blink/renderer/platform/graphics/image_node_animation_info.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/display_item_cache_skipper.h"
+@@ -116,8 +118,15 @@ void ImagePainter::PaintAreaElementFocusRing(const PaintInfo& paint_info) {
+   PhysicalRect focus_rect = layout_image_.PhysicalContentBoxRect();
+   focus_rect.Move(paint_offset);
+   paint_info.context.Clip(ToPixelSnappedRect(focus_rect));
++  const auto& outline_color_property = GetCSSPropertyOutlineColor();
++  const Color outline_color =
++      paint_info.IsPrivacyPreserving()
++          ? outline_color_property.ColorIncludingFallback(
++                /*visited_link=*/false, *area_element_style,
++                /*is_current_color=*/nullptr)
++          : area_element_style->VisitedDependentColor(outline_color_property);
+   OutlinePainter::PaintFocusRingPath(paint_info.context, path,
+-                                     *area_element_style);
++                                     *area_element_style, outline_color);
+   paint_info.context.Restore();
+ }
+ 
+diff --git a/third_party/blink/renderer/core/paint/outline_painter.cc b/third_party/blink/renderer/core/paint/outline_painter.cc
+index 00bc002aaa9895b3c259bdac75410538536084a0..72b5967bf933de1605ad67016c2345fdfc37b9b2 100644
+--- a/third_party/blink/renderer/core/paint/outline_painter.cc
++++ b/third_party/blink/renderer/core/paint/outline_painter.cc
+@@ -1041,7 +1041,8 @@ void OutlinePainter::PaintOutlineRects(
+ 
+ void OutlinePainter::PaintFocusRingPath(GraphicsContext& context,
+                                         const Path& focus_ring_path,
+-                                        const ComputedStyle& style) {
++                                        const ComputedStyle& style,
++                                        const Color& color) {
+   if (!style.OutlineStyleIsAuto()) {
+     return;
+   }
+@@ -1049,9 +1050,8 @@ void OutlinePainter::PaintFocusRingPath(GraphicsContext& context,
+   // right angle focus rings, which requires SkPathOps to support expanding and
+   // shrinking generic paths.
+   context.DrawFocusRingPath(
+-      focus_ring_path.GetSkPath(),
+-      style.VisitedDependentColor(GetCSSPropertyOutlineColor()),
+-      FocusRingStrokeWidth(style), DefaultFocusRingCornerRadius(style),
++      focus_ring_path.GetSkPath(), color, FocusRingStrokeWidth(style),
++      DefaultFocusRingCornerRadius(style),
+       PaintAutoDarkMode(style, DarkModeFilter::ElementRole::kBackground));
+ }
+ 
+diff --git a/third_party/blink/renderer/core/paint/outline_painter.h b/third_party/blink/renderer/core/paint/outline_painter.h
+index 5260ce9b51b8f8a154ca9d28cf49fcf8a46f57e5..3fcf593bf3fea674b534046b4577ead1693c3a7d 100644
+--- a/third_party/blink/renderer/core/paint/outline_painter.h
++++ b/third_party/blink/renderer/core/paint/outline_painter.h
+@@ -44,7 +44,8 @@ class CORE_EXPORT OutlinePainter {
+ 
+   static void PaintFocusRingPath(GraphicsContext&,
+                                  const Path&,
+-                                 const ComputedStyle&);
++                                 const ComputedStyle&,
++                                 const Color&);
+ 
+   static int OutlineOutsetExtent(const ComputedStyle&,
+                                  const LayoutObject::OutlineInfo&);
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/visited-link/image-map-area-visited-color-ignored.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/visited-link/image-map-area-visited-color-ignored.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..19b3e545d51c99a00a1b7741af5c3c6bba811d25
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/visited-link/image-map-area-visited-color-ignored.tentative.html
+@@ -0,0 +1,48 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not reveal image map area visited colors</title>
++  <script src="/resources/testharness.js"></script>
++  <script src="/resources/testharnessreport.js"></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    area {
++      outline: auto 10px;
++      outline-color: green;
++    }
++    area:visited {
++      outline-color: red;
++    }
++  </style>
++</head>
++<body>
++  <canvas id="canvas" width="100" height="100" content="drawable">
++    <div drawable id="child">
++      <img usemap="#map" src="/images/blue.png" width="100" height="100">
++    </div>
++  </canvas>
++  <map name="map">
++    <area id="area" href="" shape="rect" coords="10,10,90,90">
++  </map>
++
++  <script>
++    promise_test(async () => {
++      area.focus();
++      await waitForCanvasPaint(canvas);
++
++      const context = canvas.getContext("2d");
++      context.drawElementImage(child, 0, 0);
++
++      const ringPixel = context.getImageData(10, 50, 1, 1).data;
++      assert_array_equals(
++          ringPixel, [0, 128, 0, 255],
++          "The focus ring should use the area's unvisited outline color.");
++
++      const imagePixel = context.getImageData(50, 50, 1, 1).data;
++      assert_array_equals(
++          imagePixel, [0, 0, 255, 255],
++          "The image should be distinct from the focus ring.");
++    });
++  </script>
++</body>
++</html>

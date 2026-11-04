@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 9 Oct 2026 09:13:59 +0200
+Subject: [parser] Validate expression errors before rewriting invalid LHS
+
+When the operand of an assignment, prefix count operation, or postfix
+count operation is not a valid reference expression,
+`RewriteInvalidReferenceExpression` either reports an invalid LHS early
+error or rewrites a call expression into a runtime `ReferenceError` (and
+records a pattern error).
+
+Previously, `ParseAssignmentExpressionCoverGrammarContinuation`,
+`ParseUnaryOrPrefixExpression`, and `ParsePostfixContinuation` did not
+call `expression_scope()->ValidateAsExpression()` before calling
+`RewriteInvalidReferenceExpression`. As a result, inner expression
+errors such as `{a = 42}` in `+{a = 42} = 1`, `++{a = 42}`,
+`({a = 42}++)`, or `[{a = 42}.f() = 1] = []` were ignored in favor of
+the outer invalid LHS / destructuring target error.
+
+Validate the LHS as an expression before rewriting it as an invalid
+reference.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Id0d85204f4e8a755cd3d08f7c7e3cbfffa8cf8eb
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8525497
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110520}
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index de29f09e54d18c125bb6769ba4047587c57bec04..3ab28bddf0288572edcf96d36b2f1e19309472c5 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -3388,6 +3388,7 @@ ParserBase<Impl>::ParseAssignmentExpressionCoverGrammarContinuation(
+                                           end_position());
+   } else {
+     DCHECK(!IsValidReferenceExpression(expression));
++    expression_scope()->ValidateAsExpression();
+     // For web compatibility reasons, throw early errors only for logical
+     // assignment, not for regular assignment.
+     const bool early_error = Token::IsLogicalAssignmentOp(op);
+@@ -3785,6 +3786,7 @@ ParserBase<Impl>::ParseUnaryOrPrefixExpression() {
+       expression_scope()->MarkIdentifierAsAssigned();
+     }
+   } else {
++    expression_scope()->ValidateAsExpression();
+     const bool early_error = false;
+     expression = RewriteInvalidReferenceExpression(
+         expression, expression_position, end_position(),
+@@ -3874,6 +3876,7 @@ typename ParserBase<Impl>::ExpressionT
+ ParserBase<Impl>::ParsePostfixContinuation(ExpressionT expression,
+                                            int lhs_beg_pos) {
+   if (V8_UNLIKELY(!IsValidReferenceExpression(expression))) {
++    expression_scope()->ValidateAsExpression();
+     const bool early_error = false;
+     expression = RewriteInvalidReferenceExpression(
+         expression, lhs_beg_pos, end_position(),
+diff --git a/test/mjsunit/es6/regress-invalid-lhs-validate-expression.js b/test/mjsunit/es6/regress-invalid-lhs-validate-expression.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..36e3029bfd25458c0be2c5c958ec8d50b96ad70c
+--- /dev/null
++++ b/test/mjsunit/es6/regress-invalid-lhs-validate-expression.js
+@@ -0,0 +1,35 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Expression errors inside an invalid assignment or count-operation LHS
++// must be validated before reporting or rewriting the invalid reference.
++
++assertThrows(
++    () => eval("+({a = 42}) = 1"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("+{a = 42} = 1"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("++{a = 42}"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({a = 42}++)"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({a = 42}.f() &&= 1)"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({a = 42}.f`` = 1)"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("[{a = 42}.f() = 1] = []"),
++    SyntaxError,
++    "Invalid shorthand property initializer");

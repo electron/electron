@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Mon, 28 Sep 2026 10:36:52 -0700
+Subject: Construct array at once in CJS_Global::EnumProperties
+
+Instead of iteratively calling PutArrayElementReentrant() on an empty
+array, accumulate property names into a v8::LocalVector and instantiate
+the v8::Array in a single call to v8::Array::New().
+
+Bug: 566111382
+Change-Id: I55f4718719cfa613f2c50a5dff10222b95a96c11
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/158890
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/fxjs/cjs_global.cpp b/fxjs/cjs_global.cpp
+index 1a9ff938839ac55a4377d0f0307621d67211613d..e23b8d445597bae80997fa709a5874dfeb17f48e 100644
+--- a/fxjs/cjs_global.cpp
++++ b/fxjs/cjs_global.cpp
+@@ -21,6 +21,7 @@
+ #include "fxjs/fxv8.h"
+ #include "fxjs/js_define.h"
+ #include "fxjs/js_resources.h"
++#include "v8/include/v8-container.h"
+ #include "v8/include/v8-isolate.h"
+ 
+ namespace {
+@@ -258,17 +259,16 @@ CJS_Result CJS_Global::SetProperty(CJS_Runtime* pRuntime,
+ void CJS_Global::EnumProperties(
+     CJS_Runtime* pRuntime,
+     const v8::PropertyCallbackInfo<v8::Array>& info) {
+-  v8::Local<v8::Array> result = pRuntime->NewArray();
+-  int idx = 0;
++  v8::LocalVector<v8::Value> names(pRuntime->GetIsolate());
++  names.reserve(map_global_.size());
+   for (const auto& it : map_global_) {
+     if (it.second->bDeleted) {
+       continue;
+     }
+-    v8::Local<v8::Name> name = pRuntime->NewString(it.first.AsStringView());
+-    pRuntime->PutArrayElementReentrant(result, idx, name);
+-    ++idx;
++    names.push_back(pRuntime->NewString(it.first.AsStringView()));
+   }
+-  info.GetReturnValue().Set(result);
++  info.GetReturnValue().Set(
++      v8::Array::New(pRuntime->GetIsolate(), names.data(), names.size()));
+ }
+ 
+ CJS_Result CJS_Global::setPersistent(
