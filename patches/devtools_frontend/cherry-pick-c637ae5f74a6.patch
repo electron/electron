@@ -17,12 +17,13 @@ Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
 
 Electron adaptation notes (43-x-y):
 Applied on top of the upstream prerequisite 0ab6cb7a35 (fail-closed CSP guard). This branch's dispatchLoad() still queries getSecurityIsolationStatus(initiator.frameId) with a null-frame fallback instead of upstream's resolved frameId; that query was left as is, while the NetworkManager lookup now uses the frame target from #resolveFrameTarget() and the catch block adds the #isSameOriginWithPrimaryPage() check exactly as upstream. PageResourceLoader.test.ts changes did not merge and were dropped (test-only).
+ResourceTreeFrame.securityOrigin is a getter returning string|null on this branch (no SecurityOrigin class), so #isSameOriginWithPrimaryPage() compares the serialized origin strings instead, failing closed for null and opaque origins (no host).
 
 diff --git a/front_end/core/sdk/PageResourceLoader.ts b/front_end/core/sdk/PageResourceLoader.ts
-index 0ba84f1f36f6ba34d9cf7717ecc478718e33589a..a33b09e15ade63d384ce8d10739bcf972252b0c9 100644
+index 0ba84f1f36f6ba34d9cf7717ecc478718e33589a..d0a5285d1ceba6fd6640691550bd841688ea5e39 100644
 --- a/front_end/core/sdk/PageResourceLoader.ts
 +++ b/front_end/core/sdk/PageResourceLoader.ts
-@@ -314,6 +314,29 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+@@ -314,6 +314,37 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
      }
    }
  
@@ -46,13 +47,21 @@ index 0ba84f1f36f6ba34d9cf7717ecc478718e33589a..a33b09e15ade63d384ce8d10739bcf97
 +    if (!primaryFrame || !initiatorFrame) {
 +      return false;
 +    }
-+    return initiatorFrame.securityOrigin().isSameOriginWith(primaryFrame.securityOrigin());
++    // On this branch `securityOrigin` is a getter returning the serialized origin
++    // string rather than a SecurityOrigin object. Fail closed like upstream's
++    // SecurityOrigin.isSameOriginWith(): opaque or unknown origins ("null", "",
++    // "file://", "data:", ...) have no host and never match.
++    const initiatorOrigin = initiatorFrame.securityOrigin;
++    if (!initiatorOrigin || !Common.ParsedURL.ParsedURL.fromString(initiatorOrigin)?.host) {
++      return false;
++    }
++    return initiatorOrigin.toLowerCase() === primaryFrame.securityOrigin?.toLowerCase();
 +  }
 +
    private async dispatchLoad(
        url: Platform.DevToolsPath.UrlString, initiator: PageResourceLoadInitiator, isBinary: boolean): Promise<{
      success: boolean,
-@@ -340,8 +363,9 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+@@ -340,8 +371,9 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
        // directive is present. A null/error response keeps the guard armed so that a
        // detached-frame or protocol-error path cannot fall through to loadFromHostBindings.
        let mustEnforceCSP = isHttp;
@@ -64,7 +73,7 @@ index 0ba84f1f36f6ba34d9cf7717ecc478718e33589a..a33b09e15ade63d384ce8d10739bcf97
          if (networkManager) {
            let status = await networkManager.getSecurityIsolationStatus(initiator.frameId);
            if (!status && initiator.frameId) {
-@@ -362,7 +386,8 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+@@ -362,7 +394,8 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
        } catch (e) {
          if (e instanceof Error) {
            Host.userMetrics.developerResourceLoaded(Host.UserMetrics.DeveloperResourceLoaded.LOAD_THROUGH_PAGE_FAILURE);

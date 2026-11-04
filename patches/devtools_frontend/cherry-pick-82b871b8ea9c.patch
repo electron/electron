@@ -33,7 +33,42 @@ Commit-Queue: Eric Leese <leese@chromium.org>
 
 Electron adaptation notes (43-x-y):
 front_end/models/bindings/StylesSourceMapping.test.ts does not exist on this branch; its test-only hunk was dropped. Applied on top of the two upstream prerequisites (devtools-frontend c2153bf24a and 6c25c4672f) that introduced the forbidden-URL checks this fix extends.
+NetworkProject.setSourceURLSynthesized()/isSourceURLSynthesized() come from the upstream prerequisite 0e5527264722 (Prevent sourceURL annotations from spoofing origins), which is not backported to this branch; only those two helpers were added here (backed by a module-level WeakSet, matching this branch's NetworkProject.ts) so that the StylesSourceMapping.ts change compiles.
 
+diff --git a/front_end/models/bindings/NetworkProject.ts b/front_end/models/bindings/NetworkProject.ts
+index 9564c6a324fa67b95f7e35cfd613a83e50549037..7255dac60393a56bc3fdc982f1fe32aff48189b4 100644
+--- a/front_end/models/bindings/NetworkProject.ts
++++ b/front_end/models/bindings/NetworkProject.ts
+@@ -12,6 +12,7 @@ const uiSourceCodeToAttributionMap = new WeakMap<Workspace.UISourceCode.UISource
+                                                    count: number,
+                                                  }>>();
+ const projectToTargetMap = new WeakMap<Workspace.Workspace.Project, SDK.Target.Target>();
++const sourceURLSynthesizedUISourceCodes = new WeakSet<Workspace.UISourceCode.UISourceCode>();
+ 
+ let networkProjectManagerInstance: NetworkProjectManager;
+ 
+@@ -47,6 +48,21 @@ export interface EventTypes {
+ }
+ 
+ export class NetworkProject {
++  /**
++   * Records that `uiSourceCode` was synthesized from a `//# sourceURL=` annotation,
++   * and therefore doesn't correspond to an actual network resource.
++   */
++  static setSourceURLSynthesized(uiSourceCode: Workspace.UISourceCode.UISourceCode): void {
++    sourceURLSynthesizedUISourceCodes.add(uiSourceCode);
++  }
++
++  /**
++   * Whether `uiSourceCode` was synthesized from a `//# sourceURL=` annotation.
++   */
++  static isSourceURLSynthesized(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
++    return sourceURLSynthesizedUISourceCodes.has(uiSourceCode);
++  }
++
+   static resolveFrame(uiSourceCode: Workspace.UISourceCode.UISourceCode, frameId: Protocol.Page.FrameId):
+       SDK.ResourceTreeModel.ResourceTreeFrame|null {
+     const target = NetworkProject.targetForUISourceCode(uiSourceCode);
 diff --git a/front_end/models/bindings/StylesSourceMapping.ts b/front_end/models/bindings/StylesSourceMapping.ts
 index ce1c7a6f9f4cd59ac36c9a07db1737e22e245f1c..d14a225f7687f93065048ceb8642e3b4aff51953 100644
 --- a/front_end/models/bindings/StylesSourceMapping.ts
