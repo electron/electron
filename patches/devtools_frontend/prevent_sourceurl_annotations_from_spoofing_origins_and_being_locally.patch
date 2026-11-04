@@ -21,6 +21,9 @@ Auto-Submit: Danil Somsikov <dsv@chromium.org>
 Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
 (cherry picked from commit 0e5527264722c85d3771c38762ce63e9485dc165)
 
+Electron adaptation notes (44-x-y):
+This branch has no SDK.SecurityOrigin class or Target.inspectedSecurityOrigin(), and ResourceTreeFrame.securityOrigin is a getter returning string|null, so #isTrustworthySourceURL() compares serialized origin strings (ParsedURL.extractOrigin, lowercased as upstream does) and still rejects the annotation when no origin can be established.
+
 diff --git a/front_end/models/bindings/NetworkProject.ts b/front_end/models/bindings/NetworkProject.ts
 index c7f797925a7cd2bb80e1faa24ca5fac419f9bee3..abb871bb1a4e6424b8cd7d64cdc5d390e302081d 100644
 --- a/front_end/models/bindings/NetworkProject.ts
@@ -196,10 +199,10 @@ index 8c073d24949fa1616afbbdec29fd37acfbc4758b..f296fdf6392d1f6d039d21cd3d285a17
 +  });
  });
 diff --git a/front_end/models/bindings/ResourceScriptMapping.ts b/front_end/models/bindings/ResourceScriptMapping.ts
-index 145bc9a16b55cfa44f423299e1f2ad04a74a070e..df3e3ebecd0a068f040de46f837288f1f435d26d 100644
+index 145bc9a16b55cfa44f423299e1f2ad04a74a070e..c7b34c92271d8afec35fa628727bbbf03bb708f8 100644
 --- a/front_end/models/bindings/ResourceScriptMapping.ts
 +++ b/front_end/models/bindings/ResourceScriptMapping.ts
-@@ -32,6 +32,19 @@ const UIStrings = {
+@@ -32,6 +32,20 @@ const UIStrings = {
  const str_ = i18n.i18n.registerUIStrings('models/bindings/ResourceScriptMapping.ts', UIStrings);
  const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
  
@@ -207,10 +210,11 @@ index 145bc9a16b55cfa44f423299e1f2ad04a74a070e..df3e3ebecd0a068f040de46f837288f1
 + * The security origin of the URL that `target` (or its closest ancestor that has
 + * one) is inspecting, or `null` if none of them has an inspected URL yet.
 + */
-+function inspectedSecurityOrigin(target: SDK.Target.Target): SDK.SecurityOrigin.SecurityOrigin|null {
++function inspectedSecurityOrigin(target: SDK.Target.Target): string|null {
 +  for (let current: SDK.Target.Target|null = target; current; current = current.parentTarget()) {
-+    if (current.inspectedURL()) {
-+      return current.inspectedSecurityOrigin();
++    const inspectedURL = current.inspectedURL();
++    if (inspectedURL) {
++      return Common.ParsedURL.ParsedURL.extractOrigin(inspectedURL);
 +    }
 +  }
 +  return null;
@@ -219,7 +223,7 @@ index 145bc9a16b55cfa44f423299e1f2ad04a74a070e..df3e3ebecd0a068f040de46f837288f1
  export class ResourceScriptMapping implements DebuggerSourceMapping {
    readonly debuggerModel: SDK.DebuggerModel.DebuggerModel;
    #workspace: Workspace.Workspace.WorkspaceImpl;
-@@ -219,6 +232,19 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
+@@ -219,6 +233,19 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
        // Try to resolve `//# sourceURL=` annotations relative to
        // the base URL, according to the sourcemap specification.
        url = SDK.SourceMapManager.SourceMapManager.resolveRelativeSourceURL(script.debuggerModel.target(), url);
@@ -239,7 +243,7 @@ index 145bc9a16b55cfa44f423299e1f2ad04a74a070e..df3e3ebecd0a068f040de46f837288f1
      } else {
        // Ignore inline <script>s without `//# sourceURL` annotation here.
        if (script.isInlineScript()) {
-@@ -247,6 +273,9 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
+@@ -247,6 +274,9 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
      // Create UISourceCode.
      const originalContentProvider = script.originalContentProvider();
      const uiSourceCode = project.createUISourceCode(url, originalContentProvider.contentType());
@@ -249,7 +253,7 @@ index 145bc9a16b55cfa44f423299e1f2ad04a74a070e..df3e3ebecd0a068f040de46f837288f1
      NetworkProject.setInitialFrameAttribution(uiSourceCode, script.frameId);
      const metadata = metadataForURL(this.debuggerModel.target(), script.frameId, url);
  
-@@ -260,6 +289,39 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
+@@ -260,6 +290,42 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
      void this.debuggerWorkspaceBinding.updateLocations(script);
    }
  
@@ -279,11 +283,14 @@ index 145bc9a16b55cfa44f423299e1f2ad04a74a070e..df3e3ebecd0a068f040de46f837288f1
 +    const frame = script.frameId ?
 +        target.model(SDK.ResourceTreeModel.ResourceTreeModel)?.frameForId(script.frameId) ?? null :
 +        null;
-+    const securityOrigin = frame ? frame.securityOrigin() : inspectedSecurityOrigin(target);
++    // On this branch `securityOrigin` is a getter returning the serialized origin
++    // string, and there is no SecurityOrigin class, so compare origin strings.
++    // `url` is http(s) here, so opaque origins ("null", "data:", ...) never match.
++    const securityOrigin = frame ? frame.securityOrigin : inspectedSecurityOrigin(target);
 +    if (!securityOrigin) {
 +      return false;
 +    }
-+    return SDK.SecurityOrigin.SecurityOrigin.create(url).isSameOriginWith(securityOrigin);
++    return Common.ParsedURL.ParsedURL.extractOrigin(url).toLowerCase() === securityOrigin.toLowerCase();
 +  }
 +
    scriptFile(uiSourceCode: Workspace.UISourceCode.UISourceCode): ResourceScriptFile|null {
