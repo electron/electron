@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index b47da08dde4ab059be8959e2c8c44576bc3e3fb4..824686c5d37f69311b306a9228cb212f6abfe90b 100644
+index ce4a6daa71bc2aeb2aa1e381264a3a3108c762e3..a8e4e67b8777aca38383140320831f02111694b0 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -589,7 +589,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -582,7 +582,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -34,10 +34,10 @@ index b47da08dde4ab059be8959e2c8c44576bc3e3fb4..824686c5d37f69311b306a9228cb212f
    }
  
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 44ff7597a2cfa352915bdf80b6695958634dc0ac..a7f44aa73117ce935695b7c0783d93270bec660f 100644
+index 122dab13e53a46a1345a28fc010f0fb01e98044f..e2bd99590e51b0ef5911507f294bdeb7985232f7 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -100,7 +100,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -96,7 +96,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::LOCAL_NETWORK_ACCESS:
      case PermissionType::LOCAL_NETWORK:
      case PermissionType::LOOPBACK_NETWORK:
@@ -48,10 +48,10 @@ index 44ff7597a2cfa352915bdf80b6695958634dc0ac..a7f44aa73117ce935695b7c0783d9327
  }
  
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 8acf00d2618d9a0552750f0f8e1d734b52f790b1..d2ea06fa66c07baaf741382af40de154068a7d6b 100644
+index bac9b857e555333ddc21f3cef0c1a62868bc1b76..32e63aa8a9e72f761a2413e76f4ff4bd25cc3b92 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
-@@ -180,7 +180,12 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+@@ -177,7 +177,12 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
      case blink::PermissionType::LOOPBACK_NETWORK:
        return CreatePermissionDescriptor(
            blink::mojom::PermissionName::LOOPBACK_NETWORK);
@@ -66,10 +66,10 @@ index 8acf00d2618d9a0552750f0f8e1d734b52f790b1..d2ea06fa66c07baaf741382af40de154
    }
    NOTREACHED();
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 9c1b4762fe932618ec85a86a8367dce706d23c0b..a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe 100644
+index 3e462a4cd6ef8b5bc9b3687a57ff8e988b61a9e3..fe681baaf4c650b6056f0bb18b1057d3ce7b8df9 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -110,7 +110,10 @@ std::string GetPermissionString(PermissionType permission) {
+@@ -108,7 +108,10 @@ std::string GetPermissionString(PermissionType permission) {
        return "LocalNetwork";
      case PermissionType::LOOPBACK_NETWORK:
        return "LoopbackNetwork";
@@ -81,7 +81,7 @@ index 9c1b4762fe932618ec85a86a8367dce706d23c0b..a818b0b9a0eb3efdf8b2d851a6b51fcc
        NOTREACHED();
    }
    NOTREACHED();
-@@ -191,6 +194,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -187,6 +190,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -90,7 +90,7 @@ index 9c1b4762fe932618ec85a86a8367dce706d23c0b..a818b0b9a0eb3efdf8b2d851a6b51fcc
  
      case PermissionType::NUM:
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
-index b124d53fdd245f055f57ad00250112e2637e1cd1..31158388db2df745af999adc9d07fc9272a2d6f8 100644
+index fa5d3a372a4aeb0ab8aa681c6cda5b0810ec8ca8..c0672a2c9ddd9b9566acab1be1a63b33c37a6796 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
 @@ -69,7 +69,7 @@ enum class PermissionType {
@@ -103,10 +103,10 @@ index b124d53fdd245f055f57ad00250112e2637e1cd1..31158388db2df745af999adc9d07fc92
    NUM,
    MIN_VALUE = MIDI_SYSEX,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index e2cf6a8b2d35dd06b8133ce08210add04fafdaed..507eaa61fb8e83727807e6917ba0c9a3e23f9d31 100644
+index 0b90b95064845a2745daeb9844924a67a07ca1a9..34a617acec16daaa1b8736e6127e6d2d7e2e644b 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
-@@ -47,7 +47,7 @@ enum PermissionName {
+@@ -46,7 +46,7 @@ enum PermissionName {
    WEB_PRINTING,
    SMART_CARD,
    GEOLOCATION_APPROXIMATE,
@@ -152,10 +152,10 @@ index bb195df8d1c565848a3da967b12314f41bfb28d0..35c16d475b189ee777f7c0411764bacf
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 6b526fe627e3a7dbccd43dfd9386823ccecf9ce9..323b86d6f571647c551fd216dbd9f2ac9ca2c3a1 100644
+index 877e3525faf8909a36f2cc7017052fd9553a09fb..2e5f04a8ad48da0ae2e1a8613b3a59da80a43070 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -164,6 +164,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -162,6 +162,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

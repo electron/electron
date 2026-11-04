@@ -437,7 +437,6 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       std::move(callback).Run(PermissionRequestOutcome::kThirdPartyContext);
       return;
     }
-    auto origin = rfh->GetLastCommittedOrigin().GetURL();
 
     auto* permission_manager =
         static_cast<electron::ElectronPermissionManager*>(
@@ -457,7 +456,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
     permission_manager->RequestPermissionWithDetails(
         content::PermissionDescriptorUtil::
             CreatePermissionDescriptorForPermissionType(type),
-        rfh, origin, rfh->HasTransientUserActivation(), std::move(details),
+        rfh, rfh->HasTransientUserActivation(), std::move(details),
         base::BindOnce(&PermissionGrantImpl::OnPermissionRequestResult, this,
                        std::move(callback)));
   }
