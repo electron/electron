@@ -2680,6 +2680,10 @@ describe('app module', () => {
       // The DoH server uses the self-signed fixture certificate.
       session.defaultSession.setCertificateVerifyProc((req, cb) => cb(0));
       defer(() => session.defaultSession.setCertificateVerifyProc(null));
+      // CI agents may route traffic through an HTTP proxy, which would resolve
+      // the test hostname itself and bypass the configured host resolver.
+      await session.defaultSession.setProxy({ mode: 'direct' });
+      defer(() => session.defaultSession.setProxy({ mode: 'system' }));
 
       const request = (host: string) =>
         new Promise((resolve, reject) => {
