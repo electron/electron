@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 7 Oct 2026 14:03:01 +0200
+Subject: [parser] Validate non-arrow call arguments as expressions
+
+In ParserBase::ParseArguments, each argument is parsed using
+ParseAssignmentExpressionCoverGrammar() inside an AccumulationScope.
+Previously, ClassifyArrowParameter(&accumulation_scope, ...) was only
+called when maybe_arrow == kMaybeArrowHead. When maybe_arrow ==
+kNotArrowHead, pending expression errors (such as an invalid
+CoverInitializedName `{x = z}`) were neither validated nor accumulated
+before parsing subsequent arguments, allowing a later destructuring
+assignment argument (e.g. `f({x = z}, [a] = [])`) to clear the
+expression error via ValidateAsPattern().
+
+Call accumulation_scope.ValidateExpression() for each argument when
+maybe_arrow != kMaybeArrowHead so expression errors are immediately
+reported and pattern errors from inside the argument are cleared.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I30bb40916eca23423ed5cfc6f2c6eada6d86918c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8524496
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110409}
+(cherry picked from commit 1c324a0290751ac576cade3c68323757045bc5d0)
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 41a8c22ebbd56a8f2474fac5507ce539e2e72f3d..8e39a908795a2ef2ad3c39f8e7d9b1f0d613cfb8 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -3214,6 +3214,8 @@ void ParserBase<Impl>::ParseArguments(
+               scanner()->peek_location(), MessageTemplate::kParamAfterRest);
+         }
+       }
++    } else {
++      accumulation_scope.ValidateExpression();
+     }
+     if (is_spread) {
+       *has_spread = true;
+diff --git a/test/mjsunit/regress/regress-567222737-2.js b/test/mjsunit/regress/regress-567222737-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..6a5381b196be7fadbfcd9caf0f4b3e8e0b802f78
+--- /dev/null
++++ b/test/mjsunit/regress/regress-567222737-2.js
+@@ -0,0 +1,42 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --expose-gc --stress-flush-code
++
++// CoverInitializedName in a call argument must be rejected even when followed
++// by a destructuring assignment in a subsequent argument.
++assertThrows("f({x = 1}, [a] = [])", SyntaxError);
++assertThrows("new C({x = 1}, [a] = [])", SyntaxError);
++assertThrows("obj.m({x = 1}, {a} = {})", SyntaxError);
++assertThrows("f(...{x = 1}, [a] = [])", SyntaxError);
++
++// Object literals inside call arguments of a valid property destructuring
++// target must still be allowed.
++let target = {};
++[(() => target)({x: 1}).prop] = [42];
++assertEquals(42, target.prop);
++
++// Ensure lazy vs. eager parsing of an inner function containing a call with
++// CoverInitializedName followed by destructuring cannot cause a ContextCell
++// mutability mismatch.
++assertThrows(() => {
++  Function(`
++    function maker() {
++      return (() => {
++        let x = 1, z = 2;
++        function getter() { return x; }
++        function inner() {
++          f({x = z}, [a] = []);
++        }
++        return getter;
++      });
++    }
++    const outer = maker();
++    const get1 = outer();
++    get1();
++    gc();
++    const get2 = outer();
++    get2();
++  `)();
++}, SyntaxError);

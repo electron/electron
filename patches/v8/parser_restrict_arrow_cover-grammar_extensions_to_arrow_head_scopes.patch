@@ -1,0 +1,165 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 9 Oct 2026 09:14:13 +0200
+Subject: [parser] Restrict arrow cover-grammar extensions to arrow head scopes
+
+`ParseExpressionCoverGrammar` is used both for parenthesized
+`CoverParenthesizedExpressionAndArrowParameterList` (in an
+`ArrowHeadParsingScope`) and for ordinary `Expression`s (in an
+`ExpressionParsingScope`).
+
+Previously, `ParseExpressionCoverGrammar` unconditionally checked for
+`...` (`ParseArrowParametersWithRest`) and trailing commas before `) =>`
+regardless of the current `ExpressionScope`. As a result, non-arrow
+expressions such as `a, ...x = 1` or `a, ...x, y` reported arrow rest
+parameter errors instead of `Unexpected token '...'`, and `if (a,) => {}`
+accepted the trailing comma in the `if` condition and reported
+`Unexpected token '=>'` instead of `Unexpected token ')'`.
+
+Additionally, `ParseBindingPattern` eagerly reported
+`kStrictEvalArguments` when parsing an identifier in strict mode instead
+of deferring to `ClassifyParameter` / `RecordStrictModeParameterError`.
+In `"use strict"; ({a = 42}, ...eval) => {}`, this caused
+`ParseBindingPattern` to abort before `=>`, so `ParsePrimaryExpression`
+fell back to `ValidateExpression()` and reported `Invalid shorthand
+property initializer` at `{a = 42}`, and in `"use strict"; (1, ...eval) => {}`
+it reported `eval` instead of the earlier invalid parameter `1`.
+
+Guard rest parameters and trailing commas in
+`ParseExpressionCoverGrammar` with `CanBeArrowParameterDeclaration()`,
+and let `ClassifyParameter` handle strict `eval`/`arguments` in
+`ParseBindingPattern`.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Ie6b78a37fe388bdc2719287eb5f15a6e2d7e0eef
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8537630
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110521}
+(cherry picked from commit 618b7515c679f2ea46ac0410a7ae8778cbb90c60)
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index 5225dab956946765da1269e7ac13ec361da7beed..37608fa11d0698f7bf89fe99ef310228939fa38e 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -245,6 +245,11 @@ class ExpressionScope {
+     return has_possible_arrow_parameter_in_scope_chain_;
+   }
+ 
++  bool CanBeArrowParameterDeclaration() const {
++    return base::IsInRange(type_, kMaybeArrowParameterDeclaration,
++                           kMaybeAsyncArrowParameterDeclaration);
++  }
++
+  protected:
+   enum ScopeType : uint8_t {
+     // Expression or assignment target.
+@@ -341,10 +346,6 @@ class ExpressionScope {
+     return base::IsInRange(type_, kMaybeArrowParameterDeclaration,
+                            kParameterDeclaration);
+   }
+-  bool CanBeArrowParameterDeclaration() const {
+-    return base::IsInRange(type_, kMaybeArrowParameterDeclaration,
+-                           kMaybeAsyncArrowParameterDeclaration);
+-  }
+   bool IsCertainlyParameterDeclaration() const {
+     return type_ == kParameterDeclaration;
+   }
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index b4543e3f8bd587b7e29e1425b92659c3b8664306..6cd096c72d03924e61b27af73362e0685dbda879 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -2116,12 +2116,6 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseBindingPattern() {
+ 
+   if (Token::IsAnyIdentifier(token)) {
+     IdentifierT name = ParseAndClassifyIdentifier(Next());
+-    if (V8_UNLIKELY(is_strict(language_mode()) &&
+-                    impl()->IsEvalOrArguments(name))) {
+-      impl()->ReportMessageAt(scanner()->location(),
+-                              MessageTemplate::kStrictEvalArguments);
+-      return impl()->FailureExpression();
+-    }
+     return impl()->ExpressionFromIdentifier(name, beg_pos);
+   }
+ 
+@@ -2349,7 +2343,8 @@ ParserBase<Impl>::ParseExpressionCoverGrammar() {
+   AccumulationScope accumulation_scope(expression_scope());
+   int variable_index = 0;
+   while (true) {
+-    if (V8_UNLIKELY(peek() == Token::kEllipsis)) {
++    if (V8_UNLIKELY(peek() == Token::kEllipsis &&
++                    expression_scope()->CanBeArrowParameterDeclaration())) {
+       return ParseArrowParametersWithRest(&list, &accumulation_scope,
+                                           variable_index);
+     }
+@@ -2365,7 +2360,8 @@ ParserBase<Impl>::ParseExpressionCoverGrammar() {
+ 
+     if (!Check(Token::kComma)) break;
+ 
+-    if (peek() == Token::kRightParen && PeekAhead() == Token::kArrow) {
++    if (expression_scope()->CanBeArrowParameterDeclaration() &&
++        peek() == Token::kRightParen && PeekAhead() == Token::kArrow) {
+       // a trailing comma is allowed at the end of an arrow parameter list
+       break;
+     }
+diff --git a/test/mjsunit/es6/regress-arrow-cover-grammar-scope.js b/test/mjsunit/es6/regress-arrow-cover-grammar-scope.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9f98be07e44b95c19520ef8671344e317d7e2192
+--- /dev/null
++++ b/test/mjsunit/es6/regress-arrow-cover-grammar-scope.js
+@@ -0,0 +1,38 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Arrow parameter list cover-grammar extensions (rest parameters and
++// trailing commas before `) =>`) are only allowed in arrow head scopes, and
++// strict `eval`/`arguments` rest parameters must be classified via
++// RecordStrictModeParameterError rather than failing eagerly in
++// ParseBindingPattern.
++
++assertThrows(
++    () => eval("a, ...x = 1"),
++    SyntaxError,
++    "Unexpected token '...'");
++assertThrows(
++    () => eval("a, ...x, y"),
++    SyntaxError,
++    "Unexpected token '...'");
++assertThrows(
++    () => eval("if (a,) => {}"),
++    SyntaxError,
++    "Unexpected token ')'");
++assertThrows(
++    () => eval("while (a,) => {}"),
++    SyntaxError,
++    "Unexpected token ')'");
++assertThrows(
++    () => eval('"use strict"; ({a = 42}, ...eval) => {}'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval('"use strict"; (1, ...eval) => {}'),
++    SyntaxError,
++    "Invalid destructuring assignment target");
++assertThrows(
++    () => eval('"use strict"; (a, ...eval)'),
++    SyntaxError,
++    "Unexpected token '...'");
+diff --git a/test/mjsunit/harmony/shadowrealm-evaluate.js b/test/mjsunit/harmony/shadowrealm-evaluate.js
+index 8288963428138eb03882c8df4a0c94f0f5cd736b..63b0796b33a876108294d1f9b7022b2766ef3b48 100644
+--- a/test/mjsunit/harmony/shadowrealm-evaluate.js
++++ b/test/mjsunit/harmony/shadowrealm-evaluate.js
+@@ -7,7 +7,7 @@
+ var shadowRealm = new ShadowRealm();
+ 
+ // re-throwing with SyntaxError
+-assertThrows(() => shadowRealm.evaluate('...'), SyntaxError, 'Unexpected end of input')
++assertThrows(() => shadowRealm.evaluate('...'), SyntaxError, "Unexpected token '...'")
+ 
+ // builtin
+ var wrapped = shadowRealm.evaluate('String.prototype.substring');

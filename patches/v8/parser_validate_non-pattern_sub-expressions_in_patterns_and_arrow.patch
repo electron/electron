@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Thu, 8 Oct 2026 12:05:05 +0200
+Subject: [parser] Validate non-pattern sub-expressions in patterns and arrow
+ heads
+
+In `ParsePossibleDestructuringSubPattern`, when a sub-pattern is a
+`Property` (`[{a = 42}.b] = []`), `scope->ValidateExpression()` was
+called so inner expression errors were reported. However, when the
+sub-pattern was any other non-pattern expression (`[{a = 42}.f()] = []`,
+`[!{a = 42}] = []`, `[{a = 42} + 1] = []`, `[{a = 42}?.b] = []`),
+`ValidateExpression()` was not called, causing outer pattern validation
+to clear the inner expression error and report `Invalid destructuring
+assignment target` instead.
+
+Similarly, `ClassifyArrowParameter` did not call `ValidateExpression()`
+when an arrow parameter was neither an identifier, pattern, nor
+assignment (`({a = 42}.b) => {}`, `({a = 42} + 1) => {}`).
+
+Validate inner expression errors via `AccumulationScope::ValidateExpression()`
+in both places before recording the pattern or declaration error.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Ifbb062f946082a25e1709114656040aceacc89c2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8538568
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110454}
+(cherry picked from commit 95441f0fe286e630b47fbd0730f959947392ae76)
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 9537194948e08c544470c3c3b473b22c8acb77dd..d520e32b0dc1df2b4a7bf20e3f620af1d84af319 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -5629,14 +5629,17 @@ template <typename Impl>
+ void ParserBase<Impl>::ClassifyArrowParameter(
+     AccumulationScope* accumulation_scope, int position,
+     ExpressionT parameter) {
+-  accumulation_scope->Accumulate();
+   if (parameter->is_parenthesized() ||
+       !(impl()->IsIdentifier(parameter) || parameter->IsPattern() ||
+         parameter->IsAssignment())) {
++    accumulation_scope->ValidateExpression();
+     expression_scope()->RecordDeclarationError(
+         Scanner::Location(position, end_position()),
+         MessageTemplate::kInvalidDestructuringTarget);
+-  } else if (impl()->IsIdentifier(parameter)) {
++    return;
++  }
++  accumulation_scope->Accumulate();
++  if (impl()->IsIdentifier(parameter)) {
+     ClassifyParameter(impl()->AsIdentifier(parameter), position,
+                       end_position());
+   } else {
+@@ -5680,6 +5683,7 @@ ParserBase<Impl>::ParsePossibleDestructuringSubPattern(
+     }
+   } else if (result->is_parenthesized() ||
+              (!result->IsPattern() && !result->IsAssignment())) {
++    if (scope != nullptr) scope->ValidateExpression();
+     expression_scope()->RecordPatternError(
+         Scanner::Location(begin, end_position()),
+         MessageTemplate::kInvalidDestructuringTarget);
+diff --git a/test/mjsunit/es6/regress-subpattern-validate-expression.js b/test/mjsunit/es6/regress-subpattern-validate-expression.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1168e9e569a4e642afe7671aec5bb4b971520168
+--- /dev/null
++++ b/test/mjsunit/es6/regress-subpattern-validate-expression.js
+@@ -0,0 +1,44 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Non-pattern expressions inside destructuring patterns or arrow parameter
++// lists must validate inner expression errors before recording pattern or
++// parameter declaration errors.
++
++assertThrows(
++    () => eval("[{a = 42}.f()] = []"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("[!{a = 42}] = []"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("[{a = 42} + 1] = []"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("[{a = 42} ? 1 : 2] = []"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("[{a = 42}?.b] = []"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({x: {a = 42} + 1} = {})"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({a = 42}.b) => {}"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({a = 42} + 1) => {}"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("(!{a = 42}) => {}"),
++    SyntaxError,
++    "Invalid shorthand property initializer");

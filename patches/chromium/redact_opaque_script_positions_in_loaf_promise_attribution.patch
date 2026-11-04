@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joone Hur <joonehur@microsoft.com>
+Date: Mon, 28 Sep 2026 18:34:05 -0700
+Subject: Redact opaque script positions in LoAF promise attribution
+
+Redact character, line, and column positions when capturing source
+locations for opaque scripts.
+
+Requires a companion V8 change providing StackFrame::IsScriptOpaque():
+https://chromium-review.googlesource.com/c/v8/v8/+/8422987
+
+Bug: 562158081, 502251640
+Change-Id: Ic64040f8663b26c6ace883cc47a1e405a94e5ef4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8421802
+Reviewed-by: Michal Mocny <mmocny@chromium.org>
+Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+Commit-Queue: Joone Hur <joonehur@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1706573}
+
+diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+index 0f43a5763a0fa92599986c19c7aeedce564613f0..8645bb965c98be339c3ac478edc5c38096995fb8 100644
+--- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
++++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+@@ -803,14 +803,9 @@ void AnimationFrameTimingMonitor::WillHandlePromise(
+       .class_like_name = class_like_name,
+       .property_like_name = property_like_name,
+       .source_location = {.url = location->Url(script_state->GetIsolate()),
+-                          .char_position = location->CharPosition()}};
+-
+-  if (RuntimeEnabledFeatures::LongAnimationFrameSourceLineColumnEnabled()) {
+-    pending_script_info_->source_location.line_number =
+-        location->LineNumber() + 1;
+-    pending_script_info_->source_location.column_number =
+-        location->ColumnNumber() + 1;
+-  }
++                          .char_position = location->CharPosition(),
++                          .line_number = location->LineNumber(),
++                          .column_number = location->ColumnNumber()}};
+ }
+ 
+ void AnimationFrameTimingMonitor::Will(
+diff --git a/third_party/blink/renderer/platform/bindings/lazy_source_location.cc b/third_party/blink/renderer/platform/bindings/lazy_source_location.cc
+index 4f4212fd4fceeef5fe9852a17d03ddd728f60eca..e17d6c168c493c51ac7526f15f8d420832154a59 100644
+--- a/third_party/blink/renderer/platform/bindings/lazy_source_location.cc
++++ b/third_party/blink/renderer/platform/bindings/lazy_source_location.cc
+@@ -26,10 +26,16 @@ LazySourceLocation* LazySourceLocation::FromCurrentStack(v8::Isolate* isolate) {
+   }
+ 
+   v8::Local<v8::StackFrame> stack_frame = stack_trace->GetFrame(isolate, 0);
+-  int script_position = stack_frame->GetSourcePosition();
+   v8::Local<v8::String> script_name_v8 =
+       stack_frame->GetScriptNameOrSourceURL();
+ 
++  if (stack_frame->IsScriptOpaque()) {
++    return MakeGarbageCollected<LazySourceLocation>(isolate, script_name_v8,
++                                                    /*char_position=*/-1);
++  }
++
++  int script_position = stack_frame->GetSourcePosition();
++
+   if (RuntimeEnabledFeatures::LongAnimationFrameSourceLineColumnEnabled()) {
+     v8::Location location = stack_frame->GetLocation();
+     return MakeGarbageCollected<LazySourceLocation>(
+diff --git a/third_party/blink/renderer/platform/bindings/lazy_source_location.h b/third_party/blink/renderer/platform/bindings/lazy_source_location.h
+index 729118e203ec04abc9d30906fd8007262b876a1a..f0625a1e66bc104b3bd13b51e7630bbe66105138 100644
+--- a/third_party/blink/renderer/platform/bindings/lazy_source_location.h
++++ b/third_party/blink/renderer/platform/bindings/lazy_source_location.h
+@@ -41,16 +41,18 @@ class PLATFORM_EXPORT LazySourceLocation final
+   static LazySourceLocation* FromCurrentStack(v8::Isolate* isolate);
+   const String& Url(v8::Isolate* isolate);
+   int CharPosition() const { return char_position_; }
+-  int LineNumber() const { return line_number_; }
+-  int ColumnNumber() const { return column_number_; }
++  int LineNumber() const { return line_number_ < 0 ? -1 : line_number_ + 1; }
++  int ColumnNumber() const {
++    return column_number_ < 0 ? -1 : column_number_ + 1;
++  }
+   void Trace(Visitor* visitor) const;
+ 
+  private:
+   TraceWrapperV8Reference<v8::String> v8_url_;
+   String url_;
+   int char_position_ = -1;
+-  int line_number_ = 0;
+-  int column_number_ = 0;
++  int line_number_ = -1;
++  int column_number_ = -1;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/web_tests/external/wpt/long-animation-frame/loaf-source-location-redirect.html b/third_party/blink/web_tests/external/wpt/long-animation-frame/loaf-source-location-redirect.html
+index c1a631de2d6aa5f58835a50f653eaec24de09c4b..2459a690efb12e951bf19393d9890835fd29b05c 100644
+--- a/third_party/blink/web_tests/external/wpt/long-animation-frame/loaf-source-location-redirect.html
++++ b/third_party/blink/web_tests/external/wpt/long-animation-frame/loaf-source-location-redirect.html
+@@ -63,7 +63,11 @@ function test_source_location_with_redirect({path, type, name}) {
+         assert_not_equals(result, "empty", "CORS-ok scripts should expose sourceLocation");
+       } else {
+         assert_equals(result, "pre-redirect", "No-CORS classic scripts should expose pre-redirect URL");
+-        assert_equals(script.sourceCharPosition, type === "script-block" || type === "resolve-promise" ? 0 : -1, "No-CORS classic scripts should not expose character index");
++        assert_equals(script.sourceCharPosition, type === "script-block" ? 0 : -1, "No-CORS scripts should not expose character indices");
++      }
++      if (type === "resolve-promise") {
++        assert_equals(script.sourceLine, cors ? 1 : -1, "Promise source line should be one-based or redacted");
++        assert_equals(script.sourceColumn, cors ? 1 : -1, "Promise source column should be one-based or redacted");
+       }
+     }, `Test ${type} with ${scriptType}`);
+   }

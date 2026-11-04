@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Tue, 27 Oct 2026 22:21:30 -0700
+Subject: Block write access to .mvn in sensitive path blocklist
+
+Maven projects store build and JVM startup configuration in `.mvn`
+directories (such as `.mvn/jvm.config`, `.mvn/maven.config`, and
+`.mvn/extensions.xml`), and Maven's launcher walks upward from child
+projects to discover ancestor `.mvn` directories.
+
+This CL adds a suffix block rule for `*/.mvn` with
+`BlockType::kBlockWrite` in `GenerateBlockPaths()`. This blocks save
+and programmatic write operations targeting `.mvn` directories and
+their descendants while continuing to allow read access, matching the
+existing handling for `.git/hooks`, `.git/config`, and `.git/modules`.
+
+Bug: 578500839
+Change-Id: If269b98cd11bfa17809ab386c90d8dabc023a6f8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8668859
+Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+Commit-Queue: Mingyu Lei <leimy@chromium.org>
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1728825}
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+index d2158c16241ba9c9ccb15def0e60e6150a7d662a..696cf3bef0ec2797bb4acfdf1cb54e8d2d670bf7 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -641,6 +641,11 @@ class ChromeFileSystemAccessPermissionContext
+                                 BlockType::kBlockWrite),
+         BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
+                                 BlockType::kBlockWrite),
++        // Block write access to */.mvn, which holds Maven project and JVM
++        // configuration (such as jvm.config, maven.config, and extensions.xml),
++        // see crbug.com/578500839.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".mvn"),
++                                BlockType::kBlockWrite),
+   #if BUILDFLAG(IS_MAC)
+         // Similar Mac specific blocks.
+         // Block access to /System/Volumes (internal system and container
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+index 4cf6f646458ae56db4f04efde2f08908a64d7c04..a111ad1d5d0455dd3451d865bbe19001280cb1d3 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+@@ -1276,6 +1276,135 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+             SensitiveDirectoryResult::kAllowed);
+ }
+ 
++// Testing that writes to */.mvn and its descendants (such as .mvn/jvm.config)
++// are blocked, while reads and non-.mvn workspace paths stay allowed.
++TEST_F(ChromeFileSystemAccessPermissionContextTest,
++       ConfirmSensitiveEntryAccess_MvnWriteBlock) {
++#if defined(FILE_PATH_USES_DRIVE_LETTERS)
++  base::FilePath root(FILE_PATH_LITERAL("c:\\"));
++#else
++  base::FilePath root(FILE_PATH_LITERAL("/"));
++#endif
++  const base::FilePath workspace_dir = root.Append(FILE_PATH_LITERAL("a"));
++  const base::FilePath mvn_dir =
++      workspace_dir.Append(FILE_PATH_LITERAL(".mvn"));
++  const base::FilePath jvm_config =
++      mvn_dir.Append(FILE_PATH_LITERAL("jvm.config"));
++  const base::FilePath maven_config =
++      mvn_dir.Append(FILE_PATH_LITERAL("maven.config"));
++  const base::FilePath extensions_xml =
++      mvn_dir.Append(FILE_PATH_LITERAL("extensions.xml"));
++  const base::FilePath wrapper_dir =
++      mvn_dir.Append(FILE_PATH_LITERAL("wrapper"));
++  const base::FilePath wrapper_props =
++      wrapper_dir.Append(FILE_PATH_LITERAL("maven-wrapper.properties"));
++
++  // .mvn directory is blocked for save and programmatic write, but allowed for
++  // read.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(mvn_dir), HandleType::kDirectory,
++                AccessTrigger::kSave),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(mvn_dir), HandleType::kDirectory,
++                AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(mvn_dir), HandleType::kDirectory,
++                AccessTrigger::kOpen),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(mvn_dir), HandleType::kDirectory,
++                AccessTrigger::kProgrammaticRead),
++            SensitiveDirectoryResult::kAllowed);
++
++  // .mvn/jvm.config and other files/subdirectories inside .mvn are blocked for
++  // save and programmatic write, but allowed for read.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(jvm_config), HandleType::kFile,
++                AccessTrigger::kSave),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(jvm_config), HandleType::kFile,
++                AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(jvm_config), HandleType::kFile,
++                AccessTrigger::kOpen),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(jvm_config), HandleType::kFile,
++                AccessTrigger::kProgrammaticRead),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(maven_config), HandleType::kFile,
++                AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(extensions_xml),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(wrapper_dir),
++                HandleType::kDirectory, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(wrapper_props),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++
++  // Case variations of .mvn and .mvn/jvm.config are blocked for save and
++  // programmatic write.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(workspace_dir.Append(FILE_PATH_LITERAL(".MVN"))),
++                HandleType::kDirectory, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(workspace_dir.Append(FILE_PATH_LITERAL(".MVN"))
++                             .Append(FILE_PATH_LITERAL("JVM.CONFIG"))),
++                HandleType::kFile, AccessTrigger::kSave),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(workspace_dir.Append(FILE_PATH_LITERAL(".Mvn"))
++                             .Append(FILE_PATH_LITERAL("Jvm.Config"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++
++  // Parent workspace directory, child project files, and files named
++  // jvm.config outside of .mvn remain allowed for save and programmatic write.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(workspace_dir),
++                HandleType::kDirectory, AccessTrigger::kSave),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(
++      ConfirmSensitiveEntryAccessSync(
++          permission_context(),
++          PathInfo(workspace_dir.Append(FILE_PATH_LITERAL("child-project"))
++                       .Append(FILE_PATH_LITERAL("pom.xml"))),
++          HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++      SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(workspace_dir.Append(FILE_PATH_LITERAL("jvm.config"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(workspace_dir.Append(FILE_PATH_LITERAL(".mvn2"))
++                             .Append(FILE_PATH_LITERAL("jvm.config"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAllowed);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(workspace_dir.Append(FILE_PATH_LITERAL(".mvn_other"))
++                             .Append(FILE_PATH_LITERAL("jvm.config"))),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAllowed);
++}
++
+ #if BUILDFLAG(IS_ANDROID)
+ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+        ConfirmSensitiveEntryAccess_ContentUri) {

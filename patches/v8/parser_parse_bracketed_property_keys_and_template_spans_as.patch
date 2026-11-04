@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 7 Oct 2026 16:30:49 +0200
+Subject: [parser] Parse bracketed property keys and template spans as
+ expressions
+
+Bracketed property keys (`obj[expr]` and `obj?.[expr]`) and template
+literal interpolations (`` `${expr}` ``) are unconditionally
+`Expression`s in the ECMAScript grammar and can never be destructuring
+patterns or arrow parameter lists.
+
+Previously, `ParseLeftHandSideContinuation`,
+`DoParseMemberExpressionContinuation`, and `ParseTemplateLiteral` called
+`ParseExpressionCoverGrammar()` directly in the enclosing
+`ExpressionScope`. When enclosed in a `VariableDeclarationParsingScope`
+(e.g. `let [a, b[a]] = []` or `let [b[let]] = []`), identifiers inside
+the index or template span were declared as lexical bindings, and in
+destructuring assignment patterns (`[obj[{a = 42}].f()] = []`),
+expression errors inside the index or template span were cleared by
+`ValidateAsPattern()`.
+
+Use `ParseExpression()` (which sets up both `ExpressionParsingScope` and
+`AcceptINScope`) instead.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Ia268caf4f324f173fa61755e85b37f8c57cdbbb4
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8529449
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110491}
+(cherry picked from commit e38d30e70f764eacd2ca871f4b399a1e93c899c4)
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 2798f181c192531b57efaa90f4db10692dfdc2bd..e1efbfe740c604f9b52b9acbb7f4494a0eda3143 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -3961,8 +3961,7 @@ ParserBase<Impl>::ParseLeftHandSideContinuation(ExpressionT result) {
+       case Token::kLeftBracket: {
+         Consume(Token::kLeftBracket);
+         int pos = position();
+-        AcceptINScope scope(this, true);
+-        ExpressionT index = ParseExpressionCoverGrammar();
++        ExpressionT index = ParseExpression();
+         result = factory()->NewProperty(result, index, pos, is_optional);
+         Expect(Token::kRightBracket);
+         break;
+@@ -4339,8 +4338,7 @@ ParserBase<Impl>::DoParseMemberExpressionContinuation(ExpressionT expression) {
+       case Token::kLeftBracket: {
+         Consume(Token::kLeftBracket);
+         int pos = position();
+-        AcceptINScope scope(this, true);
+-        ExpressionT index = ParseExpressionCoverGrammar();
++        ExpressionT index = ParseExpression();
+         expression = factory()->NewProperty(expression, index, pos);
+         impl()->PushPropertyName(index);
+         Expect(Token::kRightBracket);
+@@ -5549,8 +5547,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseTemplateLiteral(
+     next = peek();
+ 
+     int expr_pos = peek_position();
+-    AcceptINScope scope(this, true);
+-    ExpressionT expression = ParseExpressionCoverGrammar();
++    ExpressionT expression = ParseExpression();
+ 
+     arguments_count++;
+     if (tagged && arguments_count + 1 /* receiver */ > Code::kMaxArguments) {
+diff --git a/test/mjsunit/es6/regress-member-template-expression-scope.js b/test/mjsunit/es6/regress-member-template-expression-scope.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f7d1777f327cffdbc11e2da03b5c0348e2b0a5dd
+--- /dev/null
++++ b/test/mjsunit/es6/regress-member-template-expression-scope.js
+@@ -0,0 +1,39 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Bracketed property keys and template literal interpolations are always
++// expressions, never binding patterns or arrow parameter lists.
++
++assertThrows(
++    () => eval("let [a, b[a]] = [];"),
++    SyntaxError,
++    "Illegal property in declaration context");
++assertThrows(
++    () => eval("let [b[let]] = [];"),
++    SyntaxError,
++    "Illegal property in declaration context");
++assertThrows(
++    () => eval("let [a, b?.[a]] = [];"),
++    SyntaxError,
++    "Invalid destructuring assignment target");
++assertThrows(
++    () => eval("let [a, tag`${a}`] = [];"),
++    SyntaxError,
++    "Invalid destructuring assignment target");
++assertThrows(
++    () => eval("let [tag`${let}`] = [];"),
++    SyntaxError,
++    "Invalid destructuring assignment target");
++assertThrows(
++    () => eval("[obj[{a = 42}].f()] = [];"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("[obj?.[{a = 42}].f()] = [];"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("[`${{a = 42}}`] = [];"),
++    SyntaxError,
++    "Invalid shorthand property initializer");

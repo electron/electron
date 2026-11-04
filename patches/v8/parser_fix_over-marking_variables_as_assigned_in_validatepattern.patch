@@ -1,0 +1,276 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 7 Oct 2026 15:19:55 +0200
+Subject: [parser] Fix over-marking variables as assigned in ValidatePattern
+
+When validating a destructuring assignment pattern,
+ExpressionParsingScope::ValidatePattern previously iterated over the
+entire variable_list_ from index 0, marking variables from earlier
+subexpressions in the same ExpressionParsingScope (such as comma
+operands, call arguments, or array/object elements) as assigned.
+Additionally, property assignment targets inside destructuring patterns
+(e.g. '[obj.prop, a] = [1, 2]') left their receiver and key variables in
+variable_list_, causing ValidatePattern to mark them as assigned too.
+
+Track the starting index in variable_list_ before parsing an assignment
+LHS or destructuring sub-pattern, discard variables from property
+targets once validated as expressions, and only mark variables starting
+from the pattern's lhs_variable_index as assigned. Also restrict
+ExpressionScope::SetInitializers to CanBeArrowParameterDeclaration()
+scopes.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I2083d3d3a228ad5101f7a0a4a8fbfe4924c3f763
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8524458
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110710}
+(cherry picked from commit 1aae39c74f9da5b225f7d6f5e58294ef0dce588c)
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index 855a6a418304f564c1ab6228b097e1a4f1d2095a..6c401e44b11a30a9d1d0ea8389709e88194f21eb 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -128,12 +128,24 @@ class ExpressionScope {
+     AsExpressionParsingScope()->MarkIdentifierAsAssigned();
+   }
+ 
+-  void ValidateAsPattern(ExpressionT expression, int begin, int end) {
++  void ValidateAsPattern(ExpressionT expression, int begin, int end,
++                         int variable_index) {
+     if (!CanBeExpression()) return;
+-    AsExpressionParsingScope()->ValidatePattern(expression, begin, end);
++    AsExpressionParsingScope()->ValidatePattern(expression, begin, end,
++                                                variable_index);
+     AsExpressionParsingScope()->ClearExpressionError();
+   }
+ 
++  int variable_list_length() {
++    if (!CanBeExpression()) return 0;
++    return AsExpressionParsingScope()->variable_list()->length();
++  }
++
++  void DiscardVariablesSince(int variable_index) {
++    if (!CanBeExpression()) return;
++    AsExpressionParsingScope()->DiscardVariablesSince(variable_index);
++  }
++
+   void ValidateAsExpression() {
+     if (!CanBeExpression()) return;
+     AsExpressionParsingScope()->ValidateExpression();
+@@ -545,15 +557,25 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
+ 
+   void ValidateExpression() { Validate(kExpressionIndex); }
+ 
+-  void ValidatePattern(ExpressionT expression, int begin, int end) {
++  void ValidatePattern(ExpressionT expression, int begin, int end,
++                       int variable_index = 0) {
+     Validate(kPatternIndex);
+     if (expression->is_parenthesized()) {
+       ExpressionScopeT::Report(Scanner::Location(begin, end),
+                                MessageTemplate::kInvalidDestructuringTarget);
+     }
+-    for (auto& variable_initializer_pair : variable_list_) {
+-      variable_initializer_pair.first->set_is_assigned();
++    for (int i = variable_index; i < variable_list_.length(); ++i) {
++      variable_list_.at(i).first->set_is_assigned();
++    }
++  }
++
++  void DiscardVariablesSince(int variable_index) {
++    if (this->CanBeDeclaration()) {
++      for (int i = variable_index; i < variable_list_.length(); ++i) {
++        this->parser()->scope()->AddUnresolved(variable_list_.at(i).first);
++      }
+     }
++    variable_list_.Rewind(variable_index);
+   }
+ 
+   void ClearExpressionError() {
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index d25e928c0bf336269d943311b712f8e171b44020..c1ce697e9cf3cf619f566cc3838b135915962039 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -1361,7 +1361,7 @@ class ParserBase {
+   ExpressionT ParseExpressionCoverGrammar();
+   ExpressionT ParseAssignmentExpressionCoverGrammar();
+   ExpressionT ParseAssignmentExpressionCoverGrammarContinuation(
+-      int lhs_beg_pos, ExpressionT expression);
++      int lhs_beg_pos, int lhs_variable_index, ExpressionT expression);
+   ExpressionT ParseConditionalChainAssignmentExpressionCoverGrammar();
+ 
+   ExpressionT ParseArrowParametersWithRest(ExpressionListT* list,
+@@ -3254,6 +3254,7 @@ ParserBase<Impl>::ParseConditionalChainAssignmentExpressionCoverGrammar() {
+ 
+   DCHECK_IMPLIES(!has_error(), next_arrow_function_info_.HasInitialState());
+ 
++  int lhs_variable_index = expression_scope()->variable_list_length();
+   ExpressionT expression = ParseLogicalExpression();
+ 
+   Token::Value op = peek();
+@@ -3262,8 +3263,8 @@ ParserBase<Impl>::ParseConditionalChainAssignmentExpressionCoverGrammar() {
+     return expression;
+   }
+ 
+-  return ParseAssignmentExpressionCoverGrammarContinuation(lhs_beg_pos,
+-                                                           expression);
++  return ParseAssignmentExpressionCoverGrammarContinuation(
++      lhs_beg_pos, lhs_variable_index, expression);
+ }
+ 
+ // Precedence = 2
+@@ -3285,21 +3286,22 @@ ParserBase<Impl>::ParseAssignmentExpressionCoverGrammar() {
+ 
+   DCHECK_IMPLIES(!has_error(), next_arrow_function_info_.HasInitialState());
+ 
++  int lhs_variable_index = expression_scope()->variable_list_length();
+   ExpressionT expression = ParseConditionalExpression();
+ 
+   Token::Value op = peek();
+ 
+   if (!Token::IsArrowOrAssignmentOp(op)) return expression;
+ 
+-  return ParseAssignmentExpressionCoverGrammarContinuation(lhs_beg_pos,
+-                                                           expression);
++  return ParseAssignmentExpressionCoverGrammarContinuation(
++      lhs_beg_pos, lhs_variable_index, expression);
+ }
+ 
+ // Precedence = 2
+ template <typename Impl>
+ typename ParserBase<Impl>::ExpressionT
+ ParserBase<Impl>::ParseAssignmentExpressionCoverGrammarContinuation(
+-    int lhs_beg_pos, ExpressionT expression) {
++    int lhs_beg_pos, int lhs_variable_index, ExpressionT expression) {
+   // AssignmentExpression ::
+   //   ConditionalExpression
+   //   ArrowFunction
+@@ -3363,6 +3365,7 @@ ParserBase<Impl>::ParseAssignmentExpressionCoverGrammarContinuation(
+         Scanner::Location(lhs_beg_pos, end_position()),
+         MessageTemplate::kInvalidPropertyBindingPattern);
+     expression_scope()->ValidateAsExpression();
++    expression_scope()->DiscardVariablesSince(lhs_variable_index);
+   } else if (expression->IsPattern() && op == Token::kAssign) {
+     // Destructuring assignmment.
+     if (expression->is_parenthesized()) {
+@@ -3379,7 +3382,7 @@ ParserBase<Impl>::ParseAssignmentExpressionCoverGrammarContinuation(
+       }
+     }
+     expression_scope()->ValidateAsPattern(expression, lhs_beg_pos,
+-                                          end_position());
++                                          end_position(), lhs_variable_index);
+   } else {
+     DCHECK(!IsValidReferenceExpression(expression));
+     expression_scope()->ValidateAsExpression();
+@@ -5661,6 +5664,7 @@ ParserBase<Impl>::ParsePossibleDestructuringSubPattern(
+   if (scope) scope->Accumulate();
+   int begin = peek_position();
+   AcceptINScope accept_in_scope(this, true);
++  int variable_index = expression_scope()->variable_list_length();
+   ExpressionT result = ParseAssignmentExpressionCoverGrammar();
+ 
+   // Parenthesized identifiers and property references are allowed as part of
+@@ -5678,11 +5682,14 @@ ParserBase<Impl>::ParsePossibleDestructuringSubPattern(
+           Scanner::Location(begin, end_position()),
+           MessageTemplate::kStrictEvalArguments);
+     }
++    IdentifierT identifier = impl()->AsIdentifier(result);
++    ClassifyParameter(identifier, begin, end_position());
+   } else if (result->IsProperty()) {
+     expression_scope()->RecordDeclarationError(
+         Scanner::Location(begin, end_position()),
+         MessageTemplate::kInvalidPropertyBindingPattern);
+     if (scope != nullptr) scope->ValidateExpression();
++    expression_scope()->DiscardVariablesSince(variable_index);
+   } else if (result->is_parenthesized() ||
+              (!result->IsPattern() && !result->IsAssignment())) {
+     if (scope != nullptr) scope->ValidateExpression();
+diff --git a/src/utils/scoped-list.h b/src/utils/scoped-list.h
+index 7bc0da372ef7f2c59e490f36c2142bff8e3bf60a..6d9a57f4aff26dcd3394eb002e1994c3189063c7 100644
+--- a/src/utils/scoped-list.h
++++ b/src/utils/scoped-list.h
+@@ -40,10 +40,12 @@ class V8_NODISCARD ScopedList final {
+ 
+   ~ScopedList() { Rewind(); }
+ 
+-  void Rewind() {
++  void Rewind(int length = 0) {
+     DCHECK_EQ(buffer_.size(), end_);
+-    buffer_.resize(start_);
+-    end_ = start_;
++    DCHECK_LE(0, length);
++    DCHECK_LE(start_ + length, end_);
++    end_ = start_ + length;
++    buffer_.resize(end_);
+   }
+ 
+   void MergeInto(ScopedList* parent) {
+diff --git a/test/mjsunit/regress/regress-567222737-6.js b/test/mjsunit/regress/regress-567222737-6.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..be5f6771184547b7886b74043fdd3bbfeedca228
+--- /dev/null
++++ b/test/mjsunit/regress/regress-567222737-6.js
+@@ -0,0 +1,59 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function testPatternAssignment() {
++  let obj = { prop: 0 };
++  let arr = [0];
++  let idx = 0;
++  let commaVar = 10;
++  let callArg = 20;
++  let arrayElem = 30;
++  let assignedObj;
++  let a = 0, b = 0, c = 0, d = 0;
++
++  let readCaptured = () => {
++    return obj.prop + arr[idx] + commaVar + callArg + arrayElem +
++           a + b + c + d + (assignedObj === obj ? 100 : 0);
++  };
++
++  function id(x, y) { return y; }
++
++  // 1. Comma expression before destructuring assignment.
++  (commaVar, [a] = [1]);
++  // 2. Call arguments before destructuring assignment.
++  id(callArg, [b] = [2]);
++  // 3. Array element before destructuring assignment.
++  [arrayElem, [c] = [3]];
++  // 4. Property and element targets inside destructuring assignment,
++  //    plus a real assignment inside a property target's receiver.
++  [obj.prop, arr[idx], (assignedObj = obj).prop2, d] = [4, 5, 6, 7];
++
++  return readCaptured();
++}
++
++%PrepareFunctionForOptimization(testPatternAssignment);
++assertEquals(10 + 20 + 30 + 4 + 5 + 1 + 2 + 3 + 7 + 100, testPatternAssignment());
++assertEquals(10 + 20 + 30 + 4 + 5 + 1 + 2 + 3 + 7 + 100, testPatternAssignment());
++%OptimizeFunctionOnNextCall(testPatternAssignment);
++assertEquals(10 + 20 + 30 + 4 + 5 + 1 + 2 + 3 + 7 + 100, testPatternAssignment());
++
++// Also test for-of destructuring with property targets and inner assignments.
++function testForOfPattern() {
++  let obj = { x: 0 };
++  let target;
++  let val = 0;
++  let read = () => obj.x + val + (target === obj ? 50 : 0);
++  for ([obj.x, (target = obj).y, val] of [[10, 20, 30]]) {}
++  return read();
++}
++
++%PrepareFunctionForOptimization(testForOfPattern);
++assertEquals(90, testForOfPattern());
++%OptimizeFunctionOnNextCall(testForOfPattern);
++assertEquals(90, testForOfPattern());
++
++assertThrows(() => eval("let [a()] = [];"), SyntaxError);
++assertThrows(() => eval("function f([a()]) {}"), SyntaxError);

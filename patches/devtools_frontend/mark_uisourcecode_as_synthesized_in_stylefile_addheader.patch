@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Leese <leese@chromium.org>
+Date: Mon, 5 Oct 2026 13:32:55 -0700
+Subject: Mark UISourceCode as synthesized in StyleFile.addHeader
+
+Previously, StylesSourceMapping only called
+NetworkProject.setSourceURLSynthesized when a StyleFile was initially
+constructed. If a stylesheet without a sourceURL comment was added first
+and a synthetic stylesheet with a /*# sourceURL=... */ comment for the
+same URL was added later via StyleFile.addHeader, the UISourceCode
+remained unflagged even after the original stylesheet was removed.
+
+Update StyleFile.addHeader to also mark the UISourceCode as having a
+synthesized sourceURL when header.hasSourceURL is true, and add a
+regression unit test.
+
+Bug: 562233597, 568225269
+Change-Id: Ie8bb7d38207987431c9823676cd6ec38bf514aa2
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8518358
+Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+Commit-Queue: Eric Leese <leese@chromium.org>
+
+diff --git a/front_end/models/bindings/StylesSourceMapping.ts b/front_end/models/bindings/StylesSourceMapping.ts
+index 3268123e7e7ab47499bd5b30c8a243d23c2f6063..a33f795b10403078ea972a8d43c55a0377c65027 100644
+--- a/front_end/models/bindings/StylesSourceMapping.ts
++++ b/front_end/models/bindings/StylesSourceMapping.ts
+@@ -191,6 +191,9 @@ export class StyleFile implements TextUtils.ContentProvider.ContentProvider {
+ 
+   addHeader(header: SDK.CSSStyleSheetHeader.CSSStyleSheetHeader): void {
+     this.headers.add(header);
++    if (header.hasSourceURL) {
++      NetworkProject.setSourceURLSynthesized(this.uiSourceCode);
++    }
+     NetworkProject.addFrameAttribution(this.uiSourceCode, header.frameId);
+   }
+ 

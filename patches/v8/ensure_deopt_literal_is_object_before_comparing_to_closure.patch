@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Wed, 28 Oct 2026 15:42:48 +0100
+Subject: Ensure deopt literal is object before comparing to closure
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [compiler] Ensure deopt literal is object before comparing to closure
+>
+> DeoptimizationLiteral stores object handles and primitive values in a
+> union. In CodeGenerator::AddTranslationForOperand, verify the literal
+> is actually an object before comparing it to the current closure to
+> avoid treating raw integer values as handle addresses.
+>
+> TAG=agy
+> CONV=04af8cf4-3712-4424-b3f8-d919c245b4b2
+>
+> Fixed: 577327383
+> Change-Id: I5ed2e4441ec28c83556a749456a817331581ddec
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8663224
+> Reviewed-by: Marja Hölttä <marja@chromium.org>
+> Commit-Queue: Marja Hölttä <marja@chromium.org>
+> Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111206}
+
+(cherry picked from commit a10d231eadf7b4c9e2c223c38cb220684e746fc9)
+
+Bug: 578796230,577327383
+Change-Id: I5ed2e4441ec28c83556a749456a817331581ddec
+
+diff --git a/src/compiler/backend/code-generator.cc b/src/compiler/backend/code-generator.cc
+index beaf87989092982c4b3b03fcdfc0b9684c7f0f87..ad7828a8c8dad082cbb8acab7a20aaad5bbe957a 100644
+--- a/src/compiler/backend/code-generator.cc
++++ b/src/compiler/backend/code-generator.cc
+@@ -1691,8 +1691,8 @@ void CodeGenerator::AddTranslationForOperand(Instruction* instr,
+       default:
+         UNREACHABLE();
+     }
+-    if (literal.object().equals(info()->closure()) &&
+-        info()->function_context_specializing()) {
++    if (info()->function_context_specializing() &&
++        literal.IsObject(info()->closure())) {
+       translations_.StoreJSFrameFunction();
+     } else {
+       int literal_id = DefineDeoptimizationLiteral(literal);
+diff --git a/src/objects/deoptimization-data.h b/src/objects/deoptimization-data.h
+index f6a7547d6a1fa808c1c1e0cf64c246e6d7cd6ba8..3194e373d158c2ba5ebfb1588b214539afb52a15 100644
+--- a/src/objects/deoptimization-data.h
++++ b/src/objects/deoptimization-data.h
+@@ -90,7 +90,10 @@ class DeoptimizationLiteral {
+     return literal;
+   }
+ 
+-  IndirectHandle<Object> object() const { return object_; }
++  bool IsObject(IndirectHandle<Object> object) const {
++    return kind_ == DeoptimizationLiteralKind::kObject &&
++           object_.equals(object);
++  }
+ 
+   bool operator==(const DeoptimizationLiteral& other) const {
+     if (kind_ != other.kind_) {

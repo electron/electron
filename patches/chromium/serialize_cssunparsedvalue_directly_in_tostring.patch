@@ -1,0 +1,259 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 3 Nov 2026 13:43:20 +0000
+Subject: Serialize CSSUnparsedValue directly in toString
+
+CSSUnparsedValue previously relied on the base CSSStyleValue::toString()
+implementation, which converted the object into a CSSValue via
+ToCSSValue() and validated declaration-value syntax. When invoked off the
+main thread, this entered CSS parser code paths that depend on
+main-thread-only data structures.
+
+This change overrides CSSUnparsedValue::toString() to serialize segments
+and tokens directly per specification, avoiding unnecessary CSS value
+conversion and parsing during stringification. In addition, explicit
+thread affinity checks are added to ToCSSValue() and
+ConsumeUnparsedDeclaration() to ensure declaration parsing remains on
+the main thread.
+
+Bug: 577378379
+Change-Id: I8d0dea7bd85a8153c4bac5598f12c1db5d05f477
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8668175
+Reviewed-by: Kevin Babbitt <kbabbitt@microsoft.com>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1730961}
+(cherry picked from commit 7c84d3eadb2cb9e089e16b0382079700aa2ebc77)
+
+diff --git a/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc b/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
+index 86d42c87a6bd10838a3e059c9227868e5bfc0798..44d0e01775f0ae0cb9c779ee0b89257bbfeec739 100644
+--- a/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
++++ b/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
+@@ -19,6 +19,7 @@
+ #include "third_party/blink/renderer/core/css/cssom/css_keyword_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_style_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_unit_value.h"
++#include "third_party/blink/renderer/core/css/cssom/css_unparsed_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_unsupported_color.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/non_main_thread.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+@@ -70,6 +71,31 @@ class CrossThreadStyleValueTest : public testing::Test {
+     waitable_event->Signal();
+   }
+ 
++  void CheckUnparsedValueToString(base::WaitableEvent* waitable_event) {
++    DCHECK(!IsMainThread());
++
++    EXPECT_EQ(CrossThreadUnparsedValue("").ToCSSStyleValue()->toString(), "");
++    EXPECT_EQ(
++        CrossThreadUnparsedValue("Unparsed").ToCSSStyleValue()->toString(),
++        "Unparsed");
++    EXPECT_EQ(CrossThreadUnparsedValue("if(supports(selector(div)): 10px)")
++                  .ToCSSStyleValue()
++                  ->toString(),
++              "if(supports(selector(div)): 10px)");
++    EXPECT_EQ(CrossThreadUnparsedValue("if(supports(selector(x >)): 1px)")
++                  .ToCSSStyleValue()
++                  ->toString(),
++              "if(supports(selector(x >)): 1px)");
++    EXPECT_EQ(
++        CrossThreadUnparsedValue("if(supports(list-style-type: disc): 10px)")
++            .ToCSSStyleValue()
++            ->toString(),
++        "if(supports(list-style-type: disc): 10px)");
++    EXPECT_EQ(CrossThreadUnparsedValue("var()").ToCSSStyleValue()->toString(),
++              "var()");
++    waitable_event->Signal();
++  }
++
+   void CheckUnitValue(base::WaitableEvent* waitable_event,
+                       std::unique_ptr<CrossThreadUnitValue> value) {
+     DCHECK(!IsMainThread());
+@@ -144,6 +170,20 @@ TEST_F(CrossThreadStyleValueTest, PassUnparsedValueCrossThread) {
+   ShutDownThread();
+ }
+ 
++TEST_F(CrossThreadStyleValueTest, UnparsedValueToStringCrossThread) {
++  thread_ = blink::NonMainThread::CreateThread(
++      ThreadCreationParams(ThreadType::kTestThread).SetSupportsGC(true));
++  base::WaitableEvent waitable_event;
++  PostCrossThreadTask(
++      *thread_->GetTaskRunner(), FROM_HERE,
++      CrossThreadBindOnce(
++          &CrossThreadStyleValueTest::CheckUnparsedValueToString,
++          CrossThreadUnretained(this), CrossThreadUnretained(&waitable_event)));
++  waitable_event.Wait();
++
++  ShutDownThread();
++}
++
+ TEST_F(CrossThreadStyleValueTest, CrossThreadUnparsedValueToCSSStyleValue) {
+   std::unique_ptr<CrossThreadUnparsedValue> value =
+       std::make_unique<CrossThreadUnparsedValue>("Unparsed");
+@@ -153,6 +193,17 @@ TEST_F(CrossThreadStyleValueTest, CrossThreadUnparsedValueToCSSStyleValue) {
+   EXPECT_EQ(style_value->GetType(),
+             CSSStyleValue::StyleValueType::kUnparsedType);
+   EXPECT_EQ(style_value->toString(), "Unparsed");
++  EXPECT_TRUE(To<CSSUnparsedValue>(style_value)->IsValidDeclarationValue());
++  EXPECT_EQ(style_value->ToCSSValue()->CssText(), "Unparsed");
++
++  CSSUnparsedValue* empty_value = CSSUnparsedValue::FromString("");
++  EXPECT_EQ(empty_value->toString(), "");
++  EXPECT_TRUE(empty_value->IsValidDeclarationValue());
++  EXPECT_EQ(empty_value->ToCSSValue()->CssText(), "");
++
++  CSSUnparsedValue* invalid_value = CSSUnparsedValue::FromString("var()");
++  EXPECT_EQ(invalid_value->toString(), "var()");
++  EXPECT_FALSE(invalid_value->IsValidDeclarationValue());
+ }
+ 
+ TEST_F(CrossThreadStyleValueTest, PassKeywordValueCrossThread) {
+diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+index 42b91b5e4eb0d6565868dcd83a85572c2acd3dbe..01663e7e99dba5091d0504a2d16f8f5f551e9b83 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
++++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+@@ -14,6 +14,7 @@
+ #include "third_party/blink/renderer/core/css_value_keywords.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_messages.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ 
+@@ -139,13 +140,14 @@ IndexedPropertySetterResult CSSUnparsedValue::AnonymousIndexedSetter(
+ }
+ 
+ bool CSSUnparsedValue::IsValidDeclarationValue() const {
+-  return IsValidDeclarationValue(ToStringInternal());
++  return IsValidDeclarationValue(toString());
+ }
+ 
+ const CSSValue* CSSUnparsedValue::ToCSSValue() const {
+-  String unparsed_string = ToStringInternal();
++  CHECK(IsMainThread());
++  String unparsed_string = toString();
+ 
+-  if (unparsed_string.IsNull()) {
++  if (unparsed_string.empty()) {
+     return MakeGarbageCollected<CSSUnparsedDeclarationValue>(
+         MakeGarbageCollected<CSSVariableData>());
+   }
+@@ -185,7 +187,7 @@ bool CSSUnparsedValue::IsValidDeclarationValue(const String& string) {
+       *StrictCSSParserContext(SecureContextMode::kInsecureContext));
+ }
+ 
+-String CSSUnparsedValue::ToStringInternal() const {
++String CSSUnparsedValue::toString() const {
+   String serialized = SerializeSegments();
+ 
+   // The serialization above defensively inserted /**/ between segments
+@@ -205,7 +207,7 @@ String CSSUnparsedValue::ToStringInternal() const {
+   StringBuilder builder;
+   CSSParserTokenStream stream(serialized);
+   if (stream.AtEnd()) {
+-    return g_null_atom;
++    return g_empty_atom;
+   }
+   CSSParserToken token = stream.ConsumeRaw();
+   token.Serialize(builder);
+diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+index 7fd66aed677e31046a1bd206854b2cbeac07c25b..f0169f00a9be2c2bd832cef6cda703ac64263513 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
++++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+@@ -55,7 +55,8 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+   // https://github.com/w3c/csswg-drafts/issues/13547
+   bool IsValidDeclarationValue() const;
+ 
+-  // Requires IsValidDeclarationValue()==true.
++  // Requires IsValidDeclarationValue()==true. Must only be called on the main
++  // thread.
+   const CSSValue* ToCSSValue() const override;
+ 
+   StyleValueType GetType() const override { return kUnparsedType; }
+@@ -70,6 +71,8 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+ 
+   wtf_size_t length() const { return segments_.size(); }
+ 
++  String toString() const override;
++
+   void Trace(Visitor* visitor) const override {
+     visitor->Trace(segments_);
+     CSSStyleValue::Trace(visitor);
+@@ -77,7 +80,6 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+ 
+  private:
+   static bool IsValidDeclarationValue(const String&);
+-  String ToStringInternal() const;
+   String SerializeSegments() const;
+   // Return 'false' if there is a cycle in the serialization.
+   bool AppendUnparsedString(
+diff --git a/third_party/blink/renderer/core/css/parser/css_variable_parser.cc b/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
+index a159a342a2b49cbee016990e108da40af0fa83a9..1dd2e357591ba80d729b6998c0f6ba6cd98d5ec4 100644
+--- a/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
++++ b/third_party/blink/renderer/core/css/parser/css_variable_parser.cc
+@@ -25,6 +25,7 @@
+ #include "third_party/blink/renderer/core/frame/web_feature.h"
+ #include "third_party/blink/renderer/core/html/parser/html_parser_idioms.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ 
+@@ -692,6 +693,10 @@ CSSVariableData* CSSVariableParser::ConsumeUnparsedDeclaration(
+     bool comma_ends_declaration,
+     bool& important,
+     const CSSParserContext& context) {
++  // ConsumeUnparsedValue() may parse arbitrary CSS properties or selectors via
++  // if(supports(...)), which relies on main-thread-only state.
++  CHECK(IsMainThread());
++
+   // Consume leading whitespace and comments, as required by the spec.
+   stream.ConsumeWhitespace();
+   stream.EnsureLookAhead();
+diff --git a/third_party/blink/renderer/core/css/parser/css_variable_parser.h b/third_party/blink/renderer/core/css/parser/css_variable_parser.h
+index 7435a3357ef8fd69491317dda00f5880a578c361..4052f4c4bb199d1831748205f37ef1b7d46b40bd 100644
+--- a/third_party/blink/renderer/core/css/parser/css_variable_parser.h
++++ b/third_party/blink/renderer/core/css/parser/css_variable_parser.h
+@@ -56,6 +56,8 @@ class CORE_EXPORT CSSVariableParser {
+   // will simply consume until AtEnd(), unless an error is encountered.
+   //
+   // [1] https://github.com/w3c/csswg-drafts/issues/9317
++  //
++  // Must only be called on the main thread.
+   static CSSVariableData* ConsumeUnparsedDeclaration(
+       CSSParserTokenStream& stream,
+       bool allow_important_annotation,
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js b/third_party/blink/web_tests/external/wpt/css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b2d113e8fd85b0b619474612fec3ecdc72b3e02a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js
+@@ -0,0 +1,29 @@
++// META: global=window,worker
++// META: title=CSSUnparsedValue: Don't crash for empty values
++// META: spec=https://drafts.css-houdini.org/css-typed-om-1/#dom-cssunparsedvalue-cssunparsedvalue
++
++'use strict';
++
++// https://crbug.com/1169941
++test(() => {
++  const result = new CSSUnparsedValue(['']);
++  assert_equals('', result.toString()); // Don't crash.
++}, `Don't crash when serializing empty CSSUnparsedValue`);
++
++test(() => {
++  const validSelector =
++      new CSSUnparsedValue(['if(supports(selector(div)): 10px)']);
++  assert_equals('if(supports(selector(div)): 10px)', validSelector.toString());
++
++  const complexSelector =
++      new CSSUnparsedValue(['if(supports(selector(x >)): 1px)']);
++  assert_equals('if(supports(selector(x >)): 1px)', complexSelector.toString());
++
++  const supportsProperty =
++      new CSSUnparsedValue(['if(supports(list-style-type: disc): 10px)']);
++  assert_equals('if(supports(list-style-type: disc): 10px)',
++                supportsProperty.toString());
++
++  const incompleteVar = new CSSUnparsedValue(['var()']);
++  assert_equals('var()', incompleteVar.toString());
++}, `Serializing CSSUnparsedValue with conditional and substitution syntax`);

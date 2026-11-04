@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 14 Oct 2026 00:49:54 -0400
+Subject: Translator: Work around monomorphizer crash vs comma corner case
+
+A tricky shader could cause the monomorphization pass to drop a call to
+a function that would have otherwise needed monomorphization.  That
+function would become dead code, but was otherwise left in the AST,
+causing follow up transforms to fail assertions.
+
+This change simply drops the dead functions, even if the transformation
+is not actually correct.  The IR transforms the shader correctly.
+
+Bug: chromium:557605839
+Change-Id: Ic8af0d5d3473029ad6d3f93a1d9f719959d66ffc
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8578337
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+diff --git a/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp b/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
+index a583dad6cde4a4247d4e701529d805210399bdbb..af13ff61f191644b40fc9279f32d84e61b7ae361 100644
+--- a/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
++++ b/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
+@@ -54,6 +54,31 @@ void InitializeFunctionMap(TIntermBlock *root, FunctionMap *functionMapOut)
+     }
+ }
+ 
++void RemoveUnreferencedFunctions(TIntermBlock *root, const FunctionMap &functionMap)
++{
++    TIntermSequence &sequence = *root->getSequence();
++    TIntermSequence pruned;
++
++    for (TIntermNode *node : sequence)
++    {
++        TIntermFunctionDefinition *asFuncDef = node->getAsFunctionDefinition();
++        if (asFuncDef != nullptr)
++        {
++            const TFunction *function = asFuncDef->getFunction();
++            ASSERT(function && functionMap.find(function) != functionMap.end());
++            if (!function->isMain() && !functionMap.at(function).isOriginalUsed)
++            {
++                // This function was never called, remove it
++                continue;
++            }
++        }
++
++        pruned.push_back(node);
++    }
++
++    root->replaceAllChildren(std::move(pruned));
++}
++
+ const TVariable *GetBaseUniform(TIntermTyped *node, bool *isSamplerInStructOut)
+ {
+     *isSamplerInStructOut = false;
+@@ -537,6 +562,14 @@ bool MonomorphizeUnsupportedFunctionsImpl(TCompiler *compiler,
+ 
+         if (!monomorphizer.getAnyMonomorphized())
+         {
++            // This transformation does not correctly handle comma in function arguments, so if f
++            // needs monomorphization in f((g(x), y), the call to g is accidentally dropped.  If g
++            // needed monomorphization in a second pass, it's now lost but the function itself is
++            // still left in the AST, causing trouble in future passes.  This is not a problem in
++            // the IR; for now the AST pass is made to just remove g to prevent an unexpected AST
++            // even though the translation is incorrect.
++            RemoveUnreferencedFunctions(root, functionMap);
++
+             break;
+         }
+ 
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 98c4b28b7098e8e681447fde319dde2b17f2452e..aed6155a44bfbc03405d7f6355f4ef2131d1beda 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -9249,6 +9249,44 @@ void main()
+ 
+     EXPECT_PIXEL_COLOR_EQ(1, 1, GLColor::green);
+ }
++
++// Test corner case involving comma and passing struct with sampler to function
++TEST_P(GLSLTest_ES3, SamplerInStructAsFunctionArgInCommaCornerCase)
++{
++    // The monomorphization AST pass run by multiple backends does not correctly handle comma
++    // expressions.
++    ANGLE_SKIP_TEST_IF(!getEGLWindow()->isFeatureEnabled(Feature::UseIr));
++
++    const char kFragmentShader[] = R"(#version 300 es
++precision mediump float;
++struct S
++{
++    sampler2D s;
++    int f;
++};
++uniform S u;
++int global = 0;
++
++out vec4 color;
++
++float sampleTex(S s) { ++global; return texture(s.s, vec2(0)).x; }
++float forwardToSample(S s) { return sampleTex(s); }
++
++// Need to forward `u` to `broken` via an intermediate call to cause multiple passes of
++// monomorphization in some backends before the tricky expression is handled.
++void broken(S s) { sampleTex((forwardToSample(s), u)); }
++void forward(S s) { broken(s); }
++
++void main() {
++    forward(u);
++    color = vec4(float(global) / 2.0, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFragmentShader);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(1, 1, GLColor::red);
++}
++
+ // Test that a global variable declared after main() works. This is a regression test for an issue
+ // in global variable initialization.
+ TEST_P(WebGLGLSLTest, GlobalVariableDeclaredAfterMain)

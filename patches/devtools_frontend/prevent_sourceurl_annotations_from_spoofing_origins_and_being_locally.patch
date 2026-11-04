@@ -1,0 +1,369 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Somsikov <dsv@chromium.org>
+Date: Mon, 21 Sep 2026 02:42:10 -0700
+Subject: Prevent sourceURL annotations from spoofing origins and being locally
+ overridden
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Scripts can specify sourceURL annotations and source maps that are fully controlled by the page. This change ensures that:
+- HTTP and HTTPS sourceURL annotations must match the origin of the script frame to prevent cross-origin resource spoofing.
+- sourceURL annotations cannot evict existing UISourceCodes fetched directly from the network.
+- UISourceCodes generated from sourceURL annotations or source maps cannot be saved as local overrides, preventing override directory poisoning.
+
+Bug: 553931271
+Change-Id: Ib9ac1c265445980585706830385697ee6d6d29d1
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8421102
+Commit-Queue: Danil Somsikov <dsv@chromium.org>
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Auto-Submit: Danil Somsikov <dsv@chromium.org>
+Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+(cherry picked from commit 0e5527264722c85d3771c38762ce63e9485dc165)
+
+diff --git a/front_end/models/bindings/NetworkProject.ts b/front_end/models/bindings/NetworkProject.ts
+index c7f797925a7cd2bb80e1faa24ca5fac419f9bee3..abb871bb1a4e6424b8cd7d64cdc5d390e302081d 100644
+--- a/front_end/models/bindings/NetworkProject.ts
++++ b/front_end/models/bindings/NetworkProject.ts
+@@ -15,6 +15,7 @@ const uiSourceCodeToAttributionMap = new WeakMap<Workspace.UISourceCode.UISource
+ 
+ export class NetworkProjectManager extends Common.ObjectWrapper.ObjectWrapper<EventTypes> {
+   readonly #projectToTargetMap = new WeakMap<Workspace.Workspace.Project, SDK.Target.Target>();
++  readonly #sourceURLSynthesizedUISourceCodes = new WeakSet<Workspace.UISourceCode.UISourceCode>();
+ 
+   static instance({forceNew}: {
+     forceNew: boolean,
+@@ -41,6 +42,14 @@ export class NetworkProjectManager extends Common.ObjectWrapper.ObjectWrapper<Ev
+   getTargetForUISourceCode(uiSourceCode: Workspace.UISourceCode.UISourceCode): SDK.Target.Target|null {
+     return this.#projectToTargetMap.get(uiSourceCode.project()) ?? null;
+   }
++
++  setSourceURLSynthesized(uiSourceCode: Workspace.UISourceCode.UISourceCode): void {
++    this.#sourceURLSynthesizedUISourceCodes.add(uiSourceCode);
++  }
++
++  isSourceURLSynthesized(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
++    return this.#sourceURLSynthesizedUISourceCodes.has(uiSourceCode);
++  }
+ }
+ 
+ export const enum Events {
+@@ -59,6 +68,27 @@ export interface EventTypes {
+ }
+ 
+ export class NetworkProject {
++  /**
++   * Records that `uiSourceCode` was synthesized from a `//# sourceURL=` annotation,
++   * and therefore doesn't correspond to an actual network resource.
++   */
++  static setSourceURLSynthesized(uiSourceCode: Workspace.UISourceCode.UISourceCode): void {
++    // eslint-disable-next-line @devtools/no-instance-of-migrated-singletons
++    NetworkProjectManager.instance().setSourceURLSynthesized(uiSourceCode);
++  }
++
++  /**
++   * Whether `uiSourceCode` was synthesized from a `//# sourceURL=` annotation.
++   *
++   * Both the URL and the content of such a source are fully controlled by the page,
++   * so it must never be treated like a genuine network resource (for example it must
++   * not be persisted as a local override, see b/553931271).
++   */
++  static isSourceURLSynthesized(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
++    // eslint-disable-next-line @devtools/no-instance-of-migrated-singletons
++    return NetworkProjectManager.instance().isSourceURLSynthesized(uiSourceCode);
++  }
++
+   static resolveFrame(uiSourceCode: Workspace.UISourceCode.UISourceCode, frameId: Protocol.Page.FrameId):
+       SDK.ResourceTreeModel.ResourceTreeFrame|null {
+     const target = NetworkProject.targetForUISourceCode(uiSourceCode);
+diff --git a/front_end/models/bindings/ResourceScriptMapping.test.ts b/front_end/models/bindings/ResourceScriptMapping.test.ts
+index 8c073d24949fa1616afbbdec29fd37acfbc4758b..f296fdf6392d1f6d039d21cd3d285a175c8a3d93 100644
+--- a/front_end/models/bindings/ResourceScriptMapping.test.ts
++++ b/front_end/models/bindings/ResourceScriptMapping.test.ts
+@@ -7,7 +7,9 @@ import {assert} from 'chai';
+ import * as Platform from '../../core/platform/platform.js';
+ import * as SDK from '../../core/sdk/sdk.js';
+ import * as TextUtils from '../../core/text_utils/text_utils.js';
++import {setupLocaleHooks} from '../../testing/LocaleHelpers.js';
+ import {MockDebuggerBackend} from '../../testing/MockScopeChain.js';
++import {getMainFrame, SECURITY_ORIGIN} from '../../testing/ResourceTreeHelpers.js';
+ import {setupRuntimeHooks} from '../../testing/RuntimeHelpers.js';
+ import {setupSettingsHooks} from '../../testing/SettingsHelpers.js';
+ 
+@@ -16,6 +18,7 @@ import * as Bindings from './bindings.js';
+ const {urlString} = Platform.DevToolsPath;
+ 
+ describe('ResourceScriptMapping', () => {
++  setupLocaleHooks();
+   setupRuntimeHooks();
+   setupSettingsHooks();
+ 
+@@ -73,7 +76,9 @@ describe('ResourceScriptMapping', () => {
+     });
+ 
+     it('maps UI locations in inline scripts with sourceURL', async () => {
+-      const script = await backend.addScript(target, {content: contentWithSourceUrl, url, hasSourceURL: true}, null);
++      getMainFrame(target);
++      const script = await backend.addScript(
++          target, {content: contentWithSourceUrl, url: `${SECURITY_ORIGIN}/example.js`, hasSourceURL: true}, null);
+       const uiSourceCode = resourceScriptMapping.uiSourceCodeForScript(script);
+       assert.exists(uiSourceCode);
+ 
+@@ -109,4 +114,85 @@ describe('ResourceScriptMapping', () => {
+ 
+     assert.isNull(uiSourceCode);
+   });
++
++  describe('for scripts with a `//# sourceURL` annotation', () => {
++    const content = contentWithSourceUrl;
++
++    it('creates a UISourceCode for same-origin URLs', async () => {
++      getMainFrame(target);
++
++      const script = await backend.addScript(
++          target, {content, url: `${SECURITY_ORIGIN}/from-source-url.js`, hasSourceURL: true}, null);
++
++      const uiSourceCode = resourceScriptMapping.uiSourceCodeForScript(script);
++      assert.exists(uiSourceCode);
++      assert.isTrue(Bindings.NetworkProject.NetworkProject.isSourceURLSynthesized(uiSourceCode));
++    });
++
++    it('ignores annotations claiming a cross-origin URL', async () => {
++      getMainFrame(target);
++
++      const script = await backend.addScript(
++          target, {content, url: 'https://not-example.com/from-source-url.js', hasSourceURL: true}, null);
++
++      assert.isNull(resourceScriptMapping.uiSourceCodeForScript(script));
++    });
++
++    it('accepts annotations with schemes that cannot be network resources', async () => {
++      getMainFrame(target);
++
++      const script = await backend.addScript(
++          target, {content, url: 'webpack-internal:///./src/index.js', hasSourceURL: true}, null);
++
++      assert.exists(resourceScriptMapping.uiSourceCodeForScript(script));
++    });
++
++    it('does not evict the UISourceCode of a script that was fetched from the network', async () => {
++      getMainFrame(target);
++      const networkURL = `${SECURITY_ORIGIN}/example.js`;
++      const networkScript = await backend.addScript(
++          target, {content: contentWithoutSourceUrl, url: networkURL, hasSourceURL: false}, null);
++      const networkUISourceCode = resourceScriptMapping.uiSourceCodeForScript(networkScript);
++      assert.exists(networkUISourceCode);
++
++      const spoofingScript = await backend.addScript(target, {content, url: networkURL, hasSourceURL: true}, null);
++
++      assert.isNull(resourceScriptMapping.uiSourceCodeForScript(spoofingScript));
++      assert.strictEqual(resourceScriptMapping.uiSourceCodeForScript(networkScript), networkUISourceCode);
++      assert.isFalse(Bindings.NetworkProject.NetworkProject.isSourceURLSynthesized(networkUISourceCode));
++    });
++
++    it('falls back to the inspected origin when the frame is unknown', async () => {
++      target.setInspectedURL(urlString`${`${SECURITY_ORIGIN}/index.html`}`);
++
++      const sameOrigin = await backend.addScript(
++          target, {content, url: `${SECURITY_ORIGIN}/from-source-url.js`, hasSourceURL: true}, null);
++      const crossOrigin = await backend.addScript(
++          target, {content, url: 'https://not-example.com/from-source-url.js', hasSourceURL: true}, null);
++
++      assert.exists(resourceScriptMapping.uiSourceCodeForScript(sameOrigin));
++      assert.isNull(resourceScriptMapping.uiSourceCodeForScript(crossOrigin));
++    });
++
++    it('ignores annotations when no origin can be established', async () => {
++      // Neither a frame nor an inspected URL: we can't tell whether the annotation
++      // spoofs another origin, so it must not be used.
++      const script = await backend.addScript(
++          target, {content, url: `${SECURITY_ORIGIN}/from-source-url.js`, hasSourceURL: true}, null);
++
++      assert.isNull(resourceScriptMapping.uiSourceCodeForScript(script));
++    });
++
++    it('replaces the UISourceCode of an earlier script with the same annotation', async () => {
++      getMainFrame(target);
++      const sourceURL = `${SECURITY_ORIGIN}/from-source-url.js`;
++      const oldScript = await backend.addScript(target, {content, url: sourceURL, hasSourceURL: true}, null);
++      assert.exists(resourceScriptMapping.uiSourceCodeForScript(oldScript));
++
++      const newScript = await backend.addScript(target, {content, url: sourceURL, hasSourceURL: true}, null);
++
++      assert.exists(resourceScriptMapping.uiSourceCodeForScript(newScript));
++      assert.isNull(resourceScriptMapping.uiSourceCodeForScript(oldScript));
++    });
++  });
+ });
+diff --git a/front_end/models/bindings/ResourceScriptMapping.ts b/front_end/models/bindings/ResourceScriptMapping.ts
+index 145bc9a16b55cfa44f423299e1f2ad04a74a070e..df3e3ebecd0a068f040de46f837288f1f435d26d 100644
+--- a/front_end/models/bindings/ResourceScriptMapping.ts
++++ b/front_end/models/bindings/ResourceScriptMapping.ts
+@@ -32,6 +32,19 @@ const UIStrings = {
+ const str_ = i18n.i18n.registerUIStrings('models/bindings/ResourceScriptMapping.ts', UIStrings);
+ const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
+ 
++/**
++ * The security origin of the URL that `target` (or its closest ancestor that has
++ * one) is inspecting, or `null` if none of them has an inspected URL yet.
++ */
++function inspectedSecurityOrigin(target: SDK.Target.Target): SDK.SecurityOrigin.SecurityOrigin|null {
++  for (let current: SDK.Target.Target|null = target; current; current = current.parentTarget()) {
++    if (current.inspectedURL()) {
++      return current.inspectedSecurityOrigin();
++    }
++  }
++  return null;
++}
++
+ export class ResourceScriptMapping implements DebuggerSourceMapping {
+   readonly debuggerModel: SDK.DebuggerModel.DebuggerModel;
+   #workspace: Workspace.Workspace.WorkspaceImpl;
+@@ -219,6 +232,19 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
+       // Try to resolve `//# sourceURL=` annotations relative to
+       // the base URL, according to the sourcemap specification.
+       url = SDK.SourceMapManager.SourceMapManager.resolveRelativeSourceURL(script.debuggerModel.target(), url);
++
++      // `//# sourceURL=` annotations are fully controlled by the page, so don't let
++      // them impersonate a resource of a different origin (b/553931271).
++      if (!this.#isTrustworthySourceURL(script, url)) {
++        return;
++      }
++
++      // Don't let a synthetic source evict the `UISourceCode` of a script that was
++      // actually fetched from the network under the same URL.
++      const previousUISourceCode = this.project(script).uiSourceCodeForURL(url);
++      if (previousUISourceCode && !NetworkProject.isSourceURLSynthesized(previousUISourceCode)) {
++        return;
++      }
+     } else {
+       // Ignore inline <script>s without `//# sourceURL` annotation here.
+       if (script.isInlineScript()) {
+@@ -247,6 +273,9 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
+     // Create UISourceCode.
+     const originalContentProvider = script.originalContentProvider();
+     const uiSourceCode = project.createUISourceCode(url, originalContentProvider.contentType());
++    if (script.hasSourceURL) {
++      NetworkProject.setSourceURLSynthesized(uiSourceCode);
++    }
+     NetworkProject.setInitialFrameAttribution(uiSourceCode, script.frameId);
+     const metadata = metadataForURL(this.debuggerModel.target(), script.frameId, url);
+ 
+@@ -260,6 +289,39 @@ export class ResourceScriptMapping implements DebuggerSourceMapping {
+     void this.debuggerWorkspaceBinding.updateLocations(script);
+   }
+ 
++  /**
++   * Whether the (already resolved) `//# sourceURL=` annotation `url` of `script` may
++   * be used as-is.
++   *
++   * Only `http(s)` URLs can collide with genuine network resources, so an origin is
++   * only enforced for those. Annotations using other schemes (e.g. `webpack-internal://`,
++   * `snippet://` or `chrome-extension://` for content scripts) cannot impersonate a
++   * network resource and are always accepted.
++   *
++   * The origin of the script's frame is authoritative. For targets that don't have a
++   * frame (e.g. workers) we fall back to the inspected URL of the target (or of its
++   * closest ancestor that has one). If no origin can be established at all, the
++   * annotation is rejected, since we cannot rule out that it spoofs another origin.
++   */
++  #isTrustworthySourceURL(script: SDK.Script.Script, url: Platform.DevToolsPath.UrlString): boolean {
++    if (script.isContentScript()) {
++      return true;
++    }
++    const parsedURL = Common.ParsedURL.ParsedURL.fromString(url);
++    if (!parsedURL || !['http', 'https'].includes(parsedURL.scheme)) {
++      return true;
++    }
++    const target = script.debuggerModel.target();
++    const frame = script.frameId ?
++        target.model(SDK.ResourceTreeModel.ResourceTreeModel)?.frameForId(script.frameId) ?? null :
++        null;
++    const securityOrigin = frame ? frame.securityOrigin() : inspectedSecurityOrigin(target);
++    if (!securityOrigin) {
++      return false;
++    }
++    return SDK.SecurityOrigin.SecurityOrigin.create(url).isSameOriginWith(securityOrigin);
++  }
++
+   scriptFile(uiSourceCode: Workspace.UISourceCode.UISourceCode): ResourceScriptFile|null {
+     return this.#uiSourceCodeToScriptFile.get(uiSourceCode) || null;
+   }
+diff --git a/front_end/models/persistence/NetworkPersistenceManager.ts b/front_end/models/persistence/NetworkPersistenceManager.ts
+index fb1f4abd66c1f42b540f5bbc319909bad7f0b10b..af14b900efa1fc2270a17fcbefaf1850b4f3bdd1 100644
+--- a/front_end/models/persistence/NetworkPersistenceManager.ts
++++ b/front_end/models/persistence/NetworkPersistenceManager.ts
+@@ -9,6 +9,7 @@ import * as Root from '../../core/root/root.js';
+ import * as SDK from '../../core/sdk/sdk.js';
+ import * as TextUtils from '../../core/text_utils/text_utils.js';
+ import * as Protocol from '../../generated/protocol.js';
++import * as Bindings from '../bindings/bindings.js';
+ import * as Breakpoints from '../breakpoints/breakpoints.js';
+ import * as Workspace from '../workspace/workspace.js';
+ 
+@@ -404,8 +405,32 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+   }
+ 
+   isUISourceCodeOverridable(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
+-    return uiSourceCode.project().type() === Workspace.Workspace.projectTypes.Network &&
+-        !NetworkPersistenceManager.isForbiddenNetworkUrl(uiSourceCode.url());
++    if (uiSourceCode.project().type() !== Workspace.Workspace.projectTypes.Network) {
++      return false;
++    }
++    if (NetworkPersistenceManager.isForbiddenNetworkUrl(uiSourceCode.url())) {
++      return false;
++    }
++    // A `//# sourceURL=` annotation is fully controlled by the page and doesn't refer
++    // to an actual network resource, so there is nothing to override here. Persisting
++    // it would poison the overrides folder with a file that masquerades as a genuine
++    // resource (b/553931271).
++    if (Bindings.NetworkProject.NetworkProject.isSourceURLSynthesized(uiSourceCode)) {
++      return false;
++    }
++    return true;
++  }
++
++  /**
++   * Whether the contents of `uiSourceCode` may be written into the overrides folder.
++   *
++   * Sources that originate from a source map are overridable in the sense that the
++   * deployed resource they are mapped from can be overridden (see
++   * `PersistenceActions`), but their own URL and content are page controlled and
++   * must never be persisted themselves (b/553931271).
++   */
++  #canPersistUISourceCodeAsOverride(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
++    return this.isUISourceCodeOverridable(uiSourceCode) && !uiSourceCode.contentType().isFromSourceMap();
+   }
+ 
+   #isUISourceCodeAlreadyOverridden(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
+@@ -418,11 +443,14 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+   }
+ 
+   #canSaveUISourceCodeForOverrides(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
+-    return this.#active && this.isUISourceCodeOverridable(uiSourceCode) &&
++    return this.#active && this.#canPersistUISourceCodeAsOverride(uiSourceCode) &&
+         !this.#isUISourceCodeAlreadyOverridden(uiSourceCode);
+   }
+ 
+   async setupAndStartLocalOverrides(uiSourceCode: Workspace.UISourceCode.UISourceCode): Promise<boolean> {
++    if (!this.#canPersistUISourceCodeAsOverride(uiSourceCode)) {
++      return false;
++    }
+     // No overrides folder, set it up
+     if (this.#shouldPromptSaveForOverridesDialog(uiSourceCode)) {
+       Host.userMetrics.actionTaken(Host.UserMetrics.Action.OverrideContentContextMenuSetup);
+diff --git a/test/e2e/console/console-errors.test.ts b/test/e2e/console/console-errors.test.ts
+index a7535f65cf70a92b62aa1191728e8fb696b5bbf4..fb311e291ea789670eaaf56b946739983482cf00 100644
+--- a/test/e2e/console/console-errors.test.ts
++++ b/test/e2e/console/console-errors.test.ts
+@@ -143,7 +143,9 @@ performActions @ resource-errors.html:8
+     await navigateToConsoleTab(devToolsPage);
+     await inspectedPage.evaluate(() => {
+       try {
+-        eval('function syntaxErrorDemo() { const class = 1; } \n//# sourceURL=http://example.com/buggy-script.js');
++        // Note: the `//# sourceURL` must be same-origin with the inspected page, since
++        // cross-origin annotations are ignored to prevent URL spoofing (b/553931271).
++        eval('function syntaxErrorDemo() { const class = 1; } \n//# sourceURL=buggy-script.js');
+       } catch (e) {
+         console.error(e);
+       }

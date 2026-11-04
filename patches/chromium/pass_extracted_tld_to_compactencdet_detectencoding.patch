@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Wed, 28 Oct 2026 23:35:25 -0700
+Subject: Pass extracted TLD to CompactEncDet::DetectEncoding()
+
+Previously, DetectTextEncoding() passed the full URL string from
+hint_url.GetString() as the third argument (url_hint) to
+CompactEncDet::DetectEncoding(). Because CompactEncDet::ExtractTLD()
+does not strip userinfo ("user:pass@") when parsing a URL, a colon in
+the userinfo (e.g. "http://a.jp:x@example.com/") caused ExtractTLD()
+to treat the username as the host and extract a spoofed TLD hint.
+
+The third argument of CompactEncDet::DetectEncoding() accepts either a
+full URL or a bare top-level domain name (TLD). Extract the TLD from
+hint_url.Host() in DetectTextEncoding() and pass only the TLD string
+to avoid URL parser differentials.
+
+Fixed: 578671521
+Change-Id: Iaa37ffdbc310f9962e585e293c9e533e948610a0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8677340
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Auto-Submit: Kent Tamura <tkent@chromium.org>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729995}
+
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index a722ba4a5eb7e6970c6e036102c13a0f906a97cc..31800dac90f5abe085a67c7ee011f543f856cf50 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -6411,6 +6411,11 @@
+       name: "TextEmphasisPositionAuto",
+       status: "experimental",
+     },
++    {
++      // https://crbug.com/578671521
++      name: "TextEncodingDetectorTldHint",
++      status: "stable",
++    },
+     {
+       name: "TextEmphasisPunctuationExceptions",
+       status: "stable"
+diff --git a/third_party/blink/renderer/platform/text/text_encoding_detector.cc b/third_party/blink/renderer/platform/text/text_encoding_detector.cc
+index 1450810ac1f920675b506f2ad5962a30051256e8..dcb93244735468b296f8ce3af9a41ab1d1043602 100644
+--- a/third_party/blink/renderer/platform/text/text_encoding_detector.cc
++++ b/third_party/blink/renderer/platform/text/text_encoding_detector.cc
+@@ -30,9 +30,14 @@
+ 
+ #include "third_party/blink/renderer/platform/text/text_encoding_detector.h"
+ 
++#include <algorithm>
++#include <string>
++
+ #include "base/numerics/safe_conversions.h"
+ #include "build/build_config.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
++#include "third_party/blink/renderer/platform/wtf/text/string_view.h"
+ #include "third_party/blink/renderer/platform/wtf/text/text_encoding.h"
+ #include "third_party/ced/src/compact_enc_det/compact_enc_det.h"
+ 
+@@ -60,12 +65,25 @@ bool DetectTextEncoding(base::span<const uint8_t> bytes,
+   Language language = UNKNOWN_LANGUAGE;
+   if (hint_url.Protocol() == "file")
+     LanguageFromCode(hint_user_language, &language);
++
++  // crbug.com/578671521: We'd like to pass only TLD rather than the full URL to
++  // avoid spoofing.
++  std::string url_or_tld_hint;
++  if (RuntimeEnabledFeatures::TextEncodingDetectorTldHintEnabled()) {
++    StringView host = hint_url.Host();
++    if (wtf_size_t dot_index = host.rfind('.'); dot_index != kNotFound) {
++      url_or_tld_hint = host.substr(dot_index + 1).Utf8();
++    }
++  } else {
++    url_or_tld_hint = hint_url.GetString().Ascii();
++  }
++
+   int consumed_bytes;
+   bool is_reliable;
+   auto chars = base::as_chars(bytes);
+   Encoding encoding = CompactEncDet::DetectEncoding(
+       chars.data(), base::checked_cast<int>(chars.size()),
+-      hint_url.GetString().Ascii().c_str(), nullptr, nullptr,
++      url_or_tld_hint.c_str(), nullptr, nullptr,
+       EncodingNameAliasToEncoding(hint_encoding_name), language,
+       CompactEncDet::WEB_CORPUS,
+       false,  // Include 7-bit encodings to detect ISO-2022-JP
+diff --git a/third_party/blink/renderer/platform/text/text_encoding_detector_test.cc b/third_party/blink/renderer/platform/text/text_encoding_detector_test.cc
+index be117647e9d10e6d8060e936a3630430a95ed1c6..26342c715d2db3cef519daab8ad7832dacd9e641 100644
+--- a/third_party/blink/renderer/platform/text/text_encoding_detector_test.cc
++++ b/third_party/blink/renderer/platform/text/text_encoding_detector_test.cc
+@@ -66,6 +66,13 @@ TEST(TextEncodingDetectorTest, UrlHintHelpsEucJp) {
+   EXPECT_TRUE(result);
+   EXPECT_EQ(TextEncoding("EUC-JP"), encoding)
+       << "With URL hint including '.jp', it's detected as EUC-JP";
++
++  KURL url_with_userinfo("http://a.jp:x@example.com/");
++  result = DetectTextEncoding(base::as_byte_span(eucjp_bytes), nullptr,
++                              url_with_userinfo, nullptr, &encoding);
++  EXPECT_TRUE(result);
++  EXPECT_EQ(TextEncoding("GBK"), encoding)
++      << "Userinfo in URL should not spoof the TLD hint";
+ }
+ 
+ TEST(TextEncodingDetectorTest, LanguageHintHelpsEucJp) {

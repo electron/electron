@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 5 Oct 2026 21:50:32 -0700
+Subject: Don't retry ORB-blocked media range requests
+
+An ORB block is deterministic for a given request, so retrying it in
+ResourceMultiBufferDataProvider::DidFail() can never succeed. Fail
+immediately instead.
+
+Adds a regression test at a non-zero position (where transient
+failures are normally retried) and a contrasting test confirming that
+transient errors still retry.
+
+Fixed: 568972975
+Change-Id: Id2064bd544b5c8b3f938840aff9ae20ed15ce1cd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8520759
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Thomas Guilbert <tguilbert@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1711956}
+
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 36edb26fe04a4096d5e72f6039a58acc9592c3b3..0b424f6976476ed2d25bf60c1d73681b46767a9d 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -526,6 +526,16 @@ void ResourceMultiBufferDataProvider::DidFail(const WebURLError& error) {
+   DCHECK(active_loader_.get());
+   active_loader_.reset();
+ 
++  // ORB only blocks cross-origin no-cors responses, which are opaque. Record
++  // this so that the failure is not distinguishable from other opaque
++  // failures (e.g. via error messages exposed by the media element). An ORB
++  // block is also deterministic, so fail immediately rather than retrying.
++  if (error.reason() == net::ERR_BLOCKED_BY_ORB) {
++    url_data_->set_is_cors_cross_origin(true);
++    url_data_->Fail();
++    return;  // "this" may be deleted now.
++  }
++
+   if (url_data_->url_index() && retries_ < kMaxRetries && pos_ != 0) {
+     retries_++;
+     task_runner_->PostDelayedTask(

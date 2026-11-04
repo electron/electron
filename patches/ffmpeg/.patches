@@ -1,1 +1,4 @@
 link_with_loader_path.patch
+avformat_mov_keep_frag_index_current_on_its_fragment_in.patch
+avcodec_h264_slice_reset_next_output_pic.patch
+avformat_mov_zero_uninitialized_tts_data_realloc_slack.patch

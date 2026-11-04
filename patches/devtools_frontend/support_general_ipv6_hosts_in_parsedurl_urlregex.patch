@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Leese <leese@chromium.org>
+Date: Mon, 12 Oct 2026 09:05:40 -0700
+Subject: Support general IPv6 hosts in ParsedURL.urlRegex()
+
+Previously, hostRegex in ParsedURL.urlRegex() only matched `[::]` and
+`[::\d]` IPv6 literals. Because NetworkPersistenceManager.isForbiddenNetworkUrl
+fails closed when ParsedURL.fromString returns null, valid URLs with
+other IPv6 host literals (such as `http://[2001:db8::1]/`) were treated
+as forbidden for Local Overrides.
+
+Update hostRegex in ParsedURL.urlRegex() to match general bracketed IPv6
+literals (`\[[0-9a-fA-F:.]*:[0-9a-fA-F:.]*\]`) and add unit tests.
+
+Bug: 562233597, 568226161
+Change-Id: I791730c1d2391a9da044837ef6aac2d5c80b58ef
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8557919
+Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+Commit-Queue: Eric Leese <leese@chromium.org>
+Auto-Submit: Eric Leese <leese@chromium.org>
+
+diff --git a/front_end/core/common/ParsedURL.test.ts b/front_end/core/common/ParsedURL.test.ts
+index ff7dc946b34fc627fccd175521375d25a1e2cafc..d9d228ffc2bed2aad8206ba9d59d7c9f230ed885 100644
+--- a/front_end/core/common/ParsedURL.test.ts
++++ b/front_end/core/common/ParsedURL.test.ts
+@@ -93,6 +93,15 @@ describe('Parsed URL', () => {
+     assert.strictEqual(parsedUrl.lastPathComponent, '', 'URL last path component is incorrect');
+   });
+ 
++  it('recognizes a valid IPv6 URL', () => {
++    const parsedUrl = new ParsedURL('http://[2001:db8::1]:8080/path/to/file.js');
++    assert.isTrue(parsedUrl.isValid, 'the URL should be valid');
++    assert.strictEqual(parsedUrl.scheme, 'http');
++    assert.strictEqual(parsedUrl.host, '[2001:db8::1]');
++    assert.strictEqual(parsedUrl.port, '8080');
++    assert.strictEqual(parsedUrl.path, '/path/to/file.js');
++  });
++
+   it('recognizes a valid blob URL', () => {
+     const parsedUrl = new ParsedURL('blob:http://www.example.com/');
+     assert.isTrue(parsedUrl.isValid, 'the URL should be valid');
+diff --git a/front_end/core/common/ParsedURL.ts b/front_end/core/common/ParsedURL.ts
+index 6e4bc441561e84d8393be88c4f8d0d2375c6898d..8583519f4e1cc83c7d1dfe5454a7fb8b60f3638a 100644
+--- a/front_end/core/common/ParsedURL.ts
++++ b/front_end/core/common/ParsedURL.ts
+@@ -275,7 +275,7 @@ export class ParsedURL {
+     // 8 - ?fragment
+     const schemeRegex = /([A-Za-z][A-Za-z0-9+.-]*):\/\//;
+     const userRegex = /(?:([A-Za-z0-9\-._~%!$&'()*+,;=:]*)@)?/;
+-    const hostRegex = /((?:\[::\d?\])|(?:[^\s\/:]*))/;
++    const hostRegex = /((?:\[[0-9a-fA-F:.]*:[0-9a-fA-F:.]*\])|(?:[^\s\/:]*))/;
+     const portRegex = /(?::([\d]+))?/;
+     const pathRegex = /(\/[^#?]*)?/;
+     const queryRegex = /(?:\?([^#]*))?/;

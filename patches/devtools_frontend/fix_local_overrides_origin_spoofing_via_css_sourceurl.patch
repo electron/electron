@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Leese <leese@chromium.org>
+Date: Thu, 1 Oct 2026 00:26:45 -0700
+Subject: Fix Local Overrides origin spoofing via CSS sourceURL
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes two issues that allowed a page to spoof local override paths in
+DevTools via a crafted /*# sourceURL=... */ comment in a <style> tag:
+
+1. StylesSourceMapping did not call NetworkProject.setSourceURLSynthesized
+   on UISourceCodes created from stylesheet headers with hasSourceURL,
+   allowing "Override content" to remain enabled in the context menu for
+   synthetic CSS sourceURLs.
+
+2. NetworkPersistenceManager.isForbiddenNetworkUrl returned false when
+   ParsedURL.fromString failed to parse an un-normalized URL (such as
+   "http://example.com /evil.css"), failing open instead of closed while
+   encodedPathFromUrl still extracted a host/path from the string.
+
+Also updates unit tests that passed schemeless URLs to
+encodedPathFromUrl, and updates OverridesHelpers.createWorkspaceProject
+to construct local file:/// override URLs directly from the file
+relative override path rather than passing schemeless/forbidden paths
+through fileUrlFromNetworkUrl.
+
+Bug: 562233597
+Change-Id: Icc115f33c5b2a3295a32c3b223940f26492d044b
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8481965
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Commit-Queue: Eric Leese <leese@chromium.org>
+
+diff --git a/front_end/models/bindings/StylesSourceMapping.ts b/front_end/models/bindings/StylesSourceMapping.ts
+index 3e860f45af83962fb691eebc0f542ad77ad5c6ad..3268123e7e7ab47499bd5b30c8a243d23c2f6063 100644
+--- a/front_end/models/bindings/StylesSourceMapping.ts
++++ b/front_end/models/bindings/StylesSourceMapping.ts
+@@ -176,6 +176,9 @@ export class StyleFile implements TextUtils.ContentProvider.ContentProvider {
+     this.uiSourceCode = this.#project.createUISourceCode(url, header.contentType());
+     uiSourceCodeToStyleMap.set(this.uiSourceCode, this);
+     NetworkProject.setInitialFrameAttribution(this.uiSourceCode, header.frameId);
++    if (header.hasSourceURL) {
++      NetworkProject.setSourceURLSynthesized(this.uiSourceCode);
++    }
+     this.#project.addUISourceCodeWithProvider(this.uiSourceCode, this, metadata, 'text/css');
+ 
+     this.#eventListeners = [
+diff --git a/front_end/models/persistence/NetworkPersistenceManager.ts b/front_end/models/persistence/NetworkPersistenceManager.ts
+index af14b900efa1fc2270a17fcbefaf1850b4f3bdd1..a498b83268323711e2f05dafa10c6ba3cbd932f3 100644
+--- a/front_end/models/persistence/NetworkPersistenceManager.ts
++++ b/front_end/models/persistence/NetworkPersistenceManager.ts
+@@ -537,9 +537,13 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+   }
+ 
+   static isForbiddenNetworkUrl(urlString: Platform.DevToolsPath.UrlString): boolean {
++    const trimmedUrl = urlString.trim().toLowerCase();
++    if (trimmedUrl.startsWith('chrome:')) {
++      return true;
++    }
+     const url = Common.ParsedURL.ParsedURL.fromString(urlString);
+     if (!url) {
+-      return false;
++      return true;
+     }
+     return url.scheme === 'chrome' || forbiddenUrls.includes(url.host);
+   }
+diff --git a/front_end/testing/OverridesHelpers.ts b/front_end/testing/OverridesHelpers.ts
+index 955988aad5fec8ad8ab4c6766d658415007a22a7..7c3994d87b7ca0811b5beeb1a0e535390380d34a 100644
+--- a/front_end/testing/OverridesHelpers.ts
++++ b/front_end/testing/OverridesHelpers.ts
+@@ -69,8 +69,13 @@ export async function createWorkspaceProject(
+   await networkPersistenceManager.setProject(mockProject as Workspace.Workspace.Project);
+ 
+   for (const file of files) {
+-    const url = urlString`${file.path.concat(file.name)}`;
+-    const fileUrl = networkPersistenceManager.fileUrlFromNetworkUrl(url, true);
++    const initialEncodedPath = file.path.concat(file.name) as Platform.DevToolsPath.EncodedPathString;
++    const encodedPathParts =
++        Persistence.NetworkPersistenceManager.NetworkPersistenceManager.encodeEncodedPathToLocalPathParts(
++            initialEncodedPath);
++    const rawPath = Common.ParsedURL.ParsedURL.join(encodedPathParts as Platform.DevToolsPath.RawPathString[], '/');
++    const encodedPath = Common.ParsedURL.ParsedURL.rawPathToEncodedPathString(rawPath);
++    const fileUrl = Common.ParsedURL.ParsedURL.concatenate(baseUrl, '/', encodedPath);
+ 
+     uiSourceCodes.set(fileUrl, {
+       requestContentData: () =>

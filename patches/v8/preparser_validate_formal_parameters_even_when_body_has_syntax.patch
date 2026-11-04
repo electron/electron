@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Thu, 8 Oct 2026 12:07:00 +0200
+Subject: [preparser] Validate formal parameters even when body has syntax
+ error
+
+Previously, `PreParser::PreParseFunction` skipped propagating
+`inner_scope->language_mode()` to `function_scope` and skipped calling
+`ValidateFormalParameters` whenever the function body had a syntax
+error.
+
+As a result, lazy functions like
+`function f(eval) { "use strict"; break; }`,
+`function f(a, a) { "use strict"; break; }`, and
+`let f = (eval, a = 1) => { "use strict"; };` reported the later body
+error instead of the earlier formal parameter error, disagreeing with
+eager parsing (`ParserBase::ParseFunctionBody`).
+
+Always propagate `inner_scope->language_mode()` and run
+`ValidateFormalParameters` in `PreParser::PreParseFunction` even when
+the body has an error.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I17c2a8b65472eb5857e6fdcddad8bbcbc22387d9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8539006
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110452}
+(cherry picked from commit a334f98e05856e7fc2d521e56bd8eb86f1260e66)
+
+diff --git a/src/parsing/preparser.cc b/src/parsing/preparser.cc
+index 03bc874a30ceb0420d1da3260189a8d4df289f52..326f1f61b79319e7605f2669d37c4d851c17f2b5 100644
+--- a/src/parsing/preparser.cc
++++ b/src/parsing/preparser.cc
+@@ -161,20 +161,21 @@ PreParser::PreParseResult PreParser::PreParseFunction(
+   bool allow_duplicate_parameters = false;
+   CheckConflictingVarDeclarations(inner_scope);
+ 
+-  if (!has_error()) {
+-    if (formals.is_simple) {
+-      if (is_sloppy(function_scope->language_mode())) {
+-        function_scope->HoistSloppyBlockFunctions(nullptr);
+-      }
++  if (formals.is_simple) {
++    if (!has_error() && is_sloppy(function_scope->language_mode())) {
++      function_scope->HoistSloppyBlockFunctions(nullptr);
++    }
+ 
+-      allow_duplicate_parameters =
+-          is_sloppy(function_scope->language_mode()) && !IsConciseMethod(kind);
+-    } else {
++    allow_duplicate_parameters =
++        is_sloppy(function_scope->language_mode()) && !IsConciseMethod(kind);
++  } else {
++    SetLanguageMode(function_scope, inner_scope->language_mode());
++
++    if (!has_error()) {
+       if (is_sloppy(inner_scope->language_mode())) {
+         inner_scope->HoistSloppyBlockFunctions(nullptr);
+       }
+ 
+-      SetLanguageMode(function_scope, inner_scope->language_mode());
+       inner_scope->set_end_position(scanner()->peek_location().end_pos);
+       if (inner_scope->FinalizeBlockScope() != nullptr) {
+         const AstRawString* conflict = inner_scope->FindVariableDeclaredIn(
+@@ -190,7 +191,14 @@ PreParser::PreParseResult PreParser::PreParseFunction(
+ 
+   if (stack_overflow()) {
+     return kPreParseStackOverflow;
+-  } else if (pending_error_handler()->has_error_unidentifiable_by_preparser()) {
++  }
++  if (!IsArrowFunction(kind)) {
++    // Validate parameter names. We can do this only after parsing the
++    // function, since the function can declare itself strict.
++    ValidateFormalParameters(language_mode(), formals,
++                             allow_duplicate_parameters);
++  }
++  if (pending_error_handler()->has_error_unidentifiable_by_preparser()) {
+     return kPreParseNotIdentifiableError;
+   } else if (has_error()) {
+     DCHECK(pending_error_handler()->has_pending_error());
+@@ -198,18 +206,6 @@ PreParser::PreParseResult PreParser::PreParseFunction(
+     DCHECK_EQ(Token::kRightBrace, scanner()->peek());
+ 
+     if (!IsArrowFunction(kind)) {
+-      // Validate parameter names. We can do this only after parsing the
+-      // function, since the function can declare itself strict.
+-      ValidateFormalParameters(language_mode(), formals,
+-                               allow_duplicate_parameters);
+-      if (has_error()) {
+-        if (pending_error_handler()->has_error_unidentifiable_by_preparser()) {
+-          return kPreParseNotIdentifiableError;
+-        } else {
+-          return kPreParseSuccess;
+-        }
+-      }
+-
+       // Declare arguments after parsing the function since lexical
+       // 'arguments' masks the arguments object. Declare arguments before
+       // declaring the function var since the arguments object masks 'function
+diff --git a/test/mjsunit/es6/regress-preparser-validate-formals-on-body-error.js b/test/mjsunit/es6/regress-preparser-validate-formals-on-body-error.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a119b1a9b47d18d6831268c366a4fc4e6f59845e
+--- /dev/null
++++ b/test/mjsunit/es6/regress-preparser-validate-formals-on-body-error.js
+@@ -0,0 +1,28 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Lazy functions must validate formal parameters and propagate body strict
++// mode even when the function body has a syntax error, matching eager
++// parsing and reporting the earlier parameter error first.
++
++assertThrows(
++    () => eval('function f(eval) { "use strict"; break; }'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval('function f(a, a) { "use strict"; break; }'),
++    SyntaxError,
++    "Duplicate parameter name not allowed in this context");
++assertThrows(
++    () => eval('function f(eval, a = 1) { "use strict"; }'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval('let f = (eval, a = 1) => { "use strict"; };'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval('let f = (eval) => { "use strict"; break; };'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");

@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Wed, 30 Sep 2026 14:41:23 -0700
+Subject: Avoid const_cast when repairing malformed JPEG input data
+
+LibjpegScanlineDecoder previously used a const_cast in
+GetWritableSrcData() to mutate the input span in place when repairing
+missing trailers or corrupted scanner headers.
+
+Avoid mutating the caller's source span by implementing copy-on-write
+in GetWritableSrcData(). When repair is necessary, allocate and populate
+an owned DataVector buffer member called `corrected_src_data_`.
+
+-- Remove redundant DCHECK() give checked span usage.
+
+Fixed: 567106301
+Change-Id: Icdefd8592b0600333a0b16ef9ecba3329310c365
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/159210
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/core/fxcodec/jpeg/jpegmodule.cpp b/core/fxcodec/jpeg/jpegmodule.cpp
+index 06733431f021554c2958ab368071e40a8e7c24f9..3a3a074cb4ee04b9714e685aff707668854465c3 100644
+--- a/core/fxcodec/jpeg/jpegmodule.cpp
++++ b/core/fxcodec/jpeg/jpegmodule.cpp
+@@ -130,7 +130,7 @@ class JpegDecoder final : public ScanlineDecoder {
+   // Patch up the in-memory JPEG header for known bad JPEGs.
+   void PatchUpKnownBadHeaderWithInvalidHeight(size_t dimension_offset);
+ 
+-  // Patch up the JPEG trailer, even if it is correct.
++  // Patch up the JPEG trailer if missing.
+   void PatchUpTrailer();
+ 
+   pdfium::span<uint8_t> GetWritableSrcData();
+@@ -141,6 +141,7 @@ class JpegDecoder final : public ScanlineDecoder {
+   static constexpr size_t kSofMarkerByteOffset = 5;
+ 
+   JpegCommon common_ = {};
++  DataVector<uint8_t> corrected_src_data_;  // Must outlive `src_span_`.
+   pdfium::raw_span<const uint8_t> src_span_;
+   DataVector<uint8_t> scanline_buf_;
+   bool decompress_created_ = false;
+@@ -401,22 +402,30 @@ bool JpegDecoder::IsSofSegment(size_t marker_offset) const {
+ 
+ void JpegDecoder::PatchUpKnownBadHeaderWithInvalidHeight(
+     size_t dimension_offset) {
+-  DCHECK(src_span_.size() > dimension_offset + 1u);
+-  auto pData = GetWritableSrcData().subspan(dimension_offset);
+-  pData[0] = (orig_height_ >> 8) & 0xff;
+-  pData[1] = orig_height_ & 0xff;
++  auto corrected_span = GetWritableSrcData().subspan(dimension_offset);
++  corrected_span[0] = (orig_height_ >> 8) & 0xff;
++  corrected_span[1] = orig_height_ & 0xff;
+ }
+ 
+ void JpegDecoder::PatchUpTrailer() {
+-  auto pData = GetWritableSrcData();
+-  pData[src_span_.size() - 2] = 0xff;
+-  pData[src_span_.size() - 1] = 0xd9;
++  if (src_span_.size() < 2) {
++    return;
++  }
++  auto trailer_span = src_span_.last<2>();
++  if (trailer_span[0] == 0xff && trailer_span[1] == 0xd9) {
++    return;
++  }
++  auto corrected_trailer_span = GetWritableSrcData().last<2>();
++  corrected_trailer_span[0] = 0xff;
++  corrected_trailer_span[1] = 0xd9;
+ }
+ 
+ pdfium::span<uint8_t> JpegDecoder::GetWritableSrcData() {
+-  // SAFETY: const_cast<> doesn't change size.
+-  return UNSAFE_BUFFERS(
+-      pdfium::span(const_cast<uint8_t*>(src_span_.data()), src_span_.size()));
++  if (corrected_src_data_.empty()) {
++    corrected_src_data_.assign(src_span_.begin(), src_span_.end());
++    src_span_ = corrected_src_data_;
++  }
++  return corrected_src_data_;
+ }
+ 
+ }  // namespace

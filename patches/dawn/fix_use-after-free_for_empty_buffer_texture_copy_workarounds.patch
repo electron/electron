@@ -1,0 +1,403 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hao Li <hao.x.li@intel.com>
+Date: Sun, 18 Oct 2026 20:37:33 -0700
+Subject: Fix use-after-free for empty buffer/texture copy workarounds
+
+Empty buffer-texture copies (zero-sized copy extents) skipped command
+recording within certain workaround paths (e.g., blit-to-depth/stencil,
+oversized-row split). Because mTopLevelBuffers and mTopLevelTextures
+held raw pointers, and the only Ref keeping them alive was the recorded
+command, skipping recording left these pointers dangling, causing a UAF
+in QueueBase::ValidateSubmit.
+
+Add an early-out for empty copies in APICopyBufferToTexture,
+APICopyTextureToBuffer, and APICopyTextureToTexture. They now record the
+plain copy command and return before any workaround runs.
+- Add DAWN_CHECK(!copyExtent.IsEmpty()) to workarounds as a release-mode
+  backstop.
+- Add regression tests for empty B2T and T2B copies.
+
+Bug: 571648522
+Change-Id: I88bd7f82df6a27a39c65747eb49a768e4f00f13f
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/350415
+Commit-Queue: Li, Hao X <hao.x.li@intel.com>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+
+diff --git a/src/dawn/native/BlitBufferToDepthStencil.cpp b/src/dawn/native/BlitBufferToDepthStencil.cpp
+index aa77726685c82ae7f00a8577d560dc498066459f..5358d543d3bb20ceaabfe8fd36e5c14906dc1b30 100644
+--- a/src/dawn/native/BlitBufferToDepthStencil.cpp
++++ b/src/dawn/native/BlitBufferToDepthStencil.cpp
+@@ -266,6 +266,7 @@ MaybeError BlitRG8ToDepth16Unorm(DeviceBase* device,
+     DAWN_ASSERT(device->IsLockedByCurrentThreadIfNeeded());
+     DAWN_ASSERT(dst.texture->GetFormat().format == wgpu::TextureFormat::Depth16Unorm);
+     DAWN_ASSERT(dataTexture->GetFormat().format == wgpu::TextureFormat::RG8Uint);
++    DAWN_CHECK(!copyExtent.IsEmpty());
+ 
+     // Allow internal usages since we need to use the destination
+     // as a render attachment.
+@@ -364,6 +365,8 @@ MaybeError BlitR8ToStencil(DeviceBase* device,
+     DAWN_ASSERT(device->IsLockedByCurrentThreadIfNeeded());
+     const Format& format = dst.texture->GetFormat();
+     DAWN_ASSERT(dst.aspect == Aspect::Stencil);
++    DAWN_CHECK(copyExtent.width != 0 && copyExtent.height != 0 &&
++               copyExtent.depthOrArrayLayers != 0);
+ 
+     // Allow internal usages since we need to use the destination
+     // as a render attachment.
+diff --git a/src/dawn/native/BlitTextureToBuffer.cpp b/src/dawn/native/BlitTextureToBuffer.cpp
+index 0323727c76e174599d72bc7d28a001006a001a2c..80596dd5acc15ce80fd592a6abff429dcdc76586 100644
+--- a/src/dawn/native/BlitTextureToBuffer.cpp
++++ b/src/dawn/native/BlitTextureToBuffer.cpp
+@@ -1522,6 +1522,7 @@ MaybeError BlitTextureToBuffer(DeviceBase* device,
+                                const BufferCopy& dst,
+                                const BlockExtent3D& copyExtent) {
+     DAWN_ASSERT(!src.texture->GetFormat().isCompressed);
++    DAWN_CHECK(!copyExtent.IsEmpty());
+ 
+     wgpu::TextureViewDimension textureViewDimension;
+     {
+diff --git a/src/dawn/native/BufferTextureCopyOversizedRow.cpp b/src/dawn/native/BufferTextureCopyOversizedRow.cpp
+index 9d75fe128d2b7ce1c865d15d87ba3b3e97c54857..f5fbf5fb4b66e3ae113c86ce85319da9f75478e2 100644
+--- a/src/dawn/native/BufferTextureCopyOversizedRow.cpp
++++ b/src/dawn/native/BufferTextureCopyOversizedRow.cpp
+@@ -62,6 +62,7 @@ void SplitBufferTextureCopyByRow(const BufferCopy& bufferCopy,
+                                  const BlockExtent3D& copySize,
+                                  const TypedTexelBlockInfo& blockInfo,
+                                  Func&& func) {
++    DAWN_CHECK(!copySize.IsEmpty());
+     const BlockOrigin3D origin = blockInfo.ToBlock(textureCopy.origin);
+     const uint64_t bytesPerRow = blockInfo.ToBytes(bufferCopy.blocksPerRow);
+ 
+diff --git a/src/dawn/native/CommandEncoder.cpp b/src/dawn/native/CommandEncoder.cpp
+index 4b1efb6b7935a6dce8cfcde29e86cb62207fc3cf..5d1d4a48f54047c7ab76c3a2b2c2e73b759c0cee 100644
+--- a/src/dawn/native/CommandEncoder.cpp
++++ b/src/dawn/native/CommandEncoder.cpp
+@@ -1144,15 +1144,9 @@ MaybeError EncodeTimestampsToNanosecondsConversion(CommandEncoder* encoder,
+ 
+ bool ShouldUseTextureToBufferBlit(const TextureBase* texture,
+                                   const Format& format,
+-                                  const Aspect& aspect,
+-                                  const Extent3D& copySize) {
++                                  const Aspect& aspect) {
+     const DeviceBase* device = texture->GetDevice();
+ 
+-    // Noop copy, do not use blit.
+-    if (copySize.width == 0 || copySize.height == 0 || copySize.depthOrArrayLayers == 0) {
+-        return false;
+-    }
+-
+     // Snorm
+     if (format.IsSnorm() && device->IsToggleEnabled(Toggle::UseBlitForSnormTextureToBufferCopy)) {
+         return true;
+@@ -1887,6 +1881,26 @@ void CommandEncoder::APICopyBufferToTexture(const TexelCopyBufferInfo* source,
+             dst.mipLevel = destination.mipLevel;
+             dst.aspect = ConvertAspect(destination.texture->GetFormat(), destination.aspect);
+ 
++            BufferCopy src;
++            src.buffer = source->buffer;
++            src.offset = srcLayout.offset;
++            src.blocksPerRow = blockInfo.BytesToBlocks(srcLayout.bytesPerRow);
++            src.rowsPerImage = BlockCount{srcLayout.rowsPerImage};
++
++            // Early out for an empty copy to ensure that references are kept alive, otherwise
++            // workarounds may fail to do so if they encode 0 commands.
++            // TODO(https://crbug.com/491867541): Revisit once references are moved out of the
++            // command stream.
++            const BlockExtent3D blockCopySize = blockInfo.ToBlock(*copySize);
++            if (blockCopySize.IsEmpty()) {
++                CopyBufferToTextureCmd* copy =
++                    allocator->Allocate<CopyBufferToTextureCmd>(Command::CopyBufferToTexture);
++                copy->source = std::move(src);
++                copy->destination = std::move(dst);
++                copy->copySize = *copySize;
++                return {};
++            }
++
+             if (dst.aspect == Aspect::Depth &&
+                 GetDevice()->IsToggleEnabled(Toggle::UseBlitForBufferToDepthTextureCopy)) {
+                 // The below function might create new resources. Need to lock the Device.
+@@ -1899,8 +1913,9 @@ void CommandEncoder::APICopyBufferToTexture(const TexelCopyBufferInfo* source,
+                     "copying from %s to depth aspect of %s using blit workaround.", source->buffer,
+                     dst.texture.Get());
+                 return {};
+-            } else if (dst.aspect == Aspect::Stencil &&
+-                       GetDevice()->IsToggleEnabled(Toggle::UseBlitForBufferToStencilTextureCopy)) {
++            }
++            if (dst.aspect == Aspect::Stencil &&
++                GetDevice()->IsToggleEnabled(Toggle::UseBlitForBufferToStencilTextureCopy)) {
+                 // The below function might create new resources. Need to lock the Device.
+                 // TODO(crbug.com/dawn/1618): In future, all temp resources should be created at
+                 // Command Submit time, so the locking would be removed from here at that point.
+@@ -1911,8 +1926,9 @@ void CommandEncoder::APICopyBufferToTexture(const TexelCopyBufferInfo* source,
+                                  "copying from %s to stencil aspect of %s using blit workaround.",
+                                  source->buffer, dst.texture.Get());
+                 return {};
+-            } else if (GetDevice()->IsToggleEnabled(Toggle::UseBlitForB2T) &&
+-                       IsBufferToTextureBlitSupported(source->buffer, dst, *copySize)) {
++            }
++            if (GetDevice()->IsToggleEnabled(Toggle::UseBlitForB2T) &&
++                IsBufferToTextureBlitSupported(source->buffer, dst, *copySize)) {
+                 // This function might create new resources. Need to lock the Device.
+                 // TODO(crbug.com/dawn/1618): In future, all temp resources should be created at
+                 // Command Submit time, so the locking would be removed from here at that point.
+@@ -1924,14 +1940,6 @@ void CommandEncoder::APICopyBufferToTexture(const TexelCopyBufferInfo* source,
+ 
+                 return {};
+             }
+-
+-            BufferCopy src;
+-            src.buffer = source->buffer;
+-            src.offset = srcLayout.offset;
+-            src.blocksPerRow = blockInfo.BytesToBlocks(srcLayout.bytesPerRow);
+-            src.rowsPerImage = BlockCount{srcLayout.rowsPerImage};
+-
+-            const BlockExtent3D blockCopySize = blockInfo.ToBlock(*copySize);
+             if (NeedsBufferTextureCopySplitForOversizedRow(GetDevice(), src, blockInfo)) {
+                 SplitCopyBufferToTextureForOversizedRow(allocator, src, dst, blockCopySize,
+                                                         blockInfo);
+@@ -2001,37 +2009,11 @@ void CommandEncoder::APICopyTextureToBuffer(const TexelCopyTextureInfo* sourceOr
+             auto format = source.texture->GetFormat();
+             auto aspect = ConvertAspect(format, source.aspect);
+ 
+-            // Workaround to use compute pass to emulate texture to buffer copy
+-            if (ShouldUseTextureToBufferBlit(source.texture, format, aspect, *copySize)) {
+-                // This function might create new resources. Need to lock the Device.
+-                // TODO(crbug.com/dawn/1618): In future, all temp resources should be created at
+-                // Command Submit time, so the locking would be removed from here at that point.
+-                auto deviceGuard = GetDevice()->GetGuard();
+-
+-                TextureCopy src;
+-                src.texture = source.texture;
+-                src.origin = source.origin;
+-                src.mipLevel = source.mipLevel;
+-                src.aspect = aspect;
+-
+-                BufferCopy dst;
+-                dst.buffer = destination->buffer;
+-                dst.blocksPerRow = blockInfo.BytesToBlocks(dstLayout.bytesPerRow);
+-                dst.rowsPerImage = BlockCount{dstLayout.rowsPerImage};
+-                dst.offset = dstLayout.offset;
+-                DAWN_TRY_CONTEXT(
+-                    BlitTextureToBuffer(GetDevice(), this, src, dst, blockInfo.ToBlock(*copySize)),
+-                    "copying texture %s to %s using blit workaround.", src.texture.Get(),
+-                    destination->buffer);
+-
+-                return {};
+-            }
+-
+             TextureCopy src;
+             src.texture = source.texture;
+             src.origin = source.origin;
+             src.mipLevel = source.mipLevel;
+-            src.aspect = ConvertAspect(source.texture->GetFormat(), source.aspect);
++            src.aspect = aspect;
+ 
+             BufferCopy dst;
+             dst.buffer = destination->buffer;
+@@ -2039,7 +2021,32 @@ void CommandEncoder::APICopyTextureToBuffer(const TexelCopyTextureInfo* sourceOr
+             dst.blocksPerRow = blockInfo.BytesToBlocks(dstLayout.bytesPerRow);
+             dst.rowsPerImage = BlockCount{dstLayout.rowsPerImage};
+ 
++            // Same early out as for APICopyBufferToTexture above.
+             const BlockExtent3D blockCopySize = blockInfo.ToBlock(*copySize);
++            if (blockCopySize.IsEmpty()) {
++                CopyTextureToBufferCmd* t2b =
++                    allocator->Allocate<CopyTextureToBufferCmd>(Command::CopyTextureToBuffer);
++                t2b->source = std::move(src);
++                t2b->destination = std::move(dst);
++                t2b->copySize = *copySize;
++                return {};
++            }
++
++            // Workaround to use a compute pass to emulate a texture-to-buffer copy.
++            if (ShouldUseTextureToBufferBlit(source.texture, format, aspect)) {
++                // This function might create new resources. Need to lock the Device.
++                // TODO(crbug.com/dawn/1618): In future, all temp resources should be created at
++                // Command Submit time, so the locking would be removed from here at that point.
++                auto deviceGuard = GetDevice()->GetGuard();
++
++                DAWN_TRY_CONTEXT(BlitTextureToBuffer(GetDevice(), this, src, dst, blockCopySize),
++                                 "copying texture %s to %s using blit workaround.",
++                                 src.texture.Get(), destination->buffer);
++
++                return {};
++            }
++
++            // Workaround to split copies with oversized rows into per-row copies.
+             if (NeedsBufferTextureCopySplitForOversizedRow(GetDevice(), dst, blockInfo)) {
+                 SplitCopyTextureToBufferForOversizedRow(allocator, dst, src, blockCopySize,
+                                                         blockInfo);
+@@ -2118,6 +2125,17 @@ void CommandEncoder::APICopyTextureToTexture(const TexelCopyTextureInfo* sourceO
+             dst.mipLevel = destination.mipLevel;
+             dst.aspect = aspect;
+ 
++            // Same early out as for APICopyBufferToTexture above.
++            if (copySize->width == 0 || copySize->height == 0 ||
++                copySize->depthOrArrayLayers == 0) {
++                CopyTextureToTextureCmd* copy =
++                    allocator->Allocate<CopyTextureToTextureCmd>(Command::CopyTextureToTexture);
++                copy->source = std::move(src);
++                copy->destination = std::move(dst);
++                copy->copySize = *copySize;
++                return {};
++            }
++
+             // Emulate a T2T copy with a T2B copy and a B2T copy.
+             if (ShouldUseT2B2TForT2T(GetDevice(), src.texture->GetFormat(),
+                                      dst.texture->GetFormat())) {
+@@ -2153,7 +2171,6 @@ void CommandEncoder::APICopyTextureToTexture(const TexelCopyTextureInfo* sourceO
+                 (aspect & Aspect::Depth) &&
+                 GetDevice()->IsToggleEnabled(
+                     Toggle::UseBlitForDepthTextureToTextureCopyToNonzeroSubresource) &&
+-                copySize->depthOrArrayLayers > 0 &&
+                 (dst.mipLevel > 0 || dst.origin.z > TexelCount{0u} ||
+                  copySize->depthOrArrayLayers > 1);
+ 
+diff --git a/src/dawn/tests/unittests/validation/CopyCommandsValidationTests.cpp b/src/dawn/tests/unittests/validation/CopyCommandsValidationTests.cpp
+index e774343db704b5379664f54a21955165b61dd6d1..d90da9303cd0ada7e819690b937e77d055fd74b9 100644
+--- a/src/dawn/tests/unittests/validation/CopyCommandsValidationTests.cpp
++++ b/src/dawn/tests/unittests/validation/CopyCommandsValidationTests.cpp
+@@ -263,6 +263,143 @@ TEST_F(CopyCommandTest_UseBlitForDepthTextureToTextureCopyToNonzeroSubresource,
+     device.GetQueue().Submit(1, &commands);
+ }
+ 
++struct CopyCommandTest_BlitForBufferToDepthStencil : CopyCommandTest {
++    std::vector<const char*> GetEnabledToggles() override {
++        return {"use_blit_for_buffer_to_depth_texture_copy",
++                "use_blit_for_buffer_to_stencil_texture_copy"};
++    }
++};
++// Regression test for crbug.com/571648522. Checks that a B2T copy with zero layers to the
++// depth/stencil aspect of a texture doesn't crash during submit after its buffer and texture have
++// been released. Depth/stencil destinations must cover the whole width/height of the subresource,
++// but the layer count isn't restricted, so {width, height, 0} is a valid no-op copy that still
++// reaches the blit workaround.
++TEST_F(CopyCommandTest_BlitForBufferToDepthStencil, EmptyCopy_Depth) {
++    wgpu::Buffer buffer;
++    wgpu::Texture texture;
++    wgpu::CommandBuffer commands;
++    {
++        buffer = CreateBuffer(256, wgpu::BufferUsage::CopySrc);
++        texture = Create2DTexture(4, 4, 1, 1, wgpu::TextureFormat::Depth16Unorm,
++                                  wgpu::TextureUsage::CopyDst);
++
++        wgpu::TexelCopyBufferInfo bufferInfo = utils::CreateTexelCopyBufferInfo(buffer, 0, 256, 4);
++        wgpu::TexelCopyTextureInfo textureInfo = utils::CreateTexelCopyTextureInfo(texture, 0);
++
++        constexpr uint32_t layersToCopy = 0;  // Crucial for reproducing the crash
++        wgpu::Extent3D copySize = {4, 4, layersToCopy};
++
++        wgpu::CommandEncoder commandEncoder = device.CreateCommandEncoder();
++        commandEncoder.CopyBufferToTexture(&bufferInfo, &textureInfo, &copySize);
++        commands = commandEncoder.Finish();
++    }
++
++    buffer = nullptr;
++    texture = nullptr;
++
++    // This used to result in a UAF in QueueBase::ValidateSubmit accessing the deleted
++    // buffer/texture.
++    device.GetQueue().Submit(1, &commands);
++}
++
++TEST_F(CopyCommandTest_BlitForBufferToDepthStencil, EmptyCopy_Stencil) {
++    wgpu::Buffer buffer;
++    wgpu::Texture texture;
++    wgpu::CommandBuffer commands;
++    {
++        buffer = CreateBuffer(256, wgpu::BufferUsage::CopySrc);
++        texture =
++            Create2DTexture(4, 4, 1, 1, wgpu::TextureFormat::Stencil8, wgpu::TextureUsage::CopyDst);
++
++        wgpu::TexelCopyBufferInfo bufferInfo = utils::CreateTexelCopyBufferInfo(buffer, 0, 256, 4);
++        wgpu::TexelCopyTextureInfo textureInfo = utils::CreateTexelCopyTextureInfo(texture, 0);
++
++        constexpr uint32_t layersToCopy = 0;  // Crucial for reproducing the crash
++        wgpu::Extent3D copySize = {4, 4, layersToCopy};
++
++        wgpu::CommandEncoder commandEncoder = device.CreateCommandEncoder();
++        commandEncoder.CopyBufferToTexture(&bufferInfo, &textureInfo, &copySize);
++        commands = commandEncoder.Finish();
++    }
++
++    buffer = nullptr;
++    texture = nullptr;
++
++    // This used to result in a UAF in QueueBase::ValidateSubmit accessing the deleted
++    // buffer/texture.
++    device.GetQueue().Submit(1, &commands);
++}
++
++struct CopyCommandTest_SplitBufferTextureCopyForOversizedRow : CopyCommandTest {
++    std::vector<const char*> GetEnabledToggles() override {
++        return {"split_buffer_texture_copy_for_oversized_row"};
++    }
++};
++// Regression test for crbug.com/571648522. Checks that an empty B2T/T2B copy doesn't crash during
++// submit after its buffer and texture have been released. The crash reproduced with
++// split_buffer_texture_copy_for_oversized_row enabled: encode a 0-height copy with oversized
++// bytesPerRow, drop all buffer and texture refs to force their deletion, then submit.
++TEST_F(CopyCommandTest_SplitBufferTextureCopyForOversizedRow, EmptyCopy_B2T) {
++    constexpr uint32_t kOversizedBytesPerRow = 1u << 18;
++
++    wgpu::Buffer buffer;
++    wgpu::CommandBuffer commands;
++    {
++        buffer = CreateBuffer(256, wgpu::BufferUsage::CopySrc);
++        wgpu::Texture texture = Create2DTexture(4, 4, 1, 1, wgpu::TextureFormat::RGBA8Unorm,
++                                                wgpu::TextureUsage::CopyDst);
++
++        wgpu::TexelCopyBufferInfo bufferInfo = {};
++        bufferInfo.buffer = buffer;
++        bufferInfo.layout.bytesPerRow = kOversizedBytesPerRow;
++        wgpu::TexelCopyTextureInfo textureInfo = utils::CreateTexelCopyTextureInfo(texture, 0);
++
++        constexpr uint32_t heightToCopy = 0;  // Crucial for reproducing the crash
++        wgpu::Extent3D copySize = {4, heightToCopy, 1};
++
++        wgpu::CommandEncoder commandEncoder = device.CreateCommandEncoder();
++        commandEncoder.CopyBufferToTexture(&bufferInfo, &textureInfo, &copySize);
++        commands = commandEncoder.Finish();
++    }
++
++    buffer = nullptr;
++
++    // This used to result in a UAF in QueueBase::ValidateSubmit accessing the deleted buffer.
++    device.GetQueue().Submit(1, &commands);
++}
++
++TEST_F(CopyCommandTest_SplitBufferTextureCopyForOversizedRow, EmptyCopy_T2B) {
++    constexpr uint32_t kOversizedBytesPerRow = 1u << 18;
++
++    wgpu::Buffer buffer;
++    wgpu::Texture texture;
++    wgpu::CommandBuffer commands;
++    {
++        texture = Create2DTexture(4, 4, 1, 1, wgpu::TextureFormat::RGBA8Unorm,
++                                  wgpu::TextureUsage::CopySrc);
++        buffer = CreateBuffer(256, wgpu::BufferUsage::CopyDst);
++
++        wgpu::TexelCopyTextureInfo textureInfo = utils::CreateTexelCopyTextureInfo(texture, 0);
++        wgpu::TexelCopyBufferInfo bufferInfo = {};
++        bufferInfo.buffer = buffer;
++        bufferInfo.layout.bytesPerRow = kOversizedBytesPerRow;
++
++        constexpr uint32_t heightToCopy = 0;  // Crucial for reproducing the crash
++        wgpu::Extent3D copySize = {4, heightToCopy, 1};
++
++        wgpu::CommandEncoder commandEncoder = device.CreateCommandEncoder();
++        commandEncoder.CopyTextureToBuffer(&textureInfo, &bufferInfo, &copySize);
++        commands = commandEncoder.Finish();
++    }
++
++    buffer = nullptr;
++    texture = nullptr;
++
++    // This used to result in a UAF in QueueBase::ValidateSubmit accessing the deleted
++    // buffer/texture.
++    device.GetQueue().Submit(1, &commands);
++}
++
+ // Test copies between buffer and multiple array layers of an uncompressed texture
+ TEST_F(CopyCommandTest, CopyToMultipleArrayLayers) {
+     wgpu::Texture destination =

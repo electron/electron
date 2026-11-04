@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Nguyen <tungnh@chromium.org>
+Date: Tue, 6 Oct 2026 01:49:48 -0700
+Subject: Treat empty intersection target rects as not visible
+
+Remove the !latest_observation->GetGeometry().TargetRect().IsEmpty()
+condition in HTMLCapabilityElementBase::OnIntersectionChanged(). When
+an ancestor has a singular transform (such as scaleX(0), scaleY(0),
+scale(0), or rotateY(90deg)), IntersectionGeometry maps the element's
+border box to an empty target rect and reports isVisible() == false
+with intersectionRatio() == 1.0. Treating empty target rects as visible
+allowed zero-pixel capability elements to remain valid and activatable
+via keyboard or accesskey.
+
+Also set a non-zero default font size in capability and geolocation
+unit test fixtures so elements do not collapse to zero height in tests.
+
+TAG=agy
+CONV=9e4a7638-ea0b-46cd-ae59-30866a1799bd
+
+Fixed: 565092623
+Change-Id: Ida4f817d56ddbe440023ad2e6928b0de0dbaa90b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8482753
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Thomas Nguyen <tungnh@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1712098}
+
+diff --git a/third_party/blink/renderer/core/html/html_capability_element_base.cc b/third_party/blink/renderer/core/html/html_capability_element_base.cc
+index 2a67183ac4406d0dbb957c48ad4cac0519f75d17..5052eb3a44855cbfa75f46b858bc315212f95aca 100644
+--- a/third_party/blink/renderer/core/html/html_capability_element_base.cc
++++ b/third_party/blink/renderer/core/html/html_capability_element_base.cc
+@@ -1402,10 +1402,7 @@ void HTMLCapabilityElementBase::OnIntersectionChanged(
+   // bound is clipped by the viewport or styling effects). In this case, the
+   // `isVisible` false means the element is occluded by something else or has
+   // distorted visual effect applied.
+-  // Note: It's unlikely we'll encounter an empty target rectangle (height or
+-  // width is 0), but if it happens, we can consider the element as visible.
+-  if (!latest_observation->isVisible() &&
+-      !latest_observation->GetGeometry().TargetRect().IsEmpty()) {
++  if (!latest_observation->isVisible()) {
+     new_intersection_visibility =
+         latest_observation->intersectionRatio() >= kIntersectionThreshold
+             ? IntersectionVisibility::kOccludedOrDistorted
+diff --git a/third_party/blink/renderer/core/html/html_capability_element_base.h b/third_party/blink/renderer/core/html/html_capability_element_base.h
+index daca5817b59b693e3375a35da050ae132e187443..b6f640a6093d667b52e7ec570a4856ad6409ea0e 100644
+--- a/third_party/blink/renderer/core/html/html_capability_element_base.h
++++ b/third_party/blink/renderer/core/html/html_capability_element_base.h
+@@ -222,6 +222,8 @@ class CORE_EXPORT HTMLCapabilityElementBase
+                            ContainerDivOpacity);
+   FRIEND_TEST_ALL_PREFIXES(HTMLCapabilityElementBaseIntersectionTest,
+                            ContainerDivClipPath);
++  FRIEND_TEST_ALL_PREFIXES(HTMLCapabilityElementBaseIntersectionTest,
++                           ContainerDivSingularTransform);
+   FRIEND_TEST_ALL_PREFIXES(HTMLCapabilityElementBaseIntersectionTest,
+                            IntersectionOccluderLogging);
+   FRIEND_TEST_ALL_PREFIXES(HTMLCapabilityElementBaseIntersectionTest,
+diff --git a/third_party/blink/renderer/core/html/html_capability_element_base_test.cc b/third_party/blink/renderer/core/html/html_capability_element_base_test.cc
+index bcaca0a61cf529af2b556cf118c83f85470987a9..9550b422d7f94f8a902623f4ca49ddf51cc840a2 100644
+--- a/third_party/blink/renderer/core/html/html_capability_element_base_test.cc
++++ b/third_party/blink/renderer/core/html/html_capability_element_base_test.cc
+@@ -199,7 +199,10 @@ class HTMLCapabilityElementBaseTestBase : public PageTestBase {
+       base::test::TaskEnvironment::TimeSource time_source)
+       : PageTestBase(time_source) {}
+ 
+-  void SetUp() override { PageTestBase::SetUp(); }
++  void SetUp() override {
++    PageTestBase::SetUp();
++    GetDocument().GetSettings()->SetDefaultFontSize(12);
++  }
+ 
+  private:
+   ScopedUserMediaElementForTest scoped_feature_{true};
+@@ -709,6 +712,7 @@ class HTMLCapabilityElementBaseSimTest : public SimTest {
+  protected:
+   void SetUp() override {
+     SimTest::SetUp();
++    GetDocument().GetSettings()->SetDefaultFontSize(12);
+     MainFrame().GetFrame()->GetBrowserInterfaceBroker().SetBinderForTesting(
+         PermissionService::Name_,
+         blink::BindRepeating(
+@@ -1929,6 +1933,61 @@ TEST_F(HTMLCapabilityElementBaseIntersectionTest, MAYBE_ContainerDivClipPath) {
+           kOutOfViewportOrClipped);
+ }
+ 
++#if BUILDFLAG(IS_LINUX) && defined(THREAD_SANITIZER)
++#define MAYBE_ContainerDivSingularTransform \
++  DISABLED_ContainerDivSingularTransform
++#else
++#define MAYBE_ContainerDivSingularTransform ContainerDivSingularTransform
++#endif
++TEST_F(HTMLCapabilityElementBaseIntersectionTest,
++       MAYBE_ContainerDivSingularTransform) {
++  for (const char* transform :
++       {"scaleX(0)", "scaleY(0)", "scale(0)", "rotateY(90deg)"}) {
++    SCOPED_TRACE(transform);
++    TestContainerStyleAffectsVisibility(
++        CSSPropertyID::kTransform, transform,
++        HTMLCapabilityElementBase::IntersectionVisibility::
++            kOccludedOrDistorted);
++  }
++
++  // Also verify that an element initially attached inside a container with a
++  // singular transform does not become valid after the attach cooldown expires.
++  SimRequest main_resource("https://example.test/", "text/html");
++  LoadURL("https://example.test/");
++  main_resource.Complete(R"HTML(
++    <div id='container' style='transform: scaleX(0);'>
++      <geolocation id='geo'></geolocation>
++    </div>
++  )HTML");
++
++  Compositor().BeginFrame();
++  auto* permission_element = To<HTMLCapabilityElementBase>(
++      GetDocument().QuerySelector(AtomicString("geolocation")));
++  auto* div =
++      To<HTMLDivElement>(GetDocument().QuerySelector(AtomicString("div")));
++  WaitForPermissionElementRegistration(permission_element);
++  WaitForIntersectionVisibilityChanged(
++      permission_element,
++      HTMLCapabilityElementBase::IntersectionVisibility::kOccludedOrDistorted);
++
++  DeferredChecker checker(permission_element);
++  checker.CheckClickingEnabledAfterDelay(kDefaultTimeout,
++                                         /*expected_enabled=*/false);
++  EXPECT_FALSE(permission_element->isValid());
++  EXPECT_EQ(permission_element->invalidReason(),
++            "intersection_occluded_or_distorted");
++
++  // Removing the singular transform restores visibility after the cooldown.
++  div->RemoveInlineStyleProperty(CSSPropertyID::kTransform);
++  GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kTest);
++  WaitForIntersectionVisibilityChanged(
++      permission_element,
++      HTMLCapabilityElementBase::IntersectionVisibility::kFullyVisible);
++  checker.CheckClickingEnabledAfterDelay(kDefaultTimeout,
++                                         /*expected_enabled=*/true);
++  EXPECT_TRUE(permission_element->isValid());
++}
++
+ class HTMLCapabilityElementBaseLayoutChangeTest
+     : public HTMLCapabilityElementBaseSimTest {
+  public:
+@@ -2090,9 +2149,9 @@ TEST_F(HTMLCapabilityElementBaseLayoutChangeTest,
+   ClassicScript::CreateUnspecifiedScript(
+       "window.requestAnimationFrame(function() {\n"
+       "  var camera = document.getElementById('camera');\n"
+-      "  camera.style.width = '10px';\n"
++      "  camera.style.height = '1em';\n"
+       "  camera.getBoundingClientRect();\n"
+-      "  camera.style.width = '40px';\n"
++      "  camera.style.height = '3em';\n"
+       "\n"
+       "});\n")
+       ->RunScript(&Window());
+diff --git a/third_party/blink/renderer/core/html/html_geolocation_element_test.cc b/third_party/blink/renderer/core/html/html_geolocation_element_test.cc
+index 5b3cef5b761c9d64a41d12debc241ea1b0559944..c9a7009f25ca529160d5d729840b3d76fbb7df0c 100644
+--- a/third_party/blink/renderer/core/html/html_geolocation_element_test.cc
++++ b/third_party/blink/renderer/core/html/html_geolocation_element_test.cc
+@@ -503,6 +503,7 @@ class HTMLGeolocationElementSimTest : public SimTest {
+  protected:
+   void SetUp() override {
+     SimTest::SetUp();
++    GetDocument().GetSettings()->SetDefaultFontSize(12);
+     feature_list_.InitAndEnableFeature(features::kGeolocationElement);
+     MainFrame().GetFrame()->GetBrowserInterfaceBroker().SetBinderForTesting(
+         PermissionService::Name_,

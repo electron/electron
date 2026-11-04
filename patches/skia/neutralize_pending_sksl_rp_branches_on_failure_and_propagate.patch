@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Tue, 27 Oct 2026 10:50:57 -0400
+Subject: Neutralize pending SkSL RP branches on failure and propagate
+ SkTransformShader errors
+
+* In SkSL::RP::Program::appendStages(), rewrite any already-appended branch contexts' offsets to +1 (fall-through) before returning false on early exit so that a partially populated pipeline cannot dispatch out of bounds if executed.
+* In SkTransformShader::appendStages(), propagate the child shader's appendStages() return value instead of ignoring it and returning true, and mark SkShaderBase::appendStages() [[nodiscard]].
+* Add regression tests in RasterPipelineCodeGeneratorTest and SkRuntimeEffectTest.
+
+Bug: b/574214629
+Change-Id: I656059d09846ead72bbedc45c2a865fbdabfbb20
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1405956
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Auto-Submit: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/shaders/SkShaderBase.h b/src/shaders/SkShaderBase.h
+index f346da4685f4a0f45c5415129b6560dd89a80261..e95ddfdced7602efbb733fc37a7ab2cb667b2b46 100644
+--- a/src/shaders/SkShaderBase.h
++++ b/src/shaders/SkShaderBase.h
+@@ -356,7 +356,8 @@ public:
+      * in r,g MatrixRec::apply() must be called (unless the shader doesn't require it's input
+      * coords). The default impl creates shadercontext and calls that (not very efficient).
+      */
+-    virtual bool appendStages(const SkStageRec&, const SkShaders::MatrixRec&) const = 0;
++    [[nodiscard]] virtual bool appendStages(const SkStageRec&,
++                                            const SkShaders::MatrixRec&) const = 0;
+ 
+     virtual SkImage* onIsAImage(SkMatrix*, SkTileMode[2]) const {
+         return nullptr;
+diff --git a/src/shaders/SkTransformShader.cpp b/src/shaders/SkTransformShader.cpp
+index d4656a1f20954a58b7fe20c51ee2463c1ec90db2..4480f8bd09ab25126d937b75412a024ec8c4e06c 100644
+--- a/src/shaders/SkTransformShader.cpp
++++ b/src/shaders/SkTransformShader.cpp
+@@ -50,6 +50,7 @@ bool SkTransformShader::appendStages(const SkStageRec& rec,
+                                   : SkRasterPipelineOp::matrix_2x3;
+     rec.fPipeline->append(type, fMatrixStorage);
+ 
+-    fShader.appendStages(rec, *childMRec);
+-    return true;
++    // Propagate the wrapped shader's failure: a pipeline that is only partially
++    // appended must never be compiled and executed.
++    return fShader.appendStages(rec, *childMRec);
+ }
+diff --git a/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp b/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
+index a6a275903adedcaf94fafb40e428d92ab1ca6bdc..18e0e545211733360465782969d94387ae54be0f 100644
+--- a/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
++++ b/src/sksl/codegen/SkSLRasterPipelineBuilder.cpp
+@@ -1756,6 +1756,20 @@ bool Program::appendStages(SkRasterPipeline* pipeline,
+         pipeline->append(SkRasterPipelineOp::set_base_pointer, (*slotData).values.data());
+     };
+ 
++    // Branch contexts temporarily hold an *absolute* pipeline index (see the branch case below)
++    // until every stage has been appended and the fix-up loop at the end rewrites them into
++    // relative offsets. If we bail out part-way through, the stages that were already appended to
++    // the caller's pipeline still reference those contexts. Callers should treat a `false` return
++    // as fatal, but if one of them runs the partial pipeline anyway, an absolute offset would make
++    // the branch stage dispatch past the end of the compiled program. Rewrite every pending branch
++    // into a harmless fall-through (+1) before returning failure.
++    auto failAndNeutralizeBranches = [&]() -> bool {
++        for (SkRasterPipelineContexts::BranchCtx* branchCtx : branchContexts) {
++            branchCtx->offset = 1;
++        }
++        return false;
++    };
++
+     resetBasePointer();
+ 
+     for (const Stage& stage : stages) {
+@@ -1766,28 +1780,28 @@ bool Program::appendStages(SkRasterPipeline* pipeline,
+ 
+             case ProgramOp::invoke_shader:
+                 if (!callbacks || !callbacks->appendShader(sk_bit_cast<intptr_t>(stage.ctx))) {
+-                    return false;
++                    return failAndNeutralizeBranches();
+                 }
+                 resetBasePointer();
+                 break;
+ 
+             case ProgramOp::invoke_color_filter:
+                 if (!callbacks || !callbacks->appendColorFilter(sk_bit_cast<intptr_t>(stage.ctx))) {
+-                    return false;
++                    return failAndNeutralizeBranches();
+                 }
+                 resetBasePointer();
+                 break;
+ 
+             case ProgramOp::invoke_blender:
+                 if (!callbacks || !callbacks->appendBlender(sk_bit_cast<intptr_t>(stage.ctx))) {
+-                    return false;
++                    return failAndNeutralizeBranches();
+                 }
+                 resetBasePointer();
+                 break;
+ 
+             case ProgramOp::invoke_to_linear_srgb:
+                 if (!callbacks) {
+-                    return false;
++                    return failAndNeutralizeBranches();
+                 }
+                 callbacks->toLinearSrgb(stage.ctx);
+                 // A ColorSpaceXform shouldn't ever alter the base pointer, so we don't need to call
+@@ -1796,7 +1810,7 @@ bool Program::appendStages(SkRasterPipeline* pipeline,
+ 
+             case ProgramOp::invoke_from_linear_srgb:
+                 if (!callbacks) {
+-                    return false;
++                    return failAndNeutralizeBranches();
+                 }
+                 callbacks->fromLinearSrgb(stage.ctx);
+                 // A ColorSpaceXform shouldn't ever alter the base pointer, so we don't need to call
+diff --git a/tests/RasterPipelineCodeGeneratorTest.cpp b/tests/RasterPipelineCodeGeneratorTest.cpp
+index f7963b2b855dbf4db36e48c9a8b8937852bbf1d5..f74a5ea60c9838a169b377961fc8c190a6543183 100644
+--- a/tests/RasterPipelineCodeGeneratorTest.cpp
++++ b/tests/RasterPipelineCodeGeneratorTest.cpp
+@@ -443,3 +443,34 @@ DEF_TEST(SkSLRasterPipelineTempStackOverflow, r) {
+         REPORTER_ASSERT(r, !prog->appendStages(&pipeline, &alloc, /*callbacks=*/nullptr, {}));
+     }
+ }
++
++DEF_TEST(SkSLRasterPipelineNeutralizeBranchesOnFailure, r) {
++    SkArenaAlloc alloc(1000);
++    SkRasterPipeline pipeline(&alloc);
++    pipeline.appendConstantColor(&alloc, SkColors::kGreen);
++
++    // Build a program with an unconditional jump over a failing invoke_shader to a label at the
++    // end. When invoke_shader fails (because callbacks == nullptr), appendStages() returns false
++    // before reaching the label or the branch fix-up loop. The already-appended jump stage must
++    // have its offset neutralized to +1 so that if a caller runs the partial pipeline anyway,
++    // it falls through harmlessly instead of jumping past the end of the compiled stage array.
++    SkSL::RP::Builder builder;
++    int labelID = builder.nextLabelID();
++    builder.jump(labelID);
++    builder.invoke_shader(0);
++    builder.label(labelID);
++    std::unique_ptr<SkSL::RP::Program> prog = builder.finish(
++            /*numValueSlots=*/1, /*numUniformSlots=*/0, /*numImmutableSlots=*/0);
++    REPORTER_ASSERT(r, prog);
++    REPORTER_ASSERT(r, !prog->appendStages(&pipeline, &alloc, /*callbacks=*/nullptr, {}));
++
++    // Close the partial pipeline and run it; the neutralized jump (+1) should fall through to
++    // store_8888 without dispatching out of bounds.
++    uint32_t out[SkRasterPipelineContexts::kMaxStride_highp] = {};
++    SkRasterPipelineContexts::MemoryCtx outCtx{
++            /*pixels=*/out, /*stride=*/SkRasterPipelineContexts::kMaxStride_highp};
++    pipeline.append(SkRasterPipelineOp::store_8888, &outCtx);
++    pipeline.run(0, 0, 1, 1);
++    REPORTER_ASSERT(r, out[0] == SkColors::kGreen.toBytes_RGBA());
++}
++

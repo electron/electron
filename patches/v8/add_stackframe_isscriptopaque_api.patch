@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joone Hur <joonehur@microsoft.com>
+Date: Thu, 17 Sep 2026 17:42:01 -0700
+Subject: Add StackFrame::IsScriptOpaque API
+
+Expose whether the associated script is opaque through the public
+StackFrame API. This lets embedders check whether source location
+information needs redaction before exposing it to web content.
+
+Bug: 502251640
+Change-Id: I4217f71156312b2d1db98902607a1b59b11bcb05
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8422987
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Joone Hur <joonehur@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#110021}
+(cherry picked from commit 1df1972ce6bcc521317d39e6417ff1ce9255e775)
+
+diff --git a/include/v8-debug.h b/include/v8-debug.h
+index 1ffa08a02514acd3690f7fea1e9bf0263e369292..59dfe7b92c1dc618d1e257bf7a638db333b1e062 100644
+--- a/include/v8-debug.h
++++ b/include/v8-debug.h
+@@ -109,6 +109,12 @@ class V8_EXPORT StackFrame {
+    * Returns whether or not the associated function is defined by the user.
+    */
+   bool IsUserJavaScript() const;
++
++  /**
++   * Returns whether the script was compiled with resource_is_opaque set in its
++   * ScriptOrigin.
++   */
++  bool IsScriptOpaque() const;
+ };
+ 
+ /**
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 6298f80d299fa4b345a1ecf67204eba79e3f5a4c..af4e3b5758c6c484c10d9a3b78a3e2f933828144 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -3491,6 +3491,10 @@ bool StackFrame::IsUserJavaScript() const {
+   return Utils::OpenDirectHandle(this)->script()->IsUserJavaScript();
+ }
+ 
++bool StackFrame::IsScriptOpaque() const {
++  return Utils::OpenDirectHandle(this)->script()->origin_options().IsOpaque();
++}
++
+ // --- J S O N ---
+ 
+ MaybeLocal<Value> JSON::Parse(Local<Context> context, Local<String> json_string,

@@ -1,0 +1,167 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Thu, 1 Oct 2026 14:01:00 -0700
+Subject: Handle re-entrancy during form field focus transitions
+
+Track CFFL_FormField lifetime using ObservedPtr during focus
+transitions and PWL window updates. Return early if the form field
+is destroyed while handling these events.
+
+Fixed: 567936263
+Change-Id: I992b06f6bfde5cc839e9d11b90a098b8affcf5f6
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/159451
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+
+diff --git a/fpdfsdk/formfiller/cffl_formfield.cpp b/fpdfsdk/formfiller/cffl_formfield.cpp
+index 21396530206a5e9a8429f3482ba3bca37f3a3eab..be236afa1c139d1cdec7658c710793e7d5769274 100644
+--- a/fpdfsdk/formfiller/cffl_formfield.cpp
++++ b/fpdfsdk/formfiller/cffl_formfield.cpp
+@@ -11,6 +11,7 @@
+ #include "constants/form_flags.h"
+ #include "core/fpdfapi/page/cpdf_page.h"
+ #include "core/fxcrt/check.h"
++#include "core/fxcrt/observed_ptr.h"
+ #include "core/fxge/cfx_renderdevice.h"
+ #include "fpdfsdk/cpdfsdk_pageview.h"
+ #include "fpdfsdk/cpdfsdk_widget.h"
+@@ -288,7 +289,12 @@ void CFFL_FormField::SetFocusForAnnot(CPDFSDK_Widget* pWidget,
+                                       Mask<FWL_EVENTFLAG> nFlag) {
+   CPDFSDK_PageView* pPageView =
+       form_filler_->GetOrCreatePageView(pWidget->GetPage());
++
++  ObservedPtr<CFFL_FormField> observed_this(this);
+   CPWL_Wnd* pWnd = CreateOrUpdatePWLWindow(pPageView);
++  if (!observed_this) {
++    return;
++  }
+   if (pWnd) {
+     pWnd->SetFocus();
+   }
+@@ -303,7 +309,15 @@ void CFFL_FormField::KillFocusForAnnot(Mask<FWL_EVENTFLAG> nFlag) {
+   }
+ 
+   CPDFSDK_PageView* pPageView = form_filler_->GetPageView(widget_->GetPage());
+-  if (!pPageView || !CommitData(pPageView, nFlag)) {
++  if (!pPageView) {
++    return;
++  }
++
++  ObservedPtr<CFFL_FormField> observed_this(this);
++  if (!CommitData(pPageView, nFlag)) {
++    return;
++  }
++  if (!observed_this) {
+     return;
+   }
+   if (CPWL_Wnd* pWnd = GetPWLWindow(pPageView)) {
+@@ -509,41 +523,40 @@ bool CFFL_FormField::CommitData(const CPDFSDK_PageView* pPageView,
+     return true;
+   }
+ 
+-  ObservedPtr<CPDFSDK_Widget> pObserved(widget_);
+-  if (!form_filler_->OnKeyStrokeCommit(pObserved, pPageView, nFlag)) {
+-    if (!pObserved) {
+-      return false;
+-    }
+-    ResetPWLWindow(pPageView);
+-    return true;
+-  }
+-  if (!pObserved) {
++  ObservedPtr<CFFL_FormField> observed_this(this);
++  ObservedPtr<CPDFSDK_Widget> observed_widget(widget_);
++  const bool keystroke_committed =
++      form_filler_->OnKeyStrokeCommit(observed_widget, pPageView, nFlag);
++  if (!observed_widget || !observed_this) {
+     return false;
+   }
+-
+-  if (!form_filler_->OnValidate(pObserved, pPageView, nFlag)) {
+-    if (!pObserved) {
+-      return false;
+-    }
++  if (!keystroke_committed) {
+     ResetPWLWindow(pPageView);
+-    return true;
++    return observed_this.HasObservable();
+   }
+-  if (!pObserved) {
++
++  const bool validated =
++      form_filler_->OnValidate(observed_widget, pPageView, nFlag);
++  if (!observed_widget || !observed_this) {
+     return false;
+   }
++  if (!validated) {
++    ResetPWLWindow(pPageView);
++    return observed_this.HasObservable();
++  }
+ 
+-  SaveData(pPageView);  // may invoking JS to delete this widget.
+-  if (!pObserved) {
++  SaveData(pPageView);  // May invoke JS to delete this widget.
++  if (!observed_widget || !observed_this) {
+     return false;
+   }
+ 
+-  form_filler_->OnCalculate(pObserved);
+-  if (!pObserved) {
++  form_filler_->OnCalculate(observed_widget);
++  if (!observed_widget || !observed_this) {
+     return false;
+   }
+ 
+-  form_filler_->OnFormat(pObserved);
+-  if (!pObserved) {
++  form_filler_->OnFormat(observed_widget);
++  if (!observed_widget || !observed_this) {
+     return false;
+   }
+ 
+diff --git a/fpdfsdk/formfiller/cffl_textobject.cpp b/fpdfsdk/formfiller/cffl_textobject.cpp
+index da6cd80a34989d1feb7b5c9b0ac58fddc24aab6a..d8743adef24cadf71cf96bd0a712f35d3c441c05 100644
+--- a/fpdfsdk/formfiller/cffl_textobject.cpp
++++ b/fpdfsdk/formfiller/cffl_textobject.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include "core/fpdfapi/page/cpdf_page.h"
+ #include "core/fpdfdoc/cpdf_bafontmap.h"
++#include "core/fxcrt/observed_ptr.h"
+ #include "fpdfsdk/cpdfsdk_widget.h"
+ 
+ CFFL_TextObject::CFFL_TextObject(CFFL_InteractiveFormFiller* pFormFiller,
+@@ -22,18 +23,28 @@ CFFL_TextObject::~CFFL_TextObject() {
+ 
+ CPWL_Wnd* CFFL_TextObject::ResetPWLWindow(const CPDFSDK_PageView* pPageView) {
+   DestroyPWLWindow(pPageView);
+-  ObservedPtr<CPWL_Wnd> pRet(CreateOrUpdatePWLWindow(pPageView));
+-  widget_->UpdateField();  // May invoke JS, invalidating |pRet|.
+-  return pRet.Get();
++  ObservedPtr<CFFL_FormField> observed_this(this);
++  ObservedPtr<CPWL_Wnd> observed_wnd(CreateOrUpdatePWLWindow(pPageView));
++  if (!observed_this) {
++    return nullptr;
++  }
++  // May invoke JS, invalidating `observed_wnd` and `this`.
++  widget_->UpdateField();
++  return observed_this ? observed_wnd.Get() : nullptr;
+ }
+ 
+ CPWL_Wnd* CFFL_TextObject::RestorePWLWindow(const CPDFSDK_PageView* pPageView) {
+   SavePWLWindowState(pPageView);
+   DestroyPWLWindow(pPageView);
+   RecreatePWLWindowFromSavedState(pPageView);
+-  ObservedPtr<CPWL_Wnd> pRet(GetPWLWindow(pPageView));
+-  widget_->UpdateField();  // May invoke JS, invalidating |pRet|.
+-  return pRet.Get();
++  ObservedPtr<CFFL_FormField> observed_this(this);
++  ObservedPtr<CPWL_Wnd> observed_wnd(GetPWLWindow(pPageView));
++  if (!observed_this) {
++    return nullptr;
++  }
++  // May invoke JS, invalidating `observed_wnd` and `this`.
++  widget_->UpdateField();
++  return observed_this ? observed_wnd.Get() : nullptr;
+ }
+ 
+ CPDF_BAFontMap* CFFL_TextObject::GetOrCreateFontMap() {

@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Scott Haseley <shaseley@chromium.org>
+Date: Tue, 6 Oct 2026 12:20:26 -0700
+Subject: Unregister microtask callback in ~EventLoop
+
+Since the MicrotaskQueue now lives on the Oilpan heap and is no longer
+destroyed when EventLoop is destroyed, it can leave a dangling EventLoop
+pointer stored with the MicrotasksCompletedCallback. This CL fixes this
+by clearing the callback on event loop destruction.
+
+Fixed: 568988525
+Change-Id: I89ac2f003e298a6bbbf545c4482f26cf489a3164
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8516108
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Commit-Queue: Scott Haseley <shaseley@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1712555}
+
+diff --git a/third_party/blink/renderer/platform/scheduler/common/event_loop.cc b/third_party/blink/renderer/platform/scheduler/common/event_loop.cc
+index 38f014dac07800de85836433b6c96b9a19f76116..28d14b2fd23dd4c95dc8e7842243d0508781976d 100644
+--- a/third_party/blink/renderer/platform/scheduler/common/event_loop.cc
++++ b/third_party/blink/renderer/platform/scheduler/common/event_loop.cc
+@@ -65,6 +65,11 @@ EventLoop::EventLoop(Delegate* delegate,
+ 
+ EventLoop::~EventLoop() {
+   DCHECK(schedulers_.empty());
++  // `microtask_queue_` may be cleared before sweeping during heap termination.
++  if (microtask_queue_) {
++    microtask_queue_->RemoveMicrotasksCompletedCallback(
++        &EventLoop::RunEndOfCheckpointTasks, this);
++  }
+ }
+ 
+ void EventLoop::EnqueueMicrotask(base::OnceClosure task) {

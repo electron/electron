@@ -5,3 +5,6 @@ cherry-pick-4a36628222bb.patch
 cherry-pick-e764cc088a62.patch
 cherry-pick-ac3cf1684db0.patch
 cherry-pick-0a42f6e64f28.patch
+construct_array_at_once_in_cjs_global_enumproperties.patch
+avoid_const_cast_when_repairing_malformed_jpeg_input_data.patch
+handle_re-entrancy_during_form_field_focus_transitions.patch
