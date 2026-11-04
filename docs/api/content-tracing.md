@@ -8,6 +8,9 @@ This module does not include a web interface. Traces are recorded in the
 [Perfetto protobuf format][perfetto trace format]; to view them, open them in
 the [Perfetto UI][].
 
+See the [content tracing guide](../tutorial/content-tracing.md) for recording and
+analyzing a trace, choosing categories, and profiling native heap allocations.
+
 > [!NOTE]
 > You should not use this module until the `ready` event of the app
 > module is emitted.
