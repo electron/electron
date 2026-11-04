@@ -2685,18 +2685,18 @@ describe('app module', () => {
         server.closeAllConnections();
         await new Promise((resolve) => server.close(resolve));
       });
+      // Use an isolated session: CI agents may route traffic through an HTTP
+      // proxy, which would resolve the test hostname itself and bypass the
+      // configured host resolver.
+      const ses = session.fromPartition(`configure-host-resolver-${Math.random()}`);
+      await ses.setProxy({ mode: 'direct' });
       // The DoH server uses the self-signed fixture certificate.
-      session.defaultSession.setCertificateVerifyProc((req, cb) => cb(0));
-      defer(() => session.defaultSession.setCertificateVerifyProc(null));
-      // CI agents may route traffic through an HTTP proxy, which would resolve
-      // the test hostname itself and bypass the configured host resolver.
-      await session.defaultSession.setProxy({ mode: 'direct' });
-      defer(() => session.defaultSession.setProxy({ mode: 'system' }));
+      ses.setCertificateVerifyProc((req, cb) => cb(0));
 
       const request = (host: string) =>
         new Promise((resolve, reject) => {
           electronNet
-            .request({ method: 'HEAD', url: `http://${host}:${port}/` })
+            .request({ method: 'HEAD', url: `http://${host}:${port}/`, session: ses })
             .on('response', resolve)
             .on('error', reject)
             .end();
