@@ -24,11 +24,13 @@ describe('security warnings', () => {
   let w: BrowserWindow;
   let useCsp = true;
   let serverUrl: string;
+  const partition = 'security-warnings-spec';
 
   beforeAll(async () => {
-    // CI agents may route traffic through an HTTP proxy, which would bypass
-    // the host-resolver-rules mapping for localhost2.
-    await session.defaultSession.setProxy({ mode: 'direct' });
+    // Load pages in an isolated session: CI agents may route traffic through
+    // an HTTP proxy, which would bypass the host-resolver-rules mapping for
+    // localhost2.
+    await session.fromPartition(partition).setProxy({ mode: 'direct' });
 
     // Create HTTP Server
     server = http.createServer(async (request, response) => {
@@ -55,11 +57,10 @@ describe('security warnings', () => {
     serverUrl = `http://localhost2:${(await listen(server)).port}`;
   });
 
-  afterAll(async () => {
+  afterAll(() => {
     // Close server
     server.close();
     server = null as unknown as any;
-    await session.defaultSession.setProxy({ mode: 'system' });
   });
 
   afterEach(async () => {
@@ -72,6 +73,7 @@ describe('security warnings', () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
+        partition,
         nodeIntegration: true,
         contextIsolation: false
       }
@@ -86,6 +88,7 @@ describe('security warnings', () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
+        partition,
         nodeIntegration: true
       }
     });
@@ -216,6 +219,6 @@ describe('security warnings', () => {
     });
   };
 
-  generateSpecs('without sandbox', { contextIsolation: false });
-  generateSpecs('with sandbox', { sandbox: true, contextIsolation: false });
+  generateSpecs('without sandbox', { partition, contextIsolation: false });
+  generateSpecs('with sandbox', { partition, sandbox: true, contextIsolation: false });
 });
