@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Tue, 27 Oct 2026 11:57:01 +0100
+Subject: [M150-LTS][compiler] Ensure deopt literal is object before comparing
+ to closure
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+DeoptimizationLiteral stores object handles and primitive values in a
+union. In CodeGenerator::AddTranslationForOperand, verify the literal
+is actually an object before comparing it to the current closure to
+avoid treating raw integer values as handle addresses.
+
+TAG=agy
+CONV=04af8cf4-3712-4424-b3f8-d919c245b4b2
+
+Fixed: 577327383
+Change-Id: I5ed2e4441ec28c83556a749456a817331581ddec
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8663224
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111206}
+(cherry picked from commit a10d231eadf7b4c9e2c223c38cb220684e746fc9)
+
+diff --git a/src/compiler/backend/code-generator.cc b/src/compiler/backend/code-generator.cc
+index 1a022c47a530cecc817b8118b3934d0d10cf7f4b..162edc46ecf4dcedad5e6da16268c908cd2edaf3 100644
+--- a/src/compiler/backend/code-generator.cc
++++ b/src/compiler/backend/code-generator.cc
+@@ -1682,8 +1682,8 @@ void CodeGenerator::AddTranslationForOperand(Instruction* instr,
+       default:
+         UNREACHABLE();
+     }
+-    if (literal.object().equals(info()->closure()) &&
+-        info()->function_context_specializing()) {
++    if (info()->function_context_specializing() &&
++        literal.IsObject(info()->closure())) {
+       translations_.StoreJSFrameFunction();
+     } else {
+       int literal_id = DefineDeoptimizationLiteral(literal);
+diff --git a/src/objects/deoptimization-data.h b/src/objects/deoptimization-data.h
+index 165c02a2de67007caa9bf20640bd51af519c4b00..935ced9f02e5c21c2aa2b0e4a63f5ad04bee5d13 100644
+--- a/src/objects/deoptimization-data.h
++++ b/src/objects/deoptimization-data.h
+@@ -88,7 +88,10 @@ class DeoptimizationLiteral {
+     return literal;
+   }
+ 
+-  IndirectHandle<Object> object() const { return object_; }
++  bool IsObject(IndirectHandle<Object> object) const {
++    return kind_ == DeoptimizationLiteralKind::kObject &&
++           object_.equals(object);
++  }
+ 
+   bool operator==(const DeoptimizationLiteral& other) const {
+     if (kind_ != other.kind_) {

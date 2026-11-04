@@ -1,0 +1,254 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Wed, 30 Sep 2026 10:08:55 -0700
+Subject: gpu: Zero-initialize the offscreen backbuffer in
+ ResizeOffscreenFramebuffer
+
+The validating decoder allocates the offscreen target color texture with
+uninitialized storage and relies on a native glClear to initialize it.
+On drivers with the gl_clear_broken workaround, glClear is unreliable,
+and the workaround's draw-based clear (ClearFramebufferForWorkaround)
+can't be used here because ResizeOffscreenFramebuffer runs from
+Initialize() before clear_framebuffer_blit_ is created. Since
+AllocateStorage() marks the level as fully cleared, the texture is never
+lazily cleared afterwards, so its contents could be left as recycled
+GPU memory.
+
+Upload zeros when allocating the storage so the backbuffer contents are
+defined regardless of glClear behavior. This is a one-time allocation
+at context initialization, so the cost is negligible.
+
+Bug: 562221093
+Change-Id: I6f7ccd0bfba494414b34e9fc8b673994cb54ce19
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8464087
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Reviewed-by: Brandon Jones <bajones@chromium.org>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1708239}
+
+diff --git a/gpu/BUILD.gn b/gpu/BUILD.gn
+index a5dbd7309eb7d56a62e302cdc31ab45690bcecb3..5967cc8dec51900d5932890280acbc962ff05069 100644
+--- a/gpu/BUILD.gn
++++ b/gpu/BUILD.gn
+@@ -547,6 +547,7 @@ test("gpu_unittests") {
+       "command_buffer/service/gles2_cmd_decoder_unittest_drawing.cc",
+       "command_buffer/service/gles2_cmd_decoder_unittest_extensions.cc",
+       "command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc",
++      "command_buffer/service/gles2_cmd_decoder_unittest_offscreen.cc",
+       "command_buffer/service/gles2_cmd_decoder_unittest_programs.cc",
+       "command_buffer/service/gles2_cmd_decoder_unittest_textures.cc",
+     ]
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 68857c49dcb54064e842d50ce8183e507d979469..1cafdc11c3d28aae34598339f756608078f6698d 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -4909,10 +4909,15 @@ bool GLES2DecoderImpl::ResizeOffscreenFramebuffer(const gfx::Size& size) {
+     return false;
+   }
+ 
+-  // Reallocate the offscreen target buffers.
++  // Reallocate the offscreen target buffers. Upload zeros rather than relying
++  // on the glClear below: on drivers with the gl_clear_broken workaround
++  // glClear is unreliable, and the workaround's draw-based clear isn't
++  // available yet because this runs from Initialize() before
++  // |clear_framebuffer_blit_| is created. AllocateStorage() marks the level as
++  // cleared, so it would never be lazily cleared later.
+   DCHECK(offscreen_target_color_format_);
+   if (!offscreen_target_color_texture_->AllocateStorage(
+-          offscreen_size_, offscreen_target_color_format_, false)) {
++          offscreen_size_, offscreen_target_color_format_, /*zero=*/true)) {
+     LOG(ERROR) << "GLES2DecoderImpl::ResizeOffscreenFramebuffer failed "
+                << "to allocate storage for offscreen target color texture.";
+     return false;
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_offscreen.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_offscreen.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..2fd2579e068a3d9b8068b7b78ebe2d7684e0d039
+--- /dev/null
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_offscreen.cc
+@@ -0,0 +1,186 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include <stddef.h>
++#include <stdint.h>
++
++#include <array>
++#include <memory>
++
++#include "base/memory/scoped_refptr.h"
++#include "base/test/task_environment.h"
++#include "gpu/command_buffer/client/client_test_helper.h"
++#include "gpu/command_buffer/service/context_group.h"
++#include "gpu/command_buffer/service/feature_info.h"
++#include "gpu/command_buffer/service/framebuffer_completeness_cache.h"
++#include "gpu/command_buffer/service/gles2_cmd_decoder.h"
++#include "gpu/command_buffer/service/gpu_tracer.h"
++#include "gpu/command_buffer/service/memory_tracking.h"
++#include "gpu/command_buffer/service/shader_translator_cache.h"
++#include "gpu/command_buffer/service/shared_image/shared_image_manager.h"
++#include "gpu/config/gpu_driver_bug_workarounds.h"
++#include "gpu/config/gpu_feature_info.h"
++#include "gpu/config/gpu_preferences.h"
++#include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "ui/gl/gl_context_stub.h"
++#include "ui/gl/gl_mock.h"
++#include "ui/gl/gl_surface_stub.h"
++#include "ui/gl/test/gl_surface_test_support.h"
++
++using ::gl::MockGLInterface;
++using ::testing::_;
++using ::testing::AnyNumber;
++using ::testing::NiceMock;
++using ::testing::NotNull;
++using ::testing::Return;
++using ::testing::SetArgPointee;
++using ::testing::SetArrayArgument;
++
++namespace gpu {
++namespace gles2 {
++namespace {
++
++constexpr GLuint kServiceTextureId = 101;
++constexpr GLuint kServiceFramebufferId = 102;
++constexpr GLint kMaxSize = 2048;
++
++// Tests for GLES2DecoderImpl initialized with |offscreen| = true. The shared
++// GLES2DecoderTestBase scripts a strict, ordered set of GL calls for onscreen
++// initialization only, so this fixture uses a NiceMock with reasonable
++// defaults and only sets expectations on the calls under test.
++class GLES2DecoderOffscreenTest : public testing::Test {
++ protected:
++  void SetUp() override {
++    gl::SetGLGetProcAddressProc(MockGLInterface::GetGLProcAddress);
++    display_ = gl::GLSurfaceTestSupport::InitializeOneOffWithMockBindings();
++    gl_ = std::make_unique<NiceMock<MockGLInterface>>();
++    MockGLInterface::SetGLInterface(gl_.get());
++
++    ON_CALL(*gl_, GetString(_))
++        .WillByDefault(Return(reinterpret_cast<const GLubyte*>("")));
++    ON_CALL(*gl_, GetString(GL_VERSION))
++        .WillByDefault(
++            Return(reinterpret_cast<const GLubyte*>("OpenGL ES 2.0")));
++    ON_CALL(*gl_, GetIntegerv(_, _))
++        .WillByDefault([](GLenum pname, GLint* params) {
++          switch (pname) {
++            case GL_MAX_TEXTURE_SIZE:
++            case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
++            case GL_MAX_RENDERBUFFER_SIZE:
++              *params = kMaxSize;
++              break;
++            case GL_MAX_VERTEX_UNIFORM_VECTORS:
++              *params = 256;
++              break;
++            case GL_MAX_VERTEX_ATTRIBS:
++            case GL_MAX_TEXTURE_IMAGE_UNITS:
++            case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
++            case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
++            case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
++            case GL_MAX_VARYING_VECTORS:
++              *params = 16;
++              break;
++            default:
++              // Bindings and anything else not needed by these tests.
++              *params = 0;
++              break;
++          }
++        });
++    // GL_MAX_VIEWPORT_DIMS returns two values. Declared after the generic
++    // default above so that it takes precedence.
++    static constexpr std::array<GLint, 2> kMaxViewportDims = {kMaxSize,
++                                                              kMaxSize};
++    ON_CALL(*gl_, GetIntegerv(GL_MAX_VIEWPORT_DIMS, _))
++        .WillByDefault(SetArrayArgument<1>(kMaxViewportDims.begin(),
++                                           kMaxViewportDims.end()));
++    ON_CALL(*gl_, GetError()).WillByDefault(Return(GL_NO_ERROR));
++    ON_CALL(*gl_, GenTextures(1, _))
++        .WillByDefault(SetArgPointee<1>(kServiceTextureId));
++    ON_CALL(*gl_, GenFramebuffersEXT(1, _))
++        .WillByDefault(SetArgPointee<1>(kServiceFramebufferId));
++    ON_CALL(*gl_, CheckFramebufferStatusEXT(_))
++        .WillByDefault(Return(GL_FRAMEBUFFER_COMPLETE));
++
++    surface_ = base::MakeRefCounted<gl::GLSurfaceStub>();
++    context_ = base::MakeRefCounted<gl::GLContextStub>();
++    context_->SetGLVersionString("OpenGL ES 2.0");
++    context_->SetExtensionsString("");
++    context_->MakeCurrent(surface_.get());
++  }
++
++  void TearDown() override {
++    if (decoder_) {
++      decoder_->Destroy(/*have_context=*/true);
++      decoder_.reset();
++    }
++    group_ = nullptr;
++    context_ = nullptr;
++    surface_ = nullptr;
++    MockGLInterface::SetGLInterface(nullptr);
++    gl_.reset();
++    gl::GLSurfaceTestSupport::ShutdownGL(display_);
++  }
++
++  ContextResult InitializeOffscreenDecoder(
++      const GpuDriverBugWorkarounds& workarounds) {
++    auto feature_info =
++        base::MakeRefCounted<FeatureInfo>(workarounds, GpuFeatureInfo());
++    group_ = base::MakeRefCounted<ContextGroup>(
++        gpu_preferences_, /*memory_tracker=*/nullptr, &shader_translator_cache_,
++        &framebuffer_completeness_cache_, feature_info,
++        /*progress_reporter=*/nullptr, GpuFeatureInfo(),
++        &shared_image_manager_);
++    decoder_ = GLES2Decoder::Create(&client_, &command_buffer_service_,
++                                    &outputter_, group_.get());
++    return decoder_->Initialize(surface_, context_, /*offscreen=*/true,
++                                CONTEXT_TYPE_OPENGLES2,
++                                /*lose_context_when_out_of_memory=*/false);
++  }
++
++  base::test::SingleThreadTaskEnvironment task_environment_;
++  raw_ptr<gl::GLDisplay> display_ = nullptr;
++  std::unique_ptr<NiceMock<MockGLInterface>> gl_;
++  scoped_refptr<gl::GLSurfaceStub> surface_;
++  scoped_refptr<gl::GLContextStub> context_;
++
++  GpuPreferences gpu_preferences_;
++  ShaderTranslatorCache shader_translator_cache_{gpu_preferences_};
++  FramebufferCompletenessCache framebuffer_completeness_cache_;
++  SharedImageManager shared_image_manager_;
++  FakeCommandBufferServiceBase command_buffer_service_;
++  FakeDecoderClient client_;
++  TraceOutputter outputter_;
++  scoped_refptr<ContextGroup> group_;
++  std::unique_ptr<GLES2Decoder> decoder_;
++};
++
++// The offscreen backbuffer must be allocated with defined (zeroed) contents
++// rather than relying on glClear, which is unreliable on drivers with the
++// gl_clear_broken workaround. See crbug.com/562221093.
++TEST_F(GLES2DecoderOffscreenTest, BackbufferStorageIsZeroInitialized) {
++  GpuDriverBugWorkarounds workarounds;
++  // With gl_clear_broken the backbuffer can't rely on the native glClear in
++  // ResizeOffscreenFramebuffer to initialize its contents.
++  workarounds.gl_clear_broken = true;
++
++  // Initialization issues other TexImage2D calls (e.g. default textures).
++  EXPECT_CALL(*gl_, TexImage2D(_, _, _, _, _, _, _, _, _)).Times(AnyNumber());
++
++  // The offscreen backbuffer is created at 64x64 in GL_RGB. It must be uploaded
++  // with data (BackTexture::AllocateStorage zero-fills it via
++  // base::HeapArray::WithSize) rather than nullptr, which leaves the storage
++  // uninitialized.
++  constexpr GLsizei kWidth = 64;
++  constexpr GLsizei kHeight = 64;
++  EXPECT_CALL(*gl_, TexImage2D(GL_TEXTURE_2D, 0, GL_RGB, kWidth, kHeight, 0,
++                               GL_RGB, GL_UNSIGNED_BYTE, NotNull()))
++      .Times(1);
++
++  ASSERT_EQ(InitializeOffscreenDecoder(workarounds), ContextResult::kSuccess);
++}
++
++}  // namespace
++}  // namespace gles2
++}  // namespace gpu

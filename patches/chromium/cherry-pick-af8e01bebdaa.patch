@@ -1,0 +1,373 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Mon, 2 Nov 2026 02:11:53 +0000
+Subject: [M150-LTS] Trace DisplayLockDocumentState in
+ ScopedForceActivatableDisplayLocks
+
+AIPageContentAgent::ContentBuilder::Build() previously stored per-frame
+DisplayLockDocumentState::ScopedForceActivatableDisplayLocks instances
+in a std::vector, placing their untraced raw DisplayLockDocumentState
+pointers on the standard heap instead of the stack. This means that if
+a child frame is detached and garbage-collected during
+UpdateLifecycle(), the ScopedForceActivatableDisplayLocks destructor
+can dereference a freed DisplayLockDocumentState at the end of Build().
+
+This change updates ScopedForceActivatableDisplayLocks to hold a
+HeapVector<Member<DisplayLockDocumentState>, 1> and adds an Add()
+method to combine locks across multiple documents. It also deletes the
+move assignment operator, which previously overwrote state_ without
+decrementing activatable_display_locks_forced_ on the old state
+(leaking a forced lock count if assigned onto a non-empty instance).
+ContentBuilder::Build() and EditorCommand::Execute() now use a single
+stack-allocated ScopedForceActivatableDisplayLocks instance with Add().
+
+Fixed: 576723181
+Change-Id: Ib9ce6e539d2e3232221cac032a61b869dea3a595
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8652986
+Commit-Queue: Alex Turner <alexmt@chromium.org>
+Reviewed-by: Aaron Leventhal <aleventhal@google.com>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Auto-Submit: Alex Turner <alexmt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729512}
+(cherry picked from commit 64154b3895e788731c0095472df4881df78c38be)
+
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_context_test.cc b/third_party/blink/renderer/core/display_lock/display_lock_context_test.cc
+index d07ce51897119c78d1ccf9e2fe64b594e8506829..ff081d2bc4be081df4634164498abafa116d1fb4 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_context_test.cc
++++ b/third_party/blink/renderer/core/display_lock/display_lock_context_test.cc
+@@ -8,6 +8,7 @@
+ #include <memory>
+ #include <utility>
+ 
++#include "base/compiler_specific.h"
+ #include "base/memory/ptr_util.h"
+ #include "cc/base/features.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+@@ -44,6 +45,9 @@
+ #include "third_party/blink/renderer/core/timing/soft_navigation_heuristics.h"
+ #include "third_party/blink/renderer/core/timing/soft_navigation_heuristics_test_util.h"
+ #include "third_party/blink/renderer/core/timing/soft_navigation_paint_attribution_tracker.h"
++#include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
++#include "third_party/blink/renderer/platform/heap/thread_state.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ 
+@@ -4031,4 +4035,104 @@ TEST_F(DisplayLockContextRenderingTest, VisualOverflowUpdateAfterUnlock) {
+             PhysicalRect(0, 0, 120, 120));
+ }
+ 
++namespace {
++
++// Creates the states in a separate stack frame so no raw pointer to them
++// remains on the caller's stack during conservative stack scanning.
++NOINLINE void AddUnreferencedStatesToScope(
++    Document* document,
++    DisplayLockDocumentState::ScopedForceActivatableDisplayLocks& scope,
++    WeakPersistent<DisplayLockDocumentState>& weak_state1,
++    WeakPersistent<DisplayLockDocumentState>& weak_state2) {
++  auto* state1 = MakeGarbageCollected<DisplayLockDocumentState>(document);
++  auto* state2 = MakeGarbageCollected<DisplayLockDocumentState>(document);
++  weak_state1 = state1;
++  weak_state2 = state2;
++  scope.Add(state1->GetScopedForceActivatableLocks());
++  scope.Add(state2->GetScopedForceActivatableLocks());
++}
++
++}  // namespace
++
++TEST_F(DisplayLockContextTest, ScopedForceActivatableDisplayLocks) {
++  DisplayLockDocumentState& state1 =
++      GetDocument().GetDisplayLockDocumentState();
++  auto* state2 = MakeGarbageCollected<DisplayLockDocumentState>(&GetDocument());
++
++  EXPECT_FALSE(state1.ActivatableDisplayLocksForced());
++  EXPECT_FALSE(state2->ActivatableDisplayLocksForced());
++
++  // Default-constructed scope holds no states and destructs cleanly.
++  {
++    DisplayLockDocumentState::ScopedForceActivatableDisplayLocks empty_scope;
++    EXPECT_FALSE(state1.ActivatableDisplayLocksForced());
++  }
++
++  {
++    DisplayLockDocumentState::ScopedForceActivatableDisplayLocks combined_scope;
++    {
++      auto initial_scope = state1.GetScopedForceActivatableLocks();
++      EXPECT_TRUE(state1.ActivatableDisplayLocksForced());
++
++      // Move construction transfers ownership without decrementing.
++      DisplayLockDocumentState::ScopedForceActivatableDisplayLocks moved_scope(
++          std::move(initial_scope));
++      EXPECT_TRUE(state1.ActivatableDisplayLocksForced());
++
++      combined_scope.Add(std::move(moved_scope));
++    }
++    // `initial_scope` and `moved_scope` have been destroyed, but
++    // `combined_scope` still holds the lock on `state1`.
++    EXPECT_TRUE(state1.ActivatableDisplayLocksForced());
++
++    // Destroy a second lock on `state1` in an inner scope to verify that
++    // decrementing from 2 to 1 leaves `state1` forced.
++    {
++      auto inner_scope = state1.GetScopedForceActivatableLocks();
++      EXPECT_TRUE(state1.ActivatableDisplayLocksForced());
++    }
++    EXPECT_TRUE(state1.ActivatableDisplayLocksForced());
++
++    // Add a duplicate lock on `state1` and a lock on `state2` (growing beyond
++    // the inline capacity of 1).
++    combined_scope.Add(state1.GetScopedForceActivatableLocks());
++    combined_scope.Add(state2->GetScopedForceActivatableLocks());
++    EXPECT_TRUE(state1.ActivatableDisplayLocksForced());
++    EXPECT_TRUE(state2->ActivatableDisplayLocksForced());
++  }
++  EXPECT_FALSE(state1.ActivatableDisplayLocksForced());
++  EXPECT_FALSE(state2->ActivatableDisplayLocksForced());
++}
++
++TEST_F(DisplayLockContextTest,
++       ScopedForceActivatableDisplayLocksKeepsStatesAliveAcrossGC) {
++  WeakPersistent<DisplayLockDocumentState> weak_state1;
++  WeakPersistent<DisplayLockDocumentState> weak_state2;
++  {
++    DisplayLockDocumentState::ScopedForceActivatableDisplayLocks scope;
++    AddUnreferencedStatesToScope(&GetDocument(), scope, weak_state1,
++                                 weak_state2);
++    ASSERT_TRUE(weak_state1);
++    ASSERT_TRUE(weak_state2);
++    EXPECT_TRUE(weak_state1->ActivatableDisplayLocksForced());
++    EXPECT_TRUE(weak_state2->ActivatableDisplayLocksForced());
++
++    ThreadState::Current()->CollectAllGarbageForTesting(
++        ThreadState::StackState::kMayContainHeapPointers);
++
++    ASSERT_TRUE(weak_state1);
++    ASSERT_TRUE(weak_state2);
++    EXPECT_TRUE(weak_state1->ActivatableDisplayLocksForced());
++    EXPECT_TRUE(weak_state2->ActivatableDisplayLocksForced());
++  }
++
++  EXPECT_FALSE(weak_state1->ActivatableDisplayLocksForced());
++  EXPECT_FALSE(weak_state2->ActivatableDisplayLocksForced());
++
++  ThreadState::Current()->CollectAllGarbageForTesting(
++      ThreadState::StackState::kNoHeapPointers);
++  EXPECT_FALSE(weak_state1);
++  EXPECT_FALSE(weak_state2);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc b/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc
+index e131bde7620af986daf4aaee8da29b275556286f..1579e94f42eb3ff294c6ee7231c072ec5c1e096f 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc
++++ b/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "third_party/blink/renderer/core/display_lock/display_lock_document_state.h"
+ 
++#include "base/check.h"
++#include "base/check_op.h"
+ #include "base/trace_event/trace_event.h"
+ #include "third_party/blink/renderer/core/css/style_engine.h"
+ #include "third_party/blink/renderer/core/display_lock/display_lock_context.h"
+@@ -375,11 +377,15 @@ void DisplayLockDocumentState::ForcedRangeInfo::ForceLockIfNeeded(
+ 
+ // ScopedForcedActivatableDisplayLocks implementation -----------
+ DisplayLockDocumentState::ScopedForceActivatableDisplayLocks::
+-    ScopedForceActivatableDisplayLocks(DisplayLockDocumentState* state)
+-    : state_(state) {
+-  if (++state_->activatable_display_locks_forced_ == 1) {
++    ScopedForceActivatableDisplayLocks() = default;
++
++DisplayLockDocumentState::ScopedForceActivatableDisplayLocks::
++    ScopedForceActivatableDisplayLocks(DisplayLockDocumentState* state) {
++  CHECK(state);
++  states_.push_back(state);
++  if (++state->activatable_display_locks_forced_ == 1) {
+     HeapVector<Member<DisplayLockContext>> contexts(
+-        state_->display_lock_contexts_);
++        state->display_lock_contexts_);
+     for (auto& context : contexts) {
+       if (context->HasElement()) {
+         context->DidForceActivatableDisplayLocks();
+@@ -398,25 +404,21 @@ DisplayLockDocumentState::ScopedForceActivatableDisplayLocks::
+ 
+ DisplayLockDocumentState::ScopedForceActivatableDisplayLocks::
+     ScopedForceActivatableDisplayLocks(
+-        ScopedForceActivatableDisplayLocks&& other)
+-    : state_(other.state_) {
+-  other.state_ = nullptr;
+-}
++        ScopedForceActivatableDisplayLocks&& other) = default;
+ 
+-DisplayLockDocumentState::ScopedForceActivatableDisplayLocks&
+-DisplayLockDocumentState::ScopedForceActivatableDisplayLocks::operator=(
++void DisplayLockDocumentState::ScopedForceActivatableDisplayLocks::Add(
+     ScopedForceActivatableDisplayLocks&& other) {
+-  state_ = other.state_;
+-  other.state_ = nullptr;
+-  return *this;
++  CHECK_NE(&other, this);
++  states_.append_range(other.states_);
++  other.states_.clear();
+ }
+ 
+ DisplayLockDocumentState::ScopedForceActivatableDisplayLocks::
+     ~ScopedForceActivatableDisplayLocks() {
+-  if (!state_)
+-    return;
+-  DCHECK(state_->activatable_display_locks_forced_);
+-  --state_->activatable_display_locks_forced_;
++  for (DisplayLockDocumentState* state : states_) {
++    CHECK_GT(state->activatable_display_locks_forced_, 0);
++    --state->activatable_display_locks_forced_;
++  }
+ }
+ 
+ void DisplayLockDocumentState::NotifyPrintingOrPreviewChanged() {
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_document_state.h b/third_party/blink/renderer/core/display_lock/display_lock_document_state.h
+index a6f885f5de9c52da9aded7e344e40bf7bf5404c6..82bde374a69fa32097e2cac140d6645c88f2b114 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_document_state.h
++++ b/third_party/blink/renderer/core/display_lock/display_lock_document_state.h
+@@ -68,17 +68,26 @@ class CORE_EXPORT DisplayLockDocumentState final
+     STACK_ALLOCATED();
+ 
+    public:
++    ScopedForceActivatableDisplayLocks();
+     ScopedForceActivatableDisplayLocks(ScopedForceActivatableDisplayLocks&&);
++    ScopedForceActivatableDisplayLocks& operator=(
++        ScopedForceActivatableDisplayLocks&&) = delete;
+     ~ScopedForceActivatableDisplayLocks();
+ 
+-    ScopedForceActivatableDisplayLocks& operator=(
+-        ScopedForceActivatableDisplayLocks&&);
++    // Transfers the locks held by `other` into this scope, leaving `other`
++    // empty.
++    void Add(ScopedForceActivatableDisplayLocks&& other);
+ 
+    private:
+     friend DisplayLockDocumentState;
+     explicit ScopedForceActivatableDisplayLocks(DisplayLockDocumentState*);
+ 
+-    DisplayLockDocumentState* state_;
++    // Inline capacity 1 handles the common single-document case on the stack,
++    // while multi-frame callers can merge additional states via `Add()`.
++    // Elements use `Member` so Oilpan traces the backing buffer if the vector
++    // spills to the heap (while the scope itself stays `STACK_ALLOCATED()` for
++    // deterministic RAII destruction).
++    HeapVector<Member<DisplayLockDocumentState>, 1> states_;
+   };
+ 
+   ScopedForceActivatableDisplayLocks GetScopedForceActivatableLocks();
+diff --git a/third_party/blink/renderer/core/editing/commands/editor_command.cc b/third_party/blink/renderer/core/editing/commands/editor_command.cc
+index 7c43206adcd9164ad16137f465442671a53fd902..c5ce1a3c5273360f5afe672426ff180692f7cbf9 100644
+--- a/third_party/blink/renderer/core/editing/commands/editor_command.cc
++++ b/third_party/blink/renderer/core/editing/commands/editor_command.cc
+@@ -2201,13 +2201,12 @@ bool EditorCommand::Execute(const String& parameter,
+   // We need to force unlock activatable DisplayLocks for Editor::FindString
+   // before the following call to UpdateStyleAndLayout. Otherwise,
+   // ExecuteFindString/Editor::FindString will hit bad style/layout data.
+-  std::optional<DisplayLockDocumentState::ScopedForceActivatableDisplayLocks>
+-      forced_locks;
++  DisplayLockDocumentState::ScopedForceActivatableDisplayLocks forced_locks;
+   if (command_->command_type == EditingCommandType::kFindString) {
+-    forced_locks = GetFrame()
+-                       .GetDocument()
+-                       ->GetDisplayLockDocumentState()
+-                       .GetScopedForceActivatableLocks();
++    forced_locks.Add(GetFrame()
++                         .GetDocument()
++                         ->GetDisplayLockDocumentState()
++                         .GetScopedForceActivatableLocks());
+   }
+ 
+   GetFrame().GetDocument()->UpdateStyleAndLayout(
+diff --git a/third_party/blink/renderer/modules/content_extraction/ai_page_content_agent.cc b/third_party/blink/renderer/modules/content_extraction/ai_page_content_agent.cc
+index 9fbb1b699cba825ea599cae9cf7c2618f164f825..fb5d381a9fce958fb42526894822787c799b0819 100644
+--- a/third_party/blink/renderer/modules/content_extraction/ai_page_content_agent.cc
++++ b/third_party/blink/renderer/modules/content_extraction/ai_page_content_agent.cc
+@@ -1955,26 +1955,24 @@ mojom::blink::AIPageContentPtr AIPageContentAgent::ContentBuilder::Build(
+   //
+   // TODO(crbug.com/387355768): Consider limiting the lock to nodes with
+   // activation reason of FindInPage.
+-  std::vector<DisplayLockDocumentState::ScopedForceActivatableDisplayLocks>
++  DisplayLockDocumentState::ScopedForceActivatableDisplayLocks
+       forced_activatable_locks;
+ 
+   // If we're doing this extraction as a part of the document lifecycle, we
+   // can't invalidate style/layout.
+   if (!document.InvalidationDisallowed()) {
+-    forced_activatable_locks.emplace_back(
+-        document.GetDisplayLockDocumentState()
+-            .GetScopedForceActivatableLocks());
++    forced_activatable_locks.Add(document.GetDisplayLockDocumentState()
++                                     .GetScopedForceActivatableLocks());
+     document.View()->ForAllChildLocalFrameViews(
+         [&](LocalFrameView& frame_view) {
+           if (!frame_view.GetFrame().GetDocument()) {
+             return;
+           }
+ 
+-          forced_activatable_locks.emplace_back(
+-              frame_view.GetFrame()
+-                  .GetDocument()
+-                  ->GetDisplayLockDocumentState()
+-                  .GetScopedForceActivatableLocks());
++          forced_activatable_locks.Add(frame_view.GetFrame()
++                                           .GetDocument()
++                                           ->GetDisplayLockDocumentState()
++                                           .GetScopedForceActivatableLocks());
+         });
+   }
+ 
+diff --git a/third_party/blink/renderer/modules/content_extraction/ai_page_content_agent_unittest.cc b/third_party/blink/renderer/modules/content_extraction/ai_page_content_agent_unittest.cc
+index 8dcddeaa03b1e8c970386aba60ec73c3e67b0aee..b6f3727ec2993b42ce4c17e22dd53aef8b9fb117 100644
+--- a/third_party/blink/renderer/modules/content_extraction/ai_page_content_agent_unittest.cc
++++ b/third_party/blink/renderer/modules/content_extraction/ai_page_content_agent_unittest.cc
+@@ -25,6 +25,7 @@
+ #include "third_party/blink/renderer/core/accessibility/ax_context.h"
+ #include "third_party/blink/renderer/core/accessibility/ax_object_cache.h"
+ #include "third_party/blink/renderer/core/css/style_engine.h"
++#include "third_party/blink/renderer/core/display_lock/display_lock_document_state.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/document_lifecycle.h"
+ #include "third_party/blink/renderer/core/dom/dom_node_ids.h"
+@@ -2570,6 +2571,37 @@ TEST_F(AIPageContentAgentTest, HiddenUntilFoundOnIframe) {
+   CheckTextNode(hidden_text_node, "hidden text");
+ }
+ 
++TEST_F(AIPageContentAgentTest, HiddenUntilFoundAcrossMultipleFrames) {
++  frame_test_helpers::LoadHTMLString(
++      helper_.LocalMainFrame(),
++      "<body>"
++      "  <div hidden=until-found>main hidden text</div>"
++      "  <iframe srcdoc='<div hidden=until-found>iframe 1 hidden "
++      "text</div>'></iframe>"
++      "  <iframe srcdoc='<div hidden=until-found>iframe 2 hidden "
++      "text</div>'></iframe>"
++      "</body>",
++      url_test_helpers::ToKURL("http://foobar.com"));
++
++  GetAIPageContent();
++
++  const auto& root = ContentRootNode();
++  EXPECT_TRUE(TreeContainsTextSubstring(root, "main hidden text"));
++  EXPECT_TRUE(TreeContainsTextSubstring(root, "iframe 1 hidden text"));
++  EXPECT_TRUE(TreeContainsTextSubstring(root, "iframe 2 hidden text"));
++
++  Document* main_doc = helper_.LocalMainFrame()->GetFrame()->GetDocument();
++  ASSERT_TRUE(main_doc);
++  EXPECT_FALSE(
++      main_doc->GetDisplayLockDocumentState().ActivatableDisplayLocksForced());
++  main_doc->View()->ForAllChildLocalFrameViews([](LocalFrameView& frame_view) {
++    if (Document* child_doc = frame_view.GetFrame().GetDocument()) {
++      EXPECT_FALSE(child_doc->GetDisplayLockDocumentState()
++                       .ActivatableDisplayLocksForced());
++    }
++  });
++}
++
+ #if DCHECK_IS_ON()
+ TEST_F(AIPageContentAgentTest, AutoBuildRunsDuringDOMContentLoadedDispatch) {
+   base::test::MockLog log;

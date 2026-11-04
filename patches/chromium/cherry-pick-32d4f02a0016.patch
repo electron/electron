@@ -1,0 +1,454 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@google.com>
+Date: Sun, 4 Oct 2026 19:39:17 -0700
+Subject: [FSA] Run after-write checks after popup teardown
+
+When a FileSystemWritableFileStream closes or a file handle moves,
+FileSystemAccessSafeMoveHelper computes the swap file hash on the IO
+thread before running Safe Browsing after-write checks on the UI thread.
+If the initiating popup or frame closes during write or hash
+computation, its RenderFrameHost, WebContents, and RenderProcessHost are
+destroyed while the move helper remains alive. Previously,
+DoSafeBrowsingCheckOnUIThread looked up
+RenderProcessHost::FromID(frame_id.child_id) to obtain BrowserContext.
+When RenderProcessHost was null, it returned
+DownloadCheckResult::UNKNOWN, which InterpretSafeBrowsingResult mapped
+to kAllow (fail-open), committing the file without a Safe Browsing
+check.
+
+To fix this, snapshot WebContents (as a WeakPtr) and
+outermost_main_frame_id when FileSystemAccessHandleBase or
+FileSystemAccessSafeMoveHelper is constructed on the UI thread, and pass
+them through to FileSystemAccessWriteItem. Additionally, populate
+item->browser_context from
+ChromeFileSystemAccessPermissionContext::profile() in
+DoSafeBrowsingCheckOnUIThread via a WeakPtr to the permission context,
+and fail closed (DownloadCheckResult::BLOCKED_SCAN_FAILED -> kBlock) if
+browser_context is unavailable when the UI thread check runs.
+
+Bug: b:503201581
+Test: content_unittests --gtest_filter=*FileSystemAccessSafeMoveHelper*
+Test: unit_tests --gtest_filter=ChromeFileSystemAccessPermission*
+Change-Id: Ibd806197cf3779eebbed9777b29b114b69e57b77
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8417184
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1710958}
+
+Electron adaptation notes (43-x-y):
+This branch's FileSystemAccessWriteItem has no initiating_frame_id field and FileSystemAccessHandleBase::manager()/file_system_context() are non-const, so the context-line assignment of initiating_frame_id was omitted and the accessors keep their signatures; the new web_contents()/outermost_main_frame_id() accessors, member and plumbing applied unchanged. Note: the chrome/browser side of this fix (deferring the Safe Browsing after-write check) is not compiled by Electron, whose FileSystemAccessPermissionContext::PerformAfterWriteChecks() allows unconditionally; only the content/ plumbing is picked up. The chrome/browser/file_system_access/BUILD.gn hunk (a new //chrome/test/base dependency for the unit_tests target) was dropped: chrome/test/base does not exist in Electron's checkout and the hunk is test-only.
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+index 3f89ba9b7660704e88dd51e3a2e4165b417b5ec9..a15241af20d598cd1f73fb5477f5b2f56c2ffef8 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -436,6 +436,7 @@ bool ShouldBlockAccessToPath(
+ 
+ #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
+ void DoSafeBrowsingCheckOnUIThread(
++    base::WeakPtr<ChromeFileSystemAccessPermissionContext> permission_context,
+     content::GlobalRenderFrameHostId frame_id,
+     std::unique_ptr<content::FileSystemAccessWriteItem> item,
+     safe_browsing::CheckDownloadCallback callback) {
+@@ -450,13 +451,17 @@ void DoSafeBrowsingCheckOnUIThread(
+   }
+ 
+   if (!item->browser_context) {
+-    content::RenderProcessHost* rph =
+-        content::RenderProcessHost::FromID(frame_id.child_id);
+-    if (!rph) {
+-      std::move(callback).Run(safe_browsing::DownloadCheckResult::UNKNOWN);
++    if (permission_context) {
++      item->browser_context = permission_context->profile();
++    } else if (content::RenderProcessHost* rph =
++                   content::RenderProcessHost::FromID(frame_id.child_id)) {
++      item->browser_context = rph->GetBrowserContext();
++    }
++    if (!item->browser_context) {
++      std::move(callback).Run(
++          safe_browsing::DownloadCheckResult::BLOCKED_SCAN_FAILED);
+       return;
+     }
+-    item->browser_context = rph->GetBrowserContext();
+   }
+ 
+   if (!item->web_contents) {
+@@ -2036,7 +2041,8 @@ void ChromeFileSystemAccessPermissionContext::PerformAfterWriteChecks(
+   content::GetUIThreadTaskRunner({})->PostTask(
+       FROM_HERE,
+       base::BindOnce(
+-          &DoSafeBrowsingCheckOnUIThread, frame_id, std::move(item),
++          &DoSafeBrowsingCheckOnUIThread, weak_factory_.GetWeakPtr(), frame_id,
++          std::move(item),
+           base::BindOnce(
+               [](scoped_refptr<base::TaskRunner> task_runner,
+                  base::OnceCallback<void(AfterWriteCheckResult result)>
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+index e23912db28d89c1e719d0a7684fd88223a743004..4cfc8c1d2f261b7e3a025f3ec250f4d1752727b4 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+@@ -79,6 +79,14 @@
+ #include "chrome/browser/policy/dm_token_utils.h"
+ #endif
+ 
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
++#include "chrome/browser/safe_browsing/download_protection/download_protection_service.h"
++#include "chrome/browser/safe_browsing/services_delegate.h"
++#include "chrome/browser/safe_browsing/test_safe_browsing_service.h"
++#include "chrome/test/base/testing_browser_process.h"
++#include "content/public/browser/file_system_access_write_item.h"
++#endif
++
+ using content::BrowserContext;
+ using content::PathInfo;
+ using content::PathType;
+@@ -4812,3 +4820,138 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+       SensitiveDirectoryResult::kAllowed);
+ }
+ #endif  // !BUILDFLAG(IS_CHROMEOS)
++
++#if BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
++namespace {
++
++class MockDownloadProtectionService
++    : public safe_browsing::DownloadProtectionService {
++ public:
++  explicit MockDownloadProtectionService(
++      safe_browsing::SafeBrowsingServiceImpl* sb_service)
++      : safe_browsing::DownloadProtectionService(sb_service) {
++    SetEnabled(true);
++  }
++
++  MOCK_METHOD(void,
++              CheckFileSystemAccessWrite,
++              (std::unique_ptr<content::FileSystemAccessWriteItem> item,
++               safe_browsing::CheckDownloadCallback callback),
++              (override));
++};
++
++class SafeBrowsingServiceWithMockDownloadProtection
++    : public safe_browsing::TestSafeBrowsingService {
++ public:
++  SafeBrowsingServiceWithMockDownloadProtection() {
++    services_delegate_ =
++        safe_browsing::ServicesDelegate::CreateForTest(this, this);
++  }
++
++  MockDownloadProtectionService* mock_download_protection_service() const {
++    return mock_download_protection_service_;
++  }
++
++  void ShutDown() {
++    mock_download_protection_service_ = nullptr;
++    safe_browsing::TestSafeBrowsingService::ShutDown();
++  }
++
++ protected:
++  ~SafeBrowsingServiceWithMockDownloadProtection() override = default;
++
++  bool CanCreateDownloadProtectionService() override { return true; }
++
++  safe_browsing::DownloadProtectionService* CreateDownloadProtectionService()
++      override {
++    auto* service = new MockDownloadProtectionService(this);
++    mock_download_protection_service_ = service;
++    return service;
++  }
++
++ private:
++  raw_ptr<MockDownloadProtectionService> mock_download_protection_service_ =
++      nullptr;
++};
++
++}  // namespace
++
++// Regression test for b/503201581.
++// Verifies that when the initiating RenderProcessHost is already destroyed
++// (e.g. popup teardown during close), PerformAfterWriteChecks still populates
++// item->browser_context from the permission context's profile and runs the
++// Safe Browsing download check instead of failing open with UNKNOWN.
++TEST_F(ChromeFileSystemAccessPermissionContextTest,
++       PerformAfterWriteChecks_MissingRenderProcessHost) {
++  auto sb_service =
++      base::MakeRefCounted<SafeBrowsingServiceWithMockDownloadProtection>();
++  TestingBrowserProcess::GetGlobal()->SetSafeBrowsingService(sb_service.get());
++  sb_service->Initialize();
++  ASSERT_TRUE(sb_service->mock_download_protection_service());
++
++  auto item = std::make_unique<content::FileSystemAccessWriteItem>();
++  item->target_file_path = temp_dir_.GetPath().AppendASCII("test.exe");
++  item->full_path = temp_dir_.GetPath().AppendASCII("test.exe.crswap");
++  item->sha256_hash = "hash";
++  item->size = 100;
++  item->frame_url = GURL("https://example.com/popup");
++  // Use a non-existent child process ID so RenderProcessHost::FromID returns
++  // nullptr, simulating popup renderer teardown.
++  const content::GlobalRenderFrameHostId kDeadFrameId(999999, 999999);
++  item->initiating_frame_id = kDeadFrameId;
++
++  EXPECT_CALL(*sb_service->mock_download_protection_service(),
++              CheckFileSystemAccessWrite(testing::_, testing::_))
++      .WillOnce([&](std::unique_ptr<content::FileSystemAccessWriteItem> item,
++                    safe_browsing::CheckDownloadCallback callback) {
++        EXPECT_EQ(item->browser_context, profile());
++        std::move(callback).Run(safe_browsing::DownloadCheckResult::DANGEROUS);
++      });
++
++  base::test::TestFuture<
++      ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult>
++      future;
++  permission_context()->PerformAfterWriteChecks(std::move(item), kDeadFrameId,
++                                                future.GetCallback());
++
++  EXPECT_EQ(
++      future.Get(),
++      ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult::kBlock);
++
++  sb_service->ShutDown();
++  TestingBrowserProcess::GetGlobal()->SetSafeBrowsingService(nullptr);
++}
++
++TEST_F(ChromeFileSystemAccessPermissionContextTest,
++       PerformAfterWriteChecks_DestroyedPermissionContextFailsClosed) {
++  auto sb_service =
++      base::MakeRefCounted<SafeBrowsingServiceWithMockDownloadProtection>();
++  TestingBrowserProcess::GetGlobal()->SetSafeBrowsingService(sb_service.get());
++  sb_service->Initialize();
++  ASSERT_TRUE(sb_service->mock_download_protection_service());
++
++  auto temp_permission_context =
++      std::make_unique<ChromeFileSystemAccessPermissionContext>(profile());
++
++  auto item = std::make_unique<content::FileSystemAccessWriteItem>();
++  item->target_file_path = temp_dir_.GetPath().AppendASCII("test.exe");
++  item->full_path = temp_dir_.GetPath().AppendASCII("test.exe.crswap");
++  const content::GlobalRenderFrameHostId kDeadFrameId(999999, 999999);
++
++  base::test::TestFuture<
++      ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult>
++      future;
++  temp_permission_context->PerformAfterWriteChecks(
++      std::move(item), kDeadFrameId, future.GetCallback());
++
++  // Destroy the permission context before the posted UI thread task runs.
++  temp_permission_context.reset();
++
++  EXPECT_EQ(
++      future.Get(),
++      ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult::kBlock);
++
++  sb_service->ShutDown();
++  TestingBrowserProcess::GetGlobal()->SetSafeBrowsingService(nullptr);
++}
++#endif  // BUILDFLAG(SAFE_BROWSING_DOWNLOAD_PROTECTION)
+diff --git a/content/browser/file_system_access/file_system_access_file_writer_impl.cc b/content/browser/file_system_access/file_system_access_file_writer_impl.cc
+index 3314bb0f277aadc267405d71f15b43c384aa7981..61ca9176d4642531dc97962654d9353d1ef582ac 100644
+--- a/content/browser/file_system_access/file_system_access_file_writer_impl.cc
++++ b/content/browser/file_system_access/file_system_access_file_writer_impl.cc
+@@ -281,7 +281,8 @@ void FileSystemAccessFileWriterImpl::MaybeStartClose() {
+               {FileSystemOperation::CopyOrMoveOption::
+                    kPreserveDestinationPermissions}),
+           std::move(quarantine_connection_callback_),
+-          has_transient_user_activation_);
++          has_transient_user_activation_, web_contents(),
++          outermost_main_frame_id());
+   // Allows the unique pointer to be bound to the callback so the helper stays
+   // alive until the operation completes.
+   FileSystemAccessSafeMoveHelper* raw_helper =
+diff --git a/content/browser/file_system_access/file_system_access_handle_base.cc b/content/browser/file_system_access/file_system_access_handle_base.cc
+index 6b1042f9b0f0f435bae9250ed317991ca412b71e..12a076425626f203fd1b25786a8480caa509717c 100644
+--- a/content/browser/file_system_access/file_system_access_handle_base.cc
++++ b/content/browser/file_system_access/file_system_access_handle_base.cc
+@@ -63,15 +63,17 @@ FileSystemAccessHandleBase::FileSystemAccessHandleBase(
+          url_.type() == storage::kFileSystemTypeTest)
+       << url_.type();
+ 
++  if (auto* rfh = RenderFrameHost::FromID(context_.frame_id)) {
++    outermost_main_frame_id_ = rfh->GetOutermostMainFrame()->GetGlobalId();
++    web_contents_ = WebContents::FromRenderFrameHost(rfh)->GetWeakPtr();
++  }
++
+   if (ShouldTrackUsage(url_)) {
+     DCHECK(url_.mount_type() == storage::kFileSystemTypeLocal ||
+            url_.mount_type() == storage::kFileSystemTypeExternal)
+         << url_.mount_type();
+ 
+-    WebContents* web_contents =
+-        WebContentsImpl::FromRenderFrameHostID(context_.frame_id);
+-    if (web_contents) {
+-      web_contents_ = web_contents->GetWeakPtr();
++    if (web_contents_) {
+       static_cast<WebContentsImpl*>(web_contents_.get())
+           ->IncrementFileSystemAccessHandleCount();
+     }
+@@ -628,7 +630,8 @@ void FileSystemAccessHandleBase::DoPerformMoveOperation(
+           manager()->AsWeakPtr(), context(), url(), destination_url,
+           storage::FileSystemOperation::CopyOrMoveOptionSet(),
+           GetContentClient()->browser()->GetQuarantineConnectionCallback(),
+-          has_transient_user_activation);
++          has_transient_user_activation, web_contents(),
++          outermost_main_frame_id());
+   // Allows the unique pointer to be bound to the callback so the helper stays
+   // alive until the operation completes.
+   FileSystemAccessSafeMoveHelper* raw_helper =
+diff --git a/content/browser/file_system_access/file_system_access_handle_base.h b/content/browser/file_system_access/file_system_access_handle_base.h
+index 51b97c4920f63973fac8798f389f9a0044af5cbc..9769f513e8305b6ad42525ea3cbce2d113fa6e3b 100644
+--- a/content/browser/file_system_access/file_system_access_handle_base.h
++++ b/content/browser/file_system_access/file_system_access_handle_base.h
+@@ -61,6 +61,14 @@ class CONTENT_EXPORT FileSystemAccessHandleBase {
+   const storage::FileSystemURL& url() const { return url_; }
+   const SharedHandleState& handle_state() const { return handle_state_; }
+   const BindingContext& context() const { return context_; }
++  base::WeakPtr<WebContents> web_contents() const {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    return web_contents_;
++  }
++  GlobalRenderFrameHostId outermost_main_frame_id() const {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    return outermost_main_frame_id_;
++  }
+   FileSystemAccessManagerImpl* manager() { return manager_; }
+   storage::FileSystemContext* file_system_context() {
+     return manager()->context();
+@@ -258,6 +266,8 @@ class CONTENT_EXPORT FileSystemAccessHandleBase {
+       nullptr;
+   base::WeakPtr<WebContents> web_contents_
+       GUARDED_BY_CONTEXT(sequence_checker_);
++  GlobalRenderFrameHostId outermost_main_frame_id_
++      GUARDED_BY_CONTEXT(sequence_checker_);
+   const BindingContext context_;
+   storage::FileSystemURL url_ GUARDED_BY_CONTEXT(sequence_checker_);
+   const SharedHandleState handle_state_;
+diff --git a/content/browser/file_system_access/file_system_access_safe_move_helper.cc b/content/browser/file_system_access/file_system_access_safe_move_helper.cc
+index 1710b3bdd73b2e47c94d2c3f3824792c245f98df..3692f835ae2ba3c105caa7e2d3851f9f6c372b8a 100644
+--- a/content/browser/file_system_access/file_system_access_safe_move_helper.cc
++++ b/content/browser/file_system_access/file_system_access_safe_move_helper.cc
+@@ -21,6 +21,7 @@
+ #include "content/public/browser/content_browser_client.h"
+ #include "content/public/browser/global_routing_id.h"
+ #include "content/public/browser/render_frame_host.h"
++#include "content/public/browser/web_contents.h"
+ #include "content/public/common/content_client.h"
+ #include "crypto/hash.h"
+ #include "mojo/public/cpp/bindings/callback_helpers.h"
+@@ -152,15 +153,29 @@ FileSystemAccessSafeMoveHelper::FileSystemAccessSafeMoveHelper(
+     const storage::FileSystemURL& dest_url,
+     storage::FileSystemOperation::CopyOrMoveOptionSet options,
+     download::QuarantineConnectionCallback quarantine_connection_callback,
+-    bool has_transient_user_activation)
++    bool has_transient_user_activation,
++    base::WeakPtr<WebContents> web_contents,
++    GlobalRenderFrameHostId outermost_main_frame_id)
+     : manager_(std::move(manager)),
+       context_(context),
++      web_contents_(std::move(web_contents)),
++      outermost_main_frame_id_(outermost_main_frame_id),
+       source_url_(source_url),
+       dest_url_(dest_url),
+       options_(options),
+       quarantine_connection_callback_(
+           std::move(quarantine_connection_callback)),
+-      has_transient_user_activation_(has_transient_user_activation) {}
++      has_transient_user_activation_(has_transient_user_activation) {
++  if (auto* rfh = content::RenderFrameHost::FromID(context_.frame_id)) {
++    if (!outermost_main_frame_id_) {
++      outermost_main_frame_id_ = rfh->GetOutermostMainFrame()->GetGlobalId();
++    }
++    if (!web_contents_) {
++      web_contents_ =
++          content::WebContents::FromRenderFrameHost(rfh)->GetWeakPtr();
++    }
++  }
++}
+ 
+ FileSystemAccessSafeMoveHelper::~FileSystemAccessSafeMoveHelper() = default;
+ 
+@@ -242,19 +257,15 @@ void FileSystemAccessSafeMoveHelper::DoAfterWriteCheck(
+     return;
+   }
+ 
+-  content::GlobalRenderFrameHostId outermost_main_frame_id;
+-  auto* rfh = content::RenderFrameHost::FromID(context_.frame_id);
+-  if (rfh)
+-    outermost_main_frame_id = rfh->GetOutermostMainFrame()->GetGlobalId();
+-
+   auto item = std::make_unique<FileSystemAccessWriteItem>();
+   item->target_file_path = dest_url().path();
+   item->full_path = source_url().path();
+   item->sha256_hash = hash;
+   item->size = size;
+   item->frame_url = context_.url;
+-  item->outermost_main_frame_id = outermost_main_frame_id;
++  item->outermost_main_frame_id = outermost_main_frame_id_;
+   item->has_user_gesture = has_transient_user_activation_;
++  item->web_contents = web_contents_;
+   manager_->permission_context()->PerformAfterWriteChecks(
+       std::move(item), context_.frame_id,
+       base::BindOnce(&FileSystemAccessSafeMoveHelper::DidAfterWriteCheck,
+diff --git a/content/browser/file_system_access/file_system_access_safe_move_helper.h b/content/browser/file_system_access/file_system_access_safe_move_helper.h
+index 84c4a30801ab918f8795daabecfabda4305a722d..bcb0d76a52537e140fedc0111f0917ea81e552c7 100644
+--- a/content/browser/file_system_access/file_system_access_safe_move_helper.h
++++ b/content/browser/file_system_access/file_system_access_safe_move_helper.h
+@@ -34,7 +34,10 @@ class CONTENT_EXPORT FileSystemAccessSafeMoveHelper {
+       const storage::FileSystemURL& dest_url,
+       storage::FileSystemOperation::CopyOrMoveOptionSet options,
+       download::QuarantineConnectionCallback quarantine_connection_callback,
+-      bool has_transient_user_activation);
++      bool has_transient_user_activation,
++      base::WeakPtr<WebContents> web_contents = nullptr,
++      GlobalRenderFrameHostId outermost_main_frame_id =
++          GlobalRenderFrameHostId());
+   FileSystemAccessSafeMoveHelper(const FileSystemAccessSafeMoveHelper&) =
+       delete;
+   FileSystemAccessSafeMoveHelper& operator=(
+@@ -89,6 +92,10 @@ class CONTENT_EXPORT FileSystemAccessSafeMoveHelper {
+       GUARDED_BY_CONTEXT(sequence_checker_);
+   FileSystemAccessManagerImpl::BindingContext context_
+       GUARDED_BY_CONTEXT(sequence_checker_);
++  base::WeakPtr<WebContents> web_contents_
++      GUARDED_BY_CONTEXT(sequence_checker_);
++  GlobalRenderFrameHostId outermost_main_frame_id_
++      GUARDED_BY_CONTEXT(sequence_checker_);
+ 
+   const storage::FileSystemURL source_url_;
+   const storage::FileSystemURL dest_url_;
+diff --git a/content/browser/file_system_access/file_system_access_safe_move_helper_unittest.cc b/content/browser/file_system_access/file_system_access_safe_move_helper_unittest.cc
+index a689e70f790e71b7c682dc46845956a414a8af0f..313e1600501095a2b4aecef3d4478fd2b68ddf38 100644
+--- a/content/browser/file_system_access/file_system_access_safe_move_helper_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_safe_move_helper_unittest.cc
+@@ -632,4 +632,35 @@ TEST_F(FileSystemAccessSafeMoveHelperAfterWriteChecksTest,
+       file_system_context_.get(), dest_url, 3));
+ }
+ 
++TEST_F(FileSystemAccessSafeMoveHelperAfterWriteChecksTest,
++       PreservesOutermostMainFrameId) {
++  EXPECT_TRUE(base::WriteFile(test_source_url_.path(), "abc"));
++
++  const GlobalRenderFrameHostId kOutermostFrameId(42, 42);
++  helper_ = std::make_unique<FileSystemAccessSafeMoveHelper>(
++      manager_->AsWeakPtr(),
++      FileSystemAccessManagerImpl::BindingContext(kTestStorageKey, kTestURL,
++                                                  kFrameId),
++      test_source_url_, test_dest_url_,
++      storage::FileSystemOperation::CopyOrMoveOptionSet(), quarantine_callback_,
++      /*has_transient_user_activation=*/false,
++      /*web_contents=*/nullptr, kOutermostFrameId);
++
++  EXPECT_CALL(permission_context_,
++              PerformAfterWriteChecks_(
++                  Field(&FileSystemAccessWriteItem::outermost_main_frame_id,
++                        Eq(kOutermostFrameId)),
++                  kFrameId, _))
++      .WillOnce(base::test::RunOnceCallback<2>(
++          FileSystemAccessPermissionContext::AfterWriteCheckResult::kAllow));
++
++  base::RunLoop loop;
++  helper_->Start(base::BindLambdaForTesting(
++      [&](blink::mojom::FileSystemAccessErrorPtr result) {
++        EXPECT_EQ(result->status, FileSystemAccessStatus::kOk);
++        loop.Quit();
++      }));
++  loop.Run();
++}
++
+ }  // namespace content

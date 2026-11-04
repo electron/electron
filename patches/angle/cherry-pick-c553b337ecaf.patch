@@ -1,0 +1,2012 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Mon, 21 Sep 2026 19:16:32 -0700
+Subject: GL: add defer_gl_delete_buffers workaround.
+
+Add a workaround which defers calls to glDeleteBuffers while the
+buffer might be in use by in-flight GPU work. Apply this workaround to
+Mali GPUs.
+
+Distilled and integrated test cases from the bug report. Confirmed on
+device that the test cases reliably catch the crash, and that the
+workaround eliminates it.
+
+Co-authored with Gemini.
+
+Bug: chromium:558870371
+Change-Id: I4b9246a42e863fe2dd45b20a8eeea7357475fc99
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8448362
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (43-x-y):
+This branch's GL backend predates the StateManagerGL mState/setState()/setDefaultVAOState() refactor and still has the native-context sync/restore helpers, so the workaround was ported onto that layout: the deferred-deletion members, deleteBuffer(buffer, size, isHardenedContext), bindBuffer(target, buffer, isHardenedContext) (which records element-array buffers for hardened contexts), onFinish()/onFenceSync()/onBeginQuery()/onSerialCompleted()/maybeDrainDeferredBuffers() and the finish-on-destruction logic are all applied as upstream, while the upstream-only setState/setDefaultVAOState hunks have no counterpart here. The three bindBuffer() calls in this branch's native-context restore helpers (restoreBufferBindingsNativeContext/restoreVertexArraysNativeContext, which upstream no longer has) pass isHardenedContext=false since they restore an external, non-hardened context's bindings. SyncGL is constructed from the RendererGL (as upstream) instead of raw FunctionsGL so it can reach the StateManagerGL; ContextGL::createSync() was updated accordingly. BufferGL/BlitGL/TextureGL/VertexArrayGL/QueryGL/ContextGL hunks and the Mali feature enabling applied unchanged.
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 707e21cd497782e02fb9b7e148fef7ce5cbc4a85..3fdfdcbad8dc3f3462338e8dc2d89a9dd797f1ca 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -818,6 +818,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo deferGlDeleteBuffers = {
++        "deferGlDeleteBuffers",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 3b8cb93c055e81c5a094006f456e3037d48a3819..9be87535403f1e23a51b00111cbaf22752178d8c 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -1079,6 +1079,14 @@
+                 "Issue a two-step clear with distinct values during robust resource init to prevent value-collision driver clear-dedup elision on invalidate."
+             ],
+             "issue": "http://crbug.com/550489336"
++        },
++        {
++            "name": "defer_gl_delete_buffers",
++            "category": "Workarounds",
++            "description": [
++                "Defer glDeleteBuffers calls until previous GPU work has completed."
++            ],
++            "issue": "http://crbug.com/558870371"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/BlitGL.cpp b/src/libANGLE/renderer/gl/BlitGL.cpp
+index 13b87877a76d14c11b44d5e1e0053f880cd9f945..9d5d274282eafa44dcc4fe9d18201df15f33e8c5 100644
+--- a/src/libANGLE/renderer/gl/BlitGL.cpp
++++ b/src/libANGLE/renderer/gl/BlitGL.cpp
+@@ -1366,7 +1366,7 @@ angle::Result BlitGL::generateMipmap(const gl::Context *context,
+     // Copy source to an intermediate texture.
+     GLuint intermediateTexture = mScratchTextures[0];
+     mStateManager->bindTexture(sourceType, intermediateTexture);
+-    mStateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++    mStateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0, context->isHardenedContext());
+     ANGLE_GL_TRY(context, mFunctions->texParameteri(ToGLenum(sourceTarget), GL_TEXTURE_MIN_FILTER,
+                                                     GL_NEAREST));
+     ANGLE_GL_TRY(context, mFunctions->texParameteri(ToGLenum(sourceTarget), GL_TEXTURE_MAG_FILTER,
+@@ -1459,7 +1459,8 @@ angle::Result BlitGL::initializeResources(const gl::Context *context)
+     ANGLE_GL_TRY(context, mFunctions->genFramebuffers(1, &mScratchFBO));
+ 
+     ANGLE_GL_TRY(context, mFunctions->genBuffers(1, &mVertexBuffer));
+-    mStateManager->bindBuffer(gl::BufferBinding::Array, mVertexBuffer);
++    mStateManager->bindBuffer(gl::BufferBinding::Array, mVertexBuffer,
++                              context->isHardenedContext());
+ 
+     // Use a single, large triangle, to avoid arithmetic precision issues where fragments
+     // with the same Y coordinate don't get exactly the same interpolated texcoord Y.
+@@ -1577,7 +1578,8 @@ angle::Result BlitGL::setVAOState(const gl::Context *context)
+ 
+ angle::Result BlitGL::initializeVAOState(const gl::Context *context)
+ {
+-    mStateManager->bindBuffer(gl::BufferBinding::Array, mVertexBuffer);
++    mStateManager->bindBuffer(gl::BufferBinding::Array, mVertexBuffer,
++                              context->isHardenedContext());
+ 
+     ANGLE_GL_TRY(context, mFunctions->enableVertexAttribArray(mTexcoordAttribLocation));
+     ANGLE_GL_TRY(context, mFunctions->vertexAttribPointer(mTexcoordAttribLocation, 2, GL_FLOAT,
+diff --git a/src/libANGLE/renderer/gl/BufferGL.cpp b/src/libANGLE/renderer/gl/BufferGL.cpp
+index 4e3fca4ffa1c68c6a33be3b9b0c11b74ac1240e5..7626e98f6a9782d4cff72d06255d9d9957a6f8b9 100644
+--- a/src/libANGLE/renderer/gl/BufferGL.cpp
++++ b/src/libANGLE/renderer/gl/BufferGL.cpp
+@@ -80,7 +80,7 @@ BufferGL::~BufferGL()
+ void BufferGL::destroy(const gl::Context *context)
+ {
+     StateManagerGL *stateManager = GetStateManagerGL(context);
+-    stateManager->deleteBuffer(mBufferID);
++    stateManager->deleteBuffer(mBufferID, mBufferSize, context->isHardenedContext());
+     mBufferID = 0;
+ }
+ 
+@@ -103,7 +103,7 @@ angle::Result BufferGL::setData(const gl::Context *context,
+         mShadowCopy = angle::MemoryBuffer();
+     }
+ 
+-    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID, context->isHardenedContext());
+ 
+     const void *uploadData = data;
+ 
+@@ -140,7 +140,7 @@ angle::Result BufferGL::setSubData(const gl::Context *context,
+     const FunctionsGL *functions = GetFunctionsGL(context);
+     StateManagerGL *stateManager = GetStateManagerGL(context);
+ 
+-    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID, context->isHardenedContext());
+ 
+     const void *uploadData = data;
+ 
+@@ -174,8 +174,9 @@ angle::Result BufferGL::copySubData(const gl::Context *context,
+ 
+     BufferGL *sourceGL = GetAs<BufferGL>(source);
+ 
+-    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
+-    stateManager->bindBuffer(SourceBufferOperationTarget, sourceGL->getBufferID());
++    stateManager->bindBuffer(DestBufferOperationTarget, mBufferID, context->isHardenedContext());
++    stateManager->bindBuffer(SourceBufferOperationTarget, sourceGL->getBufferID(),
++                             context->isHardenedContext());
+ 
+     ANGLE_GL_TRY(context, functions->copyBufferSubData(gl::ToGLenum(SourceBufferOperationTarget),
+                                                        gl::ToGLenum(DestBufferOperationTarget),
+@@ -212,7 +213,8 @@ angle::Result BufferGL::map(const gl::Context *context,
+     }
+     else
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+         if (functions->mapBuffer)
+         {
+             *mapPtr = ANGLE_GL_TRY(
+@@ -229,7 +231,7 @@ angle::Result BufferGL::map(const gl::Context *context,
+         // Unbind the mapped buffer from the array buffer binding. Some drivers generate errors if
+         // any mapped buffer is bound to array buffer bindings.
+         // crbug.com/1345777
+-        stateManager->bindBuffer(DestBufferOperationTarget, 0);
++        stateManager->bindBuffer(DestBufferOperationTarget, 0, context->isHardenedContext());
+     }
+ 
+     mIsMapped  = true;
+@@ -258,7 +260,8 @@ angle::Result BufferGL::mapRange(const gl::Context *context,
+     }
+     else
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+         *mapPtr =
+             ANGLE_GL_TRY(context, functions->mapBufferRange(gl::ToGLenum(DestBufferOperationTarget),
+                                                             offset, length, access));
+@@ -266,7 +269,7 @@ angle::Result BufferGL::mapRange(const gl::Context *context,
+         // Unbind the mapped buffer from the array buffer binding. Some drivers generate errors if
+         // any mapped buffer is bound to array buffer bindings.
+         // crbug.com/1345777
+-        stateManager->bindBuffer(DestBufferOperationTarget, 0);
++        stateManager->bindBuffer(DestBufferOperationTarget, 0, context->isHardenedContext());
+     }
+ 
+     mIsMapped  = true;
+@@ -291,15 +294,17 @@ angle::Result BufferGL::unmap(const gl::Context *context,
+ 
+     if (mShadowCopy.has_value())
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
+-        ANGLE_GL_TRY(context,
+-                     functions->bufferSubData(gl::ToGLenum(DestBufferOperationTarget), mMapOffset,
+-                                              mMapSize, mShadowCopy->data() + mMapOffset));
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
++        ANGLE_UNSAFE_TODO(ANGLE_GL_TRY(
++            context, functions->bufferSubData(gl::ToGLenum(DestBufferOperationTarget), mMapOffset,
++                                              mMapSize, mShadowCopy->data() + mMapOffset)));
+         *result = GL_TRUE;
+     }
+     else
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+         *result =
+             ANGLE_GL_TRY(context, functions->unmapBuffer(gl::ToGLenum(DestBufferOperationTarget)));
+     }
+@@ -331,7 +336,8 @@ angle::Result BufferGL::getIndexRange(const gl::Context *context,
+     }
+     else
+     {
+-        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID);
++        stateManager->bindBuffer(DestBufferOperationTarget, mBufferID,
++                                 context->isHardenedContext());
+ 
+         const GLuint typeBytes = gl::GetDrawElementsTypeSize(type);
+         const uint8_t *bufferData =
+diff --git a/src/libANGLE/renderer/gl/ContextGL.cpp b/src/libANGLE/renderer/gl/ContextGL.cpp
+index 0fb4314a0e9bb842dcb48d3c7d48f0157d2dcdc0..41c5d836bdf56f871c0858cf27c38074423859a6 100644
+--- a/src/libANGLE/renderer/gl/ContextGL.cpp
++++ b/src/libANGLE/renderer/gl/ContextGL.cpp
+@@ -238,7 +238,7 @@ FenceNVImpl *ContextGL::createFenceNV()
+ 
+ SyncImpl *ContextGL::createSync(const gl::Context *context)
+ {
+-    SyncImpl *sync = new SyncGL(getFunctions());
++    SyncImpl *sync = new SyncGL(mRenderer);
+     if (context)
+     {
+         static_cast<void>(applyRecreateFboWorkaroundIfNeeded(context));
+@@ -498,7 +498,8 @@ angle::Result ContextGL::drawArraysInstanced(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
+-gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstance)
++gl::AttributesMask ContextGL::updateAttributesForBaseInstance(const gl::Context *context,
++                                                              GLuint baseInstance)
+ {
+     const gl::ProgramExecutable *executable = getState().getProgramExecutable();
+     gl::AttributesMask attribToUpdateMask;
+@@ -524,7 +525,8 @@ gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstanc
+                 // and that information is in VertexArrayGL.
+                 // Assert that the buffer is non-null because this case isn't handled.
+                 ASSERT(buffer);
+-                getStateManager()->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID());
++                getStateManager()->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID(),
++                                              context->isHardenedContext());
+                 if (attrib.format->isPureInt())
+                 {
+                     functions->vertexAttribIPointer(attribIndex, attrib.format->channelCount,
+@@ -545,7 +547,7 @@ gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstanc
+     return attribToUpdateMask;
+ }
+ 
+-void ContextGL::resetUpdatedAttributes(gl::AttributesMask attribMask)
++void ContextGL::resetUpdatedAttributes(const gl::Context *context, gl::AttributesMask attribMask)
+ {
+     const FunctionsGL *functions = getFunctions();
+     for (size_t attribIndex : attribMask)
+@@ -555,7 +557,8 @@ void ContextGL::resetUpdatedAttributes(gl::AttributesMask attribMask)
+         const gl::Buffer *buffer =
+             mState.getVertexArray()->getVertexArrayBuffer(attrib.bindingIndex);
+         getStateManager()->bindBuffer(gl::BufferBinding::Array,
+-                                      GetImplAs<BufferGL>(buffer)->getBufferID());
++                                      GetImplAs<BufferGL>(buffer)->getBufferID(),
++                                      context->isHardenedContext());
+         if (attrib.format->isPureInt())
+         {
+             functions->vertexAttribIPointer(static_cast<GLuint>(attribIndex),
+@@ -602,12 +605,13 @@ angle::Result ContextGL::drawArraysInstancedBaseInstance(const gl::Context *cont
+         // pointer offset calling vertexAttribPointer Will refactor stateCache and pass baseInstance
+         // to setDrawArraysState to set pointer offset
+ 
+-        gl::AttributesMask attribToResetMask = updateAttributesForBaseInstance(baseInstance);
++        gl::AttributesMask attribToResetMask =
++            updateAttributesForBaseInstance(context, baseInstance);
+ 
+         ANGLE_GL_TRY(context, functions->drawArraysInstanced(ToGLenum(mode), first, count,
+                                                              adjustedInstanceCount));
+ 
+-        resetUpdatedAttributes(attribToResetMask);
++        resetUpdatedAttributes(context, attribToResetMask);
+     }
+ 
+     mRenderer->markWorkSubmitted();
+@@ -753,13 +757,14 @@ angle::Result ContextGL::drawElementsInstancedBaseVertexBaseInstance(const gl::C
+     {
+         // GL 3.3+ or GLES 3.2+
+         // TODO(http://anglebug.com/42262554): same as above
+-        gl::AttributesMask attribToResetMask = updateAttributesForBaseInstance(baseInstance);
++        gl::AttributesMask attribToResetMask =
++            updateAttributesForBaseInstance(context, baseInstance);
+ 
+         ANGLE_GL_TRY(context, functions->drawElementsInstancedBaseVertex(
+                                   ToGLenum(mode), count, ToGLenum(type), drawIndexPointer,
+                                   adjustedInstanceCount, baseVertex));
+ 
+-        resetUpdatedAttributes(attribToResetMask);
++        resetUpdatedAttributes(context, attribToResetMask);
+     }
+ 
+     mRenderer->markWorkSubmitted();
+@@ -1191,7 +1196,8 @@ angle::Result ContextGL::getDepthInitPBO(const gl::Context *context,
+ 
+     if (requestedSize > pbo.size)
+     {
+-        stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, pbo.bufferID);
++        stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, pbo.bufferID,
++                                 context->isHardenedContext());
+ 
+         functions->bufferData(GL_PIXEL_UNPACK_BUFFER, requestedSize, nullptr, GL_STATIC_DRAW);
+         GLubyte *mapPointer = static_cast<GLubyte *>(
+diff --git a/src/libANGLE/renderer/gl/ContextGL.h b/src/libANGLE/renderer/gl/ContextGL.h
+index df3754be0d67629e46bdff19cb647d34f54c73b3..7661bc1c5dfe93fd6ca3703419d4098af0d29039 100644
+--- a/src/libANGLE/renderer/gl/ContextGL.h
++++ b/src/libANGLE/renderer/gl/ContextGL.h
+@@ -323,8 +323,9 @@ class ContextGL : public ContextImpl
+                                        GLsizei instanceCount,
+                                        const void **outIndices);
+ 
+-    gl::AttributesMask updateAttributesForBaseInstance(GLuint baseInstance);
+-    void resetUpdatedAttributes(gl::AttributesMask attribMask);
++    gl::AttributesMask updateAttributesForBaseInstance(const gl::Context *context,
++                                                       GLuint baseInstance);
++    void resetUpdatedAttributes(const gl::Context *context, gl::AttributesMask attribMask);
+ 
+     angle::Result applyRecreateFboWorkaroundIfNeeded(const gl::Context *context);
+ 
+diff --git a/src/libANGLE/renderer/gl/QueryGL.cpp b/src/libANGLE/renderer/gl/QueryGL.cpp
+index fbd3613fe4f4bbe0a737c3f4743ecb95afca804f..e2b7ff42a5606187307adee0f5401fb99026a655 100644
+--- a/src/libANGLE/renderer/gl/QueryGL.cpp
++++ b/src/libANGLE/renderer/gl/QueryGL.cpp
+@@ -64,7 +64,8 @@ StandardQueryGL::StandardQueryGL(gl::QueryType type,
+       mStateManager(stateManager),
+       mActiveQuery(0),
+       mPendingQueries(),
+-      mResultSum(0)
++      mResultSum(0),
++      mDeferredBufferDeletionSerial(0)
+ {}
+ 
+ StandardQueryGL::~StandardQueryGL()
+@@ -92,7 +93,8 @@ void StandardQueryGL::clearInternalQueries()
+ angle::Result StandardQueryGL::begin(const gl::Context *context)
+ {
+     clearInternalQueries();
+-    mResultSum = 0;
++    mResultSum                    = 0;
++    mDeferredBufferDeletionSerial = mStateManager->onBeginQuery();
+     return resume(context);
+ }
+ 
+@@ -231,6 +233,11 @@ angle::Result StandardQueryGL::flush(const gl::Context *context, bool force)
+         mPendingQueries.pop_front();
+     }
+ 
++    if (mActiveQuery == 0 && mDeferredBufferDeletionSerial > 0)
++    {
++        mStateManager->onSerialCompleted(mDeferredBufferDeletionSerial);
++    }
++
+     return angle::Result::Continue;
+ }
+ }  // namespace rx
+diff --git a/src/libANGLE/renderer/gl/QueryGL.h b/src/libANGLE/renderer/gl/QueryGL.h
+index 43ceb3f1fc3cabdf55067b5222f850e1ea7f82f4..c4b87e23dfde1d4a6966dcfbf7ba0175e403b31f 100644
+--- a/src/libANGLE/renderer/gl/QueryGL.h
++++ b/src/libANGLE/renderer/gl/QueryGL.h
+@@ -12,6 +12,7 @@
+ #include <deque>
+ 
+ #include "libANGLE/renderer/QueryImpl.h"
++#include "libANGLE/renderer/gl/StateManagerGL.h"
+ 
+ namespace rx
+ {
+@@ -66,6 +67,7 @@ class StandardQueryGL : public QueryGL
+     GLuint mActiveQuery;
+     std::deque<GLuint> mPendingQueries;
+     GLuint64 mResultSum;
++    StateManagerGL::ExecutionSerial mDeferredBufferDeletionSerial;
+ };
+ }  // namespace rx
+ 
+diff --git a/src/libANGLE/renderer/gl/RendererGL.cpp b/src/libANGLE/renderer/gl/RendererGL.cpp
+index c8fe2f55f0b17d40a528515754cd463144900126..9be46ab0eacb774a2459550dfc8cef3afb981768 100644
+--- a/src/libANGLE/renderer/gl/RendererGL.cpp
++++ b/src/libANGLE/renderer/gl/RendererGL.cpp
+@@ -242,6 +242,7 @@ angle::Result RendererGL::finish()
+     mNeedsFlushBeforeDeleteTextures = false;
+     mWorkDoneSinceLastFlush         = false;
+     mStateManager->onSyncedFlushOrFinish();
++    mStateManager->onFinish();
+ 
+     if (mFeatures.finishDoesNotCauseQueriesToBeAvailable.enabled && mUseDebugOutput)
+     {
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+index d7de4407340155db531488771a8fdc95341da9de..9653c914477e187c378e01cfd46a304088b02880 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.cpp
++++ b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+@@ -44,6 +44,9 @@ namespace rx
+ namespace
+ {
+ 
++constexpr size_t kMaxDeferredDeletedBuffers     = 128;
++constexpr size_t kMaxDeferredDeletedBuffersSize = 128 * 1024 * 1024;
++
+ static void ValidateStateHelper(const FunctionsGL *functions,
+                                 const GLuint localValue,
+                                 const GLenum pname,
+@@ -241,6 +244,12 @@ StateManagerGL::StateManagerGL(const FunctionsGL *functions,
+ 
+ StateManagerGL::~StateManagerGL()
+ {
++    if (!mDeferredBufferDeletions.empty())
++    {
++        mFunctions->finish();
++        onFinish();
++    }
++
+     if (mPlaceholderFbo != 0)
+     {
+         deleteFramebuffer(mPlaceholderFbo);
+@@ -326,7 +335,7 @@ void StateManagerGL::deleteSampler(GLuint sampler)
+     }
+ }
+ 
+-void StateManagerGL::deleteBuffer(GLuint buffer)
++void StateManagerGL::deleteBuffer(GLuint buffer, size_t clientSpecifiedSize, bool isHardenedContext)
+ {
+     if (buffer == 0)
+     {
+@@ -337,7 +346,7 @@ void StateManagerGL::deleteBuffer(GLuint buffer)
+     {
+         if (mBuffers[target] == buffer)
+         {
+-            bindBuffer(target, 0);
++            bindBuffer(target, 0, isHardenedContext);
+         }
+ 
+         auto &indexedTarget = mIndexedBuffers[target];
+@@ -366,7 +375,29 @@ void StateManagerGL::deleteBuffer(GLuint buffer)
+         }
+     }
+ 
+-    mFunctions->deleteBuffers(1, &buffer);
++    if (!isHardenedContext || !mFeatures.deferGlDeleteBuffers.enabled)
++    {
++        mFunctions->deleteBuffers(1, &buffer);
++    }
++    else
++    {
++        bool hasBeenBoundAsElementArrayBuffer = mElementArrayBuffers.erase(buffer) > 0;
++        if (mDeferredBufferDeletions.empty() ||
++            mDeferredBufferDeletions.back().serial != mCurrentSerial)
++        {
++            mDeferredBufferDeletions.push_back({mCurrentSerial, {}, 0});
++        }
++        DeferredBufferDeletions &deletions = mDeferredBufferDeletions.back();
++        deletions.buffers.push_back(buffer);
++        deletions.size += clientSpecifiedSize;
++        ++mDeferredBufferDeletionsCount;
++        mDeferredBufferDeletionsTotalSize += clientSpecifiedSize;
++        if (hasBeenBoundAsElementArrayBuffer)
++        {
++            mDeferredBufferDeletionsNeedFinish = true;
++        }
++        maybeDrainDeferredBuffers();
++    }
+ }
+ 
+ void StateManagerGL::deleteFramebuffer(GLuint fbo)
+@@ -473,7 +504,7 @@ void StateManagerGL::forceBindVertexArray(GLuint vao, VertexArrayStateGL *vaoSta
+     mLocalDirtyBits.set(gl::state::DIRTY_BIT_VERTEX_ARRAY_BINDING);
+ }
+ 
+-void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer)
++void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer, bool isHardenedContext)
+ {
+     // GL drivers differ in whether the transform feedback bind point is modified when
+     // glBindTransformFeedback is called. To avoid these behavior differences we shouldn't try to
+@@ -484,6 +515,12 @@ void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer)
+         mBuffers[target] = buffer;
+         mFunctions->bindBuffer(gl::ToGLenum(target), buffer);
+         setBufferBindingDirty(target);
++
++        if (target == gl::BufferBinding::ElementArray && isHardenedContext &&
++            mFeatures.deferGlDeleteBuffers.enabled && buffer != 0)
++        {
++            mElementArrayBuffers.insert(buffer);
++        }
+     }
+ }
+ 
+@@ -651,7 +688,7 @@ angle::Result StateManagerGL::setPixelUnpackBuffer(const gl::Context *context,
+     {
+         bufferID = GetImplAs<BufferGL>(pixelBuffer)->getBufferID();
+     }
+-    bindBuffer(gl::BufferBinding::PixelUnpack, bufferID);
++    bindBuffer(gl::BufferBinding::PixelUnpack, bufferID, context->isHardenedContext());
+ 
+     return angle::Result::Continue;
+ }
+@@ -702,7 +739,7 @@ angle::Result StateManagerGL::setPixelPackBuffer(const gl::Context *context,
+     {
+         bufferID = GetImplAs<BufferGL>(pixelBuffer)->getBufferID();
+     }
+-    bindBuffer(gl::BufferBinding::PixelPack, bufferID);
++    bindBuffer(gl::BufferBinding::PixelPack, bufferID, context->isHardenedContext());
+ 
+     return angle::Result::Continue;
+ }
+@@ -776,6 +813,68 @@ void StateManagerGL::onSyncedFlushOrFinish()
+     mHasUnflushedQueries = false;
+ }
+ 
++void StateManagerGL::onFinish()
++{
++    if (mFeatures.deferGlDeleteBuffers.enabled)
++    {
++        mDeferredBufferDeletionsNeedFinish = false;
++        ExecutionSerial serial             = mCurrentSerial++;
++        onSerialCompleted(serial);
++    }
++}
++
++StateManagerGL::ExecutionSerial StateManagerGL::onFenceSync()
++{
++    return mCurrentSerial++;
++}
++
++StateManagerGL::ExecutionSerial StateManagerGL::onBeginQuery()
++{
++    return mCurrentSerial++;
++}
++
++void StateManagerGL::onSerialCompleted(ExecutionSerial serial)
++{
++    if (!mFeatures.deferGlDeleteBuffers.enabled)
++    {
++        return;
++    }
++
++    if (mDeferredBufferDeletions.empty() || mDeferredBufferDeletions.front().serial > serial)
++    {
++        return;
++    }
++
++    if (mDeferredBufferDeletionsNeedFinish)
++    {
++        mFunctions->finish();
++        mDeferredBufferDeletionsNeedFinish = false;
++        serial                             = mCurrentSerial++;
++    }
++
++    while (!mDeferredBufferDeletions.empty() && mDeferredBufferDeletions.front().serial <= serial)
++    {
++        DeferredBufferDeletions &deletions = mDeferredBufferDeletions.front();
++        mFunctions->deleteBuffers(static_cast<GLsizei>(deletions.buffers.size()),
++                                  deletions.buffers.data());
++        ASSERT(mDeferredBufferDeletionsCount >= deletions.buffers.size());
++        mDeferredBufferDeletionsCount -= deletions.buffers.size();
++        ASSERT(mDeferredBufferDeletionsTotalSize >= deletions.size);
++        mDeferredBufferDeletionsTotalSize -= deletions.size;
++        mDeferredBufferDeletions.pop_front();
++    }
++}
++
++void StateManagerGL::maybeDrainDeferredBuffers()
++{
++    if (mDeferredBufferDeletionsCount > kMaxDeferredDeletedBuffers ||
++        mDeferredBufferDeletionsTotalSize > kMaxDeferredDeletedBuffersSize)
++    {
++        mFunctions->finish();
++        onFinish();
++    }
++}
++
+ void StateManagerGL::forcefullyFlush()
+ {
+     if (mFunctions->fenceSync != nullptr && mFunctions->clientWaitSync != nullptr &&
+@@ -794,6 +893,7 @@ void StateManagerGL::forcefullyFlush()
+     // Sync creation not supported or failed; fall back to finish()
+     mFunctions->finish();
+     onSyncedFlushOrFinish();
++    onFinish();
+ }
+ 
+ void StateManagerGL::bindRenderbuffer(GLenum type, GLuint renderbuffer)
+@@ -891,7 +991,8 @@ void StateManagerGL::updateDrawIndirectBufferBinding(const gl::Context *context)
+     if (drawIndirectBuffer != nullptr)
+     {
+         const BufferGL *bufferGL = GetImplAs<BufferGL>(drawIndirectBuffer);
+-        bindBuffer(gl::BufferBinding::DrawIndirect, bufferGL->getBufferID());
++        bindBuffer(gl::BufferBinding::DrawIndirect, bufferGL->getBufferID(),
++                   context->isHardenedContext());
+     }
+ }
+ 
+@@ -902,7 +1003,8 @@ void StateManagerGL::updateDispatchIndirectBufferBinding(const gl::Context *cont
+     if (dispatchIndirectBuffer != nullptr)
+     {
+         const BufferGL *bufferGL = GetImplAs<BufferGL>(dispatchIndirectBuffer);
+-        bindBuffer(gl::BufferBinding::DispatchIndirect, bufferGL->getBufferID());
++        bindBuffer(gl::BufferBinding::DispatchIndirect, bufferGL->getBufferID(),
++                   context->isHardenedContext());
+     }
+ }
+ 
+@@ -3727,8 +3829,10 @@ void StateManagerGL::syncBufferBindingsFromNativeContext(const gl::Extensions &e
+ void StateManagerGL::restoreBufferBindingsNativeContext(const gl::Extensions &extensions,
+                                                         const ExternalContextState *state)
+ {
+-    bindBuffer(gl::BufferBinding::Array, state->vertexArrayBufferBinding);
+-    bindBuffer(gl::BufferBinding::ElementArray, state->elementArrayBufferBinding);
++    bindBuffer(gl::BufferBinding::Array, state->vertexArrayBufferBinding,
++               /*isHardenedContext=*/false);
++    bindBuffer(gl::BufferBinding::ElementArray, state->elementArrayBufferBinding,
++               /*isHardenedContext=*/false);
+ }
+ 
+ void StateManagerGL::syncTextureUnitsFromNativeContext(const gl::Extensions &extensions,
+@@ -3869,7 +3973,8 @@ void StateManagerGL::restoreVertexArraysNativeContext(const gl::Extensions &exte
+             externalAttrib.pointer != localAttribute.pointer ||
+             externalAttrib.buffer != localBinding.buffer)
+         {
+-            bindBuffer(gl::BufferBinding::Array, externalAttrib.buffer);
++            bindBuffer(gl::BufferBinding::Array, externalAttrib.buffer,
++                   /*isHardenedContext=*/false);
+             mFunctions->vertexAttribPointer(i, externalAttrib.format->channelCount,
+                                             gl::ToGLenum(externalAttrib.format->vertexAttribType),
+                                             externalAttrib.format->isNorm(), externalAttrib.stride,
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/StateManagerGL.h
+index cc1bf28371ff887e32fc67a8de8adb2e2639ab33..87edb5face78ee1d5309fa8c64dc0a0218822fa8 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.h
++++ b/src/libANGLE/renderer/gl/StateManagerGL.h
+@@ -10,6 +10,7 @@
+ #define LIBANGLE_RENDERER_GL_STATEMANAGERGL_H_
+ 
+ #include "common/debug.h"
++#include "common/hash_containers.h"
+ #include "libANGLE/Error.h"
+ #include "libANGLE/State.h"
+ #include "libANGLE/angletypes.h"
+@@ -18,7 +19,9 @@
+ #include "platform/autogen/FeaturesGL_autogen.h"
+ 
+ #include <array>
++#include <deque>
+ #include <map>
++#include <vector>
+ 
+ namespace gl
+ {
+@@ -176,21 +179,28 @@ class StateManagerGL final : angle::NonCopyable
+                    const angle::FeaturesGL &features);
+     ~StateManagerGL();
+ 
++    using ExecutionSerial = uint64_t;
++
+     void deleteProgram(GLuint program);
+     void deleteVertexArray(GLuint vao);
+     void deleteTexture(GLuint texture);
+     void deleteSampler(GLuint sampler);
+-    void deleteBuffer(GLuint buffer);
++    // clientSpecifiedSize may be 0 for internally-allocated scratch buffers.
++    void deleteBuffer(GLuint buffer, size_t clientSpecifiedSize, bool isHardenedContext);
+     void deleteFramebuffer(GLuint fbo);
+     void deleteRenderbuffer(GLuint rbo);
+     void deleteTransformFeedback(GLuint transformFeedback);
+ 
+     void onSyncedFlushOrFinish();
++    void onFinish();
++    ExecutionSerial onFenceSync();
++    ExecutionSerial onBeginQuery();
++    void onSerialCompleted(ExecutionSerial serial);
+ 
+     void useProgram(GLuint program);
+     void forceUseProgram(GLuint program);
+     void bindVertexArray(GLuint vao, VertexArrayStateGL *vaoState);
+-    void bindBuffer(gl::BufferBinding target, GLuint buffer);
++    void bindBuffer(gl::BufferBinding target, GLuint buffer, bool isHardenedContext);
+     void bindBufferBase(gl::BufferBinding target, size_t index, GLuint buffer);
+     void bindBufferRange(gl::BufferBinding target,
+                          size_t index,
+@@ -421,6 +431,8 @@ class StateManagerGL final : angle::NonCopyable
+     void restoreVertexArraysNativeContext(const gl::Extensions &extensions,
+                                           const ExternalContextState *state);
+ 
++    void maybeDrainDeferredBuffers();
++
+     const FunctionsGL *mFunctions;
+     const angle::FeaturesGL &mFeatures;
+ 
+@@ -590,6 +602,19 @@ class StateManagerGL final : angle::NonCopyable
+     gl::state::DirtyBits mLocalDirtyBits;
+     gl::state::ExtendedDirtyBits mLocalExtendedDirtyBits;
+     gl::AttributesMask mLocalDirtyCurrentValues;
++
++    struct DeferredBufferDeletions
++    {
++        ExecutionSerial serial = 0;
++        std::vector<GLuint> buffers;
++        size_t size = 0;
++    };
++    ExecutionSerial mCurrentSerial = 0;
++    std::deque<DeferredBufferDeletions> mDeferredBufferDeletions;
++    size_t mDeferredBufferDeletionsCount     = 0;
++    size_t mDeferredBufferDeletionsTotalSize = 0;
++    bool mDeferredBufferDeletionsNeedFinish  = false;
++    angle::HashSet<GLuint> mElementArrayBuffers;
+ };
+ 
+ }  // namespace rx
+diff --git a/src/libANGLE/renderer/gl/SyncGL.cpp b/src/libANGLE/renderer/gl/SyncGL.cpp
+index 67214d414d7a45fa94a51365553eabfece8598ca..d807a3fc2a2eeca90057ccd2dd6e720a24cdd23c 100644
+--- a/src/libANGLE/renderer/gl/SyncGL.cpp
++++ b/src/libANGLE/renderer/gl/SyncGL.cpp
+@@ -12,13 +12,15 @@
+ #include "libANGLE/Context.h"
+ #include "libANGLE/renderer/gl/ContextGL.h"
+ #include "libANGLE/renderer/gl/FunctionsGL.h"
++#include "libANGLE/renderer/gl/RendererGL.h"
+ 
+ namespace rx
+ {
+ 
+-SyncGL::SyncGL(const FunctionsGL *functions) : SyncImpl(), mFunctions(functions), mSyncObject(0)
++SyncGL::SyncGL(const std::shared_ptr<RendererGL> &renderer)
++    : SyncImpl(), mRenderer(renderer), mSyncObject(0), mDeferredBufferDeletionSerial(0)
+ {
+-    ASSERT(mFunctions);
++    ASSERT(mRenderer);
+ }
+ 
+ SyncGL::~SyncGL()
+@@ -29,7 +31,7 @@ SyncGL::~SyncGL()
+ void SyncGL::onDestroy(const gl::Context *context)
+ {
+     ASSERT(mSyncObject != 0);
+-    mFunctions->deleteSync(mSyncObject);
++    mRenderer->getFunctions()->deleteSync(mSyncObject);
+     mSyncObject = 0;
+ }
+ 
+@@ -37,9 +39,10 @@ angle::Result SyncGL::set(const gl::Context *context, GLenum condition, GLbitfie
+ {
+     ASSERT(condition == GL_SYNC_GPU_COMMANDS_COMPLETE && flags == 0);
+     ContextGL *contextGL = GetImplAs<ContextGL>(context);
+-    mSyncObject          = mFunctions->fenceSync(condition, flags);
++    mSyncObject          = mRenderer->getFunctions()->fenceSync(condition, flags);
+     ANGLE_CHECK(contextGL, mSyncObject != 0, "glFenceSync failed to create a GLsync object.",
+                 GL_OUT_OF_MEMORY);
++    mDeferredBufferDeletionSerial = mRenderer->getStateManager()->onFenceSync();
+     contextGL->markWorkSubmitted();
+     return angle::Result::Continue;
+ }
+@@ -50,21 +53,29 @@ angle::Result SyncGL::clientWait(const gl::Context *context,
+                                  GLenum *outResult)
+ {
+     ASSERT(mSyncObject != 0);
+-    *outResult = mFunctions->clientWaitSync(mSyncObject, flags, timeout);
++    *outResult = mRenderer->getFunctions()->clientWaitSync(mSyncObject, flags, timeout);
++    if (*outResult == GL_ALREADY_SIGNALED || *outResult == GL_CONDITION_SATISFIED)
++    {
++        mRenderer->getStateManager()->onSerialCompleted(mDeferredBufferDeletionSerial);
++    }
+     return angle::Result::Continue;
+ }
+ 
+ angle::Result SyncGL::serverWait(const gl::Context *context, GLbitfield flags, GLuint64 timeout)
+ {
+     ASSERT(mSyncObject != 0);
+-    mFunctions->waitSync(mSyncObject, flags, timeout);
++    mRenderer->getFunctions()->waitSync(mSyncObject, flags, timeout);
+     return angle::Result::Continue;
+ }
+ 
+ angle::Result SyncGL::getStatus(const gl::Context *context, GLint *outResult)
+ {
+     ASSERT(mSyncObject != 0);
+-    mFunctions->getSynciv(mSyncObject, GL_SYNC_STATUS, 1, nullptr, outResult);
++    mRenderer->getFunctions()->getSynciv(mSyncObject, GL_SYNC_STATUS, 1, nullptr, outResult);
++    if (*outResult == GL_SIGNALED)
++    {
++        mRenderer->getStateManager()->onSerialCompleted(mDeferredBufferDeletionSerial);
++    }
+     return angle::Result::Continue;
+ }
+ }  // namespace rx
+diff --git a/src/libANGLE/renderer/gl/SyncGL.h b/src/libANGLE/renderer/gl/SyncGL.h
+index de3424db7282aefece3b8fcde83f9ce047f1440b..01485477e7c806cfa14dfa19a3dbd1cdbb1a4678 100644
+--- a/src/libANGLE/renderer/gl/SyncGL.h
++++ b/src/libANGLE/renderer/gl/SyncGL.h
+@@ -10,15 +10,18 @@
+ #define LIBANGLE_RENDERER_GL_FENCESYNCGL_H_
+ 
+ #include "libANGLE/renderer/SyncImpl.h"
++#include "libANGLE/renderer/gl/StateManagerGL.h"
++
++#include <memory>
+ 
+ namespace rx
+ {
+-class FunctionsGL;
++class RendererGL;
+ 
+ class SyncGL : public SyncImpl
+ {
+   public:
+-    explicit SyncGL(const FunctionsGL *functions);
++    explicit SyncGL(const std::shared_ptr<RendererGL> &renderer);
+     ~SyncGL() override;
+ 
+     void onDestroy(const gl::Context *context) override;
+@@ -34,8 +37,9 @@ class SyncGL : public SyncImpl
+     angle::Result getStatus(const gl::Context *context, GLint *outResult) override;
+ 
+   private:
+-    const FunctionsGL *mFunctions;
++    std::shared_ptr<RendererGL> mRenderer;
+     GLsync mSyncObject;
++    StateManagerGL::ExecutionSerial mDeferredBufferDeletionSerial;
+ };
+ }  // namespace rx
+ 
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index c2611614f5ad57def51a546e8473f366c18e6899..22586406bd65e01add60013f1648fb1f5edf1b0a 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -449,7 +449,7 @@ angle::Result TextureGL::setImageViaScratchUnpackBuffer(const gl::Context *conte
+ 
+     GLuint scratch = 0;
+     functions->genBuffers(1, &scratch);
+-    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, scratch);
++    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, scratch, context->isHardenedContext());
+     // Regardless of whether the user supplied data (pixels != nullptr), the pixel unpack buffer
+     // must be allocated with the expected amount of data.
+     if (uploadBytes > 0)
+@@ -503,7 +503,7 @@ angle::Result TextureGL::setImageViaScratchUnpackBuffer(const gl::Context *conte
+         setLevelInfo(context, target, level, 1, levelInfo);
+     }
+ 
+-    stateManager->deleteBuffer(scratch);
++    stateManager->deleteBuffer(scratch, 0, context->isHardenedContext());
+ 
+     contextGL->markWorkSubmitted();
+     return angle::Result::Continue;
+@@ -1529,7 +1529,8 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
+         else
+         {
+             // Make sure no pixel unpack buffer is bound
+-            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0,
++                                     context->isHardenedContext());
+ 
+             const gl::InternalFormat &internalFormatInfo =
+                 gl::GetSizedInternalFormatInfo(internalFormat);
+@@ -1646,7 +1647,8 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
+         else
+         {
+             // Make sure no pixel unpack buffer is bound
+-            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0,
++                                     context->isHardenedContext());
+ 
+             // Internal format must be sized
+             ASSERT(internalFormatInfo.sized);
+@@ -1954,7 +1956,8 @@ angle::Result TextureGL::allocateMipmapLevelsForGeneration(const gl::Context *co
+         if (levelDesc.size != levelSize || *levelDesc.format.info != baseLevelInternalFormat)
+         {
+             // Make sure no pixel unpack buffer is bound
+-            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0,
++                                     context->isHardenedContext());
+ 
+             switch (getType())
+             {
+@@ -3025,7 +3028,7 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
+     ANGLE_TRY(stateManager->setPixelUnpackState(context, unpackState));
+ 
+     GLuint prevUnpackBuffer = stateManager->getBufferID(gl::BufferBinding::PixelUnpack);
+-    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0);
++    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, 0, context->isHardenedContext());
+ 
+     stateManager->bindTexture(getType(), mTextureID);
+     if (internalFormatInfo.compressed)
+@@ -3098,7 +3101,8 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
+         angle::Span<const uint8_t> uploadSpan;
+         if (usePBO)
+         {
+-            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, pboId);
++            stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, pboId,
++                                     context->isHardenedContext());
+         }
+         else
+         {
+@@ -3140,7 +3144,8 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
+     // glTexImage call, we need to make sure that the texture data to be uploaded later has the
+     // expected unpack state.
+     ANGLE_TRY(stateManager->setPixelUnpackState(context, context->getState().getUnpackState()));
+-    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, prevUnpackBuffer);
++    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, prevUnpackBuffer,
++                             context->isHardenedContext());
+ 
+     contextGL->markWorkSubmitted();
+     return angle::Result::Continue;
+diff --git a/src/libANGLE/renderer/gl/VertexArrayGL.cpp b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+index 2be7c6643a1081c5331ef0528c844d794c70a043..7d37e8e990e67fb58b2f6bce31056e214fa3314c 100644
+--- a/src/libANGLE/renderer/gl/VertexArrayGL.cpp
++++ b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+@@ -152,11 +152,11 @@ void VertexArrayGL::destroy(const gl::Context *context)
+         binding.set(context, nullptr);
+     }
+ 
+-    stateManager->deleteBuffer(mStreamingElementArrayBuffer);
++    stateManager->deleteBuffer(mStreamingElementArrayBuffer, 0, context->isHardenedContext());
+     mStreamingElementArrayBufferSize = 0;
+     mStreamingElementArrayBuffer     = 0;
+ 
+-    stateManager->deleteBuffer(mStreamingArrayBuffer);
++    stateManager->deleteBuffer(mStreamingArrayBuffer, 0, context->isHardenedContext());
+     mStreamingArrayBufferSize = 0;
+     mStreamingArrayBuffer     = 0;
+ 
+@@ -186,7 +186,8 @@ angle::Result VertexArrayGL::updateElementArrayBufferBinding(const gl::Context *
+             elementArrayBuffer ? GetNativeBufferID(elementArrayBuffer) : 0;
+ 
+         StateManagerGL *stateManager = GetStateManagerGL(context);
+-        stateManager->bindBuffer(gl::BufferBinding::ElementArray, elementArrayBufferId);
++        stateManager->bindBuffer(gl::BufferBinding::ElementArray, elementArrayBufferId,
++                                 context->isHardenedContext());
+         mElementArrayBuffer.set(context, elementArrayBuffer);
+         mNativeState->elementArrayBuffer = elementArrayBufferId;
+     }
+@@ -333,7 +334,8 @@ angle::Result VertexArrayGL::syncIndexData(const gl::Context *context,
+ 
+         stateManager->bindVertexArray(mVertexArrayID, mNativeState);
+ 
+-        stateManager->bindBuffer(gl::BufferBinding::ElementArray, mStreamingElementArrayBuffer);
++        stateManager->bindBuffer(gl::BufferBinding::ElementArray, mStreamingElementArrayBuffer,
++                                 context->isHardenedContext());
+         mElementArrayBuffer.set(context, nullptr);
+         mNativeState->elementArrayBuffer = mStreamingElementArrayBuffer;
+ 
+@@ -437,7 +439,8 @@ angle::Result VertexArrayGL::streamAttributes(
+         attribsToStream.count() * maxAttributeDataSize * indexRange.start();
+     const size_t requiredBufferSize = streamingDataSize + bufferEmptySpace;
+ 
+-    stateManager->bindBuffer(gl::BufferBinding::Array, mStreamingArrayBuffer);
++    stateManager->bindBuffer(gl::BufferBinding::Array, mStreamingArrayBuffer,
++                             context->isHardenedContext());
+     if (requiredBufferSize > mStreamingArrayBufferSize)
+     {
+         ANGLE_GL_TRY_ALWAYS_CHECK(
+@@ -519,7 +522,8 @@ angle::Result VertexArrayGL::streamAttributes(
+                 {
+                     needsUnmapAndRebindStreamingAttributeBuffer = true;
+                     const auto buffer = GetImplAs<BufferGL>(bindingBufferPointer);
+-                    stateManager->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID());
++                    stateManager->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID(),
++                                             context->isHardenedContext());
+                     // The workaround is only for latest Mac Intel so glMapBufferRange should be
+                     // supported
+                     ASSERT(CanMapBufferForRead(functions));
+@@ -564,7 +568,8 @@ angle::Result VertexArrayGL::streamAttributes(
+             if (needsUnmapAndRebindStreamingAttributeBuffer)
+             {
+                 ANGLE_GL_TRY(context, functions->unmapBuffer(GL_ARRAY_BUFFER));
+-                stateManager->bindBuffer(gl::BufferBinding::Array, mStreamingArrayBuffer);
++                stateManager->bindBuffer(gl::BufferBinding::Array, mStreamingArrayBuffer,
++                                         context->isHardenedContext());
+             }
+ 
+             // Compute where the 0-index vertex would be.
+@@ -629,7 +634,8 @@ angle::Result VertexArrayGL::recoverForcedStreamingAttributesForDrawArraysInstan
+         const auto &binding = bindings[attrib.bindingIndex];
+         gl::Buffer *buffer       = getVertexArrayBuffer(attrib.bindingIndex);
+         const BufferGL *bufferGL = GetImplAs<BufferGL>(buffer);
+-        stateManager->bindBuffer(gl::BufferBinding::Array, bufferGL->getBufferID());
++        stateManager->bindBuffer(gl::BufferBinding::Array, bufferGL->getBufferID(),
++                                 context->isHardenedContext());
+ 
+         ANGLE_TRY(callVertexAttribPointer(context, static_cast<GLuint>(idx), attrib,
+                                           static_cast<GLsizei>(binding.getStride()),
+@@ -740,7 +746,7 @@ angle::Result VertexArrayGL::updateAttribPointer(const gl::Context *context, siz
+ 
+         BufferGL *bufferGL = GetImplAs<BufferGL>(arrayBuffer);
+         bufferId           = bufferGL->getBufferID();
+-        stateManager->bindBuffer(gl::BufferBinding::Array, bufferId);
++        stateManager->bindBuffer(gl::BufferBinding::Array, bufferId, context->isHardenedContext());
+         if (features.ensureNonEmptyBufferIsBoundForDraw.enabled && bufferGL->getBufferSize() == 0)
+         {
+             BufferFeedback feedback;
+@@ -755,7 +761,7 @@ angle::Result VertexArrayGL::updateAttribPointer(const gl::Context *context, siz
+     else
+     {
+         ASSERT(canUseClientArrays);
+-        stateManager->bindBuffer(gl::BufferBinding::Array, 0);
++        stateManager->bindBuffer(gl::BufferBinding::Array, 0, context->isHardenedContext());
+         ANGLE_TRY(callVertexAttribPointer(context, static_cast<GLuint>(attribIndex), attrib,
+                                           binding.getStride(),
+                                           reinterpret_cast<uintptr_t>(attrib.pointer)));
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 99631650ba913ea4d01645c94d5573d5374a2de3..7c4400e10998409653c66c3ce87d4b77221a28da 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2787,6 +2787,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, doubleClearForRobustInit,
+                             isMali || IsAdreno6xxOrOlder(functions));
+ 
++    // http://crbug.com/558870371
++    ANGLE_FEATURE_CONDITION(features, deferGlDeleteBuffers, isMali);
++
+     // https://crbug.com/40264674
+     ANGLE_FEATURE_CONDITION(features, disableClipControl, IsMaliG72OrG76OrG51(functions));
+ 
+diff --git a/src/tests/angle_end2end_tests.gni b/src/tests/angle_end2end_tests.gni
+index 0992bbfc3a899a63fd6c700e07ef682ea478d0e3..e1c439228508fe593a37ced70ecc25fc5e334cdc 100644
+--- a/src/tests/angle_end2end_tests.gni
++++ b/src/tests/angle_end2end_tests.gni
+@@ -69,6 +69,7 @@ angle_end2end_tests_sources = [
+   "gl_tests/DXTSRGBCompressedTextureTest.cpp",
+   "gl_tests/DebugMarkerTest.cpp",
+   "gl_tests/DebugTest.cpp",
++  "gl_tests/DeleteBuffersTest.cpp",
+   "gl_tests/DepthStencilFormatsTest.cpp",
+   "gl_tests/DepthStencilTest.cpp",
+   "gl_tests/DepthWriteTest.cpp",
+diff --git a/src/tests/gl_tests/DeleteBuffersTest.cpp b/src/tests/gl_tests/DeleteBuffersTest.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..fcf40ca6bef1206feab443449c773d3d2b53e345
+--- /dev/null
++++ b/src/tests/gl_tests/DeleteBuffersTest.cpp
+@@ -0,0 +1,963 @@
++//
++// Copyright 2026 The ANGLE Project Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// DeleteBuffersTest:
++//   Tests buffer deletion while buffers are still referenced by pending GPU work
++//   and driver copy-on-write operations.
++//
++
++#include "test_utils/ANGLETest.h"
++#include "test_utils/gl_raii.h"
++
++#include <cstdint>
++#include <vector>
++
++using namespace angle;
++
++namespace
++{
++
++class DeleteBuffersTest : public ANGLETest<>
++{
++  protected:
++    static constexpr int kNumLargeBuffers                       = 4;
++    static constexpr size_t kLargeBufferSizeMB                  = 64;
++    static constexpr int kNumDonorBuffers                       = 192;
++    static constexpr int kNumSecondaryBuffers                   = 13;
++    static constexpr int kNumPreloadIterations                  = 16;
++    static constexpr int kMaxCycles                             = 8;
++    static constexpr std::array<int, 3> kBaseTargetDonorIndices = {43, 44, 45};
++    static constexpr std::array<int, 8> kTargetIndexOffsets     = {0, 1, -1, 2, -2, 3, -3, 4};
++
++    DeleteBuffersTest()
++    {
++        setWindowWidth(16);
++        setWindowHeight(16);
++        setConfigRedBits(8);
++        setConfigGreenBits(8);
++        setConfigBlueBits(8);
++        setConfigAlphaBits(8);
++        setHardenedContextEnabled(true);
++    }
++
++    void testSetUp() override
++    {
++        constexpr char kVS[] = R"(#version 300 es
++layout(location = 0) in vec4 a;
++void main()
++{
++    gl_Position = vec4(a.x * 1e-6, a.y * 1e-6, 0.0, 1.0);
++    gl_PointSize = 1.0;
++})";
++
++        constexpr char kFS[] = R"(#version 300 es
++precision mediump float;
++out vec4 o;
++void main()
++{
++    o = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++        mProgram.makeRaster(kVS, kFS);
++        ASSERT_TRUE(mProgram.valid());
++        glUseProgram(mProgram);
++        glViewport(0, 0, 16, 16);
++
++        // Allocate persistent buffers so internal driver allocator chunks remain stable
++        // across iterations.
++        glBindBuffer(GL_ARRAY_BUFFER, mScratchBuffer);
++        glBufferData(GL_ARRAY_BUFFER, 64, nullptr, GL_DYNAMIC_DRAW);
++
++        mPrimeBuffer = makeBuffer(65536);
++        glBindBuffer(GL_ARRAY_BUFFER, mScratchBuffer);
++        glBindBuffer(GL_COPY_READ_BUFFER, mPrimeBuffer);
++        const float zeroFloats[4] = {};
++        glBufferSubData(GL_COPY_READ_BUFFER, 32, sizeof(zeroFloats), zeroFloats);
++
++        ASSERT_GL_NO_ERROR();
++    }
++
++    void testTearDown() override
++    {
++        for (GLsync fence : mFences)
++        {
++            glDeleteSync(fence);
++        }
++        mFences.clear();
++
++        mPersistentControlBuffer.reset();
++        mPersistentControlBufferInitialized = false;
++        mPrimeBuffer.reset();
++        mScratchBuffer.reset();
++        mProgram.reset();
++    }
++
++    const void *getPatternData(size_t numBytes)
++    {
++        size_t numWords = numBytes / sizeof(uint32_t);
++        if (mPatternBuffer.size() < numWords)
++        {
++            size_t oldSize = mPatternBuffer.size();
++            mPatternBuffer.resize(numWords);
++            for (size_t i = oldSize; i < numWords; ++i)
++            {
++                mPatternBuffer[i] = 0x9e3779b9u ^ (static_cast<uint32_t>(i) * 2654435761u);
++            }
++        }
++        return mPatternBuffer.data();
++    }
++
++    GLBuffer makeBuffer(size_t bytes)
++    {
++        GLBuffer buffer;
++        glBindBuffer(GL_ARRAY_BUFFER, buffer);
++        glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(bytes), getPatternData(bytes),
++                     GL_DYNAMIC_DRAW);
++        return buffer;
++    }
++
++    void readDraw(GLBuffer &buffer)
++    {
++        glBindBuffer(GL_ARRAY_BUFFER, buffer);
++        glEnableVertexAttribArray(0);
++        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
++        glDrawArrays(GL_POINTS, 0, 1);
++    }
++
++    void recordSubmissionBoundary()
++    {
++        mFences.push_back(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
++    }
++
++    bool pollFence(GLsync fence, int timeoutMs)
++    {
++        constexpr GLuint64 kNsPerMs = 1000000ULL;
++        GLenum result               = glClientWaitSync(fence, GL_SYNC_FLUSH_COMMANDS_BIT,
++                                                       static_cast<GLuint64>(timeoutMs) * kNsPerMs);
++        return result == GL_ALREADY_SIGNALED || result == GL_CONDITION_SATISFIED;
++    }
++
++    void runQueuedDeletionCycle(int cycle)
++    {
++        const float zeroFloats[4] = {};
++        std::array<int, 3> targetDonorIndices;
++        for (int i = 0; i < 3; ++i)
++        {
++            targetDonorIndices[i] = kBaseTargetDonorIndices[i] + kTargetIndexOffsets[cycle % 8];
++        }
++
++        // Preparation: allocate and reference large buffers in draw calls so subsequent
++        // partial updates queue copy-on-write work in the driver.
++        std::vector<GLBuffer> largeBuffers;
++        largeBuffers.reserve(kNumLargeBuffers);
++        for (int i = 0; i < kNumLargeBuffers; ++i)
++        {
++            GLBuffer largeBuffer = makeBuffer(kLargeBufferSizeMB << 20);
++            readDraw(largeBuffer);
++            largeBuffers.push_back(std::move(largeBuffer));
++        }
++        if (!mPersistentControlBufferInitialized)
++        {
++            mPersistentControlBuffer            = makeBuffer(65536);
++            mPersistentControlBufferInitialized = true;
++            readDraw(mPersistentControlBuffer);
++        }
++        glBindBuffer(GL_ARRAY_BUFFER, mScratchBuffer);
++
++        // Pre-load secondary buffers with tracked read references across multiple
++        // submission boundaries.
++        std::vector<GLBuffer> secondaryBuffers;
++        secondaryBuffers.reserve(kNumSecondaryBuffers);
++        for (int k = 0; k < kNumSecondaryBuffers; ++k)
++        {
++            GLBuffer secondaryBuffer = makeBuffer(4096);
++            readDraw(secondaryBuffer);
++            glBindBuffer(GL_ARRAY_BUFFER, mScratchBuffer);
++            glBindBuffer(GL_COPY_READ_BUFFER, secondaryBuffer);
++            glBufferSubData(GL_COPY_READ_BUFFER, 200, sizeof(zeroFloats), zeroFloats);
++            secondaryBuffers.push_back(std::move(secondaryBuffer));
++        }
++        recordSubmissionBoundary();
++        for (int iter = 0; iter < kNumPreloadIterations; ++iter)
++        {
++            for (GLBuffer &secondaryBuffer : secondaryBuffers)
++            {
++                readDraw(secondaryBuffer);
++            }
++            glBindBuffer(GL_ARRAY_BUFFER, mScratchBuffer);
++            recordSubmissionBoundary();
++        }
++
++        // Allocate donor buffers and reference the target indices in draw calls.
++        std::vector<GLBuffer> donorBuffers;
++        donorBuffers.reserve(kNumDonorBuffers);
++        for (int i = 0; i < kNumDonorBuffers; ++i)
++        {
++            donorBuffers.push_back(makeBuffer(256));
++        }
++        for (int donorIndex : targetDonorIndices)
++        {
++            readDraw(donorBuffers[donorIndex]);
++        }
++        glBindBuffer(GL_ARRAY_BUFFER, mScratchBuffer);
++
++        GLsync settleFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
++        pollFence(settleFence, 8000);
++        glDeleteSync(settleFence);
++        ASSERT_GL_NO_ERROR();
++
++        // Queue copy-on-write operations on the large buffers and the target donor buffers
++        // (which may store raw pointers in the driver), then free the donor buffers while
++        // the copy-on-write work is still pending.
++        for (GLBuffer &largeBuffer : largeBuffers)
++        {
++            glBindBuffer(GL_COPY_READ_BUFFER, largeBuffer);
++            glBufferSubData(GL_COPY_READ_BUFFER, 32, sizeof(zeroFloats), zeroFloats);
++        }
++        for (int donorIndex : targetDonorIndices)
++        {
++            glBindBuffer(GL_COPY_READ_BUFFER, donorBuffers[donorIndex]);
++            glBufferSubData(GL_COPY_READ_BUFFER, 32, sizeof(zeroFloats), zeroFloats);
++        }
++        for (int i = kNumDonorBuffers - 1; i >= 0; --i)
++        {
++            donorBuffers[i].reset();
++        }
++
++        // Issue additional read draws on the secondary buffers to allocate new tracking entries.
++        for (GLBuffer &secondaryBuffer : secondaryBuffers)
++        {
++            readDraw(secondaryBuffer);
++        }
++        glBindBuffer(GL_ARRAY_BUFFER, mScratchBuffer);
++        recordSubmissionBoundary();
++        for (int batch = 1; batch <= 15; ++batch)
++        {
++            for (GLBuffer &secondaryBuffer : secondaryBuffers)
++            {
++                readDraw(secondaryBuffer);
++            }
++            glBindBuffer(GL_ARRAY_BUFFER, mScratchBuffer);
++            recordSubmissionBoundary();
++        }
++
++        // Wait for the pending copy-on-write queue to drain.
++        glBindBuffer(GL_COPY_READ_BUFFER, largeBuffers[kNumLargeBuffers - 1]);
++        glBufferSubData(GL_COPY_READ_BUFFER, 256, sizeof(zeroFloats), zeroFloats);
++        ASSERT_GL_NO_ERROR();
++
++        // Respecify and delete the secondary buffers to traverse their tracking structures.
++        for (int k = 0; k < kNumSecondaryBuffers; ++k)
++        {
++            glBindBuffer(GL_COPY_READ_BUFFER, secondaryBuffers[k]);
++            glBufferData(GL_COPY_READ_BUFFER, 8192, nullptr, GL_DYNAMIC_DRAW);
++            ASSERT_GL_NO_ERROR();
++        }
++        for (GLBuffer &secondaryBuffer : secondaryBuffers)
++        {
++            secondaryBuffer.reset();
++        }
++        ASSERT_GL_NO_ERROR();
++
++        // Clean up resources allocated in this cycle before starting the next iteration.
++        for (GLBuffer &largeBuffer : largeBuffers)
++        {
++            largeBuffer.reset();
++        }
++        for (GLsync fence : mFences)
++        {
++            glDeleteSync(fence);
++        }
++        mFences.clear();
++        ASSERT_GL_NO_ERROR();
++    }
++
++    GLBuffer makeElementBuffer(size_t bytes)
++    {
++        std::vector<uint32_t> indices(bytes / sizeof(uint32_t));
++        for (size_t i = 0; i < indices.size(); ++i)
++        {
++            indices[i] = (i % 4 == 1) ? ~0u : static_cast<uint32_t>(i & 63);
++        }
++        GLBuffer elementBuffer;
++        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
++        glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(bytes), indices.data(),
++                     GL_DYNAMIC_DRAW);
++        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++        return elementBuffer;
++    }
++
++    void drawElementsWithEBO(GLVertexArray &vao, GLBuffer &ebo, GLBuffer &scratchElementBuffer)
++    {
++        glBindVertexArray(vao);
++        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
++        glDrawElements(GL_POINTS, 1, GL_UNSIGNED_INT, nullptr);
++        // Rebind the persistent scratch element buffer and perform a 1-point indexed draw so
++        // ANGLE's VertexArrayGL::updateElementArrayBufferBinding releases its reference to `ebo`
++        // and unbinds `ebo` from the native VAO in the driver.
++        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scratchElementBuffer);
++        glDrawElements(GL_POINTS, 1, GL_UNSIGNED_SHORT, nullptr);
++        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++        glBindVertexArray(0);
++    }
++
++    void runElementBufferCopyAndDeleteSequence(int cycle,
++                                               GLVertexArray &vao,
++                                               GLBuffer &posBuffer,
++                                               GLBuffer &scratchElementBuffer,
++                                               GLBuffer &copySrcBuffer)
++    {
++        GLint prevProgram = 0;
++        glGetIntegerv(GL_CURRENT_PROGRAM, &prevProgram);
++        glUseProgram(mProgram);
++        glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
++        const float zeroFloats[4] = {};
++        std::array<int, 3> targetDonorIndices;
++        for (int i = 0; i < 3; ++i)
++        {
++            targetDonorIndices[i] = kBaseTargetDonorIndices[i] + kTargetIndexOffsets[cycle % 8];
++        }
++
++        static constexpr size_t kLargeElementBufferSizeMB = 8;
++        std::vector<GLBuffer> largeBuffers;
++        largeBuffers.reserve(kNumLargeBuffers);
++        for (int i = 0; i < kNumLargeBuffers; ++i)
++        {
++            GLBuffer largeBuffer = makeBuffer(kLargeElementBufferSizeMB << 20);
++            readDraw(largeBuffer);
++            largeBuffers.push_back(std::move(largeBuffer));
++        }
++        if (!mPersistentControlBufferInitialized)
++        {
++            mPersistentControlBuffer            = makeBuffer(65536);
++            mPersistentControlBufferInitialized = true;
++            readDraw(mPersistentControlBuffer);
++        }
++        readDraw(mScratchBuffer);
++        glBindBuffer(GL_ARRAY_BUFFER, posBuffer);
++
++        // Restore attribute 0 on vao to posBuffer after readDraw modified the default VAO.
++        glBindVertexArray(vao);
++        glBindBuffer(GL_ARRAY_BUFFER, posBuffer);
++        glEnableVertexAttribArray(0);
++        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++        glBindVertexArray(0);
++
++        // Allocate secondary GL_ELEMENT_ARRAY_BUFFER objects, reference them via glDrawElements,
++        // and update them via glCopyBufferSubData.
++        std::vector<GLBuffer> secondaryEbos;
++        secondaryEbos.reserve(kNumSecondaryBuffers);
++        for (int k = 0; k < kNumSecondaryBuffers; ++k)
++        {
++            GLBuffer secondaryEbo = makeElementBuffer(4096);
++            drawElementsWithEBO(vao, secondaryEbo, scratchElementBuffer);
++            glBindBuffer(GL_COPY_READ_BUFFER, copySrcBuffer);
++            glBindBuffer(GL_COPY_WRITE_BUFFER, secondaryEbo);
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 200, 16);
++            glBindBuffer(GL_COPY_READ_BUFFER, 0);
++            glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
++            secondaryEbos.push_back(std::move(secondaryEbo));
++        }
++        recordSubmissionBoundary();
++        for (int iter = 0; iter < kNumPreloadIterations; ++iter)
++        {
++            for (GLBuffer &secondaryEbo : secondaryEbos)
++            {
++                drawElementsWithEBO(vao, secondaryEbo, scratchElementBuffer);
++            }
++            recordSubmissionBoundary();
++        }
++
++        // Allocate donor GL_ELEMENT_ARRAY_BUFFER objects and reference the target indices in
++        // glDrawElements calls.
++        std::vector<GLBuffer> donorEbos;
++        donorEbos.reserve(kNumDonorBuffers);
++        for (int i = 0; i < kNumDonorBuffers; ++i)
++        {
++            donorEbos.push_back(makeElementBuffer(256));
++        }
++        for (int donorIndex : targetDonorIndices)
++        {
++            drawElementsWithEBO(vao, donorEbos[donorIndex], scratchElementBuffer);
++        }
++
++        GLsync settleFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
++        pollFence(settleFence, 8000);
++        glDeleteSync(settleFence);
++        ASSERT_GL_NO_ERROR();
++
++        // Queue copy-on-write operations on the large buffers and update the target
++        // GL_ELEMENT_ARRAY_BUFFER objects via glCopyBufferSubData, then delete the element
++        // buffers while the copy-on-write work is still pending.
++        for (GLBuffer &largeBuffer : largeBuffers)
++        {
++            glBindBuffer(GL_COPY_READ_BUFFER, largeBuffer);
++            glBufferSubData(GL_COPY_READ_BUFFER, 32, sizeof(zeroFloats), zeroFloats);
++        }
++        glBindBuffer(GL_COPY_READ_BUFFER, copySrcBuffer);
++        for (int donorIndex : targetDonorIndices)
++        {
++            glBindBuffer(GL_COPY_WRITE_BUFFER, donorEbos[donorIndex]);
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 32, 16);
++        }
++        glBindBuffer(GL_COPY_READ_BUFFER, 0);
++        glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
++        for (int i = kNumDonorBuffers - 1; i >= 0; --i)
++        {
++            donorEbos[i].reset();
++        }
++
++        for (GLBuffer &secondaryEbo : secondaryEbos)
++        {
++            drawElementsWithEBO(vao, secondaryEbo, scratchElementBuffer);
++        }
++        recordSubmissionBoundary();
++        for (int batch = 1; batch <= 15; ++batch)
++        {
++            for (GLBuffer &secondaryEbo : secondaryEbos)
++            {
++                drawElementsWithEBO(vao, secondaryEbo, scratchElementBuffer);
++            }
++            recordSubmissionBoundary();
++        }
++
++        glBindBuffer(GL_COPY_READ_BUFFER, largeBuffers[kNumLargeBuffers - 1]);
++        glBufferSubData(GL_COPY_READ_BUFFER, 256, sizeof(zeroFloats), zeroFloats);
++        glBindBuffer(GL_COPY_READ_BUFFER, 0);
++        ASSERT_GL_NO_ERROR();
++
++        for (int k = 0; k < kNumSecondaryBuffers; ++k)
++        {
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, secondaryEbos[k]);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, 8192, nullptr, GL_DYNAMIC_DRAW);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            ASSERT_GL_NO_ERROR();
++        }
++        for (GLBuffer &secondaryEbo : secondaryEbos)
++        {
++            secondaryEbo.reset();
++        }
++        ASSERT_GL_NO_ERROR();
++
++        glFinish();
++        for (GLBuffer &largeBuffer : largeBuffers)
++        {
++            largeBuffer.reset();
++        }
++        for (GLsync fence : mFences)
++        {
++            glDeleteSync(fence);
++        }
++        mFences.clear();
++        glFinish();
++        glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
++        glUseProgram(prevProgram);
++        ASSERT_GL_NO_ERROR();
++    }
++
++    void runDrawElementsAndDeleteSequences(GLVertexArray &vao,
++                                           GLBuffer &posBuffer,
++                                           GLBuffer &scratchElementBuffer,
++                                           GLTransformFeedback &tfObject,
++                                           GLBuffer &tfBuffer)
++    {
++        // Sequence 1: temporary GL_ARRAY_BUFFER with vertexAttribDivisor,
++        // glDrawElementsInstanced, rebind position buffer, 4x glDrawElements, delete both buffers.
++        {
++            static constexpr uint32_t kIndices[24] = {
++                22, 60, 6,   50, 45, ~0u, 5,  25, 56, 52, 22, 25,
++                6,  18, ~0u, 26, 29, 35,  10, 40, 62, 23, 21, 62,
++            };
++            std::vector<float> tempAttribs(256, 0.25f);
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++
++            GLBuffer instanceAttribBuffer;
++            glBindBuffer(GL_ARRAY_BUFFER, instanceAttribBuffer);
++            glBufferData(GL_ARRAY_BUFFER, tempAttribs.size() * sizeof(float), tempAttribs.data(),
++                         GL_STATIC_DRAW);
++            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++            glVertexAttribDivisor(0, 1);
++            glDrawElementsInstanced(GL_POINTS, 24, GL_UNSIGNED_INT, nullptr, 3);
++
++            glVertexAttribDivisor(0, 0);
++            glBindBuffer(GL_ARRAY_BUFFER, posBuffer);
++            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++            for (int drawIter = 0; drawIter < 4; ++drawIter)
++            {
++                glDrawElements(GL_POINTS, 24, GL_UNSIGNED_INT, nullptr);
++            }
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 2: unsigned byte index buffer with two glCopyBufferSubData updates
++        // and glDrawElementsInstanced at non-zero offset.
++        {
++            static constexpr uint8_t kIndices[16] = {
++                0, 7, 14, 21, 255, 35, 42, 49, 56, 255, 6, 13, 20, 27, 255, 41,
++            };
++            static constexpr uint8_t kCopySrc[1] = {0};
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++
++            GLBuffer copySrcBuffer;
++            glBindBuffer(GL_COPY_READ_BUFFER, copySrcBuffer);
++            glBufferData(GL_COPY_READ_BUFFER, sizeof(kCopySrc), kCopySrc, GL_STATIC_DRAW);
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 15, 1);
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 4, 1);
++            glBindBuffer(GL_COPY_READ_BUFFER, 0);
++            glDrawElementsInstanced(GL_TRIANGLE_STRIP, 13, GL_UNSIGNED_BYTE,
++                                    reinterpret_cast<const void *>(3), 1);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 3: respecifying GL_ELEMENT_ARRAY_BUFFER from uint8_t to uint32_t
++        // via glBufferData followed by repeated glDrawElementsInstanced.
++        {
++            static constexpr uint8_t kIndices8[16] = {
++                0, 1, 2, 3, 4, 5, 6, 7, 255, 9, 10, 11, 12, 13, 14, 15,
++            };
++            static constexpr uint32_t kIndices32[16] = {
++                0, ~0u, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices8), kIndices8, GL_DYNAMIC_DRAW);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices32), kIndices32, GL_DYNAMIC_DRAW);
++            glDrawElementsInstanced(GL_TRIANGLE_STRIP, 16, GL_UNSIGNED_INT, nullptr, 1);
++            glDrawElementsInstanced(GL_TRIANGLE_STRIP, 16, GL_UNSIGNED_INT, nullptr, 1);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 4: partial update via glBufferSubData on GL_ELEMENT_ARRAY_BUFFER
++        // followed by glDrawElementsInstanced and 3x glDrawElements.
++        {
++            static constexpr uint32_t kIndices[63] = {
++                0,  1,  2,   3,   4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15,
++                16, 17, 18,  19,  20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
++                32, 33, 34,  35,  36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
++                48, 49, ~0u, ~0u, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
++            };
++            static constexpr uint32_t kSubData[32] = {
++                48, 7,  ~0u, 11,  50, ~0u, 29,  ~0u, 35,  ~0u, ~0u, ~0u, 18,  ~0u, 38,  ~0u,
++                30, 30, ~0u, ~0u, 60, 49,  ~0u, ~0u, ~0u, ~0u, 62,  ~0u, ~0u, ~0u, ~0u, 62,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 60, sizeof(kSubData), kSubData);
++            glDrawElementsInstanced(GL_LINES, 15, GL_UNSIGNED_INT,
++                                    reinterpret_cast<const void *>(4), 2);
++            for (int drawIter = 0; drawIter < 3; ++drawIter)
++            {
++                glDrawElements(GL_TRIANGLES, 17, GL_UNSIGNED_INT,
++                               reinterpret_cast<const void *>(4));
++            }
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 5: Transform feedback active and paused with glDrawElementsInstanced
++        // and glDrawElements, followed by index buffer deletion.
++        {
++            static constexpr uint16_t kIndices[16] = {
++                12, 65535, 65535, 65535, 8, 39, 23, 18, 47, 58, 0, 62, 1, 2, 3, 65535,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++
++            glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tfObject);
++            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tfBuffer);
++            glBeginTransformFeedback(GL_POINTS);
++            glPauseTransformFeedback();
++            glDrawElementsInstanced(GL_POINTS, 10, GL_UNSIGNED_SHORT,
++                                    reinterpret_cast<const void *>(4), 7);
++            glDrawElementsInstanced(GL_POINTS, 10, GL_UNSIGNED_SHORT,
++                                    reinterpret_cast<const void *>(4), 7);
++            glDrawElements(GL_TRIANGLE_FAN, 16, GL_UNSIGNED_SHORT, nullptr);
++            glResumeTransformFeedback();
++            glEndTransformFeedback();
++            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
++            glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
++
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 6: secondary vertex attribute buffer bound to attribute 1
++        // with large divisor, glDrawElementsInstanced + 4x glDrawElements, then delete both.
++        {
++            std::vector<uint16_t> indices(100, 65535);
++            indices[1] = 2;
++            indices[2] = 3;
++            std::vector<float> tempAttribs(128, 0.5f);
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint16_t), indices.data(),
++                         GL_DYNAMIC_DRAW);
++
++            GLBuffer instanceAttribBuffer;
++            glBindBuffer(GL_ARRAY_BUFFER, instanceAttribBuffer);
++            glBufferData(GL_ARRAY_BUFFER, tempAttribs.size() * sizeof(float), tempAttribs.data(),
++                         GL_STATIC_DRAW);
++            glEnableVertexAttribArray(1);
++            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++            glVertexAttribDivisor(1, 65535);
++            glDrawElementsInstanced(GL_LINES, 98, GL_UNSIGNED_SHORT,
++                                    reinterpret_cast<const void *>(2), 2);
++            glVertexAttribDivisor(1, 0);
++            glBindBuffer(GL_ARRAY_BUFFER, posBuffer);
++            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++            for (int drawIter = 0; drawIter < 4; ++drawIter)
++            {
++                glDrawElements(GL_LINES, 98, GL_UNSIGNED_SHORT, reinterpret_cast<const void *>(2));
++            }
++            glDisableVertexAttribArray(1);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 7: delete GL_ELEMENT_ARRAY_BUFFER while bound to VAO, immediately
++        // create and bind a new one, draw with glDrawElements and glDrawElementsInstanced, delete.
++        {
++            static constexpr uint16_t kIndices[63] = {
++                1, 65535, 65535, 1,     0,     7, 7, 65535, 65535, 0, 7, 1, 65535, 8, 7, 65535,
++                1, 0,     8,     65535, 7,     8, 1, 65535, 7,     7, 7, 1, 8,     8, 1, 0,
++                1, 65535, 0,     1,     65535, 0, 8, 1,     65535, 8, 8, 1, 7,     7, 0, 7,
++                7, 65535, 8,     0,     0,     0, 1, 1,     8,     7, 8, 1, 0,     1, 0,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++            indexBuffer.reset();
++
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++            glDrawElements(GL_TRIANGLE_FAN, 50, GL_UNSIGNED_SHORT,
++                           reinterpret_cast<const void *>(6));
++            glDrawElementsInstanced(GL_LINE_LOOP, 50, GL_UNSIGNED_SHORT,
++                                    reinterpret_cast<const void *>(6), 2);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 8: resize GL_ELEMENT_ARRAY_BUFFER larger and smaller with glBufferData
++        // between glDrawElements and glDrawElementsInstanced calls, then delete.
++        {
++            static constexpr uint8_t kIndices[16] = {
++                0, 7, 14, 21, 255, 35, 42, 49, 56, 255, 6, 13, 20, 27, 255, 41,
++            };
++            std::vector<uint8_t> indices64(64, 1);
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++            glDrawElements(GL_LINE_STRIP, 13, GL_UNSIGNED_BYTE, reinterpret_cast<const void *>(3));
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices64.size(), indices64.data(),
++                         GL_DYNAMIC_DRAW);
++            glDrawElements(GL_LINE_STRIP, 64, GL_UNSIGNED_BYTE, nullptr);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, 1, kIndices);
++            glDrawElementsInstanced(GL_LINE_STRIP, 13, GL_UNSIGNED_BYTE,
++                                    reinterpret_cast<const void *>(3), 1);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 9: unsigned byte index buffer with glDrawElements before and after
++        // glCopyBufferSubData, plus glDrawElementsInstanced, followed by buffer deletion.
++        {
++            static constexpr uint8_t kIndices[64] = {
++                62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255,
++                62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255,
++                62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255,
++                62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255, 62, 255,
++            };
++            static constexpr uint8_t kCopySrc[10] = {
++                255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++
++            GLBuffer copySrcBuffer;
++            glBindBuffer(GL_COPY_READ_BUFFER, copySrcBuffer);
++            glBufferData(GL_COPY_READ_BUFFER, sizeof(kCopySrc), kCopySrc, GL_STATIC_DRAW);
++
++            glDrawElements(GL_TRIANGLE_STRIP, 35, GL_UNSIGNED_BYTE, nullptr);
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 50, 10);
++            glBindBuffer(GL_COPY_READ_BUFFER, 0);
++            glDrawElements(GL_TRIANGLE_STRIP, 35, GL_UNSIGNED_BYTE, nullptr);
++            glDrawElementsInstanced(GL_TRIANGLES, 64, GL_UNSIGNED_BYTE, nullptr, 1);
++
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 10: unsigned short index buffer with overlapping glCopyBufferSubData
++        // regions followed by glDrawElements and glDrawElementsInstanced and buffer deletion.
++        {
++            static constexpr uint16_t kIndices[33] = {
++                48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
++                48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
++            };
++            static constexpr uint16_t kCopySrc[11] = {
++                1, 1, 65535, 0, 1, 8, 0, 7, 65535, 8, 1,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++
++            GLBuffer copySrcBuffer;
++            glBindBuffer(GL_COPY_READ_BUFFER, copySrcBuffer);
++            glBufferData(GL_COPY_READ_BUFFER, sizeof(kCopySrc), kCopySrc, GL_STATIC_DRAW);
++
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 20, 22);
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 28, 22);
++            glBindBuffer(GL_COPY_READ_BUFFER, 0);
++            glDrawElements(GL_TRIANGLE_FAN, 33, GL_UNSIGNED_SHORT, nullptr);
++            glDrawElementsInstanced(GL_TRIANGLE_FAN, 33, GL_UNSIGNED_SHORT, nullptr, 2);
++
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 11: GL_LINE_LOOP with GL_UNSIGNED_INT and two overlapping glCopyBufferSubData
++        // writes injecting 0xFFFFFFFF primitive-restart markers, followed by glDrawElements and
++        // delete.
++        {
++            static constexpr uint32_t kIndices[12] = {
++                0, 7, 8, 8, 1, 7, 1, 1, 1, 8, 7, 63,
++            };
++            static constexpr uint32_t kCopySrc[4] = {
++                ~0u,
++                ~0u,
++                ~0u,
++                3,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++
++            GLBuffer copySrcBuffer;
++            glBindBuffer(GL_COPY_READ_BUFFER, copySrcBuffer);
++            glBufferData(GL_COPY_READ_BUFFER, sizeof(kCopySrc), kCopySrc, GL_STATIC_DRAW);
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 32, 16);
++            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 24, 16);
++            glBindBuffer(GL_COPY_READ_BUFFER, 0);
++
++            glDrawElements(GL_LINE_LOOP, 11, GL_UNSIGNED_INT, reinterpret_cast<const void *>(4));
++            glDrawElements(GL_LINE_LOOP, 11, GL_UNSIGNED_INT, reinterpret_cast<const void *>(4));
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 12: GL_LINE_LOOP with GL_UNSIGNED_INT containing multiple 0xFFFFFFFF
++        // primitive-restart indices drawn via glDrawElements and glDrawElementsInstanced, then
++        // immediately deleted.
++        {
++            static constexpr uint32_t kIndices[24] = {
++                0,  1,  2,  3,  4,  ~0u, 6,  7,  8,  9,  10, ~0u,
++                12, 13, 14, 15, 16, ~0u, 18, 19, 20, 21, 22, ~0u,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_DYNAMIC_DRAW);
++            glDrawElements(GL_LINE_LOOP, 24, GL_UNSIGNED_INT, nullptr);
++            glDrawElementsInstanced(GL_LINE_LOOP, 24, GL_UNSIGNED_INT, nullptr, 2);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 13: GL_LINE_LOOP respecifying GL_ELEMENT_ARRAY_BUFFER from uint32_t (with
++        // 0xFFFFFFFF) to uint16_t (with 0xFFFF) via glBufferData, then glDrawElementsInstanced and
++        // delete.
++        {
++            static constexpr uint32_t kIndices32[24] = {
++                0,  1,  2,  3,  4,   5,  6,  7,  8,  9,  10, 11,
++                12, 13, 14, 15, ~0u, 17, 18, 19, 20, 21, 22, 23,
++            };
++            static constexpr uint16_t kIndices16[24] = {
++                0,  1,  2,  3,  4,  5,  6,  7,  65535, 9,  10, 11,
++                12, 13, 14, 15, 16, 17, 18, 19, 20,    21, 22, 23,
++            };
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices32), kIndices32, GL_DYNAMIC_DRAW);
++            glDrawElements(GL_LINE_LOOP, 24, GL_UNSIGNED_INT, nullptr);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices16), kIndices16, GL_DYNAMIC_DRAW);
++            glDrawElementsInstanced(GL_LINE_LOOP, 13, GL_UNSIGNED_SHORT,
++                                    reinterpret_cast<const void *>(2), 1);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        // Sequence 14: Delete GL_ELEMENT_ARRAY_BUFFER while bound to VAO, recreate with 255
++        // uint16_t indices containing 64 primitive-restart markers (65535), draw 5x GL_LINE_LOOP,
++        // then delete.
++        {
++            std::array<uint16_t, 255> indices;
++            for (int k = 0; k < 255; ++k)
++            {
++                indices[k] = (k % 4 == 1) ? 65535 : static_cast<uint16_t>(k & 63);
++            }
++            GLBuffer indexBuffer;
++            glBindVertexArray(vao);
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), GL_DYNAMIC_DRAW);
++            indexBuffer.reset();
++
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), GL_DYNAMIC_DRAW);
++            for (int drawIter = 0; drawIter < 5; ++drawIter)
++            {
++                glDrawElements(GL_LINE_LOOP, 110, GL_UNSIGNED_SHORT,
++                               reinterpret_cast<const void *>(6));
++            }
++            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++            glBindVertexArray(0);
++        }
++
++        glBindVertexArray(vao);
++        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scratchElementBuffer);
++        glDrawElements(GL_POINTS, 1, GL_UNSIGNED_SHORT, nullptr);
++        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++        glBindVertexArray(0);
++    }
++
++    GLProgram mProgram;
++    GLBuffer mScratchBuffer;
++    GLBuffer mPrimeBuffer;
++    GLBuffer mPersistentControlBuffer;
++    bool mPersistentControlBufferInitialized = false;
++    std::vector<uint32_t> mPatternBuffer;
++    std::vector<GLsync> mFences;
++};
++
++// Verify that deleting buffers while referenced by pending GPU work and copy-on-write
++// operations does not crash or lose the context.
++TEST_P(DeleteBuffersTest, QueuedDeletionDoesNotCrash)
++{
++    // Too slow on SwiftShader
++    ANGLE_SKIP_TEST_IF(isSwiftshader());
++
++    for (int cycle = 0; cycle < kMaxCycles; ++cycle)
++    {
++        ASSERT_NO_FATAL_FAILURE(runQueuedDeletionCycle(cycle));
++    }
++    EXPECT_GL_NO_ERROR();
++}
++
++// Verify that repeatedly drawing with glDrawElements and glDrawElementsInstanced, updating
++// buffers via glCopyBufferSubData/glBufferSubData/glBufferData, and deleting the buffers
++// does not crash or lose the context.
++TEST_P(DeleteBuffersTest, DeleteAfterDrawElementsDoesNotCrash)
++{
++    // Too slow on SwiftShader
++    ANGLE_SKIP_TEST_IF(isSwiftshader());
++
++    static constexpr char kVS[] = R"(#version 300 es
++layout(location = 0) in vec2 p;
++out float v_tf;
++void main()
++{
++    gl_Position = vec4(p, 0.0, 1.0);
++    gl_PointSize = 1.0;
++    v_tf = p.x + p.y;
++})";
++
++    static constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 c;
++void main()
++{
++    c = vec4(1.0);
++})";
++
++    std::vector<std::string> tfVaryings = {"v_tf"};
++    ANGLE_GL_PROGRAM_TRANSFORM_FEEDBACK(program, kVS, kFS, tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    glUseProgram(program);
++    glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
++
++    std::vector<float> positions(64 * 2);
++    for (int i = 0; i < 64; ++i)
++    {
++        positions[i * 2]     = (static_cast<float>(i % 8) / 3.5f) - 1.0f;
++        positions[i * 2 + 1] = (static_cast<float>(i / 8) / 3.5f) - 1.0f;
++    }
++
++    GLBuffer posBuffer;
++    glBindBuffer(GL_ARRAY_BUFFER, posBuffer);
++    glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(float), positions.data(),
++                 GL_STATIC_DRAW);
++
++    static constexpr uint16_t kScratchIndices[4] = {0, 1, 2, 0};
++    GLBuffer scratchElementBuffer;
++    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, scratchElementBuffer);
++    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kScratchIndices), kScratchIndices, GL_STATIC_DRAW);
++    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
++
++    static constexpr uint32_t kCopySrcIndices[4] = {~0u, ~0u, ~0u, 3};
++    GLBuffer copySrcBuffer;
++    glBindBuffer(GL_COPY_READ_BUFFER, copySrcBuffer);
++    glBufferData(GL_COPY_READ_BUFFER, sizeof(kCopySrcIndices), kCopySrcIndices, GL_STATIC_DRAW);
++    glBindBuffer(GL_COPY_READ_BUFFER, 0);
++
++    GLVertexArray vao;
++    glBindVertexArray(vao);
++    glBindBuffer(GL_ARRAY_BUFFER, posBuffer);
++    glEnableVertexAttribArray(0);
++    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glBindVertexArray(0);
++
++    GLBuffer tfBuffer;
++    glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tfBuffer);
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 4096, nullptr, GL_DYNAMIC_COPY);
++    glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, 0);
++
++    GLTransformFeedback tfObject;
++    EXPECT_GL_NO_ERROR();
++
++    for (int i = 0; i < 1000; ++i)
++    {
++        glClear(GL_COLOR_BUFFER_BIT);
++        runDrawElementsAndDeleteSequences(vao, posBuffer, scratchElementBuffer, tfObject, tfBuffer);
++        if (i < 4)
++        {
++            ASSERT_NO_FATAL_FAILURE(runElementBufferCopyAndDeleteSequence(
++                i, vao, posBuffer, scratchElementBuffer, copySrcBuffer));
++        }
++        if (i % 5 == 4)
++        {
++            glFinish();
++        }
++    }
++    glFinish();
++    EXPECT_GL_NO_ERROR();
++}
++
++ANGLE_INSTANTIATE_TEST_ES3_AND(DeleteBuffersTest,
++                               ES3_OPENGL().enable(Feature::DeferGlDeleteBuffers),
++                               ES3_OPENGLES().enable(Feature::DeferGlDeleteBuffers));
++
++}  // anonymous namespace
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index c46a0fd8797cb2ac6a7ba8f597285296a2404cc9..0259d9641cf1b4d353ca129fc1880ae00694fb39 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -87,6 +87,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::CorruptProgramBinaryForTesting, "corruptProgramBinaryForTesting"},
+     {Feature::DebugClDumpCommandStream, "debugClDumpCommandStream"},
+     {Feature::DecodeEncodeSRGBForGenerateMipmap, "decodeEncodeSRGBForGenerateMipmap"},
++    {Feature::DeferGlDeleteBuffers, "deferGlDeleteBuffers"},
+     {Feature::DepthStencilBlitExtraCopy, "depthStencilBlitExtraCopy"},
+     {Feature::DescriptorSetCache, "descriptorSetCache"},
+     {Feature::DestroyOldSwapchainInSharedPresentMode, "destroyOldSwapchainInSharedPresentMode"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index cfdf940f709ac8825773c21cab6fef9af909f95f..438addf81cf4f1ad54267e4ca1accad38edb55d0 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -87,6 +87,7 @@ enum class Feature
+     CorruptProgramBinaryForTesting,
+     DebugClDumpCommandStream,
+     DecodeEncodeSRGBForGenerateMipmap,
++    DeferGlDeleteBuffers,
+     DepthStencilBlitExtraCopy,
+     DescriptorSetCache,
+     DestroyOldSwapchainInSharedPresentMode,

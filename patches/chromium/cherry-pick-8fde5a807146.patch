@@ -1,0 +1,194 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wenbin Liu <liuwenbin@microsoft.com>
+Date: Mon, 12 Oct 2026 20:58:15 -0700
+Subject: Check navigation lifetime before handling URL override exceptions
+
+The Android URL override callback can synchronously destroy the
+navigation request and then report a Java exception. Check the existing
+weak pointer immediately after the callback returns, before the
+exception path reads prerender state. Preserve diagnostics for live
+requests and the existing exception, override, and normal navigation
+behavior.
+
+Add native regression coverage for synchronous cancellation with either
+callback result, exception returns without cancellation, and normal
+navigation override decisions.
+
+Bug: 571284308
+Change-Id: I624e1bcdc6e75392e4f93c9c500a5cf88e4f2adb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8547612
+Commit-Queue: Wenbin Liu <liuwenbin@microsoft.com>
+Auto-Submit: Wenbin Liu <liuwenbin@microsoft.com>
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717320}
+
+Electron adaptation notes (43-x-y):
+This branch passes commit_params_->original_url / commit_params_->original_method to ShouldOverrideUrlLoading() where upstream now uses the original_url_ / request_method_ members; the call keeps the branch's arguments. The lifetime check was moved before the failure handling exactly as upstream.
+
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 764b13db5fc48d6ed4d1fd27d5c03b26f56f79b1..f7ef840fa86b5716ea15738948d5b50d7eb210f1 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -2942,15 +2942,24 @@ void NavigationRequest::BeginNavigationImpl() {
+   base::WeakPtr<NavigationRequest> this_ptr(weak_factory_.GetWeakPtr());
+   bool should_override_url_loading = false;
+ 
+-  if (!GetContentClient()->browser()->ShouldOverrideUrlLoading(
+-          frame_tree_node_->frame_tree_node_id(),
+-          commit_params_->is_browser_initiated, commit_params_->original_url,
+-          commit_params_->original_method,
+-          common_params_->has_possibly_filtered_user_gesture, false,
+-          frame_tree_node_->IsOutermostMainFrame(),
+-          frame_tree_node_->frame_tree().is_prerendering(),
+-          ui::PageTransitionFromInt(common_params_->transition),
+-          &should_override_url_loading)) {
++  const bool success = GetContentClient()->browser()->ShouldOverrideUrlLoading(
++      frame_tree_node_->frame_tree_node_id(),
++      commit_params_->is_browser_initiated, commit_params_->original_url,
++      commit_params_->original_method,
++      common_params_->has_possibly_filtered_user_gesture, false,
++      frame_tree_node_->IsOutermostMainFrame(),
++      frame_tree_node_->frame_tree().is_prerendering(),
++      ui::PageTransitionFromInt(common_params_->transition),
++      &should_override_url_loading);
++
++  // The content client might cause `this` to be deleted while
++  // `ShouldOverrideUrlLoading` is called.
++  // See https://crbug.com/770157.
++  if (!this_ptr) {
++    return;
++  }
++
++  if (!success) {
+     if (reserved_prerender_host_info_.has_value()) {
+       // Prerender activation must not fail but some reports imply it can
+       // actually be failing: crbug.com/408969974. This dump is useful for
+@@ -2968,12 +2977,6 @@ void NavigationRequest::BeginNavigationImpl() {
+     return;
+   }
+ 
+-  // The content/ embedder might cause |this| to be deleted while
+-  // |ShouldOverrideUrlLoading| is called.
+-  // See https://crbug.com/770157.
+-  if (!this_ptr)
+-    return;
+-
+   if (should_override_url_loading) {
+     // Don't create a NavigationHandle here to simulate what happened with the
+     // old navigation code path (i.e. doesn't fire onPageFinished notification
+diff --git a/content/browser/renderer_host/navigation_request_unittest.cc b/content/browser/renderer_host/navigation_request_unittest.cc
+index 8a8acf35cbaa740d0e03b3f6bb0ea333f444ed8f..78e68e6b4f503700f40a5661594059e903cc3da4 100644
+--- a/content/browser/renderer_host/navigation_request_unittest.cc
++++ b/content/browser/renderer_host/navigation_request_unittest.cc
+@@ -64,6 +64,25 @@ class ProcessSelectionTestData
+ 
+ PROCESS_SELECTION_USER_DATA_KEY_IMPL(ProcessSelectionTestData);
+ 
++#if BUILDFLAG(IS_ANDROID)
++class MockShouldOverrideUrlLoadingBrowserClient : public ContentBrowserClient {
++ public:
++  MOCK_METHOD(bool,
++              ShouldOverrideUrlLoading,
++              (FrameTreeNodeId frame_tree_node_id,
++               bool browser_initiated,
++               const GURL& url,
++               const std::string& request_method,
++               bool has_user_gesture,
++               bool is_redirect,
++               bool is_outermost_main_frame,
++               bool is_prerendering,
++               ui::PageTransition transition,
++               bool* ignore_navigation),
++              (override));
++};
++#endif  // BUILDFLAG(IS_ANDROID)
++
+ }  // namespace
+ 
+ class NavigationRequestTest : public RenderViewHostImplTestHarness {
+@@ -271,6 +290,85 @@ class NavigationRequestTest : public RenderViewHostImplTestHarness {
+   NavigationThrottle::ThrottleCheckResult callback_result_;
+ };
+ 
++#if BUILDFLAG(IS_ANDROID)
++TEST_F(NavigationRequestTest,
++       ShouldOverrideUrlLoadingDestroysNavigationRequest) {
++  // The fixture's browser-initiated navigation would take precedence over a
++  // renderer-initiated navigation without a user gesture.
++  contents()->Stop();
++  ASSERT_FALSE(main_test_rfh()->frame_tree_node()->navigation_request());
++
++  MockShouldOverrideUrlLoadingBrowserClient browser_client;
++  ScopedContentBrowserClientSetting setting(&browser_client);
++
++  for (bool success : {false, true}) {
++    SCOPED_TRACE(success);
++    EXPECT_CALL(browser_client, ShouldOverrideUrlLoading)
++        .WillOnce(testing::InvokeWithoutArgs([&]() {
++          auto* frame_tree_node = main_test_rfh()->frame_tree_node();
++          auto request = frame_tree_node->navigation_request()->GetWeakPtr();
++          EXPECT_EQ(NavigationRequest::WILL_START_NAVIGATION, request->state());
++          contents()->Stop();
++          EXPECT_FALSE(request);
++          // A false return models an exception thrown after stopping the load.
++          return success;
++        }));
++
++    main_test_rfh()->SendRendererInitiatedNavigationRequest(
++        GURL("https://example.com/"), /*has_user_gesture=*/false);
++    EXPECT_FALSE(main_test_rfh()->frame_tree_node()->navigation_request());
++  }
++}
++
++TEST_F(NavigationRequestTest, ShouldOverrideUrlLoadingException) {
++  // Clear the fixture's browser-initiated navigation before issuing a
++  // renderer-initiated navigation without a user gesture.
++  contents()->Stop();
++  ASSERT_FALSE(main_test_rfh()->frame_tree_node()->navigation_request());
++
++  MockShouldOverrideUrlLoadingBrowserClient browser_client;
++  ScopedContentBrowserClientSetting setting(&browser_client);
++  testing::NiceMock<MockWebContentsObserver> observer(contents());
++  EXPECT_CALL(observer, DidStartNavigation).Times(0);
++  EXPECT_CALL(browser_client, ShouldOverrideUrlLoading)
++      .WillOnce(testing::Return(false));
++
++  main_test_rfh()->SendRendererInitiatedNavigationRequest(
++      GURL("https://example.com/"), /*has_user_gesture=*/false);
++
++  auto* request = main_test_rfh()->frame_tree_node()->navigation_request();
++  ASSERT_TRUE(request);
++  EXPECT_EQ(NavigationRequest::WILL_START_NAVIGATION, request->state());
++}
++
++TEST_F(NavigationRequestTest, ShouldOverrideUrlLoadingResult) {
++  MockShouldOverrideUrlLoadingBrowserClient browser_client;
++  ScopedContentBrowserClientSetting setting(&browser_client);
++
++  for (bool ignore_navigation : {false, true}) {
++    SCOPED_TRACE(ignore_navigation);
++    EXPECT_CALL(browser_client, ShouldOverrideUrlLoading)
++        .WillOnce(testing::DoAll(testing::SetArgPointee<9>(ignore_navigation),
++                                 testing::Return(true)));
++
++    auto navigation = NavigationSimulatorImpl::CreateRendererInitiated(
++        GURL("https://example.com/"), main_rfh());
++    navigation->Start();
++    if (ignore_navigation) {
++      EXPECT_FALSE(main_test_rfh()->frame_tree_node()->navigation_request());
++    } else {
++      ASSERT_TRUE(main_test_rfh()->frame_tree_node()->navigation_request());
++      EXPECT_EQ(
++          NavigationRequest::WILL_START_REQUEST,
++          main_test_rfh()->frame_tree_node()->navigation_request()->state());
++      navigation->Commit();
++      EXPECT_EQ(GURL("https://example.com/"),
++                contents()->GetLastCommittedURL());
++    }
++  }
++}
++#endif  // BUILDFLAG(IS_ANDROID)
++
+ // Checks that the request_context_type is properly set.
+ // Note: can be extended to cover more internal members.
+ TEST_F(NavigationRequestTest, SimpleDataChecksRedirectAndProcess) {

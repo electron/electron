@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mingyu Lei <leimy@chromium.org>
+Date: Wed, 28 Oct 2026 07:02:54 -0700
+Subject: FSA: Block ~/.cache on all platforms in sensitive path blocklist
+
+GenerateBlockPaths() only blocked ~/.cache via base::DIR_CACHE under
+IS_LINUX, IS_CHROMEOS, and IS_ANDROID. On macOS, base::DIR_CACHE
+resolves to ~/Library/Caches, and on Windows base::DIR_CACHE does not
+exist, leaving ~/.cache unblocked under base::DIR_HOME
+(kDontBlockChildren) despite cross-platform tools storing virtual
+environments, package caches, and tokens there. On Linux and ChromeOS,
+~/.cache was also left unblocked when $XDG_CACHE_HOME pointed
+elsewhere, or for secondary signed-in profiles on ChromeOS.
+
+Add a platform-independent BlockPath::CreateRelative(base::DIR_HOME,
+".cache", kBlockAllChildren) rule alongside ~/.config, and keep the
+base::DIR_CACHE rule on Linux, ChromeOS, and Android to cover custom
+$XDG_CACHE_HOME locations and Android's app cache directory.
+
+Bug: 577400245
+Test: unit_tests --gtest_filter=*FileSystemAccessPermissionContext*
+Change-Id: I49709818791a0280ccaf6bb89e12127f87191c52
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8668442
+Commit-Queue: Anna Sato <annasato@chromium.org>
+Auto-Submit: Mingyu Lei <leimy@chromium.org>
+Reviewed-by: Anna Sato <annasato@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729091}
+
+Electron adaptation notes (43-x-y):
+Electron's refactor_expose_file_system_access_blocklist.patch moves GenerateBlockPaths() from chrome_file_system_access_permission_context.cc into the header on this branch, so the new ~/.cache kBlockAllChildren rule was applied to the kBlockPaths table in chrome_file_system_access_permission_context.h instead of the .cc. This branch has no Linux/ChromeOS base::DIR_CACHE rule yet (only the Android one), so the comment-only change to that rule has no counterpart. The unit test hunk applied unchanged.
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+index 2b9f609951486486e6b446fc3bf135efed560113..85c9249ac7450e2debb8406c339db3c1369b1ec8 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -586,6 +586,10 @@ class ChromeFileSystemAccessPermissionContext
+         // it on all platforms, see crbug.com/569012015.
+         BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".config"),
+                                   BlockType::kBlockAllChildren),
++        // ~/.cache holds caches and virtual environments for cross-platform
++        // tools, so block it on all platforms, see crbug.com/577400245.
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".cache"),
++                                  BlockType::kBlockAllChildren),
+         // Shell startup files in the home directory, including the ones read by
+         // Git Bash on Windows, see crbug.com/558362029.
+         BlockPath::CreateRelative(base::DIR_HOME,
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+index 779896d95e3ab63e325665bd12375bfd127f479c..e23912db28d89c1e719d0a7684fd88223a743004 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+@@ -654,6 +654,52 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+ #endif  // BUILDFLAG(IS_ANDROID)
+ }
+ 
++// ~/.cache should be blocked on all platforms even when base::DIR_CACHE points
++// elsewhere (macOS NSCachesDirectory, custom $XDG_CACHE_HOME on Linux/ChromeOS,
++// Android app cache) or does not exist (Windows).
++TEST_F(ChromeFileSystemAccessPermissionContextTest,
++       ConfirmSensitiveEntryAccess_HomeCacheBlockedOnAllPlatforms) {
++  base::FilePath home_dir = temp_dir_.GetPath().AppendASCII("home");
++  ScopedHomeDirOverride home_override = OverrideHomeDir(home_dir);
++#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
++  base::FilePath xdg_cache_dir = temp_dir_.GetPath().AppendASCII("xdg_cache");
++  base::ScopedPathOverride cache_override(base::DIR_CACHE, xdg_cache_dir, true,
++                                          true);
++#endif
++  ResetBlockPath();
++
++  base::FilePath home_cache_dir = home_dir.AppendASCII(".cache");
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(home_cache_dir),
++                HandleType::kDirectory, AccessTrigger::kOpen),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(home_cache_dir),
++                HandleType::kDirectory, AccessTrigger::kSave),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(home_cache_dir.AppendASCII("pre-commit")),
++                HandleType::kDirectory, AccessTrigger::kOpen),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(home_cache_dir.AppendASCII("pre-commit")
++                             .AppendASCII("sitecustomize.py")),
++                HandleType::kFile, AccessTrigger::kProgrammaticWrite),
++            SensitiveDirectoryResult::kAbort);
++
++#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
++  // Custom $XDG_CACHE_HOME / Android cache directory remains blocked too.
++  EXPECT_TRUE(IsOpenAbort(xdg_cache_dir, HandleType::kDirectory));
++  EXPECT_TRUE(IsOpenAbort(xdg_cache_dir.AppendASCII("foo"), HandleType::kFile));
++#endif
++
++  // Sibling directories inside DIR_HOME remain allowed.
++  EXPECT_TRUE(
++      IsOpenAllowed(home_dir.AppendASCII("allowed"), HandleType::kDirectory));
++}
++
+ // TODO(crbug.com/432011571): Flaky test.
+ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+        DISABLED_ConfirmSensitiveEntryAccess_BlockChildrenNested) {
+@@ -1469,6 +1515,7 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+       {base::DIR_HOME, FILE_PATH_LITERAL(".ssh"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".config"), true, false},
++      {base::DIR_HOME, FILE_PATH_LITERAL(".cache"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".bash_profile"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".bash_login"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".bashrc"), true, false},
+@@ -1516,11 +1563,11 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+       {base::DIR_HOME, FILE_PATH_LITERAL(".fonts.conf"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".fonts.conf.d"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".pki"), true, false},
++      {base::DIR_CACHE, nullptr, true, false},
+ #endif
+ 
+ #if BUILDFLAG(IS_ANDROID)
+       {base::DIR_ANDROID_APP_DATA, nullptr, true, false},
+-      {base::DIR_CACHE, nullptr, true, false},
+ #endif
+   };
+ 

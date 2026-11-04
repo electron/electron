@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Avi Drissman <avi@chromium.org>
+Date: Thu, 8 Oct 2026 13:53:54 -0700
+Subject: Enforce a minimum time open for file dialogs on the Mac
+
+Chromium on Windows enforces a minimum amount of time a file dialog has
+to be open before it can be accepted. Do this on the Mac as well.
+
+Fixed: 568972388
+Change-Id: I78a644a5f4edd2d65f5a25ac0e7e17e96a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8540507
+Auto-Submit: Avi Drissman <avi@chromium.org>
+Commit-Queue: Avi Drissman <avi@chromium.org>
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1714907}
+
+Electron adaptation notes (43-x-y):
+Only the macOS part applies on this branch: ui/shell_dialogs/safe_accept_file_dialog_event_handler_win.cc does not exist here (that hunk was dropped), the chrome/browser/ui/autofill comment-only hunk was dropped (file not compiled by Electron), and select_file_dialog_bridge.mm gained only the base/time/time.h include (this branch has no remote_cocoa features.h). The SelectFileDialogDelegate minimum-display-duration logic applied unchanged.
+
+diff --git a/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm b/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
+index decff1306c217f828c00eb1ee83231d0cae62446..7fb6ed713f9be47dab5c1b9f3f73819473314edd 100644
+--- a/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
++++ b/components/remote_cocoa/app_shim/select_file_dialog_bridge.mm
+@@ -19,6 +19,7 @@
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/threading/hang_watcher.h"
+ #include "base/threading/thread_restrictions.h"
++#include "base/time/time.h"
+ #import "components/remote_cocoa/app_shim/native_widget_mac_nswindow.h"
+ #import "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+ #import "ui/base/l10n/l10n_util_mac.h"
+@@ -173,7 +174,16 @@ bool IsValidExtension(const base::FilePath::StringType& ext) {
+ @interface SelectFileDialogDelegate : NSObject <NSOpenSavePanelDelegate>
+ @end
+ 
+-@implementation SelectFileDialogDelegate
++@implementation SelectFileDialogDelegate {
++  base::TimeTicks _shownTime;
++}
++
++- (instancetype)init {
++  if (self = [super init]) {
++    _shownTime = base::TimeTicks::Now();
++  }
++  return self;
++}
+ 
+ - (BOOL)panel:(id)sender validateURL:(NSURL*)url error:(NSError**)outError {
+   // Refuse to accept users closing the dialog with a key repeat, since the key
+@@ -184,6 +194,19 @@ - (BOOL)panel:(id)sender validateURL:(NSURL*)url error:(NSError**)outError {
+     return NO;
+   }
+ 
++  // Enforce a minimum display duration to prevent accidental immediate
++  // acceptances. `AutofillSuggestionController` uses a 500ms delay to prevent
++  // accidental interactions. That value is being reused here.
++  // LINT.IfChange(MinDisplayDuration)
++  constexpr base::TimeDelta kMinDisplayDuration = base::Milliseconds(500);
++  // LINT.ThenChange(
++  //     //chrome/browser/ui/autofill/autofill_suggestion_controller.h:IgnoreEarlyClicksDuration,
++  //     //ui/shell_dialogs/safe_accept_file_dialog_event_handler_win.cc:MinDisplayDuration
++  // )
++  if (base::TimeTicks::Now() - _shownTime < kMinDisplayDuration) {
++    return NO;
++  }
++
+   return YES;
+ }
+ 
+@@ -436,8 +459,9 @@ - (void)popupAction:(id)sender {
+     panel_.nameFieldStringValue = default_filename;
+   }
+ 
+-  // Ensure that key-repeat events do not trigger the dialog. See the class
+-  // comment on |SelectFileDialogDelegate|.
++  // Assign a delegate to the panel in order to enforce a few security
++  // requirements. See the implementation of `SelectFileDialogDelegate` for more
++  // details.
+   delegate_ = [[SelectFileDialogDelegate alloc] init];
+   panel_.delegate = delegate_;
+ 

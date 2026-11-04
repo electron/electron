@@ -1,0 +1,711 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Nakayama <tnak@chromium.org>
+Date: Fri, 9 Oct 2026 22:11:43 -0700
+Subject: ServiceWorker: Respect encoding for top-level worker scripts
+
+Plumb the resolved TextEncoding of top-level classic worker scripts from
+WorkerClassicScriptLoader and InstalledScriptsManager::ScriptData
+through to ServiceWorkerScriptCachedMetadataHandler::Encoding().
+
+This ensures that the script encoding is taken into account when
+generating and matching V8 code cache for service worker scripts.
+Guarded by the new runtime-enabled feature.
+
+See the bug for details.
+
+Bug: 552757015
+Change-Id: Ie90932a1cd34f2251dd5346f1af3a32c095e3abc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8523966
+Commit-Queue: Shunya Shishido <sisidovski@chromium.org>
+Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716269}
+
+Electron adaptation notes (43-x-y):
+On this branch the top-level classic-script fetch/run path has not yet been hoisted into WorkerGlobalScope::FetchClassicScript()/RunClassicScript(); each global scope still calls EvaluateClassicScript() itself. The upstream hunks for those WorkerGlobalScope functions were therefore applied to their counterparts here: ServiceWorkerGlobalScope::RunClassicScript() gained the TextEncoding parameter and forwards it, ServiceWorkerGlobalScope::DidFetchClassicScript(), DedicatedWorkerGlobalScope and SharedWorkerGlobalScope pass classic_script_loader->GetScriptEncoding() to EvaluateClassicScript()/RunClassicScript(), and the test-only WorkerThread::EvaluateClassicScriptOnWorkerThread() (removed upstream) passes a default TextEncoding(), which the handler treats as Latin-1 exactly like upstream's invalid-encoding fallback. All other hunks applied unchanged.
+
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker_global_scope.cc b/third_party/blink/renderer/core/workers/dedicated_worker_global_scope.cc
+index 532de91e556fbbb9ad4e3070f04bc8cc1c8ddd31..a5646089b1acbd3926e15048f7010545dc6f8860 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/dedicated_worker_global_scope.cc
+@@ -521,7 +521,8 @@ void DedicatedWorkerGlobalScope::DidFetchClassicScript(
+   // response."
+   EvaluateClassicScript(
+       classic_script_loader->ResponseURL(), classic_script_loader->SourceText(),
+-      classic_script_loader->ReleaseCachedMetadata(), stack_id);
++      classic_script_loader->ReleaseCachedMetadata(), stack_id,
++      classic_script_loader->GetScriptEncoding());
+ }
+ 
+ int DedicatedWorkerGlobalScope::requestAnimationFrame(
+diff --git a/third_party/blink/renderer/core/workers/installed_scripts_manager.cc b/third_party/blink/renderer/core/workers/installed_scripts_manager.cc
+index fb66bdda0ea886eb0dab4bd24f55cb8ff8108bf0..58c5413ec034e9e0a71b04514e8cb0d8acfb2c00 100644
+--- a/third_party/blink/renderer/core/workers/installed_scripts_manager.cc
++++ b/third_party/blink/renderer/core/workers/installed_scripts_manager.cc
+@@ -15,10 +15,12 @@ InstalledScriptsManager::ScriptData::ScriptData(
+     const KURL& script_url,
+     String source_text,
+     std::unique_ptr<Vector<uint8_t>> meta_data,
+-    std::unique_ptr<CrossThreadHTTPHeaderMapData> header_data)
++    std::unique_ptr<CrossThreadHTTPHeaderMapData> header_data,
++    TextEncoding encoding)
+     : script_url_(script_url),
+       source_text_(std::move(source_text)),
+-      meta_data_(std::move(meta_data)) {
++      meta_data_(std::move(meta_data)),
++      encoding_(std::move(encoding)) {
+   headers_.Adopt(std::move(header_data));
+ }
+ 
+diff --git a/third_party/blink/renderer/core/workers/installed_scripts_manager.h b/third_party/blink/renderer/core/workers/installed_scripts_manager.h
+index da26ae8b39d8f025d462e2e2a509dd90de7fe9ea..5b4ece7c114c602e35284dffce32a8d968e5dbf0 100644
+--- a/third_party/blink/renderer/core/workers/installed_scripts_manager.h
++++ b/third_party/blink/renderer/core/workers/installed_scripts_manager.h
+@@ -10,6 +10,7 @@
+ #include "third_party/blink/renderer/platform/network/http_header_map.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
++#include "third_party/blink/renderer/platform/wtf/text/text_encoding.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+ 
+ namespace blink {
+@@ -30,7 +31,8 @@ class InstalledScriptsManager {
+     ScriptData(const KURL& script_url,
+                String source_text,
+                std::unique_ptr<Vector<uint8_t>> meta_data,
+-               std::unique_ptr<CrossThreadHTTPHeaderMapData>);
++               std::unique_ptr<CrossThreadHTTPHeaderMapData>,
++               TextEncoding encoding);
+     ScriptData(const ScriptData&) = delete;
+     ScriptData& operator=(const ScriptData&) = delete;
+     ScriptData(ScriptData&& other) = default;
+@@ -40,6 +42,7 @@ class InstalledScriptsManager {
+     std::unique_ptr<Vector<uint8_t>> TakeMetaData() {
+       return std::move(meta_data_);
+     }
++    const TextEncoding& GetScriptEncoding() const { return encoding_; }
+ 
+     ContentSecurityPolicyResponseHeaders
+     GetContentSecurityPolicyResponseHeaders();
+@@ -52,6 +55,7 @@ class InstalledScriptsManager {
+     String source_text_;
+     std::unique_ptr<Vector<uint8_t>> meta_data_;
+     HTTPHeaderMap headers_;
++    TextEncoding encoding_;
+   };
+ 
+   // Used on the main or worker thread. Returns true if the script has been
+diff --git a/third_party/blink/renderer/core/workers/shared_worker_global_scope.cc b/third_party/blink/renderer/core/workers/shared_worker_global_scope.cc
+index a458d2a79a8d92a2194a7285a105446d13e4e894..9828f31806a57db6d136b5fde31d4882a804fba5 100644
+--- a/third_party/blink/renderer/core/workers/shared_worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/shared_worker_global_scope.cc
+@@ -262,7 +262,8 @@ void SharedWorkerGlobalScope::DidFetchClassicScript(
+   // response."
+   EvaluateClassicScript(
+       classic_script_loader->ResponseURL(), classic_script_loader->SourceText(),
+-      classic_script_loader->ReleaseCachedMetadata(), stack_id);
++      classic_script_loader->ReleaseCachedMetadata(), stack_id,
++      classic_script_loader->GetScriptEncoding());
+ }
+ 
+ void SharedWorkerGlobalScope::ExceptionThrown(ErrorEvent* event) {
+diff --git a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
+index 183068ded5b8c709211f3bd6865b19592538840f..ebf2da7b8516899aebba9053de7954f0b007773f 100644
+--- a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
++++ b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
+@@ -204,6 +204,22 @@ const KURL& WorkerClassicScriptLoader::ResponseURL() const {
+   return response_url_;
+ }
+ 
++TextEncoding WorkerClassicScriptLoader::GetScriptEncoding() const {
++  // If `decoder_` is available, return its encoding so that any BOM-detected
++  // encoding override is reflected.
++  if (decoder_) {
++    return decoder_->Encoding();
++  }
++  // Otherwise, resolve `response_encoding_` with the same fallback rules as
++  // `TextResourceDecoder::DefaultEncoding` (UTF-8 when unspecified, or Latin-1
++  // when invalid).
++  if (response_encoding_.empty()) {
++    return Utf8Encoding();
++  }
++  TextEncoding encoding(response_encoding_);
++  return encoding.IsValid() ? encoding : Latin1Encoding();
++}
++
+ void WorkerClassicScriptLoader::DidReceiveResponse(
+     uint64_t identifier,
+     const ResourceResponse& response) {
+@@ -252,9 +268,7 @@ void WorkerClassicScriptLoader::DidReceiveData(base::span<const char> data) {
+ 
+   if (!decoder_) {
+     decoder_ = std::make_unique<TextResourceDecoder>(TextResourceDecoderOptions(
+-        TextResourceDecoderOptions::kPlainTextContent,
+-        response_encoding_.empty() ? Utf8Encoding()
+-                                   : TextEncoding(response_encoding_)));
++        TextResourceDecoderOptions::kPlainTextContent, GetScriptEncoding()));
+   }
+ 
+   if (data.empty()) {
+diff --git a/third_party/blink/renderer/core/workers/worker_classic_script_loader.h b/third_party/blink/renderer/core/workers/worker_classic_script_loader.h
+index 6d4d8a072eed2f0495dc22abfdb7ba6e543a1032..f6e97867234eb27f8ca0b3018ebc2e8e233244aa 100644
+--- a/third_party/blink/renderer/core/workers/worker_classic_script_loader.h
++++ b/third_party/blink/renderer/core/workers/worker_classic_script_loader.h
+@@ -106,6 +106,7 @@ class CORE_EXPORT WorkerClassicScriptLoader final
+   String SourceText();
+   const KURL& Url() const { return url_; }
+   const KURL& ResponseURL() const;
++  TextEncoding GetScriptEncoding() const;
+   bool Failed() const { return failed_; }
+   bool Canceled() const { return canceled_; }
+   uint64_t Identifier() const { return identifier_; }
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+index 1287c42db21f02b30e4ecdc81427269f9caef599..0c426c64805a2b4817b6884f9e5af6a9377ab078 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+@@ -338,6 +338,7 @@ void WorkerGlobalScope::ImportScriptsInternal(const Vector<String>& urls,
+   for (const KURL& complete_url : completed_urls) {
+     KURL response_url;
+     String source_code;
++    TextEncoding encoding;
+     std::unique_ptr<Vector<uint8_t>> cached_meta_data;
+     const String error_message =
+         NetworkErrorMessageAtImportScript(complete_url);
+@@ -347,7 +348,7 @@ void WorkerGlobalScope::ImportScriptsInternal(const Vector<String>& urls,
+     // this succeeds, let script be the result. Otherwise, rethrow the
+     // exception."
+     if (!FetchClassicImportedScript(complete_url, &response_url, &source_code,
+-                                    &cached_meta_data)) {
++                                    &cached_meta_data, &encoding)) {
+       // TODO(vogelheim): In case of certain types of failure - e.g. 'nosniff'
+       // block - this ought to be a DOMExceptionCode::kSecurityError, but that
+       // information presently gets lost on the way.
+@@ -370,7 +371,7 @@ void WorkerGlobalScope::ImportScriptsInternal(const Vector<String>& urls,
+     // fetch options, and muted errors.
+     // TODO(crbug.com/1082086): Fix the base URL.
+     CachedMetadataHandler* handler(CreateWorkerScriptCachedMetadataHandler(
+-        complete_url, std::move(cached_meta_data)));
++        complete_url, std::move(cached_meta_data), std::move(encoding)));
+     ClassicScript* script = ClassicScript::Create(
+         source_code, ClassicScript::StripFragmentIdentifier(complete_url),
+         response_url /* base_url */, ScriptFetchOptions(),
+@@ -404,7 +405,8 @@ bool WorkerGlobalScope::FetchClassicImportedScript(
+     const KURL& script_url,
+     KURL* out_response_url,
+     String* out_source_code,
+-    std::unique_ptr<Vector<uint8_t>>* out_cached_meta_data) {
++    std::unique_ptr<Vector<uint8_t>>* out_cached_meta_data,
++    TextEncoding* out_response_encoding) {
+   ExecutionContext* execution_context = GetExecutionContext();
+   WorkerClassicScriptLoader* classic_script_loader =
+       MakeGarbageCollected<WorkerClassicScriptLoader>();
+@@ -417,6 +419,7 @@ bool WorkerGlobalScope::FetchClassicImportedScript(
+   *out_response_url = classic_script_loader->ResponseURL();
+   *out_source_code = classic_script_loader->SourceText();
+   *out_cached_meta_data = classic_script_loader->ReleaseCachedMetadata();
++  *out_response_encoding = classic_script_loader->GetScriptEncoding();
+   probe::ScriptImported(execution_context, classic_script_loader->Identifier(),
+                         classic_script_loader->SourceText());
+   return true;
+@@ -473,11 +476,12 @@ void WorkerGlobalScope::EvaluateClassicScript(
+     const KURL& script_url,
+     String source_code,
+     std::unique_ptr<Vector<uint8_t>> cached_meta_data,
+-    const v8_inspector::V8StackTraceId& stack_id) {
++    const v8_inspector::V8StackTraceId& stack_id,
++    TextEncoding encoding) {
+   DCHECK(!IsContextPaused());
+ 
+   CachedMetadataHandler* handler = CreateWorkerScriptCachedMetadataHandler(
+-      script_url, std::move(cached_meta_data));
++      script_url, std::move(cached_meta_data), std::move(encoding));
+   // Cross-origin workers are disallowed, so use
+   // SanitizeScriptErrors::kDoNotSanitize.
+   Script* worker_script = ClassicScript::Create(
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
+index 8cabdf2d3a3d798274568cf554ce268b8f92f759..59f46db1fde45d54ba5562b01a1711a724ff5b10 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.h
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
+@@ -99,7 +99,8 @@ class CORE_EXPORT WorkerGlobalScope
+   // for Dedicated / Shared workers too so we can benefit from code caches.
+   virtual CachedMetadataHandler* CreateWorkerScriptCachedMetadataHandler(
+       const KURL& script_url,
+-      std::unique_ptr<Vector<uint8_t>> meta_data) {
++      std::unique_ptr<Vector<uint8_t>> meta_data,
++      TextEncoding encoding) {
+     return nullptr;
+   }
+ 
+@@ -182,11 +183,13 @@ class CORE_EXPORT WorkerGlobalScope
+ 
+   // These methods should be called in the scope of a pausable
+   // task runner. ie. They should not be called when the context
+-  // is paused.
++  // is paused. `encoding` is used only for `CachedMetadataHandler` as
++  // `source_code` is already decoded.
+   void EvaluateClassicScript(const KURL& script_url,
+                              String source_code,
+                              std::unique_ptr<Vector<uint8_t>> cached_meta_data,
+-                             const v8_inspector::V8StackTraceId& stack_id);
++                             const v8_inspector::V8StackTraceId& stack_id,
++                             TextEncoding encoding);
+ 
+   // Should be called (in all successful cases) when the worker top-level
+   // script fetch is finished.
+@@ -292,11 +295,14 @@ class CORE_EXPORT WorkerGlobalScope
+   void ExceptionThrown(ErrorEvent*) override;
+   void RemoveURLFromMemoryCache(const KURL&) final;
+ 
++  // `out_response_encoding` should be used only for V8 code cache as
++  // `*out_source_code` is already decoded.
+   virtual bool FetchClassicImportedScript(
+       const KURL& script_url,
+       KURL* out_response_url,
+       String* out_source_code,
+-      std::unique_ptr<Vector<uint8_t>>* out_cached_meta_data);
++      std::unique_ptr<Vector<uint8_t>>* out_cached_meta_data,
++      TextEncoding* out_response_encoding);
+ 
+   // Notifies that the top-level worker script is ready to evaluate.
+   // Worker top-level script is evaluated after it is fetched and
+diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
+index fa81395d6df143b31e4ae28dc9104a9149c0d91a..2e0588969f583477b8c97081603b02dec062ea0c 100644
+--- a/third_party/blink/renderer/core/workers/worker_thread.cc
++++ b/third_party/blink/renderer/core/workers/worker_thread.cc
+@@ -733,7 +733,8 @@ void WorkerThread::EvaluateClassicScriptOnWorkerThread(
+   WorkerGlobalScope* global_scope = To<WorkerGlobalScope>(GlobalScope());
+   CHECK(global_scope);
+   global_scope->EvaluateClassicScript(script_url, std::move(source_code),
+-                                      std::move(cached_meta_data), stack_id);
++                                      std::move(cached_meta_data), stack_id,
++                                      TextEncoding());
+ }
+ 
+ void WorkerThread::FetchAndRunClassicScriptOnWorkerThread(
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+index 55abfb86d3c8225b9af255bdc8e90346c23efa2f..e324e30a0b59c5db4c767d6488348f56483f2cb5 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+@@ -481,7 +481,8 @@ void ServiceWorkerGlobalScope::DidFetchClassicScript(
+       classic_script_loader->GetDocumentPolicy(),
+       classic_script_loader->OriginTrialTokens(),
+       classic_script_loader->SourceText(),
+-      classic_script_loader->ReleaseCachedMetadata(), stack_id);
++      classic_script_loader->ReleaseCachedMetadata(), stack_id,
++      classic_script_loader->GetScriptEncoding());
+ }
+ 
+ // https://w3c.github.io/ServiceWorker/#run-service-worker-algorithm
+@@ -563,7 +564,8 @@ void ServiceWorkerGlobalScope::LoadAndRunInstalledClassicScript(
+       // TODO(crbug.com/488089240): Plumb Document Policy in Service Workers.
+       DocumentPolicy::DocumentPolicyBundle{},
+       script_data->CreateOriginTrialTokens().get(),
+-      script_data->TakeSourceText(), script_data->TakeMetaData(), stack_id);
++      script_data->TakeSourceText(), script_data->TakeMetaData(), stack_id,
++      script_data->GetScriptEncoding());
+ }
+ 
+ // https://w3c.github.io/ServiceWorker/#run-service-worker-algorithm
+@@ -575,7 +577,8 @@ void ServiceWorkerGlobalScope::RunClassicScript(
+     const Vector<String>* response_origin_trial_tokens,
+     const String& source_code,
+     std::unique_ptr<Vector<uint8_t>> cached_meta_data,
+-    const v8_inspector::V8StackTraceId& stack_id) {
++    const v8_inspector::V8StackTraceId& stack_id,
++    TextEncoding encoding) {
+   // Step 4.5-4.11 are implemented in Initialize().
+   Initialize(response_url, response_referrer_policy, std::move(response_csp),
+              std::move(response_document_policy), response_origin_trial_tokens);
+@@ -584,7 +587,7 @@ void ServiceWorkerGlobalScope::RunClassicScript(
+   // script script if script is a classic script, otherwise, the result of
+   // running the module script script if script is a module script."
+   EvaluateClassicScript(response_url, source_code, std::move(cached_meta_data),
+-                        stack_id);
++                        stack_id, std::move(encoding));
+ }
+ 
+ ServiceWorkerClients* ServiceWorkerGlobalScope::clients() {
+@@ -736,7 +739,8 @@ bool ServiceWorkerGlobalScope::FetchClassicImportedScript(
+     const KURL& script_url,
+     KURL* out_response_url,
+     String* out_source_code,
+-    std::unique_ptr<Vector<uint8_t>>* out_cached_meta_data) {
++    std::unique_ptr<Vector<uint8_t>>* out_cached_meta_data,
++    TextEncoding* out_response_encoding) {
+   // InstalledScriptsManager is used only for starting installed service
+   // workers.
+   if (installed_scripts_manager_) {
+@@ -750,13 +754,15 @@ bool ServiceWorkerGlobalScope::FetchClassicImportedScript(
+     *out_response_url = script_url;
+     *out_source_code = script_data->TakeSourceText();
+     *out_cached_meta_data = script_data->TakeMetaData();
++    *out_response_encoding = script_data->GetScriptEncoding();
+     // TODO(shimazu): Add appropriate probes for inspector.
+     return true;
+   }
+   // This is a new service worker. Proceed with importing scripts and installing
+   // them.
+   return WorkerGlobalScope::FetchClassicImportedScript(
+-      script_url, out_response_url, out_source_code, out_cached_meta_data);
++      script_url, out_response_url, out_source_code, out_cached_meta_data,
++      out_response_encoding);
+ }
+ 
+ ResourceLoadScheduler::ThrottleOptionOverride
+@@ -880,9 +886,10 @@ void ServiceWorkerGlobalScope::importScripts(
+ CachedMetadataHandler*
+ ServiceWorkerGlobalScope::CreateWorkerScriptCachedMetadataHandler(
+     const KURL& script_url,
+-    std::unique_ptr<Vector<uint8_t>> meta_data) {
++    std::unique_ptr<Vector<uint8_t>> meta_data,
++    TextEncoding encoding) {
+   return MakeGarbageCollected<ServiceWorkerScriptCachedMetadataHandler>(
+-      this, script_url, std::move(meta_data));
++      this, script_url, std::move(meta_data), std::move(encoding));
+ }
+ 
+ void ServiceWorkerGlobalScope::ExceptionThrown(ErrorEvent* event) {
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
+index 16f0649a489e205fee360fb9edc30e979e375da9..16dbb1227a3876feda5dfeaf67ddd980c94fb70c 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
+@@ -384,7 +384,8 @@ class MODULES_EXPORT ServiceWorkerGlobalScope final
+       const KURL& script_url,
+       KURL* out_response_url,
+       String* out_source_code,
+-      std::unique_ptr<Vector<uint8_t>>* out_cached_meta_data) override;
++      std::unique_ptr<Vector<uint8_t>>* out_cached_meta_data,
++      TextEncoding* out_response_encoding) override;
+ 
+   ResourceLoadScheduler::ThrottleOptionOverride GetThrottleOptionOverride()
+       const override;
+@@ -395,7 +396,8 @@ class MODULES_EXPORT ServiceWorkerGlobalScope final
+       ExceptionState&) override;
+   CachedMetadataHandler* CreateWorkerScriptCachedMetadataHandler(
+       const KURL& script_url,
+-      std::unique_ptr<Vector<uint8_t>> meta_data) override;
++      std::unique_ptr<Vector<uint8_t>> meta_data,
++      TextEncoding encoding) override;
+   void ExceptionThrown(ErrorEvent*) override;
+ 
+   void DidReceiveResponseForClassicScript(
+@@ -417,7 +419,8 @@ class MODULES_EXPORT ServiceWorkerGlobalScope final
+       const Vector<String>* response_origin_trial_tokens,
+       const String& source_code,
+       std::unique_ptr<Vector<uint8_t>> cached_meta_data,
+-      const v8_inspector::V8StackTraceId&);
++      const v8_inspector::V8StackTraceId&,
++      TextEncoding encoding);
+ 
+   // Counts the |script_size| and |cached_metadata_size| for UMA to measure the
+   // number of scripts and the total bytes of scripts.
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_installed_scripts_manager.cc b/third_party/blink/renderer/modules/service_worker/service_worker_installed_scripts_manager.cc
+index e759e5e4507d98c5d5bd59be31ce56fa27b2048d..25bff63bde5f1666a8e1c5db266f9ef4a3b2f96a 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_installed_scripts_manager.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_installed_scripts_manager.cc
+@@ -322,7 +322,7 @@ ServiceWorkerInstalledScriptsManager::GetScriptData(const KURL& script_url) {
+ 
+   return std::make_unique<InstalledScriptsManager::ScriptData>(
+       script_url, decoded_source_text, std::move(meta_data),
+-      raw_script_data->TakeHeaders());
++      raw_script_data->TakeHeaders(), decoder->Encoding());
+ }
+ 
+ std::unique_ptr<RawScriptData>
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_installed_scripts_manager_test.cc b/third_party/blink/renderer/modules/service_worker/service_worker_installed_scripts_manager_test.cc
+index d002c088840b8cf57fe83665dda87fb02ab02d3c..a312146018e8ff0505fd65a29a51044938a90bb7 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_installed_scripts_manager_test.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_installed_scripts_manager_test.cc
+@@ -16,8 +16,14 @@
+ #include "third_party/blink/public/mojom/service_worker/service_worker_installed_scripts_manager.mojom-blink.h"
+ #include "third_party/blink/public/platform/web_url.h"
+ #include "third_party/blink/public/web/web_embedded_worker.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_code_cache.h"
++#include "third_party/blink/renderer/core/html/parser/text_resource_decoder.h"
++#include "third_party/blink/renderer/core/workers/worker_classic_script_loader.h"
++#include "third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.h"
++#include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/non_main_thread.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
+@@ -73,6 +79,15 @@ class BrowserSideSender
+     PushDataPipe(data.Utf8(), body_handle_.get());
+   }
+ 
++  void PushBodyRawBytes(base::span<const uint8_t> bytes) {
++    ASSERT_TRUE(body_handle_.is_valid());
++    size_t actually_written_bytes = 0;
++    MojoResult rv = body_handle_->WriteData(bytes, MOJO_WRITE_DATA_FLAG_NONE,
++                                            actually_written_bytes);
++    ASSERT_EQ(MOJO_RESULT_OK, rv);
++    ASSERT_EQ(bytes.size(), actually_written_bytes);
++  }
++
+   void PushMetaData(const String& data) {
+     PushDataPipe(data.Utf8(), meta_data_handle_.get());
+   }
+@@ -204,6 +219,19 @@ class ServiceWorkerInstalledScriptsManagerTest : public testing::Test {
+     return worker_waiter_.get();
+   }
+ 
++  base::WaitableEvent* GetScriptDataOnWorkerThread(
++      const String& script_url,
++      std::unique_ptr<InstalledScriptsManager::ScriptData>* out_data) {
++    PostCrossThreadTask(
++        *worker_thread_->GetTaskRunner(), FROM_HERE,
++        CrossThreadBindOnce(
++            &ServiceWorkerInstalledScriptsManagerTest::CallGetScriptData,
++            CrossThreadUnretained(this), script_url,
++            CrossThreadUnretained(out_data),
++            CrossThreadUnretained(worker_waiter_.get())));
++    return worker_waiter_.get();
++  }
++
+  private:
+   void CallGetRawScriptData(const String& script_url,
+                             std::unique_ptr<RawScriptData>* out_data,
+@@ -212,6 +240,14 @@ class ServiceWorkerInstalledScriptsManagerTest : public testing::Test {
+     waiter->Signal();
+   }
+ 
++  void CallGetScriptData(
++      const String& script_url,
++      std::unique_ptr<InstalledScriptsManager::ScriptData>* out_data,
++      base::WaitableEvent* waiter) {
++    *out_data = installed_scripts_manager_->GetScriptData(KURL(script_url));
++    waiter->Signal();
++  }
++
+   test::TaskEnvironment task_environment_;
+   std::unique_ptr<NonMainThread> io_thread_;
+   std::unique_ptr<NonMainThread> worker_thread_;
+@@ -450,4 +486,130 @@ TEST_F(ServiceWorkerInstalledScriptsManagerTest, EarlyDisconnectionManager) {
+   }
+ }
+ 
++TEST_F(ServiceWorkerInstalledScriptsManagerTest, GetScriptDataEncoding) {
++  const KURL kScriptUrl1("https://example.com/shift_jis.js");
++  const KURL kScriptUrl2("https://example.com/default_utf8.js");
++  const KURL kScriptUrl3("https://example.com/invalid_encoding.js");
++  const KURL kScriptUrl4("https://example.com/utf16le_bom.js");
++
++  BrowserSideSender sender;
++  CreateInstalledScriptsManager(sender.CreateAndBind(
++      {kScriptUrl1, kScriptUrl2, kScriptUrl3, kScriptUrl4}));
++
++  {
++    std::unique_ptr<InstalledScriptsManager::ScriptData> script_data;
++    const String kExpectedBody = "var x = 1;";
++    base::WaitableEvent* waiter =
++        GetScriptDataOnWorkerThread(kScriptUrl1, &script_data);
++    sender.TransferInstalledScript(kScriptUrl1, "Shift_JIS",
++                                   HashMap<String, String>(),
++                                   kExpectedBody.length() + 1, 0);
++    sender.PushBody(kExpectedBody);
++    sender.FinishTransferBody();
++    sender.FinishTransferMetaData();
++    waiter->Wait();
++    ASSERT_TRUE(script_data);
++    EXPECT_EQ(TextEncoding("Shift_JIS"), script_data->GetScriptEncoding());
++  }
++
++  {
++    std::unique_ptr<InstalledScriptsManager::ScriptData> script_data;
++    const String kExpectedBody = "var x = 2;";
++    base::WaitableEvent* waiter =
++        GetScriptDataOnWorkerThread(kScriptUrl2, &script_data);
++    sender.TransferInstalledScript(kScriptUrl2, g_empty_string,
++                                   HashMap<String, String>(),
++                                   kExpectedBody.length() + 1, 0);
++    sender.PushBody(kExpectedBody);
++    sender.FinishTransferBody();
++    sender.FinishTransferMetaData();
++    waiter->Wait();
++    ASSERT_TRUE(script_data);
++    EXPECT_EQ(Utf8Encoding(), script_data->GetScriptEncoding());
++  }
++
++  {
++    std::unique_ptr<InstalledScriptsManager::ScriptData> script_data;
++    const String kExpectedBody = "var x = 3;";
++    base::WaitableEvent* waiter =
++        GetScriptDataOnWorkerThread(kScriptUrl3, &script_data);
++    sender.TransferInstalledScript(kScriptUrl3, "invalid-encoding",
++                                   HashMap<String, String>(),
++                                   kExpectedBody.length() + 1, 0);
++    sender.PushBody(kExpectedBody);
++    sender.FinishTransferBody();
++    sender.FinishTransferMetaData();
++    waiter->Wait();
++    ASSERT_TRUE(script_data);
++    EXPECT_EQ(Latin1Encoding(), script_data->GetScriptEncoding());
++  }
++
++  {
++    std::unique_ptr<InstalledScriptsManager::ScriptData> script_data;
++    // UTF-16LE BOM (0xFF, 0xFE) followed by 'a' (0x61, 0x00) overrides the
++    // response header encoding.
++    const uint8_t kUtf16LeBytes[] = {0xFF, 0xFE, 0x61, 0x00};
++    base::WaitableEvent* waiter =
++        GetScriptDataOnWorkerThread(kScriptUrl4, &script_data);
++    sender.TransferInstalledScript(kScriptUrl4, "Shift_JIS",
++                                   HashMap<String, String>(),
++                                   std::size(kUtf16LeBytes), 0);
++    sender.PushBodyRawBytes(kUtf16LeBytes);
++    sender.FinishTransferBody();
++    sender.FinishTransferMetaData();
++    waiter->Wait();
++    ASSERT_TRUE(script_data);
++    EXPECT_EQ(TextEncoding("UTF-16LE"), script_data->GetScriptEncoding());
++    String installed_source = script_data->TakeSourceText();
++    EXPECT_EQ("a", installed_source);
++
++    auto* loader = MakeGarbageCollected<WorkerClassicScriptLoader>();
++    EXPECT_EQ(Utf8Encoding(), loader->GetScriptEncoding());
++    loader->DidReceiveData(base::as_chars(base::span(kUtf16LeBytes)));
++    loader->DidFinishLoading(0);
++    EXPECT_EQ(script_data->GetScriptEncoding(), loader->GetScriptEncoding());
++    EXPECT_EQ(installed_source, loader->SourceText());
++  }
++}
++
++TEST_F(ServiceWorkerInstalledScriptsManagerTest,
++       CachedMetadataHandlerEncoding) {
++  const KURL kScriptUrl("https://example.com/sw.js");
++
++  auto* utf8_handler =
++      MakeGarbageCollected<ServiceWorkerScriptCachedMetadataHandler>(
++          nullptr, kScriptUrl, nullptr, TextEncoding("UTF-8"));
++  auto* sjis_handler =
++      MakeGarbageCollected<ServiceWorkerScriptCachedMetadataHandler>(
++          nullptr, kScriptUrl, nullptr, TextEncoding("Shift_JIS"));
++  auto* empty_encoding_handler =
++      MakeGarbageCollected<ServiceWorkerScriptCachedMetadataHandler>(
++          nullptr, kScriptUrl, nullptr, TextEncoding());
++  auto* invalid_handler =
++      MakeGarbageCollected<ServiceWorkerScriptCachedMetadataHandler>(
++          nullptr, kScriptUrl, nullptr, TextEncoding("invalid-encoding"));
++
++  EXPECT_EQ("UTF-8", utf8_handler->Encoding());
++  EXPECT_EQ("Shift_JIS", sjis_handler->Encoding());
++  EXPECT_EQ(Latin1Encoding().GetName(), empty_encoding_handler->Encoding());
++  EXPECT_EQ(Latin1Encoding().GetName(), invalid_handler->Encoding());
++
++  uint32_t utf8_tag = V8CodeCache::TagForCodeCache(utf8_handler);
++  uint32_t sjis_tag = V8CodeCache::TagForCodeCache(sjis_handler);
++  uint32_t invalid_tag = V8CodeCache::TagForCodeCache(invalid_handler);
++  EXPECT_NE(utf8_tag, sjis_tag);
++  EXPECT_NE(utf8_tag, invalid_tag);
++  EXPECT_EQ(V8CodeCache::TagForCodeCache(empty_encoding_handler), invalid_tag);
++
++  {
++    ScopedServiceWorkerScriptEncodingForTest scoped_feature(false);
++    EXPECT_EQ(g_empty_string, utf8_handler->Encoding());
++    EXPECT_EQ(g_empty_string, sjis_handler->Encoding());
++    EXPECT_EQ(g_empty_string, empty_encoding_handler->Encoding());
++    EXPECT_EQ(g_empty_string, invalid_handler->Encoding());
++    EXPECT_EQ(V8CodeCache::TagForCodeCache(utf8_handler),
++              V8CodeCache::TagForCodeCache(sjis_handler));
++  }
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.cc b/third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.cc
+index c2bf6d7170984e5e58103549446a697dd58f0492..5607e4a1753e8f45f27a786ad16404f74c347ab9 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.cc
+@@ -7,6 +7,7 @@
+ #include "third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/cached_metadata.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/resource.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/wtf/text/strcat.h"
+ 
+ namespace blink {
+@@ -15,8 +16,11 @@ ServiceWorkerScriptCachedMetadataHandler::
+     ServiceWorkerScriptCachedMetadataHandler(
+         ServiceWorkerGlobalScope* global_scope,
+         const KURL& script_url,
+-        std::unique_ptr<Vector<uint8_t>> meta_data)
+-    : global_scope_(global_scope), script_url_(script_url) {
++        std::unique_ptr<Vector<uint8_t>> meta_data,
++        TextEncoding encoding)
++    : global_scope_(global_scope),
++      script_url_(script_url),
++      encoding_(encoding.IsValid() ? std::move(encoding) : Latin1Encoding()) {
+   if (meta_data) {
+     // Non-null |meta_data| means the "platform" already has the CachedMetadata.
+     // In that case, set |cached_metadata_| to this incoming metadata. In
+@@ -73,7 +77,10 @@ ServiceWorkerScriptCachedMetadataHandler::GetCachedMetadata(
+ }
+ 
+ String ServiceWorkerScriptCachedMetadataHandler::Encoding() const {
+-  return g_empty_string;
++  if (!RuntimeEnabledFeatures::ServiceWorkerScriptEncodingEnabled()) {
++    return g_empty_string;
++  }
++  return encoding_.GetName();
+ }
+ 
+ void ServiceWorkerScriptCachedMetadataHandler::OnMemoryDump(
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.h b/third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.h
+index 00da10c78109a069d20fd5290fb0044a8d369293..33098d81b4908207d9e4b329fec5a0d5c390e28e 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.h
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_script_cached_metadata_handler.h
+@@ -6,10 +6,13 @@
+ #define THIRD_PARTY_BLINK_RENDERER_MODULES_SERVICE_WORKER_SERVICE_WORKER_SCRIPT_CACHED_METADATA_HANDLER_H_
+ 
+ #include <stdint.h>
++
++#include "third_party/blink/renderer/modules/modules_export.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/member.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
++#include "third_party/blink/renderer/platform/wtf/text/text_encoding.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+ 
+ namespace blink {
+@@ -17,12 +20,14 @@ namespace blink {
+ class CachedMetadata;
+ class ServiceWorkerGlobalScope;
+ 
+-class ServiceWorkerScriptCachedMetadataHandler : public CachedMetadataHandler {
++class MODULES_EXPORT ServiceWorkerScriptCachedMetadataHandler
++    : public CachedMetadataHandler {
+  public:
+   ServiceWorkerScriptCachedMetadataHandler(
+       ServiceWorkerGlobalScope*,
+       const KURL& script_url,
+-      std::unique_ptr<Vector<uint8_t>> meta_data);
++      std::unique_ptr<Vector<uint8_t>> meta_data,
++      TextEncoding encoding);
+   ~ServiceWorkerScriptCachedMetadataHandler() override;
+   void Trace(Visitor*) const override;
+   void SetCachedMetadata(CodeCacheHost*,
+@@ -42,6 +47,7 @@ class ServiceWorkerScriptCachedMetadataHandler : public CachedMetadataHandler {
+   Member<ServiceWorkerGlobalScope> global_scope_;
+   KURL script_url_;
+   scoped_refptr<CachedMetadata> cached_metadata_;
++  const TextEncoding encoding_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index f7a13cc191bf42169e642508331d88a9ab88c594..06c23067d9411cf2fa1dcad9729d89accbcb4d38 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -5469,6 +5469,11 @@
+       // See https://issues.chromium.org/issues/40364838
+       name: "ServiceWorkerInDedicatedWorker",
+     },
++    {
++      // Killswitch for crbug.com/552757015.
++      name: "ServiceWorkerScriptEncoding",
++      status: "stable",
++    },
+     {
+       name: "ServiceWorkerStaticRouterTimingInfo",
+       status: "stable",

@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Tue, 20 Oct 2026 14:47:13 -0400
+Subject: [M150-LTS] Vulkan: Reject non-8-bit cross-format transfers in
+ CopyTexture
+
+Ensure CanCopyWithTransferForCopyTexture verifies both source and
+destination formats exclusively contain 8-bit channels with matching
+pixel byte sizes before allowing cross-format vkCmdCopyImage transfers.
+
+Test:
+    angle_end2end_tests --gtest_filter="*CopyTextureTestES3.Float16ToRGBA4*:*Texture2DTestES3YUV.CopyTextureChromium*"
+Bug: b/574752676
+Change-Id: I4a4fdaf05a6598e9a6ff5dbfb826e945f30711cc
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8620833
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+(cherry picked from commit 6e3af03798fc89a5a258dacf19c3478728258dd0)
+
+Electron adaptation notes (43-x-y):
+src/tests/gl_tests/CopyTextureTest.cpp: context conflict with tests added by earlier Electron backports at the same insertion point; both sets of tests were kept. Non-test hunks applied unchanged.
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 1103ad3398eb0962e6b9d55c5692e5261d2b4434..f7c5b43c69dee3615420afe5cd102e49685fdc31 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -171,11 +171,25 @@ bool CanCopyWithTransferForCopyTexture(vk::Renderer *renderer,
+     const bool destHasA8    = destAngleFormat.alphaBits == 8;
+     const bool destIsSigned = destAngleFormat.isSnorm() || destAngleFormat.isSint();
+ 
++    // CHROMIUM_copy_texture frontend validation (Tables 1.0 and 1.1) disallows compressed block
++    // formats as source or destination textures.
++    ASSERT(!srcAngleFormat.isBlock);
++    ASSERT(!destAngleFormat.isBlock);
++
++    // Every uncompressed color format in GLES has homogeneous channel bit-widths (except packed
++    // formats like RGB565, RGB5_A1, RGB10_A2, or R11F_G11F_B10F, where redBits is never 8) and
++    // starts with the Red channel (R8, RG8, RGB8, RGBA8, BGRA8; A8/L8/LA8 are emulated on Vulkan
++    // and rejected above). Thus checking srcHasR8 is sufficient to guarantee all present channels
++    // are 8-bit, and prevent two non-8-bit formats (such as RGBA16F and RGBA4, where all *Has*8
++    // booleans are false) from comparing equal on the channel checks below.
++    const bool is8BitChannelFormat = srcHasR8 && !srcAngleFormat.isYUV && !destAngleFormat.isYUV;
++
+     // Copy is allowed as long as they have the same number, ordering and sign of (8-bit) channels.
+     // CHROMIUM_copy_texture expects verbatim copy between these format, so this copy is done
+     // regardless of sRGB, normalized, etc.
+-    return srcIsBGRA == destIsBGRA && srcHasR8 == destHasR8 && srcHasG8 == destHasG8 &&
+-           srcHasB8 == destHasB8 && srcHasA8 == destHasA8 && srcIsSigned == destIsSigned;
++    return is8BitChannelFormat && srcIsBGRA == destIsBGRA && srcHasR8 == destHasR8 &&
++           srcHasG8 == destHasG8 && srcHasB8 == destHasB8 && srcHasA8 == destHasA8 &&
++           srcIsSigned == destIsSigned;
+ }
+ 
+ bool CanCopyWithDraw(vk::Renderer *renderer,
+diff --git a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTest.cpp
+index f2324573823e966eea7929895d19457685c14ff2..cac89d958717ab3138e47c776351250e4c246fba 100644
+--- a/src/tests/gl_tests/CopyTextureTest.cpp
++++ b/src/tests/gl_tests/CopyTextureTest.cpp
+@@ -4008,4 +4008,59 @@ ANGLE_INSTANTIATE_TEST(CopyTextureTestDest,
+ 
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(CopyTextureTestES3);
+ ANGLE_INSTANTIATE_TEST_ES3(CopyTextureTestES3);
++// Test copying from a float16 texture (GL_RGBA16F) to a packed 16-bit texture (GL_RGBA4),
++// verifying that incompatible non-8-bit formats do not take the direct transfer path.
++TEST_P(CopyTextureTestES3, Float16ToRGBA4)
++{
++    ANGLE_SKIP_TEST_IF(!checkExtensions());
++
++    const GLColor32F kSrcColor(0.25f, 0.5f, 0.75f, 1.0f);
++    const std::array<GLColor32F, 4> kSrcData = {kSrcColor, kSrcColor, kSrcColor, kSrcColor};
++
++    GLTexture srcTex;
++    glBindTexture(GL_TEXTURE_2D, srcTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 2, 2, 0, GL_RGBA, GL_FLOAT, kSrcData.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    GLTexture dstSubTex;
++    glBindTexture(GL_TEXTURE_2D, dstSubTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA4, 2, 2, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, nullptr);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    glCopySubTextureCHROMIUM(srcTex, 0, GL_TEXTURE_2D, dstSubTex, 0, 0, 0, 0, 0, 2, 2, GL_FALSE,
++                             GL_FALSE, GL_FALSE);
++    ASSERT_GL_NO_ERROR();
++
++    GLTexture dstTex;
++    glBindTexture(GL_TEXTURE_2D, dstTex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glCopyTextureCHROMIUM(srcTex, 0, GL_TEXTURE_2D, dstTex, 0, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4,
++                          GL_FALSE, GL_FALSE, GL_FALSE);
++    ASSERT_GL_NO_ERROR();
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++    glUseProgram(program);
++    GLint textureLoc = glGetUniformLocation(program, essl1_shaders::Texture2DUniform());
++    ASSERT_NE(-1, textureLoc);
++    glUniform1i(textureLoc, 0);
++
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    glActiveTexture(GL_TEXTURE0);
++
++    glBindTexture(GL_TEXTURE_2D, dstSubTex);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    ASSERT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(64, 128, 191, 255), 17.0);
++
++    glBindTexture(GL_TEXTURE_2D, dstTex);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    ASSERT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(64, 128, 191, 255), 17.0);
++}
++
+ }  // namespace angle
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 108d5814f80c37ecef42d830e184524586e6831b..bd29ad03f6b1042cbe2f79a09b91f481f6bfa04f 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -5456,11 +5456,21 @@ TEST_P(Texture2DTestES3YUV, CopyTextureChromium)
+     verifyResults2D(yuvTexture, expectedRgbColor);
+ 
+     // Create an RGBA texture to copy into
++    GLTexture rgbaTexture;
++    glBindTexture(GL_TEXTURE_2D, rgbaTexture);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glCopyTextureCHROMIUM(yuvTexture, 0, GL_TEXTURE_2D, rgbaTexture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                          GL_FALSE, GL_FALSE, GL_FALSE);
++    verifyResults2D(rgbaTexture, expectedRgbColor);
++
++    // Also test copying into a 3-channel RGB8 texture (which has 3x 8-bit channels and 3 pixelBytes
++    // like G8_B8R8_2PLANE_420_UNORM, but is not YUV).
+     GLTexture rgbTexture;
+     glBindTexture(GL_TEXTURE_2D, rgbTexture);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+-    glCopyTextureCHROMIUM(yuvTexture, 0, GL_TEXTURE_2D, rgbTexture, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++    glCopyTextureCHROMIUM(yuvTexture, 0, GL_TEXTURE_2D, rgbTexture, 0, GL_RGB, GL_UNSIGNED_BYTE,
+                           GL_FALSE, GL_FALSE, GL_FALSE);
+     verifyResults2D(rgbTexture, expectedRgbColor);
+ 

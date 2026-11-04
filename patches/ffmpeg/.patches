@@ -1,1 +1,4 @@
 link_with_loader_path.patch
+cherry-pick-fb424c4f78d1.patch
+cherry-pick-5eed87f44b0a.patch
+cherry-pick-f4bee18dadeb.patch

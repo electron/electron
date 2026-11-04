@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Fri, 30 Oct 2026 02:25:21 +0000
+Subject: [M150-LTS][FSA] Block write access to .mvn in sensitive path
+ blocklist
+
+Maven projects store build and JVM startup configuration in `.mvn`
+directories (such as `.mvn/jvm.config`, `.mvn/maven.config`, and
+`.mvn/extensions.xml`), and Maven's launcher walks upward from child
+projects to discover ancestor `.mvn` directories.
+
+This CL adds a suffix block rule for `*/.mvn` with
+`BlockType::kBlockWrite` in `GenerateBlockPaths()`. This blocks save
+and programmatic write operations targeting `.mvn` directories and
+their descendants while continuing to allow read access, matching the
+existing handling for `.git/hooks`, `.git/config`, and `.git/modules`.
+
+Bug: 578500839
+Change-Id: If269b98cd11bfa17809ab386c90d8dabc023a6f8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8668859
+Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+Commit-Queue: Mingyu Lei <leimy@chromium.org>
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1728825}
+(cherry picked from commit 4f6e0f5726047247e23cd85762a976f1ea930e75)
+
+Electron adaptation notes (43-x-y):
+Electron's refactor_expose_file_system_access_blocklist.patch moves GenerateBlockPaths() into chrome_file_system_access_permission_context.h on this branch, so the new */.mvn kBlockWrite suffix rule was added to the kBlockPaths table in the header (after the .git/hooks rule) instead of the .cc. The unit test hunk did not merge against this branch's test file and was dropped (test-only; the file is not compiled by Electron).
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+index 85c9249ac7450e2debb8406c339db3c1369b1ec8..ecaf446100e3b1ca0d3799f6405fc85127d3bd58 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -617,6 +617,11 @@ class ChromeFileSystemAccessPermissionContext
+                                 BlockType::kBlockWrite),
+         BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
+                                 BlockType::kBlockWrite),
++        // Block write access to */.mvn, which holds Maven project and JVM
++        // configuration (such as jvm.config, maven.config, and extensions.xml),
++        // see crbug.com/578500839.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".mvn"),
++                                BlockType::kBlockWrite),
+   #if BUILDFLAG(IS_WIN)
+         // Some Windows specific directories to block, basically all apps, the
+         // operating system itself, as well as configuration data for apps.

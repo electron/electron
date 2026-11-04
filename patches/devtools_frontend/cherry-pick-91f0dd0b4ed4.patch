@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Somsikov <dsv@chromium.org>
+Date: Mon, 5 Oct 2026 05:43:48 -0700
+Subject: Validate source map content before automapping on non-Node targets
+
+Source map URLs and contents can be controlled by the inspected page. Automapping previously bypassed content validation for all source-map-derived resources regardless of the target type.
+
+This change ensures that content validation is enforced for source map UISourceCodes on non-Node targets, preventing unintended bindings to local files when contents do not match. Unvalidated source map bindings are now restricted to Node.js targets.
+
+Bug: 528485835
+Change-Id: I352227d1a43b1e6cc9209eede6500c9d5d59d7eb
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8511659
+Reviewed-by: Jack Franklin <jacktfranklin@chromium.org>
+Commit-Queue: Danil Somsikov <dsv@chromium.org>
+
+Electron adaptation notes (43-x-y):
+front_end/models/persistence/Automapping.test.ts does not exist on this branch; the test-only hunk for that file was dropped. The Automapping.ts change applied unchanged.
+
+diff --git a/front_end/models/persistence/Automapping.ts b/front_end/models/persistence/Automapping.ts
+index 6c933d4d801443c3ed22f7bb214cd000ac574437..0daa7c8e66d940ac52599b47ba735e7fc2df4ea7 100644
+--- a/front_end/models/persistence/Automapping.ts
++++ b/front_end/models/persistence/Automapping.ts
+@@ -194,7 +194,13 @@ export class Automapping {
+       if (this.#sourceCodeToProcessingPromiseMap.get(networkSourceCode) !== createBindingPromise) {
+         return null;
+       }
+-      if (status.network.contentType().isFromSourceMap() || !status.fileSystem.contentType().isTextType()) {
++      const target = Bindings.NetworkProject.NetworkProject.targetForUISourceCode(status.network);
++      const isNodeTarget = target?.type() === SDK.Target.Type.NODE;
++      // Source-map-derived URLs and contents are controlled by the inspected page.
++      // Only trust them without content validation when debugging Node.js.
++      const skipContentValidation = !status.fileSystem.contentType().isTextType() ||
++          (status.network.contentType().isFromSourceMap() && isNodeTarget);
++      if (skipContentValidation) {
+         return status;
+       }
+ 
+@@ -231,10 +237,9 @@ export class Automapping {
+         return null;
+       }
+ 
+-      const target = Bindings.NetworkProject.NetworkProject.targetForUISourceCode(status.network);
+       let isValid = false;
+       const fileContent = fileSystemContent.content;
+-      if (target && target.type() === SDK.Target.Type.NODE) {
++      if (isNodeTarget) {
+         if (networkContent.content) {
+           const rewrappedNetworkContent =
+               PersistenceImpl.rewrapNodeJSContent(status.fileSystem, fileContent, networkContent.content);

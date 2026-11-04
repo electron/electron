@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Somsikov <dsv@chromium.org>
+Date: Mon, 21 Sep 2026 08:43:26 -0700
+Subject: Disallow dot hosts and direct .headers file overrides in
+ NetworkPersistenceManager
+
+This prevents potential path traversal and unintended file creation in local overrides by:
+- Rejecting http/https URLs with empty, '.', or '..' hosts in isForbiddenNetworkUrl and hasForbiddenPath.
+- Encoding single dot ('.') path segments as '%2E' in encodeEncodedPathToLocalPathParts.
+- Disallowing direct file saves for the .headers override file and guarding against empty override paths.
+
+Bug: 562041808
+Change-Id: I5a01b34b646ddc2150c2562ac91eccfb53e2db0a
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8436055
+Auto-Submit: Danil Somsikov <dsv@chromium.org>
+Reviewed-by: Wolfgang Beyer <wolfi@chromium.org>
+Commit-Queue: Wolfgang Beyer <wolfi@chromium.org>
+
+diff --git a/front_end/models/persistence/NetworkPersistenceManager.test.ts b/front_end/models/persistence/NetworkPersistenceManager.test.ts
+index 1eee3841fc2a4ea3eac503192750239f9df41a24..d64b25612e07e37cb872871452cdbea47383cd48 100644
+--- a/front_end/models/persistence/NetworkPersistenceManager.test.ts
++++ b/front_end/models/persistence/NetworkPersistenceManager.test.ts
+@@ -195,6 +195,16 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+         urlString`mailto:test@example.com`));
+     assert.isTrue(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
+         urlString`vbscript:alert(1)`));
++    assert.isTrue(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
++        urlString`https://./.headers`));
++    assert.isTrue(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
++        urlString`http://./script.js`));
++    assert.isTrue(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
++        urlString`https://../.headers`));
++    assert.isTrue(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
++        urlString`https:///.headers`));
++    assert.isTrue(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
++        urlString`http:///victim.com/script.js`));
+     assert.isFalse(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
+         urlString`https://www.example.com/script.js`));
+     assert.isFalse(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
+@@ -219,6 +229,14 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+     assert.strictEqual(networkPersistenceManager.fileUrlFromNetworkUrl(invalidUrl),
+                        Platform.DevToolsPath.EmptyUrlString);
+     assert.isNull(networkPersistenceManager.getHeadersUISourceCodeFromUrl(invalidUrl));
++
++    const dotHostUrl = urlString`https://./.headers`;
++    assert.strictEqual(networkPersistenceManager.rawPathFromUrl(dotHostUrl), Platform.DevToolsPath.EmptyRawPathString);
++    assert.strictEqual(networkPersistenceManager.encodedPathFromUrl(dotHostUrl),
++                       Platform.DevToolsPath.EmptyEncodedPathString);
++    assert.strictEqual(networkPersistenceManager.fileUrlFromNetworkUrl(dotHostUrl),
++                       Platform.DevToolsPath.EmptyUrlString);
++    assert.isNull(networkPersistenceManager.getHeadersUISourceCodeFromUrl(dotHostUrl));
+   });
+ 
+   it('encodes path traversal components in local path parts', () => {
+@@ -226,6 +244,29 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+         'data:/../victim.com/script.js' as Platform.DevToolsPath.EncodedPathString);
+     assert.isFalse(parts.includes('..'));
+     assert.isTrue(parts.includes('%2E%2E'));
++
++    const singleDotParts =
++        Persistence.NetworkPersistenceManager.NetworkPersistenceManager.encodeEncodedPathToLocalPathParts(
++            './.headers' as Platform.DevToolsPath.EncodedPathString);
++    assert.isFalse(singleDotParts.includes('.'));
++    assert.deepEqual(singleDotParts, ['%2E', '.headers']);
++  });
++
++  it('does not allow overrides for dot-host URLs or plant .headers via content overrides', async () => {
++    for (const url of ['https://./.headers', 'https://./victim.com/.headers', 'https:///.headers',
++                       'https://www.example.com/.headers']) {
++      const {uiSourceCode} = setUpEnvironmentWithUISourceCode(url, Common.ResourceType.resourceTypes.Script);
++      const networkPersistenceManager = await createWorkspaceProject(urlString`file:///path/to/overrides`, []);
++      const overridesProject = networkPersistenceManager.project();
++      assert.exists(overridesProject);
++      const createFileSpy = sinon.spy(overridesProject, 'createFile');
++
++      await networkPersistenceManager.setupAndStartLocalOverrides(uiSourceCode);
++      await networkPersistenceManager.saveUISourceCodeForOverrides(uiSourceCode);
++
++      createFileSpy.restore();
++      assert.isTrue(createFileSpy.notCalled, `should not write an override file for ${url}`);
++    }
+   });
+ });
+ 
+@@ -457,8 +498,8 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+       },
+       {
+         url: 'www.example.com/.',
+-        raw: 'www.example.com/.',
+-        encoded: 'www.example.com/',
++        raw: 'www.example.com/%2E',
++        encoded: 'www.example.com/%252E',
+       },
+       {
+         url: 'localhost:8090/endswith.',
+diff --git a/front_end/models/persistence/NetworkPersistenceManager.ts b/front_end/models/persistence/NetworkPersistenceManager.ts
+index e3d56e1191ba3814b197ddcd1f765224af3506c6..fb041c4702e5de9370d40fe507da8200cc6968b4 100644
+--- a/front_end/models/persistence/NetworkPersistenceManager.ts
++++ b/front_end/models/persistence/NetworkPersistenceManager.ts
+@@ -228,6 +228,8 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+           encodeURI(pathPart).replace(/[\/\*]/g, match => '%' + match[0].charCodeAt(0).toString(16).toUpperCase());
+       if (encodedName === '..') {
+         encodedName = '%2E%2E';
++      } else if (encodedName === '.') {
++        encodedName = '%2E';
+       }
+       if (Host.Platform.isWin()) {
+         // Windows does not allow ':' and '?' in filenames
+@@ -293,7 +295,10 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+       if (!encodedFilePath) {
+         return null;
+       }
+-      const encodedPath = Common.ParsedURL.ParsedURL.substring(encodedFilePath, 0, encodedFilePath.lastIndexOf('/'));
++      const encodedPath = Common.ParsedURL.ParsedURL.substr(encodedFilePath, 0, encodedFilePath.lastIndexOf('/'));
++      if (!encodedPath) {
++        return null;
++      }
+       uiSourceCode = await this.#project.createFile(encodedPath, HEADERS_FILENAME, '');
+       Host.userMetrics.actionTaken(Host.UserMetrics.Action.HeaderOverrideFileCreated);
+     }
+@@ -459,6 +464,10 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+     const encodedFileName = Common.ParsedURL.ParsedURL.substring(encodedPath, lastIndexOfSlash + 1);
+     const rawFileName = Common.ParsedURL.ParsedURL.encodedPathToRawPathString(encodedFileName);
+     encodedPath = Common.ParsedURL.ParsedURL.substr(encodedPath, 0, lastIndexOfSlash);
++    if (!encodedPath || rawFileName === HEADERS_FILENAME) {
++      this.#savingForOverrides.delete(uiSourceCode);
++      return;
++    }
+     if (this.#project) {
+       await this.#project.createFile(encodedPath, rawFileName, content ?? '', isEncoded);
+     }
+@@ -498,7 +507,7 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+     const relativePathParts = FileSystemWorkspaceBinding.relativePath(uiSourceCode);
+     // Decode twice to handle paths generated on Windows OS.
+     const host = this.decodeLocalPathToUrlPath(this.decodeLocalPathToUrlPath(relativePathParts[0] || '')).toLowerCase();
+-    return ['chrome:', 'data:', 'blob:', 'javascript:', 'about:', 'mailto:', 'vbscript:'].includes(host) ||
++    return ['chrome:', 'data:', 'blob:', 'javascript:', 'about:', 'mailto:', 'vbscript:', '.', '..'].includes(host) ||
+         forbiddenUrls.includes(host);
+   }
+ 
+@@ -512,6 +521,9 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+     if (!url) {
+       return false;
+     }
++    if ((url.scheme === 'http' || url.scheme === 'https') && (!url.host || url.host === '.' || url.host === '..')) {
++      return true;
++    }
+     return !['http', 'https', 'file'].includes(url.scheme) || forbiddenUrls.includes(url.host);
+   }
+ 

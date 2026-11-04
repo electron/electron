@@ -19,5 +19,6 @@
   { "patch_dir": "src/electron/patches/icu", "repo": "src/third_party/icu" },
   { "patch_dir": "src/electron/patches/fontconfig", "repo": "src/third_party/fontconfig/src" },
   { "patch_dir": "src/electron/patches/libvpx", "repo": "src/third_party/libvpx/source/libvpx" },
-  { "patch_dir": "src/electron/patches/libaom", "repo": "src/third_party/libaom/source/libaom" }
+  { "patch_dir": "src/electron/patches/libaom", "repo": "src/third_party/libaom/source/libaom" },
+  { "patch_dir": "src/electron/patches/crabbyavif", "repo": "src/third_party/crabbyavif/src" }
 ]

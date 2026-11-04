@@ -1,0 +1,675 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Fri, 25 Sep 2026 11:22:12 +0000
+Subject: GL: Double clear for robust resource init on Mali and Adreno
+
+On Mali and older Adreno drivers (the bug seems to exist on Pixel 4's
+Adreno GPU as well), if an FBO attachment is drawn to, cleared to zero
+(or depth 1.0, stencil 0), and then invalidated, the driver elides
+subsequent robust resource initialization clears due to matching clear
+values. This leaves the attachment in a DISCARD state, potentially
+leaking uninitialized or recycled memory.
+
+Implement the doubleClearForRobustInit workaround on Mali GPUs and
+Adreno 6xx or older to issue a two-step clear during robust resource
+initialization: first clearing to an alternate value before clearing
+to the real initialization value, preventing the driver from eliding
+the clear.
+
+Bug: chromium:550489336
+Change-Id: I72d8b4c66df8168d41fb763de0347c03543d8dad
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8468008
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 7868d2b7a549e9347929901cc19f3b6f066fe843..707e21cd497782e02fb9b7e148fef7ce5cbc4a85 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -812,6 +812,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo doubleClearForRobustInit = {
++        "doubleClearForRobustInit",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index a0c72fedc3f9bdc4da54fe0ecf19b4ced8481c1b..3b8cb93c055e81c5a094006f456e3037d48a3819 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -1071,6 +1071,14 @@
+                 "For non-power-of-two textures, upload via TexSubImage2D instead of TexImage2D when uploading client-side data."
+             ],
+             "issue": "http://crbug.com/553172761"
++        },
++        {
++            "name": "double_clear_for_robust_init",
++            "category": "Workarounds",
++            "description": [
++                "Issue a two-step clear with distinct values during robust resource init to prevent value-collision driver clear-dedup elision on invalidate."
++            ],
++            "issue": "http://crbug.com/550489336"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/BlitGL.cpp b/src/libANGLE/renderer/gl/BlitGL.cpp
+index 6392bd5008bcd98ba4a037fb84ea4ae28d45e03d..13b87877a76d14c11b44d5e1e0053f880cd9f945 100644
+--- a/src/libANGLE/renderer/gl/BlitGL.cpp
++++ b/src/libANGLE/renderer/gl/BlitGL.cpp
+@@ -264,6 +264,95 @@ angle::Result CheckIfAttachmentNeedsClearing(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
++angle::Result RobustClear(const gl::Context *context,
++                          StateManagerGL *stateManager,
++                          const FunctionsGL *functions,
++                          GLbitfield clearMask)
++{
++    const angle::FeaturesGL &features = GetFeaturesGL(context);
++    if (features.doubleClearForRobustInit.enabled)
++    {
++        // Clear once with a different value, as a workaround for drivers that cache the cleared
++        // value and drop subsequent clears with the same value.
++        if ((clearMask & GL_COLOR_BUFFER_BIT) != 0)
++        {
++            stateManager->setClearColor(gl::ColorF(1.0f, 1.0f, 1.0f, 1.0f));
++        }
++        if ((clearMask & GL_DEPTH_BUFFER_BIT) != 0)
++        {
++            stateManager->setClearDepth(0.0f);
++        }
++        if ((clearMask & GL_STENCIL_BUFFER_BIT) != 0)
++        {
++            stateManager->setClearStencil(1);
++        }
++        ANGLE_GL_TRY(context, functions->clear(clearMask));
++
++        // Clear with the desired robust-init clear value after the driver-internal cache is
++        // modified by the previous clear.
++        if ((clearMask & GL_COLOR_BUFFER_BIT) != 0)
++        {
++            stateManager->setClearColor(gl::ColorF(0.0f, 0.0f, 0.0f, 0.0f));
++        }
++        if ((clearMask & GL_DEPTH_BUFFER_BIT) != 0)
++        {
++            stateManager->setClearDepth(1.0f);
++        }
++        if ((clearMask & GL_STENCIL_BUFFER_BIT) != 0)
++        {
++            stateManager->setClearStencil(0);
++        }
++    }
++
++    ANGLE_GL_TRY(context, functions->clear(clearMask));
++    return angle::Result::Continue;
++}
++
++template <typename T>
++angle::Result RobustClearBuffer(const gl::Context *context,
++                                const FunctionsGL *functions,
++                                GLenum buffer,
++                                GLint drawbuffer,
++                                bool emulatedAlpha)
++{
++    auto clearBuffer = [&](const T *val) {
++        if constexpr (std::is_same_v<T, GLfloat>)
++        {
++            ANGLE_GL_TRY(context, functions->clearBufferfv(buffer, drawbuffer, val));
++        }
++        else if constexpr (std::is_same_v<T, GLint>)
++        {
++            ANGLE_GL_TRY(context, functions->clearBufferiv(buffer, drawbuffer, val));
++        }
++        else if constexpr (std::is_same_v<T, GLuint>)
++        {
++            ANGLE_GL_TRY(context, functions->clearBufferuiv(buffer, drawbuffer, val));
++        }
++        else
++        {
++            UNREACHABLE();
++            return angle::Result::Stop;
++        }
++        return angle::Result::Continue;
++    };
++
++    const angle::FeaturesGL &features = GetFeaturesGL(context);
++    if (features.doubleClearForRobustInit.enabled)
++    {
++        // Clear once with a different value, as a workaround for drivers that cache the cleared
++        // value and drop subsequent clears with the same value.
++        constexpr T kBurnValue[] = {static_cast<T>(1), static_cast<T>(1), static_cast<T>(1),
++                                    static_cast<T>(1)};
++        ANGLE_TRY(clearBuffer(kBurnValue));
++    }
++
++    // Clear with the desired robust-init clear value after the driver-internal cache is modified
++    // by the previous clear.
++    const T clearValue[] = {static_cast<T>(0), static_cast<T>(0), static_cast<T>(0),
++                            emulatedAlpha ? static_cast<T>(1) : static_cast<T>(0)};
++    return clearBuffer(clearValue);
++}
++
+ }  // anonymous namespace
+ 
+ BlitGL::BlitGL(const FunctionsGL *functions,
+@@ -981,7 +1070,7 @@ angle::Result BlitGL::clearRenderableTexture(const gl::Context *context,
+         GLenum status = ANGLE_GL_TRY(context, mFunctions->checkFramebufferStatus(GL_FRAMEBUFFER));
+         if (status == GL_FRAMEBUFFER_COMPLETE)
+         {
+-            ANGLE_GL_TRY(context, mFunctions->clear(clearMask));
++            ANGLE_TRY(RobustClear(context, mStateManager, mFunctions, clearMask));
+         }
+         else
+         {
+@@ -1008,7 +1097,7 @@ angle::Result BlitGL::clearRenderableTexture(const gl::Context *context,
+                 ANGLE_GL_TRY(context, mFunctions->checkFramebufferStatus(GL_FRAMEBUFFER));
+             if (status == GL_FRAMEBUFFER_COMPLETE)
+             {
+-                ANGLE_GL_TRY(context, mFunctions->clear(clearMask));
++                ANGLE_TRY(RobustClear(context, mStateManager, mFunctions, clearMask));
+             }
+             else
+             {
+@@ -1040,7 +1129,7 @@ angle::Result BlitGL::clearRenderableTexture(const gl::Context *context,
+                     ANGLE_GL_TRY(context, mFunctions->checkFramebufferStatus(GL_FRAMEBUFFER));
+                 if (status == GL_FRAMEBUFFER_COMPLETE)
+                 {
+-                    ANGLE_GL_TRY(context, mFunctions->clear(clearMask));
++                    ANGLE_TRY(RobustClear(context, mStateManager, mFunctions, clearMask));
+                 }
+                 else
+                 {
+@@ -1087,15 +1176,15 @@ angle::Result BlitGL::clearRenderbuffer(const gl::Context *context,
+         {
+             case GL_INT:
+             {
+-                constexpr GLint clearValue[] = {0, 0, 0, 0};
+-                ANGLE_GL_TRY(context, mFunctions->clearBufferiv(GL_COLOR, 0, clearValue));
++                ANGLE_TRY(RobustClearBuffer<GLint>(context, mFunctions, GL_COLOR, 0,
++                                                   /*emulatedAlpha=*/false));
+             }
+             break;
+ 
+             case GL_UNSIGNED_INT:
+             {
+-                constexpr GLuint clearValue[] = {0, 0, 0, 0};
+-                ANGLE_GL_TRY(context, mFunctions->clearBufferuiv(GL_COLOR, 0, clearValue));
++                ANGLE_TRY(RobustClearBuffer<GLuint>(context, mFunctions, GL_COLOR, 0,
++                                                    /*emulatedAlpha=*/false));
+             }
+             break;
+ 
+@@ -1106,7 +1195,7 @@ angle::Result BlitGL::clearRenderbuffer(const gl::Context *context,
+     }
+     else
+     {
+-        ANGLE_GL_TRY(context, mFunctions->clear(clearMask));
++        ANGLE_TRY(RobustClear(context, mStateManager, mFunctions, clearMask));
+     }
+ 
+     // Unbind
+@@ -1190,28 +1279,25 @@ angle::Result BlitGL::clearFramebuffer(const gl::Context *context,
+                 case GL_SIGNED_NORMALIZED:
+                 case GL_FLOAT:
+                 {
+-                    const GLfloat clearValue[] = {0.0f, 0.0f, 0.0f, emulatedAlpha ? 1.0f : 0.0f};
+-                    ANGLE_GL_TRY(context,
+-                                 mFunctions->clearBufferfv(
+-                                     GL_COLOR, static_cast<GLint>(colorAttachmentIdx), clearValue));
++                    ANGLE_TRY(RobustClearBuffer<GLfloat>(context, mFunctions, GL_COLOR,
++                                                         static_cast<GLint>(colorAttachmentIdx),
++                                                         emulatedAlpha));
+                 }
+                 break;
+ 
+                 case GL_INT:
+                 {
+-                    const GLint clearValue[] = {0, 0, 0, emulatedAlpha ? 1 : 0};
+-                    ANGLE_GL_TRY(context,
+-                                 mFunctions->clearBufferiv(
+-                                     GL_COLOR, static_cast<GLint>(colorAttachmentIdx), clearValue));
++                    ANGLE_TRY(RobustClearBuffer<GLint>(context, mFunctions, GL_COLOR,
++                                                       static_cast<GLint>(colorAttachmentIdx),
++                                                       emulatedAlpha));
+                 }
+                 break;
+ 
+                 case GL_UNSIGNED_INT:
+                 {
+-                    const GLuint clearValue[] = {0, 0, 0, emulatedAlpha ? 1u : 0u};
+-                    ANGLE_GL_TRY(context,
+-                                 mFunctions->clearBufferuiv(
+-                                     GL_COLOR, static_cast<GLint>(colorAttachmentIdx), clearValue));
++                    ANGLE_TRY(RobustClearBuffer<GLuint>(context, mFunctions, GL_COLOR,
++                                                        static_cast<GLint>(colorAttachmentIdx),
++                                                        emulatedAlpha));
+                 }
+                 break;
+ 
+@@ -1227,7 +1313,7 @@ angle::Result BlitGL::clearFramebuffer(const gl::Context *context,
+ 
+     if (clearMask != 0)
+     {
+-        ANGLE_GL_TRY(context, mFunctions->clear(clearMask));
++        ANGLE_TRY(RobustClear(context, mStateManager, mFunctions, clearMask));
+     }
+ 
+     return angle::Result::Continue;
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 37a19c5be9b22d861c46927003ee26a3abb370b6..99631650ba913ea4d01645c94d5573d5374a2de3 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -166,6 +166,12 @@ bool IsAdreno5xx(const FunctionsGL *functions)
+     return number != 0 && number >= 500 && number < 600;
+ }
+ 
++bool IsAdreno6xxOrOlder(const FunctionsGL *functions)
++{
++    int number = getAdrenoNumber(functions);
++    return number != 0 && number < 700;
++}
++
+ bool IsMaliT8xxOrOlder(const FunctionsGL *functions)
+ {
+     int number = getMaliTNumber(functions);
+@@ -2777,6 +2783,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // http://crbug.com/546252753
+     ANGLE_FEATURE_CONDITION(features, finishBeforeBlitFramebufferMultiAttachment, isMali);
+ 
++    // http://crbug.com/550489336
++    ANGLE_FEATURE_CONDITION(features, doubleClearForRobustInit,
++                            isMali || IsAdreno6xxOrOlder(functions));
++
+     // https://crbug.com/40264674
+     ANGLE_FEATURE_CONDITION(features, disableClipControl, IsMaliG72OrG76OrG51(functions));
+ 
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 06006837fa24f89e716d47e68de9a003d4704330..9617e3776fa7f477132a658e95fb088a5b3a7938 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -2961,6 +2961,12 @@
+ 548127218 WIN INTEL OPENGL : Texture2DTestES3_OversizedMipLevels.CompressedETC/* = SKIP
+ 
+ 
++566108153 WIN NVIDIA VULKAN : RobustResourceInitWithInvalidationTest.InvalidateAfterDrawAndClearZeroStencil/* = SKIP
++
++568338695 VULKAN : ClearTestES3.DrawClearInvalidateClear/* = SKIP
++568338695 ARM GLES : ClearTestES3.DrawClearInvalidateClear/* = SKIP
++568338695 PIXEL4ORXL GLES : ClearTestES3.DrawClearInvalidateClear/* = SKIP
++
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ // Slow tests, should appear last in this file
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+diff --git a/src/tests/gl_tests/ClearTest.cpp b/src/tests/gl_tests/ClearTest.cpp
+index c5156c1d5fb6098ae8f1e50b3ec3e7ec16cb65a3..8503975bcbb339ef7a69233ea72b2f696297559f 100644
+--- a/src/tests/gl_tests/ClearTest.cpp
++++ b/src/tests/gl_tests/ClearTest.cpp
+@@ -4476,6 +4476,35 @@ TEST_P(ClearTestES3, RepeatedColorClearWithDrawInBetween)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Test that reclearing color to the same value works after draw, clear, and invalidate.
++TEST_P(ClearTestES3, DrawClearInvalidateClear)
++{
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, getWindowWidth(), getWindowHeight());
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    ANGLE_GL_PROGRAM(drawRed, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0.5f);
++
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    const GLenum discard = GL_COLOR_ATTACHMENT0;
++    glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &discard);
++
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that reclearing depth to the same value works if depth was written to in between with a draw
+ // call.
+ TEST_P(ClearTestES3, RepeatedDepthClearWithDrawInBetween)
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index 26555fa8973ad012fda1b501fb1379c9d88ec3f4..b33b5d43dae4485cad2920d6f2df598fc895fb51 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -313,6 +313,8 @@ class RobustResourceInitTestES3 : public RobustResourceInitTest
+     void testFloatRenderbufferInit(GLenum internalFormat, GLenum type);
+ };
+ 
++using RobustResourceInitWithInvalidationTest = RobustResourceInitTestES3;
++
+ class RobustResourceInitTestES31 : public RobustResourceInitTest
+ {};
+ 
+@@ -862,6 +864,276 @@ TEST_P(RobustResourceInitTestES3, ClearThenInvalidateThenReadBack)
+     }
+ }
+ 
++// Tests that invalidating an FBO attachment preceded by a draw and clearColor(0,0,0,0)
++// correctly re-initializes the attachment when read back under robust resource initialization.
++TEST_P(RobustResourceInitWithInvalidationTest, InvalidateAfterDrawAndClearZero)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    ASSERT_NE(0u, program);
++
++    for (int iteration = 0; iteration < 2; ++iteration)
++    {
++        GLTexture tex;
++        GLRenderbuffer rb;
++        GLFramebuffer fbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++        constexpr GLColor kPrimeColor(0xBB, 0xBB, 0xBB, 0xBB);
++
++        if (iteration == 0)
++        {
++            glBindTexture(GL_TEXTURE_2D, tex);
++            std::vector<GLColor> initData(kWidth * kHeight, kPrimeColor);
++            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                         initData.data());
++            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++        }
++        else
++        {
++            glBindRenderbuffer(GL_RENDERBUFFER, rb);
++            glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, kWidth, kHeight);
++            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rb);
++            glClearColor(kPrimeColor.R / 255.0f, kPrimeColor.G / 255.0f, kPrimeColor.B / 255.0f,
++                         kPrimeColor.A / 255.0f);
++            glClear(GL_COLOR_BUFFER_BIT);
++            glFinish();
++        }
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        // Render to the attachment.
++        drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++
++        // Clear the attachment to transparent black.
++        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
++        glClear(GL_COLOR_BUFFER_BIT);
++
++        // Invalidate the attachment.
++        std::array<GLenum, 1> attachments = {GL_COLOR_ATTACHMENT0};
++        glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, attachments.data());
++
++        // Read back the attachment. With robust resource initialization enabled, this must
++        // return transparent black and never the uninitialized/primed non-zero data.
++        GLColor pixel(100, 100, 100, 100);
++        glReadPixels(kWidth / 2, kHeight / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &pixel);
++
++        EXPECT_EQ(GLColor::transparentBlack, pixel)
++            << "Iteration " << iteration << " leaked primed data: " << pixel;
++        EXPECT_GL_NO_ERROR();
++    }
++}
++
++// Tests that invalidating attachments preceded by a draw and clear
++// correctly re-initializes depth when blitted under robust resource initialization.
++TEST_P(RobustResourceInitWithInvalidationTest, InvalidateAfterDrawAndClearZeroDepth)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    ANGLE_GL_PROGRAM(red, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    ANGLE_GL_PROGRAM(green, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
++    ASSERT_NE(0u, red);
++    ASSERT_NE(0u, green);
++
++    for (int iteration = 0; iteration < 2; ++iteration)
++    {
++        // Prepare destination framebuffer to receive the blitted depth.
++        GLTexture dstColorTex;
++        glBindTexture(GL_TEXTURE_2D, dstColorTex);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     nullptr);
++
++        GLRenderbuffer dstDepthRb;
++        glBindRenderbuffer(GL_RENDERBUFFER, dstDepthRb);
++        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, kWidth, kHeight);
++
++        GLFramebuffer dstFbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dstColorTex, 0);
++        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, dstDepthRb);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        // Clear destination to initial state (red color, 0.0f depth).
++        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
++        glClearDepthf(0.0f);
++        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
++
++        GLTexture srcColorTex;
++        glBindTexture(GL_TEXTURE_2D, srcColorTex);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     nullptr);
++
++        GLTexture srcDepthTex;
++        GLRenderbuffer srcDepthRb;
++        GLFramebuffer srcFbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcColorTex, 0);
++
++        if (iteration == 0)
++        {
++            glBindTexture(GL_TEXTURE_2D, srcDepthTex);
++            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, kWidth, kHeight, 0,
++                         GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, nullptr);
++            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, srcDepthTex,
++                                   0);
++        }
++        else
++        {
++            glBindRenderbuffer(GL_RENDERBUFFER, srcDepthRb);
++            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, kWidth, kHeight);
++            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
++                                      srcDepthRb);
++        }
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        // Prime depth with non-default value (0.8f).
++        glClearDepthf(0.8f);
++        glClear(GL_DEPTH_BUFFER_BIT);
++        glFinish();
++
++        // Render to the attachments.
++        glEnable(GL_DEPTH_TEST);
++        glDepthFunc(GL_LESS);
++        drawQuad(red, essl1_shaders::PositionAttrib(), 0.0f);
++
++        // Clear color and depth to their default values.
++        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
++        glClearDepthf(1.0f);
++        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
++
++        // Invalidate attachments.
++        std::array<GLenum, 2> attachments = {GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT};
++        glInvalidateFramebuffer(GL_FRAMEBUFFER, 2, attachments.data());
++
++        // Blit depth from srcFbo to dstFbo.
++        glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
++        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
++        glBlitFramebuffer(0, 0, kWidth, kHeight, 0, 0, kWidth, kHeight, GL_DEPTH_BUFFER_BIT,
++                          GL_NEAREST);
++
++        // Verify dstFbo depth is 1.0f: drawing at depth 0.9f with GL_LESS should pass and produce
++        // green.
++        glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++        glEnable(GL_DEPTH_TEST);
++        glDepthFunc(GL_LESS);
++        drawQuad(green, essl1_shaders::PositionAttrib(), 0.8f);
++
++        EXPECT_PIXEL_COLOR_EQ(kWidth / 2, kHeight / 2, GLColor::green)
++            << "Iteration " << iteration << " failed depth re-initialization verification";
++        EXPECT_GL_NO_ERROR();
++    }
++}
++
++// Tests that invalidating attachments preceded by a draw and clear
++// correctly re-initializes stencil when blitted under robust resource initialization.
++TEST_P(RobustResourceInitWithInvalidationTest, InvalidateAfterDrawAndClearZeroStencil)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    ANGLE_GL_PROGRAM(red, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    ANGLE_GL_PROGRAM(green, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
++    ASSERT_NE(0u, red);
++    ASSERT_NE(0u, green);
++
++    for (int iteration = 0; iteration < 2; ++iteration)
++    {
++        // Prepare destination framebuffer to receive the blitted stencil.
++        GLTexture dstColorTex;
++        glBindTexture(GL_TEXTURE_2D, dstColorTex);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     nullptr);
++
++        GLRenderbuffer dstStencilRb;
++        glBindRenderbuffer(GL_RENDERBUFFER, dstStencilRb);
++        glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, kWidth, kHeight);
++
++        GLFramebuffer dstFbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dstColorTex, 0);
++        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
++                                  dstStencilRb);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        // Clear destination to initial state (red color, stencil 0x55).
++        glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
++        glClearStencil(0x55);
++        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
++
++        GLTexture srcColorTex;
++        glBindTexture(GL_TEXTURE_2D, srcColorTex);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     nullptr);
++
++        GLTexture srcStencilTex;
++        GLRenderbuffer srcStencilRb;
++        GLFramebuffer srcFbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcColorTex, 0);
++
++        if (iteration == 0)
++        {
++            if (!IsGLExtensionEnabled("GL_OES_texture_stencil8"))
++            {
++                continue;
++            }
++            glBindTexture(GL_TEXTURE_2D, srcStencilTex);
++            glTexImage2D(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX8, kWidth, kHeight, 0, GL_STENCIL_INDEX,
++                         GL_UNSIGNED_BYTE, nullptr);
++            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
++                                   srcStencilTex, 0);
++        }
++        else
++        {
++            glBindRenderbuffer(GL_RENDERBUFFER, srcStencilRb);
++            glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, kWidth, kHeight);
++            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
++                                      srcStencilRb);
++        }
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        // Prime stencil with non-default value (0x2).
++        glClearStencil(0x2);
++        glClear(GL_STENCIL_BUFFER_BIT);
++        glFinish();
++
++        // Render to the attachments with stencil test.
++        glEnable(GL_STENCIL_TEST);
++        glStencilFunc(GL_ALWAYS, 0x3, 0xFF);
++        glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
++        drawQuad(red, essl1_shaders::PositionAttrib(), 0.5f);
++        glDisable(GL_STENCIL_TEST);
++
++        // Clear color and stencil to their default values.
++        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
++        glClearStencil(0);
++        glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
++
++        // Invalidate attachments.
++        std::array<GLenum, 2> attachments = {GL_COLOR_ATTACHMENT0, GL_STENCIL_ATTACHMENT};
++        glInvalidateFramebuffer(GL_FRAMEBUFFER, 2, attachments.data());
++
++        // Blit stencil from srcFbo to dstFbo.
++        glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
++        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFbo);
++        glBlitFramebuffer(0, 0, kWidth, kHeight, 0, 0, kWidth, kHeight, GL_STENCIL_BUFFER_BIT,
++                          GL_NEAREST);
++
++        // Verify dstFbo stencil is 0: drawing with GL_EQUAL 0 should pass and produce green.
++        glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++        glEnable(GL_STENCIL_TEST);
++        glStencilFunc(GL_EQUAL, 0, 0xFF);
++        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
++        drawQuad(green, essl1_shaders::PositionAttrib(), 0.5f);
++        glDisable(GL_STENCIL_TEST);
++
++        EXPECT_PIXEL_COLOR_EQ(kWidth / 2, kHeight / 2, GLColor::green)
++            << "Iteration " << iteration << " failed stencil re-initialization verification";
++        EXPECT_GL_NO_ERROR();
++    }
++}
++
+ // Calling invalidate after draw should either read back the result of the draw call (invalidate
+ // didn't happen) or the init depth/stencil values.
+ TEST_P(RobustResourceInitTestES3, DrawThenInvalidateThenReadBackDepthStencil)
+@@ -4493,6 +4765,11 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(RobustResourceInitTestES3,
+                                ES3_METAL().enable(Feature::AllocateNonZeroTextures),
+                                ES3_VULKAN().enable(Feature::AllocateNonZeroMemory));
+ 
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(RobustResourceInitWithInvalidationTest);
++ANGLE_INSTANTIATE_TEST_ES3_AND(RobustResourceInitWithInvalidationTest,
++                               ES3_OPENGL().enable(Feature::DoubleClearForRobustInit),
++                               ES3_OPENGLES().enable(Feature::DoubleClearForRobustInit));
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(RobustResourceInitTestES31);
+ ANGLE_INSTANTIATE_TEST_ES31_AND(RobustResourceInitTestES31,
+                                 ES31_VULKAN().enable(Feature::AllocateNonZeroMemory));
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 4c89e200cb408f59adcb03c55fd30f86930df89f..c46a0fd8797cb2ac6a7ba8f597285296a2404cc9 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -128,6 +128,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::DontInitializeUninitializedLocals, "dontInitializeUninitializedLocals"},
+     {Feature::DontInvalidateIncompleteFBOs, "dontInvalidateIncompleteFBOs"},
+     {Feature::DontUseLoopsToInitializeVariables, "dontUseLoopsToInitializeVariables"},
++    {Feature::DoubleClearForRobustInit, "doubleClearForRobustInit"},
+     {Feature::DoubleDepthBiasConstantFactor, "doubleDepthBiasConstantFactor"},
+     {Feature::DropDepthStencilClearOnInvalidate, "dropDepthStencilClearOnInvalidate"},
+     {Feature::DumpShaderSource, "dumpShaderSource"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index ce97c74c0f29ac3baddbe3c74edb3045f67bdb5b..cfdf940f709ac8825773c21cab6fef9af909f95f 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -128,6 +128,7 @@ enum class Feature
+     DontInitializeUninitializedLocals,
+     DontInvalidateIncompleteFBOs,
+     DontUseLoopsToInitializeVariables,
++    DoubleClearForRobustInit,
+     DoubleDepthBiasConstantFactor,
+     DropDepthStencilClearOnInvalidate,
+     DumpShaderSource,

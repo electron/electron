@@ -1,0 +1,316 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Xianzhu Wang <wangxianzhu@chromium.org>
+Date: Fri, 2 Oct 2026 13:01:07 -0700
+Subject: [HiC] Supress paint invalidation of spell/grammar markers in canvas
+ subtree
+
+Though we supress paint of spell/grammer markers in canvas subtree,
+previously we still invalidate paint of them, causing user dictionary
+leaks through the html-in-canvas API.
+
+Now suppress paint invalidations of them to prevent the leak.
+
+In document_marker_controller.cc, InvalidateVisualOverflowForNode is
+fold into InvalidatePaintForNode. This simplifies code to suppress
+paint invalidation for spell/grammer markers. That could cause a few
+more redundant paint invalidation calls in some cases but the cost
+is trivial, and that won't cause any extra paint invalidation.
+
+Fixed: 563359033
+Change-Id: I20f15ba16eaa307294d4d8e45935293ae6d72a9a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8489082
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Xianzhu Wang <wangxianzhu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1710351}
+
+Electron adaptation notes (43-x-y):
+This branch has no LayoutObject::IsInCanvasSubtree(); the check mirrors Element::IsInCanvasSubtree() by testing the node's ParentOrShadowHostElement()->IsCanvasOrInCanvasSubtree(), which also covers text nodes carrying the markers.
+
+diff --git a/third_party/blink/renderer/core/editing/markers/document_marker_controller.cc b/third_party/blink/renderer/core/editing/markers/document_marker_controller.cc
+index b84f784cd192227b3b778e05e9a717cda2831dac..1167b9857063cf73eb0ab669aaa55a0e02c138c3 100644
+--- a/third_party/blink/renderer/core/editing/markers/document_marker_controller.cc
++++ b/third_party/blink/renderer/core/editing/markers/document_marker_controller.cc
+@@ -128,23 +128,17 @@ DocumentMarkerList* CreateListForType(DocumentMarker::MarkerType type) {
+   NOTREACHED();
+ }
+ 
+-void InvalidateVisualOverflowForNode(const Node& node,
+-                                     DocumentMarker::MarkerType type) {
++void InvalidatePaintForNode(const Node& node, DocumentMarker::MarkerType type) {
+   LayoutObject* layout_object = node.GetLayoutObject();
+-  if (!layout_object ||
+-      !DocumentMarker::MarkerTypes::HighlightPseudos().Intersects(
+-          DocumentMarker::MarkerTypes(type))) {
++  if (!layout_object) {
+     return;
+   }
+-  if (HighlightStyleUtils::ShouldInvalidateVisualOverflow(*layout_object,
+-                                                          type)) {
+-    layout_object->InvalidateVisualOverflow();
+-  }
+-}
+ 
+-void InvalidatePaintForNode(const Node& node) {
+-  LayoutObject* layout_object = node.GetLayoutObject();
+-  if (!layout_object) {
++  // This branch has no LayoutObject::IsInCanvasSubtree(); mirror
++  // Element::IsInCanvasSubtree() for any node (including text nodes).
++  const Element* parent_element = node.ParentOrShadowHostElement();
++  if (parent_element && parent_element->IsCanvasOrInCanvasSubtree() &&
++      (type == DocumentMarker::kSpelling || type == DocumentMarker::kGrammar)) {
+     return;
+   }
+ 
+@@ -161,6 +155,13 @@ void InvalidatePaintForNode(const Node& node) {
+         PaintInvalidationReason::kDocumentMarker);
+   }
+ 
++  if (DocumentMarker::MarkerTypes::HighlightPseudos().Intersects(
++          DocumentMarker::MarkerTypes(type)) &&
++      HighlightStyleUtils::ShouldInvalidateVisualOverflow(*layout_object,
++                                                          type)) {
++    layout_object->InvalidateVisualOverflow();
++  }
++
+   // Tell accessibility about the new marker.
+   AXObjectCache* ax_object_cache = node.GetDocument().ExistingAXObjectCache();
+   if (!ax_object_cache) {
+@@ -455,8 +456,7 @@ void DocumentMarkerController::AddMarkerToNode(const Text& text,
+   }
+   markers->Add(new_marker);
+ 
+-  InvalidatePaintForNode(text);
+-  InvalidateVisualOverflowForNode(text, new_marker->GetType());
++  InvalidatePaintForNode(text, new_marker_type);
+ }
+ 
+ // Moves markers from src_node to dst_node. Markers are moved if their start
+@@ -472,7 +472,6 @@ void DocumentMarkerController::MoveMarkers(const Text& src_node,
+     return;
+   }
+ 
+-  bool doc_dirty = false;
+   for (auto& marker_map : markers_) {
+     if (!marker_map) {
+       continue;
+@@ -494,8 +493,7 @@ void DocumentMarkerController::MoveMarkers(const Text& src_node,
+     DCHECK(src_markers != dst_markers);
+ 
+     if (src_markers->MoveMarkers(length, dst_markers)) {
+-      doc_dirty = true;
+-      InvalidateVisualOverflowForNode(dst_node, type);
++      InvalidatePaintForNode(dst_node, type);
+       for (const auto& marker : dst_markers->GetMarkers()) {
+         auto it = marker_groups_.find(marker);
+         if (it != marker_groups_.end())
+@@ -506,7 +504,7 @@ void DocumentMarkerController::MoveMarkers(const Text& src_node,
+     // the src and dst, in which case both lists may be empty despite
+     // MoveMarkers returning false.
+     if (src_markers->IsEmpty()) {
+-      InvalidateVisualOverflowForNode(src_node, type);
++      InvalidatePaintForNode(src_node, type);
+       marker_map->erase(&src_node);
+       DidRemoveNodeFromMap(type);
+     }
+@@ -515,12 +513,6 @@ void DocumentMarkerController::MoveMarkers(const Text& src_node,
+       DidRemoveNodeFromMap(type);
+     }
+   }
+-
+-  if (!doc_dirty) {
+-    return;
+-  }
+-
+-  InvalidatePaintForNode(dst_node);
+ }
+ 
+ void DocumentMarkerController::DidRemoveNodeFromMap(
+@@ -569,8 +561,7 @@ void DocumentMarkerController::RemoveMarkersInternal(
+     }
+   }
+   if (list->RemoveMarkers(start_offset, length)) {
+-    InvalidateVisualOverflowForNode(text, marker_type);
+-    InvalidatePaintForNode(text);
++    InvalidatePaintForNode(text, marker_type);
+   }
+   if (list->IsEmpty()) {
+     marker_map->erase(&text);
+@@ -1143,8 +1134,7 @@ void DocumentMarkerController::RemoveSpellingMarkersUnderWords(
+       DocumentMarkerList* const list = node_markers.value;
+       if (To<SpellCheckMarkerListImpl>(list)->RemoveMarkersUnderWords(
+               text.data(), words)) {
+-        InvalidateVisualOverflowForNode(text, type);
+-        InvalidatePaintForNode(text);
++        InvalidatePaintForNode(text, type);
+         if (list->IsEmpty()) {
+           nodes_to_remove.insert(node_markers.key);
+         }
+@@ -1179,7 +1169,7 @@ void DocumentMarkerController::RemoveSuggestionMarkerInRangeOnFinish(
+       // one suggestion marker needs to be removed.
+       To<SuggestionMarkerListImpl>(list)->RemoveMarkerByTag(
+           suggestion_marker->Tag());
+-      InvalidatePaintForNode(text);
++      InvalidatePaintForNode(text, DocumentMarker::kSuggestion);
+       if (list->IsEmpty()) {
+         marker_map->erase(&text);
+         DidRemoveNodeFromMap(DocumentMarker::kSuggestion);
+@@ -1204,7 +1194,7 @@ void DocumentMarkerController::RemoveSuggestionMarkerByType(
+     // RemoveMarkerByType() might be expensive. In practice, we have at most
+     // one suggestion marker needs to be removed.
+     To<SuggestionMarkerListImpl>(list)->RemoveMarkerByType(type);
+-    InvalidatePaintForNode(text);
++    InvalidatePaintForNode(text, DocumentMarker::kSuggestion);
+     if (list->IsEmpty()) {
+       marker_map->erase(node_marker_pair.first);
+       DidRemoveNodeFromMap(DocumentMarker::kSuggestion);
+@@ -1223,7 +1213,7 @@ void DocumentMarkerController::RemoveSuggestionMarkerByType(
+   for (const auto& node_markers : *marker_map) {
+     DocumentMarkerList* const list = node_markers.value;
+     if (To<SuggestionMarkerListImpl>(list)->RemoveMarkerByType(type)) {
+-      InvalidatePaintForNode(*node_markers.key);
++      InvalidatePaintForNode(*node_markers.key, DocumentMarker::kSuggestion);
+       if (list->IsEmpty()) {
+         marker_map->erase(node_markers.key);
+         DidRemoveNodeFromMap(DocumentMarker::kSuggestion);
+@@ -1251,7 +1241,7 @@ void DocumentMarkerController::RemoveSuggestionMarkerByTag(const Text& text,
+     marker_map->erase(&text);
+     DidRemoveNodeFromMap(DocumentMarker::kSuggestion);
+   }
+-  InvalidatePaintForNode(text);
++  InvalidatePaintForNode(text, DocumentMarker::kSuggestion);
+ }
+ 
+ void DocumentMarkerController::RemoveMarkersOfTypes(
+@@ -1283,8 +1273,7 @@ void DocumentMarkerController::RemoveMarkersFromList(
+   list->Clear();
+ 
+   const Text& node = *iterator->key;
+-  InvalidateVisualOverflowForNode(node, marker_type);
+-  InvalidatePaintForNode(node);
++  InvalidatePaintForNode(node, marker_type);
+   InvalidatePaintForTickmarks(node);
+ 
+   MarkerMap* marker_map = markers_[MarkerTypeToMarkerIndex(marker_type)];
+@@ -1342,7 +1331,7 @@ bool DocumentMarkerController::SetTextMatchMarkersActive(const Text& text,
+   if (!doc_dirty) {
+     return false;
+   }
+-  InvalidatePaintForNode(text);
++  InvalidatePaintForNode(text, DocumentMarker::kTextMatch);
+   return true;
+ }
+ 
+@@ -1388,7 +1377,6 @@ void DocumentMarkerController::DidUpdateCharacterData(CharacterData* node,
+   if (!text_node)
+     return;
+ 
+-  bool did_shift_marker = false;
+   for (auto& marker_map : markers_) {
+     if (!marker_map) {
+       continue;
+@@ -1399,22 +1387,19 @@ void DocumentMarkerController::DidUpdateCharacterData(CharacterData* node,
+     }
+     DCHECK(!list->IsEmpty());
+     DocumentMarker::MarkerType type = list->GetMarkers()[0]->GetType();
+-    if (list->ShiftMarkers(node->data(), offset, old_length, new_length)) {
+-      did_shift_marker = true;
++    if (list->ShiftMarkers(node->data(), offset, old_length, new_length) ||
++        list->IsEmpty()) {
++      InvalidatePaintForNode(*node, type);
+     }
+     if (list->IsEmpty()) {
+-      InvalidateVisualOverflowForNode(*node, type);
+       marker_map->erase(text_node);
+       DidRemoveNodeFromMap(type);
+     }
+   }
+ 
+-  if (!did_shift_marker)
+-    return;
+   if (!node->GetLayoutObject())
+     return;
+   InvalidateRectsForTextMatchMarkersInNode(*text_node);
+-  InvalidatePaintForNode(*node);
+ }
+ 
+ void DocumentMarkerController::StartGlicMarkerAnimationIfNeeded() {
+@@ -1496,8 +1481,8 @@ void DocumentMarkerController::InvalidatePaintForGlicMarkers() {
+       markers_[MarkerTypeToMarkerIndex(DocumentMarker::kGlic)];
+   CHECK(marker_map);
+   for (auto& [text_node, marker_list] : *marker_map) {
+-    CHECK_EQ(marker_list->MarkerType(), DocumentMarker::MarkerType::kGlic);
+-    InvalidatePaintForNode(*text_node);
++    CHECK_EQ(marker_list->MarkerType(), DocumentMarker::kGlic);
++    InvalidatePaintForNode(*text_node, DocumentMarker::kGlic);
+   }
+ }
+ 
+diff --git a/third_party/blink/web_tests/editing/spelling/spellcheck-under-canvas.html b/third_party/blink/web_tests/editing/spelling/spellcheck-under-canvas.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..57efb771292eb236a4923d3e37e5a76eff5273ce
+--- /dev/null
++++ b/third_party/blink/web_tests/editing/spelling/spellcheck-under-canvas.html
+@@ -0,0 +1,62 @@
++<!DOCTYPE html>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++<script src="../assert_selection.js"></script>
++<script src="spellcheck_test.js"></script>
++
++<script>
++let paintCountInsideCanvas = 0;
++
++spellcheck_test(
++    '<canvas content="drawable"><div contenteditable>|</div></canvas>',
++    document => {
++      document.getElementsByTagName('canvas')[0].onpaint = () => {
++        paintCountInsideCanvas++;
++      };
++      document.execCommand('insertText', false, 'zz. ');
++    },
++    '<canvas content="drawable"><div contenteditable>#zz#.\u00A0</div></canvas>',
++    {
++      title: 'Spellcheck must be visually disabled inside canvas subtree with zero spellcheck repaints.',
++      callback: () => {
++        assert_less_than_equal(
++          paintCountInsideCanvas, 1,
++          'Typing misspelled words inside canvas must produce ZERO spellcheck-induced repaints'
++        );
++      }
++    }
++);
++
++let paintCountOnMove = 0;
++
++spellcheck_test(
++    '<div contenteditable>|</div><canvas content="drawable"><div></div></canvas>',
++    'insertText zz. ',
++    '<div contenteditable>#zz#.\u00A0</div><canvas content="drawable"><div></div></canvas>',
++    {
++      title: 'Spelling marker should appear when typed outside canvas subtree.',
++      callback: sample => {
++        const doc = sample.window.document;
++        const canvas = doc.getElementsByTagName('canvas')[0];
++        canvas.onpaint = () => { paintCountOnMove++; };
++
++        return spellcheck_test(
++          sample,
++          document => {
++            canvas.firstChild.appendChild(document.getElementsByTagName('div')[0]);
++          },
++          '<canvas content="drawable"><div><div contenteditable>#zz#.\u00A0</div></div></canvas>',
++          {
++            title: 'Spelling marker must be visually disabled and produce no extra repaints when moved into canvas subtree.',
++            callback: () => {
++              assert_less_than_equal(
++                paintCountOnMove, 1,
++                'Moving spelling markers into canvas subtree must not trigger extra paint invalidation events'
++              );
++            }
++          }
++        );
++      }
++    }
++);
++</script>
+\ No newline at end of file

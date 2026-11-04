@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Elorm Coch <elormcoch@microsoft.com>
+Date: Mon, 27 Jul 2026 13:17:29 -0700
+Subject: Harden CSP guard in PageResourceLoader to fail-closed
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This is a follow-up to the fix for [crbug:
+490773579](https://issues.chromium.org/issues/490773579)
+(commit 94bfd04bf5: "Prevent CSP bypass in source map fetches via removed frames") - (https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/7656988)
+
+The original fix initialized mustEnforceCSP = false and only set it to
+true when getSecurityIsolationStatus positively returned a connect-src
+or default-src directive. This left a residual bypass window: if the
+frame was already detached by the time the status query ran, the CDP
+call returns null, mustEnforceCSP stayed false, and the unsafe
+loadFromHostBindings fallback could still execute — recreating the same
+CSP bypass the original fix intended to close.
+
+This CL hardens the guard to fail-closed:
+
+  - mustEnforceCSP now defaults to true for all http/https resources.
+  - It is only relaxed to false when getSecurityIsolationStatus
+    positively confirms that no connect-src or default-src directive
+    is present (status.csp !== undefined && no matching directive).
+  - A null, undefined, or error response from the protocol keeps the
+    guard armed, so a detached-frame or protocol-error path can never
+    fall through to the unsafe fallback.
+
+Bug: 490773579
+Change-Id: I093ca4e13b564b84b8f45c7b2fa4b045c4ee04a8
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8139986
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Commit-Queue: Sylvester Elorm Coch <elormcoch@microsoft.com>
+
+diff --git a/front_end/core/sdk/PageResourceLoader.test.ts b/front_end/core/sdk/PageResourceLoader.test.ts
+index 07267916912cadf2ccf1c82913119df6247e7d94..1e25eb32a81b874e0716d1aa998fe7a9238666c9 100644
+--- a/front_end/core/sdk/PageResourceLoader.test.ts
++++ b/front_end/core/sdk/PageResourceLoader.test.ts
+@@ -377,6 +377,45 @@ describe('PageResourceLoader', () => {
+       assert.strictEqual(result.content, 'fallback content');
+       sinon.assert.calledOnce(loadHostBindingsStub);
+     });
++
++    it('does not fall back to host bindings if security isolation status is unavailable (fail-closed)', async () => {
++      // If getSecurityIsolationStatus returns null (e.g. because the frame was removed before the query completed),
++      // the unsafe fallback must not execute.
++      const {loader, settings, targetManager} = setup();
++      settings.moduleSetting('cache-disabled').set(false);
++      const connection = new MockCDPConnection();
++
++      connection.setFailureHandler('Network.getSecurityIsolationStatus', () => {
++        return {
++          code: -32000 as ProtocolClient.CDPConnection.CDPErrorStatus,
++          message: 'Frame not found',
++        };
++      });
++
++      connection.setFailureHandler('Network.loadNetworkResource', () => {
++        return {
++          code: -32000 as ProtocolClient.CDPConnection.CDPErrorStatus,
++          message: 'Frame not found',
++        };
++      });
++
++      const target = createTarget({connection, targetManager});
++      const initiator = {target, frameId: '123' as Protocol.Page.FrameId, initiatorUrl: urlString`https://example.com`};
++      const url = urlString`https://example.com/source.map`;
++
++      const loadHostBindingsStub =
++          sinon.stub(Host.InspectorFrontendHost.InspectorFrontendHostInstance, 'loadNetworkResource');
++
++      try {
++        await loader.loadResource(url, initiator);
++        assert.fail('Expected loadResource to throw');
++      } catch (e) {
++        assert.strictEqual(e.message, 'Frame not found');
++      }
++
++      // Fallback must not be called, null status keeps the guard armed.
++      sinon.assert.notCalled(loadHostBindingsStub);
++    });
+   });
+ });
+ 
+diff --git a/front_end/core/sdk/PageResourceLoader.ts b/front_end/core/sdk/PageResourceLoader.ts
+index 6439842e7a8f753802d2871c5184930aa668111d..0ba84f1f36f6ba34d9cf7717ecc478718e33589a 100644
+--- a/front_end/core/sdk/PageResourceLoader.ts
++++ b/front_end/core/sdk/PageResourceLoader.ts
+@@ -334,8 +334,12 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+         initiator.target;
+     Host.userMetrics.developerResourceScheme(this.getDeveloperResourceScheme(parsedURL));
+     if (eligibleForLoadFromTarget) {
+-      let mustEnforceCSP = false;
+       const isHttp = parsedURL.scheme === 'http' || parsedURL.scheme === 'https';
++      // Default to enforcing CSP for http(s) resources (fail-closed). Only relax
++      // if the isolation-status query positively confirms no connect-src/default-src
++      // directive is present. A null/error response keeps the guard armed so that a
++      // detached-frame or protocol-error path cannot fall through to loadFromHostBindings.
++      let mustEnforceCSP = isHttp;
+       if (isHttp && initiator.target) {
+         const networkManager = initiator.target.model(NetworkManager);
+         if (networkManager) {
+@@ -343,14 +347,10 @@ export class PageResourceLoader extends Common.ObjectWrapper.ObjectWrapper<Event
+           if (!status && initiator.frameId) {
+             status = await networkManager.getSecurityIsolationStatus(null);
+           }
+-          if (status?.csp) {
+-            for (const csp of status.csp) {
+-              const directives = csp.effectiveDirectives;
+-              if (directives.includes('connect-src') || directives.includes('default-src')) {
+-                mustEnforceCSP = true;
+-                break;
+-              }
+-            }
++          if (status) {
++            const csps = status.csp ?? [];
++            mustEnforceCSP = csps.some(csp => csp.effectiveDirectives.includes('connect-src') ||
++                                           csp.effectiveDirectives.includes('default-src'));
+           }
+         }
+       }
