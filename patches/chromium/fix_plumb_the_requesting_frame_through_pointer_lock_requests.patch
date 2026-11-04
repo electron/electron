@@ -185,10 +185,10 @@ index 35a414a123e2a75b824eb7332728c6da55262636..a9ad4bee3b649cd8eb5e206462087254
        bool unadjusted_movement,
        input::InputRouterImpl::RequestMouseLockCallback response) override;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 93acf2f6f24082d9749df924a618cf38d5eac35c..7973ff0c66e0b2cce27f84a2e58380f9fc879c54 100644
+index adeafd576891f5f14acfb800c07f91d6a7b257b3..094ed47b0429a5d8179c479ac75021b717737d71 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5507,6 +5507,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
+@@ -5529,6 +5529,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
  
  void WebContentsImpl::RequestToLockPointer(
      RenderWidgetHostImpl* render_widget_host,
@@ -196,7 +196,7 @@ index 93acf2f6f24082d9749df924a618cf38d5eac35c..7973ff0c66e0b2cce27f84a2e58380f9
      bool user_gesture,
      bool last_unlocked_by_target) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RequestPointerLock",
-@@ -5534,9 +5535,19 @@ void WebContentsImpl::RequestToLockPointer(
+@@ -5556,9 +5557,19 @@ void WebContentsImpl::RequestToLockPointer(
      }
    }
  
@@ -216,7 +216,7 @@ index 93acf2f6f24082d9749df924a618cf38d5eac35c..7973ff0c66e0b2cce27f84a2e58380f9
      observers_.NotifyObservers(&WebContentsObserver::PointerLockRequested);
      delegate->RequestPointerLock(this, user_gesture, last_unlocked_by_target);
    } else {
-@@ -10187,9 +10198,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
+@@ -10221,9 +10232,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
    return false;
  }
  
@@ -240,7 +240,7 @@ index 93acf2f6f24082d9749df924a618cf38d5eac35c..7973ff0c66e0b2cce27f84a2e58380f9
      static_cast<SurfaceEmbedConnectorImpl*>(connector)
          ->SetPointerLockWidgetInParentChain(widget);
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 13b73bce4b40acb83478330ff02a59bc06612ba8..e481e82aa6868a0c7e441ae553ffb805e8332d64 100644
+index 77fd682bac8f7ae0560afe637f7ef7fbcf301d9a..9fd97326dab21adab4d64d1d3c8b6952cf7d0ac8 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1233,6 +1233,7 @@ class CONTENT_EXPORT WebContentsImpl
@@ -263,7 +263,7 @@ index 13b73bce4b40acb83478330ff02a59bc06612ba8..e481e82aa6868a0c7e441ae553ffb805
    const std::set<raw_ptr<RenderFrameHostImpl, SetExperimental>>&
    fullscreen_frames_for_testing() const {
      return fullscreen_frames_;
-@@ -2749,6 +2755,9 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -2770,6 +2776,9 @@ class CONTENT_EXPORT WebContentsImpl
    raw_ptr<RenderWidgetHostImpl, DanglingUntriaged> pointer_lock_widget_ =
        nullptr;
  
