@@ -53,10 +53,10 @@ index 6e4bc441561e84d8393be88c4f8d0d2375c6898d..8583519f4e1cc83c7d1dfe5454a7fb8b
      const pathRegex = /(\/[^#?]*)?/;
      const queryRegex = /(?:\?([^#]*))?/;
 diff --git a/front_end/models/persistence/NetworkPersistenceManager.test.ts b/front_end/models/persistence/NetworkPersistenceManager.test.ts
-index cafe0c12fb0785476342208ed12f9dad49c87084..16b6ac303edcf1b1b9f1980863a4def548ff8c12 100644
+index f90197d7314ed3dc614f0918dec4e415b61abee8..2234bd1c5cb1873de3f61a659eeb41f18d73e46c 100644
 --- a/front_end/models/persistence/NetworkPersistenceManager.test.ts
 +++ b/front_end/models/persistence/NetworkPersistenceManager.test.ts
-@@ -217,6 +217,8 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+@@ -237,6 +237,8 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
          urlString`https://www.example.com/script.js`));
      assert.isFalse(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
          urlString`http://www.example.com/script.js`));
