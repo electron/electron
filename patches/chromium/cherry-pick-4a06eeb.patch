@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin Ellis <kevers@google.com>
+Date: Fri, 30 Oct 2026 06:20:34 -0700
+Subject: Do not composite backdrop-filter animations with reference filters
+
+Regular `filter` animations reject reference filters (`url(#...)`)
+from running on the compositor because `ReferenceFilterOperation::MovesPixels returns true. Because
+pixel-moving `backdrop-filter` operations (such as `blur()` and
+`drop-shadow()`) do not affect layer bounds,
+`CompositorAnimations::CheckCanStartEffectOnCompositor` previously had
+no per-keyframe filter check for `kBackdropFilter`, inadvertently
+allowing reference filters onto the compositor. Reference filters must
+fall back to the main thread for two reasons:
+1. Reference filters are not interpolable; on the main thread they
+   animate discretely at 50% progress, whereas
+   `cc::FilterOperations::Blend` returns the destination filter
+   across the entire active interval when either endpoint contains a
+   reference filter.
+2. Building compositor filter keyframes in `AddKeyframeToCurve` calls
+   `FilterEffectBuilder::BuildFilterOperations` during
+   `DocumentAnimations::UpdateAnimations` (post-paint) with an empty
+   reference box, which can synchronously paint referenced SVG
+   resource subtrees (such as `<feImage>`) outside the paint lifecycle
+   phase.
+
+Bug: 575318807
+Change-Id: I54b5f2a3b93fe2a1cb0794d1bcf81eb6edfbe798
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8674102
+Commit-Queue: Kevin Ellis <kevers@chromium.org>
+Reviewed-by: David A <awogbemila@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1731377}
+
+diff --git a/third_party/blink/renderer/core/animation/compositor_animations.cc b/third_party/blink/renderer/core/animation/compositor_animations.cc
+index cd6e71614f26ef66d3d69bb327b9e6abfdfdaa9d..05128ecf6c9a478bb3593b8c6222ca51fcf09dbc 100644
+--- a/third_party/blink/renderer/core/animation/compositor_animations.cc
++++ b/third_party/blink/renderer/core/animation/compositor_animations.cc
+@@ -413,7 +413,15 @@ CompositorAnimations::CheckCanStartEffectOnCompositor(
+           break;
+         case CSSPropertyID::kBackdropFilter:
+           // Backdrop-filter pixel moving filters do not change the layer bounds
+-          // like regular filters do, so they can still be composited.
++          // like regular filters do, so they can still be composited. However,
++          // reference filters cannot be interpolated or composited.
++          if (keyframe->GetCompositorKeyframeValue() &&
++              To<CompositorKeyframeFilterOperations>(
++                  keyframe->GetCompositorKeyframeValue())
++                  ->Operations()
++                  .HasReferenceFilter()) {
++            DefaultToUnsupportedProperty(state, property);
++          }
+           break;
+         case CSSPropertyID::kBackgroundColor:
+         case CSSPropertyID::kClipPath:
+@@ -888,6 +896,7 @@ void AddKeyframeToCurve(cc::KeyframedFilterAnimationCurve& curve,
+   CompositorFilterOperations operations = builder.BuildFilterOperations(
+       To<CompositorKeyframeFilterOperations>(value)->Operations(),
+       is_backdrop_filter);
++  DCHECK(!operations.HasReferenceFilter());
+   std::unique_ptr<cc::FilterKeyframe> filter_keyframe =
+       cc::FilterKeyframe::Create(base::Seconds(keyframe->Offset()),
+                                  operations.ReleaseCcFilterOperations(),
+diff --git a/third_party/blink/renderer/core/animation/compositor_animations_test.cc b/third_party/blink/renderer/core/animation/compositor_animations_test.cc
+index ed35d6d2f683cc4f30318cc565104e36589eeccb..f9ff09af1cd7345c06fcd5eb2952f1c03052991e 100644
+--- a/third_party/blink/renderer/core/animation/compositor_animations_test.cc
++++ b/third_party/blink/renderer/core/animation/compositor_animations_test.cc
+@@ -1465,6 +1465,35 @@ TEST_P(AnimationCompositorAnimationsTest,
+                CompositorAnimations::kTargetHasInvalidCompositingState));
+ }
+ 
++TEST_P(AnimationCompositorAnimationsTest,
++       CanStartElementOnCompositorEffectBackdropFilter) {
++  // Pixel-moving filters (such as blur) on backdrop-filter do not change layer
++  // bounds and can be composited.
++  StringKeyframeEffectModel* effect1 = CreateKeyframeEffectModel(
++      CreateReplaceOpKeyframe(CSSPropertyID::kBackdropFilter, "none", 0),
++      CreateReplaceOpKeyframe(CSSPropertyID::kBackdropFilter, "blur(10px)",
++                              1.0));
++  auto* keyframe_effect1 =
++      MakeGarbageCollected<KeyframeEffect>(element_.Get(), effect1, timing_);
++  Animation* animation1 = timeline_->Play(keyframe_effect1);
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_EQ(CheckCanStartEffectOnCompositor(timing_, *element_.Get(),
++                                            animation1, *effect1),
++            CompositorAnimations::kNoFailure);
++
++  // Reference filters on backdrop-filter cannot be interpolated or composited.
++  StringKeyframeEffectModel* effect2 = CreateKeyframeEffectModel(
++      CreateReplaceOpKeyframe(CSSPropertyID::kBackdropFilter, "none", 0),
++      CreateReplaceOpKeyframe(CSSPropertyID::kBackdropFilter, "url(#f)", 1.0));
++  auto* keyframe_effect2 =
++      MakeGarbageCollected<KeyframeEffect>(element_.Get(), effect2, timing_);
++  Animation* animation2 = timeline_->Play(keyframe_effect2);
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_TRUE(CheckCanStartEffectOnCompositor(timing_, *element_.Get(),
++                                              animation2, *effect2) &
++              CompositorAnimations::kUnsupportedCSSProperty);
++}
++
+ TEST_P(AnimationCompositorAnimationsTest,
+        CanStartElementOnCompositorEffectTransform) {
+   const auto& style = GetDocument().GetStyleResolver().InitialStyle();

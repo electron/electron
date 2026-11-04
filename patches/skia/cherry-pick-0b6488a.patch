@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 26 Oct 2026 21:46:47 -0400
+Subject: [graphite] Include hairline and subpixel strokes in inflation radius
+
+Clarifies that `Shape::getInflationRadius` applies only to regular
+strokes and not hairlines. Adds asserts to catch the unexpected case
+where CoverBoundsRenderStep would hit w/o being a regular stroke.
+
+Logic in ClipStack's draw bounds calculations is cleaned up to either
+handle the fill path (no outset, or 1/2 local pixel outset if it's
+subpixel), or the stroke/hairline path. The stroke/hairline path is
+merged now by using the local pixel width as the minimum local stroke
+width. Hairlines and subpixel strokes are automatically expanded to
+this, which simplifies some of the conditions from the old code.
+
+By handling hairlines this way, they get now take into account the rest
+of the join and cap styling's impact on their local bounds. This is most
+significant for hairlines with large miter limits.
+
+A small change with this is that when we add the local AA outset for
+subpixel fills, subpixel strokes, and hairlines, the old code outset by
+a full pixel on each axis. This CL changes it to be half a pixel
+(locally conservative), which is sufficient given the ClipStack's
+implicit 1/2px outset allowance already.
+
+Bug: 577352772
+Fixed: 577352772
+Change-Id: I5fc0e86094eff198059e9352e876b4c382eac949
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1406296
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/gpu/graphite/ClipStack.cpp b/src/gpu/graphite/ClipStack.cpp
+index b3990f189c752b25fb4695334420a6fbd99b59a4..a01be32e62edfe1b346d4e7a4ccee1ff8ffb45b5 100644
+--- a/src/gpu/graphite/ClipStack.cpp
++++ b/src/gpu/graphite/ClipStack.cpp
+@@ -1371,21 +1371,24 @@ bool ClipStack::DrawShape::applyStyle(const SkStrokeRec& style, const Rect& devi
+         fLocalToDevice = Transform::Identity();
+         fShapeMatchesGeometry = false;
+     } else {
+-        // SkStrokeRec::GetInflationRadius() returns a device-space inflation for hairlines.
+         float localOutset = 0.f;
+-        if (!style.isFillStyle() && !style.isHairlineStyle()) {
++        if (style.isFillStyle()) {
++            // If the shape projects to a subpixel shape, expand the local bounds by the AA radius
++            // to create a conservative clip query that preserves the oriented bounding box.
++            if (!fShape.inverted() && any(origSize < localAAOutset)) {
++                localOutset = 0.5f * localAAOutset;
++            }
++        } else {
++            // getInflationRadius() does not handle device-space inflation for hairlines, but to
++            // preserve the bounding box in local space for as long as possible, use the
++            // `localAAOutset` as a conservative estimate for the local stroke radius that would
++            // cover the hairline.
++            //
++            // For local strokes that project to a subpixel shape, clamp to the localAAOutset as
++            // well to handle rendering that pads beyond the 1/2px outset in the subpixel case.
++            const float strokeWidth = std::max(localAAOutset, style.getWidth());
+             localOutset = fShape.getInflationRadius(
+-                    style.getJoin(), style.getMiter(), style.getCap(), style.getWidth());
+-        }
+-
+-        if (style.isHairlineStyle() ||
+-            (!style.isFillStyle() && style.getWidth() < localAAOutset) ||
+-            (style.isFillStyle() && !fShape.inverted() && any(origSize < localAAOutset))) {
+-            // The geometry is a hairline or projects to a subpixel shape, so rendering will not
+-            // follow the typical 1/2px outset anti-aliasing that is compatible with clipping.
+-            // In this case, apply the local AA radius to the shape to have a conservative clip
+-            // query while preserving the oriented bounding box.
+-            localOutset += localAAOutset;
++                    style.getJoin(), style.getMiter(), style.getCap(), strokeWidth);
+         }
+ 
+         if (localOutset > 0.f) {
+diff --git a/src/gpu/graphite/draw/DrawParams.h b/src/gpu/graphite/draw/DrawParams.h
+index 561e2da980a5978fffa4cd3773930cb591d8f767..19e8bed6cb5b638657e461a9f4ae30ecc303d3b1 100644
+--- a/src/gpu/graphite/draw/DrawParams.h
++++ b/src/gpu/graphite/draw/DrawParams.h
+@@ -198,9 +198,11 @@ public:
+         return *fStroke;
+     }
+ 
++    // Returns local bounds adjusted for stroke style; does not take into account fill inversion or
++    // or device-space bounds adjustments like hairlines or anti-aliasing.
+     Rect styledBounds() const {
+         Rect localBounds = fGeometry.bounds();
+-        if (this->isStroke() && fGeometry.isShape()) {
++        if (this->isStroke() && fStroke->halfWidth() > 0.f && fGeometry.isShape()) {
+             float localOutset = fGeometry.shape().getInflationRadius(fStroke->join(),
+                                                                      fStroke->miterLimit(),
+                                                                      fStroke->cap(),
+diff --git a/src/gpu/graphite/geom/Shape.cpp b/src/gpu/graphite/geom/Shape.cpp
+index b762f582fe8532dc038ccb79de11d05863625fd3..bb288c9cd0247b4cf68c8054e395196aead7ce0b 100644
+--- a/src/gpu/graphite/geom/Shape.cpp
++++ b/src/gpu/graphite/geom/Shape.cpp
+@@ -144,7 +144,7 @@ float Shape::getInflationRadius(SkPaint::Join join,
+                                 float miterLimit,
+                                 SkPaint::Cap cap,
+                                 float strokeWidth) const {
+-    SkASSERT(miterLimit >= 0.f && strokeWidth >= 0.f);
++    SkASSERT(miterLimit >= 0.f && strokeWidth > 0.f);
+     // Rectangles, rounded rectangles, and lines do not produce miters so don't count the
+     // pessimistic limit against their draw bounds.
+     const float effectiveMiterLimit = this->isPath() ? miterLimit : 1.f;
+diff --git a/src/gpu/graphite/geom/Shape.h b/src/gpu/graphite/geom/Shape.h
+index b9e4c7701583b129189723359663de87024acb81..5b16b2e1568762ab594ae83d3f7d91ed3ba222ea 100644
+--- a/src/gpu/graphite/geom/Shape.h
++++ b/src/gpu/graphite/geom/Shape.h
+@@ -118,7 +118,9 @@ public:
+     SkPath asPath() const;
+ 
+     // Calculate the conservative amount of outset that stroking adds to the Shape's bounds,
+-    // taking advantage of the shape's type
++    // taking advantage of the shape's type. This should only be called for local stroking, since
++    // it returns a value based on the vector concept of a stroke, and does not handle hairlines or
++    // anti-aliasing inflation logic.
+     float getInflationRadius(SkPaint::Join join,
+                              float miterLimit,
+                              SkPaint::Cap cap,
+diff --git a/src/gpu/graphite/render/CoverBoundsRenderStep.cpp b/src/gpu/graphite/render/CoverBoundsRenderStep.cpp
+index 689dc96aaf4700a9806dbbcd47857f713ed5be55..19c122774e63b125be03510c122c09f74dde5ac3 100644
+--- a/src/gpu/graphite/render/CoverBoundsRenderStep.cpp
++++ b/src/gpu/graphite/render/CoverBoundsRenderStep.cpp
+@@ -90,6 +90,9 @@ void CoverBoundsRenderStep::writeVertices(DrawWriter* writer,
+     } else {
+         // If there's a stroke style, the bounding box needs to increase by the stroke radius.
+         // This is not necessary for inverted fills since that maximally covers the clip.
++        // styledBounds() is sufficient because CoverBoundsRenderStep is used for inverse-strokes
++        // (not this branch) or stroke-and-fills (which don't have hairlines).
++        SkASSERT(!params.isStroke() || params.strokeStyle().halfWidth() > 0.f);
+         bounds = params.styledBounds().ltrb();
+     }
+ 

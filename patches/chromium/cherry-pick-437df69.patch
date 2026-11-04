@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Fri, 30 Oct 2026 07:08:49 -0700
+Subject: Turn main-thread QualifiedNameCache DCHECK into CHECK
+
+It may cause UAF and we should crash in production when this happens.
+
+Bug: 577378379
+Change-Id: I3d4bc256c6837063de7705a391f37e74ec8bd454
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8666584
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: David Baron <dbaron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1731414}
+
+diff --git a/third_party/blink/renderer/core/dom/qualified_name.cc b/third_party/blink/renderer/core/dom/qualified_name.cc
+index a042e87e01eed2ec227016fbd8bb379a7ff70e8a..710bede2704815525dc74fa0a600f1aef42556d1 100644
+--- a/third_party/blink/renderer/core/dom/qualified_name.cc
++++ b/third_party/blink/renderer/core/dom/qualified_name.cc
+@@ -47,7 +47,7 @@ using QualifiedNameCache = HashSet<QualifiedNameImpl*>;
+ 
+ static QualifiedNameCache& GetQualifiedNameCache() {
+   // This code is lockless and thus assumes it all runs on one thread!
+-  DCHECK(IsMainThread());
++  CHECK(IsMainThread());
+   static QualifiedNameCache* g_name_cache = new QualifiedNameCache;
+   return *g_name_cache;
+ }

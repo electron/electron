@@ -141,3 +141,12 @@ fix_handle_a_null_pending_call_in_dbus_objectproxy.patch
 feat_update_executioncontext_api.patch
 use_forward_slashes_for_the_default_crdtp_include_dir_in_templates.patch
 cherry-pick-ef5f5daefb71.patch
+cherry-pick-0112508.patch
+cherry-pick-4a06eeb.patch
+cherry-pick-0a8c558.patch
+cherry-pick-7c84d3e.patch
+cherry-pick-437df69.patch
+cherry-pick-807547c.patch
+cherry-pick-3897d80.patch
+cherry-pick-3d78624.patch
+cherry-pick-f6a48fc.patch
