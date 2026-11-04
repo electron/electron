@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Mon, 12 Oct 2026 10:26:23 -0700
+Subject: [agy][gfx] CHECK buffer dimensions in gbm_wrapper
+
+Add a CHECK in ui::gbm_wrapper::Device::CreateBuffer and
+CreateBufferWithModifiers ensuring requested buffer dimensions do not
+exceed 16384. This prevents huge dimensions from overflowing 32-bit
+stride and size calculations in minigbm and allocating an undersized
+buffer.
+
+Fixed: 536516239
+Test: gl_tests --gtest_filter="OzoneImageBackingFactoryTest.*"
+Change-Id: I197863800201546ca367c7dd7210d0d91c999441
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8131859
+Commit-Queue: Tzarial <zork@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Reviewed-by: Daniel Nicoara <dnicoara@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716893}
+
+diff --git a/ui/gfx/linux/gbm_wrapper.cc b/ui/gfx/linux/gbm_wrapper.cc
+index 6020a6081e961a92b5c04c04a5c60b416d7db313..1474647e8cfd4ea2ba933d4000df9cd675c904be 100644
+--- a/ui/gfx/linux/gbm_wrapper.cc
++++ b/ui/gfx/linux/gbm_wrapper.cc
+@@ -11,6 +11,7 @@
+ #include <utility>
+ #include <vector>
+ 
++#include "base/check_op.h"
+ #include "base/compiler_specific.h"
+ #include "base/logging.h"
+ #include "base/memory/raw_ptr.h"
+@@ -43,6 +44,10 @@ namespace ui {
+ namespace gbm_wrapper {
+ namespace {
+ 
++// Maximum dimension for GBM buffer allocation to prevent integer overflow in
++// minigbm stride/size calculations (https://crbug.com/536516239).
++constexpr int kMaxGbmBufferDimension = 16384;
++
+ uint32_t GetHandleForPlane(struct gbm_bo* bo, int plane) {
+   return gbm_bo_get_handle_for_plane(bo, plane).u32;
+ }
+@@ -312,6 +317,8 @@ class Device final : public ui::GbmDevice {
+   std::unique_ptr<ui::GbmBuffer> CreateBuffer(uint32_t format,
+                                               const gfx::Size& size,
+                                               uint32_t flags) override {
++    CHECK_LE(size.width(), kMaxGbmBufferDimension);
++    CHECK_LE(size.height(), kMaxGbmBufferDimension);
+     struct gbm_bo* bo = gbm_bo_create(device_.get(), size.width(),
+                                       size.height(), format, flags);
+     if (!bo) {
+@@ -339,6 +346,8 @@ class Device final : public ui::GbmDevice {
+     if (modifiers.empty()) {
+       return CreateBuffer(format, requested_size, flags);
+     }
++    CHECK_LE(requested_size.width(), kMaxGbmBufferDimension);
++    CHECK_LE(requested_size.height(), kMaxGbmBufferDimension);
+ 
+     // Buggy drivers prevent us from getting plane FDs from a BO which had its
+     // previously imported BO destroyed. E.g: Nvidia. Thus, on Linux Desktop, we

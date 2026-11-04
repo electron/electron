@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Fri, 23 Oct 2026 10:57:11 -0700
+Subject: Printing: Upgrade a DCHECK() in PrintRenderFrameHelper
+
+A sample CDP driver can trigger a DCHECK() failure in
+PrintRenderFrameHelper::GetPrintManagerHost(). Upgrade it to a CHECK()
+so the renderer crashes instead of doing something worse.
+
+Bug: 574409275
+Change-Id: I1cad28c41e5e006a462578820b5b35969652bc43
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8638189
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Reviewed-by: Peter Kvitek <kvitekp@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1726016}
+
+diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
+index 7bc39de06fe96171549d141d281717a954b4bdc9..8c3322a070e39ba952f0fce6f49c427925aa02d7 100644
+--- a/components/printing/renderer/print_render_frame_helper.cc
++++ b/components/printing/renderer/print_render_frame_helper.cc
+@@ -1163,7 +1163,7 @@ PrintRenderFrameHelper::~PrintRenderFrameHelper() = default;
+ const mojo::AssociatedRemote<mojom::PrintManagerHost>&
+ PrintRenderFrameHelper::GetPrintManagerHost() {
+   // We should not make calls back to the host while handling PrintWithParams().
+-  DCHECK(!print_with_params_callback_);
++  CHECK(!print_with_params_callback_);
+ 
+   if (!print_manager_host_) {
+     render_frame()->GetRemoteAssociatedInterfaces()->GetInterface(

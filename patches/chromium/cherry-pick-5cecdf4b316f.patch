@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mingyu Lei <leimy@chromium.org>
+Date: Thu, 29 Oct 2026 00:28:57 -0700
+Subject: [M156] FSA: block hypervisor host-share roots and sensitive paths on
+ Windows
+
+Original change's description:
+> FSA: block hypervisor host-share roots and sensitive paths on Windows
+>
+> On Windows guest VMs (Parallels, VMware, VirtualBox), hypervisor
+> shared-folder providers expose the host filesystem via UNC namespaces
+> (\\Mac, \\psf, \\vmware-host, \\.host, \\vboxsvr, \\vboxsrv) that do not
+> match drive-letter blocklist rules or MaybeIsLocalUNCPath().
+>
+> Rather than blanket-blocking all children under these UNC servers (which
+> would break legitimate VM use cases where Desktop, Documents, Downloads,
+> or project shares map to hypervisor UNC paths), this CL:
+> - Treats hypervisor share roots (e.g. \\Mac\Home, \\Mac\AllFiles,
+>   \\vmware-host\Shared Folders\<share>, \\vboxsvr\<share>) and top-level
+>   user folders (Desktop, Documents, Downloads) as kDontBlockChildren,
+>   preventing sites from obtaining a directory grant to the entire host
+>   home or share root while allowing access to subdirectories and files.
+> - Blocks sensitive host subdirectories (.ssh, .gnupg, Library, .config,
+>   .cache, .dbus, Applications, AppData) and shell startup dotfiles
+>   (.zshenv, .zshrc, .bashrc, .bash_profile, .profile) under hypervisor
+>   share roots with kBlockAllChildren (while preserving macOS
+>   Library/CloudStorage, Library/Containers, and Library/Mobile Documents
+>   exceptions).
+> - Adds suffix blocklist rules for .ssh and .gnupg with
+>  `kBlockAllChildren`.
+>
+> Bug: 561994040
+> Change-Id: I24ecb084ba467b92ae0520854f48f5c0fc2c5e2c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8424981
+> Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+> Commit-Queue: Mingyu Lei <leimy@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1725532}
+
+(cherry picked from commit bc29f4524cf9032462afd9ed237dc1c280df519c)
+
+Bug: 578796989,561994040
+Change-Id: I24ecb084ba467b92ae0520854f48f5c0fc2c5e2c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8675578
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Mingyu Lei <leimy@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1737}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+index e36bd624cad112b4047253b9623431f7b1879fdc..3b182bfac31110162bb01c0e4945b8a5374c66ee 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -281,8 +281,32 @@ bool ContainsInvalidDNSCharacter(base::FilePath::StringType hostname) {
+   return false;
+ }
+ 
++bool IsLocalUNCServer(base::FilePath::StringViewType server) {
++  if (server.size() > 1 && server.back() == FILE_PATH_LITERAL('.')) {
++    server.remove_suffix(1);
++  }
++  static constexpr base::FilePath::StringViewType kLocalServers[] = {
++      FILE_PATH_LITERAL("localhost"),
++      FILE_PATH_LITERAL("wsl.localhost"),
++      // Hypervisor host-share redirectors (Parallels, VMware, VirtualBox).
++      FILE_PATH_LITERAL("mac"),
++      FILE_PATH_LITERAL("psf"),
++      FILE_PATH_LITERAL("vmware-host"),
++      FILE_PATH_LITERAL(".host"),
++      FILE_PATH_LITERAL("vboxsvr"),
++      FILE_PATH_LITERAL("vboxsrv"),
++  };
++  for (const auto& candidate : kLocalServers) {
++    if (base::FilePath::CompareEqualIgnoreCase(server, candidate)) {
++      return true;
++    }
++  }
++  return false;
++}
++
+ // Returns true if the path is a Universal Naming Convention (UNC) path pointing
+-// to a local system path, device namespace, or WSL loopback redirector.
++// to a local system path, device namespace, WSL loopback redirector, or
++// hypervisor host-share namespace.
+ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+   if (!path.IsNetwork()) {
+     return false;
+@@ -291,16 +315,11 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+   const std::vector<base::FilePath::StringType> components =
+       path.GetComponents();
+ 
+-  // Check for server name that could represent a local system. We only
++  // Check for server name that could represent a local or host system. We only
+   // check for a very short list, as it is impossible to cover all different
+   // variants on Windows.
+   if (components.size() >= 2 &&
+-      (base::FilePath::CompareEqualIgnoreCase(components[1],
+-                                              FILE_PATH_LITERAL("localhost")) ||
+-       base::FilePath::CompareEqualIgnoreCase(
+-           components[1], FILE_PATH_LITERAL("wsl.localhost")) ||
+-       base::FilePath::CompareEqualIgnoreCase(
+-           components[1], FILE_PATH_LITERAL("wsl.localhost.")) ||
++      (IsLocalUNCServer(components[1]) ||
+        components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
+        components[1] == FILE_PATH_LITERAL(".") ||
+        components[1] == FILE_PATH_LITERAL("?") ||
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+index 1d77fe929bd3aed865a47480fa89863b7a98f7d4..cb7f1e3e1c24f91c0f18211fd87dfe17c1ab7e9b 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+@@ -1422,6 +1422,36 @@ TEST_F(ChromeFileSystemAccessPermissionContextNoSymbolicLinkCheckTest,
+             SensitiveDirectoryResult::kAllowed);
+ }
+ 
++// Verifies that hypervisor host-share UNC paths (Parallels, VMware, VirtualBox)
++// are blocked by `MaybeIsLocalUNCPath()`.
++TEST_F(ChromeFileSystemAccessPermissionContextNoSymbolicLinkCheckTest,
++       ConfirmSensitiveEntryAccess_HypervisorHostShareUNC) {
++  static constexpr const base::FilePath::CharType* kBlockedPaths[] = {
++      FILE_PATH_LITERAL("\\\\Mac\\Home"),
++      FILE_PATH_LITERAL("\\\\MAC\\home"),
++      FILE_PATH_LITERAL("\\\\Mac.\\Home"),
++      FILE_PATH_LITERAL("\\\\Mac\\AllFiles"),
++      FILE_PATH_LITERAL("\\\\Mac\\Home\\.ssh\\id_rsa"),
++      FILE_PATH_LITERAL("\\\\Mac\\Home\\.zshenv"),
++      FILE_PATH_LITERAL("\\\\psf\\Home"),
++      FILE_PATH_LITERAL("\\\\psf.\\Home"),
++      FILE_PATH_LITERAL("\\\\vmware-host\\Shared Folders"),
++      FILE_PATH_LITERAL("\\\\vmware-host.\\Shared Folders"),
++      FILE_PATH_LITERAL("\\\\.host\\Shared Folders"),
++      FILE_PATH_LITERAL("\\\\.host.\\Shared Folders"),
++      FILE_PATH_LITERAL("\\\\vboxsvr\\share"),
++      FILE_PATH_LITERAL("\\\\vboxsvr.\\share"),
++      FILE_PATH_LITERAL("\\\\vboxsrv\\share"),
++  };
++  for (const auto* path : kBlockedPaths) {
++    EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                  permission_context(), PathInfo(path), HandleType::kDirectory,
++                  AccessTrigger::kOpen),
++              SensitiveDirectoryResult::kAbort)
++        << "Expected blocked path: " << path;
++  }
++}
++
+ #endif  // BUILDFLAG(IS_WIN)
+ 
+ // Testing that the */.git/hooks are all blocked.

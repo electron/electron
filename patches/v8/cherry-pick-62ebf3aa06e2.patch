@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Thu, 8 Oct 2026 19:12:37 +0200
+Subject: [parser] Report kStrictEvalArguments in destructuring sub-patterns
+
+In strict mode, `IsValidReferenceExpression(result)` returns `false` for
+`eval` and `arguments` because `IsAssignableIdentifier(result)` is
+`false`.
+
+Previously, `ParsePossibleDestructuringSubPattern` gated its identifier
+branch on `IsValidReferenceExpression(result)` and fell through to
+recording `kInvalidDestructuringTarget` when `result` was `eval` or
+`arguments` in strict mode. As a result, `"use strict"; [eval] = []`,
+`"use strict"; let [eval] = []`, and `"use strict"; ({a: eval} = {})`
+reported `Invalid destructuring assignment target` instead of
+`Unexpected eval or arguments in strict mode` (unlike shorthand
+`"use strict"; ({eval} = {})`).
+
+Similarly, `ParseProperty` (`case Token::kEllipsis`) checked
+`!IsValidReferenceExpression(expression)`, causing
+`"use strict"; ({...eval}) => {}` and
+`"use strict"; function f({...eval}) {}` to report
+`` `...` must be followed by an identifier in declaration contexts ``
+even though `eval` is an identifier.
+
+Check `impl()->IsIdentifier` directly in both places and record
+`kStrictEvalArguments` as a pattern error when `!IsAssignableIdentifier`
+in `ParsePossibleDestructuringSubPattern`.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Id613dd31199f7702f94815150ad3320befb9e8ba
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8538075
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110479}
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 5eede6daa029df8d7836b83cf1087357fa8d3a7a..36935bf590bda83bed1965ebc7af154d2f08a3c1 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -2607,7 +2607,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseProperty(
+             ParsePossibleDestructuringSubPattern(prop_info->accumulation_scope);
+         prop_info->kind = ParsePropertyKind::kSpread;
+ 
+-        if (!IsValidReferenceExpression(expression)) {
++        if (!impl()->IsIdentifier(expression) && !expression->IsProperty()) {
+           if (prop_info->accumulation_scope != nullptr) {
+             prop_info->accumulation_scope->ValidateExpression();
+           }
+@@ -5664,26 +5664,26 @@ ParserBase<Impl>::ParsePossibleDestructuringSubPattern(
+   AcceptINScope accept_in_scope(this, true);
+   ExpressionT result = ParseAssignmentExpressionCoverGrammar();
+ 
+-  if (IsValidReferenceExpression(result)) {
+-    // Parenthesized identifiers and property references are allowed as part of
+-    // a larger assignment pattern, even though parenthesized patterns
+-    // themselves are not allowed, e.g., "[(x)] = []". Only accumulate
+-    // assignment pattern errors if the parsed expression is more complex.
+-    if (impl()->IsIdentifier(result)) {
+-      if (result->is_parenthesized()) {
+-        expression_scope()->RecordDeclarationError(
+-            Scanner::Location(begin, end_position()),
+-            MessageTemplate::kInvalidDestructuringTarget);
+-      }
+-      IdentifierT identifier = impl()->AsIdentifier(result);
+-      ClassifyParameter(identifier, begin, end_position());
+-    } else {
+-      DCHECK(result->IsProperty());
++  // Parenthesized identifiers and property references are allowed as part of
++  // a larger assignment pattern, even though parenthesized patterns
++  // themselves are not allowed, e.g., "[(x)] = []". Only accumulate
++  // assignment pattern errors if the parsed expression is more complex.
++  if (impl()->IsIdentifier(result)) {
++    if (result->is_parenthesized()) {
+       expression_scope()->RecordDeclarationError(
+           Scanner::Location(begin, end_position()),
+-          MessageTemplate::kInvalidPropertyBindingPattern);
+-      if (scope != nullptr) scope->ValidateExpression();
++          MessageTemplate::kInvalidDestructuringTarget);
+     }
++    if (!IsAssignableIdentifier(result)) {
++      expression_scope()->RecordPatternError(
++          Scanner::Location(begin, end_position()),
++          MessageTemplate::kStrictEvalArguments);
++    }
++  } else if (result->IsProperty()) {
++    expression_scope()->RecordDeclarationError(
++        Scanner::Location(begin, end_position()),
++        MessageTemplate::kInvalidPropertyBindingPattern);
++    if (scope != nullptr) scope->ValidateExpression();
+   } else if (result->is_parenthesized() ||
+              (!result->IsPattern() && !result->IsAssignment())) {
+     if (scope != nullptr) scope->ValidateExpression();
+diff --git a/test/mjsunit/es6/regress-strict-eval-destructuring-subpattern.js b/test/mjsunit/es6/regress-strict-eval-destructuring-subpattern.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..578b32e1aca1f733e35319ec06ed8cfe056d50eb
+--- /dev/null
++++ b/test/mjsunit/es6/regress-strict-eval-destructuring-subpattern.js
+@@ -0,0 +1,34 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// In strict mode, `eval` and `arguments` in destructuring sub-patterns and
++// object rest properties must report `kStrictEvalArguments` rather than
++// generic destructuring target errors.
++
++const cases = [
++  '"use strict"; [eval] = [];',
++  '"use strict"; [arguments] = [];',
++  '"use strict"; [...eval] = [];',
++  '"use strict"; let [eval] = [];',
++  '"use strict"; let [...eval] = [];',
++  '"use strict"; ({a: eval} = {});',
++  '"use strict"; ({a: arguments} = {});',
++  '"use strict"; let {a: eval} = {};',
++  '"use strict"; ({...eval} = {});',
++  '"use strict"; ({...arguments} = {});',
++  '"use strict"; let {...eval} = {};',
++  '"use strict"; ([eval]) => {};',
++  '"use strict"; ({a: eval}) => {};',
++  '"use strict"; ({...eval}) => {};',
++  '"use strict"; function f([eval]) {}',
++  '"use strict"; function f({a: eval}) {}',
++  '"use strict"; function f({...eval}) {}',
++];
++
++for (const code of cases) {
++  assertThrows(
++      () => eval(code),
++      SyntaxError,
++      "Unexpected eval or arguments in strict mode");
++}

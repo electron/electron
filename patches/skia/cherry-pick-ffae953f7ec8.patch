@@ -1,0 +1,468 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Fri, 25 Sep 2026 17:51:41 -0400
+Subject: [ganesh] Handle deferred writePixels failure
+
+When deferred texture uploads (ASAP or inline) or GrGpu::writePixels
+failed, Ganesh previously ignored the return status and proceeded with
+draw execution. This caused subsequent draws to sample unwritten,
+recycled, or uninitialized texture memory.
+
+This CL plumbs upload success/failure throughout the Ganesh flush
+pipeline:
+
+- Draws dependent on failed uploads are skipped during flush execution
+  rather than sampling corrupt texture state.
+- Backend OpsRenderPass implementations now propagate inline upload
+  status instead of returning true unconditionally.
+- DrawOpAtlas plots that fail to upload are cleanly evicted and reset
+  so client caches are purged and plot capacity is reclaimed.
+- GrOpFlushState::doUpload defensively guards against null proxies
+  and surfaces to prevent crashes under OOM or context loss.
+
+Bug: b/553130328
+Change-Id: Ic9970eb327c98b94c9fb5225d1073db5a40a978b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1369317
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+
+diff --git a/src/gpu/ganesh/GrAtlasTypes.cpp b/src/gpu/ganesh/GrAtlasTypes.cpp
+index 03b689185d765c60b851ebc7ea019715ce812d7b..5634bf18136ba857219d22f9c0cbc5212b4a73bc 100644
+--- a/src/gpu/ganesh/GrAtlasTypes.cpp
++++ b/src/gpu/ganesh/GrAtlasTypes.cpp
+@@ -37,6 +37,7 @@ GrPlot::GrPlot(int pageIndex,
+         , fBytesPerPixel(bpp)
+ #ifdef SK_DEBUG
+         , fDirty(false)
++        , fUploadInFlight(false)
+ #endif
+ {
+     // We expect the allocated dimensions to be a multiple of 4 bytes
+@@ -114,11 +115,13 @@ bool GrPlot::addSubImage(int width, int height, const void* image, GrAtlasLocato
+ }
+ 
+ std::pair<const void*, SkIRect> GrPlot::prepareForUpload() {
+-    // We should only be issuing uploads if we are dirty
+-    SkASSERT(fDirty);
+-    if (!fData) {
++    if (!fData || fDirtyRect.isEmpty()) {
+         return {nullptr, {}};
+     }
++    // We should only be issuing uploads if we are dirty
++    SkASSERT(fDirty);
++    SkASSERT(!fUploadInFlight);
++    SkDEBUGCODE(fUploadInFlight = true;)
+     const std::byte* dataPtr;
+     SkIRect offsetRect;
+     // Clamp to 4-byte aligned boundaries
+@@ -133,9 +136,8 @@ std::pair<const void*, SkIRect> GrPlot::prepareForUpload() {
+     dataPtr += fBytesPerPixel * fDirtyRect.fLeft;
+     offsetRect = fDirtyRect.makeOffset(fOffset.fX, fOffset.fY);
+ 
+-    fDirtyRect.setEmpty();
+-    SkDEBUGCODE(fDirty = false);
+-
++    // We cannot clear the dirty rect here because we do not know the results of the
++    // associated writePixels call.
+     return {dataPtr, offsetRect};
+ }
+ 
+@@ -156,4 +158,5 @@ void GrPlot::resetRects(bool freeData) {
+ 
+     fDirtyRect.setEmpty();
+     SkDEBUGCODE(fDirty = false;)
++    SkDEBUGCODE(fUploadInFlight = false;)
+ }
+diff --git a/src/gpu/ganesh/GrAtlasTypes.h b/src/gpu/ganesh/GrAtlasTypes.h
+index 32257ffb1e4fed7a888235d41abc920e119980aa..b08d0e4d0be9a8d40f85bc0164228e9b51514ee2 100644
+--- a/src/gpu/ganesh/GrAtlasTypes.h
++++ b/src/gpu/ganesh/GrAtlasTypes.h
+@@ -354,12 +354,18 @@ public:
+ 
+     bool needsUpload() { return !fDirtyRect.isEmpty(); }
+     std::pair<const void*, SkIRect> prepareForUpload();
++    void clearDirty() {
++        fDirtyRect.setEmpty();
++        SkDEBUGCODE(fDirty = false;)
++        SkDEBUGCODE(fUploadInFlight = false;)
++    }
+     // Re-initialize Plot. The client should ensure that they process any eviction callbacks
+     // before calling this, otherwise any cached references will point to invalid data.
+     // If freeData is true, this will free the backing data as well. This should only be used
+     // when we know we won't be adding to the Plot immediately afterwards.
+     void resetRects(bool freeData);
+ 
++
+     /**
+      * Create a clone of this plot. The cloned plot will take the place of the current plot in
+      * the atlas
+@@ -405,6 +411,7 @@ private:
+     const size_t fBytesPerPixel;
+     SkIRect fDirtyRect;  // area in the Plot that needs to be uploaded
+     SkDEBUGCODE(bool fDirty;)
++    SkDEBUGCODE(bool fUploadInFlight;)
+ };
+ 
+ typedef SkTInternalLList<GrPlot> GrPlotList;
+diff --git a/src/gpu/ganesh/GrDeferredProxyUploader.h b/src/gpu/ganesh/GrDeferredProxyUploader.h
+index 10f1fd23985439ac33c18c35d6814c5beef63ff5..7f9c542c4374c6c839a61d732dc1be24c9e8ee02 100644
+--- a/src/gpu/ganesh/GrDeferredProxyUploader.h
++++ b/src/gpu/ganesh/GrDeferredProxyUploader.h
+@@ -55,17 +55,18 @@ public:
+         auto uploadMask = [this, proxy](GrDeferredTextureUploadWritePixelsFn& writePixelsFn) {
+             this->wait();
+             GrColorType pixelColorType = SkColorTypeToGrColorType(this->fPixels.info().colorType());
+-            // If the worker thread was unable to allocate pixels, this check will fail, and we'll
+-            // end up drawing with an uninitialized mask texture, but at least we won't crash.
++            // If the worker thread was unable to allocate pixels, this check will fail.
++            bool success = false;
+             if (this->fPixels.addr()) {
+-                writePixelsFn(proxy,
+-                              SkIRect::MakeSize(fPixels.dimensions()),
+-                              pixelColorType,
+-                              this->fPixels.addr(),
+-                              this->fPixels.rowBytes());
++                success = writePixelsFn(proxy,
++                                        SkIRect::MakeSize(fPixels.dimensions()),
++                                        pixelColorType,
++                                        this->fPixels.addr(),
++                                        this->fPixels.rowBytes());
+             }
+             // Upload has finished, so tell the proxy to release this GrDeferredProxyUploader
+             proxy->texPriv().resetDeferredUploader();
++            return success;
+         };
+         flushState->addASAPUpload(std::move(uploadMask));
+         fScheduledUpload = true;
+diff --git a/src/gpu/ganesh/GrDeferredUpload.h b/src/gpu/ganesh/GrDeferredUpload.h
+index 728add91d4a716cd7cc7261077ec2677e2342777..8cd341575b969d58998f1e835896ba93855c239f 100644
+--- a/src/gpu/ganesh/GrDeferredUpload.h
++++ b/src/gpu/ganesh/GrDeferredUpload.h
+@@ -50,7 +50,8 @@ using GrDeferredTextureUploadWritePixelsFn = std::function<bool(GrTextureProxy*,
+  * GrDeferredTextureUploadWritePixelsFn as a parameter. It is called when it should perform its
+  * upload as the draw/upload sequence is executed.
+  */
+-using GrDeferredTextureUploadFn = std::function<void(GrDeferredTextureUploadWritePixelsFn&)>;
++using GrDeferredTextureUploadFn =
++        std::function<bool(GrDeferredTextureUploadWritePixelsFn&)>;
+ 
+ /**
+  * An interface for scheduling deferred uploads. It accepts asap and deferred inline uploads.
+diff --git a/src/gpu/ganesh/GrDrawOpAtlas.cpp b/src/gpu/ganesh/GrDrawOpAtlas.cpp
+index d3672a9e0eceac4e61933c502ae2fe829bae6265..6ec6d8cf2c98fd717e1622a3cedb7397a643168b 100644
+--- a/src/gpu/ganesh/GrDrawOpAtlas.cpp
++++ b/src/gpu/ganesh/GrDrawOpAtlas.cpp
+@@ -142,7 +142,7 @@ inline void GrDrawOpAtlas::processEviction(GrPlotLocator plotLocator) {
+     fAtlasGeneration = fGenerationCounter->next();
+ }
+ 
+-void GrDrawOpAtlas::uploadPlotToTexture(GrDeferredTextureUploadWritePixelsFn& writePixels,
++bool GrDrawOpAtlas::uploadPlotToTexture(GrDeferredTextureUploadWritePixelsFn& writePixels,
+                                         GrTextureProxy* proxy,
+                                         GrPlot* plot) {
+     SkASSERT(proxy && proxy->peekTexture());
+@@ -151,12 +151,24 @@ void GrDrawOpAtlas::uploadPlotToTexture(GrDeferredTextureUploadWritePixelsFn& wr
+     const void* dataPtr;
+     SkIRect rect;
+     std::tie(dataPtr, rect) = plot->prepareForUpload();
++    if (!dataPtr || rect.isEmpty()) {
++        // Nothing to upload (e.g. the plot was reset after this upload was
++        // scheduled). This is not a failure.
++        plot->clearDirty();
++        return true;
++    }
+ 
+-    writePixels(proxy,
+-                rect,
+-                SkColorTypeToGrColorType(fColorType),
+-                dataPtr,
+-                fBytesPerPixel*fPlotWidth);
++    if (!writePixels(proxy,
++                     rect,
++                     SkColorTypeToGrColorType(fColorType),
++                     dataPtr,
++                     fBytesPerPixel*fPlotWidth)) {
++        this->processEvictionAndResetRects(plot);
++        return false;
++    } else {
++        plot->clearDirty();
++        return true;
++    }
+ }
+ 
+ inline bool GrDrawOpAtlas::updatePlot(GrDeferredUploadTarget* target,
+@@ -180,7 +192,7 @@ inline bool GrDrawOpAtlas::updatePlot(GrDeferredUploadTarget* target,
+ 
+         skgpu::Token lastUploadToken = target->addASAPUpload(
+                 [this, plotsp, proxy](GrDeferredTextureUploadWritePixelsFn& writePixels) {
+-                    this->uploadPlotToTexture(writePixels, proxy, plotsp.get());
++                    return this->uploadPlotToTexture(writePixels, proxy, plotsp.get());
+                 });
+         plot->setLastUploadToken(lastUploadToken);
+     }
+@@ -321,7 +333,7 @@ GrDrawOpAtlas::ErrorCode GrDrawOpAtlas::addToAtlas(GrResourceProvider* resourceP
+ 
+     skgpu::Token lastUploadToken = target->addInlineUpload(
+             [this, plotsp, proxy](GrDeferredTextureUploadWritePixelsFn& writePixels) {
+-                this->uploadPlotToTexture(writePixels, proxy, plotsp.get());
++                return this->uploadPlotToTexture(writePixels, proxy, plotsp.get());
+             });
+     newPlot->setLastUploadToken(lastUploadToken);
+ 
+diff --git a/src/gpu/ganesh/GrDrawOpAtlas.h b/src/gpu/ganesh/GrDrawOpAtlas.h
+index d5430e7a249cfd2db8b6c8dbea65aaf0edcb4bcf..5550c6c38f4a554246da41ba650d6fe078da2dac 100644
+--- a/src/gpu/ganesh/GrDrawOpAtlas.h
++++ b/src/gpu/ganesh/GrDrawOpAtlas.h
+@@ -210,9 +210,9 @@ private:
+                       const void* image,
+                       GrAtlasLocator*);
+ 
+-    void uploadPlotToTexture(GrDeferredTextureUploadWritePixelsFn& writePixels,
+-                             GrTextureProxy* proxy,
+-                             GrPlot* plot);
++    [[nodiscard]] bool uploadPlotToTexture(GrDeferredTextureUploadWritePixelsFn& writePixels,
++                                           GrTextureProxy* proxy,
++                                           GrPlot* plot);
+ 
+     bool createPages(GrProxyProvider*, GrAtlasGenerationCounter*);
+     bool activateNewPage(GrResourceProvider*);
+diff --git a/src/gpu/ganesh/GrGpu.h b/src/gpu/ganesh/GrGpu.h
+index 5cac961e748ca1021a63014df80f83e011456db4..23744dc58716efbae442c9b140fe21f20becc13a 100644
+--- a/src/gpu/ganesh/GrGpu.h
++++ b/src/gpu/ganesh/GrGpu.h
+@@ -288,24 +288,24 @@ public:
+      *              the color type is not allowed for the format of the surface or
+      *              if the rectangle written is not contained in the surface.
+      */
+-    bool writePixels(GrSurface* surface,
+-                     SkIRect rect,
+-                     GrColorType surfaceColorType,
+-                     GrColorType srcColorType,
+-                     const GrMipLevel texels[],
+-                     int mipLevelCount,
+-                     bool prepForTexSampling = false);
++    [[nodiscard]] bool writePixels(GrSurface* surface,
++                                   SkIRect rect,
++                                   GrColorType surfaceColorType,
++                                   GrColorType srcColorType,
++                                   const GrMipLevel texels[],
++                                   int mipLevelCount,
++                                   bool prepForTexSampling = false);
+ 
+     /**
+      * Helper for the case of a single level.
+      */
+-    bool writePixels(GrSurface* surface,
+-                     SkIRect rect,
+-                     GrColorType surfaceColorType,
+-                     GrColorType srcColorType,
+-                     const void* buffer,
+-                     size_t rowBytes,
+-                     bool prepForTexSampling = false) {
++    [[nodiscard]] bool writePixels(GrSurface* surface,
++                                   SkIRect rect,
++                                   GrColorType surfaceColorType,
++                                   GrColorType srcColorType,
++                                   const void* buffer,
++                                   size_t rowBytes,
++                                   bool prepForTexSampling = false) {
+         GrMipLevel mipLevel = {buffer, rowBytes, nullptr};
+         return this->writePixels(surface,
+                                  rect,
+diff --git a/src/gpu/ganesh/GrOpFlushState.cpp b/src/gpu/ganesh/GrOpFlushState.cpp
+index c334cf9349ee2c65c2497904d01ca6c0a1d29f80..9b20ac81b7fd048564b354ad361ac5dec144ff87 100644
+--- a/src/gpu/ganesh/GrOpFlushState.cpp
++++ b/src/gpu/ganesh/GrOpFlushState.cpp
+@@ -59,15 +59,17 @@ void GrOpFlushState::executeDrawsAndUploadsForMeshDrawOp(
+                fCurrUpload->fUploadBeforeToken == drawToken) {
+             if (!this->opsRenderPass()->inlineUpload(this, fCurrUpload->fUpload)) {
+                 drawUploadFailure = true;
++                fDeferredUploadFailed = true;
+             }
+             // Attempt subsequent uploads even if one fails (future draws may depend upon them).
+             ++fCurrUpload;
+         }
+ 
+         // If not all of the uploads succeeded, do not attempt to execute the draw and relevant
+-        // preparations. Continue on to the next draw operation (which may also fail if subsequent
+-        // draw calls depended upon these uploads, but we cannot know that at this point).
+-        if (drawUploadFailure) {
++        // preparations. Continue on to the next draw operation.
++        // fDeferredUploadFailed covers ASAP and inline upload failures: draws in such a flush
++        // may sample texture regions that were never written, so they are skipped.
++        if (drawUploadFailure || fDeferredUploadFailed) {
+             fGpu->stats()->incNumFailedDraws();
+         } else {
+             GrProgramInfo programInfo(this->caps(),
+@@ -102,7 +104,9 @@ bool GrOpFlushState::preExecuteDraws() {
+         return false;
+     }
+     for (auto& upload : fASAPUploads) {
+-        this->doUpload(upload);
++        if (!this->doUpload(upload)) {
++            fDeferredUploadFailed = true;
++        }
+     }
+     // Setup execution iterators.
+     fCurrDraw = fDraws.begin();
+@@ -122,9 +126,10 @@ void GrOpFlushState::reset() {
+     fInlineUploads.reset();
+     fDraws.reset();
+     fBaseDrawToken = skgpu::Token::InvalidToken();
++    fDeferredUploadFailed = false;
+ }
+ 
+-void GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
++bool GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
+                               bool shouldPrepareSurfaceForSampling) {
+     GrDeferredTextureUploadWritePixelsFn wp = [this, shouldPrepareSurfaceForSampling](
+                                                       GrTextureProxy* dstProxy,
+@@ -132,8 +137,11 @@ void GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
+                                                       GrColorType colorType,
+                                                       const void* buffer,
+                                                       size_t rowBytes) {
++        if (!dstProxy) {
++            return false;
++        }
+         GrSurface* dstSurface = dstProxy->peekSurface();
+-        if (!fGpu->caps()->surfaceSupportsWritePixels(dstSurface)) {
++        if (!dstSurface || !fGpu->caps()->surfaceSupportsWritePixels(dstSurface)) {
+             return false;
+         }
+         GrCaps::SupportedWrite supportedWrite = fGpu->caps()->supportedWritePixelsColorType(
+@@ -163,7 +171,7 @@ void GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
+                                        rowBytes,
+                                        shouldPrepareSurfaceForSampling);
+     };
+-    upload(wp);
++    return upload(wp);
+ }
+ 
+ skgpu::Token GrOpFlushState::addInlineUpload(GrDeferredTextureUploadFn&& upload) {
+diff --git a/src/gpu/ganesh/GrOpFlushState.h b/src/gpu/ganesh/GrOpFlushState.h
+index b1d7892563ebbc17e0db378f2a3a2af6d60fe96e..0276a8e92286a21cdeedb72c6a664c9df3c1b574 100644
+--- a/src/gpu/ganesh/GrOpFlushState.h
++++ b/src/gpu/ganesh/GrOpFlushState.h
+@@ -73,7 +73,8 @@ public:
+         surface needs to be prepared for being sampled in a draw after the upload, the caller
+         should pass in true for shouldPrepareSurfaceForSampling. This feature is needed for Vulkan
+         when doing inline uploads to reset the image layout back to sampled. */
+-    void doUpload(GrDeferredTextureUploadFn&, bool shouldPrepareSurfaceForSampling = false);
++    [[nodiscard]] bool doUpload(GrDeferredTextureUploadFn&,
++                                bool shouldPrepareSurfaceForSampling = false);
+ 
+     /** Called as ops are executed. Must be called in the same order as the ops were prepared. */
+     void executeDrawsAndUploadsForMeshDrawOp(const GrOp* op, const SkRect& chainBounds,
+@@ -336,6 +337,12 @@ private:
+     // in fDraws.
+     skgpu::Token fBaseDrawToken = skgpu::Token::InvalidToken();
+ 
++    // Set when a deferred texture upload (ASAP or inline) fails for this flush.
++    // Draws are skipped while this is set because they may sample texture
++    // regions that were never written (e.g. uninitialized or recycled memory
++    // in a deferred-upload atlas).
++    bool fDeferredUploadFailed = false;
++
+     // Info about the op that is currently preparing or executing using the flush state or null if
+     // an op is not currently preparing of executing.
+     OpArgs* fOpArgs = nullptr;
+diff --git a/src/gpu/ganesh/d3d/GrD3DOpsRenderPass.cpp b/src/gpu/ganesh/d3d/GrD3DOpsRenderPass.cpp
+index 5fcea0598d7095e7f7449d917f30daa18053937f..65b248e555606556d7d816606d8877f74ab596b6 100644
+--- a/src/gpu/ganesh/d3d/GrD3DOpsRenderPass.cpp
++++ b/src/gpu/ganesh/d3d/GrD3DOpsRenderPass.cpp
+@@ -347,9 +347,7 @@ bool GrD3DOpsRenderPass::inlineUpload(GrOpFlushState* state, GrDeferredTextureUp
+ 
+     // We pass in true here to signal that after the upload we need to set the upload texture's
+     // resource state back to D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE.
+-    state->doUpload(upload, true);
+-
+-    return true;
++    return state->doUpload(upload, true);
+ }
+ 
+ void GrD3DOpsRenderPass::submit() {
+diff --git a/src/gpu/ganesh/gl/GrGLOpsRenderPass.h b/src/gpu/ganesh/gl/GrGLOpsRenderPass.h
+index 6ed5e9a3ebbbdc3dd4cdd72757008f159b5276ae..764b85f1eadba170cb7c80b20c8fab6c40cce078 100644
+--- a/src/gpu/ganesh/gl/GrGLOpsRenderPass.h
++++ b/src/gpu/ganesh/gl/GrGLOpsRenderPass.h
+@@ -43,8 +43,7 @@ public:
+     GrGLOpsRenderPass(GrGLGpu* gpu) : fGpu(gpu) {}
+ 
+     bool inlineUpload(GrOpFlushState* state, GrDeferredTextureUploadFn& upload) override {
+-        state->doUpload(upload);
+-        return true;
++        return state->doUpload(upload);
+     }
+ 
+     void set(GrRenderTarget*, bool useMSAASurface, const SkIRect& contentBounds, GrSurfaceOrigin,
+diff --git a/src/gpu/ganesh/mock/GrMockOpsRenderPass.h b/src/gpu/ganesh/mock/GrMockOpsRenderPass.h
+index f40c581410a8daaab24b44ce2dce47599665fdd3..07a66729127bb5ecfcc99b84c1ee0d31e8effaa4 100644
+--- a/src/gpu/ganesh/mock/GrMockOpsRenderPass.h
++++ b/src/gpu/ganesh/mock/GrMockOpsRenderPass.h
+@@ -11,6 +11,7 @@
+ #include "include/core/SkRefCnt.h"
+ #include "include/private/gpu/ganesh/GrTypesPriv.h"
+ #include "src/gpu/ganesh/GrDeferredUpload.h"
++#include "src/gpu/ganesh/GrOpFlushState.h"
+ #include "src/gpu/ganesh/GrOpsRenderPass.h"
+ #include "src/gpu/ganesh/GrRenderTarget.h"
+ #include "src/gpu/ganesh/GrTexture.h"
+@@ -23,7 +24,6 @@
+ class GrBuffer;
+ class GrGeometryProcessor;
+ class GrGpu;
+-class GrOpFlushState;
+ class GrPipeline;
+ class GrProgramInfo;
+ class GrScissorState;
+@@ -42,7 +42,9 @@ public:
+     }
+ 
+     GrGpu* gpu() override { return fGpu; }
+-    bool inlineUpload(GrOpFlushState*, GrDeferredTextureUploadFn&) override { return true; }
++    bool inlineUpload(GrOpFlushState* state, GrDeferredTextureUploadFn& upload) override {
++        return state->doUpload(upload);
++    }
+ 
+     int numDraws() const { return fNumDraws; }
+ 
+diff --git a/src/gpu/ganesh/mtl/GrMtlOpsRenderPass.mm b/src/gpu/ganesh/mtl/GrMtlOpsRenderPass.mm
+index 2460fd577f8bc01b51f2e18e9db290828213f9f4..550104eb39c0ab1ffab659e4c1f30b688e52327c 100644
+--- a/src/gpu/ganesh/mtl/GrMtlOpsRenderPass.mm
++++ b/src/gpu/ganesh/mtl/GrMtlOpsRenderPass.mm
+@@ -187,7 +187,7 @@ static MTLPrimitiveType gr_to_mtl_primitive(GrPrimitiveType primitiveType) {
+ }
+ 
+ bool GrMtlOpsRenderPass::inlineUpload(GrOpFlushState* state, GrDeferredTextureUploadFn& upload) {
+-    state->doUpload(upload);
++    bool result = state->doUpload(upload);
+ 
+     // If the previous renderCommandEncoder did a resolve without an MSAA store
+     // (e.g., if the color attachment is memoryless) we need to copy the contents of
+@@ -198,7 +198,7 @@ static MTLPrimitiveType gr_to_mtl_primitive(GrPrimitiveType primitiveType) {
+         this->setupRenderCommandEncoder(nullptr);
+     }
+ 
+-    return true;
++    return result;
+ }
+ 
+ void GrMtlOpsRenderPass::initRenderState(GrMtlRenderCommandEncoder* encoder) {
+diff --git a/src/gpu/ganesh/vk/GrVkOpsRenderPass.cpp b/src/gpu/ganesh/vk/GrVkOpsRenderPass.cpp
+index 8ffed2a35024f75c0924308b93acc4c0029d32ab..f909454b94bba0194bf44dca6467e3f1068dc99f 100644
+--- a/src/gpu/ganesh/vk/GrVkOpsRenderPass.cpp
++++ b/src/gpu/ganesh/vk/GrVkOpsRenderPass.cpp
+@@ -636,11 +636,9 @@ bool GrVkOpsRenderPass::inlineUpload(GrOpFlushState* state, GrDeferredTextureUpl
+ 
+     // We pass in true here to signal that after the upload we need to set the upload textures
+     // layout back to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+-    state->doUpload(upload, /*shouldPrepareSurfaceForSampling=*/true);
+-
++    bool result = state->doUpload(upload, /*shouldPrepareSurfaceForSampling=*/true);
+     this->addAdditionalRenderPass(false);
+-
+-    return true;
++    return result;
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////

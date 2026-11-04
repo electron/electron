@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Fri, 9 Oct 2026 14:44:58 -0700
+Subject: [HiC] Suppress snapshot generation for drawables in top layer
+
+Prior to this CL, the IsInTopLayer() was only applied to the element
+with the `drawable` attribute, without checking its ancestor chain.
+
+Fixed: 568903801
+Change-Id: I89449aa561a6e0a6107575082e11ef2b5d75d453
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8523664
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Auto-Submit: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716033}
+
+Electron adaptation notes (45-x-y): 45-x-y predates the html-in-canvas
+refactors that renamed CompositingReason::kCanvasChild to
+kCanvasDrawableElement and introduced
+LayoutObject::CanvasForDrawingLayoutObject(), so the fix was ported onto
+the branch's inline equivalent (IsA<LayoutBoxModelObject>() +
+Element::CanvasForDrawing() + LayoutObject::IsCanvas()). The ancestor walk
+from the object up to the canvas layout object that checks
+IsRenderedInTopLayer() is unchanged, as is the behaviour: drawables under a
+top-layer ancestor get no canvas compositing reason and fall through to the
+regular compositing reasons. The WPT error-conditions test hunk was not
+taken because it exercises getElementImageDefaultSize(), which does not
+exist on this branch.
+
+diff --git a/third_party/blink/renderer/core/paint/compositing/compositing_reason_finder.cc b/third_party/blink/renderer/core/paint/compositing/compositing_reason_finder.cc
+index 1ec46635796307ef9ef90624a89da971029e6c5f..00cc2c775d503af96f5907d7609a7b440f67fe58 100644
+--- a/third_party/blink/renderer/core/paint/compositing/compositing_reason_finder.cc
++++ b/third_party/blink/renderer/core/paint/compositing/compositing_reason_finder.cc
+@@ -19,6 +19,7 @@
+ #include "third_party/blink/renderer/core/html/html_element.h"
+ #include "third_party/blink/renderer/core/html_names.h"
+ #include "third_party/blink/renderer/core/layout/layout_embedded_content.h"
++#include "third_party/blink/renderer/core/layout/layout_html_canvas.h"
+ #include "third_party/blink/renderer/core/layout/layout_view.h"
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_transformable_container.h"
+ #include "third_party/blink/renderer/core/layout/transform_utils.h"
+@@ -388,20 +389,35 @@ CompositingReasons CompositingReasonFinder::DirectReasonsForPaintProperties(
+ 
+   auto* element = DynamicTo<Element>(object.GetNode());
+ 
+-  if (element && element->IsInCanvasSubtree() &&
+-      !object.StyleRef().IsRenderedInTopLayer(*element)) [[unlikely]] {
++  if (element && element->IsInCanvasSubtree()) [[unlikely]] {
++    bool top_layer = false;
+     if (IsA<LayoutBoxModelObject>(object)) {
+       if (auto* canvas = element->CanvasForDrawing()) {
+         if (auto* canvas_layout_object = canvas->GetLayoutObject()) {
+           if (canvas_layout_object->IsCanvas()) {
+-            reasons.Put(CompositingReason::kCanvasChild);
++            for (auto* ancestor = &object; ancestor != canvas_layout_object;
++                 ancestor = ancestor->Parent()) {
++              if (auto* ancestor_element =
++                      DynamicTo<Element>(ancestor->GetNode())) {
++                if (ancestor->StyleRef().IsRenderedInTopLayer(
++                        *ancestor_element)) {
++                  top_layer = true;
++                  break;
++                }
++              }
++            }
++            if (!top_layer) {
++              reasons.Put(CompositingReason::kCanvasChild);
++            }
+           }
+         }
+       }
+     }
+-    // In canvas subtrees, only drawable elements can have a compositing
+-    // reason (kCanvasChild), and no other compositing reasons apply.
+-    return reasons;
++    if (!top_layer) {
++      // In canvas subtrees, only drawable elements can have a compositing
++      // reason (kCanvasChild), and no other compositing reasons apply.
++      return reasons;
++    }
+   }
+ 
+   reasons.PutAll(CompositingReasonsFor3DSceneLeaf(object));

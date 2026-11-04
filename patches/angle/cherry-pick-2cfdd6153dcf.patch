@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Fri, 9 Oct 2026 00:03:42 +0800
+Subject: Translator: Validate constructor size after array inference
+
+Implicitly sized array constructors like S[](...) have an
+outermost dimension of 0 until their arguments are counted and the
+array dimension is inferred.
+
+Previously, checkVariableSize was called before populating the
+array dimensions, which evaluated the variable size product as 0
+and allowed oversized temporaries to bypass the WebGL private
+variable limit.
+
+Moving checkVariableSize to run after the unsized array dimension
+is populated ensures the completed type is properly validated
+against the maximum variable size.
+
+Bug: chromium:569415790
+Change-Id: Ic2ee136f9b6f9756defd7ed2795b05e146279e73
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8536108
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index d026c9d471e1c0760ca98e7c692c0b9b347cab25..395c72183e0f7db5b3ffe95f316cbba789d9b740 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -6824,7 +6824,6 @@ bool TParseContext::checkUnsizedArrayConstructorArgumentDimensionality(
+ TIntermTyped *TParseContext::addConstructor(TFunctionLookup *fnCall, const TSourceLoc &line)
+ {
+     TType type = fnCall->constructorType();
+-    checkVariableSize(line, ImmutableString(""), &type);
+ 
+     TIntermSequence &arguments = fnCall->arguments();
+     if (type.isUnsizedArray())
+@@ -6850,6 +6849,8 @@ TIntermTyped *TParseContext::addConstructor(TFunctionLookup *fnCall, const TSour
+         ASSERT(!type.isUnsizedArray());
+     }
+ 
++    checkVariableSize(line, ImmutableString(""), &type);
++
+     if (!checkConstructorArguments(line, arguments, type))
+     {
+         return CreateZeroNode(type);
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index f2718dcd6a56b5563340ad61126ac4fd2990d56d..df88837f37b851ef8af48802986cdb56985c42ac 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -3217,6 +3217,35 @@ TEST_P(WebGL2GLSLValidationTest, LargeStructConstructorOnly)
+                   "'' : Size of declared private variable exceeds implementation-defined limit");
+ }
+ 
++// Validate that implicitly sized array constructor with excessive size cannot bypass variable
++// size checks.
++TEST_P(WebGL2GLSLValidationTest, ImplicitlySizedArrayConstructorExcessiveSize)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++uniform int elementIndex;
++struct S { mat4 m[512]; };
++void main() {
++    S a;
++    S b;
++    float x = S[](
++        a, b, a, b, a, b, a, b, a, b, a, b, a, b, a, b,
++        a, b, a, b, a, b, a, b, a, b, a, b, a, b, a, b,
++        a, b, a, b, a, b, a, b, a, b, a, b, a, b, a, b,
++        a, b, a, b, a, b, a, b, a, b, a, b, a, b, a, b,
++        a, b, a, b, a, b, a, b, a, b, a, b, a, b, a, b,
++        a, b, a, b, a, b, a, b, a, b, a, b, a, b, a, b,
++        a, b, a, b, a, b, a, b, a, b, a, b, a, b, a, b,
++        a, b, a, b, a, b, a, b, a, b, a, b, a, b, a, b
++    )[elementIndex].m[0][0][0];
++    color = vec4(x);
++})";
++
++    validateError(GL_FRAGMENT_SHADER, kFS,
++                  "'' : Size of declared private variable exceeds implementation-defined limit");
++}
++
+ // Validate that too-large structures cannot be used as function return types
+ TEST_P(WebGL2GLSLValidationTest, LargeVariableFunctionReturnType)
+ {

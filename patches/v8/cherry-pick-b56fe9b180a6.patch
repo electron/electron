@@ -1,0 +1,229 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Fri, 9 Oct 2026 09:49:16 +0200
+Subject: [interpreter] Avoid emitting switches and jump tables in dead code
+
+Previously, allocating a jump table and binding its entries in dead
+code (such as in a `switch`, `yield`, `yield*`, or `try`-`finally`
+after an unconditional exit like `with (o) { return; }`) left an
+unemitted switch while still binding jump table targets and starting
+new basic blocks in unreachable code.
+
+Check RemainderOfBlockIsDead() before allocating jump tables or
+emitting switches in BytecodeGenerator, and DCHECK in
+AllocateJumpTable and CHECK in WriteSwitch that the current block is
+not dead.
+
+TAG=agy
+CONV=1dd9fbe9-ef03-4efb-85db-698730a3015f
+
+Fixed: 568794851
+Change-Id: I4f59887fe59243966d94f3d014c894d297eb7ab5
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8524451
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110501}
+
+diff --git a/src/interpreter/bytecode-array-builder.cc b/src/interpreter/bytecode-array-builder.cc
+index d50b594fe2135ccfd76eb62344ca8a7e887de480..33998365e4586b57e612921a74ff7dad8c4a3110 100644
+--- a/src/interpreter/bytecode-array-builder.cc
++++ b/src/interpreter/bytecode-array-builder.cc
+@@ -1762,6 +1762,7 @@ SINGLETON_CONSTANT_ENTRY_TYPES(ENTRY_GETTER)
+ BytecodeJumpTable* BytecodeArrayBuilder::AllocateJumpTable(
+     int size, int case_value_base) {
+   DCHECK_GT(size, 0);
++  DCHECK(!RemainderOfBlockIsDead());
+ 
+   size_t constant_pool_index = constant_array_builder()->InsertJumpTable(size);
+ 
+diff --git a/src/interpreter/bytecode-array-writer.cc b/src/interpreter/bytecode-array-writer.cc
+index e9b93787ad74576421cf46dfc2a9d21293000941..de8f1b2c499557d2bf1610df85e5fc199e152c35 100644
+--- a/src/interpreter/bytecode-array-writer.cc
++++ b/src/interpreter/bytecode-array-writer.cc
+@@ -170,8 +170,8 @@ void BytecodeArrayWriter::WriteJumpLoop(BytecodeNode* node,
+ void BytecodeArrayWriter::WriteSwitch(BytecodeNode* node,
+                                       BytecodeJumpTable* jump_table) {
+   DCHECK(Bytecodes::IsSwitch(node->bytecode()));
++  CHECK(!exit_seen_in_block_);
+ 
+-  if (exit_seen_in_block_) return;  // Don't emit dead code.
+   UpdateExitSeenInBlock(node->bytecode());
+   MaybeElideLastBytecode(node->bytecode(), node->source_info().is_valid());
+ 
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index b6b593263013b1d27a0255a833e4be8d816df547..4413758248973f224155c6f0253c9d9fd099dfd6 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -289,7 +289,7 @@ class V8_NODISCARD BytecodeGenerator::ControlScope::DeferredCommands final {
+   // Applies all recorded control-flow commands after the finally-block again.
+   // This generates a dynamic dispatch on the token from the entry point.
+   void ApplyDeferredCommands() {
+-    if (deferred_.empty()) return;
++    if (deferred_.empty() || builder()->RemainderOfBlockIsDead()) return;
+ 
+     BytecodeLabel fall_through_from_try_block;
+ 
+@@ -2763,10 +2763,16 @@ bool IsSwitchOptimizable(SwitchStatement* stmt, SwitchInfo* info) {
+ //   <out = 19, break>
+ 
+ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
++  if (builder()->RemainderOfBlockIsDead()) return;
++
+   // We need this scope because we visit for register values. We have to
+   // maintain an execution result scope where registers can be allocated.
+   ZonePtrList<CaseClause>* clauses = stmt->cases();
+ 
++  builder()->SetStatementPosition(stmt);
++  VisitForAccumulatorValue(stmt->tag());
++  if (builder()->RemainderOfBlockIsDead()) return;
++
+   SwitchInfo info;
+   BytecodeJumpTable* jump_table = nullptr;
+   bool use_jump_table = IsSwitchOptimizable(stmt, &info);
+@@ -2790,9 +2796,6 @@ void BytecodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
+   SwitchBuilder switch_builder(builder(), block_coverage_builder_, stmt,
+                                n_comp_cases, jump_table);
+   ControlScopeForBreakable scope(this, stmt, &switch_builder);
+-  builder()->SetStatementPosition(stmt);
+-
+-  VisitForAccumulatorValue(stmt->tag());
+ 
+   if (use_jump_table) {
+     // Release temps so that they can be reused in clauses.
+@@ -6124,6 +6127,7 @@ void BytecodeGenerator::BuildSuspendPoint(int position) {
+ void BytecodeGenerator::VisitYield(Yield* expr) {
+   builder()->SetExpressionPosition(expr);
+   VisitForAccumulatorValue(expr->expression());
++  if (builder()->RemainderOfBlockIsDead()) return;
+ 
+   bool is_async = IsAsyncGeneratorFunction(function_kind());
+   // If this is not the first yield
+@@ -6291,6 +6295,7 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
+     RegisterAllocationScope register_scope(this);
+     RegisterList iterator_and_input = register_allocator()->NewRegisterList(2);
+     VisitForAccumulatorValue(expr->expression());
++    if (builder()->RemainderOfBlockIsDead()) return;
+     IteratorRecord iterator = BuildGetIteratorRecord(
+         register_allocator()->NewRegister() /* next method */,
+         iterator_and_input[0], iterator_type);
+diff --git a/src/interpreter/bytecode-jump-table.h b/src/interpreter/bytecode-jump-table.h
+index 69012659ee8743ee038df06ca2c67e7ba1f12872..f63a2959423864604ebccd3f0c8afe647e58726d 100644
+--- a/src/interpreter/bytecode-jump-table.h
++++ b/src/interpreter/bytecode-jump-table.h
+@@ -35,7 +35,10 @@ class V8_EXPORT_PRIVATE BytecodeJumpTable final : public ZoneObject {
+   }
+ 
+   size_t constant_pool_index() const { return constant_pool_index_; }
+-  size_t switch_bytecode_offset() const { return switch_bytecode_offset_; }
++  size_t switch_bytecode_offset() const {
++    DCHECK_NE(switch_bytecode_offset_, kInvalidOffset);
++    return switch_bytecode_offset_;
++  }
+   OperandScale switch_bytecode_operand_scale() const {
+     return switch_bytecode_operand_scale_;
+   }
+diff --git a/test/mjsunit/regress/regress-568794851.js b/test/mjsunit/regress/regress-568794851.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..36b08d76cca448b4e9e48b5860a3fb376a811d5e
+--- /dev/null
++++ b/test/mjsunit/regress/regress-568794851.js
+@@ -0,0 +1,99 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++function* gen_yield(o) {
++  eval("");
++  do {
++    with (o) {
++      return;
++    }
++  } while (yield);
++  yield;
++  return x;
++}
++
++function* gen_yield_star(o) {
++  eval("");
++  do {
++    with (o) {
++      return;
++    }
++  } while (yield* o);
++  return x;
++}
++
++function* gen_try_finally(o) {
++  eval("");
++  l: {
++    try {
++      if (o) return 1;
++      if (o) break l;
++    } finally {
++      with (o) {
++        return 2;
++      }
++    }
++  }
++  yield;
++  return x;
++}
++
++function* gen_switch(o) {
++  eval("");
++  if (true || o) {
++    with (o) {
++      return;
++    }
++  } else switch (o) {
++    case 0:
++      yield;
++  }
++  return x;
++}
++
++function* gen_switch_table(o) {
++  eval("");
++  if (true || o) {
++    with (o) {
++      return;
++    }
++  } else switch (o) {
++    case 0:
++    case 1:
++    case 2:
++    case 3:
++    case 4:
++    case 5:
++      yield;
++  }
++  return x;
++}
++
++function* gen_switch_throwing_tag(o) {
++  eval("");
++  try {
++    with (o) {
++      switch (o() = 1) {
++        case 0:
++        case 1:
++        case 2:
++        case 3:
++        case 4:
++        case 5:
++          yield;
++      }
++    }
++  } catch {}
++  yield;
++  return 42;
++}
++
++for (let i = 0; i < 1000; i++) {
++  gen_yield({}).next();
++  gen_yield_star({}).next();
++  gen_try_finally({}).next();
++  gen_switch({}).next();
++  gen_switch_table({}).next();
++  gen_switch_throwing_tag(() => {}).next();
++}

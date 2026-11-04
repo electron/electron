@@ -1,0 +1,336 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin Ellis <kevers@google.com>
+Date: Mon, 2 Nov 2026 08:05:39 -0800
+Subject: [M156] Fix UAF and cross-document lifecycle violation in keyframe
+ snapshot
+
+Original change's description:
+> Fix UAF and cross-document lifecycle violation in keyframe snapshot
+>
+> The UAF was triggered due to the curve being destroyed mid-loop if
+> resolving a style-dependent keyframe triggers a synchronous
+> style/layout update that replaces or resets the curve. Resolved by
+> holding a self-reference in CompositorAnimationCurve::UpdateKeyframeSnapshot.
+>
+> Addressing the UAF, revealed crash flakes due to lifecycle violations.
+> The style and layout update is per document and the parent document
+> is processed before the child. In the test, the slot reassignment
+> in the child document was invalidating the parent's style.
+>
+> Flag guarded by the SyncCrossDocumentAnimationTiming killswitch:
+>   - Synchronously update animation timing in Animation::SetOutdated()
+>     when the effect target belongs to a different document than the
+>     timeline, since servicing the target document's timelines will
+>     not tick the animation.
+>   - In KeyframeEffect::InvalidateEffectTargetStyle(), if the target
+>     document is an ancestor of the animation or owning element's
+>     document and is already style-clean (e.g., when a child frame's
+>     style/layout pass cancels a CSS animation retargeted to the
+>     parent document), defer SetNeedsAnimationStyleRecalc() to a
+>     microtask so the parent document is not dirtied mid-lifecycle.
+>   - Recalculate composited paint status for native paint worklet
+>     animations directly in KeyframeEffect::DetachTarget() rather than
+>     deferring to UpdateCompositedPaintStatus() during PreCommit.
+>
+> Bug: 574193110
+> Change-Id: Ide1e8ff5799b0b7705da3866b20fdd0c04bec575
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8657364
+> Reviewed-by: David A <awogbemila@chromium.org>
+> Commit-Queue: Kevin Ellis <kevers@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1729481}
+
+(cherry picked from commit 5e57db9b666cb005fb75ad28f481331098c5e169)
+
+Bug: 580175008,574193110
+Change-Id: Ide1e8ff5799b0b7705da3866b20fdd0c04bec575
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8705193
+Pure-Cherry-Pick: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Kevin Ellis <kevers@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#2025}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/animation/animation.cc b/third_party/blink/renderer/core/animation/animation.cc
+index 87879720332253ea299a6b5c97646e83b100da33..52eba4f731a6c65ca2e7f89b42116c8d2d3d9fbb 100644
+--- a/third_party/blink/renderer/core/animation/animation.cc
++++ b/third_party/blink/renderer/core/animation/animation.cc
+@@ -1448,7 +1448,8 @@ void Animation::setEffect(AnimationEffect* new_effect) {
+   if (new_effect == old_effect)
+     return;
+ 
+-  if (old_effect) {
++  if (old_effect &&
++      !RuntimeEnabledFeatures::SyncCrossDocumentAnimationTimingEnabled()) {
+     Element* old_target = nullptr;
+     Element* new_target = nullptr;
+     if (auto* keyframe_effect = DynamicTo<KeyframeEffect>(new_effect)) {
+@@ -2456,11 +2457,19 @@ void Animation::SetOutdated() {
+   outdated_ = true;
+   if (timeline_) {
+     timeline_->SetOutdatedAnimation(this);
+-  } else {
+-    // Animations without a timeline will not be ticked on a subsequent frame.
+-    // Synchronously update so that the animation is not left in an outdated
+-    // state, which could trigger a style invalidation post-style and layout,
+-    // e.g. mid-paint (see crbug.com/567645136).
++  }
++  KeyframeEffect* keyframe_effect = DynamicTo<KeyframeEffect>(content_.Get());
++  Element* target = keyframe_effect ? keyframe_effect->EffectTarget() : nullptr;
++  bool cross_document_target =
++      RuntimeEnabledFeatures::SyncCrossDocumentAnimationTimingEnabled() &&
++      target && timeline_ && timeline_->GetDocument() != &target->GetDocument();
++  if (!timeline_ || cross_document_target) {
++    // Animations without a timeline or targeting an element in a different
++    // document from the timeline will not be ticked when the target document
++    // updates its animation timing. Synchronously update so that the animation
++    // is not left in an outdated state, which could trigger a style
++    // invalidation post-style and layout, e.g. mid-paint (see
++    // crbug.com/567645136).
+     Update(kTimingUpdateOnDemand);
+   }
+ }
+diff --git a/third_party/blink/renderer/core/animation/compositor_animation_curve.cc b/third_party/blink/renderer/core/animation/compositor_animation_curve.cc
+index f54e43f8441ca9d215476f3cdff74f8ab9c3187b..364a6868e953f71a1b7e62852908628d2a503a64 100644
+--- a/third_party/blink/renderer/core/animation/compositor_animation_curve.cc
++++ b/third_party/blink/renderer/core/animation/compositor_animation_curve.cc
+@@ -107,9 +107,12 @@ bool CompositorAnimationCurve::PopulateKeyframes(Animation* animation,
+ 
+ scoped_refptr<CompositorAnimationCurve>
+ CompositorAnimationCurve::UpdateKeyframeSnapshot(Animation* animation) {
++  scoped_refptr<CompositorAnimationCurve> scoped_ref =
++      base::WrapRefCounted(this);
++
+ #if !EXPENSIVE_DCHECKS_ARE_ON()
+   if (!HasStyleDependency()) {
+-    return base::WrapRefCounted(this);
++    return scoped_ref;
+   }
+ #endif
+ 
+@@ -132,7 +135,7 @@ CompositorAnimationCurve::UpdateKeyframeSnapshot(Animation* animation) {
+     return maybe_copy;
+   }
+ 
+-  return base::WrapRefCounted(this);
++  return scoped_ref;
+ }
+ 
+ wtf_size_t CompositorAnimationCurve::ComputeKeyframeIndex(double progress) {
+diff --git a/third_party/blink/renderer/core/animation/keyframe_effect.cc b/third_party/blink/renderer/core/animation/keyframe_effect.cc
+index c436be1641af6260b81d07b8673becc54d019d9d..3cca5576325b0a5b310c984178627139a831be2a 100644
+--- a/third_party/blink/renderer/core/animation/keyframe_effect.cc
++++ b/third_party/blink/renderer/core/animation/keyframe_effect.cc
+@@ -49,6 +49,8 @@
+ #include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/dom/pseudo_element.h"
+ #include "third_party/blink/renderer/core/dom/shadow_root.h"
++#include "third_party/blink/renderer/core/execution_context/agent.h"
++#include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/web_feature.h"
+ #include "third_party/blink/renderer/core/paint/paint_layer.h"
+ #include "third_party/blink/renderer/core/style/computed_style.h"
+@@ -57,7 +59,10 @@
+ #include "third_party/blink/renderer/platform/animation/compositor_animation.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
++#include "third_party/blink/renderer/platform/scheduler/public/event_loop.h"
++#include "third_party/blink/renderer/platform/wtf/functional.h"
+ #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+ 
+ namespace blink {
+@@ -738,7 +743,7 @@ void KeyframeEffect::ApplyEffects() {
+   }
+ 
+   if (changed) {
+-    effect_target_->SetNeedsAnimationStyleRecalc();
++    InvalidateEffectTargetStyle();
+   }
+ }
+ 
+@@ -750,10 +755,49 @@ void KeyframeEffect::ClearEffects() {
+   sampled_effect_ = nullptr;
+   if (GetAnimation())
+     GetAnimation()->RestartAnimationOnCompositor();
+-  if (!effect_target_->GetDocument().Lifecycle().InDetach()) {
++  InvalidateEffectTargetStyle();
++  Invalidate();
++}
++
++void KeyframeEffect::InvalidateEffectTargetStyle() {
++  if (!effect_target_) {
++    return;
++  }
++  Document& target_document = effect_target_->GetDocument();
++  if (target_document.Lifecycle().InDetach()) {
++    return;
++  }
++  if (!RuntimeEnabledFeatures::SyncCrossDocumentAnimationTimingEnabled()) {
+     effect_target_->SetNeedsAnimationStyleRecalc();
++    return;
+   }
+-  Invalidate();
++
++  // Guard against a change in a child document synchronously invalidating the style of an
++  // ancestor document, as it would create a lifecycle violation. If the ancestor is already
++  // marked as having a clean style, then defer dirtying the style bit until the next
++  // update cycle. This is similar to how we don't allow script execution during style and
++  // layout, as the script could invaldiate the lifecycle state (crbug.com/574193110).
++  auto is_upstream = [&target_document](const Document* doc) {
++    return doc && doc != &target_document && doc->GetFrame() &&
++           target_document.GetFrame() &&
++           doc->GetFrame()->Tree().IsDescendantOf(target_document.GetFrame());
++  };
++  Animation* animation = GetAnimation();
++  const Document* animation_document =
++      animation ? animation->GetDocument() : nullptr;
++  const Document* owning_document =
++      (animation && animation->OwningElement())
++          ? &animation->OwningElement()->GetDocument()
++          : nullptr;
++  if (target_document.Lifecycle().GetState() >=
++          DocumentLifecycle::kStyleClean &&
++      (is_upstream(animation_document) || is_upstream(owning_document))) {
++    target_document.GetAgent().event_loop()->EnqueueMicrotask(
++        BindOnce(&Element::SetNeedsAnimationStyleRecalc,
++                 WrapWeakPersistent(effect_target_.Get())));
++    return;
++  }
++  effect_target_->SetNeedsAnimationStyleRecalc();
+ }
+ 
+ void KeyframeEffect::UpdateChildrenAndEffects() const {
+@@ -782,12 +826,22 @@ void KeyframeEffect::AttachTarget(Animation* animation) {
+   if (!effect_target_ || !animation)
+     return;
+   effect_target_->EnsureElementAnimations().Animations().insert(animation);
+-  effect_target_->SetNeedsAnimationStyleRecalc();
++  InvalidateEffectTargetStyle();
+ }
+ 
+ void KeyframeEffect::DetachTarget(Animation* animation) {
+-  if (effect_target_ && animation)
+-    effect_target_->GetElementAnimations()->Animations().erase(animation);
++  if (effect_target_ && animation) {
++    ElementAnimations* element_animations =
++        effect_target_->GetElementAnimations();
++    element_animations->Animations().erase(animation);
++    if (RuntimeEnabledFeatures::SyncCrossDocumentAnimationTimingEnabled() &&
++        animation->GetNativePaintWorkletReasons() !=
++            Animation::kNoPaintWorklet) {
++      element_animations->RecalcCompositedStatus(
++          effect_target_,
++          Animation::CompositorPendingReason::kPendingEffectChange);
++    }
++  }
+   // If we have sampled this effect previously, we need to purge that state.
+   // ClearEffects takes care of clearing the cached sampled effect, informing
+   // the target that it needs to refresh its style, and doing any necessary
+diff --git a/third_party/blink/renderer/core/animation/keyframe_effect.h b/third_party/blink/renderer/core/animation/keyframe_effect.h
+index 6454c51be746cc3baba5314b307ebd3071783780..f47858673fc584d601c2545b40c11c608a373f0b 100644
+--- a/third_party/blink/renderer/core/animation/keyframe_effect.h
++++ b/third_party/blink/renderer/core/animation/keyframe_effect.h
+@@ -162,6 +162,7 @@ class CORE_EXPORT KeyframeEffect final : public AnimationEffect {
+ 
+   void ApplyEffects();
+   void ClearEffects();
++  void InvalidateEffectTargetStyle();
+   void UpdateChildrenAndEffects() const override;
+   void Attach(AnimationEffectOwner*) override;
+   void Detach() override;
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 6d38d31c47d51e723e7c7f4ba76a52f08518c59c..f5cca40e5c0fc559885137b1e6dd1eec81fe6208 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -6318,6 +6318,10 @@
+       name: "SvgUseNestedResourceDocumentsDelayLoad",
+       status: "stable",
+     },
++    {
++      name: "SyncCrossDocumentAnimationTiming",
++      status: "stable",
++    },
+     {
+       name: "SynthesizedKeyboardEventsForAccessibilityActions",
+       status: "experimental",
+diff --git a/third_party/blink/web_tests/animations/web-animations/iframe-shadow-dom-keyframe-snapshot-crash.html b/third_party/blink/web_tests/animations/web-animations/iframe-shadow-dom-keyframe-snapshot-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..64dd6b9c5ec593b237c7680bc85f4c5de71ffe94
+--- /dev/null
++++ b/third_party/blink/web_tests/animations/web-animations/iframe-shadow-dom-keyframe-snapshot-crash.html
+@@ -0,0 +1,74 @@
++<!DOCTYPE html>
++<html class="testwait">
++<head>
++  <meta charset="utf-8">
++  <meta name="viewport" content="width=device-width, initial-scale=1">
++  <title></title>
++</head>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++<style>
++#spacer { height: 60000px }
++#target { width: 50px; height: 50px; color: rgb(10, 20, 30) }
++</style>
++<body>
++<iframe id=iframe width=300 height=100 srcdoc=
++"<!doctype html>
++  <style>
++    @keyframes clippy {
++      from { clip-path: inset(0px) }
++      to { clip-path: inset(10px) }
++    }
++    #item2, #item3 {
++      animation: clippy 1000s
++    }
++    div {
++      width: 20px; height: 10px;
++    }
++  </style>
++  <div id=wrapper>
++    <div id=item1 slot=a></div>
++    <div id=item2 slot=a></div>
++    <div id=item3 slot=a></div>
++  </div>"></iframe>
++<div id=spacer></div>
++<div id=target></div>
++<script>
++const frame = () => new Promise(r => requestAnimationFrame(r));
++const task = ms => new Promise(r => setTimeout(r, ms));
++
++window.onload = async () => {
++  promise_test(async t => {
++    const child_doc = iframe.contentDocument;
++    const  [wrapper, item1, item2, item3] =
++        ['wrapper', 'item1', 'item2', 'item3'].map(
++            id => child_doc.getElementById(id));
++    wrapper.attachShadow({ mode: 'open' }).innerHTML =
++       '<slot name=a></slot>';
++    await frame(); await frame();
++    const anim1 = item2.getAnimations()[0];
++    anim1.effect.target = target;
++    const anim2 = target.animate(
++        [
++          { backgroundColor: 'currentcolor' },
++          { backgroundColor: 'rgb(200, 0, 0)' }
++        ],
++        { duration: 1e7, easing: 'steps(1, end)' });
++    anim2.currentTime = -1e7;
++    await anim2.ready;
++    await frame(); await frame(); await frame();
++    await task(50);
++    target.style.color = 'rgb(1, 2, 3)';
++    getComputedStyle(target).color;
++    anim2.effect.target = item1;
++    item2.slot = 'b';
++    target.style.color = 'rgb(4, 5, 6)';
++    getComputedStyle(target).color;
++    document.documentElement.classList.remove('testwait');
++  }, 'Cross-document animation target changes with shadow DOM slot ' +
++     'reassignment do not crash');
++
++};
++</script>
++</body>
++</html>

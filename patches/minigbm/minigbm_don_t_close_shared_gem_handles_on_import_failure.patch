@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Spencer Doyle <spedoyle@google.com>
+Date: Mon, 31 Aug 2026 21:20:32 +0000
+Subject: minigbm: don't close shared GEM handles on import failure
+
+When an import fails, avoid closing handles that are already tracked in
+drv->buffer_table, as they may still be in use by another active bo.
+
+Bug: 511768565
+Test: Tested using PoC: http://b/511768565#attachment76775494
+Change-Id: I234180d7971db1eb397721c35cd513537ae99cf9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromiumos/platform/minigbm/+/8281807
+Tested-by: Spencer Doyle <spedoyle@google.com>
+Auto-Submit: Spencer Doyle <spedoyle@google.com>
+Commit-Queue: Spencer Doyle <spedoyle@google.com>
+Reviewed-by: Chia-I Wu <olv@google.com>
+
+diff --git a/drv_helpers.c b/drv_helpers.c
+index 8ca65c1d85968936ffce9f86b7ee3d065140ed6e..58346fa4332edd92e2d135ede1d4573ae8181b4a 100644
+--- a/drv_helpers.c
++++ b/drv_helpers.c
+@@ -447,6 +447,29 @@ int drv_gem_bo_destroy(struct bo *bo)
+ 	return drv_gem_close(bo->drv, bo->handle.u32);
+ }
+ 
++/*
++ * Close a GEM handle only if no live bo in this driver still references it.
++ * This is primarily used when cleaning up after a failed import. Because
++ * DRM_IOCTL_PRIME_FD_TO_HANDLE returns the same handle for any fd referencing
++ * the same underlying object on a given DRM file, a handle may already be held
++ * by another bo and tracked in drv->buffer_table. Only handles with no other
++ * live references are closed; the rest are left for their owner to release.
++ */
++void drv_gem_close_if_unreferenced(struct driver *drv, uint32_t gem_handle)
++{
++	void *value;
++
++	if (!gem_handle)
++		return;
++
++	pthread_mutex_lock(&drv->buffer_table_lock);
++	// Only close the handle if it is not in the buffer table
++	if (drmHashLookup(drv->buffer_table, gem_handle, &value)) {
++		drv_gem_close(drv, gem_handle);
++	}
++	pthread_mutex_unlock(&drv->buffer_table_lock);
++}
++
+ int drv_prime_bo_import(struct bo *bo, struct drv_import_fd_data *data)
+ {
+ 	int ret;
+@@ -460,7 +483,7 @@ int drv_prime_bo_import(struct bo *bo, struct drv_import_fd_data *data)
+ 		ret = drmIoctl(bo->drv->fd, DRM_IOCTL_PRIME_FD_TO_HANDLE, &prime_handle);
+ 
+ 		if (plane > 0 && !ret && bo->handle.u32 != prime_handle.handle) {
+-			drv_gem_close(bo->drv, prime_handle.handle);
++			drv_gem_close_if_unreferenced(bo->drv, prime_handle.handle);
+ 			ret = -1;
+ 			errno = EINVAL;
+ 		}
+@@ -468,7 +491,7 @@ int drv_prime_bo_import(struct bo *bo, struct drv_import_fd_data *data)
+ 		if (ret) {
+ 			drv_loge("DRM_IOCTL_PRIME_FD_TO_HANDLE failed (fd=%u)\n", prime_handle.fd);
+ 			if (plane > 0)
+-				drv_gem_close(bo->drv, bo->handle.u32);
++				drv_gem_close_if_unreferenced(bo->drv, bo->handle.u32);
+ 			return -errno;
+ 		}
+ 
+diff --git a/drv_helpers.h b/drv_helpers.h
+index 5821b0b6f90f29d3850bed9b1b2542699c943239..7206898bb0acc1b7c1aada4e6da1e58b8fc163b2 100644
+--- a/drv_helpers.h
++++ b/drv_helpers.h
+@@ -35,6 +35,7 @@ int drv_dumb_bo_create_ex(struct bo *bo, uint32_t width, uint32_t height, uint32
+ int drv_dumb_bo_destroy(struct bo *bo);
+ int drv_gem_close(struct driver *drv, uint32_t gem_handle);
+ int drv_gem_bo_destroy(struct bo *bo);
++void drv_gem_close_if_unreferenced(struct driver *drv, uint32_t gem_handle);
+ int drv_prime_bo_import(struct bo *bo, struct drv_import_fd_data *data);
+ int drv_prime_bo_export(struct bo *bo, size_t plane);
+ void *drv_dumb_bo_map(struct bo *bo, struct vma *vma, uint32_t map_flags);
+diff --git a/i915.c b/i915.c
+index 18809724160ba11864cfe95e96ca881a0b0bce77..e1051089998a470907bac702fc34593e17c494ee 100644
+--- a/i915.c
++++ b/i915.c
+@@ -912,7 +912,7 @@ static int i915_bo_import(struct bo *bo, struct drv_import_fd_data *data)
+ 
+ 		ret = drmIoctl(bo->drv->fd, DRM_IOCTL_I915_GEM_GET_TILING, &gem_get_tiling);
+ 		if (ret) {
+-			drv_gem_bo_destroy(bo);
++			drv_gem_close_if_unreferenced(bo->drv, bo->handle.u32);
+ 			drv_loge("DRM_IOCTL_I915_GEM_GET_TILING failed.\n");
+ 			return ret;
+ 		}

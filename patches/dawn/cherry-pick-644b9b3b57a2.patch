@@ -1,0 +1,241 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Thu, 22 Oct 2026 11:05:32 -0700
+Subject: [M157] Enable SplitBufferTextureCopyForOversizedRow on ARM, ImgTec,
+ and Qualcomm
+
+Original change's description:
+> Enable SplitBufferTextureCopyForOversizedRow on ARM, ImgTec, and Qualcomm
+>
+> Several GPUs and drivers overflow or wrap around when copying between a
+> buffer and a texture with a large row pitch (>= 256 MiB / 0x10000000):
+> - ARM Mali GLES drivers overflow a signed 32-bit bit-stride calculation
+>   ((int32_t)(GL_PACK_ROW_LENGTH * bpp) * 8) and write subsequent rows at
+>   negative offsets before the PBO (crbug.com/569161611).
+> - ImgTec PowerVR GPUs/drivers fail with GL_INVALID_OPERATION on GLES or
+>   fail to write subsequent rows on Vulkan when the row byte stride
+>   reaches 2^28 (crbug.com/529867799).
+> - Qualcomm Adreno GPUs wrap row offsets at 256 MiB (2^28) back to 0 in
+>   buffer-texture copies (crbug.com/380487895).
+>
+> Enable Toggle::SplitBufferTextureCopyForOversizedRow on ARM, ImgTec,
+> Intel, and Qualcomm in the OpenGL backend, on ImgTec and Qualcomm in the
+> Vulkan backend, and on Qualcomm in the D3D11 and D3D12 backends, so
+> copies with oversized rows are split into one copy command per row.
+>
+> Bug: 569161611, 529867799, 380487895
+> Change-Id: I37b99e14ee9e17d6f1c4a0d693f75e12fe99050a
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/351555
+> Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+> Commit-Queue: Antonio Maiorano <amaiorano@google.com>
+
+(cherry picked from commit 9a3e82dcee8267e12d89f334ad3fc06ea67cb122)
+
+Bug: 576121963,569161611,529867799,380487895
+Change-Id: I37b99e14ee9e17d6f1c4a0d693f75e12fe99050a
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/353095
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/dawn/native/BufferTextureCopyOversizedRow.cpp b/src/dawn/native/BufferTextureCopyOversizedRow.cpp
+index 09fb755f40f2c3dee91c820e834ffd2a468aedde..9d75fe128d2b7ce1c865d15d87ba3b3e97c54857 100644
+--- a/src/dawn/native/BufferTextureCopyOversizedRow.cpp
++++ b/src/dawn/native/BufferTextureCopyOversizedRow.cpp
+@@ -45,7 +45,10 @@ namespace {
+ // hardware register fields: bytes per row is 18 bits and texels per row is 14 bits. The two must
+ // be checked independently: bytesPerRow == texelsPerRow * bytesPerBlock, so a format with a small
+ // bytesPerBlock (e.g. R8Unorm, 1 byte/texel) can push texelsPerRow past 2^14 while bytesPerRow is
+-// still nowhere near 2^18. See https://crbug.com/481934465.
++// still nowhere near 2^18. See crbug.com/481934465.
++// These thresholds also cover the larger 256 MiB (2^28 bytes) row pitch overflow / wrap-around
++// limits on ARM Mali (crbug.com/569161611), ImgTec PowerVR (crbug.com/529867799),
++// and Qualcomm Adreno (crbug.com/380487895).
+ constexpr uint64_t kMaxBytesPerRow = 1u << 18;
+ constexpr uint64_t kMaxTexelsPerRow = 1u << 14;
+ 
+diff --git a/src/dawn/native/BufferTextureCopyOversizedRow.h b/src/dawn/native/BufferTextureCopyOversizedRow.h
+index 0bfb676b971b2bfce8d0bf05236eb6b182ae4f10..800ce320aa35eaf3063817523a05ad38d47de0b4 100644
+--- a/src/dawn/native/BufferTextureCopyOversizedRow.h
++++ b/src/dawn/native/BufferTextureCopyOversizedRow.h
+@@ -38,8 +38,9 @@ class DeviceBase;
+ 
+ // Determines whether a buffer<->texture copy needs to be split for oversized rows. This happens
+ // if the SplitBufferTextureCopyForOversizedRow toggle is enabled and `bufferCopy`'s bytes per row
+-// or texels per row overflows the limited-width hardware register field used to store it,
+-// respectively. See https://crbug.com/481934465.
++// or texels per row overflows the limited-width hardware register field or driver stride
++// calculation used to store it. See crbug.com/481934465, crbug.com/569161611,
++// crbug.com/529867799, and crbug.com/380487895.
+ bool NeedsBufferTextureCopySplitForOversizedRow(const DeviceBase* device,
+                                                 const BufferCopy& bufferCopy,
+                                                 const TypedTexelBlockInfo& blockInfo);
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index 4506bc64cbd7fba91e10ab2b670bd5d00bcf7804..bb7214aaa1c92b5ac1801b64f344b431f6e1f3a6 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -530,8 +530,9 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+     {Toggle::SplitBufferTextureCopyForOversizedRow,
+      {"split_buffer_texture_copy_for_oversized_row",
+       "Split a buffer-to-texture or texture-to-buffer copy into one copy command per row so its "
+-      "row pitch (bytes) and row width (texels) never overflow the 18-bit and 14-bit hardware "
+-      "register fields. Workaround for an Intel GPU hardware limitation.",
++      "row pitch (bytes) and row width (texels) never overflow hardware register fields or driver "
++      "stride calculations. Workaround for Intel, ARM, ImgTec, and Qualcomm GPU hardware/driver "
++      "limitations.",
+       "https://crbug.com/481934465", ToggleStage::Device}},
+     {Toggle::GLUseArrayLengthFromImmediate,
+      {"gl_use_array_length_from_immediate",
+diff --git a/src/dawn/native/d3d11/PhysicalDeviceD3D11.cpp b/src/dawn/native/d3d11/PhysicalDeviceD3D11.cpp
+index 588e678e074e028567adbd26a0efcb67f2820185..05e06cccfba621c5dfac86931cbc5083f5d21cf7 100644
+--- a/src/dawn/native/d3d11/PhysicalDeviceD3D11.cpp
++++ b/src/dawn/native/d3d11/PhysicalDeviceD3D11.cpp
+@@ -375,9 +375,10 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         }
+     }
+ 
+-    if (gpu_info::IsIntel(vendorId)) {
+-        // Workaround an Intel GPU hardware limitation that corrupts buffer<->texture copies with
+-        // a large row pitch. See https://crbug.com/481934465.
++    if (gpu_info::IsIntel(vendorId) || gpu_info::IsQualcommACPI(vendorId) ||
++        gpu_info::IsQualcommPCI(vendorId)) {
++        // Workaround Intel (crbug.com/481934465) and Qualcomm (crbug.com/380487895) GPU
++        // hardware/driver limitations that corrupt buffer<->texture copies with a large row pitch.
+         deviceToggles->Default(Toggle::SplitBufferTextureCopyForOversizedRow, true);
+     }
+ 
+diff --git a/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp b/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
+index c5cf13fe1be68ae4eb5257850e9cbce153cbcca2..518b79560298572ea6bcc72ab2c1fdc5fc17fde0 100644
+--- a/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
++++ b/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
+@@ -988,6 +988,9 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+     // See https://crbug.com/411268750 for more information.
+     if (gpu_info::IsQualcommACPI(vendorId)) {
+         deviceToggles->Default(Toggle::UsePackedDepth24UnormStencil8Format, true);
++        // Workaround a Qualcomm GPU limitation that wraps row offsets at 256 MiB in
++        // buffer<->texture copies (crbug.com/380487895).
++        deviceToggles->Default(Toggle::SplitBufferTextureCopyForOversizedRow, true);
+     }
+ 
+     // Enable the integer range analysis for shader robustness by default if the corresponding
+diff --git a/src/dawn/native/opengl/PhysicalDeviceGL.cpp b/src/dawn/native/opengl/PhysicalDeviceGL.cpp
+index df3b8db241ef253bfe3c0a15eccfcfc2a84a3e44..9a360fb0414ddc9f79e587ffeb9f72930ca8951b 100644
+--- a/src/dawn/native/opengl/PhysicalDeviceGL.cpp
++++ b/src/dawn/native/opengl/PhysicalDeviceGL.cpp
+@@ -521,6 +521,15 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+     deviceToggles->Default(Toggle::Limit3DTexturePotFootprintTo4GB,
+                            mVendorId == gpu_info::kVendorID_ImgTec);
+ 
++    // Workaround hardware/driver limitations on ARM Mali (crbug.com/569161611),
++    // ImgTec PowerVR (crbug.com/529867799), Intel (crbug.com/481934465), and
++    // Qualcomm Adreno (crbug.com/380487895) where buffer<->texture copies with a
++    // large row pitch overflow or wrap around.
++    if (gpu_info::IsARM(mVendorId) || gpu_info::IsImgTec(mVendorId) ||
++        gpu_info::IsIntel(mVendorId) || gpu_info::IsQualcommPCI(mVendorId)) {
++        deviceToggles->Default(Toggle::SplitBufferTextureCopyForOversizedRow, true);
++    }
++
+     // Enable the integer range analysis for shader robustness by default if the corresponding
+     // platform feature is enabled.
+     deviceToggles->Default(
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+index 8bf45984044183b8e572cd552aba3248b8eca9df..a147691f8c0ba52ecadc167d2b12e372777d4a5f 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+@@ -1161,9 +1161,11 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         deviceToggles->Default(Toggle::VulkanForceAlphaWriteForAlphaToCoverage, true);
+     }
+ 
+-    if (gpu_info::IsIntel(GetVendorId())) {
+-        // crbug.com/481934465: Workaround an Intel GPU hardware limitation that corrupts
+-        // buffer<->texture copies with a large row pitch.
++    if (gpu_info::IsIntel(GetVendorId()) || gpu_info::IsImgTec(GetVendorId()) ||
++        gpu_info::IsQualcommPCI(GetVendorId()) || gpu_info::IsQualcommACPI(GetVendorId())) {
++        // Workaround Intel (crbug.com/481934465), ImgTec (crbug.com/529867799), and Qualcomm
++        // (crbug.com/380487895) GPU hardware/driver limitations that corrupt buffer<->texture
++        // copies with a large row pitch.
+         deviceToggles->Default(Toggle::SplitBufferTextureCopyForOversizedRow, true);
+     }
+ 
+diff --git a/src/dawn/tests/end2end/CopyTests.cpp b/src/dawn/tests/end2end/CopyTests.cpp
+index a202c67bafe4d95fe4a8448667af967171bcd88f..993ef6d2578d955cbd1a7a8332b843fda8bbf011 100644
+--- a/src/dawn/tests/end2end/CopyTests.cpp
++++ b/src/dawn/tests/end2end/CopyTests.cpp
+@@ -2334,7 +2334,68 @@ DAWN_INSTANTIATE_TEST_P(
+         wgpu::TextureFormat::BGRA8Unorm,
+     });
+ 
+-class CopyTests_T2B_No_Format_Param : public CopyTests, public DawnTest {};
++class CopyTests_T2B_No_Format_Param : public CopyTests, public DawnTest {
++  protected:
++    void GetRequiredLimits(const dawn::utils::ComboLimits& supported,
++                           dawn::utils::ComboLimits& required) override {
++        required.maxBufferSize = supported.maxBufferSize;
++        required.maxStorageBufferBindingSize = supported.maxStorageBufferBindingSize;
++    }
++};
++
++// Regression test for crbug.com/569161611, crbug.com/529867799, and crbug.com/380487895: when
++// copying a multi-row texture to a buffer with bytesPerRow >= 0x10000000 (256 MiB), ARM Mali GLES
++// drivers overflow a signed 32-bit bit-stride calculation ((int32_t)(GL_PACK_ROW_LENGTH * bpp) * 8)
++// and write row 1 at a negative offset before the PBO, ImgTec PowerVR GLES drivers fail with
++// GL_INVALID_OPERATION, and Qualcomm Adreno GPUs wrap row 1's offset back to 0. Verify that row 0
++// and row 1 land at the expected offsets.
++TEST_P(CopyTests_T2B_No_Format_Param, LargeBytesPerRow256MiB) {
++    constexpr uint32_t kWidth = 2;
++    constexpr uint32_t kHeight = 2;
++    constexpr uint32_t kBytesPerTexel = 4;
++    constexpr uint32_t kBytesPerRow = 0x10000000u;  // 256 MiB
++    constexpr uint64_t kBufferSize = kBytesPerRow + kWidth * kBytesPerTexel;
++
++    DAWN_TEST_UNSUPPORTED_IF(GetSupportedLimits().maxBufferSize < kBufferSize);
++    DAWN_TEST_UNSUPPORTED_IF(HasToggleEnabled("use_blit_for_t2b") &&
++                             GetSupportedLimits().maxStorageBufferBindingSize < kBufferSize);
++
++    wgpu::TextureDescriptor textureDesc;
++    textureDesc.format = wgpu::TextureFormat::RGBA8Unorm;
++    textureDesc.size = {kWidth, kHeight, 1};
++    textureDesc.usage = wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::CopySrc;
++    wgpu::Texture texture = device.CreateTexture(&textureDesc);
++
++    constexpr std::array<uint8_t, 8> kRow0 = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
++    constexpr std::array<uint8_t, 8> kRow1 = {0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x12};
++    std::array<uint8_t, 256 + 8> uploadData{};
++    std::ranges::copy(kRow0, uploadData.begin());
++    std::ranges::copy(kRow1, uploadData.begin() + 256);
++
++    wgpu::TexelCopyTextureInfo dstTextureView =
++        utils::CreateTexelCopyTextureInfo(texture, 0, {0, 0, 0});
++    wgpu::TexelCopyBufferLayout uploadLayout = utils::CreateTexelCopyBufferLayout(0, 256, kHeight);
++    wgpu::Extent3D copySize = {kWidth, kHeight, 1};
++    queue.WriteTexture(&dstTextureView, uploadData.data(), uploadData.size(), &uploadLayout,
++                       &copySize);
++
++    wgpu::BufferDescriptor bufferDesc;
++    bufferDesc.size = kBufferSize;
++    bufferDesc.usage = wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::CopySrc;
++    wgpu::Buffer buffer = device.CreateBuffer(&bufferDesc);
++
++    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++    wgpu::TexelCopyTextureInfo srcTextureView =
++        utils::CreateTexelCopyTextureInfo(texture, 0, {0, 0, 0});
++    wgpu::TexelCopyBufferInfo dstBufferView =
++        utils::CreateTexelCopyBufferInfo(buffer, 0, kBytesPerRow, kHeight);
++    encoder.CopyTextureToBuffer(&srcTextureView, &dstBufferView, &copySize);
++    wgpu::CommandBuffer commands = encoder.Finish();
++    queue.Submit(1, &commands);
++
++    EXPECT_BUFFER_U8_RANGE_EQ(kRow0.data(), buffer, 0, kRow0.size());
++    EXPECT_BUFFER_U8_RANGE_EQ(kRow1.data(), buffer, kBytesPerRow, kRow1.size());
++}
+ 
+ // A regression test for a bug on D3D12 backend that causes crash when doing texture-to-texture
+ // copy one row with the texture format Depth32Float.
+@@ -2586,6 +2647,7 @@ DAWN_INSTANTIATE_TEST(CopyTests_T2B_No_Format_Param,
+                       OpenGLBackend(),
+                       OpenGLESBackend(),
+                       OpenGLESBackend({"gl_defer"}),
++                      OpenGLESBackend({"split_buffer_texture_copy_for_oversized_row"}),
+                       OpenGLESBackend({"use_blit_for_rg11b10ufloat_texture_copy"}),
+                       VulkanBackend(),
+                       VulkanBackend({"use_blit_for_depth32float_texture_to_buffer_copy"}),

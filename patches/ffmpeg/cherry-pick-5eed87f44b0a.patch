@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Liberato <liberato@chromium.org>
+Date: Mon, 5 Oct 2026 22:01:09 +0000
+Subject: avcodec/h264_slice: reset next_output_pic
+
+Ensure next_output_pic is cleared when updating thread context and when
+starting or selecting output for a field.
+
+Bug: 567936265
+Change-Id: I479b6161e286a2c110a18646db0a1691ca24d8f8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/8517542
+Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-by: Syed AbuTalib <lowkey@google.com>
+
+Electron adaptation notes (45-x-y): the h264_field_start() hunk was
+applied by hand because the ffmpeg revision on 45-x-y predates the
+ff_h264_set_erpic() reset block that upstream used as context. The added
+`h->next_output_pic = NULL;` statement is unchanged and sits in the same
+second-field branch; the other two hunks applied verbatim.
+
+diff --git a/libavcodec/h264_slice.c b/libavcodec/h264_slice.c
+index 83b8a410ae39f76a15cab34e6b28680931f156ec..f29a98462a200a418708090b47b2562185d76447 100644
+--- a/libavcodec/h264_slice.c
++++ b/libavcodec/h264_slice.c
+@@ -427,7 +427,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
+     memcpy(h->delayed_pic, h1->delayed_pic, sizeof(h->delayed_pic));
+     memcpy(h->last_pocs,   h1->last_pocs,   sizeof(h->last_pocs));
+ 
+-    h->next_output_pic   = h1->next_output_pic;
++    h->next_output_pic   = NULL;
+     h->next_outputed_poc = h1->next_outputed_poc;
+     h->poc_offset        = h1->poc_offset;
+ 
+@@ -1402,6 +1402,7 @@ static int h264_select_output_frame(H264Context *h)
+             }
+         }
+     } else {
++        h->next_output_pic = NULL;
+         av_log(h->avctx, AV_LOG_DEBUG, "no picture %s\n", out_of_order ? "ooo" : "");
+     }
+ 
+@@ -1638,6 +1639,7 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
+         int field = h->picture_structure == PICT_BOTTOM_FIELD;
+         release_unused_pictures(h, 0);
+         h->cur_pic_ptr->tf.owner[field] = h->avctx;
++        h->next_output_pic = NULL;
+     }
+     /* Some macroblocks can be accessed before they're available in case
+     * of lost slices, MBAFF or threading. */

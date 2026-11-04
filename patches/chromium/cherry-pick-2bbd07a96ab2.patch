@@ -1,0 +1,470 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ari Chivukula <arichiv@chromium.org>
+Date: Thu, 1 Oct 2026 14:36:35 -0700
+Subject: [Clear-Site-Data] Prevent cross-site fetch clearing unpartitioned
+ data
+
+Currently, cross-site fetch requests with CSD headers clear
+unpartitioned storage. This is incorrect, as they should only clear the
+relevant partitioned storage. This CL ensures the StorageKey used for
+CSD logic is set up properly with trusted data from the network service.
+
+Fixed: 566660676, 518053309, 550356947
+Change-Id: I4b7e845a92d4ea09ff08da3342c57ec7d50d0f69
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8463605
+Reviewed-by: mmenke <mmenke@chromium.org>
+Commit-Queue: Ari Chivukula <arichiv@chromium.org>
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Auto-Submit: Ari Chivukula <arichiv@chromium.org>
+Reviewed-by: Lambros Lambrou <lambroslambrou@chromium.org>
+Reviewed-by: Erik Chen <erikchen@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1709414}
+
+diff --git a/chrome/browser/ash/bruschetta/bruschetta_network_context.cc b/chrome/browser/ash/bruschetta/bruschetta_network_context.cc
+index 19976931ef5e491c832df0151357259644f51bb7..9f5bdee894ae42d6ce0b7c155fba0d9077db5a48 100644
+--- a/chrome/browser/ash/bruschetta/bruschetta_network_context.cc
++++ b/chrome/browser/ash/bruschetta/bruschetta_network_context.cc
+@@ -245,6 +245,8 @@ void BruschettaNetworkContext::OnPlatformLocalNetworkPermissionRequired(
+ 
+ void BruschettaNetworkContext::OnClearSiteData(
+     const GURL& url,
++    const std::optional<net::SchemefulSite>& top_level_site,
++    const std::optional<base::UnguessableToken>& nonce,
+     const std::string& header_value,
+     int32_t load_flags,
+     const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/chrome/browser/ash/bruschetta/bruschetta_network_context.h b/chrome/browser/ash/bruschetta/bruschetta_network_context.h
+index 0a8adcbf2e282fd87cdcb36c73a7b90ed5838761..667a328dc9e3936e069c349ef89b1a9fe7706c3a 100644
+--- a/chrome/browser/ash/bruschetta/bruschetta_network_context.h
++++ b/chrome/browser/ash/bruschetta/bruschetta_network_context.h
+@@ -77,6 +77,8 @@ class BruschettaNetworkContext
+       OnPlatformLocalNetworkPermissionRequiredCallback callback) override;
+   void OnClearSiteData(
+       const GURL& url,
++      const std::optional<net::SchemefulSite>& top_level_site,
++      const std::optional<base::UnguessableToken>& nonce,
+       const std::string& header_value,
+       int32_t load_flags,
+       const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/content/browser/network_service_client.cc b/content/browser/network_service_client.cc
+index 7277f249342bde87c2ea434cd9099cee903da46a..9f51bad1c198d3566e0201c14b507ac913e066b1 100644
+--- a/content/browser/network_service_client.cc
++++ b/content/browser/network_service_client.cc
+@@ -300,6 +300,8 @@ void NetworkServiceClient::OnPlatformLocalNetworkPermissionRequired(
+ 
+ void NetworkServiceClient::OnClearSiteData(
+     const GURL& url,
++    const std::optional<net::SchemefulSite>& top_level_site,
++    const std::optional<base::UnguessableToken>& nonce,
+     const std::string& header_value,
+     int load_flags,
+     const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/content/browser/network_service_client.h b/content/browser/network_service_client.h
+index fced78db3ea45be4c4424ac4262c91070fc99466..8da865dc2d7c407f22550e281586f373effcfccd 100644
+--- a/content/browser/network_service_client.h
++++ b/content/browser/network_service_client.h
+@@ -112,6 +112,8 @@ class NetworkServiceClient
+       OnPlatformLocalNetworkPermissionRequiredCallback callback) override;
+   void OnClearSiteData(
+       const GURL& url,
++      const std::optional<net::SchemefulSite>& top_level_site,
++      const std::optional<base::UnguessableToken>& nonce,
+       const std::string& header_value,
+       int load_flags,
+       const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
+index 4bbcd83fe40e2b20082e61097c523e03ecee6d13..f5cd3a9cb99af7d1912620dd42aebb2d9b249d68 100644
+--- a/content/browser/storage_partition_impl.cc
++++ b/content/browser/storage_partition_impl.cc
+@@ -2778,12 +2778,31 @@ void StoragePartitionImpl::OnCanSendDomainReliabilityUpload(
+ 
+ void StoragePartitionImpl::OnClearSiteData(
+     const GURL& url,
++    const std::optional<net::SchemefulSite>& top_level_site,
++    const std::optional<base::UnguessableToken>& nonce,
+     const std::string& header_value,
+     int load_flags,
+     const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+     bool partitioned_state_allowed_only,
+     OnClearSiteDataCallback callback) {
+   CHECK(initialized_, base::NotFatalUntil::M159);
++  // Theoretically, it's possible for CHIPS/3PCP to be off while storage
++  // partitioning is enabled, so we cannot directly derive `nonce` and
++  // `top_level_site` from `cookie_partition_key`. That said, where
++  // `cookie_partition_key` is set, it should match `nonce` and
++  // `top_level_site`. Enforcement is delayed to ensure no WebView problems.
++  if (cookie_partition_key) {
++    CHECK(top_level_site, base::NotFatalUntil::M160);
++    CHECK_EQ(*top_level_site, cookie_partition_key->site(),
++             base::NotFatalUntil::M160);
++    if (cookie_partition_key->nonce()) {
++      CHECK(nonce, base::NotFatalUntil::M160);
++      CHECK_EQ(*nonce, *cookie_partition_key->nonce(),
++               base::NotFatalUntil::M160);
++    } else {
++      CHECK(!nonce, base::NotFatalUntil::M160);
++    }
++  }
+ 
+   base::WeakPtr<WebContents> weak_web_contents;
+   WebContents* web_contents =
+@@ -2795,11 +2814,13 @@ void StoragePartitionImpl::OnClearSiteData(
+         blink::mojom::WebFeature::kClearSiteData);
+   }
+ 
+-  std::optional<blink::StorageKey> storage_key = CalculateStorageKey(
+-      url::Origin::Create(url),
+-      cookie_partition_key.has_value()
+-          ? base::OptionalToPtr(cookie_partition_key.value().nonce())
+-          : nullptr);
++  // TODO(crbug.com/567972108): This function is quite fragile as the render
++  // frame host tree may not be able to accurately calculate the StorageKey in
++  // some cases (like cross-site fetches). Ideally the network service would be
++  // able to calculate and send the accurate storage key directly.
++  std::optional<blink::StorageKey> storage_key =
++      CalculateStorageKeyForClearSiteData(url::Origin::Create(url),
++                                          top_level_site, nonce);
+ 
+   ClearSiteDataHandler::HandleHeader(
+       browser_context()->GetWeakPtr(), weak_web_contents, GetConfig(), url,
+@@ -3712,9 +3733,11 @@ void StoragePartitionImpl::BindSessionStorageAreaForProcess(
+                                         base::DoNothing());
+ }
+ 
+-std::optional<blink::StorageKey> StoragePartitionImpl::CalculateStorageKey(
++std::optional<blink::StorageKey>
++StoragePartitionImpl::CalculateStorageKeyForClearSiteData(
+     const url::Origin& origin,
+-    const base::UnguessableToken* nonce) {
++    const std::optional<net::SchemefulSite>& top_level_site,
++    const std::optional<base::UnguessableToken>& nonce) {
+   if (!blink::StorageKey::IsThirdPartyStoragePartitioningEnabled()) {
+     return std::nullopt;
+   }
+@@ -3746,7 +3769,22 @@ std::optional<blink::StorageKey> StoragePartitionImpl::CalculateStorageKey(
+     return std::nullopt;
+   }
+ 
+-  return frame_host->CalculateStorageKey(origin, nonce);
++  blink::StorageKey proposed_storage_key =
++      frame_host->CalculateStorageKey(origin, base::OptionalToPtr(nonce));
++
++  // It's possible to get a 1P key above despite being in a cross-site fetch.
++  // The logic below resolves the issue by reconstructing the 3P key using
++  // trusted data from the network service to derive the correct 3P StorageKey.
++  // This ensures when a Clear-Site-Data header is seen in a 1P context on a
++  // fetch we clear 1P and 3P data, but when the same header is seen in a 3P
++  // context, only the 3P data is cleared.
++  if (proposed_storage_key.IsFirstPartyContext() && top_level_site &&
++      *top_level_site != proposed_storage_key.top_level_site()) {
++    proposed_storage_key = blink::StorageKey::Create(
++        proposed_storage_key.origin(), *top_level_site,
++        blink::mojom::AncestorChainBit::kCrossSite);
++  }
++  return proposed_storage_key;
+ }
+ 
+ GlobalRenderFrameHostId
+diff --git a/content/browser/storage_partition_impl.h b/content/browser/storage_partition_impl.h
+index f7d66e989842b103f37c4a7b12d1cfef2dde22b4..a93dd4a1a4e2d8e599cf65dc9778593fe513e1c8 100644
+--- a/content/browser/storage_partition_impl.h
++++ b/content/browser/storage_partition_impl.h
+@@ -353,6 +353,8 @@ class CONTENT_EXPORT StoragePartitionImpl
+       OnPlatformLocalNetworkPermissionRequiredCallback callback) override;
+   void OnClearSiteData(
+       const GURL& url,
++      const std::optional<net::SchemefulSite>& top_level_site,
++      const std::optional<base::UnguessableToken>& nonce,
+       const std::string& header_value,
+       int load_flags,
+       const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+@@ -550,8 +552,8 @@ class CONTENT_EXPORT StoragePartitionImpl
+       network::OriginatingProcessId process_id;
+       std::optional<url::Origin> worker_origin;
+       // Holds the storage key of the worker that owns this network context.
+-      // When present, `CalculateStorageKey()` uses this key to scope
+-      // Clear-Site-Data filter deletions to the worker's top-level site
++      // When present, `CalculateStorageKeyForClearSiteData()` uses this key to
++      // scope Clear-Site-Data filter deletions to the worker's top-level site
+       // partition. Is `std::nullopt` for contexts that lack a worker storage
+       // key.
+       std::optional<blink::StorageKey> storage_key;
+@@ -746,9 +748,10 @@ class CONTENT_EXPORT StoragePartitionImpl
+   void CreateURLLoaderFactoryForBrowserProcessInternal(
+       mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory);
+ 
+-  std::optional<blink::StorageKey> CalculateStorageKey(
++  std::optional<blink::StorageKey> CalculateStorageKeyForClearSiteData(
+       const url::Origin& origin,
+-      const base::UnguessableToken* nonce);
++      const std::optional<net::SchemefulSite>& top_level_site,
++      const std::optional<base::UnguessableToken>& nonce);
+ 
+   GlobalRenderFrameHostId GetRenderFrameHostIdFromNetworkContext();
+ 
+diff --git a/remoting/base/url_loader_network_service_observer.cc b/remoting/base/url_loader_network_service_observer.cc
+index 756162dfae5f3910913b49ae91600d0115badff9..1327be4d7245ea60696ed4df67c0d15539864751 100644
+--- a/remoting/base/url_loader_network_service_observer.cc
++++ b/remoting/base/url_loader_network_service_observer.cc
+@@ -99,6 +99,8 @@ void UrlLoaderNetworkServiceObserver::OnPlatformLocalNetworkPermissionRequired(
+ 
+ void UrlLoaderNetworkServiceObserver::OnClearSiteData(
+     const GURL& url,
++    const std::optional<net::SchemefulSite>& top_level_site,
++    const std::optional<base::UnguessableToken>& nonce,
+     const std::string& header_value,
+     int32_t load_flags,
+     const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/remoting/base/url_loader_network_service_observer.h b/remoting/base/url_loader_network_service_observer.h
+index f18eea209ba042204bd39c5a73be8451e937760f..4be8097274ae8cb01b200f4b4a3b5d87b45b251b 100644
+--- a/remoting/base/url_loader_network_service_observer.h
++++ b/remoting/base/url_loader_network_service_observer.h
+@@ -65,6 +65,8 @@ class UrlLoaderNetworkServiceObserver
+       OnPlatformLocalNetworkPermissionRequiredCallback callback) override;
+   void OnClearSiteData(
+       const GURL& url,
++      const std::optional<net::SchemefulSite>& top_level_site,
++      const std::optional<base::UnguessableToken>& nonce,
+       const std::string& header_value,
+       int load_flags,
+       const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/services/network/network_service_network_delegate.cc b/services/network/network_service_network_delegate.cc
+index 7420f19f602c68b2ddc36a80be20caf06c3d1943..e9fa46157e819d30df8cc1459fc2bf3405f7b428 100644
+--- a/services/network/network_service_network_delegate.cc
++++ b/services/network/network_service_network_delegate.cc
+@@ -433,7 +433,12 @@ int NetworkServiceNetworkDelegate::HandleClearSiteDataHeader(
+       net::NetworkDelegate::PrivacySetting::kPartitionedStateAllowedOnly;
+ 
+   url_loader_network_observer->OnClearSiteData(
+-      request->url(), *header_value, request->load_flags(),
++      request->url(),
++      request->isolation_info().top_frame_origin()
++          ? std::make_optional(net::SchemefulSite(
++                *request->isolation_info().top_frame_origin()))
++          : std::nullopt,
++      request->isolation_info().nonce(), *header_value, request->load_flags(),
+       request->cookie_partition_key(), partitioned_state_allowed_only,
+       base::BindOnce(&NetworkServiceNetworkDelegate::FinishedClearSiteData,
+                      weak_ptr_factory_.GetWeakPtr(), request->GetWeakPtr(),
+diff --git a/services/network/network_service_unittest.cc b/services/network/network_service_unittest.cc
+index 0cb7bed674f984757c7d4fb504c398852471c5f2..84c0a04666b16fa76ea93f39ef89a761658ff5dd 100644
+--- a/services/network/network_service_unittest.cc
++++ b/services/network/network_service_unittest.cc
+@@ -2138,6 +2138,8 @@ class ClearSiteDataAuthCertObserver : public TestURLLoaderNetworkObserver {
+ 
+   void OnClearSiteData(
+       const GURL& url,
++      const std::optional<net::SchemefulSite>& top_level_site,
++      const std::optional<base::UnguessableToken>& nonce,
+       const std::string& header_value,
+       int load_flags,
+       const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/services/network/public/mojom/url_loader_network_service_observer.mojom b/services/network/public/mojom/url_loader_network_service_observer.mojom
+index cb5c8cad57a6e83bb9f7d447865753126423a5c5..967585dfef6fa4be934055549058b630d5e0d246 100644
+--- a/services/network/public/mojom/url_loader_network_service_observer.mojom
++++ b/services/network/public/mojom/url_loader_network_service_observer.mojom
+@@ -14,10 +14,12 @@ import "services/network/public/mojom/http_response_headers.mojom";
+ import "services/network/public/mojom/ip_address.mojom";
+ import "services/network/public/mojom/ip_address_space.mojom";
+ import "services/network/public/mojom/network_param.mojom";
++import "services/network/public/mojom/schemeful_site.mojom";
+ import "services/network/public/mojom/ssl_info.mojom";
+ import "services/network/public/mojom/x509_certificate.mojom";
+ import "url/mojom/origin.mojom";
+ import "url/mojom/url.mojom";
++import "mojo/public/mojom/base/unguessable_token.mojom";
+ 
+ // Result of a Local Network Access permission check.
+ enum LocalNetworkAccessResult {
+@@ -181,6 +183,8 @@ interface URLLoaderNetworkServiceObserver {
+   // TODO(crbug.com/41409604): We might want to move header parsing work to
+   // Network Service for security concerns (e.g. |header_value| => booleans).
+   OnClearSiteData(url.mojom.Url url,
++                  SchemefulSite? top_level_site,
++                  mojo_base.mojom.UnguessableToken? nonce,
+                   string header_value,
+                   int32 load_flags,
+                   CookiePartitionKey? cookie_partition_key,
+diff --git a/services/network/test/test_url_loader_network_observer.cc b/services/network/test/test_url_loader_network_observer.cc
+index 02a671515a779988f563d1743bd58dcac8cff561..004d80cd9b96b862f9edad3a015393de4ba4fd53 100644
+--- a/services/network/test/test_url_loader_network_observer.cc
++++ b/services/network/test/test_url_loader_network_observer.cc
+@@ -61,6 +61,8 @@ void TestURLLoaderNetworkObserver::OnPlatformLocalNetworkPermissionRequired(
+ 
+ void TestURLLoaderNetworkObserver::OnClearSiteData(
+     const GURL& url,
++    const std::optional<net::SchemefulSite>& top_level_site,
++    const std::optional<base::UnguessableToken>& nonce,
+     const std::string& header_value,
+     int32_t load_flags,
+     const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/services/network/test/test_url_loader_network_observer.h b/services/network/test/test_url_loader_network_observer.h
+index d078db576f8cbefbe6b74887a7c84a383e31e6d3..3e00d0b1ea1df0f5198f165af9313c7b6cd07ba6 100644
+--- a/services/network/test/test_url_loader_network_observer.h
++++ b/services/network/test/test_url_loader_network_observer.h
+@@ -60,6 +60,8 @@ class TestURLLoaderNetworkObserver
+       OnPlatformLocalNetworkPermissionRequiredCallback callback) override;
+   void OnClearSiteData(
+       const GURL& url,
++      const std::optional<net::SchemefulSite>& top_level_site,
++      const std::optional<base::UnguessableToken>& nonce,
+       const std::string& header_value,
+       int32_t load_flags,
+       const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+diff --git a/third_party/blink/web_tests/external/wpt/clear-site-data/no-cors-fetch-iframe.https.sub.html b/third_party/blink/web_tests/external/wpt/clear-site-data/no-cors-fetch-iframe.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..dbb71380301728a8ebf196267fe50b881f8f9e34
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/clear-site-data/no-cors-fetch-iframe.https.sub.html
+@@ -0,0 +1,45 @@
++<!DOCTYPE html>
++<body>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script>
++// Here's the set-up for this test:
++// Step 1 (window) Opens new iframe to set storage.
++// Step 2 (iframe) Sets storage and sends message back.
++// Step 3 (window) Does no-cors fetch request to clear site data.
++// Step 4 (fetch target) Tries to clear site data.
++// Step 5 (window) Asks second window to find storage after waiting for clear.
++// Step 6 (iframe) Sees if storage is still set.
++async_test(t => {
++    const iframe = document.createElement('iframe');
++
++    window.addEventListener("message", t.step_func(e => {
++        switch(e.data) {
++            case "set":
++                // Step 3
++                fetch(
++                    "https://{{hosts[alt][]}}:{{ports[https][0]}}/clear-site-data/support/no-cors-fetch-clear-site-data.html",
++                    {mode: 'no-cors', credentials: 'include'}
++                ).then((r) => {
++                    // Step 5
++                    setTimeout(() => {
++                        iframe.contentWindow.postMessage("find", "*");
++                    }, 1000);
++                });
++                break;
++            case "found":
++                assert_false("Data should be cleared.");
++                break;
++            case "missing":
++                t.done();
++                break;
++        }
++    }));
++
++    // Step 1
++    iframe.src = "https://{{hosts[alt][]}}:{{ports[https][0]}}/clear-site-data/support/no-cors-fetch-util.html";
++    document.body.appendChild(iframe);
++}, "Clearing site data via no-cors cross-site request should work on partitioned data.");
++</script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/clear-site-data/no-cors-fetch-window.https.sub.html b/third_party/blink/web_tests/external/wpt/clear-site-data/no-cors-fetch-window.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..959b587754934cd3f6b129a54d280012a2558683
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/clear-site-data/no-cors-fetch-window.https.sub.html
+@@ -0,0 +1,45 @@
++<!DOCTYPE html>
++<body>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script>
++// Here's the set-up for this test:
++// Step 1 (first window) Opens new window to set storage.
++// Step 2 (second window) Sets storage and sends message back.
++// Step 3 (first window) Does no-cors fetch request to clear site data.
++// Step 4 (fetch target) Tries to clear site data.
++// Step 5 (first window) Asks second window to find storage after waiting for clear.
++// Step 6 (second window) Sees if storage is still set.
++async_test(t => {
++    let new_window;
++
++    window.addEventListener("message", t.step_func(e => {
++        switch(e.data) {
++            case "set":
++                // Step 3
++                fetch(
++                    "https://{{hosts[alt][]}}:{{ports[https][0]}}/clear-site-data/support/no-cors-fetch-clear-site-data.html",
++                    {mode: 'no-cors', credentials: 'include'}
++                ).then((r) => {
++                    // Step 5
++                    setTimeout(() => {
++                        new_window.postMessage("find", "*");
++                    }, 1000);
++                });
++                break;
++            case "found":
++                t.done();
++                break;
++            case "missing":
++                assert_false("Data should not be cleared.");
++                break;
++        }
++    }));
++
++    // Step 1
++    new_window = window.open("https://{{hosts[alt][]}}:{{ports[https][0]}}/clear-site-data/support/no-cors-fetch-util.html");
++    t.add_cleanup(new_window.close);
++}, "Clearing site data via no-cors cross-site request should not work on unpartitioned data.");
++</script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-clear-site-data.html b/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-clear-site-data.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..9ca7ad13c0c842ae2e132b12ebbef354b9d33ffb
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-clear-site-data.html
+@@ -0,0 +1,2 @@
++<!DOCTYPE html>
++<!-- // Step 4 (clear-site-data/no-cors-fetch-*.html) -->
+\ No newline at end of file
+diff --git a/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-clear-site-data.html.headers b/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-clear-site-data.html.headers
+new file mode 100644
+index 0000000000000000000000000000000000000000..ee7a0c52e1811bd770af29efcbd7e8d120813a50
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-clear-site-data.html.headers
+@@ -0,0 +1 @@
++Clear-Site-Data: "storage"
+diff --git a/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-util.html b/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-util.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..447c6da79d39eea22c20c87fb12d1016c39f7294
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/clear-site-data/support/no-cors-fetch-util.html
+@@ -0,0 +1,20 @@
++<!DOCTYPE html>
++<html>
++<header>
++<script>
++const randomStr = Math.random().toString();
++window.addEventListener("message", (event) => {
++    switch (event.data) {
++        case "find":
++            // Step 6 (clear-site-data/no-cors-fetch-*.html)
++            const did_find = localStorage.getItem(randomStr) != null;
++            (window.opener || window.top).postMessage(did_find ? "found" : "missing", "*");
++            break;
++    }
++});
++// Step 2 (clear-site-data/no-cors-fetch-*.html)
++window.localStorage.setItem(randomStr, randomStr);
++(window.opener || window.top).postMessage("set", "*");
++</script>
++</header>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/lint.ignore b/third_party/blink/web_tests/external/wpt/lint.ignore
+index 51f18deac5e6225686ec1574c289a1ac8a6996d7..05ba25955a4c48eb5ac656500e9e0e98da2dcf13 100644
+--- a/third_party/blink/web_tests/external/wpt/lint.ignore
++++ b/third_party/blink/web_tests/external/wpt/lint.ignore
+@@ -171,6 +171,8 @@ SET TIMEOUT: annotation-model/scripts/ajv.min.js
+ SET TIMEOUT: apng/animated-png-timeout.html
+ SET TIMEOUT: avif/animated-avif-timeout.html
+ SET TIMEOUT: jpegxl/animated-img-timeout.html
++SET TIMEOUT: clear-site-data/no-cors-fetch-iframe.https.sub.html
++SET TIMEOUT: clear-site-data/no-cors-fetch-window.https.sub.html
+ SET TIMEOUT: cookies/resources/testharness-helpers.js
+ SET TIMEOUT: common/reftest-wait.js
+ SET TIMEOUT: compute-pressure/resources/support-iframe.html

@@ -1,0 +1,358 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Thu, 1 Oct 2026 13:18:16 -0700
+Subject: Synchronize form control autofill state with suggested values
+
+Previously, HTMLFormControlElement::autofill_state_ could become
+desynchronized from the rendered suggestion state (suggested_option_ on
+HTMLSelectElement and suggested_value_ on TextControlElement) when DOM
+operations reset autofill_state_ to kNotFilled without clearing the
+suggestion:
+
+- On HTMLSelectElement, operations like self-assigning
+  select.selectedIndex or form.reset() reset autofill_state_ to
+  kNotFilled without clearing suggested_option_ or closing the preview
+  popover.
+- On TextControlElement (HTMLInputElement and HTMLTextAreaElement),
+  operations like setting input.checked or input.defaultChecked called
+  SetAutofillState(kNotFilled) without clearing suggested_value_, which
+  re-enabled field-sizing:content sizing on the previewed suggestion
+  text. Additionally, self-assigning textarea.value returned early
+  before updating autofill_state_.
+
+This change makes HTMLFormControlElement::SetAutofillState() virtual and
+overrides it in both HTMLSelectElement and TextControlElement so that
+transitioning autofill_state_ away from a previewed/filled state clears
+any active suggested_option_ or suggested_value_. Because
+SetAutofillState() now clears the suggestion when resetting to
+kNotFilled, SetSuggestedValue() and SetSuggestedOption() are updated to
+set suggested_value_ and suggested_option_ before calling
+SetAutofillState() to avoid infinite recursion when clearing a
+suggestion. It also ensures HTMLTextAreaElement::SetValueCommon()
+updates autofill_state_ before its early return when the value is
+unchanged, and replaces the temporary FindBuffer popover check with a
+CHECK.
+
+Fixed: 556233596, 562224383, 562225118
+Change-Id: I3decec2a1dab8029d9c275c0bbc5e0b8b47c478b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8480911
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1709341}
+
+diff --git a/third_party/blink/renderer/core/editing/finder/find_buffer.cc b/third_party/blink/renderer/core/editing/finder/find_buffer.cc
+index 3bf7601aa6f458a06a9da97b4b74a2a9bf69483a..c0c229030717883bbb11fa3eee8409968a87d452 100644
+--- a/third_party/blink/renderer/core/editing/finder/find_buffer.cc
++++ b/third_party/blink/renderer/core/editing/finder/find_buffer.cc
+@@ -83,15 +83,12 @@ bool FindBuffer::ShouldIgnoreContents(const Node& node) {
+         return true;
+       }
+     }
+-    // TODO(crbug.com/562224383): Fix the state desync issue between
+-    // autofill_state_ and suggested_option_ and replace this temporary fix
+-    // with a CHECK that the autofill popover is closed.
++    // The autofill popover should not be showing, otherwise it would be
++    // possible for the page to figure out what the suggested option is.
+     if (const auto* select = DynamicTo<HTMLSelectElement>(element)) {
+       HTMLSelectElement::SelectAutofillPreviewElement* preview =
+           select->GetAutofillPreviewElement();
+-      if (preview && preview->popoverOpen()) {
+-        return true;
+-      }
++      CHECK(!preview || !preview->popoverOpen());
+     }
+   }
+ 
+diff --git a/third_party/blink/renderer/core/editing/finder/find_buffer_test.cc b/third_party/blink/renderer/core/editing/finder/find_buffer_test.cc
+index dd15bbd517873ec6fe944a2dc13918017ad1b03e..e56245e862f1c3a8ddb38340fec488b113dcc210 100644
+--- a/third_party/blink/renderer/core/editing/finder/find_buffer_test.cc
++++ b/third_party/blink/renderer/core/editing/finder/find_buffer_test.cc
+@@ -842,10 +842,12 @@ TEST_P(FindBufferParamTest, DoNotSearchInSelectSuggestedOption) {
+     <style>
+       #s option { visibility: hidden; }
+     </style>
+-    <select id="s" size="2">
+-      <option value="val1">secret</option>
+-      <option value="val2">other</option>
+-    </select>
++    <form id="f">
++      <select id="s" size="2">
++        <option value="val1">secret</option>
++        <option value="val2">other</option>
++      </select>
++    </form>
+   )HTML");
+ 
+   auto* select = To<HTMLSelectElement>(GetElementById("s"));
+@@ -861,12 +863,11 @@ TEST_P(FindBufferParamTest, DoNotSearchInSelectSuggestedOption) {
+     EXPECT_EQ(0U, results.CountForTesting());
+   }
+ 
+-  // Self-assigning selectedIndex resets autofill state potentially without
+-  // hiding the preview popover. Make sure that this does not affect
+-  // findability.
++  // Self-assigning selectedIndex resets autofill state and hides the preview
++  // popover so state and UI cannot desynchronize.
+   select->setSelectedIndex(select->selectedIndex());
+   ASSERT_FALSE(select->IsPreviewed());
+-  ASSERT_TRUE(select->GetAutofillPreviewElement()->popoverOpen());
++  ASSERT_FALSE(select->GetAutofillPreviewElement()->popoverOpen());
+   GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kTest);
+ 
+   {
+diff --git a/third_party/blink/renderer/core/html/forms/html_form_control_element.h b/third_party/blink/renderer/core/html/forms/html_form_control_element.h
+index 560f2f0b73812531f3af46991af0ae320b2afaba..d7c515455b30d667487910e9cd7aae73ca792ca9 100644
+--- a/third_party/blink/renderer/core/html/forms/html_form_control_element.h
++++ b/third_party/blink/renderer/core/html/forms/html_form_control_element.h
+@@ -130,7 +130,8 @@ class CORE_EXPORT HTMLFormControlElement : public HTMLElement,
+   bool IsPreviewed() const {
+     return autofill_state_ == WebAutofillState::kPreviewed;
+   }
+-  void SetAutofillState(WebAutofillState = WebAutofillState::kAutofilled);
++  virtual void SetAutofillState(
++      WebAutofillState = WebAutofillState::kAutofilled);
+   // Returns true if this element can be autofilled by the embedder's Autofill
+   // agent.
+   bool IsAutofillable() const;
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element.cc b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+index 97429e31251f79fad02bfb8d2f8b16c505799c52..00f4a24414815d15f763519bfe7a9ccc8e67d925 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+@@ -1318,8 +1318,8 @@ void HTMLInputElement::SetSuggestedValue(const String& value) {
+   if (!input_type_->CanSetSuggestedValue()) {
+     // Clear the suggested value because it may have been set when
+     // `input_type_->CanSetSuggestedValue()` was true.
+-    SetAutofillState(WebAutofillState::kNotFilled);
+     TextControlElement::SetSuggestedValue(String());
++    SetAutofillState(WebAutofillState::kNotFilled);
+     return;
+   }
+   needs_to_update_view_value_ = true;
+@@ -1331,9 +1331,9 @@ void HTMLInputElement::SetSuggestedValue(const String& value) {
+     sanitized_value = String();
+   }
+ 
++  TextControlElement::SetSuggestedValue(sanitized_value);
+   SetAutofillState(sanitized_value.empty() ? WebAutofillState::kNotFilled
+                                            : WebAutofillState::kPreviewed);
+-  TextControlElement::SetSuggestedValue(sanitized_value);
+ 
+   // Update the suggested value revelation.
+   if (auto* placeholder = PlaceholderElement()) {
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element_test.cc b/third_party/blink/renderer/core/html/forms/html_input_element_test.cc
+index 237cc15b8f0add89374b0580295984676720ff90..dec221bcbc099f79f782b43fde1ff9efddd11d4b 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element_test.cc
++++ b/third_party/blink/renderer/core/html/forms/html_input_element_test.cc
+@@ -712,7 +712,18 @@ TEST_F(HTMLInputElementTest, SuggestedValueFontFamilyIsGeneric) {
+   EXPECT_TRUE(style->GetFontDescription().Family().FamilyIsGeneric());
+ }
+ 
++TEST_F(HTMLInputElementTest, SetCheckedForBindingClearsSuggestedValue) {
++  GetDocument().body()->SetInnerHTMLWithoutTrustedTypes("<input id=test>");
++  HTMLInputElement& input = TestElement();
++  input.SetSuggestedValue("preview");
++  input.SetAutofillState(WebAutofillState::kPreviewed);
++  EXPECT_EQ("preview", input.SuggestedValue());
++  EXPECT_EQ(WebAutofillState::kPreviewed, input.GetAutofillState());
+ 
++  input.setCheckedForBinding(false);
++  EXPECT_TRUE(input.SuggestedValue().empty());
++  EXPECT_EQ(WebAutofillState::kNotFilled, input.GetAutofillState());
++}
+ 
+ // Removing a disabled <fieldset> notifies its descendants in tree order.
+ // Removing the checked radio button re-validates the remaining (still
+diff --git a/third_party/blink/renderer/core/html/forms/html_select_element.cc b/third_party/blink/renderer/core/html/forms/html_select_element.cc
+index 3b4879aa8d18934c74753eab48013c44518793b8..b6d15311839510cec17e47cdd471da4b4c904272 100644
+--- a/third_party/blink/renderer/core/html/forms/html_select_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_select_element.cc
+@@ -360,6 +360,13 @@ void HTMLSelectElement::SetAutofillOption(HTMLOptionElement* option,
+   interacted_state_ = interacted_state;
+ }
+ 
++void HTMLSelectElement::SetAutofillState(WebAutofillState autofill_state) {
++  if (autofill_state != WebAutofillState::kPreviewed) {
++    SetSuggestedOption(nullptr);
++  }
++  HTMLFormControlElementWithState::SetAutofillState(autofill_state);
++}
++
+ String HTMLSelectElement::SuggestedValue() const {
+   return suggested_option_ ? suggested_option_->value() : "";
+ }
+@@ -393,9 +400,9 @@ void HTMLSelectElement::SetSuggestedOption(HTMLOptionElement* option) {
+   if (suggested_option_ == option) {
+     return;
+   }
++  suggested_option_ = option;
+   SetAutofillState(option ? WebAutofillState::kPreviewed
+                           : WebAutofillState::kNotFilled);
+-  suggested_option_ = option;
+ 
+   select_type_->DidSetSuggestedOption(option);
+ }
+diff --git a/third_party/blink/renderer/core/html/forms/html_select_element.h b/third_party/blink/renderer/core/html/forms/html_select_element.h
+index 63e158a9ab381577cf9012adbe0a30f96a64e383..93305258e9ade3b6ff4160916706044abdcea764 100644
+--- a/third_party/blink/renderer/core/html/forms/html_select_element.h
++++ b/third_party/blink/renderer/core/html/forms/html_select_element.h
+@@ -134,6 +134,8 @@ class CORE_EXPORT HTMLSelectElement final
+ 
+   // It is possible to pass WebAutofillState::kNotFilled here in case we need
+   // to simulate a reset of a <select> element.
++  void SetAutofillState(
++      WebAutofillState = WebAutofillState::kAutofilled) override;
+   void SetAutofillValue(const String& value, WebAutofillState);
+   void SetAutofillOption(HTMLOptionElement* option, WebAutofillState);
+ 
+diff --git a/third_party/blink/renderer/core/html/forms/html_text_area_element.cc b/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
+index 8f0802e2c0c8b1d12cd02081743b2acea5bbd7b9..0e4f48c29c404101d552e05cec773e56b00859ae 100644
+--- a/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
+@@ -627,6 +627,7 @@ void HTMLTextAreaElement::SetValueCommon(const String& new_value,
+ 
+   // Clear the suggested value. Use the base class version to not trigger a view
+   // update.
++  SetAutofillState(autofill_state);
+   TextControlElement::SetSuggestedValue(String());
+ 
+   // Return early because we don't want to trigger other side effects when the
+@@ -685,7 +686,6 @@ void HTMLTextAreaElement::SetValueCommon(const String& new_value,
+                       std::min(end_of_string, selection_end));
+   }
+ 
+-  SetAutofillState(autofill_state);
+   NotifyFormStateChanged();
+   switch (event_behavior) {
+     case TextFieldEventBehavior::kDispatchChangeEvent:
+@@ -736,9 +736,9 @@ void HTMLTextAreaElement::SetSuggestedValue(const String& value) {
+     // information to javascript.
+     sanitized_value = String();
+   }
++  TextControlElement::SetSuggestedValue(sanitized_value);
+   SetAutofillState(!sanitized_value.empty() ? WebAutofillState::kPreviewed
+                                             : WebAutofillState::kNotFilled);
+-  TextControlElement::SetSuggestedValue(sanitized_value);
+   SetNeedsStyleRecalc(
+       kSubtreeStyleChange,
+       StyleChangeReasonForTracing::Create(style_change_reason::kControlValue));
+diff --git a/third_party/blink/renderer/core/html/forms/text_control_element.cc b/third_party/blink/renderer/core/html/forms/text_control_element.cc
+index 587a669c6791418900c780e1a6996360dae3895b..c25e6b8327c77dfb681cf3639c2dc4b170c88d85 100644
+--- a/third_party/blink/renderer/core/html/forms/text_control_element.cc
++++ b/third_party/blink/renderer/core/html/forms/text_control_element.cc
+@@ -1367,6 +1367,14 @@ void TextControlElement::SetAutofillValue(const String& value,
+            value.empty() ? WebAutofillState::kNotFilled : autofill_state);
+ }
+ 
++void TextControlElement::SetAutofillState(WebAutofillState autofill_state) {
++  if (autofill_state == WebAutofillState::kNotFilled &&
++      !SuggestedValue().empty()) {
++    SetSuggestedValue(String());
++  }
++  HTMLFormControlElementWithState::SetAutofillState(autofill_state);
++}
++
+ void TextControlElement::SetSuggestedValue(const String& value) {
+   // Avoid calling maxLength() if possible as it's non-trivial.
+   const String new_suggested_value =
+diff --git a/third_party/blink/renderer/core/html/forms/text_control_element.h b/third_party/blink/renderer/core/html/forms/text_control_element.h
+index 02c79340054d31fe635829aadbcdd3db1f34ef8d..f86cff77a3ecb088f05a34fec8a4356a692e0115 100644
+--- a/third_party/blink/renderer/core/html/forms/text_control_element.h
++++ b/third_party/blink/renderer/core/html/forms/text_control_element.h
+@@ -195,6 +195,9 @@ class CORE_EXPORT TextControlElement : public HTMLFormControlElementWithState {
+   void SetAutofillValue(const String& value,
+                         WebAutofillState = WebAutofillState::kAutofilled);
+ 
++  void SetAutofillState(
++      WebAutofillState = WebAutofillState::kAutofilled) override;
++
+   // A null value indicates that the suggested value should be hidden.
+   virtual void SetSuggestedValue(const String& value);
+   const String& SuggestedValue() const;
+diff --git a/third_party/blink/renderer/core/testing/internals.cc b/third_party/blink/renderer/core/testing/internals.cc
+index a365c355a552b82f0c976b08bab66d86152eff77..efb18dea431ee47f80b2e17f334fb276ff00a5fe 100644
+--- a/third_party/blink/renderer/core/testing/internals.cc
++++ b/third_party/blink/renderer/core/testing/internals.cc
+@@ -1781,8 +1781,14 @@ void Internals::setSuggestedValue(Element* element,
+     textarea->SetSuggestedValue(value);
+ 
+   if (auto* select = DynamicTo<HTMLSelectElement>(*element)) {
+-    // A Null string resets the suggested value.
+-    select->SetSuggestedValue(value.empty() ? String() : value);
++    // Pass `value` directly so that an empty string can still match an
++    // `<option value="">` (and resets the suggestion if no option matches).
++    // Return early because HTMLSelectElement::SetSuggestedValue() already
++    // updates the autofill state based on whether a matching option was found,
++    // and calling SetAutofillState(kNotFilled) below for an empty `value`
++    // would clear a matched `<option value="">` suggestion.
++    select->SetSuggestedValue(value);
++    return;
+   }
+ 
+   To<HTMLFormControlElement>(element)->SetAutofillState(
+diff --git a/third_party/blink/web_tests/fast/forms/suggested-value-do-not-search.html b/third_party/blink/web_tests/fast/forms/suggested-value-do-not-search.html
+index b7f5b6fb81088c11d61894a013c72b8414cafecc..09d1e830a2395a57599648200f27873bc588f1fa 100644
+--- a/third_party/blink/web_tests/fast/forms/suggested-value-do-not-search.html
++++ b/third_party/blink/web_tests/fast/forms/suggested-value-do-not-search.html
+@@ -130,9 +130,8 @@ if (!window.internals) {
+     assert_false(lookup('preview'));
+     assert_false(lookup('view'));
+ 
+-    // Self-assigning selectedIndex resets autofill state potentially without
+-    // hiding the preview popover. Make sure that this does not affect
+-    // findability.
++    // Self-assigning selectedIndex resets autofill state and clears the
++    // suggested option and preview popover.
+     listbox.selectedIndex = listbox.selectedIndex;
+     assert_false(lookup('preview'));
+     assert_false(lookup('view'));
+diff --git a/third_party/blink/web_tests/fast/forms/text/text-field-sizing-autofill.html b/third_party/blink/web_tests/fast/forms/text/text-field-sizing-autofill.html
+index 65a9efc173b28bfef9a6d8cf1e7205b59c988c4b..bcd9e9a44fd7719bd3f90b5f187b7f9b3f2e9b48 100644
+--- a/third_party/blink/web_tests/fast/forms/text/text-field-sizing-autofill.html
++++ b/third_party/blink/web_tests/fast/forms/text/text-field-sizing-autofill.html
+@@ -17,5 +17,22 @@ test(() => {
+   internals.setSuggestedValue(target, 's');
+   assert_equals(target.offsetWidth, reference.offsetWidth);
+ }, 'field-sizing:content is not applied to autofilled controls');
+-</script>
+ 
++test(() => {
++  target.value = '';
++  const emptyWidth = target.offsetWidth;
++  assert_less_than(emptyWidth, reference.offsetWidth);
++
++  internals.setSuggestedValue(target, 'suggested quick brown fox jumps');
++  assert_equals(target.offsetWidth, reference.offsetWidth);
++
++  target.defaultChecked = true;
++  assert_equals(target.offsetWidth, emptyWidth);
++
++  internals.setSuggestedValue(target, 'suggested quick brown fox jumps');
++  assert_equals(target.offsetWidth, reference.offsetWidth);
++
++  target.checked = target.checked;
++  assert_equals(target.offsetWidth, emptyWidth);
++}, 'Setting input.checked or input.defaultChecked on a previewed text field clears the suggestion and does not leak preview width');
++</script>
+diff --git a/third_party/blink/web_tests/fast/forms/textarea/textarea-field-sizing-autofill.html b/third_party/blink/web_tests/fast/forms/textarea/textarea-field-sizing-autofill.html
+index 786761536dc6e5ed948025c1837a7f0da940bb47..462a5d81c1fe1f1110ac4ef467bdb573788b3a3d 100644
+--- a/third_party/blink/web_tests/fast/forms/textarea/textarea-field-sizing-autofill.html
++++ b/third_party/blink/web_tests/fast/forms/textarea/textarea-field-sizing-autofill.html
+@@ -17,5 +17,16 @@ test(() => {
+   internals.setSuggestedValue(target, 's');
+   assert_equals(target.offsetWidth, reference.offsetWidth);
+ }, 'field-sizing:content is not applied to autofilled controls');
+-</script>
+ 
++test(() => {
++  target.value = '';
++  const emptyWidth = target.offsetWidth;
++  assert_less_than(emptyWidth, reference.offsetWidth);
++
++  internals.setSuggestedValue(target, 'suggested quick brown fox jumps');
++  assert_equals(target.offsetWidth, reference.offsetWidth);
++
++  target.value = target.value;
++  assert_equals(target.offsetWidth, emptyWidth);
++}, 'Self-assigning textarea.value on a previewed textarea clears the suggestion and resets autofill state');
++</script>

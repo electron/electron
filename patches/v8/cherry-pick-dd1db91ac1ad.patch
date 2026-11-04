@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Tue, 6 Oct 2026 10:09:08 +0200
+Subject: [runtime] Fix TOCTOU with FastKeyAccumulator::may_have_elements_ and
+ GSABs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A TypedArray has elements iff its size is > 0. A background thread might
+grow a 0-sized GSAB and make it have elements while the main thread is
+doing something else.
+
+This CL makes FastKeyAccumulator not check twice whether the object has
+elements; only check once and use that information.
+
+Regression test omitted since it's too slow and/or flaky.
+
+Fixed: 567169222
+Change-Id: I7789c72ce63cfc8ce4effbc7bab5001927dd69ef
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8524746
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110399}
+
+diff --git a/src/objects/keys.cc b/src/objects/keys.cc
+index d4aa5f6155d1549652e9939a0c3010fd5d6a2a9c..6d2305a755b7718d10cee4b5a68110f582819162 100644
+--- a/src/objects/keys.cc
++++ b/src/objects/keys.cc
+@@ -529,7 +529,7 @@ MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysFast(
+   // Do not try to use the enum-cache for dict-mode objects.
+   if (map->is_dictionary_map()) {
+     return GetOwnKeysWithElements<false>(isolate_, object, keys_conversion,
+-                                         skip_indices_);
++                                         skip_indices_ || !may_have_elements_);
+   }
+   int enum_length = receiver_->map()->EnumLength();
+   if (enum_length == kInvalidEnumCacheSentinel) {
+@@ -548,7 +548,7 @@ MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysFast(
+   // The properties-only case failed because there were probably elements on the
+   // receiver.
+   return GetOwnKeysWithElements<true>(isolate_, object, keys_conversion,
+-                                      skip_indices_);
++                                      skip_indices_ || !may_have_elements_);
+ }
+ 
+ // static

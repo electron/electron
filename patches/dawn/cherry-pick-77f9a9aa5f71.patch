@@ -1,0 +1,673 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hao Li <hao.x.li@intel.com>
+Date: Fri, 2 Oct 2026 13:05:54 -0700
+Subject: Split buffer<->texture copies to work around Intel row-pitch
+ limitation
+
+Intel GPUs store a buffer<->texture copy's bytes per row in an 18-bit
+hardware register (a row pitch of 262,144 bytes) and texels per row in
+a separate 14-bit hardware register (a row width of 16,384 texels), so
+a larger bytesPerRow silently overflows and corrupts the copy. Add a
+workaround for Intel GPUs that splits affected buffer-to-texture and
+texture-to-buffer copies on D3D11/D3D12/Vulkan into one command per row
+so the oversized bytes and texels is never handed to the driver.
+
+Bug: 481934465
+
+Change-Id: Ib3e25be11f03d3f55205a3803dbbdb1817b9f7cb
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/336315
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: Loko Kung <lokokung@google.com>
+
+diff --git a/src/dawn/native/BUILD.gn b/src/dawn/native/BUILD.gn
+index dbc686236c9da869d19a836d26d800640ff8d550..c7e44d48048d68ae16d2c2c9e5ac49ce2b02b295 100644
+--- a/src/dawn/native/BUILD.gn
++++ b/src/dawn/native/BUILD.gn
+@@ -271,6 +271,8 @@ source_set("sources") {
+     "BuddyMemoryAllocator.h",
+     "Buffer.cpp",
+     "Buffer.h",
++    "BufferTextureCopyOversizedRow.cpp",
++    "BufferTextureCopyOversizedRow.h",
+     "CacheKey.cpp",
+     "CacheKey.h",
+     "CacheRequest.cpp",
+diff --git a/src/dawn/native/BufferTextureCopyOversizedRow.cpp b/src/dawn/native/BufferTextureCopyOversizedRow.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..09fb755f40f2c3dee91c820e834ffd2a468aedde
+--- /dev/null
++++ b/src/dawn/native/BufferTextureCopyOversizedRow.cpp
+@@ -0,0 +1,139 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/dawn/native/BufferTextureCopyOversizedRow.h"
++
++#include <cstdint>
++
++#include "src/dawn/common/Constants.h"
++#include "src/dawn/common/Math.h"
++#include "src/dawn/native/Buffer.h"
++#include "src/dawn/native/CommandAllocator.h"
++#include "src/dawn/native/Device.h"
++#include "src/dawn/native/Texture.h"
++#include "src/dawn/native/Toggles.h"
++
++namespace dawn::native {
++
++namespace {
++
++// Intel GPUs store a buffer<->texture copy's bytes per row and texels per row in two separate
++// hardware register fields: bytes per row is 18 bits and texels per row is 14 bits. The two must
++// be checked independently: bytesPerRow == texelsPerRow * bytesPerBlock, so a format with a small
++// bytesPerBlock (e.g. R8Unorm, 1 byte/texel) can push texelsPerRow past 2^14 while bytesPerRow is
++// still nowhere near 2^18. See https://crbug.com/481934465.
++constexpr uint64_t kMaxBytesPerRow = 1u << 18;
++constexpr uint64_t kMaxTexelsPerRow = 1u << 14;
++
++// Splits {bufferCopy, textureCopy, copySize} into one sub-copy per unpadded row, in row-major
++// order, invoking `func(bufferOffset, origin)` for each one. `bufferOffset` is the real
++// (unclamped) offset of the row in the buffer; `origin` is the texture origin of this row (the
++// rest of the TextureCopy is unchanged from the original, unsplit copy).
++template <typename Func>
++void SplitBufferTextureCopyByRow(const BufferCopy& bufferCopy,
++                                 const TextureCopy& textureCopy,
++                                 const BlockExtent3D& copySize,
++                                 const TypedTexelBlockInfo& blockInfo,
++                                 Func&& func) {
++    const BlockOrigin3D origin = blockInfo.ToBlock(textureCopy.origin);
++    const uint64_t bytesPerRow = blockInfo.ToBytes(bufferCopy.blocksPerRow);
++
++    for (BlockCount z{0u}; z < copySize.depthOrArrayLayers; z += BlockCount{1u}) {
++        // Buffer offset of the first row of this layer.
++        const uint64_t layerOffset =
++            bufferCopy.offset +
++            blockInfo.ToBytes(z * bufferCopy.rowsPerImage * bufferCopy.blocksPerRow);
++        for (BlockCount y{0u}; y < copySize.height; y += BlockCount{1u}) {
++            // Advance from the layer's first row by y rows of (possibly padded) bytes per row.
++            func(layerOffset + static_cast<uint64_t>(y) * bytesPerRow,
++                 blockInfo.ToTexel(BlockOrigin3D{origin.x, origin.y + y, origin.z + z}));
++        }
++    }
++}
++
++}  // namespace
++
++bool NeedsBufferTextureCopySplitForOversizedRow(const DeviceBase* device,
++                                                const BufferCopy& bufferCopy,
++                                                const TypedTexelBlockInfo& blockInfo) {
++    if (!device->IsToggleEnabled(Toggle::SplitBufferTextureCopyForOversizedRow)) {
++        return false;
++    }
++    const bool exceedsMaxBytesPerRow =
++        blockInfo.ToBytes(bufferCopy.blocksPerRow) >= kMaxBytesPerRow;
++    const bool exceedsMaxTexelsPerRow =
++        static_cast<uint64_t>(blockInfo.ToTexelWidth(bufferCopy.blocksPerRow)) >= kMaxTexelsPerRow;
++    return exceedsMaxBytesPerRow || exceedsMaxTexelsPerRow;
++}
++
++void SplitCopyTextureToBufferForOversizedRow(CommandAllocator* allocator,
++                                             const BufferCopy& bufferCopy,
++                                             const TextureCopy& textureCopy,
++                                             const BlockExtent3D& copySize,
++                                             const TypedTexelBlockInfo& blockInfo) {
++    const BlockCount blocksPerRow = blockInfo.BytesToBlocks(
++        Align(blockInfo.ToBytes(copySize.width), uint64_t{kTextureBytesPerRowAlignment}));
++    SplitBufferTextureCopyByRow(
++        bufferCopy, textureCopy, copySize, blockInfo,
++        [&](uint64_t bufferOffset, const TexelOrigin3D& origin) {
++            CopyTextureToBufferCmd* cmd =
++                allocator->Allocate<CopyTextureToBufferCmd>(Command::CopyTextureToBuffer);
++            cmd->source = textureCopy;
++            cmd->source.origin = origin;
++            cmd->destination.buffer = bufferCopy.buffer;
++            cmd->destination.offset = bufferOffset;
++            cmd->destination.blocksPerRow = blocksPerRow;
++            cmd->destination.rowsPerImage = BlockCount{1u};
++            cmd->copySize =
++                blockInfo.ToTexel(BlockExtent3D{copySize.width, BlockCount{1u}, BlockCount{1u}});
++        });
++}
++
++void SplitCopyBufferToTextureForOversizedRow(CommandAllocator* allocator,
++                                             const BufferCopy& bufferCopy,
++                                             const TextureCopy& textureCopy,
++                                             const BlockExtent3D& copySize,
++                                             const TypedTexelBlockInfo& blockInfo) {
++    const BlockCount blocksPerRow = blockInfo.BytesToBlocks(
++        Align(blockInfo.ToBytes(copySize.width), uint64_t{kTextureBytesPerRowAlignment}));
++    SplitBufferTextureCopyByRow(
++        bufferCopy, textureCopy, copySize, blockInfo,
++        [&](uint64_t bufferOffset, const TexelOrigin3D& origin) {
++            CopyBufferToTextureCmd* cmd =
++                allocator->Allocate<CopyBufferToTextureCmd>(Command::CopyBufferToTexture);
++            cmd->source.buffer = bufferCopy.buffer;
++            cmd->source.offset = bufferOffset;
++            cmd->source.blocksPerRow = blocksPerRow;
++            cmd->source.rowsPerImage = BlockCount{1u};
++            cmd->destination = textureCopy;
++            cmd->destination.origin = origin;
++            cmd->copySize =
++                blockInfo.ToTexel(BlockExtent3D{copySize.width, BlockCount{1u}, BlockCount{1u}});
++        });
++}
++
++}  // namespace dawn::native
+diff --git a/src/dawn/native/BufferTextureCopyOversizedRow.h b/src/dawn/native/BufferTextureCopyOversizedRow.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..0bfb676b971b2bfce8d0bf05236eb6b182ae4f10
+--- /dev/null
++++ b/src/dawn/native/BufferTextureCopyOversizedRow.h
+@@ -0,0 +1,67 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#ifndef SRC_DAWN_NATIVE_BUFFERTEXTURECOPYOVERSIZEDROW_H_
++#define SRC_DAWN_NATIVE_BUFFERTEXTURECOPYOVERSIZEDROW_H_
++
++#include "src/dawn/native/BlockInfo.h"
++#include "src/dawn/native/Commands.h"
++
++namespace dawn::native {
++
++class CommandAllocator;
++class DeviceBase;
++
++// Determines whether a buffer<->texture copy needs to be split for oversized rows. This happens
++// if the SplitBufferTextureCopyForOversizedRow toggle is enabled and `bufferCopy`'s bytes per row
++// or texels per row overflows the limited-width hardware register field used to store it,
++// respectively. See https://crbug.com/481934465.
++bool NeedsBufferTextureCopySplitForOversizedRow(const DeviceBase* device,
++                                                const BufferCopy& bufferCopy,
++                                                const TypedTexelBlockInfo& blockInfo);
++
++// Applies the oversized-row-pitch workaround to a texture-to-buffer copy: splits
++// {bufferCopy, textureCopy, copySize} into one sub-copy per unpadded row and allocates one
++// CopyTextureToBufferCmd per sub-copy into `allocator`. Callers should only call this when
++// NeedsBufferTextureCopySplitForOversizedRow returns true.
++void SplitCopyTextureToBufferForOversizedRow(CommandAllocator* allocator,
++                                             const BufferCopy& bufferCopy,
++                                             const TextureCopy& textureCopy,
++                                             const BlockExtent3D& copySize,
++                                             const TypedTexelBlockInfo& blockInfo);
++
++// Same as SplitCopyTextureToBufferForOversizedRow but for the buffer-to-texture direction:
++// allocates one CopyBufferToTextureCmd per sub-copy into `allocator`.
++void SplitCopyBufferToTextureForOversizedRow(CommandAllocator* allocator,
++                                             const BufferCopy& bufferCopy,
++                                             const TextureCopy& textureCopy,
++                                             const BlockExtent3D& copySize,
++                                             const TypedTexelBlockInfo& blockInfo);
++
++}  // namespace dawn::native
++
++#endif  // SRC_DAWN_NATIVE_BUFFERTEXTURECOPYOVERSIZEDROW_H_
+diff --git a/src/dawn/native/CMakeLists.txt b/src/dawn/native/CMakeLists.txt
+index 5ab1dea70d3b7762ee251f40975ab5e54217690a..c789f70769c83cc8690b8a1297b2530d9581eec7 100644
+--- a/src/dawn/native/CMakeLists.txt
++++ b/src/dawn/native/CMakeLists.txt
+@@ -154,6 +154,7 @@ set(private_headers
+     "SwapChain.h"
+     "SystemEvent.h"
+     "Texture.h"
++    "BufferTextureCopyOversizedRow.h"
+     "TexelBufferView.h"
+     "TintUtils.h"
+     "ToBackend.h"
+@@ -263,6 +264,7 @@ set(sources
+     "SwapChain.cpp"
+     "SystemEvent.cpp"
+     "Texture.cpp"
++    "BufferTextureCopyOversizedRow.cpp"
+     "TexelBufferView.cpp"
+     "TintUtils.cpp"
+     "Toggles.cpp"
+diff --git a/src/dawn/native/CommandEncoder.cpp b/src/dawn/native/CommandEncoder.cpp
+index d2f247a25e709a21ecf3932535d1a1e94571da16..fceeab0ec3fc42e6c0c1c26ca0227819054d4fb7 100644
+--- a/src/dawn/native/CommandEncoder.cpp
++++ b/src/dawn/native/CommandEncoder.cpp
+@@ -46,6 +46,7 @@
+ #include "src/dawn/native/BlitDepthToDepth.h"
+ #include "src/dawn/native/BlitTextureToBuffer.h"
+ #include "src/dawn/native/Buffer.h"
++#include "src/dawn/native/BufferTextureCopyOversizedRow.h"
+ #include "src/dawn/native/ChainUtils.h"
+ #include "src/dawn/native/CommandBuffer.h"
+ #include "src/dawn/native/CommandBufferStateTracker.h"
+@@ -1927,13 +1928,23 @@ void CommandEncoder::APICopyBufferToTexture(const TexelCopyBufferInfo* source,
+                 return {};
+             }
+ 
++            BufferCopy src;
++            src.buffer = source->buffer;
++            src.offset = srcLayout.offset;
++            src.blocksPerRow = blockInfo.BytesToBlocks(srcLayout.bytesPerRow);
++            src.rowsPerImage = BlockCount{srcLayout.rowsPerImage};
++
++            const BlockExtent3D blockCopySize = blockInfo.ToBlock(*copySize);
++            if (NeedsBufferTextureCopySplitForOversizedRow(GetDevice(), src, blockInfo)) {
++                SplitCopyBufferToTextureForOversizedRow(allocator, src, dst, blockCopySize,
++                                                        blockInfo);
++                return {};
++            }
++
+             CopyBufferToTextureCmd* copy =
+                 allocator->Allocate<CopyBufferToTextureCmd>(Command::CopyBufferToTexture);
+-            copy->source.buffer = source->buffer;
+-            copy->source.offset = srcLayout.offset;
+-            copy->source.blocksPerRow = blockInfo.BytesToBlocks(srcLayout.bytesPerRow);
+-            copy->source.rowsPerImage = BlockCount{srcLayout.rowsPerImage};
+-            copy->destination = dst;
++            copy->source = std::move(src);
++            copy->destination = std::move(dst);
+             copy->copySize = *copySize;
+ 
+             return {};
+@@ -2019,16 +2030,29 @@ void CommandEncoder::APICopyTextureToBuffer(const TexelCopyTextureInfo* sourceOr
+                 return {};
+             }
+ 
++            TextureCopy src;
++            src.texture = source.texture;
++            src.origin = source.origin;
++            src.mipLevel = source.mipLevel;
++            src.aspect = ConvertAspect(source.texture->GetFormat(), source.aspect);
++
++            BufferCopy dst;
++            dst.buffer = destination->buffer;
++            dst.offset = dstLayout.offset;
++            dst.blocksPerRow = blockInfo.BytesToBlocks(dstLayout.bytesPerRow);
++            dst.rowsPerImage = BlockCount{dstLayout.rowsPerImage};
++
++            const BlockExtent3D blockCopySize = blockInfo.ToBlock(*copySize);
++            if (NeedsBufferTextureCopySplitForOversizedRow(GetDevice(), dst, blockInfo)) {
++                SplitCopyTextureToBufferForOversizedRow(allocator, dst, src, blockCopySize,
++                                                        blockInfo);
++                return {};
++            }
++
+             CopyTextureToBufferCmd* t2b =
+                 allocator->Allocate<CopyTextureToBufferCmd>(Command::CopyTextureToBuffer);
+-            t2b->source.texture = source.texture;
+-            t2b->source.origin = source.origin;
+-            t2b->source.mipLevel = source.mipLevel;
+-            t2b->source.aspect = ConvertAspect(source.texture->GetFormat(), source.aspect);
+-            t2b->destination.buffer = destination->buffer;
+-            t2b->destination.offset = dstLayout.offset;
+-            t2b->destination.blocksPerRow = blockInfo.BytesToBlocks(dstLayout.bytesPerRow);
+-            t2b->destination.rowsPerImage = BlockCount{dstLayout.rowsPerImage};
++            t2b->source = std::move(src);
++            t2b->destination = std::move(dst);
+             t2b->copySize = *copySize;
+ 
+             return {};
+diff --git a/src/dawn/native/Commands.cpp b/src/dawn/native/Commands.cpp
+index 49755f09086b72e49846367822550af32ea94eee..7ff293de94e2f00998e1be19d60a0c0c968df8b7 100644
+--- a/src/dawn/native/Commands.cpp
++++ b/src/dawn/native/Commands.cpp
+@@ -479,11 +479,15 @@ BeginRenderPassCmd::BeginRenderPassCmd() = default;
+ BeginRenderPassCmd::~BeginRenderPassCmd() = default;
+ 
+ BufferCopy::BufferCopy() = default;
++BufferCopy::BufferCopy(BufferCopy&&) = default;
++BufferCopy& BufferCopy::operator=(BufferCopy&&) = default;
+ BufferCopy::~BufferCopy() = default;
+ 
+ TextureCopy::TextureCopy() = default;
+ TextureCopy::TextureCopy(const TextureCopy&) = default;
+ TextureCopy& TextureCopy::operator=(const TextureCopy&) = default;
++TextureCopy::TextureCopy(TextureCopy&&) = default;
++TextureCopy& TextureCopy::operator=(TextureCopy&&) = default;
+ TextureCopy::~TextureCopy() = default;
+ 
+ const TexelBlockInfo& GetBlockInfo(const TextureCopy& t) {
+diff --git a/src/dawn/native/Commands.h b/src/dawn/native/Commands.h
+index d904355a0f64546d468871994ef25f8dab53257f..00d8869de9743ec5d5caea6647825a6015971889 100644
+--- a/src/dawn/native/Commands.h
++++ b/src/dawn/native/Commands.h
+@@ -207,6 +207,8 @@ struct BeginRenderPassCmd {
+ 
+ struct BufferCopy {
+     BufferCopy();
++    BufferCopy(BufferCopy&&);
++    BufferCopy& operator=(BufferCopy&&);
+     ~BufferCopy();
+ 
+     Ref<BufferBase> buffer;
+@@ -219,6 +221,8 @@ struct TextureCopy {
+     TextureCopy();
+     TextureCopy(const TextureCopy&);
+     TextureCopy& operator=(const TextureCopy&);
++    TextureCopy(TextureCopy&&);
++    TextureCopy& operator=(TextureCopy&&);
+     ~TextureCopy();
+ 
+     Ref<TextureBase> texture;
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index 6952e954b43255062e5cf9c1d13a913e8c6dbb45..4506bc64cbd7fba91e10ab2b670bd5d00bcf7804 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -527,6 +527,12 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+       "attachment's alpha channel unchanged, so the workaround is not observable to the "
+       "application. Skipped for non-blendable formats.",
+       "https://issues.chromium.org/issues/525294804", ToggleStage::Device}},
++    {Toggle::SplitBufferTextureCopyForOversizedRow,
++     {"split_buffer_texture_copy_for_oversized_row",
++      "Split a buffer-to-texture or texture-to-buffer copy into one copy command per row so its "
++      "row pitch (bytes) and row width (texels) never overflow the 18-bit and 14-bit hardware "
++      "register fields. Workaround for an Intel GPU hardware limitation.",
++      "https://crbug.com/481934465", ToggleStage::Device}},
+     {Toggle::GLUseArrayLengthFromImmediate,
+      {"gl_use_array_length_from_immediate",
+       "Use immediate data to replace arrayLength() function calls of dynamic storage buffers. "
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index 2c4d717a10653fb68da3fa377e406850ead268ac..f80dd25e2938e85004885bd646cbda45da29b31a 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -131,6 +131,7 @@ enum class Toggle {
+     UseBlitForSintTextureToBufferCopy,
+     VulkanSplitBufferTextureCopyForArrayLayers,
+     VulkanForceAlphaWriteForAlphaToCoverage,
++    SplitBufferTextureCopyForOversizedRow,
+     GLUseArrayLengthFromImmediate,
+     D3D11DisableCPUUploadBuffers,
+     UseT2B2TForSRGBTextureCopy,
+diff --git a/src/dawn/native/d3d11/PhysicalDeviceD3D11.cpp b/src/dawn/native/d3d11/PhysicalDeviceD3D11.cpp
+index 5a0d415642766b9d603a4f7156b266b1d05f95b1..588e678e074e028567adbd26a0efcb67f2820185 100644
+--- a/src/dawn/native/d3d11/PhysicalDeviceD3D11.cpp
++++ b/src/dawn/native/d3d11/PhysicalDeviceD3D11.cpp
+@@ -375,6 +375,12 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         }
+     }
+ 
++    if (gpu_info::IsIntel(vendorId)) {
++        // Workaround an Intel GPU hardware limitation that corrupts buffer<->texture copies with
++        // a large row pitch. See https://crbug.com/481934465.
++        deviceToggles->Default(Toggle::SplitBufferTextureCopyForOversizedRow, true);
++    }
++
+     // Enable the integer range analysis for shader robustness by default if the corresponding
+     // platform feature is enabled.
+     deviceToggles->Default(
+diff --git a/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp b/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
+index 141a35eaeada6e5662b0020c09031e16dff3a29f..c5cf13fe1be68ae4eb5257850e9cbce153cbcca2 100644
+--- a/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
++++ b/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
+@@ -959,9 +959,13 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         deviceToggles->Default(Toggle::D3D12PolyfillReflectVec2F32, true);
+     }
+ 
+-    // Currently this workaround is needed on old Intel drivers and newer version of Windows 11.
+-    // See http://crbug.com/dawn/2308 for more information.
+     if (gpu_info::IsIntel(vendorId)) {
++        // Workaround an Intel GPU hardware limitation that corrupts buffer<->texture copies with
++        // a large row pitch. See https://crbug.com/481934465.
++        deviceToggles->Default(Toggle::SplitBufferTextureCopyForOversizedRow, true);
++
++        // The workaround below is needed on old Intel drivers and newer version of Windows 11.
++        // See http://crbug.com/dawn/2308 for more information.
+         constexpr uint64_t kAffectedMinimumWindowsBuildNumber = 25957u;
+         const gpu_info::IntelWindowsDriverVersion kAffectedMaximumDriverVersion = {27, 20, 100,
+                                                                                    9664};
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+index 862c4868838ec9cf40f85db136458930e42486b5..8bf45984044183b8e572cd552aba3248b8eca9df 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+@@ -1161,6 +1161,12 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         deviceToggles->Default(Toggle::VulkanForceAlphaWriteForAlphaToCoverage, true);
+     }
+ 
++    if (gpu_info::IsIntel(GetVendorId())) {
++        // crbug.com/481934465: Workaround an Intel GPU hardware limitation that corrupts
++        // buffer<->texture copies with a large row pitch.
++        deviceToggles->Default(Toggle::SplitBufferTextureCopyForOversizedRow, true);
++    }
++
+     // Collapse redundant subgroup min and max operations to workaround a driver crash on some AMD
+     // GPUs.  Should only affect AMD Windows Driver versions < 31.0.22000.0, but because this is a
+     // harmless "optimizing" workaround go ahead enable for all versions. See:
+diff --git a/src/dawn/tests/end2end/CopyTests.cpp b/src/dawn/tests/end2end/CopyTests.cpp
+index bc07a2041547bfe31c1a04ba1da56b92b1addde3..a202c67bafe4d95fe4a8448667af967171bcd88f 100644
+--- a/src/dawn/tests/end2end/CopyTests.cpp
++++ b/src/dawn/tests/end2end/CopyTests.cpp
+@@ -214,9 +214,19 @@ class CopyTests {
+         }
+     }
+ 
++    // Returns the texel block size (in bytes) recorded in a copy layout. Zero-width copy tests have
++    // bytesPerRow == 0 (so texelBlocksPerRow == 0) and no texels to generate, so return 0 rather
++    // than computing 0 / 0.
++    static uint32_t GetBytesPerTexelBlock(const utils::TextureDataCopyLayout& layout) {
++        if (layout.texelBlocksPerRow == 0) {
++            return 0;
++        }
++        return layout.bytesPerRow / layout.texelBlocksPerRow;
++    }
++
+     static std::vector<uint8_t> GetExpectedTextureDataGeneral(
+         const utils::TextureDataCopyLayout& layout) {
+-        uint32_t bytesPerTexelBlock = layout.bytesPerRow / layout.texelBlocksPerRow;
++        uint32_t bytesPerTexelBlock = GetBytesPerTexelBlock(layout);
+         std::vector<uint8_t> textureData(layout.byteLength);
+         for (uint32_t layer = 0; layer < layout.mipSize.depthOrArrayLayers; ++layer) {
+             const uint32_t byteOffsetPerSlice = layout.bytesPerImage * layer;
+@@ -264,7 +274,7 @@ class CopyTests {
+         constexpr uint32_t formatByteSize = 2;
+         constexpr uint32_t numGoodValues = goodBytes.size() / sizeof(uint8_t) / formatByteSize;
+ 
+-        uint32_t bytesPerTexelBlock = layout.bytesPerRow / layout.texelBlocksPerRow;
++        uint32_t bytesPerTexelBlock = GetBytesPerTexelBlock(layout);
+         std::vector<uint8_t> textureData(layout.byteLength);
+         for (uint32_t layer = 0; layer < layout.mipSize.depthOrArrayLayers; ++layer) {
+             const uint32_t byteOffsetPerSlice = layout.bytesPerImage * layer;
+@@ -308,7 +318,7 @@ class CopyTests {
+         });
+         constexpr uint32_t formatByteSize = 4;
+         constexpr uint32_t numGoodValues = goodBytes.size() / formatByteSize;
+-        uint32_t bytesPerTexelBlock = layout.bytesPerRow / layout.texelBlocksPerRow;
++        uint32_t bytesPerTexelBlock = GetBytesPerTexelBlock(layout);
+         uint32_t channelsPerTexel = bytesPerTexelBlock / formatByteSize;
+         std::vector<uint8_t> textureData(layout.byteLength);
+         for (uint32_t layer = 0; layer < layout.mipSize.depthOrArrayLayers; ++layer) {
+@@ -345,7 +355,7 @@ class CopyTests {
+              0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28});
+         constexpr uint32_t formatByteSize = 4;
+         constexpr uint32_t numGoodValues = goodBytes.size() / sizeof(uint8_t) / formatByteSize;
+-        uint32_t bytesPerTexelBlock = layout.bytesPerRow / layout.texelBlocksPerRow;
++        uint32_t bytesPerTexelBlock = GetBytesPerTexelBlock(layout);
+         std::vector<uint8_t> textureData(layout.byteLength);
+         for (uint32_t layer = 0; layer < layout.mipSize.depthOrArrayLayers; ++layer) {
+             const uint32_t byteOffsetPerSlice = layout.bytesPerImage * layer;
+@@ -378,7 +388,7 @@ class CopyTests {
+         });
+         constexpr uint32_t formatByteSize = 4;
+         constexpr uint32_t numGoodValues = goodBytes.size() / formatByteSize;
+-        uint32_t bytesPerTexelBlock = layout.bytesPerRow / layout.texelBlocksPerRow;
++        uint32_t bytesPerTexelBlock = GetBytesPerTexelBlock(layout);
+         std::vector<uint8_t> textureData(layout.byteLength);
+         for (uint32_t layer = 0; layer < layout.mipSize.depthOrArrayLayers; ++layer) {
+             const uint32_t byteOffsetPerSlice = layout.bytesPerImage * layer;
+@@ -818,10 +828,9 @@ class CopyTests_B2T : public CopyTests_WithFormatParam {
+                     PixelType::ComponentRepresentation tolerance = {}) {
+         const uint32_t bytesPerTexel = PixelType::kDataSize;
+         DAWN_ASSERT(bytesPerTexel == utils::GetTexelBlockSizeInBytes(textureSpec.format));
+-        const utils::TextureDataCopyLayout copyLayout =
+-            utils::GetTextureDataCopyLayoutForTextureAtLevel(
+-                textureSpec.format, textureSpec.textureSize, textureSpec.copyLevel, dimension,
+-                bufferSpec.rowsPerImage, GetTextureBytesPerRowAlignment());
++        utils::TextureDataCopyLayout copyLayout = utils::GetTextureDataCopyLayoutForTextureAtLevel(
++            textureSpec.format, textureSpec.textureSize, textureSpec.copyLevel, dimension,
++            bufferSpec.bytesPerRow, bufferSpec.rowsPerImage, GetTextureBytesPerRowAlignment());
+ 
+         // Create a buffer and populate it with data
+         wgpu::Buffer buffer;
+@@ -1836,28 +1845,29 @@ TEST_P(CopyTests_T2B, BytesPerRowShouldNotCauseBufferOOBIfCopyHeightIsOne) {
+     }
+ }
+ 
+-// Test copying rows with bytesPerRow extremely large (32k texels). This is to test a special case
+-// in Metal where we need to split the copy to be row-by-row in that case.
++// Test texture->buffer copying rows with an extremely large bytesPerRow. This exercises the
++// row-by-row copy split needed on Metal (its own bytesPerRow limit) and the D3D11/D3D12/Vulkan
++// workaround for Intel hardware row-pitch/row-width register limits. See
++// https://crbug.com/481934465.
+ TEST_P(CopyTests_T2B, ReallyLargeBytesPerRow) {
+     // TODO(crbug.com/40238674): Fails on Pixel 10 gles and vulkan.
+     DAWN_SUPPRESS_TEST_IF(IsImgTec() && (IsOpenGLES() || IsVulkan()));
+ 
+-    // TODO(https://issues.chromium.org/481934465): Fails on Intel D3D12 / Vulkan which don't have
+-    // the workaround.
+-    DAWN_SUPPRESS_TEST_IF(IsIntel() && (IsD3D12() || IsVulkan()));
+-
+     // TODO(crbug.com/500445353): Fails to copy region on Win/AMD RX 5500 XT.
+     DAWN_SUPPRESS_TEST_IF(IsWindows11() && IsAMD() && IsD3D11());
+ 
+     TextureSpec textureSpec;
+     textureSpec.textureSize = {2, 2, 2};
+ 
+-    const uint32_t bytesPerTexel = utils::GetTexelBlockSizeInBytes(textureSpec.format);
+-    const uint32_t bytesPerRow = 32 * 1024 * bytesPerTexel;
+-    BufferSpec bufferSpec = MinimumBufferSpec({2, 2, 2}, /*overrideBytesPerRow=*/bytesPerRow);
+-
+-    // Check various offsets to cover each code path in the 2D split code in TextureCopySplitter.
+-    DoTest(textureSpec, bufferSpec, {2, 2, 2});
++    // Check both limits the workaround enforces:
++    // - 18-bit row-pitch bytes boundary and near/above-boundary values to catch truncation
++    //   behavior (262144->0, 262400->256, 524288/1048576->0 without the workaround)
++    // - 14-bit row-width texels boundary with 1 byte/texel format(such as R8Unorm)
++    for (uint32_t bytesPerRow : {(1u << 18), (1u << 18) + 256u, (1u << 19), (1u << 20)}) {
++        SCOPED_TRACE(testing::Message() << "bytesPerRow=" << bytesPerRow);
++        BufferSpec bufferSpec = MinimumBufferSpec({2, 2, 2}, /*overrideBytesPerRow=*/bytesPerRow);
++        DoTest(textureSpec, bufferSpec, {2, 2, 2});
++    }
+ }
+ 
+ // Test that copying whole texture 2D array layers in one texture-to-buffer-copy works.
+@@ -3045,6 +3055,31 @@ TEST_P(CopyTests_B2T, BytesPerRowWithOneRowCopy) {
+     }
+ }
+ 
++// Test buffer->texture copying rows with an extremely large bytesPerRow. This exercises the
++// row-by-row copy split needed on Metal (its own bytesPerRow limit) and the D3D11/D3D12/Vulkan
++// workaround for Intel hardware row-pitch/row-width register limits. See
++// https://crbug.com/481934465.
++TEST_P(CopyTests_B2T, ReallyLargeBytesPerRow) {
++    // TODO(crbug.com/40238674): Fails on Pixel 10 gles and vulkan.
++    DAWN_SUPPRESS_TEST_IF(IsImgTec() && (IsOpenGLES() || IsVulkan()));
++
++    // TODO(crbug.com/500445353): Fails to copy region on Win/AMD RX 5500 XT.
++    DAWN_SUPPRESS_TEST_IF(IsWindows11() && IsAMD() && IsD3D11());
++
++    TextureSpec textureSpec;
++    textureSpec.textureSize = {2, 2, 2};
++
++    // Check both limits the workaround enforces:
++    // - 18-bit row-pitch bytes boundary and near/above-boundary values to catch truncation
++    //   behavior (262144->0, 262400->256, 524288/1048576->0 without the workaround)
++    // - 14-bit row-width texels boundary with 1 byte/texel format (such as R8Unorm)
++    for (uint32_t bytesPerRow : {(1u << 18), (1u << 18) + 256u, (1u << 19), (1u << 20)}) {
++        SCOPED_TRACE(testing::Message() << "bytesPerRow=" << bytesPerRow);
++        BufferSpec bufferSpec = MinimumBufferSpec({2, 2, 2}, /*overrideBytesPerRow=*/bytesPerRow);
++        DoTest(textureSpec, bufferSpec, {2, 2, 2});
++    }
++}
++
+ TEST_P(CopyTests_B2T, StrideSpecialCases) {
+     // TODO(crbug.com/40238674): Fails on Pixel 10.
+     DAWN_SUPPRESS_TEST_IF(IsImgTec());
+diff --git a/src/dawn/utils/TestUtils.cpp b/src/dawn/utils/TestUtils.cpp
+index b7f1f494b05b7ecb7f07506f05c2f459fbc2daee..4ab3be1e7027f16b302f2af400f26edfdf384985 100644
+--- a/src/dawn/utils/TestUtils.cpp
++++ b/src/dawn/utils/TestUtils.cpp
+@@ -67,6 +67,7 @@ TextureDataCopyLayout GetTextureDataCopyLayoutForTextureAtLevel(
+     wgpu::Extent3D textureSizeAtLevel0,
+     uint32_t mipmapLevel,
+     wgpu::TextureDimension dimension,
++    uint32_t bytesPerRow,
+     uint32_t rowsPerImage,
+     uint32_t textureBytesPerRowAlignment) {
+     // Compressed texture formats not supported in this function yet.
+@@ -83,8 +84,12 @@ TextureDataCopyLayout GetTextureDataCopyLayoutForTextureAtLevel(
+             std::max(textureSizeAtLevel0.depthOrArrayLayers >> mipmapLevel, 1u);
+     }
+ 
+-    layout.bytesPerRow =
+-        GetMinimumBytesPerRow(format, layout.mipSize.width, textureBytesPerRowAlignment);
++    // Default to the minimum valid bytesPerRow if the caller doesn't specify one.
++    if (bytesPerRow == wgpu::kCopyStrideUndefined) {
++        bytesPerRow =
++            GetMinimumBytesPerRow(format, layout.mipSize.width, textureBytesPerRowAlignment);
++    }
++    layout.bytesPerRow = bytesPerRow;
+ 
+     if (rowsPerImage == wgpu::kCopyStrideUndefined) {
+         rowsPerImage = layout.mipSize.height;
+@@ -98,6 +103,7 @@ TextureDataCopyLayout GetTextureDataCopyLayoutForTextureAtLevel(
+         RequiredBytesInCopy(layout.bytesPerRow, appliedRowsPerImage, layout.mipSize, format);
+ 
+     const uint32_t bytesPerTexel = dawn::utils::GetTexelBlockSizeInBytes(format);
++    DAWN_ASSERT(layout.bytesPerRow % bytesPerTexel == 0);
+     layout.texelBlocksPerRow = layout.bytesPerRow / bytesPerTexel;
+     layout.texelBlocksPerImage = layout.bytesPerImage / bytesPerTexel;
+     layout.texelBlockCount = layout.byteLength / bytesPerTexel;
+diff --git a/src/dawn/utils/TestUtils.h b/src/dawn/utils/TestUtils.h
+index 273a639e6b3e2306ce21792b2e17b688610c2c1e..999166c02286881af2d0aeacb5c65cdbab2d53de 100644
+--- a/src/dawn/utils/TestUtils.h
++++ b/src/dawn/utils/TestUtils.h
+@@ -75,6 +75,7 @@ TextureDataCopyLayout GetTextureDataCopyLayoutForTextureAtLevel(
+     wgpu::Extent3D textureSizeAtLevel0,
+     uint32_t mipmapLevel,
+     wgpu::TextureDimension dimension = wgpu::TextureDimension::e2D,
++    uint32_t bytesPerRow = wgpu::kCopyStrideUndefined,
+     uint32_t rowsPerImage = wgpu::kCopyStrideUndefined,
+     uint32_t textureBytesPerRowAlignment = kTextureBytesPerRowAlignment);
+ 

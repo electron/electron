@@ -1,0 +1,210 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Thu, 29 Oct 2026 11:34:57 +0100
+Subject: [M156] [builtins] Track Promise.any reject closure state in the
+ errors array
+
+Original change's description:
+> [builtins] Track Promise.any reject closure state in the errors array
+>
+> PromiseAnyRejectElementClosure previously recorded its one-shot
+> `[[AlreadyCalled]]` state by overwriting `target.context` with the
+> native context and checking `IsNativeContext(context)` against the
+> incoming context register. Because Maglev and TurboFan treat
+> JSFunction::context as immutable and constant-fold it for known call
+> targets, an optimized caller could invoke the same reject closure
+> repeatedly with its original PromiseAnyRejectElementContext, driving
+> remainingElementsCount to zero while unfilled PromiseHole elements
+> remained in `AggregateError.errors`.
+>
+> Check `remainingElementsCount == 0` and
+> `errors.objects[index] != PromiseHole` in PromiseAnyRejectElementClosure
+> instead of mutating `target.context`, and check that the rejected value
+> is not PromiseHole, matching PromiseAllResolveElementClosure
+> (https://crrev.com/c/5000306).
+>
+> TAG=agy
+> CONV=57c1aa00-cb2b-4637-be86-2573ecc4d803
+>
+> Fixed: 578688670
+> Change-Id: I2c7a3e016d03e598ba44b427f0d70d8f4a57aed8
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8679039
+> Reviewed-by: Igor Sheludko <ishell@chromium.org>
+> Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Igor Sheludko <ishell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111421}
+
+(cherry picked from commit 85adfcb327156366bd8d3412a349247995ab4c65)
+
+Bug: 580173540,578688670
+Change-Id: I2c7a3e016d03e598ba44b427f0d70d8f4a57aed8
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8696019
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.6@{#65}
+Cr-Branched-From: b976f35da8356fcf4e5e176d1d810ba6a6f05718-refs/heads/15.6.75@{#1}
+Cr-Branched-From: a424b0597aab8e27f12ea4a700bae3961fa1a076-refs/heads/main@{#110135}
+
+diff --git a/src/builtins/promise-any.tq b/src/builtins/promise-any.tq
+index 427d31c2840bef30e489b8d60d7f2db316e8e0ff..6f3d91f1995986e801884c16ca50f888182f23de 100644
+--- a/src/builtins/promise-any.tq
++++ b/src/builtins/promise-any.tq
+@@ -26,9 +26,7 @@ extern operator '[]' macro LoadContextElementNoCell(
+ // together with the errors array. Since all closures for a single Promise.any
+ // call use the same context, we need to store the indices for the individual
+ // closures somewhere else (we put them into the identity hash field of the
+-// closures), and we also need to have a separate marker for when the closure
+-// was called already (we slap the native context onto the closure in that
+-// case to mark it's done). See Promise.all which uses the same approach.
++// closures).
+ transitioning macro CreatePromiseAnyRejectElementContext(
+     implicit context: Context)(capability: PromiseCapability,
+     nativeContext: NativeContext): PromiseAnyRejectElementContext {
+@@ -75,36 +73,30 @@ transitioning javascript builtin PromiseAnyRejectElementClosure(
+     js-implicit context: Context, receiver: JSAny, target: JSFunction)(
+     value: JSAny): JSAny {
+   // 1. Let F be the active function object.
+-
+-  // 2. Let alreadyCalled be F.[[AlreadyCalled]].
+-
+-  // 3. If alreadyCalled.[[Value]] is true, return undefined.
+-
+-  // We use the function's context as the marker to remember whether this
+-  // reject element closure was already called. It points to the reject
+-  // element context (which is a FunctionContext) until it was called the
+-  // first time, in which case we make it point to the native context here
+-  // to mark this reject element closure as done.
+-  if (IsNativeContext(context)) deferred {
+-      return Undefined;
+-    }
+-
+   dcheck(
+       context.length ==
+       SmiTag(
+           PromiseAnyRejectElementContextSlots::kPromiseAnyRejectElementLength));
+   const context = %RawDownCast<PromiseAnyRejectElementContext>(context);
+ 
+-  // 4. Set alreadyCalled.[[Value]] to true.
+-  const nativeContext = LoadNativeContext(context);
+-  target.context = nativeContext;
+-
+   // 5. Let index be F.[[Index]].
+   dcheck(kPropertyArrayNoHashSentinel == 0);
+   const identityHash = LoadJSReceiverIdentityHash(target) otherwise unreachable;
+   dcheck(ChangeUint32ToWord(identityHash) < kSmiMaxValue);
+   const index = Signed(ChangeUint32ToWord(identityHash)) - 1;
+ 
++  // 8. Let remainingElementsCount be F.[[RemainingElements]].
++  let remainingElementsCount = *ContextSlot(
++      context,
++      PromiseAnyRejectElementContextSlots::
++          kPromiseAnyRejectElementRemainingSlot);
++
++  // If all promises were already rejected, the remaining count will already be
++  // 0.
++  if (remainingElementsCount == 0) deferred {
++      return Undefined;
++    }
++
+   // 6. Let errors be F.[[Errors]].
+   let errorsRef:&FixedArray = ContextSlot(
+       context,
+@@ -113,12 +105,6 @@ transitioning javascript builtin PromiseAnyRejectElementClosure(
+ 
+   // 7. Let promiseCapability be F.[[Capability]].
+ 
+-  // 8. Let remainingElementsCount be F.[[RemainingElements]].
+-  let remainingElementsCount = *ContextSlot(
+-      context,
+-      PromiseAnyRejectElementContextSlots::
+-          kPromiseAnyRejectElementRemainingSlot);
+-
+   // 9. Set errors[index] to x.
+ 
+   // The max computation below is an optimization to avoid excessive allocations
+@@ -138,11 +124,22 @@ transitioning javascript builtin PromiseAnyRejectElementClosure(
+           errors, 0, errors.length_intptr, newCapacity, PromiseHole);
+       *errorsRef = errors;
+     }
++
++  // 2. Let alreadyCalled be F.[[AlreadyCalled]].
++  // 3. If alreadyCalled.[[Value]] is true, return undefined.
++  // 4. Set alreadyCalled.[[Value]] to true.
++  if (errors.objects[index] != PromiseHole) deferred {
++      return Undefined;
++    }
++
++  // Make sure that we never see the PromiseHole here as a result.
++  check(value != PromiseHole);
+   errors.objects[index] = value;
+ 
+   // 10. Set remainingElementsCount.[[Value]] to
+   // remainingElementsCount.[[Value]] - 1.
+   remainingElementsCount = remainingElementsCount - 1;
++  check(remainingElementsCount >= 0);
+   *ContextSlot(
+       context,
+       PromiseAnyRejectElementContextSlots::
+diff --git a/test/mjsunit/compiler/regress-578688670.js b/test/mjsunit/compiler/regress-578688670.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b16f0752f28e1d027ad82f34b5702ccb6c28bd78
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-578688670.js
+@@ -0,0 +1,56 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++let rejected_error;
++function CustomPromise(executor) {
++  executor(() => {}, (err) => { rejected_error = err; });
++}
++
++let captured_reject_closure;
++CustomPromise.resolve = function(thenable) {
++  return thenable;
++};
++
++const pending_thenables = [
++  { then(resolve, reject) { captured_reject_closure = reject; } },
++  { then() {} },
++  { then() {} },
++];
++
++Promise.any.call(CustomPromise, pending_thenables);
++
++// Store the reject element closure on a constant holder so that inlining
++// invoke_reject_closure into call_reject_closure constant-folds the closure
++// target and its initial FunctionContext.
++const closure_holder = { reject: captured_reject_closure };
++
++function invoke_reject_closure(closure, should_call) {
++  if (should_call) closure('err');
++}
++
++function call_reject_closure(should_call) {
++  invoke_reject_closure(closure_holder.reject, should_call);
++}
++
++// Make the call site inside invoke_reject_closure polymorphic before
++// calling captured_reject_closure so Maglev/TurboFan compile the call without
++// invoking captured_reject_closure during warmup.
++%PrepareFunctionForOptimization(invoke_reject_closure);
++invoke_reject_closure(() => {}, true);
++invoke_reject_closure((x) => x, true);
++
++%PrepareFunctionForOptimization(call_reject_closure);
++call_reject_closure(false);
++%OptimizeFunctionOnNextCall(call_reject_closure);
++call_reject_closure(false);
++
++// Repeated calls to the same reject element closure must be ignored after the
++// first call and must not decrement remainingElementsCount to 0.
++call_reject_closure(true);
++call_reject_closure(true);
++call_reject_closure(true);
++
++assertEquals(undefined, rejected_error);

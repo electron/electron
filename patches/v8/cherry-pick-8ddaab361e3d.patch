@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 28 Oct 2026 11:57:49 +0100
+Subject: [M156] [maps] Fully initialize relevant fields before publishing maps
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [maps] Fully initialize relevant fields before publishing maps
+>
+> Ensure concurrent compiler threads cannot observe maps with unupdated
+> unused_property_fields or inconsistent construction_counter values:
+> - Account for added property fields before connecting transitions in
+>   Map::CopyAddDescriptor and Map::ShareDescriptor.
+> - Initialize in-object slack tracking before publishing initial maps on
+>   JSFunctions.
+> - Avoid zeroing construction_counter before CompleteInobjectSlackTracking
+>   acquires map_updater_access.
+>
+> Fixed: 574351803
+>
+> TAG=agy
+> CONV=375e18c8-58e1-4f63-b47f-a46ccc9ebdba
+>
+> Change-Id: If3b0a69e421d7e3754ebb4356de0bd317f3f12e1
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8664511
+> Reviewed-by: Marja Hölttä <marja@chromium.org>
+> Commit-Queue: Igor Sheludko <ishell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111266}
+
+(cherry picked from commit 26b9a1e79b76fc2417548d6c2752802ca1102edc)
+
+Bug: 579236251,574351803
+Change-Id: If3b0a69e421d7e3754ebb4356de0bd317f3f12e1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8685742
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.6@{#61}
+Cr-Branched-From: b976f35da8356fcf4e5e176d1d810ba6a6f05718-refs/heads/15.6.75@{#1}
+Cr-Branched-From: a424b0597aab8e27f12ea4a700bae3961fa1a076-refs/heads/main@{#110135}
+
+diff --git a/src/objects/js-function.cc b/src/objects/js-function.cc
+index 585d97d436c30d95674fe31d584b13db85d89c2c..310ed57d8adee95c433308815fe20ec1fc22b792 100644
+--- a/src/objects/js-function.cc
++++ b/src/objects/js-function.cc
+@@ -991,8 +991,9 @@ void JSFunction::EnsureHasInitialMap(Isolate* isolate,
+   // system.
+   // TODO(leszeks): Figure out if this CHECK is needed.
+   CHECK(IsJSReceiver(*prototype));
+-  JSFunction::SetInitialMap(isolate, function, map, prototype);
++  // Initialize slack tracking before publishing the map to concurrent readers.
+   map->StartInobjectSlackTracking();
++  JSFunction::SetInitialMap(isolate, function, map, prototype);
+ }
+ 
+ namespace {
+@@ -1183,11 +1184,12 @@ bool FastInitializeDerivedMap(Isolate* isolate,
+       Map::CopyInitialMap(isolate, constructor_initial_map, instance_size,
+                           in_object_properties, unused_property_fields);
+   map->set_new_target_is_base(false);
++  // Initialize slack tracking before publishing the map to concurrent readers.
++  map->set_construction_counter(Map::kNoSlackTracking);
++  map->StartInobjectSlackTracking();
+   DirectHandle<JSReceiver> prototype(new_target->instance_prototype(), isolate);
+   JSFunction::SetInitialMap(isolate, new_target, map, prototype, constructor);
+   DCHECK(IsJSReceiver(new_target->instance_prototype()));
+-  map->set_construction_counter(Map::kNoSlackTracking);
+-  map->StartInobjectSlackTracking();
+   return true;
+ }
+ 
+diff --git a/src/objects/map-inl.h b/src/objects/map-inl.h
+index 1cbddb0d9879dfa9363aff75e1c6ff0e771d2966..63cfe9edd10f76eaa20cc1e24aa90ea3ad9d77db 100644
+--- a/src/objects/map-inl.h
++++ b/src/objects/map-inl.h
+@@ -1258,9 +1258,12 @@ void Map::InobjectSlackTrackingStep(Isolate* isolate) {
+   DCHECK(IsUndefined(GetBackPointer()));
+   if (!this->IsInobjectSlackTrackingInProgress()) return;
+   int counter = construction_counter();
+-  set_construction_counter(counter - 1);
+   if (counter == kSlackTrackingCounterEnd) {
++    // The last decrement must happen under the map_updater_access mutex,
++    // together with the instance size changes.
+     MapUpdater::CompleteInobjectSlackTracking(isolate, this);
++  } else {
++    set_construction_counter(counter - 1);
+   }
+ }
+ 
+diff --git a/src/objects/map.cc b/src/objects/map.cc
+index a6f6a26a9451ad5a4ce71d8dbecdb6dce6334edd..cdc41455019ee4288419a1002d6e23bffcdb03ad 100644
+--- a/src/objects/map.cc
++++ b/src/objects/map.cc
+@@ -603,10 +603,7 @@ MaybeHandle<Map> Map::CopyWithField(Isolate* isolate, DirectHandle<Map> map,
+   MaybeObjectDirectHandle wrapped_type = WrapFieldType(type);
+   Descriptor d = Descriptor::DataField(name, offset, attributes, constness,
+                                        representation, wrapped_type);
+-  Handle<Map> new_map = Map::CopyAddDescriptor(isolate, map, &d, flag);
+-
+-  new_map->AccountAddedPropertyField();
+-  return new_map;
++  return Map::CopyAddDescriptor(isolate, map, &d, flag);
+ }
+ 
+ MaybeHandle<Map> Map::CopyWithConstant(Isolate* isolate, DirectHandle<Map> map,
+@@ -1615,6 +1612,10 @@ Handle<Map> Map::ShareDescriptor(Isolate* isolate, DirectHandle<Map> map,
+     DisallowGarbageCollection no_gc;
+     descriptors->Append(descriptor);
+     result->InitializeDescriptors(*descriptors);
++    // Account for the field before publishing the transition.
++    if (descriptor->GetDetails().location() == PropertyLocation::kField) {
++      result->AccountAddedPropertyField();
++    }
+   }
+ 
+   DCHECK(result->NumberOfOwnDescriptors() == map->NumberOfOwnDescriptors() + 1);
+@@ -2333,7 +2334,12 @@ Handle<Map> Map::CopyAddDescriptor(Isolate* isolate, DirectHandle<Map> map,
+       DescriptorArray::CopyUpTo(isolate, descriptors, nof, 1);
+   new_descriptors->Append(descriptor);
+ 
+-  return CopyReplaceDescriptors(isolate, map, new_descriptors, flag,
++  auto InitMap = [&](DirectHandle<Map> new_map) {
++    if (descriptor->GetDetails().location() == PropertyLocation::kField) {
++      new_map->AccountAddedPropertyField();
++    }
++  };
++  return CopyReplaceDescriptors(isolate, map, new_descriptors, flag, InitMap,
+                                 descriptor->GetKey(), "CopyAddDescriptor",
+                                 SIMPLE_PROPERTY_TRANSITION);
+ }
