@@ -33,7 +33,42 @@ Commit-Queue: Eric Leese <leese@chromium.org>
 
 Electron adaptation notes (43-x-y):
 front_end/models/bindings/StylesSourceMapping.test.ts does not exist on this branch; its test-only hunk was dropped. Applied on top of the two upstream prerequisites (devtools-frontend c2153bf24a and 6c25c4672f) that introduced the forbidden-URL checks this fix extends.
+NetworkProject.setSourceURLSynthesized()/isSourceURLSynthesized() come from the upstream prerequisite 0e5527264722 (Prevent sourceURL annotations from spoofing origins), which is not backported to this branch; only those two helpers were added here (backed by a module-level WeakSet, matching this branch's NetworkProject.ts) so that the StylesSourceMapping.ts change compiles. The NetworkPersistenceManager.isUISourceCodeOverridable() check that reads the flag, and its unit test, are also taken from 0e5527264722 so that synthesized UISourceCodes cannot be overridden; the rest of that commit is not included.
 
+diff --git a/front_end/models/bindings/NetworkProject.ts b/front_end/models/bindings/NetworkProject.ts
+index 9564c6a324fa67b95f7e35cfd613a83e50549037..7255dac60393a56bc3fdc982f1fe32aff48189b4 100644
+--- a/front_end/models/bindings/NetworkProject.ts
++++ b/front_end/models/bindings/NetworkProject.ts
+@@ -12,6 +12,7 @@ const uiSourceCodeToAttributionMap = new WeakMap<Workspace.UISourceCode.UISource
+                                                    count: number,
+                                                  }>>();
+ const projectToTargetMap = new WeakMap<Workspace.Workspace.Project, SDK.Target.Target>();
++const sourceURLSynthesizedUISourceCodes = new WeakSet<Workspace.UISourceCode.UISourceCode>();
+ 
+ let networkProjectManagerInstance: NetworkProjectManager;
+ 
+@@ -47,6 +48,21 @@ export interface EventTypes {
+ }
+ 
+ export class NetworkProject {
++  /**
++   * Records that `uiSourceCode` was synthesized from a `//# sourceURL=` annotation,
++   * and therefore doesn't correspond to an actual network resource.
++   */
++  static setSourceURLSynthesized(uiSourceCode: Workspace.UISourceCode.UISourceCode): void {
++    sourceURLSynthesizedUISourceCodes.add(uiSourceCode);
++  }
++
++  /**
++   * Whether `uiSourceCode` was synthesized from a `//# sourceURL=` annotation.
++   */
++  static isSourceURLSynthesized(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
++    return sourceURLSynthesizedUISourceCodes.has(uiSourceCode);
++  }
++
+   static resolveFrame(uiSourceCode: Workspace.UISourceCode.UISourceCode, frameId: Protocol.Page.FrameId):
+       SDK.ResourceTreeModel.ResourceTreeFrame|null {
+     const target = NetworkProject.targetForUISourceCode(uiSourceCode);
 diff --git a/front_end/models/bindings/StylesSourceMapping.ts b/front_end/models/bindings/StylesSourceMapping.ts
 index ce1c7a6f9f4cd59ac36c9a07db1737e22e245f1c..d14a225f7687f93065048ceb8642e3b4aff51953 100644
 --- a/front_end/models/bindings/StylesSourceMapping.ts
@@ -49,10 +84,44 @@ index ce1c7a6f9f4cd59ac36c9a07db1737e22e245f1c..d14a225f7687f93065048ceb8642e3b4
  
      this.#eventListeners = [
 diff --git a/front_end/models/persistence/NetworkPersistenceManager.test.ts b/front_end/models/persistence/NetworkPersistenceManager.test.ts
-index d64b25612e07e37cb872871452cdbea47383cd48..cafe0c12fb0785476342208ed12f9dad49c87084 100644
+index d64b25612e07e37cb872871452cdbea47383cd48..f90197d7314ed3dc614f0918dec4e415b61abee8 100644
 --- a/front_end/models/persistence/NetworkPersistenceManager.test.ts
 +++ b/front_end/models/persistence/NetworkPersistenceManager.test.ts
-@@ -205,6 +205,14 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+@@ -18,6 +18,7 @@ import {describeWithMockConnection} from '../../testing/MockConnection.js';
+ import {createWorkspaceProject, setUpEnvironment} from '../../testing/OverridesHelpers.js';
+ import {setMockResourceTree} from '../../testing/ResourceTreeHelpers.js';
+ import {createFileSystemUISourceCode} from '../../testing/UISourceCodeHelpers.js';
++import * as Bindings from '../bindings/bindings.js';
+ import * as Persistence from '../persistence/persistence.js';
+ import * as Workspace from '../workspace/workspace.js';
+ 
+@@ -104,6 +105,25 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+     assert.isTrue(saveSpy.notCalled, 'should not attempt to save override');
+   });
+ 
++  it('does not allow overrides for sources synthesized from a `//# sourceURL` annotation', async () => {
++    const url = 'http://www.example.com/script.js';
++    const resourceType = Common.ResourceType.resourceTypes.Script;
++
++    const {uiSourceCode} = setUpEnvironmentWithUISourceCode(url, resourceType);
++    Bindings.NetworkProject.NetworkProject.setSourceURLSynthesized(uiSourceCode);
++    const networkPersistenceManager = await createWorkspaceProject(urlString`file:///path/to/overrides`, []);
++
++    assert.isFalse(networkPersistenceManager.isUISourceCodeOverridable(uiSourceCode));
++
++    const saveSpy = sinon.spy(networkPersistenceManager, 'saveUISourceCodeForOverrides');
++    const actual = await networkPersistenceManager.setupAndStartLocalOverrides(uiSourceCode);
++
++    saveSpy.restore();
++
++    assert.isFalse(actual, 'should not allow override');
++    assert.isTrue(saveSpy.notCalled, 'should not attempt to save override');
++  });
++
+   it('does not save override on working copy committed for data URLs', async () => {
+     const url = 'data:/../victim.com/script.js';
+     const resourceType = Common.ResourceType.resourceTypes.Script;
+@@ -205,6 +225,14 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
          urlString`https:///.headers`));
      assert.isTrue(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
          urlString`http:///victim.com/script.js`));
@@ -67,7 +136,7 @@ index d64b25612e07e37cb872871452cdbea47383cd48..cafe0c12fb0785476342208ed12f9dad
      assert.isFalse(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
          urlString`https://www.example.com/script.js`));
      assert.isFalse(Persistence.NetworkPersistenceManager.NetworkPersistenceManager.isForbiddenNetworkUrl(
-@@ -482,53 +490,53 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+@@ -482,53 +510,53 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
      let toTest = [
        // Simple tests.
        {
@@ -131,7 +200,7 @@ index d64b25612e07e37cb872871452cdbea47383cd48..cafe0c12fb0785476342208ed12f9dad
          raw: 'example.com/foo/bar/?3hello%2Fbar',
          encoded: 'example.com/foo/bar/%3F3hello%252Fbar',
        },
-@@ -545,22 +553,22 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+@@ -545,22 +573,22 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
        },
        // Hash parameters.
        {
@@ -158,7 +227,7 @@ index d64b25612e07e37cb872871452cdbea47383cd48..cafe0c12fb0785476342208ed12f9dad
          raw: 'example.com/foo.js',
          encoded: 'example.com/foo.js',
        },
-@@ -575,35 +583,35 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+@@ -575,35 +603,35 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
          encoded: 'www.example.com/file&$%252A%3F.html',
        },
        {
@@ -201,7 +270,7 @@ index d64b25612e07e37cb872871452cdbea47383cd48..cafe0c12fb0785476342208ed12f9dad
                '/THIS/PATH/IS_LESS_THAN/200/Chars'.repeat(5))
                   .slice(0, -1),
          raw:
-@@ -640,149 +648,149 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
+@@ -640,149 +668,149 @@ describeWithMockConnection('NetworkPersistenceManager', () => {
            encoded: 'www.example.com/file&$%252A%253F.html',
          },
          {
@@ -381,10 +450,41 @@ index d64b25612e07e37cb872871452cdbea47383cd48..cafe0c12fb0785476342208ed12f9dad
            encoded: 'example.com/%254C%2550%2554%2539',
          },
 diff --git a/front_end/models/persistence/NetworkPersistenceManager.ts b/front_end/models/persistence/NetworkPersistenceManager.ts
-index fb041c4702e5de9370d40fe507da8200cc6968b4..08f80d4a870750eeccf059e183c6ffb74d699a95 100644
+index fb041c4702e5de9370d40fe507da8200cc6968b4..74c46aca3c00a41f11d2eacc09f36cb5764f29b0 100644
 --- a/front_end/models/persistence/NetworkPersistenceManager.ts
 +++ b/front_end/models/persistence/NetworkPersistenceManager.ts
-@@ -513,13 +513,14 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+@@ -7,6 +7,7 @@ import * as Host from '../../core/host/host.js';
+ import * as Platform from '../../core/platform/platform.js';
+ import * as SDK from '../../core/sdk/sdk.js';
+ import * as Protocol from '../../generated/protocol.js';
++import * as Bindings from '../bindings/bindings.js';
+ import * as Breakpoints from '../breakpoints/breakpoints.js';
+ import * as TextUtils from '../text_utils/text_utils.js';
+ import * as Workspace from '../workspace/workspace.js';
+@@ -395,8 +396,20 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
+   }
+ 
+   isUISourceCodeOverridable(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
+-    return uiSourceCode.project().type() === Workspace.Workspace.projectTypes.Network &&
+-        !NetworkPersistenceManager.isForbiddenNetworkUrl(uiSourceCode.url());
++    if (uiSourceCode.project().type() !== Workspace.Workspace.projectTypes.Network) {
++      return false;
++    }
++    if (NetworkPersistenceManager.isForbiddenNetworkUrl(uiSourceCode.url())) {
++      return false;
++    }
++    // A `//# sourceURL=` annotation is fully controlled by the page and doesn't refer
++    // to an actual network resource, so there is nothing to override here. Persisting
++    // it would poison the overrides folder with a file that masquerades as a genuine
++    // resource (b/553931271).
++    if (Bindings.NetworkProject.NetworkProject.isSourceURLSynthesized(uiSourceCode)) {
++      return false;
++    }
++    return true;
+   }
+ 
+   #isUISourceCodeAlreadyOverridden(uiSourceCode: Workspace.UISourceCode.UISourceCode): boolean {
+@@ -513,13 +526,14 @@ export class NetworkPersistenceManager extends Common.ObjectWrapper.ObjectWrappe
  
    static isForbiddenNetworkUrl(urlString: Platform.DevToolsPath.UrlString): boolean {
      const trimmedUrl = urlString.trim().toLowerCase();
