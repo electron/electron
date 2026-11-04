@@ -1253,8 +1253,9 @@ access to.
 `useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
 This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
 is set to `true`, the handler will not be invoked. The system picker offers windows when the page calls
-`getDisplayMedia({ video: { displaySurface: 'window' } })`, screens for `'monitor'` or `'browser'`, and windows, applications
-and screens when the page doesn't set `displaySurface` (screens only on macOS 15.0 and 15.1). Sharing a whole application
+`getDisplayMedia({ video: { displaySurface: 'window' } })`, screens for `'monitor'`, and windows, applications
+and screens otherwise (screens only on macOS 15.0 and 15.1). `'browser'` asks for a tab, which Electron doesn't have, so
+it gets the same picker as no preference. Sharing a whole application
 reports `displaySurface: 'window'`. If the page also asks
 for audio, the stream includes system audio unless the page opts out with `systemAudio: 'exclude'` (screens) or
 `windowAudio: 'exclude'` (windows). `windowAudio: 'window'` gets no audio, since per-window audio isn't supported. This needs the `NSAudioCaptureUsageDescription` Info.plist key, as

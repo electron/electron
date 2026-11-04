@@ -764,14 +764,16 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
 namespace {
 
 // TYPE_NONE opens a picker that offers windows, applications and screens.
+// 'browser' asks for a tab, which Electron has none of, so it is treated as no
+// preference; displaySurface is a hint and must not fail the request.
 content::DesktopMediaID::Type PickerTypeForRequest(
     const content::MediaStreamRequest& request) {
   switch (request.preferred_display_surface) {
     case blink::mojom::PreferredDisplaySurface::WINDOW:
       return content::DesktopMediaID::TYPE_WINDOW;
     case blink::mojom::PreferredDisplaySurface::MONITOR:
-    case blink::mojom::PreferredDisplaySurface::BROWSER:
       return content::DesktopMediaID::TYPE_SCREEN;
+    case blink::mojom::PreferredDisplaySurface::BROWSER:
     case blink::mojom::PreferredDisplaySurface::NO_PREFERENCE:
 #if BUILDFLAG(IS_MAC)
       // A screen pick is only told apart from a window pick by its display
