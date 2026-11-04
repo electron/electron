@@ -23,7 +23,7 @@ Reviewed-by: Joey Arhar <jarhar@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1715673}
 
 diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
-index a358a4ae0f4232342d2b9394ec40f29701295f84..5223713f8b164ddfaf9f3d749d440e03b73c7cea 100644
+index f0bdb80d524edce90ba1048b42173fd2723ba702..fd286b20e8391d932b5e765f78f870c71b4e4447 100644
 --- a/third_party/blink/renderer/core/dom/element.cc
 +++ b/third_party/blink/renderer/core/dom/element.cc
 @@ -8317,8 +8317,7 @@ void Element::setAttributeNS(const AtomicString& namespace_uri,
@@ -60,7 +60,7 @@ index a358a4ae0f4232342d2b9394ec40f29701295f84..5223713f8b164ddfaf9f3d749d440e03
  
    if (reason !=
        AttributeModificationReason::kBySynchronizationOfLazyAttribute) {
-@@ -13885,14 +13894,25 @@ ALWAYS_INLINE void Element::SetAttributeInternal(
+@@ -13895,14 +13904,25 @@ ALWAYS_INLINE void Element::SetAttributeInternal(
        DidModifyAttribute(existing_attribute_name, new_value, new_value, reason);
      }
    } else {

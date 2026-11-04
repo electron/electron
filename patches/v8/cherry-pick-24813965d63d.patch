@@ -20,10 +20,10 @@ Commit-Queue: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#110574}
 
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index ca199bab0fabe67bb4d453fafe8c8a3bd35442d1..5dbd225cd180b175c55b2a46bac6c223b4654c63 100644
+index d9ed8b2c9fbde411cf39909cb039b3d85935b5db..f780178cb5a4bf2abfdb2291b89375cfc080bf72 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
-@@ -14844,6 +14844,9 @@ void MaglevGraphBuilder::MergeIntoFrameState(BasicBlock* predecessor,
+@@ -14845,6 +14845,9 @@ void MaglevGraphBuilder::MergeIntoFrameState(BasicBlock* predecessor,
  
    } else {
      // If there already is a frame state, merge.
@@ -33,7 +33,7 @@ index ca199bab0fabe67bb4d453fafe8c8a3bd35442d1..5dbd225cd180b175c55b2a46bac6c223
      merge_states_[target]->Merge(graph(), is_tracing(), *compilation_unit(),
                                   current_interpreter_frame_, predecessor,
                                   GetCurrentScopeInfo());
-@@ -14851,14 +14854,11 @@ void MaglevGraphBuilder::MergeIntoFrameState(BasicBlock* predecessor,
+@@ -14852,14 +14855,11 @@ void MaglevGraphBuilder::MergeIntoFrameState(BasicBlock* predecessor,
  }
  
  void MaglevGraphBuilder::SetCurrentScopeInfo(ContextScopeInfo scope_info) {
@@ -51,7 +51,7 @@ index ca199bab0fabe67bb4d453fafe8c8a3bd35442d1..5dbd225cd180b175c55b2a46bac6c223
    }
    register_scope_infos_[interpreter::Register::current_context()] = scope_info;
  }
-@@ -14888,7 +14888,19 @@ void MaglevGraphBuilder::MergeDeadIntoFrameState(int target,
+@@ -14889,7 +14889,19 @@ void MaglevGraphBuilder::MergeDeadIntoFrameState(int target,
                  << iterator_.current_offset());
          }
          dead_scope_infos_.insert({target, GetCurrentScopeInfo()});
@@ -71,7 +71,7 @@ index ca199bab0fabe67bb4d453fafe8c8a3bd35442d1..5dbd225cd180b175c55b2a46bac6c223
      }
    }
    // If there is no merge state yet, don't create one, but just reduce the
-@@ -16959,6 +16971,9 @@ void MaglevGraphBuilder::ProcessMergePoint(int offset,
+@@ -16960,6 +16972,9 @@ void MaglevGraphBuilder::ProcessMergePoint(int offset,
    if (merge_state.is_loop() && !merge_state.has_context_scope_info()) {
      merge_state.set_context_scope_info(GetCurrentScopeInfo());
    }
