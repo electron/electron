@@ -23,7 +23,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
-import { defer, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { expectWarningMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
@@ -108,7 +108,10 @@ describe('chrome extensions', () => {
     expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
   });
 
-  describe('chrome.system.storage', () => {
+  // On Linux, using this API scans mounted devices. A device with no identifying
+  // udev properties, as seen on CI, fails DCHECK(!unique_id.empty()) in
+  // storage_monitor::StorageInfo::MakeDeviceId().
+  ifdescribe(process.platform !== 'linux')('chrome.system.storage', () => {
     let w: BrowserWindow;
 
     beforeEach(async () => {
