@@ -197,6 +197,10 @@ class NativeWindowViews : public NativeWindow,
   void UpdateThickFrame();
   void SetLayered();
   bool has_thick_frame() const { return thick_frame_; }
+  // Whether a mouse leave reported while the window is click-through should be
+  // dropped: the cursor is still inside, so the leave describes a window the
+  // cursor never left. See SetForwardMouseMessages().
+  bool ShouldSwallowForwardedMouseLeave() const;
 #endif
 
   std::optional<SkColor> overlay_button_color() const {
@@ -253,12 +257,6 @@ class NativeWindowViews : public NativeWindow,
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
-  // Remembers a legacy window (Chrome_RenderWidgetHostHWND) reported by
-  // WM_PARENTNOTIFY, one per web content container.
-  void RememberLegacyWindow(HWND legacy_window);
-  // Adds or removes the mouse leave filter on every remembered legacy window,
-  // depending on whether mouse messages are being forwarded.
-  void UpdateLegacyWindowSubclasses();
   void SetForwardMouseMessages(bool forward);
   // Records the cursor position reported by |MouseHookProc| and schedules a
   // deferred dispatch into the aura window tree.
@@ -266,12 +264,6 @@ class NativeWindowViews : public NativeWindow,
   // Dispatches the most recent forwarded cursor position, or the mouse leave
   // that ends it, to the web contents.
   void FlushForwardedMouseEvent();
-  static LRESULT CALLBACK SubclassProc(HWND hwnd,
-                                       UINT msg,
-                                       WPARAM w_param,
-                                       LPARAM l_param,
-                                       UINT_PTR subclass_id,
-                                       DWORD_PTR ref_data);
   static LRESULT CALLBACK MouseHookProc(int n_code,
                                         WPARAM w_param,
                                         LPARAM l_param);
@@ -356,10 +348,6 @@ class NativeWindowViews : public NativeWindow,
   static inline base::NoDestructor<absl::flat_hash_set<NativeWindowViews*>>
       forwarding_windows_;
   static HHOOK mouse_hook_;
-  // The legacy windows created inside this window, one per web content
-  // container. They are recreated on navigation and renderer crashes, and the
-  // replacements are reported through WM_PARENTNOTIFY.
-  absl::flat_hash_set<HWND> legacy_windows_;
   bool forwarding_mouse_messages_ = false;
 
   // Cursor position (physical pixels, relative to the client area) that the
