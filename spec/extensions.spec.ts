@@ -23,7 +23,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
-import { defer, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { expectWarningMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
@@ -106,6 +106,56 @@ describe('chrome extensions', () => {
     expect(all.map((info: any) => info.id)).toContain(extension.id);
     const info = await w.webContents.executeJavaScript(`chrome.management.get('${extension.id}')`);
     expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
+  });
+
+  // On Linux, using this API scans mounted devices. A device with no identifying
+  // udev properties, as seen on CI, fails DCHECK(!unique_id.empty()) in
+  // storage_monitor::StorageInfo::MakeDeviceId().
+  ifdescribe(process.platform !== 'linux')('chrome.system.storage', () => {
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-system-storage')
+      );
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${extension.url}page.html`);
+    });
+
+    afterEach(() => {
+      w.destroy();
+    });
+
+    it('lists storage units', async () => {
+      const units = await w.webContents.executeJavaScript('chrome.system.storage.getInfo()');
+      expect(Array.isArray(units)).toBe(true);
+      for (const unit of units) {
+        expect(unit).toEqual(
+          expect.objectContaining({
+            id: expect.any(String),
+            name: expect.any(String),
+            type: expect.any(String),
+            capacity: expect.any(Number)
+          })
+        );
+      }
+    });
+
+    it('reports an unknown device when ejecting', async () => {
+      const result = await w.webContents.executeJavaScript("chrome.system.storage.ejectDevice('unknown-device')");
+      expect(result).toBe('no_such_device');
+    });
+
+    it('accepts device attach and detach listeners', async () => {
+      // The browser starts watching for devices when the first listener is added.
+      const units = await w.webContents.executeJavaScript(`
+        chrome.system.storage.onAttached.addListener(() => {});
+        chrome.system.storage.onDetached.addListener(() => {});
+        chrome.system.storage.getInfo();
+      `);
+      expect(Array.isArray(units)).toBe(true);
+    });
   });
 
   describe('Chrome Web Store origin', () => {
