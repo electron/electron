@@ -158,6 +158,12 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEventForCaption(
 }
 
 bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
+  // The message path is filtered in PreHandleMSG; this catches the leave a
+  // Chrome_RenderWidgetHostHWND relays past it.
+  if (event->type() == ui::EventType::kMouseExited &&
+      native_window_view_->ShouldSwallowForwardedMouseLeave()) {
+    return true;
+  }
   if (event->is_system_menu() && !native_window_view_->has_frame()) {
     bool prevent_default = false;
     native_window_view_->NotifyWindowSystemContextMenu(event->x(), event->y(),
