@@ -227,3 +227,4 @@ cherry-pick-2def58ebf816.patch
 cherry-pick-0a8c55898c38.patch
 cherry-pick-f6a48fca8842.patch
 cherry-pick-3318e836e90b.patch
+fix_avoid_updating_display_affinity_for_hidden_owned_windows.patch
