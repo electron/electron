@@ -234,6 +234,8 @@ NativeWindowMacRemote::NativeWindowMacRemote(
   params.delegate = this;
   if (IsTranslucent())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
+  if (!options.ValueOrDefault(options::kHasShadow, true))
+    params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
   // Reading the options above may have run JavaScript that disconnected the
   // shim, so the host is looked up again here, with nothing left to run
   // before it is used. Without one the window is made in this process.
