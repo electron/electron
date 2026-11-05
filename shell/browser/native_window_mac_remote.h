@@ -124,6 +124,8 @@ class NativeWindowMacRemote : public NativeWindow,
   SkColor GetBackgroundColor() const override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() const override;
+  void SetFocusable(bool focusable) override;
+  bool IsFocusable() const override;
   void SetOpacity(const double opacity) override;
   double GetOpacity() const override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
