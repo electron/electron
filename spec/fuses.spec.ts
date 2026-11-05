@@ -1,10 +1,69 @@
-import { describe, expect, it } from 'vitest';
+import { flipFuses, FuseV1Options, FuseVersion } from '@electron/fuses';
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
+import { copyApp } from './lib/fs-helpers.ts';
 import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers.ts';
+
+ifdescribe(process.platform === 'win32')('fuses Windows executable configuration', { timeout: 120000 }, () => {
+  let tempDir: string;
+  let executable: string;
+
+  beforeAll(async () => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-fuses-'));
+    executable = await copyApp(tempDir);
+  }, 120000);
+
+  afterAll(() => {
+    if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5 });
+  }, 120000);
+
+  it('rejects an executable with an invalid fuse sentinel', () => {
+    const original = fs.readFileSync(executable);
+    const offset = original.indexOf('dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX');
+    expect(offset).toBeGreaterThan(-1);
+    const invalid = Buffer.from(original);
+    invalid[offset] ^= 0xff;
+    try {
+      fs.writeFileSync(executable, invalid);
+      const result = spawnSync(executable, ['-e', 'console.log("unexpected")'], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_OPTIONS: '' },
+        encoding: 'utf8',
+        timeout: 30000
+      });
+      expect(result.error).toBe(undefined);
+      expect(result.status, result.stderr).toBe(13); // ERROR_INVALID_DATA
+      expect(result.stdout).not.toContain('unexpected');
+    } finally {
+      fs.writeFileSync(executable, original);
+    }
+  });
+
+  it('reads a fuse patched in the executable from the runtime DLL', async () => {
+    const options = {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_OPTIONS: '-e 0' },
+      encoding: 'utf8' as const,
+      timeout: 30000
+    };
+    const before = spawnSync(executable, ['-e', 'console.log("ok")'], options);
+    expect(before.error).toBe(undefined);
+    expect(before.status, before.stderr).toBe(9);
+    await flipFuses(executable, {
+      version: FuseVersion.V1,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false
+    });
+    const after = spawnSync(executable, ['-e', 'console.log("ok")'], options);
+    expect(after.error).toBe(undefined);
+    expect(after.status, after.stderr).toBe(0);
+    expect(after.stdout.trim()).toBe('ok');
+  });
+});
 
 ifdescribe(isTestingBindingAvailable())('fuses', () => {
   it('can be enabled by command-line argument during testing', async () => {
