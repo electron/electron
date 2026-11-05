@@ -39,10 +39,8 @@ namespace electron {
 namespace {
 
 // The OS's TME_LEAVE tracking is one-shot: after WM_MOUSELEAVE it stays off
-// until TrackMouseEvent() is called again. Chromium only updates its cached
-// tracking state (|active_mouse_tracking_flags_|, |mouse_tracking_enabled_|)
-// from the leave handler that mouse forwarding consumes, so re-arm on its
-// behalf to keep the two in sync.
+// until TrackMouseEvent() is called again, which Chromium only does on a real
+// mouse move.
 void RearmMouseLeaveTracking(HWND hwnd, DWORD flags) {
   if (!hwnd)
     return;
@@ -305,11 +303,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
   }
 
   switch (message) {
-    case WM_MOUSELEAVE:
-    case WM_NCMOUSELEAVE: {
-      return ShouldSwallowForwardedMouseLeave();
-    }
-
     // Screen readers send WM_GETOBJECT in order to get the accessibility
     // object, so take this opportunity to push Chromium into accessible
     // mode if it isn't already, always say we didn't handle the message
@@ -786,11 +779,10 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   }
 }
 
-// A Chrome_RenderWidgetHostHWND relays its mouse leave here with
-// ui::WindowEventTarget::HandleMouseMessage(), which bypasses PreHandleMSG.
-// A click-through window is invisible to ::WindowFromPoint(), so that leave
-// claims the cursor left a window it never left; genuine enter/leave comes
-// from the low level mouse hook instead, see FlushForwardedMouseEvent().
+// A click-through window is invisible to ::WindowFromPoint(), so the leave the
+// OS reports, directly or relayed by a Chrome_RenderWidgetHostHWND, claims the
+// cursor left a window it never left. Genuine enter/leave comes from the low
+// level mouse hook instead, see FlushForwardedMouseEvent().
 bool NativeWindowViews::ShouldSwallowForwardedMouseLeave() const {
   if (!forwarding_mouse_messages_)
     return false;
