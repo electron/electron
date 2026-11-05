@@ -82,6 +82,25 @@ index c14b09d9a578b5d76c3f43eebfcf20e1945218a6..164a455665b413eb7cc173767af755a1
  
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
+diff --git a/chrome/browser/pdf/pdf_help_bubble_handler_factory.cc b/chrome/browser/pdf/pdf_help_bubble_handler_factory.cc
+index 508a205d43192ddc05e777d4e91a66d3333d557d..67582c928dc4c1d71aa28373eb6f00ef2644eed5 100644
+--- a/chrome/browser/pdf/pdf_help_bubble_handler_factory.cc
++++ b/chrome/browser/pdf/pdf_help_bubble_handler_factory.cc
+@@ -39,10 +39,13 @@ DEFINE_CLASS_ELEMENT_IDENTIFIER_VALUE(PdfHelpBubbleHandlerFactory,
+ void PdfHelpBubbleHandlerFactory::Create(
+     content::RenderFrameHost* render_frame_host,
+     HelpFactoryPendingReceiver receiver) {
+-  bool is_feature_enabled =
++  bool is_feature_enabled = false;
++#if 0
++  is_feature_enabled =
+       glic::GetGlicProviderSpec(
+           Profile::FromBrowserContext(render_frame_host->GetBrowserContext()))
+           .SupportsFeature(glic::GlicFeature::kPdfSummarize);
++#endif
+ #if BUILDFLAG(ENABLE_PDF_INK2)
+   is_feature_enabled |=
+       base::FeatureList::IsEnabled(chrome_pdf::features::kPdfInk2);
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
 index 89e865b5e487fec01e45b171d6bbe95efd63f292..06a8aae836d86d095a8d457573766d198d7992a8 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
