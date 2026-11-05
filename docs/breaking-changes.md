@@ -16,6 +16,22 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Behavior Changed: `useSystemPicker` follows `displaySurface`
+
+On macOS 15+, `session.setDisplayMediaRequestHandler(handler, { useSystemPicker: true })`
+now opens the same system picker Chrome uses:
+
+* The picker offers what the page asks for: windows for
+  `getDisplayMedia({ video: { displaySurface: 'window' } })`, screens for
+  `'monitor'`, and windows, applications and screens otherwise (screens only
+  on macOS 15.0 and 15.1). Previously it always offered everything.
+* When the page also asks for audio, the stream now includes system audio,
+  unless the page opts out. Previously the stream was video only. See
+  [`ses.setDisplayMediaRequestHandler`](api/session.md#sessetdisplaymediarequesthandlerhandler-opts).
+* The video track reports the picked kind: a screen now reports
+  `displaySurface: 'monitor'` instead of `'window'`. Its `deviceId` also
+  changes format.
+
 ### Removed: `--experimental-transform-types` command-line switch
 
 Node.js 26 removed the `--experimental-transform-types` flag, so Electron no
