@@ -120,6 +120,25 @@ void RunNotificationCallback(int request_id,
   callback.Run(name, std::move(user_info), object);
 }
 
+// Runs the subscription's callback now when called on the main thread, and
+// otherwise posts it to |main_task_runner| so the calling thread never waits
+// on the isolate's v8::Locker.
+void DispatchNotification(
+    const scoped_refptr<base::SingleThreadTaskRunner>& main_task_runner,
+    int request_id,
+    std::string name,
+    base::Value user_info,
+    std::string object) {
+  if ([NSThread isMainThread]) {
+    RunNotificationCallback(request_id, name, std::move(user_info), object);
+    return;
+  }
+  main_task_runner->PostTask(
+      FROM_HERE,
+      base::BindOnce(&RunNotificationCallback, request_id, std::move(name),
+                     std::move(user_info), std::move(object)));
+}
+
 AVMediaType ParseMediaType(const std::string& media_type) {
   if (media_type == "camera") {
     return AVMediaTypeVideo;
@@ -290,6 +309,8 @@ int SystemPreferences::DoSubscribeNotification(
   // on the lock, which hangs quit if the main thread waits for it. Deliver
   // those notifications to the main thread asynchronously instead. The block
   // holds no V8 handles, so releasing it on any thread is safe.
+  // A copy is needed: the block below would capture a reference by reference.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   scoped_refptr<base::SingleThreadTaskRunner> main_task_runner =
       base::SingleThreadTaskRunner::GetCurrentDefault();
   GetCallbackMap()[request_id] = callback;
@@ -306,21 +327,10 @@ int SystemPreferences::DoSubscribeNotification(
                 if (notification.userInfo) {
                   user_info = NSDictionaryToValue(notification.userInfo);
                 }
-                std::string notification_name =
-                    base::SysNSStringToUTF8(notification.name);
-
-                if ([NSThread isMainThread]) {
-                  RunNotificationCallback(request_id, notification_name,
-                                          base::Value(std::move(user_info)),
-                                          object);
-                } else {
-                  main_task_runner->PostTask(
-                      FROM_HERE,
-                      base::BindOnce(&RunNotificationCallback, request_id,
-                                     std::move(notification_name),
+                DispatchNotification(main_task_runner, request_id,
+                                     base::SysNSStringToUTF8(notification.name),
                                      base::Value(std::move(user_info)),
-                                     std::move(object)));
-                }
+                                     std::move(object));
               }];
   GetKindMap()[request_id] = kind;
   return request_id;
