@@ -159,6 +159,14 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEventForCaption(
 }
 
 bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
+  // Every leave Chromium maps to kMouseExited gets here, whether the OS sent
+  // it to this window or a Chrome_RenderWidgetHostHWND relayed it, and after
+  // Chromium has reset its tracking state. See
+  // ShouldSwallowForwardedMouseLeave().
+  if (event->type() == ui::EventType::kMouseExited &&
+      native_window_view_->ShouldSwallowForwardedMouseLeave()) {
+    return true;
+  }
   if (event->is_system_menu() && !native_window_view_->has_frame()) {
     bool prevent_default = false;
     native_window_view_->NotifyWindowSystemContextMenu(event->x(), event->y(),
