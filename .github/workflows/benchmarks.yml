@@ -1,0 +1,84 @@
+name: Benchmarks
+
+# Runs the crossbench-based benchmarks in script/benchmarks/ (see its README):
+# the latest nightly against the previous nightly, interleaved on one runner,
+# with the results sent to Datadog. Only paired results are meaningful; runners change
+# hosts between jobs, so don't compare raw values across runs.
+#
+# Dispatch with explicit versions to compare any two builds, for example to
+# bisect a flagged change through nightlies.
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate:
+        type: string
+        description: 'Electron version under test, e.g. 47.0.0-nightly.20261028 (default: latest nightly)'
+        default: ''
+        required: false
+      baseline:
+        type: string
+        description: 'Electron version to compare against (default: the nightly before the candidate, or the previous release on its major line)'
+        default: ''
+        required: false
+      rounds:
+        type: string
+        description: 'Interleaved rounds per target'
+        default: '10'
+        required: false
+      suites:
+        type: string
+        description: 'Comma-separated suites: loading, trace, file_loading, speedometer, jetstream'
+        default: 'loading,trace,file_loading,speedometer,jetstream'
+        required: false
+      upload-to-datadog:
+        type: boolean
+        description: 'Send the results to Datadog'
+        default: false
+        required: false
+  schedule:
+    # 8:43pm UTC daily. Nightlies usually publish between 2:30pm and 6pm UTC;
+    # days without a new nightly are skipped.
+    - cron: '43 20 * * *'
+
+# No concurrency group: each run gets its own runner, and a group keeps only
+# one pending run, so queued bisect dispatches or a scheduled run waiting
+# behind a dispatch would be cancelled.
+permissions: {}
+
+jobs:
+  setup:
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+    - name: Get Build Image SHA
+      id: set-output
+      uses: ./.github/actions/build-image-sha
+
+  # One job per platform. Phase 0 is Linux only; Windows (garm-windows-x64-32core)
+  # and macOS (macos-15-xlarge) can be added as more callers of the segment.
+  benchmark-linux-x64:
+    needs: setup
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-benchmarks.yml
+    with:
+      target-platform: linux
+      target-arch: x64
+      runs-on: electron-arc-centralus-linux-amd64-32core
+      container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
+      candidate: ${{ inputs.candidate || '' }}
+      baseline: ${{ inputs.baseline || '' }}
+      rounds: ${{ inputs.rounds || '10' }}
+      suites: ${{ inputs.suites || 'loading,trace,file_loading,speedometer,jetstream' }}
+      upload-to-datadog: ${{ github.event_name == 'schedule' || inputs.upload-to-datadog == true }}
+      skip-stale-nightly: ${{ github.event_name == 'schedule' }}
+    secrets:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}

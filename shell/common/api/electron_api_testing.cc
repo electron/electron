@@ -27,10 +27,15 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_peer.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/net/network_context_service.h"
+#include "shell/browser/net/network_context_service_factory.h"
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
@@ -298,6 +303,17 @@ v8::Local<v8::Promise> SimulateNetworkServiceCrash(v8::Isolate* isolate) {
   return handle;
 }
 
+// Blocks until |session|'s NetworkContext has received every proxy config sent
+// to it so far. Flushing the NetworkContext first makes sure it has been
+// recreated if the network service restarted.
+void FlushSessionProxyConfigForTesting(electron::api::Session* session) {
+  auto* browser_context = session->browser_context();
+  browser_context->GetDefaultStoragePartition()
+      ->FlushNetworkInterfaceForTesting();
+  electron::NetworkContextServiceFactory::GetForContext(browser_context)
+      ->FlushProxyConfigMonitorForTesting();
+}
+
 void AddNodeBlockedSPKIForTesting(gin_helper::ErrorThrower thrower,
                                   const std::string& hex) {
   std::vector<uint8_t> hash;
@@ -557,6 +573,14 @@ void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
       SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
 }
 
+// Fails a V8 API check: setting an internal field on a plain object, which
+// has none. V8 reports that through the isolate's fatal error handler with
+// location "v8::Object::SetInternalField()", so specs can exercise how each
+// process type handles V8 fatal errors.
+void TriggerV8FatalError(v8::Isolate* isolate) {
+  v8::Object::New(isolate)->SetInternalField(0, v8::Undefined(isolate));
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -580,6 +604,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(
       "isPlatformCaretBrowsingEnabled");
   dict.SetMethod<&SimulateNetworkServiceCrash>("simulateNetworkServiceCrash");
+  dict.SetMethod<&FlushSessionProxyConfigForTesting>(
+      "flushSessionProxyConfigForTesting");
   dict.SetMethod<&AddNodeBlockedSPKIForTesting>("addNodeBlockedSPKI");
   dict.SetMethod<&ClearNodeBlockedSPKIsForTesting>("clearNodeBlockedSPKIs");
   dict.SetMethod<&SimulatePowerEvent>("simulatePowerEvent");
@@ -609,6 +635,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&CommitPendingLocalStateWrites>(
       "commitPendingLocalStateWrites");
   dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
+  dict.SetMethod<&TriggerV8FatalError>("triggerV8FatalError");
 }
 
 }  // namespace

@@ -44,6 +44,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
@@ -441,6 +442,11 @@ void ElectronBrowserContext::InitPrefs() {
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
   pref_store->ReadPrefs();  // Synchronous.
   prefs_factory.set_user_prefs(pref_store);
+
+  // Apply any proxy switches from the command line to this session once, here.
+  // Session::SetProxy() writes to the same store, so applying them again later
+  // would overwrite a proxy the app set with ses.setProxy().
+  BrowserProcessImpl::ApplyProxyModeFromCommandLine(in_memory_pref_store());
   prefs_factory.set_command_line_prefs(in_memory_pref_store());
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
