@@ -158,10 +158,16 @@ export async function installMsixPackage(msixPath: string): Promise<void> {
 
 // Uninstall MSIX package by  name
 export async function uninstallMsixPackage(name: string): Promise<void> {
-  const result = await runPowerShell(['-Command', `Get-AppxPackage ${name} | Remove-AppxPackage`]);
-  // Don't throw if package doesn't exist
-  if (result.status !== 0) {
-    throw new Error(`Failed to uninstall MSIX package: ${result.stderr.toString() || result.stdout.toString()}`);
+  const command = `Get-AppxPackage ${name} | Remove-AppxPackage`;
+  const started = Date.now();
+  try {
+    const result = await runPowerShell(['-Command', command]);
+    // Don't throw if package doesn't exist
+    if (result.status !== 0) {
+      throw new Error(`Failed to uninstall MSIX package: ${result.stderr.toString() || result.stdout.toString()}`);
+    }
+  } catch (error) {
+    throw new Error(`MSIX package cleanup failed after ${Date.now() - started} ms: ${command}`, { cause: error });
   }
 }
 
@@ -177,15 +183,23 @@ export async function getMsixPackageVersion(name: string): Promise<string | null
 }
 
 export async function spawn(cmd: string, args: string[], opts: any = {}): Promise<{ code: number; out: string }> {
+  const started = Date.now();
   let out = '';
-  const child = cp.spawn(cmd, args, opts);
-  child.stdout.on('data', (chunk: Buffer) => {
-    out += chunk.toString();
-  });
-  child.stderr.on('data', (chunk: Buffer) => {
-    out += chunk.toString();
-  });
-  const [code, signal] = await once(child, 'close');
-  expect(signal).toBe(null);
-  return { code, out };
+  try {
+    const child = cp.spawn(cmd, args, opts);
+    child.stdout.on('data', (chunk: Buffer) => {
+      out += chunk.toString();
+    });
+    child.stderr.on('data', (chunk: Buffer) => {
+      out += chunk.toString();
+    });
+    const [code, signal] = await once(child, 'close');
+    expect(signal).toBe(null);
+    return { code, out };
+  } catch (error) {
+    throw new Error(
+      `MSIX app launch failed after ${Date.now() - started} ms: ${JSON.stringify([cmd, ...args])}\nOutput:\n${out}`,
+      { cause: error }
+    );
+  }
 }
