@@ -15,7 +15,7 @@ Reviewed-by: Peter Kvitek <kvitekp@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1726016}
 
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 7bc39de06fe96171549d141d281717a954b4bdc9..8c3322a070e39ba952f0fce6f49c427925aa02d7 100644
+index 4532fbdb7735764caf2eb472c94a3f756d55b790..3bd4e07f33d0d463695793ab1f125a050f51aacc 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -1163,7 +1163,7 @@ PrintRenderFrameHelper::~PrintRenderFrameHelper() = default;

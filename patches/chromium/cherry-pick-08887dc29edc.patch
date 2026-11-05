@@ -154,18 +154,18 @@ index 9b55c0f77f8b6aeb2384fc205415dfddf5ef20d7..81e868fa99203958067e18d5815302ff
      CalculationResultCategory category = calculation->Category();
      if (category == kCalcAngle || category == kCalcPercent ||
 diff --git a/third_party/blink/renderer/platform/geometry/length.cc b/third_party/blink/renderer/platform/geometry/length.cc
-index 7cec8702a4514549dc3398daf95462028e781f3a..eff763f2b564f4bad11a98083bedc33c37edc466 100644
+index cfbf02371caf155958d7f50e0accdf96ba794891..7a102cf06afdf748daa574aa8b3b29fb55c7a14c 100644
 --- a/third_party/blink/renderer/platform/geometry/length.cc
 +++ b/third_party/blink/renderer/platform/geometry/length.cc
-@@ -122,7 +122,7 @@ class CalculationValueHandleMap
+@@ -148,7 +148,7 @@ class CalculationValueHandleMap {
  };
  
  static CalculationValueHandleMap& CalcHandles() {
 -  DCHECK(IsMainThread());
 +  CHECK(IsMainThread());
-   DEFINE_STATIC_LOCAL(Persistent<CalculationValueHandleMap>, handle_map,
-                       (MakeGarbageCollected<CalculationValueHandleMap>()));
-   return *handle_map;
+   DEFINE_STATIC_LOCAL(CalculationValueHandleMap, handle_map, ());
+   return handle_map;
+ }
 diff --git a/third_party/blink/web_tests/external/wpt/css/css-values/signs-abs-invalid.html b/third_party/blink/web_tests/external/wpt/css/css-values/signs-abs-invalid.html
 index f0e88adb517b8dc1fa38c594aa39594a3e760ff4..4cedfc99b06435457b7ed8add07a46c9889ca7cb 100644
 --- a/third_party/blink/web_tests/external/wpt/css/css-values/signs-abs-invalid.html
