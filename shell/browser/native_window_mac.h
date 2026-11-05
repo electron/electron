@@ -253,6 +253,10 @@ class NativeWindowMac : public NativeWindow,
 
   void UpdateZoomButton();
 
+  // Gives a frameless transparent window an opaque background while a vibrant
+  // view covers it, and restores the clear background otherwise.
+  void UpdateTransparentWindowBackground(bool vibrancy_visible);
+
   int FrameViewNonClientHitTest(const gfx::Point& point);
 
   ElectronNSWindow* window_;  // Weak ref, managed by widget_.

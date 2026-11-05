@@ -1366,6 +1366,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type, int duration) {
 
   if (type.empty()) {
     vibrancy_type_ = type;
+    UpdateTransparentWindowBackground(false);
 
     auto cleanupHandler = ^{
       if (vibrant_native_view_host_ != nullptr) {
@@ -1464,17 +1465,36 @@ void NativeWindowMac::SetVibrancy(const std::string& type, int duration) {
     }
 
     if (animate) {
+      // Keep the background clear while the vibrant view fades in, so the
+      // desktop rather than the opaque background shows through it.
+      UpdateTransparentWindowBackground(false);
       [vibrantView setAlphaValue:0.0];
+      __weak ElectronNSWindowDelegate* weak_delegate = window_delegate_;
       [NSAnimationContext
           runAnimationGroup:^(NSAnimationContext* context) {
             context.duration = duration / 1000.0f;
             vibrantView.animator.alphaValue = 1.0;
           }
-          completionHandler:nil];
+          completionHandler:^{
+            if (!weak_delegate || vibrancy_type_.empty())
+              return;
+
+            UpdateTransparentWindowBackground(true);
+          }];
+    } else {
+      UpdateTransparentWindowBackground(true);
     }
 
     [vibrantView setMaterial:vibrancyType];
   }
+}
+
+void NativeWindowMac::UpdateTransparentWindowBackground(bool vibrancy_visible) {
+  if (!transparent() || has_frame())
+    return;
+
+  [window_ setBackgroundColor:vibrancy_visible ? NSColor.windowBackgroundColor
+                                               : NSColor.clearColor];
 }
 
 void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
