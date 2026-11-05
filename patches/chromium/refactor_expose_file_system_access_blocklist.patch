@@ -37,8 +37,15 @@ ShouldBlockAccessToPath() allow plain subfolders of WSL home directories
 (\\wsl.localhost\<distro>\home\<user>\<child>) through the local UNC path
 check.
 
+As of 159.0.8144.0, it also carries the kFileSystemAccessBlockHomeDotFiles
+feature check added upstream in that version: GenerateBlockPaths() records the
+normalized base::DIR_HOME path in BlockPathRules::home_path_, and
+ShouldBlockAccessToPath() uses GetBlockedHomeDotPath() to block hidden
+dot-files and dot-directories directly under the home directory (and their
+descendants) with BlockType::kBlockAllChildren.
+
 diff --git a/chrome/browser/file_system_access/BUILD.gn b/chrome/browser/file_system_access/BUILD.gn
-index 0c1debacd07cb9b84a1615b5b17fb9e88d905806..c1666f79eff726895e886fa784dac9dac0ed42f0 100644
+index a72d5994e39d8f299eb8b297b7907a1327c0a307..a7bd2ac0e07286c65fab2c22183439e747eef8a9 100644
 --- a/chrome/browser/file_system_access/BUILD.gn
 +++ b/chrome/browser/file_system_access/BUILD.gn
 @@ -40,6 +40,7 @@ source_set("file_system_access") {
@@ -51,10 +58,10 @@ index 0c1debacd07cb9b84a1615b5b17fb9e88d905806..c1666f79eff726895e886fa784dac9da
      "file_system_access_permission_context_factory.cc",
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71502aa97f
+index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471350eb241
 --- /dev/null
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
-@@ -0,0 +1,642 @@
+@@ -0,0 +1,691 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -67,6 +74,7 @@ index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71
 +
 +#include <algorithm>
 +#include <memory>
++#include <utility>
 +#include <vector>
 +
 +#include "base/base_paths.h"
@@ -287,6 +295,18 @@ index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71
 +  return normalized_path;
 +}
 +
++namespace {
++
++// ChromeOS supports multi-user sign-in. `base::DIR_HOME` only returns the
++// profile path for the primary user, the first user to sign in. We want to use
++// the `profile_path` instead since that is associated with the user that
++// initiated this blocklist check.
++//
++// TODO(crbug.com/375490221): Improve the ChromeOS blocklist logic.
++constexpr bool kUseProfilePathForDirHome = BUILDFLAG(IS_CHROMEOS);
++
++}  // namespace
++
 +// static
 +std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
 +ChromeFileSystemAccessPermissionContext::GenerateBlockPaths(
@@ -504,13 +524,6 @@ index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71
 +      // XDG_CONFIG_HOME when it is not set ~/.config?
 +  };
 +
-+  // ChromeOS supports multi-user sign-in. base::DIR_HOME only returns the
-+  // profile path for the primary user, the first user to sign in. We want to
-+  // use the `profile_path` instead since that's associated with user that
-+  // initiated this blocklist check.
-+  //
-+  // TODO(crbug.com/375490221): Improve the ChromeOS blocklist logic.
-+  constexpr bool kUseProfilePathForDirHome = BUILDFLAG(IS_CHROMEOS);
 +  // Populate the hard-coded rules.
 +  auto block_path_rules = std::make_unique<
 +      ChromeFileSystemAccessPermissionContext::BlockPathRules>();
@@ -549,13 +562,42 @@ index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71
 +      }
 +    }
 +
-+    block_path_rules->block_path_rules_.emplace_back(
-+        NormalizeFilePathForBlocklist(path, should_normalize_file_path),
-+        blocked_path.block_type);
++    base::FilePath normalized_path =
++        NormalizeFilePathForBlocklist(path, should_normalize_file_path);
++    if (blocked_path.base_path_key == base::DIR_HOME && !blocked_path.path) {
++      block_path_rules->home_path_ = normalized_path;
++    }
++    block_path_rules->block_path_rules_.emplace_back(std::move(normalized_path),
++                                                     blocked_path.block_type);
 +  }
 +
 +  return block_path_rules;
 +}
++
++namespace {
++
++// If `path` is a hidden dot-file or dot-directory (`.*`) directly under
++// `home_dir` (or a descendant of one), returns that direct child path under
++// `home_dir`. Otherwise returns an empty `base::FilePath`.
++base::FilePath GetBlockedHomeDotPath(const base::FilePath& path,
++                                     const base::FilePath& home_dir) {
++  base::FilePath relative_path;
++  if (!home_dir.empty() && home_dir.AppendRelativePath(path, &relative_path)) {
++    std::vector<base::FilePath::StringType> relative_components =
++        relative_path.GetComponents();
++    if (!relative_components.empty()) {
++      const auto& direct_child_name = relative_components[0];
++      if (direct_child_name.starts_with(FILE_PATH_LITERAL('.')) &&
++          direct_child_name != base::FilePath::kCurrentDirectory &&
++          direct_child_name != base::FilePath::kParentDirectory) {
++        return home_dir.Append(direct_child_name);
++      }
++    }
++  }
++  return base::FilePath();
++}
++
++}  // namespace
 +
 +// Checks if `path` should be blocked by the `rules`.
 +// The BlockType of the nearest ancestor of a path to check is what
@@ -634,8 +676,20 @@ index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71
 +    }
 +  }
 +
-+  std::vector<base::FilePath::StringType> path_components =
-+      path.GetComponents();
++  // Block hidden dot-files and dot-directories (`.*`) directly under the home
++  // directory (and all of their descendants), while allowing dotfiles inside
++  // normal subdirectories of the home directory, see crbug.com/578803790.
++  if (base::FeatureList::IsEnabled(
++          features::kFileSystemAccessBlockHomeDotFiles)) {
++    const base::FilePath& home_dir =
++        kUseProfilePathForDirHome ? profile_path : block_path_rules.home_path_;
++    base::FilePath blocked_dot_path = GetBlockedHomeDotPath(path, home_dir);
++    if (!blocked_dot_path.empty() &&
++        should_block_with_rule(blocked_dot_path,
++                               BlockType::kBlockAllChildren)) {
++      return true;
++    }
++  }
 +
 +  // Checks if the path components contain the components of the suffix rule.
 +  // For example, if the rule is `.git/hooks`, it will block paths like
@@ -643,6 +697,8 @@ index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71
 +  // using case-insensitive comparison and constructs a `current_path` from the
 +  // root up to the end of the matched subrange (e.g., `/foo/bar/.git/hooks`).
 +  // This path is then evaluated against the regular block rules.
++  std::vector<base::FilePath::StringType> path_components =
++      path.GetComponents();
 +  for (const auto& rule : block_path_rules.suffix_block_path_rules_) {
 +    base::FilePath rule_path(rule.path);
 +    std::vector<base::FilePath::StringType> rule_components =
@@ -698,10 +754,10 @@ index 0000000000000000000000000000000000000000..01452596107408e3507b75e03f5c3f71
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 7ad5450a84bde41f4c60a3a2fd7a2de58dc0ed85..3f23fcc41e46d4973a5ac32554e217f5988c44a8 100644
+index 76d2b878b7f8f03ee585ffe3f9b601e15f85e437..5101ab729304da7d411000688ada944ca823cc8d 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -267,615 +267,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
+@@ -268,655 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
  }
  #endif
  
@@ -906,6 +962,14 @@ index 7ad5450a84bde41f4c60a3a2fd7a2de58dc0ed85..3f23fcc41e46d4973a5ac32554e217f5
 -
  using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
  
+-// ChromeOS supports multi-user sign-in. `base::DIR_HOME` only returns the
+-// profile path for the primary user, the first user to sign in. We want to use
+-// the `profile_path` instead since that is associated with the user that
+-// initiated this blocklist check.
+-//
+-// TODO(crbug.com/375490221): Improve the ChromeOS blocklist logic.
+-constexpr bool kUseProfilePathForDirHome = BUILDFLAG(IS_CHROMEOS);
+-
 -std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
 -GenerateBlockPaths(bool should_normalize_file_path) {
 -  using BlockPath = ChromeFileSystemAccessPermissionContext::BlockPath;
@@ -1121,13 +1185,6 @@ index 7ad5450a84bde41f4c60a3a2fd7a2de58dc0ed85..3f23fcc41e46d4973a5ac32554e217f5
 -      // XDG_CONFIG_HOME when it is not set ~/.config?
 -  };
 -
--  // ChromeOS supports multi-user sign-in. base::DIR_HOME only returns the
--  // profile path for the primary user, the first user to sign in. We want to
--  // use the `profile_path` instead since that's associated with user that
--  // initiated this blocklist check.
--  //
--  // TODO(crbug.com/375490221): Improve the ChromeOS blocklist logic.
--  constexpr bool kUseProfilePathForDirHome = BUILDFLAG(IS_CHROMEOS);
 -  // Populate the hard-coded rules.
 -  auto block_path_rules = std::make_unique<
 -      ChromeFileSystemAccessPermissionContext::BlockPathRules>();
@@ -1166,12 +1223,37 @@ index 7ad5450a84bde41f4c60a3a2fd7a2de58dc0ed85..3f23fcc41e46d4973a5ac32554e217f5
 -      }
 -    }
 -
--    block_path_rules->block_path_rules_.emplace_back(
--        NormalizeFilePathForBlocklist(path, should_normalize_file_path),
--        blocked_path.block_type);
+-    base::FilePath normalized_path =
+-        NormalizeFilePathForBlocklist(path, should_normalize_file_path);
+-    if (blocked_path.base_path_key == base::DIR_HOME && !blocked_path.path) {
+-      block_path_rules->home_path_ = normalized_path;
+-    }
+-    block_path_rules->block_path_rules_.emplace_back(std::move(normalized_path),
+-                                                     blocked_path.block_type);
 -  }
 -
 -  return block_path_rules;
+-}
+-
+-// If `path` is a hidden dot-file or dot-directory (`.*`) directly under
+-// `home_dir` (or a descendant of one), returns that direct child path under
+-// `home_dir`. Otherwise returns an empty `base::FilePath`.
+-base::FilePath GetBlockedHomeDotPath(const base::FilePath& path,
+-                                     const base::FilePath& home_dir) {
+-  base::FilePath relative_path;
+-  if (!home_dir.empty() && home_dir.AppendRelativePath(path, &relative_path)) {
+-    std::vector<base::FilePath::StringType> relative_components =
+-        relative_path.GetComponents();
+-    if (!relative_components.empty()) {
+-      const auto& direct_child_name = relative_components[0];
+-      if (direct_child_name.starts_with(FILE_PATH_LITERAL('.')) &&
+-          direct_child_name != base::FilePath::kCurrentDirectory &&
+-          direct_child_name != base::FilePath::kParentDirectory) {
+-        return home_dir.Append(direct_child_name);
+-      }
+-    }
+-  }
+-  return base::FilePath();
 -}
 -
 -// Checks if `path` should be blocked by the `rules`.
@@ -1250,8 +1332,20 @@ index 7ad5450a84bde41f4c60a3a2fd7a2de58dc0ed85..3f23fcc41e46d4973a5ac32554e217f5
 -    }
 -  }
 -
--  std::vector<base::FilePath::StringType> path_components =
--      path.GetComponents();
+-  // Block hidden dot-files and dot-directories (`.*`) directly under the home
+-  // directory (and all of their descendants), while allowing dotfiles inside
+-  // normal subdirectories of the home directory, see crbug.com/578803790.
+-  if (base::FeatureList::IsEnabled(
+-          features::kFileSystemAccessBlockHomeDotFiles)) {
+-    const base::FilePath& home_dir =
+-        kUseProfilePathForDirHome ? profile_path : block_path_rules.home_path_;
+-    base::FilePath blocked_dot_path = GetBlockedHomeDotPath(path, home_dir);
+-    if (!blocked_dot_path.empty() &&
+-        should_block_with_rule(blocked_dot_path,
+-                               BlockType::kBlockAllChildren)) {
+-      return true;
+-    }
+-  }
 -
 -  // Checks if the path components contain the components of the suffix rule.
 -  // For example, if the rule is `.git/hooks`, it will block paths like
@@ -1259,6 +1353,8 @@ index 7ad5450a84bde41f4c60a3a2fd7a2de58dc0ed85..3f23fcc41e46d4973a5ac32554e217f5
 -  // using case-insensitive comparison and constructs a `current_path` from the
 -  // root up to the end of the matched subrange (e.g., `/foo/bar/.git/hooks`).
 -  // This path is then evaluated against the regular block rules.
+-  std::vector<base::FilePath::StringType> path_components =
+-      path.GetComponents();
 -  for (const auto& rule : block_path_rules.suffix_block_path_rules_) {
 -    base::FilePath rule_path(rule.path);
 -    std::vector<base::FilePath::StringType> rule_components =
@@ -1318,10 +1414,10 @@ index 7ad5450a84bde41f4c60a3a2fd7a2de58dc0ed85..3f23fcc41e46d4973a5ac32554e217f5
  // `parent_path`, ignoring case differences. Unlike
  // `base::FilePath::IsParent()`, this handles case-variant paths returned by
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 05ee182cf840bc925697a2bfa3d1c281579296c4..e201e4d82b7298d6f90d78490aa342d915251a56 100644
+index 7d3717f7b19f24e119455f16aff715aedc09090f..8d4df6fe93be99b23ae82816e4a76d2cb6b0c658 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-@@ -242,6 +242,31 @@ class ChromeFileSystemAccessPermissionContext
+@@ -246,6 +246,31 @@ class ChromeFileSystemAccessPermissionContext
      }
    };
  
