@@ -1,0 +1,44 @@
+function                       policy   sites  tests
+heap_insert                    checked      1      1  ok
+heap_remove                    checked      3      3  ok
+poll_cb                        exempt       2      0  ok
+uv__async_io                   exempt       1      0  ok
+uv__calloc                     checked      1      1  ok
+uv__drain                      exempt       1      0  ok
+uv__finish_close               exempt       1      0  ok
+uv__free                       checked      1      1  ok
+uv__fs_done                    exempt       1      0  ok
+uv__fs_mkstemp                 exempt       1      0  ok
+uv__getaddrinfo_done           exempt       1      0  ok
+uv__getnameinfo_done           exempt       1      0  ok
+uv__getsockpeername            exempt       1      0  ok
+uv__inotify_read               exempt       1      0  ok
+uv__malloc                     checked      1      1  ok
+uv__poll_io                    exempt       2      0  ok
+uv__poll_io_uring              exempt       1      0  ok
+uv__preadv_or_pwritev          exempt       1      0  ok
+uv__queue_done                 exempt       1      0  ok
+uv__queue_work                 exempt       1      0  ok
+uv__random_done                exempt       1      0  ok
+uv__read                       exempt       6      0  ok
+uv__realloc                    checked      1      1  ok
+uv__run_check                  exempt       1      0  ok
+uv__run_idle                   exempt       1      0  ok
+uv__run_prepare                exempt       1      0  ok
+uv__run_timers                 exempt       1      0  ok
+uv__server_io                  exempt       1      0  ok
+uv__signal_event               exempt       1      0  ok
+uv__stream_connect             exempt       1      0  ok
+uv__stream_destroy             exempt       1      0  ok
+uv__stream_eof                 exempt       1      0  ok
+uv__udp_recvmmsg               exempt       4      0  ok
+uv__udp_recvmsg                exempt       5      0  ok
+uv__udp_recvmsg_errqueue       exempt       1      0  ok
+uv__udp_run_completed          exempt       2      0  ok
+uv__wait_children              exempt       1      0  ok
+uv__work_done                  checked      1      1  ok
+uv__write_callbacks            exempt       1      0  ok
+uv_walk                        exempt       1      0  ok
+worker                         checked      1      1  ok
+
+ERRORS (0)

@@ -1,0 +1,151 @@
+# libuv public callback contract (Linux x64), reviewed.
+# <kind:key> <role> <reason>
+# param roles:  addon   = exported API; an uninstrumented addon may pass its own function (seed)
+#               runtime = only the instrumented embedder may call it (no seed; a value from an addon traps)
+# field roles:  addon   = expected to hold addon callbacks (checked against inferred provenance)
+#               addon-input = addon writes the field directly (seed)
+#               runtime = must only ever hold libuv/embedder functions (violation = build failure)
+#               n/a     = never invoked
+# typedef roles are informational (a new callback typedef fails until it is reviewed).
+# site:<fn>:<callee> internal|external <reason> resolves an UNRESOLVED indirect call after review;
+#   external = target lives outside the LTO unit (e.g. dlsym'd libc), so the call must be exempted.
+
+field:UV_ASYNC_PRIVATE_FIELDS.async_cb           addon       set by libuv from the matching registration API parameter
+field:UV_CHECK_PRIVATE_FIELDS.check_cb           addon       set by libuv from the matching registration API parameter
+field:UV_FS_EVENT_PRIVATE_FIELDS.cb              addon       set by libuv from the matching registration API parameter
+field:UV_GETADDRINFO_PRIVATE_FIELDS.cb           addon       set by libuv from the matching registration API parameter
+field:UV_GETNAMEINFO_PRIVATE_FIELDS.getnameinfo_cb addon       set by libuv from the matching registration API parameter
+field:UV_HANDLE_FIELDS.close_cb                  addon       set by libuv from the matching registration API parameter
+field:UV_IDLE_PRIVATE_FIELDS.idle_cb             addon       set by libuv from the matching registration API parameter
+field:UV_LOOP_PRIVATE_FIELDS.async_unused        n/a         ABI padding, never invoked
+field:UV_PREPARE_PRIVATE_FIELDS.prepare_cb       addon       set by libuv from the matching registration API parameter
+field:UV_STREAM_FIELDS.alloc_cb                  addon       set by libuv from the matching registration API parameter
+field:UV_STREAM_FIELDS.read_cb                   addon       set by libuv from the matching registration API parameter
+field:UV_STREAM_PRIVATE_FIELDS.connection_cb     addon       set by libuv from the matching registration API parameter
+field:UV_TIMER_PRIVATE_FIELDS.timer_cb           addon       set by libuv from the matching registration API parameter
+field:UV_UDP_PRIVATE_FIELDS.alloc_cb             addon       set by libuv from the matching registration API parameter
+field:UV_UDP_PRIVATE_FIELDS.recv_cb              addon       set by libuv from the matching registration API parameter
+field:UV_UDP_SEND_PRIVATE_FIELDS.send_cb         addon       set by libuv from the matching registration API parameter
+field:uv__work.done                              runtime     threadpool.h is public but only libuv sets work/done (uv__work_submit with uv__queue_work/uv__fs_work/...)
+field:uv__work.work                              runtime     threadpool.h is public but only libuv sets work/done (uv__work_submit with uv__queue_work/uv__fs_work/...)
+field:uv_connect_s.cb                            addon       set by libuv from the matching registration API parameter
+field:uv_fs_s.cb                                 addon       set by libuv from the matching registration API parameter
+field:uv_poll_s.poll_cb                          addon       set by libuv from the matching registration API parameter
+field:uv_process_options_s.exit_cb               addon-input addon fills uv_process_options_t directly before uv_spawn
+field:uv_process_s.exit_cb                       addon       set by libuv from the matching registration API parameter
+field:uv_random_s.cb                             addon       set by libuv from the matching registration API parameter
+field:uv_shutdown_s.cb                           addon       set by libuv from the matching registration API parameter
+field:uv_signal_s.signal_cb                      addon       set by libuv from the matching registration API parameter
+field:uv_udp_send_s.cb                           n/a         unused on unix (UV_UDP_SEND_PRIVATE_FIELDS.send_cb is used); Windows-only
+field:uv_work_s.after_work_cb                    addon       set by libuv from the matching registration API parameter
+field:uv_work_s.work_cb                          addon       set by libuv from the matching registration API parameter
+field:uv_write_s.cb                              addon       set by libuv from the matching registration API parameter
+param:uv_async_init.async_cb                     addon       public callback registration; addon-supplied
+param:uv_check_start.cb                          addon       public callback registration; addon-supplied
+param:uv_close.close_cb                          addon       public callback registration; addon-supplied
+param:uv_fs_access.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_chmod.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_chown.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_close.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_closedir.cb                          addon       public callback registration; addon-supplied
+param:uv_fs_copyfile.cb                          addon       public callback registration; addon-supplied
+param:uv_fs_event_start.cb                       addon       public callback registration; addon-supplied
+param:uv_fs_fchmod.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_fchown.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_fdatasync.cb                         addon       public callback registration; addon-supplied
+param:uv_fs_fstat.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_fsync.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_ftruncate.cb                         addon       public callback registration; addon-supplied
+param:uv_fs_futime.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_lchown.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_link.cb                              addon       public callback registration; addon-supplied
+param:uv_fs_lstat.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_lutime.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_mkdir.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_mkdtemp.cb                           addon       public callback registration; addon-supplied
+param:uv_fs_mkstemp.cb                           addon       public callback registration; addon-supplied
+param:uv_fs_open.cb                              addon       public callback registration; addon-supplied
+param:uv_fs_opendir.cb                           addon       public callback registration; addon-supplied
+param:uv_fs_poll_start.poll_cb                   addon       public callback registration; addon-supplied
+param:uv_fs_read.cb                              addon       public callback registration; addon-supplied
+param:uv_fs_readdir.cb                           addon       public callback registration; addon-supplied
+param:uv_fs_readlink.cb                          addon       public callback registration; addon-supplied
+param:uv_fs_realpath.cb                          addon       public callback registration; addon-supplied
+param:uv_fs_rename.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_rmdir.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_scandir.cb                           addon       public callback registration; addon-supplied
+param:uv_fs_sendfile.cb                          addon       public callback registration; addon-supplied
+param:uv_fs_stat.cb                              addon       public callback registration; addon-supplied
+param:uv_fs_statfs.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_symlink.cb                           addon       public callback registration; addon-supplied
+param:uv_fs_unlink.cb                            addon       public callback registration; addon-supplied
+param:uv_fs_utime.cb                             addon       public callback registration; addon-supplied
+param:uv_fs_write.cb                             addon       public callback registration; addon-supplied
+param:uv_getaddrinfo.getaddrinfo_cb              addon       public callback registration; addon-supplied
+param:uv_getnameinfo.getnameinfo_cb              addon       public callback registration; addon-supplied
+param:uv_idle_start.cb                           addon       public callback registration; addon-supplied
+param:uv_listen.cb                               addon       public callback registration; addon-supplied
+param:uv_once.callback                           addon       addon-supplied; forwarded to libc pthread_once (no libuv icall)
+param:uv_pipe_connect.cb                         addon       public callback registration; addon-supplied
+param:uv_pipe_connect2.cb                        addon       public callback registration; addon-supplied
+param:uv_poll_start.cb                           addon       public callback registration; addon-supplied
+param:uv_prepare_start.cb                        addon       public callback registration; addon-supplied
+param:uv_queue_work.after_work_cb                addon       public callback registration; addon-supplied
+param:uv_queue_work.work_cb                      addon       public callback registration; addon-supplied
+param:uv_random.cb                               addon       public callback registration; addon-supplied
+param:uv_read_start.alloc_cb                     addon       public callback registration; addon-supplied
+param:uv_read_start.read_cb                      addon       public callback registration; addon-supplied
+param:uv_replace_allocator.calloc_func           runtime     embedder-only; must be called before any other uv_* call; Node never calls it, addons must not (would trap: fail-closed)
+param:uv_replace_allocator.free_func             runtime     embedder-only; must be called before any other uv_* call; Node never calls it, addons must not (would trap: fail-closed)
+param:uv_replace_allocator.malloc_func           runtime     embedder-only; must be called before any other uv_* call; Node never calls it, addons must not (would trap: fail-closed)
+param:uv_replace_allocator.realloc_func          runtime     embedder-only; must be called before any other uv_* call; Node never calls it, addons must not (would trap: fail-closed)
+param:uv_shutdown.cb                             addon       public callback registration; addon-supplied
+param:uv_signal_start.signal_cb                  addon       public callback registration; addon-supplied
+param:uv_signal_start_oneshot.signal_cb          addon       public callback registration; addon-supplied
+param:uv_tcp_close_reset.close_cb                addon       public callback registration; addon-supplied
+param:uv_tcp_connect.cb                          addon       public callback registration; addon-supplied
+param:uv_thread_create.entry                     addon       addon-supplied; forwarded to libc pthread_create (no libuv icall)
+param:uv_thread_create_ex.entry                  addon       addon-supplied; forwarded to libc pthread_create (no libuv icall)
+param:uv_timer_start.cb                          addon       public callback registration; addon-supplied
+param:uv_udp_recv_start.alloc_cb                 addon       public callback registration; addon-supplied
+param:uv_udp_recv_start.recv_cb                  addon       public callback registration; addon-supplied
+param:uv_udp_send.send_cb                        addon       public callback registration; addon-supplied
+param:uv_walk.walk_cb                            addon       public callback registration; addon-supplied
+param:uv_write.cb                                addon       public callback registration; addon-supplied
+param:uv_write2.cb                               addon       public callback registration; addon-supplied
+typedef:uv_after_work_cb                         addon       public callback type
+typedef:uv_alloc_cb                              addon       public callback type
+typedef:uv_async_cb                              addon       public callback type
+typedef:uv_calloc_func                           runtime     allocator hooks; embedder-only (uv_replace_allocator)
+typedef:uv_check_cb                              addon       public callback type
+typedef:uv_close_cb                              addon       public callback type
+typedef:uv_connect_cb                            addon       public callback type
+typedef:uv_connection_cb                         addon       public callback type
+typedef:uv_exit_cb                               addon       public callback type
+typedef:uv_free_func                             runtime     allocator hooks; embedder-only (uv_replace_allocator)
+typedef:uv_fs_cb                                 addon       public callback type
+typedef:uv_fs_event_cb                           addon       public callback type
+typedef:uv_fs_poll_cb                            addon       public callback type
+typedef:uv_getaddrinfo_cb                        addon       public callback type
+typedef:uv_getnameinfo_cb                        addon       public callback type
+typedef:uv_idle_cb                               addon       public callback type
+typedef:uv_malloc_func                           runtime     allocator hooks; embedder-only (uv_replace_allocator)
+typedef:uv_poll_cb                               addon       public callback type
+typedef:uv_prepare_cb                            addon       public callback type
+typedef:uv_random_cb                             addon       public callback type
+typedef:uv_read_cb                               addon       public callback type
+typedef:uv_realloc_func                          runtime     allocator hooks; embedder-only (uv_replace_allocator)
+typedef:uv_shutdown_cb                           addon       public callback type
+typedef:uv_signal_cb                             addon       public callback type
+typedef:uv_thread_cb                             addon       thread entry; invoked by libc pthread_create, not by libuv
+typedef:uv_timer_cb                              addon       public callback type
+typedef:uv_udp_recv_cb                           addon       public callback type
+typedef:uv_udp_send_cb                           addon       public callback type
+typedef:uv_walk_cb                               addon       public callback type
+typedef:uv_work_cb                               addon       public callback type
+typedef:uv_write_cb                              addon       public callback type
+
+# Reviewed UNRESOLVED sites (opaque provenance the analysis cannot prove).
+site:uv__fs_mkstemp@fs.c:uv__mkostemp           external    dlsym(RTLD_DEFAULT,"mkostemp"): libc target outside the LTO unit; a checked call traps
+site:uv__preadv_or_pwritev@fs.c:f               external    dlsym'd preadv64/pwritev64 (libc, outside the LTO unit) or internal *_emul fallback, cached in an atomic uintptr_t
+site:uv__getsockpeername:func                    external    clang 18 only: glibc transparent-union __SOCKADDR_ARG gives getsockname/getpeername a different CFI type id than uv__peersockfunc. Does NOT trap with Chromium's clang (verified on a #54561 release build); drop for Electron

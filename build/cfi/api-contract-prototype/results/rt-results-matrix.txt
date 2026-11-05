@@ -1,0 +1,60 @@
+gen               work         rc=0           callbacks=2
+gen-minus-timers  work         rc=0           callbacks=2
+none              work         rc=132 SIGILL  callbacks=0
+pr                work         rc=0           callbacks=2
+gen               timer        rc=0           callbacks=2
+gen-minus-timers  timer        rc=132 SIGILL  callbacks=0
+none              timer        rc=132 SIGILL  callbacks=0
+pr                timer        rc=0           callbacks=2
+gen               async        rc=0           callbacks=1
+gen-minus-timers  async        rc=0           callbacks=1
+none              async        rc=132 SIGILL  callbacks=0
+pr                async        rc=0           callbacks=1
+gen               watchers     rc=0           callbacks=4
+gen-minus-timers  watchers     rc=0           callbacks=4
+none              watchers     rc=132 SIGILL  callbacks=0
+pr                watchers     rc=0           callbacks=4
+gen               pipe         rc=0           callbacks=7
+gen-minus-timers  pipe         rc=0           callbacks=7
+none              pipe         rc=132 SIGILL  callbacks=0
+pr                pipe         rc=0           callbacks=7
+gen               tcp          rc=0           callbacks=2
+gen-minus-timers  tcp          rc=0           callbacks=2
+none              tcp          rc=132 SIGILL  callbacks=0
+pr                tcp          rc=132 SIGILL  callbacks=0
+gen               udp          rc=0           callbacks=2
+gen-minus-timers  udp          rc=0           callbacks=2
+none              udp          rc=132 SIGILL  callbacks=0
+pr                udp          rc=132 SIGILL  callbacks=0
+gen               fs           rc=0           callbacks=4
+gen-minus-timers  fs           rc=0           callbacks=4
+none              fs           rc=132 SIGILL  callbacks=0
+pr                fs           rc=0           callbacks=4
+gen               os           rc=0           callbacks=4
+gen-minus-timers  os           rc=0           callbacks=4
+none              os           rc=132 SIGILL  callbacks=0
+pr                os           rc=0           callbacks=4
+gen               preadv       rc=0           callbacks=1
+gen-minus-timers  preadv       rc=0           callbacks=1
+none              preadv       rc=132 SIGILL  callbacks=0
+pr                preadv       rc=132 SIGILL  callbacks=0
+gen               mkstemp      rc=0           callbacks=1
+gen-minus-timers  mkstemp      rc=0           callbacks=1
+none              mkstemp      rc=132 SIGILL  callbacks=0
+pr                mkstemp      rc=132 SIGILL  callbacks=0
+gen               getsockname  rc=0           callbacks=1
+gen-minus-timers  getsockname  rc=0           callbacks=1
+none              getsockname  rc=132 SIGILL  callbacks=0
+pr                getsockname  rc=132 SIGILL  callbacks=0
+gen               alloc_ok     rc=0           callbacks=1
+gen-minus-timers  alloc_ok     rc=0           callbacks=1
+none              alloc_ok     rc=0           callbacks=1
+pr                alloc_ok     rc=0           callbacks=1
+gen               alloc_bad    rc=132 SIGILL  callbacks=0
+gen-minus-timers  alloc_bad    rc=132 SIGILL  callbacks=0
+none              alloc_bad    rc=132 SIGILL  callbacks=0
+pr                alloc_bad    rc=132 SIGILL  callbacks=0
+gen               allocator    rc=132 SIGILL  callbacks=0
+gen-minus-timers  allocator    rc=132 SIGILL  callbacks=0
+none              allocator    rc=132 SIGILL  callbacks=0
+pr                allocator    rc=132 SIGILL  callbacks=0

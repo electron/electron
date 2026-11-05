@@ -1,0 +1,216 @@
+libuv API-rooted CFI analysis
+TUs: 35  extract: 7.22s  total: 7.27s
+public callback decls: 134  contract entries: 137
+indirect call sites: 58  {'addon': 45, 'internal': 10, 'external (reviewed)': 3}
+exempt functions: 33  mixed dispatchers: 0
+
+== ERRORS (0)
+
+== WARNINGS (2)
+  addon callback escapes to external pthread_create() arg 2 at src/unix/thread.c:181 (uv_thread_create_ex): invoked outside the instrumented unit
+  addon callback escapes to external pthread_once() arg 1 at src/unix/thread.c:454 (uv_once): invoked outside the instrumented unit
+
+== MIXED-PROVENANCE exempt sites (internal targets also lose the check here)
+  uv__run_timers handle->timer_cb: timer_cb@fs-poll.c
+  uv__async_io h->async_cb: uv__work_done
+  uv__finish_close@core.c handle->close_cb: timer_close_cb@fs-poll.c
+  uv__getsockpeername func: getpeername, getsockname
+  uv__preadv_or_pwritev@fs.c f: uv__preadv_emul@fs.c, uv__pwritev_emul@fs.c
+  uv__fs_done@fs.c req->cb: poll_cb@fs-poll.c
+  uv__poll_io_uring@linux.c req->cb: poll_cb@fs-poll.c
+  uv__signal_event handle->signal_cb: uv__chld@process.c
+
+== SITES
+addon                  poll_cb@fs-poll.c                  ctx->poll_cb                 src/fs-poll.c:202
+      addon/param:uv_fs_poll_start.poll_cb  via P:uv_fs_poll_start#1 [include/uv.h:1710] -> F:poll_ctx.poll_cb [src/fs-poll.c:86]
+addon                  poll_cb@fs-poll.c                  ctx->poll_cb                 src/fs-poll.c:215
+      addon/param:uv_fs_poll_start.poll_cb  via P:uv_fs_poll_start#1 [include/uv.h:1710] -> F:poll_ctx.poll_cb [src/fs-poll.c:86]
+internal               heap_insert@heap-inl.h             less_than                    src/heap-inl.h:146
+internal               heap_remove@heap-inl.h             less_than                    src/heap-inl.h:222
+internal               heap_remove@heap-inl.h             less_than                    src/heap-inl.h:224
+internal               heap_remove@heap-inl.h             less_than                    src/heap-inl.h:235
+addon                  uv__random_done@random.c           req->cb                      src/random.c:90
+      addon/param:uv_random.cb  via P:uv_random#5 [include/uv.h:1803] -> F:uv_random_s.cb [src/random.c:112]
+internal               worker@threadpool.c                w->work                      src/threadpool.c:123
+internal               uv__work_done                      w->done                      src/threadpool.c:340
+addon                  uv__queue_work@threadpool.c        req->work_cb                 src/threadpool.c:362
+      addon/param:uv_queue_work.work_cb  via P:uv_queue_work#2 [include/uv.h:1195] -> F:uv_work_s.work_cb [src/threadpool.c:388]
+addon                  uv__queue_done@threadpool.c        req->after_work_cb           src/threadpool.c:375
+      addon/param:uv_queue_work.after_work_cb  via P:uv_queue_work#3 [include/uv.h:1195] -> F:uv_work_s.after_work_cb [src/threadpool.c:389]
+addon                  uv__run_timers                     handle->timer_cb             src/timer.c:192
+      addon/param:uv_timer_start.cb  via P:uv_timer_start#1 [include/uv.h:977] -> F:UV_TIMER_PRIVATE_FIELDS.timer_cb [src/timer.c:82]
+      internal/timer_cb@fs-poll.c  via P:uv_timer_start#1 [src/fs-poll.c:232] -> F:UV_TIMER_PRIVATE_FIELDS.timer_cb [src/timer.c:82]
+addon                  uv__async_io                       h->async_cb                  src/unix/async.c:208
+      addon/param:uv_async_init.async_cb  via P:uv_async_init#2 [include/uv.h:960] -> F:UV_ASYNC_PRIVATE_FIELDS.async_cb [src/unix/async.c:82]
+      internal/uv__work_done  via P:uv_async_init#2 [src/unix/loop.c:97] -> F:UV_ASYNC_PRIVATE_FIELDS.async_cb [src/unix/async.c:82]
+addon                  uv__finish_close@core.c            handle->close_cb             src/unix/core.c:363
+      addon/param:uv_close.close_cb  via P:uv_close#1 [include/uv.h:504] -> F:UV_HANDLE_FIELDS.close_cb [src/unix/core.c:163]
+      addon/param:uv_tcp_close_reset.close_cb  via P:uv_tcp_close_reset#1 [include/uv.h:637] -> P:uv_close#1 [src/unix/tcp.c:416] -> F:UV_HANDLE_FIELDS.close_cb [src/unix/core.c:163]
+      internal/timer_close_cb@fs-poll.c  via P:uv_close#1 [src/fs-poll.c:130] -> F:UV_HANDLE_FIELDS.close_cb [src/unix/core.c:163]
+external (reviewed)    uv__getsockpeername                func                         src/unix/core.c:1920
+      internal-ext/getpeername  via P:uv__getsockpeername#1 [src/unix/tcp.c:389]
+      internal-ext/getsockname  via P:uv__getsockpeername#1 [src/unix/tcp.c:375]
+external (reviewed)    uv__fs_mkstemp@fs.c                uv__mkostemp                 src/unix/fs.c:321
+      unknown/return of external dlsym()  via G:uv__mkostemp@fs.c [src/unix/fs.c:279]
+external (reviewed)    uv__preadv_or_pwritev@fs.c         f                            src/unix/fs.c:483
+      internal/uv__preadv_emul@fs.c  via L:uv__preadv_or_pwritev@fs.c:p#0x555cff598c98 [src/unix/fs.c:478] -> L:uv__preadv_or_pwritev@fs.c:f#0x555cff598c00 [src/unix/fs.c:482]
+      internal/uv__pwritev_emul@fs.c  via L:uv__preadv_or_pwritev@fs.c:p#0x555cff598c98 [src/unix/fs.c:478] -> L:uv__preadv_or_pwritev@fs.c:f#0x555cff598c00 [src/unix/fs.c:482]
+      unknown/atomic load cache  via L:uv__preadv_or_pwritev@fs.c:p#0x555cff598c98 [src/unix/fs.c:466] -> L:uv__preadv_or_pwritev@fs.c:f#0x555cff598c00 [src/unix/fs.c:482]
+      unknown/return of external dlsym()  via L:uv__preadv_or_pwritev@fs.c:p#0x555cff598c98 [src/unix/fs.c:474] -> L:uv__preadv_or_pwritev@fs.c:f#0x555cff598c00 [src/unix/fs.c:482]
+addon                  uv__fs_done@fs.c                   req->cb                      src/unix/fs.c:1764
+      addon/param:uv_fs_access.cb  via P:uv_fs_access#4 [include/uv.h:1591] -> F:uv_fs_s.cb [src/unix/fs.c:1783]
+      addon/param:uv_fs_chmod.cb  via P:uv_fs_chmod#4 [include/uv.h:1596] -> F:uv_fs_s.cb [src/unix/fs.c:1795]
+      addon/param:uv_fs_chown.cb  via P:uv_fs_chown#5 [include/uv.h:1662] -> F:uv_fs_s.cb [src/unix/fs.c:1808]
+      addon/param:uv_fs_close.cb  via P:uv_fs_close#3 [include/uv.h:1470] -> F:uv_fs_s.cb [src/unix/fs.c:1817]
+      addon/param:uv_fs_closedir.cb  via P:uv_fs_closedir#3 [include/uv.h:1554] -> F:uv_fs_s.cb [src/unix/fs.c:2091]
+      addon/param:uv_fs_copyfile.cb  via P:uv_fs_copyfile#5 [include/uv.h:1516] -> F:uv_fs_s.cb [src/unix/fs.c:2280]
+      addon/param:uv_fs_fchmod.cb  via P:uv_fs_fchmod#4 [include/uv.h:1657] -> F:uv_fs_s.cb [src/unix/fs.c:1831]
+      addon/param:uv_fs_fchown.cb  via P:uv_fs_fchown#5 [include/uv.h:1668] -> F:uv_fs_s.cb [src/unix/fs.c:1844]
+      addon/param:uv_fs_fdatasync.cb  via P:uv_fs_fdatasync#3 [include/uv.h:1575] -> F:uv_fs_s.cb [src/unix/fs.c:1867]
+      addon/param:uv_fs_fstat.cb  via P:uv_fs_fstat#3 [include/uv.h:1562] -> F:uv_fs_s.cb [src/unix/fs.c:1877]
+      addon/param:uv_fs_fsync.cb  via P:uv_fs_fsync#3 [include/uv.h:1571] -> F:uv_fs_s.cb [src/unix/fs.c:1887]
+      addon/param:uv_fs_ftruncate.cb  via P:uv_fs_ftruncate#4 [include/uv.h:1579] -> F:uv_fs_s.cb [src/unix/fs.c:1901]
+      addon/param:uv_fs_futime.cb  via P:uv_fs_futime#5 [include/uv.h:1609] -> F:uv_fs_s.cb [src/unix/fs.c:1917]
+      addon/param:uv_fs_lchown.cb  via P:uv_fs_lchown#5 [include/uv.h:1674] -> F:uv_fs_s.cb [src/unix/fs.c:1858]
+      addon/param:uv_fs_link.cb  via P:uv_fs_link#4 [include/uv.h:1625] -> F:uv_fs_s.cb [src/unix/fs.c:1953]
+      addon/param:uv_fs_lstat.cb  via P:uv_fs_lstat#3 [include/uv.h:1621] -> F:uv_fs_s.cb [src/unix/fs.c:1939]
+      addon/param:uv_fs_lutime.cb  via P:uv_fs_lutime#5 [include/uv.h:1615] -> F:uv_fs_s.cb [src/unix/fs.c:1930]
+      addon/param:uv_fs_mkdir.cb  via P:uv_fs_mkdir#4 [include/uv.h:1522] -> F:uv_fs_s.cb [src/unix/fs.c:1967]
+      addon/param:uv_fs_mkdtemp.cb  via P:uv_fs_mkdtemp#3 [include/uv.h:1527] -> F:uv_fs_s.cb [src/unix/fs.c:1981]
+      addon/param:uv_fs_mkstemp.cb  via P:uv_fs_mkstemp#3 [include/uv.h:1531] -> F:uv_fs_s.cb [src/unix/fs.c:1993]
+      addon/param:uv_fs_open.cb  via P:uv_fs_open#5 [include/uv.h:1474] -> F:uv_fs_s.cb [src/unix/fs.c:2007]
+      addon/param:uv_fs_opendir.cb  via P:uv_fs_opendir#3 [include/uv.h:1546] -> F:uv_fs_s.cb [src/unix/fs.c:2069]
+      addon/param:uv_fs_read.cb  via P:uv_fs_read#6 [include/uv.h:1480] -> F:uv_fs_s.cb [src/unix/fs.c:2024]
+      addon/param:uv_fs_readdir.cb  via P:uv_fs_readdir#3 [include/uv.h:1550] -> F:uv_fs_s.cb [src/unix/fs.c:2078]
+      addon/param:uv_fs_readlink.cb  via P:uv_fs_readlink#3 [include/uv.h:1649] -> F:uv_fs_s.cb [src/unix/fs.c:2104]
+      addon/param:uv_fs_realpath.cb  via P:uv_fs_realpath#3 [include/uv.h:1653] -> F:uv_fs_s.cb [src/unix/fs.c:2114]
+      addon/param:uv_fs_rename.cb  via P:uv_fs_rename#4 [include/uv.h:1566] -> F:uv_fs_s.cb [src/unix/fs.c:2125]
+      addon/param:uv_fs_rmdir.cb  via P:uv_fs_rmdir#3 [include/uv.h:1535] -> F:uv_fs_s.cb [src/unix/fs.c:2135]
+      addon/param:uv_fs_scandir.cb  via P:uv_fs_scandir#4 [include/uv.h:1539] -> F:uv_fs_s.cb [src/unix/fs.c:2059]
+      addon/param:uv_fs_sendfile.cb  via P:uv_fs_sendfile#6 [include/uv.h:1584] -> F:uv_fs_s.cb [src/unix/fs.c:2148]
+      addon/param:uv_fs_stat.cb  via P:uv_fs_stat#3 [include/uv.h:1558] -> F:uv_fs_s.cb [src/unix/fs.c:2158]
+      addon/param:uv_fs_statfs.cb  via P:uv_fs_statfs#3 [include/uv.h:1680] -> F:uv_fs_s.cb [src/unix/fs.c:2298]
+      addon/param:uv_fs_symlink.cb  via P:uv_fs_symlink#5 [include/uv.h:1643] -> F:uv_fs_s.cb [src/unix/fs.c:2173]
+      addon/param:uv_fs_unlink.cb  via P:uv_fs_unlink#3 [include/uv.h:1487] -> F:uv_fs_s.cb [src/unix/fs.c:2184]
+      addon/param:uv_fs_utime.cb  via P:uv_fs_utime#5 [include/uv.h:1603] -> F:uv_fs_s.cb [src/unix/fs.c:2199]
+      addon/param:uv_fs_write.cb  via P:uv_fs_write#6 [include/uv.h:1491] -> F:uv_fs_s.cb [src/unix/fs.c:2214]
+      internal/poll_cb@fs-poll.c  via P:uv_fs_stat#3 [src/fs-poll.c:99] -> F:uv_fs_s.cb [src/unix/fs.c:2158]
+addon                  uv__getaddrinfo_done@getaddrinfo.c req->cb                      src/unix/getaddrinfo.c:134
+      addon/param:uv_getaddrinfo.getaddrinfo_cb  via P:uv_getaddrinfo#2 [include/uv.h:1002] -> F:UV_GETADDRINFO_PRIVATE_FIELDS.cb [src/unix/getaddrinfo.c:187]
+addon                  uv__getnameinfo_done@getnameinfo.c req->getnameinfo_cb          src/unix/getnameinfo.c:73
+      addon/param:uv_getnameinfo.getnameinfo_cb  via P:uv_getnameinfo#2 [include/uv.h:1024] -> F:UV_GETNAMEINFO_PRIVATE_FIELDS.getnameinfo_cb [src/unix/getnameinfo.c:103]
+addon                  uv__poll_io_uring@linux.c          req->cb                      src/unix/linux.c:1210
+      addon/param:uv_fs_access.cb  via P:uv_fs_access#4 [include/uv.h:1591] -> F:uv_fs_s.cb [src/unix/fs.c:1783]
+      addon/param:uv_fs_chmod.cb  via P:uv_fs_chmod#4 [include/uv.h:1596] -> F:uv_fs_s.cb [src/unix/fs.c:1795]
+      addon/param:uv_fs_chown.cb  via P:uv_fs_chown#5 [include/uv.h:1662] -> F:uv_fs_s.cb [src/unix/fs.c:1808]
+      addon/param:uv_fs_close.cb  via P:uv_fs_close#3 [include/uv.h:1470] -> F:uv_fs_s.cb [src/unix/fs.c:1817]
+      addon/param:uv_fs_closedir.cb  via P:uv_fs_closedir#3 [include/uv.h:1554] -> F:uv_fs_s.cb [src/unix/fs.c:2091]
+      addon/param:uv_fs_copyfile.cb  via P:uv_fs_copyfile#5 [include/uv.h:1516] -> F:uv_fs_s.cb [src/unix/fs.c:2280]
+      addon/param:uv_fs_fchmod.cb  via P:uv_fs_fchmod#4 [include/uv.h:1657] -> F:uv_fs_s.cb [src/unix/fs.c:1831]
+      addon/param:uv_fs_fchown.cb  via P:uv_fs_fchown#5 [include/uv.h:1668] -> F:uv_fs_s.cb [src/unix/fs.c:1844]
+      addon/param:uv_fs_fdatasync.cb  via P:uv_fs_fdatasync#3 [include/uv.h:1575] -> F:uv_fs_s.cb [src/unix/fs.c:1867]
+      addon/param:uv_fs_fstat.cb  via P:uv_fs_fstat#3 [include/uv.h:1562] -> F:uv_fs_s.cb [src/unix/fs.c:1877]
+      addon/param:uv_fs_fsync.cb  via P:uv_fs_fsync#3 [include/uv.h:1571] -> F:uv_fs_s.cb [src/unix/fs.c:1887]
+      addon/param:uv_fs_ftruncate.cb  via P:uv_fs_ftruncate#4 [include/uv.h:1579] -> F:uv_fs_s.cb [src/unix/fs.c:1901]
+      addon/param:uv_fs_futime.cb  via P:uv_fs_futime#5 [include/uv.h:1609] -> F:uv_fs_s.cb [src/unix/fs.c:1917]
+      addon/param:uv_fs_lchown.cb  via P:uv_fs_lchown#5 [include/uv.h:1674] -> F:uv_fs_s.cb [src/unix/fs.c:1858]
+      addon/param:uv_fs_link.cb  via P:uv_fs_link#4 [include/uv.h:1625] -> F:uv_fs_s.cb [src/unix/fs.c:1953]
+      addon/param:uv_fs_lstat.cb  via P:uv_fs_lstat#3 [include/uv.h:1621] -> F:uv_fs_s.cb [src/unix/fs.c:1939]
+      addon/param:uv_fs_lutime.cb  via P:uv_fs_lutime#5 [include/uv.h:1615] -> F:uv_fs_s.cb [src/unix/fs.c:1930]
+      addon/param:uv_fs_mkdir.cb  via P:uv_fs_mkdir#4 [include/uv.h:1522] -> F:uv_fs_s.cb [src/unix/fs.c:1967]
+      addon/param:uv_fs_mkdtemp.cb  via P:uv_fs_mkdtemp#3 [include/uv.h:1527] -> F:uv_fs_s.cb [src/unix/fs.c:1981]
+      addon/param:uv_fs_mkstemp.cb  via P:uv_fs_mkstemp#3 [include/uv.h:1531] -> F:uv_fs_s.cb [src/unix/fs.c:1993]
+      addon/param:uv_fs_open.cb  via P:uv_fs_open#5 [include/uv.h:1474] -> F:uv_fs_s.cb [src/unix/fs.c:2007]
+      addon/param:uv_fs_opendir.cb  via P:uv_fs_opendir#3 [include/uv.h:1546] -> F:uv_fs_s.cb [src/unix/fs.c:2069]
+      addon/param:uv_fs_read.cb  via P:uv_fs_read#6 [include/uv.h:1480] -> F:uv_fs_s.cb [src/unix/fs.c:2024]
+      addon/param:uv_fs_readdir.cb  via P:uv_fs_readdir#3 [include/uv.h:1550] -> F:uv_fs_s.cb [src/unix/fs.c:2078]
+      addon/param:uv_fs_readlink.cb  via P:uv_fs_readlink#3 [include/uv.h:1649] -> F:uv_fs_s.cb [src/unix/fs.c:2104]
+      addon/param:uv_fs_realpath.cb  via P:uv_fs_realpath#3 [include/uv.h:1653] -> F:uv_fs_s.cb [src/unix/fs.c:2114]
+      addon/param:uv_fs_rename.cb  via P:uv_fs_rename#4 [include/uv.h:1566] -> F:uv_fs_s.cb [src/unix/fs.c:2125]
+      addon/param:uv_fs_rmdir.cb  via P:uv_fs_rmdir#3 [include/uv.h:1535] -> F:uv_fs_s.cb [src/unix/fs.c:2135]
+      addon/param:uv_fs_scandir.cb  via P:uv_fs_scandir#4 [include/uv.h:1539] -> F:uv_fs_s.cb [src/unix/fs.c:2059]
+      addon/param:uv_fs_sendfile.cb  via P:uv_fs_sendfile#6 [include/uv.h:1584] -> F:uv_fs_s.cb [src/unix/fs.c:2148]
+      addon/param:uv_fs_stat.cb  via P:uv_fs_stat#3 [include/uv.h:1558] -> F:uv_fs_s.cb [src/unix/fs.c:2158]
+      addon/param:uv_fs_statfs.cb  via P:uv_fs_statfs#3 [include/uv.h:1680] -> F:uv_fs_s.cb [src/unix/fs.c:2298]
+      addon/param:uv_fs_symlink.cb  via P:uv_fs_symlink#5 [include/uv.h:1643] -> F:uv_fs_s.cb [src/unix/fs.c:2173]
+      addon/param:uv_fs_unlink.cb  via P:uv_fs_unlink#3 [include/uv.h:1487] -> F:uv_fs_s.cb [src/unix/fs.c:2184]
+      addon/param:uv_fs_utime.cb  via P:uv_fs_utime#5 [include/uv.h:1603] -> F:uv_fs_s.cb [src/unix/fs.c:2199]
+      addon/param:uv_fs_write.cb  via P:uv_fs_write#6 [include/uv.h:1491] -> F:uv_fs_s.cb [src/unix/fs.c:2214]
+      internal/poll_cb@fs-poll.c  via P:uv_fs_stat#3 [src/fs-poll.c:99] -> F:uv_fs_s.cb [src/unix/fs.c:2158]
+addon                  uv__inotify_read                   h->cb                        src/unix/linux.c:2647
+      addon/param:uv_fs_event_start.cb  via P:uv_fs_event_start#1 [include/uv.h:1771] -> F:UV_FS_EVENT_PRIVATE_FIELDS.cb [src/unix/linux.c:2715]
+addon                  uv__run_prepare                    h->prepare_cb                src/unix/loop-watcher.c:66
+      addon/param:uv_prepare_start.cb  via P:uv_prepare_start#1 [include/uv.h:931] -> F:UV_PREPARE_PRIVATE_FIELDS.prepare_cb [src/unix/loop-watcher.c:66]
+addon                  uv__run_check                      h->check_cb                  src/unix/loop-watcher.c:67
+      addon/param:uv_check_start.cb  via P:uv_check_start#1 [include/uv.h:941] -> F:UV_CHECK_PRIVATE_FIELDS.check_cb [src/unix/loop-watcher.c:67]
+addon                  uv__run_idle                       h->idle_cb                   src/unix/loop-watcher.c:68
+      addon/param:uv_idle_start.cb  via P:uv_idle_start#1 [include/uv.h:951] -> F:UV_IDLE_PRIVATE_FIELDS.idle_cb [src/unix/loop-watcher.c:68]
+addon                  uv__poll_io                        handle->poll_cb              src/unix/poll.c:49
+      addon/param:uv_poll_start.cb  via P:uv_poll_start#2 [include/uv.h:921] -> F:uv_poll_s.poll_cb [src/unix/poll.c:151]
+addon                  uv__poll_io                        handle->poll_cb              src/unix/poll.c:63
+      addon/param:uv_poll_start.cb  via P:uv_poll_start#2 [include/uv.h:921] -> F:uv_poll_s.poll_cb [src/unix/poll.c:151]
+addon                  uv__wait_children                  process->exit_cb             src/unix/process.c:174
+      addon/field:uv_process_options_s.exit_cb  via F:uv_process_options_s.exit_cb [include/uv.h:1066] -> F:uv_process_s.exit_cb [src/unix/process.c:1054]
+addon                  uv__signal_event                   handle->signal_cb            src/unix/signal.c:481
+      addon/param:uv_signal_start.signal_cb  via P:uv_signal_start#1 [include/uv.h:1728] -> P:uv__signal_start@signal.c#1 [src/unix/signal.c:363] -> F:uv_signal_s.signal_cb [src/unix/signal.c:431]
+      addon/param:uv_signal_start_oneshot.signal_cb  via P:uv_signal_start_oneshot#1 [include/uv.h:1731] -> P:uv__signal_start@signal.c#1 [src/unix/signal.c:370] -> F:uv_signal_s.signal_cb [src/unix/signal.c:431]
+      internal/uv__chld@process.c  via P:uv_signal_start#1 [src/unix/process.c:1019] -> P:uv__signal_start@signal.c#1 [src/unix/signal.c:363] -> F:uv_signal_s.signal_cb [src/unix/signal.c:431]
+addon                  uv__stream_destroy                 stream->connect_req->cb      src/unix/stream.c:460
+      addon/param:uv_pipe_connect.cb  via P:uv_pipe_connect#3 [include/uv.h:882] -> F:uv_connect_s.cb [src/unix/pipe.c:245]
+      addon/param:uv_pipe_connect2.cb  via P:uv_pipe_connect2#5 [include/uv.h:886] -> F:uv_connect_s.cb [src/unix/pipe.c:338]
+      addon/param:uv_tcp_connect.cb  via P:uv_tcp_connect#3 [include/uv.h:638] -> P:uv__tcp_connect#4 [src/uv-common.c:410] -> F:uv_connect_s.cb [src/unix/tcp.c:338]
+addon                  uv__server_io                      stream->connection_cb        src/unix/stream.c:527
+      addon/param:uv_listen.cb  via P:uv_listen#2 [include/uv.h:542] -> P:uv__tcp_listen#2 [src/unix/stream.c:607] -> F:UV_STREAM_PRIVATE_FIELDS.connection_cb [src/unix/tcp.c:443]
+addon                  uv__drain@stream.c                 req->cb                      src/unix/stream.c:656
+      addon/param:uv_shutdown.cb  via P:uv_shutdown#2 [include/uv.h:451] -> F:uv_shutdown_s.cb [src/unix/stream.c:1179]
+addon                  uv__write_callbacks@stream.c       req->cb                      src/unix/stream.c:926
+      addon/param:uv_write.cb  via P:uv_write#4 [include/uv.h:550] -> P:uv_write2#5 [src/unix/stream.c:1418] -> F:uv_write_s.cb [src/unix/stream.c:1364]
+      addon/param:uv_write2.cb  via P:uv_write2#5 [include/uv.h:555] -> F:uv_write_s.cb [src/unix/stream.c:1364]
+addon                  uv__stream_eof@stream.c            stream->read_cb              src/unix/stream.c:937
+      addon/param:uv_read_start.read_cb  via P:uv_read_start#2 [include/uv.h:545] -> P:uv__read_start#2 [src/uv-common.c:937] -> F:UV_STREAM_FIELDS.read_cb [src/unix/stream.c:1462]
+addon                  uv__read@stream.c                  stream->alloc_cb             src/unix/stream.c:1049
+      addon/param:uv_read_start.alloc_cb  via P:uv_read_start#1 [include/uv.h:545] -> P:uv__read_start#1 [src/uv-common.c:937] -> F:UV_STREAM_FIELDS.alloc_cb [src/unix/stream.c:1463]
+addon                  uv__read@stream.c                  stream->read_cb              src/unix/stream.c:1052
+      addon/param:uv_read_start.read_cb  via P:uv_read_start#2 [include/uv.h:545] -> P:uv__read_start#2 [src/uv-common.c:937] -> F:UV_STREAM_FIELDS.read_cb [src/unix/stream.c:1462]
+addon                  uv__read@stream.c                  stream->read_cb              src/unix/stream.c:1089
+      addon/param:uv_read_start.read_cb  via P:uv_read_start#2 [include/uv.h:545] -> P:uv__read_start#2 [src/uv-common.c:937] -> F:UV_STREAM_FIELDS.read_cb [src/unix/stream.c:1462]
+addon                  uv__read@stream.c                  stream->read_cb              src/unix/stream.c:1098
+      addon/param:uv_read_start.read_cb  via P:uv_read_start#2 [include/uv.h:545] -> P:uv__read_start#2 [src/uv-common.c:937] -> F:UV_STREAM_FIELDS.read_cb [src/unix/stream.c:1462]
+addon                  uv__read@stream.c                  stream->read_cb              src/unix/stream.c:1117
+      addon/param:uv_read_start.read_cb  via P:uv_read_start#2 [include/uv.h:545] -> P:uv__read_start#2 [src/uv-common.c:937] -> F:UV_STREAM_FIELDS.read_cb [src/unix/stream.c:1462]
+addon                  uv__read@stream.c                  stream->read_cb              src/unix/stream.c:1145
+      addon/param:uv_read_start.read_cb  via P:uv_read_start#2 [include/uv.h:545] -> P:uv__read_start#2 [src/uv-common.c:937] -> F:UV_STREAM_FIELDS.read_cb [src/unix/stream.c:1462]
+addon                  uv__stream_connect@stream.c        req->cb                      src/unix/stream.c:1285
+      addon/param:uv_pipe_connect.cb  via P:uv_pipe_connect#3 [include/uv.h:882] -> F:uv_connect_s.cb [src/unix/pipe.c:245]
+      addon/param:uv_pipe_connect2.cb  via P:uv_pipe_connect2#5 [include/uv.h:886] -> F:uv_connect_s.cb [src/unix/pipe.c:338]
+      addon/param:uv_tcp_connect.cb  via P:uv_tcp_connect#3 [include/uv.h:638] -> P:uv__tcp_connect#4 [src/uv-common.c:410] -> F:uv_connect_s.cb [src/unix/tcp.c:338]
+addon                  uv__udp_run_completed@udp.c        req->send_cb                 src/unix/udp.c:126
+      addon/param:uv_udp_send.send_cb  via P:uv_udp_send#5 [include/uv.h:776] -> P:uv__udp_send#6 [src/uv-common.c:499] -> F:UV_UDP_SEND_PRIVATE_FIELDS.send_cb [src/unix/udp.c:681]
+addon                  uv__udp_run_completed@udp.c        req->send_cb                 src/unix/udp.c:128
+      addon/param:uv_udp_send.send_cb  via P:uv_udp_send#5 [include/uv.h:776] -> P:uv__udp_send#6 [src/uv-common.c:499] -> F:UV_UDP_SEND_PRIVATE_FIELDS.send_cb [src/unix/udp.c:681]
+addon                  uv__udp_recvmsg_errqueue@udp.c     handle->recv_cb              src/unix/udp.c:162
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+addon                  uv__udp_recvmmsg@udp.c             handle->recv_cb              src/unix/udp.c:250
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+addon                  uv__udp_recvmmsg@udp.c             handle->recv_cb              src/unix/udp.c:252
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+addon                  uv__udp_recvmmsg@udp.c             handle->recv_cb              src/unix/udp.c:268
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+addon                  uv__udp_recvmmsg@udp.c             handle->recv_cb              src/unix/udp.c:277
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+addon                  uv__udp_recvmsg@udp.c              handle->alloc_cb             src/unix/udp.c:306
+      addon/param:uv_udp_recv_start.alloc_cb  via P:uv_udp_recv_start#1 [include/uv.h:792] -> P:uv__udp_recv_start#1 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.alloc_cb [src/unix/udp.c:1320]
+addon                  uv__udp_recvmsg@udp.c              handle->recv_cb              src/unix/udp.c:308
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+addon                  uv__udp_recvmsg@udp.c              handle->recv_cb              src/unix/udp.c:351
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+addon                  uv__udp_recvmsg@udp.c              handle->recv_cb              src/unix/udp.c:353
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+addon                  uv__udp_recvmsg@udp.c              handle->recv_cb              src/unix/udp.c:355
+      addon/param:uv_udp_recv_start.recv_cb  via P:uv_udp_recv_start#2 [include/uv.h:792] -> P:uv__udp_recv_start#2 [src/uv-common.c:542] -> F:UV_UDP_PRIVATE_FIELDS.recv_cb [src/unix/udp.c:1321]
+internal               uv__malloc                         uv__allocator.local_malloc   src/uv-common.c:77
+internal               uv__free                           uv__allocator.local_free     src/uv-common.c:88
+internal               uv__calloc                         uv__allocator.local_calloc   src/uv-common.c:93
+internal               uv__realloc                        uv__allocator.local_realloc  src/uv-common.c:98
+addon                  uv_walk                            walk_cb                      src/uv-common.c:568
+      addon/param:uv_walk.walk_cb  via P:uv_walk#1 [include/uv.h:498]

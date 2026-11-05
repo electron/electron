@@ -1,0 +1,23 @@
+=== new_api: analyzer exit 1
+  E UNCONTRACTED public callback decl field:UV_TIMER_PRIVATE_FIELDS.fire_cb (include/uv/unix.h:331, uv_timer_fire_cb): add it to the contract with role addon|runtime|n/a
+  E UNCONTRACTED public callback decl param:uv_timer_on_fire.cb (include/uv.h:978, uv_timer_fire_cb): add it to the contract with role addon|runtime|n/a
+  E UNCONTRACTED public callback decl typedef:uv_timer_fire_cb (include/uv.h:336, void (*)(uv_timer_t *, int)): add it to the contract with role addon|runtime|n/a
+  E UNRESOLVED indirect call handle->fire_cb in uv__timer_notify@timer.c (src/timer.c:171) labels=[]; add a reviewed 'site:uv__timer_notify@timer.c:handle->fire_cb internal|external <reason>' contract entry or a model
+  policy +[] -[]
+=== moved_call: analyzer exit 0
+  policy +['fun:uv__invoke_work'] -['fun:uv__queue_work']
+=== renamed_field: analyzer exit 1
+  E UNCONTRACTED public callback decl field:uv_work_s.work_fn (include/uv.h:1190, uv_work_cb): add it to the contract with role addon|runtime|n/a
+  E STALE contract entry field:uv_work_s.work_cb (contract line 41): no such public decl; was it renamed/removed?
+  policy +[] -[]
+=== cast_into_runtime_field: analyzer exit 1
+  E CONTRACT VIOLATION field:uv__work.work is 'runtime' but may hold an addon callback: P:uv_queue_work#2 [include/uv.h:1195] -> F:uv__work.work [src/threadpool.c:389]
+  policy +['fun:worker'] -[]
+=== opaque_memcpy: analyzer exit 1
+  E UNRESOLVED indirect call req->work_cb in uv__queue_work@threadpool.c (src/threadpool.c:362) labels=[]; add a reviewed 'site:uv__queue_work@threadpool.c:req->work_cb internal|external <reason>' contract entry or a model
+  W addon callback escapes to external memcpy() arg 1 at src/threadpool.c:388 (uv_queue_work): invoked outside the instrumented unit
+  W contract field:uv_work_s.work_cb says addon, but no addon value reaches it
+  policy +[] -['fun:uv__queue_work']
+=== mixed_dispatcher: analyzer exit 1
+  E MIXED dispatcher uv__run_timers: exempting it also unprotects hook (src/timer.c:198, internal)
+  policy +[] -[]
