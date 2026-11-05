@@ -644,6 +644,63 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
           expect(await count(view, 'mouseleave')).toBe(1);
         }
       });
+
+      // Chromium moves a live Chrome_RenderWidgetHostHWND between windows with
+      // ::SetParent, which sends no WM_PARENTNOTIFY, so a window that gains a
+      // view never learns about the HWND it now hosts.
+      it('keeps forwarding for a WebContentsView moved to another window', { timeout: 60000 }, async () => {
+        await moveTo(OUTSIDE);
+        const from = new BaseWindow({ ...BOUNDS, frame: false, show: false });
+        const to = new BaseWindow({ ...BOUNDS, frame: false, show: false });
+        defer(() => {
+          if (!to.isDestroyed()) to.destroy();
+          if (!from.isDestroyed()) from.destroy();
+        });
+        const view = new WebContentsView();
+        defer(() => {
+          if (!view.webContents.isDestroyed()) view.webContents.destroy();
+        });
+        view.setBounds({ x: 0, y: 0, width: BOUNDS.width, height: BOUNDS.height });
+        from.contentView.addChildView(view);
+        await view.webContents.loadURL(PAGE);
+
+        // Show |from| so the view's legacy window is created under it, then
+        // move the view, still loaded, into the window that forwards.
+        from.setAlwaysOnTop(true);
+        from.showInactive();
+        await setTimeout(500);
+        from.contentView.removeChildView(view);
+        to.contentView.addChildView(view);
+        from.hide();
+
+        // Show |to| solid first, so the moved view's legacy window is armed by
+        // real mouse input. Enabling forwarding while an element is hovered is
+        // what makes that window report a leave the cursor never made, and this
+        // window has never seen that HWND, so it cannot filter it by identity.
+        to.setAlwaysOnTop(true);
+        to.showInactive();
+        await nudgeUntil(TARGET_CENTER, () => isHovered(view));
+        await clearEvents(view);
+
+        to.setIgnoreMouseEvents(true, { forward: true });
+        await settle();
+        expect(await count(view, 'mouseleave')).toBe(0);
+
+        // Moves inside keep being forwarded, and hover is never interrupted:
+        // with forwarding on, the moved view's legacy window reports a leave at
+        // the first move even though the cursor never left, and nothing in this
+        // window knows that HWND well enough to filter it by identity.
+        await moveInWindow(view, { x: TARGET_CENTER.x + 10, y: TARGET_CENTER.y + 10 });
+        await settle();
+        expect(await count(view, 'mouseenter')).toBe(0);
+        expect(await count(view, 'mouseleave')).toBe(0);
+        expect(await isHovered(view)).toBe(true);
+
+        await moveTo(OUTSIDE);
+        await waitUntil(async () => !(await isHovered(view)));
+        await settle();
+        expect(await count(view, 'mouseleave')).toBe(1);
+      });
     });
   }
 );
