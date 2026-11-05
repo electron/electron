@@ -29,6 +29,7 @@ import { expectWarningMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
 const fixtures = path.join(import.meta.dirname, 'fixtures');
+const features = process._linkedBinding('electron_common_features');
 
 describe('chrome extensions', () => {
   const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
@@ -103,6 +104,54 @@ describe('chrome extensions', () => {
     expect(all.map((info: any) => info.id)).toContain(extension.id);
     const info = await w.webContents.executeJavaScript(`chrome.management.get('${extension.id}')`);
     expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
+  });
+
+  it('lets an extension disable and enable another with chrome.management.setEnabled', async () => {
+    const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+    const manager = await customSession.extensions.loadExtension(
+      path.join(fixtures, 'extensions', 'chrome-management')
+    );
+    const target = await customSession.extensions.loadExtension(
+      path.join(fixtures, 'extensions', 'mv3-service-worker')
+    );
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    await w.loadURL(`${manager.url}page.html`);
+    const setEnabled = (enabled: boolean) =>
+      w.webContents.executeJavaScript(`chrome.management.setEnabled('${target.id}', ${enabled})`);
+    const reportedEnabled = async () =>
+      (await w.webContents.executeJavaScript(`chrome.management.get('${target.id}')`)).enabled;
+
+    await setEnabled(false);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(false);
+    expect(await reportedEnabled()).toBe(false);
+
+    await setEnabled(true);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(true);
+    expect(await reportedEnabled()).toBe(true);
+
+    // The app can undo what an extension did.
+    await setEnabled(false);
+    customSession.extensions.enableExtension(target.id);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(true);
+  });
+
+  it('does not let chrome.management.setEnabled enable a Manifest V2 extension', async () => {
+    const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+    const manager = await customSession.extensions.loadExtension(
+      path.join(fixtures, 'extensions', 'chrome-management')
+    );
+    const target = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    await w.loadURL(`${manager.url}page.html`);
+
+    customSession.extensions.disableExtension(target.id);
+    await expect(w.webContents.executeJavaScript(`chrome.management.setEnabled('${target.id}', true)`)).rejects.toThrow(
+      /cannot be modified by user/
+    );
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(false);
+
+    customSession.extensions.enableExtension(target.id);
+    expect(customSession.extensions.isExtensionEnabled(target.id)).toBe(true);
   });
 
   describe('Chrome Web Store origin', () => {
@@ -338,6 +387,135 @@ describe('chrome extensions', () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const e = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     expect(customSession.extensions.getExtension(e.id)).toEqual(e);
+  });
+
+  describe('enabling and disabling', () => {
+    const redBg = path.join(fixtures, 'extensions', 'red-bg');
+
+    const pageBackground = async (ses: Session) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(url);
+      return w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
+    };
+
+    const enableAndWaitUntilReady = async (ses: Session, id: string) => {
+      const ready = emittedUntil(ses.extensions, 'extension-ready', (event: Event, e: Extension) => e.id === id);
+      ses.extensions.enableExtension(id);
+      await ready;
+    };
+
+    it('stops a disabled extension and restarts it when enabled', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const { id } = await customSession.extensions.loadExtension(redBg);
+      expect(customSession.extensions.isExtensionEnabled(id)).toBe(true);
+      expect(await pageBackground(customSession)).toBe('red');
+
+      customSession.extensions.disableExtension(id);
+      expect(customSession.extensions.isExtensionEnabled(id)).toBe(false);
+      expect(await pageBackground(customSession)).toBe('');
+
+      await enableAndWaitUntilReady(customSession, id);
+      expect(customSession.extensions.isExtensionEnabled(id)).toBe(true);
+      expect(await pageBackground(customSession)).toBe('red');
+    });
+
+    it('emits extension lifecycle events', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(redBg);
+
+      const unloadedPromise = once(customSession.extensions, 'extension-unloaded');
+      customSession.extensions.disableExtension(extension.id);
+      const [, unloadedExtension] = await unloadedPromise;
+      expect(unloadedExtension).toEqual(extension);
+
+      const loadedPromise = once(customSession.extensions, 'extension-loaded');
+      const readyPromise = emittedUntil(
+        customSession.extensions,
+        'extension-ready',
+        (event: Event, e: Extension) => e.id === extension.id
+      );
+      customSession.extensions.enableExtension(extension.id);
+      const [, loadedExtension] = await loadedPromise;
+      const [, readyExtension] = await readyPromise;
+      expect(loadedExtension).toEqual(extension);
+      expect(readyExtension).toEqual(extension);
+    });
+
+    it('keeps a disabled extension loaded', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(redBg);
+      customSession.extensions.disableExtension(extension.id);
+      expect(customSession.extensions.getExtension(extension.id)).toEqual(extension);
+      expect(customSession.extensions.getAllExtensions()).toEqual([extension]);
+    });
+
+    it('keeps an extension disabled when it is loaded again', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const { id } = await customSession.extensions.loadExtension(redBg);
+      customSession.extensions.disableExtension(id);
+      customSession.extensions.removeExtension(id);
+      expect(customSession.extensions.getExtension(id)).toBeNull();
+
+      const reloaded = await customSession.extensions.loadExtension(redBg);
+      expect(reloaded.id).toBe(id);
+      expect(customSession.extensions.isExtensionEnabled(id)).toBe(false);
+      expect(await pageBackground(customSession)).toBe('');
+
+      await enableAndWaitUntilReady(customSession, id);
+      expect(await pageBackground(customSession)).toBe('red');
+    });
+
+    it('does nothing when the extension is already in the requested state', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const { id } = await customSession.extensions.loadExtension(redBg);
+      let events = 0;
+      customSession.extensions.on('extension-loaded', () => events++);
+      customSession.extensions.on('extension-unloaded', () => events++);
+
+      customSession.extensions.enableExtension(id);
+      expect(customSession.extensions.isExtensionEnabled(id)).toBe(true);
+      customSession.extensions.disableExtension(id);
+      customSession.extensions.disableExtension(id);
+      expect(customSession.extensions.isExtensionEnabled(id)).toBe(false);
+      expect(events).toBe(1);
+    });
+
+    it('leaves Manifest V2 extensions enabled when another extension is enabled from chrome.management', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const manager = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-management')
+      );
+      const mv2 = await customSession.extensions.loadExtension(redBg);
+      const mv3 = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${manager.url}page.html`);
+
+      // Enabling an extension makes Chromium look up its Manifest V2
+      // phase-out service, which disables Manifest V2 extensions from a
+      // posted task if that lookup is what creates it.
+      customSession.extensions.disableExtension(mv3.id);
+      await w.webContents.executeJavaScript(`chrome.management.setEnabled('${mv3.id}', true)`);
+      const info = await w.webContents.executeJavaScript(`chrome.management.get('${mv2.id}')`);
+      expect(info.enabled).toBe(true);
+      expect(customSession.extensions.isExtensionEnabled(mv2.id)).toBe(true);
+      expect(await pageBackground(customSession)).toBe('red');
+    });
+
+    it('throws for an extension that is not loaded', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const id = 'a'.repeat(32);
+      expect(() => customSession.extensions.disableExtension(id)).toThrow(/No extension with ID/);
+      expect(() => customSession.extensions.enableExtension(id)).toThrow(/No extension with ID/);
+      expect(customSession.extensions.isExtensionEnabled(id)).toBe(false);
+    });
+
+    ifit(features.isPDFViewerEnabled())('refuses to disable the built-in PDF viewer', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const pdfViewerId = 'mhjfbmdgcfjbbpaeojofohoefgiehjai';
+      expect(customSession.extensions.getExtension(pdfViewerId)).not.toBeNull();
+      expect(() => customSession.extensions.disableExtension(pdfViewerId)).toThrow(/built in/);
+      expect(customSession.extensions.isExtensionEnabled(pdfViewerId)).toBe(true);
+    });
   });
 
   it('confines an extension to the session it was loaded in', async () => {

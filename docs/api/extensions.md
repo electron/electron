@@ -97,6 +97,7 @@ The following methods of `chrome.management` are supported:
 - `chrome.management.getSelf`
 - `chrome.management.getPermissionWarningsById`
 - `chrome.management.getPermissionWarningsByManifest`
+- `chrome.management.setEnabled`
 
 The following events of `chrome.management` are supported:
 
@@ -106,6 +107,10 @@ The following events of `chrome.management` are supported:
 Apart from `chrome.management.getSelf` and
 `chrome.management.getPermissionWarningsByManifest`, these require the
 `management` permission.
+
+`chrome.management.setEnabled` cannot enable a Manifest V2 extension. Use
+[`extensions.enableExtension`](extensions-api.md#extensionsenableextensionextensionid)
+from the main process instead.
 
 See [official documentation](https://developer.chrome.com/docs/extensions/reference/management) for more information.
 

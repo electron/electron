@@ -21,7 +21,9 @@
 #include "content/public/browser/browser_thread.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
+#include "extensions/browser/disable_reason.h"
 #include "extensions/browser/management_policy.h"
+#include "extensions/browser/manifest_v2_handler.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/quota_service.h"
 #include "extensions/browser/service_worker_manager.h"
@@ -38,6 +40,38 @@ using content::BrowserContext;
 using content::BrowserThread;
 
 namespace extensions {
+
+namespace {
+
+// chrome.management.setEnabled() relies on the management policy to refuse an
+// extension that Chromium's Manifest V2 phase-out would block from being
+// enabled; it CHECKs the same condition once the policy has let it through.
+class ManifestV2PolicyProvider : public ManagementPolicy::Provider {
+ public:
+  explicit ManifestV2PolicyProvider(BrowserContext* browser_context)
+      : browser_context_(browser_context) {}
+
+  // ManagementPolicy::Provider:
+  std::string GetDebugPolicyProviderName() const override {
+    return "Electron Manifest V2 policy";
+  }
+
+  bool MustRemainDisabled(
+      const Extension* extension,
+      disable_reason::DisableReason* reason) const override {
+    auto* mv2_handler = ManifestV2Handler::Get(browser_context_);
+    if (!mv2_handler || !mv2_handler->ShouldBlockExtensionEnable(*extension))
+      return false;
+    if (reason)
+      *reason = disable_reason::DISABLE_UNSUPPORTED_MANIFEST_VERSION;
+    return true;
+  }
+
+ private:
+  raw_ptr<BrowserContext> browser_context_;  // Not owned.
+};
+
+}  // namespace
 
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
@@ -101,6 +135,9 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
     LoadComponentExtensions();
 
   management_policy_ = std::make_unique<ManagementPolicy>();
+  manifest_v2_policy_provider_ =
+      std::make_unique<ManifestV2PolicyProvider>(browser_context_);
+  management_policy_->RegisterProvider(manifest_v2_policy_provider_.get());
 }
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
