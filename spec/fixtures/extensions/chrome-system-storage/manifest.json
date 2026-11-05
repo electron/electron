@@ -1,0 +1,6 @@
+{
+  "name": "chrome-system-storage",
+  "version": "1.0",
+  "permissions": ["system.storage"],
+  "manifest_version": 3
+}
