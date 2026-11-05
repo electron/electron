@@ -223,10 +223,10 @@ index caffbfc6c7f700ec0c8178a34caefb3c23cfa693..727cc258653545e0dc382e02b5f77412
    MakeFirstResponder();
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index e5f155cfbcab8c4448c0c17edf0e30bea55a2fa6..c76e6ce417a9a80c54a5a13291bc45813a3b4f6a 100644
+index 1aed0c0234ea7438ef7a1f585546bd43a5755220..0e146b9650f15f87a5dfde979be547cd87966ccd 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -945,8 +945,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -949,8 +949,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (@available(macOS 14, *)) {
      if (application_host_ &&
          new_state == WindowVisibilityState::kShowAndActivateWindow) {

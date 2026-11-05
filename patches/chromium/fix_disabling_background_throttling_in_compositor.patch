@@ -62,7 +62,7 @@ index 20a094e08662cfcceeb39558ecc33c5ea9e739a7..01739518a0423789310a1687516e9d05
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index c9409ec32097cac6ac7ff25706123f685d04f13c..39008279db0b65121c57c185044bdd9de1bc4acb 100644
+index c77d9e772f7417b77b62b680b2d6fc09d6508614..a8d3097a0fab1a7df0b2a07744f3de36b8008997 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -496,6 +496,10 @@ class COMPOSITOR_EXPORT Compositor

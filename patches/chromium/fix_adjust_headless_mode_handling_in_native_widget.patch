@@ -23,7 +23,7 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 0255317e03629f0030335593b184ab81f387ddd8..8a0a31e94f63616f23ba791f0ab6a82e448a9f9c 100644
+index f458a74a61cdc92e63bfbec4be9c84bc9c0d4b09..a88f4f78cf6c2aa94b86895d5be0a4c155dd1ef5 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -250,6 +250,7 @@ @implementation NativeWidgetMacNSWindow {
@@ -42,7 +42,7 @@ index 0255317e03629f0030335593b184ab81f387ddd8..8a0a31e94f63616f23ba791f0ab6a82e
  @synthesize isShufflingForOrdering = _isShufflingForOrdering;
  @synthesize preventKeyWindow = _preventKeyWindow;
  @synthesize childWindowAddedHandler = _childWindowAddedHandler;
-@@ -282,23 +284,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+@@ -283,23 +285,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
    return self;
  }
  
@@ -106,10 +106,10 @@ index ce102bf2b10cf4f6260ea11945e4c4ec72566558..3476029cf1b17bbbf10620ed898874b5
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 1457328edbe1e60bd3da68b961cd02182bf32c32..e5f155cfbcab8c4448c0c17edf0e30bea55a2fa6 100644
+index 188e921febc5922f7ec176eed992d4f8550f0996..1aed0c0234ea7438ef7a1f585546bd43a5755220 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -487,6 +487,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -488,6 +488,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (!is_tooltip) {
      tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
    }
@@ -117,7 +117,7 @@ index 1457328edbe1e60bd3da68b961cd02182bf32c32..e5f155cfbcab8c4448c0c17edf0e30be
  
    if (params.workspace.length()) {
      if (std::optional<std::vector<uint8_t>> restoration_data =
-@@ -504,6 +505,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -505,6 +506,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      window_params->modal_type = widget->widget_delegate()->GetModalType();
      window_params->is_translucent =
          params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
@@ -125,7 +125,7 @@ index 1457328edbe1e60bd3da68b961cd02182bf32c32..e5f155cfbcab8c4448c0c17edf0e30be
      window_params->is_tooltip = is_tooltip;
  
      // macOS likes to put shadows on most things. However, frameless windows
-@@ -726,10 +728,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -728,10 +730,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
@@ -141,7 +141,7 @@ index 1457328edbe1e60bd3da68b961cd02182bf32c32..e5f155cfbcab8c4448c0c17edf0e30be
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index e2c3697bf3cccf5474459fae96099811b14ec8bc..444cedbd22fae30270b51f6af560ebbc6a019195 100644
+index 27af22bbd9dfdb4212417e8cdf3185ae9e52e808..a5a57753ab5127366077bc395dd01e2eb140693d 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -251,6 +251,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -163,7 +163,7 @@ index e2c3697bf3cccf5474459fae96099811b14ec8bc..444cedbd22fae30270b51f6af560ebbc
  void Widget::InitParams::SetParent(Widget* parent_widget) {
    SetParent(parent_widget->GetNativeView());
  }
-@@ -518,6 +530,7 @@ void Widget::Init(InitParams params) {
+@@ -519,6 +531,7 @@ void Widget::Init(InitParams params) {
  
    params.child |= (params.type == InitParams::TYPE_CONTROL);
    is_top_level_ = !params.child;

@@ -16,7 +16,7 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index de70e90d1fb9aff03ab972c15aedd618358fc1d1..9b3d66e0e646d384f24d1b905c1e7b59e3ad1531 100644
+index 40fe63ee0085f8f383aac97eadade8a1dd791c85..af2693d1338b61f15a002bd3acd1d537dc70f171 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
 @@ -2867,6 +2867,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
@@ -33,10 +33,10 @@ index de70e90d1fb9aff03ab972c15aedd618358fc1d1..9b3d66e0e646d384f24d1b905c1e7b59
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 3437d210a49e82a570e3c829ecab5706d056600d..f3056fba32247a11dfe66917aadc7eb0d7eb1d1a 100644
+index 3e3ec5fe8fc470e419963e44b24b587054344b97..f51a5141346b265ba2fd09fe9506fbc557b4fc92 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -859,6 +859,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -864,6 +864,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,10 +51,10 @@ index 3437d210a49e82a570e3c829ecab5706d056600d..f3056fba32247a11dfe66917aadc7eb0
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 75e4aca5ef5556a8577b74f89cf1ac83fcee341c..f4e12fda1e43ba62beee363f114d1e61f1bf2875 100644
+index b902a08ac13cfe6392a0cc85d3fbcb1adc8e7a0f..872544a5f6d70d34ce9fa6873d9c5f9b2c3ac02d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1333,6 +1333,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1342,6 +1342,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  

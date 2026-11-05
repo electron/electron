@@ -78,10 +78,10 @@ index bf4f010ed083118e63a8913df47ccc6cdbf025e6..858c731e72146a0136a00b41910e49ca
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index c7b431dc31495b06f7320992e6044be4fcde93f4..a8929e4d0c4154d8af69238c252c293e94049c88 100644
+index 71070b625944469c0a21ea65ff0ff50df34eebdc..4f406d9ad737bb7441c7a1d2d88781687ca57607 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
-@@ -444,6 +444,9 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
+@@ -452,6 +452,9 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
        return ValueEquals(a.DominantBaseline(), b.DominantBaseline());
      case CSSPropertyID::kDynamicRangeLimit:
        return ValueEquals(a.GetDynamicRangeLimit(), b.GetDynamicRangeLimit());
@@ -315,7 +315,7 @@ index 9d125de843259dae40e6b08eaf65ea3650435295..428219fb35d7a967dcaee91aa1c3628e
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index dee671402bad3c1abea1f12fedeb249d6f8a0446..6307df97df1b241c85c0e8aafe4672cfaf591fd0 100644
+index 9ef3d1cc69742e05392d275c57d723b33544a05d..1e8df3066963b2a3d28661ca962964a8002543df 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@
