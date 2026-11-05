@@ -127,8 +127,16 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
     // webContents.getMediaSourceId(), which is bound to the requesting
     // contents, or through getDisplayMedia().
     auto dm_id = GetScreenId(request.requested_video_device_ids);
+    bool is_picker_session = false;
+#if BUILDFLAG(IS_MAC)
+    // On macOS only the browser issues picker session ids; accepting one here
+    // would hand another page's picker selection to this renderer.
+    is_picker_session =
+        dm_id.id_type == content::DesktopMediaID::IdType::kNativePickerSession;
+#endif
     if (dm_id.is_null() ||
-        dm_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS) {
+        dm_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS ||
+        is_picker_session) {
       std::move(callback).Run(blink::mojom::StreamDevicesSet(),
                               MediaStreamRequestResult::INVALID_STATE, nullptr);
       return;
