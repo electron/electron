@@ -108,6 +108,53 @@ describe('chrome extensions', () => {
     expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
   });
 
+  describe('chrome.system.storage', () => {
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-system-storage')
+      );
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${extension.url}page.html`);
+    });
+
+    afterEach(() => {
+      w.destroy();
+    });
+
+    it('lists storage units', async () => {
+      const units = await w.webContents.executeJavaScript('chrome.system.storage.getInfo()');
+      expect(Array.isArray(units)).toBe(true);
+      for (const unit of units) {
+        expect(unit).toEqual(
+          expect.objectContaining({
+            id: expect.any(String),
+            name: expect.any(String),
+            type: expect.any(String),
+            capacity: expect.any(Number)
+          })
+        );
+      }
+    });
+
+    it('reports an unknown device when ejecting', async () => {
+      const result = await w.webContents.executeJavaScript("chrome.system.storage.ejectDevice('unknown-device')");
+      expect(result).toBe('no_such_device');
+    });
+
+    it('accepts device attach and detach listeners', async () => {
+      // The browser starts watching for devices when the first listener is added.
+      const units = await w.webContents.executeJavaScript(`
+        chrome.system.storage.onAttached.addListener(() => {});
+        chrome.system.storage.onDetached.addListener(() => {});
+        chrome.system.storage.getInfo();
+      `);
+      expect(Array.isArray(units)).toBe(true);
+    });
+  });
+
   describe('Chrome Web Store origin', () => {
     // The core //extensions feature files expose some APIs to web pages on the
     // Chrome Web Store origin. Electron does not support chrome.webstorePrivate

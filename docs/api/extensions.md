@@ -157,6 +157,12 @@ The following methods of `chrome.storage` are supported:
 
 See [official documentation](https://developer.chrome.com/docs/extensions/reference/storage) for more information.
 
+### `chrome.system.storage`
+
+All features of this API are supported.
+
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/system/storage) for more information.
+
 ### `chrome.tabs`
 
 The following methods of `chrome.tabs` are supported:
