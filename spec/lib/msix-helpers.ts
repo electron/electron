@@ -150,7 +150,10 @@ export function getMsixFixturePath(version: 'v1' | 'v2'): string {
 // Install MSIX package
 export async function installMsixPackage(msixPath: string): Promise<void> {
   // Use Add-AppxPackage PowerShell cmdlet
-  const result = await runPowerShell(['-Command', `Add-AppxPackage -Path "${msixPath}" -ForceApplicationShutdown`]);
+  const result = await runPowerShell([
+    '-Command',
+    `Add-AppxPackage -Path "${msixPath}" -ForceApplicationShutdown -ForceUpdateFromAnyVersion`
+  ]);
   if (result.status !== 0) {
     throw new Error(`Failed to install MSIX package: ${result.stderr.toString()}`);
   }
@@ -187,6 +190,13 @@ export async function spawn(cmd: string, args: string[], opts: any = {}): Promis
   let out = '';
   try {
     const child = cp.spawn(cmd, args, opts);
+    defer(async () => {
+      if (child.pid && child.exitCode === null && child.signalCode === null) {
+        const closed = once(child, 'close');
+        child.kill('SIGKILL');
+        await closed;
+      }
+    });
     child.stdout.on('data', (chunk: Buffer) => {
       out += chunk.toString();
     });
