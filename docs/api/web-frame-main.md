@@ -4,26 +4,23 @@
 
 Process: [Main](../glossary.md#main-process)
 
-The `webFrameMain` module can be used to lookup frames across existing
-[`WebContents`](web-contents.md) instances. Navigation events are the common
-use case.
+`WebFrameMain` instances are provided by frame specific
+[`WebContents`](web-contents.md) events, and the `webFrameMain` module can be
+used to lookup frames across existing `WebContents` instances. Navigation
+events are the common use case.
 
 ```js
-const { BrowserWindow, webFrameMain } = require('electron')
+const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 1500 })
 win.loadURL('https://twitter.com')
 
-win.webContents.on(
-  'did-frame-navigate',
-  (event, url, httpResponseCode, httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
-    const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)
-    if (frame) {
-      const code = 'document.body.innerHTML = document.body.innerHTML.replaceAll("heck", "h*ck")'
-      frame.executeJavaScript(code)
-    }
+win.webContents.on('did-frame-navigate', ({ frame }) => {
+  if (frame) {
+    const code = 'document.body.innerHTML = document.body.innerHTML.replaceAll("heck", "h*ck")'
+    frame.executeJavaScript(code)
   }
-)
+})
 ```
 
 You can also access frames of existing pages by using the `mainFrame` property

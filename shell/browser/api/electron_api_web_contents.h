@@ -447,7 +447,8 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
-  // 'did-fail-load'; the frame ids are omitted from the event when -1.
+  // 'did-fail-load'; the frame ids are omitted from the event when -1. The
+  // event's frame is null when the ids are -1 or the frame no longer exists.
   void EmitDidFailLoad(int error_code,
                        std::string_view error_description,
                        const GURL& url,
