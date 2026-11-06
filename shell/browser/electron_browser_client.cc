@@ -1860,23 +1860,26 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
         std::make_unique<extensions::ExtensionNavigationUIData>();
   }
 
+  // Electron's proxy and the extensions proxy share the one header client the
+  // network service accepts when both want it.
   mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
       header_client_receiver;
+  mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+      shared_header_client_receiver;
+  mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+      own_header_client;
   if (header_client && !header_client->is_valid()) {
     if (extensions_header_client) {
-      mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
-          own_header_client;
+      shared_header_client_receiver =
+          header_client->InitWithNewPipeAndPassReceiver();
       header_client_receiver =
           own_header_client.InitWithNewPipeAndPassReceiver();
-      ChainURLLoaderHeaderClients(
-          header_client->InitWithNewPipeAndPassReceiver(),
-          std::move(extensions_header_client), std::move(own_header_client));
     } else {
       header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
     }
   }
 
-  new ProxyingURLLoaderFactory{
+  auto* proxy = new ProxyingURLLoaderFactory{
       web_request,
       protocol_registry->intercept_handlers(),
       static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr(),
@@ -1889,6 +1892,14 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
       std::move(target_factory_remote),
       std::move(header_client_receiver),
       type};
+
+  if (shared_header_client_receiver) {
+    ChainURLLoaderHeaderClients(
+        std::move(shared_header_client_receiver),
+        std::move(extensions_header_client), std::move(own_header_client),
+        base::BindRepeating(&ProxyingURLLoaderFactory::HandlesLoader,
+                            proxy->GetWeakPtr()));
+  }
 }
 
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>

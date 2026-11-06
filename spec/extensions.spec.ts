@@ -950,6 +950,21 @@ describe('chrome extensions', () => {
         expect(sent?.requestHeaders?.map((header) => header.name)).not.toContain('X-From-Session');
       });
 
+      it('reports to extraHeaders listeners while session.webRequest has no listeners', async () => {
+        expect(await messageExtension({ type: 'listen-with-extra-headers' })).toBe(true);
+        await extensionSeesRequests('onHeadersReceived:extraHeaders');
+
+        const token = crypto.randomUUID();
+        expect(await fetchStatus(`${url}/${token}`)).toBe(200);
+
+        const events = await extensionEvents(token);
+        const sent = events.find((event) => event.name === 'onSendHeaders:extraHeaders');
+        // Headers the network service adds are only visible to extraHeaders
+        // listeners, so this shows the event came through the header client.
+        expect(sent?.requestHeaders?.map((header) => header.name)).toContain('Accept-Encoding');
+        expect(names(events)).toContain('onHeadersReceived:extraHeaders');
+      });
+
       it('orders extraHeaders listeners around session.webRequest in the same way', async () => {
         customSession.webRequest.onBeforeSendHeaders((details, callback) => {
           callback({ requestHeaders: { ...details.requestHeaders, 'X-From-Session': 'app' } });

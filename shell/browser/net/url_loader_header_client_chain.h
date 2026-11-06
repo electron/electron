@@ -5,6 +5,9 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_URL_LOADER_HEADER_CLIENT_CHAIN_H_
 #define ELECTRON_SHELL_BROWSER_NET_URL_LOADER_HEADER_CLIENT_CHAIN_H_
 
+#include <optional>
+
+#include "base/functional/callback_forward.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "services/network/public/mojom/network_context.mojom-forward.h"
@@ -21,12 +24,21 @@ namespace electron {
 // Both proxies have to know a loader by the request ID the network service
 // reports, so `inner` must forward the request ID it is given.
 //
+// `inner_handles_loader` is asked about each loader the network service
+// reports, by its request ID, or with no ID for a CORS preflight. Where the
+// answer is no, `outer` is the loader's only header client and is called by the
+// network service directly, so a proxy with nothing to do for a request costs
+// it nothing.
+//
 // The object lives until `receiver` is disconnected.
+using HandlesLoaderCallback =
+    base::RepeatingCallback<bool(std::optional<int32_t> request_id)>;
 void ChainURLLoaderHeaderClients(
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient> outer,
-    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient> inner);
+    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient> inner,
+    HandlesLoaderCallback inner_handles_loader);
 
 }  // namespace electron
 
