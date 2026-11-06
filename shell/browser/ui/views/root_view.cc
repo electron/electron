@@ -24,6 +24,14 @@ bool IsAltModifier(const input::NativeWebKeyboardEvent& event) {
   return (event.GetModifiers() & Mods::kKeyModifiers) == Mods::kAltKey;
 }
 
+bool HasNoOtherKeyModifiers(const input::NativeWebKeyboardEvent& event) {
+  typedef blink::WebInputEvent::Modifiers Modifiers;
+  int mods = event.GetModifiers();
+  mods &= ~Modifiers::kNumLockOn;
+  mods &= ~Modifiers::kCapsLockOn;
+  return (mods & Modifiers::kKeyModifiers & ~Modifiers::kAltKey) == 0;
+}
+
 }  // namespace
 
 RootView::RootView(NativeWindow* window)
@@ -100,7 +108,8 @@ void RootView::HandleKeyEvent(const input::NativeWebKeyboardEvent& event) {
   // Show accelerator when "Alt" is pressed.
   if (menu_bar_visible_ && IsAltKey(event))
     menu_bar_->SetAcceleratorVisibility(
-        event.GetType() == blink::WebInputEvent::Type::kRawKeyDown);
+        event.GetType() == blink::WebInputEvent::Type::kRawKeyDown &&
+        HasNoOtherKeyModifiers(event));
 
   // Show the submenu when "Alt+Key" is pressed.
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown &&
@@ -121,11 +130,12 @@ void RootView::HandleKeyEvent(const input::NativeWebKeyboardEvent& event) {
 
   // Toggle the menu bar only when a single Alt is released.
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown &&
-      IsAltKey(event)) {
+      IsAltKey(event) && HasNoOtherKeyModifiers(event)) {
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
   } else if (event.GetType() == blink::WebInputEvent::Type::kKeyUp &&
-             IsAltKey(event) && menu_bar_alt_pressed_) {
+             IsAltKey(event) && menu_bar_alt_pressed_ &&
+             HasNoOtherKeyModifiers(event)) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
     if (menu_bar_autohide_)
