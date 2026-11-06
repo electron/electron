@@ -101,6 +101,66 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['seri
     });
   });
 
+  describe('shortcut objects', () => {
+    type ShortcutInput = Parameters<typeof globalShortcut.register>[0];
+
+    const registerRaw = (shortcut: unknown) => globalShortcut.register(shortcut as ShortcutInput, () => {});
+
+    it('registers a shortcut given as an object', () => {
+      const result = globalShortcut.register(
+        { accelerator: 'CmdOrCtrl+L', description: 'Focus location bar' },
+        () => {}
+      );
+      expect(result).toBe(true);
+      expect(globalShortcut.isRegistered('CmdOrCtrl+L')).toBe(true);
+    });
+
+    it('ignores the description when matching a shortcut', () => {
+      globalShortcut.register({ accelerator: 'CmdOrCtrl+M', description: 'First' }, () => {});
+      globalShortcut.register({ accelerator: 'CmdOrCtrl+M', description: 'Second' }, () => {});
+
+      expect(globalShortcut.isRegistered('CmdOrCtrl+M'), 'description does not change identity').toBe(true);
+
+      globalShortcut.unregister({ accelerator: 'CmdOrCtrl+M', description: 'Second' });
+      expect(globalShortcut.isRegistered('CmdOrCtrl+M')).toBe(false);
+    });
+
+    it('accepts a mix of strings and objects in registerAll', () => {
+      globalShortcut.registerAll(['CmdOrCtrl+1', { accelerator: 'CmdOrCtrl+2', description: 'Second' }], () => {});
+
+      expect(globalShortcut.isRegistered('CmdOrCtrl+1')).toBe(true);
+      expect(globalShortcut.isRegistered('CmdOrCtrl+2')).toBe(true);
+    });
+
+    it('accepts either form in isRegistered and unregister', () => {
+      globalShortcut.register('CmdOrCtrl+0', () => {});
+      expect(globalShortcut.isRegistered({ accelerator: 'CmdOrCtrl+0' })).toBe(true);
+      globalShortcut.unregister({ accelerator: 'CmdOrCtrl+0' });
+      expect(globalShortcut.isRegistered('CmdOrCtrl+0')).toBe(false);
+
+      globalShortcut.register({ accelerator: 'CmdOrCtrl+9' }, () => {});
+      expect(globalShortcut.isRegistered('CmdOrCtrl+9')).toBe(true);
+      globalShortcut.unregister('CmdOrCtrl+9');
+      expect(globalShortcut.isRegistered('CmdOrCtrl+9')).toBe(false);
+    });
+
+    it('throws when the accelerator property is missing', () => {
+      expect(() => registerRaw({})).toThrow();
+    });
+
+    it('throws when the accelerator property is not a string', () => {
+      expect(() => registerRaw({ accelerator: 42 })).toThrow();
+    });
+
+    it('throws when the description property is not a string', () => {
+      expect(() => registerRaw({ accelerator: 'CmdOrCtrl+9', description: 42 })).toThrow();
+    });
+
+    it('throws for an invalid accelerator given as an object', () => {
+      expect(() => registerRaw({ accelerator: 'NotAKey' })).toThrow();
+    });
+  });
+
   describe('isRegistered', () => {
     it('returns false for an accelerator that was never registered', () => {
       expect(globalShortcut.isRegistered('CmdOrCtrl+Shift+F9')).toBe(false);
