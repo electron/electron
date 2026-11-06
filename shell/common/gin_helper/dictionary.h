@@ -128,6 +128,12 @@ class Dictionary : public gin::Dictionary {
     return result.FromMaybe(false);
   }
 
+  bool DeleteHidden(std::string_view key) {
+    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
+    v8::Local<v8::Private> privateKey = MakeHiddenKey(key);
+    return GetHandle()->DeletePrivate(context, privateKey).FromMaybe(false);
+  }
+
   template <typename T>
   bool SetMethod(std::string_view key, const T& callback) {
     auto context = isolate()->GetCurrentContext();

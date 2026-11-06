@@ -198,6 +198,11 @@ inline constexpr std::string_view kAllowRunningInsecureContent =
 
 inline constexpr std::string_view kOffscreen = "offscreen";
 
+// Internal: set by BrowserWindow on the contents it creates, so that code
+// running before SetOwnerWindow() knows the association is still coming.
+// Consumed by the WebContents it marks; never left on the caller's object.
+inline constexpr std::string_view kOwnedByWindow = "ownedByWindow";
+
 inline constexpr std::string_view kUseSharedTexture = "useSharedTexture";
 
 inline constexpr std::string_view kSharedTexturePixelFormat =
