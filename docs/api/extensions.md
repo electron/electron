@@ -188,6 +188,10 @@ See [official documentation](https://developer.chrome.com/docs/extensions/refere
 All features of this API are supported.
 
 > [!NOTE]
-> Electron's [`webRequest`](web-request.md) module takes precedence over `chrome.webRequest` if there are conflicting handlers.
+> `chrome.webRequest` listeners and Electron's [`webRequest`](web-request.md) listeners receive events for the same requests.
+> A request reaches an extension's listeners before Electron's `webRequest` listeners, and its response reaches them in the opposite order.
+> Electron's `webRequest` module therefore has the final say on what is sent: it sees a request after extensions have changed it, and extensions see a request it cancels or redirects as an error or a redirect.
+> Extensions have the final say on the response headers a page receives.
+> Requests made from the main process, such as those from the [`net`](net.md) module, are not reported to extensions.
 
 See [official documentation](https://developer.chrome.com/docs/extensions/reference/webRequest) for more information.

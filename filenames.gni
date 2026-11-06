@@ -514,6 +514,8 @@ filenames = {
     "shell/browser/net/system_network_context_manager.h",
     "shell/browser/net/url_loader_factory_gate.cc",
     "shell/browser/net/url_loader_factory_gate.h",
+    "shell/browser/net/url_loader_header_client_chain.cc",
+    "shell/browser/net/url_loader_header_client_chain.h",
     "shell/browser/net/url_loader_network_observer.cc",
     "shell/browser/net/url_loader_network_observer.h",
     "shell/browser/network_hints_handler_impl.cc",

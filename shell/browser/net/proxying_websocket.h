@@ -10,11 +10,13 @@
 #include <string>
 #include <vector>
 
+#include "base/values.h"
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "net/base/auth.h"
 #include "net/ssl/ssl_info.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -50,7 +52,11 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       int process_id,
       int render_frame_id,
       content::BrowserContext* browser_context,
-      uint64_t* request_id_generator);
+      uint64_t* request_id_generator,
+      mojo::PendingRemote<network::mojom::WebSocketAuthenticationHandler>
+          outer_auth_handler,
+      mojo::PendingRemote<network::mojom::TrustedHeaderClient>
+          outer_header_client);
   ~ProxyingWebSocket() override;
 
   // disable copy
@@ -87,6 +93,10 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
                          const std::optional<net::SSLInfo>& ssl_info,
                          OnHeadersReceivedCallback callback) override;
 
+  // The last three arguments are set when another proxy sits between this one
+  // and the renderer, and are what that proxy would have sent to the network
+  // service: the request headers it wants, and its own handlers, which this
+  // proxy then calls in the network service's place.
   static void StartProxying(
       api::WebRequest* web_request,
       WebSocketFactory factory,
@@ -100,9 +110,19 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       int render_frame_id,
       const url::Origin& origin,
       content::BrowserContext* browser_context,
-      uint64_t* request_id_generator);
+      uint64_t* request_id_generator,
+      std::vector<network::mojom::HttpHeaderPtr> outer_additional_headers,
+      mojo::PendingRemote<network::mojom::WebSocketAuthenticationHandler>
+          outer_auth_handler,
+      mojo::PendingRemote<network::mojom::TrustedHeaderClient>
+          outer_header_client);
 
  private:
+  void OnOuterBeforeSendHeaders(
+      const net::HttpRequestHeaders& original_headers,
+      int32_t result,
+      const std::optional<net::HttpRequestHeaders>& headers,
+      std::optional<base::DictValue> net_log_events);
   void OnBeforeRequestComplete(int error_code);
   void OnBeforeSendHeadersComplete(const std::set<std::string>& removed_headers,
                                    const std::set<std::string>& set_headers,
@@ -141,6 +161,16 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       receiver_as_auth_handler_{this};
   mojo::Receiver<network::mojom::TrustedHeaderClient>
       receiver_as_header_client_{this};
+
+  // The handlers of a proxy between this one and the renderer, if any. Its
+  // header client sees request headers before this proxy's listeners and
+  // response headers after them. Its authentication handler is asked for
+  // credentials when this proxy has none.
+  mojo::Remote<network::mojom::WebSocketAuthenticationHandler>
+      outer_auth_handler_;
+  mojo::Remote<network::mojom::TrustedHeaderClient> outer_header_client_;
+  std::optional<net::AuthChallengeInfo> auth_info_;
+  std::optional<net::SSLInfo> ssl_info_;
 
   net::HttpRequestHeaders request_headers_;
   network::mojom::URLResponseHeadPtr response_;
