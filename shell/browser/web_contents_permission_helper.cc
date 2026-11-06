@@ -127,8 +127,16 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
     // webContents.getMediaSourceId(), which is bound to the requesting
     // contents, or through getDisplayMedia().
     auto dm_id = GetScreenId(request.requested_video_device_ids);
+    bool is_picker_session = false;
+#if BUILDFLAG(IS_MAC)
+    // On macOS only the browser issues picker session ids; accepting one here
+    // would hand another page's picker selection to this renderer.
+    is_picker_session =
+        dm_id.id_type == content::DesktopMediaID::IdType::kNativePickerSession;
+#endif
     if (dm_id.is_null() ||
-        dm_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS) {
+        dm_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS ||
+        is_picker_session) {
       std::move(callback).Run(blink::mojom::StreamDevicesSet(),
                               MediaStreamRequestResult::INVALID_STATE, nullptr);
       return;
@@ -238,11 +246,10 @@ void WebContentsPermissionHelper::RequestPermission(
     base::DictValue details) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
-  auto origin = requesting_frame->GetLastCommittedOrigin().GetURL();
   permission_manager->RequestPermissionWithDetails(
       content::PermissionDescriptorUtil::
           CreatePermissionDescriptorForPermissionType(permission),
-      requesting_frame, origin, user_gesture, std::move(details),
+      requesting_frame, user_gesture, std::move(details),
       base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
@@ -380,8 +387,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
         content::PermissionDescriptorUtil::
             CreatePermissionDescriptorForPermissionType(
                 blink::PermissionType::OPEN_EXTERNAL),
-        requesting_frame, requester->origin.GetURL(), user_gesture,
-        std::move(details),
+        requesting_frame, user_gesture, std::move(details),
         base::BindOnce(&OnPermissionResponse, std::move(callback)));
     return;
   }

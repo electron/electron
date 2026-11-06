@@ -16,7 +16,7 @@ import {
 
 const fixturesPath = path.join(import.meta.dirname, 'fixtures');
 
-describe('cpp heap', () => {
+describe('cpp heap', { retry: 0 }, () => {
   ifdescribe(isTestingBindingAvailable())('native callback holders', () => {
     for (const [mode, description] of [
       ['call', 'creates callable images through an API retained from a removed iframe'],

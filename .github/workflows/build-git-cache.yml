@@ -31,7 +31,7 @@ jobs:
       contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root
+      options: --user root --umask 0022
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     env:
@@ -56,7 +56,7 @@ jobs:
       contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
+      options: --user root --device /dev/fuse --cap-add SYS_ADMIN --umask 0022
       volumes:
         - /mnt/win-cache:/mnt/win-cache
     env:
@@ -83,7 +83,7 @@ jobs:
       contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root
+      options: --user root --umask 0022
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     env:

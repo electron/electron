@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import { defer } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
-describe('ipc main module', () => {
+describe('ipc main module', { retry: 0 }, () => {
   const fixtures = path.join(import.meta.dirname, 'fixtures');
 
   afterEach(closeAllWindows);
