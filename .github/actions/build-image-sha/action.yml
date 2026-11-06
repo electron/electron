@@ -20,5 +20,5 @@ runs:
         if [ -n "$OVERRIDE" ]; then
           echo "build-image-sha=$OVERRIDE" >> "$GITHUB_OUTPUT"
         else
-          echo "build-image-sha=4db2fbc7034dce0bcea238a280794a9225b93bf1" >> "$GITHUB_OUTPUT"
+          echo "build-image-sha=48409d6a437ba91fef2c5c1dd81e979c15b2f6cd" >> "$GITHUB_OUTPUT"
         fi
