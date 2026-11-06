@@ -469,6 +469,11 @@ jobs:
           chown -R :builduser . && chmod -R g+w .
           chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- git config --global --add safe.directory $(pwd)
+          # xvfb-run's default screen, plus -noreset: otherwise Xvfb resets
+          # whenever its last client disconnects and drops connections that
+          # arrive meanwhile, so a spec worker starting just as the others quit
+          # exits with "Missing X server or $DISPLAY" before it is ready.
+          XVFB_RUN=(xvfb-run -s "-screen 0 1280x1024x24 -noreset")
           if [ "$IS_ASAN" == "true" ]; then
             cd ..
             ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
@@ -485,18 +490,18 @@ jobs:
             export ELECTRON_SPEC_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+            runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           elif [ "$IS_UBSAN" == "true" ]; then
             cd ..
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export ELECTRON_SPEC_TIMEOUT=180000
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else
             if [ "$DISPLAY_SERVER" = "wayland" ]; then
               runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
             else
-              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+              runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
             fi
           fi
         fi
