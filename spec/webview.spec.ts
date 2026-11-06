@@ -573,6 +573,166 @@ describe('<webview> tag', () => {
       await w.webContents.executeJavaScript('view.remove()');
       w.webContents.setZoomLevel(0.5);
     });
+
+    describe('zoom mode', () => {
+      let partitionCount = 0;
+
+      // Loads a window with an attached <webview>. Both get their own
+      // in-memory session so zoom levels stored per host by other tests
+      // cannot leak in, leaving embedder -> guest zoom inheritance as the only
+      // way the guest's zoom level can change.
+      const loadEmbedderAndGuest = async (): Promise<{ embedder: WebContents; guest: WebContents }> => {
+        const id = ++partitionCount;
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            webviewTag: true,
+            session: session.fromPartition(`webview-zoom-mode-embedder-${id}`)
+          }
+        });
+        await w.loadURL(blankPageUrl);
+        const attachPromise = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
+        await loadWebView(w.webContents, {
+          src: url.pathToFileURL(path.join(fixtures, 'pages', 'a.html')).toString(),
+          partition: `webview-zoom-mode-guest-${id}`
+        });
+        const [, guest] = await attachPromise;
+        expect(w.webContents.getZoomLevel()).toBe(0);
+        expect(guest.getZoomLevel()).toBe(0);
+        return { embedder: w.webContents, guest };
+      };
+
+      // Page zoom scales window.devicePixelRatio, so reading it back from the
+      // renderer (relative to its value at zoom level 0) shows the zoom the
+      // page actually rendered at, not just the level the zoom controller
+      // tracks. This matters for manual mode, where the two differ.
+      const getDevicePixelRatio = (wc: WebContents): Promise<number> => wc.executeJavaScript('window.devicePixelRatio');
+      const waitForRenderedZoomFactor = (wc: WebContents, baseDpr: number, factor: number) =>
+        waitUntil(async () => Math.abs((await getDevicePixelRatio(wc)) / baseDpr - factor) < 0.01);
+
+      // Serves a page on a site other than the guest's initial file: page, and
+      // stores per-host zoom level 2 for it in |ses| via a throwaway
+      // default-mode window. Navigating the guest there is cross-site, so the
+      // primary main frame's RenderFrameHost is replaced.
+      const serveZoomedOrigin = async (ses: Electron.Session) => {
+        const server = http.createServer((req, res) => {
+          res.end('hello');
+        });
+        const { url: serverUrl } = await listen(server);
+        defer(() => server.close());
+        const origin = serverUrl.replace('127.0.0.1', 'localhost');
+
+        const seed = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await seed.loadURL(origin);
+        seed.webContents.setZoomLevel(2);
+        expect(seed.webContents.getZoomLevel()).toBe(2);
+        seed.close();
+
+        // Control: a fresh default-mode window in the same session picks the
+        // stored level up, so a guest that does not has really ignored it.
+        const control = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await control.loadURL(origin);
+        expect(control.webContents.getZoomLevel()).toBe(2);
+        control.close();
+
+        return origin;
+      };
+
+      for (const embedderMode of ['default', 'isolated'] as const) {
+        // An embedder in isolated mode uses temporary (per-webContents) zoom
+        // levels, which reach the guest through a different code path than
+        // the per-host zoom levels of a default-mode embedder.
+        describe(`when the embedder is in ${embedderMode} zoom mode`, () => {
+          // Zooms the embedder and waits until its own page has rendered at
+          // the new level, by which point any zoom the guest inherits has
+          // been dispatched too.
+          const zoomEmbedder = async (embedder: WebContents, embedderBaseDpr: number) => {
+            embedder.setZoomLevel(2);
+            expect(embedder.getZoomLevel()).toBe(2);
+            await waitForRenderedZoomFactor(embedder, embedderBaseDpr, 1.44);
+          };
+
+          it('a webview in default zoom mode follows the embedder zoom level', async () => {
+            const { embedder, guest } = await loadEmbedderAndGuest();
+            embedder.setZoomMode(embedderMode);
+            const embedderBaseDpr = await getDevicePixelRatio(embedder);
+            const guestBaseDpr = await getDevicePixelRatio(guest);
+            expect(guest.getZoomMode()).toBe('default');
+
+            await zoomEmbedder(embedder, embedderBaseDpr);
+            expect(guest.getZoomLevel()).toBe(2);
+            await waitForRenderedZoomFactor(guest, guestBaseDpr, 1.44);
+          });
+
+          it('a webview in isolated zoom mode keeps its own zoom level', async () => {
+            const { embedder, guest } = await loadEmbedderAndGuest();
+            embedder.setZoomMode(embedderMode);
+            const embedderBaseDpr = await getDevicePixelRatio(embedder);
+            const guestBaseDpr = await getDevicePixelRatio(guest);
+
+            guest.setZoomMode('isolated');
+            guest.setZoomLevel(1);
+            expect(guest.getZoomLevel()).toBe(1);
+            await waitForRenderedZoomFactor(guest, guestBaseDpr, 1.2);
+
+            await zoomEmbedder(embedder, embedderBaseDpr);
+            expect(guest.getZoomLevel()).toBe(1);
+            expect(Math.abs((await getDevicePixelRatio(guest)) / guestBaseDpr - 1.2)).toBeLessThanOrEqual(0.01);
+          });
+
+          it('a webview in manual zoom mode is not zoomed by the embedder', async () => {
+            const { embedder, guest } = await loadEmbedderAndGuest();
+            embedder.setZoomMode(embedderMode);
+            const embedderBaseDpr = await getDevicePixelRatio(embedder);
+            const guestBaseDpr = await getDevicePixelRatio(guest);
+
+            guest.setZoomMode('manual');
+            guest.setZoomLevel(1);
+            // Manual mode tracks the level but leaves the page unzoomed.
+            expect(guest.getZoomLevel()).toBe(1);
+            expect(Math.abs((await getDevicePixelRatio(guest)) / guestBaseDpr - 1)).toBeLessThanOrEqual(0.01);
+
+            await zoomEmbedder(embedder, embedderBaseDpr);
+            expect(guest.getZoomLevel()).toBe(1);
+            expect(Math.abs((await getDevicePixelRatio(guest)) / guestBaseDpr - 1)).toBeLessThanOrEqual(0.01);
+          });
+
+          it('a webview in disabled zoom mode stays at the default zoom level', async () => {
+            const { embedder, guest } = await loadEmbedderAndGuest();
+            embedder.setZoomMode(embedderMode);
+            const embedderBaseDpr = await getDevicePixelRatio(embedder);
+            const guestBaseDpr = await getDevicePixelRatio(guest);
+
+            guest.setZoomMode('disabled');
+            guest.setZoomLevel(1);
+            expect(guest.getZoomLevel()).toBe(0);
+
+            await zoomEmbedder(embedder, embedderBaseDpr);
+            expect(guest.getZoomLevel()).toBe(0);
+            expect(Math.abs((await getDevicePixelRatio(guest)) / guestBaseDpr - 1)).toBeLessThanOrEqual(0.01);
+          });
+
+          it('a webview in disabled zoom mode stays at the default zoom level after navigating to an origin with a stored zoom level', async () => {
+            const { embedder, guest } = await loadEmbedderAndGuest();
+            embedder.setZoomMode(embedderMode);
+            const zoomedOrigin = await serveZoomedOrigin(guest.session);
+
+            guest.setZoomMode('disabled');
+            expect(guest.getZoomLevel()).toBe(0);
+            const guestBaseDpr = await getDevicePixelRatio(guest);
+
+            // Temporary zoom levels are per RenderFrameHost, so the level
+            // pinned by disabled mode must be re-applied to the frame created
+            // for the cross-site navigation, or the stored per-host level for
+            // the new origin takes effect.
+            await guest.loadURL(zoomedOrigin);
+            expect(guest.getZoomMode()).toBe('disabled');
+            expect(guest.getZoomLevel()).toBe(0);
+            expect(Math.abs((await getDevicePixelRatio(guest)) / guestBaseDpr - 1)).toBeLessThanOrEqual(0.01);
+          });
+        });
+      }
+    });
   });
 
   describe('requestFullscreen from webview', { tags: ['serial'] }, () => {
