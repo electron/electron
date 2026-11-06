@@ -48,17 +48,20 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
+#include "shell/common/v8_util.h"
 #include "shell/services/node/node_service.h"
 #include "third_party/blink/public/common/loader/referrer_utils.h"
 #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-external-memory-accounter.h"
 #include "v8/include/v8-traced-handle.h"
 
 namespace gin {
@@ -665,12 +668,9 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
 }
 
 // static
-SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
-  gin_helper::Dictionary opts;
-  if (!args->GetNext(&opts)) {
-    args->ThrowTypeError("Expected a dictionary");
-    return {};
-  }
+std::unique_ptr<network::ResourceRequest> SimpleURLLoaderWrapper::CreateRequest(
+    gin::Arguments* const args,
+    const gin_helper::Dictionary& opts) {
   auto request = std::make_unique<network::ResourceRequest>();
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
@@ -749,8 +749,6 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
     return {};
   }
 
-  bool credentials_specified =
-      opts.Get("credentials", &request->credentials_mode);
   std::vector<std::pair<std::string, std::string>> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {
@@ -809,7 +807,22 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
       opts.Get("priorityIncremental", &priorityIncremental)) {
     request->priority_incremental = priorityIncremental;
   }
+  return request;
+}
 
+// static
+SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
+  gin_helper::Dictionary opts;
+  if (!args->GetNext(&opts)) {
+    args->ThrowTypeError("Expected a dictionary");
+    return {};
+  }
+  std::unique_ptr<network::ResourceRequest> request = CreateRequest(args, opts);
+  if (!request)
+    return {};
+
+  const bool credentials_specified =
+      opts.Get("credentials", &request->credentials_mode);
   const bool use_session_cookies =
       opts.ValueOrDefault("useSessionCookies", false);
   int options = network::mojom::kURLLoadOptionSniffMimeType;
@@ -1137,6 +1150,97 @@ void SimpleURLLoaderWrapper::Trace(cppgc::Visitor* visitor) const {
   gin::Wrappable<SimpleURLLoaderWrapper>::Trace(visitor);
   visitor->Trace(chunk_pipe_getter_);
   visitor->Trace(weak_factory_);
+}
+
+// Owns the bytes and reports them to V8, as an ArrayBuffer's contents are,
+// so that bodies nothing reads count toward the next GC. Releasing it stops
+// the report outside sweeping, while the isolate is alive.
+class FileFetchBody::Bytes final : public NativePeer<FileFetchBody> {
+ public:
+  Bytes(FileFetchBody* body, v8::Isolate* isolate, std::string bytes)
+      : NativePeer<FileFetchBody>(body),
+        isolate_(isolate),
+        size_(bytes.size()),
+        bytes_(std::move(bytes)) {
+    external_memory_.Increase(isolate_, size_);
+    StartObservingShutdown();
+  }
+
+  [[nodiscard]] std::optional<std::string> Take() {
+    return std::exchange(bytes_, std::nullopt);
+  }
+
+ private:
+  ~Bytes() override = default;
+
+  // NativePeer:
+  void TearDownNative() override {
+    bytes_.reset();
+    external_memory_.Decrease(isolate_, size_);
+    // Released peers can be deleted after the isolate.
+    isolate_ = nullptr;
+  }
+
+  raw_ptr<v8::Isolate> isolate_;
+  const size_t size_;
+  std::optional<std::string> bytes_;
+  v8::ExternalMemoryAccounter external_memory_;
+};
+
+const gin::WrapperInfo FileFetchBody::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronFileFetchBody);
+
+// static
+FileFetchBody* FileFetchBody::Create(v8::Isolate* const isolate,
+                                     std::string bytes) {
+  return cppgc::MakeGarbageCollected<FileFetchBody>(
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate, std::move(bytes));
+}
+
+FileFetchBody::FileFetchBody(v8::Isolate* const isolate, std::string bytes)
+    : bytes_(NativePeer<FileFetchBody>::Create<Bytes>(this,
+                                                      isolate,
+                                                      std::move(bytes))) {}
+
+FileFetchBody::~FileFetchBody() = default;
+
+std::optional<std::string> FileFetchBody::Take() {
+  std::optional<std::string> bytes = bytes_->Take();
+  bytes_->Release();
+  return bytes;
+}
+
+v8::Local<v8::Value> FileFetchBody::Read(v8::Isolate* const isolate) {
+  const std::optional<std::string> bytes = Take();
+  if (!bytes) {
+    gin_helper::ErrorThrower(isolate).ThrowError("The body was already read");
+    return {};
+  }
+  const v8::Local<v8::Uint8Array> array = v8::Uint8Array::New(
+      v8::ArrayBuffer::New(isolate, bytes->size(),
+                           v8::BackingStoreInitializationMode::kUninitialized),
+      0, bytes->size());
+  electron::util::as_byte_span(array).copy_from(base::as_byte_span(*bytes));
+  return array;
+}
+
+void FileFetchBody::Discard() {
+  bytes_->Release();
+}
+
+gin::ObjectTemplateBuilder FileFetchBody::GetObjectTemplateBuilder(
+    v8::Isolate* const isolate) {
+  return gin::Wrappable<FileFetchBody>::GetObjectTemplateBuilder(isolate)
+      .SetMethod("read", &FileFetchBody::Read)
+      .SetMethod("discard", &FileFetchBody::Discard);
+}
+
+const gin::WrapperInfo* FileFetchBody::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* FileFetchBody::GetHumanReadableName() const {
+  return "Electron / FileFetchBody";
 }
 
 }  // namespace electron::api

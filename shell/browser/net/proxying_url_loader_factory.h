@@ -47,6 +47,11 @@ namespace electron {
 
 const uint32_t kBypassCustomProtocolHandlers = 1 << 30;
 
+// The response head of the internal redirect that an onBeforeRequest listener
+// produces by setting redirectURL.
+[[nodiscard]] network::mojom::URLResponseHeadPtr CreateWebRequestRedirectHead(
+    const GURL& redirect_url);
+
 // This class is responsible for following tasks when NetworkService is enabled:
 // 1. handling intercepted protocols;
 // 2. implementing webRequest module;

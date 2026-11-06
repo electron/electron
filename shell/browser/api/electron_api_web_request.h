@@ -6,6 +6,8 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_REQUEST_H_
 
 #include <map>
+#include <memory>
+#include <optional>
 #include <set>
 #include <string>
 
@@ -16,6 +18,7 @@
 #include "net/base/completion_once_callback.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/url_response_head.mojom-forward.h"
+#include "shell/browser/native_peer.h"
 
 class URLPattern;
 
@@ -292,6 +295,28 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
 
   struct ObservedRequest;
   std::map<uint64_t, std::unique_ptr<ObservedRequest>> observed_requests_;
+
+  // net.fetch() answers some file: URLs without a URL loader. It calls these
+  // to dispatch the events the loader's request would have, so listeners see
+  // the same thing. StartFileFetch() takes the options net.fetch() would
+  // create the loader with, and returns the request's id, or null when no
+  // listener can see the request.
+  v8::Local<v8::Value> StartFileFetch(gin::Arguments* args);
+  // Resolves with {} to go ahead, { error } if a listener cancelled it, or
+  // { redirectURL } if a listener redirected it, along with { error } when
+  // the URL loader would refuse to follow.
+  v8::Local<v8::Promise> FileFetchBeforeRequest(v8::Isolate* isolate,
+                                                uint64_t id);
+  // onResponseStarted, then onCompleted.
+  void FileFetchResponded(uint64_t id,
+                          const std::string& mime_type,
+                          const std::string& last_modified);
+  // onErrorOccurred with net::ERR_ABORTED.
+  void AbortFileFetch(uint64_t id);
+
+  // The native peer that holds those requests and their pending promises.
+  class FileFetches;
+  std::unique_ptr<FileFetches, NativePeerBase::Deleter> file_fetches_;
 
   gin::WeakCellFactory<WebRequest> weak_factory_{this};
 };

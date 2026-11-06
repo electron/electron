@@ -15,6 +15,7 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/url_utils.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/common/api/web_request/web_request_resource_type.h"
@@ -23,6 +24,9 @@
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "net/base/net_errors.h"
+#include "net/http/http_request_headers.h"
+#include "net/http/http_response_headers.h"
 #include "net/url_request/redirect_info.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
@@ -33,7 +37,9 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/login_handler.h"
+#include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/net/url_loader_factory_gate.h"
+#include "shell/common/api/electron_api_url_loader.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -41,7 +47,9 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
+#include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 
 static constexpr auto ResourceTypes =
@@ -338,11 +346,6 @@ WebRequest::ResponseListenerInfo::ResponseListenerInfo(
 WebRequest::ResponseListenerInfo::ResponseListenerInfo() = default;
 WebRequest::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
-WebRequest::WebRequest(base::PassKey<Session>,
-                       base::WeakPtr<ElectronBrowserContext> browser_context)
-    : browser_context_{std::move(browser_context)} {}
-WebRequest::~WebRequest() = default;
-
 gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
@@ -365,7 +368,11 @@ gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
       .SetMethod("onErrorOccurred",
                  &WebRequest::SetSimpleListener<SimpleEvent::kOnErrorOccurred>)
       .SetMethod("onCompleted",
-                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>);
+                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>)
+      .SetMethod("_startFileFetch", &WebRequest::StartFileFetch)
+      .SetMethod("_fileFetchBeforeRequest", &WebRequest::FileFetchBeforeRequest)
+      .SetMethod("_fileFetchResponded", &WebRequest::FileFetchResponded)
+      .SetMethod("_abortFileFetch", &WebRequest::AbortFileFetch);
 }
 
 const gin::WrapperInfo* WebRequest::wrapper_info() const {
@@ -811,6 +818,239 @@ struct WebRequest::ObservedRequest {
   network::ResourceRequest request;
   std::unique_ptr<extensions::WebRequestInfo> info;
 };
+
+// Stands in for the URL loader requests that net.fetch() of a file: URL no
+// longer makes. Like ProxyingURLLoaderFactory, it builds a WebRequestInfo and
+// calls the On* entry points, so listeners get the same details.
+class WebRequest::FileFetches final : public NativePeer<WebRequest> {
+ public:
+  explicit FileFetches(WebRequest* web_request)
+      : NativePeer<WebRequest>(web_request) {
+    StartObservingShutdown();
+  }
+
+  // |observed| is a request only observers can see: the URL loader's would
+  // take the observed route, which tells them about the request headers.
+  [[nodiscard]] uint64_t Start(const network::ResourceRequest& request,
+                               const bool observed) {
+    const uint64_t id = ElectronBrowserClient::Get()->NextWebRequestId();
+    auto& fetch = fetches_[id];
+    // No frame: what ProxyingURLLoaderFactory gets for a browser process
+    // request such as net.fetch().
+    fetch.request = std::make_unique<ObservedRequest>(
+        id, content::GlobalRenderFrameHostId(), request);
+    if (auto web_request = wrapper(); web_request && observed) {
+      ObservedRequest* const observed_request = fetch.request.get();
+      Dispatch([&] {
+        web_request->OnSendHeaders(observed_request->info.get(),
+                                   observed_request->request,
+                                   observed_request->request.headers);
+      });
+    }
+    return id;
+  }
+
+  void BeforeRequest(const uint64_t id,
+                     gin_helper::Promise<v8::Local<v8::Value>> promise) {
+    auto web_request = wrapper();
+    const auto it = fetches_.find(id);
+    if (!web_request || !is_active() || it == fetches_.end()) {
+      promise.Resolve();
+      return;
+    }
+    Fetch& fetch = it->second;
+    fetch.verdict = std::move(promise);
+    int result = net::ERR_IO_PENDING;
+    Dispatch([&] {
+      result = web_request->OnBeforeRequest(
+          fetch.request->info.get(), fetch.request->request,
+          base::BindOnce(&FileFetches::OnBeforeRequestResult,
+                         weak_factory_.GetWeakPtr(), id),
+          &fetch.redirect_url);
+    });
+    if (result != net::ERR_IO_PENDING)
+      OnBeforeRequestResult(id, result);
+  }
+
+  void Respond(const uint64_t id,
+               const std::string& mime_type,
+               const std::string& last_modified) {
+    auto node = fetches_.extract(id);
+    auto web_request = wrapper();
+    if (!node || !web_request)
+      return;
+    ObservedRequest& request = *node.mapped().request;
+    // What FileURLLoader sends net.fetch(): AsarURLLoaderFactory's empty
+    // headers, plus the Content-Type and Last-Modified the loader adds.
+    auto head = network::mojom::URLResponseHead::New();
+    head->headers = base::MakeRefCounted<net::HttpResponseHeaders>("");
+    head->headers->AddHeader(net::HttpRequestHeaders::kContentType, mime_type);
+    head->headers->AddHeader(net::HttpResponseHeaders::kLastModified,
+                             last_modified);
+    head->mime_type = mime_type;
+    request.info->AddResponseInfoFromResourceResponse(*head);
+    Dispatch([&] {
+      web_request->OnResponseStarted(request.info.get(), request.request);
+    });
+    // The loader completes a request for a file that fits in its data pipe
+    // before anything reads the body; net.fetch() leaves larger files to it.
+    Dispatch([&] {
+      web_request->OnCompleted(request.info.get(), request.request, net::OK);
+    });
+    web_request->OnRequestWillBeDestroyed(request.info.get());
+  }
+
+  void Abort(const uint64_t id) { Fail(id, net::ERR_ABORTED); }
+
+ private:
+  struct Fetch {
+    std::unique_ptr<ObservedRequest> request;
+    // Where an onBeforeRequest listener redirected the request, if it did.
+    GURL redirect_url;
+    std::optional<gin_helper::Promise<v8::Local<v8::Value>>> verdict;
+  };
+
+  ~FileFetches() override = default;
+
+  // Calls listeners as the URL loader's events do, from a task of their own:
+  // an exception one throws is uncaught, and the request goes on.
+  template <typename Callback>
+  static void Dispatch(const Callback& dispatch) {
+    v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
+    v8::TryCatch try_catch(isolate);
+    dispatch();
+    if (try_catch.HasCaught())
+      node::errors::TriggerUncaughtException(isolate, try_catch);
+  }
+
+  // NativePeer:
+  void TearDownNative() override {
+    weak_factory_.InvalidateWeakPtrs();
+    auto web_request = wrapper();
+    for (auto& [id, fetch] : std::exchange(fetches_, {})) {
+      // A blocked request points at |fetch.redirect_url|.
+      if (web_request)
+        web_request->OnRequestWillBeDestroyed(fetch.request->info.get());
+      if (fetch.verdict)
+        fetch.verdict->Resolve();
+    }
+  }
+
+  void OnBeforeRequestResult(const uint64_t id, const int result) {
+    const auto it = fetches_.find(id);
+    if (it == fetches_.end() || !it->second.verdict)
+      return;
+    gin_helper::Promise<v8::Local<v8::Value>> promise =
+        *std::exchange(it->second.verdict, std::nullopt);
+    v8::Isolate* const isolate = promise.isolate();
+    v8::HandleScope handle_scope(isolate);
+    auto verdict = gin_helper::Dictionary::CreateEmpty(isolate);
+    if (result != net::OK) {
+      verdict.Set("error", net::ErrorToString(result));
+      Fail(id, result);
+    } else if (const GURL redirect_url = it->second.redirect_url;
+               redirect_url.is_valid()) {
+      // net.fetch() then fetches the new URL as a new request, as
+      // SimpleURLLoaderWrapper::OnRedirect() restarts one, unless it is a URL
+      // that a redirect from a file must not reach.
+      verdict.Set("redirectURL", redirect_url);
+      if (!content::IsSafeRedirectTarget(it->second.request->request.url,
+                                         redirect_url)) {
+        verdict.Set("error", net::ErrorToString(net::ERR_UNSAFE_REDIRECT));
+      }
+      Fail(id, net::ERR_ABORTED, &redirect_url);
+    }
+    promise.Resolve(verdict.GetHandle());
+  }
+
+  // Ends the request with onErrorOccurred, after onBeforeRedirect when a
+  // listener redirected it, as ProxyingURLLoaderFactory reports a redirect.
+  void Fail(const uint64_t id,
+            const int net_error,
+            const GURL* const redirect_url = nullptr) {
+    auto node = fetches_.extract(id);
+    if (!node)
+      return;
+    Fetch& fetch = node.mapped();
+    if (auto web_request = wrapper()) {
+      ObservedRequest& request = *fetch.request;
+      if (redirect_url) {
+        request.info->AddResponseInfoFromResourceResponse(
+            *CreateWebRequestRedirectHead(*redirect_url));
+        Dispatch([&] {
+          web_request->OnBeforeRedirect(request.info.get(), request.request,
+                                        *redirect_url);
+        });
+      }
+      Dispatch([&] {
+        web_request->OnErrorOccurred(request.info.get(), request.request,
+                                     net_error);
+      });
+      web_request->OnRequestWillBeDestroyed(request.info.get());
+    }
+    if (fetch.verdict)
+      fetch.verdict->Resolve();
+  }
+
+  std::map<uint64_t, Fetch> fetches_;
+  base::WeakPtrFactory<FileFetches> weak_factory_{this};
+};
+
+v8::Local<v8::Value> WebRequest::StartFileFetch(gin::Arguments* const args) {
+  v8::Isolate* const isolate = args->isolate();
+  if (!HasListener() || !browser_context_)
+    return v8::Null(isolate);
+  gin_helper::Dictionary opts;
+  if (!args->GetNext(&opts)) {
+    args->ThrowTypeError("Expected a dictionary");
+    return {};
+  }
+  const std::unique_ptr<network::ResourceRequest> request =
+      SimpleURLLoaderWrapper::CreateRequest(args, opts);
+  if (!request)
+    return {};
+  // As ProxyingURLLoaderFactory routes the loader's request.
+  const InterceptState::Route route =
+      browser_context_->intercept_state()->RouteFor(*request);
+  if (route == InterceptState::Route::kDirect)
+    return v8::Null(isolate);
+  if (!file_fetches_)
+    file_fetches_ = NativePeer<WebRequest>::Create<FileFetches>(this);
+  if (!file_fetches_->is_active())
+    return v8::Null(isolate);
+  return gin::ConvertToV8(
+      isolate,
+      file_fetches_->Start(*request, route == InterceptState::Route::kObserve));
+}
+
+v8::Local<v8::Promise> WebRequest::FileFetchBeforeRequest(
+    v8::Isolate* const isolate,
+    const uint64_t id) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  if (file_fetches_)
+    file_fetches_->BeforeRequest(id, std::move(promise));
+  else
+    promise.Resolve();
+  return handle;
+}
+
+void WebRequest::FileFetchResponded(const uint64_t id,
+                                    const std::string& mime_type,
+                                    const std::string& last_modified) {
+  if (file_fetches_)
+    file_fetches_->Respond(id, mime_type, last_modified);
+}
+
+void WebRequest::AbortFileFetch(const uint64_t id) {
+  if (file_fetches_)
+    file_fetches_->Abort(id);
+}
+
+WebRequest::WebRequest(base::PassKey<Session>,
+                       base::WeakPtr<ElectronBrowserContext> browser_context)
+    : browser_context_{std::move(browser_context)} {}
+WebRequest::~WebRequest() = default;
 
 // static
 void WebRequest::ObservedRequestStarted(
