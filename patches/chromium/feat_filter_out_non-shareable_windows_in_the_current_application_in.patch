@@ -21,7 +21,7 @@ protecting a window during an active capture will not take effect until the
 next filter update or stream restart.
 
 diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
-index 6f84446a63d0e4baf9ded6fa989321298160f1a9..1fd5abc969b6bf85c9b519f20334748d19c8a4cb 100644
+index 3a3b4e95d13c4ec65b8a1947887e25107b2301e1..9e069790859b1192b85f17b170296b06c126cd92 100644
 --- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
 +++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
 @@ -471,7 +471,8 @@ void API_AVAILABLE(macos(14.0))

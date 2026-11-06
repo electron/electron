@@ -170,9 +170,9 @@ v8::Local<v8::Value> SerializeWasmModuleForTesting(
   }
   auto serialized =
       module.As<v8::WasmModuleObject>()->GetCompiledModule().Serialize();
+  const auto bytes = serialized.as_span();
   return node::Buffer::Copy(
-             isolate, reinterpret_cast<const char*>(serialized.buffer.get()),
-             serialized.size)
+             isolate, reinterpret_cast<const char*>(bytes.data()), bytes.size())
       .ToLocalChecked();
 }
 

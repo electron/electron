@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Fri, 6 Nov 2026 13:32:42 +0000
+Subject: src: stop using deprecated ArrayBufferView::Buffer()
+
+V8 deprecated `v8::ArrayBufferView::Buffer()` in favour of
+`GetBuffer()`, which returns the new `v8::ArrayBufferBase` type that
+covers both ArrayBuffer and SharedArrayBuffer. Switch the headers that
+embedders compile with `-Werror` to `GetBuffer()`.
+
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8714721
+
+diff --git a/src/aliased_buffer-inl.h b/src/aliased_buffer-inl.h
+index 5cb36e707ce2db9f0de25d39c82d6327753b51ff..38ca828ea259f28db14d84b5eba2cc2834f0803f 100644
+--- a/src/aliased_buffer-inl.h
++++ b/src/aliased_buffer-inl.h
+@@ -97,7 +97,7 @@ inline void AliasedBufferBase<NativeT, V8T>::Deserialize(
+   // be removed when we expand the snapshot support.
+   DCHECK_EQ(count_, arr->Length());
+   DCHECK_EQ(byte_offset_, arr->ByteOffset());
+-  uint8_t* raw = static_cast<uint8_t*>(arr->Buffer()->Data());
++  uint8_t* raw = static_cast<uint8_t*>(arr->GetBuffer()->Data());
+   buffer_ = reinterpret_cast<NativeT*>(raw + byte_offset_);
+   js_array_.Reset(isolate_, arr);
+   index_ = nullptr;
+diff --git a/src/util-inl.h b/src/util-inl.h
+index 5eae3882feb7f950b1cbaceb1e6ff33ddfd26629..bee43889675c777694886521a2cb66d6650247cd 100644
+--- a/src/util-inl.h
++++ b/src/util-inl.h
+@@ -598,10 +598,10 @@ ArrayBufferViewContents<T, S>::ArrayBufferViewContents(
+ template <typename T, size_t S>
+   requires(sizeof(T) == 1)
+ void ArrayBufferViewContents<T, S>::Read(v8::Local<v8::ArrayBufferView> abv) {
+-  was_detached_ = abv->Buffer()->WasDetached();
++  was_detached_ = abv->GetBuffer()->WasDetached();
+   length_ = abv->ByteLength();
+   if (length_ > sizeof(stack_storage_) || abv->HasBuffer()) {
+-    auto buf_data = abv->Buffer()->Data();
++    auto buf_data = abv->GetBuffer()->Data();
+     data_ = buf_data != nullptr ? static_cast<T*>(buf_data) + abv->ByteOffset()
+                                 : stack_storage_;
+   } else {
+diff --git a/src/util.h b/src/util.h
+index 6cb2d5e8900ec2e1271a924159e8a298356cd828..15dc1dcaebd7efd7551416a9658525a68abd8684 100644
+--- a/src/util.h
++++ b/src/util.h
+@@ -695,7 +695,7 @@ class BufferValue : public MaybeStackBuffer<char> {
+   const size_t name##_offset = name->ByteOffset();                             \
+   const size_t name##_length = name->ByteLength();                             \
+   char* const name##_data =                                                    \
+-      static_cast<char*>(name->Buffer()->Data()) + name##_offset;              \
++      static_cast<char*>(name->GetBuffer()->Data()) + name##_offset;           \
+   if (name##_length > 0) CHECK_NE(name##_data, nullptr);
+ 
+ // Use this when a variable or parameter is unused in order to explicitly
