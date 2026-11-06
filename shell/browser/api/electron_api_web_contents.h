@@ -237,7 +237,8 @@ class WebContents final : public gin::Wrappable<WebContents>,
       v8::Isolate* isolate,
       gin_helper::ErrorThrower thrower,
       int index,
-      const std::vector<v8::Local<v8::Value>>& entries);
+      const std::vector<v8::Local<v8::Value>>& entries,
+      bool bypass_cache);
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
