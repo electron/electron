@@ -124,7 +124,7 @@ changes:
   * `callback` Function
     * `beforeSendResponse` Object
       * `cancel` boolean (optional)
-      * `requestHeaders` Record\<string, string | string[]\> (optional) - When provided, request will be made
+      * `requestHeaders` Record\<string, string\> (optional) - When provided, request will be made
   with these headers.
 
 The `listener` will be called with `listener(details, callback)` before sending
