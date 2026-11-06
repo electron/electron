@@ -484,6 +484,14 @@ bool NativeWindow::IsTabletMode() const {
   return false;
 }
 
+bool NativeWindow::IsTiled() const {
+  return false;
+}
+
+bool NativeWindow::SetDecorationInsets(const gfx::Insets& insets) {
+  return false;
+}
+
 std::string NativeWindow::GetRepresentedFilename() const {
   return "";
 }
@@ -635,6 +643,10 @@ void NativeWindow::NotifyWindowMinimize() {
 
 void NativeWindow::NotifyWindowRestore() {
   observers_.Notify(&NativeWindowObserver::OnWindowRestore);
+}
+
+void NativeWindow::NotifyWindowTiledStateChanged(bool is_tiled) {
+  observers_.Notify(&NativeWindowObserver::OnWindowTiledStateChanged, is_tiled);
 }
 
 void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,

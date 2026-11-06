@@ -70,6 +70,7 @@
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
 #include "ui/linux/window_frame_provider.h"
+#include "ui/platform_window/platform_window.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/frame_view_linux.h"
 #include "ui/views/window/native_frame_view.h"
@@ -906,6 +907,15 @@ bool NativeWindowViews::IsFullscreen() const {
   return widget()->IsFullscreen();
 }
 
+#if BUILDFLAG(IS_LINUX)
+bool NativeWindowViews::IsTiled() const {
+  auto* tree_host = static_cast<ElectronDesktopWindowTreeHostLinux*>(
+      views::DesktopWindowTreeHostLinux::GetHostForWidget(
+          GetAcceleratedWidget()));
+  return tree_host && tree_host->is_tiled();
+}
+#endif
+
 void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if BUILDFLAG(IS_WIN)
   if (is_moving_ || is_resizing_) {
@@ -1373,6 +1383,48 @@ void NativeWindowViews::SetHasShadow(bool has_shadow) {
   has_shadow_ = has_shadow;
 }
 
+#if BUILDFLAG(IS_LINUX)
+bool NativeWindowViews::SetDecorationInsets(const gfx::Insets& insets) {
+  // Only a transparent frameless window leaves its whole surface to the page,
+  // and only a compositor told about the insets keeps them out of the window.
+  auto* efvl = views::AsViewClass<ElectronFrameViewLinux>(
+      widget()->non_client_view()->frame_view());
+  auto* tree_host = static_cast<ElectronDesktopWindowTreeHostLinux*>(
+      views::DesktopWindowTreeHostLinux::GetHostForWidget(
+          GetAcceleratedWidget()));
+  if (!efvl || !IsTranslucent() || !tree_host ||
+      !tree_host->SupportsClientFrameShadow())
+    return false;
+
+  if (efvl->decoration_insets() == insets)
+    return true;
+
+  const gfx::Insets old_insets = GetRestoredFrameBorderInsets();
+  efvl->set_decoration_insets(insets);
+  const gfx::Insets new_insets = GetRestoredFrameBorderInsets();
+
+  // Preserve the visible area. While maximized or fullscreen the insets do
+  // not apply, so adjust the bounds the window restores to instead.
+  if (widget()->IsMaximized() || widget()->IsFullscreen()) {
+    ui::PlatformWindow* platform_window = tree_host->platform_window();
+    gfx::Rect restored_bounds = platform_window->GetRestoredBoundsInDIP();
+    if (!restored_bounds.IsEmpty()) {
+      restored_bounds.Inset(old_insets);
+      restored_bounds.Inset(-new_insets);
+      platform_window->SetRestoredBoundsInDIP(restored_bounds);
+    }
+  } else {
+    gfx::Rect bounds = widget()->GetWindowBoundsInScreen();
+    bounds.Inset(old_insets);
+    bounds.Inset(-new_insets);
+    widget()->SetBounds(bounds);
+  }
+
+  tree_host->UpdateFrameHints();
+  return true;
+}
+#endif
+
 bool NativeWindowViews::HasShadow() const {
   return has_shadow_;
 }
@@ -1598,6 +1650,8 @@ gfx::Insets NativeWindowViews::GetRestoredFrameBorderInsets() const {
     return frameless->RestoredFrameBorderInsets();
 
 #if BUILDFLAG(IS_LINUX)
+  if (auto* efvl = views::AsViewClass<ElectronFrameViewLinux>(frame_view))
+    return efvl->GetRestoredDecorationInsets();
   if (auto* fvl = views::AsViewClass<views::FrameViewLinux>(frame_view))
     return fvl->GetRestoredFrameBorderInsets();
 #endif
