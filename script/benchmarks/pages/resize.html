@@ -25,10 +25,11 @@
   // Steps the window between two sizes with BrowserWindow.setSize(). The
   // latency itself is measured from the trace (see TRACE_QUERIES in
   // lib/configs.mts): from the browser's Widget::OnNativeWidgetSizeChanged to
-  // the presentation of the renderer's first main frame after it. The marks
-  // bracket the resizes so the window's initial sizing is left out. Each step
-  // waits for the resize event, two frames and a short idle period, so the
-  // next resize never overlaps the previous one's frame.
+  // the presentation of the first renderer frame that commits after the page
+  // sees the new size, which the cb-resized mark records. The cb-resize-start
+  // and cb-resize-end marks bracket the resizes so the window's initial sizing
+  // is left out. Each step waits for the resize event, two frames and a short
+  // idle period, so the next resize never overlaps the previous one's frame.
   window.cbRunResize = async (count) => {
     if (!window.cbHarness) {
       window.__cbResizeDone = true;
@@ -37,7 +38,16 @@
     performance.mark('cb-resize-start');
     for (let i = 0; i < count; i++) {
       const [width, height] = i % 2 ? [1280, 800] : [900, 600];
-      const resized = new Promise((resolve) => addEventListener('resize', resolve, { once: true }));
+      const resized = new Promise((resolve) =>
+        addEventListener(
+          'resize',
+          () => {
+            performance.mark('cb-resized');
+            resolve();
+          },
+          { once: true }
+        )
+      );
       await window.cbHarness.setSize(width, height);
       await resized;
       await nextFrame();
