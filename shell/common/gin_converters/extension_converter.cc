@@ -18,6 +18,7 @@ v8::Local<v8::Value> Converter<const extensions::Extension*>::ToV8(
     const extensions::Extension* extension) {
   auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("id", extension->id());
+  dict.Set("dynamicId", extension->guid());
   dict.Set("name", extension->name());
   dict.Set("path", extension->path());
   dict.Set("url", extension->url());
