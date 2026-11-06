@@ -694,8 +694,11 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     bool should_block) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-  if (access_trigger == AccessTrigger::kProgrammaticRead ||
-      access_trigger == AccessTrigger::kProgrammaticWrite) {
+  // Programmatic writes are rejected outright rather than asking the app to
+  // prevent unattended modifications to sensitive files. Programmatic reads
+  // (such as getFile() on a handle to a file under userData) still ask the app
+  // via 'file-system-access-restricted' so it can approve access to its own files.
+  if (access_trigger == AccessTrigger::kProgrammaticWrite) {
     auto result = should_block ? SensitiveEntryResult::kAbort
                                : SensitiveEntryResult::kAllowed;
     RunRestrictedPathCallback(request_id, result);
