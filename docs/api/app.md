@@ -327,6 +327,55 @@ Returns:
 
 Emitted when a new [browserWindow](browser-window.md) is created.
 
+### Event: 'dialog-opened'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54988
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `type` string - The kind of dialog. Can be `open-dialog`, `save-dialog`,
+    `message-box`, `error-box` or `certificate-trust-dialog`.
+  * `window` [BaseWindow](base-window.md) | null - The window the dialog is
+    attached to, if any.
+
+Emitted when a method of the [`dialog`](dialog.md) module is about to show a
+dialog. Each `dialog-opened` is followed by one `dialog-closed` with the same
+`details` object when that dialog has been dismissed, so an app can tell at any
+time whether one of its own dialogs is on screen. The synchronous methods emit
+both events from within the call.
+
+Dialogs that web content brings up by itself, such as a file chooser for
+`<input type="file">`, `window.alert()` or a print dialog, do not emit these
+events.
+
+### Event: 'dialog-closed'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54988
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `type` string - The kind of dialog. Can be `open-dialog`, `save-dialog`,
+    `message-box`, `error-box` or `certificate-trust-dialog`.
+  * `window` [BaseWindow](base-window.md) | null - The window the dialog was
+    attached to, if any.
+
+Emitted when a dialog that was announced with `dialog-opened` has been
+dismissed.
+
 ### Event: 'web-contents-created'
 
 Returns:
