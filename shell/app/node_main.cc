@@ -47,6 +47,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "components/crash/core/app/crash_switches.h"  // nogncheck
 #include "content/public/common/content_descriptors.h"
+#include "v8/include/v8-wasm-trap-handler-posix.h"
 #endif
 
 #if BUILDFLAG(IS_MAC)
@@ -182,12 +183,16 @@ int NodeMain() {
   std::optional<std::string> pid_string =
       os_env->GetVar("CRASHPAD_HANDLER_PID");
   if (fd_string && pid_string) {
+    // Parse outside DCHECK(), which skips its argument when DCHECKs are off.
     int fd = -1;
-    DCHECK(base::StringToInt(fd_string.value(), &fd));
-    DCHECK(base::StringToInt(pid_string.value(), &pid));
-    base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
-    command_line->AppendSwitchASCII(
-        crash_reporter::switches::kCrashpadHandlerPid, pid_string.value());
+    int handler_pid = -1;
+    if (base::StringToInt(*fd_string, &fd) &&
+        base::StringToInt(*pid_string, &handler_pid)) {
+      pid = handler_pid;
+      base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
+      command_line->AppendSwitchASCII(
+          crash_reporter::switches::kCrashpadHandlerPid, *pid_string);
+    }
     // Following API is unsafe in multi-threaded scenario, but at this point
     // we are still single threaded.
     os_env->UnSetVar("CRASHDUMP_SIGNAL_FD");
@@ -252,6 +257,10 @@ int NodeMain() {
     if (pid != -1) {
       ElectronCrashReporterClient::Create();
       crash_reporter::InitializeCrashpad(false, "node");
+      // Crashpad's handler now runs before Node's,
+      // so let V8 claim WebAssembly out-of-bounds traps first.
+      crash_reporter::SetFirstChanceExceptionHandler(
+          v8::TryHandleWebAssemblyTrapPosix);
       crash_keys::SetCrashKeysFromCommandLine(
           *base::CommandLine::ForCurrentProcess());
       crash_keys::SetPlatformCrashKey();
