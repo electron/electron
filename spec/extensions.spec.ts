@@ -1029,6 +1029,191 @@ describe('chrome extensions', () => {
       expect(await canFetch(otherTab.webContents)).toBe(true);
       expect(await canFetch(tab.webContents)).toBe(false);
     });
+
+    describe('alongside session.webRequest', () => {
+      let customSession: Session;
+      let extensionPage: BrowserWindow;
+      let w: BrowserWindow;
+      let seenBySession: string[];
+
+      const addSessionRules = async (rules: object[]) => {
+        const error = await extensionPage.webContents.executeJavaScript(
+          `chrome.runtime.sendMessage(${JSON.stringify({ type: 'add-session-rules', rules })})`
+        );
+        expect(error).toBeNull();
+      };
+
+      const fetchStatus = (target: string): Promise<number | string> =>
+        w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(target)}).then((response) => response.status, (error) => error.message)`
+        );
+
+      const fetchHeader = (target: string, header: string): Promise<string | null> =>
+        w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(target)}).then((response) => response.headers.get(${JSON.stringify(header)}))`
+        );
+
+      const seenBySessionFor = (token: string) => seenBySession.filter((seenUrl) => seenUrl.includes(token));
+
+      const headersReceivedByServer = (token: string) =>
+        new Promise<http.IncomingHttpHeaders>((resolve) => {
+          const onRequest = (req: http.IncomingMessage) => {
+            if (req.url?.includes(token)) {
+              server.off('request', onRequest);
+              resolve(req.headers);
+            }
+          };
+          server.on('request', onRequest);
+        });
+
+      beforeEach(async () => {
+        customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+        // Registered before the extension loads, and so before any of the
+        // session's URL loader factories exist.
+        seenBySession = [];
+        customSession.webRequest.onBeforeRequest((details, callback) => {
+          seenBySession.push(details.url);
+          callback({});
+        });
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-declarativeNetRequest')
+        );
+        extensionPage = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+        w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+        await Promise.all([extensionPage.loadURL(`${extension.url}page.html`), w.loadURL(url)]);
+      });
+
+      it('blocks a fetch, which session.webRequest then never sees', async () => {
+        const blocked = crypto.randomUUID();
+        await addSessionRules([{ id: 1, condition: { urlFilter: blocked }, action: { type: 'block' } }]);
+
+        expect(await fetchStatus(`${url}/${blocked}`)).toBe('Failed to fetch');
+        expect(seenBySessionFor(blocked)).toEqual([]);
+
+        const allowed = crypto.randomUUID();
+        expect(await fetchStatus(`${url}/${allowed}`)).toBe(200);
+        expect(seenBySessionFor(allowed)).toEqual([`${url}/${allowed}`]);
+      });
+
+      it('blocks a main frame navigation', async () => {
+        const blocked = crypto.randomUUID();
+        await addSessionRules([
+          { id: 1, condition: { urlFilter: blocked, resourceTypes: ['main_frame'] }, action: { type: 'block' } }
+        ]);
+
+        await expect(w.loadURL(`${url}/${blocked}`)).rejects.toThrow(/ERR_BLOCKED_BY_CLIENT/);
+        expect(seenBySessionFor(blocked)).toEqual([]);
+      });
+
+      it('blocks a WebSocket handshake', async () => {
+        const blocked = crypto.randomUUID();
+        await addSessionRules([
+          { id: 1, condition: { urlFilter: blocked, resourceTypes: ['websocket'] }, action: { type: 'block' } }
+        ]);
+        const connect = (token: string): Promise<boolean> =>
+          w.webContents.executeJavaScript(`new Promise((resolve) => {
+            const socket = new WebSocket('ws://127.0.0.1:${port}/${token}');
+            socket.onopen = () => { socket.close(); resolve(true); };
+            socket.onerror = () => resolve(false);
+          })`);
+
+        expect(await connect(blocked)).toBe(false);
+        expect(seenBySessionFor(blocked)).toEqual([]);
+
+        const allowed = crypto.randomUUID();
+        expect(await connect(allowed)).toBe(true);
+        expect(seenBySessionFor(allowed)).toEqual([`ws://127.0.0.1:${port}/${allowed}`]);
+      });
+
+      it('redirects a fetch, and session.webRequest sees only the new request', async () => {
+        const from = crypto.randomUUID();
+        const to = crypto.randomUUID();
+        await addSessionRules([
+          { id: 1, condition: { urlFilter: from }, action: { type: 'redirect', redirect: { url: `${url}/${to}` } } }
+        ]);
+
+        const finalUrl = await w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(`${url}/${from}`)}).then((response) => response.url)`
+        );
+        expect(finalUrl).toBe(`${url}/${to}`);
+        expect(seenBySessionFor(from)).toEqual([]);
+        expect(seenBySessionFor(to)).toEqual([`${url}/${to}`]);
+      });
+
+      it('applies rules to the request that a session.webRequest redirect leads to', async () => {
+        const from = crypto.randomUUID();
+        const to = crypto.randomUUID();
+        await addSessionRules([{ id: 1, condition: { urlFilter: to }, action: { type: 'block' } }]);
+        customSession.webRequest.onBeforeRequest((details, callback) => {
+          callback(details.url.includes(from) ? { redirectURL: `${url}/${to}` } : {});
+        });
+
+        // The extension is nearest the page, so it sees the redirect and
+        // then the request for its target.
+        expect(await fetchStatus(`${url}/${from}`)).toBe('Failed to fetch');
+      });
+
+      it('changes request headers before session.webRequest, which has the final say', async () => {
+        const token = crypto.randomUUID();
+        await addSessionRules([
+          {
+            id: 1,
+            condition: { urlFilter: token },
+            action: {
+              type: 'modifyHeaders',
+              requestHeaders: [
+                { header: 'X-From-Rule', operation: 'set', value: 'rule' },
+                { header: 'X-From-Both', operation: 'set', value: 'rule' }
+              ]
+            }
+          }
+        ]);
+        let seenFromBoth: string | undefined;
+        customSession.webRequest.onBeforeSendHeaders((details, callback) => {
+          // Rules set header names in lower case.
+          const { 'x-from-both': fromBoth, ...requestHeaders } = details.requestHeaders;
+          if (details.url.includes(token)) seenFromBoth = fromBoth;
+          callback({ requestHeaders: { ...requestHeaders, 'X-From-Both': 'session' } });
+        });
+
+        const serverHeaders = headersReceivedByServer(token);
+        expect(await fetchStatus(`${url}/${token}`)).toBe(200);
+        expect(seenFromBoth).toBe('rule');
+        expect((await serverHeaders)['x-from-rule']).toBe('rule');
+        expect((await serverHeaders)['x-from-both']).toBe('session');
+      });
+
+      it('changes response headers after session.webRequest, and so has the final say', async () => {
+        const token = crypto.randomUUID();
+        await addSessionRules([
+          {
+            id: 1,
+            condition: { urlFilter: token },
+            action: {
+              type: 'modifyHeaders',
+              responseHeaders: [{ header: 'X-From-Both', operation: 'set', value: 'rule' }]
+            }
+          }
+        ]);
+        customSession.webRequest.onHeadersReceived((details, callback) => {
+          callback({
+            responseHeaders: { ...details.responseHeaders, 'X-From-Both': ['session'], 'X-From-Session': ['session'] }
+          });
+        });
+
+        expect(await fetchHeader(`${url}/${token}`, 'X-From-Session')).toBe('session');
+        expect(await fetchHeader(`${url}/${token}`, 'X-From-Both')).toBe('rule');
+      });
+
+      it('does not apply rules to requests from the main process', async () => {
+        const token = crypto.randomUUID();
+        await addSessionRules([{ id: 1, condition: { urlFilter: token }, action: { type: 'block' } }]);
+
+        expect(await fetchStatus(`${url}/${token}`)).toBe('Failed to fetch');
+        const response = await customSession.fetch(`${url}/${token}`);
+        expect(response.status).toBe(200);
+      });
+    });
   });
 
   describe('chrome.tabs', () => {

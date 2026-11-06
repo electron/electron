@@ -269,15 +269,26 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
   current_body_ = std::move(body);
   current_cached_metadata_ = std::move(cached_metadata);
   if (current_request_uses_header_client_) {
-    // Use the headers we got from OnHeadersReceived as that'll contain
-    // Set-Cookie if it existed.
+    // Take the cookie headers from OnHeadersReceived, as they are stripped
+    // from `head` on its way here. Every other header has to come from
+    // `head`: another proxy sharing the header client (see
+    // ChainURLLoaderHeaderClients) may have changed the headers after this
+    // one saw them.
     auto saved_headers = current_response_->headers;
     current_response_ = std::move(head);
     // If this response is from a file or handler, OnHeadersReceived will not
-    // be called before OnReceiveResponse, so make sure the saved headers exist
-    // before setting them.
-    if (saved_headers)
+    // be called before OnReceiveResponse, so there may be no saved headers.
+    if (saved_headers && current_response_->headers) {
+      size_t iter = 0;
+      std::string name;
+      std::string value;
+      while (saved_headers->EnumerateHeaderLines(&iter, &name, &value)) {
+        if (net::HttpResponseHeaders::IsCookieResponseHeader(name))
+          current_response_->headers->AddHeader(name, value);
+      }
+    } else if (saved_headers) {
       current_response_->headers = saved_headers;
+    }
     ContinueToResponseStarted(net::OK);
   } else {
     current_response_ = std::move(head);

@@ -192,6 +192,7 @@ All features of this API are supported.
 > A request reaches an extension's listeners before Electron's `webRequest` listeners, and its response reaches them in the opposite order.
 > Electron's `webRequest` module therefore has the final say on what is sent: it sees a request after extensions have changed it, and extensions see a request it cancels or redirects as an error or a redirect.
 > Extensions have the final say on the response headers a page receives.
+> `chrome.declarativeNetRequest` rules are applied at the same point as an extension's `chrome.webRequest` listeners, so a request that a rule blocks or redirects never reaches Electron's `webRequest` listeners.
 > Requests made from the main process, such as those from the [`net`](net.md) module, are not reported to extensions.
 
 See [official documentation](https://developer.chrome.com/docs/extensions/reference/webRequest) for more information.
