@@ -2322,47 +2322,47 @@ describe('cpp heap', { retry: 0 }, () => {
     });
 
     it('stops DevTools indexing without retaining cppgc handles on its worker sequence', async () => {
+      const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-devtools-index-'));
+      defer(() => fs.promises.rm(workspace, { recursive: true, force: true }));
+      for (let i = 0; i < 500; ++i) {
+        fs.writeFileSync(path.join(workspace, `${i}.txt`), `indexed content ${i}`);
+      }
+
       const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
       const exited = once(rc.process, 'exit');
-      await rc.remotely(async () => {
+      await rc.remotely(async (workspace: string) => {
         const { app, webContents } = require('electron');
         const { once } = require('node:events');
-        const fs = require('node:fs');
-        const os = require('node:os');
-        const path = require('node:path');
         const v8Util = process._linkedBinding('electron_common_v8_util');
-        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-devtools-index-'));
         const contents = webContents.create();
 
-        try {
-          for (let i = 0; i < 500; ++i) {
-            fs.writeFileSync(path.join(workspace, `${i}.txt`), `indexed content ${i}`);
-          }
+        await contents.loadURL('about:blank');
+        // Use the runner's timeout, which also scales for sanitizer builds.
+        const opened = once(contents, 'devtools-opened');
+        // stderr is forwarded even if the remote call never completes.
+        console.error('DevTools indexing: waiting for devtools-opened');
+        contents.openDevTools({ mode: 'detach', activate: false });
+        await opened;
+        console.error('DevTools indexing: devtools-opened received');
+        contents.addWorkSpace(workspace);
 
-          await contents.loadURL('about:blank');
-          const opened = once(contents, 'devtools-opened', { signal: AbortSignal.timeout(10000) });
-          contents.openDevTools({ mode: 'detach', activate: false });
-          await opened;
-          contents.addWorkSpace(workspace);
+        const devTools = contents.devToolsWebContents;
+        await devTools.executeJavaScript(`InspectorFrontendHost.indexPath(42, ${JSON.stringify(workspace)}, '[]')`);
+        await devTools.executeJavaScript('InspectorFrontendHost.stopIndexing(42)');
 
-          const devTools = contents.devToolsWebContents;
-          await devTools.executeJavaScript(`InspectorFrontendHost.indexPath(42, ${JSON.stringify(workspace)}, '[]')`);
-          await devTools.executeJavaScript('InspectorFrontendHost.stopIndexing(42)');
-
-          const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
-          contents.destroy();
-          await destroyed;
-          for (let attempt = 0; attempt < 10; ++attempt) {
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            v8Util.requestGarbageCollectionForTesting();
-          }
-          await new Promise((resolve) => setTimeout(resolve, 250));
-        } finally {
-          fs.rmSync(workspace, { recursive: true, force: true });
+        const destroyed = once(contents, 'destroyed');
+        console.error('DevTools indexing: waiting for destroyed');
+        contents.destroy();
+        await destroyed;
+        console.error('DevTools indexing: destroyed received');
+        for (let attempt = 0; attempt < 10; ++attempt) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
         }
+        await new Promise((resolve) => setTimeout(resolve, 250));
 
         setTimeout(() => app.quit());
-      });
+      }, workspace);
 
       const [code] = await exited;
       expect(code).toBe(0);
