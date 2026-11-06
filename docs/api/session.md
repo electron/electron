@@ -1064,7 +1064,6 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `speaker-selection` - Request to enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `system-wake-lock` - Request to keep the system awake without keeping the screen on (a system wake lock).
-    * `top-level-storage-access` - Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Request access to USB devices via the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
     * `vr` - Request access to virtual reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
     * `web-app-installation` - Request to install a web app via the [Web Install API](https://github.com/WICG/web-install).
@@ -1162,7 +1161,6 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
     * `speaker-selection` - Enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `system-wake-lock` - Keep the system awake without keeping the screen on (a system wake lock).
-    * `top-level-storage-access` - Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
     * `vr` - Access virtual reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
     * `web-app-installation` - Install a web app via the [Web Install API](https://github.com/WICG/web-install).
@@ -1206,6 +1204,15 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 
 #### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/51243
+    description: "`useSystemPicker` follows `displaySurface`, and can include system audio"
+    breaking-changes-header: behavior-changed-usesystempicker-follows-displaysurface
+```
+-->
+
 * `handler` Function | null
   * `request` Object
     * `frame` [WebFrameMain](web-frame-main.md) | null - Frame that is requesting access to media.
@@ -1227,7 +1234,9 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
       * `audio` String | [WebFrameMain](web-frame-main.md) (optional) - If
         a string is specified, can be `loopback` or `loopbackWithMute`.
         Specifying a loopback device will capture system audio, and is
-        currently only supported on Windows. If a WebFrameMain is specified,
+        supported on Windows and on macOS 14.2 and later (see
+        [`desktopCapturer`](desktop-capturer.md#macos-versions-142-or-higher)).
+        If a WebFrameMain is specified,
         will capture audio from the `webContents` that contains that frame.
       * `enableLocalEcho` Boolean (optional) - If `audio` is a [WebFrameMain](web-frame-main.md)
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
@@ -1243,7 +1252,16 @@ access to.
 
 `useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
 This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
-is set to `true`, the handler will not be invoked.
+is set to `true`, the handler will not be invoked. The system picker offers windows when the page calls
+`getDisplayMedia({ video: { displaySurface: 'window' } })`, screens for `'monitor'`, and windows, applications
+and screens otherwise (screens only on macOS 15.0 and 15.1). `'browser'` asks for a tab, which Electron doesn't have, so
+it gets the same picker as no preference. Sharing a whole application
+reports `displaySurface: 'window'`. If the page also asks
+for audio, the stream includes system audio unless the page opts out with `systemAudio: 'exclude'` (screens) or
+`windowAudio: 'exclude'` (windows). `windowAudio: 'window'` gets no audio, since per-window audio isn't supported. This needs the `NSAudioCaptureUsageDescription` Info.plist key, as
+described in [`desktopCapturer`](desktop-capturer.md#macos-versions-142-or-higher).
+`getDisplayMedia()` rejects with `NotAllowedError` if the user cancels the picker. Any call made while the picker
+is already open rejects with `AbortError`, and the open picker keeps its original request.
 
 ```js
 const { session, desktopCapturer } = require('electron')

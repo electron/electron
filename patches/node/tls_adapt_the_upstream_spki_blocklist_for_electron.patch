@@ -15,10 +15,10 @@ Electron still needs on top of it:
   and mutex so Electron's testing binding can extend it at runtime.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 083e650823472920db76b201ca5616a87112cd84..cdf0290c7084c9c813dc088794f666d9676b4e35 100644
+index 05e8e5f85c0ba67b90f48278a40f4a5bc8f0b37a..245ec85ee805e4339edf639888a16b7cd2734e93 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -1541,12 +1541,12 @@ SpkiCheck CheckSPKIs(const STACK_OF(X509) * certs,
+@@ -1494,12 +1494,12 @@ SpkiCheck CheckSPKIs(const STACK_OF(X509) * certs,
                       X509** offender,
                       int* depth) {
    if (certs == nullptr) return SpkiCheck::kAllowed;
@@ -33,7 +33,7 @@ index 083e650823472920db76b201ca5616a87112cd84..cdf0290c7084c9c813dc088794f666d9
        return result;
      }
    }
-@@ -1650,6 +1650,18 @@ void InstallCertVerifyCallback(SSL_CTX* ctx) {
+@@ -1603,6 +1603,18 @@ void InstallCertVerifyCallback(SSL_CTX* ctx) {
    SSL_CTX_set_cert_verify_callback(ctx, CertVerifyCallback, nullptr);
  }
  
@@ -53,7 +53,7 @@ index 083e650823472920db76b201ca5616a87112cd84..cdf0290c7084c9c813dc088794f666d9
      const FunctionCallbackInfo<Value>& args) {
    Environment* env = Environment::GetCurrent(args);
 diff --git a/src/crypto/crypto_context.h b/src/crypto/crypto_context.h
-index b82b206f4f3eacc8921763917e3261f1fba735dd..cc10282eaa13896ec4e6df1ec617ec8729289027 100644
+index c2da04bbbb55b66d11449cf1bbcc0d8c8d4b0175..d83e5050f2ee637309e6e434f5f67bad3b368451 100644
 --- a/src/crypto/crypto_context.h
 +++ b/src/crypto/crypto_context.h
 @@ -33,6 +33,12 @@ X509_STORE* GetOrCreateRootCertStore(Environment* env);

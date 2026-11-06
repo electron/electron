@@ -22,10 +22,10 @@ against node_path's default even when both are overridden, so gn gen fails
 unless the default points at the real checkout.
 
 diff --git a/configure.py b/configure.py
-index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..1b35f195f7ee7547544cc954baf95c725afa8d0b 100755
+index a3769ff2d8798341046935bf1dd1b2783d514a0f..493f6b51fdf2280aaa5f9ac2b4850efc02ea0052 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1955,7 +1955,7 @@ def configure_v8(o, configs):
+@@ -2259,7 +2259,7 @@ def configure_v8(o, configs):
    # Like V8's own default, the sandbox goes with the shared pointer compression
    # cage. Multi-cage builds give every IsolateGroup its own sandbox, which the
    # array buffer allocator does not know about yet.
@@ -35,7 +35,7 @@ index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..1b35f195f7ee7547544cc954baf95c72
    o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 diff --git a/node.gni b/node.gni
-index 28ef444b72c139eb9253122dfaf8b14c8108eac6..757a0b2a75643322b3339a45e991ad5622ffc29e 100644
+index fa4668a543e2c1d6f084a0ac1e7c6fc4f5d3a1ee..6220b9339265051156aaa6ff77a735c8e49c85e1 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,7 +5,7 @@
@@ -47,7 +47,7 @@ index 28ef444b72c139eb9253122dfaf8b14c8108eac6..757a0b2a75643322b3339a45e991ad56
  
    # The location of V8 - use the one from node's deps by default.
    node_v8_path = "$node_path/deps/v8"
-@@ -72,6 +72,12 @@ declare_args() {
+@@ -80,6 +80,12 @@ declare_args() {
  
    # Build with Amaro (TypeScript utils).
    node_use_amaro = true
@@ -61,10 +61,10 @@ index 28ef444b72c139eb9253122dfaf8b14c8108eac6..757a0b2a75643322b3339a45e991ad56
  
  # Link against shared copies of the bundled dependencies instead of building
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index bf1276f82412b7321732995cfc2f93d9cce961a2..cfd8c8c9c7d8911be7b3a66f4695e54f1022a678 100644
+index c58fa0089105db6b815aaf773b0700226f36c8e3..29e9a4748878285f505df82b74ef60a2f97ada24 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -460,6 +460,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -484,6 +484,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
    return value.As<Function>();
  }
  
@@ -95,16 +95,7 @@ index bf1276f82412b7321732995cfc2f93d9cce961a2..cfd8c8c9c7d8911be7b3a66f4695e54f
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
                                                  const char* id,
                                                  Realm* realm) {
-@@ -746,7 +770,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
-   // Pre-fetch all dependencies.
-   if (requests->Length() > 0) {
-     for (int i = 0; i < requests->Length(); i++) {
--      Local<ModuleRequest> req = requests->Get(context, i).As<ModuleRequest>();
-+      Local<ModuleRequest> req = requests->Get(i).As<ModuleRequest>();
-       std::string specifier =
-           Utf8Value(isolate, req->GetSpecifier()).ToString();
-       std::string resolved_id = ResolveRequestForBuiltin(specifier);
-@@ -905,6 +929,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -930,6 +954,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(ImportBuiltinSourceTextModule);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -113,7 +104,7 @@ index bf1276f82412b7321732995cfc2f93d9cce961a2..cfd8c8c9c7d8911be7b3a66f4695e54f
  
  }  // namespace builtins
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index b51b85ff6f2389d431890da3a39a406aeb8552e3..8cf93ffc86d5f186bf630aa95a304d5e457d9e97 100644
+index 89fe7f5c1aa7a3b985ca8f4968586045430fd079..5a74c5dd4fbbacd6cbff91efbf6b56e7900989a1 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -82,6 +82,8 @@ using BuiltinCodeCacheMap =
@@ -298,10 +289,10 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..5fe998f97e2465162bde97cdae758bc7ab8243ba 100644
+index 5878f079d94e8becff276619d0ca204c329a6675..2443574f3c2aa7a6ec5bd7027f9dac5a1a51a1d7 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -147,32 +147,42 @@ template("node_gn_build") {
+@@ -158,32 +158,42 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
@@ -347,7 +338,7 @@ index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..5fe998f97e2465162bde97cdae758bc7
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -224,6 +234,10 @@ template("node_gn_build") {
+@@ -235,6 +245,10 @@ template("node_gn_build") {
      }
    }
  
@@ -358,7 +349,7 @@ index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..5fe998f97e2465162bde97cdae758bc7
    executable(target_name) {
      forward_variables_from(invoker, "*")
  
-@@ -315,6 +329,7 @@ template("node_gn_build") {
+@@ -326,6 +340,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -366,12 +357,13 @@ index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..5fe998f97e2465162bde97cdae758bc7
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -327,26 +342,75 @@ template("node_gn_build") {
-       "src/builtin_info.cc",
-       "src/builtin_info.h",
+@@ -340,27 +355,77 @@ template("node_gn_build") {
      ]
--    include_dirs = [ "src" ]
-+    include_dirs = [ "src", "tools" ]
+     include_dirs = [
+       "src",
++      "tools",
+       get_label_info(node_simdutf_path, "dir"),
+     ]
 +
 +    if (!is_win) {
 +      defines += [ "NODE_JS2C_USE_STRING_LITERALS" ]
@@ -452,7 +444,7 @@ index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..5fe998f97e2465162bde97cdae758bc7
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -360,11 +424,11 @@ template("node_gn_build") {
+@@ -374,11 +439,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  

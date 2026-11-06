@@ -10,7 +10,7 @@ import { emittedNTimes } from './lib/events-helpers.ts';
 import { defer, ifdescribe, listen } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
-describe('renderer nodeIntegrationInSubFrames', () => {
+describe('renderer nodeIntegrationInSubFrames', { retry: 0 }, () => {
   const generateTests = (description: string, webPreferences: any) => {
     describe(description, () => {
       const fixtureSuffix = webPreferences.webviewTag ? '-webview' : '';
@@ -219,7 +219,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
   });
 });
 
-describe('renderer allFrames preload scripts', () => {
+describe('renderer allFrames preload scripts', { retry: 0 }, () => {
   for (const sandbox of [false, true]) {
     describe(`with sandbox: ${sandbox}`, () => {
       let w: BrowserWindow;
@@ -304,7 +304,7 @@ describe('renderer allFrames preload scripts', () => {
   }
 });
 
-describe('subframe with non-standard schemes', () => {
+describe('subframe with non-standard schemes', { retry: 0 }, () => {
   it('should not crash when changing subframe src to about:blank and back', async () => {
     const w = new BrowserWindow({ show: false, width: 400, height: 400 });
 
@@ -339,7 +339,7 @@ describe('subframe with non-standard schemes', () => {
 });
 
 // app.getAppMetrics() does not return sandbox information on Linux.
-ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
+ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', { retry: 0 }, () => {
   let server: http.Server;
   let crossSiteUrl: string;
   let serverUrl: string;

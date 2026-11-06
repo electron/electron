@@ -302,6 +302,30 @@ describe('webFrame module', () => {
       });
     });
 
+    describe('removeInsertedCSS()', () => {
+      const getBackgroundRepeat = 'getComputedStyle(document.body).backgroundRepeat';
+
+      it('removes CSS inserted with the author origin', async () => {
+        const inserted = await w.executeJavaScript(`
+          cssKey = webFrame.insertCSS('body { background-repeat: round !important; }');
+          ${getBackgroundRepeat}
+        `);
+        expect(inserted).toBe('round');
+        const removed = await w.executeJavaScript(`webFrame.removeInsertedCSS(cssKey); ${getBackgroundRepeat}`);
+        expect(removed).toBe('repeat');
+      });
+
+      it('removes CSS inserted with the user origin', async () => {
+        const inserted = await w.executeJavaScript(`
+          cssKey = webFrame.insertCSS('body { background-repeat: round !important; }', { cssOrigin: 'user' });
+          ${getBackgroundRepeat}
+        `);
+        expect(inserted).toBe('round');
+        const removed = await w.executeJavaScript(`webFrame.removeInsertedCSS(cssKey); ${getBackgroundRepeat}`);
+        expect(removed).toBe('repeat');
+      });
+    });
+
     describe('executeJavaScript', () => {
       it('executeJavaScript() yields results via a promise and a sync callback', async () => {
         const { callbackResult, callbackError, result } = await w.executeJavaScript(`new Promise(resolve => {

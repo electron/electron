@@ -68,7 +68,41 @@ Note that `level` on the `Event` is a string with possible values of `info`,
 
 The `console-message` event on `<webview>` is unchanged.
 
+### Behavior Changed: `useSystemPicker` follows `displaySurface`
+
+On macOS 15+, `session.setDisplayMediaRequestHandler(handler, { useSystemPicker: true })`
+now opens the same system picker Chrome uses:
+
+* The picker offers what the page asks for: windows for
+  `getDisplayMedia({ video: { displaySurface: 'window' } })`, screens for
+  `'monitor'`, and windows, applications and screens otherwise (screens only
+  on macOS 15.0 and 15.1). Previously it always offered everything.
+* When the page also asks for audio, the stream now includes system audio,
+  unless the page opts out. Previously the stream was video only. See
+  [`ses.setDisplayMediaRequestHandler`](api/session.md#sessetdisplaymediarequesthandlerhandler-opts).
+* The video track reports the picked kind: a screen now reports
+  `displaySurface: 'monitor'` instead of `'window'`. Its `deviceId` also
+  changes format.
+
+### Removed: `top-level-storage-access` permission
+
+Chromium has removed the `top-level-storage-access` permission type, so it is
+no longer a possible `permission` value in
+[`ses.setPermissionRequestHandler(handler)`](api/session.md#sessetpermissionrequesthandlerhandler)
+or [`ses.setPermissionCheckHandler(handler)`](api/session.md#sessetpermissioncheckhandlerhandler).
+Web content lost the ability to trigger this permission in Electron 46 when
+`document.requestStorageAccessFor` was removed.
+
 ## Breaking API Changes (46.0)
+
+### Removed: `--experimental-transform-types` command-line switch
+
+Node.js 26 removed the `--experimental-transform-types` flag, so Electron no
+longer accepts it. Electron ignores it on its command line, and
+`ELECTRON_RUN_AS_NODE` exits with a "bad option" error, as Node.js does.
+Type stripping of TypeScript files is still enabled by default; compile
+TypeScript-only syntax such as `enum` and `namespace` with a TypeScript
+compiler or bundler instead.
 
 ### Behavior Changed: `--no-stdio-init` command-line switch is ignored
 

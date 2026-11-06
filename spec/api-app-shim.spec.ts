@@ -163,6 +163,23 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     expect(w.isVisible()).toBe(false);
   });
 
+  it('honors focusable for a window in a shim', async () => {
+    const shim = await launchShim();
+    const w = new BrowserWindow({ appShim: shim, focusable: false });
+    await once(w, 'show');
+    expect(w.isFocusable()).toBe(false);
+    w.focus();
+    await setTimeout(100);
+    expect(w.isFocused()).toBe(false);
+
+    const focused = once(w, 'focus');
+    w.setFocusable(true);
+    expect(w.isFocusable()).toBe(true);
+    w.focus();
+    await focused;
+    expect(w.isFocused()).toBe(true);
+  });
+
   it('lets the close event keep a window in a shim open', async () => {
     const shim = await launchShim();
     // A BaseWindow closes inside close() when nothing prevents it.

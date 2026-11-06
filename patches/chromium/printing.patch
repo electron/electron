@@ -72,7 +72,7 @@ to modify the upstream chrome/browser/printing/print_view_manager.{cc,h}, which
 Electron does not compile.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index a62b37a927e7c85d85ad3bea2b70f53e19b6e5bf..bc24a5e4690649ab0c4ccc889975fb0368cc04ce 100644
+index af343b972f38a9d08be0a6c36de096c486d33512..37a139966c79ad0301ef4ca71b12fd946d64ccbb 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -97,6 +97,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
