@@ -7,7 +7,10 @@
   * `bypassCSP` boolean (optional) - Default false.
   * `allowServiceWorkers` boolean (optional) - Default false.
   * `supportFetchAPI` boolean (optional) - Default false.
-  * `corsEnabled` boolean (optional) - Default false.
+  * `corsEnabled` boolean (optional) - Whether the scheme can be loaded across
+    origins. When true, contents served over the scheme are readable from any
+    origin, so only enable it for schemes whose contents are safe to expose.
+    When false, the scheme can not be loaded across origins. Default false.
   * `stream` boolean (optional) - Default false.
   * `codeCache` boolean (optional) - Enable V8 code cache for the scheme, only
     works when `standard` is also set to true. Default false.
