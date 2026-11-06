@@ -663,6 +663,14 @@ void View::SetBackgroundBlur(int blur_radius) {
   layer->SetBackgroundBlur(blur_radius);
 }
 
+void View::SetIgnoreMouseEvents(bool ignore) {
+  ignore_mouse_events_ = ignore;
+  views::View* view = live_view();
+  if (!view)
+    return;
+  view->SetCanProcessEventsWithinSubtree(!ignore);
+}
+
 void View::SetVisible(bool visible) {
   if (views::View* view = live_view())
     view->SetVisible(visible);
@@ -722,6 +730,8 @@ void View::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod<&View::SetBackgroundColor>("setBackgroundColor")
       .SetMethod<&View::SetBorderRadius>("setBorderRadius")
       .SetMethod<&View::SetBackgroundBlur>("setBackgroundBlur")
+      .SetMethod<&View::SetIgnoreMouseEvents>("setIgnoreMouseEvents")
+      .SetMethod<&View::GetIgnoreMouseEvents>("getIgnoreMouseEvents")
       .SetMethod<&View::SetLayout>("setLayout")
       .SetMethod<&View::SetVisible>("setVisible")
       .SetMethod<&View::GetVisible>("getVisible");

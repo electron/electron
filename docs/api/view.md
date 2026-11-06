@@ -124,6 +124,14 @@ Examples of valid `color` values:
 > [!NOTE]
 > You must set a background color with an alpha channel (e.g. `#80ffffff`) in order for the blur effect to be visible.
 
+#### `view.setIgnoreMouseEvents(ignore)`
+
+* `ignore` boolean - If true, the view will not receive mouse events. Events will fall-through to views below.
+
+#### `view.getIgnoreMouseEvents()`
+
+Returns `boolean` - Whether the view is ignoring mouse events.
+
 #### `view.setVisible(visible)`
 
 * `visible` boolean - If false, the view will be hidden from display.
