@@ -22,6 +22,7 @@
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_info.h"
 #include "net/url_request/redirect_util.h"
+#include "net/url_request/url_request.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
@@ -724,6 +725,13 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
     OnRequestError(network::URLLoaderCompletionStatus(error_code));
     return;
   }
+
+  if (redirect_count_ >= net::URLRequest::kMaxRedirects) {
+    OnRequestError(
+        network::URLLoaderCompletionStatus(net::ERR_TOO_MANY_REDIRECTS));
+    return;
+  }
+  ++redirect_count_;
 
   info_->AddResponseInfoFromResourceResponse(*current_response_);
 
