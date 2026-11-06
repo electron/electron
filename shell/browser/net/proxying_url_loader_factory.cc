@@ -1002,6 +1002,21 @@ void ProxyingURLLoaderFactory::OnLoaderFailedWithRemoteEndpoint(
   request_it->second->OnLoaderFailedWithRemoteEndpoint(remote_endpoint);
 }
 
+// static
+bool ProxyingURLLoaderFactory::HandlesLoader(
+    base::WeakPtr<ProxyingURLLoaderFactory> factory,
+    std::optional<int32_t> request_id) {
+  if (!factory)
+    return false;
+  // Requests sent past this factory, by URLLoaderFactoryGate or by
+  // CreateLoaderAndStart(), are not in the map.
+  if (request_id) {
+    return factory->network_request_id_to_web_request_id_.contains(*request_id);
+  }
+  const api::WebRequest* web_request = factory->web_request_.Get();
+  return web_request && web_request->HasListener();
+}
+
 ProxyingURLLoaderFactory::~ProxyingURLLoaderFactory() = default;
 
 void ProxyingURLLoaderFactory::OnTargetFactoryError() {

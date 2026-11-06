@@ -254,6 +254,16 @@ class ProxyingURLLoaderFactory
 
   bool IsForServiceWorkerScript() const;
 
+  // Whether `factory` has listeners to tell about the loader the network
+  // service calls `request_id`, or about a CORS preflight when there is no ID.
+  // A factory that shares its header client is only told about those loaders.
+  static bool HandlesLoader(base::WeakPtr<ProxyingURLLoaderFactory> factory,
+                            std::optional<int32_t> request_id);
+
+  base::WeakPtr<ProxyingURLLoaderFactory> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   void OnTargetFactoryError();
   void OnProxyBindingError();
@@ -298,6 +308,8 @@ class ProxyingURLLoaderFactory
   base::flat_map<int32_t, uint64_t> network_request_id_to_web_request_id_;
 
   std::vector<std::string> ignore_connections_limit_domains_;
+
+  base::WeakPtrFactory<ProxyingURLLoaderFactory> weak_factory_{this};
 };
 
 }  // namespace electron

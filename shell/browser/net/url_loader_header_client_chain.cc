@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "mojo/public/cpp/bindings/callback_helpers.h"
@@ -175,10 +176,12 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
   URLLoaderHeaderClientChain(
       mojo::PendingReceiver<TrustedURLLoaderHeaderClient> receiver,
       mojo::PendingRemote<TrustedURLLoaderHeaderClient> outer,
-      mojo::PendingRemote<TrustedURLLoaderHeaderClient> inner)
+      mojo::PendingRemote<TrustedURLLoaderHeaderClient> inner,
+      HandlesLoaderCallback inner_handles_loader)
       : receiver_(this, std::move(receiver)),
         outer_(std::move(outer)),
-        inner_(std::move(inner)) {
+        inner_(std::move(inner)),
+        inner_handles_loader_(std::move(inner_handles_loader)) {
     receiver_.set_disconnect_handler(base::BindOnce(
         &URLLoaderHeaderClientChain::DeleteThis, base::Unretained(this)));
   }
@@ -196,6 +199,10 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
   void OnLoaderCreated(
       int32_t request_id,
       mojo::PendingReceiver<TrustedHeaderClient> receiver) override {
+    if (!inner_handles_loader_.Run(request_id)) {
+      outer_->OnLoaderCreated(request_id, std::move(receiver));
+      return;
+    }
     mojo::PendingRemote<TrustedHeaderClient> outer;
     mojo::PendingRemote<TrustedHeaderClient> inner;
     outer_->OnLoaderCreated(request_id, outer.InitWithNewPipeAndPassReceiver());
@@ -207,6 +214,10 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
   void OnLoaderForCorsPreflightCreated(
       const network::ResourceRequest& request,
       mojo::PendingReceiver<TrustedHeaderClient> receiver) override {
+    if (!inner_handles_loader_.Run(std::nullopt)) {
+      outer_->OnLoaderForCorsPreflightCreated(request, std::move(receiver));
+      return;
+    }
     mojo::PendingRemote<TrustedHeaderClient> outer;
     mojo::PendingRemote<TrustedHeaderClient> inner;
     outer_->OnLoaderForCorsPreflightCreated(
@@ -220,6 +231,7 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
   mojo::Receiver<TrustedURLLoaderHeaderClient> receiver_;
   mojo::Remote<TrustedURLLoaderHeaderClient> outer_;
   mojo::Remote<TrustedURLLoaderHeaderClient> inner_;
+  const HandlesLoaderCallback inner_handles_loader_;
 };
 
 }  // namespace
@@ -227,9 +239,11 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
 void ChainURLLoaderHeaderClients(
     mojo::PendingReceiver<TrustedURLLoaderHeaderClient> receiver,
     mojo::PendingRemote<TrustedURLLoaderHeaderClient> outer,
-    mojo::PendingRemote<TrustedURLLoaderHeaderClient> inner) {
+    mojo::PendingRemote<TrustedURLLoaderHeaderClient> inner,
+    HandlesLoaderCallback inner_handles_loader) {
   new URLLoaderHeaderClientChain(std::move(receiver), std::move(outer),
-                                 std::move(inner));
+                                 std::move(inner),
+                                 std::move(inner_handles_loader));
 }
 
 }  // namespace electron
