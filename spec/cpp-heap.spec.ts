@@ -2340,18 +2340,24 @@ describe('cpp heap', { retry: 0 }, () => {
           }
 
           await contents.loadURL('about:blank');
-          const opened = once(contents, 'devtools-opened', { signal: AbortSignal.timeout(10000) });
+          // Use the runner's timeout, which also scales for sanitizer builds.
+          const opened = once(contents, 'devtools-opened');
+          // stderr is forwarded even if the remote call never completes.
+          console.error('DevTools indexing: waiting for devtools-opened');
           contents.openDevTools({ mode: 'detach', activate: false });
           await opened;
+          console.error('DevTools indexing: devtools-opened received');
           contents.addWorkSpace(workspace);
 
           const devTools = contents.devToolsWebContents;
           await devTools.executeJavaScript(`InspectorFrontendHost.indexPath(42, ${JSON.stringify(workspace)}, '[]')`);
           await devTools.executeJavaScript('InspectorFrontendHost.stopIndexing(42)');
 
-          const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          const destroyed = once(contents, 'destroyed');
+          console.error('DevTools indexing: waiting for destroyed');
           contents.destroy();
           await destroyed;
+          console.error('DevTools indexing: destroyed received');
           for (let attempt = 0; attempt < 10; ++attempt) {
             await new Promise((resolve) => setTimeout(resolve, 0));
             v8Util.requestGarbageCollectionForTesting();
