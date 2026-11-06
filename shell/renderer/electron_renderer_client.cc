@@ -151,7 +151,8 @@ void ElectronRendererClient::DidCreateScriptContext(
   // enabled.
 
   // Only load Node.js if we are a main frame or a devtools extension
-  // unless Node.js support has been explicitly enabled for subframes.
+  // unless Node.js support has been explicitly enabled for subframes, or the
+  // subframe runs a preload registered with allFrames.
   if (!ShouldLoadPreload(isolate, renderer_context, render_frame))
     return;
 
@@ -373,13 +374,12 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
 std::unique_ptr<blink::WebContentSettingsClient>
 ElectronRendererClient::CreateWorkerContentSettingsClient(
     content::RenderFrame* render_frame) {
-  // Only frames that themselves get Node integration (the main frame, or any
-  // frame when nodeIntegrationInSubFrames is on) pass it on to their workers.
-  const blink::web_pref::WebPreferences& prefs =
-      render_frame->GetBlinkPreferences();
+  // Only frames that themselves get Node integration (the main frame, any
+  // frame when nodeIntegrationInSubFrames is on, or a subframe that runs a
+  // preload registered with allFrames) pass it on to their workers.
   return std::make_unique<WorkerContentSettingsClient>(
-      prefs.node_integration_in_worker &&
-      (render_frame->IsMainFrame() || prefs.node_integration_in_sub_frames));
+      render_frame->GetBlinkPreferences().node_integration_in_worker &&
+      IsPreloadFrame(render_frame));
 }
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(

@@ -206,6 +206,8 @@ v8::Local<v8::Value> Converter<PreloadScript>::ToV8(
     dict.Set("excludeGlobs", script.exclude_globs);
   if (script.match_origin_as_fallback)
     dict.Set("matchOriginAsFallback", true);
+  if (script.all_frames)
+    dict.Set("allFrames", true);
   return ConvertToV8(isolate, dict).As<v8::Object>();
 }
 
@@ -257,6 +259,7 @@ bool Converter<PreloadScript>::FromV8(v8::Isolate* isolate,
     return false;
   }
   options.Get("matchOriginAsFallback", &out->match_origin_as_fallback);
+  options.Get("allFrames", &out->all_frames);
   if (bool deprecated; options.Get("_deprecated", &deprecated)) {
     out->deprecated = deprecated;
   }

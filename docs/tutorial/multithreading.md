@@ -18,7 +18,9 @@ const win = new BrowserWindow({
 ```
 
 Workers created by an `<iframe>` only get Node.js integration when the frame
-itself has it, i.e. when `nodeIntegrationInSubFrames` is also enabled.
+itself has it, i.e. when the frame runs a preload script registered with
+`allFrames` using [`ses.registerPreloadScript()`](../api/session.md#sesregisterpreloadscriptscript),
+or when the deprecated `nodeIntegrationInSubFrames` is enabled.
 
 The `nodeIntegrationInWorker` can be used independent of `nodeIntegration`, but
 `sandbox` must not be set to `true`.
