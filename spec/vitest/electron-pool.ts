@@ -11,7 +11,7 @@ import * as path from 'node:path';
 
 import { deserialize, serialize, WORKER_READY_MESSAGE } from './ipc-serialization.ts';
 
-import type { PoolOptions, PoolRunnerInitializer, PoolWorker, WorkerRequest } from 'vitest/node';
+import type { PoolOptions, PoolRunnerInitializer, PoolWorker, Vitest, WorkerRequest } from 'vitest/node';
 
 export interface ElectronPoolOptions {
   /** Path to the Electron executable that runs the specs. */
@@ -31,9 +31,17 @@ export interface ElectronPoolOptions {
    * project).
    */
   exclusive?: boolean;
+  /**
+   * How long a worker may take to quit once vitest has told it to stop. After
+   * half of it the worker gets SIGTERM, after all of it SIGKILL, and whatever
+   * it had yet to print or report is lost. A worker already past its message
+   * loop, such as one printing a sanitizer report at exit, dies at the SIGTERM,
+   * so it gets only half. Defaults to 5 seconds.
+   */
+  quitTimeout?: number;
 }
 
-const SIGKILL_TIMEOUT = 5_000;
+const QUIT_TIMEOUT = 5_000;
 // Time for Electron to start and reach app 'ready' (sanitizer builds are slow).
 const START_TIMEOUT = 3 * 60_000;
 // How long to wait for a stopped worker's output pipes to drain; a process
@@ -50,6 +58,10 @@ let nextWorkerId = 1;
 // Electron processes.
 const liveWorkers = new Set<Promise<void>>();
 
+// Workers running a spec file: vitest has sent them 'run' or 'collect' but not
+// yet 'stop'. While there are any, the run's summary is still to come.
+const busyWorkers = new Set<ElectronPoolWorker>();
+
 export function electronPool(poolOptions: ElectronPoolOptions): PoolRunnerInitializer {
   return {
     name: 'electron',
@@ -65,15 +77,21 @@ class ElectronPoolWorker implements PoolWorker {
 
   private child: childProcess.ChildProcess | undefined;
   private stopped = false;
+  // vitest has told the worker to quit (see checkQuitExit()).
+  private quitRequested = false;
+  // The spec files vitest last gave the worker, for checkQuitExit()'s report.
+  private files: string[] = [];
   private readonly errors = new EventEmitter();
   private readonly env: Partial<NodeJS.ProcessEnv>;
   private readonly stdout: NodeJS.WritableStream;
   private readonly stderr: NodeJS.WritableStream;
   private readonly id = nextWorkerId++;
   private readonly electron: ElectronPoolOptions;
+  private readonly vitest: Vitest;
 
   constructor(options: PoolOptions, electron: ElectronPoolOptions) {
     this.electron = electron;
+    this.vitest = options.project.vitest;
     this.env = options.env;
     this.stdout = options.project.vitest.logger.outputStream;
     this.stderr = options.project.vitest.logger.errorStream;
@@ -90,6 +108,13 @@ class ElectronPoolWorker implements PoolWorker {
   }
 
   send(message: WorkerRequest): void {
+    if (message.type === 'run' || message.type === 'collect') {
+      this.files = message.context.files.map((file) => file.filepath);
+      busyWorkers.add(this);
+    } else if (message.type === 'stop') {
+      this.quitRequested = true;
+      busyWorkers.delete(this);
+    }
     this.proc.send(serialize(message), (error) => {
       if (error) this.emitError(error);
     });
@@ -103,8 +128,8 @@ class ElectronPoolWorker implements PoolWorker {
     if (this.child) return;
 
     if (this.electron.exclusive) {
-      // stop() SIGKILLs a worker that has not quit after SIGKILL_TIMEOUT, so
-      // this wait is bounded.
+      // stop() SIGKILLs a worker that has not quit after quitTimeout, so this
+      // wait is bounded.
       await Promise.all(liveWorkers);
       // stop() may have been called while waiting (a cancelled run); starting
       // Electron now would leave it running with nobody to stop it.
@@ -142,6 +167,11 @@ class ElectronPoolWorker implements PoolWorker {
     });
     this.child = child;
     child.on('error', this.emitError);
+    child.once('exit', (code, signal) => {
+      // A worker that died while running a file is not busy any more either.
+      busyWorkers.delete(this);
+      this.checkQuitExit(child, code, signal);
+    });
     const exited = new Promise<void>((resolve) => {
       child.once('exit', () => resolve());
       // A child that failed to spawn never emits 'exit'.
@@ -214,8 +244,9 @@ class ElectronPoolWorker implements PoolWorker {
     });
     // The worker calls app.quit() once vitest has told it to stop; only step in
     // if that does not happen.
-    const sigterm = setTimeout(() => child.kill(), SIGKILL_TIMEOUT / 2);
-    const sigkill = setTimeout(() => child.kill('SIGKILL'), SIGKILL_TIMEOUT);
+    const quitTimeout = this.electron.quitTimeout ?? QUIT_TIMEOUT;
+    const sigterm = setTimeout(() => child.kill(), quitTimeout / 2);
+    const sigkill = setTimeout(() => child.kill('SIGKILL'), quitTimeout);
     await exited;
     clearTimeout(sigterm);
     clearTimeout(sigkill);
@@ -238,6 +269,37 @@ class ElectronPoolWorker implements PoolWorker {
     child.stderr!.unpipe(this.stderr);
     this.stdout.setMaxListeners(this.stdout.getMaxListeners() - 1);
     this.stderr.setMaxListeners(this.stderr.getMaxListeners() - 1);
+  }
+
+  // vitest stops watching for the worker's exit once it has told the worker
+  // to quit, so on its own a worker that crashes or exits with an error code
+  // while quitting does not fail the run. Report that here. A worker that
+  // stop() had to kill is not reported: see quitTimeout.
+  private checkQuitExit(child: childProcess.ChildProcess, code: number | null, signal: NodeJS.Signals | null) {
+    if (!this.quitRequested || (code === 0 && signal === null)) return;
+    // `killed` only says that stop() sent a signal, not that the signal is
+    // what ended the worker.
+    if (child.killed && (signal === 'SIGTERM' || signal === 'SIGKILL' || code === 128 + 15)) return;
+    const status = signal
+      ? `signal ${signal}`
+      : `exit code ${process.platform === 'win32' ? `0x${code!.toString(16)}` : code}`;
+    const files = this.files.map((file) => path.relative(this.vitest.config.root, file)).join(', ');
+    const error = new Error(
+      `Electron spec worker ${this.id} (pid ${child.pid}) exited with ${status} while quitting` +
+        (files ? ` after running ${files}` : '')
+    );
+    if (busyWorkers.size > 0) {
+      // The run's summary comes after the files still running, so it will list
+      // this error.
+      Object.assign(error, { VITEST_TEST_PATH: this.files[0] });
+      this.vitest.state.catchError(error, 'Teardown Error');
+    } else {
+      // The summary may already have been printed: the last workers usually
+      // finish quitting after it.
+      this.vitest.logger.error(`\n${error.message}\n`);
+    }
+    // Fails the run however the summary turns out.
+    process.exitCode = 1;
   }
 
   private readonly emitError = (error: Error): void => {
