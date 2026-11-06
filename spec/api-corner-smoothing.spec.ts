@@ -126,7 +126,7 @@ async function pageCaptureTestRecipe(
   }
 }
 
-describe('-electron-corner-smoothing', () => {
+describe('-electron-corner-smoothing', { retry: 0 }, () => {
   afterEach(async () => {
     await closeAllWindows();
   });
