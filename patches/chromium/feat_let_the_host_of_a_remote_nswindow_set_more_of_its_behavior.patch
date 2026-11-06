@@ -26,10 +26,10 @@ it ever does.
 Co-Authored-By: Claude <noreply@anthropic.com>
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-index 266cdef605606dbab077f4cfb5f2c7b3765d3655..284e6a3c29d7f969f554fd157eeaaeb3787279e2 100644
+index aab9c770f3eb651c3146567b843bbd7ec9075fda..36a1d4fc112e898e5b22132a762e63ba2cd51dd9 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-@@ -320,6 +320,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+@@ -321,6 +321,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
    void SetCALayerParams(gfx::CALayerParams ca_layer_params) override;
    void SetWindowTitle(const std::u16string& title) override;
    void SetIgnoresMouseEvents(bool ignores_mouse_events) override;
@@ -40,7 +40,7 @@ index 266cdef605606dbab077f4cfb5f2c7b3765d3655..284e6a3c29d7f969f554fd157eeaaeb3
    void MakeFirstResponder() override;
    void SortSubviews(
        const std::vector<uint64_t>& associated_subview_ids) override;
-@@ -483,6 +487,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+@@ -493,6 +497,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
    bool is_tooltip_ = false;
    bool window_initialized_ = false;
    bool is_tracked_by_occlusion_checker_ = false;
@@ -52,10 +52,10 @@ index 266cdef605606dbab077f4cfb5f2c7b3765d3655..284e6a3c29d7f969f554fd157eeaaeb3
  
    raw_ptr<NativeWidgetNSWindowBridge> parent_ =
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 5ee7a2a8dde4d4ff2c79ad147ef32e9448478ca7..43a8ceb0d688e9aa5dbc3e95ecf9cf47840b19bf 100644
+index 2ed39852ac416ab401600a214a587471e439634d..d94f5b07c2724393524ba18efe1088dc4ca7bdfb 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -1596,6 +1596,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1634,6 +1634,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    gfx::ApplyNSWindowSizeConstraints(window_, min_size, max_size,
                                      shows_resize_controls,
                                      shows_fullscreen_controls);
@@ -63,7 +63,7 @@ index 5ee7a2a8dde4d4ff2c79ad147ef32e9448478ca7..43a8ceb0d688e9aa5dbc3e95ecf9cf47
  }
  
  void NativeWidgetNSWindowBridge::OnShowAnimationComplete() {
-@@ -2011,7 +2012,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2061,7 +2062,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  void NativeWidgetNSWindowBridge::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {
@@ -75,7 +75,7 @@ index 5ee7a2a8dde4d4ff2c79ad147ef32e9448478ca7..43a8ceb0d688e9aa5dbc3e95ecf9cf47
    [window_delegate_ setAspectRatio:aspect_ratio.width() / aspect_ratio.height()
                      excludedMargin:excluded_margin];
  }
-@@ -2091,6 +2095,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2141,6 +2145,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    [window_ setIgnoresMouseEvents:ignores_mouse_events];
  }
  
@@ -192,7 +192,7 @@ index c4f1bd2e8d646306ae2c80100aba01085777a0fc..d5d4d778fb1190eb22b4933632ad9d3a
  };
  
 diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
-index caffbfc6c7f700ec0c8178a34caefb3c23cfa693..727cc258653545e0dc382e02b5f77412ef3bd110 100644
+index 02123df2d574a31d534fd550a08051a0532b7e75..f8f6cf9d30edf50ff272e8184009465724394fe2 100644
 --- a/components/remote_cocoa/common/native_widget_ns_window.mojom
 +++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
 @@ -275,6 +275,7 @@ interface NativeWidgetNSWindow {
@@ -223,10 +223,10 @@ index caffbfc6c7f700ec0c8178a34caefb3c23cfa693..727cc258653545e0dc382e02b5f77412
    MakeFirstResponder();
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 1aed0c0234ea7438ef7a1f585546bd43a5755220..0e146b9650f15f87a5dfde979be547cd87966ccd 100644
+index d7ef5d2ca29c3428183486a05c2a81df454ae8f4..8432e6171e8e80e26161779500dba39984d37759 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -949,8 +949,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -951,8 +951,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (@available(macOS 14, *)) {
      if (application_host_ &&
          new_state == WindowVisibilityState::kShowAndActivateWindow) {

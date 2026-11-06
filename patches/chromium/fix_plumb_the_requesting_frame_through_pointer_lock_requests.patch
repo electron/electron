@@ -152,7 +152,7 @@ index 5b87ed5def8b6ff737cdc59aa577fd49f7ab257a..a9b3a67e80a325079b9519da1a6436d5
    virtual void UnlockPointer(RenderWidgetHostImpl* render_widget_host) {}
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 3a21456819cbf494d38a5b321cc55a9382b01272..d1133573678258fb89c2a258b395e4ee7cb4f70f 100644
+index ee590314448547a44cd7a37ded4f84a9fc63811f..7673ed496a868d0f93e0da7e0f511d483d1e5991 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -3697,6 +3697,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
@@ -173,7 +173,7 @@ index 3a21456819cbf494d38a5b321cc55a9382b01272..d1133573678258fb89c2a258b395e4ee
    // We need to reset |is_last_unlocked_by_target_| here as we don't know
    // request source in |LostPointerLock()|.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 590b629f40c97110eb18017111ecacef8706d07b..e19d44282e8aa921af89fee5a17695f3743b3f6f 100644
+index 150e8839f322ce2781f283dd058f9a35d293e83f..25500d2845a480db5681b7fc9b33ef23329e8968 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -891,6 +891,7 @@ class CONTENT_EXPORT RenderWidgetHostImpl
@@ -185,10 +185,10 @@ index 590b629f40c97110eb18017111ecacef8706d07b..e19d44282e8aa921af89fee5a17695f3
        bool unadjusted_movement,
        input::InputRouterImpl::RequestMouseLockCallback response) override;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4540ffda2ce18da0b5e1edbb5d4c51e3d2ed6c3d..2f88581ed80d093aeeedb2ffb3769a84145f150d 100644
+index d6da0d5e1546007b40777c82137638a3492fe66f..0f7e2248247d66b1b7c32f5e13c189a27717c9e5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5538,6 +5538,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
+@@ -5550,6 +5550,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
  
  void WebContentsImpl::RequestToLockPointer(
      RenderWidgetHostImpl* render_widget_host,
@@ -196,7 +196,7 @@ index 4540ffda2ce18da0b5e1edbb5d4c51e3d2ed6c3d..2f88581ed80d093aeeedb2ffb3769a84
      bool user_gesture,
      bool last_unlocked_by_target) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RequestPointerLock",
-@@ -5565,9 +5566,19 @@ void WebContentsImpl::RequestToLockPointer(
+@@ -5577,9 +5578,19 @@ void WebContentsImpl::RequestToLockPointer(
      }
    }
  
@@ -216,7 +216,7 @@ index 4540ffda2ce18da0b5e1edbb5d4c51e3d2ed6c3d..2f88581ed80d093aeeedb2ffb3769a84
      observers_.NotifyObservers(&WebContentsObserver::PointerLockRequested);
      delegate->RequestPointerLock(this, user_gesture, last_unlocked_by_target);
    } else {
-@@ -10239,9 +10250,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
+@@ -10257,9 +10268,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
    return false;
  }
  
@@ -240,10 +240,10 @@ index 4540ffda2ce18da0b5e1edbb5d4c51e3d2ed6c3d..2f88581ed80d093aeeedb2ffb3769a84
      static_cast<SurfaceEmbedConnectorImpl*>(connector)
          ->SetPointerLockWidgetInParentChain(widget);
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 53c5d0253e14d7a10497b8a839a04314f0aad5ea..6295469b9cc04def22e083a3f311c28ac537f8c0 100644
+index 300e30ee281370d7feb6069efa999fe2962b9ed7..2346981c379cfb678669bb8387bf40748e9e1ebf 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1238,6 +1238,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1240,6 +1240,7 @@ class CONTENT_EXPORT WebContentsImpl
        base::RepeatingClosure hang_monitor_restarter) override;
    void RendererResponsive(RenderWidgetHostImpl* render_widget_host) override;
    void RequestToLockPointer(RenderWidgetHostImpl* render_widget_host,
@@ -251,7 +251,7 @@ index 53c5d0253e14d7a10497b8a839a04314f0aad5ea..6295469b9cc04def22e083a3f311c28a
                              bool user_gesture,
                              bool last_unlocked_by_target) override;
    bool IsWaitingForPointerLockPrompt(
-@@ -1678,6 +1679,11 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1680,6 +1681,11 @@ class CONTENT_EXPORT WebContentsImpl
      return pointer_lock_widget_;
    }
  
@@ -263,7 +263,7 @@ index 53c5d0253e14d7a10497b8a839a04314f0aad5ea..6295469b9cc04def22e083a3f311c28a
    const std::set<raw_ptr<RenderFrameHostImpl, SetExperimental>>&
    fullscreen_frames_for_testing() const {
      return fullscreen_frames_;
-@@ -2780,6 +2786,9 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -2782,6 +2788,9 @@ class CONTENT_EXPORT WebContentsImpl
    raw_ptr<RenderWidgetHostImpl, DanglingUntriaged> pointer_lock_widget_ =
        nullptr;
  
