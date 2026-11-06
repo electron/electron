@@ -627,6 +627,70 @@ describe('command line switches', () => {
     );
   });
 
+  ifdescribe(process.platform === 'linux')('locale environment variables', () => {
+    const invalidLocale = 'sdjflkdsjflkdsjf';
+    const testLocaleEnvironment = async (localeEnv: NodeJS.ProcessEnv, expectedLocale: string, lang = '') => {
+      const env = { ...process.env };
+      // Inherited locale overrides must not mask the value under test.
+      for (const name of Object.keys(env)) {
+        if (name === 'LANG' || name === 'LANGUAGE' || name.startsWith('LC_')) delete env[name];
+      }
+      Object.assign(env, localeEnv);
+
+      const appPath = path.join(fixturesPath, 'api', 'locale-check');
+      const result = await spawnAndWait(process.execPath, [appPath, `--set-lang=${lang}`, '--print-locale-env'], {
+        env,
+        timeout: 10000
+      });
+      expect(result.signal, result.stderr).toBeNull();
+      expect(result.code, result.stderr).toBe(0);
+      const output = JSON.parse(result.stdout);
+      expect(output.locale).toBe(expectedLocale);
+      expect(output.systemLocale).toBeTypeOf('string');
+      expect(output.systemLocale).not.toBe('');
+      expect(Array.isArray(output.preferredLanguages)).toBe(true);
+      expect(output.env).toEqual(localeEnv);
+    };
+
+    for (const variable of ['LANG', 'LC_ALL', 'LC_MESSAGES', 'LANGUAGE']) {
+      it(`starts with an invalid ${variable}`, async () => {
+        await testLocaleEnvironment({ [variable]: invalidLocale }, 'en-US');
+      });
+    }
+
+    it('preserves a valid locale', async () => {
+      await testLocaleEnvironment({ LANG: 'fr_FR.UTF-8' }, 'fr');
+    });
+
+    it('starts with the C locale', async () => {
+      await testLocaleEnvironment({ LANG: 'C' }, 'en-US');
+    });
+
+    it('starts with an empty LANG', async () => {
+      await testLocaleEnvironment({ LANG: '' }, 'en-US');
+    });
+
+    it('starts without locale environment variables', async () => {
+      await testLocaleEnvironment({}, 'en-US');
+    });
+
+    it('honors LC_ALL over an invalid LANG', async () => {
+      await testLocaleEnvironment({ LANG: invalidLocale, LC_ALL: 'fr_FR.UTF-8' }, 'fr');
+    });
+
+    it('honors LC_MESSAGES over an invalid LANG', async () => {
+      await testLocaleEnvironment({ LANG: invalidLocale, LC_MESSAGES: 'fr_FR.UTF-8' }, 'fr');
+    });
+
+    it('starts with an empty LC_ALL override', async () => {
+      await testLocaleEnvironment({ LANG: 'en_US.UTF-8', LC_ALL: '' }, 'en-US');
+    });
+
+    it('honors --lang with an invalid LANG', async () => {
+      await testLocaleEnvironment({ LANG: invalidLocale }, 'fr', 'fr');
+    });
+  });
+
   describe('--remote-debugging-pipe switch', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;
