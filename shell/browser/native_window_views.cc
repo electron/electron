@@ -1955,6 +1955,10 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
+  // Native bounds are still valid here, including when the OS destroys an
+  // owned window without a Widget::Close() request.
+  FlushWindowState();
+
   if (aura::Window* window = GetNativeWindow())
     window->RemovePreTargetHandler(this);
 
