@@ -54,6 +54,9 @@ describe('chrome extensions', () => {
         }
       });
     });
+    server.on('upgrade', (req, socket, head) => {
+      wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
+    });
 
     ({ port, url } = await listen(server));
   });
@@ -717,30 +720,263 @@ describe('chrome extensions', () => {
       });
     });
 
-    it('does not take precedence over Electron webRequest - http', async () => {
-      return new Promise<void>((resolve) => {
-        (async () => {
-          customSession.webRequest.onBeforeRequest((details, callback) => {
-            resolve();
-            callback({ cancel: true });
-          });
-          await w.loadURL(url);
+    describe('alongside session.webRequest', () => {
+      type ExtensionEvent = {
+        name: string;
+        url: string;
+        type: string;
+        error?: string;
+        redirectUrl?: string;
+        requestHeaders?: { name: string; value: string }[];
+        responseHeaders?: { name: string; value: string }[];
+      };
 
-          await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-          fetch(w.webContents, url);
-        })();
+      const httpEvents = [
+        'onBeforeRequest',
+        'onBeforeSendHeaders',
+        'onSendHeaders',
+        'onHeadersReceived',
+        'onResponseStarted',
+        'onCompleted'
+      ];
+
+      let extensionPage: BrowserWindow;
+      let appEvents: { name: string; url: string }[];
+
+      const messageExtension = (message: object) =>
+        extensionPage.webContents.executeJavaScript(`chrome.runtime.sendMessage(${JSON.stringify(message)})`);
+
+      const extensionEvents = (token: string): Promise<ExtensionEvent[]> => messageExtension({ type: 'events', token });
+
+      const names = (events: { name: string }[]) => events.map((event) => event.name);
+
+      const appEventsFor = (token: string) => appEvents.filter((event) => event.url.includes(token));
+
+      const fetchStatus = (target: string): Promise<number | string> =>
+        w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(target)}).then((response) => response.status, (error) => error.message)`
+        );
+
+      // Resolves once the extension has events for a request made after the
+      // call, so that a listener it registered earlier is known to be live.
+      const extensionSeesRequests = (eventName = 'onCompleted') =>
+        waitUntil(async () => {
+          const token = crypto.randomUUID();
+          await fetchStatus(`${url}/${token}`);
+          return names(await extensionEvents(token)).includes(eventName);
+        });
+
+      // Observes every stage without changing the request.
+      const observeWithSession = () => {
+        const record = (name: string) => (details: { url: string }) => {
+          appEvents.push({ name, url: details.url });
+        };
+        customSession.webRequest.onBeforeRequest((details, callback) => {
+          record('onBeforeRequest')(details);
+          callback({});
+        });
+        customSession.webRequest.onBeforeSendHeaders((details, callback) => {
+          record('onBeforeSendHeaders')(details);
+          callback({});
+        });
+        customSession.webRequest.onSendHeaders(record('onSendHeaders'));
+        customSession.webRequest.onHeadersReceived((details, callback) => {
+          record('onHeadersReceived')(details);
+          callback({});
+        });
+        customSession.webRequest.onResponseStarted(record('onResponseStarted'));
+        customSession.webRequest.onCompleted(record('onCompleted'));
+      };
+
+      const stopObservingWithSession = () => {
+        customSession.webRequest.onBeforeRequest(null);
+        customSession.webRequest.onBeforeSendHeaders(null);
+        customSession.webRequest.onSendHeaders(null);
+        customSession.webRequest.onHeadersReceived(null);
+        customSession.webRequest.onResponseStarted(null);
+        customSession.webRequest.onCompleted(null);
+      };
+
+      const headersReceivedByServer = (token: string) =>
+        new Promise<http.IncomingHttpHeaders>((resolve) => {
+          const onRequest = (req: http.IncomingMessage) => {
+            if (req.url?.includes(token)) {
+              server.off('request', onRequest);
+              resolve(req.headers);
+            }
+          };
+          server.on('request', onRequest);
+        });
+
+      beforeEach(async () => {
+        appEvents = [];
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-webRequest-observer')
+        );
+        extensionPage = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+        await extensionPage.loadURL(`${extension.url}page.html`);
+        await w.loadURL(url);
+        await extensionSeesRequests();
       });
-    });
 
-    it('does not take precedence over Electron webRequest - WebSocket', () => {
-      return new Promise<void>((resolve) => {
-        (async () => {
-          customSession.webRequest.onBeforeSendHeaders(() => {
-            resolve();
-          });
-          await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port: `${port}` } });
-          await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
-        })();
+      it('reports a fetch to both APIs', async () => {
+        observeWithSession();
+        const token = crypto.randomUUID();
+        expect(await fetchStatus(`${url}/${token}`)).toBe(200);
+
+        expect(names(appEventsFor(token))).toEqual(httpEvents);
+        const events = await extensionEvents(token);
+        expect(names(events)).toEqual(httpEvents);
+        expect(events[0].type).toBe('xmlhttprequest');
+      });
+
+      it('reports a main frame navigation to both APIs', async () => {
+        observeWithSession();
+        const token = crypto.randomUUID();
+        await w.loadURL(`${url}/${token}`);
+
+        expect(names(appEventsFor(token))).toEqual(httpEvents);
+        const events = await extensionEvents(token);
+        expect(names(events)).toEqual(httpEvents);
+        expect(events[0].type).toBe('main_frame');
+      });
+
+      it('reports a WebSocket handshake to both APIs', async () => {
+        observeWithSession();
+        const token = crypto.randomUUID();
+        const opened = await w.webContents.executeJavaScript(`new Promise((resolve) => {
+          const socket = new WebSocket('ws://127.0.0.1:${port}/${token}');
+          socket.onopen = () => { socket.close(); resolve(true); };
+          socket.onerror = () => resolve(false);
+        })`);
+        expect(opened).toBe(true);
+
+        expect(names(appEventsFor(token))).toEqual(httpEvents);
+        const events = await extensionEvents(token);
+        expect(names(events)).toEqual(httpEvents);
+        expect(events[0].type).toBe('websocket');
+      });
+
+      it('follows session.webRequest listeners added and removed after the page loaded', async () => {
+        const before = crypto.randomUUID();
+        expect(await fetchStatus(`${url}/${before}`)).toBe(200);
+        expect(appEventsFor(before)).toEqual([]);
+        expect(names(await extensionEvents(before))).toEqual(httpEvents);
+
+        observeWithSession();
+        const during = crypto.randomUUID();
+        expect(await fetchStatus(`${url}/${during}`)).toBe(200);
+        expect(names(appEventsFor(during))).toEqual(httpEvents);
+        expect(names(await extensionEvents(during))).toEqual(httpEvents);
+
+        stopObservingWithSession();
+        const after = crypto.randomUUID();
+        expect(await fetchStatus(`${url}/${after}`)).toBe(200);
+        expect(appEventsFor(after)).toEqual([]);
+        expect(names(await extensionEvents(after))).toEqual(httpEvents);
+      });
+
+      it('does not report requests from the main process to the extension', async () => {
+        observeWithSession();
+        const token = crypto.randomUUID();
+        const response = await customSession.fetch(`${url}/${token}`);
+        expect(response.status).toBe(200);
+        await response.text();
+
+        await waitUntil(() => names(appEventsFor(token)).includes('onCompleted'));
+        expect(names(appEventsFor(token))).toEqual(httpEvents);
+        // A later request from the page reaches the extension, so the one
+        // above would have by now.
+        await extensionSeesRequests();
+        expect(await extensionEvents(token)).toEqual([]);
+      });
+
+      it('reports a request that session.webRequest cancels to the extension as an error', async () => {
+        const token = crypto.randomUUID();
+        customSession.webRequest.onBeforeRequest((details, callback) => {
+          callback({ cancel: details.url.includes(token) });
+        });
+        expect(await fetchStatus(`${url}/${token}`)).toBe('Failed to fetch');
+
+        const events = await extensionEvents(token);
+        expect(names(events)).toEqual(['onBeforeRequest', 'onBeforeSendHeaders', 'onSendHeaders', 'onErrorOccurred']);
+        expect(events[3].error).toBe('net::ERR_BLOCKED_BY_CLIENT');
+      });
+
+      it('reports a session.webRequest redirect to the extension', async () => {
+        const from = crypto.randomUUID();
+        const to = crypto.randomUUID();
+        customSession.webRequest.onBeforeRequest((details, callback) => {
+          callback(details.url.includes(from) ? { redirectURL: `${url}/${to}` } : {});
+        });
+        expect(await fetchStatus(`${url}/${from}`)).toBe(200);
+
+        const redirected = await extensionEvents(from);
+        expect(names(redirected)).toEqual([
+          'onBeforeRequest',
+          'onBeforeSendHeaders',
+          'onSendHeaders',
+          'onHeadersReceived',
+          'onBeforeRedirect'
+        ]);
+        expect(redirected[4].redirectUrl).toBe(`${url}/${to}`);
+        expect(names(await extensionEvents(to))).toEqual(httpEvents);
+      });
+
+      it('shows the extension the response headers that session.webRequest set', async () => {
+        const token = crypto.randomUUID();
+        customSession.webRequest.onHeadersReceived((details, callback) => {
+          callback({ responseHeaders: { ...details.responseHeaders, 'X-From-Session': ['app'] } });
+        });
+        const header = await w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(`${url}/${token}`)}).then((response) => response.headers.get('x-from-session'))`
+        );
+        expect(header).toBe('app');
+
+        const received = (await extensionEvents(token)).find((event) => event.name === 'onHeadersReceived');
+        expect(received?.responseHeaders).toContainEqual({ name: 'X-From-Session', value: 'app' });
+      });
+
+      it('sends the request headers that session.webRequest set, which the extension sees before the change', async () => {
+        const token = crypto.randomUUID();
+        customSession.webRequest.onBeforeSendHeaders((details, callback) => {
+          callback({ requestHeaders: { ...details.requestHeaders, 'X-From-Session': 'app' } });
+        });
+        const serverHeaders = headersReceivedByServer(token);
+        expect(await fetchStatus(`${url}/${token}`)).toBe(200);
+        expect((await serverHeaders)['x-from-session']).toBe('app');
+
+        const sent = (await extensionEvents(token)).find((event) => event.name === 'onSendHeaders');
+        expect(sent?.requestHeaders?.map((header) => header.name)).not.toContain('X-From-Session');
+      });
+
+      it('orders extraHeaders listeners around session.webRequest in the same way', async () => {
+        customSession.webRequest.onBeforeSendHeaders((details, callback) => {
+          callback({ requestHeaders: { ...details.requestHeaders, 'X-From-Session': 'app' } });
+        });
+        customSession.webRequest.onHeadersReceived((details, callback) => {
+          callback({ responseHeaders: { ...details.responseHeaders, 'X-From-Session': ['app'] } });
+        });
+        expect(await messageExtension({ type: 'listen-with-extra-headers' })).toBe(true);
+        await extensionSeesRequests('onHeadersReceived:extraHeaders');
+
+        const token = crypto.randomUUID();
+        const serverHeaders = headersReceivedByServer(token);
+        const header = await w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(`${url}/${token}`)}).then((response) => response.headers.get('x-from-session'))`
+        );
+        expect(header).toBe('app');
+        expect((await serverHeaders)['x-from-session']).toBe('app');
+
+        const events = await extensionEvents(token);
+        const sent = events.find((event) => event.name === 'onSendHeaders:extraHeaders');
+        const sentNames = sent?.requestHeaders?.map((header) => header.name);
+        // Headers the network service adds are only visible to extraHeaders
+        // listeners, so this shows the event came through the header client.
+        expect(sentNames).toContain('Accept-Encoding');
+        expect(sentNames).not.toContain('X-From-Session');
+        const received = events.find((event) => event.name === 'onHeadersReceived:extraHeaders');
+        expect(received?.responseHeaders).toContainEqual({ name: 'X-From-Session', value: 'app' });
       });
     });
 
