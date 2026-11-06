@@ -100,7 +100,7 @@ runs:
         fi
     - name: Fix esbuild
       if: ${{ inputs.target-platform != 'linux' }}
-      uses: ./src/electron/.github/actions/cipd-install
+      uses: $/.github/actions/cipd-install
       with:
         cipd-root-prefix-path: src/third_party/devtools-frontend/src/
         dependency: esbuild
@@ -109,7 +109,7 @@ runs:
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/esbuild/${platform}
     - name: Fix hermetic Python
-      uses: ./src/electron/.github/actions/cipd-install
+      uses: $/.github/actions/cipd-install
       with:
         dependency: cpython3-host
         deps-file: src/DEPS
@@ -118,7 +118,7 @@ runs:
         package: infra/3pp/tools/cpython3/${platform}
     - name: Fix gn (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
-      uses: ./src/electron/.github/actions/cipd-install
+      uses: $/.github/actions/cipd-install
       with:
         dependency: gn
         deps-file: src/DEPS
@@ -127,7 +127,7 @@ runs:
         package: gn/gn/mac-${arch}
     - name: Fix gn (Windows)
       if: ${{ inputs.target-platform == 'win' }}
-      uses: ./src/electron/.github/actions/cipd-install
+      uses: $/.github/actions/cipd-install
       with:
         dependency: gn
         deps-file: src/DEPS
@@ -136,7 +136,7 @@ runs:
         package: gn/gn/windows-amd64
     - name: Fix ninja
       if: ${{ inputs.target-platform != 'linux' }}
-      uses: ./src/electron/.github/actions/cipd-install
+      uses: $/.github/actions/cipd-install
       with:
         dependency: ninja
         deps-file: src/DEPS
@@ -149,7 +149,7 @@ runs:
       run : | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, value is build config
         echo "$(pwd)/src/third_party/ninja" >> $GITHUB_PATH
     - name: Fix siso
-      uses: ./src/electron/.github/actions/cipd-install
+      uses: $/.github/actions/cipd-install
       with:
         dependency: siso
         deps-file: src/DEPS

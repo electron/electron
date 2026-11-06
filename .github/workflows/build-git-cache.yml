@@ -17,12 +17,9 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        persist-credentials: false
     - name: Set Build Image SHA
       id: build-image-sha
-      uses: ./.github/actions/build-image-sha
+      uses: $/.github/actions/build-image-sha
 
   build-git-cache-linux:
     needs: setup
@@ -45,7 +42,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Build Git Cache
-      uses: ./src/electron/.github/actions/build-git-cache
+      uses: $/.github/actions/build-git-cache
       with:
         target-platform: linux
 
@@ -71,7 +68,7 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Build Git Cache
-      uses: ./src/electron/.github/actions/build-git-cache
+      uses: $/.github/actions/build-git-cache
       with:
         target-platform: win
 
@@ -97,6 +94,6 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Build Git Cache
-      uses: ./src/electron/.github/actions/build-git-cache
+      uses: $/.github/actions/build-git-cache
       with:
         target-platform: macos

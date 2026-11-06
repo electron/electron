@@ -26,7 +26,7 @@ jobs:
     # Check changed paths via the API instead of the path filter under the on: block
     # so that the output can be used to conditionally run the apply-patches job, which lets
     # the job be marked as a required status check (conditional skip counts as a success).
-    - uses: ./.github/actions/paths-filter
+    - uses: $/.github/actions/paths-filter
       id: filter
       with:
         filters: |

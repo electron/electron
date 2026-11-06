@@ -171,7 +171,7 @@ jobs:
       timeout-minutes: 5
       # Best effort: let collection run even if the window stays up.
       continue-on-error: true
-      uses: ./src/electron/.github/actions/dismiss-windows-first-sign-in
+      uses: $/.github/actions/dismiss-windows-first-sign-in
       with:
         # Outlast the collect step's 330 minute timeout.
         minimizer-seconds: 19800
