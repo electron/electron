@@ -84,39 +84,31 @@ namespace {
 
 int g_next_id = 0;
 
-// The map to convert |id| to |int|.
-auto& GetIdMap() {
-  static base::NoDestructor<base::flat_map<int, id>> g_id_map;
-  return *g_id_map;
-}
+struct Subscription {
+  id observer;
+  NotificationCenterKind kind;
+  SystemPreferences::NotificationCallback callback;
+};
 
-auto& GetKindMap() {
-  static base::NoDestructor<base::flat_map<int, NotificationCenterKind>>
-      g_kind_map;
-  return *g_kind_map;
-}
-
-// The JS callback of each live subscription, keyed by |id|. Only accessed on
-// the main thread, so the callback is never run or destroyed elsewhere.
-auto& GetCallbackMap() {
-  static base::NoDestructor<
-      base::flat_map<int, SystemPreferences::NotificationCallback>>
-      g_callback_map;
-  return *g_callback_map;
+// Live subscriptions, keyed by request id. Only accessed on the main thread,
+// so a subscription's JS callback is never run or destroyed elsewhere.
+auto& GetSubscriptions() {
+  static base::NoDestructor<base::flat_map<int, Subscription>> g_subscriptions;
+  return *g_subscriptions;
 }
 
 void RunNotificationCallback(int request_id,
                              const std::string& name,
                              base::Value user_info,
                              const std::string& object) {
-  auto& callbacks = GetCallbackMap();
-  auto iter = callbacks.find(request_id);
+  auto& subscriptions = GetSubscriptions();
+  auto iter = subscriptions.find(request_id);
   // The subscription may have been removed while a notification posted on
   // another thread was waiting to be delivered here.
-  if (iter == callbacks.end())
+  if (iter == subscriptions.end())
     return;
   // Run a copy so that the callback can unsubscribe itself.
-  SystemPreferences::NotificationCallback callback = iter->second;
+  SystemPreferences::NotificationCallback callback = iter->second.callback;
   callback.Run(name, std::move(user_info), object);
 }
 
@@ -313,8 +305,7 @@ int SystemPreferences::DoSubscribeNotification(
   // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   scoped_refptr<base::SingleThreadTaskRunner> main_task_runner =
       base::SingleThreadTaskRunner::GetCurrentDefault();
-  GetCallbackMap()[request_id] = callback;
-  GetIdMap()[request_id] = [GetNotificationCenter(kind)
+  id observer = [GetNotificationCenter(kind)
       addObserverForName:name
                   object:nil
                    queue:nil
@@ -332,30 +323,31 @@ int SystemPreferences::DoSubscribeNotification(
                                      base::Value(std::move(user_info)),
                                      std::move(object));
               }];
-  GetKindMap()[request_id] = kind;
+  // Notifications posted on other threads reach the callback through a task
+  // that runs after this returns, so registering it after the observer is
+  // safe.
+  GetSubscriptions()[request_id] = {
+      .observer = observer, .kind = kind, .callback = callback};
   return request_id;
 }
 
 void SystemPreferences::DoUnsubscribeNotification(int request_id,
                                                   NotificationCenterKind kind) {
-  auto iter = GetIdMap().find(request_id);
-  if (iter != GetIdMap().end()) {
-    id observer = iter->second;
-    [GetNotificationCenter(kind) removeObserver:observer];
-    GetIdMap().erase(iter);
-    GetKindMap().erase(request_id);
-    GetCallbackMap().erase(request_id);
+  auto& subscriptions = GetSubscriptions();
+  auto iter = subscriptions.find(request_id);
+  if (iter != subscriptions.end()) {
+    [GetNotificationCenter(kind) removeObserver:iter->second.observer];
+    subscriptions.erase(iter);
   }
 }
 
 void SystemPreferences::ClearNotificationSubscriptions() {
-  for (const auto& [request_id, observer] : GetIdMap()) {
-    auto kind = GetKindMap().at(request_id);
-    [GetNotificationCenter(kind) removeObserver:observer];
+  auto& subscriptions = GetSubscriptions();
+  for (const auto& [request_id, subscription] : subscriptions) {
+    [GetNotificationCenter(subscription.kind)
+        removeObserver:subscription.observer];
   }
-  GetIdMap().clear();
-  GetKindMap().clear();
-  GetCallbackMap().clear();
+  subscriptions.clear();
 }
 
 v8::Local<v8::Value> SystemPreferences::GetUserDefault(
