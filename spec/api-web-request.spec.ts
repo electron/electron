@@ -503,6 +503,38 @@ describe('webRequest module', () => {
       // This is a limitation of the WebRequest API.
       expect(result).toBe('');
     });
+
+    it('limits redirects across target loader restarts', async () => {
+      const requestURL = `${defaultURL}redirect-limit`;
+      const filter = { urls: [requestURL] };
+      const terminalEvents: string[] = [];
+      let calls = 0;
+      let redirects = 0;
+      defer(() => {
+        ses.webRequest.onBeforeRedirect(null);
+        ses.webRequest.onErrorOccurred(null);
+        ses.webRequest.onCompleted(null);
+      });
+      ses.webRequest.onBeforeRedirect(filter, () => redirects++);
+      ses.webRequest.onCompleted(filter, () => terminalEvents.push('completed'));
+      const error = new Promise<string>((resolve) => {
+        ses.webRequest.onErrorOccurred(filter, (details) => {
+          terminalEvents.push(details.error);
+          resolve(details.error);
+        });
+      });
+      ses.webRequest.onBeforeRequest(filter, (details, callback) => {
+        // Bound resource use even if the redirect limit regresses.
+        if (++calls > 25) return callback({ cancel: true });
+        setImmediate(() => callback({ redirectURL: details.url }));
+      });
+
+      await expect(ajax(requestURL)).rejects.toThrow();
+      expect(await error).toBe('net::ERR_TOO_MANY_REDIRECTS');
+      expect(calls).toBe(21);
+      expect(redirects).toBe(20);
+      expect(terminalEvents).toEqual(['net::ERR_TOO_MANY_REDIRECTS']);
+    });
   });
 
   describe('webRequest.onBeforeSendHeaders', () => {
