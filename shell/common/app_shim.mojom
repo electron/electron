@@ -144,6 +144,7 @@ interface AppShim {
   // NSVisualEffectState.
   SetWindowVibrancy(
       uint64 window_id, string type, int32 duration_ms, int32 state);
+  SetWindowHasShadow(uint64 window_id, bool has_shadow);
   PerformWindowTabAction(uint64 window_id, AppShimTabAction action);
   AddTabbedWindow(uint64 window_id, uint64 tabbed_window_id);
   PreviewFile(
