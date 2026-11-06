@@ -163,6 +163,7 @@ class ProxyingURLLoaderFactory
     mojo::ScopedDataPipeConsumerHandle current_body_;
     scoped_refptr<net::HttpResponseHeaders> override_headers_;
     GURL redirect_url_;
+    int redirect_count_ = 0;
 
     const bool for_cors_preflight_ = false;
 
