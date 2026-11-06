@@ -1,0 +1,234 @@
+From eaa1bac5d8b094256f1fa77d5f3086383b63aaca Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 5 Nov 2026 23:17:24 +0000
+Subject: [PATCH] siso: retry a local action once when its esbuild service was
+ stopped
+
+On macOS CI the devtools-frontend bundle actions intermittently fail
+with "Failed to run esbuild: Error: The service was stopped". Each of
+those actions runs scripts/build/esbuild.js under node, which starts
+one `esbuild --service` Go child; that child exits with status 1 and no
+output right after launch, before answering the build request. Memory
+pressure is ruled out, the cause is otherwise unknown, and rerunning
+the action succeeds. esbuild's JS API cannot restart a stopped service
+in-process, so the recovery has to be re-running the whole action.
+
+When a non-console local action exits non-zero and its stderr contains
+that exact esbuild message, run it once more and report only the
+second attempt's result and output. The retry is logged via
+clog.Warningf and also written to stderr so it is visible (and
+countable) in CI step output. It is limited to macOS, the only host
+where the failure has been seen; other platforms are unchanged.
+
+Add tests that a matching failure is retried exactly once (and the
+retry's success replaces the failure), that a second matching failure
+is not retried again, and that other failures, or the retry being
+disabled, run the action only once.
+---
+ siso/execute/localexec/esbuild_retry_test.go | 114 +++++++++++++++++++
+ siso/execute/localexec/localexec.go          |  57 ++++++++--
+ 2 files changed, 162 insertions(+), 9 deletions(-)
+ create mode 100644 siso/execute/localexec/esbuild_retry_test.go
+
+diff --git a/siso/execute/localexec/esbuild_retry_test.go b/siso/execute/localexec/esbuild_retry_test.go
+new file mode 100644
+index 0000000..d452155
+--- /dev/null
++++ b/siso/execute/localexec/esbuild_retry_test.go
+@@ -0,0 +1,114 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//go:build unix
++
++package localexec
++
++import (
++	"errors"
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++
++	"go.chromium.org/build/siso/execute"
++)
++
++// esbuildRetryCmd returns a cmd whose action appends a line to "runs" in its
++// workspace each time it starts, then fails with stderr firstErr on the first
++// run and with stderr laterErr (or succeeds, if laterErr is empty) after that.
++func esbuildRetryCmd(t *testing.T, firstErr, laterErr string) (*execute.Cmd, func() int) {
++	t.Helper()
++	ws := t.TempDir()
++	script := `echo run >> runs
++if [ "$(wc -l < runs)" -eq 1 ]; then
++  printf '%s\n' "$FIRST_ERR" >&2; exit 1
++fi
++if [ -n "$LATER_ERR" ]; then
++  printf '%s\n' "$LATER_ERR" >&2; exit 1
++fi
++echo ok`
++	cmd := &execute.Cmd{
++		Desc:          "ACTION //third_party/devtools-frontend:bundle",
++		Args:          []string{"/bin/sh", "-c", script},
++		Env:           append(os.Environ(), "FIRST_ERR="+firstErr, "LATER_ERR="+laterErr),
++		WorkspaceRoot: ws,
++	}
++	runs := func() int {
++		b, err := os.ReadFile(filepath.Join(ws, "runs"))
++		if err != nil {
++			t.Fatalf("read runs: %v", err)
++		}
++		return strings.Count(string(b), "\n")
++	}
++	return cmd, runs
++}
++
++func setRetryEsbuildServiceStopped(t *testing.T, v bool) {
++	t.Helper()
++	old := retryEsbuildServiceStopped
++	retryEsbuildServiceStopped = v
++	t.Cleanup(func() { retryEsbuildServiceStopped = old })
++}
++
++const serviceStoppedStderr = "Traceback (most recent call last):\nRuntimeError: Command failed\nstderr:\n" +
++	esbuildServiceStoppedMarker + "\n    at esbuild.js:1:1\nexit=1"
++
++func TestRunRetriesEsbuildServiceStopped(t *testing.T) {
++	setRetryEsbuildServiceStopped(t, true)
++	cmd, runs := esbuildRetryCmd(t, serviceStoppedStderr, "")
++	if err := Run(t.Context(), cmd); err != nil {
++		t.Fatalf("Run: %v; stderr=%q", err, cmd.Stderr())
++	}
++	if got := runs(); got != 2 {
++		t.Errorf("action ran %d times, want 2", got)
++	}
++	res, _ := cmd.ActionResult()
++	if res.GetExitCode() != 0 {
++		t.Errorf("exit code = %d, want 0", res.GetExitCode())
++	}
++	if got := strings.TrimSpace(string(cmd.Stdout())); got != "ok" {
++		t.Errorf("stdout = %q, want %q", got, "ok")
++	}
++	if len(cmd.Stderr()) != 0 {
++		t.Errorf("stderr = %q, want the failed attempt's stderr dropped", cmd.Stderr())
++	}
++}
++
++func TestRunRetriesEsbuildServiceStoppedOnlyOnce(t *testing.T) {
++	setRetryEsbuildServiceStopped(t, true)
++	cmd, runs := esbuildRetryCmd(t, serviceStoppedStderr, serviceStoppedStderr)
++	err := Run(t.Context(), cmd)
++	if !errors.As(err, &execute.ExitError{}) {
++		t.Fatalf("Run: %v, want ExitError", err)
++	}
++	if got := runs(); got != 2 {
++		t.Errorf("action ran %d times, want 2", got)
++	}
++}
++
++func TestRunNoRetryForOtherFailures(t *testing.T) {
++	setRetryEsbuildServiceStopped(t, true)
++	cmd, runs := esbuildRetryCmd(t, "Failed to run esbuild: Error: Build failed with 1 error", "")
++	err := Run(t.Context(), cmd)
++	if !errors.As(err, &execute.ExitError{}) {
++		t.Fatalf("Run: %v, want ExitError", err)
++	}
++	if got := runs(); got != 1 {
++		t.Errorf("action ran %d times, want 1", got)
++	}
++}
++
++func TestRunNoRetryWhenDisabled(t *testing.T) {
++	setRetryEsbuildServiceStopped(t, false)
++	cmd, runs := esbuildRetryCmd(t, serviceStoppedStderr, "")
++	err := Run(t.Context(), cmd)
++	if !errors.As(err, &execute.ExitError{}) {
++		t.Fatalf("Run: %v, want ExitError", err)
++	}
++	if got := runs(); got != 1 {
++		t.Errorf("action ran %d times, want 1", got)
++	}
++}
+diff --git a/siso/execute/localexec/localexec.go b/siso/execute/localexec/localexec.go
+index 3363b23..c98ddac 100644
+--- a/siso/execute/localexec/localexec.go
++++ b/siso/execute/localexec/localexec.go
+@@ -6,6 +6,7 @@
+ package localexec
+ 
+ import (
++	"bytes"
+ 	"context"
+ 	"errors"
+ 	"fmt"
+@@ -46,15 +47,15 @@ func Run(ctx context.Context, cmd *execute.Cmd) error {
+ 
+ // Run runs a cmd.
+ func (LocalExec) Run(ctx context.Context, cmd *execute.Cmd) (err error) {
+-	var res *rpb.ActionResult
+-	if cmd.Console {
+-		// Console actions need real stdin and output teed to the terminal, so
+-		// they always run in-process rather than through the spawn helper.
+-		res, err = run(ctx, cmd)
+-	} else {
+-		// Otherwise prefer the out-of-process spawn helper so the large-heap
+-		// siso process never fork()s (a no-op direct exec on non-unix).
+-		res, err = runViaHelper(ctx, cmd)
++	res, err := runAction(ctx, cmd)
++	if err == nil && shouldRetryEsbuildServiceStopped(ctx, cmd, res) {
++		msg := fmt.Sprintf("esbuild service was stopped in %q (exit=%d); retrying once", cmd.Desc, res.ExitCode)
++		clog.Warningf(ctx, "%s", msg)
++		fmt.Fprintf(os.Stderr, "siso: %s\n", msg)
++		// Drop the failed attempt's output so only the retry's is reported.
++		cmd.StdoutWriter()
++		cmd.StderrWriter()
++		res, err = runAction(ctx, cmd)
+ 	}
+ 	if err != nil {
+ 		return err
+@@ -91,6 +92,44 @@ func (LocalExec) Run(ctx context.Context, cmd *execute.Cmd) (err error) {
+ 	return cmd.RecordOutputsFromLocal(ctx, now)
+ }
+ 
++func runAction(ctx context.Context, cmd *execute.Cmd) (*rpb.ActionResult, error) {
++	if cmd.Console {
++		// Console actions need real stdin and output teed to the terminal, so
++		// they always run in-process rather than through the spawn helper.
++		return run(ctx, cmd)
++	}
++	// Otherwise prefer the out-of-process spawn helper so the large-heap
++	// siso process never fork()s (a no-op direct exec on non-unix).
++	return runViaHelper(ctx, cmd)
++}
++
++// esbuildServiceStoppedMarker is what Chromium's devtools-frontend
++// scripts/build/esbuild.js prints (via third_party/node/node.py) when the
++// esbuild Go service it spawns exits at startup before answering the build
++// request.
++const esbuildServiceStoppedMarker = "Failed to run esbuild: Error: The service was stopped"
++
++// retryEsbuildServiceStopped enables the one-shot retry below. It is limited
++// to macOS, the only host where the failure has been seen; tests override it.
++var retryEsbuildServiceStopped = runtime.GOOS == "darwin"
++
++// shouldRetryEsbuildServiceStopped reports whether a failed action should be
++// re-run once because its esbuild service child died at startup. On macOS CI
++// the `esbuild --service` child intermittently exits with status 1 and no
++// output right after launch, which fails the devtools-frontend bundle action
++// even though rerunning it succeeds. esbuild's JS API cannot restart a stopped
++// service in-process, so the whole action is re-run. Console actions are
++// excluded since their output has already been teed to the terminal.
++func shouldRetryEsbuildServiceStopped(ctx context.Context, cmd *execute.Cmd, res *rpb.ActionResult) bool {
++	if !retryEsbuildServiceStopped || cmd.Console || ctx.Err() != nil {
++		return false
++	}
++	if res == nil || res.ExitCode == 0 {
++		return false
++	}
++	return bytes.Contains(res.StderrRaw, []byte(esbuildServiceStoppedMarker))
++}
++
+ // fix for http://b/278658064 windows: fork/exec: Not enough memory resources are available to process this command.
+ var ForkSema = semaphore.New("fork", runtime.GOMAXPROCS(0))
+ 
