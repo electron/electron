@@ -100,6 +100,12 @@ class View : public gin::Wrappable<View>,
   views::View* view() const;
   std::optional<int> border_radius() const { return border_radius_; }
 
+  // Keeps this view out of the accessibility tree while it has no child
+  // view. Used for the empty container that a window installs as its content
+  // view, which screen readers otherwise report as an empty pane instead of
+  // the window content.
+  void SetHideFromAccessibilityWhenChildless(bool hide);
+
  protected:
   explicit View(std::unique_ptr<views::View> view);
 
@@ -127,6 +133,7 @@ class View : public gin::Wrappable<View>,
   views::View* live_view() const;
   void OnBoundsChanged();
   void OnChildViewRemoved(views::View* child);
+  void UpdateChildlessAccessibilityState();
   views::ProposedLayout CalculateProposedLayout(
       v8::Isolate* isolate,
       const views::SizeBounds& size_bounds);
@@ -145,6 +152,7 @@ class View : public gin::Wrappable<View>,
   cppgc::Member<ChildEntry> first_child_;
   v8::TracedReference<v8::Function> layout_callback_;
   std::optional<int> border_radius_;
+  bool hide_from_accessibility_when_childless_ = false;
   std::unique_ptr<Host, NativePeerBase::Deleter> host_;
 };
 
@@ -174,6 +182,8 @@ class View::Host : public NativePeer<View>, public views::ViewObserver {
 
   // views::ViewObserver:
   void OnViewBoundsChanged(views::View* observed_view) override;
+  void OnChildViewAdded(views::View* observed_view,
+                        views::View* child) override;
   void OnChildViewRemoved(views::View* observed_view,
                           views::View* child) override;
 
