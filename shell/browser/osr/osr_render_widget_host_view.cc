@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "base/location.h"
+#include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
 #include "base/notimplemented.h"
@@ -22,6 +23,7 @@
 #include "components/viz/common/frame_sinks/copy_output_request.h"
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/quads/compositor_render_pass.h"
+#include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_delegate.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/common/input/synthetic_gesture.h"  // nogncheck
@@ -30,6 +32,7 @@
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
+#include "gpu/config/gpu_feature_info.h"
 #include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
@@ -51,6 +54,28 @@
 namespace electron {
 
 namespace {
+
+// OSR has no OS window to clamp the root display surface size, so sizes
+// provided by the embedder are passed through to GPU composition unchanged.
+// When either dimension exceeds the backend's max render target size, the
+// Skia GrSurfaceCharacterization becomes invalid and the GPU process crashes.
+// The effective limit is the backend's reported max texture size (for example
+// 8192 on D3D feature level 10.0/10.1), capped at 16384, which is the limit on
+// D3D11 (D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION) and Metal (maxTextureDimension).
+constexpr int kMinOsrSurfaceSize = 8192;
+constexpr int kMaxOsrSurfaceSize = 16384;
+
+// Returns the maximum root surface size (px per dimension) supported by the
+// active GPU backend. Falls back to the lowest known backend limit while the
+// GPU process is still initializing (max_texture_size not reported yet).
+int GetOsrSurfaceSizeLimit() {
+  const auto& feature_info =
+      content::GpuDataManagerImpl::GetInstance()->GetGpuFeatureInfo();
+  if (feature_info.max_texture_size == 0)
+    return kMinOsrSurfaceSize;
+  return std::min(static_cast<int>(feature_info.max_texture_size),
+                  kMaxOsrSurfaceSize);
+}
 
 ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   int button_flags = 0;
@@ -282,7 +307,20 @@ void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
 }
 
 void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
-  size_ = size;
+  // Clamp in pixel space (scaled by the device scale factor) so that the final
+  // root surface size never exceeds the backend's max render target size (see
+  // GetOsrSurfaceSizeLimit).
+  const float dsf = std::max(offscreen_device_scale_factor_, 1.0f);
+  const int max_logical_size =
+      base::ClampFloor<int>(GetOsrSurfaceSizeLimit() / dsf);
+  gfx::Size clamped = size;
+  clamped.SetToMin(gfx::Size(max_logical_size, max_logical_size));
+  if (clamped != size) {
+    LOG(WARNING) << "OSR size clamped from " << size.ToString() << " to "
+                 << clamped.ToString() << " (limit " << kMaxOsrSurfaceSize
+                 << " px per dimension, dsf=" << dsf << ")";
+  }
+  size_ = clamped;
   SynchronizeVisualProperties();
 }
 
