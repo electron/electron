@@ -147,6 +147,7 @@ int NodeMain() {
     os_env->UnSetVar("NODE_OPTIONS");
   }
   UnsetFuseGatedNodeEnvVars(os_env.get());
+  UnsetInheritedNodeEnvVars(os_env.get());
 
 #if BUILDFLAG(IS_MAC)
   // Capture the parent's audit token as early as possible. The audit token

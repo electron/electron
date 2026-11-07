@@ -17,6 +17,7 @@ const fixture = path.join(import.meta.dirname, 'fixtures', 'apps', 'node-env-var
 interface Report {
   env: string[];
   compileCache: boolean;
+  proxy: boolean;
 }
 
 type AppResult = Record<'main' | 'worker' | 'utility' | 'utilityWithEnv' | 'renderer', Report> & {
@@ -25,10 +26,22 @@ type AppResult = Record<'main' | 'worker' | 'utility' | 'utilityWithEnv' | 'rend
 
 describe('Node.js environment variables', { timeout: 120000 }, () => {
   let dir: string;
+  // Respected only when set by the app itself if the fuse is disabled.
+  let inherited: Record<string, string>;
+  // Never respected if the fuse is disabled.
   let gated: Record<string, string>;
 
   beforeAll(async () => {
     dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'electron-node-env-vars-'));
+    inherited = {
+      NODE_PENDING_DEPRECATION: '1',
+      NODE_PRESERVE_SYMLINKS: '1',
+      NODE_PRESERVE_SYMLINKS_MAIN: '1',
+      NODE_REDIRECT_WARNINGS: path.join(dir, 'warnings.txt'),
+      NODE_TLS_REJECT_UNAUTHORIZED: '0',
+      NODE_USE_ENV_PROXY: '1',
+      NODE_USE_SYSTEM_CA: '1'
+    };
     gated = {
       NODE_COMPILE_CACHE: path.join(dir, 'cache'),
       NODE_COMPILE_CACHE_PORTABLE: '1',
@@ -47,7 +60,8 @@ describe('Node.js environment variables', { timeout: 120000 }, () => {
       if (!name.startsWith('NODE_')) env[name] = value;
     }
     Object.assign(env, vars, {
-      TEST_APP_VARS: JSON.stringify(gated),
+      HTTP_PROXY: 'http://127.0.0.1:1',
+      TEST_APP_VARS: JSON.stringify({ ...inherited, ...gated }),
       TEST_CACHE_DIR: path.join(dir, 'app-cache')
     });
     const child = spawn(exe, args, { env });
@@ -70,20 +84,24 @@ describe('Node.js environment variables', { timeout: 120000 }, () => {
   const runAsNode = (exe: string, vars: Record<string, string>): Promise<Report> =>
     run(exe, [path.join(fixture, 'report.js')], { ...vars, ELECTRON_RUN_AS_NODE: '1' });
 
+  const names = (...vars: Record<string, string>[]) => Object.keys(Object.assign({}, ...vars)).sort();
+
   describe('with the nodeOptions fuse enabled', () => {
     it('are respected', async () => {
-      const result = await runApp(process.execPath, gated);
-      const all = Object.keys(gated);
+      const result = await runApp(process.execPath, { ...inherited, ...gated });
+      const all = names(inherited, gated);
       for (const type of ['main', 'worker', 'utility', 'utilityWithEnv', 'renderer'] as const) {
         expect(result[type].env, type).toEqual(expect.arrayContaining(all));
         expect(result[type].compileCache, type).toBe(true);
       }
+      expect(result.main.proxy).toBe(true);
     });
 
     it('are respected with ELECTRON_RUN_AS_NODE', async () => {
-      const result = await runAsNode(process.execPath, gated);
-      expect(result.env).toEqual(expect.arrayContaining(Object.keys(gated)));
+      const result = await runAsNode(process.execPath, { ...inherited, ...gated });
+      expect(result.env).toEqual(expect.arrayContaining(names(inherited)));
       expect(result.compileCache).toBe(true);
+      expect(result.proxy).toBe(true);
     });
 
     it('do not include NODE_COMPILE_CACHE in packaged apps', async () => {
@@ -121,13 +139,18 @@ describe('Node.js environment variables', { timeout: 120000 }, () => {
       await originalFs.promises.rm(appDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
     }, 180000);
 
-    it('are ignored', async () => {
+    it('are not inherited from the launcher', async () => {
       fs.rmSync(gated.NODE_COMPILE_CACHE, { recursive: true, force: true });
-      const result = await runApp(exe, gated);
-      for (const type of ['main', 'worker', 'utility', 'utilityWithEnv', 'renderer'] as const) {
-        expect(result[type], type).toEqual({ env: [], compileCache: false });
+      const result = await runApp(exe, { ...inherited, ...gated });
+      for (const type of ['main', 'worker', 'utility', 'renderer'] as const) {
+        expect(result[type], type).toEqual({ env: [], compileCache: false, proxy: false });
       }
       expect(fs.existsSync(gated.NODE_COMPILE_CACHE)).toBe(false);
+    });
+
+    it('can partly be set by the app for its utility processes', async () => {
+      const { utilityWithEnv } = await runApp(exe, {});
+      expect(utilityWithEnv).toEqual({ env: names(inherited), compileCache: false, proxy: true });
     });
 
     it('do not prevent module.enableCompileCache()', async () => {
@@ -135,9 +158,14 @@ describe('Node.js environment variables', { timeout: 120000 }, () => {
       expect(enabledByApp).toBe(true);
     });
 
+    it('do not prevent startup when NODE_REPL_EXTERNAL_MODULE is set', async () => {
+      const { main } = await runApp(exe, { NODE_REPL_EXTERNAL_MODULE: path.join(fixture, 'report.js') });
+      expect(main.env).toEqual([]);
+    });
+
     it('are ignored with ELECTRON_RUN_AS_NODE', async () => {
-      const result = await runAsNode(exe, gated);
-      expect(result).toEqual({ env: [], compileCache: false });
+      const result = await runAsNode(exe, { ...inherited, ...gated });
+      expect(result).toEqual({ env: [], compileCache: false, proxy: false });
     });
   });
 });

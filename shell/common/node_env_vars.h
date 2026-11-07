@@ -15,11 +15,17 @@ class Environment;
 
 namespace electron {
 
-// Unsets the variables that are not respected when the nodeOptions fuse is
-// disabled, and returns the ones that were set. Call in every process before
-// Node.js is initialized.
+// Both functions do nothing unless the nodeOptions fuse is disabled.
+
+// Unsets the variables that are never respected. Call in every process before
+// Node.js is initialized. Returns the variables that were set.
 std::vector<base::cstring_view> UnsetFuseGatedNodeEnvVars(
     base::Environment* env);
+
+// Unsets the variables that are only respected when the app sets them itself.
+// Call at startup, before app code runs and before any child process exists.
+// Children must not call this, so that they keep what the app passes to them.
+void UnsetInheritedNodeEnvVars(base::Environment* env);
 
 }  // namespace electron
 

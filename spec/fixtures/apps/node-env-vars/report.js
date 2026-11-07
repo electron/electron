@@ -3,7 +3,8 @@ const report = () => ({
   env: Object.keys(process.env)
     .filter((name) => name.startsWith('NODE_'))
     .sort(),
-  compileCache: require('node:module').getCompileCacheDir() !== undefined
+  compileCache: require('node:module').getCompileCacheDir() !== undefined,
+  proxy: require('node:http').globalAgent.options.proxyEnv !== undefined
 });
 
 if (process.env.ELECTRON_RUN_AS_NODE) {

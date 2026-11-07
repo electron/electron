@@ -64,18 +64,36 @@ environment variable, and other environment variables that configure the Node.js
 The `NODE_OPTIONS` environment variable can be used to pass all kinds of custom options to the Node.js
 runtime and isn't typically used by apps in production. Most apps can safely disable this fuse.
 
-When this fuse is disabled, the following variables are ignored:
+When this fuse is disabled, the following variables are ignored in every process:
 
 * `NODE_OPTIONS`
 * [`NODE_COMPILE_CACHE`](https://nodejs.org/api/cli.html#node_compile_cachedir), `NODE_COMPILE_CACHE_PORTABLE` and `NODE_COMPILE_CACHE_READONLY`
 * [`NODE_EXTRA_CA_CERTS`](https://nodejs.org/api/cli.html#node_extra_ca_certsfile)
+* `NODE_REPL_EXTERNAL_MODULE`
+
+The following variables are ignored when the app is started with them. The app can still set them in
+`process.env` for its [utility processes](../api/utility-process.md). With `ELECTRON_RUN_AS_NODE` they
+are always ignored.
+
+* `NODE_PENDING_DEPRECATION`
+* `NODE_PRESERVE_SYMLINKS` and `NODE_PRESERVE_SYMLINKS_MAIN`
+* `NODE_REDIRECT_WARNINGS`
+* [`NODE_TLS_REJECT_UNAUTHORIZED`](https://nodejs.org/api/cli.html#node_tls_reject_unauthorizedvalue)
+* [`NODE_USE_ENV_PROXY`](https://nodejs.org/api/cli.html#node_use_env_proxy1)
+* [`NODE_USE_SYSTEM_CA`](https://nodejs.org/api/cli.html#node_use_system_ca1)
 
 Apps that need the behavior of one of these variables can turn it on in code instead:
 
 | Variable | Replacement |
 | --- | --- |
 | `NODE_COMPILE_CACHE` | [`module.enableCompileCache()`](https://nodejs.org/api/module.html#moduleenablecompilecacheoptions) |
-| `NODE_EXTRA_CA_CERTS` | [`tls.setDefaultCACertificates()`](https://nodejs.org/api/tls.html#tlssetdefaultcacertificatescerts) |
+| `NODE_EXTRA_CA_CERTS`, `NODE_USE_SYSTEM_CA` | [`tls.setDefaultCACertificates()`](https://nodejs.org/api/tls.html#tlssetdefaultcacertificatescerts) |
+| `NODE_USE_ENV_PROXY` | [`http.setGlobalProxyFromEnv()`](https://nodejs.org/api/http.html#httpsetglobalproxyfromenvproxyenv) |
+
+> [!NOTE]
+> `http.setGlobalProxyFromEnv()` uses `HTTP_PROXY` and similar variables unless it is given a
+> configuration. On Linux, `tls.getCACertificates('system')` uses `SSL_CERT_FILE` and `SSL_CERT_DIR`.
+> This fuse does not affect those variables.
 
 ### `nodeCliInspect`
 

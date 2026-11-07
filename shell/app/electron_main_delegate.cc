@@ -50,6 +50,7 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/logging.h"
+#include "shell/common/node_env_vars.h"
 #include "shell/common/process_util.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -234,6 +235,11 @@ std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 
   if (env->HasVar(kElectronDisableSandbox))
     command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
+
+  // Zygote-forked renderers get the environment the zygote was started with,
+  // so this has to happen before content creates the zygote.
+  if (IsBrowserProcess())
+    UnsetInheritedNodeEnvVars(env.get());
 
   tracing_sampler_profiler_ =
       tracing::TracingSamplerProfiler::CreateOnMainThread();
