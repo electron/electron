@@ -43,18 +43,19 @@ index ba02974778b98b83456e79ba62a9d6b30680039c..fd2e7a592cdeca42393d2e3f9f2a0e6c
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index ea061934bfdc01f22e017baf7ab67efb2bf4bfdb..dec1186e849390a042fa221a71f934bfb3bec30c 100644
+index eeeea6cfa75da6dac064686e5c8bca800c84604e..17b1d3e389c676e6ea94913220753cfe53318263 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -16,7 +16,6 @@
+@@ -16,8 +16,6 @@
  #include "build/branding_buildflags.h"
  #include "build/build_config.h"
  #include "chrome/browser/browser_process.h"
 -#include "chrome/browser/glic/public/glic_enabling.h"
+-#include "chrome/browser/glic/public/glic_provider_spec.h"
+ #include "chrome/browser/profiles/profile.h"
  #include "chrome/common/chrome_features.h"
  #include "chrome/common/extensions/api/pdf_viewer_private.h"
- #include "chrome/common/url_constants.h"
-@@ -287,10 +286,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -266,10 +264,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -68,7 +69,32 @@ index ea061934bfdc01f22e017baf7ab67efb2bf4bfdb..dec1186e849390a042fa221a71f934bf
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -548,11 +550,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -375,7 +376,9 @@ base::DictValue GetStrings(PdfViewerContext context) {
+ 
+ base::DictValue GetAdditionalData(content::WebContents* web_contents) {
+   content::BrowserContext* context = web_contents->GetBrowserContext();
++#if 0
+   Profile* profile = Profile::FromBrowserContext(context);
++#endif
+   // NOTE: This function should not include any data used for $i18n{}
+   // replacements. The i18n string resources should be added using GetStrings()
+   // above instead.
+@@ -385,10 +388,14 @@ base::DictValue GetAdditionalData(content::WebContents* web_contents) {
+                chrome_pdf::features::kPdfGetSaveDataInBlocks));
+   dict.Set("pdfGlicSummarizeEnabled",
+            ShouldShowGlicSummarizeButton(web_contents));
++#if 0
+   dict.Set("pdfGlicSummarizeUseLongButtonText",
+            glic::GetGlicProviderSpec(profile)
+                .GetPdfSummarizeFeatureParams()
+                .use_long_button_text);
++#else
++  dict.Set("pdfGlicSummarizeUseLongButtonText", false);
++#endif
+   dict.Set(
+       "pdfSearchifySaveEnabled",
+       base::FeatureList::IsEnabled(chrome_pdf::features::kPdfSearchifySave));
+@@ -533,11 +540,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  
