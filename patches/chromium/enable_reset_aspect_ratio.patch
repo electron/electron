@@ -19,7 +19,7 @@ index db21f47ffcdb610e8f73d764c8905451bd07d41e..ccfb78eb803766e2f3be95b86dc976f3
                                     excluded_margin);
  }
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index ef5ef8e3650b8931b4f7a4a9563be12298d60643..899801d88a6e883580195d0e89c1188be86d420c 100644
+index 5f8a5a26f0003c9bed8d308e626a3706de86319f..73bc629806f59e0bb6ceb89fde4947ff0b9d4b12 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -1195,8 +1195,11 @@ void HWNDMessageHandler::SetFullscreen(bool fullscreen,
@@ -27,7 +27,7 @@ index ef5ef8e3650b8931b4f7a4a9563be12298d60643..899801d88a6e883580195d0e89c1188b
  void HWNDMessageHandler::SetAspectRatio(float aspect_ratio,
                                          const gfx::Size& excluded_margin) {
 -  // If the aspect ratio is not in the valid range, do nothing.
--  DCHECK_GT(aspect_ratio, 0.0f);
+-  CHECK_GT(aspect_ratio, 0.0f, base::NotFatalUntil::M163);
 +  // If the aspect ratio is 0, reset it to null.
 +  if (aspect_ratio == 0.0f) {
 +    aspect_ratio_.reset();
