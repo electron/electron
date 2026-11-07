@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Sat, 7 Nov 2026 13:41:13 +0000
+Subject: src: stop using deprecated ArrayBufferView::Buffer()
+
+V8 deprecated `ArrayBufferView::Buffer()` in favour of `GetBuffer()`,
+which returns a `Local<ArrayBufferBase>` shared by `ArrayBuffer` and
+`SharedArrayBuffer`. `ArrayBufferViewContents` only needs
+`WasDetached()` and `Data()`, which the base class provides.
+
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8586076
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8714721
+
+diff --git a/src/util-inl.h b/src/util-inl.h
+index 5eae3882feb7f950b1cbaceb1e6ff33ddfd26629..bee43889675c777694886521a2cb66d6650247cd 100644
+--- a/src/util-inl.h
++++ b/src/util-inl.h
+@@ -598,10 +598,10 @@ ArrayBufferViewContents<T, S>::ArrayBufferViewContents(
+ template <typename T, size_t S>
+   requires(sizeof(T) == 1)
+ void ArrayBufferViewContents<T, S>::Read(v8::Local<v8::ArrayBufferView> abv) {
+-  was_detached_ = abv->Buffer()->WasDetached();
++  was_detached_ = abv->GetBuffer()->WasDetached();
+   length_ = abv->ByteLength();
+   if (length_ > sizeof(stack_storage_) || abv->HasBuffer()) {
+-    auto buf_data = abv->Buffer()->Data();
++    auto buf_data = abv->GetBuffer()->Data();
+     data_ = buf_data != nullptr ? static_cast<T*>(buf_data) + abv->ByteOffset()
+                                 : stack_storage_;
+   } else {
