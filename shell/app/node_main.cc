@@ -31,6 +31,7 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
+#include "shell/common/node_env_vars.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/platform_util.h"
@@ -104,8 +105,8 @@ void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
 
 #if BUILDFLAG(IS_MAC)
 // A list of node envs that may be used to inject scripts.
-constexpr base::cstring_view kHijackableEnvs[] = {"NODE_OPTIONS",
-                                                  "NODE_REPL_EXTERNAL_MODULE"};
+constexpr base::cstring_view kHijackableEnvs[] = {
+    "NODE_COMPILE_CACHE", "NODE_OPTIONS", "NODE_REPL_EXTERNAL_MODULE"};
 
 // Return true if there is any env in kHijackableEnvs.
 bool UnsetHijackableEnvs(base::Environment* env) {
@@ -144,8 +145,8 @@ int NodeMain() {
   bool node_options_enabled = electron::fuses::IsNodeOptionsEnabled();
   if (!node_options_enabled) {
     os_env->UnSetVar("NODE_OPTIONS");
-    os_env->UnSetVar("NODE_EXTRA_CA_CERTS");
   }
+  UnsetFuseGatedNodeEnvVars(os_env.get());
 
 #if BUILDFLAG(IS_MAC)
   // Capture the parent's audit token as early as possible. The audit token

@@ -60,10 +60,22 @@ later will make your cookie store corrupt and useless. Most apps can safely enab
 **@electron/fuses:** `FuseV1Options.EnableNodeOptionsEnvironmentVariable`
 
 The `nodeOptions` fuse toggles whether the [`NODE_OPTIONS`](https://nodejs.org/api/cli.html#node_optionsoptions)
-and [`NODE_EXTRA_CA_CERTS`](https://github.com/nodejs/node/blob/main/doc/api/cli.md#node_extra_ca_certsfile)
-environment variables are respected. The `NODE_OPTIONS` environment variable can be used to pass all
-kinds of custom options to the Node.js runtime and isn't typically used by apps in production.
-Most apps can safely disable this fuse.
+environment variable, and other environment variables that configure the Node.js runtime, are respected.
+The `NODE_OPTIONS` environment variable can be used to pass all kinds of custom options to the Node.js
+runtime and isn't typically used by apps in production. Most apps can safely disable this fuse.
+
+When this fuse is disabled, the following variables are ignored:
+
+* `NODE_OPTIONS`
+* [`NODE_COMPILE_CACHE`](https://nodejs.org/api/cli.html#node_compile_cachedir), `NODE_COMPILE_CACHE_PORTABLE` and `NODE_COMPILE_CACHE_READONLY`
+* [`NODE_EXTRA_CA_CERTS`](https://nodejs.org/api/cli.html#node_extra_ca_certsfile)
+
+Apps that need the behavior of one of these variables can turn it on in code instead:
+
+| Variable | Replacement |
+| --- | --- |
+| `NODE_COMPILE_CACHE` | [`module.enableCompileCache()`](https://nodejs.org/api/module.html#moduleenablecompilecacheoptions) |
+| `NODE_EXTRA_CA_CERTS` | [`tls.setDefaultCACertificates()`](https://nodejs.org/api/tls.html#tlssetdefaultcacertificatescerts) |
 
 ### `nodeCliInspect`
 

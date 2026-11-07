@@ -1364,6 +1364,30 @@ describe('node feature', () => {
         expect(out).toContain('NODE_OPTIONS passed to child');
       });
     });
+
+    const compileCacheScript = path.join(fixtures, 'api', 'exec-with-compile-cache.js');
+
+    it('disables NODE_COMPILE_CACHE when invoked by other apps in ELECTRON_RUN_AS_NODE mode', async () => {
+      await withTempDirectory(async (dir) => {
+        const appPath = await copySignedApp(dir, 'initial');
+        const args = [compileCacheScript, path.join(appPath, 'Contents/MacOS/Electron'), path.join(dir, 'cache')];
+        const { code, out } = await spawn('node', args);
+        expect(code).toBe(0);
+        expect(out).toContain(nodeOptionsWarning);
+        expect(out).toContain('compile cache: false');
+      });
+    });
+
+    it('respects NODE_COMPILE_CACHE when invoked from self', async () => {
+      await withTempDirectory(async (dir) => {
+        const appPath = await copySignedApp(dir, null);
+        const appExePath = path.join(appPath, 'Contents/MacOS/Electron');
+        const { code, out } = await spawn(appExePath, [compileCacheScript, appExePath, path.join(dir, 'cache')]);
+        expect(code).toBe(0);
+        expect(out).not.toContain(nodeOptionsWarning);
+        expect(out).toContain('compile cache: true');
+      });
+    });
   });
 
   describe('Node.js cli flags', () => {

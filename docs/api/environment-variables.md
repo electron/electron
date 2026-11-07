@@ -51,7 +51,8 @@ Unsupported options are:
 --http-parser
 ```
 
-If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_OPTIONS` will be ignored.
+If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_OPTIONS` and several
+other Node.js environment variables will be ignored.
 
 ### `NODE_EXTRA_CA_CERTS`
 
@@ -62,6 +63,18 @@ export NODE_EXTRA_CA_CERTS=/path/to/cert.pem
 ```
 
 If the [`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, `NODE_EXTRA_CA_CERTS` will be ignored.
+
+### `NODE_COMPILE_CACHE`
+
+See [Node.js cli documentation](https://nodejs.org/api/cli.html#node_compile_cachedir) for details.
+
+```sh
+export NODE_COMPILE_CACHE=/path/to/cache
+```
+
+`NODE_COMPILE_CACHE` is ignored in packaged apps, unless `ELECTRON_RUN_AS_NODE` is set. If the
+[`nodeOptions` fuse](../tutorial/fuses.md#nodeoptions) is disabled, it is always ignored. Apps can
+still turn on the compile cache with [`module.enableCompileCache()`](https://nodejs.org/api/module.html#moduleenablecompilecacheoptions).
 
 ### `GOOGLE_API_KEY`
 

@@ -43,6 +43,7 @@
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/mac/main_application_bundle.h"
+#include "shell/common/node_env_vars.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/platform_util.h"
@@ -475,11 +476,12 @@ void SetNodeOptions(base::Environment* env) {
       "--max-http-header-size",
   });
 
-  if (env->HasVar("NODE_EXTRA_CA_CERTS")) {
-    if (!electron::fuses::IsNodeOptionsEnabled()) {
-      LOG(WARNING) << "NODE_OPTIONS ignored due to disabled nodeOptions fuse.";
-      env->UnSetVar("NODE_EXTRA_CA_CERTS");
-    }
+  for (base::cstring_view name : electron::UnsetFuseGatedNodeEnvVars(env))
+    LOG(WARNING) << name << " ignored due to disabled nodeOptions fuse.";
+
+  if (env->HasVar("NODE_COMPILE_CACHE") && electron::api::App::IsPackaged()) {
+    LOG(WARNING) << "NODE_COMPILE_CACHE is not supported in packaged apps.";
+    env->UnSetVar("NODE_COMPILE_CACHE");
   }
 
   if (env->HasVar("NODE_OPTIONS")) {

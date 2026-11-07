@@ -775,6 +775,8 @@ filenames = {
     "shell/common/logging.h",
     "shell/common/node_bindings.cc",
     "shell/common/node_bindings.h",
+    "shell/common/node_env_vars.cc",
+    "shell/common/node_env_vars.h",
     "shell/common/node_includes.h",
     "shell/common/node_natives_code_cache.cc",
     "shell/common/node_natives_code_cache.h",
