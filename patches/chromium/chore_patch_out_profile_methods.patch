@@ -101,7 +101,7 @@ index eeeea6cfa75da6dac064686e5c8bca800c84604e..17b1d3e389c676e6ea94913220753cfe
 +#if 0
    Profile* profile =
        Profile::FromBrowserContext(web_contents->GetBrowserContext());
-   if (!glic::GlicEnabling::IsEnabledForProfile(profile)) {
+   if (!glic::GlicEnabling::IsPdfSummarizeEnabled(profile)) {
      return false;
    }
 +#endif
