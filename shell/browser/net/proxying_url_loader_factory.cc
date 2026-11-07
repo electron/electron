@@ -367,6 +367,16 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
   }
 }
 
+void ProxyingURLLoaderFactory::InProgressRequest::
+    OnLoaderFailedWithRemoteEndpoint(const net::IPEndPoint& remote_endpoint) {
+  // Record the resolved remote IP so that onErrorOccurred can report it, as
+  // the response head never arrives for a request that fails after resolving.
+  if (info_.has_value() && info_->response_ip.empty() &&
+      !remote_endpoint.address().empty()) {
+    info_->response_ip = remote_endpoint.ToStringWithoutPort();
+  }
+}
+
 void ProxyingURLLoaderFactory::InProgressRequest::OnBeforeSendHeaders(
     const GURL& request_url,
     const net::HttpRequestHeaders& headers,
@@ -948,6 +958,18 @@ void ProxyingURLLoaderFactory::OnLoaderCreated(
   auto request_it = requests_.find(it->second);
   DCHECK(request_it != requests_.end());
   request_it->second->OnLoaderCreated(std::move(receiver));
+}
+
+void ProxyingURLLoaderFactory::OnLoaderFailedWithRemoteEndpoint(
+    int32_t request_id,
+    const net::IPEndPoint& remote_endpoint) {
+  auto it = network_request_id_to_web_request_id_.find(request_id);
+  if (it == network_request_id_to_web_request_id_.end())
+    return;
+
+  auto request_it = requests_.find(it->second);
+  DCHECK(request_it != requests_.end());
+  request_it->second->OnLoaderFailedWithRemoteEndpoint(remote_endpoint);
 }
 
 void ProxyingURLLoaderFactory::OnLoaderForCorsPreflightCreated(

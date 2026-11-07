@@ -20,7 +20,7 @@ restores the pre-existing (is_win implies enable_openxr) semantics.
 This should be upstreamed.
 
 diff --git a/chrome/browser/vr/BUILD.gn b/chrome/browser/vr/BUILD.gn
-index 1e20a06ad209ac5ddf06ad9e5d2f78314372ef5c..81d283d48e1f091083a6a53c1d713bc7f7168bbe 100644
+index 99256a7c0c2fda84f2a7b81c325831c4063a5114..37960063c529b12f87b71bf19a649de80523a3b0 100644
 --- a/chrome/browser/vr/BUILD.gn
 +++ b/chrome/browser/vr/BUILD.gn
 @@ -539,8 +539,11 @@ if (enable_vr) {

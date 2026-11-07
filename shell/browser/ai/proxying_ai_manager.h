@@ -101,10 +101,12 @@ class ProxyingAIManager : public base::SupportsUserData::Data,
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
   void CanCreateSemanticEmbedder(
+      blink::mojom::AISemanticEmbedderCreateOptionsPtr options,
       CanCreateSemanticEmbedderCallback callback) override;
   void CreateSemanticEmbedder(
       mojo::PendingRemote<blink::mojom::AIManagerCreateSemanticEmbedderClient>
           client,
+      blink::mojom::AISemanticEmbedderCreateOptionsPtr options,
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
 

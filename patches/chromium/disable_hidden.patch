@@ -15,7 +15,7 @@ makes it defer main frames until the view is eventually shown. Key the
 decision off the host's visibility, as RenderWidgetHostViewMac does.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 4533f71937c8e672fd655f69789f45cead4cc419..a13e61125094d16083f7d723d6bc390bc5779c75 100644
+index b65be82b0100c2bd3a7fe7e670509a96548d94d9..e64462462df8e61a18a384873c415f2b8ab7ce4a 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -889,6 +889,10 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -30,10 +30,10 @@ index 4533f71937c8e672fd655f69789f45cead4cc419..a13e61125094d16083f7d723d6bc390b
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 78c3ce6a02931f958d01d8d304946617ccb05bd7..590b629f40c97110eb18017111ecacef8706d07b 100644
+index 69e40ca5af40ac89bf8449950493a800198c6e5d..9d607ef82724ea392fa29b70a3e014dd371301bb 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1112,6 +1112,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1114,6 +1114,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
  
    base::TimeDelta GetHungRendererDelayForTesting();
  
@@ -43,7 +43,7 @@ index 78c3ce6a02931f958d01d8d304946617ccb05bd7..590b629f40c97110eb18017111ecacef
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 51d15b39c9ed1f57d0fbd627a7f88a8baabab2d9..8af51ee5477b08300b16833b87fdefd40ff9cb42 100644
+index 1ca59a9ceba20b3c6a3446130cb1405e8a271106..314a8576db9440beef17dedfb4c8d3002072b843 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -790,7 +790,7 @@ void RenderWidgetHostViewAura::HideImpl() {
@@ -55,7 +55,7 @@ index 51d15b39c9ed1f57d0fbd627a7f88a8baabab2d9..8af51ee5477b08300b16833b87fdefd4
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
        aura::Window* parent = window_->parent();
-@@ -3916,7 +3916,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
+@@ -3971,7 +3971,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
  void RenderWidgetHostViewAura::DidNavigate() {
    CHECK(delegated_frame_host_) << "Cannot be invoked during destruction.";
  

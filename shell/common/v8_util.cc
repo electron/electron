@@ -413,13 +413,13 @@ namespace util {
  * UNSAFE_BUFFER_USAGE test, so let's isolate the unsafe API here.
  *
  * Where possible, Electron should use spans returned here instead of
- * |v8::ArrayBufferView::Buffer()->Data()|,
+ * |v8::ArrayBufferView::GetBuffer()->Data()|,
  * |v8::ArrayBufferView::ByteOffset()|,
  * |v8::ArrayBufferView::ByteLength()|.
  */
 base::span<uint8_t> as_byte_span(v8::Local<v8::ArrayBufferView> val) {
-  uint8_t* data = UNSAFE_BUFFERS(static_cast<uint8_t*>(val->Buffer()->Data()) +
-                                 val->ByteOffset());
+  uint8_t* data = UNSAFE_BUFFERS(
+      static_cast<uint8_t*>(val->GetBuffer()->Data()) + val->ByteOffset());
   const size_t size = val->ByteLength();
   return UNSAFE_BUFFERS(base::span{data, size});
 }

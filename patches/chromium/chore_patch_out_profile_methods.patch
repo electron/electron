@@ -43,18 +43,19 @@ index ba02974778b98b83456e79ba62a9d6b30680039c..fd2e7a592cdeca42393d2e3f9f2a0e6c
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index ea061934bfdc01f22e017baf7ab67efb2bf4bfdb..dec1186e849390a042fa221a71f934bfb3bec30c 100644
+index eeeea6cfa75da6dac064686e5c8bca800c84604e..17b1d3e389c676e6ea94913220753cfe53318263 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -16,7 +16,6 @@
+@@ -16,8 +16,6 @@
  #include "build/branding_buildflags.h"
  #include "build/build_config.h"
  #include "chrome/browser/browser_process.h"
 -#include "chrome/browser/glic/public/glic_enabling.h"
+-#include "chrome/browser/glic/public/glic_provider_spec.h"
+ #include "chrome/browser/profiles/profile.h"
  #include "chrome/common/chrome_features.h"
  #include "chrome/common/extensions/api/pdf_viewer_private.h"
- #include "chrome/common/url_constants.h"
-@@ -287,10 +286,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -266,10 +264,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -68,20 +69,73 @@ index ea061934bfdc01f22e017baf7ab67efb2bf4bfdb..dec1186e849390a042fa221a71f934bf
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -548,11 +550,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -375,7 +376,9 @@ base::DictValue GetStrings(PdfViewerContext context) {
+ 
+ base::DictValue GetAdditionalData(content::WebContents* web_contents) {
+   content::BrowserContext* context = web_contents->GetBrowserContext();
++#if 0
+   Profile* profile = Profile::FromBrowserContext(context);
++#endif
+   // NOTE: This function should not include any data used for $i18n{}
+   // replacements. The i18n string resources should be added using GetStrings()
+   // above instead.
+@@ -385,10 +388,14 @@ base::DictValue GetAdditionalData(content::WebContents* web_contents) {
+                chrome_pdf::features::kPdfGetSaveDataInBlocks));
+   dict.Set("pdfGlicSummarizeEnabled",
+            ShouldShowGlicSummarizeButton(web_contents));
++#if 0
+   dict.Set("pdfGlicSummarizeUseLongButtonText",
+            glic::GetGlicProviderSpec(profile)
+                .GetPdfSummarizeFeatureParams()
+                .use_long_button_text);
++#else
++  dict.Set("pdfGlicSummarizeUseLongButtonText", false);
++#endif
+   dict.Set(
+       "pdfSearchifySaveEnabled",
+       base::FeatureList::IsEnabled(chrome_pdf::features::kPdfSearchifySave));
+@@ -533,11 +540,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  
 +#if 0
    Profile* profile =
        Profile::FromBrowserContext(web_contents->GetBrowserContext());
-   if (!glic::GlicEnabling::IsEnabledForProfile(profile)) {
+   if (!glic::GlicEnabling::IsPdfSummarizeEnabled(profile)) {
      return false;
    }
 +#endif
  
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
+diff --git a/chrome/browser/pdf/pdf_help_bubble_handler_factory.cc b/chrome/browser/pdf/pdf_help_bubble_handler_factory.cc
+index 508a205d43192ddc05e777d4e91a66d3333d557d..6038322811b499874e00628ad22a814e53bd2103 100644
+--- a/chrome/browser/pdf/pdf_help_bubble_handler_factory.cc
++++ b/chrome/browser/pdf/pdf_help_bubble_handler_factory.cc
+@@ -11,8 +11,6 @@
+ #include "base/features.h"
+ #include "base/functional/bind.h"
+ #include "base/memory/self_deleting.h"
+-#include "chrome/browser/glic/public/glic_feature.h"
+-#include "chrome/browser/glic/public/glic_provider_spec.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/browser_element_identifiers.h"
+ #include "components/user_education/webui/help_bubble_handler.h"
+@@ -39,10 +37,13 @@ DEFINE_CLASS_ELEMENT_IDENTIFIER_VALUE(PdfHelpBubbleHandlerFactory,
+ void PdfHelpBubbleHandlerFactory::Create(
+     content::RenderFrameHost* render_frame_host,
+     HelpFactoryPendingReceiver receiver) {
+-  bool is_feature_enabled =
++  bool is_feature_enabled = false;
++#if 0
++  is_feature_enabled =
+       glic::GetGlicProviderSpec(
+           Profile::FromBrowserContext(render_frame_host->GetBrowserContext()))
+           .SupportsFeature(glic::GlicFeature::kPdfSummarize);
++#endif
+ #if BUILDFLAG(ENABLE_PDF_INK2)
+   is_feature_enabled |=
+       base::FeatureList::IsEnabled(chrome_pdf::features::kPdfInk2);
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
 index 89e865b5e487fec01e45b171d6bbe95efd63f292..06a8aae836d86d095a8d457573766d198d7992a8 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
