@@ -863,14 +863,13 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
 
   // Use mojo to deserialize the exported shared image.
   mojo::Message message(transfer_data.value(), {});
-  mojo::internal::MessageFragment<
-      gpu::mojom::internal::ExportedSharedImage_Data>
-      data(message);
-  data.Claim(message.mutable_payload());
+  auto* data =
+      reinterpret_cast<gpu::mojom::internal::ExportedSharedImage_Data*>(
+          message.mutable_payload());
 
   gpu::ExportedSharedImage exported;
   mojo::internal::Serializer<gpu::mojom::ExportedSharedImageDataView,
-                             gpu::ExportedSharedImage>::Deserialize(data.data(),
+                             gpu::ExportedSharedImage>::Deserialize(data,
                                                                     &exported,
                                                                     &message);
 
