@@ -15,6 +15,11 @@
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
+#if BUILDFLAG(IS_LINUX)
+#include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/lib/session_end_listener_linux.h"
+#endif
+
 #if BUILDFLAG(IS_WIN)
 #include "ui/base/win/session_change_observer.h"
 #endif
@@ -75,9 +80,24 @@ PowerMonitor::PowerMonitor() {
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   InitPlatformSpecificMonitors();
 #endif
+
+#if BUILDFLAG(IS_LINUX)
+  // The listener outlives this object; let it ask about "shutdown".
+  if (auto* listener = ElectronBrowserMainParts::GetSessionEndListener()) {
+    listener->SetShouldQuitHandler(base::BindRepeating(
+        &PowerMonitor::ShouldQuitForSessionEnd, base::Unretained(this)));
+  }
+#endif
 }
 
 PowerMonitor::~PowerMonitor() {
+#if BUILDFLAG(IS_LINUX)
+  // The listener outlives this object, so stop pointing at it.
+  if (auto* listener = ElectronBrowserMainParts::GetSessionEndListener()) {
+    listener->SetShouldQuitHandler(base::RepeatingCallback<bool()>());
+  }
+#endif
+
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   DestroyPlatformSpecificMonitors();
 #endif
@@ -88,7 +108,7 @@ PowerMonitor::~PowerMonitor() {
   power_monitor->RemovePowerThermalObserver(this);
 }
 
-bool PowerMonitor::ShouldShutdown() {
+bool PowerMonitor::ShouldQuitForSessionEnd() {
   return !Emit("shutdown");
 }
 
@@ -131,18 +151,6 @@ void PowerMonitor::OnSpeedLimitChange(int speed_limit) {
       gin::DataObjectBuilder(isolate).Set("limit", speed_limit).Build());
 }
 
-#if BUILDFLAG(IS_LINUX)
-void PowerMonitor::SetListeningForShutdown(bool is_listening) {
-  if (is_listening) {
-    // unretained is OK because we own power_observer_linux_
-    power_observer_linux_.SetShutdownHandler(base::BindRepeating(
-        &PowerMonitor::ShouldShutdown, base::Unretained(this)));
-  } else {
-    power_observer_linux_.SetShutdownHandler(base::RepeatingCallback<bool()>());
-  }
-}
-#endif
-
 // static
 PowerMonitor* PowerMonitor::Create(v8::Isolate* isolate) {
   return cppgc::MakeGarbageCollected<PowerMonitor>(
@@ -154,10 +162,6 @@ gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
   auto builder =
       gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
           isolate);
-#if BUILDFLAG(IS_LINUX)
-  builder.SetMethod("setListeningForShutdown",
-                    &PowerMonitor::SetListeningForShutdown);
-#endif
   return builder;
 }
 

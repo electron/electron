@@ -83,6 +83,7 @@
 #include "device/bluetooth/dbus/bluez_dbus_manager.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #include "electron/electron_gtk_stubs.h"
+#include "shell/browser/lib/session_end_listener_linux.h"
 #include "ui/base/cursor/cursor_factory.h"
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
@@ -207,6 +208,13 @@ ElectronBrowserMainParts::ElectronBrowserMainParts()
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
+
+#if BUILDFLAG(IS_LINUX)
+// static
+SessionEndListenerLinux* ElectronBrowserMainParts::GetSessionEndListener() {
+  return self_ ? self_->session_end_listener_.get() : nullptr;
+}
+#endif
 
 #if BUILDFLAG(IS_LINUX)
 namespace {
@@ -670,6 +678,14 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
       base::BindOnce(&ExitOnSessionLoss),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
   dbus_thread_linux::Initialize(base::BindRepeating(&ExitOnSessionLoss));
+
+  session_end_listener_ = std::make_unique<SessionEndListenerLinux>(
+      dbus_thread_linux::GetSharedSystemBus(),
+      dbus_thread_linux::GetSharedSessionBus(),
+      base::RepeatingCallback<bool()>(), base::BindRepeating([] {
+        if (auto* browser = Browser::Get())
+          browser->Quit();
+      }));
 
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();

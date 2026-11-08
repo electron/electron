@@ -17,24 +17,6 @@ class PowerMonitor extends EventEmitter implements Electron.PowerMonitor {
     this.once('newListener', () => {
       pm = createPowerMonitor();
       pm.emit = this.emit.bind(this);
-
-      if (process.platform === 'linux') {
-        // On Linux, we inhibit shutdown in order to give the app a chance to
-        // decide whether or not it wants to prevent the shutdown. We don't
-        // inhibit the shutdown event unless there's a listener for it. This
-        // keeps the C++ code informed about whether there are any listeners.
-        pm.setListeningForShutdown(this.listenerCount('shutdown') > 0);
-        this.on('newListener', (event) => {
-          if (event === 'shutdown') {
-            pm.setListeningForShutdown(this.listenerCount('shutdown') + 1 > 0);
-          }
-        });
-        this.on('removeListener', (event) => {
-          if (event === 'shutdown') {
-            pm.setListeningForShutdown(this.listenerCount('shutdown') > 0);
-          }
-        });
-      }
     });
   }
 
