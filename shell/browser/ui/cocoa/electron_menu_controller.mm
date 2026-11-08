@@ -159,9 +159,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 @implementation ElectronMenuItemState {
   base::WeakPtr<electron::ElectronMenuModel> _model;
 }
-
-@synthesize appliedTitle;
-@synthesize hasAppliedImage;
+@synthesize appliedTitle = _appliedTitle;
+@synthesize hasAppliedImage = _hasAppliedImage;
 
 + (instancetype)stateWithModel:(electron::ElectronMenuModel*)model {
   return [[ElectronMenuItemState alloc] initWithModel:model];

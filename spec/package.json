@@ -11,6 +11,7 @@
     "@electron-ci/dialog-helper": "*",
     "@electron-ci/echo": "*",
     "@electron-ci/is-valid-window": "*",
+    "@electron-ci/menu-helper": "*",
     "@electron-ci/mouse-input": "*",
     "@electron-ci/object-wrap": "*",
     "@electron-ci/uv-dlopen": "*",
