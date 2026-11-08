@@ -3806,6 +3806,21 @@ void WebContents::FlushPendingDevToolsOpen() {
   PendingDevToolsOpen pending =
       std::exchange(pending_devtools_open_, std::nullopt).value();
   ShowDevToolsNow(pending.mode, pending.activate, pending.title);
+
+  // ShowDevTools() has attached the page's agent synchronously, so an inspect
+  // target recorded while the open was pending can be applied right away.
+  auto* inspectable = native_lifecycle_->inspectable_web_contents_.get();
+  if (!inspectable)
+    return;
+  if (pending.attach_agent_id) {
+    // The worker may have gone away meanwhile; the page stays attached then.
+    if (auto host =
+            content::DevToolsAgentHost::GetForId(*pending.attach_agent_id))
+      inspectable->AttachTo(std::move(host));
+  } else if (pending.inspect_point) {
+    inspectable->InspectElement(pending.inspect_point->x(),
+                                pending.inspect_point->y());
+  }
 }
 
 content::WebContents* WebContents::GetWebContents() const {
@@ -4532,12 +4547,22 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
   // on how early openDevTools() was called, and policies that need the window
   // — the Window Controls Overlay check in ShowDevTools(), for one — would be
   // skipped. So wait for the owner: SetOwnerWindow() replays this, and
-  // AddNewContents() runs it without one if the child never got a window. The
-  // first request wins, as it does once DevTools are open.
+  // AddNewContents() runs it without one if the child never got a window.
+  //
+  // A further call while one is pending merges into it the way a further call
+  // behaves once DevTools are open: the first dock mode stays, since an open
+  // DevTools is not re-docked, but the later title applies and the later call
+  // can still activate them.
   if (owned_by_window_ && !owner_window()) {
-    if (!pending_devtools_open_)
-      pending_devtools_open_ = PendingDevToolsOpen{std::move(mode), activate,
-                                                   std::move(title)};
+    if (!pending_devtools_open_) {
+      pending_devtools_open_.emplace();
+      pending_devtools_open_->mode = std::move(mode);
+      pending_devtools_open_->activate = activate;
+    } else {
+      pending_devtools_open_->activate =
+          pending_devtools_open_->activate || activate;
+    }
+    pending_devtools_open_->title = std::move(title);
     return;
   }
 
@@ -4598,6 +4623,10 @@ std::u16string WebContents::GetDevToolsTitle() {
 }
 
 void WebContents::SetDevToolsTitle(const std::u16string& title) {
+  // A pending open applies its title when it runs; keep that in step, or it
+  // would overwrite a title set after openDevTools() was called.
+  if (pending_devtools_open_)
+    pending_devtools_open_->title = base::UTF16ToUTF8(title);
   if (native_lifecycle_->inspectable_web_contents_)
     native_lifecycle_->inspectable_web_contents_->SetDevToolsTitle(title);
 }
@@ -4661,11 +4690,28 @@ void WebContents::InspectElement(int x, int y) {
   if (!enable_devtools_ || !native_lifecycle_->inspectable_web_contents_)
     return;
 
+  // With an open pending, inspect once it runs, with the caller's options and
+  // owner window, rather than opening differently now.
+  if (pending_devtools_open_) {
+    pending_devtools_open_->inspect_point = gfx::Point(x, y);
+    return;
+  }
+
   // Not OpenDevTools(): that may defer, and InspectElement() below needs the
   // DevTools agent to exist now or it silently does nothing.
   if (!GetDevToolsWebContents())
     ShowDevToolsNow(std::nullopt, true, std::string());
   native_lifecycle_->inspectable_web_contents_->InspectElement(x, y);
+}
+
+void WebContents::AttachDevToolsTo(
+    const scoped_refptr<content::DevToolsAgentHost>& host) {
+  if (pending_devtools_open_) {
+    pending_devtools_open_->attach_agent_id = host->GetId();
+    return;
+  }
+  ShowDevToolsNow(std::nullopt, true, std::string());
+  native_lifecycle_->inspectable_web_contents_->AttachTo(host);
 }
 
 void WebContents::InspectSharedWorkerById(const std::string& workerId) {
@@ -4679,8 +4725,7 @@ void WebContents::InspectSharedWorkerById(const std::string& workerId) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeSharedWorker) {
       if (agent_host->GetId() == workerId) {
-        ShowDevToolsNow(std::nullopt, true, std::string());
-        native_lifecycle_->inspectable_web_contents_->AttachTo(agent_host);
+        AttachDevToolsTo(agent_host);
         break;
       }
     }
@@ -4716,8 +4761,7 @@ void WebContents::InspectSharedWorker() {
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeSharedWorker) {
-      ShowDevToolsNow(std::nullopt, true, std::string());
-      native_lifecycle_->inspectable_web_contents_->AttachTo(agent_host);
+      AttachDevToolsTo(agent_host);
       break;
     }
   }
@@ -4733,8 +4777,7 @@ void WebContents::InspectServiceWorker() {
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeServiceWorker) {
-      ShowDevToolsNow(std::nullopt, true, std::string());
-      native_lifecycle_->inspectable_web_contents_->AttachTo(agent_host);
+      AttachDevToolsTo(agent_host);
       break;
     }
   }

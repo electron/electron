@@ -45,6 +45,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "third_party/skia/include/core/SkRegion.h"
+#include "ui/gfx/geometry/point.h"
 #include "v8/include/cppgc/persistent.h"
 
 #if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
@@ -559,17 +560,27 @@ class WebContents final : public gin::Wrappable<WebContents>,
     std::optional<std::string> mode;
     bool activate = true;
     std::string title;
+    // What inspect calls made while the open was pending should show once it
+    // runs. A worker takes precedence over an element, whatever the order: once
+    // a worker's agent is attached, InspectElement() does nothing.
+    std::optional<gfx::Point> inspect_point;    // inspectElement()
+    std::optional<std::string> attach_agent_id;  // the worker inspectors
   };
 
-  // Resolves the dock state and shows DevTools right away. Callers that need
-  // the frontend immediately (inspectElement() and friends) use this directly
-  // rather than OpenDevTools(), which may defer.
+  // Resolves the dock state and shows DevTools right away. OpenDevTools() may
+  // defer instead; the inspect calls use this when nothing is pending, and
+  // otherwise ride along with the pending request.
   void ShowDevToolsNow(const std::optional<std::string>& mode,
                        bool activate,
                        const std::string& title);
 
+  // Shows DevTools attached to |host|, or, while an open is pending, records
+  // |host| to be attached once that open runs.
+  void AttachDevToolsTo(const scoped_refptr<content::DevToolsAgentHost>& host);
+
   // Runs a deferred openDevTools(), if there is one, with whatever owner window
-  // these contents have by now.
+  // these contents have by now, then applies any inspect target recorded
+  // alongside it.
   void FlushPendingDevToolsOpen();
 
   base::flat_set<GURL> last_favicon_urls_;

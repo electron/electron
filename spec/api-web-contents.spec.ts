@@ -1902,13 +1902,44 @@ describe('webContents module', () => {
       expect(await devToolsDockState(w)).toBe('bottom');
     });
 
-    it('keeps the first openDevTools() request made before the window owns its contents', async () => {
+    it('keeps the dock mode of the first openDevTools() made before the window owns its contents', async () => {
       // Once DevTools are open a second openDevTools() does not re-dock them, so
-      // the deferred path keeps the first request too.
+      // the deferred path keeps the first dock mode too.
       const w = await openDevToolsWhileCreating({}, (contents) => {
         contents.openDevTools({ mode: 'bottom' });
         contents.openDevTools({ mode: 'left' });
       });
+      expect(await devToolsDockState(w)).toBe('bottom');
+    });
+
+    it('applies the title of a later openDevTools() made before the window owns its contents', async () => {
+      // A second openDevTools() on open DevTools still sets its title, so a
+      // later request merges its title into the pending one.
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'detach' });
+        contents.openDevTools({ mode: 'detach', title: 'Second' });
+      });
+      expect(w.webContents.getDevToolsTitle()).toBe('Second');
+    });
+
+    it('keeps a title set after openDevTools() before the window owns its contents', async () => {
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'detach' });
+        // Applied while the open is pending; replaying the open must not
+        // overwrite it with the title the request was made with.
+        contents.setDevToolsTitle('Custom title');
+      });
+      expect(w.webContents.getDevToolsTitle()).toBe('Custom title');
+    });
+
+    it('opens with the pending request options when inspectElement() follows openDevTools()', async () => {
+      // inspectElement() must not open DevTools its own way while a request is
+      // pending; it inspects once that request has run, with its options.
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'bottom', activate: false });
+        contents.inspectElement(0, 0);
+      });
+      expect(await devToolsCanDock(w.webContents)).toBe(true);
       expect(await devToolsDockState(w)).toBe('bottom');
     });
 
@@ -1925,7 +1956,7 @@ describe('webContents module', () => {
           opened = once(contents, 'devtools-opened');
           onCreated(contents);
         });
-        w.webContents.executeJavaScript('window.open("about:blank")', true);
+        await w.webContents.executeJavaScript('void window.open("about:blank")', true);
         await waitUntil(() => opened !== undefined);
         await opened;
         return child!;
