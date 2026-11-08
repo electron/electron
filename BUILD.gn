@@ -574,6 +574,52 @@ action("electron_generate_preload_realm_bindings") {
       [ "--modules-idl-files" ] + rebase_path(modules_idl_files, root_build_dir)
 }
 
+action("electron_node_env_vars_check") {
+  script = "build/check_node_env_vars.py"
+  _node_dir = "//third_party/electron_node"
+  inputs = [
+    "shell/common/node_env_vars.cc",
+    "shell/common/node_env_vars.json",
+  ]
+  _search = "$_node_dir/tools/search_files.py"
+  _here = rebase_path(".", root_build_dir)
+  inputs += exec_script(_search,
+                        [
+                          _here,
+                          rebase_path("$_node_dir/lib", root_build_dir),
+                          "js",
+                        ],
+                        "list lines",
+                        [ "$_node_dir/lib" ])
+  inputs += exec_script(_search,
+                        [
+                          _here,
+                          rebase_path("$_node_dir/src", root_build_dir),
+                          "cc",
+                        ],
+                        "list lines",
+                        [ "$_node_dir/src" ])
+  inputs += exec_script(_search,
+                        [
+                          _here,
+                          rebase_path("$_node_dir/src", root_build_dir),
+                          "h",
+                        ],
+                        "list lines",
+                        [ "$_node_dir/src" ])
+  outputs = [ "$target_gen_dir/electron_node_env_vars_check.stamp" ]
+  args = [
+    "--node-dir",
+    rebase_path(_node_dir, root_build_dir),
+    "--manifest",
+    rebase_path("shell/common/node_env_vars.json", root_build_dir),
+    "--cc",
+    rebase_path("shell/common/node_env_vars.cc", root_build_dir),
+    "--stamp",
+    rebase_path(outputs[0], root_build_dir),
+  ]
+}
+
 source_set("electron_lib") {
   configs += [
     "//v8:external_startup_data",
@@ -590,6 +636,7 @@ source_set("electron_lib") {
     ":electron_generate_node_defines",
     ":electron_generate_preload_realm_bindings",
     ":electron_js2c",
+    ":electron_node_env_vars_check",
     ":electron_version_header",
     ":resources",
     "buildflags",

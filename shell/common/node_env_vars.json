@@ -1,0 +1,227 @@
+{
+  "//": "Every environment variable that Node.js reads, and how the nodeOptions fuse treats it. build/check_node_env_vars.py fails the build when Node.js reads one that is not listed here. fuse-gated: removed in every process when the fuse is disabled (kFuseGated). inherited: removed at startup when the fuse is disabled, so only values the app sets reach child processes (kInherited). handled: covered by other code, see why. allowed: reviewed and left alone, see why.",
+  "CI_NAME": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "COLORTERM": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "FORCE_COLOR": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "HTTPS_PROXY": {
+    "action": "handled",
+    "why": "only read when NODE_USE_ENV_PROXY or --use-env-proxy is set"
+  },
+  "HTTP_PROXY": {
+    "action": "handled",
+    "why": "only read when NODE_USE_ENV_PROXY or --use-env-proxy is set"
+  },
+  "NODE_BENCH_CONTEXT": {
+    "action": "allowed",
+    "why": "only read by the node:bench runner"
+  },
+  "NODE_BENCH_FILE_RUN_ID": {
+    "action": "allowed",
+    "why": "only read by the node:bench runner"
+  },
+  "NODE_BENCH_RUN_ID": {
+    "action": "allowed",
+    "why": "only read by the node:bench runner"
+  },
+  "NODE_CHANNEL_FD": {
+    "action": "allowed",
+    "why": "set by child_process.fork() and utilityProcess; opens an IPC channel to the parent on the given descriptor"
+  },
+  "NODE_CHANNEL_SERIALIZATION_MODE": {
+    "action": "allowed",
+    "why": "set by child_process.fork(); selects the IPC wire format for NODE_CHANNEL_FD"
+  },
+  "NODE_CLUSTER_SCHED_POLICY": {
+    "action": "allowed",
+    "why": "only affects a process that calls cluster.fork()"
+  },
+  "NODE_COMPILE_CACHE": {
+    "action": "fuse-gated"
+  },
+  "NODE_COMPILE_CACHE_PORTABLE": {
+    "action": "fuse-gated"
+  },
+  "NODE_COMPILE_CACHE_READONLY": {
+    "action": "fuse-gated"
+  },
+  "NODE_DEBUG": {
+    "action": "allowed",
+    "why": "prints debug logging for the listed core modules to stderr"
+  },
+  "NODE_DEBUG_NATIVE": {
+    "action": "allowed",
+    "why": "prints debug logging for the listed native subsystems to stderr"
+  },
+  "NODE_DISABLE_COLORS": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "NODE_DISABLE_COMPILE_CACHE": {
+    "action": "allowed",
+    "why": "turns the compile cache off"
+  },
+  "NODE_EXTRA_CA_CERTS": {
+    "action": "fuse-gated"
+  },
+  "NODE_ICU_DATA": {
+    "action": "allowed",
+    "why": "ignored; ICU data is linked into the binary"
+  },
+  "NODE_INSPECT_RESUME_ON_START": {
+    "action": "allowed",
+    "why": "only read by the node inspect debugger client"
+  },
+  "NODE_NO_READLINE": {
+    "action": "allowed",
+    "why": "only read by the interactive REPL"
+  },
+  "NODE_NO_WARNINGS": {
+    "action": "allowed",
+    "why": "silences process warnings"
+  },
+  "NODE_OPTIONS": {
+    "action": "handled",
+    "why": "SetNodeOptions() in node_bindings.cc and kDisableNodeOptionsEnv apply the fuse and the packaged app rules"
+  },
+  "NODE_PATH": {
+    "action": "handled",
+    "why": "ignored outside ELECTRON_RUN_AS_NODE because Electron sets kNoGlobalSearchPaths"
+  },
+  "NODE_PENDING_DEPRECATION": {
+    "action": "inherited"
+  },
+  "NODE_PENDING_PIPE_INSTANCES": {
+    "action": "allowed",
+    "why": "tunes named pipe server backlog on Windows"
+  },
+  "NODE_PRESERVE_SYMLINKS": {
+    "action": "inherited"
+  },
+  "NODE_PRESERVE_SYMLINKS_MAIN": {
+    "action": "inherited"
+  },
+  "NODE_REDIRECT_WARNINGS": {
+    "action": "inherited"
+  },
+  "NODE_REPL_EXTERNAL_MODULE": {
+    "action": "fuse-gated"
+  },
+  "NODE_REPL_HISTORY": {
+    "action": "allowed",
+    "why": "only read by the interactive REPL"
+  },
+  "NODE_REPL_HISTORY_SIZE": {
+    "action": "allowed",
+    "why": "only read by the interactive REPL"
+  },
+  "NODE_REPL_MODE": {
+    "action": "allowed",
+    "why": "only read by the interactive REPL"
+  },
+  "NODE_SKIP_PLATFORM_CHECK": {
+    "action": "allowed",
+    "why": "skips the minimum Windows version check at startup"
+  },
+  "NODE_TEST_CONTEXT": {
+    "action": "allowed",
+    "why": "only read by the node:test runner"
+  },
+  "NODE_TEST_WORKER_ID": {
+    "action": "allowed",
+    "why": "only read by the node:test runner"
+  },
+  "NODE_TLS_REJECT_UNAUTHORIZED": {
+    "action": "inherited"
+  },
+  "NODE_UNIQUE_ID": {
+    "action": "allowed",
+    "why": "set by cluster.fork(); makes the process a cluster worker whose listen() is delegated to the parent"
+  },
+  "NODE_USE_ENV_PROXY": {
+    "action": "inherited"
+  },
+  "NODE_USE_SYSTEM_CA": {
+    "action": "inherited"
+  },
+  "NODE_V8_COVERAGE": {
+    "action": "allowed",
+    "why": "writes V8 coverage reports to the given directory at exit"
+  },
+  "NO_COLOR": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "NO_PROXY": {
+    "action": "handled",
+    "why": "only read when NODE_USE_ENV_PROXY or --use-env-proxy is set"
+  },
+  "OPENSSL_CONF": {
+    "action": "allowed",
+    "why": "ignored; BoringSSL does not load a configuration file"
+  },
+  "SSL_CERT_DIR": {
+    "action": "allowed",
+    "why": "only read with --use-openssl-ca, which BoringSSL builds do not support"
+  },
+  "SSL_CERT_FILE": {
+    "action": "allowed",
+    "why": "only read with --use-openssl-ca, which BoringSSL builds do not support"
+  },
+  "TEAMCITY_VERSION": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "TEMP": {
+    "action": "allowed",
+    "why": "os.tmpdir()"
+  },
+  "TERM": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "TERM_PROGRAM": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "TERM_PROGRAM_VERSION": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "TMP": {
+    "action": "allowed",
+    "why": "os.tmpdir()"
+  },
+  "TMPDIR": {
+    "action": "allowed",
+    "why": "os.tmpdir()"
+  },
+  "TMUX": {
+    "action": "allowed",
+    "why": "terminal color detection only"
+  },
+  "TZ": {
+    "action": "allowed",
+    "why": "process time zone"
+  },
+  "USERPROFILE": {
+    "action": "handled",
+    "why": "only used for the HOME/.node_modules search path, which kNoGlobalSearchPaths disables"
+  },
+  "UV_THREADPOOL_SIZE": {
+    "action": "allowed",
+    "why": "libuv thread pool size"
+  },
+  "WATCH_REPORT_DEPENDENCIES": {
+    "action": "allowed",
+    "why": "set by node --watch; makes the module loader report each loaded path to the parent over IPC"
+  }
+}
