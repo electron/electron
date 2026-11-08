@@ -586,4 +586,9 @@ void UtilityAIManager::CreateSemanticEmbedder(
   NOTIMPLEMENTED();
 }
 
+void UtilityAIManager::GetSupportedEmbeddingSpaces(
+    GetSupportedEmbeddingSpacesCallback callback) {
+  std::move(callback).Run({});
+}
+
 }  // namespace electron
