@@ -1,5 +1,6 @@
 const { app, BrowserWindow, protocol, session } = require('electron/main');
 
+const { once } = require('node:events');
 const path = require('node:path');
 
 const html = '<html><body><h1>EMPTY PAGE</h1></body></html>';
@@ -42,13 +43,12 @@ app
     await backgroundReady;
 
     const win = new BrowserWindow();
-
-    win.on('page-title-updated', (_event, title) => {
-      console.log(`Title: ${title}`);
-      app.quit();
-    });
+    const titleUpdated = once(win, 'page-title-updated');
 
     await win.loadURL(`${scheme}://app/`);
+    const [, title] = await titleUpdated;
+    console.log(`Title: ${title}`);
+    app.quit();
   })
   .catch((error) => {
     console.error(error);
