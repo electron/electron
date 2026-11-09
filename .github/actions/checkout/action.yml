@@ -17,7 +17,8 @@ runs:
   - name: Set GIT_CACHE_PATH to make gclient to use the cache
     shell: bash
     run: |
-      echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
+      # gclient rejects a git cache inside the gclient root (the workspace).
+      echo "GIT_CACHE_PATH=$RUNNER_TEMP/git-cache" >> $GITHUB_ENV
   - name: Install Dependencies
     uses: ./src/electron/.github/actions/install-dependencies
   - name: Set Chromium Git Cookie
