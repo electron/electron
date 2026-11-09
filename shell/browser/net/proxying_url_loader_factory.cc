@@ -987,7 +987,7 @@ void ProxyingURLLoaderFactory::OnLoaderFailedWithRemoteEndpoint(
     return;
 
   auto request_it = requests_.find(it->second);
-  DCHECK(request_it != requests_.end());
+  CHECK(request_it != requests_.end());
   request_it->second->OnLoaderFailedWithRemoteEndpoint(remote_endpoint);
 }
 
