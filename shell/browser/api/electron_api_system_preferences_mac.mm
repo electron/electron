@@ -20,6 +20,7 @@
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/bind_post_task.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/values.h"
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
 #include "net/base/apple/url_conversions.h"
@@ -82,10 +83,50 @@ namespace {
 
 int g_next_id = 0;
 
-// The map to convert |id| to |int|.
-auto& GetIdMap() {
-  static base::NoDestructor<base::flat_map<int, id>> g_id_map;
-  return *g_id_map;
+struct Subscription {
+  id observer;
+  SystemPreferences::NotificationCallback callback;
+};
+
+// Live subscriptions, keyed by request id. Only accessed on the main thread,
+// so a subscription's JS callback is never run or destroyed elsewhere.
+auto& GetSubscriptions() {
+  static base::NoDestructor<base::flat_map<int, Subscription>> g_subscriptions;
+  return *g_subscriptions;
+}
+
+void RunNotificationCallback(int request_id,
+                             const std::string& name,
+                             base::Value user_info,
+                             const std::string& object) {
+  auto& subscriptions = GetSubscriptions();
+  auto iter = subscriptions.find(request_id);
+  // The subscription may have been removed while a notification posted on
+  // another thread was waiting to be delivered here.
+  if (iter == subscriptions.end())
+    return;
+  // Run a copy so that the callback can unsubscribe itself.
+  SystemPreferences::NotificationCallback callback = iter->second.callback;
+  callback.Run(name, std::move(user_info), object);
+}
+
+// Runs the subscription's callback now when called on the main thread, and
+// otherwise posts it to |main_task_runner| so the calling thread never waits
+// on the isolate's v8::Locker.
+void DispatchNotification(
+    const scoped_refptr<base::SingleThreadTaskRunner>& main_task_runner,
+    int request_id,
+    std::string name,
+    base::Value user_info,
+    std::string object) {
+  if ([NSThread isMainThread]) {
+    RunNotificationCallback(request_id, name, std::move(user_info), object);
+    return;
+  }
+  main_task_runner->PostTask(
+      FROM_HERE,
+      base::BindOnce(&RunNotificationCallback, request_id, std::move(name),
+                     std::move(user_info), std::move(object)));
 }
 
 AVMediaType ParseMediaType(const std::string& media_type) {
@@ -241,7 +282,6 @@ int SystemPreferences::DoSubscribeNotification(
     const NotificationCallback& callback,
     NotificationCenterKind kind) {
   int request_id = g_next_id++;
-  __block NotificationCallback copied_callback = callback;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   std::string name_str;
@@ -254,37 +294,50 @@ int SystemPreferences::DoSubscribeNotification(
 
   auto* name = maybe_name->IsNull() ? nil : base::SysUTF8ToNSString(name_str);
 
-  GetIdMap()[request_id] = [GetNotificationCenter(kind)
+  // With a nil queue, NSNotificationCenter runs the block synchronously on
+  // whichever thread posted the notification, and many notifications are
+  // posted on background threads. The JS callback may only run on the main
+  // thread, which holds the isolate's v8::Locker for the lifetime of the
+  // JavaScript environment: calling it from another thread blocks that thread
+  // on the lock, which hangs quit if the main thread waits for it. Deliver
+  // those notifications to the main thread asynchronously instead. The block
+  // holds no V8 handles, so releasing it on any thread is safe.
+  // A copy is needed: the block below would capture a reference by reference.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+  scoped_refptr<base::SingleThreadTaskRunner> main_task_runner =
+      base::SingleThreadTaskRunner::GetCurrentDefault();
+  id observer = [GetNotificationCenter(kind)
       addObserverForName:name
                   object:nil
                    queue:nil
               usingBlock:^(NSNotification* notification) {
-                std::string object = "";
+                std::string object;
                 if ([notification.object isKindOfClass:[NSString class]]) {
                   object = base::SysNSStringToUTF8(notification.object);
                 }
-
+                base::DictValue user_info;
                 if (notification.userInfo) {
-                  copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name),
-                      base::Value(NSDictionaryToValue(notification.userInfo)),
-                      object);
-                } else {
-                  copied_callback.Run(
-                      base::SysNSStringToUTF8(notification.name),
-                      base::Value(base::DictValue()), object);
+                  user_info = NSDictionaryToValue(notification.userInfo);
                 }
+                DispatchNotification(main_task_runner, request_id,
+                                     base::SysNSStringToUTF8(notification.name),
+                                     base::Value(std::move(user_info)),
+                                     std::move(object));
               }];
+  // Notifications posted on other threads reach the callback through a task
+  // that runs after this returns, so registering it after the observer is
+  // safe.
+  GetSubscriptions()[request_id] = {.observer = observer, .callback = callback};
   return request_id;
 }
 
 void SystemPreferences::DoUnsubscribeNotification(int request_id,
                                                   NotificationCenterKind kind) {
-  auto iter = GetIdMap().find(request_id);
-  if (iter != GetIdMap().end()) {
-    id observer = iter->second;
-    [GetNotificationCenter(kind) removeObserver:observer];
-    GetIdMap().erase(iter);
+  auto& subscriptions = GetSubscriptions();
+  auto iter = subscriptions.find(request_id);
+  if (iter != subscriptions.end()) {
+    [GetNotificationCenter(kind) removeObserver:iter->second.observer];
+    subscriptions.erase(iter);
   }
 }
 
