@@ -290,8 +290,8 @@ void WebContentsPermissionHelper::RequestWebNotificationPermission(
 void WebContentsPermissionHelper::RequestPointerLockPermission(
     bool user_gesture,
     bool last_unlocked_by_target,
-    base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
-        callback) {
+    base::OnceCallback<
+        void(base::WeakPtr<content::WebContents>, bool, bool, bool)> callback) {
   // content records the frame that called requestPointerLock() before asking
   // the delegate, so the request is attributed to that document rather than
   // to the top-level document or to the local root whose widget carried it.
@@ -299,19 +299,21 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
       static_cast<content::WebContentsImpl*>(web_contents_)
           ->GetPointerLockRequestingFrame();
   if (!requesting_frame) {
-    std::move(callback).Run(web_contents_, user_gesture,
+    std::move(callback).Run(web_contents_->GetWeakPtr(), user_gesture,
                             last_unlocked_by_target, false);
     return;
   }
-  RequestPermission(requesting_frame, blink::PermissionType::POINTER_LOCK,
-                    base::BindOnce(std::move(callback), web_contents_,
-                                   user_gesture, last_unlocked_by_target),
-                    user_gesture);
+  RequestPermission(
+      requesting_frame, blink::PermissionType::POINTER_LOCK,
+      base::BindOnce(std::move(callback), web_contents_->GetWeakPtr(),
+                     user_gesture, last_unlocked_by_target),
+      user_gesture);
 }
 
 void WebContentsPermissionHelper::RequestKeyboardLockPermission(
     bool esc_key_locked,
-    base::OnceCallback<void(content::WebContents*, bool, bool)> callback) {
+    base::OnceCallback<void(base::WeakPtr<content::WebContents>, bool, bool)>
+        callback) {
   // navigator.keyboard.lock() is only honoured for the primary main frame;
   // content rejects it from any document that has a parent before we are
   // asked (see KeyboardLockServiceImpl::RequestKeyboardLock). The request
@@ -321,12 +323,13 @@ void WebContentsPermissionHelper::RequestKeyboardLockPermission(
   content::RenderFrameHost* main_frame = web_contents_->GetPrimaryMainFrame();
   if (static_cast<content::WebContentsImpl*>(web_contents_)
           ->GetKeyboardLockWidget() != main_frame->GetRenderWidgetHost()) {
-    std::move(callback).Run(web_contents_, esc_key_locked, false);
+    std::move(callback).Run(web_contents_->GetWeakPtr(), esc_key_locked, false);
     return;
   }
   RequestPermission(
       main_frame, blink::PermissionType::KEYBOARD_LOCK,
-      base::BindOnce(std::move(callback), web_contents_, esc_key_locked));
+      base::BindOnce(std::move(callback), web_contents_->GetWeakPtr(),
+                     esc_key_locked));
 }
 
 void WebContentsPermissionHelper::RequestOpenExternalPermission(
