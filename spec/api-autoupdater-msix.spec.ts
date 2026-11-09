@@ -79,6 +79,13 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 },
     let server: express.Application = null as any;
     let httpServer: http.Server = null as any;
     let requests: express.Request[] = [];
+    let packageNeedsCleanup = false;
+
+    const installPackage = async (msixPath: string) => {
+      // An interrupted installation may still leave a package behind.
+      packageNeedsCleanup = true;
+      await installMsixPackage(msixPath);
+    };
 
     beforeEach(
       () =>
@@ -107,10 +114,13 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 },
           });
         });
       }
-      await uninstallMsixPackage('com.electron.myapp');
+      if (packageNeedsCleanup) {
+        await uninstallMsixPackage('com.electron.myapp');
+        packageNeedsCleanup = false;
+      }
     }, 120000);
 
-    it('should not update when no update is available', async () => {
+    it('should not update when no update is available', { retry: 0 }, async () => {
       server.get('/update-check', (req, res) => {
         res.status(204).send();
       });
@@ -151,7 +161,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 },
     });
 
     it('should update successfully with direct link to MSIX file', async () => {
-      await installMsixPackage(MSIX_V1);
+      await installPackage(MSIX_V1);
       const initialVersion = await getMsixPackageVersion('com.electron.myapp');
       expect(initialVersion).toBe('1.0.0.0');
 
@@ -181,7 +191,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 },
     });
 
     it('should update successfully with JSON response', async () => {
-      await installMsixPackage(MSIX_V1);
+      await installPackage(MSIX_V1);
       const initialVersion = await getMsixPackageVersion('com.electron.myapp');
       expect(initialVersion).toBe('1.0.0.0');
 
@@ -223,7 +233,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 },
     });
 
     it('should update successfully with static JSON releases file', async () => {
-      await installMsixPackage(MSIX_V1);
+      await installPackage(MSIX_V1);
       const initialVersion = await getMsixPackageVersion('com.electron.myapp');
       expect(initialVersion).toBe('1.0.0.0');
 
@@ -285,7 +295,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 },
     });
 
     it('should not update with update File JSON Format if currentRelease is older than installed version', async () => {
-      await installMsixPackage(MSIX_V2);
+      await installPackage(MSIX_V2);
 
       server.get('/update-check', (req, res) => {
         res.json({
@@ -320,7 +330,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 },
     });
 
     it('should downgrade to older version with JSON server format and allowAnyVersion is true', async () => {
-      await installMsixPackage(MSIX_V2);
+      await installPackage(MSIX_V2);
       const initialVersion = await getMsixPackageVersion('com.electron.myapp');
       expect(initialVersion).toBe('2.0.0.0');
 
