@@ -5,11 +5,36 @@ Subject: build: allow electron to use exec_script
 
 This is similar to the //build usecase so we're OK adding ourselves here.
 
+Also exempt //electron and //third_party/electron_node from strict include
+checking. Upstream replaced the global check_includes_strict_exceptions
+entry with a per-directory allowlist in //build/strict_deps_failures.gni
+that only lists Chromium's own top-level directories, so without this
+`gn check` fails for every Electron target.
+
 diff --git a/.gn b/.gn
-index 3f592ba2d538eecf63afff59f6cea44c6f84ca8c..c0213c1d687366d28412ba236782f9be7c1a0271 100644
+index 3f592ba2d538eecf63afff59f6cea44c6f84ca8c..f616241f584fff0a0c2efd5a2ec87de91cd1cf57 100644
 --- a/.gn
 +++ b/.gn
-@@ -464,6 +464,31 @@ exec_script_allowlist =
+@@ -8,6 +8,18 @@ import("//build/strict_deps_failures.gni")
+ import("//build/dotfile_settings.gni")
+ import("//third_party/angle/dotfile_settings.gni")
+ 
++# //electron and //third_party/electron_node are not among the top-level
++# directories that //build/strict_deps_failures.gni allowlists, so exempt them
++# from strict include checking the same way until their deps are cleaned up.
++check_includes_strict_exceptions += [
++  {
++    includer = "//electron/*"
++  },
++  {
++    includer = "//third_party/electron_node/*"
++  },
++]
++
+ # The location of the build configuration file.
+ buildconfig = "//build/config/BUILDCONFIG.gn"
+ 
+@@ -464,6 +476,31 @@ exec_script_allowlist =
        # script. exec_script only happens when the checkout_mesa gclient arg is
        # set. If/when a 'proper' GN build for Mesa exists, this can be removed.
        "//third_party/dawn/third_party/meson/meson_target.gni",
