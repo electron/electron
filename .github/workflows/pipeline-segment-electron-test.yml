@@ -107,18 +107,29 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
         epochdate=$(($(date +'%s * 1000 + %-N / 1000000')))
+        # The sqlite3 CLI doesn't wait for locks by default, so the insert can fail
+        # with "database is locked" if tccd has TCC.db open at the same time. Wait
+        # up to 10s for the lock and retry a few times; the insert is idempotent.
+        insert_tccdb () {
+          local dbPath=$1
+          local values=$2
+          shift 2
+          local sqlQuery="BEGIN IMMEDIATE; INSERT OR REPLACE INTO access VALUES($values); COMMIT;"
+          local attempt
+          for attempt in 1 2 3 4 5; do
+            "$@" sqlite3 -cmd ".timeout 10000" "$dbPath" "$sqlQuery" && return 0
+            echo "Failed to update $dbPath (attempt $attempt), retrying in $((attempt * 2))s..."
+            sleep $((attempt * 2))
+          done
+          return 1
+        }
+
         configure_user_tccdb () {
-          local values=$1
-          local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
-          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
-          sqlite3 "$dbPath" "$sqlQuery"
+          insert_tccdb "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "$1"
         }
 
         configure_sys_tccdb () {
-          local values=$1
-          local dbPath="/Library/Application Support/com.apple.TCC/TCC.db"
-          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
-          sudo sqlite3 "$dbPath" "$sqlQuery"
+          insert_tccdb "/Library/Application Support/com.apple.TCC/TCC.db" "$1" sudo
         }
 
         userValuesArray=(
