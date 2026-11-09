@@ -2119,10 +2119,10 @@ void WebContents::OnReadAvailableTypes(
       render_frame_host,
       !types.empty(),
   };
-  auto weak_this = WeakRef();
+  auto weak_this = GetWeakPtr();
   Emit("context-menu", event_data);
 
-  if (!weak_this->Get() || !web_contents())
+  if (!weak_this || !web_contents())
     return;
 
   // Apps show their own menu, or none, in response to the event above, so
