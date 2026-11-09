@@ -44,9 +44,11 @@ Every measure comes from one of crossbench's probes:
   * FCP and LCP: from the main frame's `navigationStart` to
     `firstContentfulPaint` and to the last `largestContentfulPaint::Candidate`.
   * Resize: `BrowserWindow.setSize()` from the browser's
-    `Widget::OnNativeWidgetSizeChanged` to the presentation of the first
-    renderer frame begun after it (the end of its `PipelineReporter`), 20 times
-    per run.
+    `Widget::OnNativeWidgetSizeChanged` to the presentation (the end of the
+    `PipelineReporter`) of the first renderer frame whose main frame committed
+    after the page's `resize` event, 20 times per run. Frames are matched by
+    their commit because a `PipelineReporter` starts at its BeginFrame
+    timestamp, which can be earlier than the resize the frame shows.
 
 Tracing slows the browser down, so the traced stories run in their own `trace`
 invocation and the `loading` and `file_loading` numbers are never traced. The

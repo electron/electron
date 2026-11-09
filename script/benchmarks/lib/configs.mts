@@ -66,7 +66,13 @@ ORDER BY nav.ts DESC
 LIMIT 1`,
   // One row per BrowserWindow.setSize() between the page's cb-resize-start
   // and cb-resize-end marks: from the browser's native widget size change to
-  // the presentation of the first renderer frame begun after it.
+  // the presentation of the first renderer frame whose main frame committed
+  // after the page saw the new size (its cb-resized mark, set by the resize
+  // event). Frames are matched by their commit, not by the PipelineReporter's
+  // start: that is the frame's BeginFrame timestamp, which can be earlier
+  // than the resize even when the frame's main frame picks the resize up.
+  // Comparing against it skipped the frame that showed the resize and, when
+  // no later frame changed anything, matched the next resize's frame instead.
   resize: `
 WITH
   bracket AS (
@@ -83,19 +89,26 @@ WITH
     WHERE s.name = 'Widget::OnNativeWidgetSizeChanged' AND p.name = 'Browser'
       AND s.ts BETWEEN b.begin_ts AND b.end_ts
   ),
+  seen AS (
+    SELECT r.ts, r.next_ts,
+      (SELECT MIN(m.ts) FROM slice m
+        WHERE m.name = 'cb-resized' AND m.ts >= r.ts AND (r.next_ts IS NULL OR m.ts < r.next_ts)) AS seen_ts
+    FROM resizes r
+  ),
   frames AS (
-    SELECT s.ts, s.ts + s.dur AS presented_ts
+    SELECT c.ts + c.dur AS commit_ts, s.ts + s.dur AS presented_ts
     FROM slice s
     JOIN process_track pt ON s.track_id = pt.id
     JOIN process p USING (upid)
+    JOIN slice c ON c.parent_id = s.id AND c.name = 'SendBeginMainFrameToCommit'
     WHERE s.name = 'PipelineReporter' AND p.name = 'Renderer'
       AND EXTRACT_ARG(s.arg_set_id, 'frame_reporter.state') IN ('STATE_PRESENTED_ALL', 'STATE_PRESENTED_PARTIAL')
   )
 SELECT
   r.ts AS resize_ts,
   ((SELECT MIN(f.presented_ts) FROM frames f
-    WHERE f.ts >= r.ts AND (r.next_ts IS NULL OR f.ts < r.next_ts)) - r.ts) / 1e6 AS resize_ms
-FROM resizes r
+    WHERE f.commit_ts >= r.seen_ts AND (r.next_ts IS NULL OR f.commit_ts < r.next_ts)) - r.ts) / 1e6 AS resize_ms
+FROM seen r
 ORDER BY r.ts`
 };
 
