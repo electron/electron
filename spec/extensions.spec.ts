@@ -2184,12 +2184,12 @@ describe('chrome extensions', () => {
       const args = [path.join(fixtures, 'extensions', name, 'main.js'), `--user-data-dir=${userDataDir}`];
       if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const appProcess = spawn(process.execPath, args);
-      const exited = once(appProcess, 'exit');
+      const closed = once(appProcess, 'close');
       defer(async () => {
         // A hung app would keep its profile open into the retry.
-        if (appProcess.exitCode === null && appProcess.signalCode === null) {
+        if (appProcess.pid && appProcess.exitCode === null && appProcess.signalCode === null) {
           appProcess.kill();
-          await exited;
+          await closed;
         }
         await fs.rm(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
       });
@@ -2198,7 +2198,15 @@ describe('chrome extensions', () => {
       appProcess.stdout.on('data', (data) => {
         output += data;
       });
-      await once(appProcess.stdout, 'end');
+      let stderr = '';
+      appProcess.stderr.on('data', (data) => {
+        stderr += data;
+      });
+      const [code, signal] = await closed;
+      expect({ code, signal }, `Fixture ${name} failed.\nstdout:\n${output}\nstderr:\n${stderr}`).toEqual({
+        code: 0,
+        signal: null
+      });
 
       return output.trim();
     }
