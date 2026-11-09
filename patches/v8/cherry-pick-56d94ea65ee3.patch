@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 7 Oct 2026 14:04:55 +0200
+Subject: [parser] Parse dynamic import arguments as AssignmentExpression
+
+ParserBase::ParseImportExpressions previously parsed both the module
+specifier and import options using
+ParseAssignmentExpressionCoverGrammar() instead of
+ParseAssignmentExpression(). Because dynamic import arguments cannot be
+binding patterns or arrow formal parameters, using the cover grammar
+left pending expression errors (such as `{x = z}`) unvalidated in the
+enclosing ExpressionParsingScope, allowing a subsequent destructuring
+assignment (e.g. `import({x = z}, [a] = [])` or
+`1 + {x = z} + import([a] = [])`) to clear the expression error.
+
+Use ParseAssignmentExpression() for both arguments of import().
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: I59a2a4dc192c02e76b7e740eba87b9c9dd111bdc
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8529500
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110403}
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 1df1fa026f5bc7e018a3ae511892cb3a095fa257..c71a9752bba31bcdcbfb033291c06a06b1b53afc 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -4271,7 +4271,7 @@ ParserBase<Impl>::ParseImportExpressions() {
+   }
+ 
+   AcceptINScope scope(this, true);
+-  ExpressionT specifier = ParseAssignmentExpressionCoverGrammar();
++  ExpressionT specifier = ParseAssignmentExpression();
+ 
+   DCHECK_IMPLIES(phase == ModuleImportPhase::kSource,
+                  v8_flags.js_source_phase_imports);
+@@ -4283,7 +4283,7 @@ ParserBase<Impl>::ParseImportExpressions() {
+       // A trailing comma allowed after the specifier.
+       return factory()->NewImportCallExpression(specifier, phase, pos);
+     } else {
+-      ExpressionT import_options = ParseAssignmentExpressionCoverGrammar();
++      ExpressionT import_options = ParseAssignmentExpression();
+       Check(Token::kComma);  // A trailing comma is allowed after the import
+                              // attributes.
+       Expect(Token::kRightParen);
+diff --git a/test/mjsunit/regress/regress-567222737-3.js b/test/mjsunit/regress/regress-567222737-3.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4d38d5e5f1a9be3610d6dcd125870e8557de9ed8
+--- /dev/null
++++ b/test/mjsunit/regress/regress-567222737-3.js
+@@ -0,0 +1,37 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --expose-gc --stress-flush-code
++
++// CoverInitializedName in or before an import() expression must be rejected
++// even when followed by a destructuring assignment argument.
++assertThrows("import({x = 1})", SyntaxError);
++assertThrows("import('foo', {x = 1})", SyntaxError);
++assertThrows("import({x = 1}, [a] = [])", SyntaxError);
++assertThrows("1 + {x = 1} + import([a] = [])", SyntaxError);
++assertThrows("import('foo', {x = 1} + ([a] = []))", SyntaxError);
++
++// Ensure lazy vs. eager parsing of an inner function containing an import()
++// expression with CoverInitializedName followed by destructuring cannot cause
++// a ContextCell mutability mismatch.
++assertThrows(() => {
++  Function(`
++    function maker() {
++      return (() => {
++        let x = 1, z = 2;
++        function getter() { return x; }
++        function inner() {
++          import({x = z}, [a] = []);
++        }
++        return getter;
++      });
++    }
++    const outer = maker();
++    const get1 = outer();
++    get1();
++    gc();
++    const get2 = outer();
++    get2();
++  `)();
++}, SyntaxError);

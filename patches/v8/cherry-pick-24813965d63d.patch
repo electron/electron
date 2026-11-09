@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Fri, 9 Oct 2026 15:30:30 +0200
+Subject: [maglev] DCHECK ContextScopeInfo invariants across control flow
+
+Verify that SetCurrentScopeInfo is never called with an empty
+ContextScopeInfo, that incoming control-flow edges (both live and dead)
+agree on the target's ContextScopeInfo, and that ResumeGenerator merge
+states match the preceding SuspendGenerator's ContextScopeInfo.
+
+TAG=agy
+CONV=6b68729b-a0e3-402e-ba83-c39c606f51ee
+
+Bug: 568794851
+Change-Id: Ib8e80e6b7f727b8541c74dacde5f2dc3434847e0
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8548693
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110574}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index d9ed8b2c9fbde411cf39909cb039b3d85935b5db..f780178cb5a4bf2abfdb2291b89375cfc080bf72 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -14845,6 +14845,9 @@ void MaglevGraphBuilder::MergeIntoFrameState(BasicBlock* predecessor,
+ 
+   } else {
+     // If there already is a frame state, merge.
++    DCHECK_IMPLIES(
++        merge_states_[target]->has_context_scope_info(),
++        merge_states_[target]->context_scope_info() == GetCurrentScopeInfo());
+     merge_states_[target]->Merge(graph(), is_tracing(), *compilation_unit(),
+                                  current_interpreter_frame_, predecessor,
+                                  GetCurrentScopeInfo());
+@@ -14852,14 +14855,11 @@ void MaglevGraphBuilder::MergeIntoFrameState(BasicBlock* predecessor,
+ }
+ 
+ void MaglevGraphBuilder::SetCurrentScopeInfo(ContextScopeInfo scope_info) {
++  DCHECK(scope_info.has_value());
+   if (v8_flags.trace_maglev_scope_info) {
+     int offset = iterator_.done() ? -1 : iterator_.current_offset();
+-    if (scope_info.has_value()) {
+-      TRACE("  [ScopeInfo] Activated " << scope_info.value() << " at offset "
+-                                       << offset);
+-    } else {
+-      TRACE("  [ScopeInfo] Activated <empty> at offset " << offset);
+-    }
++    TRACE("  [ScopeInfo] Activated " << scope_info.value() << " at offset "
++                                     << offset);
+   }
+   register_scope_infos_[interpreter::Register::current_context()] = scope_info;
+ }
+@@ -14889,7 +14889,19 @@ void MaglevGraphBuilder::MergeDeadIntoFrameState(int target,
+                 << iterator_.current_offset());
+         }
+         dead_scope_infos_.insert({target, GetCurrentScopeInfo()});
++      } else {
++        // When inlining a generator, VisitSwitchOnGeneratorState marks all
++        // ResumeGenerator targets dead from offset 0 (before
++        // CreateFunctionContext or inner scopes), which can disagree with
++        // dead jumps after ResumeGenerator.
++        DCHECK_IMPLIES(!is_inline(), jump_it->second == GetCurrentScopeInfo());
+       }
++    } else if (merge_state->has_context_scope_info()) {
++      // At inline_exit_offset() (or after dead ResumeGenerator targets in
++      // inlined generators), dead returns from different inner scopes can merge
++      // with different ScopeInfos.
++      DCHECK_IMPLIES(!is_inline(), merge_state->context_scope_info() ==
++                                       GetCurrentScopeInfo());
+     }
+   }
+   // If there is no merge state yet, don't create one, but just reduce the
+@@ -16960,6 +16972,9 @@ void MaglevGraphBuilder::ProcessMergePoint(int offset,
+   if (merge_state.is_loop() && !merge_state.has_context_scope_info()) {
+     merge_state.set_context_scope_info(GetCurrentScopeInfo());
+   }
++  DCHECK_IMPLIES(
++      iterator_.current_bytecode() == interpreter::Bytecode::kResumeGenerator,
++      merge_state.context_scope_info() == GetCurrentScopeInfo());
+   current_interpreter_frame_.CopyFrom(*compilation_unit_, merge_state,
+                                       preserve_known_node_aspects, zone());
+   SetCurrentScopeInfo(merge_state.context_scope_info());
+diff --git a/test/mjsunit/regress/regress-568794851.js b/test/mjsunit/regress/regress-568794851.js
+index 36b08d76cca448b4e9e48b5860a3fb376a811d5e..76118ff07c6421cd5c24eb9acc2a6d9fb8053cd2 100644
+--- a/test/mjsunit/regress/regress-568794851.js
++++ b/test/mjsunit/regress/regress-568794851.js
+@@ -89,6 +89,36 @@ function* gen_switch_throwing_tag(o) {
+   return 42;
+ }
+ 
++function outer_without_eval() {
++  let outer_var = 1;
++  return function* (o) {
++    do {
++      with (o) {
++        return outer_var;
++      }
++    } while ((yield, yield, x));
++    eval("");
++  };
++}
++const gen_outer_without_eval = outer_without_eval();
++
++function* gen_unreachable_resumable_loop(o) {
++  eval("");
++  with (o) {
++    return;
++  }
++  do {
++    yield x;
++  } while (x);
++}
++
++function inlined_returns_in_different_scopes(cond, o) {
++  if (cond) return 1;
++  with (o) {
++    return 2;
++  }
++}
++
+ for (let i = 0; i < 1000; i++) {
+   gen_yield({}).next();
+   gen_yield_star({}).next();
+@@ -96,4 +126,7 @@ for (let i = 0; i < 1000; i++) {
+   gen_switch({}).next();
+   gen_switch_table({}).next();
+   gen_switch_throwing_tag(() => {}).next();
++  gen_outer_without_eval({}).next();
++  gen_unreachable_resumable_loop({}).next();
++  inlined_returns_in_different_scopes(i % 2 === 0, {});
+ }

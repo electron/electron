@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Fri, 9 Oct 2026 18:47:20 -0700
+Subject: Ensure GatherObservations references remain safe to use
+
+In ResizeObserver::GatherObservations(), ObservationSizeOutOfSync() and
+TargetDepth() can trigger a synchronous update which adds to
+`observations_` and reallocates its backing buffer. Using `auto&` bound
+a `const WeakMember<ResizeObservation>&` directly into that buffer,
+which was unsafe to use if the buffer moved. Using `ResizeObservation*`
+instead copies the pointer and is valid even if `observations_`
+reallocates.
+
+Fixed: 571065824
+Change-Id: I30636968462d9659a3108c78da0e1a1ca13bcff6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8545063
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Auto-Submit: Philip Rogers <pdr@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716232}
+
+diff --git a/third_party/blink/renderer/core/resize_observer/resize_observer.cc b/third_party/blink/renderer/core/resize_observer/resize_observer.cc
+index 67bb35bb91ec0849c93e1c834117a51ca7cea033..c9c40da14c5f1218f9f75b748cd4d381c18f0f0a 100644
+--- a/third_party/blink/renderer/core/resize_observer/resize_observer.cc
++++ b/third_party/blink/renderer/core/resize_observer/resize_observer.cc
+@@ -138,13 +138,13 @@ size_t ResizeObserver::GatherObservations(size_t deeper_than) {
+   DCHECK(active_observations_.empty());
+ 
+   size_t min_observed_depth = ResizeObserverController::kDepthBottom;
+-  for (auto& observation : observations_) {
++  for (ResizeObservation* observation : observations_) {
+     if (!observation->ObservationSizeOutOfSync()) {
+       continue;
+     }
+     auto depth = observation->TargetDepth();
+     if (depth > deeper_than) {
+-      active_observations_.push_back(*observation);
++      active_observations_.push_back(observation);
+       min_observed_depth = std::min(min_observed_depth, depth);
+     } else {
+       skipped_observations_ = true;

@@ -1,0 +1,404 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Guilbert <tguilbert@chromium.org>
+Date: Tue, 29 Sep 2026 18:33:09 -0700
+Subject: [WebCodecs] Create flush() promises in the caller's realm
+
+Audio and video encoders and decoders created the promise returned by
+`flush()` using the `ScriptState` captured at construction. When
+`flush()` was called from a different world or realm than the one that
+created the codec, the caller received a promise belonging to the
+creator's realm.
+
+Add `[CallWith=ScriptState]` to `flush()` and create the resolver with
+the caller's `ScriptState`, so the returned promise always belongs to
+the caller. Calls from the creating realm are unaffected. Output and
+error callbacks keep using the creator's `ScriptState`, since they are
+registered by the creator.
+
+TAG=agy
+CONV=ed044e08-4c4f-4368-b71d-4f1cc33142b8
+
+Bug: 553309390
+Test: blink_unittests --gtest_filter=*FlushPromiseCreatedInCallerContext*
+Change-Id: I5e84470257c73510792689c8daf338659d2e567a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8481251
+Auto-Submit: Thomas Guilbert <tguilbert@chromium.org>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Commit-Queue: Thomas Guilbert <tguilbert@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1707723}
+
+diff --git a/third_party/blink/renderer/modules/webcodecs/audio_decoder.idl b/third_party/blink/renderer/modules/webcodecs/audio_decoder.idl
+index 41f9206ef5d2f119246f40bd3c85654cca789cca..4ec6f4ef6308fb38981fae1005dc3396c664d8a1 100644
+--- a/third_party/blink/renderer/modules/webcodecs/audio_decoder.idl
++++ b/third_party/blink/renderer/modules/webcodecs/audio_decoder.idl
+@@ -45,7 +45,7 @@
+   // Resolved after all output for earlier decode requests has been emitted.
+   //
+   // The next decode request must be for a keyframe.
+-  [RaisesException] Promise<undefined> flush();
++  [CallWith=ScriptState, RaisesException] Promise<undefined> flush();
+ 
+   // Reset all codec state, including all pending requests.
+   //
+diff --git a/third_party/blink/renderer/modules/webcodecs/audio_decoder_fuzzer.cc b/third_party/blink/renderer/modules/webcodecs/audio_decoder_fuzzer.cc
+index e8309ecfaf7021eb44e30ce277ef90094a5d1615..200c320d11266b4a3c7eadd8393a2820151b2622 100644
+--- a/third_party/blink/renderer/modules/webcodecs/audio_decoder_fuzzer.cc
++++ b/third_party/blink/renderer/modules/webcodecs/audio_decoder_fuzzer.cc
+@@ -105,7 +105,7 @@ DEFINE_TEXT_PROTO_FUZZER(
+         case wc_fuzzer::AudioDecoderApiInvocation::kFlush: {
+           // TODO(https://crbug.com/1119253): Fuzz whether to await resolution
+           // of the flush promise.
+-          audio_decoder->flush(IGNORE_EXCEPTION_FOR_TESTING);
++          audio_decoder->flush(script_state, IGNORE_EXCEPTION_FOR_TESTING);
+           break;
+         }
+         case wc_fuzzer::AudioDecoderApiInvocation::kReset:
+diff --git a/third_party/blink/renderer/modules/webcodecs/audio_encoder.idl b/third_party/blink/renderer/modules/webcodecs/audio_encoder.idl
+index f05bc276111dab8a9608c6e204b88d2450148071..0fb7e23b284b7909e787d23f7e45e1b5d3bd9c98 100644
+--- a/third_party/blink/renderer/modules/webcodecs/audio_encoder.idl
++++ b/third_party/blink/renderer/modules/webcodecs/audio_encoder.idl
+@@ -33,7 +33,7 @@
+ 
+     // Enqueues a request to produce outputs for all already encoded data.
+     // Resolved after emitting outputs for all previously encoded data.
+-    [RaisesException]
++    [CallWith=ScriptState, RaisesException]
+     Promise<undefined> flush();
+ 
+     // Discard all pending work and current encoder configuration.
+diff --git a/third_party/blink/renderer/modules/webcodecs/audio_encoder_fuzzer.cc b/third_party/blink/renderer/modules/webcodecs/audio_encoder_fuzzer.cc
+index 41955b5c47458fc087fd30deb7b4ebd741998b47..5a51e9cf0f922c4e830997d9a43abb422c32ef68 100644
+--- a/third_party/blink/renderer/modules/webcodecs/audio_encoder_fuzzer.cc
++++ b/third_party/blink/renderer/modules/webcodecs/audio_encoder_fuzzer.cc
+@@ -235,7 +235,7 @@ DEFINE_TEXT_PROTO_FUZZER(
+         case wc_fuzzer::AudioEncoderApiInvocation::kFlush: {
+           // TODO(https://crbug.com/1119253): Fuzz whether to await resolution
+           // of the flush promise.
+-          audio_encoder->flush(IGNORE_EXCEPTION_FOR_TESTING);
++          audio_encoder->flush(script_state, IGNORE_EXCEPTION_FOR_TESTING);
+           break;
+         }
+         case wc_fuzzer::AudioEncoderApiInvocation::kReset:
+diff --git a/third_party/blink/renderer/modules/webcodecs/audio_encoder_test.cc b/third_party/blink/renderer/modules/webcodecs/audio_encoder_test.cc
+index 1315a1d59c176422d0eca890b473067844c3c695..c8cba9148247e025db644a2afa1972c9b7bd046d 100644
+--- a/third_party/blink/renderer/modules/webcodecs/audio_encoder_test.cc
++++ b/third_party/blink/renderer/modules/webcodecs/audio_encoder_test.cc
+@@ -162,4 +162,37 @@ TEST_F(AudioEncoderTest, EncodeQueueSize) {
+   encoder->close(es);
+ }
+ 
++TEST_F(AudioEncoderTest, FlushPromiseCreatedInCallerContext) {
++  constexpr int kSampleRate = 48000;
++  constexpr int kChannels = 2;
++
++  // Create and configure the codec in one context.
++  V8TestingScope creator_scope;
++  auto* creator_script_state = creator_scope.GetScriptState();
++  MockFunctionScope mock_function(creator_script_state);
++  auto* init = AudioEncoderInit::Create();
++  init->setOutput(V8EncodedAudioChunkOutputCallback::Create(
++      mock_function.ExpectNoCall()->ToV8Function(creator_script_state)));
++  init->setError(V8WebCodecsErrorCallback::Create(
++      mock_function.ExpectNoCall()->ToV8Function(creator_script_state)));
++  auto* encoder = AudioEncoder::Create(creator_script_state, init,
++                                       creator_scope.GetExceptionState());
++
++  auto* config = AudioEncoderConfig::Create();
++  config->setCodec("opus");
++  config->setSampleRate(kSampleRate);
++  config->setNumberOfChannels(kChannels);
++  encoder->configure(config, creator_scope.GetExceptionState());
++  ASSERT_FALSE(creator_scope.GetExceptionState().HadException());
++
++  // Call `flush()` from a different context.
++  V8TestingScope caller_scope;
++  auto promise = encoder->flush(caller_scope.GetScriptState(),
++                                caller_scope.GetExceptionState());
++  ASSERT_FALSE(caller_scope.GetExceptionState().HadException());
++  // The promise must belong to the caller's context, not the creator's.
++  EXPECT_EQ(promise.V8Promise()->GetCreationContextChecked(),
++            caller_scope.GetContext());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webcodecs/decoder_template.cc b/third_party/blink/renderer/modules/webcodecs/decoder_template.cc
+index 5402d9111d74c1781e55772a09abe89e6a936fb2..24636b68bc38c597af5977c433894323589d8d80 100644
+--- a/third_party/blink/renderer/modules/webcodecs/decoder_template.cc
++++ b/third_party/blink/renderer/modules/webcodecs/decoder_template.cc
+@@ -207,6 +207,7 @@ void DecoderTemplate<Traits>::decode(const InputType* chunk,
+ 
+ template <typename Traits>
+ ScriptPromise<IDLUndefined> DecoderTemplate<Traits>::flush(
++    ScriptState* script_state,
+     ExceptionState& exception_state) {
+   DVLOG(3) << __func__;
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -223,7 +224,7 @@ ScriptPromise<IDLUndefined> DecoderTemplate<Traits>::flush(
+   Request* request = MakeGarbageCollected<Request>();
+   request->type = Request::Type::kFlush;
+   auto* resolver =
+-      MakeGarbageCollected<ScriptPromiseResolver<IDLUndefined>>(script_state_);
++      MakeGarbageCollected<ScriptPromiseResolver<IDLUndefined>>(script_state);
+   request->resolver = resolver;
+   request->reset_generation = reset_generation_;
+   requests_.push_back(request);
+diff --git a/third_party/blink/renderer/modules/webcodecs/decoder_template.h b/third_party/blink/renderer/modules/webcodecs/decoder_template.h
+index fe7ac9352a08945f4cd8c4b8dffff6153ec83642..0f3045ed2df81ece3765362f8e24cd8380f996e7 100644
+--- a/third_party/blink/renderer/modules/webcodecs/decoder_template.h
++++ b/third_party/blink/renderer/modules/webcodecs/decoder_template.h
+@@ -64,7 +64,7 @@ class MODULES_EXPORT DecoderTemplate
+   DEFINE_ATTRIBUTE_EVENT_LISTENER(dequeue, kDequeue)
+   void configure(const ConfigType*, ExceptionState&);
+   void decode(const InputType*, ExceptionState&);
+-  ScriptPromise<IDLUndefined> flush(ExceptionState&);
++  ScriptPromise<IDLUndefined> flush(ScriptState*, ExceptionState&);
+   void reset(ExceptionState&);
+   void close(ExceptionState&);
+   V8CodecState state() const { return state_; }
+@@ -221,6 +221,9 @@ class MODULES_EXPORT DecoderTemplate
+ 
+   bool dequeue_event_pending_ = false;
+ 
++  // The `ScriptState` in which this decoder was created. Used for lifetime
++  // checks and callback invocation. Do not use it to create values returned to
++  // callers (e.g. promises), which may be in a different world or realm.
+   Member<ScriptState> script_state_;
+   Member<OutputCallbackType> output_cb_;
+   Member<V8WebCodecsErrorCallback> error_cb_;
+diff --git a/third_party/blink/renderer/modules/webcodecs/decoder_template_test.cc b/third_party/blink/renderer/modules/webcodecs/decoder_template_test.cc
+index 557648e573b56e24892f5755c72c7c2a1201562e..4864180949a7aeb0a544f17e25f5372683fbd5e4 100644
+--- a/third_party/blink/renderer/modules/webcodecs/decoder_template_test.cc
++++ b/third_party/blink/renderer/modules/webcodecs/decoder_template_test.cc
+@@ -156,7 +156,8 @@ TYPED_TEST(DecoderTemplateTest, ResetDuringFlush) {
+ 
+   // flush() to ensure configure completes.
+   {
+-    auto promise = decoder->flush(v8_scope.GetExceptionState());
++    auto promise =
++        decoder->flush(v8_scope.GetScriptState(), v8_scope.GetExceptionState());
+     ASSERT_FALSE(v8_scope.GetExceptionState().HadException());
+ 
+     ScriptPromiseTester tester(v8_scope.GetScriptState(), promise);
+@@ -166,7 +167,8 @@ TYPED_TEST(DecoderTemplateTest, ResetDuringFlush) {
+ 
+   // flush() again but reset() before it gets started.
+   {
+-    auto promise = decoder->flush(v8_scope.GetExceptionState());
++    auto promise =
++        decoder->flush(v8_scope.GetScriptState(), v8_scope.GetExceptionState());
+     ASSERT_FALSE(v8_scope.GetExceptionState().HadException());
+     decoder->reset(v8_scope.GetExceptionState());
+     ASSERT_FALSE(v8_scope.GetExceptionState().HadException());
+@@ -177,6 +179,29 @@ TYPED_TEST(DecoderTemplateTest, ResetDuringFlush) {
+   }
+ }
+ 
++TYPED_TEST(DecoderTemplateTest, FlushPromiseCreatedInCallerContext) {
++  // Create and configure the codec in one context.
++  V8TestingScope creator_scope;
++  MockFunctionScope mock_function(creator_scope.GetScriptState());
++  auto* decoder =
++      this->CreateDecoder(creator_scope.GetScriptState(),
++                          this->CreateInit(creator_scope.GetScriptState(),
++                                           mock_function.ExpectNoCall(),
++                                           mock_function.ExpectNoCall()),
++                          creator_scope.GetExceptionState());
++  decoder->configure(this->CreateConfig(), creator_scope.GetExceptionState());
++  ASSERT_FALSE(creator_scope.GetExceptionState().HadException());
++
++  // Call `flush()` from a different context.
++  V8TestingScope caller_scope;
++  auto promise = decoder->flush(caller_scope.GetScriptState(),
++                                caller_scope.GetExceptionState());
++  ASSERT_FALSE(caller_scope.GetExceptionState().HadException());
++  // The promise must belong to the caller's context, not the creator's.
++  EXPECT_EQ(promise.V8Promise()->GetCreationContextChecked(),
++            caller_scope.GetContext());
++}
++
+ TYPED_TEST(DecoderTemplateTest, ResetDuringConfigureOnWorker) {
+   V8TestingScope v8_scope;
+ 
+@@ -226,7 +251,8 @@ TYPED_TEST(DecoderTemplateTest, ResetDuringConfigureOnWorker) {
+ 
+   // flush() to ensure configure completes.
+   {
+-    auto promise = decoder->flush(v8_scope.GetExceptionState());
++    auto promise =
++        decoder->flush(v8_scope.GetScriptState(), v8_scope.GetExceptionState());
+     ASSERT_FALSE(v8_scope.GetExceptionState().HadException());
+ 
+     ScriptPromiseTester tester(v8_scope.GetScriptState(), promise);
+diff --git a/third_party/blink/renderer/modules/webcodecs/encoder_base.cc b/third_party/blink/renderer/modules/webcodecs/encoder_base.cc
+index 6ad480789052da27cae2fc18b7f7c949169971b7..ec2b4576f782066208faf1e6a3432000e345f4fa 100644
+--- a/third_party/blink/renderer/modules/webcodecs/encoder_base.cc
++++ b/third_party/blink/renderer/modules/webcodecs/encoder_base.cc
+@@ -178,6 +178,7 @@ void EncoderBase<Traits>::close(ExceptionState& exception_state) {
+ 
+ template <typename Traits>
+ ScriptPromise<IDLUndefined> EncoderBase<Traits>::flush(
++    ScriptState* script_state,
+     ExceptionState& exception_state) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   if (ThrowIfCodecStateClosed(state_, "flush", exception_state))
+@@ -189,12 +190,13 @@ ScriptPromise<IDLUndefined> EncoderBase<Traits>::flush(
+   MarkCodecActive();
+ 
+   Request* request = MakeGarbageCollected<Request>();
+-  request->resolver =
+-      MakeGarbageCollected<ScriptPromiseResolver<IDLUndefined>>(script_state_);
++  auto* resolver =
++      MakeGarbageCollected<ScriptPromiseResolver<IDLUndefined>>(script_state);
++  request->resolver = resolver;
+   request->reset_count = reset_count_;
+   request->type = Request::Type::kFlush;
+   EnqueueRequest(request);
+-  return request->resolver->Promise();
++  return resolver->Promise();
+ }
+ 
+ template <typename Traits>
+diff --git a/third_party/blink/renderer/modules/webcodecs/encoder_base.h b/third_party/blink/renderer/modules/webcodecs/encoder_base.h
+index f6ba783f63033bcf69c4133cb07e12e0fb170ef1..2e06ee7701e0ceca88c198c812efb4407a216721 100644
+--- a/third_party/blink/renderer/modules/webcodecs/encoder_base.h
++++ b/third_party/blink/renderer/modules/webcodecs/encoder_base.h
+@@ -64,7 +64,7 @@ class MODULES_EXPORT EncoderBase
+               const EncodeOptionsType* opts,
+               ExceptionState& exception_state);
+ 
+-  ScriptPromise<IDLUndefined> flush(ExceptionState&);
++  ScriptPromise<IDLUndefined> flush(ScriptState*, ExceptionState&);
+ 
+   void reset(ExceptionState&);
+ 
+@@ -164,6 +164,9 @@ class MODULES_EXPORT EncoderBase
+   V8CodecState state_;
+ 
+   Member<InternalConfigType> active_config_;
++  // The `ScriptState` in which this encoder was created. Used for lifetime
++  // checks and callback invocation. Do not use it to create values returned to
++  // callers (e.g. promises), which may be in a different world or realm.
+   Member<ScriptState> script_state_;
+   Member<OutputCallbackType> output_callback_;
+   Member<V8WebCodecsErrorCallback> error_callback_;
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_decoder.idl b/third_party/blink/renderer/modules/webcodecs/video_decoder.idl
+index fc66d4b630672a876dec8ede30e26f0d37b8ffb0..304f7d77a56d549035d950c42cd6a6b68b551ece 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_decoder.idl
++++ b/third_party/blink/renderer/modules/webcodecs/video_decoder.idl
+@@ -59,7 +59,7 @@
+   // TODO(sandersd): Consider relaxing the keyframe requirement.
+   // TODO(sandersd): Indicate whether the flush() completed successfully or due
+   // to a reset.
+-  [RaisesException] Promise<undefined> flush();
++  [CallWith=ScriptState, RaisesException] Promise<undefined> flush();
+ 
+   // Discard all pending decode requests.
+   //
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_decoder_fuzzer.cc b/third_party/blink/renderer/modules/webcodecs/video_decoder_fuzzer.cc
+index 8ae8521186ca176e23987e281ca51a19c494a9fd..68185e0adab381385621744f7dcd6f256f73731e 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_decoder_fuzzer.cc
++++ b/third_party/blink/renderer/modules/webcodecs/video_decoder_fuzzer.cc
+@@ -105,7 +105,7 @@ DEFINE_TEXT_PROTO_FUZZER(
+         case wc_fuzzer::VideoDecoderApiInvocation::kFlush: {
+           // TODO(https://crbug.com/1119253): Fuzz whether to await resolution
+           // of the flush promise.
+-          video_decoder->flush(IGNORE_EXCEPTION_FOR_TESTING);
++          video_decoder->flush(script_state, IGNORE_EXCEPTION_FOR_TESTING);
+           break;
+         }
+         case wc_fuzzer::VideoDecoderApiInvocation::kReset:
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_encoder.idl b/third_party/blink/renderer/modules/webcodecs/video_encoder.idl
+index ad57f3cedbd608a8e186ff64b4afc069d265ff3a..caa45d0eacdc0561f78f8cc531ca1118f4cf5f2e 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_encoder.idl
++++ b/third_party/blink/renderer/modules/webcodecs/video_encoder.idl
+@@ -35,7 +35,7 @@
+ 
+     // Enqueues a request to produce outputs for all already encoded frames.
+     // Resolved after emitting outputs for all previously encoded frames.
+-    [RaisesException]
++    [CallWith=ScriptState, RaisesException]
+     Promise<undefined> flush();
+ 
+     // Discard all pending work and current encoder configuration.
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_encoder_fuzzer.cc b/third_party/blink/renderer/modules/webcodecs/video_encoder_fuzzer.cc
+index 1ea81a46467fe8fb257c568c5ddd3604387677d7..fb09055266f339b93d41af6b4a8746d5e9847c65 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_encoder_fuzzer.cc
++++ b/third_party/blink/renderer/modules/webcodecs/video_encoder_fuzzer.cc
+@@ -130,7 +130,7 @@ DEFINE_TEXT_PROTO_FUZZER(
+         case wc_fuzzer::VideoEncoderApiInvocation::kFlush: {
+           // TODO(https://crbug.com/1119253): Fuzz whether to await resolution
+           // of the flush promise.
+-          video_encoder->flush(IGNORE_EXCEPTION_FOR_TESTING);
++          video_encoder->flush(script_state, IGNORE_EXCEPTION_FOR_TESTING);
+           break;
+         }
+         case wc_fuzzer::VideoEncoderApiInvocation::kReset:
+@@ -151,7 +151,7 @@ DEFINE_TEXT_PROTO_FUZZER(
+     // opportunity to crash, otherwise we might quit too quickly and miss
+     // something bad happening in a background thread.
+     ExceptionState exception_state(nullptr);
+-    auto promise = video_encoder->flush(exception_state);
++    auto promise = video_encoder->flush(script_state, exception_state);
+     if (!exception_state.HadException()) {
+       ScriptPromiseTester tester(script_state, promise);
+       tester.WaitUntilSettled();
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_encoder_test.cc b/third_party/blink/renderer/modules/webcodecs/video_encoder_test.cc
+index 6a023e5a718d44e1c028385604cb732f551f4078..15de036b5c5dc8bf43c3886d2653e1312dc4967c 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_encoder_test.cc
++++ b/third_party/blink/renderer/modules/webcodecs/video_encoder_test.cc
+@@ -240,7 +240,7 @@ TEST_F(VideoEncoderTest, RejectFlushAfterClose) {
+   ASSERT_FALSE(es.HadException());
+   {
+     // We need this to make sure that configuration has completed.
+-    auto promise = encoder->flush(es);
++    auto promise = encoder->flush(script_state, es);
+     ScriptPromiseTester tester(script_state, promise);
+     tester.WaitUntilSettled();
+     ASSERT_TRUE(tester.IsFulfilled());
+@@ -250,7 +250,7 @@ TEST_F(VideoEncoderTest, RejectFlushAfterClose) {
+       MakeVideoFrame(script_state, config->width(), config->height(), 1),
+       MakeGarbageCollected<VideoEncoderEncodeOptions>(), es);
+ 
+-  ScriptPromiseTester tester(script_state, encoder->flush(es));
++  ScriptPromiseTester tester(script_state, encoder->flush(script_state, es));
+   ASSERT_FALSE(es.HadException());
+   ASSERT_FALSE(tester.IsFulfilled());
+   ASSERT_FALSE(tester.IsRejected());
+@@ -263,6 +263,28 @@ TEST_F(VideoEncoderTest, RejectFlushAfterClose) {
+   ASSERT_TRUE(tester.IsRejected());
+ }
+ 
++TEST_F(VideoEncoderTest, FlushPromiseCreatedInCallerContext) {
++  // Create and configure the codec in one context.
++  V8TestingScope creator_scope;
++  MockFunctionScope mock_function(creator_scope.GetScriptState());
++  auto* init =
++      CreateInit(creator_scope.GetScriptState(), mock_function.ExpectNoCall(),
++                 mock_function.ExpectNoCall());
++  auto* encoder = CreateEncoder(creator_scope.GetScriptState(), init,
++                                creator_scope.GetExceptionState());
++  encoder->configure(CreateConfig(), creator_scope.GetExceptionState());
++  ASSERT_FALSE(creator_scope.GetExceptionState().HadException());
++
++  // Call `flush()` from a different context.
++  V8TestingScope caller_scope;
++  auto promise = encoder->flush(caller_scope.GetScriptState(),
++                                caller_scope.GetExceptionState());
++  ASSERT_FALSE(caller_scope.GetExceptionState().HadException());
++  // The promise must belong to the caller's context, not the creator's.
++  EXPECT_EQ(promise.V8Promise()->GetCreationContextChecked(),
++            caller_scope.GetContext());
++}
++
+ TEST_F(VideoEncoderTest, CodecReclamation) {
+   V8TestingScope v8_scope;
+   auto& es = v8_scope.GetExceptionState();
+@@ -671,7 +693,7 @@ TEST_F(VideoEncoderTest, EncodePreservesVisibleRect) {
+                                  kEncodeSize.height(), 1, kVisibleRect),
+                   MakeGarbageCollected<VideoEncoderEncodeOptions>(), es);
+ 
+-  ScriptPromiseTester tester(script_state, encoder->flush(es));
++  ScriptPromiseTester tester(script_state, encoder->flush(script_state, es));
+   tester.WaitUntilSettled();
+   EXPECT_TRUE(tester.IsFulfilled());
+ }

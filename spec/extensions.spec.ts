@@ -23,7 +23,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
-import { defer, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { expectWarningMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
@@ -106,6 +106,56 @@ describe('chrome extensions', () => {
     expect(all.map((info: any) => info.id)).toContain(extension.id);
     const info = await w.webContents.executeJavaScript(`chrome.management.get('${extension.id}')`);
     expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
+  });
+
+  // On Linux, using this API scans mounted devices. A device with no identifying
+  // udev properties, as seen on CI, fails DCHECK(!unique_id.empty()) in
+  // storage_monitor::StorageInfo::MakeDeviceId().
+  ifdescribe(process.platform !== 'linux')('chrome.system.storage', () => {
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-system-storage')
+      );
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${extension.url}page.html`);
+    });
+
+    afterEach(() => {
+      w.destroy();
+    });
+
+    it('lists storage units', async () => {
+      const units = await w.webContents.executeJavaScript('chrome.system.storage.getInfo()');
+      expect(Array.isArray(units)).toBe(true);
+      for (const unit of units) {
+        expect(unit).toEqual(
+          expect.objectContaining({
+            id: expect.any(String),
+            name: expect.any(String),
+            type: expect.any(String),
+            capacity: expect.any(Number)
+          })
+        );
+      }
+    });
+
+    it('reports an unknown device when ejecting', async () => {
+      const result = await w.webContents.executeJavaScript("chrome.system.storage.ejectDevice('unknown-device')");
+      expect(result).toBe('no_such_device');
+    });
+
+    it('accepts device attach and detach listeners', async () => {
+      // The browser starts watching for devices when the first listener is added.
+      const units = await w.webContents.executeJavaScript(`
+        chrome.system.storage.onAttached.addListener(() => {});
+        chrome.system.storage.onDetached.addListener(() => {});
+        chrome.system.storage.getInfo();
+      `);
+      expect(Array.isArray(units)).toBe(true);
+    });
   });
 
   describe('Chrome Web Store origin', () => {
@@ -470,6 +520,75 @@ describe('chrome extensions', () => {
       } finally {
         w.destroy();
       }
+    });
+
+    it('supports chrome.storage.sync as a storage area separate from local', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage-sync'));
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false }
+      });
+      try {
+        const p = once(ipcMain, 'storage-sync-result');
+        await w.loadURL(url);
+        const [, json] = await p;
+        const result = JSON.parse(json);
+        expect(result.error).toBeUndefined();
+        expect(result.change).toEqual({
+          key: { newValue: 'sync-value' },
+          other: { newValue: 'sync-other' }
+        });
+        expect(result.sync).toEqual({ key: 'sync-value', other: 'sync-other' });
+        expect(result.local).toEqual({ key: 'local-value' });
+        expect(result.syncAfterRemove).toEqual({ key: 'sync-value' });
+        expect(result.bytesInUse).toBeTypeOf('number');
+        expect(result.bytesInUse).toBeGreaterThan(0);
+        expect(result.perItemError).toBeTypeOf('string');
+        expect(result.perItemError).toContain('kQuotaBytesPerItem quota exceeded');
+        expect(result.syncAfterClear).toEqual({});
+        expect(result.localAfterSyncClear).toEqual({ key: 'local-value' });
+        expect(result.constants).toEqual({
+          QUOTA_BYTES: 102400,
+          QUOTA_BYTES_PER_ITEM: 8192,
+          MAX_ITEMS: 512
+        });
+      } finally {
+        w.destroy();
+      }
+    });
+
+    describe('storage.managed', () => {
+      let w: BrowserWindow;
+
+      beforeEach(async () => {
+        const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-storage-service-worker')
+        );
+        w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+        await w.loadURL(`${extension.url}page.html`);
+      });
+
+      afterEach(() => {
+        w.destroy();
+      });
+
+      it('is empty', async () => {
+        expect(await w.webContents.executeJavaScript('chrome.storage.managed.get()')).toEqual({});
+        expect(await w.webContents.executeJavaScript("chrome.storage.managed.get('key')")).toEqual({});
+        expect(await w.webContents.executeJavaScript('chrome.storage.managed.getBytesInUse()')).toBe(0);
+      });
+
+      it('is empty in a service worker', async () => {
+        expect(await w.webContents.executeJavaScript("chrome.runtime.sendMessage('get-managed')")).toEqual({});
+      });
+
+      it('rejects writes', async () => {
+        for (const call of ["set({ key: 'value' })", "remove('key')", 'clear()']) {
+          await expect(w.webContents.executeJavaScript(`chrome.storage.managed.${call}`)).rejects.toThrow(/read-only/);
+        }
+      });
     });
   });
 
@@ -1972,12 +2091,12 @@ describe('chrome extensions', () => {
       const args = [path.join(fixtures, 'extensions', name, 'main.js'), `--user-data-dir=${userDataDir}`];
       if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const appProcess = spawn(process.execPath, args);
-      const exited = once(appProcess, 'exit');
+      const closed = once(appProcess, 'close');
       defer(async () => {
         // A hung app would keep its profile open into the retry.
-        if (appProcess.exitCode === null && appProcess.signalCode === null) {
+        if (appProcess.pid && appProcess.exitCode === null && appProcess.signalCode === null) {
           appProcess.kill();
-          await exited;
+          await closed;
         }
         await fs.rm(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
       });
@@ -1986,7 +2105,15 @@ describe('chrome extensions', () => {
       appProcess.stdout.on('data', (data) => {
         output += data;
       });
-      await once(appProcess.stdout, 'end');
+      let stderr = '';
+      appProcess.stderr.on('data', (data) => {
+        stderr += data;
+      });
+      const [code, signal] = await closed;
+      expect({ code, signal }, `Fixture ${name} failed.\nstdout:\n${output}\nstderr:\n${stderr}`).toEqual({
+        code: 0,
+        signal: null
+      });
 
       return output.trim();
     }

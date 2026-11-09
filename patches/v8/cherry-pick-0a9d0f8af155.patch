@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 7 Oct 2026 16:30:48 +0200
+Subject: [parser] Preserve strict parameter errors when reparsing lazy arrow
+ functions
+
+When a lazy top-level arrow function fails `SkipFunction` due to an
+unidentifiable error in its body, `ParseArrowFunctionLiteral` rewinds to
+the arrow head and reparses it via `ParseConditionalExpression()`.
+
+Previously, this fallback path did not restore `start_position` on the
+reparsed `function_scope` or copy the strict parameter error from
+`next_arrow_function_info_` to `parameters`. As a result, cases like
+`let f = (eval) => { "use strict"; let x; let x; };` reported the later
+body error instead of `Unexpected eval or arguments in strict mode`.
+
+Propagate `start_position` and `strict_parameter_error` to the reparsed
+scope and `FormalParametersT`.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Iddf63af649d38c54bcebe74feb411104ab2479e4
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8525333
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110413}
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 224e72c9d13826b89fa388bf1872d1450df49349..dff76d7e79071dc211779a33abdc83beba6e12ac 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -5185,11 +5185,16 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
+           if (has_error()) return impl()->FailureExpression();
+ 
+           DeclarationScope* function_scope = next_arrow_function_info_.scope;
++          function_scope->set_start_position(
++              formal_parameters.scope->start_position());
+           FunctionState inner_function_state(&function_state_, &scope_,
+                                              function_scope);
+           Scanner::Location loc(function_scope->start_position(),
+                                 end_position());
+           FormalParametersT parameters(function_scope);
++          parameters.set_strict_parameter_error(
++              next_arrow_function_info_.strict_parameter_error_location,
++              next_arrow_function_info_.strict_parameter_error_message);
+           parameters.is_simple = function_scope->has_simple_parameters();
+           impl()->DeclareArrowFunctionFormalParameters(&parameters, expression,
+                                                        loc);
+diff --git a/test/mjsunit/es6/regress-arrow-reparse-strict-param.js b/test/mjsunit/es6/regress-arrow-reparse-strict-param.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5fae19a1a3c2cb446854c11c8f9c6f787c064fb9
+--- /dev/null
++++ b/test/mjsunit/es6/regress-arrow-reparse-strict-param.js
+@@ -0,0 +1,24 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// When a lazy top-level arrow function aborts preparsing due to an
++// unidentifiable error in its body and reparses the arrow head, strict
++// parameter errors in the head must still be preserved and reported first.
++
++assertThrows(
++    () => eval('let f = (eval) => { "use strict"; let x; let x; };'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval('let f = eval => { "use strict"; let x; let x; };'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval('let f = (arguments) => { "use strict"; let x; let x; };'),
++    SyntaxError,
++    "Unexpected eval or arguments in strict mode");
++assertThrows(
++    () => eval('let f = (implements) => { "use strict"; function g(a, a) {} };'),
++    SyntaxError,
++    "Unexpected strict mode reserved word");

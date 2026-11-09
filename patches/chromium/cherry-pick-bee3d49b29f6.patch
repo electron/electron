@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Fri, 9 Oct 2026 10:50:50 -0700
+Subject: Let CSSParser::ParseFont() parse the shorthand directly
+
+This drops support for CSS wide keywords and pending substitution
+values, which were already being dropped after parsing.
+
+Avoids arbitrary declaration parsing in @supports which may access
+cross thread access to static Persistent in GetUACounterStyleMap().
+
+This fixes a UAF issue when the singleton was created on an off-main
+thread and later accessed from the main thread.
+
+Bug: 568832157
+Change-Id: I8793cee34fc032c43918599acc52f65a5ed1c039
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8525429
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: Kevin Babbitt <kbabbitt@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1715776}
+
+diff --git a/third_party/blink/renderer/core/css/parser/css_parser.cc b/third_party/blink/renderer/core/css/parser/css_parser.cc
+index 9368327044d75a2036cde9385e80f90e7e87a097..896d73c774d6b01d803e4f65cd1cdb2646c4437e 100644
+--- a/third_party/blink/renderer/core/css/parser/css_parser.cc
++++ b/third_party/blink/renderer/core/css/parser/css_parser.cc
+@@ -17,6 +17,7 @@
+ #include "third_party/blink/renderer/core/css/parser/css_tokenizer.h"
+ #include "third_party/blink/renderer/core/css/parser/css_variable_parser.h"
+ #include "third_party/blink/renderer/core/css/properties/css_parsing_utils.h"
++#include "third_party/blink/renderer/core/css/properties/shorthands.h"
+ #include "third_party/blink/renderer/core/css/style_color.h"
+ #include "third_party/blink/renderer/core/css/style_rule.h"
+ #include "third_party/blink/renderer/core/css/style_rule_keyframe.h"
+@@ -481,22 +482,27 @@ MutableCSSPropertyValueSet* CSSParser::ParseFont(
+     const String& string,
+     const ExecutionContext* execution_context) {
+   DCHECK(ThreadState::Current()->IsAllocationAllowed());
+-  auto* set =
+-      MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLStandardMode);
+-  ParseValue(set, CSSPropertyID::kFont, string, true /* important */,
+-             execution_context);
+-  if (set->IsEmpty()) {
+-    return nullptr;
+-  }
+-  const CSSValue* font_size =
+-      set->GetPropertyCSSValue(CSSPropertyID::kFontSize);
+-  if (!font_size || font_size->IsCSSWideKeyword()) {
+-    return nullptr;
+-  }
+-  if (font_size->IsPendingSubstitutionValue()) {
+-    return nullptr;
++
++  LocalCSSParserContext context(execution_context
++                                    ? execution_context->GetSecureContextMode()
++                                    : SecureContextMode::kInsecureContext,
++                                static_cast<StyleSheetContents*>(nullptr),
++                                execution_context, kHTMLStandardMode);
++  CSSParserLocalContext local_context(CSSPropertyName(CSSPropertyID::kFont),
++                                      CSSPropertyID::kFont);
++  CSSParserTokenStream stream(string);
++  HeapVector<CSSPropertyValue, 64> parsed_properties;
++
++  if (GetCSSPropertyFont().ParseShorthand(/*important=*/true, stream,
++                                          *context.GetParserContext(),
++                                          local_context, parsed_properties) &&
++      stream.AtEnd()) {
++    auto* set =
++        MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLStandardMode);
++    set->AddParsedProperties(parsed_properties);
++    return set;
+   }
+-  return set;
++  return nullptr;
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/parser/css_property_parser.cc b/third_party/blink/renderer/core/css/parser/css_property_parser.cc
+index ccdf0ebbdb6a4123d897828b11851e1dfc237535..15674d4f9d2bd460d6a2893ed726322bb03450f0 100644
+--- a/third_party/blink/renderer/core/css/parser/css_property_parser.cc
++++ b/third_party/blink/renderer/core/css/parser/css_property_parser.cc
+@@ -203,6 +203,15 @@ bool CSSPropertyParser::ParseValueStart(CSSPropertyID unresolved_property,
+     }
+   }
+ 
++  // From here we can end up parsing arbitrary CSS properties via
++  // if(supports(<property>:<value>)). CSS parsing can in some cases be unsafe
++  // cross threads where we rely on static Persistent objects which are not
++  // thread local.
++  //
++  // Some CSSParser APIS are invoked off main thread for canvas APIs, but should
++  // never end up here.
++  CHECK(IsMainThread());
++
+   // We did not parse properly without variable substitution,
+   // so rewind the stream, and see if parsing it as something
+   // containing variables will help.
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/text/2d.text.font.parse.invalid.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/text/2d.text.font.parse.invalid.html
+index 6a788fa7abc79a581e56fc0a9655b12a4b3e8c0b..64c5fc109ac725183d2be81887b998c1d957742d 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/text/2d.text.font.parse.invalid.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/text/2d.text.font.parse.invalid.html
+@@ -67,6 +67,10 @@ _addTest(function(canvas, ctx) {
+   ctx.font = '1em serif; background: green; margin: 10px';
+   _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
+ 
++  ctx.font = '20px serif';
++  ctx.font = 'if(supports(list-style-type: disc): 13px MyFont)';
++  _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
++
+ });
+ </script>
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.invalid.html b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.invalid.html
+index c091c7a3941984a7f52ced7c4a0cd62994732f26..88dd5396033608f1b5e3d12a4f451bca345a01d4 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.invalid.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.invalid.html
+@@ -67,6 +67,10 @@ t.step(function() {
+   ctx.font = '20px serif';
+   ctx.font = '1em serif; background: green; margin: 10px';
+   _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
++
++  ctx.font = '20px serif';
++  ctx.font = 'if(supports(list-style-type: disc): 13px MyFont)';
++  _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
+   t.done();
+ 
+ });
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.invalid.worker.js b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.invalid.worker.js
+index 31f374579e7c5651fd6d1a98698e69688c548409..537e215693342bb1c480f04c10a3d7585918807e 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.invalid.worker.js
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.invalid.worker.js
+@@ -62,6 +62,10 @@ t.step(function() {
+   ctx.font = '20px serif';
+   ctx.font = '1em serif; background: green; margin: 10px';
+   _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
++
++  ctx.font = '20px serif';
++  ctx.font = 'if(supports(list-style-type: disc): 13px MyFont)';
++  _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
+   t.done();
+ });
+ done();
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/tools/yaml/text.yaml b/third_party/blink/web_tests/external/wpt/html/canvas/tools/yaml/text.yaml
+index cbbafdd87d919e75fb98dfa84a8d0b33cc5ad1c1..58056126ac5982ee32b5576a4efa01948d09cb56 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/tools/yaml/text.yaml
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/tools/yaml/text.yaml
+@@ -108,6 +108,10 @@
+     ctx.font = '1em serif; background: green; margin: 10px';
+     @assert ctx.font === '20px serif';
+ 
++    ctx.font = '20px serif';
++    ctx.font = 'if(supports(list-style-type: disc): 13px MyFont)';
++    @assert ctx.font === '20px serif';
++
+ - name: 2d.text.font.default
+   code: |
+     @assert ctx.font === '10px sans-serif';

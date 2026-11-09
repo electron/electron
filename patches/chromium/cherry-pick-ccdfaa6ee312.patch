@@ -1,0 +1,172 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Johannes Kron <kron@chromium.org>
+Date: Fri, 23 Oct 2026 07:25:11 -0700
+Subject: [views] Skip SetWindowDisplayAffinity for unchanged or hidden windows
+
+Since crrev.com/c/7982006, showing a widget applies its display affinity
+to all windows it owns and to native menus on the UI thread, even when
+the affinity is WDA_NONE.
+
+Calling SetWindowDisplayAffinity() causes DWM to render certain hidden
+windows as blank rectangles. This notably manifests as a persistent
+white box in the top-left corner on systems running third-party
+overlays/hooks such as ASUS Smart Input.
+
+To fix this:
+- Only call SetWindowDisplayAffinity() when the target affinity differs from
+  the current affinity, making this a no-op in the common WDA_NONE case.
+- Skip hidden owned windows, as hidden Chromium widgets will apply the
+  affinity upon being shown.
+
+Bug: 563416302, 359921643
+Change-Id: I3439f8add8a827c634cd2c6b19a55c5d1aa1d2c2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8642510
+Commit-Queue: Johannes Kron <kron@chromium.org>
+Reviewed-by: David Bienvenu <davidbienvenu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725787}
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 0251470d559d1b0cdb5c9f88ba842e707727b1eb..1bd25fb4361cbc903132d87593021aff138cbb78 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -110,6 +110,19 @@ void UpdateMouseLockRegion(aura::Window* window, bool locked) {
+   ::ClipCursor(&window_rect);
+ }
+ 
++// Sets the display affinity of `hwnd` unless it already has `affinity`.
++// `SetWindowDisplayAffinity()` makes DWM draw a hidden window as a blank
++// rectangle, even for `WDA_NONE` (https://crbug.com/359921643), so avoid
++// needless calls. Returns whether `affinity` is now in effect.
++bool SetDisplayAffinityIfChanged(HWND hwnd, DWORD affinity) {
++  DWORD current_affinity = WDA_NONE;
++  if (::GetWindowDisplayAffinity(hwnd, &current_affinity) &&
++      current_affinity == affinity) {
++    return true;
++  }
++  return ::SetWindowDisplayAffinity(hwnd, affinity);
++}
++
+ // Applies display affinity to all active Win32 native system/popup menu
+ // windows on the current thread.
+ void ApplyAffinityToActiveSystemMenus(DWORD affinity) {
+@@ -122,7 +135,7 @@ void ApplyAffinityToActiveSystemMenus(DWORD affinity) {
+         if (len > 0 &&
+             std::wstring_view(class_name, static_cast<size_t>(len)) ==
+                 kSystemMenuClassName) {
+-          ::SetWindowDisplayAffinity(hwnd, static_cast<DWORD>(lParam));
++          SetDisplayAffinityIfChanged(hwnd, static_cast<DWORD>(lParam));
+         }
+         return TRUE;
+       },
+@@ -137,8 +150,8 @@ DWORD GetExclusionAffinity() {
+              : WDA_MONITOR;
+ }
+ 
+-// Enumerates all top-level windows owned by the given hwnd on the current
+-// thread and applies the given display affinity to them.
++// Enumerates all visible top-level windows owned by the given hwnd on the
++// current thread and applies the given display affinity to them.
+ void ApplyAffinityToOwnedWindows(HWND owner_hwnd, DWORD affinity) {
+   struct EnumData {
+     HWND owner;
+@@ -149,6 +162,13 @@ void ApplyAffinityToOwnedWindows(HWND owner_hwnd, DWORD affinity) {
+   ::EnumThreadWindows(
+       ::GetCurrentThreadId(),
+       [](HWND hwnd, LPARAM lParam) -> BOOL {
++        // Skip hidden windows, e.g. helper windows created on this thread by
++        // third-party input methods (see `SetDisplayAffinityIfChanged()`).
++        // Hidden Chromium widgets pick up the affinity in
++        // `UpdateDisplayAffinity()` when they are shown.
++        if (!::IsWindowVisible(hwnd)) {
++          return TRUE;
++        }
+         EnumData* enum_data = reinterpret_cast<EnumData*>(lParam);
+         HWND current_owner = ::GetWindow(hwnd, GW_OWNER);
+         // Guard against infinite loops if an external process or cyclic
+@@ -156,7 +176,7 @@ void ApplyAffinityToOwnedWindows(HWND owner_hwnd, DWORD affinity) {
+         constexpr int kMaxOwnerDepth = 32;
+         for (int depth = 0; current_owner && depth < kMaxOwnerDepth; ++depth) {
+           if (current_owner == enum_data->owner) {
+-            ::SetWindowDisplayAffinity(hwnd, enum_data->affinity);
++            SetDisplayAffinityIfChanged(hwnd, enum_data->affinity);
+             break;
+           }
+           current_owner = ::GetWindow(current_owner, GW_OWNER);
+@@ -1752,13 +1772,13 @@ void DesktopWindowTreeHostWin::UpdateDisplayAffinity() {
+     }
+   }
+ 
+-  SetWindowDisplayAffinity(GetHWND(), affinity);
++  SetDisplayAffinityIfChanged(GetHWND(), affinity);
+ 
+   // Propagate the new display affinity to any active native system menu.
+   ApplyAffinityToActiveSystemMenus(affinity);
+ 
+-  // Propagate the new display affinity to all owned windows on the current
+-  // thread.
++  // Propagate the new display affinity to all visible owned windows on the
++  // current thread.
+   ApplyAffinityToOwnedWindows(GetHWND(), affinity);
+ }
+ 
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
+index a6c52f8842e937aba5fc1c1ad0a4eeb5e9d8a3ba..05afc6efa0722a928547fbab7db7bac1f48c9304 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
+@@ -801,6 +801,56 @@ TEST_F(DesktopWindowTreeHostWinTest, ExcludeContextWindowsFromCapture) {
+   parent_widget.CloseNow();
+ }
+ 
++// Display affinity must not be propagated to hidden owned windows, since that
++// makes DWM draw them as blank rectangles. Chromium widgets pick it up when
++// they are shown.
++TEST_F(DesktopWindowTreeHostWinTest,
++       ExcludeFromCaptureSkipsHiddenOwnedWindows) {
++  Widget parent_widget;
++  HWND parent_hwnd =
++      InitTestWidget(parent_widget,
++                     CreateParams(Widget::InitParams::CLIENT_OWNS_WIDGET,
++                                  Widget::InitParams::TYPE_WINDOW),
++                     /*exclude_capture=*/false);
++
++  // Simulate a hidden non-Chromium window owned by `parent_hwnd` on the UI
++  // thread (e.g. a helper window of a third-party input method).
++  HWND hidden_hwnd =
++      ::CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 100, 100,
++                        parent_hwnd, nullptr, nullptr, nullptr);
++  ASSERT_NE(nullptr, hidden_hwnd);
++
++  // Also create an owned Chromium widget that has not been shown yet.
++  Widget child_widget;
++  Widget::InitParams child_params = CreateParams(
++      Widget::InitParams::CLIENT_OWNS_WIDGET, Widget::InitParams::TYPE_MENU);
++  child_params.parent = parent_widget.GetNativeWindow();
++  child_widget.Init(std::move(child_params));
++  HWND child_hwnd =
++      child_widget.GetNativeWindow()->GetHost()->GetAcceleratedWidget();
++
++  // Enabling exclusion on the parent must not apply affinity to hidden owned
++  // windows.
++  parent_widget.SetExcludeFromScreenCapture(true);
++  DWORD affinity = WDA_NONE;
++  EXPECT_TRUE(::GetWindowDisplayAffinity(hidden_hwnd, &affinity));
++  EXPECT_EQ(static_cast<DWORD>(WDA_NONE), affinity);
++  EXPECT_TRUE(::GetWindowDisplayAffinity(child_hwnd, &affinity));
++  EXPECT_EQ(static_cast<DWORD>(WDA_NONE), affinity);
++
++  // Once shown, the Chromium child widget inherits its owner's affinity, while
++  // the hidden non-Chromium window remains untouched.
++  child_widget.Show();
++  EXPECT_TRUE(::GetWindowDisplayAffinity(child_hwnd, &affinity));
++  EXPECT_EQ(GetExpectedExclusionAffinity(), affinity);
++  EXPECT_TRUE(::GetWindowDisplayAffinity(hidden_hwnd, &affinity));
++  EXPECT_EQ(static_cast<DWORD>(WDA_NONE), affinity);
++
++  ::DestroyWindow(hidden_hwnd);
++  child_widget.CloseNow();
++  parent_widget.CloseNow();
++}
++
+ TEST_F(DesktopWindowTreeHostWinTest, ContextTooltipAccessibilityTree) {
+   // HWND ownership: browser -> bubble -> tooltip. The context-created tooltip
+   // has no Widget parent and must not also appear directly under browser.

@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 9 Oct 2026 14:29:25 +0200
+Subject: Reland "[parser] Only classify arrow parameters and set initializers
+ in arrow heads"
+
+This is a reland of commit d149767fe05516886351a46d4b573073187bfece.
+
+Resolved the duplicate `CanBeArrowParameterDeclaration()` declaration in
+`ExpressionScope` that resulted from auto-merging on top of
+https://crrev.com/c/8537630.
+
+Original change's description:
+> [parser] Only classify arrow parameters and set initializers in arrow heads
+>
+> `VariableProxy` initializer positions in
+> `ExpressionParsingScope::variable_list_` are only consumed by
+> `ArrowHeadParsingScope::ValidateAndCreateScope`.
+>
+> Previously:
+> - `ExpressionScope::SetInitializers` checked `CanBeExpression()` instead
+>   of `CanBeArrowParameterDeclaration()`, so every comma expression and
+>   every normal function call argument walked `variable_list_` in the
+>   enclosing `ExpressionParsingScope`.
+> - `ExpressionParsingScope::SetInitializers` returned `len - 1` instead
+>   of `len`, causing subsequent calls to re-check the last initialized
+>   variable.
+> - `ParseExpressionCoverGrammar` and `ParseArguments` called
+>   `ClassifyArrowParameter` and `SetInitializers` even when not parsing a
+>   potential arrow head.
+>
+> Restrict `ClassifyArrowParameter` and `SetInitializers` to arrow head
+> scopes and return `len` from `SetInitializers`.
+>
+> Bug: 567222737
+> TAG=agy
+> CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+R=ishell@chromium.org
+
+Change-Id: I3270530a5456e625db1c2d0ca63699ea41d04842
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8549938
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110534}
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index 37608fa11d0698f7bf89fe99ef310228939fa38e..855a6a418304f564c1ab6228b097e1a4f1d2095a 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -234,7 +234,7 @@ class ExpressionScope {
+   }
+ 
+   int SetInitializers(int variable_index, int peek_position) {
+-    if (CanBeExpression()) {
++    if (CanBeArrowParameterDeclaration()) {
+       return AsExpressionParsingScope()->SetInitializers(variable_index,
+                                                          peek_position);
+     }
+@@ -591,15 +591,12 @@ class ExpressionParsingScope : public ExpressionScope<Types> {
+     if (len == 0) return 0;
+ 
+     int end = len - 1;
+-    // Loop backwards and abort as soon as we see one that's already set to
+-    // avoid a loop on expressions like a,b,c,d,e,f,g (outside of an arrowhead).
+-    // TODO(delphick): Look into removing this loop.
+     for (int i = end; i >= first_variable_index &&
+                       variable_list_.at(i).second == kNoSourcePosition;
+          --i) {
+       variable_list_.at(i).second = position;
+     }
+-    return end;
++    return len;
+   }
+ 
+   ScopedList<std::pair<VariableProxy*, int>>* variable_list() {
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 91419b2dbbd1a69610ab8c3474a4fa454228f9ea..b9bc5f8e56d345d831b871bf9153580d88932296 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -2357,11 +2357,12 @@ ParserBase<Impl>::ParseExpressionCoverGrammar() {
+     expression = ParseAssignmentExpressionCoverGrammar();
+ 
+     ClassifyArrowParameter(&accumulation_scope, expr_pos, expression);
++    if (V8_UNLIKELY(expression_scope()->CanBeArrowParameterDeclaration())) {
++      variable_index =
++          expression_scope()->SetInitializers(variable_index, peek_position());
++    }
+     list.Add(expression);
+ 
+-    variable_index =
+-        expression_scope()->SetInitializers(variable_index, peek_position());
+-
+     if (!Check(Token::kComma)) break;
+ 
+     if (expression_scope()->CanBeArrowParameterDeclaration() &&
+@@ -3213,6 +3214,8 @@ void ParserBase<Impl>::ParseArguments(
+               scanner()->peek_location(), MessageTemplate::kParamAfterRest);
+         }
+       }
++      variable_index =
++          expression_scope()->SetInitializers(variable_index, peek_position());
+     } else {
+       accumulation_scope.ValidateExpression();
+     }
+@@ -3222,9 +3225,6 @@ void ParserBase<Impl>::ParseArguments(
+     }
+     args->Add(argument);
+ 
+-    variable_index =
+-        expression_scope()->SetInitializers(variable_index, peek_position());
+-
+     if (!Check(Token::kComma)) break;
+   }
+ 
+diff --git a/test/mjsunit/es6/regress-comma-expression-arrow-initializers.js b/test/mjsunit/es6/regress-comma-expression-arrow-initializers.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ff17fa4b287818fb15a3b14bd7175d461b3b2f59
+--- /dev/null
++++ b/test/mjsunit/es6/regress-comma-expression-arrow-initializers.js
+@@ -0,0 +1,15 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++let b = 0;
++([1], [b] = [42]);
++assertEquals(42, b);
++
++for (let i = ([1], [b] = [99]); false; ) {}
++assertEquals(99, b);
++
++assertThrows(
++    () => eval("for (let i = ([{a = 42}.f()], [b] = [1]); false; ) {}"),
++    SyntaxError,
++    "Invalid shorthand property initializer");

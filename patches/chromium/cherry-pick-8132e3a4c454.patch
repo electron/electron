@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 5 Oct 2026 21:50:32 -0700
+Subject: Don't retry ORB-blocked media range requests
+
+An ORB block is deterministic for a given request, so retrying it in
+ResourceMultiBufferDataProvider::DidFail() can never succeed. Fail
+immediately instead.
+
+Adds a regression test at a non-zero position (where transient
+failures are normally retried) and a contrasting test confirming that
+transient errors still retry.
+
+Fixed: 568972975
+Change-Id: Id2064bd544b5c8b3f938840aff9ae20ed15ce1cd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8520759
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Thomas Guilbert <tguilbert@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1711956}
+
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index cedc485cf6dbe93b8936d03fb76a35db8a39b44d..070ff12d32f6577dd2e5001740e0f41269779639 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -537,9 +537,12 @@ void ResourceMultiBufferDataProvider::DidFail(const WebURLError& error) {
+ 
+   // ORB only blocks cross-origin no-cors responses, which are opaque. Record
+   // this so that the failure is not distinguishable from other opaque
+-  // failures (e.g. via error messages exposed by the media element).
++  // failures (e.g. via error messages exposed by the media element). An ORB
++  // block is also deterministic, so fail immediately rather than retrying.
+   if (error.reason() == net::ERR_BLOCKED_BY_ORB) {
+     url_data_->set_is_cors_cross_origin(true);
++    url_data_->Fail();
++    return;  // "this" may be deleted now.
+   }
+ 
+   if (url_data_->url_index() && retries_ < kMaxRetries && pos_ != 0) {
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index d55bc8cd0f1813a3362bbbc4e258d34ed5303c4e..02c068238dd771d90804d8d76081e23cb3ced012 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -320,6 +320,32 @@ TEST_F(ResourceMultiBufferDataProviderTest, DidFailOtherErrorNotCrossOrigin) {
+   EXPECT_FALSE(url_data->is_cors_cross_origin());
+ }
+ 
++// An ORB block is deterministic, so it must fail immediately rather than being
++// retried, even at a non-zero position where transient failures are retried.
++TEST_F(ResourceMultiBufferDataProviderTest, DidFailBlockedByOrbDoesNotRetry) {
++  Initialize(kHttpUrl, 100);
++  // Exactly one loader must be created: the initial one. A retry would create
++  // a second one. The default action from the fixture's ON_CALL applies.
++  EXPECT_CALL(fetch_context_, CreateUrlLoader(_)).Times(1);
++  Start();
++  scoped_refptr<UrlData> url_data = url_data_;
++  EXPECT_CALL(*this, RedirectCallback(testing::IsNull()));
++  loader_->DidFail(WebURLError(net::ERR_BLOCKED_BY_ORB, url_));
++  EXPECT_TRUE(url_data->is_cors_cross_origin());
++  task_environment_.FastForwardUntilNoTasksRemain();
++}
++
++// Transient errors at a non-zero position are still retried.
++TEST_F(ResourceMultiBufferDataProviderTest, DidFailOtherErrorRetries) {
++  Initialize(kHttpUrl, 100);
++  // The initial loader plus one retry.
++  EXPECT_CALL(fetch_context_, CreateUrlLoader(_)).Times(2);
++  Start();
++  EXPECT_CALL(*this, RedirectCallback(_)).Times(0);
++  loader_->DidFail(WebURLError(net::ERR_FAILED, url_));
++  task_environment_.FastForwardUntilNoTasksRemain();
++}
++
+ TEST_F(ResourceMultiBufferDataProviderTest, DestructedUrlIndexDidFinish) {
+   Initialize(kHttpUrl, 100);
+   Start();

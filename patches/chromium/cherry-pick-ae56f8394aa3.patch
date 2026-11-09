@@ -1,0 +1,243 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Mon, 12 Oct 2026 18:47:06 -0700
+Subject: Prevent Range::expand() from crossing shadow boundaries
+
+Range::expand() computes word, sentence, block, and document boundaries
+using editing position utilities that can traverse the flat tree across
+shadow boundaries and return positions in a different TreeScope. Passing
+those unadjusted positions to Range::setStart() and Range::setEnd()
+causes the Range to collapse into the target shadow tree, exposing nodes
+inside closed or user-agent shadow roots.
+
+Adjust the positions in Range::expand() so that they remain within the
+Range's initial TreeScope, clamping positions that cross into a child
+shadow tree to before or after the shadow host and clamping positions
+that cross out of a shadow tree to the start or end of the shadow root.
+
+Fixed: 567936269
+Change-Id: I1d873ef6ed07998eae08f8d4c2644b424a035830
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8519883
+Reviewed-by: Dan Clark <daniec@microsoft.com>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717233}
+
+diff --git a/third_party/blink/renderer/core/dom/range.cc b/third_party/blink/renderer/core/dom/range.cc
+index fcea0d96675b5f7b3ae3ff4a859b62b32ae21b3e..342fd7c0fce4f324f211dcc21d11dff74c0a9f48 100644
+--- a/third_party/blink/renderer/core/dom/range.cc
++++ b/third_party/blink/renderer/core/dom/range.cc
+@@ -42,6 +42,7 @@
+ #include "third_party/blink/renderer/core/editing/frame_selection.h"
+ #include "third_party/blink/renderer/core/editing/iterators/text_iterator.h"
+ #include "third_party/blink/renderer/core/editing/position_units.h"
++#include "third_party/blink/renderer/core/editing/selection_adjuster.h"
+ #include "third_party/blink/renderer/core/editing/selection_template.h"
+ #include "third_party/blink/renderer/core/editing/serializers/serialization.h"
+ #include "third_party/blink/renderer/core/editing/set_selection_options.h"
+@@ -1655,6 +1656,9 @@ void Range::expand(const String& unit, ExceptionState& exception_state) {
+   owner_document_->UpdateStyleAndLayout(DocumentUpdateReason::kJavaScript);
+   VisiblePosition start = CreateVisiblePosition(StartPosition());
+   VisiblePosition end = CreateVisiblePosition(EndPosition());
++  if (start.IsNull() || end.IsNull()) {
++    return;
++  }
+   if (unit == "word") {
+     start = CreateVisiblePosition(StartOfWordPosition(start.DeepEquivalent()));
+     end = CreateVisiblePosition(EndOfWordPosition(end.DeepEquivalent()));
+@@ -1671,11 +1675,25 @@ void Range::expand(const String& unit, ExceptionState& exception_state) {
+   } else {
+     return;
+   }
+-  setStart(start.DeepEquivalent().ComputeContainerNode(),
+-           start.DeepEquivalent().ComputeOffsetInContainerNode(),
+-           exception_state);
+-  setEnd(end.DeepEquivalent().ComputeContainerNode(),
+-         end.DeepEquivalent().ComputeOffsetInContainerNode(), exception_state);
++  if (start.IsNull() || end.IsNull()) {
++    return;
++  }
++  const Position result_start =
++      SelectionAdjuster::AdjustSelectionToAvoidCrossingShadowBoundaries(
++          SelectionInDomTree::Builder()
++              .SetBaseAndExtent(StartPosition(), start.DeepEquivalent())
++              .Build())
++          .Focus();
++  const Position result_end =
++      SelectionAdjuster::AdjustSelectionToAvoidCrossingShadowBoundaries(
++          SelectionInDomTree::Builder()
++              .SetBaseAndExtent(EndPosition(), end.DeepEquivalent())
++              .Build())
++          .Focus();
++  setStart(result_start.ComputeContainerNode(),
++           result_start.ComputeOffsetInContainerNode(), exception_state);
++  setEnd(result_end.ComputeContainerNode(),
++         result_end.ComputeOffsetInContainerNode(), exception_state);
+ }
+ 
+ DOMRectList* Range::getClientRects() const {
+diff --git a/third_party/blink/web_tests/external/wpt/dom/ranges/Range-expand-shadow.tentative.html b/third_party/blink/web_tests/external/wpt/dom/ranges/Range-expand-shadow.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..a1b553314ef3b5562cf44f3ed5b2affe6596f962
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/dom/ranges/Range-expand-shadow.tentative.html
+@@ -0,0 +1,159 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Range.expand() should not cross shadow boundaries</title>
++<link rel=help href="https://issues.chromium.org/issues/567936269">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++
++<div id="before-host-container">
++  x<span id="before-host">
++    <template shadowrootmode="closed"><span>shadow word. Second sentence.</span></template>
++  </span>y
++</div>
++
++<div id="flex-container">
++  <div id="flex-box" style="display:flex;height:10px;width:10px"></div>
++  <div id="flex-host">
++    <template shadowrootmode="closed">
++      <div>shadow word.</div>
++    </template>
++  </div>
++</div>
++
++<div id="after-host-container">
++  <span id="after-host">
++    <template shadowrootmode="closed"><span>hello</span></template>
++  </span>world
++</div>
++
++<div id="inside-shadow-container">
++  before<span id="inside-host">
++    <template shadowrootmode="open"><span id="inside-span">inside</span></template>
++  </span>after
++</div>
++
++<div id="video-container">x<video id="vid" controls width="400" height="300"></video>y</div>
++
++<div id="nested-container">
++  x<div id="outer-host">
++    <template shadowrootmode="open">
++      <div id="nested-box" style="display:flex;height:10px;width:10px"></div>
++      <div id="inner-host">
++        <template shadowrootmode="closed">
++          <div>nested secret</div>
++        </template>
++      </div>
++    </template>
++  </div>y
++</div>
++
++<div id="hidden">hidden</div>
++
++<script>
++for (const unit of ['word', 'sentence']) {
++  test(() => {
++    const container = document.getElementById('before-host-container');
++    const host = document.getElementById('before-host');
++    const range = document.createRange();
++    const hostIndex = [...container.childNodes].indexOf(host);
++    range.setStart(container, hostIndex);
++    range.collapse(true);
++    range.expand(unit);
++
++    assert_equals(range.startContainer.getRootNode(), document,
++                  'startContainer must remain in document');
++    assert_equals(range.endContainer.getRootNode(), document,
++                  'endContainer must remain in document');
++  }, `Range.expand('${unit}') before shadow host with preceding text does not enter shadow tree`);
++
++  test(() => {
++    const box = document.getElementById('flex-box');
++    const range = document.createRange();
++    range.setStart(box, 0);
++    range.collapse(true);
++    range.expand(unit);
++
++    assert_equals(range.startContainer.getRootNode(), document,
++                  'startContainer must remain in document');
++    assert_equals(range.endContainer.getRootNode(), document,
++                  'endContainer must remain in document');
++  }, `Range.expand('${unit}') from empty flex box before shadow host does not enter shadow tree`);
++
++  test(() => {
++    const host = document.getElementById('after-host');
++    const textAfter = host.nextSibling;
++    const range = document.createRange();
++    range.setStart(textAfter, 0);
++    range.collapse(true);
++    range.expand(unit);
++
++    assert_equals(range.startContainer.getRootNode(), document,
++                  'startContainer must remain in document');
++    assert_equals(range.endContainer.getRootNode(), document,
++                  'endContainer must remain in document');
++    assert_equals(range.toString(), 'world');
++  }, `Range.expand('${unit}') after shadow host does not enter shadow tree`);
++}
++
++for (const unit of ['word', 'sentence', 'block', 'document']) {
++  test(() => {
++    const host = document.getElementById('inside-host');
++    const shadowRoot = host.shadowRoot;
++    const shadowSpan = shadowRoot.getElementById('inside-span');
++    const range = document.createRange();
++    range.setStart(shadowSpan.firstChild, 2);
++    range.collapse(true);
++    range.expand(unit);
++
++    assert_equals(range.startContainer.getRootNode(), shadowRoot,
++                  'startContainer must remain in shadowRoot');
++    assert_equals(range.endContainer.getRootNode(), shadowRoot,
++                  'endContainer must remain in shadowRoot');
++  }, `Range.expand('${unit}') starting inside shadow root does not escape to document`);
++}
++
++test(() => {
++  const container = document.getElementById('video-container');
++  const vid = document.getElementById('vid');
++  const range = document.createRange();
++  const vidIndex = [...container.childNodes].indexOf(vid);
++  range.setStart(container, vidIndex);
++  range.collapse(true);
++  range.expand('word');
++
++  assert_equals(range.startContainer.getRootNode(), document,
++                'startContainer must remain in document');
++  assert_equals(range.endContainer.getRootNode(), document,
++                'endContainer must remain in document');
++}, 'Range.expand("word") before <video controls> does not leak user-agent shadow tree nodes');
++
++test(() => {
++  const outerHost = document.getElementById('outer-host');
++  const outerRoot = outerHost.shadowRoot;
++  const box = outerRoot.getElementById('nested-box');
++  const range = document.createRange();
++  range.setStart(box, 0);
++  range.collapse(true);
++  range.expand('word');
++
++  assert_equals(range.startContainer.getRootNode(), outerRoot,
++                'startContainer must remain in outerRoot');
++  assert_equals(range.endContainer.getRootNode(), outerRoot,
++                'endContainer must remain in outerRoot');
++}, 'Range.expand("word") inside a shadow root does not enter a nested closed shadow root');
++
++test(t => {
++  t.add_cleanup(() => {
++    document.documentElement.style.display = '';
++  });
++  document.documentElement.style.display = 'none';
++  const hidden = document.getElementById('hidden');
++  const range = document.createRange();
++  range.setStart(hidden, 0);
++  range.collapse(true);
++  range.expand('word');
++
++  assert_equals(range.startContainer, hidden);
++  assert_equals(range.endContainer, hidden);
++}, 'Range.expand("word") when document has display:none does not crash');
++</script>

@@ -205,12 +205,27 @@ export async function spawnAndWait(
 
   let timedOut = false;
   let killTimeoutId: NodeJS.Timeout | undefined;
+  let stopReadingTimeoutId: NodeJS.Timeout | undefined;
+  let stdioHeldOpen = false;
+  // 'close' also waits for stdout and stderr to close, and a descendant that
+  // inherited them can keep them open long after the child has exited (Windows
+  // testing builds hand both to their sandboxed child processes). So once
+  // timed out, stop reading them a moment after the child exits.
+  const stopReadingSoon = () => {
+    stopReadingTimeoutId = globalThis.setTimeout(() => {
+      stdioHeldOpen = true;
+      child.stdout.destroy();
+      child.stderr.destroy();
+    }, 1000);
+  };
   const timeoutId = globalThis.setTimeout(() => {
     timedOut = true;
     child.kill();
     killTimeoutId = globalThis.setTimeout(() => {
       child.kill('SIGKILL');
     }, killTimeout);
+    if (child.exitCode !== null || child.signalCode !== null) stopReadingSoon();
+    else child.once('exit', stopReadingSoon);
   }, timeout);
 
   const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve, reject) => {
@@ -221,12 +236,16 @@ export async function spawnAndWait(
   }).finally(() => {
     globalThis.clearTimeout(timeoutId);
     if (killTimeoutId) globalThis.clearTimeout(killTimeoutId);
+    if (stopReadingTimeoutId) globalThis.clearTimeout(stopReadingTimeoutId);
   });
 
   const output = formatSpawnOutput(stdout, stderr, stripOutput);
   if (timedOut) {
+    const status = stdioHeldOpen
+      ? `It exited with code ${code} and signal ${signal}, but its stdout or stderr stayed open.`
+      : `Process closed with code ${code} and signal ${signal}.`;
     throw new Error(
-      `Timed out after ${timeout}ms waiting for ${command} ${args.join(' ')} to exit. Process closed with code ${code} and signal ${signal}.\n\nstdout:\n${output.stdout}\n\nstderr:\n${output.stderr}`
+      `Timed out after ${timeout}ms waiting for ${command} ${args.join(' ')} to exit. ${status}\n\nstdout:\n${output.stdout}\n\nstderr:\n${output.stderr}`
     );
   }
 

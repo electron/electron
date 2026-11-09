@@ -234,6 +234,10 @@ NativeWindowMacRemote::NativeWindowMacRemote(
   params.delegate = this;
   if (IsTranslucent())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
+  if (!options.ValueOrDefault(options::kHasShadow, true))
+    params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
+  if (!options.ValueOrDefault(options::kFocusable, true))
+    params.activatable = views::Widget::InitParams::Activatable::kNo;
   // Reading the options above may have run JavaScript that disconnected the
   // shim, so the host is looked up again here, with nothing left to run
   // before it is used. Without one the window is made in this process.
@@ -739,10 +743,21 @@ SkColor NativeWindowMacRemote::GetBackgroundColor() const {
 
 void NativeWindowMacRemote::SetHasShadow(bool has_shadow) {
   has_shadow_ = has_shadow;
+  if (auto* shim = GetAppShim())
+    shim->SetWindowHasShadow(GetRemoteWindowId(), has_shadow);
 }
 
 bool NativeWindowMacRemote::HasShadow() const {
   return has_shadow_;
+}
+
+void NativeWindowMacRemote::SetFocusable(bool focusable) {
+  // The shim asks the widget whether its window can become key.
+  SetCanActivate(focusable);
+}
+
+bool NativeWindowMacRemote::IsFocusable() const {
+  return CanActivate();
 }
 
 void NativeWindowMacRemote::SetOpacity(const double opacity) {

@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Tue, 29 Sep 2026 11:29:05 -0700
+Subject: Block WebSocketConnector creation in PDF renderer processes
+
+Reject blink.mojom.WebSocketConnector binding requests from PDF-isolated
+frames in RenderFrameHostImpl::CreateWebSocketConnector() with
+mojo::ReportBadMessage(). A PDF renderer commits the serving origin but
+is not permitted to access that origin's data or cookies; allowing it to
+create a WebSocketConnector would attach the origin's cookies (including
+HttpOnly cookies) to WebSocket handshakes.
+
+Bug: 566683019
+Change-Id: I2aecd84c9548c3d1f617b0042808773899a7a19f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8471069
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1707308}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 84295839dd741111822230f6905d4995db7b56ba..7c0be3c96c448032c433c7e71655c9267c5b7861 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -14876,6 +14876,10 @@ void RenderFrameHostImpl::CreateWebSocketConnector(
+     mojo::ReportBadMessage("WebSockets are not allowed in MHTML documents.");
+     return;
+   }
++  if (GetSiteInstance()->IsPdf()) {
++    mojo::ReportBadMessage("WebSockets are not allowed in PDF documents.");
++    return;
++  }
+   net::StorageAccessApiStatus storage_access_api_status =
+       GetStorageAccessApiStatus();
+   mojo::MakeSelfOwnedReceiver(
+diff --git a/content/browser/renderer_host/render_frame_host_impl_browsertest.cc b/content/browser/renderer_host/render_frame_host_impl_browsertest.cc
+index 2670ab89f832ff47e9197cfce79a1f1f7b723e9c..dc054ef714bf8a520438fe267daa6ad6a36ecf3f 100644
+--- a/content/browser/renderer_host/render_frame_host_impl_browsertest.cc
++++ b/content/browser/renderer_host/render_frame_host_impl_browsertest.cc
+@@ -11563,4 +11563,26 @@ IN_PROC_BROWSER_TEST_F(RenderFrameHostImplBrowserTest,
+   EXPECT_EQ("test.mojom.NotServed", broker.requested_names()[0]);
+ }
+ 
++// Verifies that a frame committed in a PDF-isolated process cannot bind
++// blink.mojom.WebSocketConnector.
++IN_PROC_BROWSER_TEST_F(RenderFrameHostImplBrowserTest,
++                       WebSocketBlockedForPdfProcess) {
++  const GURL url = embedded_test_server()->GetURL("a.com", "/title1.html");
++  ASSERT_TRUE(NavigateToURLWithPdf(web_contents(), url));
++
++  RenderFrameHostImpl* const main_document = root_frame_host();
++  RenderProcessHostBadMojoMessageWaiter kill_waiter(
++      main_document->GetProcess());
++
++  // Attempting to open a WebSocket from a PDF frame triggers the renderer to
++  // request blink.mojom.WebSocketConnector from RenderFrameHost. The browser
++  // must reject this and terminate the process.
++  ExecuteScriptAsync(main_document, "new WebSocket('ws://127.0.0.1');");
++
++  EXPECT_EQ(
++      "Received bad user message: WebSockets are not allowed in PDF "
++      "documents.",
++      kill_waiter.Wait());
++}
++
+ }  // namespace content

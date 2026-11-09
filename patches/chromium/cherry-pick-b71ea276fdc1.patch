@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mike Taylor <miketaylr@chromium.org>
+Date: Wed, 30 Sep 2026 22:11:52 -0700
+Subject: Treat ORB-blocked media responses as CORS cross-origin
+
+When a no-cors media request is blocked by ORB, the load fails with
+net::ERR_BLOCKED_BY_ORB and goes through
+ResourceMultiBufferDataProvider::DidFail() rather than
+DidReceiveResponse(). Only DidReceiveResponse() records whether the
+response is CORS cross-origin, so ORB-blocked loads were never marked
+as such.
+
+As a result, HTMLMediaElement handled these failures differently from
+other cross-origin load failures (e.g. reporting a different
+MediaError message).
+
+Mark the UrlData as CORS cross-origin in DidFail() when the error is
+ERR_BLOCKED_BY_ORB, since ORB only applies to cross-origin no-cors
+responses. This makes http/tests/media/media-load-nonmedia-crossorigin.html
+pass consistently, so remove its TestExpectations entry.
+
+Bug: 40257965
+Change-Id: Ia39a3d1cdc40e942d7ff50b0b1a42910dd06acc4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8471947
+Reviewed-by: Jordan Bayles <jophba@chromium.org>
+Commit-Queue: Mike Taylor <miketaylr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1708616}
+
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 961a58c66764bc92f81b74ec93c7357d497401c8..cedc485cf6dbe93b8936d03fb76a35db8a39b44d 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -19,6 +19,7 @@
+ #include "base/strings/string_util.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
++#include "net/base/net_errors.h"
+ #include "net/http/http_byte_range.h"
+ #include "net/http/http_request_headers.h"
+ #include "services/network/public/cpp/cors/cors.h"
+@@ -534,6 +535,13 @@ void ResourceMultiBufferDataProvider::DidFail(const WebURLError& error) {
+   DCHECK(active_loader_.get());
+   active_loader_.reset();
+ 
++  // ORB only blocks cross-origin no-cors responses, which are opaque. Record
++  // this so that the failure is not distinguishable from other opaque
++  // failures (e.g. via error messages exposed by the media element).
++  if (error.reason() == net::ERR_BLOCKED_BY_ORB) {
++    url_data_->set_is_cors_cross_origin(true);
++  }
++
+   if (url_data_->url_index() && retries_ < kMaxRetries && pos_ != 0) {
+     retries_++;
+     task_runner_->PostDelayedTask(
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index c50e857d6f4bfbea0061bbaf4525af43d4c5d97a..d55bc8cd0f1813a3362bbbc4e258d34ed5303c4e 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -300,6 +300,26 @@ TEST_F(ResourceMultiBufferDataProviderTest, DestructedUrlIndexDidFail) {
+   loader_->DidFail(WebURLError(net::ERR_ABORTED, url_));
+ }
+ 
++// An ORB-blocked response is a cross-origin no-cors response, so the data must
++// be marked as cross-origin to avoid leaking information about it.
++TEST_F(ResourceMultiBufferDataProviderTest, DidFailBlockedByOrbIsCrossOrigin) {
++  Initialize(kHttpUrl, 0);
++  Start();
++  scoped_refptr<UrlData> url_data = url_data_;
++  EXPECT_CALL(*this, RedirectCallback(testing::IsNull()));
++  loader_->DidFail(WebURLError(net::ERR_BLOCKED_BY_ORB, url_));
++  EXPECT_TRUE(url_data->is_cors_cross_origin());
++}
++
++TEST_F(ResourceMultiBufferDataProviderTest, DidFailOtherErrorNotCrossOrigin) {
++  Initialize(kHttpUrl, 0);
++  Start();
++  scoped_refptr<UrlData> url_data = url_data_;
++  EXPECT_CALL(*this, RedirectCallback(testing::IsNull()));
++  loader_->DidFail(WebURLError(net::ERR_FAILED, url_));
++  EXPECT_FALSE(url_data->is_cors_cross_origin());
++}
++
+ TEST_F(ResourceMultiBufferDataProviderTest, DestructedUrlIndexDidFinish) {
+   Initialize(kHttpUrl, 100);
+   Start();
+diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
+index 47b0c262e1d79451e67f8ce32937044ffd383907..8badb2acffe162bb2480cefbed0fbbc34277c018 100644
+--- a/third_party/blink/web_tests/TestExpectations
++++ b/third_party/blink/web_tests/TestExpectations
+@@ -6437,9 +6437,6 @@ crbug.com/1396185 accessibility/reach-and-scroll-overflow-div-without-mouse.html
+ # TODO(crbug.com/1401396): Re-enable this test
+ external/wpt/webrtc/simulcast/setParameters-active.https.html [ Pass Timeout ]
+ 
+-# TODO(crbug.com/1419063): Deflake.
+-http/tests/media/media-load-nonmedia-crossorigin.html [ Failure Pass Timeout ]
+-
+ # TODO(crbug.com/1404614): Fix this test on MacOS (sheriff 2023-01-03).
+ crbug.com/1404614 [ Mac ] external/wpt/url/url-setters-a-area.window.html?exclude=(file|javascript|mailto) [ Failure Pass ]
+ 

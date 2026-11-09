@@ -7,6 +7,15 @@ const { parseCommaSeparatedKeyValue, parseFeatures }: typeof import('../lib/brow
   createRequire(import.meta.url)('../lib/browser/parse-features-string.ts');
 
 describe('feature-string parsing', () => {
+  it.each([0, 0.1, 0.75, 1])('preserves fractional window opacity %s', (opacity) => {
+    expect(parseFeatures(`opacity=${opacity}`).options.opacity).toBe(opacity);
+  });
+
+  it('keeps position and size features as integers alongside opacity', () => {
+    const { options } = parseFeatures('opacity=0.75,width=400.9,height=300.5,left=10.7,top=20.2');
+    expect(options).toEqual({ opacity: 0.75, width: 400, height: 300, left: 10, top: 20, x: 10, y: 20 });
+  });
+
   it('is indifferent to whitespace around keys and values', () => {
     const checkParse = (string: string, parsed: Record<string, string | boolean>) => {
       const features = parseCommaSeparatedKeyValue(string);

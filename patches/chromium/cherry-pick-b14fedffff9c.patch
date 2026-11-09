@@ -1,0 +1,450 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Wed, 7 Oct 2026 14:43:35 -0700
+Subject: Fix bugs when worker terminates during MediaSource attachment
+
+Store the CrossThreadMediaSourceAttachment in media_source_attachment_
+when created in MediaSource::handle() so that ContextDestroyed()
+always notifies the attachment under attachment_state_lock_, even if
+worker termination races with StartAttachingToMediaElement() on the
+main thread before attachment has completed.
+
+Fixed: 569659190
+Change-Id: I07bdd91cc99ac8a51cbf55eb400914dc201ec3f2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8518402
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1713898}
+
+diff --git a/third_party/blink/renderer/modules/mediasource/cross_thread_media_source_attachment.cc b/third_party/blink/renderer/modules/mediasource/cross_thread_media_source_attachment.cc
+index fee2dc1d836693aad0e4c9f6a66ab215dcfc91a9..cd7a58f2dbaf93fb5b7bc63a6f5bc3289b4e84c7 100644
+--- a/third_party/blink/renderer/modules/mediasource/cross_thread_media_source_attachment.cc
++++ b/third_party/blink/renderer/modules/mediasource/cross_thread_media_source_attachment.cc
+@@ -425,6 +425,7 @@ void CrossThreadMediaSourceAttachment::OnMediaSourceContextDestroyed() {
+   // We shouldn't be notified more than once.
+   DCHECK(!media_source_context_destroyed_);
+   media_source_context_destroyed_ = true;
++  registered_media_source_ = nullptr;
+ }
+ 
+ bool CrossThreadMediaSourceAttachment::FullyAttachedOrSameThread(
+@@ -455,8 +456,12 @@ bool CrossThreadMediaSourceAttachment::RunExclusively(
+ 
+   // We must never be called if the MSE API context has already destructed.
+   DCHECK(!media_source_context_destroyed_);
+-  DCHECK(attached_media_source_);
+-  DCHECK(have_ever_attached_);
++
++  // |attached_media_source_| is set iff StartAttachingToMediaElement()
++  // succeeded. Both may be false here when called from
++  // MediaSource::ContextDestroyed() if handle() was created on the worker
++  // thread but attachment never started on the main thread.
++  DCHECK_EQ(!!attached_media_source_, have_ever_attached_);
+ 
+   if (abort_if_not_fully_attached &&
+       (media_element_context_destroyed_ || !attached_element_ ||
+@@ -473,8 +478,17 @@ bool CrossThreadMediaSourceAttachment::RunExclusively(
+ }
+ 
+ void CrossThreadMediaSourceAttachment::Unregister() {
+-  // MSE-in-Worker does NOT use object URLs, so this should not be called.
+-  NOTREACHED();
++  DVLOG(1) << __func__ << " this=" << this;
++  base::AutoLock lock(attachment_state_lock_);
++  // Called by ~HandleAttachmentProvider() if all MediaSourceHandle instances
++  // were destroyed without TakeAttachment() being called. Drop our strong
++  // reference to the worker MediaSource to break the reference cycle with
++  // MediaSource::media_source_attachment_. If the worker context is already
++  // being destroyed, Oilpan's HeapBase::Terminate() clears cross-thread
++  // persistents itself.
++  if (!media_source_context_destroyed_) {
++    registered_media_source_ = nullptr;
++  }
+ }
+ 
+ MediaSourceTracer*
+@@ -516,16 +530,17 @@ CrossThreadMediaSourceAttachment::StartAttachingToMediaElement(
+     // started closing.
+     DCHECK(!have_ever_started_closing_);
+ 
+-    // Likewise, we must never have been able to receive the worker context
+-    // destruction notification if we've never been successfully attached.
+-    DCHECK(!media_source_context_destroyed_);
++    // If the worker context was destroyed before we acquired
++    // |attachment_state_lock_|, MediaSource::ContextDestroyed() has already
++    // notified us via OnMediaSourceContextDestroyed() (which also clears
++    // |registered_media_source_|).
++    if (media_source_context_destroyed_) {
++      DCHECK(!registered_media_source_);
++      *success = false;
++      return nullptr;
++    }
+ 
+-    // Fail if already unregistered. This should be rare: caller's retrieval of
+-    // this attachment instance is done by finding us in the registry. Probably
+-    // the only reason we might now be unregistered would be an intervening
+-    // action (like explicit revocation) occurrring on the worker thread.
+-    // (Worker's context destruction could also cause this, but we've already
+-    // checked this, above.)
++    // Also fail if |registered_media_source_| was already cleared by Oilpan.
+     if (!registered_media_source_) {
+       DVLOG(1) << __func__ << " this=" << this << ", element=" << element
+                << ": failed: unregistered already";
+@@ -547,14 +562,13 @@ CrossThreadMediaSourceAttachment::StartAttachingToMediaElement(
+         registered_media_source_->StartWorkerAttachingToMainThreadMediaElement(
+             WrapRefCounted(this));
+     if (!*success) {
+-      DVLOG(1)
+-          << __func__ << " this=" << this << ", element=" << element
+-          << ": failed: MediaSource possibly in use via another attachment";
++      DVLOG(1) << __func__ << " this=" << this << ", element=" << element
++               << ": failed: worker context is being destroyed";
+       return nullptr;
+     }
+ 
+     attached_element_ = element;
+-    attached_media_source_ = registered_media_source_;
++    attached_media_source_ = std::move(registered_media_source_);
+     main_runner_ =
+         element->GetExecutionContext()->GetTaskRunner(TaskType::kPostedMessage);
+     DCHECK(main_runner_->BelongsToCurrentThread());
+diff --git a/third_party/blink/renderer/modules/mediasource/cross_thread_media_source_attachment.h b/third_party/blink/renderer/modules/mediasource/cross_thread_media_source_attachment.h
+index ae74e0d7f190a7eea0e8b0f81764d80efbc8ccb2..74d85db533d45a0781984e8248c4af730ce6268d 100644
+--- a/third_party/blink/renderer/modules/mediasource/cross_thread_media_source_attachment.h
++++ b/third_party/blink/renderer/modules/mediasource/cross_thread_media_source_attachment.h
+@@ -112,10 +112,13 @@ class CrossThreadMediaSourceAttachment final
+   bool FullyAttachedOrSameThread(SourceBufferPassKey) const final
+       EXCLUSIVE_LOCKS_REQUIRED(attachment_state_lock_);
+ 
++  // Called on either the main or worker thread by
++  // HandleAttachmentProvider::~HandleAttachmentProvider() if all
++  // MediaSourceHandle instances are destroyed without ever starting attachment.
++  void Unregister() final LOCKS_EXCLUDED(attachment_state_lock_);
++
+   // MediaSourceAttachment methods called on the main thread by the media
+-  // element. Unregister() is not used because MSE-in-Worker does not use object
+-  // URLs.
+-  void Unregister() final;
++  // element.
+   MediaSourceTracer* StartAttachingToMediaElement(HTMLMediaElement*,
+                                                   bool* success) final
+       LOCKS_EXCLUDED(attachment_state_lock_);
+@@ -204,10 +207,12 @@ class CrossThreadMediaSourceAttachment final
+ 
+   // Cache of the registered worker-thread MediaSource. Retains strong reference
+   // on all Oilpan heaps, from construction of this object until Unregister() is
+-  // called. This lets the main thread successfully attach (modulo normal
+-  // reasons why StartAttaching..() can fail) to the worker-thread MediaSource
+-  // even if there were no other strong references other than this one on the
+-  // worker-thread Oilpan heap to the MediaSource.
++  // called (when the handle is destroyed without ever attaching) or
++  // StartAttachingToMediaElement() is called. This lets the main thread
++  // successfully attach (modulo normal reasons why StartAttaching..() can fail)
++  // to the worker-thread MediaSource even if there were no other strong
++  // references other than this one on the worker-thread Oilpan heap to the
++  // MediaSource.
+   CrossThreadPersistent<MediaSource> registered_media_source_
+       GUARDED_BY(attachment_state_lock_);
+ 
+diff --git a/third_party/blink/renderer/modules/mediasource/handle_attachment_provider.cc b/third_party/blink/renderer/modules/mediasource/handle_attachment_provider.cc
+index 04ddb815017ab1c07e5b99a302b1dce26ae072b7..334af163b58d44553540aa902c7eb6ec759f24f0 100644
+--- a/third_party/blink/renderer/modules/mediasource/handle_attachment_provider.cc
++++ b/third_party/blink/renderer/modules/mediasource/handle_attachment_provider.cc
+@@ -21,6 +21,9 @@ HandleAttachmentProvider::HandleAttachmentProvider(
+ 
+ HandleAttachmentProvider::~HandleAttachmentProvider() {
+   DVLOG(1) << __func__ << " this=" << this;
++  if (attachment_) {
++    attachment_->Unregister();
++  }
+ }
+ 
+ scoped_refptr<MediaSourceAttachment>
+diff --git a/third_party/blink/renderer/modules/mediasource/handle_attachment_provider.h b/third_party/blink/renderer/modules/mediasource/handle_attachment_provider.h
+index 316491f4fbfd3811adc4045bc0983740d86996d9..2ba86b8cfded55ef24f7fc555d71bf5ba5013404 100644
+--- a/third_party/blink/renderer/modules/mediasource/handle_attachment_provider.h
++++ b/third_party/blink/renderer/modules/mediasource/handle_attachment_provider.h
+@@ -24,7 +24,11 @@ namespace blink {
+ // mediasource. Once attached, only the media element and the mediasource should
+ // have references to the attachment object, and when they close the attachment
+ // and drop their references, there should be no other references remaining,
+-// enabling GC. This object serves as a provider of either a never-yet attached
++// enabling GC. If all handle instances are destroyed without TakeAttachment()
++// ever being called, ~HandleAttachmentProvider() calls Unregister() on the
++// attachment to release its strong reference to the MediaSource and break the
++// reference cycle with MediaSource::media_source_attachment_. This object
++// serves as a provider of either a never-yet attached
+ // CrossThreadMediaSourceAttachment for a handle instance (and its potential
+ // descendants due to serialization), or a nullptr once that attachment was
+ // started. Locking is used to prevent read/write collision for this scenario.
+diff --git a/third_party/blink/renderer/modules/mediasource/media_source.cc b/third_party/blink/renderer/modules/mediasource/media_source.cc
+index d87d072e75f372e8ba6b8a973048571c373ab949..f95ec8f5731709eb445533c2fc79d571e51420fb 100644
+--- a/third_party/blink/renderer/modules/mediasource/media_source.cc
++++ b/third_party/blink/renderer/modules/mediasource/media_source.cc
+@@ -1225,11 +1225,15 @@ MediaSourceHandleImpl* MediaSource::handle() {
+     // Lazily create the handle, since it indirectly holds a
+     // CrossThreadMediaSourceAttachment (until attachment starts or the handle
+     // is transferred) which holds a strong reference to us until attachment is
+-    // actually started and later closed. PassKey provider usage here ensures
+-    // that we are allowed to call the attachment constructor.
++    // actually started and later closed. Also store the attachment in
++    // |media_source_attachment_| immediately so ContextDestroyed() can
++    // synchronize with and notify it even if the worker context is destroyed
++    // before attachment starts on the main thread. PassKey provider usage here
++    // ensures that we are allowed to call the attachment constructor.
+     scoped_refptr<CrossThreadMediaSourceAttachment> attachment =
+         base::MakeRefCounted<CrossThreadMediaSourceAttachment>(
+             this, AttachmentCreationPassKeyProvider::GetPassKey());
++    media_source_attachment_ = attachment;
+     scoped_refptr<HandleAttachmentProvider> attachment_provider =
+         base::MakeRefCounted<HandleAttachmentProvider>(std::move(attachment));
+ 
+@@ -1379,15 +1383,14 @@ bool MediaSource::StartWorkerAttachingToMainThreadMediaElement(
+     return false;  // See comments in ContextDestroyed().
+   }
+ 
+-  if (media_source_attachment_ || attachment_tracer_) {
+-    return false;  // Already attached.
+-  }
+-
++  // |media_source_attachment_| was already populated in handle() when
++  // |attachment| was created, and CrossThreadMediaSourceAttachment prevents
++  // reuse after attachment has started/closed.
++  DCHECK_EQ(media_source_attachment_, attachment);
+   DCHECK(IsClosed());
+   TRACE_EVENT_BEGIN(
+       "media", "MediaSource::StartWorkerAttachingToMainThreadMediaElement",
+       perfetto::NamedTrack::FromPointer("blink::MediaSource", this));
+-  media_source_attachment_ = attachment;
+   return true;
+ }
+ 
+@@ -1462,23 +1465,26 @@ void MediaSource::ContextDestroyed() {
+   }
+ 
+   // Worker context destruction could race CrossThreadMediaSourceAttachment's
+-  // StartAttachingToMediaElement on the main thread: we could finish
+-  // ContextDestroyed() here, and in the case of not yet ever having been
+-  // attached using a particular CrossThreadMediaSourceAttachent, then receive a
+-  // StartWorkerAttachingToMainThreadMediaElement() call before unregistration
+-  // of us has completed. Therefore, we use our |attachment_link_lock_| to also
+-  // protect a flag here that lets us know to fail any future attempt to start
+-  // attaching to us.
++  // StartAttachingToMediaElement() on the main thread: the main thread could
++  // hold |attachment_state_lock_| and be calling (or waiting on
++  // |attachment_link_lock_| inside)
++  // StartWorkerAttachingToMainThreadMediaElement() while ContextDestroyed()
++  // runs on the worker thread. Setting |context_already_destroyed_| under
++  // |attachment_link_lock_| causes an in-progress
++  // StartWorkerAttachingToMainThreadMediaElement() to fail, and because
++  // |media_source_attachment_| is populated in handle() as soon as the
++  // CrossThreadMediaSourceAttachment is created, we will also acquire the
++  // attachment's |attachment_state_lock_| via RunExclusively() below before
++  // ContextDestroyed() returns (preventing worker heap teardown while the main
++  // thread is still inside StartWorkerAttachingToMainThreadMediaElement()) and
++  // notify the attachment via OnMediaSourceContextDestroyed().
+   scoped_refptr<MediaSourceAttachmentSupplement> attachment;
+   {
+     base::AutoLock lock(attachment_link_lock_);
+     context_already_destroyed_ = true;
+ 
+-    // If not yet attached, the flag, above, will prevent us from ever
+-    // successfully attaching, and we can return. There is no attachment on
+-    // which we need (or can) call OnMediaSourceContextDestroyed() here. And any
+-    // attachments owned by this context will soon (or have already been)
+-    // unregistered.
++    // If |attachment| is null, either handle() was never called or a previous
++    // attachment was already closed, so there is no attachment to notify.
+     attachment = media_source_attachment_;
+     if (!attachment) {
+       DCHECK(IsClosed());
+@@ -1487,11 +1493,13 @@ void MediaSource::ContextDestroyed() {
+     }
+   }
+ 
+-  // We need to let our current attachment know that our context is destroyed.
+-  // This will let it handle cases like returning sane values for
+-  // BufferedInternal and SeekableInternal and stop further use of us via the
+-  // attachment. We need to hold the attachment's |attachment_state_lock_| when
+-  // doing this detachment.
++  // Let our attachment know that our context is destroyed. This will let it
++  // reject any future StartAttachingToMediaElement(), return sane values for
++  // BufferedInternal and SeekableInternal, and stop further use of us via the
++  // attachment. Taking the attachment's |attachment_state_lock_| via
++  // RunExclusively() also ensures any concurrent StartAttachingToMediaElement()
++  // on the main thread has finished accessing |this| before worker heap
++  // termination proceeds.
+   bool cb_ran = attachment->RunExclusively(
+       true /* abort if unsafe to use underlying demuxer */,
+       blink::BindOnce(&MediaSource::DetachWorkerOnContextDestruction_Locked,
+@@ -1499,7 +1507,8 @@ void MediaSource::ContextDestroyed() {
+                       true /* safe to notify underlying demuxer */));
+ 
+   if (!cb_ran) {
+-    // Main-thread is already detaching or destructing the underlying demuxer.
++    // Either attachment never started, or the main thread is already detaching
++    // or destructing the underlying demuxer.
+     CHECK(attachment->RunExclusively(
+         false /* do not abort */,
+         blink::BindOnce(&MediaSource::DetachWorkerOnContextDestruction_Locked,
+@@ -1522,7 +1531,8 @@ void MediaSource::DetachWorkerOnContextDestruction_Locked(
+              << ", notify_close=" << notify_close;
+ 
+     // Close() could not race our dispatch: it must happen on worker thread, on
+-    // which we're called synchronously only if we're attached.
++    // which we're called synchronously only if we have an unclosed attachment
++    // (created in handle()).
+     DCHECK(media_source_attachment_);
+ 
+     // We're only called for CrossThread attachments, which use no tracer.
+@@ -1532,15 +1542,16 @@ void MediaSource::DetachWorkerOnContextDestruction_Locked(
+     media_source_attachment_->OnMediaSourceContextDestroyed();
+ 
+     if (!notify_close) {
+-      // In this case, not only is our context shutting down, but the media
+-      // element is also at least tearing down the WebMediaPlayer (and the
+-      // underlying demuxer owned by it) already. We can do some simple cleanup,
+-      // but must not access |*web_media_source_| or our SourceBuffers'
+-      // |*web_source_buffer_|'s. We're helped by the demuxer not calling us or
+-      // our SourceBuffers unless in scope of a call initiated by a SourceBuffer
+-      // during media parsing, which cannot occur after our context destruction.
+-      // Underlying buffered media is removed during demuxer teardown itself,
+-      // which is certain to be happening already or soon in this case.
++      // In this case, our context is shutting down and either attachment never
++      // started, or the media element is already at least tearing down the
++      // WebMediaPlayer (and the underlying demuxer owned by it). We can do some
++      // simple cleanup, but must not access |*web_media_source_| or our
++      // SourceBuffers' |*web_source_buffer_|'s. We're helped by the demuxer not
++      // calling us or our SourceBuffers unless in scope of a call initiated by
++      // a SourceBuffer during media parsing, which cannot occur after our
++      // context destruction. Underlying buffered media is removed during
++      // demuxer teardown itself, which is certain to be happening already or
++      // soon in this case.
+       media_source_attachment_.reset();
+       attachment_tracer_ = nullptr;  // For consistency with same-thread usage.
+       if (!IsClosed()) {
+diff --git a/third_party/blink/renderer/modules/mediasource/media_source.h b/third_party/blink/renderer/modules/mediasource/media_source.h
+index 088140c73d5a84ace3d0cb5e9cf7bc56d2390357..c26ee90adf014ed13197073eb1b5cb0da82f5acb 100644
+--- a/third_party/blink/renderer/modules/mediasource/media_source.h
++++ b/third_party/blink/renderer/modules/mediasource/media_source.h
+@@ -274,7 +274,13 @@ class MediaSource final : public EventTarget,
+   // and reset: the actual derived type of the attachment (same-thread vs
+   // cross-thread, for instance) must be the same semantic as the actual derived
+   // type of the tracer. Further, if there is no attachment, then there must be
+-  // no tracer that's tracking an active attachment.
++  // no tracer that's tracking an active attachment. For
++  // SameThreadMediaSourceAttachment, both are set in
++  // StartAttachingToMediaElement(). For CrossThreadMediaSourceAttachment,
++  // |media_source_attachment_| is set in handle() when the attachment is
++  // created so that ContextDestroyed() can notify the attachment even before
++  // attachment starts on the main thread (and |attachment_tracer_| is always
++  // null).
+   scoped_refptr<MediaSourceAttachmentSupplement> media_source_attachment_
+       GUARDED_BY(attachment_link_lock_);
+   Member<MediaSourceTracer> attachment_tracer_
+diff --git a/third_party/blink/web_tests/http/tests/media/media-source/mediasource-worker-terminate-during-attach.html b/third_party/blink/web_tests/http/tests/media/media-source/mediasource-worker-terminate-during-attach.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..2bf189894173a0157470271fa82d593adb9d313f
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/media/media-source/mediasource-worker-terminate-during-attach.html
+@@ -0,0 +1,79 @@
++<!DOCTYPE html>
++<title>Destroying a worker context before MediaSourceHandle attachment fails cleanly</title>
++<script src="/w3c/resources/testharness.js"></script>
++<script src="/w3c/resources/testharnessreport.js"></script>
++<body>
++<script>
++// Regression test for https://crbug.com/569659190: when a worker creates a
++// MediaSourceHandle and its context is destroyed before a main-thread media
++// element attaches to that handle, MediaSource::ContextDestroyed() must notify
++// the CrossThreadMediaSourceAttachment so attachment fails cleanly with
++// MEDIA_ERR_SRC_NOT_SUPPORTED rather than accessing a swept MediaSource.
++
++function waitForEvent(target, name) {
++  return new Promise(resolve => {
++    target.addEventListener(name, resolve, {once: true});
++  });
++}
++
++promise_test(async t => {
++  assert_true(MediaSource.canConstructInDedicatedWorker,
++              'MediaSource.canConstructInDedicatedWorker');
++
++  const lockName = 'worker-close-lock';
++  const worker = new Worker(
++      `mediasource-worker-terminate-during-attach.js?lock=${lockName}&close`);
++  worker.onerror = t.unreached_func('worker error');
++  const handle = await new Promise(resolve => {
++    worker.onmessage = e => resolve(e.data);
++  });
++  assert_true(handle instanceof MediaSourceHandle, 'must be a MediaSourceHandle');
++
++  // The worker holds |lockName| with a never-resolving promise, so this lock
++  // request resolves only once the worker's ExecutionContext is destroyed
++  // (after MediaSource::ContextDestroyed() has run on the worker thread).
++  await navigator.locks.request(lockName, () => {});
++
++  const video = document.createElement('video');
++  document.body.appendChild(video);
++  t.add_cleanup(() => {
++    video.srcObject = null;
++    video.remove();
++  });
++
++  video.srcObject = handle;
++  await waitForEvent(video, 'error');
++  assert_equals(video.error.code, MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED);
++}, 'Worker calling close() after transferring MediaSourceHandle fails attachment cleanly');
++
++promise_test(async t => {
++  assert_true(MediaSource.canConstructInDedicatedWorker,
++              'MediaSource.canConstructInDedicatedWorker');
++
++  const lockName = 'worker-terminate-lock';
++  const worker = new Worker(
++      `mediasource-worker-terminate-during-attach.js?lock=${lockName}`);
++  worker.onerror = t.unreached_func('worker error');
++  const handle = await new Promise(resolve => {
++    worker.onmessage = e => resolve(e.data);
++  });
++  assert_true(handle instanceof MediaSourceHandle, 'must be a MediaSourceHandle');
++
++  worker.terminate();
++  // Wait until the worker's ExecutionContext has been destroyed on the worker
++  // thread before starting attachment on the main thread.
++  await navigator.locks.request(lockName, () => {});
++
++  const video = document.createElement('video');
++  document.body.appendChild(video);
++  t.add_cleanup(() => {
++    video.srcObject = null;
++    video.remove();
++  });
++
++  video.srcObject = handle;
++  await waitForEvent(video, 'error');
++  assert_equals(video.error.code, MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED);
++}, 'Terminating worker before setting srcObject fails attachment cleanly');
++</script>
++</body>
+diff --git a/third_party/blink/web_tests/http/tests/media/media-source/mediasource-worker-terminate-during-attach.js b/third_party/blink/web_tests/http/tests/media/media-source/mediasource-worker-terminate-during-attach.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..21badc93b3e395b35b39e8432be3b41b043b17c8
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/media/media-source/mediasource-worker-terminate-during-attach.js
+@@ -0,0 +1,14 @@
++// Worker script for mediasource-worker-terminate-during-attach.html.
++const params = new URLSearchParams(location.search);
++const lockName = params.get('lock');
++
++navigator.locks.request(lockName, () => {
++  const source = new MediaSource();
++  const handle = source.handle;
++  postMessage(handle, [handle]);
++  if (params.has('close')) {
++    self.close();
++  }
++  // Hold the lock until the worker's ExecutionContext is destroyed.
++  return new Promise(() => {});
++});

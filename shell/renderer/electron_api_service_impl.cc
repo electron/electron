@@ -19,6 +19,7 @@
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_util.h"
 #include "shell/renderer/electron_ipc_native.h"
+#include "shell/renderer/inserted_css.h"
 #include "shell/renderer/preload_utils.h"
 
 #include "base/functional/callback_helpers.h"
@@ -296,20 +297,16 @@ void ElectronApiServiceImpl::ExecuteJavaScript(
 void ElectronApiServiceImpl::InsertCSS(const std::string& css,
                                        const std::string& css_origin,
                                        InsertCSSCallback callback) {
-  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   std::move(callback).Run(
-      frame->GetDocument()
-          .InsertStyleSheet(blink::WebString::FromUtf8(css), nullptr,
-                            css_origin == "user" ? blink::WebCssOrigin::kUser
-                                                 : blink::WebCssOrigin::kAuthor)
-          .Utf16());
+      InsertStyleSheet(render_frame()->GetWebFrame()->GetDocument(), css,
+                       css_origin == "user" ? blink::WebCssOrigin::kUser
+                                            : blink::WebCssOrigin::kAuthor));
 }
 
 void ElectronApiServiceImpl::RemoveInsertedCSS(
     const std::u16string& key,
     RemoveInsertedCSSCallback callback) {
-  render_frame()->GetWebFrame()->GetDocument().RemoveInsertedStyleSheet(
-      blink::WebString::FromUtf16(key));
+  RemoveInsertedStyleSheet(render_frame()->GetWebFrame()->GetDocument(), key);
   std::move(callback).Run();
 }
 

@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Tue, 13 Oct 2026 15:39:49 -0700
+Subject: [html-in-canvas] Harden VideoTextureBacking
+
+This patch hardens VideoTextureBacking, similar to
+MailboxTextureBacking in https://crrev.com/c/8549355.
+
+Fixed: 569129173
+Change-Id: I21bc84d9993afcce96723b2cc26e6aee9e3f9adb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8552157
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718038}
+
+diff --git a/media/gfx/paint_canvas_video_renderer.cc b/media/gfx/paint_canvas_video_renderer.cc
+index cc457ad2f1c0e17720169d34d58a7aa23d966a08..ff0cdf103b3cb12d67c9d0e0d46aadcc9484efa4 100644
+--- a/media/gfx/paint_canvas_video_renderer.cc
++++ b/media/gfx/paint_canvas_video_renderer.cc
+@@ -763,16 +763,18 @@ class VideoTextureBacking : public cc::TextureBacking {
+         sk_image_info_(std::move(other.sk_image_info_)),
+         sync_token_(other.sync_token_),
+         acquired_(true) {
++    CHECK(other.sequence_checker_.CalledOnValidSequence());
+     if (other.ri_access_) {
+       sync_token_ =
+           gpu::RasterScopedAccess::EndAccess(std::move(other.ri_access_));
+     }
+     other.raster_context_provider_ = nullptr;
+     other.sync_token_.Clear();
++    sequence_checker_.DetachFromSequence();
+   }
+ 
+   void Bind(scoped_refptr<cc::TextureBackingContext> context) override {
+-    CHECK(!acquired_ || !raster_context_provider_);
++    CHECK(sequence_checker_.CalledOnValidSequence());
+     // If this has not been passed across threads then binding is unnecessary.
+     if (!acquired_) {
+       return;
+@@ -787,6 +789,7 @@ class VideoTextureBacking : public cc::TextureBacking {
+     if (raster_context_provider == raster_context_provider_) {
+       return;
+     }
++    CHECK(!raster_context_provider_);
+     raster_context_provider_ = std::move(raster_context_provider);
+     if (raster_context_provider_) {
+       BeginAccess();
+@@ -794,13 +797,16 @@ class VideoTextureBacking : public cc::TextureBacking {
+   }
+ 
+   void Unbind() override {
++    CHECK(sequence_checker_.CalledOnValidSequence());
+     if (acquired_) {
+       clear_access();
+       raster_context_provider_ = nullptr;
++      sequence_checker_.DetachFromSequence();
+     }
+   }
+ 
+   ~VideoTextureBacking() override {
++    CHECK(sequence_checker_.CalledOnValidSequence());
+     CHECK(!acquired_ || !ri_access_);
+     if (ri_access_) {
+       gpu::SyncToken sync_token =
+@@ -820,6 +826,7 @@ class VideoTextureBacking : public cc::TextureBacking {
+   }
+ 
+   void BeginAccess() {
++    CHECK(sequence_checker_.CalledOnValidSequence());
+     CHECK(raster_context_provider_);
+     CHECK(!ri_access_);
+     auto* ri = raster_context_provider_->RasterInterface();
+@@ -828,12 +835,14 @@ class VideoTextureBacking : public cc::TextureBacking {
+   }
+ 
+   void clear_access() {
++    CHECK(sequence_checker_.CalledOnValidSequence());
+     if (ri_access_) {
+       sync_token_ = gpu::RasterScopedAccess::EndAccess(std::move(ri_access_));
+     }
+   }
+ 
+   sk_sp<SkImage> GetSkImageViaReadback() override {
++    CHECK(sequence_checker_.CalledOnValidSequence());
+     sk_sp<SkData> image_pixels =
+         SkData::MakeUninitialized(sk_image_info_.computeMinByteSize());
+     if (!readPixels(sk_image_info_, image_pixels->writable_data(),
+@@ -850,6 +859,7 @@ class VideoTextureBacking : public cc::TextureBacking {
+                   size_t dst_row_bytes,
+                   int src_x,
+                   int src_y) override {
++    CHECK(sequence_checker_.CalledOnValidSequence());
+     CHECK(raster_context_provider_);
+     gpu::raster::RasterInterface* ri =
+         raster_context_provider_->RasterInterface();
+@@ -859,8 +869,12 @@ class VideoTextureBacking : public cc::TextureBacking {
+                                    /*plane_index=*/0, dst_pixels);
+   }
+ 
+-  const gpu::SyncToken& sync_token() { return sync_token_; }
++  const gpu::SyncToken& sync_token() {
++    CHECK(sequence_checker_.CalledOnValidSequence());
++    return sync_token_;
++  }
+   void UpdateSyncToken(const gpu::SyncToken& sync_token) {
++    CHECK(sequence_checker_.CalledOnValidSequence());
+     sync_token_ = sync_token;
+   }
+ 
+@@ -873,6 +887,7 @@ class VideoTextureBacking : public cc::TextureBacking {
+   std::unique_ptr<gpu::RasterScopedAccess> ri_access_;
+   gpu::SyncToken sync_token_;
+   bool acquired_ = false;
++  base::SequenceCheckerImpl sequence_checker_;
+ };
+ 
+ PaintCanvasVideoRenderer::PaintCanvasVideoRenderer()

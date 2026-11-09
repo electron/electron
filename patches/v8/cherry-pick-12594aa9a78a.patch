@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Thu, 8 Oct 2026 14:56:35 +0200
+Subject: [parser] Fix error validation in object rest/spread properties
+
+In `ParseProperty` (`case Token::kEllipsis`), when the operand of `...`
+is not a valid reference expression (`!IsValidReferenceExpression`), it
+can never be a valid rest binding or assignment target, because object
+rest properties do not allow nested destructuring patterns.
+
+Previously, `ParseProperty` did not call
+`prop_info->accumulation_scope->ValidateExpression()` before recording
+`kInvalidRestBindingPattern` and `kInvalidRestAssignmentPattern`. This
+left inner expression errors unvalidated (so `({...{a = 42}} = {})` and
+`({...{a = 42}}) => {}` reported outer rest pattern errors instead of
+`Invalid shorthand property initializer`) and left inner pattern errors
+uncleared in `scope_` (so `({...1} = {})` reported `Invalid
+destructuring assignment target` instead of
+`kInvalidRestAssignmentPattern`).
+
+Additionally, `ParseProperty` checked `if (peek() != Token::kRightBrace)`
+instead of `if (peek() == Token::kComma)` (unlike `ParseArrayLiteral`),
+causing syntax errors like `let { ...a : 1 } = {}` to report `Rest
+element must be last element` instead of `Unexpected token ':'`.
+
+Validate the operand as an expression when it is not a valid reference,
+and only record `kElementAfterRest` when followed by a comma.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Ifec75442dfab196828bd6c9a1516126c23c8322d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8540204
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110462}
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index da23694c946d57a44735c786bb57df8da350a1a1..5eede6daa029df8d7836b83cf1087357fa8d3a7a 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -2608,6 +2608,9 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseProperty(
+         prop_info->kind = ParsePropertyKind::kSpread;
+ 
+         if (!IsValidReferenceExpression(expression)) {
++          if (prop_info->accumulation_scope != nullptr) {
++            prop_info->accumulation_scope->ValidateExpression();
++          }
+           expression_scope()->RecordDeclarationError(
+               Scanner::Location(start_pos, end_position()),
+               MessageTemplate::kInvalidRestBindingPattern);
+@@ -2616,7 +2619,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseProperty(
+               MessageTemplate::kInvalidRestAssignmentPattern);
+         }
+ 
+-        if (peek() != Token::kRightBrace) {
++        if (peek() == Token::kComma) {
+           expression_scope()->RecordPatternError(
+               scanner()->location(), MessageTemplate::kElementAfterRest);
+         }
+diff --git a/test/mjsunit/es6/regress-object-rest-property-validation.js b/test/mjsunit/es6/regress-object-rest-property-validation.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..cf8ff94eb9750ce815ab55d52cbf6068834930c4
+--- /dev/null
++++ b/test/mjsunit/es6/regress-object-rest-property-validation.js
+@@ -0,0 +1,40 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Object spread/rest properties must validate inner expression errors when
++// the operand is not a valid reference expression, and must only record
++// kElementAfterRest when followed by a comma.
++
++assertThrows(
++    () => eval("({...{a = 42}} = {})"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({...[{a = 42}]} = {})"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({...{a = 42}}) => {}"),
++    SyntaxError,
++    "Invalid shorthand property initializer");
++assertThrows(
++    () => eval("({...1} = {})"),
++    SyntaxError,
++    "`...` must be followed by an assignable reference in assignment contexts");
++assertThrows(
++    () => eval("({...[1]} = {})"),
++    SyntaxError,
++    "`...` must be followed by an assignable reference in assignment contexts");
++assertThrows(
++    () => eval("let { ...a b } = {}"),
++    SyntaxError,
++    "Unexpected identifier 'b'");
++assertThrows(
++    () => eval("let { ...a : 1 } = {}"),
++    SyntaxError,
++    "Unexpected token ':'");
++assertThrows(
++    () => eval("function f({ ...a : 1 }) {}"),
++    SyntaxError,
++    "Unexpected token ':'");

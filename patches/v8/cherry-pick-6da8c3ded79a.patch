@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Thu, 8 Oct 2026 14:58:12 +0200
+Subject: [parser] Check IsIdentifier for `for (async of ...)` restriction
+
+In `ParseForStatement`, `for (async of ...)` is disallowed by checking
+whether the parsed LHS expression is `async`. Previously, this check
+only tested `scanner()->current_token() == Token::kAsync &&
+!scanner()->literal_contains_escapes()`, which was true whenever the
+last consumed token of the LHS expression was `async`.
+
+As a result, valid loops such as `for (x.async of [1]) {}` were
+rejected with `SyntaxError: The left-hand side of a for-of loop may not
+be 'async'`, and invalid LHS expressions ending in `async` (such as
+`for (+async of [1]) {}` or `for (a, async of [1]) {}`) reported the
+wrong error message.
+
+Also check `impl()->IsIdentifier(expression)` when computing
+`expression_is_async`.
+
+Bug: 567222737
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+
+Change-Id: Ibad27dc99862d3b5755c659444a4b44239442363
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8538473
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110519}
+
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 5305ed619cb0b925255a95bfb81838efd999c2e6..de29f09e54d18c125bb6769ba4047587c57bec04 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -6721,7 +6721,8 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseForStatement(
+       expression = ParseExpressionCoverGrammar();
+       // `for (async of` is disallowed but `for (async.x of` is allowed, so
+       // check if the token is kAsync after parsing the expression.
+-      bool expression_is_async = scanner()->current_token() == Token::kAsync &&
++      bool expression_is_async = impl()->IsIdentifier(expression) &&
++                                 scanner()->current_token() == Token::kAsync &&
+                                  !scanner()->literal_contains_escapes();
+       // Initializer is reference followed by in/of.
+       lhs_end_pos = end_position();
+diff --git a/test/mjsunit/es6/regress-for-of-async-property.js b/test/mjsunit/es6/regress-for-of-async-property.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..cbbc9d14b60ecc7b948fcf333f8188daad0676ea
+--- /dev/null
++++ b/test/mjsunit/es6/regress-for-of-async-property.js
+@@ -0,0 +1,36 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Only the bare identifier `async` is disallowed as the left-hand side of a
++// for-of loop (`for (async of ...)`). Property accesses like `x.async` must
++// be allowed, and non-identifier expressions ending in `async` must report
++// standard LHS errors rather than "The left-hand side of a for-of loop may
++// not be 'async'".
++
++let obj = {};
++for (obj.async of [42]) {}
++assertEquals(42, obj.async);
++
++{
++  let async = 0;
++  for ((async) of [42]) {}
++  assertEquals(42, async);
++}
++
++assertThrows(
++    () => eval("for (async of [1]) {}"),
++    SyntaxError,
++    "The left-hand side of a for-of loop may not be 'async'.");
++assertThrows(
++    () => eval("for (obj?.async of [1]) {}"),
++    SyntaxError,
++    "Invalid left-hand side in for-loop");
++assertThrows(
++    () => eval("for (+async of [1]) {}"),
++    SyntaxError,
++    "Invalid left-hand side in for-loop");
++assertThrows(
++    () => eval("for (a, async of [1]) {}"),
++    SyntaxError,
++    "Invalid left-hand side in for-loop");

@@ -54,19 +54,123 @@ jobs:
           exit 1
         fi
         echo "revision=$chromium_revision" >> "$GITHUB_OUTPUT"
-    - name: Download GN Binary
+    # Chromium's DEPS and buildtools/DEPS only change on a Chromium roll, so
+    # keep a copy per revision on the cross-instance cache share (where the src
+    # cache lives) instead of hitting the shared API limit every run.
+    #
+    # The cached copy may have been written by any PR's workflow, so treat it as
+    # untrusted: it can only pick which genuine Google-built gn and
+    # clang-format get downloaded, and only after the strict checks in
+    # read_lint_deps, which the steps below take their values from.
+    - name: Get Chromium DEPS
+      id: get-chromium-deps
       shell: bash
       env:
         chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
         GITHUB_TOKEN: ${{ github.token }}
       run: |
-        curl -fsSL --retry 3 \
-          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-          -H "Accept: application/vnd.github.raw+json" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          -o src/DEPS "https://api.github.com/repos/chromium/chromium/contents/DEPS?ref=refs/tags/${chromium_revision}"
-        gn_version=$(e depot-tools gclient getdep --deps-file=src/DEPS --var=gn_version | tail -1)
+        cache_dir=/mnt/cross-instance-cache/lint-chromium-deps
+        cached_deps=$cache_dir/$chromium_revision.DEPS
+        cached_buildtools_deps=$cache_dir/$chromium_revision.buildtools-DEPS
 
+        fetch_chromium_file() {
+          local path=$1 out=$2
+          if curl -fsSL --retry 3 --retry-delay 15 --retry-max-time 90 \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github.raw+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -o "$out" "https://api.github.com/repos/chromium/chromium/contents/${path}?ref=refs/tags/${chromium_revision}"; then
+            return 0
+          fi
+          echo "::warning::GitHub contents API fetch of ${path} failed, falling back to chromium.googlesource.com"
+          local cookie_args=()
+          if [[ -f ~/.gitcookies ]]; then
+            cookie_args=(-b ~/.gitcookies)
+          fi
+          curl -fsSL --retry 3 --retry-delay 15 "${cookie_args[@]}" \
+            "https://chromium.googlesource.com/chromium/src/+/refs/tags/${chromium_revision}/${path}?format=TEXT" | base64 -d > "$out"
+        }
+
+        # Prints "<gn_version> <clang-format object_name> <sha256sum>" read from
+        # DEPS ($1) and buildtools/DEPS ($2), or fails if anything lint needs is
+        # missing or malformed, so a bad copy is never used or cached.
+        read_lint_deps() {
+          local gn_version clang_format_objects
+          gn_version=$(e depot-tools gclient getdep --deps-file="$1" --var=gn_version | tail -1) || return 1
+          if [[ ! "$gn_version" =~ ^git_revision:[0-9a-f]{40}$ ]]; then
+            echo "Invalid gn_version in $1: $gn_version" >&2
+            return 1
+          fi
+          clang_format_objects=$(e depot-tools gclient getdep --deps-file="$2" --revision=linux64-format | tail -1) || return 1
+          python3 -I -c '
+        import ast, re, sys
+        try:
+            objects = ast.literal_eval(sys.argv[2])
+        except (ValueError, SyntaxError):
+            sys.exit("linux64-format in buildtools/DEPS is not a GCS dependency")
+        if not (isinstance(objects, list) and len(objects) == 1 and isinstance(objects[0], dict)):
+            sys.exit("linux64-format in buildtools/DEPS must have exactly one object")
+        name, sha256 = objects[0].get("object_name"), objects[0].get("sha256sum")
+        if not (isinstance(name, str) and re.fullmatch(r"[0-9a-f]{40}", name)):
+            sys.exit(f"Invalid clang-format object_name: {name!r}")
+        if not (isinstance(sha256, str) and re.fullmatch(r"[0-9a-f]{64}", sha256)):
+            sys.exit(f"Invalid clang-format sha256sum: {sha256!r}")
+        print(sys.argv[1], name, sha256)
+        ' "$gn_version" "$clang_format_objects"
+        }
+
+        save_to_cache() {
+          if [ ! -d /mnt/cross-instance-cache ]; then
+            echo "Cross-instance cache is not mounted, not saving Chromium DEPS"
+            return
+          fi
+          # Copy to run-unique temp names first so concurrent readers never see
+          # a partially-written file. Failing to save shouldn't fail lint.
+          local upload_suffix=upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+          if mkdir -p "$cache_dir" \
+            && cp src/DEPS "$cached_deps.$upload_suffix" \
+            && cp src/buildtools/DEPS "$cached_buildtools_deps.$upload_suffix" \
+            && mv -f "$cached_buildtools_deps.$upload_suffix" "$cached_buildtools_deps" \
+            && mv -f "$cached_deps.$upload_suffix" "$cached_deps"; then
+            echo "Saved Chromium DEPS for ${chromium_revision} to $cache_dir"
+          else
+            echo "::warning::Could not save Chromium DEPS for ${chromium_revision} to $cache_dir"
+            rm -f "$cached_deps.$upload_suffix" "$cached_buildtools_deps.$upload_suffix"
+          fi
+        }
+
+        mkdir -p src/buildtools
+        if [ -s "$cached_deps" ] && [ -s "$cached_buildtools_deps" ] \
+          && lint_deps=$(read_lint_deps "$cached_deps" "$cached_buildtools_deps"); then
+          echo "Using cached Chromium DEPS for ${chromium_revision} from $cache_dir"
+          cp "$cached_deps" src/DEPS
+          cp "$cached_buildtools_deps" src/buildtools/DEPS
+        else
+          if [ -e "$cached_deps" ] || [ -e "$cached_buildtools_deps" ]; then
+            echo "::warning::Cached Chromium DEPS for ${chromium_revision} are invalid, fetching and overwriting them"
+          else
+            echo "Chromium DEPS for ${chromium_revision} not cached, fetching"
+          fi
+          fetch_chromium_file DEPS src/DEPS
+          fetch_chromium_file buildtools/DEPS src/buildtools/DEPS
+          if ! lint_deps=$(read_lint_deps src/DEPS src/buildtools/DEPS); then
+            echo "::error::Fetched DEPS files for ${chromium_revision} are not valid Chromium DEPS and buildtools/DEPS"
+            exit 1
+          fi
+          save_to_cache
+        fi
+
+        read -r gn_version clang_format_object clang_format_sha256 <<< "$lint_deps"
+        {
+          echo "gn_version=$gn_version"
+          echo "clang_format_object=$clang_format_object"
+          echo "clang_format_sha256=$clang_format_sha256"
+        } >> "$GITHUB_OUTPUT"
+    - name: Download GN Binary
+      shell: bash
+      env:
+        gn_version: ${{ steps.get-chromium-deps.outputs.gn_version }}
+      run: |
         e d cipd ensure -ensure-file - -root . <<-CIPD
         \$ServiceURL https://chrome-infra-packages.appspot.com/
         @Subdir src/buildtools/linux64
@@ -75,17 +179,24 @@ jobs:
     - name: Download clang-format Binary
       shell: bash
       env:
-        chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
-        GITHUB_TOKEN: ${{ github.token }}
+        object_name: ${{ steps.get-chromium-deps.outputs.clang_format_object }}
+        sha256sum: ${{ steps.get-chromium-deps.outputs.clang_format_sha256 }}
       run: |
-        mkdir -p src/buildtools
-        curl -fsSL --retry 3 \
-          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-          -H "Accept: application/vnd.github.raw+json" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          -o src/buildtools/DEPS "https://api.github.com/repos/chromium/chromium/contents/buildtools/DEPS?ref=refs/tags/${chromium_revision}"
-
-        e d gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
+        # Don't gclient sync the possibly-cached buildtools/DEPS. Fetch only the
+        # Linux clang-format object from Chromium's bucket and check its SHA-1
+        # matches the name (the bucket is content-addressed).
+        clang_format_dir=src/buildtools/linux64-format
+        mkdir -p "$clang_format_dir"
+        curl -fsSL --retry 3 --retry-delay 15 -o "$clang_format_dir/clang-format.download" \
+          "https://storage.googleapis.com/chromium-clang-format/${object_name}"
+        if ! echo "${object_name}  $clang_format_dir/clang-format.download" | sha1sum --check --status \
+          || ! echo "${sha256sum}  $clang_format_dir/clang-format.download" | sha256sum --check --status; then
+          echo "::error::Downloaded clang-format ${object_name} does not match its expected hashes"
+          rm -f "$clang_format_dir/clang-format.download"
+          exit 1
+        fi
+        chmod +x "$clang_format_dir/clang-format.download"
+        mv -f "$clang_format_dir/clang-format.download" "$clang_format_dir/clang-format"
     - name: Add problem matchers
       shell: bash
       run: |

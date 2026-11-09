@@ -1,0 +1,128 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: vikas soni <vikassoni@chromium.org>
+Date: Fri, 2 Oct 2026 13:07:38 -0700
+Subject: [GPU Security] Improve GPU fence handle validation and lifetime.
+
+Validate file descriptor duplication in PlatformDuplicate() and
+GLFenceAndroidNativeFenceSync::CreateFromGpuFenceHandle() so invalid
+descriptors are not passed to eglCreateSyncKHR(). Close the released
+file descriptor if CreateInternal() fails so it does not leak.
+
+Also check for null GLFence or GpuFence returns in
+GLTexturePassthroughOzoneImageRepresentation::BeginAccess(),
+    VideoImageReaderImageBacking::VideoRepresentation::BeginReadAccess(),
+CommandBufferProxyImpl::CreateGpuFence(), and
+GLES2CommandBufferStub::GetGpuFenceHandle().
+
+Bug: 516958782
+Change-Id: I528de20fed0196678c01a10e0fc2ea824471491f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8444381
+Commit-Queue: vikas soni <vikassoni@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1710359}
+
+diff --git a/gpu/command_buffer/service/shared_image/gl_ozone_image_representation.cc b/gpu/command_buffer/service/shared_image/gl_ozone_image_representation.cc
+index 363d7ef7824641f5e73c9ac6ccce763a74529896..057db5c19b42ecbb39851d4846e893a70a9162b3 100644
+--- a/gpu/command_buffer/service/shared_image/gl_ozone_image_representation.cc
++++ b/gpu/command_buffer/service/shared_image/gl_ozone_image_representation.cc
+@@ -52,7 +52,6 @@ GLTexturePassthroughOzoneImageRepresentation::GetTexturePassthrough(
+ 
+ bool GLTexturePassthroughOzoneImageRepresentation::BeginAccess(GLenum mode) {
+   DCHECK(!current_access_mode_);
+-  current_access_mode_ = mode;
+ 
+   auto* ozone_backing = GetOzoneBacking();
+   bool readonly = mode != GL_SHARED_IMAGE_ACCESS_MODE_READWRITE_CHROMIUM;
+@@ -69,9 +68,15 @@ bool GLTexturePassthroughOzoneImageRepresentation::BeginAccess(GLenum mode) {
+     for (auto& fence : fences) {
+       std::unique_ptr<gl::GLFence> gl_fence =
+           gl::GLFence::CreateFromGpuFenceHandle(std::move(fence));
++
++      // Adding a CHECK instead of returning false since we can not gracefully
++      // recover in these cases.
++      CHECK(gl_fence);
+       gl_fence->ServerWait();
+     }
+   }
++
++  current_access_mode_ = mode;
+   return true;
+ }
+ 
+diff --git a/gpu/command_buffer/service/shared_image/video_image_reader_image_backing.cc b/gpu/command_buffer/service/shared_image/video_image_reader_image_backing.cc
+index 42cd2ee541e44103276fe8f20366cb39c99094b5..68f00c030645fdb2880dabdea22c7eff9568d77c 100644
+--- a/gpu/command_buffer/service/shared_image/video_image_reader_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/video_image_reader_image_backing.cc
+@@ -1009,6 +1009,10 @@ class VideoImageReaderImageBacking::VideoRepresentation
+       handle.Adopt(std::move(fence_fd));
+       std::unique_ptr<gl::GLFence> gl_fence =
+           gl::GLFence::CreateFromGpuFenceHandle(std::move(handle));
++
++      // Adding a CHECK instead of returning false since we can not gracefully
++      // recover in these cases.
++      CHECK(gl_fence);
+       gl_fence->ServerWait();
+     }
+     return true;
+diff --git a/gpu/ipc/client/command_buffer_proxy_impl.cc b/gpu/ipc/client/command_buffer_proxy_impl.cc
+index e1ec5be3cf7352196a49c868c1cf840bbdc6c506..70b567e80306d2f763bd7d53af4e44e57ae5610b 100644
+--- a/gpu/ipc/client/command_buffer_proxy_impl.cc
++++ b/gpu/ipc/client/command_buffer_proxy_impl.cc
+@@ -699,6 +699,9 @@ void CommandBufferProxyImpl::CreateGpuFence(uint32_t gpu_fence_id,
+   }
+ 
+   gfx::GpuFence* gpu_fence = gfx::GpuFence::FromClientGpuFence(source);
++  if (!gpu_fence) {
++    return;
++  }
+   command_buffer_->CreateGpuFenceFromHandle(
+       gpu_fence_id, gpu_fence->GetGpuFenceHandle().Clone());
+ }
+diff --git a/gpu/ipc/service/gles2_command_buffer_stub.cc b/gpu/ipc/service/gles2_command_buffer_stub.cc
+index fafc2d9ec209882d20f6b2e849c7fc75cd9b9c37..14ec500eb4163b98bbcada569886ddea3a251acf 100644
+--- a/gpu/ipc/service/gles2_command_buffer_stub.cc
++++ b/gpu/ipc/service/gles2_command_buffer_stub.cc
+@@ -404,7 +404,13 @@ void GLES2CommandBufferStub::GetGpuFenceHandle(
+   if (manager->IsValidGpuFence(gpu_fence_id)) {
+     std::unique_ptr<gfx::GpuFence> gpu_fence =
+         manager->GetGpuFence(gpu_fence_id);
+-    handle = gpu_fence->GetGpuFenceHandle().Clone();
++    if (gpu_fence) {
++      handle = gpu_fence->GetGpuFenceHandle().Clone();
++    } else {
++      DLOG(ERROR) << "Failed to retrieve GpuFence";
++      command_buffer_->SetParseError(error::kLostContext);
++      CheckContextLost();
++    }
+   } else {
+     // Retrieval failed. This shouldn't happen, force context loss to avoid
+     // inconsistent state.
+diff --git a/ui/gl/gl_fence_android_native_fence_sync.cc b/ui/gl/gl_fence_android_native_fence_sync.cc
+index 21b2c9450e536e4ea949fc7c813b7129b77833fe..53586c1a48cd36a477ad33a1d0d1a9dfed85166e 100644
+--- a/ui/gl/gl_fence_android_native_fence_sync.cc
++++ b/ui/gl/gl_fence_android_native_fence_sync.cc
+@@ -49,10 +49,20 @@ GLFenceAndroidNativeFenceSync::CreateForGpuFence() {
+ std::unique_ptr<GLFenceAndroidNativeFenceSync>
+ GLFenceAndroidNativeFenceSync::CreateFromGpuFenceHandle(
+     gfx::GpuFenceHandle gpu_fence) {
+-  DCHECK_GE(gpu_fence.Peek(), 0);
+-  EGLint attribs[] = {EGL_SYNC_NATIVE_FENCE_FD_ANDROID,
+-                      gpu_fence.Release().release(), EGL_NONE};
+-  return CreateInternal(EGL_SYNC_NATIVE_FENCE_ANDROID, attribs);
++  base::ScopedFD fence_fd = gpu_fence.Release();
++  if (!fence_fd.is_valid()) {
++    return nullptr;
++  }
++  // Release `fence_fd` ownership before calling `CreateInternal()`:
++  // `eglCreateSyncKHR` assumes ownership of the FD and may close it before
++  // returning, which Android's fdsan requires to be unowned (tag 0).
++  EGLint raw_fd = fence_fd.release();
++  EGLint attribs[] = {EGL_SYNC_NATIVE_FENCE_FD_ANDROID, raw_fd, EGL_NONE};
++  auto fence = CreateInternal(EGL_SYNC_NATIVE_FENCE_ANDROID, attribs);
++  if (!fence) {
++    base::ScopedFD close_fd(raw_fd);
++  }
++  return fence;
+ }
+ 
+ gfx::GpuFenceHandle GLFenceAndroidNativeFenceSync::GetGpuFenceHandle() {
