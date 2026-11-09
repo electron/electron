@@ -8,6 +8,7 @@
 #include <optional>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -36,11 +37,13 @@ class WebContentsPermissionHelper
   void RequestPointerLockPermission(
       bool user_gesture,
       bool last_unlocked_by_target,
-      base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
+      base::OnceCallback<
+          void(base::WeakPtr<content::WebContents>, bool, bool, bool)>
           callback);
   void RequestKeyboardLockPermission(
       bool esc_key_locked,
-      base::OnceCallback<void(content::WebContents*, bool, bool)> callback);
+      base::OnceCallback<void(base::WeakPtr<content::WebContents>, bool, bool)>
+          callback);
   void RequestWebNotificationPermission(
       content::RenderFrameHost* requesting_frame,
       base::OnceCallback<void(bool)> callback);
