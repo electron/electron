@@ -1,21 +1,15 @@
-window.initWebGpu().catch((err) => {
-  console.error('Failed to initialize WebGPU:', err);
-  window.textures.webGpuUnavailable();
-});
-
-window.textures.onSharedTexture(async (imported) => {
-  try {
-    // Step 6: Get VideoFrame from the imported texture
+const init = async () => {
+  await window.initWebGpu();
+  window.textures.onSharedTexture(async (imported) => {
     const frame = imported.getVideoFrame();
+    try {
+      await window.renderFrame(frame);
+    } finally {
+      frame.close();
+    }
+  });
+  window.textures.verifyCapturedImage(window.verifyCapturedImage);
+  window.textures.ready();
+};
 
-    // Step 7: Render using WebGPU
-    await window.renderFrame(frame);
-
-    // Step 8: Release the VideoFrame as we no longer need it
-    frame.close();
-  } catch (error) {
-    console.error('Error getting VideoFrame:', error);
-  }
-});
-
-window.textures.verifyCapturedImage(window.verifyCapturedImage);
+init().catch((error) => window.textures.reportError(error.stack));
