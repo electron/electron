@@ -612,7 +612,7 @@ class WebContents final : public ExclusiveAccessContext,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
-  void OnRequestPointerLock(content::WebContents* web_contents,
+  void OnRequestPointerLock(base::WeakPtr<content::WebContents> web_contents,
                             bool user_gesture,
                             bool last_unlocked_by_target,
                             bool allowed);
@@ -622,7 +622,7 @@ class WebContents final : public ExclusiveAccessContext,
   void LostPointerLock() override;
   bool IsWaitingForPointerLockPrompt(
       content::WebContents* web_contents) override;
-  void OnRequestKeyboardLock(content::WebContents* web_contents,
+  void OnRequestKeyboardLock(base::WeakPtr<content::WebContents> web_contents,
                              bool esc_key_locked,
                              bool allowed);
   void RequestKeyboardLock(content::WebContents* web_contents,
