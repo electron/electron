@@ -2187,10 +2187,6 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 
 Sends an input `event` to the page.
 
-> [!NOTE]
-> The [`BrowserWindow`](browser-window.md) containing the contents needs to be focused for
-`sendInputEvent()` to work.
-
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 
 <!--
