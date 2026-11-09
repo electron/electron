@@ -25,7 +25,7 @@ import { promisify } from 'node:util';
 import * as vm from 'node:vm';
 
 import { captureWithTabSourceId } from './lib/media-helpers.ts';
-import { containsText, readPDF, readPDFs } from './lib/pdf-helpers.ts';
+import { containsText, readPDF } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
@@ -43,7 +43,7 @@ import type { AddressInfo } from 'node:net';
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
-describe('webContents module', () => {
+describe('webContents module', { retry: 0 }, () => {
   describe('getAllWebContents() API', () => {
     afterEach(closeAllWindows);
     it('returns an array of web contents', async () => {
@@ -4702,11 +4702,7 @@ describe('webContents module', () => {
 
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
-  describe('destroy()', { retry: 3 }, () => {
-    // These tests are flaky on Windows CI and we don't know why, but their
-    // purpose is to make sure Electron does not crash so it is fine to retry
-    // them a few times.
-
+  describe('destroy()', () => {
     let server: http.Server;
     let serverUrl: string;
 
@@ -5429,7 +5425,10 @@ describe('webContents module', () => {
 
     type PageSizeString = Exclude<Required<Electron.PrintToPDFOptions>['pageSize'], Electron.Size>;
 
-    it('with custom page sizes', async () => {
+    describe('with custom page sizes', () => {
+      // One print and parse per test: printing and parsing all eleven sizes in
+      // a single test left too little headroom in the per-test timeout on slow
+      // Windows and macOS x64 CI hosts.
       const paperFormats: Record<PageSizeString, ElectronInternal.PageSize> = {
         Letter: { width: 8.5, height: 11 },
         Legal: { width: 8.5, height: 14 },
@@ -5444,25 +5443,15 @@ describe('webContents module', () => {
         A6: { width: 4.13, height: 5.83 }
       };
 
-      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      for (const [format, size] of Object.entries(paperFormats) as [PageSizeString, ElectronInternal.PageSize][]) {
+        it(format, async () => {
+          await w.loadFile(path.join(fixturesPath, 'api', 'print-to-pdf-small.html'));
+          const pdfInfo = await readPDF(await w.webContents.printToPDF({ pageSize: format }));
 
-      const formats = Object.keys(paperFormats) as PageSizeString[];
-      const pdfs = [];
-      for (const format of formats) {
-        pdfs.push(await w.webContents.printToPDF({ pageSize: format }));
-      }
-
-      const pdfInfos = await readPDFs(pdfs);
-
-      const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
-
-      for (const [i, format] of formats.entries()) {
-        // page.view is [top, left, width, height].
-        const width = pdfInfos[i].view[2] / 72;
-        const height = pdfInfos[i].view[3] / 72;
-
-        expect(approxEq(width, paperFormats[format].width)).toBe(true);
-        expect(approxEq(height, paperFormats[format].height)).toBe(true);
+          // page.view is [top, left, width, height], in points.
+          expect(Math.abs(pdfInfo.view[2] / 72 - size.width)).toBeLessThanOrEqual(0.01);
+          expect(Math.abs(pdfInfo.view[3] / 72 - size.height)).toBeLessThanOrEqual(0.01);
+        });
       }
     });
 
