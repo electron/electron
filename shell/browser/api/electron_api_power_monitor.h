@@ -56,10 +56,9 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
   PowerMonitor& operator=(const PowerMonitor&) = delete;
 
  private:
-#if BUILDFLAG(IS_LINUX)
-  // Asked when the session starts ending. False means the app is handling it.
-  bool ShouldQuitForSessionEnd();
-#endif
+  // Called by native callers when the session starts ending. False means the
+  // app is handling it.
+  bool ShouldShutdown();
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   void InitPlatformSpecificMonitors();

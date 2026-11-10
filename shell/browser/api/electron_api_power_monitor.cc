@@ -85,7 +85,7 @@ PowerMonitor::PowerMonitor() {
   // The listener outlives this object; let it ask about "shutdown".
   if (auto* listener = ElectronBrowserMainParts::GetSessionEndListener()) {
     listener->SetShouldQuitHandler(base::BindRepeating(
-        &PowerMonitor::ShouldQuitForSessionEnd, base::Unretained(this)));
+        &PowerMonitor::ShouldShutdown, base::Unretained(this)));
   }
 #endif
 }
@@ -108,7 +108,7 @@ PowerMonitor::~PowerMonitor() {
   power_monitor->RemovePowerThermalObserver(this);
 }
 
-bool PowerMonitor::ShouldQuitForSessionEnd() {
+bool PowerMonitor::ShouldShutdown() {
   return !Emit("shutdown");
 }
 
