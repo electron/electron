@@ -16,30 +16,22 @@
 #include "base/win/pe_image.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "electron/fuses.h"
-#include "sandbox/policy/mojom/sandbox.mojom.h"
-#include "sandbox/policy/sandbox_type.h"
 #include "sandbox/policy/switches.h"
-#include "sandbox/win/src/sandbox_types.h"
+#include "shell/app/electron_runtime_win.h"
 
 namespace {
 
-bool ShouldInitializeSandboxInfo(const base::CommandLine& command_line) {
+void InitializeRuntimeSandboxInfo(sandbox::SandboxInterfaceInfo* info) {
   const auto process_type =
-      command_line.GetSwitchValueASCII(sandbox::policy::switches::kProcessType);
-  if (process_type.empty())
-    return true;
-
-  // The sandbox type parser only accepts Content child process types on
-  // Windows.
-  if (process_type != sandbox::policy::switches::kRendererProcess &&
-      process_type != sandbox::policy::switches::kGpuProcess &&
-      process_type != sandbox::policy::switches::kUtilityProcess) {
-    return false;
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          sandbox::policy::switches::kProcessType);
+  // Chromium skips unsandboxed children. Only pass it Content process types.
+  if (process_type.empty() ||
+      process_type == sandbox::policy::switches::kRendererProcess ||
+      process_type == sandbox::policy::switches::kGpuProcess ||
+      process_type == sandbox::policy::switches::kUtilityProcess) {
+    content::InitializeSandboxInfo(info);
   }
-
-  // FeatureList is not initialized yet, so use the command-line sandbox type.
-  return sandbox::policy::SandboxTypeFromCommandLine(command_line) !=
-         sandbox::mojom::Sandbox::kNoSandbox;
 }
 
 class RuntimePreReader : public base::PlatformThread::Delegate {
@@ -71,10 +63,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
   const base::FilePath runtime_path =
       executable_dir.Append(FILE_PATH_LITERAL("main.dll"));
 
-  sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
-  if (ShouldInitializeSandboxInfo(*base::CommandLine::ForCurrentProcess()))
-    content::InitializeSandboxInfo(&sandbox_info);
-
   // Keep the runtime loaded through CRT shutdown, including addon destructors.
   HMODULE runtime = ::LoadLibraryExW(
       runtime_path.value().c_str(), nullptr,
@@ -85,10 +73,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
     return static_cast<int>(error);
   }
 
-  using MainEntry =
-      int (*)(HINSTANCE, sandbox::SandboxInterfaceInfo*, const volatile char*);
-  auto main_entry =
-      reinterpret_cast<MainEntry>(::GetProcAddress(runtime, "ElectronMain"));
+  auto main_entry = reinterpret_cast<electron::RuntimeMain>(
+      ::GetProcAddress(runtime, "ElectronMain"));
   if (!main_entry) {
     DWORD error = ::GetLastError();
     PLOG(ERROR) << "Unable to find Electron runtime entry point";
@@ -113,5 +99,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
     }
   }
 
-  return main_entry(instance, &sandbox_info, electron::fuses::kFuseWire);
+  return main_entry(instance, InitializeRuntimeSandboxInfo,
+                    electron::fuses::kFuseWire);
 }

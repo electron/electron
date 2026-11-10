@@ -31,6 +31,7 @@
 #include "sandbox/win/src/sandbox_types.h"
 #include "shell/app/command_line_args.h"
 #include "shell/app/electron_main_delegate.h"
+#include "shell/app/electron_runtime_win.h"
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
@@ -78,7 +79,7 @@ extern const char kCrashpadProcess[];
 
 extern "C" __declspec(dllexport) int ElectronMain(
     HINSTANCE instance,
-    sandbox::SandboxInterfaceInfo* sandbox_info,
+    electron::InitializeSandboxInfoCallback initialize_sandbox_info,
     const volatile char* fuse_wire);
 
 // In 32-bit builds, the main thread starts with the default (small) stack size.
@@ -92,7 +93,7 @@ struct FiberState {
   HINSTANCE instance;
   LPVOID original_fiber;
   int fiber_result;
-  sandbox::SandboxInterfaceInfo* sandbox_info;
+  electron::InitializeSandboxInfoCallback initialize_sandbox_info;
   const volatile char* fuse_wire;
 };
 
@@ -102,8 +103,9 @@ struct FiberState {
 void WINAPI FiberBinder(void* params) {
   auto* fiber_state = static_cast<FiberState*>(params);
   // Re-enter the runtime with the larger main-thread stack.
-  fiber_state->fiber_result = ElectronMain(
-      fiber_state->instance, fiber_state->sandbox_info, fiber_state->fuse_wire);
+  fiber_state->fiber_result =
+      ElectronMain(fiber_state->instance, fiber_state->initialize_sandbox_info,
+                   fiber_state->fuse_wire);
   // Switch back to the main thread to exit.
   ::SwitchToFiber(fiber_state->original_fiber);
 }
@@ -111,7 +113,7 @@ void WINAPI FiberBinder(void* params) {
 
 extern "C" __declspec(dllexport) int ElectronMain(
     HINSTANCE instance,
-    sandbox::SandboxInterfaceInfo* sandbox_info,
+    electron::InitializeSandboxInfoCallback initialize_sandbox_info,
     const volatile char* fuse_wire) {
   if (!IsFuseWireInExecutableImage(fuse_wire) ||
       !electron::fuses::SetFuseWire(fuse_wire)) {
@@ -131,8 +133,8 @@ extern "C" __declspec(dllexport) int ElectronMain(
     LPVOID original_fiber =
         ::ConvertThreadToFiberEx(nullptr, FIBER_FLAG_FLOAT_SWITCH);
     if (original_fiber) {
-      FiberState fiber_state = {instance, original_fiber, 0, sandbox_info,
-                                fuse_wire};
+      FiberState fiber_state = {instance, original_fiber, 0,
+                                initialize_sandbox_info, fuse_wire};
       // Create a fiber with a bigger stack and switch to it. Leak the fiber on
       // exit.
       LPVOID big_stack_fiber = ::CreateFiberEx(
@@ -251,11 +253,13 @@ extern "C" __declspec(dllexport) int ElectronMain(
   if (!electron::CheckCommandLineArguments(command_line->argv()))
     return -1;
 
+  sandbox::SandboxInterfaceInfo sandbox_info = {};
+  initialize_sandbox_info(&sandbox_info);
   electron::ElectronMainDelegate delegate;
 
   content::ContentMainParams params(&delegate);
   params.instance = instance;
-  params.sandbox_info = sandbox_info;
+  params.sandbox_info = &sandbox_info;
   int rc = content::ContentMain(std::move(params));
   // System DLLs loaded into utility processes crash in their DLL_PROCESS_DETACH
   // handlers during CRT exit, so leave the way Chrome does: without running it.

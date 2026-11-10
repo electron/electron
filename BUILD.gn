@@ -1826,6 +1826,7 @@ if (is_mac) {
       sources = [
         "$target_gen_dir/win-resources/electron.rc",
         "shell/app/electron_main_win.cc",
+        "shell/app/electron_runtime_win.h",
         "shell/browser/resources/win/resource.h",
       ]
       include_dirs = [ "." ]
@@ -1871,7 +1872,6 @@ if (is_mac) {
       "//base",
       "//content:sandbox_helper_win",
       "//sandbox/policy",
-      "//sandbox/policy/mojom",
       "//sandbox/win:common",
     ]
   }
@@ -1891,6 +1891,7 @@ if (is_mac) {
       sources = [
         "$target_gen_dir/fuses_wire.cc",
         "shell/app/electron_loader_win.cc",
+        "shell/app/electron_runtime_win.h",
       ]
     } else if (is_linux) {
       sources = [

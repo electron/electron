@@ -115,6 +115,19 @@ ifdescribe(process.platform === 'win32')('Windows runtime DLL', { timeout: 12000
       if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5 });
     }, 120000);
 
+    it('treats a process type as a script argument in RunAsNode mode', () => {
+      const script = path.join(tempDir, 'script.cjs');
+      fs.writeFileSync(script, 'console.log(JSON.stringify(process.argv.slice(2)))');
+      const result = spawnSync(executable, [script, '--type=utility'], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_OPTIONS: '' },
+        encoding: 'utf8',
+        timeout: 30000
+      });
+      expect(result.error).toBe(undefined);
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual(['--type=utility']);
+    });
+
     it('prints the version after loading the runtime', () => {
       const env = { ...process.env };
       delete env.ELECTRON_RUN_AS_NODE;
