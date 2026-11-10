@@ -24,7 +24,7 @@ implementation instead.  Since Electron does not support the webstorePrivate
 API, it is more concise to carry this patch.
 
 diff --git a/extensions/browser/api/webstore_private/webstore_private_api.cc b/extensions/browser/api/webstore_private/webstore_private_api.cc
-index 16d3f425dbffa70f244cfb97543cef0eaabe1e18..139e848e5d1c077562e1140a5d3efdd62a3d6b59 100644
+index 1447e9595cce56ca8d103816eb7f23256870390e..151f3fa555fc3fdf911a75d37d6a27da203f1135 100644
 --- a/extensions/browser/api/webstore_private/webstore_private_api.cc
 +++ b/extensions/browser/api/webstore_private/webstore_private_api.cc
 @@ -519,6 +519,12 @@ WebstorePrivateApi::PopApprovalForTesting(  // IN-TEST

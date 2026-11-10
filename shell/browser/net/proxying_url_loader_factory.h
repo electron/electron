@@ -111,6 +111,8 @@ class ProxyingURLLoaderFactory
 
     void OnLoaderCreated(
         mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver);
+    void OnLoaderFailedWithRemoteEndpoint(
+        const net::IPEndPoint& remote_endpoint);
 
     // network::mojom::TrustedHeaderClient:
     void OnBeforeSendHeaders(const GURL& request_url,
@@ -246,6 +248,9 @@ class ProxyingURLLoaderFactory
       const network::ResourceRequest& request,
       mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
       override;
+  void OnLoaderFailedWithRemoteEndpoint(
+      int32_t request_id,
+      const net::IPEndPoint& remote_endpoint) override;
 
   bool IsForServiceWorkerScript() const;
 
