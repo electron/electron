@@ -50,6 +50,14 @@
 #include "third_party/blink/public/common/service_worker/service_worker_status_code.h"
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 
+namespace features {
+
+BASE_FEATURE(kExtensionRuntimeOnInstalled,
+             "ExtensionRuntimeOnInstalled",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
+}  // namespace features
+
 namespace extensions {
 
 // What loading an unpacked extension from disk produced.
@@ -429,19 +437,25 @@ void ElectronExtensionLoader::AddLoadedExtension(
 
     extension_registrar_->AddExtension(extension);
 
-    // Chromium dispatches runtime.onInstalled from its install flow, which
-    // loading an unpacked extension on every launch does not go through.
     if (!previous_version.IsValid() ||
         previous_version != extension->version()) {
+      // The version is stored whether or not the event is emitted: reusing the
+      // indexed rulesets depends on it, and an extension that was loaded while
+      // the feature was disabled is not a new install once it is enabled.
       extension_prefs->UpdateExtensionPref(
           extension->id(), kPrefLastLoadedVersion,
           base::Value(extension->VersionString()));
-      base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-          FROM_HERE,
-          base::BindOnce(
-              &RuntimeEventRouter::DispatchOnInstalledEvent,
-              base::UnsafeDangling(static_cast<void*>(browser_context_.get())),
-              extension->id(), previous_version, false));
+      // Chromium dispatches runtime.onInstalled from its install flow, which
+      // loading an unpacked extension on every launch does not go through.
+      if (base::FeatureList::IsEnabled(
+              features::kExtensionRuntimeOnInstalled)) {
+        base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+            FROM_HERE,
+            base::BindOnce(&RuntimeEventRouter::DispatchOnInstalledEvent,
+                           base::UnsafeDangling(
+                               static_cast<void*>(browser_context_.get())),
+                           extension->id(), previous_version, false));
+      }
     }
 
     // Write extension install time to ExtensionPrefs.

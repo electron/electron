@@ -1676,8 +1676,12 @@ describe('chrome extensions', () => {
         );
       };
 
-      const runRemoteControlApp = async (expectInstalled: boolean) => {
-        const rc = await startRemoteControlApp();
+      // The feature is set either way, so that the specs do not depend on its
+      // default.
+      const runRemoteControlApp = async (expectInstalled: boolean, { onInstalled = true } = {}) => {
+        const rc = await startRemoteControlApp([
+          `--${onInstalled ? 'enable' : 'disable'}-features=ExtensionRuntimeOnInstalled`
+        ]);
         const exitPromise = once(rc.process, 'exit');
 
         const state = await rc.remotely(
@@ -1827,6 +1831,17 @@ describe('chrome extensions', () => {
 
       await extension.write('2.0', 'second');
       expect((await extension.launch(true)).installed).toEqual({ reason: 'update', previousVersion: '1.0' });
+    });
+
+    it('does not emit runtime.onInstalled when ExtensionRuntimeOnInstalled is disabled', async () => {
+      const extension = await setUpRestartingExtension();
+
+      await extension.write('1.0', 'first');
+      expect((await extension.launch(false, { onInstalled: false })).installed).toBeNull();
+
+      // The load was still recorded, so it is not a new install once the
+      // feature is enabled.
+      expect((await extension.launch(false)).installed).toBeNull();
     });
 
     it('can run chrome extension APIs', async () => {

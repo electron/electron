@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 
+#include "base/feature_list.h"
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
@@ -21,6 +22,15 @@ class FilePath;
 namespace content {
 class BrowserContext;
 }
+
+namespace features {
+
+// Emits chrome.runtime.onInstalled when a session loads an extension for the
+// first time or loads a different version of it than it loaded last. When
+// disabled, loading an extension never emits the event.
+BASE_DECLARE_FEATURE(kExtensionRuntimeOnInstalled);
+
+}  // namespace features
 
 namespace extensions {
 
