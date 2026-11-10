@@ -21,6 +21,10 @@ console.log(ses.getUserAgent())
 
 ## Offline sessions
 
+> [!NOTE]
+> Offline sessions are experimental. Their behavior may change in a future
+> Electron release.
+
 A session created with `networkAccess: 'none'` cannot open a network
 connection. The restriction is enforced in the network service for the
 session's own network context, so it covers every path that would otherwise
@@ -74,7 +78,7 @@ and disable the spellchecker with
 `networkAccess` is a per-session property, applied only when the session is
 first created; like other session options it is ignored when a `Session` for
 the same partition or path already exists, and creating one with a conflicting
-`networkAccess` value throws. Read [`ses.networkAccess`](#sesnetworkaccess-readonly)
+`networkAccess` value throws. Read [`ses.networkAccess`](#sesnetworkaccess-readonly-experimental)
 to check the effective value. Because the restriction is per session, content in
 an offline session can still reach the network through a `<webview>` or a child
 window the app places in a _different_ session, so apps embedding untrusted
@@ -106,8 +110,8 @@ The `session` module has the following methods:
 * `options` Object (optional)
   * `cache` boolean (optional) - Whether to enable cache. Default is `true` unless the
     [`--disable-http-cache` switch](command-line-switches.md#--disable-http-cache) is used.
-  * `networkAccess` string (optional) - Can be `all` or `none`. Default is
-    `all`. `none` creates a fully offline session, see
+  * `networkAccess` string (optional) _Experimental_ - Can be `all` or `none`.
+    Default is `all`. `none` creates a fully offline session, see
     [Offline sessions](#offline-sessions).
 
 Returns `Session` - A session instance from `partition` string. When there is an existing
@@ -129,8 +133,8 @@ of an existing `Session` object.
 * `options` Object (optional)
   * `cache` boolean (optional) - Whether to enable cache. Default is `true` unless the
     [`--disable-http-cache` switch](command-line-switches.md#--disable-http-cache) is used.
-  * `networkAccess` string (optional) - Can be `all` or `none`. Default is
-    `all`. `none` creates a fully offline session, see
+  * `networkAccess` string (optional) _Experimental_ - Can be `all` or `none`.
+    Default is `all`. `none` creates a fully offline session, see
     [Offline sessions](#offline-sessions).
 
 Returns `Session` - A session instance from the absolute path as specified by the `path`
@@ -2045,7 +2049,7 @@ A `boolean` indicating whether builtin spell checker is enabled.
 A `string | null` indicating the absolute file system path where data for this
 session is persisted on disk.  For in memory sessions this returns `null`.
 
-#### `ses.networkAccess` _Readonly_
+#### `ses.networkAccess` _Readonly_ _Experimental_
 
 A `string` (`'all'` or `'none'`) indicating whether this session can access the
 network. Set with the `networkAccess` option of
