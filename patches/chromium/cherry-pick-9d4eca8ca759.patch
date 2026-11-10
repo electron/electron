@@ -32,10 +32,10 @@ Bug: 573451783,571284308
 Change-Id: I624e1bcdc6e75392e4f93c9c500a5cf88e4f2adb
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index b6eb11b8909ed8260295948b4032adbb9f70b8e4..8e7dc771a03115130121edf91b044d932ccdc6e5 100644
+index 7d628fa1fc8b8dd74c9bf75cf3d41d21fa09539d..e2d129593cb3a4a80a754245aa5dc0b16d8d4bba 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -2875,14 +2875,23 @@ void NavigationRequest::BeginNavigationImpl() {
+@@ -2876,14 +2876,23 @@ void NavigationRequest::BeginNavigationImpl() {
    base::WeakPtr<NavigationRequest> this_ptr(weak_factory_.GetWeakPtr());
    bool should_override_url_loading = false;
  
@@ -67,7 +67,7 @@ index b6eb11b8909ed8260295948b4032adbb9f70b8e4..8e7dc771a03115130121edf91b044d93
      if (reserved_prerender_host_info_.has_value()) {
        // Prerender activation must not fail but some reports imply it can
        // actually be failing: crbug.com/408969974. This dump is useful for
-@@ -2900,12 +2909,6 @@ void NavigationRequest::BeginNavigationImpl() {
+@@ -2901,12 +2910,6 @@ void NavigationRequest::BeginNavigationImpl() {
      return;
    }
  

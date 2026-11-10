@@ -20,10 +20,10 @@ Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 
 diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
-index 2783aa908249006d7914b8e742b59b8dece39e40..dc1d792365ccf09160eb3b8b0665bc8d7c8ce43a 100644
+index 27d73b01659cd9d73aad36285b46cf12aaefeffa..3c209f1cc4392e3cae349351ec44c72f8d2014dc 100644
 --- a/include/platform/autogen/FeaturesGL_autogen.h
 +++ b/include/platform/autogen/FeaturesGL_autogen.h
-@@ -806,6 +806,12 @@ struct FeaturesGL : FeatureSetBase
+@@ -812,6 +812,12 @@ struct FeaturesGL : FeatureSetBase
          &members,
      };
  
@@ -37,10 +37,10 @@ index 2783aa908249006d7914b8e742b59b8dece39e40..dc1d792365ccf09160eb3b8b0665bc8d
  
  inline FeaturesGL::FeaturesGL()  = default;
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index ee29e3efe16a76ad6657d2f19d5b139cdb12d792..81bd300452cf09f2d2d599b64d20eab6bc87baf4 100644
+index 2e6115f0af17c7d911a808fff03ee2ed02acba9f..093bff069658dfa789a8d422cdb2f782aeb75d7a 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
-@@ -1062,6 +1062,14 @@
+@@ -1071,6 +1071,14 @@
                  "Issue a two-step clear with distinct values during robust resource init to prevent value-collision driver clear-dedup elision on invalidate."
              ],
              "issue": "http://crbug.com/550489336"
@@ -786,7 +786,7 @@ index 581efc9deccc80f7e9806dcc57738fd4542b32d6..01485477e7c806cfa14dfa19a3dbd1cd
  }  // namespace rx
  
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 0ae680bcd03db7424a9d63d7ff4fb3ff0afbd68b..bd6250f1aced8833a045dae4d4b830447ba8a499 100644
+index c2338d6ae875082664169ece1334f7b095e50669..11f86fc5e7a143a9ee520141a9096abd1b725632 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -447,7 +447,7 @@ angle::Result TextureGL::setImageViaScratchUnpackBuffer(const gl::Context *conte
@@ -807,7 +807,7 @@ index 0ae680bcd03db7424a9d63d7ff4fb3ff0afbd68b..bd6250f1aced8833a045dae4d4b83044
  
      contextGL->markWorkSubmitted();
      return angle::Result::Continue;
-@@ -1547,7 +1547,8 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
+@@ -1568,7 +1568,8 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
          else
          {
              // Make sure no pixel unpack buffer is bound
@@ -817,7 +817,7 @@ index 0ae680bcd03db7424a9d63d7ff4fb3ff0afbd68b..bd6250f1aced8833a045dae4d4b83044
  
              const gl::InternalFormat &internalFormatInfo =
                  gl::GetSizedInternalFormatInfo(internalFormat);
-@@ -1664,7 +1665,8 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
+@@ -1685,7 +1686,8 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
          else
          {
              // Make sure no pixel unpack buffer is bound
@@ -827,7 +827,7 @@ index 0ae680bcd03db7424a9d63d7ff4fb3ff0afbd68b..bd6250f1aced8833a045dae4d4b83044
  
              // Internal format must be sized
              ASSERT(internalFormatInfo.sized);
-@@ -1950,7 +1952,8 @@ angle::Result TextureGL::allocateMipmapLevelsForGeneration(const gl::Context *co
+@@ -1971,7 +1973,8 @@ angle::Result TextureGL::allocateMipmapLevelsForGeneration(const gl::Context *co
          if (levelDesc.size != levelSize || *levelDesc.format.info != baseLevelInternalFormat)
          {
              // Make sure no pixel unpack buffer is bound
@@ -837,7 +837,7 @@ index 0ae680bcd03db7424a9d63d7ff4fb3ff0afbd68b..bd6250f1aced8833a045dae4d4b83044
  
              switch (getType())
              {
-@@ -3021,7 +3024,7 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
+@@ -3042,7 +3045,7 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
      ANGLE_TRY(stateManager->setPixelUnpackState(context, unpackState));
  
      GLuint prevUnpackBuffer = stateManager->getBufferID(gl::BufferBinding::PixelUnpack);
@@ -846,7 +846,7 @@ index 0ae680bcd03db7424a9d63d7ff4fb3ff0afbd68b..bd6250f1aced8833a045dae4d4b83044
  
      stateManager->bindTexture(getType(), mTextureID);
      if (internalFormatInfo.compressed)
-@@ -3094,7 +3097,8 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
+@@ -3115,7 +3118,8 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
          angle::Span<const uint8_t> uploadSpan;
          if (usePBO)
          {
@@ -856,7 +856,7 @@ index 0ae680bcd03db7424a9d63d7ff4fb3ff0afbd68b..bd6250f1aced8833a045dae4d4b83044
          }
          else
          {
-@@ -3136,7 +3140,8 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
+@@ -3157,7 +3161,8 @@ angle::Result TextureGL::initializeContentsImpl(const gl::Context *context,
      // glTexImage call, we need to make sure that the texture data to be uploaded later has the
      // expected unpack state.
      ANGLE_TRY(stateManager->setPixelUnpackState(context, context->getState().getUnpackState()));
@@ -963,7 +963,7 @@ index 6b1507e28d2b5334a556cd5cc058fb7c1445ac6f..140957638e1c2b13cf6ca7725ff5c990
                                            binding.getStride(),
                                            reinterpret_cast<uintptr_t>(attrib.pointer)));
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 36c2c9e28ad31f6afa654ea56ce86945ff597f36..39273fbf9574c320ac57439f371f8221d9cd60b7 100644
+index ee22709545613b6c74a51dbc6fe6220e5ae5a2db..4c5af0c9a0f903f0c8bb935a5916561005f268d7 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
 @@ -2681,6 +2681,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
@@ -1958,7 +1958,7 @@ index 0000000000000000000000000000000000000000..fcf40ca6bef1206feab443449c773d3d
 +
 +}  // anonymous namespace
 diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
-index b01676aaafd42a80c1ac0d27197fd261ce435c46..753c1bc4e5dd31b81c49f87079158ce7df316461 100644
+index 6c7b004903d6534edee3960443a8de77cdb1c27a..5e1e99440d840b10103f946ba4e2c4c3c72d0b74 100644
 --- a/util/autogen/angle_features_autogen.cpp
 +++ b/util/autogen/angle_features_autogen.cpp
 @@ -88,6 +88,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
@@ -1970,7 +1970,7 @@ index b01676aaafd42a80c1ac0d27197fd261ce435c46..753c1bc4e5dd31b81c49f87079158ce7
      {Feature::DescriptorSetCache, "descriptorSetCache"},
      {Feature::DestroyOldSwapchainInSharedPresentMode, "destroyOldSwapchainInSharedPresentMode"},
 diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
-index bbdf0efdc1b6bdd321dc870f883a29143bd797dd..012d12be239adccb92f0d52ec111cb8683401dcb 100644
+index b015da1c63f4208ee6027dc95cd2dd7987174fd6..d32fc3bf4ee4ac1b63700faa4552f356e373f4f6 100644
 --- a/util/autogen/angle_features_autogen.h
 +++ b/util/autogen/angle_features_autogen.h
 @@ -88,6 +88,7 @@ enum class Feature

@@ -39,10 +39,10 @@ index d7056881ab5f26f7bcc0746d9d14f2b089f28a42..356628d7976e59898b008c713f0c788e
        "command_buffer/service/gles2_cmd_decoder_unittest_textures.cc",
      ]
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index 954cdc18b999c8f917b73555e765d60e78d26e01..b3b533579bcb65fd9451dc6ab16ffefcc70c5b03 100644
+index d5f06693082d3554dc05bb42ff2f385908437480..f3fb3ac1847d95a16d3d18526c14a24da5199621 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-@@ -4915,10 +4915,15 @@ bool GLES2DecoderImpl::ResizeOffscreenFramebuffer(const gfx::Size& size) {
+@@ -4917,10 +4917,15 @@ bool GLES2DecoderImpl::ResizeOffscreenFramebuffer(const gfx::Size& size) {
      return false;
    }
  

@@ -84,10 +84,10 @@ index c50e857d6f4bfbea0061bbaf4525af43d4c5d97a..d55bc8cd0f1813a3362bbbc4e258d34e
    Initialize(kHttpUrl, 100);
    Start();
 diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
-index 47b0c262e1d79451e67f8ce32937044ffd383907..8badb2acffe162bb2480cefbed0fbbc34277c018 100644
+index 81db34216de6bfeda8bd8097d1e6d73d4e097fef..1e99ab799647ab281243255d96ab49bf868730e2 100644
 --- a/third_party/blink/web_tests/TestExpectations
 +++ b/third_party/blink/web_tests/TestExpectations
-@@ -6437,9 +6437,6 @@ crbug.com/1396185 accessibility/reach-and-scroll-overflow-div-without-mouse.html
+@@ -6438,9 +6438,6 @@ crbug.com/1396185 accessibility/reach-and-scroll-overflow-div-without-mouse.html
  # TODO(crbug.com/1401396): Re-enable this test
  external/wpt/webrtc/simulcast/setParameters-active.https.html [ Pass Timeout ]
  

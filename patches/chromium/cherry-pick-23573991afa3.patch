@@ -34,7 +34,7 @@ Commit-Queue: vikas soni <vikassoni@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1707524}
 
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index fc213cb1cfb8bcdcb927bca2eae915f168463a8d..37a9c2a19318b9262f72c4963605d4493e50b856 100644
+index 202a63e414e3fbee8089dad1249841cc126243ca..d5f06693082d3554dc05bb42ff2f385908437480 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
 @@ -85,6 +85,7 @@
@@ -54,7 +54,7 @@ index fc213cb1cfb8bcdcb927bca2eae915f168463a8d..37a9c2a19318b9262f72c4963605d449
    bool PrepareTexturesForRender(bool* textures_set, const char* function_name);
    void RestoreStateForTextures();
  
-@@ -9624,12 +9627,15 @@ void GLES2DecoderImpl::RestoreStateForTextures() {
+@@ -9626,12 +9629,15 @@ void GLES2DecoderImpl::RestoreStateForTextures() {
          if (!texture_ref ||
              !texture_manager()->CanRenderWithSampler(
                  texture_ref, sampler_state)) {
@@ -75,7 +75,7 @@ index fc213cb1cfb8bcdcb927bca2eae915f168463a8d..37a9c2a19318b9262f72c4963605d449
            continue;
          }
        }
-@@ -9993,7 +9999,15 @@ ALWAYS_INLINE error::Error GLES2DecoderImpl::DoMultiDrawArrays(
+@@ -9995,7 +10001,15 @@ ALWAYS_INLINE error::Error GLES2DecoderImpl::DoMultiDrawArrays(
    // normally but just to pass OpenGL ES 2 conformance where there's no
    // basevertex and baseinstance support.
    {
@@ -92,7 +92,7 @@ index fc213cb1cfb8bcdcb927bca2eae915f168463a8d..37a9c2a19318b9262f72c4963605d449
      if (!PrepareTexturesForRender(&textures_set, function_name)) {
        return error::kNoError;
      }
-@@ -10035,9 +10049,7 @@ ALWAYS_INLINE error::Error GLES2DecoderImpl::DoMultiDrawArrays(
+@@ -10037,9 +10051,7 @@ ALWAYS_INLINE error::Error GLES2DecoderImpl::DoMultiDrawArrays(
            transform_feedback_vertices);
      }
  
@@ -103,7 +103,7 @@ index fc213cb1cfb8bcdcb927bca2eae915f168463a8d..37a9c2a19318b9262f72c4963605d449
      // only reset base vertex and base instance shader variable when it's
      // possibly non-zero
      if (option == DrawArraysOption::UseBaseInstance) {
-@@ -10252,21 +10264,31 @@ ALWAYS_INLINE error::Error GLES2DecoderImpl::DoMultiDrawElements(
+@@ -10254,21 +10266,31 @@ ALWAYS_INLINE error::Error GLES2DecoderImpl::DoMultiDrawElements(
    // normally But just to pass OpenGL ES 2 conformance where there's no
    // basevertex and baseinstance support.
    {
@@ -139,7 +139,7 @@ index fc213cb1cfb8bcdcb927bca2eae915f168463a8d..37a9c2a19318b9262f72c4963605d449
      if (state_.enable_flags.primitive_restart_fixed_index &&
          feature_info_->feature_flags().emulate_primitive_restart_fixed_index) {
        api()->glEnableFn(GL_PRIMITIVE_RESTART);
-@@ -10320,9 +10342,7 @@ ALWAYS_INLINE error::Error GLES2DecoderImpl::DoMultiDrawElements(
+@@ -10322,9 +10344,7 @@ ALWAYS_INLINE error::Error GLES2DecoderImpl::DoMultiDrawElements(
        api()->glBindBufferFn(GL_ELEMENT_ARRAY_BUFFER,
                              element_array_buffer->service_id());
      }
