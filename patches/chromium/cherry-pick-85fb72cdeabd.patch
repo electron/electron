@@ -1,0 +1,314 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Fri, 6 Nov 2026 09:47:06 -0800
+Subject: Reland "viz: Don't propose the same rounded-display mask candidate
+ twice"
+
+This is a reland of commit 5d3262a53d11c7ec249148a07751185d83dcc04a
+
+The original CL was reverted because its new death test,
+ListContainerDeathTest.EraseFromEmptyInnerListDies, failed on Linux
+MSan (crbug.com/564188297). The test erased a polymorphic
+DerivedElement1 twice. Since
+ListContainer::EraseAndInvalidateAllPointers() runs the element's
+destructor before ListContainerHelper's checks, the second erase made a
+virtual call through the vptr of the already destroyed element. MSan's
+use-after-dtor check reported that as use-of-uninitialized-value
+("Virtual table ptr was destroyed") before the new CHECK was reached,
+so the process did not die with "Check failed".
+
+Changes since the original CL:
+- Rebase onto https://crrev.com/c/8452585, which made
+  ListContainerHelper use offsets instead of raw pointers.
+  InnerList::Erase() now CHECKs the offset against LastElementOffset().
+  The old CHECK_GE(position, Begin()) has no offset equivalent, since
+  offsets are unsigned.
+- Use the trivially destructible NonDerivedElement in the death tests,
+  so the second erase doesn't run a destructor on a destroyed object.
+- Leave spare capacity in the inner list in the death tests. Otherwise,
+  dereferencing the stale iterator hits the DCHECK that
+  https://crrev.com/c/8452585 added to InnerList::ElementAtOffset()
+  before the CHECK, and EXPECT_CHECK_DEATH() doesn't match the
+  "DCHECK failed" message in DCHECK-enabled builds.
+- Add death tests for erasing from an inner list that was emptied while
+  the container still has elements, and for erasing past the last
+  element, to cover the other new CHECKs.
+
+Original change's description:
+> viz: Don't propose the same rounded-display mask candidate twice
+>
+> MaybeAppendOccludingMaskCandidates() appends a proposed candidate that
+> carries rounded-display masks to the test candidate list once for every
+> candidate already in that list that it occludes. A single mask quad can
+> occlude more than one candidate - e.g. a strip across the top of the
+> display whose two corner mask squares each intersect a different
+> promoted SingleOnTop candidate - so the same proposed candidate, with
+> the same QuadList iterator, is appended twice.
+>
+> If the hardware then accepts the proposed plane set, both copies are
+> committed. The commit loop in AttemptMultipleOverlays() sorts candidates
+> by descending quad index and commits them back to front so that erasing
+> a quad cannot invalidate the iterators of the candidates that follow.
+> Two copies of the same candidate defeat that: they share one quad index,
+> so OverlayStrategySingleOnTop::CommitCandidate() calls
+> QuadList::EraseAndInvalidateAllPointers() twice on the same position.
+>
+> The second erase runs against an inner list that the first one already
+> emptied. cc::ListContainerHelper's InnerList::Erase() computes
+>
+>   std::copy(position + step, End(), position)
+>
+> with End() == position, so the length underflows to ~2^64 bytes and the
+> copy becomes a wild forward memmove over the heap of the GPU process.
+> AddressSanitizer reports it as negative-size-param on the memmove;
+> without ASan it linearly overwrites the heap until it reaches an
+> unmapped page. It also decrements InnerList::size and ::capacity below
+> zero, wrapping the container's bookkeeping.
+>
+> Fix the root cause: stop scanning once a mask candidate has been found
+> to occlude something, so each mask candidate is proposed, tested and
+> committed at most once. Whether a mask candidate is appended does not
+> depend on how many candidates it occludes, only on whether it occludes
+> any, so this does not change which candidates are promoted.
+>
+> Also harden cc::ListContainerHelper so that a future caller hits a
+> controlled crash instead of corrupting the heap. InnerList::Erase()'s
+> bounds checks were DCHECKs, which are compiled out in release builds
+> where this bug reproduces, so upgrade them to CHECKs and add an explicit
+> non-empty check for the underflow computed above. CharAllocator::Erase()
+> gains the same check for the container and for the inner list it is
+> about to erase from. These are not on a hot path: erasing a quad already
+> performs a linear copy of the rest of the inner list.
+>
+> Bug: 561998123
+>
+> Change-Id: I2169288dc5617d208d5f0c94b692e8b2f6769f30
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8430920
+> Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+> Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1701240}
+
+Bug: 561998123, 564188297
+Test: cc_unittests --gtest_filter=ListContainer*
+Test: viz_unittests --gtest_filter=MultiOverlay*
+Change-Id: Ic8e6f68ebb91e6010c913bd0168bf0d08698861f
+Cq-Include-Trybots: luci.chromium.try:linux_chromium_msan_rel_ng
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8749664
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1737753}
+
+Electron adaptation notes (43-x-y): this branch predates the
+offset-based CharAllocator refactor (crbug.com/549161451), so
+cc/base/list_container_helper.cc still addresses elements by raw
+pointer. The new CHECKs were ported onto that representation:
+InnerList::Erase(char* position) now does CHECK_GT(size, 0u) and
+CHECK_LE(position, LastElement()) (upstream: CHECK_LE(position_offset,
+LastElementOffset())), and CharAllocator::Erase() gains the same
+CHECK_GT(size_, 0u) / CHECK_GT(list.size, 0u) guards before the
+pointer-based LastElement() comparison. The list_container_unittest.cc
+hunk only adds the three ListContainerDeathTest cases; the unrelated
+RefactorInternalAllocatorPointersRegression test that the 3-way merge
+pulled in as context was not taken. The viz overlay_processor and
+overlay_unittest hunks applied verbatim.
+
+diff --git a/cc/base/list_container_helper.cc b/cc/base/list_container_helper.cc
+index 7b33e836ed7ce2d95956692c71bf0f2c1c14c25a..84ac854a2f653f0dc0adf65ec851e901bb48a3f8 100644
+--- a/cc/base/list_container_helper.cc
++++ b/cc/base/list_container_helper.cc
+@@ -57,7 +57,11 @@ class ListContainerHelper::CharAllocator {
+       // Confident that destructor is called by caller of this function. Since
+       // CharAllocator does not handle construction after
+       // allocation, it doesn't handle desctrution before deallocation.
+-      DCHECK_LE(position, LastElement());
++      // Enforced in all builds: erasing from an empty list or erasing a
++      // past-the-end position underflows the std::copy below into a wild
++      // memmove (~2^64 bytes) and corrupts size/capacity bookkeeping.
++      CHECK_GT(size, 0u);
++      CHECK_LE(position, LastElement());
+       DCHECK_GE(position, Begin());
+       char* start = UNSAFE_TODO(position + step);
+       std::copy(start, End(), position);
+@@ -190,9 +194,11 @@ class ListContainerHelper::CharAllocator {
+ 
+   void Erase(PositionInCharAllocator* position) {
+     DCHECK_EQ(this, position->ptr_to_container);
++    CHECK_GT(size_, 0u);
+ 
+     // Update |position| to point to the element after the erased element.
+     InnerList& list = storage_[position->vector_index];
++    CHECK_GT(list.size, 0u);
+     char* item_iterator = position->item_iterator;
+     if (item_iterator == list.LastElement())
+       position->Increment();
+diff --git a/cc/base/list_container_unittest.cc b/cc/base/list_container_unittest.cc
+index d2bbd9e57517e063a8ef2270e1bb8033fd4e211d..e0f6b12a76d4cbf5cb8606f0018ca9515496b9ae 100644
+--- a/cc/base/list_container_unittest.cc
++++ b/cc/base/list_container_unittest.cc
+@@ -11,6 +11,7 @@
+ #include <vector>
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/test/gtest_util.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+ namespace cc {
+@@ -1338,5 +1339,54 @@ TEST(ListContainerTest, GetCapacityInBytes) {
+   }
+ }
+ 
++// The death tests below erase the same position twice, as happens when a
++// caller commits the same QuadList iterator twice. The second erase must hit a
++// CHECK instead of underflowing the std::copy() in InnerList::Erase() into a
++// wild memmove over the heap.
++//
++// They use NonDerivedElement because EraseAndInvalidateAllPointers() runs the
++// element's destructor before erasing. For a polymorphic element, the second
++// erase would make a virtual call on an already destroyed object, which MSan
++// reports (use-after-dtor) before the CHECK is reached. They also leave spare
++// capacity in the inner list, so that dereferencing the stale iterator doesn't
++// hit the DCHECK in InnerList::ElementAtOffset() first.
++TEST(ListContainerDeathTest, EraseFromEmptyListDies) {
++  ListContainer<NonDerivedElement> list(alignof(NonDerivedElement),
++                                        sizeof(NonDerivedElement), 2);
++  list.AllocateAndConstruct<NonDerivedElement>();
++  auto it = list.begin();
++  list.EraseAndInvalidateAllPointers(it);
++  ASSERT_TRUE(list.empty());
++  EXPECT_CHECK_DEATH(list.EraseAndInvalidateAllPointers(it));
++}
++
++TEST(ListContainerDeathTest, EraseFromEmptyInnerListDies) {
++  // The first inner list holds one element, so the second element goes into a
++  // second inner list, which this test empties while the list is not empty.
++  ListContainer<NonDerivedElement> list(alignof(NonDerivedElement),
++                                        sizeof(NonDerivedElement), 1);
++  list.AllocateAndConstruct<NonDerivedElement>();
++  list.AllocateAndConstruct<NonDerivedElement>();
++  auto it = list.begin();
++  ++it;
++  list.EraseAndInvalidateAllPointers(it);
++  ASSERT_EQ(1u, list.size());
++  EXPECT_CHECK_DEATH(list.EraseAndInvalidateAllPointers(it));
++}
++
++TEST(ListContainerDeathTest, ErasePastLastElementDies) {
++  ListContainer<NonDerivedElement> list(alignof(NonDerivedElement),
++                                        sizeof(NonDerivedElement), 4);
++  list.AllocateAndConstruct<NonDerivedElement>();
++  list.AllocateAndConstruct<NonDerivedElement>();
++  list.AllocateAndConstruct<NonDerivedElement>();
++  auto it = list.begin();
++  ++it;
++  ++it;
++  list.EraseAndInvalidateAllPointers(it);
++  ASSERT_EQ(2u, list.size());
++  EXPECT_CHECK_DEATH(list.EraseAndInvalidateAllPointers(it));
++}
++
+ }  // namespace
+ }  // namespace cc
+diff --git a/components/viz/service/display/overlay_processor_using_strategy.cc b/components/viz/service/display/overlay_processor_using_strategy.cc
+index ae5d05b2f6025781c392f0c925ef0720bd276626..a88595aa5efb0408bef70e431c1ed3e2e6f8e276 100644
+--- a/components/viz/service/display/overlay_processor_using_strategy.cc
++++ b/components/viz/service/display/overlay_processor_using_strategy.cc
+@@ -76,9 +76,12 @@ ConstOverlayProposedCandidateIterator MaybeAppendOccludingMaskCandidates(
+       const auto& keys = test_candidates[i].occluding_mask_keys;
+ 
+       // Append candidates with masks if they occludes any other overlay
+-      // candidate in `test_candidates`.
++      // candidate in `test_candidates`. Append each mask candidate at most
++      // once: appending one copy per occluded candidate would make the
++      // commit loop erase the same quad from the QuadList multiple times.
+       if (keys.contains(mask_key)) {
+         test_candidates.push_back(*it);
++        break;
+       }
+     }
+   }
+diff --git a/components/viz/service/display/overlay_unittest.cc b/components/viz/service/display/overlay_unittest.cc
+index ef7327117310c32cc81b6b9e3f4bcd3197c09a9b..996674db8a4e2df699ed7974ba89e738f243e6a7 100644
+--- a/components/viz/service/display/overlay_unittest.cc
++++ b/components/viz/service/display/overlay_unittest.cc
+@@ -5822,6 +5822,81 @@ TEST_F(MultiOverlayTest, RoundedDisplayMaskCandidateFailsToPromote) {
+   EXPECT_EQ(candidate_list[2].plane_z_order, 2);
+ }
+ 
++// Test-only processor that accepts every tested candidate combination,
++// simulating DRM hardware whose atomic TEST commit accepts the proposed
++// plane set (e.g. >=5 universal planes on recent Intel devices).
++class AllHandledMultiSingleOnTopProcessor : public MultiOverlayProcessorBase {
++ public:
++  AllHandledMultiSingleOnTopProcessor() {
++    strategies_.push_back(std::make_unique<OverlayStrategySingleOnTop>(this));
++  }
++
++  void CheckOverlaySupportImpl(
++      const std::optional<OverlayCandidate>& primary_plane,
++      OverlayCandidateList* surfaces) override {
++    for (auto& candidate : *surfaces) {
++      candidate.overlay_handled = true;
++    }
++  }
++};
++
++using MultiOverlayDoubleCommitTest =
++    UseMultipleOverlaysTest<AllHandledMultiSingleOnTopProcessor>;
++
++// Regression test for a duplicate rounded-display-mask candidate commit:
++// MaybeAppendOccludingMaskCandidates() appends a mask candidate to the test
++// candidate list once per SingleOnTop candidate it occludes. A single mask
++// quad whose two corner mask squares overlap two different promoted
++// SingleOnTop candidates is therefore appended -- and, if the plane set is
++// accepted, committed -- twice. Committing runs back-to-front by quad index,
++// so both copies of the mask candidate erase the same (index 0) QuadList
++// position last. The second erase runs against an already emptied inner
++// list: cc::ListContainerHelper's InnerList::Erase computes
++// std::copy(position + step, End(), position) with End() == position, whose
++// length underflows to ~2^64 bytes and turns into a wild forward memmove
++// over the heap of the viz process. AddressSanitizer reports it as a
++// negative-size-param on the memmove; without ASan this linearly overwrites
++// the heap until an unmapped page is hit.
++TEST_F(MultiOverlayDoubleCommitTest, MaskOccludingTwoCandidatesDoubleErase) {
++  // A full-width, 32px-tall strip at the top of the display. With mask radii
++  // of 16, its two corner mask squares are (0,0 16x16) and (240,0 16x16).
++  const gfx::Rect kMaskRect(0, 0, 256, 32);
++  // Two non-overlapping SingleOnTop candidates, each intersecting exactly
++  // one of the two corner mask squares.
++  const gfx::Rect kCandLeft(kOverlayTopLeftRect);
++  const gfx::Rect kCandRight(kOverlayTopRightRect);
++
++  auto pass = CreateRenderPass();
++  SurfaceDamageRectList surface_damage_rect_list;
++
++  const auto kMaskInfo =
++      RoundedDisplayMasksInfo::CreateRoundedDisplayMasksInfo(16, 16);
++
++  // Quad index 0: the top-most quad carrying the rounded-display masks.
++  CreateCandidateWithRoundedDisplayMasksAt(pass->shared_quad_state_list.back(),
++                                           pass.get(), kMaskRect, kMaskInfo);
++  // Quad index 1: occluded by the origin (top-left) mask square.
++  CreateCandidateQuadAt(pass->shared_quad_state_list.back(), pass.get(),
++                        kCandLeft);
++  // Quad index 2: occluded by the other (top-right) mask square.
++  CreateCandidateQuadAt(pass->shared_quad_state_list.back(), pass.get(),
++                        kCandRight);
++
++  OverlayCandidateList candidate_list;
++  AggregatedRenderPassList pass_list;
++  pass_list.push_back(std::move(pass));
++
++  overlay_processor_->ProcessForOverlays(
++      resource_provider(), &pass_list, GetIdentityColorMatrix(),
++      std::move(surface_damage_rect_list), GetDefaultPrimaryPlane(),
++      &candidate_list, &damage_rect_);
++
++  // With the duplicate append fixed, the mask candidate is promoted exactly
++  // once and every quad in the pass has been committed to an overlay.
++  EXPECT_EQ(test::NumOverlaysExcludingPrimaryPlane(candidate_list), 3u);
++  EXPECT_TRUE(pass_list.back()->quad_list.empty());
++}
++
+ TEST_F(MultiOverlayTest,
+        DontPromoteCandidatesWithMasksIfAreOnlyOverlayCandidatesNotRejected) {
+   overlay_processor_->SetMaximumOverlaysConsidered(6);

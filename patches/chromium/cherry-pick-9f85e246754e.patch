@@ -1,0 +1,319 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Wed, 7 Oct 2026 14:26:25 -0700
+Subject: gpu: Check GL errors before marking CopySharedImage dest cleared
+
+On Ganesh-GL, Skia does not surface GL driver errors from uploads or
+draws. Drain GL errors before CopySharedImage writes to an uncleared
+destination and verify none were raised before updating its cleared
+rect, matching WritePixelsYUV. DrainGLErrors now accepts a null GLApi
+so callers can skip the check without a separate guard.
+
+Bug: 566384898
+Change-Id: I0295859a32560e873c0ed5b335fdb5e792c2debb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8530670
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1713877}
+
+diff --git a/gpu/command_buffer/service/copy_shared_image_helper.cc b/gpu/command_buffer/service/copy_shared_image_helper.cc
+index f06620a05acd16382bac178b72b66307c71558a5..98b1ed0f36f774ecf76bd8211a90fc28651c7d95 100644
+--- a/gpu/command_buffer/service/copy_shared_image_helper.cc
++++ b/gpu/command_buffer/service/copy_shared_image_helper.cc
+@@ -116,6 +116,8 @@ sk_sp<SkSurface> CreateSkSurfaceWrappingGLTexture(
+       dest_color_space, nullptr);
+ }
+ 
++// If the copy is performed, returns true and sets `upload_error` to any GL
++// error reported by the driver during the upload.
+ bool CopyPixelsToTexture(
+     GLint xoffset,
+     GLint yoffset,
+@@ -130,7 +132,9 @@ bool CopyPixelsToTexture(
+     SharedImageRepresentationFactory* representation_factory,
+     SharedContextState* shared_context_state,
+     const std::vector<GrBackendSemaphore>& begin_semaphores,
+-    std::vector<GrBackendSemaphore>& end_semaphores) {
++    std::vector<GrBackendSemaphore>& end_semaphores,
++    gl::GLApi* gl_api,
++    GLenum& upload_error) {
+   // We have implemented CompoundImageBacking::ProduceMemory() which can lead
+   // to a performance regression when it's underlying GPU backing holds the
+   // latest data. Previously, an unimplemented
+@@ -195,7 +199,10 @@ bool CopyPixelsToTexture(
+       dest_scoped_access->NeedGraphiteContextSubmit());
+ 
+   if (success && !dest_shared_image->IsCleared()) {
+-    dest_shared_image->SetClearedRect(dest_cleared_rect);
++    upload_error = DrainGLErrors(gl_api);
++    if (upload_error == GL_NO_ERROR) {
++      dest_shared_image->SetClearedRect(dest_cleared_rect);
++    }
+   }
+ 
+   return true;
+@@ -295,13 +302,23 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImage(
+   bool update_cleared_rect = false;
+   gfx::Rect new_cleared_rect;
+ 
++  // Skia does not report GL errors from uploads, so check for driver errors
++  // before marking an uncleared destination as cleared.
++  const bool check_gl_upload_errors = !dest_shared_image->IsCleared() &&
++                                      shared_context_state_->GrContextIsGL() &&
++                                      !shared_context_state_->context_lost();
++  gl::GLApi* const gl_api =
++      check_gl_upload_errors ? gl::g_current_gl_context : nullptr;
++  DrainGLErrors(gl_api);
++
+   // Flush dest surface and submit if necessary before exiting.
+   absl::Cleanup cleanup = [&]() {
+     bool success =
+         shared_context_state_->FlushWriteAccess(dest_scoped_access.get());
+     shared_context_state_->SubmitIfNecessary(std::move(end_semaphores),
+                                              need_graphite_submit);
+-    if (success && update_cleared_rect) {
++    if (success && update_cleared_rect &&
++        DrainGLErrors(gl_api) == GL_NO_ERROR) {
+       dest_shared_image->SetClearedRect(new_cleared_rect);
+     }
+   };
+@@ -319,14 +336,20 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImage(
+ 
+   // Attempt to upload directly from CPU shared memory to destination texture.
+   // Only do this if no scaling is happening.
++  GLenum upload_error = GL_NO_ERROR;
+   if (src_width == dst_width && src_height == dst_height &&
+-      CopyPixelsToTexture(xoffset, yoffset, x, y, src_width, src_height,
+-                          new_cleared_rect, source_mailbox,
+-                          dest_shared_image.get(), dest_scoped_access.get(),
+-                          representation_factory_, shared_context_state_,
+-                          begin_semaphores, end_semaphores)) {
++      CopyPixelsToTexture(
++          xoffset, yoffset, x, y, src_width, src_height, new_cleared_rect,
++          source_mailbox, dest_shared_image.get(), dest_scoped_access.get(),
++          representation_factory_, shared_context_state_, begin_semaphores,
++          end_semaphores, gl_api, upload_error)) {
+     // Cancel cleanup as CopyPixelsToTexture already handles it.
+     std::move(cleanup).Cancel();
++    if (upload_error != GL_NO_ERROR) {
++      return base::unexpected(
++          GLError(upload_error, "CopySharedImage",
++                  "GL driver reported an error during texture upload"));
++    }
+     return base::ok();
+   }
+ 
+@@ -479,7 +502,16 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImage(
+                                            need_graphite_submit);
+ 
+   if (success && update_cleared_rect) {
+-    dest_shared_image->SetClearedRect(new_cleared_rect);
++    GLenum error = DrainGLErrors(gl_api);
++    if (error != GL_NO_ERROR) {
++      if (result.has_value()) {
++        result = base::unexpected(
++            GLError(error, "CopySharedImage",
++                    "GL driver reported an error during texture upload"));
++      }
++    } else {
++      dest_shared_image->SetClearedRect(new_cleared_rect);
++    }
+   }
+   return result;
+ }
+diff --git a/gpu/command_buffer/service/gl_utils.h b/gpu/command_buffer/service/gl_utils.h
+index cf2d4c0f883fb54a2474550e4cc5acca61699548..4f0ce3b1f0ea5b2b83b6b7f42e2801565ce34232 100644
+--- a/gpu/command_buffer/service/gl_utils.h
++++ b/gpu/command_buffer/service/gl_utils.h
+@@ -185,8 +185,11 @@ Texture* CreateGLES2TextureWithLightRef(GLuint service_id, GLenum target);
+ }  // namespace gles2
+ 
+ // Drains all GL errors from `gl_api` and returns the first error encountered,
+-// or GL_NO_ERROR if there were no errors.
++// or GL_NO_ERROR if there were no errors or `gl_api` is null.
+ inline GLenum DrainGLErrors(gl::GLApi* gl_api) {
++  if (!gl_api) {
++    return GL_NO_ERROR;
++  }
+   GLenum error = gl_api->glGetErrorFn();
+   GLenum first_error = error;
+   while (error != GL_NO_ERROR) {
+diff --git a/gpu/command_buffer/service/raster_decoder_unittest.cc b/gpu/command_buffer/service/raster_decoder_unittest.cc
+index 43dc14eff3c66942a36107d9fdd6d04c94b6a67f..51e9ef0fe1e7680afa4688b0b973fe6516073840 100644
+--- a/gpu/command_buffer/service/raster_decoder_unittest.cc
++++ b/gpu/command_buffer/service/raster_decoder_unittest.cc
+@@ -4,8 +4,6 @@
+ 
+ #include "gpu/command_buffer/service/raster_decoder.h"
+ 
+-#include "cc/paint/paint_op_buffer.h"
+-
+ #include <limits>
+ #include <memory>
+ #include <string>
+@@ -16,6 +14,7 @@
+ #include "base/functional/callback_helpers.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/raw_ptr.h"
++#include "cc/paint/paint_op_buffer.h"
+ #include "gpu/command_buffer/common/gles2_cmd_utils.h"
+ #include "gpu/command_buffer/common/mailbox.h"
+ #include "gpu/command_buffer/common/raster_cmd_format.h"
+@@ -26,9 +25,12 @@
+ #include "gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory.h"
+ #include "gpu/command_buffer/service/shared_image/shared_image_factory.h"
+ #include "gpu/command_buffer/service/shared_image/shared_image_manager.h"
++#include "gpu/command_buffer/service/shared_image/shared_image_representation.h"
++#include "gpu/command_buffer/service/shared_image/test_image_backing.h"
+ #include "gpu/command_buffer/service/test_helper.h"
+ #include "gpu/config/gpu_preferences.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/skia/include/core/SkBitmap.h"
+ #include "ui/gl/gl_mock.h"
+ #include "ui/gl/gl_surface_stub.h"
+ #include "ui/gl/init/gl_factory.h"
+@@ -599,5 +601,144 @@ TEST_F(RasterDecoderOOPTest, SharedImageProviderRejectsActiveOutputMailbox) {
+   EXPECT_EQ(error, cc::SharedImageProvider::Error::kNoAccess);
+ }
+ 
++namespace {
++
++// Source backing which raises a GL error when accessed. ProduceMemory()
++// returns a working CPU representation, while ProduceSkiaGanesh() fails.
++class GLErrorOnAccessTestImageBacking : public TestImageBacking {
++ public:
++  GLErrorOnAccessTestImageBacking(const Mailbox& mailbox,
++                                  const SharedImageInfo& si_info,
++                                  bool raise_gl_error)
++      : TestImageBacking(mailbox, si_info, /*estimated_size=*/0),
++        raise_gl_error_(raise_gl_error) {
++    bitmap_.allocN32Pixels(si_info.size.width(), si_info.size.height());
++    bitmap_.eraseColor(SK_ColorRED);
++    SetCleared();
++  }
++
++  void MaybeRaiseGLError() {
++    if (raise_gl_error_) {
++      glEnable(GL_NONE);
++    }
++  }
++
++  SkPixmap pixmap() const { return bitmap_.pixmap(); }
++
++ protected:
++  std::unique_ptr<MemoryImageRepresentation> ProduceMemory(
++      SharedImageManager* manager,
++      MemoryTypeTracker* tracker) override;
++
++  std::unique_ptr<SkiaGaneshImageRepresentation> ProduceSkiaGanesh(
++      SharedImageManager* manager,
++      MemoryTypeTracker* tracker,
++      scoped_refptr<SharedContextState> context_state) override {
++    MaybeRaiseGLError();
++    return nullptr;
++  }
++
++ private:
++  const bool raise_gl_error_;
++  SkBitmap bitmap_;
++};
++
++class GLErrorOnAccessMemoryImageRepresentation
++    : public MemoryImageRepresentation {
++ public:
++  GLErrorOnAccessMemoryImageRepresentation(
++      SharedImageManager* manager,
++      GLErrorOnAccessTestImageBacking* backing,
++      MemoryTypeTracker* tracker)
++      : MemoryImageRepresentation(manager, backing, tracker) {}
++
++ protected:
++  SkPixmap BeginReadAccess() override {
++    auto* backing =
++        static_cast<GLErrorOnAccessTestImageBacking*>(this->backing());
++    backing->MaybeRaiseGLError();
++    return backing->pixmap();
++  }
++};
++
++std::unique_ptr<MemoryImageRepresentation>
++GLErrorOnAccessTestImageBacking::ProduceMemory(SharedImageManager* manager,
++                                               MemoryTypeTracker* tracker) {
++  return std::make_unique<GLErrorOnAccessMemoryImageRepresentation>(
++      manager, this, tracker);
++}
++
++}  // namespace
++
++class RasterDecoderOOPCopyGLErrorTest
++    : public RasterDecoderOOPTest,
++      public testing::WithParamInterface<bool> {
++ public:
++  bool raise_gl_error() const { return GetParam(); }
++
++  std::unique_ptr<SharedImageRepresentationFactoryRef> CreateSourceImage(
++      const Mailbox& mailbox) {
++    SharedImageInfo si_info(viz::SinglePlaneFormat::kRGBA_8888, gfx::Size(2, 2),
++                            gfx::ColorSpace::CreateSRGB(),
++                            kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType,
++                            SHARED_IMAGE_USAGE_RASTER_READ, "TestLabel");
++    return shared_image_manager()->Register(
++        std::make_unique<GLErrorOnAccessTestImageBacking>(mailbox, si_info,
++                                                          raise_gl_error()),
++        &memory_tracker_);
++  }
++};
++
++INSTANTIATE_TEST_SUITE_P(All, RasterDecoderOOPCopyGLErrorTest, testing::Bool());
++
++// A GL error raised while copying from a CPU-backed source must leave the
++// destination uncleared.
++TEST_P(RasterDecoderOOPCopyGLErrorTest, CopyFromMemory) {
++  if (!context_state_->GrContextIsGL()) {
++    GTEST_SKIP() << "GL error checks only apply to Ganesh-GL.";
++  }
++  Mailbox source_mailbox = Mailbox::Generate();
++  auto source_ref = CreateSourceImage(source_mailbox);
++  GLbyte mailboxes[sizeof(gpu::Mailbox) * 2];
++  CopyMailboxes(mailboxes, source_mailbox, client_texture_mailbox_);
++
++  SharedImageRepresentationFactory repr_factory(shared_image_manager(),
++                                                nullptr);
++  auto representation =
++      repr_factory.ProduceSkia(client_texture_mailbox_, context_state_.get());
++  EXPECT_FALSE(representation->IsCleared());
++
++  auto& cmd = *GetImmediateAs<cmds::CopySharedImageINTERNALImmediate>();
++  cmd.Init(0, 0, 0, 0, 2, 2, 2, 2, mailboxes);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++  EXPECT_EQ(raise_gl_error() ? GL_INVALID_ENUM : GL_NO_ERROR, GetGLError());
++  EXPECT_EQ(!raise_gl_error(), representation->IsCleared());
++}
++
++// A GL error raised on the path that clears the destination when the source
++// can't be read must leave the destination uncleared.
++TEST_P(RasterDecoderOOPCopyGLErrorTest, ClearWhenSourceUnavailable) {
++  if (!context_state_->GrContextIsGL()) {
++    GTEST_SKIP() << "GL error checks only apply to Ganesh-GL.";
++  }
++  Mailbox source_mailbox = Mailbox::Generate();
++  auto source_ref = CreateSourceImage(source_mailbox);
++  GLbyte mailboxes[sizeof(gpu::Mailbox) * 2];
++  CopyMailboxes(mailboxes, source_mailbox, client_texture_mailbox_);
++
++  SharedImageRepresentationFactory repr_factory(shared_image_manager(),
++                                                nullptr);
++  auto representation =
++      repr_factory.ProduceSkia(client_texture_mailbox_, context_state_.get());
++  EXPECT_FALSE(representation->IsCleared());
++
++  // Scaling skips the CPU upload path.
++  auto& cmd = *GetImmediateAs<cmds::CopySharedImageINTERNALImmediate>();
++  cmd.Init(0, 0, 0, 0, 1, 1, 2, 2, mailboxes);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailboxes)));
++  EXPECT_EQ(GL_INVALID_VALUE, GetGLError());
++  EXPECT_EQ(!raise_gl_error(), representation->IsCleared());
++}
++
+ }  // namespace raster
+ }  // namespace gpu

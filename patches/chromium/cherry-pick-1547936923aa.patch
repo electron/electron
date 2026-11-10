@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Date: Wed, 23 Sep 2026 12:35:04 -0700
+Subject: Don't support partial clearing in WritePixels
+
+Partially cleared images are not really a thing from perspective of
+anything except validating command decoder.
+
+All call-sites except Canvas2D [1] always overwrite whole image.
+Canvas2D calls it only if it's accelerated [2], which always clears
+resource at creation time [3] and initialized all subsequent resources
+with copy-on-write from previous ones [4], it always should have shared
+image initialized.
+
+[1]
+https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/graphics/canvas_2d_resource_provider.cc;drc=42b8c15629420815a0264116d52e0492dfe7aea9;l=301
+[2]
+https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/graphics/canvas_2d_resource_provider.cc;drc=42b8c15629420815a0264116d52e0492dfe7aea9;l=274
+[3]
+https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/graphics/canvas_2d_resource_provider.cc;drc=42b8c15629420815a0264116d52e0492dfe7aea9;l=804
+[4]
+https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/graphics/canvas_2d_resource_provider.cc;drc=42b8c15629420815a0264116d52e0492dfe7aea9;l=227
+
+Bug: 536663516
+Change-Id: I90fdafaed28827081f3ab353667380145471385b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8450359
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1703666}
+
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index 2ebaa6fb7f1e571757c3acc6ae31cba10537899a..222af981ffdd8b806bed24d9c9bf850101bb138e 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -2037,8 +2037,7 @@ void RasterDecoderImpl::DoWritePixelsINTERNAL(GLint x_offset,
+           return;
+         }
+       }
+-      dest_shared_image->SetClearedRect(
+-          gfx::Rect(src_info.width(), src_info.height()));
++      dest_shared_image->SetCleared();
+     }
+     return;
+   }
+@@ -2100,8 +2099,11 @@ void RasterDecoderImpl::DoWritePixelsINTERNAL(GLint x_offset,
+         return;
+       }
+     }
+-    dest_shared_image->SetClearedRect(
+-        gfx::Rect(x_offset, y_offset, src_width, src_height));
++
++    if (gfx::Rect(x_offset, y_offset, src_width, src_height)
++            .Contains(gfx::Rect(dest_shared_image->size()))) {
++      dest_shared_image->SetCleared();
++    }
+   }
+ }
+ 
