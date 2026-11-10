@@ -63,3 +63,4 @@ check_prototypes_and_exceptions_in_setprototypeproperties.patch
 defer_debugger_break_in_optimized_wasm_frames.patch
 track_promise_any_reject_closure_state_in_the_errors_array.patch
 add_stackframe_isscriptopaque_api.patch
+cherry-pick-e3e0f1c146fc.patch

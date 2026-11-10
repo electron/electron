@@ -9,3 +9,4 @@ limit_3d_textures_to_4gb_when_rounded_to_pot_on_img.patch
 split_buffer_-_texture_copies_to_work_around_intel_row-pitch.patch
 enable_splitbuffertexturecopyforoversizedrow_on_arm_imgtec_and.patch
 fix_use-after-free_for_empty_buffer_texture_copy_workarounds.patch
+cherry-pick-d758dd0ff515.patch

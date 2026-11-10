@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Tue, 13 Oct 2026 11:59:35 -0700
+Subject: gpu: Check GL errors before marking WebGPU Skia-fallback images
+ cleared
+
+When WebGPU uses the Skia fallback with Ganesh-GL, Skia does not surface
+GL driver errors from uploads or clears. Drain GL errors before writing
+to an uncleared shared image in UploadContentsToSkia and
+ClearSharedImageWithSkia, and only mark it cleared if none were raised.
+
+Bug: 566384898
+Change-Id: I9df266e7198cadca53759dca49edc15ae9574889
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8520144
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717684}
+
+diff --git a/gpu/command_buffer/service/webgpu_decoder_impl.cc b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+index 57a3b79bc721b29b1fc8fbe6b41fa3cf2c49b032..28ee6fefbdc3b792a4033ea8659dd1e259cef518 100644
+--- a/gpu/command_buffer/service/webgpu_decoder_impl.cc
++++ b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+@@ -39,6 +39,7 @@
+ #include "gpu/command_buffer/service/dawn_service_serializer.h"
+ #include "gpu/command_buffer/service/dawn_wire_server.h"
+ #include "gpu/command_buffer/service/decoder_client.h"
++#include "gpu/command_buffer/service/gl_utils.h"
+ #include "gpu/command_buffer/service/graphite_utils.h"
+ #include "gpu/command_buffer/service/isolation_key_provider.h"
+ #include "gpu/command_buffer/service/shared_context_state.h"
+@@ -96,6 +97,26 @@ constexpr wgpu::BufferUsage kAllowedMailboxBufferUsages =
+     wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst |
+     wgpu::BufferUsage::Storage;
+ 
++// Returns true if GL errors should be checked around a Skia write to
++// `representation`, which may be an upload or a clear. Skia does not report GL
++// errors from uploads or draws.
++//
++// Errors are only checked while the image is uncleared: that is when a failed
++// write could leave uninitialized contents marked as cleared. Checking only
++// then avoids the cost of glGetError on every write once the image has been
++// initialized.
++//
++// When this returns true, the shared context is current, so callers drain
++// errors from the thread's current GL API.
++bool ShouldCheckGLErrors(SharedContextState* shared_context_state,
++                         SkiaImageRepresentation* representation) {
++  const bool should_check = !representation->IsCleared() &&
++                            shared_context_state->GrContextIsGL() &&
++                            !shared_context_state->context_lost();
++  DCHECK(!should_check || shared_context_state->IsCurrent(nullptr));
++  return should_check;
++}
++
+ template <typename T1, typename T2>
+ void ChainStruct(T1& head, T2* struct_to_chain) {
+   DCHECK(struct_to_chain->nextInChain == nullptr);
+@@ -847,6 +868,12 @@ class WebGPUDecoderImpl final : public WebGPUDecoder {
+ 
+       auto* surface = scoped_write_access->surface();
+ 
++      const bool check_gl_errors = ShouldCheckGLErrors(
++          shared_context_state_.get(), representation_.get());
++      if (check_gl_errors) {
++        DrainGLErrors(gl::g_current_gl_context);
++      }
++
+       WaitForSemaphores(std::move(begin_semaphores));
+       surface->writePixels(SkPixmap(surface->imageInfo(), data, bytes_per_row),
+                            /*x*/ 0, /*y*/ 0);
+@@ -869,6 +896,11 @@ class WebGPUDecoderImpl final : public WebGPUDecoder {
+ 
+       SignalSemaphores(std::move(end_semaphores));
+ 
++      if (success && check_gl_errors &&
++          DrainGLErrors(gl::g_current_gl_context) != GL_NO_ERROR) {
++        success = false;
++      }
++
+       return success;
+     }
+ 
+@@ -2446,6 +2478,12 @@ bool WebGPUDecoderImpl::ClearSharedImageWithSkia(const Mailbox& mailbox) {
+     return false;
+   }
+ 
++  const bool check_gl_errors =
++      ShouldCheckGLErrors(shared_context_state_.get(), representation.get());
++  if (check_gl_errors) {
++    DrainGLErrors(gl::g_current_gl_context);
++  }
++
+   auto* surface = scoped_write_access->surface();
+   if (!begin_semaphores.empty()) {
+     // gr_context() must not be null when begin_semaphores is not empty.
+@@ -2491,6 +2529,10 @@ bool WebGPUDecoderImpl::ClearSharedImageWithSkia(const Mailbox& mailbox) {
+     DLOG(ERROR) << "ClearSharedImage: SharedContextState submit failed";
+     return false;
+   }
++  if (check_gl_errors &&
++      DrainGLErrors(gl::g_current_gl_context) != GL_NO_ERROR) {
++    return false;
++  }
+   representation->SetCleared();
+   return true;
+ }
