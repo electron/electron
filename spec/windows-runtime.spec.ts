@@ -178,6 +178,7 @@ ifdescribe(process.platform === 'win32')('Windows runtime DLL', { timeout: 12000
       expect(result.error).toBe(undefined);
       expect(result.status).toBe(126); // ERROR_MOD_NOT_FOUND
       expect(result.stderr).toContain('Unable to load Electron runtime');
+      expect(result.stderr).toContain('electron_runtime.dll');
     });
 
     it('reports a missing runtime entry point', () => {

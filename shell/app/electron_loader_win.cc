@@ -70,7 +70,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
       LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
   if (!runtime) {
     DWORD error = ::GetLastError();
-    PLOG(ERROR) << "Unable to load Electron runtime";
+    PLOG(ERROR) << "Unable to load Electron runtime at " << runtime_path
+                << "; ship electron_runtime.dll beside the executable";
     return static_cast<int>(error);
   }
 
