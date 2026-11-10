@@ -5,6 +5,7 @@
 #include "shell/browser/extensions/electron_extension_loader.h"
 
 #include <optional>
+#include <set>
 #include <utility>
 
 #include "base/auto_reset.h"
@@ -245,6 +246,26 @@ bool CanReuseIndexedRulesets(ExtensionPrefs* extension_prefs,
   return true;
 }
 
+// Forgets the static rulesets and rules that an extension enabled or disabled
+// with the declarativeNetRequest API, as Chromium does when it updates an
+// extension: they refer to the rulesets of the version that made the choice.
+void ResetRulesetChoices(ExtensionPrefs* extension_prefs,
+                         const Extension& extension) {
+  // This also drops the checksums, which belong to the previous version too.
+  extension_prefs->UpdateExtensionPref(
+      extension.id(), ExtensionPrefs::kDNRStaticRulesetPref, std::nullopt);
+
+  std::set<declarative_net_request::RulesetID> enabled_by_manifest;
+  for (const auto& ruleset :
+       declarative_net_request::DNRManifestData::GetRulesets(extension)) {
+    if (ruleset.enabled) {
+      enabled_by_manifest.insert(ruleset.id);
+    }
+  }
+  declarative_net_request::PrefsHelper(*extension_prefs)
+      .SetEnabledStaticRulesets(extension.id(), enabled_by_manifest);
+}
+
 // Stores what RulesMonitorService needs in order to load `extension`'s static
 // declarativeNetRequest rulesets. Must be called before the extension is added.
 //
@@ -394,6 +415,11 @@ void ElectronExtensionLoader::AddLoadedExtension(
     if (loaded_extension_ids_.insert(extension->id()).second) {
       declarative_net_request::PrefsHelper(*extension_prefs)
           .SetAllocatedGlobalRuleCount(extension->id(), /*rule_count=*/0);
+    }
+
+    if (previous_version.IsValid() &&
+        previous_version != extension->version()) {
+      ResetRulesetChoices(extension_prefs, *extension);
     }
 
     if (result.ruleset_install_prefs) {

@@ -893,6 +893,23 @@ describe('chrome extensions', () => {
         expect(await canFetch('blocked-by-disabled-ruleset')).toBe(false);
       });
 
+      it('returns to the rulesets the manifest enables when the extension version changes', async () => {
+        const extensionPath = await copyExtension();
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        const { updateEnabledRulesets } = await openExtensionPageAndTab(extension);
+        await updateEnabledRulesets({ disableRulesetIds: ['enabled'], enableRulesetIds: ['disabled'] });
+        await closeAllWindows();
+        customSession.extensions.removeExtension(extension.id);
+        await setVersion(extensionPath, '2.0');
+
+        const updatedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { getEnabledRulesets, canFetch } = await openExtensionPageAndTab(updatedExtension);
+
+        expect(await getEnabledRulesets()).toEqual(['enabled']);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(false);
+        expect(await canFetch('blocked-by-disabled-ruleset')).toBe(true);
+      });
+
       it('reuses the indexed rulesets when the same version is loaded again', async () => {
         const extensionPath = await copyExtension();
         await backdate(path.join(extensionPath, 'enabled.json'));
