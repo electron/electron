@@ -2,7 +2,7 @@ version: '3'
 
 services:
   buildtools:
-    image: ghcr.io/electron/devcontainer:73d09a918de785619880e7f483a187bbc2aac832
+    image: ghcr.io/electron/devcontainer:48409d6a437ba91fef2c5c1dd81e979c15b2f6cd
 
     volumes:
       - ..:/workspaces/gclient/src/electron:cached

@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/functional/bind.h"
@@ -19,13 +20,16 @@
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/synchronization/lock.h"
 #include "base/task/sequenced_task_runner.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
+#include "content/browser/media/capture/screenshot_capture_request_impl.h"  // nogncheck
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/desktop_capture.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/common/content_switches.h"
@@ -71,6 +75,48 @@ NODE_EXTERN void ClearBlockedSPKIsForTesting();
 namespace {
 
 std::atomic<int> live_callback_holder_probes{0};
+
+// Stands in for the native screen capture picker: reports a session id and
+// then holds the request open, like a picker nobody has answered yet.
+std::atomic<int> system_picker_stub_opens{0};
+base::Lock& SystemPickerStubLock() {
+  static base::NoDestructor<base::Lock> lock;
+  return *lock;
+}
+std::vector<base::OnceCallback<void(webrtc::DesktopCapturer::Source)>>&
+HeldSystemPickerCallbacks() {
+  static base::NoDestructor<
+      std::vector<base::OnceCallback<void(webrtc::DesktopCapturer::Source)>>>
+      held;
+  return *held;
+}
+
+void StubSystemPickerOpen(
+    content::DesktopMediaID::Type type,
+    base::OnceCallback<void(content::DesktopMediaID::Id)> created_callback,
+    base::OnceCallback<void(webrtc::DesktopCapturer::Source)> picker_callback,
+    base::OnceCallback<void()> cancel_callback,
+    base::OnceCallback<void()> error_callback) {
+  const int id = ++system_picker_stub_opens;
+  std::move(created_callback).Run(id);
+  base::AutoLock lock(SystemPickerStubLock());
+  HeldSystemPickerCallbacks().push_back(std::move(picker_callback));
+}
+
+void SetSystemPickerStubForTesting(bool enabled) {
+  content::desktop_capture::SetOpenNativeScreenCapturePickerCallbackForTesting(
+      enabled ? base::BindRepeating(&StubSystemPickerOpen)
+              : content::desktop_capture::OpenNativePickerCallbackForTesting());
+  if (!enabled) {
+    system_picker_stub_opens = 0;
+    base::AutoLock lock(SystemPickerStubLock());
+    HeldSystemPickerCallbacks().clear();
+  }
+}
+
+int GetSystemPickerStubOpenCount() {
+  return system_picker_stub_opens.load();
+}
 
 class CallbackHolderProbe {
  public:
@@ -124,9 +170,9 @@ v8::Local<v8::Value> SerializeWasmModuleForTesting(
   }
   auto serialized =
       module.As<v8::WasmModuleObject>()->GetCompiledModule().Serialize();
+  const auto bytes = serialized.as_span();
   return node::Buffer::Copy(
-             isolate, reinterpret_cast<const char*>(serialized.buffer.get()),
-             serialized.size)
+             isolate, reinterpret_cast<const char*>(bytes.data()), bytes.size())
       .ToLocalChecked();
 }
 
@@ -636,6 +682,9 @@ void Initialize(v8::Local<v8::Object> exports,
       "commitPendingLocalStateWrites");
   dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
   dict.SetMethod<&TriggerV8FatalError>("triggerV8FatalError");
+  dict.SetMethod<&SetSystemPickerStubForTesting>(
+      "setSystemPickerStubForTesting");
+  dict.SetMethod<&GetSystemPickerStubOpenCount>("getSystemPickerStubOpenCount");
 }
 
 }  // namespace

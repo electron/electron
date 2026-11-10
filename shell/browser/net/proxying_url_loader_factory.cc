@@ -22,6 +22,7 @@
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_info.h"
 #include "net/url_request/redirect_util.h"
+#include "net/url_request/url_request.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
@@ -337,6 +338,14 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
 
   // Deletes |this|.
   factory_->RemoveRequest(network_service_request_id_, request_id_);
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::
+    OnLoaderFailedWithRemoteEndpoint(const net::IPEndPoint& remote_endpoint) {
+  if (info_.has_value() && info_->response_ip.empty() &&
+      !remote_endpoint.address().empty()) {
+    info_->response_ip = remote_endpoint.ToStringWithoutPort();
+  }
 }
 
 bool ProxyingURLLoaderFactory::IsForServiceWorkerScript() const {
@@ -722,6 +731,13 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
     return;
   }
 
+  if (redirect_count_ >= net::URLRequest::kMaxRedirects) {
+    OnRequestError(
+        network::URLLoaderCompletionStatus(net::ERR_TOO_MANY_REDIRECTS));
+    return;
+  }
+  ++redirect_count_;
+
   info_->AddResponseInfoFromResourceResponse(*current_response_);
 
   if (proxied_client_receiver_.is_bound())
@@ -961,6 +977,18 @@ void ProxyingURLLoaderFactory::OnLoaderForCorsPreflightCreated(
 
   result.first->second->OnLoaderCreated(std::move(receiver));
   result.first->second->Restart();
+}
+
+void ProxyingURLLoaderFactory::OnLoaderFailedWithRemoteEndpoint(
+    int32_t request_id,
+    const net::IPEndPoint& remote_endpoint) {
+  auto it = network_request_id_to_web_request_id_.find(request_id);
+  if (it == network_request_id_to_web_request_id_.end())
+    return;
+
+  auto request_it = requests_.find(it->second);
+  CHECK(request_it != requests_.end());
+  request_it->second->OnLoaderFailedWithRemoteEndpoint(remote_endpoint);
 }
 
 ProxyingURLLoaderFactory::~ProxyingURLLoaderFactory() = default;

@@ -133,18 +133,29 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
         epochdate=$(($(date +'%s * 1000 + %-N / 1000000')))
+        # The sqlite3 CLI doesn't wait for locks by default, so the insert can fail
+        # with "database is locked" if tccd has TCC.db open at the same time. Wait
+        # up to 10s for the lock and retry a few times; the insert is idempotent.
+        insert_tccdb () {
+          local dbPath=$1
+          local values=$2
+          shift 2
+          local sqlQuery="BEGIN IMMEDIATE; INSERT OR REPLACE INTO access VALUES($values); COMMIT;"
+          local attempt
+          for attempt in 1 2 3 4 5; do
+            "$@" sqlite3 -cmd ".timeout 10000" "$dbPath" "$sqlQuery" && return 0
+            echo "Failed to update $dbPath (attempt $attempt), retrying in $((attempt * 2))s..."
+            sleep $((attempt * 2))
+          done
+          return 1
+        }
+
         configure_user_tccdb () {
-          local values=$1
-          local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
-          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
-          sqlite3 "$dbPath" "$sqlQuery"
+          insert_tccdb "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "$1"
         }
 
         configure_sys_tccdb () {
-          local values=$1
-          local dbPath="/Library/Application Support/com.apple.TCC/TCC.db"
-          local sqlQuery="INSERT OR REPLACE INTO access VALUES($values);"
-          sudo sqlite3 "$dbPath" "$sqlQuery"
+          insert_tccdb "/Library/Application Support/com.apple.TCC/TCC.db" "$1" sudo
         }
 
         userValuesArray=(
@@ -498,6 +509,11 @@ jobs:
           chown -R :builduser . && chmod -R g+w .
           chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- git config --global --add safe.directory $(pwd)
+          # xvfb-run's default screen, plus -noreset: otherwise Xvfb resets
+          # whenever its last client disconnects and drops connections that
+          # arrive meanwhile, so a spec worker starting just as the others quit
+          # exits with "Missing X server or $DISPLAY" before it is ready.
+          XVFB_RUN=(xvfb-run -s "-screen 0 1280x1024x24 -noreset")
           if [ "$IS_ASAN" == "true" ]; then
             cd ..
             ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
@@ -514,18 +530,18 @@ jobs:
             export ELECTRON_SPEC_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+            runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           elif [ "$IS_UBSAN" == "true" ]; then
             cd ..
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export ELECTRON_SPEC_TIMEOUT=180000
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else
             if [ "$DISPLAY_SERVER" = "wayland" ]; then
               runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
             else
-              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+              runuser -u builduser -- "${XVFB_RUN[@]}" script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
             fi
           fi
         fi
