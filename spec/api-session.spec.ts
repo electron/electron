@@ -218,6 +218,55 @@ describe('session module', () => {
       expect(connections).toBe(0);
     });
 
+    describe('with DevTools request interception', () => {
+      const interceptSubresources = async (
+        w: BrowserWindow,
+        onPaused: (requestId: string) => Promise<unknown>
+      ): Promise<Promise<unknown>[]> => {
+        const commands: Promise<unknown>[] = [];
+        w.webContents.debugger.attach();
+        w.webContents.debugger.on('message', (_event, method, params) => {
+          if (method === 'Fetch.requestPaused') commands.push(onPaused(params.requestId));
+        });
+        await w.webContents.debugger.sendCommand('Fetch.enable', { patterns: [{ urlPattern: `${serverUrl}/*` }] });
+        return commands;
+      };
+
+      it('can fulfill subresource requests', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
+        await w.loadFile(blankPage);
+        const commands = await interceptSubresources(w, (requestId) =>
+          w.webContents.debugger.sendCommand('Fetch.fulfillRequest', {
+            requestId,
+            responseCode: 200,
+            responseHeaders: [{ name: 'Access-Control-Allow-Origin', value: '*' }],
+            body: Buffer.from('intercepted').toString('base64')
+          })
+        );
+        const text = await w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(`${serverUrl}/data`)}).then((r) => r.text())`
+        );
+        await Promise.all(commands);
+        expect(text).toBe('intercepted');
+        expect(connections).toBe(0);
+      });
+
+      it('still blocks subresource requests it continues', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
+        await w.loadFile(blankPage);
+        const commands = await interceptSubresources(w, (requestId) =>
+          w.webContents.debugger.sendCommand('Fetch.continueRequest', { requestId })
+        );
+        const result = await w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(`${serverUrl}/data`)}).then(() => 'ok', (e) => e.name)`
+        );
+        await Promise.all(commands);
+        expect(commands.length).toBe(1);
+        expect(result).toBe('TypeError');
+        expect(connections).toBe(0);
+      });
+    });
+
     it('blocks WebRTC', async () => {
       const stun = dgram.createSocket('udp4');
       let packets = 0;

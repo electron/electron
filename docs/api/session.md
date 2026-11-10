@@ -42,6 +42,10 @@ session's [`webRequest`](web-request.md) listeners still run first, so a listene
 can redirect a network URL to a bundled `file://` or custom-scheme URL before it
 would be blocked.
 
+DevTools request interception, such as `Fetch.fulfillRequest` sent through
+[`webContents.debugger`](web-contents.md#contentsdebugger-readonly), can still
+answer requests locally; requests it continues to the network are blocked.
+
 Only `http:`, `https:`, `ws:` and `wss:` URLs are network requests. `file://`,
 `data:`, `blob:` and `about:` URLs, extension and DevTools pages, and any
 scheme served by a [`protocol.handle`](protocol.md#protocolhandlescheme-handler)

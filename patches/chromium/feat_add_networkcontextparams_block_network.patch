@@ -9,17 +9,19 @@ WebTransport sessions, preconnects, prefetches and host resolutions fail
 with ERR_NETWORK_ACCESS_REVOKED; the raw TCP/UDP, proxy-resolving, P2P and
 mDNS socket interfaces are not bound; and all host mapping is set to
 ^NOTFOUND so code built directly on the URLRequestContext (cert fetching,
-reporting) cannot reach the network either.
+reporting) cannot reach the network either. URL loads are refused in
+network::URLLoaderFactory as well, after any factory override, so DevTools
+request interception can still fulfill requests locally.
 
 Electron uses this to implement sessions created with
 `networkAccess: 'none'`, which must be fully offline regardless of which
 browser-side path created the request.
 
 diff --git a/services/network/cors/cors_url_loader_factory.cc b/services/network/cors/cors_url_loader_factory.cc
-index 6ab28ad68295d1ddcb8071a36c9d7d4523c04a38..f1b39ca424bdf7c1b1851ca5d628b32aa9ba111c 100644
+index 6ab28ad68295d1ddcb8071a36c9d7d4523c04a38..deecee42e87761d1820cc6e4fef002db1c05bc26 100644
 --- a/services/network/cors/cors_url_loader_factory.cc
 +++ b/services/network/cors/cors_url_loader_factory.cc
-@@ -444,11 +444,13 @@ void CorsURLLoaderFactory::CreateLoaderAndStart(
+@@ -444,11 +444,17 @@ void CorsURLLoaderFactory::CreateLoaderAndStart(
      isolation_info_ptr = &isolation_info.value();
    }
  
@@ -29,8 +31,12 @@ index 6ab28ad68295d1ddcb8071a36c9d7d4523c04a38..f1b39ca424bdf7c1b1851ca5d628b32a
 -          *network_restrictions_id_, resource_request.url,
 -          isolation_info_ptr->network_anonymization_key())) {
 +  // Check if the initiator's network access has been restricted, or if the
-+  // whole context is blocked from the network.
-+  if (context_->IsNetworkBlockedForUrl(resource_request.url) ||
++  // whole context is blocked from the network. The latter is skipped with a
++  // factory override (e.g. DevTools interception), which may fulfill the
++  // request locally; anything it continues is refused by
++  // network::URLLoaderFactory.
++  if ((!factory_override_ &&
++       context_->IsNetworkBlockedForUrl(resource_request.url)) ||
 +      (network_restrictions_id_.has_value() &&
 +       !context_->IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
 +           *network_restrictions_id_, resource_request.url,
@@ -304,3 +310,25 @@ index e94a057181d09b5b305cb0106b6cf6476e6b8158..21f04aac91583acbe15e93fc4aef09d0
    // Whether "Compression dictionary transport" feature should be enabled.
    bool shared_dictionary_enabled = false;
  
+diff --git a/services/network/url_loader_factory.cc b/services/network/url_loader_factory.cc
+index f561b9d5cb200ff820842c853e7995cc93953022..8570119ee91781252ea632450a740a65fee53993 100644
+--- a/services/network/url_loader_factory.cc
++++ b/services/network/url_loader_factory.cc
+@@ -209,6 +209,17 @@ void URLLoaderFactory::CreateLoaderAndStartWithSyncClient(
+   // have been rejected at the CorsURLLoader layer.
+   DCHECK(!resource_request.trusted_params || params_->is_trusted);
+ 
++  // Refuse network requests when the whole context is blocked from the
++  // network. CorsURLLoaderFactory already refuses them unless a factory
++  // override (e.g. DevTools interception) is installed; this also covers
++  // requests the override continues to the network.
++  if (context_->IsNetworkBlockedForUrl(resource_request.url)) {
++    mojo::Remote<mojom::URLLoaderClient>(std::move(client))
++        ->OnComplete(
++            URLLoaderCompletionStatus(net::ERR_NETWORK_ACCESS_REVOKED));
++    return;
++  }
++
+   if (resource_request.web_bundle_token_params.has_value() &&
+       resource_request.destination !=
+           network::mojom::RequestDestination::kWebBundle) {
