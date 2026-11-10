@@ -28,10 +28,8 @@ module.exports = async (page, child, snapshotHelper, mode) => {
   const collect = () =>
     evaluate(`
     (async () => {
-      const v8Util = process._linkedBinding('electron_common_v8_util');
-      for (let i = 0; i < 3; ++i) {
-        await v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
-      }
+      const { collectGarbage } = require(${JSON.stringify(snapshotHelper)});
+      await collectGarbage(undefined, 3);
       return process._linkedBinding('electron_common_testing')
         .getLiveCallbackHolderProbeCountForTesting();
     })()

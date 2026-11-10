@@ -142,3 +142,12 @@ export function snapshotContainsRetainingPath(snapshot, retainingPath) {
 export function countRetainingPathNodes(snapshot, retainingPath) {
   return findRetainingPathNodes(snapshot, retainingPath).length;
 }
+
+export async function collectGarbage(until, attempts = until ? 30 : 10) {
+  const v8Util = process._linkedBinding('electron_common_v8_util');
+  for (let i = 0; i < attempts; i++) {
+    await v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
+    if (until?.()) return true;
+  }
+  return !until;
+}
