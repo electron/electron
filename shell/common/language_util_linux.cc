@@ -6,8 +6,11 @@
 
 #include <glib.h>
 
+#include <optional>
+
 #include "base/check.h"
-#include "base/i18n/rtl.h"
+#include "base/i18n/language_tag.h"
+#include "base/i18n/tag_converters.h"
 
 namespace electron {
 
@@ -27,8 +30,14 @@ std::vector<std::string> GetPreferredLanguages() {
   // This loop is the correct way to walk through its return values.
   static constexpr std::string_view CLangName = "C";
   for (; *languages; UNSAFE_BUFFERS(++languages)) {
-    if (CLangName != *languages)
-      preferredLanguages.push_back(base::i18n::GetCanonicalLocale(*languages));
+    if (CLangName == *languages)
+      continue;
+    // Canonicalize the POSIX locale name (e.g. "en_US.UTF-8") to a BCP47
+    // language tag ("en-US"). Entries that cannot be parsed are skipped.
+    std::optional<base::i18n::LanguageTag> tag =
+        base::i18n::GetLanguageTagFromString(*languages);
+    if (tag.has_value())
+      preferredLanguages.emplace_back(tag->tag_string());
   }
 
   return preferredLanguages;
