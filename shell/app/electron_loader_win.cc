@@ -87,7 +87,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
   // electron_runtime.dll. Keep this work off the browser startup thread and
   // below its CPU/I/O priority.
   if (base::CommandLine::ForCurrentProcess()
-          ->GetSwitchValueASCII("type")
+          ->GetSwitchValueASCII(sandbox::policy::switches::kProcessType)
           .empty() &&
       !base::Environment::Create()->HasVar("ELECTRON_RUN_AS_NODE")) {
     const SIZE_T size =
