@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 20 Oct 2026 19:21:05 -0700
+Subject: [M150-LTS] Verify Graphite recording insertion before updating
+ SharedImage cleared state
+
+Currently, when a SharedImage is uninitialized, we record a clear
+command into the Graphite Recorder and immediately mark the SharedImage
+as cleared. However, if the Recording containing the clear fails to be
+inserted into the Graphite Context for any reason, the clear command
+never executes. Since the cleared flag was already updated on the
+SharedImage, Chrome never attempts to clear it again on subsequent
+accesses, causing uninitialized memory reads.
+
+This CL propagates the recording insertion success (by returning a bool
+from FlushGraphiteRecorder and FlushWriteAccess) up to the callsites,
+and defers calling SetCleared() / SetClearedRect() until we know the
+Graphite recording insertion successfully completes.
+
+(cherry picked from commit 872f3f32bf81dfa4efa23352c1741267401ea14f)
+
+Bug: b/497205529
+Change-Id: I78f0028b4a2206985417e588534ef404cdbf8a8b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8102302
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1663118}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8584055
+Owners-Override: Mohamed Omar <mohamedaomar@google.com>
+Reviewed-by: Greg Daniel <egdaniel@google.com>
+Reviewed-by: Mohamed Omar <mohamedaomar@google.com>
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4494}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+Electron adaptation notes (43-x-y): picked as the prerequisite that
+"gpu: Check GL errors before marking CopySharedImage dest cleared"
+(https://chromium-review.googlesource.com/c/chromium/src/+/8530670) was
+written against. This branch already carries cherry-pick-79e5352b5458
+("[webgpu] Check Skia flush success before calling SetCleared") and
+cherry-pick-de4926eaa4d8 ("[skia] Update Ganesh flush calls to
+propagate success"), which land newer versions of the
+shared_context_state.{h,cc}, graphite_utils.cc, raster_decoder.cc and
+webgpu_decoder_impl.cc changes in this CL (bool FlushAndSubmit /
+SubmitIfNecessary, should_clear_shared_image_, Flush(...).fSuccess).
+Those five files were therefore kept as already in tree; only the
+copy_shared_image_helper.cc hunks (success-gated SetClearedRect via
+update_cleared_rect / new_cleared_rect) are applied by this patch.
+
+diff --git a/gpu/command_buffer/service/copy_shared_image_helper.cc b/gpu/command_buffer/service/copy_shared_image_helper.cc
+index 8e913150d605eb939717decfa0182144379ebc41..f06620a05acd16382bac178b72b66307c71558a5 100644
+--- a/gpu/command_buffer/service/copy_shared_image_helper.cc
++++ b/gpu/command_buffer/service/copy_shared_image_helper.cc
+@@ -189,12 +189,12 @@ bool CopyPixelsToTexture(
+ 
+   dest_scoped_access->surface()->writePixels(subset, xoffset, yoffset);
+ 
+-  shared_context_state->FlushWriteAccess(dest_scoped_access);
++  bool success = shared_context_state->FlushWriteAccess(dest_scoped_access);
+   shared_context_state->SubmitIfNecessary(
+       std::move(end_semaphores),
+       dest_scoped_access->NeedGraphiteContextSubmit());
+ 
+-  if (!dest_shared_image->IsCleared()) {
++  if (success && !dest_shared_image->IsCleared()) {
+     dest_shared_image->SetClearedRect(dest_cleared_rect);
+   }
+ 
+@@ -292,14 +292,20 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImage(
+   }
+ 
+   bool need_graphite_submit = dest_scoped_access->NeedGraphiteContextSubmit();
++  bool update_cleared_rect = false;
++  gfx::Rect new_cleared_rect;
++
+   // Flush dest surface and submit if necessary before exiting.
+   absl::Cleanup cleanup = [&]() {
+-    shared_context_state_->FlushWriteAccess(dest_scoped_access.get());
++    bool success =
++        shared_context_state_->FlushWriteAccess(dest_scoped_access.get());
+     shared_context_state_->SubmitIfNecessary(std::move(end_semaphores),
+                                              need_graphite_submit);
++    if (success && update_cleared_rect) {
++      dest_shared_image->SetClearedRect(new_cleared_rect);
++    }
+   };
+ 
+-  gfx::Rect new_cleared_rect;
+   gfx::Rect old_cleared_rect = dest_shared_image->ClearedRect();
+   if (!gles2::TextureManager::CombineAdjacentRects(old_cleared_rect, dest_rect,
+                                                    &new_cleared_rect)) {
+@@ -361,7 +367,7 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImage(
+     }
+ 
+     if (!dest_shared_image->IsCleared()) {
+-      dest_shared_image->SetClearedRect(new_cleared_rect);
++      update_cleared_rect = true;
+     }
+ 
+     // Note, that we still generate error for the client to indicate there was
+@@ -455,20 +461,26 @@ base::expected<void, GLError> CopySharedImageHelper::CopySharedImage(
+       skia::BlitRGBAToYUVA(source_image.get(), yuva_sk_surfaces, yuva_info,
+                            gfx::RectToSkRect(dest_rect), false,
+                            gfx::RectToSkRect(source_rect));
+-      dest_shared_image->SetCleared();
++      new_cleared_rect = gfx::Rect(dest_shared_image->size());
++      update_cleared_rect = true;
+     }
+ 
+     if (!dest_shared_image->IsCleared()) {
+-      dest_shared_image->SetClearedRect(new_cleared_rect);
++      update_cleared_rect = true;
+     }
+   }
+ 
+   // Cancel cleanup as the cleanup order is different here.
+   std::move(cleanup).Cancel();
+-  shared_context_state_->FlushWriteAccess(dest_scoped_access.get());
++  bool success =
++      shared_context_state_->FlushWriteAccess(dest_scoped_access.get());
+   source_scoped_access->ApplyBackendSurfaceEndState();
+   shared_context_state_->SubmitIfNecessary(std::move(end_semaphores),
+                                            need_graphite_submit);
++
++  if (success && update_cleared_rect) {
++    dest_shared_image->SetClearedRect(new_cleared_rect);
++  }
+   return result;
+ }
+ 
+@@ -832,11 +844,12 @@ base::expected<void, GLError> CopySharedImageHelper::WritePixelsYUV(
+     }
+   }
+ 
+-  shared_context_state_->FlushWriteAccess(dest_scoped_access.get());
++  bool success =
++      shared_context_state_->FlushWriteAccess(dest_scoped_access.get());
+   shared_context_state_->SubmitIfNecessary(std::move(end_semaphores),
+                                            need_graphite_submit);
+ 
+-  if (!dest_shared_image->IsCleared()) {
++  if (success && !dest_shared_image->IsCleared()) {
+     if (gl_api) {
+       GLenum error = DrainGLErrors(gl_api);
+       if (error != GL_NO_ERROR) {

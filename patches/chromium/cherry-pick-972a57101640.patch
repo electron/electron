@@ -1,0 +1,267 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Thu, 15 Oct 2026 11:10:32 -0700
+Subject: gpu: Check GL errors before marking passthrough shared image cleared
+
+The passthrough decoder lazily clears uncleared shared images when a
+texture is created for them. Flush pending GL errors into the decoder's
+error state before the clear, and only mark the image cleared if no
+errors were raised and the context was not lost.
+
+Bug: 566384898
+Change-Id: I65f691941291e6ca6de54599bbc337ef5fa4c289
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8526899
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1719864}
+
+Electron adaptation notes (43-x-y): this branch's
+PassthroughResources::SharedImageData::EnsureClear() predates the
+GL_TEXTURE_2D_ARRAY per-layer clearing loop (all_layers_cleared), so
+the final check was ported onto the single-clear code path: the
+glCheckFramebufferStatusEXTFn() == GL_FRAMEBUFFER_COMPLETE result is
+stored in a local `cleared`, which is forced to false when
+impl->FlushErrors() || impl->WasContextLost() reports a driver error
+or context loss, before representation_->SetCleared(). The leading
+FlushErrors()/WasContextLost() guard, the FlushErrors() on failed
+BeginScopedAccess, the const-removal on the impl pointer, the header
+changes (EnsureClear made private, friend declaration) and the
+unittest hunks applied verbatim.
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+index c1e0fac4cc0af3f0b7c25d766e80df8e2a7fa8a2..64eae316ea934065c5569ea499c57489d6332b8a 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+@@ -635,7 +635,7 @@ void PassthroughResources::Destroy(gl::GLApi* api,
+ 
+ PassthroughResources::SharedImageData::SharedImageData() = default;
+ PassthroughResources::SharedImageData::SharedImageData(
+-    const GLES2DecoderPassthroughImpl* impl,
++    GLES2DecoderPassthroughImpl* impl,
+     std::unique_ptr<GLTexturePassthroughImageRepresentation> representation)
+     : representation_(std::move(representation)) {
+   DCHECK(representation_);
+@@ -658,18 +658,27 @@ PassthroughResources::SharedImageData::operator=(SharedImageData&& other) {
+ }
+ 
+ void PassthroughResources::SharedImageData::EnsureClear(
+-    const GLES2DecoderPassthroughImpl* impl) {
++    GLES2DecoderPassthroughImpl* impl) {
+   // To avoid unnessary overhead we don't enable robust initialization on shared
+   // gl context where all shared images are created, so we clear image here if
+   // necessary.
+   if (!representation_->IsCleared()) {
++    // Move any pending errors into the decoder's error state so that only
++    // errors raised while clearing are checked below.
++    impl->FlushErrors();
++    if (impl->WasContextLost()) {
++      return;
++    }
++
+     // Allow uncleared access as we're going to clear the image.
+     auto scoped_access = representation_->BeginScopedAccess(
+         GL_SHARED_IMAGE_ACCESS_MODE_READWRITE_CHROMIUM,
+         SharedImageRepresentation::AllowUnclearedAccess::kYes);
+ 
+-    if (!scoped_access)
++    if (!scoped_access) {
++      impl->FlushErrors();
+       return;
++    }
+ 
+     auto texture = representation_->GetTexturePassthrough();
+     const bool use_oes_draw_buffers_indexed =
+@@ -712,8 +721,16 @@ void PassthroughResources::SharedImageData::EnsureClear(
+     }
+     api->glClearFn(GL_COLOR_BUFFER_BIT);
+ 
+-    if (api->glCheckFramebufferStatusEXTFn(GL_FRAMEBUFFER) ==
+-        GL_FRAMEBUFFER_COMPLETE) {
++    bool cleared = api->glCheckFramebufferStatusEXTFn(GL_FRAMEBUFFER) ==
++                   GL_FRAMEBUFFER_COMPLETE;
++
++    // Don't mark the image cleared if the driver reported an error. Errors
++    // remain in the decoder's error state for the client.
++    if (impl->FlushErrors() || impl->WasContextLost()) {
++      cleared = false;
++    }
++
++    if (cleared) {
+       // Mark the shared image as cleared.
+       representation_->SetCleared();
+     }
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.h b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.h
+index 9716a7424551f4816a7fd35d92ae03712a45a706..d9c62a7017ef9922dab794355c442ff04de62dde 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.h
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.h
+@@ -96,7 +96,7 @@ struct PassthroughResources {
+    public:
+     SharedImageData();
+     explicit SharedImageData(
+-        const GLES2DecoderPassthroughImpl*,
++        GLES2DecoderPassthroughImpl*,
+         std::unique_ptr<GLTexturePassthroughImageRepresentation>);
+     SharedImageData(SharedImageData&& other);
+ 
+@@ -114,8 +114,6 @@ struct PassthroughResources {
+     // even if access is currently suspended.
+     bool is_being_accessed() const { return access_mode_.has_value(); }
+ 
+-    void EnsureClear(const GLES2DecoderPassthroughImpl*);
+-
+     bool BeginAccess(GLenum mode, gl::GLApi* api);
+     void EndAccess();
+ 
+@@ -123,6 +121,8 @@ struct PassthroughResources {
+     void SuspendAccessIfNeeded();
+ 
+    private:
++    void EnsureClear(GLES2DecoderPassthroughImpl*);
++
+     std::unique_ptr<GLTexturePassthroughImageRepresentation> representation_;
+     std::unique_ptr<GLTexturePassthroughImageRepresentation::ScopedAccess>
+         scoped_access_;
+@@ -380,6 +380,8 @@ class GPU_GLES2_EXPORT GLES2DecoderPassthroughImpl
+  private:
+   // Allow unittests to inspect internal state tracking
+   friend class GLES2DecoderPassthroughTestBase;
++  // Uses FlushErrors() to detect failures when clearing shared images.
++  friend class PassthroughResources::SharedImageData;
+ 
+   const char* GetCommandName(unsigned int command_id) const;
+ 
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
+index aabd47d784879d4aa6b36637b1d1a1124062c8ca..afe9deb37470fc0a5261895db1ee2f1bc931418d 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
+@@ -25,7 +25,8 @@ namespace gpu {
+ namespace gles2 {
+ namespace {
+ 
+-std::unique_ptr<TestImageBacking> AllocateTextureAndCreateSharedImage(
++template <typename BackingType = TestImageBacking>
++std::unique_ptr<BackingType> AllocateTextureAndCreateSharedImage(
+     const Mailbox& mailbox,
+     viz::SharedImageFormat format,
+     const gfx::Size& size,
+@@ -41,13 +42,60 @@ std::unique_ptr<TestImageBacking> AllocateTextureAndCreateSharedImage(
+   glTexImage2D(GL_TEXTURE_2D, 0, format_desc.image_internal_format,
+                size.width(), size.height(), 0, format_desc.data_format,
+                format_desc.data_type, nullptr /* data */);
+-  return std::make_unique<TestImageBacking>(
++  return std::make_unique<BackingType>(
+       mailbox,
+       SharedImageInfo(format, size, color_space, surface_origin, alpha_type,
+                       usage, "TestLabel"),
+       0 /* estimated_size */, service_id);
+ }
+ 
++// Representation which raises a GL error when access begins.
++class GLErrorOnAccessRepresentation
++    : public GLTexturePassthroughImageRepresentation {
++ public:
++  GLErrorOnAccessRepresentation(
++      SharedImageManager* manager,
++      SharedImageBacking* backing,
++      MemoryTypeTracker* tracker,
++      std::unique_ptr<GLTexturePassthroughImageRepresentation> inner)
++      : GLTexturePassthroughImageRepresentation(manager, backing, tracker),
++        inner_(std::move(inner)) {}
++
++  const scoped_refptr<TexturePassthrough>& GetTexturePassthrough(
++      size_t plane_index) override {
++    return inner_->GetTexturePassthrough(plane_index);
++  }
++  bool BeginAccess(GLenum mode) override {
++    inner_access_ = inner_->BeginScopedAccess(
++        mode, SharedImageRepresentation::AllowUnclearedAccess::kYes);
++    if (!inner_access_) {
++      return false;
++    }
++    glEnable(GL_NONE);
++    return true;
++  }
++  void EndAccess() override { inner_access_.reset(); }
++
++ private:
++  std::unique_ptr<GLTexturePassthroughImageRepresentation> inner_;
++  std::unique_ptr<GLTexturePassthroughImageRepresentation::ScopedAccess>
++      inner_access_;
++};
++
++class GLErrorOnAccessTestImageBacking : public TestImageBacking {
++ public:
++  using TestImageBacking::TestImageBacking;
++
++ protected:
++  std::unique_ptr<GLTexturePassthroughImageRepresentation>
++  ProduceGLTexturePassthrough(SharedImageManager* manager,
++                              MemoryTypeTracker* tracker) override {
++    return std::make_unique<GLErrorOnAccessRepresentation>(
++        manager, this, tracker,
++        TestImageBacking::ProduceGLTexturePassthrough(manager, tracker));
++  }
++};
++
+ }  // namespace
+ 
+ TEST_F(GLES2DecoderPassthroughTest, CreateAndTexStorage2DSharedImageCHROMIUM) {
+@@ -93,6 +141,58 @@ TEST_F(GLES2DecoderPassthroughTest, CreateAndTexStorage2DSharedImageCHROMIUM) {
+   shared_image.reset();
+ }
+ 
++// The lazy clear of an uncleared shared image succeeds without errors.
++TEST_F(GLES2DecoderPassthroughTest,
++       CreateAndTexStorage2DSharedImageCHROMIUMClearsImage) {
++  MemoryTypeTracker memory_tracker(nullptr);
++  Mailbox mailbox = Mailbox::Generate();
++  auto backing = AllocateTextureAndCreateSharedImage(
++      mailbox, viz::SinglePlaneFormat::kRGBA_8888, gfx::Size(10, 10),
++      gfx::ColorSpace(), kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType,
++      {SHARED_IMAGE_USAGE_GLES2_READ, SHARED_IMAGE_USAGE_GLES2_WRITE});
++  TestImageBacking* backing_ptr = backing.get();
++  EXPECT_FALSE(backing_ptr->IsCleared());
++  std::unique_ptr<SharedImageRepresentationFactoryRef> shared_image =
++      GetSharedImageManager()->Register(std::move(backing), &memory_tracker);
++
++  auto& cmd = *GetImmediateAs<
++      cmds::CreateAndTexStorage2DSharedImageINTERNALImmediate>();
++  cmd.Init(kNewClientId, mailbox.name);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailbox.name)));
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++  EXPECT_TRUE(backing_ptr->IsCleared());
++
++  DoDeleteTexture(kNewClientId);
++  shared_image.reset();
++}
++
++// A GL error raised during the lazy clear of a shared image must leave the
++// image uncleared, and the error must still be reported to the client.
++TEST_F(GLES2DecoderPassthroughTest,
++       CreateAndTexStorage2DSharedImageCHROMIUMClearError) {
++  MemoryTypeTracker memory_tracker(nullptr);
++  Mailbox mailbox = Mailbox::Generate();
++  auto backing =
++      AllocateTextureAndCreateSharedImage<GLErrorOnAccessTestImageBacking>(
++          mailbox, viz::SinglePlaneFormat::kRGBA_8888, gfx::Size(10, 10),
++          gfx::ColorSpace(), kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType,
++          {SHARED_IMAGE_USAGE_GLES2_READ, SHARED_IMAGE_USAGE_GLES2_WRITE});
++  TestImageBacking* backing_ptr = backing.get();
++  EXPECT_FALSE(backing_ptr->IsCleared());
++  std::unique_ptr<SharedImageRepresentationFactoryRef> shared_image =
++      GetSharedImageManager()->Register(std::move(backing), &memory_tracker);
++
++  auto& cmd = *GetImmediateAs<
++      cmds::CreateAndTexStorage2DSharedImageINTERNALImmediate>();
++  cmd.Init(kNewClientId, mailbox.name);
++  EXPECT_EQ(error::kNoError, ExecuteImmediateCmd(cmd, sizeof(mailbox.name)));
++  EXPECT_EQ(GL_INVALID_ENUM, GetGLError());
++  EXPECT_FALSE(backing_ptr->IsCleared());
++
++  DoDeleteTexture(kNewClientId);
++  shared_image.reset();
++}
++
+ TEST_F(GLES2DecoderPassthroughTest,
+        CreateAndTexStorage2DSharedImageCHROMIUMInvalidMailbox) {
+   // Attempt to use an invalid mailbox.
