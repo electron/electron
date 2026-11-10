@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 42d400b35bf83ddb75092c9398b5882e561dbba3..4d765f7ce375d5f3ef764a68bd3eb51c6c007216 100644
+index 76fb572811d0984f38ed2a4aaec34db7bb3e3b45..a3dcaa2bcab50eeb82c0b1360cdaf71faf7edb68 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1170,6 +1170,7 @@ component("base") {
@@ -137,7 +137,7 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 97dc414e4f834185420ec4ef92eb159f0e33d082..80977e3c7a83183895f04296dedb439d3c28900c 100644
+index c47476ec63b0292d2a1348b463c3ece421433a09..2fde0dde04c8f6273bda19087e15c8de83dccc28 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 @@ -1039,6 +1039,7 @@ if (is_clang_or_gcc) {
@@ -908,10 +908,10 @@ index 1d8cd051aedd7f5cc8d472ea37a75ba5a7dc403d..763a8f7def6e0f80c58d8980187ca536
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 8c421bcd0f996754ad50e035df662dc8a61ccd46..c87ef5d09798c1ce14cd23e4715bf48c6264c7c2 100644
+index 9f7515d0ea18739b2a6ceff2c0bca88fe543593f..a0440645e8204f2482d0eae80a453f021e14ab2b 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -390,6 +390,7 @@ viz_component("service") {
+@@ -392,6 +392,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -919,7 +919,7 @@ index 8c421bcd0f996754ad50e035df662dc8a61ccd46..c87ef5d09798c1ce14cd23e4715bf48c
    }
  
    if (is_ios) {
-@@ -751,6 +752,7 @@ viz_source_set("unit_tests") {
+@@ -754,6 +755,7 @@ viz_source_set("unit_tests") {
        "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d01f7c999537413650c63bb1d22b48b0c81862ef..c545dc8766a890e84a9e85a3dc31f1641fc2af81 100644
+index 3f407a2cc55cfcf1da61fb994c7dd3eef9573174..3668e97efdc18766ff9bf15b086e085a12888867 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -651,6 +651,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index d01f7c999537413650c63bb1d22b48b0c81862ef..c545dc8766a890e84a9e85a3dc31f164
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3463,6 +3467,7 @@ test("content_unittests") {
+@@ -3462,6 +3466,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2077,10 +2077,10 @@ index 841621b8af7ab427ca85c7bf0b22478179d6711d..2197fa9c54da72f039458dfbd68ad8ea
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index f0850f8dd184571bf1c3f7a5e26c6b719c6c1925..a74ebc91c325addedec9209cc3729949d061d518 100644
+index 7361f529c65a7e3da05324b01525ed5fc6eb3358..66671f4adb2f2f6e45e9bdc8a96c75dd50601509 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -300,6 +300,7 @@ component("platform") {
+@@ -296,6 +296,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]
