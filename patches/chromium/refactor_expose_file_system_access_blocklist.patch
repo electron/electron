@@ -16,8 +16,11 @@ As of 159.0.8129.0, it also carries the Vim startup rules (~/.vim, ~/vimfiles,
 ~/.vimrc, ~/_vimrc, ~/.gvimrc, ~/_gvimrc, ~/.exrc and ~/_exrc) and the .mvn
 kBlockWrite suffix rule added upstream in that version.
 
+As of 159.0.8153.0, it also carries the legacy ~/.fontconfig and ~/.fonts
+rules on Linux added upstream in that version.
+
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 7d3717f7b19f24e119455f16aff715aedc09090f..d7cb2caec97c3f4d050fbba14e452e4cf6908025 100644
+index 7d3717f7b19f24e119455f16aff715aedc09090f..94f83051b1329fc8d89f23e9578b4504af2eefcd 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -42,7 +45,7 @@ index 7d3717f7b19f24e119455f16aff715aedc09090f..d7cb2caec97c3f4d050fbba14e452e4c
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -474,6 +478,349 @@ class ChromeFileSystemAccessPermissionContext
+@@ -474,6 +478,356 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -320,6 +323,13 @@ index 7d3717f7b19f24e119455f16aff715aedc09090f..d7cb2caec97c3f4d050fbba14e452e4c
 +                                  BlockType::kBlockAllChildren),
 +        BlockPath::CreateRelative(base::DIR_HOME,
 +                                  FILE_PATH_LITERAL(".fonts.conf.d"),
++                                  BlockType::kBlockAllChildren),
++        // Block the legacy per-user fontconfig cache and font directories. The
++        // current locations are under ~/.cache and ~/.local/share.
++        BlockPath::CreateRelative(base::DIR_HOME,
++                                  FILE_PATH_LITERAL(".fontconfig"),
++                                  BlockType::kBlockAllChildren),
++        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".fonts"),
 +                                  BlockType::kBlockAllChildren),
 +        // Block the per-user NSS database, see crbug.com/557367241.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".pki"),

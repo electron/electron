@@ -26,6 +26,7 @@
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_rewriter.mojom.h"
+#include "third_party/blink/public/mojom/ai/ai_semantic_embedder.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_summarizer.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_writer.mojom.h"
 #include "url/gurl.h"
@@ -571,6 +572,7 @@ void UtilityAIManager::CreateDecisionModel(
 }
 
 void UtilityAIManager::CanCreateSemanticEmbedder(
+    blink::mojom::AISemanticEmbedderCreateOptionsPtr options,
     CanCreateSemanticEmbedderCallback callback) {
   std::move(callback).Run(
       blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
@@ -579,8 +581,14 @@ void UtilityAIManager::CanCreateSemanticEmbedder(
 void UtilityAIManager::CreateSemanticEmbedder(
     mojo::PendingRemote<blink::mojom::AIManagerCreateSemanticEmbedderClient>
         client,
+    blink::mojom::AISemanticEmbedderCreateOptionsPtr options,
     mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
+}
+
+void UtilityAIManager::GetSupportedEmbeddingSpaces(
+    GetSupportedEmbeddingSpacesCallback callback) {
+  std::move(callback).Run({});
 }
 
 }  // namespace electron
