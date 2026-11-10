@@ -38,7 +38,7 @@ index 7a6b17291f0f6686e9f266ae658e950c652c9444..8a80ce70859096a9764bf88206938fdf
    if (command_line->HasSwitch(switches::kUseFakeNativeScreenCapturePicker)) {
      // The optional switch value filters the browser window by title.
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index f5ae612041759a1623314bafac908bacb4136c86..703bf8fab5c31f77aa52b7c195e1770922f96fb1 100644
+index ad5109ef18fc48839a213ee2f94ecb81dcf3458f..66f09ddac188bb3e98de43aab85b581887bf0326 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 @@ -185,7 +185,8 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(

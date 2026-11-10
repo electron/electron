@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index 40fe63ee0085f8f383aac97eadade8a1dd791c85..af2693d1338b61f15a002bd3acd1d537dc70f171 100644
+index 8889ecb5136428c9eeb007243fba474fa4dd9738..76e32e0b98a136f1a8966c67ef3e214a924521ae 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2867,6 +2867,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2853,6 +2853,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,7 +33,7 @@ index 40fe63ee0085f8f383aac97eadade8a1dd791c85..af2693d1338b61f15a002bd3acd1d537
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 731d39546a8686471330034855d9f1568198578c..b398d616db1052aa321dd5f103a3a41ccdbd5173 100644
+index 2947c3db3e8898d49d9f1bf2d66d9f461b4dce51..490eab5e6d6ef6f1778b6856726a6f1574db5dd7 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -870,6 +870,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
@@ -51,7 +51,7 @@ index 731d39546a8686471330034855d9f1568198578c..b398d616db1052aa321dd5f103a3a41c
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4a0bd8dfb81a46da41b5b21ba28212f3fcd79d79..48b02f310a9d2b26a070e97581784434363358a4 100644
+index 04887a8dcc5343adb4ad37446d159fefed4b9635..fea0f0f7750accef47e88676dcee26ad76be492e 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1348,6 +1348,17 @@ class CONTENT_EXPORT ContentBrowserClient {
