@@ -15,6 +15,7 @@
 #include "base/threading/platform_thread.h"
 #include "base/win/pe_image.h"
 #include "content/public/app/sandbox_helper_win.h"
+#include "electron/electron_version.h"
 #include "electron/fuses.h"
 #include "sandbox/policy/switches.h"
 #include "shell/app/electron_runtime_win.h"
@@ -101,5 +102,5 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
   }
 
   return main_entry(instance, InitializeRuntimeSandboxInfo,
-                    electron::fuses::kFuseWire);
+                    electron::fuses::kFuseWire, ELECTRON_VERSION_STRING);
 }

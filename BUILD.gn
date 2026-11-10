@@ -1831,6 +1831,7 @@ if (is_mac) {
       ]
       include_dirs = [ "." ]
       deps = electron_app_link_deps + [
+               ":electron_version_header",
                ":packed_resources",
                "//chrome/app:exit_code_watcher",
                "//components/crash/core/app:run_as_crashpad_handler",
@@ -1868,6 +1869,7 @@ if (is_mac) {
       ":electron_app_manifest",
       ":electron_fuses",
       ":electron_runtime_exports",
+      ":electron_version_header",
       ":electron_win32_resources",
       "//base",
       "//content:sandbox_helper_win",

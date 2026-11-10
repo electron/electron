@@ -170,5 +170,23 @@ ifdescribe(process.platform === 'win32')('Windows runtime DLL', { timeout: 12000
       expect(result.status).toBe(127); // ERROR_PROC_NOT_FOUND
       expect(result.stderr).toContain('Unable to find Electron runtime entry point');
     });
+
+    it('rejects a runtime DLL from a different Electron version', () => {
+      const data = fs.readFileSync(executable);
+      const version = Buffer.from(`${process.versions.electron}\0`);
+      const offset = data.indexOf(version);
+      expect(offset).toBeGreaterThanOrEqual(0);
+      expect(data.indexOf(version, offset + 1)).toBe(-1);
+
+      // Change the launcher's embedded version without changing its length.
+      data[offset] = data[offset] === 0x31 ? 0x32 : 0x31;
+      const mismatchedExecutable = path.join(tempDir, 'mismatched.exe');
+      fs.writeFileSync(mismatchedExecutable, data);
+
+      const result = spawnSync(mismatchedExecutable, ['--version'], { encoding: 'utf8', timeout: 30000 });
+      expect(result.error).toBe(undefined);
+      expect(result.status).toBe(1306); // ERROR_REVISION_MISMATCH
+      expect(result.stderr).toContain('Electron executable and runtime DLL versions do not match');
+    });
   });
 });

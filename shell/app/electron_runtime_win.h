@@ -16,7 +16,8 @@ namespace electron {
 using InitializeSandboxInfoCallback = void (*)(sandbox::SandboxInterfaceInfo*);
 using RuntimeMain = int (*)(HINSTANCE,
                             InitializeSandboxInfoCallback,
-                            const volatile char*);
+                            const volatile char*,
+                            const char*);
 
 }  // namespace electron
 
