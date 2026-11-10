@@ -384,6 +384,16 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
 #if BUILDFLAG(IS_LINUX)
   JoinSystemFontConfigInit();
+  dbus_thread_linux::Initialize(base::BindRepeating(&ExitOnSessionLoss));
+
+  // Must exist before the main script runs, since it may register a
+  // powerMonitor "shutdown" handler.
+  session_end_listener_ = std::make_unique<SessionEndListenerLinux>(
+      dbus_thread_linux::GetSharedSystemBus(),
+      dbus_thread_linux::GetSharedSessionBus(), base::BindRepeating([] {
+        if (auto* browser = Browser::Get())
+          browser->Quit();
+      }));
 #endif
 
   // Load everything.
@@ -677,15 +687,6 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       base::BindOnce(&ExitOnSessionLoss),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
-  dbus_thread_linux::Initialize(base::BindRepeating(&ExitOnSessionLoss));
-
-  session_end_listener_ = std::make_unique<SessionEndListenerLinux>(
-      dbus_thread_linux::GetSharedSystemBus(),
-      dbus_thread_linux::GetSharedSessionBus(),
-      base::RepeatingCallback<bool()>(), base::BindRepeating([] {
-        if (auto* browser = Browser::Get())
-          browser->Quit();
-      }));
 
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();

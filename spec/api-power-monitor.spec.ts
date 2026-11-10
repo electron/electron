@@ -260,6 +260,41 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
             dbusMockPowerMonitor.off('shutdown', preventDefault);
           }
         });
+
+        it('should handle "shutdown" registered while the main script runs', async () => {
+          const preventDefault = (event: Electron.Event) => event.preventDefault();
+          // This process has a powerMonitor too, so it would quit as well.
+          dbusMockPowerMonitor.on('shutdown', preventDefault);
+          try {
+            const callsBefore = (await getCalls()).length;
+            // Registered at the top level of the app's main script, before the
+            // app is ready.
+            const bootEval =
+              'require("electron").powerMonitor.on("shutdown", (event) => { event.preventDefault(); globalThis.sawShutdown = true; })';
+            const remoteApp = await startRemoteControlApp([`--boot-eval=${bootEval}`]);
+            let calls: any[] = [];
+            for (let retries = 3; retries > 0; retries--) {
+              calls = await getCalls();
+              if (calls.length >= callsBefore + 2) break;
+              await setTimeout(1000);
+            }
+            expect(calls).toHaveLength(callsBefore + 2);
+            emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', true]]);
+            let sawShutdown = false;
+            for (let retries = 20; retries > 0 && !sawShutdown; retries--) {
+              await setTimeout(100);
+              try {
+                sawShutdown = await remoteApp.remoteEval('globalThis.sawShutdown === true');
+              } catch {
+                // The app quit instead of handling the event.
+                break;
+              }
+            }
+            expect(sawShutdown).toBe(true);
+          } finally {
+            dbusMockPowerMonitor.off('shutdown', preventDefault);
+          }
+        });
       });
     }
   );

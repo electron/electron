@@ -39,11 +39,9 @@ namespace electron {
 SessionEndListenerLinux::SessionEndListenerLinux(
     scoped_refptr<dbus::Bus> system_bus,
     scoped_refptr<dbus::Bus> session_bus,
-    base::RepeatingCallback<bool()> should_quit,
     base::RepeatingClosure on_quit)
     : system_bus_(std::move(system_bus)),
       session_bus_(std::move(session_bus)),
-      should_quit_(std::move(should_quit)),
       on_quit_(std::move(on_quit)) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   ConnectToLogind();

@@ -50,7 +50,6 @@ class SessionEndListenerLinux {
 
   SessionEndListenerLinux(scoped_refptr<dbus::Bus> system_bus,
                           scoped_refptr<dbus::Bus> session_bus,
-                          base::RepeatingCallback<bool()> should_quit,
                           base::RepeatingClosure on_quit);
   ~SessionEndListenerLinux();
 

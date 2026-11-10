@@ -105,7 +105,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
 
 #if BUILDFLAG(IS_LINUX)
-  // Null when the D-Bus buses are unavailable.
+  // Null until PostEarlyInitialization() creates the listener.
   static SessionEndListenerLinux* GetSessionEndListener();
 #endif
 
