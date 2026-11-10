@@ -65,20 +65,20 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
       executable_dir.Append(FILE_PATH_LITERAL("electron_runtime.dll"));
 
   // Keep the runtime loaded through CRT shutdown, including addon destructors.
-  HMODULE runtime = ::LoadLibraryExW(
+  const HMODULE runtime = ::LoadLibraryExW(
       runtime_path.value().c_str(), nullptr,
       LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
   if (!runtime) {
-    DWORD error = ::GetLastError();
+    const DWORD error = ::GetLastError();
     PLOG(ERROR) << "Unable to load Electron runtime at " << runtime_path
                 << "; ship electron_runtime.dll beside the executable";
     return static_cast<int>(error);
   }
 
-  auto main_entry = reinterpret_cast<electron::RuntimeMain>(
+  const auto main_entry = reinterpret_cast<electron::RuntimeMain>(
       ::GetProcAddress(runtime, "ElectronMain"));
   if (!main_entry) {
-    DWORD error = ::GetLastError();
+    const DWORD error = ::GetLastError();
     PLOG(ERROR) << "Unable to find Electron runtime entry point";
     return static_cast<int>(error);
   }
