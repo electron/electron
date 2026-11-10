@@ -23,7 +23,7 @@ const snapshotHolder =
   process.platform === 'darwin'
     ? path.resolve(process.execPath, '../../Frameworks/Electron Framework.framework/Versions/A/Electron Framework')
     : process.platform === 'win32'
-      ? path.join(outDir, 'main.dll')
+      ? path.join(outDir, 'electron_runtime.dll')
       : process.execPath;
 
 ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', () => {

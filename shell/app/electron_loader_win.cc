@@ -61,7 +61,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
   if (!base::PathService::Get(base::DIR_EXE, &executable_dir))
     return ERROR_PATH_NOT_FOUND;
   const base::FilePath runtime_path =
-      executable_dir.Append(FILE_PATH_LITERAL("main.dll"));
+      executable_dir.Append(FILE_PATH_LITERAL("electron_runtime.dll"));
 
   // Keep the runtime loaded through CRT shutdown, including addon destructors.
   HMODULE runtime = ::LoadLibraryExW(
@@ -81,8 +81,9 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
     return static_cast<int>(error);
   }
 
-  // Preread the loaded image without mapping a second copy of main.dll. Keep
-  // this work off the browser startup thread and below its CPU/I/O priority.
+  // Preread the loaded image without mapping a second copy of
+  // electron_runtime.dll. Keep this work off the browser startup thread and
+  // below its CPU/I/O priority.
   if (base::CommandLine::ForCurrentProcess()
           ->GetSwitchValueASCII("type")
           .empty() &&

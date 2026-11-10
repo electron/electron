@@ -87,11 +87,11 @@ for the Windows `NUL` device workaround.
 
 ### Behavior Changed: `app.getPath('module')` returns the DLL path on Windows
 
-On Windows, `app.getPath('module')` now returns the path to `main.dll` instead
+On Windows, `app.getPath('module')` now returns the path to `electron_runtime.dll` instead
 of the application EXE. Use `app.getPath('exe')` or `process.execPath` if your
 application needs the executable path.
 
-Windows distributions now include `main.dll` alongside the EXE. Custom
+Windows distributions now include `electron_runtime.dll` alongside the EXE. Custom
 packaging, signing, and update workflows must include this file.
 
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child

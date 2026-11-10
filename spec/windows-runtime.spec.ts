@@ -82,7 +82,7 @@ function readPeExports(file: string): Map<string, string | null> {
 
 ifdescribe(process.platform === 'win32')('Windows runtime DLL', { timeout: 120000 }, () => {
   it('preserves named runtime exports with explicit direct-export exceptions', () => {
-    const runtimeExports = readPeExports(path.join(path.dirname(process.execPath), 'main.dll'));
+    const runtimeExports = readPeExports(path.join(path.dirname(process.execPath), 'electron_runtime.dll'));
     const executableExports = readPeExports(process.execPath);
     // These must use the EXE's static dependencies, not the DLL's separate state.
     const requiredDirectExports = readDirectExports(path.join(import.meta.dirname, '..', 'build', 'electron.def'));
@@ -97,7 +97,7 @@ ifdescribe(process.platform === 'win32')('Windows runtime DLL', { timeout: 12000
     }
     for (const name of runtimeExports.keys()) {
       if (!requiredDirectExports.has(name)) {
-        expect(executableExports.get(name), name).toBe(`main.${name}`);
+        expect(executableExports.get(name), name).toBe(`electron_runtime.${name}`);
       }
     }
   });
@@ -161,7 +161,10 @@ ifdescribe(process.platform === 'win32')('Windows runtime DLL', { timeout: 12000
       const missingEntryExecutable = path.join(directory, 'electron.exe');
       fs.copyFileSync(executable, missingEntryExecutable);
       // Use a valid system DLL that does not export ElectronMain.
-      fs.copyFileSync(path.join(process.env.SystemRoot!, 'System32', 'version.dll'), path.join(directory, 'main.dll'));
+      fs.copyFileSync(
+        path.join(process.env.SystemRoot!, 'System32', 'version.dll'),
+        path.join(directory, 'electron_runtime.dll')
+      );
       const result = spawnSync(missingEntryExecutable, ['-v'], { encoding: 'utf8', timeout: 30000 });
       expect(result.error).toBe(undefined);
       expect(result.status).toBe(127); // ERROR_PROC_NOT_FOUND

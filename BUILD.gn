@@ -1822,7 +1822,7 @@ if (is_mac) {
 
   if (is_win) {
     shared_library("electron_runtime") {
-      output_name = "main"
+      output_name = "electron_runtime"
       sources = [
         "$target_gen_dir/win-resources/electron.rc",
         "shell/app/electron_main_win.cc",
@@ -1856,7 +1856,7 @@ if (is_mac) {
       script = "script/generate-runtime-exports.py"
       deps = [ ":electron_runtime" ]
       inputs = [
-        "$root_out_dir/main.dll",
+        "$root_out_dir/electron_runtime.dll",
         "build/electron.def",
       ]
       outputs = [ "$target_gen_dir/electron_runtime.def" ]
@@ -2024,7 +2024,7 @@ if (is_mac) {
 
     if (is_win) {
       extract_symbols("electron_runtime_symbols") {
-        binary = "$root_out_dir/main.dll"
+        binary = "$root_out_dir/electron_runtime.dll"
         symbol_dir = "$root_out_dir/breakpad_symbols"
         deps = [ ":electron_runtime" ]
       }
