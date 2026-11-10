@@ -1,0 +1,538 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Mon, 5 Oct 2026 18:11:30 -0700
+Subject: [dawn][vk] Allow querying and filtering on Vulkan device/driver
+ UUIDs.
+
+Two new chained structs are added in VulkanBackend.h (because it is not
+possible to declare a uint8_t[VK_UUID_SIZE] in dawn.json), with
+additions to ChainUtilsImpl and tests.
+
+ - AdapterPropertierVulkanUUIDs returns the device/driver UUIDs when
+   chained in an AdapterInfo.
+ - RequestAdapterOptionsVulkanUUIDs filters the returned adapters to
+   return only the ones with matching device/driver UUIDs.
+
+Other small changes are:
+
+ - ChainUtils.h STypeFor is fixed to support extensions in ChainUtilsImpl
+   for out structs.
+ - VulkanDeviceInfo member names are aligned to all end with
+   "Properties".
+
+Bug: 563358700
+Change-Id: I19231b0a77f97e3d62ffcaa6eed32d609c099427
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/347715
+Reviewed-by: Loko Kung <lokokung@google.com>
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+
+diff --git a/docs/dawn/features/adapter_options.md b/docs/dawn/features/adapter_options.md
+index 403c4dbeeb868e477d131626d3005769c138d0b1..9d2916a6c6ba95836a024dc783ea6b2cdfd5a380 100644
+--- a/docs/dawn/features/adapter_options.md
++++ b/docs/dawn/features/adapter_options.md
+@@ -38,6 +38,10 @@ When discovering adapters on D3D11 and D3D12, Dawn only discovers adapters match
+ 
+ When discovering adapter on D3D11, Dawn creates an adapter matching the provided `RequestAdapterOptionsD3D11Device::device`, and `wgpu::Device` created from the adapter will share the same D3D11 device from `RequestAdapterOptionsD3D11Device::device`. This extension struct does nothing on other backends.
+ 
++### `RequestAdapterOptionsVulkanUUIDs`
++
++When discovering adapters on Vulkan, Dawn only discovers adapters matching the provided `RequestAdapterOptionsVulkanUUIDs::driverUUID/deviceUUID`. This extension struct does nothing on other backends.
++
+ ### `DawnTogglesDescriptor`
+ 
+ When discovering adapters, Dawn will use chained `DawnTogglesDescriptor` as required adapter
+diff --git a/docs/dawn/features/adapter_properties.md b/docs/dawn/features/adapter_properties.md
+index bb1db542a409b813b7e7ab13168535a2dbc419e6..d70edb563eeda2182255cf64209350bee6240b14 100644
+--- a/docs/dawn/features/adapter_properties.md
++++ b/docs/dawn/features/adapter_properties.md
+@@ -60,6 +60,15 @@ struct AdapterPropertiesVk {
+ };
+ ```
+ 
++Likewise `dawn::native::vulkan::AdapterPropertiesVulkanUUIDs` may be chained on `wgpu::AdapterInfo` to query the following:
++
++```
++struct AdapterPropertiesVulkanUUIDs {
++    std::array<uint8_t, VK_UUID_SIZE> deviceUUID;
++    std::array<uint8_t, VK_UUID_SIZE> driverUUID;
++};
++```
++
+ ## WebGPU
+ 
+ `wgpu::FeatureName::AdapterPropertiesWGPU` allows querying inner backend information of the WebGPUBackend from the adapter.
+diff --git a/generator/templates/dawn/native/ChainUtils.h b/generator/templates/dawn/native/ChainUtils.h
+index 9df9024c8330bd12cb1bbb3f21be29627de33b73..4cd8a23d6a638f9a6749d5f7d2877cd6c9e58e4f 100644
+--- a/generator/templates/dawn/native/ChainUtils.h
++++ b/generator/templates/dawn/native/ChainUtils.h
+@@ -93,6 +93,8 @@ struct UnpackedPtrChain<AdditionalExtensionsList<Additionals...>, Ts...> {
+ template <typename T>
+ constexpr inline wgpu::SType STypeFor = detail::STypeForImpl<T>;
+ template <typename T>
++constexpr inline wgpu::SType STypeFor<T*> = detail::STypeForImpl<T>;
++template <typename T>
+ constexpr inline wgpu::SType STypeFor<const T*> = detail::STypeForImpl<T>;
+ 
+ }  // namespace {{native_namespace}}
+diff --git a/include/dawn/native/VulkanBackend.h b/include/dawn/native/VulkanBackend.h
+index 355c4b8646cd3fd1b5aca1ff3e0762f4f30fc97b..d21766e671c96227b0ddf71248f0f37538ca685d 100644
+--- a/include/dawn/native/VulkanBackend.h
++++ b/include/dawn/native/VulkanBackend.h
+@@ -41,6 +41,22 @@ DAWN_NATIVE_EXPORT VkInstance GetInstance(WGPUDevice device);
+ 
+ DAWN_NATIVE_EXPORT PFN_vkVoidFunction GetInstanceProcAddr(WGPUDevice device, const char* pName);
+ 
++// Can be chained in WGPURequestAdapterOptions
++struct DAWN_NATIVE_EXPORT RequestAdapterOptionsVulkanUUIDs : wgpu::ChainedStruct {
++    RequestAdapterOptionsVulkanUUIDs();
++
++    std::array<uint8_t, VK_UUID_SIZE> deviceUUID = {};
++    std::array<uint8_t, VK_UUID_SIZE> driverUUID = {};
++};
++
++// Can be chained in WGPUAdapterInfo
++struct DAWN_NATIVE_EXPORT AdapterPropertiesVulkanUUIDs : wgpu::ChainedStructOut {
++    AdapterPropertiesVulkanUUIDs();
++
++    std::array<uint8_t, VK_UUID_SIZE> deviceUUID = {};
++    std::array<uint8_t, VK_UUID_SIZE> driverUUID = {};
++};
++
+ enum class NeedsDedicatedAllocation {
+     Yes,
+     No,
+diff --git a/src/dawn/dawn.json b/src/dawn/dawn.json
+index 27d3aca937afefdcc0256521a209ed2c47fc0e98..610239bead17154525797dc3bd03002e2712ac6c 100644
+--- a/src/dawn/dawn.json
++++ b/src/dawn/dawn.json
+@@ -4235,7 +4235,9 @@
+             {"value": 81, "name": "adapter properties drm", "tags": ["dawn", "native"]},
+             {"value": 82, "name": "render bundle encoder resource table", "tags": ["dawn"]},
+             {"value": 83, "name": "dawn shader source SPIRV", "tags": ["dawn"]},
+-            {"value": 84, "name": "shared buffer memory host pointer descriptor", "tags": ["dawn", "native"]}
++            {"value": 84, "name": "shared buffer memory host pointer descriptor", "tags": ["dawn", "native"]},
++            {"value": 85, "name": "request adapter options vulkan UUIDs", "tags": ["dawn", "native"]},
++            {"value": 86, "name": "adapter properties vulkan UUIDs", "tags": ["dawn", "native"]}
+         ]
+     },
+     "texture": {
+diff --git a/src/dawn/native/Adapter.cpp b/src/dawn/native/Adapter.cpp
+index 2274cb737edb011f44519689b3bd03092095ccb3..a166d519668f44c11048f6bca8313ae250fee3f1 100644
+--- a/src/dawn/native/Adapter.cpp
++++ b/src/dawn/native/Adapter.cpp
+@@ -172,6 +172,9 @@ ResultOrValError<UnpackedPtr<AdapterInfo>> AdapterBase::ValidateGetInfo(AdapterI
+     DAWN_INVALID_IF(unpacked.Has<AdapterPropertiesVk>() &&
+                         !mSupportedFeatures.IsEnabled(wgpu::FeatureName::AdapterPropertiesVk),
+                     "Feature AdapterPropertiesVk is not available.");
++    DAWN_INVALID_IF(unpacked.Has<vulkan::AdapterPropertiesVulkanUUIDs>() &&
++                        !mSupportedFeatures.IsEnabled(wgpu::FeatureName::AdapterPropertiesVk),
++                    "Feature AdapterPropertiesVk is not available.");
+     DAWN_INVALID_IF(unpacked.Has<AdapterPropertiesDrm>() &&
+                         !mSupportedFeatures.IsEnabled(wgpu::FeatureName::AdapterPropertiesDrm),
+                     "Feature AdapterPropertiesDrm is not available.");
+diff --git a/src/dawn/native/ChainUtilsImpl.inl b/src/dawn/native/ChainUtilsImpl.inl
+index e989813d8c22b0c850fb42522e734dfb0b460265..bb3de2f3e8554ca8314a408af719370064866229 100644
+--- a/src/dawn/native/ChainUtilsImpl.inl
++++ b/src/dawn/native/ChainUtilsImpl.inl
+@@ -52,11 +52,22 @@ struct RequestAdapterOptionsAngleVirtualizationGroup;
+ }
+ 
+ namespace vulkan {
++struct AdapterPropertiesVulkanUUIDs;
++struct RequestAdapterOptionsVulkanUUIDs;
+ struct YCbCrVulkanDescriptor;
+ }
+ 
+ namespace detail {
+ 
++template <>
++constexpr inline wgpu::SType STypeForImpl<vulkan::AdapterPropertiesVulkanUUIDs> =
++    wgpu::SType(WGPUSType_AdapterPropertiesVulkanUUIDs);
++
++template <>
++struct AdditionalExtensions<AdapterInfo> {
++    using List = AdditionalExtensionsList<vulkan::AdapterPropertiesVulkanUUIDs*>;
++};
++
+ template <>
+ constexpr inline wgpu::SType STypeForImpl<DawnInstanceDescriptor> =
+     wgpu::SType(WGPUSType_DawnInstanceDescriptor);
+@@ -82,12 +93,17 @@ template <>
+ constexpr inline wgpu::SType STypeForImpl<opengl::RequestAdapterOptionsAngleVirtualizationGroup> =
+     wgpu::SType(WGPUSType_RequestAdapterOptionsAngleVirtualizationGroup);
+ 
++template <>
++constexpr inline wgpu::SType STypeForImpl<vulkan::RequestAdapterOptionsVulkanUUIDs> =
++    wgpu::SType(WGPUSType_RequestAdapterOptionsVulkanUUIDs);
++
+ template <>
+ struct AdditionalExtensions<RequestAdapterOptions> {
+     using List = AdditionalExtensionsList<const d3d::RequestAdapterOptionsLUID*,
+                                           const d3d11::RequestAdapterOptionsD3D11Device*,
+                                           const opengl::RequestAdapterOptionsGetGLProc*,
+-                                          const opengl::RequestAdapterOptionsAngleVirtualizationGroup*>;
++                                          const opengl::RequestAdapterOptionsAngleVirtualizationGroup*,
++                                          const vulkan::RequestAdapterOptionsVulkanUUIDs*>;
+ };
+ 
+ template <>
+diff --git a/src/dawn/native/vulkan/BackendVk.cpp b/src/dawn/native/vulkan/BackendVk.cpp
+index 2f190505658a98e2aa6256e3a71dde14a3fc7434..b08e3657ea56437e34a9e132004ecde194cf15ea 100644
+--- a/src/dawn/native/vulkan/BackendVk.cpp
++++ b/src/dawn/native/vulkan/BackendVk.cpp
+@@ -631,6 +631,15 @@ std::vector<Ref<PhysicalDeviceBase>> Backend::DiscoverPhysicalDevices(
+             }
+         }
+         for (auto& physicalDevice : mPhysicalDevices[icd]) {
++            if (auto* uuidOptions = options.Get<RequestAdapterOptionsVulkanUUIDs>()) {
++                const VkPhysicalDeviceIDProperties& idProps =
++                    physicalDevice->GetDeviceInfo().idProperties;
++                if (!std::ranges::equal(uuidOptions->deviceUUID, idProps.deviceUUID) ||
++                    !std::ranges::equal(uuidOptions->driverUUID, idProps.driverUUID)) {
++                    continue;
++                }
++            }
++
+             if (physicalDevice->SupportsFeatureLevel(options->featureLevel, instance)) {
+                 physicalDevices.push_back(physicalDevice);
+             }
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+index a147691f8c0ba52ecadc167d2b12e372777d4a5f..d3aba204b2efb852e78b73dba18ae8d82b080ead 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+@@ -933,9 +933,9 @@ MaybeError PhysicalDevice::InitializeSupportedLimitsInternal(wgpu::FeatureLevel
+ 
+     limits->v1.maxBufferSize = kAssumedMaxBufferSize;
+     if (mDeviceInfo.HasExt(DeviceExt::Maintenance4)) {
+-        limits->v1.maxBufferSize = mDeviceInfo.propertiesMaintenance4.maxBufferSize;
++        limits->v1.maxBufferSize = mDeviceInfo.maintenance4Properties.maxBufferSize;
+     } else {
+-        limits->v1.maxBufferSize = mDeviceInfo.propertiesMaintenance3.maxMemoryAllocationSize;
++        limits->v1.maxBufferSize = mDeviceInfo.maintenance3Properties.maxMemoryAllocationSize;
+     }
+ 
+     // OpArrayLength returns 0 for buffers >= 2GB for some NVIDIA devices.
+@@ -1798,6 +1798,12 @@ void PhysicalDevice::PopulateBackendProperties(UnpackedPtr<AdapterInfo>& info,
+     if (auto* vkProperties = info.Get<AdapterPropertiesVk>()) {
+         vkProperties->driverVersion = mDeviceInfo.properties.driverVersion;
+     }
++    if (auto* uuidProperties = info.Get<AdapterPropertiesVulkanUUIDs>()) {
++        ByteSpanFromRef(uuidProperties->deviceUUID)
++            .CopyFrom(ByteSpanFromRef(mDeviceInfo.idProperties.deviceUUID));
++        ByteSpanFromRef(uuidProperties->driverUUID)
++            .CopyFrom(ByteSpanFromRef(mDeviceInfo.idProperties.driverUUID));
++    }
+     if (auto* drmProperties = info.Get<AdapterPropertiesDrm>()) {
+         drmProperties->hasPrimary = mDeviceInfo.drmProperties.hasPrimary;
+         drmProperties->hasRender = mDeviceInfo.drmProperties.hasRender;
+diff --git a/src/dawn/native/vulkan/TextureVk.cpp b/src/dawn/native/vulkan/TextureVk.cpp
+index f8b47a25392fc2aeb21d860b75f4d3162b90f6ae..2249f7f9fe1c31ddc98664faf91e7b0115703c23 100644
+--- a/src/dawn/native/vulkan/TextureVk.cpp
++++ b/src/dawn/native/vulkan/TextureVk.cpp
+@@ -429,7 +429,7 @@ void MaybeConvertDepthStencilSwizzleOneToAlpha(bool isDepthOrStencilFormat,
+     // This is enabled by the VK_KHR_maintenance5 extension.
+     // https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#textures-component-swizzle
+     if (deviceInfo.HasExt(DeviceExt::Maintenance5) &&
+-        deviceInfo.propertiesMaintenance5.depthStencilSwizzleOneSupport == VK_TRUE) {
++        deviceInfo.maintenance5Properties.depthStencilSwizzleOneSupport == VK_TRUE) {
+         return;
+     }
+ 
+diff --git a/src/dawn/native/vulkan/VulkanBackend.cpp b/src/dawn/native/vulkan/VulkanBackend.cpp
+index e82cd06290b4dbbfade028b7057d1253f66fbaed..3859eeb6165223b52e716717ff416f37a51e50f7 100644
+--- a/src/dawn/native/vulkan/VulkanBackend.cpp
++++ b/src/dawn/native/vulkan/VulkanBackend.cpp
+@@ -57,6 +57,14 @@ DAWN_NATIVE_EXPORT PFN_vkVoidFunction GetInstanceProcAddr(WGPUDevice device, con
+     return (*backendDevice->fn.GetInstanceProcAddr)(backendDevice->GetVkInstance(), pName);
+ }
+ 
++RequestAdapterOptionsVulkanUUIDs::RequestAdapterOptionsVulkanUUIDs() {
++    sType = wgpu::SType::RequestAdapterOptionsVulkanUUIDs;
++}
++
++AdapterPropertiesVulkanUUIDs::AdapterPropertiesVulkanUUIDs() {
++    sType = wgpu::SType::AdapterPropertiesVulkanUUIDs;
++}
++
+ #if DAWN_PLATFORM_IS(LINUX)
+ ExternalImageDescriptorOpaqueFD::ExternalImageDescriptorOpaqueFD()
+     : ExternalImageDescriptorFD(ExternalImageType::OpaqueFD) {}
+diff --git a/src/dawn/native/vulkan/VulkanInfo.cpp b/src/dawn/native/vulkan/VulkanInfo.cpp
+index 11d6df9e5f3810723a92084113eac64a436bfc9f..93042c81f2e0805d7aeeed4b7ec9a59deda98ba4 100644
+--- a/src/dawn/native/vulkan/VulkanInfo.cpp
++++ b/src/dawn/native/vulkan/VulkanInfo.cpp
+@@ -256,7 +256,8 @@ ResultOrError<VulkanDeviceInfo> GatherDeviceInfo(const PhysicalDevice& device) {
+     properties2.pNext = nullptr;
+     PNextChainBuilder propertiesChain(&properties2);
+ 
+-    propertiesChain.Add(&info.propertiesMaintenance3,
++    propertiesChain.Add(&info.idProperties, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES);
++    propertiesChain.Add(&info.maintenance3Properties,
+                         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES);
+ 
+     featuresChain.Add(&info._16BitStorageFeatures,
+@@ -304,7 +305,7 @@ ResultOrError<VulkanDeviceInfo> GatherDeviceInfo(const PhysicalDevice& device) {
+     }
+ 
+     if (info.extensions[DeviceExt::Maintenance4]) {
+-        propertiesChain.Add(&info.propertiesMaintenance4,
++        propertiesChain.Add(&info.maintenance4Properties,
+                             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES);
+     }
+ 
+@@ -378,7 +379,7 @@ ResultOrError<VulkanDeviceInfo> GatherDeviceInfo(const PhysicalDevice& device) {
+     }
+ 
+     if (info.extensions[DeviceExt::Maintenance5]) {
+-        propertiesChain.Add(&info.propertiesMaintenance5,
++        propertiesChain.Add(&info.maintenance5Properties,
+                             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES);
+     }
+ 
+diff --git a/src/dawn/native/vulkan/VulkanInfo.h b/src/dawn/native/vulkan/VulkanInfo.h
+index d705eed8bca69b49294dfbace60b315c6c178e13..d5bd7e22f199ab2b6c41fe9b2aebd0534ab8e4f1 100644
+--- a/src/dawn/native/vulkan/VulkanInfo.h
++++ b/src/dawn/native/vulkan/VulkanInfo.h
+@@ -92,17 +92,18 @@ struct VulkanDeviceKnobs {
+ 
+ struct VulkanDeviceInfo : VulkanDeviceKnobs {
+     VkPhysicalDeviceProperties properties;
+-    VkPhysicalDeviceMaintenance3Properties propertiesMaintenance3;
++    VkPhysicalDeviceIDProperties idProperties;
++    VkPhysicalDeviceMaintenance3Properties maintenance3Properties;
++    VkPhysicalDeviceMaintenance4Properties maintenance4Properties;
++    VkPhysicalDeviceMaintenance5Properties maintenance5Properties;
+     VkPhysicalDeviceDriverProperties driverProperties;
+     VkPhysicalDeviceSubgroupSizeControlPropertiesEXT subgroupSizeControlProperties;
+     VkPhysicalDeviceShaderIntegerDotProductPropertiesKHR shaderIntegerDotProductProperties;
+-    VkPhysicalDeviceMaintenance4Properties propertiesMaintenance4;
+     VkPhysicalDeviceSubgroupProperties subgroupProperties;
+     VkPhysicalDeviceExternalMemoryHostPropertiesEXT externalMemoryHostProperties;
+     VkPhysicalDeviceCooperativeMatrixPropertiesKHR cooperativeMatrixProperties;
+     VkPhysicalDeviceDescriptorIndexingProperties descriptorIndexingProperties;
+     VkPhysicalDevicePipelineRobustnessProperties pipelineRobustnessProperties;
+-    VkPhysicalDeviceMaintenance5Properties propertiesMaintenance5;
+     VkPhysicalDeviceDrmPropertiesEXT drmProperties;
+ 
+     std::vector<VkQueueFamilyProperties> queueFamilies;
+diff --git a/src/dawn/tests/BUILD.gn b/src/dawn/tests/BUILD.gn
+index c4f53ac9678eefbb7c11076bddc35fb2714af832..cae4b3c4db63fe31c875943fb837d7cd23fd321e 100644
+--- a/src/dawn/tests/BUILD.gn
++++ b/src/dawn/tests/BUILD.gn
+@@ -592,7 +592,6 @@ source_set("end2end_tests_sources") {
+     "end2end/AdapterFormatCapabilitiesVkTests.cpp",
+     "end2end/AdapterPropertiesD3DTests.cpp",
+     "end2end/AdapterPropertiesDrmTests.cpp",
+-    "end2end/AdapterPropertiesVkTests.cpp",
+     "end2end/ArchTierLimitsExhaustive.cpp",
+     "end2end/BasicTests.cpp",
+     "end2end/BindGroupTests.cpp",
+@@ -766,7 +765,10 @@ source_set("end2end_tests_sources") {
+   }
+ 
+   if (dawn_enable_vulkan) {
+-    sources += [ "end2end/AllocatorMemoryInstrumentationTests.cpp" ]
++    sources += [
++      "end2end/AdapterPropertiesVkTests.cpp",
++      "end2end/AllocatorMemoryInstrumentationTests.cpp",
++    ]
+   }
+ 
+   if (dawn_enable_webgpu_on_webgpu) {
+diff --git a/src/dawn/tests/CMakeLists.txt b/src/dawn/tests/CMakeLists.txt
+index 9b9a5db895388e5b34186c4a638a13e0fc605ede..f43d9fd73bbf03e58f54245c5ff684723331180d 100644
+--- a/src/dawn/tests/CMakeLists.txt
++++ b/src/dawn/tests/CMakeLists.txt
+@@ -97,7 +97,6 @@ set(end2end_sources
+     "end2end/AdapterEnumerationTests.cpp"
+     "end2end/AdapterFormatCapabilitiesVkTests.cpp"
+     "end2end/AdapterPropertiesD3DTests.cpp"
+-    "end2end/AdapterPropertiesVkTests.cpp"
+     "end2end/AdapterPropertiesDrmTests.cpp"
+     "end2end/ArchTierLimitsExhaustive.cpp"
+     "end2end/BasicTests.cpp"
+@@ -294,6 +293,7 @@ endif()
+ if (DAWN_ENABLE_VULKAN)
+     list(APPEND end2end_sources
+         "end2end/AllocatorMemoryInstrumentationTests.cpp"
++        "end2end/AdapterPropertiesVkTests.cpp"
+     )
+ endif()
+ 
+diff --git a/src/dawn/tests/end2end/AdapterEnumerationTests.cpp b/src/dawn/tests/end2end/AdapterEnumerationTests.cpp
+index 7077a6af46763d8d8a43cfb77629c2dcaabfdfcd..0e1fbf01cdc7ebf8e139e34a89c635fbc4a271b0 100644
+--- a/src/dawn/tests/end2end/AdapterEnumerationTests.cpp
++++ b/src/dawn/tests/end2end/AdapterEnumerationTests.cpp
+@@ -29,10 +29,12 @@
+ 
+ #include <memory>
+ #include <utility>
++#include <vector>
+ 
+ #include "dawn/dawn_proc.h"
+ #include "dawn/native/DawnNative.h"
+ #include "src/dawn/common/GPUInfo.h"
++#include "src/dawn/common/Sha3.h"
+ #include "src/dawn/common/StringViewUtils.h"
+ #include "src/utils/compiler.h"
+ 
+@@ -183,7 +185,7 @@ TEST_F(AdapterEnumerationTests, MatchingDXGIAdapterD3D11) {
+ TEST_F(AdapterEnumerationTests, OnlyD3D12) {
+     native::Instance instance;
+ 
+-    wgpu::RequestAdapterOptions adapterOptions = {};
++    wgpu::RequestAdapterOptions adapterOptions;
+     adapterOptions.backendType = wgpu::BackendType::D3D12;
+ 
+     const auto& adapters = instance.EnumerateAdapters(&adapterOptions);
+@@ -324,6 +326,78 @@ TEST_F(AdapterEnumerationTests, OneBackendThenTheOther) {
+     }
+ }
+ 
++#if defined(DAWN_ENABLE_BACKEND_VULKAN)
++// Test enumerating a Vulkan physical devices matching specific device/driver UUIDs
++TEST_F(AdapterEnumerationTests, MatchingVulkanUUIDs) {
++    native::Instance instance;
++
++    wgpu::RequestAdapterOptions testAdapterOptions;
++    testAdapterOptions.backendType = wgpu::BackendType::Vulkan;
++    const auto& testAdapters = instance.EnumerateAdapters(&testAdapterOptions);
++
++    for (const auto& testAdapter : testAdapters) {
++        native::vulkan::RequestAdapterOptionsVulkanUUIDs uuidOptions;
++
++        wgpu::RequestAdapterOptions adapterOptions = {};
++        adapterOptions.backendType = wgpu::BackendType::Vulkan;
++        adapterOptions.nextInChain = &uuidOptions;
++
++        // Check requesting the UUIDs for a specific Vulkan physical device.
++        {
++            // Fill UUID options with UUIDs from the current adapter.
++            {
++                wgpu::AdapterInfo info;
++                native::vulkan::AdapterPropertiesVulkanUUIDs uuidProperties;
++                info.nextInChain = &uuidProperties;
++                EXPECT_EQ(wgpu::Adapter(testAdapter.Get()).GetInfo(&info), wgpu::Status::Success);
++
++                ByteSpanFromRef(uuidOptions.driverUUID)
++                    .CopyFrom(ByteSpanFromRef(uuidProperties.driverUUID));
++                ByteSpanFromRef(uuidOptions.deviceUUID)
++                    .CopyFrom(ByteSpanFromRef(uuidProperties.deviceUUID));
++            }
++
++            // A single adapter should be returned that should be a device with the exact same
++            // UUIDs.
++            std::vector<native::Adapter> adapters = instance.EnumerateAdapters(&adapterOptions);
++            ASSERT_EQ(adapters.size(), 1u);
++
++            // UUID of the returned adapter should be the same as requested.
++            {
++                wgpu::AdapterInfo info;
++                native::vulkan::AdapterPropertiesVulkanUUIDs uuidProperties;
++                info.nextInChain = &uuidProperties;
++                EXPECT_EQ(wgpu::Adapter(adapters[0].Get()).GetInfo(&info), wgpu::Status::Success);
++
++                EXPECT_TRUE(std::ranges::equal(uuidOptions.driverUUID, uuidProperties.driverUUID));
++                EXPECT_TRUE(std::ranges::equal(uuidOptions.deviceUUID, uuidProperties.deviceUUID));
++            }
++        }
++    }
++
++    // Check requesting a non-existent UUID (choose a "random" non-existent set of UUIDs by hashing
++    // some value).
++    {
++        uint32_t seed = 0x12345678;
++        Sha3_256::Output randomData = Sha3_256::Hash(ByteSpanFromRef(seed));
++        static_assert(sizeof(randomData) == 2 * VK_UUID_SIZE);
++
++        native::vulkan::RequestAdapterOptionsVulkanUUIDs uuidOptions;
++        ByteSpanFromRef(uuidOptions.driverUUID)
++            .CopyFrom(ByteSpanFromRef(randomData).first(VK_UUID_SIZE));
++        ByteSpanFromRef(uuidOptions.deviceUUID)
++            .CopyFrom(ByteSpanFromRef(randomData).subspan(VK_UUID_SIZE));
++
++        wgpu::RequestAdapterOptions adapterOptions = {};
++        adapterOptions.backendType = wgpu::BackendType::Vulkan;
++        adapterOptions.nextInChain = &uuidOptions;
++
++        std::vector<native::Adapter> adapters = instance.EnumerateAdapters(&adapterOptions);
++        ASSERT_TRUE(adapters.empty());
++    }
++}
++#endif  // defined(DAWN_ENABLE_BACKEND_VULKAN)
++
+ #if defined(DAWN_ENABLE_BACKEND_WEBGPU)
+ // Test enumerating the WebGPU backend with the RequestAdapterWebGPUBackendOptions.
+ TEST_F(AdapterEnumerationTests, WebGPUBackend) {
+diff --git a/src/dawn/tests/end2end/AdapterPropertiesVkTests.cpp b/src/dawn/tests/end2end/AdapterPropertiesVkTests.cpp
+index cb98d2ab3b1657368e11febc2e09bef9782fd8a1..258e32c60f7b142d3a907b4ddca69b7f738a228b 100644
+--- a/src/dawn/tests/end2end/AdapterPropertiesVkTests.cpp
++++ b/src/dawn/tests/end2end/AdapterPropertiesVkTests.cpp
+@@ -27,13 +27,20 @@
+ 
+ #include "src/dawn/tests/DawnTest.h"
+ 
++// This must be above VulkanBackend.h otherwise vulkan.h will be included before we can wrap it with
++// vulkan_platform.h.
++#include "src/dawn/common/vulkan_platform.h"
++
++// After vulkan_platform
++#include "dawn/native/VulkanBackend.h"
++
+ namespace dawn {
+ namespace {
+ 
+ class AdapterPropertiesVkTest : public DawnTest {};
+ 
+-// TODO(dawn:2257) test that is is invalid to request AdapterPropertiesVk if the
+-// feature is not available.
++// TODO(dawn:2257) test that is is invalid to request AdapterPropertiesVk and
++// AdapterPropertiesVulkanUUIDs if the feature is not available.
+ 
+ // Test that it is possible to query the Vulkan properties, and it is populated with a valid data.
+ TEST_P(AdapterPropertiesVkTest, GetVkProperties) {
+@@ -42,8 +49,7 @@ TEST_P(AdapterPropertiesVkTest, GetVkProperties) {
+         wgpu::AdapterInfo info;
+         wgpu::AdapterPropertiesVk vkProperties;
+         info.nextInChain = &vkProperties;
+-
+-        adapter.GetInfo(&info);
++        EXPECT_EQ(adapter.GetInfo(&info), wgpu::Status::Success);
+ 
+         // The driver version should be set to something but it depends on the hardware.
+         EXPECT_NE(vkProperties.driverVersion, 0u);
+@@ -52,14 +58,32 @@ TEST_P(AdapterPropertiesVkTest, GetVkProperties) {
+         wgpu::AdapterInfo adapterInfo;
+         wgpu::AdapterPropertiesVk vkProperties;
+         adapterInfo.nextInChain = &vkProperties;
+-
+-        device.GetAdapterInfo(&adapterInfo);
++        EXPECT_EQ(device.GetAdapterInfo(&adapterInfo), wgpu::Status::Success);
+ 
+         // The driver version should be set to something but it depends on the hardware.
+         EXPECT_NE(vkProperties.driverVersion, 0u);
+     }
+ }
+ 
++// Test that it is possible to query the Vulkan UUIDs.
++TEST_P(AdapterPropertiesVkTest, GetVulkanUUIDsProperties) {
++    DAWN_TEST_UNSUPPORTED_IF(!adapter.HasFeature(wgpu::FeatureName::AdapterPropertiesVk));
++    {
++        wgpu::AdapterInfo info;
++        native::vulkan::AdapterPropertiesVulkanUUIDs uuidProperties;
++        info.nextInChain = &uuidProperties;
++
++        EXPECT_EQ(adapter.GetInfo(&info), wgpu::Status::Success);
++    }
++    {
++        wgpu::AdapterInfo adapterInfo;
++        native::vulkan::AdapterPropertiesVulkanUUIDs uuidProperties;
++        adapterInfo.nextInChain = &uuidProperties;
++
++        EXPECT_EQ(device.GetAdapterInfo(&adapterInfo), wgpu::Status::Success);
++    }
++}
++
+ DAWN_INSTANTIATE_TEST(AdapterPropertiesVkTest, VulkanBackend());
+ 
+ }  // anonymous namespace
