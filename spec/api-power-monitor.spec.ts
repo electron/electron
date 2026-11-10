@@ -302,8 +302,7 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
           dbusMockPowerMonitor.on('shutdown', preventDefault);
           try {
             const callsBefore = (await getCalls()).length;
-            const bootEval =
-              'require("electron").app.on("before-quit", (event) => event.preventDefault())';
+            const bootEval = 'require("electron").app.on("before-quit", (event) => event.preventDefault())';
             await startRemoteControlApp([`--boot-eval=${bootEval}`]);
             const waitForCalls = async (expected: number) => {
               let calls: any[] = [];
@@ -323,6 +322,81 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
             await setTimeout(500);
             emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', false]]);
             expect(await waitForCalls(callsBefore + 2)).toHaveLength(callsBefore + 2);
+          } finally {
+            dbusMockPowerMonitor.off('shutdown', preventDefault);
+          }
+        });
+      });
+
+      describe('when the portal reports a session end', () => {
+        let getPortalCalls: () => Promise<any[]>;
+        let clearPortalCalls: () => Promise<void>;
+        let emitInhibitState: (state: number) => Promise<void>;
+
+        beforeAll(async () => {
+          const sessionBus = dbus.sessionBus();
+          const service = sessionBus.getService('org.freedesktop.portal.Desktop');
+          const getInterface = promisify(service.getInterface.bind(service));
+          const portalMock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+          getPortalCalls = promisify(portalMock.GetCalls.bind(portalMock));
+          clearPortalCalls = promisify(portalMock.ClearCalls.bind(portalMock));
+          emitInhibitState = promisify(portalMock.EmitInhibitState.bind(portalMock));
+        });
+
+        it('should quit when nothing delays the logout', async () => {
+          const preventDefault = (event: Electron.Event) => event.preventDefault();
+          // This process has a powerMonitor too, so it would quit as well.
+          dbusMockPowerMonitor.on('shutdown', preventDefault);
+          try {
+            await clearPortalCalls();
+            const remoteApp = await startRemoteControlApp();
+            // Wait for the app's monitor session, so it will see the signal.
+            let calls: any[] = [];
+            for (let retries = 10; retries > 0; retries--) {
+              calls = await getPortalCalls();
+              if (calls.some((call) => call[1] === 'CreateMonitor')) break;
+              await setTimeout(200);
+            }
+            expect(calls.some((call) => call[1] === 'CreateMonitor')).toBe(true);
+
+            const exited = once(remoteApp.process, 'exit');
+            await emitInhibitState(3);
+            const [code] = await exited;
+            expect(code).toBe(0);
+          } finally {
+            dbusMockPowerMonitor.off('shutdown', preventDefault);
+          }
+        });
+
+        it('should emit "shutdown" and stay alive when the default is prevented', async () => {
+          const preventDefault = (event: Electron.Event) => event.preventDefault();
+          // This process has a powerMonitor too, so it would quit as well.
+          dbusMockPowerMonitor.on('shutdown', preventDefault);
+          try {
+            await clearPortalCalls();
+            const bootEval =
+              'require("electron").powerMonitor.on("shutdown", (event) => { event.preventDefault(); globalThis.sawShutdown = true; })';
+            const remoteApp = await startRemoteControlApp([`--boot-eval=${bootEval}`]);
+            let calls: any[] = [];
+            for (let retries = 10; retries > 0; retries--) {
+              calls = await getPortalCalls();
+              if (calls.some((call) => call[1] === 'CreateMonitor')) break;
+              await setTimeout(200);
+            }
+            expect(calls.some((call) => call[1] === 'CreateMonitor')).toBe(true);
+
+            await emitInhibitState(3);
+            let sawShutdown = false;
+            for (let retries = 20; retries > 0 && !sawShutdown; retries--) {
+              await setTimeout(100);
+              try {
+                sawShutdown = await remoteApp.remoteEval('globalThis.sawShutdown === true');
+              } catch {
+                // The app quit instead of handling the event.
+                break;
+              }
+            }
+            expect(sawShutdown).toBe(true);
           } finally {
             dbusMockPowerMonitor.off('shutdown', preventDefault);
           }
