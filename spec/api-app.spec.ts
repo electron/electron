@@ -337,7 +337,7 @@ describe('app module', () => {
         expect(signal, message).toBeNull();
         expect(code, message).toBe(0);
         expect(stderr, message).not.toContain('dangling pointer at exit');
-        const warning = "'session preconnect event' is deprecated";
+        const warning = "'preconnect event' is deprecated";
         if (target === 'session') {
           expect(stderr, message).toContain(warning);
         } else {

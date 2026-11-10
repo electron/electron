@@ -40,7 +40,6 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
@@ -844,10 +843,8 @@ WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
   if (web_frame)
     return web_frame;
 
-  web_frame = cppgc::MakeGarbageCollected<WebFrameMain>(
+  return cppgc::MakeGarbageCollected<WebFrameMain>(
       isolate->GetCppHeap()->GetAllocationHandle(), rfh);
-  gin_helper::CallMethod(isolate, web_frame, "_init");
-  return web_frame;
 }
 
 // static

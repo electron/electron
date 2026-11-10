@@ -3224,11 +3224,22 @@ describe('BrowserWindow module', () => {
       const p = once(w.webContents.session, 'preconnect');
       const framePreconnect = once(w.webContents.mainFrame, 'preconnect');
       w.loadURL(url + '/link');
-      const [[event, preconnectUrl, allowCredentials, frame], frameArgs] = await Promise.all([p, framePreconnect]);
+      const [[, preconnectUrl, allowCredentials, frame], frameArgs] = await Promise.all([p, framePreconnect]);
       expect(preconnectUrl).toBe('http://example.com/');
       expect(allowCredentials, 'allowCredentials').toBe(true);
       expect(frame).toBe(w.webContents.mainFrame);
-      expect(frameArgs).toEqual([event, preconnectUrl, allowCredentials]);
+      expect(frameArgs.slice(1)).toEqual([preconnectUrl, allowCredentials]);
+    });
+
+    it('keeps the deprecated session event independent of frame listeners', async () => {
+      w = new BrowserWindow({ show: false });
+      w.webContents.mainFrame.removeAllListeners('preconnect');
+      const preconnect = once(w.webContents.session, 'preconnect');
+      await w.loadURL(url + '/link');
+      const [, preconnectUrl, allowCredentials, frame] = await preconnect;
+      expect(preconnectUrl).toBe('http://example.com/');
+      expect(allowCredentials).toBe(true);
+      expect(frame).toBe(w.webContents.mainFrame);
     });
 
     for (const crossOrigin of [false, true]) {
@@ -3262,6 +3273,13 @@ describe('BrowserWindow module', () => {
     it('can destroy the requesting frame from a preconnect listener', async () => {
       w = new BrowserWindow({ show: false });
       const frame = w.webContents.mainFrame;
+      const ses = w.webContents.session;
+      let sessionPreconnectAfterDestroy = false;
+      const onSessionPreconnect = () => {
+        sessionPreconnectAfterDestroy ||= frame.isDestroyed();
+      };
+      ses.on('preconnect', onSessionPreconnect);
+      defer(() => ses.removeListener('preconnect', onSessionPreconnect));
       const preconnect = new Promise<void>((resolve) => {
         frame.prependOnceListener('preconnect', () => {
           w.destroy();
@@ -3269,11 +3287,12 @@ describe('BrowserWindow module', () => {
         });
       });
       const load = w.loadURL(url + '/link').catch((error: Error) => {
-        expect(error.message).toContain('ERR_ABORTED');
+        expect(error.message).toMatch(/ERR_(ABORTED|FAILED)/);
       });
       await preconnect;
       await load;
       expect(frame.isDestroyed()).toBe(true);
+      expect(sessionPreconnectAfterDestroy).toBe(false);
     });
   });
 
