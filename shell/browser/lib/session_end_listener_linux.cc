@@ -16,6 +16,7 @@
 #include "components/dbus/xdg/inhibit_session_monitor.h"
 #include "dbus/object_path.h"
 #include "dbus/object_proxy.h"
+#include "shell/browser/browser.h"
 
 namespace {
 
@@ -45,6 +46,12 @@ SessionEndListenerLinux::SessionEndListenerLinux(
       on_quit_(std::move(on_quit)) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   ConnectToLogind();
+
+  if (auto* browser = Browser::Get()) {
+    browser->SetQuitCancelledCallback(base::BindRepeating(
+        &SessionEndListenerLinux::OnQuitCancelled,
+        weak_ptr_factory_.GetWeakPtr()));
+  }
 
   if (session_bus_) {
     // Does nothing when the portal is unavailable.
@@ -180,8 +187,19 @@ void SessionEndListenerLinux::OnSessionEnding(Source source) {
   }
 
   if (on_quit_) {
+    quit_started_ = true;
     on_quit_.Run();
   }
+}
+
+void SessionEndListenerLinux::OnQuitCancelled() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  // Don't make logind wait for an app that has decided not to exit.
+  if (!quit_started_)
+    return;
+  quit_started_ = false;
+  inhibitor_fd_.reset();
+  inhibitor_requested_ = false;
 }
 
 }  // namespace electron

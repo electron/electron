@@ -77,6 +77,7 @@ class SessionEndListenerLinux {
   void OnInhibitResponse(dbus_utils::CallMethodResultSig<"h"> result);
   void OnPrepareForShutdown(dbus_utils::ConnectToSignalResultSig<"b"> result);
   void OnSessionEnding(Source source);
+  void OnQuitCancelled();
 
   const scoped_refptr<dbus::Bus> system_bus_;
   const scoped_refptr<dbus::Bus> session_bus_;
@@ -91,6 +92,9 @@ class SessionEndListenerLinux {
   // One session end is reported by several mechanisms (a reboot ends the
   // session, so the portal reports it too). The first one wins.
   bool ended_ = false;
+
+  // Whether a quit was started for the session end and has not been cancelled.
+  bool quit_started_ = false;
 
   SEQUENCE_CHECKER(sequence_checker_);
   base::WeakPtrFactory<SessionEndListenerLinux> weak_ptr_factory_{this};

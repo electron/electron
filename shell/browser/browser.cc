@@ -122,8 +122,10 @@ void Browser::Quit() {
     return;
 
   is_quitting_ = HandleBeforeQuit();
-  if (!is_quitting_)
+  if (!is_quitting_) {
+    NotifyQuitCancelled();
     return;
+  }
 
   if (electron::WindowList::IsEmpty())
     NotifyAndShutdown();
@@ -294,6 +296,7 @@ void Browser::NotifyAndShutdown() {
   observers_.Notify(&BrowserObserver::OnWillQuit, &prevent_default);
   if (prevent_default) {
     is_quitting_ = false;
+    NotifyQuitCancelled();
     return;
   }
 
@@ -307,10 +310,21 @@ bool Browser::HandleBeforeQuit() {
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
-  if (is_quitting_)
+  if (is_quitting_) {
     // Once a beforeunload handler has prevented the closing, we think the quit
     // is cancelled too.
     is_quitting_ = false;
+    NotifyQuitCancelled();
+  }
+}
+
+void Browser::SetQuitCancelledCallback(base::RepeatingClosure callback) {
+  quit_cancelled_callback_ = std::move(callback);
+}
+
+void Browser::NotifyQuitCancelled() {
+  if (quit_cancelled_callback_)
+    quit_cancelled_callback_.Run();
 }
 
 void Browser::OnWindowAllClosed() {

@@ -295,6 +295,38 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
             dbusMockPowerMonitor.off('shutdown', preventDefault);
           }
         });
+
+        it('should release the shutdown inhibitor when the quit is cancelled', async () => {
+          const preventDefault = (event: Electron.Event) => event.preventDefault();
+          // This process has a powerMonitor too, so it would quit as well.
+          dbusMockPowerMonitor.on('shutdown', preventDefault);
+          try {
+            const callsBefore = (await getCalls()).length;
+            const bootEval =
+              'require("electron").app.on("before-quit", (event) => event.preventDefault())';
+            await startRemoteControlApp([`--boot-eval=${bootEval}`]);
+            const waitForCalls = async (expected: number) => {
+              let calls: any[] = [];
+              for (let retries = 3; retries > 0; retries--) {
+                calls = await getCalls();
+                if (calls.length >= expected) break;
+                await setTimeout(1000);
+              }
+              return calls;
+            };
+            expect(await waitForCalls(callsBefore + 1)).toHaveLength(callsBefore + 1);
+
+            // The shutdown is announced and the app cancels the quit, which
+            // drops its delay lock. A cancelled shutdown is a new cycle, so the
+            // lock is taken again.
+            emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', true]]);
+            await setTimeout(500);
+            emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', false]]);
+            expect(await waitForCalls(callsBefore + 2)).toHaveLength(callsBefore + 2);
+          } finally {
+            dbusMockPowerMonitor.off('shutdown', preventDefault);
+          }
+        });
       });
     }
   );
