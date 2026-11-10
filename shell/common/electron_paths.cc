@@ -4,6 +4,12 @@
 
 #include "shell/common/electron_paths.h"
 
+#if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
+#include <string>
+#endif
+
 #include <utility>
 
 #include "base/environment.h"
@@ -73,6 +79,16 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     }
 #endif
 #if BUILDFLAG(IS_WIN)
+    case FILE_APP_MODULE: {
+      // Do not use FILE_EXE: an app may override it independently.
+      std::wstring path(MAX_PATH, L'\0');
+      const DWORD length = ::GetModuleFileNameW(nullptr, path.data(), MAX_PATH);
+      if (!length || length >= MAX_PATH)
+        return false;
+      path.resize(length);
+      *result = base::FilePath(std::move(path));
+      return true;
+    }
     case DIR_RECENT:
       if (!platform_util::GetFolderPath(DIR_RECENT, &cur))
         return false;

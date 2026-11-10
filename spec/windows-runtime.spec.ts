@@ -144,6 +144,31 @@ ifdescribe(process.platform === 'win32')('Windows runtime DLL', { timeout: 12000
       expect(result.stdout.trim()).toBe(`v${process.versions.electron}`);
     });
 
+    it('defaults the module path to the EXE and keeps path overrides independent', () => {
+      const script = path.join(tempDir, 'module-path.cjs');
+      fs.writeFileSync(
+        script,
+        `const { app } = require('electron');
+        const exe = app.getPath('exe');
+        app.setPath('exe', exe + '.override');
+        const moduleDefault = app.getPath('module');
+        app.setPath('module', exe + '.module');
+        console.log(JSON.stringify([exe, moduleDefault, app.getPath('exe'), app.getPath('module')]));
+        app.exit(0);`
+      );
+      const env: NodeJS.ProcessEnv = { ...process.env, NODE_OPTIONS: '' };
+      delete env.ELECTRON_RUN_AS_NODE;
+      const result = spawnSync(executable, [script], { env, encoding: 'utf8', timeout: 30000 });
+      expect(result.error).toBe(undefined);
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual([
+        executable,
+        executable,
+        executable + '.override',
+        executable + '.module'
+      ]);
+    });
+
     it('reports a missing runtime DLL', () => {
       const directory = path.join(tempDir, 'missing-runtime');
       fs.mkdirSync(directory);

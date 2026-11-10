@@ -693,15 +693,6 @@ Returns `string` - The current application directory.
 
 ### `app.getPath(name)`
 
-<!--
-```YAML history
-changes:
-  - pr-url: https://github.com/electron/electron/pull/54205
-    description: "Changed `module` to return the path to `electron_runtime.dll` on Windows."
-    breaking-changes-header: behavior-changed-appgetpathmodule-returns-the-dll-path-on-windows
-```
--->
-
 * `name` string - You can request the following paths by the name:
   * `home` User's home directory.
   * `appData` Per-user application data directory, which by default points to:
@@ -729,7 +720,7 @@ changes:
     directory.
   * `temp` Temporary directory.
   * `exe` The current executable file.
-  * `module` The location of the Chromium module. On Windows, this is the path to `electron_runtime.dll`. On macOS, it is the path to the Electron Framework binary. On Linux, it is the same as `exe`.
+  * `module` The location of the Chromium module. By default this is synonymous with `exe`.
   * `desktop` The current user's Desktop directory.
   * `documents` Directory for a user's "My Documents".
   * `downloads` Directory for a user's downloads.

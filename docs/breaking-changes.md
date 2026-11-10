@@ -85,11 +85,7 @@ initialization remains enabled when `NUL` is available.
 Remove this switch from application launch arguments. No replacement is needed
 for the Windows `NUL` device workaround.
 
-### Behavior Changed: `app.getPath('module')` returns the DLL path on Windows
-
-On Windows, `app.getPath('module')` now returns the path to `electron_runtime.dll` instead
-of the application EXE. Use `app.getPath('exe')` or `process.execPath` if your
-application needs the executable path.
+### Behavior Changed: Windows distributions include a runtime DLL
 
 Windows distributions now include `electron_runtime.dll` alongside the EXE. Custom
 packaging, signing, and update workflows must include this file.
