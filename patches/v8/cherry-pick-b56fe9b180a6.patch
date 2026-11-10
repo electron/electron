@@ -51,7 +51,7 @@ index e9b93787ad74576421cf46dfc2a9d21293000941..de8f1b2c499557d2bf1610df85e5fc19
    MaybeElideLastBytecode(node->bytecode(), node->source_info().is_valid());
  
 diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
-index b6b593263013b1d27a0255a833e4be8d816df547..4413758248973f224155c6f0253c9d9fd099dfd6 100644
+index f6651020361a0eefdc275ca997234f2c4ff9042c..792aedfade0742642e2198b350126f4cae2bf697 100644
 --- a/src/interpreter/bytecode-generator.cc
 +++ b/src/interpreter/bytecode-generator.cc
 @@ -289,7 +289,7 @@ class V8_NODISCARD BytecodeGenerator::ControlScope::DeferredCommands final {
@@ -90,7 +90,7 @@ index b6b593263013b1d27a0255a833e4be8d816df547..4413758248973f224155c6f0253c9d9f
  
    if (use_jump_table) {
      // Release temps so that they can be reused in clauses.
-@@ -6124,6 +6127,7 @@ void BytecodeGenerator::BuildSuspendPoint(int position) {
+@@ -6127,6 +6130,7 @@ void BytecodeGenerator::BuildSuspendPoint(int position) {
  void BytecodeGenerator::VisitYield(Yield* expr) {
    builder()->SetExpressionPosition(expr);
    VisitForAccumulatorValue(expr->expression());
@@ -98,7 +98,7 @@ index b6b593263013b1d27a0255a833e4be8d816df547..4413758248973f224155c6f0253c9d9f
  
    bool is_async = IsAsyncGeneratorFunction(function_kind());
    // If this is not the first yield
-@@ -6291,6 +6295,7 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
+@@ -6294,6 +6298,7 @@ void BytecodeGenerator::VisitYieldStar(YieldStar* expr) {
      RegisterAllocationScope register_scope(this);
      RegisterList iterator_and_input = register_allocator()->NewRegisterList(2);
      VisitForAccumulatorValue(expr->expression());
