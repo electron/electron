@@ -79,15 +79,6 @@ UnpackedExtensionLoadResult LoadUnpacked(const base::FilePath& extension_dir,
     return {.error_or_warnings = std::move(err)};
   }
 
-  // remove _metadata folder. Otherwise, the following warning will be thrown
-  // Cannot load extension with file or directory name _metadata.
-  // Filenames starting with "_" are reserved for use by the system.
-  // see: https://bugs.chromium.org/p/chromium/issues/detail?id=377278
-  base::FilePath metadata_dir = extension_dir.Append(kMetadataFolder);
-  if (base::DirectoryExists(metadata_dir)) {
-    base::DeletePathRecursively(metadata_dir);
-  }
-
   std::u16string load_error;
   scoped_refptr<Extension> extension = file_util::LoadExtension(
       extension_dir, extensions::mojom::ManifestLocation::kCommandLine,
@@ -101,8 +92,8 @@ UnpackedExtensionLoadResult LoadUnpacked(const base::FilePath& extension_dir,
 
   // RulesMonitorService only loads a static declarativeNetRequest ruleset
   // whose checksum is in ExtensionPrefs, and the checksum comes from indexing
-  // the ruleset. The indexed rulesets are written to the _metadata folder,
-  // which was removed above, so they are indexed on every load.
+  // the ruleset. The indexed rulesets are written to the extension's _metadata
+  // folder.
   RulesetParseResult index_result = declarative_net_request::
       InstallIndexHelper::IndexAndPersistRulesOnInstall(*extension);
   base::DictValue ruleset_install_prefs;
@@ -126,6 +117,12 @@ UnpackedExtensionLoadResult LoadUnpacked(const base::FilePath& extension_dir,
         "Warnings loading extension at " +
         base::UTF16ToUTF8(extension_dir.LossyDisplayName());
 
+    // Chromium warns about every top-level name that starts with "_". The
+    // _metadata folder is expected: it holds the indexed rulesets, and an
+    // extension from the Chrome Web Store ships with one.
+    const std::string metadata_folder_warning = base::UTF16ToUTF8(
+        file_util::ReservedFilenameWarning(base::FilePath(kMetadataFolder)));
+
     for (const auto& warning : extension->install_warnings()) {
       std::string unrecognized_manifest_error = ErrorUtils::FormatErrorMessage(
           manifest_errors::kUnrecognizedManifestKey, warning.key);
@@ -134,6 +131,8 @@ UnpackedExtensionLoadResult LoadUnpacked(const base::FilePath& extension_dir,
         // filter kUnrecognizedManifestKey error. This error does not have any
         // impact e.g: Unrecognized manifest key 'minimum_chrome_version' etc.
         LOG(WARNING) << warning_prefix << ": " << warning.message;
+      } else if (warning.message == metadata_folder_warning) {
+        continue;
       } else {
         warnings += "  " + warning.message + "\n";
       }

@@ -309,6 +309,21 @@ describe('chrome extensions', () => {
     expect(bg).toBe('red');
   });
 
+  it('loads an extension that has a _metadata folder without a warning and keeps the folder', async () => {
+    const extensionPath = await fs.mkdtemp(path.join(os.tmpdir(), 'electron-extension-'));
+    defer(() => fs.rm(extensionPath, { recursive: true, force: true }));
+    await fs.cp(path.join(fixtures, 'extensions', 'persistent-state'), extensionPath, { recursive: true });
+    // An extension from the Chrome Web Store ships with this file.
+    const verifiedContents = path.join(extensionPath, '_metadata', 'verified_contents.json');
+    await fs.mkdir(path.dirname(verifiedContents));
+    await fs.writeFile(verifiedContents, '[]');
+
+    const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+    await expectWarningMessages(() => customSession.extensions.loadExtension(extensionPath));
+
+    expect(await fs.readFile(verifiedContents, 'utf8')).toBe('[]');
+  });
+
   it('does not crash when loading an extension with missing manifest', async () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const promise = customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'missing-manifest'));
