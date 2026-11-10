@@ -110,6 +110,8 @@ class ProxyingAIManager : public base::SupportsUserData::Data,
       blink::mojom::AISemanticEmbedderCreateOptionsPtr options,
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
+  void GetSupportedEmbeddingSpaces(
+      GetSupportedEmbeddingSpacesCallback callback) override;
 
   mojo::ReceiverSet<blink::mojom::AIManager> receivers_;
 

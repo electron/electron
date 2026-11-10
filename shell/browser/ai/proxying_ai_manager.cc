@@ -212,4 +212,9 @@ void ProxyingAIManager::CreateSemanticEmbedder(
   NOTIMPLEMENTED();
 }
 
+void ProxyingAIManager::GetSupportedEmbeddingSpaces(
+    GetSupportedEmbeddingSpacesCallback callback) {
+  std::move(callback).Run({});
+}
+
 }  // namespace electron
