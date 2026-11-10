@@ -39,7 +39,7 @@ index 609e46ffd02341dcb5188a08299aab2be73cfff1..9f532919895d135fcce15be3cd79b446
            NOTREACHED();
        }
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
-index 0605b0eec1784bcfaa0429fb308726d92173e35b..952291d69b0a6a142af1ca4a7ff0dd7312123575 100644
+index 58c2c0758987f9ac380f1cbf47f9e604b241aa8f..f08cdeb2fd6388f395a107f381d70adce05908de 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
 @@ -119,7 +119,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(
@@ -95,10 +95,10 @@ index 9e63dd9d33abc89a7bbef75992925356470ebb26..9071afc9bb01db832164909a202effaf
  
    bool is_listening_ = false;
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
-index d3838460df1f61dbcee1cc6586632cb218fec97a..4351cfeea03b8adc5da8500db1faf6d8b8811454 100644
+index cbfbbf86b71d0f3b0bacbae40d5e96e21d9dc8ab..cb20a4c0d87f1d3eb3cd3368d6209c1251dcbd82 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
-@@ -66,6 +66,8 @@ void GlobalAcceleratorListenerWin::OnWndProc(HWND hwnd,
+@@ -72,6 +72,8 @@ void GlobalAcceleratorListenerWin::OnWndProc(HWND hwnd,
    modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
@@ -107,7 +107,7 @@ index d3838460df1f61dbcee1cc6586632cb218fec97a..4351cfeea03b8adc5da8500db1faf6d8
    ui::Accelerator accelerator(ui::KeyboardCodeForWindowsKeyCode(key_code),
                                modifiers);
  
-@@ -96,6 +98,7 @@ bool GlobalAcceleratorListenerWin::StartListeningForAccelerator(
+@@ -103,6 +105,7 @@ bool GlobalAcceleratorListenerWin::StartListeningForAccelerator(
    modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
    modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
    modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
@@ -130,7 +130,7 @@ index db596585cbb44b3710636e3fc013f288966f604f..6d5557ee1a2c35ee15e695e024834184
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index d923715b21bafdcfcd247101092cee62e19959b6..0627953a9f4e17135c2358fd73379bd9b31a4913 100644
+index d23b07189289c953cd69b321cd3341b44f1daa36..74b7bde4b804a26ee290b67934b255f2ae0e15f0 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -40,6 +40,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
@@ -159,7 +159,7 @@ index d923715b21bafdcfcd247101092cee62e19959b6..0627953a9f4e17135c2358fd73379bd9
    }
  
 diff --git a/ui/base/x/x11_global_shortcut_listener.cc b/ui/base/x/x11_global_shortcut_listener.cc
-index 8c9a137d5e50bb8de7b61986963d9e93d9d8f02a..b371d11c2339829979b498c58925e70abd872096 100644
+index 4182722b8908cb8f0a7eb5566f98de4afd77bbbf..e2c30e81570d4e9a06353d971aaf28e558a58240 100644
 --- a/ui/base/x/x11_global_shortcut_listener.cc
 +++ b/ui/base/x/x11_global_shortcut_listener.cc
 @@ -33,11 +33,13 @@ constexpr auto kModifiersMasks = std::to_array<x11::ModMask>({
@@ -178,7 +178,7 @@ index 8c9a137d5e50bb8de7b61986963d9e93d9d8f02a..b371d11c2339829979b498c58925e70a
  }
  
  }  // namespace
-@@ -83,8 +85,9 @@ uint32_t XGlobalShortcutListener::DispatchEvent(const PlatformEvent& event) {
+@@ -85,8 +87,9 @@ uint32_t XGlobalShortcutListener::DispatchEvent(const PlatformEvent& event) {
  bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
                                                    bool is_alt_down,
                                                    bool is_ctrl_down,
@@ -190,7 +190,7 @@ index 8c9a137d5e50bb8de7b61986963d9e93d9d8f02a..b371d11c2339829979b498c58925e70a
    auto keysym = XKeysymForWindowsKeyCode(key_code, false);
    auto keycode = connection_->KeysymToKeycode(keysym);
  
-@@ -109,7 +112,7 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
+@@ -111,7 +114,7 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
    }
  
    registered_combinations_.insert(
@@ -199,7 +199,7 @@ index 8c9a137d5e50bb8de7b61986963d9e93d9d8f02a..b371d11c2339829979b498c58925e70a
  
    return true;
  }
-@@ -117,8 +120,9 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
+@@ -119,8 +122,9 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
  void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
                                                      bool is_alt_down,
                                                      bool is_ctrl_down,
@@ -211,7 +211,7 @@ index 8c9a137d5e50bb8de7b61986963d9e93d9d8f02a..b371d11c2339829979b498c58925e70a
    auto keysym = XKeysymForWindowsKeyCode(key_code, false);
    auto keycode = connection_->KeysymToKeycode(keysym);
  
-@@ -126,7 +130,7 @@ void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
+@@ -128,7 +132,7 @@ void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
      connection_->UngrabKey({keycode, x_root_window_, modifiers | mask});
  
    registered_combinations_.erase(
@@ -220,7 +220,7 @@ index 8c9a137d5e50bb8de7b61986963d9e93d9d8f02a..b371d11c2339829979b498c58925e70a
  }
  
  void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
-@@ -136,13 +140,14 @@ void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
+@@ -138,13 +142,14 @@ void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
    const bool is_alt_down = event.flags() & EF_ALT_DOWN;
    const bool is_ctrl_down = event.flags() & EF_CONTROL_DOWN;
    const bool is_shift_down = event.flags() & EF_SHIFT_DOWN;

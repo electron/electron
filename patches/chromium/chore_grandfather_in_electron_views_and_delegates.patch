@@ -10,7 +10,7 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index 9a873393387552a8949bee9c7d309de566767e57..e4d46104dac7602008dbe2c5e925c0eeb9bb3359 100644
+index 816c447f0f5c7cfd04e5629e624a5bd4774fff03..2c244362296a7b66cbd7b4ff9aa63823474e4454 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
 @@ -78,6 +78,17 @@ namespace ash {
@@ -45,7 +45,7 @@ index 9a873393387552a8949bee9c7d309de566767e57..e4d46104dac7602008dbe2c5e925c0ee
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index 2365f88bddec11d282940f32255b79b4e4ede583..1ae62843509c30012d5b148100a09cb58d068979 100644
+index 86f9976f5c913547b24a8090ca524c2a04b69018..98feb4d0a051dfa25dd6f5f207900ca2fbb0bbbd 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
 @@ -167,6 +167,12 @@ namespace crostini {

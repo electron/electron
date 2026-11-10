@@ -24,32 +24,19 @@ its ids, so its behavior is unchanged; ids it did not issue now capture
 normally instead of failing, which would be the argument for upstreaming.
 
 diff --git a/content/browser/media/capture/native_screen_capture_picker.cc b/content/browser/media/capture/native_screen_capture_picker.cc
-index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..c9155f67d1c78bbc17b64fdeb4c7775dc7c4d254 100644
+index 7a6b17291f0f6686e9f266ae658e950c652c9444..8a80ce70859096a9764bf88206938fdfab61cb77 100644
 --- a/content/browser/media/capture/native_screen_capture_picker.cc
 +++ b/content/browser/media/capture/native_screen_capture_picker.cc
-@@ -6,7 +6,6 @@
- 
- #if BUILDFLAG(IS_MAC)
- #include "content/browser/media/capture/native_screen_capture_picker_mac.h"
--#include "media/base/media_switches.h"
- #endif
- 
- namespace content {
-@@ -14,11 +13,10 @@ namespace content {
+@@ -16,9 +16,6 @@ namespace content {
  std::unique_ptr<NativeScreenCapturePicker>
  MaybeCreateNativeScreenCapturePicker() {
  #if BUILDFLAG(IS_MAC)
--  if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
--    return CreateNativeScreenCapturePickerMac();
+-  if (!base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
+-    return nullptr;
 -  }
--#endif
-+  return CreateNativeScreenCapturePickerMac();
-+#else
-   return nullptr;
-+#endif
- }
- 
- }  // namespace content
+   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+   if (command_line->HasSwitch(switches::kUseFakeNativeScreenCapturePicker)) {
+     // The optional switch value filters the browser window by title.
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 index f5ae612041759a1623314bafac908bacb4136c86..703bf8fab5c31f77aa52b7c195e1770922f96fb1 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
