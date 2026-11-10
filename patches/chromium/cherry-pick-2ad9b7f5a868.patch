@@ -1,0 +1,255 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Sat, 7 Nov 2026 09:46:21 -0800
+Subject: [M156] Fix use-after-free in libxslt direct pattern match cache
+
+xsltTestCompMatchDirect read the cached node-set from the transform
+context's runtime extras before calling xmlXPathEval, then freed that
+pointer afterwards. The evaluation can re-enter the function for the
+same cache slot (e.g. via a lazily evaluated global variable whose value
+runs xsl:number), and the nested call may free and replace the cached
+object, resulting in a double free. Re-read the slot after the
+evaluation.
+
+(cherry picked from commit 61cab3f77203671e09402e68738aa217632aed8d)
+
+Fixed: 582442907, 572578603
+Change-Id: I535c3ba61bfdc951683590cd31f4fc6b8fa0a46a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8762073
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Reviewed-by: Srinivas Sista <srinivassista@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1738201}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8762826
+Reviewed-by: Harry Souders <harrysouders@google.com>
+Commit-Queue: Harry Souders <harrysouders@google.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#2121}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
+index 8badb2acffe162bb2480cefbed0fbbc34277c018..1e99ab799647ab281243255d96ab49bf868730e2 100644
+--- a/third_party/blink/web_tests/TestExpectations
++++ b/third_party/blink/web_tests/TestExpectations
+@@ -1627,6 +1627,7 @@ crbug.com/421650040 virtual/xslt-enabled/fast/xsl/xslt/loader/document-updated-b
+ 
+ crbug.com/503627446 external/wpt/xml/xslt/xslt-attribute-double-free-crash.html [ Pass ]
+ crbug.com/503879106 external/wpt/xml/xslt/xslt-type-confusion-crash.html [ Pass ]
++crbug.com/582442907 external/wpt/xml/xslt/xslt-number-pattern-cache-reentrancy-crash.html [ Pass ]
+ crbug.com/440374744 external/wpt/content-security-policy/xslt/document-function-blocked.html [ Timeout ]
+ crbug.com/421650040 external/wpt/content-security-policy/xslt/xsltprocessor-include-blocked.html [ Timeout ]
+ crbug.com/421650040 fast/xsl/xslt/xmlviewer/long-multi-byte-char.xml [ Failure ]
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-doc2.xml b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-doc2.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..2daa6db55ae53178c39b42c1a2ef83f6a5731ca8
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-doc2.xml
+@@ -0,0 +1 @@
++<r><n id="2"/></r>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-doc3.xml b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-doc3.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..2e74bc43f4b77d744ea401bbecb9af9d1cf58a26
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-doc3.xml
+@@ -0,0 +1 @@
++<r><n id="3"/></r>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-inner.xsl b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-inner.xsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..5b4e994fd22342850272bda0c38b558d9a95132d
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-inner.xsl
+@@ -0,0 +1,5 @@
++<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
++  <xsl:template name="inner">
++    <xsl:number count="n[true()][true()]" level="single"/>
++  </xsl:template>
++</xsl:stylesheet>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-outer.xsl b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-outer.xsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..deec70d62421ebb52572cb747815ac328f758906
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-outer.xsl
+@@ -0,0 +1,5 @@
++<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
++  <xsl:template name="outer">
++    <xsl:number count="n[true()][$b]" level="single"/>
++  </xsl:template>
++</xsl:stylesheet>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-prime.xsl b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-prime.xsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c8c807d0fd2f976e4a6a81a2f4a7a653fab6df0
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import-prime.xsl
+@@ -0,0 +1,3 @@
++<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
++  <xsl:template match="n[true()][true()]" mode="prime">P</xsl:template>
++</xsl:stylesheet>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import.xml b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..f2c65f894562e390c728f61e36397604dbdf52a8
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import.xml
+@@ -0,0 +1,3 @@
++<?xml version="1.0"?>
++<?xml-stylesheet type="text/xsl" href="xslt-number-reentrancy-import.xsl"?>
++<r><n id="1"/></r>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import.xsl b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import.xsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..708c58eb25bd4b147c93f988b2c152205143452b
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-import.xsl
+@@ -0,0 +1,25 @@
++<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
++  <!-- The xsl:number patterns in the imported stylesheets share runtime cache
++       slots with the template pattern in the first imported stylesheet. -->
++  <xsl:import href="xslt-number-reentrancy-import-prime.xsl"/>
++  <xsl:import href="xslt-number-reentrancy-import-outer.xsl"/>
++  <xsl:import href="xslt-number-reentrancy-import-inner.xsl"/>
++  <xsl:output method="html"/>
++  <!-- $a populates the cache on the source document, then runs the outer
++       xsl:number on doc2. The outer count pattern lazily evaluates $b, which
++       runs the inner xsl:number on doc3 while the outer one is in progress. -->
++  <xsl:variable name="a">
++    <xsl:apply-templates select="/r/n" mode="prime"/>
++    <xsl:for-each select="document('xslt-number-reentrancy-doc2.xml')/r/n">
++      <xsl:call-template name="outer"/>
++    </xsl:for-each>
++  </xsl:variable>
++  <xsl:variable name="b">
++    <xsl:for-each select="document('xslt-number-reentrancy-doc3.xml')/r/n">
++      <xsl:call-template name="inner"/>
++    </xsl:for-each>
++  </xsl:variable>
++  <xsl:template match="/">
++    <html><body><xsl:value-of select="$a"/><xsl:value-of select="$b"/></body></html>
++  </xsl:template>
++</xsl:stylesheet>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-union.xml b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-union.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..e851454771cabea273cb3259296850ce65b52284
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-union.xml
+@@ -0,0 +1,3 @@
++<?xml version="1.0"?>
++<?xml-stylesheet type="text/xsl" href="xslt-number-reentrancy-union.xsl"?>
++<r><n id="1"/></r>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-union.xsl b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-union.xsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..80e69de64421a544282dc664b8b7b6ad7c5913e9
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/resources/xslt-number-reentrancy-union.xsl
+@@ -0,0 +1,21 @@
++<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
++  <xsl:output method="html"/>
++  <!-- $w runs xsl:number on the source document, leaving a cached result for
++       the second alternative of the count pattern, then on doc2. On doc2 the
++       count pattern lazily evaluates $v, which runs the same xsl:number on
++       doc3 while the outer one is in progress. -->
++  <xsl:variable name="w">
++    <xsl:apply-templates select="/r/n" mode="num"/>
++    <xsl:apply-templates select="document('xslt-number-reentrancy-doc2.xml')/r/n" mode="num"/>
++  </xsl:variable>
++  <xsl:variable name="v">
++    <xsl:apply-templates select="document('xslt-number-reentrancy-doc3.xml')/r/n" mode="num"/>
++    <xsl:text>v</xsl:text>
++  </xsl:variable>
++  <xsl:template match="n" mode="num">
++    <xsl:number level="single" count="never | n[@id = '2'][boolean($v)]"/>
++  </xsl:template>
++  <xsl:template match="/">
++    <html><body><xsl:value-of select="$w"/></body></html>
++  </xsl:template>
++</xsl:stylesheet>
+diff --git a/third_party/blink/web_tests/external/wpt/xml/xslt/xslt-number-pattern-cache-reentrancy-crash.html b/third_party/blink/web_tests/external/wpt/xml/xslt/xslt-number-pattern-cache-reentrancy-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..af9928d9d45d2c722e795236f6cd2db1fd714821
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xml/xslt/xslt-number-pattern-cache-reentrancy-crash.html
+@@ -0,0 +1,9 @@
++<!DOCTYPE html>
++<title>XSLT xsl:number pattern cache re-entrancy crash test</title>
++<link rel="help" href="https://crbug.com/582442907">
++<link rel="help" href="https://crbug.com/572578603">
++<body>
++  <p>Test passes if it does not crash.</p>
++  <iframe src="resources/xslt-number-reentrancy-import.xml"></iframe>
++  <iframe src="resources/xslt-number-reentrancy-union.xml"></iframe>
++</body>
+diff --git a/third_party/libxslt/chromium/0008-Fix-use-after-free-in-direct-pattern-match-cache.patch b/third_party/libxslt/chromium/0008-Fix-use-after-free-in-direct-pattern-match-cache.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..76bfd14704f34a1383fdcca6d888902961055eb4
+--- /dev/null
++++ b/third_party/libxslt/chromium/0008-Fix-use-after-free-in-direct-pattern-match-cache.patch
+@@ -0,0 +1,40 @@
++From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
++From: Joey Arhar <jarhar@chromium.org>
++Date: Fri, 6 Nov 2026 14:45:00 -0800
++Subject: [PATCH] Fix use-after-free in direct pattern match cache
++
++xsltTestCompMatchDirect reads the cached node-set for a pattern from the
++transformation context's runtime extras before calling xmlXPathEval.
++The evaluation can re-enter xsltTestCompMatchDirect for the same cache
++slot, for example when a predicate references a global variable whose
++lazily evaluated value runs xsl:number. The nested call can free and
++replace the cached object, after which the outer call freed its stale
++pointer again.
++
++Re-read the cached object from the runtime extras after the evaluation
++instead of using the value read before it.
++---
++ libxslt/pattern.c | 9 +++++++++
++ 1 file changed, 9 insertions(+)
++
++diff --git a/libxslt/pattern.c b/libxslt/pattern.c
++index 581f17919fe3a..019a5cebbb31e 100644
++--- a/libxslt/pattern.c
+++++ b/libxslt/pattern.c
++@@ -581,6 +581,15 @@ xsltTestCompMatchDirect(xsltTransformContextPtr ctxt, xsltCompMatchPtr comp,
++ 	    nocache = 1;
++
++ 	if (nocache == 0) {
+++	    /*
+++	     * xmlXPathEval can re-enter this function for the same cache
+++	     * slot, e.g. through a lazily evaluated global variable whose
+++	     * value runs xsl:number. The nested call may free or replace
+++	     * the cached object, so re-read it instead of using the value
+++	     * read before the evaluation.
+++	     */
+++	    list = (xmlXPathObjectPtr)
+++		XSLT_RUNTIME_EXTRA_LST(ctxt, sel->lenExtra);
++ 	    if (list != NULL)
++ 		xmlXPathFreeObject(list);
++ 	    list = newlist;
++--
+diff --git a/third_party/libxslt/chromium/roll.py b/third_party/libxslt/chromium/roll.py
+index 16bf0476cf6ce6e4c61c26e4d140d44bdfe96773..a24e66ef1ef81f00c5fdd39b6f2c37e9616b374b 100755
+--- a/third_party/libxslt/chromium/roll.py
++++ b/third_party/libxslt/chromium/roll.py
+@@ -76,6 +76,7 @@ PATCHES = [
+     '0005-Verify-dictionary-ownership-before-aliasing-attribut.patch',
+     '0006-Fix-type-confusion-in-xsltParseTemplateContent.patch',
+     '0007-Return-an-empty-node-set-from-document-function-with-invalid-uri.patch',
++    '0008-Fix-use-after-free-in-direct-pattern-match-cache.patch',
+ ]
+ 
+ 
+diff --git a/third_party/libxslt/src/libxslt/pattern.c b/third_party/libxslt/src/libxslt/pattern.c
+index 581f17919fe3a15e9326c45117c1961e634df3a1..019a5cebbb31e576a376aa3470b7811fadb62323 100644
+--- a/third_party/libxslt/src/libxslt/pattern.c
++++ b/third_party/libxslt/src/libxslt/pattern.c
+@@ -581,6 +581,15 @@ xsltTestCompMatchDirect(xsltTransformContextPtr ctxt, xsltCompMatchPtr comp,
+ 	    nocache = 1;
+ 
+ 	if (nocache == 0) {
++	    /*
++	     * xmlXPathEval can re-enter this function for the same cache
++	     * slot, e.g. through a lazily evaluated global variable whose
++	     * value runs xsl:number. The nested call may free or replace
++	     * the cached object, so re-read it instead of using the value
++	     * read before the evaluation.
++	     */
++	    list = (xmlXPathObjectPtr)
++		XSLT_RUNTIME_EXTRA_LST(ctxt, sel->lenExtra);
+ 	    if (list != NULL)
+ 		xmlXPathFreeObject(list);
+ 	    list = newlist;

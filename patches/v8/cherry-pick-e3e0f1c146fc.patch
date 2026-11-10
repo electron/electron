@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Fri, 9 Oct 2026 13:33:53 +0200
+Subject: [termination exception] Don't swallow termination exceptions in
+ IteratorClose
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bug: 568893995
+Change-Id: Iabfacc2829c4de14307b3dba3dec5d1472e713c4
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8538474
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110529}
+
+diff --git a/src/builtins/builtins-iterator-inl.h b/src/builtins/builtins-iterator-inl.h
+index ca0897c0855d2b9d3349cd49d112dce8dd73621d..426a29597bd932f99acd272044e0c896e1d52810 100644
+--- a/src/builtins/builtins-iterator-inl.h
++++ b/src/builtins/builtins-iterator-inl.h
+@@ -77,8 +77,13 @@ inline MaybeDirectHandle<JSReceiver> IteratorStep(
+ // https://tc39.es/ecma262/#sec-iteratorclose
+ inline void IteratorClose(Isolate* isolate, DirectHandle<JSReceiver> iterator) {
+   DirectHandle<Object> completion_exception;
++
+   bool has_completion_exception = isolate->has_exception();
+   if (has_completion_exception) {
++    if (isolate->is_execution_terminating()) {
++      // Don't swallow the termination exception.
++      return;
++    }
+     completion_exception = handle(isolate->exception(), isolate);
+     isolate->clear_exception();
+   }
+@@ -91,6 +96,10 @@ inline void IteratorClose(Isolate* isolate, DirectHandle<JSReceiver> iterator) {
+   if (!Object::GetProperty(isolate, iterator,
+                            isolate->factory()->return_string())
+            .ToHandle(&return_method)) {
++    if (isolate->is_execution_terminating()) {
++      // Don't swallow the termination exception.
++      return;
++    }
+     has_inner_exception = true;
+     inner_exception = handle(isolate->exception(), isolate);
+     isolate->clear_exception();
+@@ -103,6 +112,11 @@ inline void IteratorClose(Isolate* isolate, DirectHandle<JSReceiver> iterator) {
+     if (!Execution::Call(isolate, return_method, iterator,
+                          base::Vector<const DirectHandle<Object>>())
+              .ToHandle(&inner_result)) {
++      if (isolate->is_execution_terminating()) {
++        // Don't swallow the termination exception.
++        return;
++      }
++
+       has_inner_exception = true;
+       inner_exception = handle(isolate->exception(), isolate);
+       isolate->clear_exception();
+diff --git a/test/mjsunit/regress/regress-568893995-1.js b/test/mjsunit/regress/regress-568893995-1.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1860c02aaf055a697e1314cd1b837dcb9ab86b24
+--- /dev/null
++++ b/test/mjsunit/regress/regress-568893995-1.js
+@@ -0,0 +1,29 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++const iterator = {
++  [Symbol.iterator]() {
++    return this;
++  },
++  next() {
++    return { value: 42, done: false };
++  },
++  return() {
++    d8.terminateNow();
++    return {};
++  }
++};
++
++try {
++  %IterableForEach(iterator, () => {
++    throw new Error("abrupt completion");
++  });
++} catch (e) {
++  // If the termination exception is swallowed, we catch Error("abrupt
++  // completion") here.
++}
++
++assertUnreachable("Termination exception was swallowed in IteratorClose");
+diff --git a/test/mjsunit/regress/regress-568893995-2.js b/test/mjsunit/regress/regress-568893995-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..7742377711e0c6359997c070d70f850788cdcf17
+--- /dev/null
++++ b/test/mjsunit/regress/regress-568893995-2.js
+@@ -0,0 +1,27 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++let worker = new Worker(`
++  const iterator = {
++    [Symbol.iterator]() {
++      return this;
++    },
++    next() {
++      return { value: 42, done: false };
++    },
++    return() {
++      postMessage("return_called");
++      return {};
++    }
++  };
++  %IterableForEach(iterator, () => {
++    d8.terminateNow();
++  });
++`, {type: "string"});
++
++let msg = worker.getMessage();
++assertEquals(undefined, msg,
++  "iterator.return() must not be called when execution is terminating");
+diff --git a/test/mjsunit/regress/regress-568893995-3.js b/test/mjsunit/regress/regress-568893995-3.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c21d678a9e1b2eae403de044253a16c716ec2ee3
+--- /dev/null
++++ b/test/mjsunit/regress/regress-568893995-3.js
+@@ -0,0 +1,28 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++const iterator = {
++  [Symbol.iterator]() {
++    return this;
++  },
++  next() {
++    return { value: 42, done: false };
++  },
++  get return() {
++    d8.terminateNow();
++  }
++};
++
++try {
++  %IterableForEach(iterator, () => {
++    throw new Error("abrupt completion");
++  });
++} catch (e) {
++  // If the termination exception is swallowed, we catch Error("abrupt
++  // completion") here.
++}
++
++assertUnreachable("Termination exception was swallowed in IteratorClose when getting return");
