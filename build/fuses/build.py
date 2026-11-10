@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
+import argparse
 from collections import OrderedDict
 import json
 import os
-import sys
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
+parser = argparse.ArgumentParser()
+parser.add_argument('header_output')
+parser.add_argument('source_output')
+parser.add_argument('--wire-output')
+args = parser.parse_args()
 
 SENTINEL = "dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX"
 
@@ -106,13 +111,13 @@ impl = impl.replace("{getters}", getters_cc.strip())
 
 # On Windows the wire stays in the executable so existing fuse tools continue
 # to patch the same file. The runtime receives its address at entry.
-if len(sys.argv) == 4:
+if args.wire_output:
   wire_start = impl.index('const volatile char kFuseWire[]')
   wire_end = impl.index(';', wire_start) + 1
   wire_definition = impl[wire_start:wire_end]
   wire_impl = '#include "electron/fuses.h"\n\nnamespace electron::fuses {\n'
   wire_impl += wire_definition + '\n}  // namespace electron::fuses\n'
-  with open(sys.argv[3], 'w') as f:
+  with open(args.wire_output, 'w') as f:
     f.write(wire_impl)
   header = header.replace('extern const volatile char kFuseWire[];',
                           f'extern const volatile char kFuseWire[{len(SENTINEL) + 2 + len(fuses)}];\n'
@@ -134,8 +139,8 @@ bool SetFuseWire(const volatile char* wire) {
                       hex_arr(SENTINEL) + ',' + c_hex(fuse_version) + ',' + c_hex(len(fuses)))
   impl = impl.replace('return kFuseWire[', 'return g_fuse_wire[')
 
-with open(sys.argv[1], 'w') as f:
+with open(args.header_output, 'w') as f:
   f.write(header)
 
-with open(sys.argv[2], 'w') as f:
+with open(args.source_output, 'w') as f:
   f.write(impl)

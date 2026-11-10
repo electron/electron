@@ -456,11 +456,15 @@ action("electron_fuses") {
     "$target_gen_dir/fuses.h",
     "$target_gen_dir/fuses.cc",
   ]
-  if (is_win) {
-    outputs += [ "$target_gen_dir/fuses_wire.cc" ]
-  }
-
   args = rebase_path(outputs)
+  if (is_win) {
+    wire_output = "$target_gen_dir/fuses_wire.cc"
+    outputs += [ wire_output ]
+    args += [
+      "--wire-output",
+      rebase_path(wire_output),
+    ]
+  }
 }
 
 action("electron_generate_node_defines") {
