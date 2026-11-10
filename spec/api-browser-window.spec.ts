@@ -3270,13 +3270,21 @@ describe('BrowserWindow module', () => {
       });
     }
 
-    it('can destroy the requesting frame from a preconnect listener', async () => {
+    it('forwards preconnect when a frame listener requests window destruction', async () => {
       w = new BrowserWindow({ show: false });
       const frame = w.webContents.mainFrame;
       const ses = w.webContents.session;
-      let sessionPreconnectAfterDestroy = false;
-      const onSessionPreconnect = () => {
-        sessionPreconnectAfterDestroy ||= frame.isDestroyed();
+      let sessionPreconnects = 0;
+      let frameDestroyedWhenForwarded: boolean | undefined;
+      const onSessionPreconnect = (
+        _event: Electron.Event,
+        _preconnectUrl: string,
+        _allowCredentials: boolean,
+        requestingFrame: WebFrameMain | null
+      ) => {
+        if (requestingFrame !== frame) return;
+        sessionPreconnects++;
+        frameDestroyedWhenForwarded = requestingFrame.isDestroyed();
       };
       ses.on('preconnect', onSessionPreconnect);
       defer(() => ses.removeListener('preconnect', onSessionPreconnect));
@@ -3291,8 +3299,23 @@ describe('BrowserWindow module', () => {
       });
       await preconnect;
       await load;
-      expect(frame.isDestroyed()).toBe(true);
-      expect(sessionPreconnectAfterDestroy).toBe(false);
+      await waitUntil(() => frame.isDestroyed());
+      expect(sessionPreconnects).toBe(1);
+      expect(frameDestroyedWhenForwarded).toBe(false);
+    });
+
+    it('does not forward preconnect if the frame is destroyed by its listener', async () => {
+      const fixture = path.join(fixtures, 'api', 'quit-after-preconnect');
+      const { code, signal, stdout, stderr } = await spawnAndWait(
+        process.execPath,
+        [fixture, '--destroy-frame-on-preconnect'],
+        { timeout: 20_000 }
+      );
+      const message = `code=${code} signal=${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`;
+      expect(stdout, message).toContain('frame destroyed inside listener: true');
+      expect(stdout, message).toContain('session preconnects: 0, listeners: 1');
+      expect(signal, message).toBeNull();
+      expect(code, message).toBe(0);
     });
   });
 
