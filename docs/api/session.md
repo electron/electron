@@ -28,7 +28,9 @@ reach the network from that session, not just page loads:
 
 * Navigations, subresources, `fetch()`, XHR, beacons, workers and service
   workers, downloads, prefetches and `<link rel="preconnect">` /
-  `<link rel="dns-prefetch">` hints.
+  `<link rel="dns-prefetch">` hints. The session's
+  [`'preconnect'`](#event-preconnect) event is still emitted for preconnect
+  hints, since it never opens a connection.
 * WebSockets and WebTransport.
 * WebRTC (`RTCPeerConnection`), including STUN/TURN and host candidates.
 * Host resolution, certificate revocation fetches and reporting uploads.

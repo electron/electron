@@ -40,9 +40,9 @@ void NetworkHintsHandlerImpl::Preconnect(const url::SchemeHostPort& url,
                                          bool allow_credentials) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  if (!browser_context_ ||
-      static_cast<electron::ElectronBrowserContext*>(browser_context_)
-          ->is_network_blocked()) {
+  // Electron only reports preconnect hints as the session's 'preconnect' event
+  // and never opens a connection here, so offline sessions keep emitting it.
+  if (!browser_context_) {
     return;
   }
   gin::WeakCell<electron::api::Session>* session =

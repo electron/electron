@@ -218,6 +218,23 @@ describe('session module', () => {
       expect(connections).toBe(0);
     });
 
+    it("still emits the session's 'preconnect' event", async () => {
+      const ses = offlineSession();
+      ses.protocol.handle(
+        'http',
+        () =>
+          new Response('<html><head><link rel="preconnect" href="http://preconnect.invalid"></head></html>', {
+            headers: { 'content-type': 'text/html' }
+          })
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      const preconnect = once(ses, 'preconnect');
+      await w.loadURL('http://offline.invalid/index.html');
+      const [, preconnectUrl] = await preconnect;
+      expect(preconnectUrl).toBe('http://preconnect.invalid/');
+      expect(connections).toBe(0);
+    });
+
     describe('with DevTools request interception', () => {
       const interceptSubresources = async (
         w: BrowserWindow,
