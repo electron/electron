@@ -441,10 +441,10 @@ index 18a070048449b2fb56996241c9cebc565f59dee9..9f77589c95ceb47b98fa9b8068c43aad
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index 845171e88ef7e848ef65aa8aee3d66bf55afac18..1b7492eb0ac51d4a68d80e0a087c2c4d744d6803 100644
+index 1d4538f01f135a6c0bd34f78594a0eea4a90c967..2bc336c8c3684abe5ecbeaecef365dc1981918e2 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
-@@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
+@@ -50,17 +50,19 @@ UtilitySandboxedProcessLauncherDelegate::
      UtilitySandboxedProcessLauncherDelegate(
          sandbox::mojom::Sandbox sandbox_type,
          const base::EnvironmentMap& env,
@@ -468,7 +468,7 @@ index 845171e88ef7e848ef65aa8aee3d66bf55afac18..1b7492eb0ac51d4a68d80e0a087c2c4d
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -119,11 +121,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -130,11 +132,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -499,7 +499,17 @@ index 845171e88ef7e848ef65aa8aee3d66bf55afac18..1b7492eb0ac51d4a68d80e0a087c2c4d
  
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
-@@ -206,6 +225,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
+@@ -206,6 +225,9 @@ void UtilitySandboxedProcessLauncherDelegate::SetZygote(
+ 
+ #if BUILDFLAG(IS_MAC)
+ bool UtilitySandboxedProcessLauncherDelegate::DisclaimResponsibility() {
++  if (disclaim_responsibility_) {
++    return true;
++  }
+   if (sandbox_type_ == sandbox::mojom::Sandbox::kCdm) {
+     return base::FeatureList::IsEnabled(kMacDisclaimCdmTccResponsibility) &&
+            !base::IsCurrentProcessSelfResponsible();
+@@ -225,6 +247,11 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
  
    return std::nullopt;
  }
@@ -508,15 +518,11 @@ index 845171e88ef7e848ef65aa8aee3d66bf55afac18..1b7492eb0ac51d4a68d80e0a087c2c4d
 +    bool disclaim_responsibility) {
 +  disclaim_responsibility_ = disclaim_responsibility;
 +}
-+
-+bool UtilitySandboxedProcessLauncherDelegate::DisclaimResponsibility() {
-+  return disclaim_responsibility_;
-+}
  #endif  // BUILDFLAG(IS_MAC)
  
  }  // namespace content
 diff --git a/content/browser/service_host/utility_sandbox_delegate.h b/content/browser/service_host/utility_sandbox_delegate.h
-index 6c8d6f754358170e0ec7c20d064332f7bbcae7db..0a7c2d8610d9746887eeeedaad557b3e585c2e81 100644
+index a4dd233864a63a9fa75d73b5c19ade1fee786b71..56eacce2551a751ef02fc53c26db9f2b19be7025 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.h
 +++ b/content/browser/service_host/utility_sandbox_delegate.h
 @@ -36,7 +36,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
@@ -547,12 +553,11 @@ index 6c8d6f754358170e0ec7c20d064332f7bbcae7db..0a7c2d8610d9746887eeeedaad557b3e
  
  #if BUILDFLAG(USE_ZYGOTE)
    void SetZygote(ZygoteCommunication* handle);
-@@ -74,12 +81,12 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
- 
+@@ -75,12 +82,11 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
  #if BUILDFLAG(IS_MAC)
+   bool DisclaimResponsibility() override;
    std::optional<base::mac::ProcessRequirement> GetProcessRequirement() override;
 +  void SetDisclaimResponsibility(bool disclaim_responsibility);
-+  bool DisclaimResponsibility() override;
  #endif  // BUILDFLAG(IS_MAC)
  
   private:
@@ -562,7 +567,7 @@ index 6c8d6f754358170e0ec7c20d064332f7bbcae7db..0a7c2d8610d9746887eeeedaad557b3e
  
  #if BUILDFLAG(IS_WIN)
    // Adds preload-libraries to the delegate blob for utility_main() to access
-@@ -95,12 +102,20 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -96,12 +102,20 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    std::optional<raw_ptr<ZygoteCommunication>> zygote_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
