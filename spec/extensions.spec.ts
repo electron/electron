@@ -993,6 +993,58 @@ describe('chrome extensions', () => {
         const received = events.find((event) => event.name === 'onHeadersReceived:extraHeaders');
         expect(received?.responseHeaders).toContainEqual({ name: 'X-From-Session', value: 'app' });
       });
+
+      describe('with a CORS preflight', () => {
+        let crossOriginServer: http.Server;
+        let crossOriginUrl: string;
+        let methodsReceivedByServer: string[];
+
+        const put = (target: string): Promise<number | string> =>
+          w.webContents.executeJavaScript(
+            `fetch(${JSON.stringify(target)}, { method: 'PUT' }).then((response) => response.status, (error) => error.message)`
+          );
+
+        beforeEach(async () => {
+          methodsReceivedByServer = [];
+          crossOriginServer = http.createServer((req, res) => {
+            methodsReceivedByServer.push(req.method!);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'PUT');
+            res.end();
+          });
+          ({ url: crossOriginUrl } = await listen(crossOriginServer));
+        });
+
+        afterEach(() => {
+          crossOriginServer.close();
+        });
+
+        it('sends the preflight and the request when session.webRequest allows both', async () => {
+          const token = crypto.randomUUID();
+          const methodsSeenBySession: string[] = [];
+          customSession.webRequest.onBeforeRequest((details, callback) => {
+            if (details.url.includes(token)) methodsSeenBySession.push(details.method);
+            callback({});
+          });
+          expect(await put(`${crossOriginUrl}/${token}`)).toBe(200);
+
+          expect(methodsSeenBySession).toEqual(['PUT', 'OPTIONS']);
+          expect(methodsReceivedByServer).toEqual(['OPTIONS', 'PUT']);
+        });
+
+        it('does not send a preflight that session.webRequest cancels', async () => {
+          const token = crypto.randomUUID();
+          const methodsSeenBySession: string[] = [];
+          customSession.webRequest.onBeforeRequest((details, callback) => {
+            if (details.url.includes(token)) methodsSeenBySession.push(details.method);
+            callback({ cancel: details.method === 'OPTIONS' });
+          });
+          expect(await put(`${crossOriginUrl}/${token}`)).toBe('Failed to fetch');
+
+          expect(methodsSeenBySession).toEqual(['PUT', 'OPTIONS']);
+          expect(methodsReceivedByServer).toEqual([]);
+        });
+      });
     });
 
     describe('WebSocket', () => {
