@@ -517,6 +517,13 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +      BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 +#endif
 +#if BUILDFLAG(IS_ANDROID)
++      // Block the legacy per-user fontconfig cache and font directories. The
++      // current locations are under ~/.cache and ~/.local/share.
++      BlockPath::CreateRelative(base::DIR_HOME,
++                                FILE_PATH_LITERAL(".fontconfig"),
++                                BlockType::kBlockAllChildren),
++      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".fonts"),
++                                BlockType::kBlockAllChildren),
 +      BlockPath::CreateRelative(base::DIR_ANDROID_APP_DATA,
 +                                BlockType::kBlockAllChildren),
 +#endif
@@ -1317,6 +1324,13 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -
 -  for (const auto* block_rules_ptr :
 -       {&extra_rules, &block_path_rules.block_path_rules_}) {
+-      // Block the legacy per-user fontconfig cache and font directories. The
+-      // current locations are under ~/.cache and ~/.local/share.
+-      BlockPath::CreateRelative(base::DIR_HOME,
+-                                FILE_PATH_LITERAL(".fontconfig"),
+-                                BlockType::kBlockAllChildren),
+-      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".fonts"),
+-                                BlockType::kBlockAllChildren),
 -    for (const auto& block : *block_rules_ptr) {
 -      if (should_block_with_rule(block.path, block.type)) {
 -        return true;
