@@ -1794,10 +1794,8 @@ if (is_mac) {
     ]
   }
 
-  # Deps that determine the native code linked into the electron executable.
-  # Shared with :electron_resource_allowlist_inputs below so the resource
-  # allowlist is computed from exactly the same link inputs as the shipped
-  # binary.
+  # Link inputs for the Windows runtime DLL or the non-Windows executable.
+  # The resource allowlist uses the same inputs as the binary it describes.
   electron_app_link_deps = [
     ":default_app_asar",
     ":electron_app_manifest",
@@ -1868,8 +1866,7 @@ if (is_mac) {
       args = rebase_path(inputs + outputs, root_build_dir)
     }
 
-    electron_app_link_deps = []
-    electron_app_link_deps = [
+    electron_launcher_link_deps = [
       ":electron_app_manifest",
       ":electron_fuses",
       ":electron_runtime_exports",
@@ -1908,7 +1905,13 @@ if (is_mac) {
       ]
     }
     include_dirs = [ "." ]
-    deps = electron_app_link_deps + [ ":packed_resources" ]
+    if (is_win) {
+      deps = electron_launcher_link_deps
+    } else {
+      deps = electron_app_link_deps
+    }
+
+    deps += [ ":packed_resources" ]
 
     data = []
     data_deps = []
