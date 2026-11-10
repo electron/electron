@@ -21,6 +21,7 @@ filenames = {
 
   lib_sources_linux = [
     "shell/browser/browser_linux.cc",
+    "shell/browser/lib/logind_utils.h",
     "shell/browser/lib/power_observer_linux.cc",
     "shell/browser/lib/power_observer_linux.h",
     "shell/browser/lib/session_end_listener_linux.cc",

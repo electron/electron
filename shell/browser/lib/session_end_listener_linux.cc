@@ -8,8 +8,6 @@
 #include <tuple>
 #include <utility>
 
-#include "base/command_line.h"
-#include "base/files/file_path.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/notreached.h"
@@ -17,21 +15,12 @@
 #include "dbus/object_path.h"
 #include "dbus/object_proxy.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/lib/logind_utils.h"
 
 namespace {
 
-const char kLogindServiceName[] = "org.freedesktop.login1";
-const char kLogindObjectPath[] = "/org/freedesktop/login1";
-const char kLogindManagerInterface[] = "org.freedesktop.login1.Manager";
 const char kPrepareForShutdownSignal[] = "PrepareForShutdown";
 const char kInhibitMethod[] = "Inhibit";
-
-base::FilePath::StringType GetExecutableBaseName() {
-  return base::CommandLine::ForCurrentProcess()
-      ->GetProgram()
-      .BaseName()
-      .value();
-}
 
 }  // namespace
 
@@ -89,10 +78,10 @@ void SessionEndListenerLinux::ConnectToLogind() {
 
   const auto weak_this = weak_ptr_factory_.GetWeakPtr();
   logind_proxy_ = system_bus_->GetObjectProxy(
-      kLogindServiceName, dbus::ObjectPath(kLogindObjectPath));
+      logind::kServiceName, dbus::ObjectPath(logind::kObjectPath));
 
   dbus_utils::ConnectToSignal<"b">(
-      logind_proxy_, kLogindManagerInterface, kPrepareForShutdownSignal,
+      logind_proxy_, logind::kManagerInterface, kPrepareForShutdownSignal,
       base::BindRepeating(&SessionEndListenerLinux::OnPrepareForShutdown,
                           weak_this),
       base::BindOnce(&SessionEndListenerLinux::OnPrepareForShutdownConnected,
@@ -119,7 +108,7 @@ void SessionEndListenerLinux::OnPrepareForShutdownConnected(
 void SessionEndListenerLinux::OnLogindAvailable(bool available) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (!available) {
-    VLOG(1) << kLogindServiceName << " not available";
+    VLOG(1) << logind::kServiceName << " not available";
     return;
   }
   // Covers a logind that appeared after the signal connection.
@@ -135,10 +124,10 @@ void SessionEndListenerLinux::RequestInhibitor() {
 
   // A delay lock: logind waits for this process up to InhibitDelayMaxSec.
   dbus_utils::CallMethod<"ssss", "h">(
-      logind_proxy_, kLogindManagerInterface, kInhibitMethod,
+      logind_proxy_, logind::kManagerInterface, kInhibitMethod,
       base::BindOnce(&SessionEndListenerLinux::OnInhibitResponse,
                      weak_ptr_factory_.GetWeakPtr()),
-      "shutdown", GetExecutableBaseName(), "Ensure a clean shutdown", "delay");
+      "shutdown", logind::GetExecutableBaseName(), "Ensure a clean shutdown", "delay");
 }
 
 void SessionEndListenerLinux::OnInhibitResponse(

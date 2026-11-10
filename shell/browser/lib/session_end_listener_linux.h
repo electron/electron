@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_LIB_SESSION_END_LISTENER_LINUX_H_
 
 #include <memory>
+#include <string>
 
 #include "base/files/scoped_file.h"
 #include "base/functional/callback.h"
@@ -59,11 +60,6 @@ class SessionEndListenerLinux {
 
   // An empty callback means nothing wants to delay, i.e. quit.
   void SetShouldQuitHandler(base::RepeatingCallback<bool()> should_quit);
-
-  bool has_inhibitor_for_testing() const { return inhibitor_fd_.is_valid(); }
-  bool has_portal_monitor_for_testing() const {
-    return portal_monitor_ != nullptr;
-  }
 
  private:
   static const char* SourceName(Source source);

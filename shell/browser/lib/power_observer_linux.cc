@@ -5,36 +5,20 @@
 
 #include <unistd.h>
 
-#include "base/command_line.h"
-#include "base/files/file_path.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "device/bluetooth/dbus/bluez_dbus_manager.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
+#include "shell/browser/lib/logind_utils.h"
 #include "shell/common/uv_includes.h"
-
-namespace {
-
-const char kLogindServiceName[] = "org.freedesktop.login1";
-const char kLogindObjectPath[] = "/org/freedesktop/login1";
-const char kLogindManagerInterface[] = "org.freedesktop.login1.Manager";
-
-base::FilePath::StringType GetExecutableBaseName() {
-  return base::CommandLine::ForCurrentProcess()
-      ->GetProgram()
-      .BaseName()
-      .value();
-}
-
-}  // namespace
 
 namespace electron {
 
 PowerObserverLinux::PowerObserverLinux(
     base::PowerSuspendObserver* suspend_observer)
     : suspend_observer_(suspend_observer),
-      lock_owner_name_(GetExecutableBaseName()) {
+      lock_owner_name_(logind::GetExecutableBaseName()) {
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();
 
@@ -48,10 +32,10 @@ PowerObserverLinux::PowerObserverLinux(
 
   const auto weakThis = weak_ptr_factory_.GetWeakPtr();
 
-  logind_ = bus->GetObjectProxy(kLogindServiceName,
-                                dbus::ObjectPath(kLogindObjectPath));
+  logind_ = bus->GetObjectProxy(logind::kServiceName,
+                                dbus::ObjectPath(logind::kObjectPath));
   logind_->ConnectToSignal(
-      kLogindManagerInterface, "PrepareForSleep",
+      logind::kManagerInterface, "PrepareForSleep",
       base::BindRepeating(&PowerObserverLinux::OnPrepareForSleep, weakThis),
       base::BindRepeating(&PowerObserverLinux::OnSignalConnected, weakThis));
   logind_->WaitForServiceToBeAvailable(base::BindRepeating(
@@ -62,7 +46,7 @@ PowerObserverLinux::~PowerObserverLinux() = default;
 
 void PowerObserverLinux::OnLoginServiceAvailable(bool service_available) {
   if (!service_available) {
-    LOG(WARNING) << kLogindServiceName << " not available";
+    LOG(WARNING) << logind::kServiceName << " not available";
     return;
   }
   // Take sleep inhibit lock
@@ -70,7 +54,7 @@ void PowerObserverLinux::OnLoginServiceAvailable(bool service_available) {
 }
 
 void PowerObserverLinux::BlockSleep() {
-  dbus::MethodCall sleep_inhibit_call(kLogindManagerInterface, "Inhibit");
+  dbus::MethodCall sleep_inhibit_call(logind::kManagerInterface, "Inhibit");
   dbus::MessageWriter inhibit_writer(&sleep_inhibit_call);
   inhibit_writer.AppendString("sleep");  // what
   // Use the executable name as the lock owner, which will list rebrands of the

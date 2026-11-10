@@ -159,10 +159,8 @@ PowerMonitor* PowerMonitor::Create(v8::Isolate* isolate) {
 
 gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  auto builder =
-      gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
-          isolate);
-  return builder;
+  return gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
+      isolate);
 }
 
 const gin::WrapperInfo* PowerMonitor::wrapper_info() const {
