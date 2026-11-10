@@ -12,10 +12,10 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index e3c58ef8151c2f09f55dd11b0a43d5cffad25162..5c923460953829dc38f80bc1ca6e438d859894a0 100644
+index c88b43e50fe7d23bd356ae46855787be50db2bb9..a67de7ba456d347e019e4145165493baafee479b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11033,6 +11033,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11018,6 +11018,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -23,7 +23,7 @@ index e3c58ef8151c2f09f55dd11b0a43d5cffad25162..5c923460953829dc38f80bc1ca6e438d
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
-@@ -11043,6 +11044,11 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11028,6 +11029,11 @@ void RenderFrameHostImpl::CreateNewWindow(
      return;
    }
  
@@ -242,10 +242,10 @@ index 37cfc495b51a4e9a18ff6bdf9c6305562d02a298..e008fa40ea8011bb7a917942ae8d8118
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 316a4b66dbb56ee10854a6ba1f6e8ff83cd56807..a71d1bc740714ac14dc1534aa83ecbde65128cf0 100644
+index 02f36e53043d74dc05f694dd1959898c69be766f..4ab53d5bea95f90466a43939ca7c85985bbae63e 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2522,6 +2522,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2473,6 +2473,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  

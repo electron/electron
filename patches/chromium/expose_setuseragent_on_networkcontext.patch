@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 890a632d6ded6a9842a38edbc493efa5066c93b2..3f14de9f5a1acd7e65155ca977ec02ca6a72be0a 100644
+index 0b9286047749ed68ef68434203e28ae85a93db02..67ae96326c26336c4af919e67e0ca3e2a1dd5c47 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -2547,6 +2547,13 @@ NetworkContext::GetIsolatedTransactionFactory(
+@@ -2535,6 +2535,13 @@ NetworkContext::GetIsolatedTransactionFactory(
    return it->second->factory_handle;
  }
  
@@ -51,7 +51,7 @@ index 890a632d6ded6a9842a38edbc493efa5066c93b2..3f14de9f5a1acd7e65155ca977ec02ca
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 35adbb70b9c28a1da9c2a21fafaf509b0da160a4..7266dbb3b330e0a63672d721e627a202c595f797 100644
+index 668841c8c3fa432d66ac3eb48b7ca346f6918955..20bb0bff0123d41a068aed8d18a095afaef96e25 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -383,6 +383,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,10 +63,10 @@ index 35adbb70b9c28a1da9c2a21fafaf509b0da160a4..7266dbb3b330e0a63672d721e627a202
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 511d17f7b68916a33411afa1553edb8791a2cf89..d15c1126e746b979e27995b42f9eab5287851797 100644
+index 1c561696db22b6643c5af4276695007ec9773ff0..e94a057181d09b5b305cb0106b6cf6476e6b8158 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1502,6 +1502,9 @@ interface NetworkContext {
+@@ -1493,6 +1493,9 @@ interface NetworkContext {
    ClearSocketLayerNetworkConditions(
        mojo_base.mojom.UnguessableToken throttling_profile_id);
  
