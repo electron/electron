@@ -77,7 +77,6 @@
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/x_window_utils.h"
-#include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/xproto.h"
 #endif
@@ -356,13 +355,16 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
     SetParentWindow(parent);
 
   if (x11_util::IsX11()) {
+    auto* connection = x11::Connection::Get();
+
     // Before the window is mapped the SetWMSpecState can not work, so we have
     // to manually set the _NET_WM_STATE.
     std::vector<x11::Atom> state_atom_list;
 
     // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
     if (fullscreen) {
-      state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_FULLSCREEN"));
+      state_atom_list.push_back(
+          connection->GetAtom("_NET_WM_STATE_FULLSCREEN"));
     }
 
     if (parent) {
@@ -371,14 +373,14 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 
       // Modal window needs the _NET_WM_STATE_MODAL hint.
       if (is_modal())
-        state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_MODAL"));
+        state_atom_list.push_back(connection->GetAtom("_NET_WM_STATE_MODAL"));
     }
 
     if (!state_atom_list.empty()) {
-      auto* connection = x11::Connection::Get();
       connection->SetArrayProperty(
           static_cast<x11::Window>(GetAcceleratedWidget()),
-          x11::GetAtom("_NET_WM_STATE"), x11::Atom::ATOM, state_atom_list);
+          connection->GetAtom("_NET_WM_STATE"), x11::Atom::ATOM,
+          state_atom_list);
     }
 
     // Set the _NET_WM_WINDOW_TYPE.
@@ -559,7 +561,8 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
     auto* connection = x11::Connection::Get();
     connection->SetStringProperty(
         static_cast<x11::Window>(GetAcceleratedWidget()),
-        x11::GetAtom("_GTK_THEME_VARIANT"), x11::GetAtom("UTF8_STRING"), color);
+        connection->GetAtom("_GTK_THEME_VARIANT"),
+        connection->GetAtom("UTF8_STRING"), color);
   }
 #endif
 }
