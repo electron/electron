@@ -142,3 +142,5 @@ feat_update_executioncontext_api.patch
 use_forward_slashes_for_the_default_crdtp_include_dir_in_templates.patch
 cherry-pick-437df69.patch
 build_guard_the_openxr_browser_tests_in_xr_browser_tests_vr_required.patch
+cherry-pick-bdf41682316d.patch
+cherry-pick-85fb72cdeabd.patch
