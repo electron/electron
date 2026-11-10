@@ -65,18 +65,21 @@ constexpr uint32_t kSnapStartupOffsetOffset =
     kSnapVersionStringOffset + kSnapVersionStringLength;
 constexpr uint32_t kSnapFirstContextOffsetOffset =
     kSnapStartupOffsetOffset + 2 * 4;
-// v8/src/snapshot/snapshot-data.h, SnapshotData: magic, payload length.
-constexpr uint32_t kSnapshotDataHeaderSize = 8;
+// v8/src/snapshot/snapshot-data.h, SnapshotData: magic, payload length,
+// trusted payload length.
+constexpr uint32_t kSnapshotDataHeaderSize = 12;
 
-// v8/src/snapshot/code-serializer.h, SerializedCodeData (64-bit).
+// v8/src/snapshot/code-serializer.h, SerializedCodeData (64-bit): the
+// SerializedData header (magic, payload length, trusted payload length), then
+// version hash, source hash, flag hash and read-only snapshot checksum.
 constexpr uint32_t kCacheMagicOffset = 0;
-constexpr uint32_t kCacheVersionHashOffset = 4;
-constexpr uint32_t kCacheSourceHashOffset = 8;
+constexpr uint32_t kCachePayloadLengthOffset = 4;
+constexpr uint32_t kCacheVersionHashOffset = 12;
+constexpr uint32_t kCacheSourceHashOffset = kCacheVersionHashOffset + 4;
 constexpr uint32_t kCacheSourceHashSize = 32;
 constexpr uint32_t kCacheFlagHashOffset =
     kCacheSourceHashOffset + kCacheSourceHashSize;
 constexpr uint32_t kCacheRoChecksumOffset = kCacheFlagHashOffset + 4;
-constexpr uint32_t kCachePayloadLengthOffset = kCacheRoChecksumOffset + 4;
 constexpr uint32_t kCacheHeaderSize = 56;
 
 uint32_t ReadU32(const char* p) {

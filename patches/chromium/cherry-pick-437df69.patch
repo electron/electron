@@ -13,10 +13,10 @@ Reviewed-by: David Baron <dbaron@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1731414}
 
 diff --git a/third_party/blink/renderer/core/dom/qualified_name.cc b/third_party/blink/renderer/core/dom/qualified_name.cc
-index a042e87e01eed2ec227016fbd8bb379a7ff70e8a..710bede2704815525dc74fa0a600f1aef42556d1 100644
+index e5760596285f6005be05520e2a1fd1f5ec3a3aff..b85539fb8834e515a8b8e15865c5dcde133d6d16 100644
 --- a/third_party/blink/renderer/core/dom/qualified_name.cc
 +++ b/third_party/blink/renderer/core/dom/qualified_name.cc
-@@ -47,7 +47,7 @@ using QualifiedNameCache = HashSet<QualifiedNameImpl*>;
+@@ -125,7 +125,7 @@ using QualifiedNameCache = HashSet<QualifiedNameImpl*>;
  
  static QualifiedNameCache& GetQualifiedNameCache() {
    // This code is lockless and thus assumes it all runs on one thread!

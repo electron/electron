@@ -17,7 +17,7 @@ It also:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index ab43bb87b8a00f76759a1549d4eaa8ac2a122f8f..c7d9cc0e309a90fa1df34c370b4b45535028c354 100644
+index 85d8123a008a05371f21b8f410762a0cb3f0e369..40b19b204544fe1bc4f3d92fa6d27a45b4344588 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
 @@ -496,8 +496,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
