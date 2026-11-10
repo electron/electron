@@ -102,6 +102,8 @@ void SessionEndListenerLinux::OnPrepareForShutdownConnected(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (!success) {
     VLOG(1) << "Failed to connect to " << interface_name << "." << signal_name;
+    // Don't make logind wait for a process that can't hear the shutdown.
+    logind_proxy_ = nullptr;
     return;
   }
   RequestInhibitor();
