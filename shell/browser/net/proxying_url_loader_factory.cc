@@ -33,6 +33,14 @@
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "url/origin.h"
 
+namespace features {
+
+BASE_FEATURE(kExtensionsAlongsideWebRequest,
+             "ExtensionsAlongsideWebRequest",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
+}  // namespace features
+
 namespace electron {
 
 namespace {
@@ -274,12 +282,15 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
     // from `head` on its way here. Every other header has to come from
     // `head`: another proxy sharing the header client (see
     // ChainURLLoaderHeaderClients) may have changed the headers after this
-    // one saw them.
+    // one saw them. Without kExtensionsAlongsideWebRequest no proxy shares
+    // it, and the saved headers are used whole.
     auto saved_headers = current_response_->headers;
     current_response_ = std::move(head);
     // If this response is from a file or handler, OnHeadersReceived will not
     // be called before OnReceiveResponse, so there may be no saved headers.
-    if (saved_headers && current_response_->headers) {
+    if (saved_headers && current_response_->headers &&
+        base::FeatureList::IsEnabled(
+            features::kExtensionsAlongsideWebRequest)) {
       size_t iter = 0;
       std::string name;
       std::string value;

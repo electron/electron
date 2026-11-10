@@ -1059,6 +1059,64 @@ describe('chrome extensions', () => {
       });
     });
 
+    it('is not sent a request that session.webRequest listens for when ExtensionsAlongsideWebRequest is disabled', async () => {
+      const rc = await startRemoteControlApp(['--disable-features=ExtensionsAlongsideWebRequest']);
+      const { appSawRequest, extensionEvents } = await rc.remotely(
+        async (extensionPath: string, url: string) => {
+          const { BrowserWindow, session } = require('electron/main');
+          const { randomUUID } = require('node:crypto');
+          const { setTimeout } = require('node:timers/promises');
+
+          const { extensions, webRequest } = session.defaultSession;
+          const extension = await extensions.loadExtension(extensionPath);
+          const extensionPage = new BrowserWindow({ show: false });
+          await extensionPage.loadURL(`${extension.url}page.html`);
+          const w = new BrowserWindow({ show: false });
+
+          const eventsFor = (token: string): Promise<{ name: string }[]> =>
+            extensionPage.webContents
+              .executeJavaScript(`chrome.runtime.sendMessage(${JSON.stringify({ type: 'events', token })})`)
+              .catch(() => []);
+          // Whether a page's requests go to extensions is settled when the
+          // page loads, from the listeners the session has then.
+          const fetchFromNewPage = async () => {
+            const token = randomUUID();
+            await w.loadURL(url);
+            await w.webContents.executeJavaScript(`fetch(${JSON.stringify(`${url}/${token}`)}).then((r) => r.status)`);
+            return token;
+          };
+          const extensionSeesRequests = async () => {
+            while (!(await eventsFor(await fetchFromNewPage())).length) {
+              await setTimeout(100);
+            }
+          };
+
+          await extensionSeesRequests();
+
+          const seenUrls: string[] = [];
+          webRequest.onBeforeRequest((details: { url: string }, callback: (response: object) => void) => {
+            seenUrls.push(details.url);
+            callback({});
+          });
+          const token = await fetchFromNewPage();
+          webRequest.onBeforeRequest(null);
+
+          // The extension records events in order, so once it has those of a
+          // later request it has any there were for this one.
+          await extensionSeesRequests();
+          return {
+            appSawRequest: seenUrls.some((seenUrl) => seenUrl.includes(token)),
+            extensionEvents: await eventsFor(token)
+          };
+        },
+        path.join(fixtures, 'extensions', 'chrome-webRequest-observer'),
+        url
+      );
+
+      expect(appSawRequest).toBe(true);
+      expect(extensionEvents).toEqual([]);
+    });
+
     it('reports the tab id of the requesting WebContents', async () => {
       const extension = await customSession.extensions.loadExtension(
         path.join(fixtures, 'extensions', 'request-tab-id')

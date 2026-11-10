@@ -17,6 +17,7 @@
 #include "base/command_line.h"
 #include "base/debug/crash_logging.h"
 #include "base/environment.h"
+#include "base/feature_list.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/i18n/language_tag.h"
@@ -1738,24 +1739,29 @@ void ElectronBrowserClient::CreateWebSocket(
   DCHECK(web_request);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto* web_request_api =
-      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
-          browser_context);
-  if (web_request_api && web_request_api->MayHaveProxies()) {
-    // As for URL loader factories, the extensions proxy is nearest the
-    // renderer and hands the handshake on to session.webRequest.
-    if (web_request->HasListener()) {
-      factory = base::BindOnce(
-          &StartWebSocketProxyAfterExtensions,
-          static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr(),
-          frame->GetProcess()->GetDeprecatedID(), frame->GetRoutingID(),
-          frame->GetLastCommittedOrigin(), site_for_cookies,
-          base::Unretained(&next_id_), std::move(factory));
+  // Without kExtensionsAlongsideWebRequest, a session whose webRequest has
+  // listeners does not send its handshakes to extensions.
+  const bool has_listener = web_request->HasListener();
+  if (!has_listener ||
+      base::FeatureList::IsEnabled(features::kExtensionsAlongsideWebRequest)) {
+    auto* web_request_api = extensions::BrowserContextKeyedAPIFactory<
+        extensions::WebRequestAPI>::Get(browser_context);
+    if (web_request_api && web_request_api->MayHaveProxies()) {
+      // As for URL loader factories, the extensions proxy is nearest the
+      // renderer and hands the handshake on to session.webRequest.
+      if (has_listener) {
+        factory = base::BindOnce(
+            &StartWebSocketProxyAfterExtensions,
+            static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr(),
+            frame->GetProcess()->GetDeprecatedID(), frame->GetRoutingID(),
+            frame->GetLastCommittedOrigin(), site_for_cookies,
+            base::Unretained(&next_id_), std::move(factory));
+      }
+      web_request_api->ProxyWebSocket(
+          frame, std::move(factory), url, site_for_cookies, user_agent,
+          std::move(handshake_client), std::move(options.header_client));
+      return;
     }
-    web_request_api->ProxyWebSocket(
-        frame, std::move(factory), url, site_for_cookies, user_agent,
-        std::move(handshake_client), std::move(options.header_client));
-    return;
   }
 #endif
 
@@ -1805,7 +1811,12 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
        type == URLLoaderFactoryType::kWorkerMainResource) &&
       render_process_id == content::ChildProcessHost::kInvalidUniqueID &&
       !frame_host;
-  if (!is_browser_process_request) {
+  // Without kExtensionsAlongsideWebRequest the two proxies do not share
+  // requests: a session whose webRequest has listeners is not routed to
+  // extensions, and the extensions proxy otherwise takes the header client.
+  const bool coexist =
+      base::FeatureList::IsEnabled(features::kExtensionsAlongsideWebRequest);
+  if (!is_browser_process_request && (coexist || !web_request->HasListener())) {
     auto* web_request_api = extensions::BrowserContextKeyedAPIFactory<
         extensions::WebRequestAPI>::Get(browser_context);
 
@@ -1820,11 +1831,16 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
         web_request_api->MaybeProxyURLLoaderFactory(
             browser_context, frame_host, render_process_id, type, navigation_id,
             ukm_source_id, factory_builder,
-            header_client ? &extensions_header_client : nullptr,
+            header_client && coexist ? &extensions_header_client
+                                     : header_client,
             navigation_response_task_runner);
 
     if (bypass_redirect_checks)
       *bypass_redirect_checks = used_proxy_for_web_request;
+    if (!coexist && used_proxy_for_web_request &&
+        protocol_registry->intercept_handlers().empty()) {
+      return;
+    }
   }
 #endif
 

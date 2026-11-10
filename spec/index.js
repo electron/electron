@@ -76,7 +76,10 @@ app.commandLine.appendSwitch(
     'DocumentPolicyIncludeJSCallStacksInCrashReports',
     // spec/spellchecker.spec.ts - allows spellcheck without user gesture
     // https://chromium-review.googlesource.com/c/chromium/src/+/7452579
-    'UnrestrictSpellingAndGrammarForTesting'
+    'UnrestrictSpellingAndGrammarForTesting',
+    // spec/extensions.spec.ts - 'alongside session.webRequest' specs need it
+    // whatever its default is
+    'ExtensionsAlongsideWebRequest'
   ].join(',')
 );
 

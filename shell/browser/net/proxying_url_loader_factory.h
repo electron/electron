@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
+#include "base/feature_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
@@ -42,6 +43,16 @@ class PendingReceiver;
 template <typename T>
 class PendingRemote;
 }  // namespace mojo
+
+namespace features {
+
+// Routes a session's requests to extensions (chrome.webRequest and
+// chrome.declarativeNetRequest) as well as to session.webRequest when the
+// latter has listeners. When disabled, such a session's requests go to
+// session.webRequest alone.
+BASE_DECLARE_FEATURE(kExtensionsAlongsideWebRequest);
+
+}  // namespace features
 
 namespace electron {
 
