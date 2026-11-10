@@ -223,11 +223,13 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
       mojo::PendingReceiver<TrustedURLLoaderHeaderClient> receiver,
       mojo::PendingRemote<TrustedURLLoaderHeaderClient> outer,
       mojo::PendingRemote<TrustedURLLoaderHeaderClient> inner,
-      HandlesLoaderCallback inner_handles_loader)
+      HandlesLoaderCallback inner_handles_loader,
+      LoaderFailedCallback inner_loader_failed)
       : receiver_(this, std::move(receiver)),
         outer_(std::move(outer)),
         inner_(std::move(inner)),
-        inner_handles_loader_(std::move(inner_handles_loader)) {
+        inner_handles_loader_(std::move(inner_handles_loader)),
+        inner_loader_failed_(std::move(inner_loader_failed)) {
     receiver_.set_disconnect_handler(base::BindOnce(
         &URLLoaderHeaderClientChain::DeleteThis, base::Unretained(this)));
   }
@@ -274,10 +276,18 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
                           std::move(inner), /*for_cors_preflight=*/true);
   }
 
+  void OnLoaderFailedWithRemoteEndpoint(
+      int32_t request_id,
+      const net::IPEndPoint& remote_endpoint) override {
+    inner_loader_failed_.Run(request_id, remote_endpoint);
+    outer_->OnLoaderFailedWithRemoteEndpoint(request_id, remote_endpoint);
+  }
+
   mojo::Receiver<TrustedURLLoaderHeaderClient> receiver_;
   mojo::Remote<TrustedURLLoaderHeaderClient> outer_;
   mojo::Remote<TrustedURLLoaderHeaderClient> inner_;
   const HandlesLoaderCallback inner_handles_loader_;
+  const LoaderFailedCallback inner_loader_failed_;
 };
 
 }  // namespace
@@ -286,10 +296,11 @@ void ChainURLLoaderHeaderClients(
     mojo::PendingReceiver<TrustedURLLoaderHeaderClient> receiver,
     mojo::PendingRemote<TrustedURLLoaderHeaderClient> outer,
     mojo::PendingRemote<TrustedURLLoaderHeaderClient> inner,
-    HandlesLoaderCallback inner_handles_loader) {
-  new URLLoaderHeaderClientChain(std::move(receiver), std::move(outer),
-                                 std::move(inner),
-                                 std::move(inner_handles_loader));
+    HandlesLoaderCallback inner_handles_loader,
+    LoaderFailedCallback inner_loader_failed) {
+  new URLLoaderHeaderClientChain(
+      std::move(receiver), std::move(outer), std::move(inner),
+      std::move(inner_handles_loader), std::move(inner_loader_failed));
 }
 
 }  // namespace electron

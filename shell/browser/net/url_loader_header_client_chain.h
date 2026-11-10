@@ -12,6 +12,10 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "services/network/public/mojom/network_context.mojom-forward.h"
 
+namespace net {
+class IPEndPoint;
+}  // namespace net
+
 namespace electron {
 
 // The network service takes one TrustedURLLoaderHeaderClient per factory.
@@ -30,15 +34,26 @@ namespace electron {
 // network service directly, so a proxy with nothing to do for a request costs
 // it nothing.
 //
+// `inner_loader_failed` stands in for `inner`'s
+// OnLoaderFailedWithRemoteEndpoint(). The address has to reach a proxy before
+// the loader's OnComplete(), which the network service sends on another pipe,
+// and a message relayed over `inner` would be a step behind it. `outer` gets
+// the relayed message, which is in order whenever its OnComplete() comes
+// through `inner`.
+//
 // The object lives until `receiver` is disconnected.
 using HandlesLoaderCallback =
     base::RepeatingCallback<bool(std::optional<int32_t> request_id)>;
+using LoaderFailedCallback =
+    base::RepeatingCallback<void(int32_t request_id,
+                                 const net::IPEndPoint& remote_endpoint)>;
 void ChainURLLoaderHeaderClients(
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient> outer,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient> inner,
-    HandlesLoaderCallback inner_handles_loader);
+    HandlesLoaderCallback inner_handles_loader,
+    LoaderFailedCallback inner_loader_failed);
 
 }  // namespace electron
 

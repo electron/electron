@@ -1899,7 +1899,10 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
         std::move(shared_header_client_receiver),
         std::move(extensions_header_client), std::move(own_header_client),
         base::BindRepeating(&ProxyingURLLoaderFactory::HandlesLoader,
-                            proxy->GetWeakPtr()));
+                            proxy->GetWeakPtr()),
+        base::BindRepeating(
+            &ProxyingURLLoaderFactory::OnLoaderFailedWithRemoteEndpoint,
+            proxy->GetWeakPtr()));
   }
 }  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
