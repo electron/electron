@@ -37,9 +37,9 @@ SessionEndListenerLinux::SessionEndListenerLinux(
   ConnectToLogind();
 
   if (auto* browser = Browser::Get()) {
-    browser->SetQuitCancelledCallback(base::BindRepeating(
-        &SessionEndListenerLinux::OnQuitCancelled,
-        weak_ptr_factory_.GetWeakPtr()));
+    browser->SetQuitCancelledCallback(
+        base::BindRepeating(&SessionEndListenerLinux::OnQuitCancelled,
+                            weak_ptr_factory_.GetWeakPtr()));
   }
 
   if (session_bus_) {
@@ -127,7 +127,8 @@ void SessionEndListenerLinux::RequestInhibitor() {
       logind_proxy_, logind::kManagerInterface, kInhibitMethod,
       base::BindOnce(&SessionEndListenerLinux::OnInhibitResponse,
                      weak_ptr_factory_.GetWeakPtr()),
-      "shutdown", logind::GetExecutableBaseName(), "Ensure a clean shutdown", "delay");
+      "shutdown", logind::GetExecutableBaseName(), "Ensure a clean shutdown",
+      "delay");
 }
 
 void SessionEndListenerLinux::OnInhibitResponse(

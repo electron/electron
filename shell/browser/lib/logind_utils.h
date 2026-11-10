@@ -17,7 +17,10 @@ inline constexpr char kManagerInterface[] = "org.freedesktop.login1.Manager";
 // Used as the lock owner, which lists rebrands of the electron executable as
 // separate entities.
 inline base::FilePath::StringType GetExecutableBaseName() {
-  return base::CommandLine::ForCurrentProcess()->GetProgram().BaseName().value();
+  return base::CommandLine::ForCurrentProcess()
+      ->GetProgram()
+      .BaseName()
+      .value();
 }
 
 }  // namespace electron::logind
