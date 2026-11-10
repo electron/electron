@@ -1879,6 +1879,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     }
   }
 
+  // Deletes itself once its pipes are closed and its requests have completed.
   auto* proxy = new ProxyingURLLoaderFactory{
       web_request,
       protocol_registry->intercept_handlers(),
@@ -1900,7 +1901,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
         base::BindRepeating(&ProxyingURLLoaderFactory::HandlesLoader,
                             proxy->GetWeakPtr()));
   }
-}
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
 ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
