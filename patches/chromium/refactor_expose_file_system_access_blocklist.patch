@@ -44,6 +44,16 @@ ShouldBlockAccessToPath() uses GetBlockedHomeDotPath() to block hidden
 dot-files and dot-directories directly under the home directory (and their
 descendants) with BlockType::kBlockAllChildren.
 
+As of 159.0.8153.0, it also carries the single */.git kBlockWrite suffix rule
+and the ShouldBlockAccessToGitPath() allowlist that replaced the .git/hooks,
+.git/config and .git/modules suffix rules upstream, the legacy ~/.fontconfig
+and ~/.fonts rules on Linux, and the case-insensitive matching in
+ShouldBlockAccessToPath(): the components-based IsPathOrDescendantIgnoreCase()
+and IsParentIgnoreCase() helpers and the components-based
+GetBlockedHomeDotPath(). The three-argument IsPathOrDescendantIgnoreCase()
+helper is only used by chrome_file_system_access_permission_context.cc, so it
+stays there with its original self-contained body.
+
 diff --git a/chrome/browser/file_system_access/BUILD.gn b/chrome/browser/file_system_access/BUILD.gn
 index a72d5994e39d8f299eb8b297b7907a1327c0a307..a7bd2ac0e07286c65fab2c22183439e747eef8a9 100644
 --- a/chrome/browser/file_system_access/BUILD.gn
@@ -58,10 +68,10 @@ index a72d5994e39d8f299eb8b297b7907a1327c0a307..a7bd2ac0e07286c65fab2c22183439e7
      "file_system_access_permission_context_factory.cc",
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471350eb241
+index 0000000000000000000000000000000000000000..642f2a71587e03315e3146ba12db0d3a974042e7
 --- /dev/null
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
-@@ -0,0 +1,691 @@
+@@ -0,0 +1,839 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -388,16 +398,14 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +                                BlockType::kBlockAllChildren),
 +      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL("_exrc"),
 +                                BlockType::kBlockAllChildren),
-+      // Block write access to */.git/hooks, see crbug.com/465668234 and
-+      // crbug.com/553115714.
-+      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
-+                              BlockType::kBlockWrite),
-+      // Block write access to the repository config and to submodule git
-+      // directories, which have their own hooks and config, see
-+      // crbug.com/572269631 and crbug.com/571913154.
-+      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
-+                              BlockType::kBlockWrite),
-+      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
++      // Block write access to */.git by default (covering .git directory and
++      // gitfile creation, config, hooks, modules, commondir, worktrees, info,
++      // and arbitrary subdirectories); `ShouldBlockAccessToGitPath()` carves
++      // out safe repository data, ref, and index paths under an existing .git
++      // directory so web-based Git clients (e.g. isomorphic-git) continue to
++      // work. See crbug.com/465668234, crbug.com/553115714,
++      // crbug.com/571913154, crbug.com/572269631, and crbug.com/577352729.
++      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git"),
 +                              BlockType::kBlockWrite),
 +      // Block write access to */.mvn, which holds Maven project and JVM
 +      // configuration (such as jvm.config, maven.config, and extensions.xml),
@@ -509,6 +517,13 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +      BlockPath::CreateRelative(base::DIR_HOME,
 +                                FILE_PATH_LITERAL(".fonts.conf.d"),
 +                                BlockType::kBlockAllChildren),
++      // Block the legacy per-user fontconfig cache and font directories. The
++      // current locations are under ~/.cache and ~/.local/share.
++      BlockPath::CreateRelative(base::DIR_HOME,
++                                FILE_PATH_LITERAL(".fontconfig"),
++                                BlockType::kBlockAllChildren),
++      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".fonts"),
++                                BlockType::kBlockAllChildren),
 +      // Block the per-user NSS database, see crbug.com/557367241.
 +      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".pki"),
 +                                BlockType::kBlockAllChildren),
@@ -576,25 +591,156 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +
 +namespace {
 +
-+// If `path` is a hidden dot-file or dot-directory (`.*`) directly under
-+// `home_dir` (or a descendant of one), returns that direct child path under
-+// `home_dir`. Otherwise returns an empty `base::FilePath`.
-+base::FilePath GetBlockedHomeDotPath(const base::FilePath& path,
-+                                     const base::FilePath& home_dir) {
++using HandleType = content::FileSystemAccessPermissionContext::HandleType;
++
++// Returns true if `child_components` is the same as or a descendant of
++// `parent_components`, ignoring case differences.
++bool IsPathOrDescendantIgnoreCase(
++    const std::vector<base::FilePath::StringType>& parent_components,
++    const std::vector<base::FilePath::StringType>& child_components) {
++  if (parent_components.empty() ||
++      parent_components.size() > child_components.size()) {
++    return false;
++  }
++
++  return std::equal(parent_components.begin(), parent_components.end(),
++                    child_components.begin(),
++                    base::FilePath::CompareEqualIgnoreCase);
++}
++
++// Returns true if `parent_components` is a strict parent of
++// `child_components`, ignoring case differences.
++bool IsParentIgnoreCase(
++    const std::vector<base::FilePath::StringType>& parent_components,
++    const std::vector<base::FilePath::StringType>& child_components) {
++  return parent_components.size() < child_components.size() &&
++         IsPathOrDescendantIgnoreCase(parent_components, child_components);
++}
++
++// If `path_components` represents a hidden dot-file or dot-directory (`.*`)
++// directly under `home_dir` (or a descendant of one), returns that direct
++// child path under `home_dir`. Otherwise returns an empty `base::FilePath`.
++base::FilePath GetBlockedHomeDotPath(
++    const std::vector<base::FilePath::StringType>& path_components,
++    const base::FilePath& home_dir) {
++  if (home_dir.empty()) {
++    return base::FilePath();
++  }
++  const std::vector<base::FilePath::StringType> home_components =
++      home_dir.GetComponents();
++  if (!IsParentIgnoreCase(home_components, path_components)) {
++    return base::FilePath();
++  }
++  const auto& direct_child_name = path_components[home_components.size()];
++  if (direct_child_name.starts_with(FILE_PATH_LITERAL('.')) &&
++      direct_child_name != base::FilePath::kCurrentDirectory &&
++      direct_child_name != base::FilePath::kParentDirectory) {
++    return home_dir.Append(direct_child_name);
++  }
++  return base::FilePath();
++}
++
++// Checks if write access (`kSave` or `kProgrammaticWrite`) to `path` should be
++// blocked by a `*/.git` rule rooted at `git_dir`.
++//
++// Creating or overwriting the `.git` entry itself (directory or gitfile
++// pointer) is always blocked, as are configuration, hook, submodule, worktree,
++// `commondir`, and `objects/info` paths that control what Git executes. A
++// narrow allowlist of repository data, ref, and index paths under an existing
++// `.git` directory remains writable so web-based Git clients (e.g.
++// isomorphic-git) continue to work.
++bool ShouldBlockAccessToGitPath(const base::FilePath& git_dir,
++                                const base::FilePath& path,
++                                HandleType handle_type) {
 +  base::FilePath relative_path;
-+  if (!home_dir.empty() && home_dir.AppendRelativePath(path, &relative_path)) {
-+    std::vector<base::FilePath::StringType> relative_components =
-+        relative_path.GetComponents();
-+    if (!relative_components.empty()) {
-+      const auto& direct_child_name = relative_components[0];
-+      if (direct_child_name.starts_with(FILE_PATH_LITERAL('.')) &&
-+          direct_child_name != base::FilePath::kCurrentDirectory &&
-+          direct_child_name != base::FilePath::kParentDirectory) {
-+        return home_dir.Append(direct_child_name);
++  if (!git_dir.AppendRelativePath(path, &relative_path) ||
++      relative_path.ReferencesParent()) {
++    return true;
++  }
++
++  const std::vector<base::FilePath::StringType> rel_components =
++      relative_path.GetComponents();
++  // `FilePath(".").GetComponents()` is empty when `path` is `<repo>/.git/.`.
++  if (rel_components.empty()) {
++    return true;
++  }
++
++  for (const auto& component : rel_components) {
++    if (component == base::FilePath::kCurrentDirectory ||
++        base::FilePath::CompareEqualIgnoreCase(component,
++                                               FILE_PATH_LITERAL(".git"))) {
++      return true;
++    }
++  }
++
++  // Subtrees under `.git` whose contents hold repository data, refs, or
++  // reflogs rather than executable hooks or configuration.
++  static constexpr base::FilePath::StringViewType kAllowedGitDirectories[] = {
++      FILE_PATH_LITERAL("objects"),
++      FILE_PATH_LITERAL("refs"),
++      FILE_PATH_LITERAL("reftable"),
++      FILE_PATH_LITERAL("logs"),
++  };
++  for (const auto& allowed_dir : kAllowedGitDirectories) {
++    if (base::FilePath::CompareEqualIgnoreCase(rel_components[0],
++                                               allowed_dir)) {
++      if (rel_components.size() == 1) {
++        return handle_type != HandleType::kDirectory;
++      }
++      // Block `.git/objects/info` (such as `alternates` and `http-alternates`),
++      // which can redirect object lookups outside the repository.
++      if (allowed_dir == FILE_PATH_LITERAL("objects") &&
++          base::FilePath::CompareEqualIgnoreCase(rel_components[1],
++                                                 FILE_PATH_LITERAL("info"))) {
++        return true;
++      }
++      return false;
++    }
++  }
++
++  // Top-level files (and atomic lock/staging files) directly under `.git` that
++  // web-based Git clients (e.g. isomorphic-git) update during normal staging,
++  // commit, checkout, branch, fetch, and merge workflows. These files are safe
++  // to allow because Git parses them strictly as binary index entries, hex
++  // object IDs, `ref:` targets, or plain-text commit messages; unlike `config`,
++  // `hooks/*`, `commondir`, `gitdir`, or `objects/info/alternates`, they cannot
++  // configure external commands or redirect Git's repository/object lookup.
++  if (rel_components.size() == 1 && handle_type == HandleType::kFile) {
++    static constexpr base::FilePath::StringViewType kAllowedGitFiles[] = {
++        // Staging area updated by `add`, `checkout`, and `reset`.
++        FILE_PATH_LITERAL("index"),
++        FILE_PATH_LITERAL("index.lock"),
++        // Compacted ref table (`<oid> <refname>`) updated by `fetch` / `gc`.
++        FILE_PATH_LITERAL("packed-refs"),
++        FILE_PATH_LITERAL("packed-refs.lock"),
++        FILE_PATH_LITERAL("packed-refs.new"),
++        // Shallow-clone commit boundary OIDs updated by shallow `fetch`.
++        FILE_PATH_LITERAL("shallow"),
++        FILE_PATH_LITERAL("shallow.lock"),
++        // Current branch symref / commit OID and pseudorefs updated by
++        // `commit`, `checkout`, `fetch`, `merge`, `cherry-pick`, and `revert`.
++        FILE_PATH_LITERAL("HEAD"),
++        FILE_PATH_LITERAL("HEAD.lock"),
++        FILE_PATH_LITERAL("ORIG_HEAD"),
++        FILE_PATH_LITERAL("ORIG_HEAD.lock"),
++        FILE_PATH_LITERAL("FETCH_HEAD"),
++        FILE_PATH_LITERAL("MERGE_HEAD"),
++        FILE_PATH_LITERAL("CHERRY_PICK_HEAD"),
++        FILE_PATH_LITERAL("REVERT_HEAD"),
++        // Plain-text commit/merge message and mode state (`no-ff`).
++        FILE_PATH_LITERAL("MERGE_MSG"),
++        FILE_PATH_LITERAL("MERGE_MODE"),
++        FILE_PATH_LITERAL("COMMIT_EDITMSG"),
++    };
++    for (const auto& allowed_file : kAllowedGitFiles) {
++      if (base::FilePath::CompareEqualIgnoreCase(rel_components[0],
++                                                 allowed_file)) {
++        return false;
 +      }
 +    }
 +  }
-+  return base::FilePath();
++
++  return true;
 +}
 +
 +}  // namespace
@@ -635,7 +781,10 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +  }
 +#endif
 +
++  const std::vector<base::FilePath::StringType> path_components =
++      path.GetComponents();
 +  base::FilePath nearest_ancestor;
++  std::vector<base::FilePath::StringType> nearest_ancestor_components;
 +  BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
 +  auto should_block_with_rule = [&](const base::FilePath& block_path,
 +                                    BlockType block_type) -> bool {
@@ -645,15 +794,25 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +      return false;
 +    }
 +
-+    if (path == block_path || path.IsParent(block_path)) {
++    if (block_type == BlockType::kBlockWrite &&
++        base::FilePath::CompareEqualIgnoreCase(block_path.BaseName().value(),
++                                               FILE_PATH_LITERAL(".git"))) {
++      return ShouldBlockAccessToGitPath(block_path, path, handle_type);
++    }
++
++    std::vector<base::FilePath::StringType> block_components =
++        block_path.GetComponents();
++    if (IsPathOrDescendantIgnoreCase(path_components, block_components)) {
 +      LOG(ERROR) << "Blocking access to " << path
 +                 << " because it is a parent of " << block_path;
 +      return true;
 +    }
 +
-+    if (block_path.IsParent(path) &&
-+        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block_path))) {
++    if (IsParentIgnoreCase(block_components, path_components) &&
++        (nearest_ancestor.empty() ||
++         IsParentIgnoreCase(nearest_ancestor_components, block_components))) {
 +      nearest_ancestor = block_path;
++      nearest_ancestor_components = std::move(block_components);
 +      nearest_ancestor_block_type = block_type;
 +    }
 +    return false;
@@ -683,7 +842,8 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +          features::kFileSystemAccessBlockHomeDotFiles)) {
 +    const base::FilePath& home_dir =
 +        kUseProfilePathForDirHome ? profile_path : block_path_rules.home_path_;
-+    base::FilePath blocked_dot_path = GetBlockedHomeDotPath(path, home_dir);
++    base::FilePath blocked_dot_path =
++        GetBlockedHomeDotPath(path_components, home_dir);
 +    if (!blocked_dot_path.empty() &&
 +        should_block_with_rule(blocked_dot_path,
 +                               BlockType::kBlockAllChildren)) {
@@ -697,8 +857,6 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +  // using case-insensitive comparison and constructs a `current_path` from the
 +  // root up to the end of the matched subrange (e.g., `/foo/bar/.git/hooks`).
 +  // This path is then evaluated against the regular block rules.
-+  std::vector<base::FilePath::StringType> path_components =
-+      path.GetComponents();
 +  for (const auto& rule : block_path_rules.suffix_block_path_rules_) {
 +    base::FilePath rule_path(rule.path);
 +    std::vector<base::FilePath::StringType> rule_components =
@@ -754,10 +912,10 @@ index 0000000000000000000000000000000000000000..20678f3b89d3d4268edf7404aa715471
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c45457e4a0513 100644
+index 3f742f231ff44da466cfa7d11a309940dfa84b1e..5a486ade31d7b4507e13fe17d11c45457e4a0513 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -268,655 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
+@@ -268,500 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
  }
  #endif
  
@@ -1049,16 +1207,14 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -                                BlockType::kBlockAllChildren),
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL("_exrc"),
 -                                BlockType::kBlockAllChildren),
--      // Block write access to */.git/hooks, see crbug.com/465668234 and
--      // crbug.com/553115714.
--      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
--                              BlockType::kBlockWrite),
--      // Block write access to the repository config and to submodule git
--      // directories, which have their own hooks and config, see
--      // crbug.com/572269631 and crbug.com/571913154.
--      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/config"),
--                              BlockType::kBlockWrite),
--      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/modules"),
+-      // Block write access to */.git by default (covering .git directory and
+-      // gitfile creation, config, hooks, modules, commondir, worktrees, info,
+-      // and arbitrary subdirectories); `ShouldBlockAccessToGitPath()` carves
+-      // out safe repository data, ref, and index paths under an existing .git
+-      // directory so web-based Git clients (e.g. isomorphic-git) continue to
+-      // work. See crbug.com/465668234, crbug.com/553115714,
+-      // crbug.com/571913154, crbug.com/572269631, and crbug.com/577352729.
+-      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git"),
 -                              BlockType::kBlockWrite),
 -      // Block write access to */.mvn, which holds Maven project and JVM
 -      // configuration (such as jvm.config, maven.config, and extensions.xml),
@@ -1170,6 +1326,13 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -      BlockPath::CreateRelative(base::DIR_HOME,
 -                                FILE_PATH_LITERAL(".fonts.conf.d"),
 -                                BlockType::kBlockAllChildren),
+-      // Block the legacy per-user fontconfig cache and font directories. The
+-      // current locations are under ~/.cache and ~/.local/share.
+-      BlockPath::CreateRelative(base::DIR_HOME,
+-                                FILE_PATH_LITERAL(".fontconfig"),
+-                                BlockType::kBlockAllChildren),
+-      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".fonts"),
+-                                BlockType::kBlockAllChildren),
 -      // Block the per-user NSS database, see crbug.com/557367241.
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".pki"),
 -                                BlockType::kBlockAllChildren),
@@ -1235,25 +1398,165 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -  return block_path_rules;
 -}
 -
--// If `path` is a hidden dot-file or dot-directory (`.*`) directly under
--// `home_dir` (or a descendant of one), returns that direct child path under
--// `home_dir`. Otherwise returns an empty `base::FilePath`.
--base::FilePath GetBlockedHomeDotPath(const base::FilePath& path,
--                                     const base::FilePath& home_dir) {
+-// Returns true if `child_components` is the same as or a descendant of
+-// `parent_components`, ignoring case differences.
+-bool IsPathOrDescendantIgnoreCase(
+-    const std::vector<base::FilePath::StringType>& parent_components,
+-    const std::vector<base::FilePath::StringType>& child_components) {
+-  if (parent_components.empty() ||
+-      parent_components.size() > child_components.size()) {
+-    return false;
+-  }
+-
+-  return std::equal(parent_components.begin(), parent_components.end(),
+-                    child_components.begin(),
+-                    base::FilePath::CompareEqualIgnoreCase);
+-}
+-
+ // Returns true if `child_path` is the same as or a descendant of
+ // `parent_path`, ignoring case differences. Unlike
+ // `base::FilePath::IsParent()`, this handles case-variant paths returned by
+@@ -774,309 +282,17 @@ bool IsPathOrDescendantIgnoreCase(
+   if (child_path == parent_path || parent_path.IsParent(child_path)) {
+     return true;
+   }
+-  return IsPathOrDescendantIgnoreCase(parent_components,
+-                                      child_path.GetComponents());
+-}
+-
+-// Returns true if `parent_components` is a strict parent of
+-// `child_components`, ignoring case differences.
+-bool IsParentIgnoreCase(
+-    const std::vector<base::FilePath::StringType>& parent_components,
+-    const std::vector<base::FilePath::StringType>& child_components) {
+-  return parent_components.size() < child_components.size() &&
+-         IsPathOrDescendantIgnoreCase(parent_components, child_components);
+-}
+-
+-// If `path_components` represents a hidden dot-file or dot-directory (`.*`)
+-// directly under `home_dir` (or a descendant of one), returns that direct
+-// child path under `home_dir`. Otherwise returns an empty `base::FilePath`.
+-base::FilePath GetBlockedHomeDotPath(
+-    const std::vector<base::FilePath::StringType>& path_components,
+-    const base::FilePath& home_dir) {
+-  if (home_dir.empty()) {
+-    return base::FilePath();
+-  }
+-  const std::vector<base::FilePath::StringType> home_components =
+-      home_dir.GetComponents();
+-  if (!IsParentIgnoreCase(home_components, path_components)) {
+-    return base::FilePath();
+-  }
+-  const auto& direct_child_name = path_components[home_components.size()];
+-  if (direct_child_name.starts_with(FILE_PATH_LITERAL('.')) &&
+-      direct_child_name != base::FilePath::kCurrentDirectory &&
+-      direct_child_name != base::FilePath::kParentDirectory) {
+-    return home_dir.Append(direct_child_name);
+-  }
+-  return base::FilePath();
+-}
+-
+-// Checks if write access (`kSave` or `kProgrammaticWrite`) to `path` should be
+-// blocked by a `*/.git` rule rooted at `git_dir`.
+-//
+-// Creating or overwriting the `.git` entry itself (directory or gitfile
+-// pointer) is always blocked, as are configuration, hook, submodule, worktree,
+-// `commondir`, and `objects/info` paths that control what Git executes. A
+-// narrow allowlist of repository data, ref, and index paths under an existing
+-// `.git` directory remains writable so web-based Git clients (e.g.
+-// isomorphic-git) continue to work.
+-bool ShouldBlockAccessToGitPath(const base::FilePath& git_dir,
+-                                const base::FilePath& path,
+-                                HandleType handle_type) {
 -  base::FilePath relative_path;
--  if (!home_dir.empty() && home_dir.AppendRelativePath(path, &relative_path)) {
--    std::vector<base::FilePath::StringType> relative_components =
--        relative_path.GetComponents();
--    if (!relative_components.empty()) {
--      const auto& direct_child_name = relative_components[0];
--      if (direct_child_name.starts_with(FILE_PATH_LITERAL('.')) &&
--          direct_child_name != base::FilePath::kCurrentDirectory &&
--          direct_child_name != base::FilePath::kParentDirectory) {
--        return home_dir.Append(direct_child_name);
+-  if (!git_dir.AppendRelativePath(path, &relative_path) ||
+-      relative_path.ReferencesParent()) {
+-    return true;
+-  }
+-
+-  const std::vector<base::FilePath::StringType> rel_components =
+-      relative_path.GetComponents();
+-  // `FilePath(".").GetComponents()` is empty when `path` is `<repo>/.git/.`.
+-  if (rel_components.empty()) {
+-    return true;
+-  }
+-
+-  for (const auto& component : rel_components) {
+-    if (component == base::FilePath::kCurrentDirectory ||
+-        base::FilePath::CompareEqualIgnoreCase(component,
+-                                               FILE_PATH_LITERAL(".git"))) {
+-      return true;
+-    }
+-  }
+-
+-  // Subtrees under `.git` whose contents hold repository data, refs, or
+-  // reflogs rather than executable hooks or configuration.
+-  static constexpr base::FilePath::StringViewType kAllowedGitDirectories[] = {
+-      FILE_PATH_LITERAL("objects"),
+-      FILE_PATH_LITERAL("refs"),
+-      FILE_PATH_LITERAL("reftable"),
+-      FILE_PATH_LITERAL("logs"),
+-  };
+-  for (const auto& allowed_dir : kAllowedGitDirectories) {
+-    if (base::FilePath::CompareEqualIgnoreCase(rel_components[0],
+-                                               allowed_dir)) {
+-      if (rel_components.size() == 1) {
+-        return handle_type != HandleType::kDirectory;
+-      }
+-      // Block `.git/objects/info` (such as `alternates` and `http-alternates`),
+-      // which can redirect object lookups outside the repository.
+-      if (allowed_dir == FILE_PATH_LITERAL("objects") &&
+-          base::FilePath::CompareEqualIgnoreCase(rel_components[1],
+-                                                 FILE_PATH_LITERAL("info"))) {
+-        return true;
+-      }
+-      return false;
+-    }
+-  }
+-
+-  // Top-level files (and atomic lock/staging files) directly under `.git` that
+-  // web-based Git clients (e.g. isomorphic-git) update during normal staging,
+-  // commit, checkout, branch, fetch, and merge workflows. These files are safe
+-  // to allow because Git parses them strictly as binary index entries, hex
+-  // object IDs, `ref:` targets, or plain-text commit messages; unlike `config`,
+-  // `hooks/*`, `commondir`, `gitdir`, or `objects/info/alternates`, they cannot
+-  // configure external commands or redirect Git's repository/object lookup.
+-  if (rel_components.size() == 1 && handle_type == HandleType::kFile) {
+-    static constexpr base::FilePath::StringViewType kAllowedGitFiles[] = {
+-        // Staging area updated by `add`, `checkout`, and `reset`.
+-        FILE_PATH_LITERAL("index"),
+-        FILE_PATH_LITERAL("index.lock"),
+-        // Compacted ref table (`<oid> <refname>`) updated by `fetch` / `gc`.
+-        FILE_PATH_LITERAL("packed-refs"),
+-        FILE_PATH_LITERAL("packed-refs.lock"),
+-        FILE_PATH_LITERAL("packed-refs.new"),
+-        // Shallow-clone commit boundary OIDs updated by shallow `fetch`.
+-        FILE_PATH_LITERAL("shallow"),
+-        FILE_PATH_LITERAL("shallow.lock"),
+-        // Current branch symref / commit OID and pseudorefs updated by
+-        // `commit`, `checkout`, `fetch`, `merge`, `cherry-pick`, and `revert`.
+-        FILE_PATH_LITERAL("HEAD"),
+-        FILE_PATH_LITERAL("HEAD.lock"),
+-        FILE_PATH_LITERAL("ORIG_HEAD"),
+-        FILE_PATH_LITERAL("ORIG_HEAD.lock"),
+-        FILE_PATH_LITERAL("FETCH_HEAD"),
+-        FILE_PATH_LITERAL("MERGE_HEAD"),
+-        FILE_PATH_LITERAL("CHERRY_PICK_HEAD"),
+-        FILE_PATH_LITERAL("REVERT_HEAD"),
+-        // Plain-text commit/merge message and mode state (`no-ff`).
+-        FILE_PATH_LITERAL("MERGE_MSG"),
+-        FILE_PATH_LITERAL("MERGE_MODE"),
+-        FILE_PATH_LITERAL("COMMIT_EDITMSG"),
+-    };
+-    for (const auto& allowed_file : kAllowedGitFiles) {
+-      if (base::FilePath::CompareEqualIgnoreCase(rel_components[0],
+-                                                 allowed_file)) {
+-        return false;
 -      }
 -    }
 -  }
--  return base::FilePath();
+-
+-  return true;
 -}
 -
 -// Checks if `path` should be blocked by the `rules`.
@@ -1291,7 +1594,10 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -  }
 -#endif
 -
+-  const std::vector<base::FilePath::StringType> path_components =
+-      path.GetComponents();
 -  base::FilePath nearest_ancestor;
+-  std::vector<base::FilePath::StringType> nearest_ancestor_components;
 -  BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
 -  auto should_block_with_rule = [&](const base::FilePath& block_path,
 -                                    BlockType block_type) -> bool {
@@ -1301,15 +1607,25 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -      return false;
 -    }
 -
--    if (path == block_path || path.IsParent(block_path)) {
+-    if (block_type == BlockType::kBlockWrite &&
+-        base::FilePath::CompareEqualIgnoreCase(block_path.BaseName().value(),
+-                                               FILE_PATH_LITERAL(".git"))) {
+-      return ShouldBlockAccessToGitPath(block_path, path, handle_type);
+-    }
+-
+-    std::vector<base::FilePath::StringType> block_components =
+-        block_path.GetComponents();
+-    if (IsPathOrDescendantIgnoreCase(path_components, block_components)) {
 -      LOG(ERROR) << "Blocking access to " << path
 -                 << " because it is a parent of " << block_path;
 -      return true;
 -    }
 -
--    if (block_path.IsParent(path) &&
--        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block_path))) {
+-    if (IsParentIgnoreCase(block_components, path_components) &&
+-        (nearest_ancestor.empty() ||
+-         IsParentIgnoreCase(nearest_ancestor_components, block_components))) {
 -      nearest_ancestor = block_path;
+-      nearest_ancestor_components = std::move(block_components);
 -      nearest_ancestor_block_type = block_type;
 -    }
 -    return false;
@@ -1339,7 +1655,8 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -          features::kFileSystemAccessBlockHomeDotFiles)) {
 -    const base::FilePath& home_dir =
 -        kUseProfilePathForDirHome ? profile_path : block_path_rules.home_path_;
--    base::FilePath blocked_dot_path = GetBlockedHomeDotPath(path, home_dir);
+-    base::FilePath blocked_dot_path =
+-        GetBlockedHomeDotPath(path_components, home_dir);
 -    if (!blocked_dot_path.empty() &&
 -        should_block_with_rule(blocked_dot_path,
 -                               BlockType::kBlockAllChildren)) {
@@ -1353,8 +1670,6 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -  // using case-insensitive comparison and constructs a `current_path` from the
 -  // root up to the end of the matched subrange (e.g., `/foo/bar/.git/hooks`).
 -  // This path is then evaluated against the regular block rules.
--  std::vector<base::FilePath::StringType> path_components =
--      path.GetComponents();
 -  for (const auto& rule : block_path_rules.suffix_block_path_rules_) {
 -    base::FilePath rule_path(rule.path);
 -    std::vector<base::FilePath::StringType> rule_components =
@@ -1394,25 +1709,30 @@ index e8bab0a0ea23dac00558e07e119ad03cbf42c49b..5a486ade31d7b4507e13fe17d11c4545
 -            << nearest_ancestor << " and it's kDontBlockChildren";
 -    return false;
 -  }
--
+ 
 -  // The path we're checking is a file, and the nearest ancestor only blocks
 -  // access to directories. Grant access.
 -  if (handle_type == HandleType::kFile &&
 -      nearest_ancestor_block_type == BlockType::kBlockNestedDirectories) {
 -    VLOG(1) << "Not blocking access to " << path << " because it is inside "
 -            << nearest_ancestor << " and it's kBlockNestedDirectories";
--    return false;
--  }
--
++  const std::vector<base::FilePath::StringType> child_components =
++      child_path.GetComponents();
++  if (parent_components.empty() ||
++      parent_components.size() > child_components.size()) {
+     return false;
+   }
+ 
 -  // The nearest ancestor blocks access to its children, so block access.
 -  VLOG(1) << "Blocking access to " << path << " because it is inside "
 -          << nearest_ancestor << " and it's kBlockAllChildren";
 -  return true;
--}
--
- // Returns true if `child_path` is the same as or a descendant of
- // `parent_path`, ignoring case differences. Unlike
- // `base::FilePath::IsParent()`, this handles case-variant paths returned by
++  return std::equal(parent_components.begin(), parent_components.end(),
++                    child_components.begin(),
++                    base::FilePath::CompareEqualIgnoreCase);
+ }
+ 
+ #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 index 7d3717f7b19f24e119455f16aff715aedc09090f..8d4df6fe93be99b23ae82816e4a76d2cb6b0c658 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
