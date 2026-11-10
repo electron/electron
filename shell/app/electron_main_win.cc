@@ -56,7 +56,8 @@ const char kNodeService[] = "node.mojom.NodeService";
   return required_size != 0;
 }
 
-bool IsReadableInExecutableImage(const void* address, size_t size) {
+[[nodiscard]] bool IsReadableInExecutableImage(const void* address,
+                                               size_t size) {
   MEMORY_BASIC_INFORMATION region;
   constexpr DWORD kReadable = PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY |
                               PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE |
