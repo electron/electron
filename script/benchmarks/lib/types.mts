@@ -59,6 +59,9 @@ export interface RunMetadata {
   repeat: number;
   suites?: string[];
   fileCount?: number;
+  // Suites run.mts --best-effort stopped running after the candidate failed
+  // them in the first two rounds.
+  skippedSuites?: string[];
   targets: TargetInfo[];
   invocations: Invocation[];
 }
