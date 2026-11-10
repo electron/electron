@@ -75,6 +75,13 @@ class InterceptState : public base::RefCountedThreadSafe<InterceptState> {
   std::vector<std::string> ignore_connections_limit_domains_ GUARDED_BY(lock_);
 };
 
+// Returns a non-zero request ID that is unique in this process until the
+// counter wraps. A request from a child process is sent to the extensions proxy
+// under one: that proxy replaces the ID and reports the one the request came
+// with (see ProxyingURLLoaderFactory::OnNetworkRequestIdReplaced()), and the
+// IDs a child process chooses need not be unique. May be called on any thread.
+int32_t GenerateForwardedRequestId();
+
 // Starts a request on the IO thread with both URLLoader endpoints proxied so
 // observer only webRequest events can be reported without blocking the load.
 void CreateObservedLoaderAndStartOnIO(
@@ -92,11 +99,15 @@ void CreateObservedLoaderAndStartOnIO(
 // Bound on the IO thread between a renderer's factory pipe and the network:
 // requests go straight to `target` unless `state` wants them on the UI thread,
 // in which case `interceptor` (a ProxyingURLLoaderFactory) gets them. Lives as
-// long as its receivers and both remotes do.
+// long as its receivers and both remotes do. `replace_request_ids` must be true
+// when `target` is the extensions proxy: requests sent straight to `target`
+// then get an ID from GenerateForwardedRequestId(), as `interceptor` gives the
+// ones it sends there.
 void CreateURLLoaderFactoryGate(
     ElectronBrowserContext* browser_context,
     int render_process_id,
     int frame_routing_id,
+    bool replace_request_ids,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor);

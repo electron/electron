@@ -1655,16 +1655,14 @@ bool ElectronBrowserClient::HasWebRequestAPIProxy(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace {
 
-// The WebSocketFactory given to extensions::WebRequestProxyingWebSocket when
-// session.webRequest also has listeners. The arguments after `factory` are
-// what the extensions proxy would have sent to the network service.
-void StartWebSocketProxyAfterExtensions(
-    base::WeakPtr<ElectronBrowserContext> browser_context,
-    int process_id,
-    int render_frame_id,
-    const url::Origin& origin,
+// The WebSocketFactory given to ProxyingWebSocket when extensions proxy
+// WebSockets too: session.webRequest sees the handshake first and this hands it
+// on to the extensions proxy, which takes `header_client` as the header client
+// it reports to after its own listeners.
+void StartExtensionsWebSocketProxy(
+    content::GlobalRenderFrameHostId frame_id,
     const net::SiteForCookies& site_for_cookies,
-    uint64_t* request_id_generator,
+    const std::optional<std::string>& user_agent,
     content::ContentBrowserClient::WebSocketFactory factory,
     const GURL& url,
     std::vector<network::mojom::HttpHeaderPtr> additional_headers,
@@ -1674,20 +1672,26 @@ void StartWebSocketProxyAfterExtensions(
         auth_handler,
     mojo::PendingRemote<network::mojom::TrustedHeaderClient> header_client) {
   // Dropping `handshake_client` fails the handshake.
-  if (!browser_context)
+  auto* frame = content::RenderFrameHost::FromID(frame_id);
+  if (!frame)
     return;
 
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  auto* web_request =
-      api::WebRequest::FromOrCreate(isolate, browser_context.get());
-  // `additional_headers` already carries the user agent override, if any.
-  ProxyingWebSocket::StartProxying(
-      web_request, std::move(factory), url, site_for_cookies, std::nullopt,
-      std::move(handshake_client), true, process_id, render_frame_id, origin,
-      browser_context.get(), request_id_generator,
-      std::move(additional_headers), std::move(auth_handler),
-      std::move(header_client));
+  auto* web_request_api =
+      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
+          frame->GetProcess()->GetBrowserContext());
+  if (!web_request_api || !web_request_api->MayHaveProxiesForFrame(frame)) {
+    std::move(factory).Run(url, std::move(additional_headers),
+                           std::move(handshake_client), std::move(auth_handler),
+                           std::move(header_client));
+    return;
+  }
+
+  // `additional_headers` holds only the user agent override, which the
+  // extensions proxy adds again. It also has its own authentication handler;
+  // ProxyingWebSocket's never has credentials to give.
+  web_request_api->ProxyWebSocket(
+      frame, std::move(factory), url, site_for_cookies, user_agent,
+      std::move(handshake_client), std::move(header_client));
 }
 
 }  // namespace
@@ -1742,20 +1746,17 @@ void ElectronBrowserClient::CreateWebSocket(
       extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
           browser_context);
   if (web_request_api && web_request_api->MayHaveProxies()) {
-    // As for URL loader factories, the extensions proxy is nearest the
-    // renderer and hands the handshake on to session.webRequest.
-    if (web_request->HasListener()) {
-      factory = base::BindOnce(
-          &StartWebSocketProxyAfterExtensions,
-          static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr(),
-          frame->GetProcess()->GetDeprecatedID(), frame->GetRoutingID(),
-          frame->GetLastCommittedOrigin(), site_for_cookies,
-          base::Unretained(&next_id_), std::move(factory));
+    if (!web_request->HasListener()) {
+      web_request_api->ProxyWebSocket(
+          frame, std::move(factory), url, site_for_cookies, user_agent,
+          std::move(handshake_client), std::move(options.header_client));
+      return;
     }
-    web_request_api->ProxyWebSocket(
-        frame, std::move(factory), url, site_for_cookies, user_agent,
-        std::move(handshake_client), std::move(options.header_client));
-    return;
+    // As for URL loader factories, session.webRequest is nearest the renderer
+    // and the extensions proxy nearest the network.
+    factory =
+        base::BindOnce(&StartExtensionsWebSocketProxy, frame->GetGlobalId(),
+                       site_for_cookies, user_agent, std::move(factory));
   }
 #endif
 
@@ -1763,7 +1764,7 @@ void ElectronBrowserClient::CreateWebSocket(
       web_request, std::move(factory), url, site_for_cookies, user_agent,
       std::move(handshake_client), true, frame->GetProcess()->GetDeprecatedID(),
       frame->GetRoutingID(), frame->GetLastCommittedOrigin(), browser_context,
-      &next_id_, {}, mojo::NullRemote(), mojo::NullRemote());
+      &next_id_);
 }
 
 void ElectronBrowserClient::WillCreateURLLoaderFactory(
@@ -1791,10 +1792,16 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
 
+  // session.webRequest's proxy goes nearest the renderer and the extensions
+  // proxy, appended after it, nearest the network, so that an app's listeners
+  // see a request before extensions can block or redirect it.
+  auto [proxied_receiver, target_factory_remote] = factory_builder.Append();
+
   // Set when the extensions proxy is on this factory and wants the header
   // client that the network service accepts only one of.
   mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
       extensions_header_client;
+  bool extensions_proxy_follows = false;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Factories for requests made from the main process (e.g. net.fetch) or
@@ -1808,27 +1815,24 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   if (!is_browser_process_request) {
     auto* web_request_api = extensions::BrowserContextKeyedAPIFactory<
         extensions::WebRequestAPI>::Get(browser_context);
-
-    // The extensions proxy goes nearest the renderer, with the proxy below
-    // between it and the network, so that chrome.webRequest and
-    // session.webRequest listeners both see every request. This order is not
-    // a free choice: the extensions proxy gives requests a new ID, and only a
-    // proxy that sees that ID can match the network service's header client
-    // calls to its requests.
     DCHECK(web_request_api);
-    bool used_proxy_for_web_request =
-        web_request_api->MaybeProxyURLLoaderFactory(
-            browser_context, frame_host, render_process_id, type, navigation_id,
-            ukm_source_id, factory_builder,
-            header_client ? &extensions_header_client : nullptr,
-            navigation_response_task_runner);
+
+    // The extensions proxy sends requests from child processes to the network
+    // service under IDs of its own, and the network service reports loaders to
+    // the header client by those.
+    web_request_api->request_id_generator().set_network_request_id_callback(
+        base::BindRepeating(
+            &ProxyingURLLoaderFactory::OnNetworkRequestIdReplaced));
+    extensions_proxy_follows = web_request_api->MaybeProxyURLLoaderFactory(
+        browser_context, frame_host, render_process_id, type, navigation_id,
+        ukm_source_id, factory_builder,
+        header_client ? &extensions_header_client : nullptr,
+        navigation_response_task_runner);
 
     if (bypass_redirect_checks)
-      *bypass_redirect_checks = used_proxy_for_web_request;
+      *bypass_redirect_checks = extensions_proxy_follows;
   }
 #endif
-
-  auto [proxied_receiver, target_factory_remote] = factory_builder.Append();
 
   // Renderer-facing factories get an IO-thread gate in front of the proxy, so
   // requests only detour through this thread while something observes them.
@@ -1843,6 +1847,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     CreateURLLoaderFactoryGate(
         static_cast<ElectronBrowserContext*>(browser_context),
         render_process_id, frame_host->GetRoutingID(),
+        /*replace_request_ids=*/extensions_proxy_follows,
         std::move(proxied_receiver), std::move(gate_to_network),
         std::move(gate_to_proxy));
     proxied_receiver = std::move(proxy_receiver);
@@ -1892,7 +1897,8 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
       std::move(proxied_receiver),
       std::move(target_factory_remote),
       std::move(header_client_receiver),
-      type};
+      type,
+      extensions_proxy_follows};
 
   if (shared_header_client_receiver) {
     ChainURLLoaderHeaderClients(

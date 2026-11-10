@@ -189,11 +189,12 @@ All features of this API are supported.
 
 > [!NOTE]
 > `chrome.webRequest` listeners and Electron's [`webRequest`](web-request.md) listeners receive events for the same requests.
-> A request reaches an extension's listeners before Electron's `webRequest` listeners, and its response reaches them in the opposite order.
-> Where the two conflict, extensions take priority: a request that an extension blocks or redirects never reaches Electron's `webRequest` listeners, and extensions have the final say on the response headers a page receives.
-> The exception is request headers: Electron's `webRequest` listeners run after extensions have changed them, so their changes are what is sent.
-> Extensions see a request that Electron's `webRequest` listeners cancel or redirect as an error or a redirect.
-> `chrome.declarativeNetRequest` rules are applied at the same point as an extension's `chrome.webRequest` listeners and take priority in the same way.
+> Where the two conflict, Electron's `webRequest` listeners take priority.
+> They see a request before extensions do: extensions are not told about a request that they cancel, and see only the target of a request that they redirect.
+> They change request and response headers after extensions have, so their changes are the ones that apply.
+> A request that an extension blocks or redirects is reported to Electron's `webRequest` listeners as an error or a redirect.
+> `chrome.declarativeNetRequest` rules are applied at the same point as an extension's `chrome.webRequest` listeners.
+> A request that a handler registered with [`protocol.handle`](protocol.md#protocolhandlescheme-handler) serves is not reported to extensions.
 > Requests made from the main process, such as those from the [`net`](net.md) module, are not reported to extensions.
 
 See [official documentation](https://developer.chrome.com/docs/extensions/reference/webRequest) for more information.

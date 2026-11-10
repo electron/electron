@@ -891,19 +891,20 @@ describe('chrome extensions', () => {
         expect(await extensionEvents(token)).toEqual([]);
       });
 
-      it('reports a request that session.webRequest cancels to the extension as an error', async () => {
+      it('does not report a request that session.webRequest cancels to the extension', async () => {
         const token = crypto.randomUUID();
         customSession.webRequest.onBeforeRequest((details, callback) => {
           callback({ cancel: details.url.includes(token) });
         });
         expect(await fetchStatus(`${url}/${token}`)).toBe('Failed to fetch');
 
-        const events = await extensionEvents(token);
-        expect(names(events)).toEqual(['onBeforeRequest', 'onBeforeSendHeaders', 'onSendHeaders', 'onErrorOccurred']);
-        expect(events[3].error).toBe('net::ERR_BLOCKED_BY_CLIENT');
+        // A later request from the page reaches the extension, so the one
+        // above would have by now.
+        await extensionSeesRequests();
+        expect(await extensionEvents(token)).toEqual([]);
       });
 
-      it('reports a session.webRequest redirect to the extension', async () => {
+      it('reports only the target of a session.webRequest redirect to the extension', async () => {
         const from = crypto.randomUUID();
         const to = crypto.randomUUID();
         customSession.webRequest.onBeforeRequest((details, callback) => {
@@ -911,16 +912,8 @@ describe('chrome extensions', () => {
         });
         expect(await fetchStatus(`${url}/${from}`)).toBe(200);
 
-        const redirected = await extensionEvents(from);
-        expect(names(redirected)).toEqual([
-          'onBeforeRequest',
-          'onBeforeSendHeaders',
-          'onSendHeaders',
-          'onHeadersReceived',
-          'onBeforeRedirect'
-        ]);
-        expect(redirected[4].redirectUrl).toBe(`${url}/${to}`);
         expect(names(await extensionEvents(to))).toEqual(httpEvents);
+        expect(await extensionEvents(from)).toEqual([]);
       });
 
       it('shows the extension the response headers that session.webRequest set', async () => {
@@ -965,7 +958,7 @@ describe('chrome extensions', () => {
         expect(names(events)).toContain('onHeadersReceived:extraHeaders');
       });
 
-      it('orders extraHeaders listeners around session.webRequest in the same way', async () => {
+      it('runs extraHeaders listeners before session.webRequest for request and response headers', async () => {
         customSession.webRequest.onBeforeSendHeaders((details, callback) => {
           callback({ requestHeaders: { ...details.requestHeaders, 'X-From-Session': 'app' } });
         });
@@ -991,7 +984,27 @@ describe('chrome extensions', () => {
         expect(sentNames).toContain('Accept-Encoding');
         expect(sentNames).not.toContain('X-From-Session');
         const received = events.find((event) => event.name === 'onHeadersReceived:extraHeaders');
-        expect(received?.responseHeaders).toContainEqual({ name: 'X-From-Session', value: 'app' });
+        const receivedNames = received?.responseHeaders?.map((header) => header.name);
+        expect(receivedNames).toContain('Content-Length');
+        expect(receivedNames).not.toContain('X-From-Session');
+      });
+
+      it('does not report a request that protocol.handle serves to the extension', async () => {
+        const token = crypto.randomUUID();
+        customSession.protocol.handle('http', () => new Response('handled'));
+        try {
+          const body = await w.webContents.executeJavaScript(
+            `fetch(${JSON.stringify(`${url}/${token}`)}).then((response) => response.text())`
+          );
+          expect(body).toBe('handled');
+        } finally {
+          customSession.protocol.unhandle('http');
+        }
+
+        // A later request from the page reaches the extension, so the one
+        // above would have by now.
+        await extensionSeesRequests();
+        expect(await extensionEvents(token)).toEqual([]);
       });
 
       describe('with a CORS preflight', () => {
@@ -1150,12 +1163,12 @@ describe('chrome extensions', () => {
         await Promise.all([extensionPage.loadURL(`${extension.url}page.html`), w.loadURL(url)]);
       });
 
-      it('blocks a fetch, which session.webRequest then never sees', async () => {
+      it('blocks a fetch after session.webRequest has seen it', async () => {
         const blocked = crypto.randomUUID();
         await addSessionRules([{ id: 1, condition: { urlFilter: blocked }, action: { type: 'block' } }]);
 
         expect(await fetchStatus(`${url}/${blocked}`)).toBe('Failed to fetch');
-        expect(seenBySessionFor(blocked)).toEqual([]);
+        expect(seenBySessionFor(blocked)).toEqual([`${url}/${blocked}`]);
 
         const allowed = crypto.randomUUID();
         expect(await fetchStatus(`${url}/${allowed}`)).toBe(200);
@@ -1169,7 +1182,7 @@ describe('chrome extensions', () => {
         ]);
 
         await expect(w.loadURL(`${url}/${blocked}`)).rejects.toThrow(/ERR_BLOCKED_BY_CLIENT/);
-        expect(seenBySessionFor(blocked)).toEqual([]);
+        expect(seenBySessionFor(blocked)).toEqual([`${url}/${blocked}`]);
       });
 
       it('blocks a WebSocket handshake', async () => {
@@ -1185,14 +1198,14 @@ describe('chrome extensions', () => {
           })`);
 
         expect(await connect(blocked)).toBe(false);
-        expect(seenBySessionFor(blocked)).toEqual([]);
+        expect(seenBySessionFor(blocked)).toEqual([`ws://127.0.0.1:${port}/${blocked}`]);
 
         const allowed = crypto.randomUUID();
         expect(await connect(allowed)).toBe(true);
         expect(seenBySessionFor(allowed)).toEqual([`ws://127.0.0.1:${port}/${allowed}`]);
       });
 
-      it('redirects a fetch, and session.webRequest sees only the new request', async () => {
+      it('redirects a fetch, and session.webRequest sees both requests', async () => {
         const from = crypto.randomUUID();
         const to = crypto.randomUUID();
         await addSessionRules([
@@ -1203,7 +1216,7 @@ describe('chrome extensions', () => {
           `fetch(${JSON.stringify(`${url}/${from}`)}).then((response) => response.url)`
         );
         expect(finalUrl).toBe(`${url}/${to}`);
-        expect(seenBySessionFor(from)).toEqual([]);
+        expect(seenBySessionFor(from)).toEqual([`${url}/${from}`]);
         expect(seenBySessionFor(to)).toEqual([`${url}/${to}`]);
       });
 
@@ -1215,8 +1228,8 @@ describe('chrome extensions', () => {
           callback(details.url.includes(from) ? { redirectURL: `${url}/${to}` } : {});
         });
 
-        // The extension is nearest the page, so it sees the redirect and
-        // then the request for its target.
+        // session.webRequest is nearest the page, so the extension sees only
+        // the request for the target.
         expect(await fetchStatus(`${url}/${from}`)).toBe('Failed to fetch');
       });
 
@@ -1250,7 +1263,7 @@ describe('chrome extensions', () => {
         expect((await serverHeaders)['x-from-both']).toBe('session');
       });
 
-      it('changes response headers after session.webRequest, and so has the final say', async () => {
+      it('changes response headers before session.webRequest, which has the final say', async () => {
         const token = crypto.randomUUID();
         await addSessionRules([
           {
@@ -1258,18 +1271,24 @@ describe('chrome extensions', () => {
             condition: { urlFilter: token },
             action: {
               type: 'modifyHeaders',
-              responseHeaders: [{ header: 'X-From-Both', operation: 'set', value: 'rule' }]
+              responseHeaders: [
+                { header: 'X-From-Rule', operation: 'set', value: 'rule' },
+                { header: 'X-From-Both', operation: 'set', value: 'rule' }
+              ]
             }
           }
         ]);
+        let seenFromBoth: string[] | undefined;
         customSession.webRequest.onHeadersReceived((details, callback) => {
-          callback({
-            responseHeaders: { ...details.responseHeaders, 'X-From-Both': ['session'], 'X-From-Session': ['session'] }
-          });
+          // Rules set header names in lower case.
+          const { 'x-from-both': fromBoth, ...responseHeaders } = details.responseHeaders ?? {};
+          if (details.url.includes(token)) seenFromBoth = fromBoth;
+          callback({ responseHeaders: { ...responseHeaders, 'X-From-Both': ['session'] } });
         });
 
-        expect(await fetchHeader(`${url}/${token}`, 'X-From-Session')).toBe('session');
-        expect(await fetchHeader(`${url}/${token}`, 'X-From-Both')).toBe('rule');
+        expect(await fetchHeader(`${url}/${token}`, 'X-From-Both')).toBe('session');
+        expect(seenFromBoth).toEqual(['rule']);
+        expect(await fetchHeader(`${url}/${token}`, 'X-From-Rule')).toBe('rule');
       });
 
       it('does not apply rules to requests from the main process', async () => {

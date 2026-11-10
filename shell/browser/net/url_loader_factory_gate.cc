@@ -4,6 +4,8 @@
 
 #include "shell/browser/net/url_loader_factory_gate.h"
 
+#include <atomic>
+#include <limits>
 #include <optional>
 #include <utility>
 
@@ -308,6 +310,7 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
       base::WeakPtr<ElectronBrowserContext> browser_context,
       int render_process_id,
       int frame_routing_id,
+      bool replace_request_ids,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
       mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
       mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor,
@@ -317,6 +320,7 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
         browser_context_(std::move(browser_context)),
         render_process_id_(render_process_id),
         frame_routing_id_(frame_routing_id),
+        replace_request_ids_(replace_request_ids),
         target_(std::move(target)),
         interceptor_(std::move(interceptor)) {
     target_.set_disconnect_handler(
@@ -336,8 +340,13 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
       override {
+    // `target_` reports the ID each request came with to `interceptor_`,
+    // which takes it for one of its own requests if the ID matches.
+    const int32_t target_request_id =
+        replace_request_ids_ ? GenerateForwardedRequestId() : request_id;
     switch (state_->RouteFor(request)) {
       case InterceptState::Route::kProxy:
+        // `interceptor_` picks the ID it sends on.
         interceptor_->CreateLoaderAndStart(std::move(loader), request_id,
                                            options, request, std::move(client),
                                            traffic_annotation);
@@ -345,12 +354,12 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
       case InterceptState::Route::kObserve:
         CreateObservedLoaderAndStart(
             browser_context_, render_process_id_, frame_routing_id_,
-            std::move(loader), request_id, options, request, std::move(client),
-            traffic_annotation, target_.get());
+            std::move(loader), target_request_id, options, request,
+            std::move(client), traffic_annotation, target_.get());
         return;
       case InterceptState::Route::kDirect:
-        target_->CreateLoaderAndStart(std::move(loader), request_id, options,
-                                      request, std::move(client),
+        target_->CreateLoaderAndStart(std::move(loader), target_request_id,
+                                      options, request, std::move(client),
                                       traffic_annotation);
         return;
     }
@@ -363,11 +372,21 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
   const base::WeakPtr<ElectronBrowserContext> browser_context_;
   const int render_process_id_;
   const int frame_routing_id_;
+  const bool replace_request_ids_;
   mojo::Remote<network::mojom::URLLoaderFactory> target_;
   mojo::Remote<network::mojom::URLLoaderFactory> interceptor_;
 };
 
 }  // namespace
+
+int32_t GenerateForwardedRequestId() {
+  static std::atomic<uint32_t> next_id{0};
+  // Always positive, so it can't match the negative IDs content gives
+  // browser-initiated requests.
+  return static_cast<int32_t>(next_id.fetch_add(1, std::memory_order_relaxed) %
+                              std::numeric_limits<int32_t>::max()) +
+         1;
+}
 
 void CreateObservedLoaderAndStartOnIO(
     base::WeakPtr<ElectronBrowserContext> browser_context,
@@ -407,6 +426,7 @@ void CreateURLLoaderFactoryGate(
     ElectronBrowserContext* browser_context,
     int render_process_id,
     int frame_routing_id,
+    bool replace_request_ids,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor) {
@@ -419,18 +439,19 @@ void CreateURLLoaderFactoryGate(
           [](scoped_refptr<InterceptState> state,
              base::WeakPtr<ElectronBrowserContext> browser_context,
              int render_process_id, int frame_routing_id,
+             bool replace_request_ids,
              mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
              mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
              mojo::PendingRemote<network::mojom::URLLoaderFactory>
                  interceptor) {
             base::MakeSelfDeleting<URLLoaderFactoryGate>(
                 std::move(state), std::move(browser_context), render_process_id,
-                frame_routing_id, std::move(receiver), std::move(target),
-                std::move(interceptor));
+                frame_routing_id, replace_request_ids, std::move(receiver),
+                std::move(target), std::move(interceptor));
           },
           std::move(state), std::move(weak_browser_context), render_process_id,
-          frame_routing_id, std::move(receiver), std::move(target),
-          std::move(interceptor)));
+          frame_routing_id, replace_request_ids, std::move(receiver),
+          std::move(target), std::move(interceptor)));
 }
 
 }  // namespace electron

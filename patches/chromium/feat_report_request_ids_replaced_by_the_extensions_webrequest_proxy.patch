@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Maddock <samuel.maddock@gmail.com>
+Date: Tue, 10 Nov 2026 12:00:00 +0000
+Subject: feat: report request IDs replaced by the extensions WebRequest proxy
+
+WebRequestProxyingURLLoaderFactory sends each request from a child
+process to the network service under an ID it generates, and the network
+service names a loader by that ID when it calls
+TrustedURLLoaderHeaderClient::OnLoaderCreated().
+
+Electron's session.webRequest proxy sits between the child process and
+this proxy and shares that header client with it, so it has to learn
+which of its requests each generated ID belongs to. Add a callback on
+RequestIDGenerator that is run with each ID it generates for the network
+service and the ID that it replaces.
+
+diff --git a/extensions/browser/api/web_request/web_request_api.h b/extensions/browser/api/web_request/web_request_api.h
+index ed4e5da9a902efae470d0cca075150ea42ef7adb..46dfdb8dbc338c6192d3dbd7dc7568ed9966b12a 100644
+--- a/extensions/browser/api/web_request/web_request_api.h
++++ b/extensions/browser/api/web_request/web_request_api.h
+@@ -185,7 +185,23 @@ class WebRequestAPI : public BrowserContextKeyedAPI,
+     // lifetime of this generator (until wrap-around).
+     int32_t GenerateNetworkRequestId();
+ 
++    // Run with each ID GenerateNetworkRequestId() returns and the ID it
++    // replaces. An embedder's proxy between the child process and this API's
++    // proxy needs it to know which of its requests the network service means
++    // when it reports a loader by request ID.
++    using NetworkRequestIdCallback =
++        base::RepeatingCallback<void(int render_process_id,
++                                     int32_t request_id_from_client,
++                                     int32_t network_request_id)>;
++    void set_network_request_id_callback(NetworkRequestIdCallback callback) {
++      network_request_id_callback_ = std::move(callback);
++    }
++    const NetworkRequestIdCallback& network_request_id_callback() const {
++      return network_request_id_callback_;
++    }
++
+    private:
++    NetworkRequestIdCallback network_request_id_callback_;
+     uint64_t id_ = 0;
+     int32_t network_request_id_ = 0;
+     std::map<std::pair<int32_t, int32_t>, uint64_t> saved_id_map_;
+@@ -284,6 +300,8 @@ class WebRequestAPI : public BrowserContextKeyedAPI,
+ 
+   void ForceProxyForTesting();
+ 
++  RequestIDGenerator& request_id_generator() { return request_id_generator_; }
++
+   // Returns true if any extension is installed that could potentially require
+   // network request proxying (e.g. extensions with 'webRequest',
+   // 'declarativeNetRequest', or 'webview' permissions). This is a global
+diff --git a/extensions/browser/api/web_request/web_request_proxying_url_loader_factory.cc b/extensions/browser/api/web_request/web_request_proxying_url_loader_factory.cc
+index 83ddb7ed0ae0c3d624b83966a26853444ca488e8..97c456d476744241a5ff9b37507c5357c841e09f 100644
+--- a/extensions/browser/api/web_request/web_request_proxying_url_loader_factory.cc
++++ b/extensions/browser/api/web_request/web_request_proxying_url_loader_factory.cc
+@@ -1709,6 +1709,11 @@ void WebRequestProxyingURLLoaderFactory::CreateLoaderAndStart(
+       (render_process_id_ != -1)
+           ? request_id_generator_->GenerateNetworkRequestId()
+           : request_id;
++  if (render_process_id_ != -1 &&
++      request_id_generator_->network_request_id_callback()) {
++    request_id_generator_->network_request_id_callback().Run(
++        render_process_id_, request_id, request_id_for_network_service);
++  }
+ 
+   if (request_id_for_network_service) {
+     // Only requests with a non-zero request ID can have their proxy

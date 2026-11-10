@@ -4,14 +4,17 @@
 
 #include "shell/browser/net/proxying_url_loader_factory.h"
 
+#include <map>
 #include <memory>
 #include <utility>
 
 #include "base/command_line.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback_helpers.h"
+#include "base/no_destructor.h"
 #include "base/strings/string_split.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/child_process_host.h"
 #include "content/public/browser/global_routing_id.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
@@ -57,6 +60,20 @@ class NoOpHeaderClient final : public network::mojom::TrustedHeaderClient {
     std::move(callback).Run(net::OK, std::nullopt, std::nullopt);
   }
 };
+
+// A request sent to a target that replaces request IDs, which has yet to be
+// told the ID the network service knows the request by.
+struct ForwardedRequest {
+  base::WeakPtr<ProxyingURLLoaderFactory> factory;
+  uint64_t web_request_id;
+};
+
+// Keyed by the ID from GenerateForwardedRequestId() the request was sent with.
+// Used on the UI thread only.
+std::map<int32_t, ForwardedRequest>& GetForwardedRequests() {
+  static base::NoDestructor<std::map<int32_t, ForwardedRequest>> requests;
+  return *requests;
+}
 
 }  // namespace
 
@@ -825,7 +842,8 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote,
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
         header_client_receiver,
-    content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
+    content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type,
+    bool target_replaces_request_ids)
     : web_request_{web_request},
       intercepted_handlers_(intercepted_handlers),
       browser_context_(std::move(browser_context)),
@@ -834,7 +852,8 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
       request_id_generator_(request_id_generator),
       navigation_ui_data_(std::move(navigation_ui_data)),
       navigation_id_(navigation_id),
-      loader_factory_type_(loader_factory_type) {
+      loader_factory_type_(loader_factory_type),
+      target_replaces_request_ids_(target_replaces_request_ids) {
   target_factory_.Bind(std::move(target_factory_remote));
   target_factory_.set_disconnect_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::OnTargetFactoryError, base::Unretained(this)));
@@ -898,6 +917,20 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     override_target_factory.Bind(AsarURLLoaderFactory::Create());
   }
 
+  // The extensions proxy gives a request from a child process a new ID and
+  // reports it with the ID the request came with (see
+  // OnNetworkRequestIdReplaced()). A child process picks |request_id|, which
+  // need not be unique, so send the request on under an ID that names it alone.
+  // The extensions proxy keeps the ID of a navigation and of a request with no
+  // child process, and so does this.
+  const bool generate_request_id =
+      target_replaces_request_ids_ &&
+      render_process_id_ != content::ChildProcessHost::kInvalidUniqueID &&
+      loader_factory_type_ !=
+          content::ContentBrowserClient::URLLoaderFactoryType::kNavigation;
+  const int32_t target_request_id =
+      generate_request_id ? GenerateForwardedRequestId() : request_id;
+
   // Requests that no blocking listener can match do not need an
   // InProgressRequest on this thread; observers hear about them from the IO
   // thread (see URLLoaderFactoryGate, which does the same for renderer
@@ -914,12 +947,12 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
       target_factory->Clone(observed_target.InitWithNewPipeAndPassReceiver());
       CreateObservedLoaderAndStartOnIO(
           browser_context_, render_process_id_, frame_routing_id_,
-          std::move(loader), request_id, options, request, std::move(client),
-          traffic_annotation, std::move(observed_target));
+          std::move(loader), target_request_id, options, request,
+          std::move(client), traffic_annotation, std::move(observed_target));
       return;
     }
-    target_factory->CreateLoaderAndStart(std::move(loader), request_id, options,
-                                         request, std::move(client),
+    target_factory->CreateLoaderAndStart(std::move(loader), target_request_id,
+                                         options, request, std::move(client),
                                          traffic_annotation);
     return;
   }
@@ -934,15 +967,25 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // "extraHeaders" code path, however in Electron requests started from
   // the net module would have zero-ID because they do not have renderer process
   // associated.
-  if (request_id)
+  if (generate_request_id) {
+    // The network service will know this request by an ID the target has yet
+    // to pick, which OnNetworkRequestIdReplaced() adds to the map. A request
+    // the override factory serves never gets one.
+    if (!override_target_factory.is_bound()) {
+      GetForwardedRequests().insert_or_assign(
+          target_request_id,
+          ForwardedRequest{weak_factory_.GetWeakPtr(), web_request_id});
+    }
+  } else if (request_id) {
     network_request_id_to_web_request_id_.emplace(request_id, web_request_id);
+  }
 
   auto result = requests_.emplace(
       web_request_id,
       std::make_unique<InProgressRequest>(
           this, std::move(override_target_factory), web_request_id,
-          frame_routing_id_, request_id, options, request, traffic_annotation,
-          std::move(loader), std::move(client)));
+          frame_routing_id_, target_request_id, options, request,
+          traffic_annotation, std::move(loader), std::move(client)));
   result.first->second->Restart();
 }
 
@@ -1017,6 +1060,25 @@ bool ProxyingURLLoaderFactory::HandlesLoader(
   return web_request && web_request->HasListener();
 }
 
+// static
+void ProxyingURLLoaderFactory::OnNetworkRequestIdReplaced(
+    int render_process_id,
+    int32_t request_id,
+    int32_t network_service_request_id) {
+  auto it = GetForwardedRequests().find(request_id);
+  if (it == GetForwardedRequests().end())
+    return;
+
+  ProxyingURLLoaderFactory* factory = it->second.factory.get();
+  if (!factory || factory->render_process_id_ != render_process_id)
+    return;
+
+  // A request that starts over is sent to the target again under the same ID
+  // and gets another one from it, so the entry stays until RemoveRequest().
+  factory->network_request_id_to_web_request_id_.insert_or_assign(
+      network_service_request_id, it->second.web_request_id);
+}
+
 ProxyingURLLoaderFactory::~ProxyingURLLoaderFactory() = default;
 
 void ProxyingURLLoaderFactory::OnTargetFactoryError() {
@@ -1035,7 +1097,20 @@ void ProxyingURLLoaderFactory::OnProxyBindingError() {
 
 void ProxyingURLLoaderFactory::RemoveRequest(int32_t network_service_request_id,
                                              uint64_t request_id) {
-  network_request_id_to_web_request_id_.erase(network_service_request_id);
+  if (target_replaces_request_ids_) {
+    auto it = GetForwardedRequests().find(network_service_request_id);
+    if (it != GetForwardedRequests().end() &&
+        it->second.factory.get() == this &&
+        it->second.web_request_id == request_id) {
+      GetForwardedRequests().erase(it);
+    }
+    // The request may be in the map under every ID the target gave it.
+    base::EraseIf(
+        network_request_id_to_web_request_id_,
+        [request_id](const auto& entry) { return entry.second == request_id; });
+  } else {
+    network_request_id_to_web_request_id_.erase(network_service_request_id);
+  }
   requests_.erase(request_id);
 
   MaybeDeleteThis();

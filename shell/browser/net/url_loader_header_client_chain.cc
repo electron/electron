@@ -46,19 +46,19 @@ using network::mojom::TrustedURLLoaderHeaderClient;
 class HeaderClientChain : public TrustedHeaderClient {
  public:
   HeaderClientChain(mojo::PendingReceiver<TrustedHeaderClient> receiver,
-                    mojo::PendingRemote<TrustedHeaderClient> outer,
-                    mojo::PendingRemote<TrustedHeaderClient> inner,
+                    mojo::PendingRemote<TrustedHeaderClient> first,
+                    mojo::PendingRemote<TrustedHeaderClient> second,
                     bool for_cors_preflight)
       : receiver_(this, std::move(receiver)),
-        outer_(std::move(outer)),
-        inner_(std::move(inner)),
+        first_(std::move(first)),
+        second_(std::move(second)),
         for_cors_preflight_(for_cors_preflight) {
     receiver_.set_disconnect_handler(
         base::BindOnce(&HeaderClientChain::DeleteThis, base::Unretained(this)));
-    outer_.set_disconnect_handler(base::BindOnce(
-        &HeaderClientChain::OnOuterDisconnected, base::Unretained(this)));
-    inner_.set_disconnect_handler(base::BindOnce(
-        &HeaderClientChain::OnInnerDisconnected, base::Unretained(this)));
+    first_.set_disconnect_handler(base::BindOnce(
+        &HeaderClientChain::OnFirstDisconnected, base::Unretained(this)));
+    second_.set_disconnect_handler(base::BindOnce(
+        &HeaderClientChain::OnSecondDisconnected, base::Unretained(this)));
   }
 
   HeaderClientChain(const HeaderClientChain&) = delete;
@@ -69,8 +69,10 @@ class HeaderClientChain : public TrustedHeaderClient {
 
   void DeleteThis() { delete this; }
 
-  void OnOuterDisconnected() { OnProxyDisconnected(outer_, outer_answered_); }
-  void OnInnerDisconnected() { OnProxyDisconnected(inner_, inner_answered_); }
+  void OnFirstDisconnected() { OnProxyDisconnected(first_, first_answered_); }
+  void OnSecondDisconnected() {
+    OnProxyDisconnected(second_, second_answered_);
+  }
 
   void OnProxyDisconnected(mojo::Remote<TrustedHeaderClient>& proxy,
                            bool answered) {
@@ -96,17 +98,17 @@ class HeaderClientChain : public TrustedHeaderClient {
                            OnBeforeSendHeadersCallback callback) override {
     // The network service is sending the request again, as it does after a
     // proxy authentication challenge.
-    outer_answered_ = false;
-    inner_answered_ = false;
-    if (!outer_) {
-      OnOuterBeforeSendHeaders(request_url, headers, std::move(callback),
+    first_answered_ = false;
+    second_answered_ = false;
+    if (!first_) {
+      OnFirstBeforeSendHeaders(request_url, headers, std::move(callback),
                                net::OK, std::nullopt, std::nullopt);
       return;
     }
-    outer_->OnBeforeSendHeaders(
+    first_->OnBeforeSendHeaders(
         request_url, headers,
         mojo::WrapCallbackWithDefaultInvokeIfNotRun(
-            base::BindOnce(&HeaderClientChain::OnOuterBeforeSendHeaders,
+            base::BindOnce(&HeaderClientChain::OnFirstBeforeSendHeaders,
                            weak_factory_.GetWeakPtr(), request_url, headers,
                            std::move(callback)),
             DroppedReplyResult(), std::optional<net::HttpRequestHeaders>(),
@@ -117,56 +119,56 @@ class HeaderClientChain : public TrustedHeaderClient {
                          const net::IPEndPoint& remote_endpoint,
                          const std::optional<net::SSLInfo>& ssl_info,
                          OnHeadersReceivedCallback callback) override {
-    if (!inner_) {
-      OnInnerHeadersReceived(headers, remote_endpoint, ssl_info,
+    if (!first_) {
+      OnFirstHeadersReceived(headers, remote_endpoint, ssl_info,
                              std::move(callback), net::OK, std::nullopt,
                              std::nullopt);
       return;
     }
-    inner_->OnHeadersReceived(
+    first_->OnHeadersReceived(
         headers, remote_endpoint, ssl_info,
         mojo::WrapCallbackWithDefaultInvokeIfNotRun(
-            base::BindOnce(&HeaderClientChain::OnInnerHeadersReceived,
+            base::BindOnce(&HeaderClientChain::OnFirstHeadersReceived,
                            weak_factory_.GetWeakPtr(), headers, remote_endpoint,
                            ssl_info, std::move(callback)),
             DroppedReplyResult(), std::optional<std::string>(),
             std::optional<GURL>()));
   }
 
-  void OnOuterBeforeSendHeaders(
+  void OnFirstBeforeSendHeaders(
       const GURL& request_url,
       const net::HttpRequestHeaders& original_headers,
       OnBeforeSendHeadersCallback callback,
       int32_t result,
       const std::optional<net::HttpRequestHeaders>& headers,
       std::optional<base::DictValue> net_log_events) {
-    if (result != net::OK || !inner_) {
+    if (result != net::OK || !second_) {
       std::move(callback).Run(result, headers, std::move(net_log_events));
       return;
     }
-    inner_->OnBeforeSendHeaders(
+    second_->OnBeforeSendHeaders(
         request_url, headers ? *headers : original_headers,
         mojo::WrapCallbackWithDefaultInvokeIfNotRun(
-            base::BindOnce(&HeaderClientChain::OnInnerBeforeSendHeaders,
+            base::BindOnce(&HeaderClientChain::OnSecondBeforeSendHeaders,
                            headers, std::move(net_log_events),
                            std::move(callback)),
             DroppedReplyResult(), std::optional<net::HttpRequestHeaders>(),
             std::optional<base::DictValue>()));
   }
 
-  static void OnInnerBeforeSendHeaders(
-      const std::optional<net::HttpRequestHeaders>& outer_headers,
-      std::optional<base::DictValue> outer_net_log_events,
+  static void OnSecondBeforeSendHeaders(
+      const std::optional<net::HttpRequestHeaders>& first_headers,
+      std::optional<base::DictValue> first_net_log_events,
       OnBeforeSendHeadersCallback callback,
       int32_t result,
       const std::optional<net::HttpRequestHeaders>& headers,
       std::optional<base::DictValue> net_log_events) {
-    std::move(callback).Run(result, headers ? headers : outer_headers,
+    std::move(callback).Run(result, headers ? headers : first_headers,
                             net_log_events ? std::move(net_log_events)
-                                           : std::move(outer_net_log_events));
+                                           : std::move(first_net_log_events));
   }
 
-  void OnInnerHeadersReceived(
+  void OnFirstHeadersReceived(
       const std::string& original_headers,
       const net::IPEndPoint& remote_endpoint,
       const std::optional<net::SSLInfo>& ssl_info,
@@ -174,16 +176,16 @@ class HeaderClientChain : public TrustedHeaderClient {
       int32_t result,
       const std::optional<std::string>& headers,
       const std::optional<GURL>& preserve_fragment_on_redirect_url) {
-    inner_answered_ = result == net::OK;
-    if (result != net::OK || !outer_) {
+    first_answered_ = result == net::OK;
+    if (result != net::OK || !second_) {
       std::move(callback).Run(result, headers,
                               preserve_fragment_on_redirect_url);
       return;
     }
-    outer_->OnHeadersReceived(
+    second_->OnHeadersReceived(
         headers ? *headers : original_headers, remote_endpoint, ssl_info,
         mojo::WrapCallbackWithDefaultInvokeIfNotRun(
-            base::BindOnce(&HeaderClientChain::OnOuterHeadersReceived,
+            base::BindOnce(&HeaderClientChain::OnSecondHeadersReceived,
                            weak_factory_.GetWeakPtr(), headers,
                            preserve_fragment_on_redirect_url,
                            std::move(callback)),
@@ -191,29 +193,29 @@ class HeaderClientChain : public TrustedHeaderClient {
             std::optional<GURL>()));
   }
 
-  void OnOuterHeadersReceived(
-      const std::optional<std::string>& inner_headers,
-      const std::optional<GURL>& inner_preserve_fragment_on_redirect_url,
+  void OnSecondHeadersReceived(
+      const std::optional<std::string>& first_headers,
+      const std::optional<GURL>& first_preserve_fragment_on_redirect_url,
       OnHeadersReceivedCallback callback,
       int32_t result,
       const std::optional<std::string>& headers,
       const std::optional<GURL>& preserve_fragment_on_redirect_url) {
-    outer_answered_ = result == net::OK;
+    second_answered_ = result == net::OK;
     const bool has_url = preserve_fragment_on_redirect_url &&
                          !preserve_fragment_on_redirect_url->is_empty();
-    std::move(callback).Run(result, headers ? headers : inner_headers,
+    std::move(callback).Run(result, headers ? headers : first_headers,
                             has_url ? preserve_fragment_on_redirect_url
-                                    : inner_preserve_fragment_on_redirect_url);
+                                    : first_preserve_fragment_on_redirect_url);
   }
 
   mojo::Receiver<TrustedHeaderClient> receiver_;
-  mojo::Remote<TrustedHeaderClient> outer_;
-  mojo::Remote<TrustedHeaderClient> inner_;
+  mojo::Remote<TrustedHeaderClient> first_;
+  mojo::Remote<TrustedHeaderClient> second_;
   const bool for_cors_preflight_;
   // Whether each proxy has answered OnHeadersReceived for the request the
   // network service last sent.
-  bool outer_answered_ = false;
-  bool inner_answered_ = false;
+  bool first_answered_ = false;
+  bool second_answered_ = false;
   base::WeakPtrFactory<HeaderClientChain> weak_factory_{this};
 };
 
@@ -221,15 +223,15 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
  public:
   URLLoaderHeaderClientChain(
       mojo::PendingReceiver<TrustedURLLoaderHeaderClient> receiver,
-      mojo::PendingRemote<TrustedURLLoaderHeaderClient> outer,
-      mojo::PendingRemote<TrustedURLLoaderHeaderClient> inner,
-      HandlesLoaderCallback inner_handles_loader,
-      LoaderFailedCallback inner_loader_failed)
+      mojo::PendingRemote<TrustedURLLoaderHeaderClient> first,
+      mojo::PendingRemote<TrustedURLLoaderHeaderClient> second,
+      HandlesLoaderCallback second_handles_loader,
+      LoaderFailedCallback second_loader_failed)
       : receiver_(this, std::move(receiver)),
-        outer_(std::move(outer)),
-        inner_(std::move(inner)),
-        inner_handles_loader_(std::move(inner_handles_loader)),
-        inner_loader_failed_(std::move(inner_loader_failed)) {
+        first_(std::move(first)),
+        second_(std::move(second)),
+        second_handles_loader_(std::move(second_handles_loader)),
+        second_loader_failed_(std::move(second_loader_failed)) {
     receiver_.set_disconnect_handler(base::BindOnce(
         &URLLoaderHeaderClientChain::DeleteThis, base::Unretained(this)));
   }
@@ -247,60 +249,61 @@ class URLLoaderHeaderClientChain : public TrustedURLLoaderHeaderClient {
   void OnLoaderCreated(
       int32_t request_id,
       mojo::PendingReceiver<TrustedHeaderClient> receiver) override {
-    if (!inner_handles_loader_.Run(request_id)) {
-      outer_->OnLoaderCreated(request_id, std::move(receiver));
+    if (!second_handles_loader_.Run(request_id)) {
+      first_->OnLoaderCreated(request_id, std::move(receiver));
       return;
     }
-    mojo::PendingRemote<TrustedHeaderClient> outer;
-    mojo::PendingRemote<TrustedHeaderClient> inner;
-    outer_->OnLoaderCreated(request_id, outer.InitWithNewPipeAndPassReceiver());
-    inner_->OnLoaderCreated(request_id, inner.InitWithNewPipeAndPassReceiver());
-    new HeaderClientChain(std::move(receiver), std::move(outer),
-                          std::move(inner), /*for_cors_preflight=*/false);
+    mojo::PendingRemote<TrustedHeaderClient> first;
+    mojo::PendingRemote<TrustedHeaderClient> second;
+    first_->OnLoaderCreated(request_id, first.InitWithNewPipeAndPassReceiver());
+    second_->OnLoaderCreated(request_id,
+                             second.InitWithNewPipeAndPassReceiver());
+    new HeaderClientChain(std::move(receiver), std::move(first),
+                          std::move(second), /*for_cors_preflight=*/false);
   }
 
   void OnLoaderForCorsPreflightCreated(
       const network::ResourceRequest& request,
       mojo::PendingReceiver<TrustedHeaderClient> receiver) override {
-    if (!inner_handles_loader_.Run(std::nullopt)) {
-      outer_->OnLoaderForCorsPreflightCreated(request, std::move(receiver));
+    if (!second_handles_loader_.Run(std::nullopt)) {
+      first_->OnLoaderForCorsPreflightCreated(request, std::move(receiver));
       return;
     }
-    mojo::PendingRemote<TrustedHeaderClient> outer;
-    mojo::PendingRemote<TrustedHeaderClient> inner;
-    outer_->OnLoaderForCorsPreflightCreated(
-        request, outer.InitWithNewPipeAndPassReceiver());
-    inner_->OnLoaderForCorsPreflightCreated(
-        request, inner.InitWithNewPipeAndPassReceiver());
-    new HeaderClientChain(std::move(receiver), std::move(outer),
-                          std::move(inner), /*for_cors_preflight=*/true);
+    mojo::PendingRemote<TrustedHeaderClient> first;
+    mojo::PendingRemote<TrustedHeaderClient> second;
+    first_->OnLoaderForCorsPreflightCreated(
+        request, first.InitWithNewPipeAndPassReceiver());
+    second_->OnLoaderForCorsPreflightCreated(
+        request, second.InitWithNewPipeAndPassReceiver());
+    new HeaderClientChain(std::move(receiver), std::move(first),
+                          std::move(second), /*for_cors_preflight=*/true);
   }
 
   void OnLoaderFailedWithRemoteEndpoint(
       int32_t request_id,
       const net::IPEndPoint& remote_endpoint) override {
-    inner_loader_failed_.Run(request_id, remote_endpoint);
-    outer_->OnLoaderFailedWithRemoteEndpoint(request_id, remote_endpoint);
+    second_loader_failed_.Run(request_id, remote_endpoint);
+    first_->OnLoaderFailedWithRemoteEndpoint(request_id, remote_endpoint);
   }
 
   mojo::Receiver<TrustedURLLoaderHeaderClient> receiver_;
-  mojo::Remote<TrustedURLLoaderHeaderClient> outer_;
-  mojo::Remote<TrustedURLLoaderHeaderClient> inner_;
-  const HandlesLoaderCallback inner_handles_loader_;
-  const LoaderFailedCallback inner_loader_failed_;
+  mojo::Remote<TrustedURLLoaderHeaderClient> first_;
+  mojo::Remote<TrustedURLLoaderHeaderClient> second_;
+  const HandlesLoaderCallback second_handles_loader_;
+  const LoaderFailedCallback second_loader_failed_;
 };
 
 }  // namespace
 
 void ChainURLLoaderHeaderClients(
     mojo::PendingReceiver<TrustedURLLoaderHeaderClient> receiver,
-    mojo::PendingRemote<TrustedURLLoaderHeaderClient> outer,
-    mojo::PendingRemote<TrustedURLLoaderHeaderClient> inner,
-    HandlesLoaderCallback inner_handles_loader,
-    LoaderFailedCallback inner_loader_failed) {
+    mojo::PendingRemote<TrustedURLLoaderHeaderClient> first,
+    mojo::PendingRemote<TrustedURLLoaderHeaderClient> second,
+    HandlesLoaderCallback second_handles_loader,
+    LoaderFailedCallback second_loader_failed) {
   new URLLoaderHeaderClientChain(
-      std::move(receiver), std::move(outer), std::move(inner),
-      std::move(inner_handles_loader), std::move(inner_loader_failed));
+      std::move(receiver), std::move(first), std::move(second),
+      std::move(second_handles_loader), std::move(second_loader_failed));
 }
 
 }  // namespace electron

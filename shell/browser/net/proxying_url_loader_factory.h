@@ -219,7 +219,8 @@ class ProxyingURLLoaderFactory
           target_factory_remote,
       mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
           header_client_receiver,
-      content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type);
+      content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type,
+      bool target_replaces_request_ids);
 
   ~ProxyingURLLoaderFactory() override;
 
@@ -264,6 +265,14 @@ class ProxyingURLLoaderFactory
     return weak_factory_.GetWeakPtr();
   }
 
+  // For factories whose target is the extensions proxy, which sends each
+  // request from a child process to the network service under an ID of its
+  // own: `network_service_request_id` is the one it gave the request a factory
+  // sent it as `request_id`. Requests no factory is waiting on are ignored.
+  static void OnNetworkRequestIdReplaced(int render_process_id,
+                                         int32_t request_id,
+                                         int32_t network_service_request_id);
+
  private:
   void OnTargetFactoryError();
   void OnProxyBindingError();
@@ -298,6 +307,10 @@ class ProxyingURLLoaderFactory
       url_loader_header_client_receiver_{this};
   const content::ContentBrowserClient::URLLoaderFactoryType
       loader_factory_type_;
+
+  // Whether the target gives requests from child processes new IDs, reported
+  // through OnNetworkRequestIdReplaced().
+  const bool target_replaces_request_ids_;
 
   // Mapping from our own internally generated request ID to an
   // InProgressRequest instance.

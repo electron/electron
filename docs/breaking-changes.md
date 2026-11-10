@@ -67,10 +67,10 @@ stopped extensions loaded in that session from receiving `chrome.webRequest`
 events and from applying `chrome.declarativeNetRequest` rules. Extensions now
 handle requests alongside the session's `webRequest` listeners.
 
-Where the two conflict, extensions take priority. A request that an extension
-blocks or redirects no longer reaches the session's `webRequest` listeners, and
-extensions have the final say on the response headers a page receives. Request
-headers set by the session's `webRequest` listeners are still what is sent.
+Where the two conflict, the session's `webRequest` listeners take priority. They
+see a request before extensions do, and they change request and response headers
+after extensions have. A request that an extension blocks or redirects is
+reported to them as an error or a redirect.
 
 See [`chrome.webRequest`](api/extensions.md#chromewebrequest) for the full
 ordering.
