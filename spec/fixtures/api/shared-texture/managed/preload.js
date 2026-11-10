@@ -7,16 +7,20 @@ contextBridge.exposeInMainWorld('textures', {
     sharedTexture.setSharedTextureReceiver(async (data) => {
       // Step 5: Receive the imported shared texture
       const { importedSharedTexture: imported } = data;
-      await cb(imported);
-
-      // Release the imported shared texture since we're done.
-      // No need to use the callback here, as the util function automatically
-      // managed the lifetime via sync token.
-      imported.release();
+      try {
+        await cb(imported);
+      } catch (error) {
+        ipcRenderer.send('shared-texture-error', error.stack);
+      } finally {
+        imported.release();
+      }
     });
   },
-  webGpuUnavailable: () => {
-    ipcRenderer.send('webgpu-unavailable');
+  ready: () => {
+    ipcRenderer.send('shared-texture-ready');
+  },
+  reportError: (error) => {
+    ipcRenderer.send('shared-texture-error', error);
   },
   verifyCapturedImage: (verify) => {
     ipcRenderer.on('verify-captured-image', (e, images) => {

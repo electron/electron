@@ -16,7 +16,8 @@ window.verifyCapturedImage = (images, result) => {
       const capturedData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(targetImage, 0, 0);
+      // capturePage() images can have a different device scale factor from the fixture.
+      ctx.drawImage(targetImage, 0, 0, canvas.width, canvas.height);
       const targetData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
       // Compare the pixel data
@@ -58,37 +59,36 @@ window.initWebGpu = async () => {
   context.configure({ device, format });
 
   window.renderFrame = async (frame) => {
-    try {
-      // Create external texture
-      const externalTexture = device.importExternalTexture({ source: frame });
+    // Create external texture
+    const externalTexture = device.importExternalTexture({ source: frame });
 
-      // Create bind group layout, correctly specifying the external texture type
-      const bindGroupLayout = device.createBindGroupLayout({
-        entries: [
-          {
-            binding: 0,
-            visibility: window.GPUShaderStage.FRAGMENT,
-            externalTexture: {}
-          },
-          {
-            binding: 1,
-            visibility: window.GPUShaderStage.FRAGMENT,
-            sampler: {}
-          }
-        ]
-      });
+    // Create bind group layout, correctly specifying the external texture type
+    const bindGroupLayout = device.createBindGroupLayout({
+      entries: [
+        {
+          binding: 0,
+          visibility: window.GPUShaderStage.FRAGMENT,
+          externalTexture: {}
+        },
+        {
+          binding: 1,
+          visibility: window.GPUShaderStage.FRAGMENT,
+          sampler: {}
+        }
+      ]
+    });
 
-      // Create pipeline layout
-      const pipelineLayout = device.createPipelineLayout({
-        bindGroupLayouts: [bindGroupLayout]
-      });
+    // Create pipeline layout
+    const pipelineLayout = device.createPipelineLayout({
+      bindGroupLayouts: [bindGroupLayout]
+    });
 
-      // Create render pipeline
-      const pipeline = device.createRenderPipeline({
-        layout: pipelineLayout,
-        vertex: {
-          module: device.createShaderModule({
-            code: `
+    // Create render pipeline
+    const pipeline = device.createRenderPipeline({
+      layout: pipelineLayout,
+      vertex: {
+        module: device.createShaderModule({
+          code: `
                 @vertex
                 fn main(@builtin(vertex_index) VertexIndex : u32) -> @builtin(position) vec4<f32> {
                 var pos = array<vec2<f32>, 6>(
@@ -102,12 +102,12 @@ window.initWebGpu = async () => {
                 return vec4<f32>(pos[VertexIndex], 0.0, 1.0);
                 }
             `
-          }),
-          entryPoint: 'main'
-        },
-        fragment: {
-          module: device.createShaderModule({
-            code: `
+        }),
+        entryPoint: 'main'
+      },
+      fragment: {
+        module: device.createShaderModule({
+          code: `
                 @group(0) @binding(0) var extTex: texture_external;
                 @group(0) @binding(1) var mySampler: sampler;
 
@@ -117,52 +117,52 @@ window.initWebGpu = async () => {
                 return textureSampleBaseClampToEdge(extTex, mySampler, texCoord);
                 }
             `
-          }),
-          entryPoint: 'main',
-          targets: [{ format }]
+        }),
+        entryPoint: 'main',
+        targets: [{ format }]
+      },
+      primitive: { topology: 'triangle-list' }
+    });
+
+    // Create bind group
+    const bindGroup = device.createBindGroup({
+      layout: bindGroupLayout,
+      entries: [
+        {
+          binding: 0,
+          resource: externalTexture
         },
-        primitive: { topology: 'triangle-list' }
-      });
+        {
+          binding: 1,
+          resource: device.createSampler()
+        }
+      ]
+    });
 
-      // Create bind group
-      const bindGroup = device.createBindGroup({
-        layout: bindGroupLayout,
-        entries: [
-          {
-            binding: 0,
-            resource: externalTexture
-          },
-          {
-            binding: 1,
-            resource: device.createSampler()
-          }
-        ]
-      });
+    // Create command encoder and render pass
+    const commandEncoder = device.createCommandEncoder();
+    const textureView = context.getCurrentTexture().createView();
+    const renderPass = commandEncoder.beginRenderPass({
+      colorAttachments: [
+        {
+          view: textureView,
+          clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+          loadOp: 'clear',
+          storeOp: 'store'
+        }
+      ]
+    });
 
-      // Create command encoder and render pass
-      const commandEncoder = device.createCommandEncoder();
-      const textureView = context.getCurrentTexture().createView();
-      const renderPass = commandEncoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: textureView,
-            clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
-            loadOp: 'clear',
-            storeOp: 'store'
-          }
-        ]
-      });
+    // Set pipeline and bind group
+    renderPass.setPipeline(pipeline);
+    renderPass.setBindGroup(0, bindGroup);
+    renderPass.draw(6); // Draw a rectangle composed of two triangles
+    renderPass.end();
 
-      // Set pipeline and bind group
-      renderPass.setPipeline(pipeline);
-      renderPass.setBindGroup(0, bindGroup);
-      renderPass.draw(6); // Draw a rectangle composed of two triangles
-      renderPass.end();
-
-      // Submit commands
-      device.queue.submit([commandEncoder.finish()]);
-    } catch (error) {
-      console.error('Rendering error:', error);
-    }
+    // Submit commands
+    device.queue.submit([commandEncoder.finish()]);
+    await device.queue.onSubmittedWorkDone();
+    // Let the canvas be composited before the main process captures the page.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   };
 };
