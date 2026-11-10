@@ -81,8 +81,9 @@ class MenuDelegate : public views::MenuDelegate {
   std::unique_ptr<views::MenuDelegate> adapter_;
   std::unique_ptr<views::MenuRunner> menu_runner_;
 
-  // The menu button to switch to.
-  raw_ptr<views::MenuButton> button_to_open_ = nullptr;
+  // The item to select after the current menu closes. Submenu headers open;
+  // command items only receive focus.
+  raw_ptr<views::MenuButton> button_to_select_ = nullptr;
   bool hold_first_switch_ = false;
 
   base::ObserverList<Observer>::Unchecked observers_;

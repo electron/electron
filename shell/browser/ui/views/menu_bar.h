@@ -37,29 +37,34 @@ class MenuBar : public views::AccessiblePaneView,
   // Replaces current menu with a new one.
   void SetMenu(ElectronMenuModel* menu_model);
 
-  // Shows underline under accelerators.
+  // Shows or hides menu-bar mnemonic underlines.
   void SetAcceleratorVisibility(bool visible);
 
-  // Returns true if the submenu has accelerator |key|
+  // Returns true if an enabled, visible menu-bar item has mnemonic |key|.
   bool HasAccelerator(char16_t key);
 
-  // Shows the submenu whose accelerator is |key|.
+  // Opens the submenu or executes the command whose mnemonic is |key|.
   void ActivateAccelerator(char16_t key);
 
-  // Returns there are how many items in the root menu.
+  // Returns the number of top-level items in the menu model.
   size_t GetItemCount() const;
 
-  // Get the menu under specified screen point.
+  // Gets the submenu model and button at the specified screen point.
   bool GetMenuButtonFromScreenPoint(const gfx::Point& point,
                                     ElectronMenuModel** menu_model,
                                     views::MenuButton** button);
 
-  // Get the submenu button adjacent to the button with |current_id|, wrapping
-  // around and skipping non-submenu items. |next| selects the following button
-  // when true and the preceding one when false.
+  // Finds an adjacent submenu header or command, wrapping around and skipping
+  // separators, hidden items, and disabled items. |next| selects the following
+  // item when true and the preceding one when false. Returns false if there
+  // is no eligible item other than |current_id|.
   bool GetSiblingMenuButtonByDirection(int current_id,
                                        bool next,
                                        views::MenuButton** button);
+
+  // Selects |button| without executing commands. |open_submenu| opens submenu
+  // headers immediately and preserves this mode when selecting commands.
+  void SelectMenuButton(views::MenuButton* button, bool open_submenu);
 
   void ViewHierarchyChanged(
       const views::ViewHierarchyChangedDetails& details) override;
@@ -76,6 +81,7 @@ class MenuBar : public views::AccessiblePaneView,
   // views::AccessiblePaneView:
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
   bool SetPaneFocusAndFocusDefault() override;
+  bool OnKeyPressed(const ui::KeyEvent& event) override;
   void OnThemeChanged() override;
 
   // views::FocusChangeListener:
@@ -98,6 +104,7 @@ class MenuBar : public views::AccessiblePaneView,
   raw_ptr<RootView> root_view_;
   raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
   bool accelerator_installed_ = false;
+  bool open_menu_on_navigation_ = false;
 };
 
 }  // namespace electron

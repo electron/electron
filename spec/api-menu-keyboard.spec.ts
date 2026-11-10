@@ -1,4 +1,5 @@
 import { BrowserWindow, Menu, screen } from 'electron/main';
+import type { MenuItemConstructorOptions } from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 
@@ -27,8 +28,7 @@ const display = screen.getPrimaryDisplay();
 // too quickly for the nested menu message loop.
 const KEY_DELAY = 350;
 
-// The sibling-menu switching feature only exists on the Views menu
-// bar used on Windows and Linux
+// Menu-bar keyboard navigation uses the Views menu bar on Windows and Linux.
 ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
   'menu bar keyboard sibling switching',
   { tags: ['serial'], retry: 0 },
@@ -39,8 +39,9 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
       lastClicked = label;
     };
 
-    // A menu bar with three top-level menus. Opening a menu via the keyboard auto-selects the first item.
-    const buildMenu = () =>
+    // Three submenu headers, with optional items between Alpha and Beta.
+    // Keyboard-opened dropdowns select their first item automatically.
+    const buildMenu = (betweenMenus: MenuItemConstructorOptions[] = []) =>
       Menu.buildFromTemplate([
         {
           label: '&Alpha',
@@ -51,6 +52,7 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
             }
           ]
         },
+        ...betweenMenus,
         {
           label: '&Beta',
           submenu: [
@@ -80,6 +82,15 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
         }
       ]);
 
+    const buildMenuWithCommands = () =>
+      buildMenu([
+        { type: 'separator' },
+        { label: '&Command', click: () => record('command') },
+        { type: 'separator' },
+        { label: 'Disabled', enabled: false, click: () => record('disabled') },
+        { label: 'Hidden', visible: false, click: () => record('hidden') }
+      ]);
+
     let w: BrowserWindow;
 
     // Brings the shared window to the OS foreground so robotjs key events route to
@@ -95,8 +106,8 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
       await waitUntil(() => w.isFocused());
     };
 
-    // Presses a sequence of keys with a delay between each so the native menu can
-    // keep up. Each entry is either a key name or a [key, modifiers] tuple.
+    // Presses keys with a delay between each so menu event handling can keep up.
+    // Each entry is either a key name or a [key, modifiers] tuple.
     const pressKeys = async (keys: Array<string | [string, string[]]>) => {
       for (const key of keys) {
         if (Array.isArray(key)) {
@@ -126,6 +137,7 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
 
     beforeEach(async () => {
       lastClicked = null;
+      w.setMenu(buildMenu());
       // Re-establish foreground focus
       await focusWindow();
     });
@@ -146,7 +158,7 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
     it('switches to the next sibling menu when Right is pressed on a top-level leaf item', async () => {
       await pressKeys([
         ['a', ['alt']], // open Alpha (Alpha Item selected)
-        'right', // switch to Beta (next sibling)
+        'right', // open Beta automatically (Beta Leaf selected)
         'enter' // activate Beta's first item
       ]);
 
@@ -164,7 +176,7 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
     it('wraps to the last sibling menu when Left is pressed on the first menu', async () => {
       await pressKeys([
         ['a', ['alt']], // open Alpha (Alpha Item selected)
-        'left', // switch to Gamma (previous sibling, wrapping)
+        'left', // wrap to Gamma and open it automatically
         'enter' // activate Gamma's first item
       ]);
 
@@ -175,13 +187,108 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
     it('wraps to the first sibling menu when Right is pressed on the last menu', async () => {
       await pressKeys([
         ['g', ['alt']], // open Gamma (Gamma Item selected)
-        'right', // switch to Alpha (next sibling, wrapping)
+        'right', // wrap to Alpha and open it automatically
         'enter' // activate Alpha's first item
       ]);
 
       await waitUntil(() => lastClicked !== null);
       expect(lastClicked).toBe('alpha-item');
     });
+
+    for (const [mnemonic, direction] of [
+      ['a', 'right'],
+      ['b', 'left']
+    ] as const) {
+      it(`selects a top-level command without executing it when ${direction} is pressed`, async () => {
+        w.setMenu(buildMenuWithCommands());
+        await pressKeys([[mnemonic, ['alt']], direction]);
+
+        expect(lastClicked).toBeNull();
+        await pressKeys(['up', 'down']);
+        expect(lastClicked).toBeNull();
+
+        await pressKeys(['enter']);
+        await waitUntil(() => lastClicked !== null);
+        expect(lastClicked).toBe('command');
+      });
+    }
+
+    for (const [mnemonic, direction, expected] of [
+      ['a', 'right', 'beta-leaf'],
+      ['b', 'left', 'alpha-item']
+    ] as const) {
+      it(`automatically opens the next submenu after navigating ${direction} through a command`, async () => {
+        w.setMenu(buildMenuWithCommands());
+        await pressKeys([[mnemonic, ['alt']], direction, direction, 'enter']);
+
+        await waitUntil(() => lastClicked !== null);
+        expect(lastClicked).toBe(expected);
+      });
+
+      it(`skips separators, disabled items, and hidden items when navigating ${direction}`, async () => {
+        w.setMenu(
+          buildMenu([
+            { type: 'separator' },
+            { label: 'Disabled', enabled: false, click: () => record('disabled') },
+            { label: 'Hidden', visible: false, click: () => record('hidden') }
+          ])
+        );
+        await pressKeys([[mnemonic, ['alt']], direction, 'enter']);
+
+        await waitUntil(() => lastClicked !== null);
+        expect(lastClicked).toBe(expected);
+      });
+    }
+
+    it('requires activation to open a submenu when navigating the menu bar after Alt alone', async () => {
+      w.setMenu(buildMenuWithCommands());
+      await pressKeys(['alt', 'right']);
+      expect(lastClicked).toBeNull();
+
+      // Enter opens Beta here; only the following Enter executes Beta Leaf.
+      await pressKeys(['right', 'enter']);
+      expect(lastClicked).toBeNull();
+
+      await pressKeys(['enter']);
+      await waitUntil(() => lastClicked !== null);
+      expect(lastClicked).toBe('beta-leaf');
+    });
+
+    it('executes a top-level command using its mnemonic after navigating from an open submenu', async () => {
+      w.setMenu(buildMenuWithCommands());
+      await pressKeys([['a', ['alt']], 'right', 'c']);
+
+      await waitUntil(() => lastClicked !== null);
+      expect(lastClicked).toBe('command');
+    });
+
+    it('leaves open-menu navigation mode when Escape is pressed on a top-level command', async () => {
+      w.setMenu(buildMenuWithCommands());
+      await pressKeys([['a', ['alt']], 'right', 'escape', 'alt', 'right', 'right', 'enter']);
+      expect(lastClicked).toBeNull();
+
+      await pressKeys(['enter']);
+      await waitUntil(() => lastClicked !== null);
+      expect(lastClicked).toBe('beta-leaf');
+    });
+
+    for (const direction of ['left', 'right']) {
+      it(`keeps the current menu usable when ${direction} has no other menu-bar item to select`, async () => {
+        w.setMenu(
+          Menu.buildFromTemplate([
+            {
+              label: '&Alpha',
+              submenu: [{ label: 'Alpha Item', click: () => record('alpha-item') }]
+            },
+            { type: 'separator' }
+          ])
+        );
+        await pressKeys([['a', ['alt']], direction, 'enter']);
+
+        await waitUntil(() => lastClicked !== null);
+        expect(lastClicked).toBe('alpha-item');
+      });
+    }
 
     for (const [keys, expected] of [
       [['right'], 'beta-leaf'],
