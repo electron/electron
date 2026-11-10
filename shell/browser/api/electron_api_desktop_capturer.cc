@@ -46,7 +46,7 @@
 #include "ui/base/x/x11_display_util.h"
 #include "ui/base/x/x11_util.h"
 #include "ui/display/util/edid_parser.h"  // nogncheck
-#include "ui/gfx/x/atom_cache.h"
+#include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/randr.h"
 #endif
 
@@ -85,7 +85,7 @@ std::vector<uint8_t> GetEDIDProperty(x11::RandR* randr,
   constexpr const char kRandrEdidProperty[] = "EDID";
   auto future = randr->GetOutputProperty(x11::RandR::GetOutputPropertyRequest{
       .output = output,
-      .property = x11::GetAtom(kRandrEdidProperty),
+      .property = x11::Connection::Get()->GetAtom(kRandrEdidProperty),
       .long_length = 128});
   auto response = future.Sync();
   std::vector<uint8_t> edid;
