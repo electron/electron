@@ -24,13 +24,14 @@ Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Commit-Queue: Quyen Le <lehoangquyen@google.com>
 
 diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
-index 572c11c445f7bb735c5eb4b13849194f56e2230f..2783aa908249006d7914b8e742b59b8dece39e40 100644
+index 337290301ab36f38276819b02279588831248eca..27d73b01659cd9d73aad36285b46cf12aaefeffa 100644
 --- a/include/platform/autogen/FeaturesGL_autogen.h
 +++ b/include/platform/autogen/FeaturesGL_autogen.h
-@@ -800,6 +800,12 @@ struct FeaturesGL : FeatureSetBase
+@@ -805,6 +805,13 @@ struct FeaturesGL : FeatureSetBase
+         FeatureCategory::OpenGLWorkarounds,
          &members,
      };
- 
++
 +    FeatureInfo doubleClearForRobustInit = {
 +        "doubleClearForRobustInit",
 +        FeatureCategory::OpenGLWorkarounds,
@@ -41,13 +42,13 @@ index 572c11c445f7bb735c5eb4b13849194f56e2230f..2783aa908249006d7914b8e742b59b8d
  
  inline FeaturesGL::FeaturesGL()  = default;
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index 6557442140792dfefcbfe241fc25095d0673c9e0..ee29e3efe16a76ad6657d2f19d5b139cdb12d792 100644
+index 4a0c15e9eb71f8861c84a44e98f58f4ef28acf90..2e6115f0af17c7d911a808fff03ee2ed02acba9f 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
-@@ -1054,6 +1054,14 @@
-                 "For non-power-of-two textures, upload via TexSubImage2D instead of TexImage2D when uploading client-side data."
+@@ -1063,6 +1063,14 @@
+                 "destination texture to work around driver bugs."
              ],
-             "issue": "http://crbug.com/553172761"
+             "issue": "https://crbug.com/552672183"
 +        },
 +        {
 +            "name": "double_clear_for_robust_init",
@@ -263,7 +264,7 @@ index 216a40e27b1b139eaaa18b145c65eff0dbced64e..aeeb78bc9c38bb983c007d9b390cffe4
  
      return angle::Result::Continue;
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 488c6d7348d4ca3ead179f6fb7c24dedb0007c1c..36c2c9e28ad31f6afa654ea56ce86945ff597f36 100644
+index fa32e5ccb55ac11008bf9660d4e6c99569ed4494..ee22709545613b6c74a51dbc6fe6220e5ae5a2db 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
 @@ -164,6 +164,12 @@ bool IsAdreno5xx(const FunctionsGL *functions)
@@ -291,10 +292,10 @@ index 488c6d7348d4ca3ead179f6fb7c24dedb0007c1c..36c2c9e28ad31f6afa654ea56ce86945
      ANGLE_FEATURE_CONDITION(features, disableClipControl, IsMaliG72OrG76OrG51(functions));
  
 diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
-index bddd42b4de7266057542aa42d512dbfd1911dca6..d780a3c1e1449de8cb43bc6419d92831554f6e86 100644
+index b07d8158575935a8e4d15f89cdcc9f98f927c1b8..417ab86653287ae44d5988a7cee934667aa052c5 100644
 --- a/src/tests/angle_end2end_tests_expectations.txt
 +++ b/src/tests/angle_end2end_tests_expectations.txt
-@@ -3143,6 +3143,12 @@
+@@ -3146,6 +3146,12 @@
  564918838 METAL : RobustResourceInitTestES3.InvalidateSliceOf3DBlendReadback/* = SKIP
  564918838 METAL : RobustResourceInitTestES3.InvalidateLayerOf2DArrayBlendReadback/* = SKIP
  
@@ -348,7 +349,7 @@ index 30f0c860b791673839a0e9591eb8bcb3f53e7836..0799b611d96fee9010ce510ca4cb9f48
  // call.
  TEST_P(ClearTestES3, RepeatedDepthClearWithDrawInBetween)
 diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
-index c35f0620ba68cd02824b1f4ac8850e78feb3cfb0..5d3a05a2052f0eb387c6064cd547978a487b2e3e 100644
+index 1765ba2253128233d93390ad500ee9c93bfa3613..f1e559cd9721d709a4bb76beef2ee783d4b7ea40 100644
 --- a/src/tests/gl_tests/RobustResourceInitTest.cpp
 +++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
 @@ -312,6 +312,8 @@ class RobustResourceInitTestES3 : public RobustResourceInitTest
@@ -360,8 +361,8 @@ index c35f0620ba68cd02824b1f4ac8850e78feb3cfb0..5d3a05a2052f0eb387c6064cd547978a
  class RobustResourceInitTestES31 : public RobustResourceInitTest
  {};
  
-@@ -1071,6 +1073,276 @@ TEST_P(RobustResourceInitTestES3, ClearThenInvalidateThenReadBack)
-     }
+@@ -1364,6 +1366,276 @@ TEST_P(RobustResourceInitTestES3, ClearThenRedirtyThenInvalidateThenReadBackSten
+     EXPECT_GL_NO_ERROR();
  }
  
 +// Tests that invalidating an FBO attachment preceded by a draw and clearColor(0,0,0,0)
@@ -637,7 +638,7 @@ index c35f0620ba68cd02824b1f4ac8850e78feb3cfb0..5d3a05a2052f0eb387c6064cd547978a
  // Calling invalidate after draw should either read back the result of the draw call (invalidate
  // didn't happen) or the init depth/stencil values.
  TEST_P(RobustResourceInitTestES3, DrawThenInvalidateThenReadBackDepthStencil)
-@@ -5198,6 +5470,11 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(RobustResourceInitTestES3,
+@@ -5491,6 +5763,11 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(RobustResourceInitTestES3,
                                 ES3_METAL().enable(Feature::AllocateNonZeroTextures),
                                 ES3_VULKAN().enable(Feature::AllocateNonZeroMemory));
  
@@ -650,7 +651,7 @@ index c35f0620ba68cd02824b1f4ac8850e78feb3cfb0..5d3a05a2052f0eb387c6064cd547978a
  ANGLE_INSTANTIATE_TEST_ES31_AND(RobustResourceInitTestES31,
                                  ES31_VULKAN().enable(Feature::AllocateNonZeroMemory));
 diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
-index 20700bf6a5a419783540a36924b52be2fb7b488d..b01676aaafd42a80c1ac0d27197fd261ce435c46 100644
+index c97d89537b03e9ef24236dbeada931f9ed3b2570..6c7b004903d6534edee3960443a8de77cdb1c27a 100644
 --- a/util/autogen/angle_features_autogen.cpp
 +++ b/util/autogen/angle_features_autogen.cpp
 @@ -130,6 +130,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
@@ -662,7 +663,7 @@ index 20700bf6a5a419783540a36924b52be2fb7b488d..b01676aaafd42a80c1ac0d27197fd261
      {Feature::DropDepthStencilClearOnInvalidate, "dropDepthStencilClearOnInvalidate"},
      {Feature::DumpShaderSource, "dumpShaderSource"},
 diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
-index 9806d537f9f4e64c9561f25312cb00e4d5f436ef..bbdf0efdc1b6bdd321dc870f883a29143bd797dd 100644
+index 32594e3cbea04674da2a32ff56349c2698fa186f..b015da1c63f4208ee6027dc95cd2dd7987174fd6 100644
 --- a/util/autogen/angle_features_autogen.h
 +++ b/util/autogen/angle_features_autogen.h
 @@ -130,6 +130,7 @@ enum class Feature

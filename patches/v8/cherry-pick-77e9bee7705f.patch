@@ -167,10 +167,10 @@ index dff76d7e79071dc211779a33abdc83beba6e12ac..720752eceae031601733d72ccd36d4c7
    }
    iterable_block_scope->set_end_position(end_position());
 diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
-index 388e4f1c96e79662e69db85c1a27d488ea66dad4..a501024ad81aeb91aed17c348aa18be1e274bf33 100644
+index c853b24dc73e00980fc5dbe120f9911db4131e18..1e0c7385f6ce26432d22e8b303c8b60673a5fc0b 100644
 --- a/src/parsing/parser.cc
 +++ b/src/parsing/parser.cc
-@@ -1824,7 +1824,6 @@ Statement* Parser::ParseExportDefault() {
+@@ -1835,7 +1835,6 @@ Statement* Parser::ParseExportDefault() {
  
      default: {
        int pos = position();
@@ -178,7 +178,7 @@ index 388e4f1c96e79662e69db85c1a27d488ea66dad4..a501024ad81aeb91aed17c348aa18be1
        Expression* value = ParseAssignmentExpression();
        SetFunctionName(value, ast_value_factory()->default_string());
  
-@@ -3273,7 +3272,6 @@ void Parser::ParseFunction(
+@@ -3284,7 +3283,6 @@ void Parser::ParseFunction(
    *num_parameters = formals.num_parameters();
    *function_length = formals.function_length;
  

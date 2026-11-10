@@ -34,10 +34,10 @@ The WPT offscreenCanvas-drawElementImage-worker test hunk was not taken
 (test-only, branch version differs).
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
-index 52c020a4544d3a180eaf04a046ae0917582462b1..05d0a2ba7483eee4e5467ef62779284f976187f5 100644
+index 1a1a00f68a2d14ad006a05796c72994d8fdf4ceb..a204943e39a95a7f540f95951b00a0efc10a2b13 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_view.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
-@@ -227,8 +227,14 @@ std::optional<cc::PaintRecord> GetCanvasSnapshot(DOMNodeId id) {
+@@ -228,8 +228,14 @@ std::optional<cc::PaintRecord> GetCanvasSnapshot(DOMNodeId id) {
      if (!nested_canvas->OriginClean() || !nested_canvas->GetLayoutObject()) {
        return cc::PaintRecord();
      }
