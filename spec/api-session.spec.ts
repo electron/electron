@@ -236,6 +236,9 @@ describe('session module', () => {
     });
 
     describe('with DevTools request interception', () => {
+      // Interception is enabled before the page loads, so the document commits
+      // with the DevTools-intercepted subresource factory instead of relying on
+      // the factory update that Fetch.enable pushes to an already-loaded page.
       const interceptSubresources = async (
         w: BrowserWindow,
         onPaused: (requestId: string) => Promise<unknown>
@@ -251,7 +254,6 @@ describe('session module', () => {
 
       it('can fulfill subresource requests', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
-        await w.loadFile(blankPage);
         const commands = await interceptSubresources(w, (requestId) =>
           w.webContents.debugger.sendCommand('Fetch.fulfillRequest', {
             requestId,
@@ -260,6 +262,7 @@ describe('session module', () => {
             body: Buffer.from('intercepted').toString('base64')
           })
         );
+        await w.loadFile(blankPage);
         const text = await w.webContents.executeJavaScript(
           `fetch(${JSON.stringify(`${serverUrl}/data`)}).then((r) => r.text())`
         );
@@ -270,10 +273,10 @@ describe('session module', () => {
 
       it('still blocks subresource requests it continues', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
-        await w.loadFile(blankPage);
         const commands = await interceptSubresources(w, (requestId) =>
           w.webContents.debugger.sendCommand('Fetch.continueRequest', { requestId })
         );
+        await w.loadFile(blankPage);
         const result = await w.webContents.executeJavaScript(
           `fetch(${JSON.stringify(`${serverUrl}/data`)}).then(() => 'ok', (e) => e.name)`
         );
