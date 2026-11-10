@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 15181930c2b628f0353ec096203387b34860cba0..ec11564e45fb4759d0a6c3a0446e8ad66a96e3a9 100644
+index b8e4c44459884661aed637befeaa7ce481ab94bf..0b9286047749ed68ef68434203e28ae85a93db02 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -203,6 +203,11 @@
+@@ -204,6 +204,11 @@
  #include "services/network/ssl_private_key_proxy.h"
  #endif
  
@@ -22,7 +22,7 @@ index 15181930c2b628f0353ec096203387b34860cba0..ec11564e45fb4759d0a6c3a0446e8ad6
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -674,6 +679,132 @@ void RemoveInvalidationFilterCallback(
+@@ -739,6 +744,132 @@ void RemoveInvalidationFilterCallback(
  
  }  // namespace
  
@@ -155,7 +155,7 @@ index 15181930c2b628f0353ec096203387b34860cba0..ec11564e45fb4759d0a6c3a0446e8ad6
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1174,6 +1305,12 @@ void NetworkContext::CreateSocketFactory(
+@@ -1227,6 +1358,12 @@ void NetworkContext::CreateSocketFactory(
    socket_factory_receivers_.Add(socket_factory_.get(), std::move(receiver));
  }
  
@@ -168,7 +168,7 @@ index 15181930c2b628f0353ec096203387b34860cba0..ec11564e45fb4759d0a6c3a0446e8ad6
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -3338,6 +3475,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -3377,6 +3514,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -180,7 +180,7 @@ index 15181930c2b628f0353ec096203387b34860cba0..ec11564e45fb4759d0a6c3a0446e8ad6
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 805b40f2692965289b57c18da1862f80c62d4d1b..35adbb70b9c28a1da9c2a21fafaf509b0da160a4 100644
+index 3b9f6050b8424ef3f0a66008a68710b4fc545c32..668841c8c3fa432d66ac3eb48b7ca346f6918955 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -137,6 +137,7 @@ class SimpleUrlPatternMatcher;
@@ -200,7 +200,7 @@ index 805b40f2692965289b57c18da1862f80c62d4d1b..35adbb70b9c28a1da9c2a21fafaf509b
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -1217,6 +1220,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -1211,6 +1214,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -210,7 +210,7 @@ index 805b40f2692965289b57c18da1862f80c62d4d1b..35adbb70b9c28a1da9c2a21fafaf509b
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 1abb004ecaf74f64a97d4dd844f4675cd6a69505..511d17f7b68916a33411afa1553edb8791a2cf89 100644
+index 13555304ffcdc1decf9b5da8e86c09e75fa796e1..1c561696db22b6643c5af4276695007ec9773ff0 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -356,6 +356,17 @@ struct SocketBrokerRemotes {
@@ -231,7 +231,7 @@ index 1abb004ecaf74f64a97d4dd844f4675cd6a69505..511d17f7b68916a33411afa1553edb87
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -1066,6 +1077,8 @@ interface NetworkContext {
+@@ -1057,6 +1068,8 @@ interface NetworkContext {
    // `NetworkContext`.
    CreateSocketFactory(pending_receiver<SocketFactory> receiver);
  

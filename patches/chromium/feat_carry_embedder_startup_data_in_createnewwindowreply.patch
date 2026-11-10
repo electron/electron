@@ -26,7 +26,7 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 7ca7dabe9d73d4e51d0cb732c7ab73b35d862f1f..2f11d1519301715a12c016f472fff63203d282fb 100644
+index 51f601a68863f692e58eff484f23799074432270..1a70aec912e589761790eb09976f423bb0132828 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -11212,7 +11212,12 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -71,7 +71,7 @@ index 6334636936118cc801e977be7a69e77044b5ddbc..08c46c9d1321c1b5bf3124f6f1fb4a73
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 5c48470bcbea85efb95fafe8f1085f383211d71e..731d39546a8686471330034855d9f1568198578c 100644
+index dd9f05c767d0c27e1b76656c96893a7be7cc4442..2947c3db3e8898d49d9f1bf2d66d9f461b4dce51 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -863,6 +863,13 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -89,7 +89,7 @@ index 5c48470bcbea85efb95fafe8f1085f383211d71e..731d39546a8686471330034855d9f156
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index b269bd85436d6992660886006a1cde7a13c9484e..4a0bd8dfb81a46da41b5b21ba28212f3fcd79d79 100644
+index f02671b2f8dce4a3e754b03cb129c1bc68583cb1..04887a8dcc5343adb4ad37446d159fefed4b9635 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -62,6 +62,7 @@

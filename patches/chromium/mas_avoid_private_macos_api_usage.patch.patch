@@ -58,10 +58,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index cf8d0be226fe636451f343a29edc082e788ae64f..ece29f7c8dc2cbcfc54fdeb156ce6d19e56965c8 100644
+index 76fb572811d0984f38ed2a4aaec34db7bb3e3b45..a3dcaa2bcab50eeb82c0b1360cdaf71faf7edb68 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1168,6 +1168,7 @@ component("base") {
+@@ -1170,6 +1170,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -137,7 +137,7 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 97dc414e4f834185420ec4ef92eb159f0e33d082..80977e3c7a83183895f04296dedb439d3c28900c 100644
+index c47476ec63b0292d2a1348b463c3ece421433a09..2fde0dde04c8f6273bda19087e15c8de83dccc28 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 @@ -1039,6 +1039,7 @@ if (is_clang_or_gcc) {
@@ -908,10 +908,10 @@ index 1d8cd051aedd7f5cc8d472ea37a75ba5a7dc403d..763a8f7def6e0f80c58d8980187ca536
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 8c421bcd0f996754ad50e035df662dc8a61ccd46..c87ef5d09798c1ce14cd23e4715bf48c6264c7c2 100644
+index 9f7515d0ea18739b2a6ceff2c0bca88fe543593f..a0440645e8204f2482d0eae80a453f021e14ab2b 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -390,6 +390,7 @@ viz_component("service") {
+@@ -392,6 +392,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -919,7 +919,7 @@ index 8c421bcd0f996754ad50e035df662dc8a61ccd46..c87ef5d09798c1ce14cd23e4715bf48c
    }
  
    if (is_ios) {
-@@ -751,6 +752,7 @@ viz_source_set("unit_tests") {
+@@ -754,6 +755,7 @@ viz_source_set("unit_tests") {
        "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -1013,7 +1013,7 @@ index c397252346e0e8779cf7bca2ba733dd575327f2f..122d028da1219c379cfb6f5940855e7f
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 587743c7bdd416ce347cc168b11ed2341390ceb6..165349c74d66646110a2d25fcfda07bbb05fba5e 100644
+index 0666c022908874dcc42bed0936bf71a3c43a092d..36252261837160195cf1e993d103b2f6a3b0919a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -396,6 +396,7 @@ source_set("browser") {
@@ -1059,7 +1059,7 @@ index 119556d1bfc0fa79e75b2eb0bf1c67d10701c52b..94399663cbfb8b54e259da3908d2825c
    ui::AXTreeID parent_ax_tree_id_ = ui::AXTreeIDUnknown();
  
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 21e8ab0982978da83ac41f3cd7782b11b0564d05..3fa6f9ba6a9945c22ba659b750a06111c104e479 100644
+index 031d41c19c84c4af95f701b56a6c1f4dd7dfa05b..716b5d4f51ba7eb28116055df9b6f59aed9c0937 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -58,6 +58,7 @@
@@ -1081,7 +1081,7 @@ index 21e8ab0982978da83ac41f3cd7782b11b0564d05..3fa6f9ba6a9945c22ba659b750a06111
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1911,10 +1914,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1914,10 +1917,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1094,7 +1094,7 @@ index 21e8ab0982978da83ac41f3cd7782b11b0564d05..3fa6f9ba6a9945c22ba659b750a06111
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1989,9 +1994,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1992,9 +1997,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1106,7 +1106,7 @@ index 21e8ab0982978da83ac41f3cd7782b11b0564d05..3fa6f9ba6a9945c22ba659b750a06111
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2612,20 +2619,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2615,20 +2622,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1146,10 +1146,10 @@ index 3339832ee0c80de9f33b1a138db27d8d1e89bb29..55708ed138cc30b3e449afa60b48c6e9
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 33af1cb53032e50d55a175347758d0ba15bad5ae..4e1a096d36d5cf80e550d435534b0b7ee0f29e1d 100644
+index cf78814644054c5557ba7d4192384531c56143d3..e91c3a6f5109349cf9c26a3da1d06dbbdfb8402b 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -320,6 +320,7 @@ target(link_target_type, "renderer") {
+@@ -321,6 +321,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 92e49efad31469079957bf69d503125f226058b7..b466e7614a600546e3d4d53e9a6bd21ae927a8e1 100644
+index 3f407a2cc55cfcf1da61fb994c7dd3eef9573174..3668e97efdc18766ff9bf15b086e085a12888867 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -651,6 +651,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 92e49efad31469079957bf69d503125f226058b7..b466e7614a600546e3d4d53e9a6bd21a
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2064,6 +2067,7 @@ test("content_browsertests") {
+@@ -2065,6 +2068,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1256,7 +1256,7 @@ index 92e49efad31469079957bf69d503125f226058b7..b466e7614a600546e3d4d53e9a6bd21a
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3461,6 +3465,7 @@ test("content_unittests") {
+@@ -3462,6 +3466,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1525,7 +1525,7 @@ index a243eba4fead115a34165cff3a1ebf37e2248f19..8e4c119d5551747605272681b68968ad
  }
  
 diff --git a/sandbox/mac/sandbox_serializer.cc b/sandbox/mac/sandbox_serializer.cc
-index 0e6e650f88e6aadd46bec96a8b41768c37d7cc6a..a6830e3f886e408c254ccd1c2b1d5c15cd3bcb92 100644
+index bc8cc6fb750ad82adf12c4b9d87776869369009a..27a396d2a5141c83781bfc76554bff04ea2c7c17 100644
 --- a/sandbox/mac/sandbox_serializer.cc
 +++ b/sandbox/mac/sandbox_serializer.cc
 @@ -8,6 +8,7 @@
@@ -1536,7 +1536,7 @@ index 0e6e650f88e6aadd46bec96a8b41768c37d7cc6a..a6830e3f886e408c254ccd1c2b1d5c15
  #include "sandbox/mac/sandbox_logging.h"
  #include "sandbox/mac/seatbelt.h"
  
-@@ -193,6 +194,7 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
+@@ -192,6 +193,7 @@ SandboxSerializer::DeserializePolicy(const std::string& serialized_policy,
  // static
  bool SandboxSerializer::ApplySerializedPolicy(
      const std::string& serialized_policy) {
@@ -1544,7 +1544,7 @@ index 0e6e650f88e6aadd46bec96a8b41768c37d7cc6a..a6830e3f886e408c254ccd1c2b1d5c15
    std::string error;
    std::optional<DeserializedPolicy> deserialized_policy =
        DeserializePolicy(serialized_policy, error);
-@@ -223,6 +225,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
+@@ -222,6 +224,9 @@ bool SandboxSerializer::ApplySerializedPolicy(
        break;
    }
    return true;
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 208f82a8a9a15fb8525c9a63acc6e2a14418b348..0b2e73ac27b932377059ef806e471f0466e1ce48 100644
+index bf9c2c4b6485a2cf28df4daffb56673d52779a91..56cef50c0f48c5990ee0d6063a60dc543546dddb 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -2077,10 +2077,10 @@ index 841621b8af7ab427ca85c7bf0b22478179d6711d..2197fa9c54da72f039458dfbd68ad8ea
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index f0850f8dd184571bf1c3f7a5e26c6b719c6c1925..a74ebc91c325addedec9209cc3729949d061d518 100644
+index 7361f529c65a7e3da05324b01525ed5fc6eb3358..66671f4adb2f2f6e45e9bdc8a96c75dd50601509 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -300,6 +300,7 @@ component("platform") {
+@@ -296,6 +296,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]

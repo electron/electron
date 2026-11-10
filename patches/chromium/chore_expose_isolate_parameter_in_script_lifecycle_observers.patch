@@ -103,7 +103,7 @@ index c698d80d5c1efdd5e715fc3b40a9d47fc1a44f8d..b3def35a3fb42a73c6f88e897ff09488
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index 5bb4f1d64c72f5fdecebf8600db7ddf2adfcfe52..2e1537846bf640ab567e56b54a7de0a4a75866fb 100644
+index 27280d7b62572a383e13874eee1533e33f10ece4..4ab2eb26c9e8f52922b8cbc6fa57fb728f5fd8e4 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
 @@ -527,6 +527,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(

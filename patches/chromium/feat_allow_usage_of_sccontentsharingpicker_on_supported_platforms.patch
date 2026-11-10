@@ -328,10 +328,10 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index f5ae612041759a1623314bafac908bacb4136c86..e30bb74d7fe673e00b9b11092f92347c09c13002 100644
+index ad5109ef18fc48839a213ee2f94ecb81dcf3458f..05635a1002605561696861599c1d673e16965762 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -321,8 +321,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -330,8 +330,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -349,7 +349,7 @@ index f5ae612041759a1623314bafac908bacb4136c86..e30bb74d7fe673e00b9b11092f92347c
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -338,6 +346,8 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -347,6 +355,8 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
  
@@ -358,7 +358,7 @@ index f5ae612041759a1623314bafac908bacb4136c86..e30bb74d7fe673e00b9b11092f92347c
        // All cases other than tab capture or Aura desktop/window capture.
        TRACE_EVENT_INSTANT(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
                            "UsingDesktopCapturer");
-@@ -361,7 +371,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -370,7 +380,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        start_capture_closure = base::BindOnce(
            &InProcessVideoCaptureDeviceLauncher::
                DoStartDesktopCaptureOnDeviceThread,
@@ -400,10 +400,10 @@ index b4f428e1d41a365dc14c523d62fa2acfbccc5c45..2774f35d9cce6f2bd984aeb469692b71
    return requested_format.IsValid() &&
           resolution_change_policy >= ResolutionChangePolicy::FIXED_RESOLUTION &&
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index 228fb4628d1d0f1fff83ab69af22290c8e4751d3..0d192fd5f91d59c8d419756cd3c033d1a7fb1c12 100644
+index 233d2898334722a484ebef2c998f1d5931cff22d..388f9ac049c2f1a51342c96d8880fa97c74347c2 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
-@@ -331,6 +331,10 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+@@ -335,6 +335,10 @@ struct CAPTURE_EXPORT VideoCaptureParams {
    };
  
    VideoCaptureParams();
@@ -414,7 +414,7 @@ index 228fb4628d1d0f1fff83ab69af22290c8e4751d3..0d192fd5f91d59c8d419756cd3c033d1
  
    // Returns true if requested_format.IsValid() and all other values are within
    // their expected ranges.
-@@ -384,6 +388,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+@@ -388,6 +392,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
    // streamed out of the device. Used for capture prevention, e.g. for protected
    // content or by enterprise policy.
    bool is_secure = false;
