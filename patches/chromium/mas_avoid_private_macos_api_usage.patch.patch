@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 04495362bc75f81715925fbc00eba879322a6eb3..d2bb59250c7edee595a88939d36894f7acda3374 100644
+index 42d400b35bf83ddb75092c9398b5882e561dbba3..4d765f7ce375d5f3ef764a68bd3eb51c6c007216 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1170,6 +1170,7 @@ component("base") {
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3f407a2cc55cfcf1da61fb994c7dd3eef9573174..3668e97efdc18766ff9bf15b086e085a12888867 100644
+index d01f7c999537413650c63bb1d22b48b0c81862ef..c545dc8766a890e84a9e85a3dc31f1641fc2af81 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -651,6 +651,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index 3f407a2cc55cfcf1da61fb994c7dd3eef9573174..3668e97efdc18766ff9bf15b086e085a
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3462,6 +3466,7 @@ test("content_unittests") {
+@@ -3463,6 +3467,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index b4e053b01eb0cb182c46f7a65e77182113e4c4c5..ff5abf0736d237e37e7094fce439f7bf22340e4b 100644
+index bf9c2c4b6485a2cf28df4daffb56673d52779a91..56cef50c0f48c5990ee0d6063a60dc543546dddb 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {

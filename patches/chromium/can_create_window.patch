@@ -94,7 +94,7 @@ index 6ee43e70f51467b0fb19b16ebdaa7bbc4aaa5499..6334636936118cc801e977be7a69e770
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 7eb4c4e1f7ab68f7dad2caa30e2b40ae9d22a1c7..5c48470bcbea85efb95fafe8f1085f383211d71e 100644
+index 3b1deaf4612c08e9fa7faee81a54e4fbd507f6bc..dd9f05c767d0c27e1b76656c96893a7be7cc4442 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -854,6 +854,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -107,7 +107,7 @@ index 7eb4c4e1f7ab68f7dad2caa30e2b40ae9d22a1c7..5c48470bcbea85efb95fafe8f1085f38
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f57e3a928c7f9df6965a003769a9bc99732fb359..23a70c66f1847093998694241953d58e909c4946 100644
+index 41e8367731088b61da32ea86aeb81e58bd7cec74..f751e54f7577683cad08f6c86213e02866ce2c11 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -212,6 +212,7 @@ class TrustedURLLoaderHeaderClient;

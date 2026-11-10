@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ec11564e45fb4759d0a6c3a0446e8ad66a96e3a9..4460b70c0a9c293aac2ff4be6453a691c55cf9a3 100644
+index 890a632d6ded6a9842a38edbc493efa5066c93b2..3f14de9f5a1acd7e65155ca977ec02ca6a72be0a 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -2482,6 +2482,13 @@ NetworkContext::GetIsolatedTransactionFactory(
+@@ -2547,6 +2547,13 @@ NetworkContext::GetIsolatedTransactionFactory(
    return it->second->factory_handle;
  }
  

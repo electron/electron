@@ -71,7 +71,7 @@ index 6334636936118cc801e977be7a69e77044b5ddbc..08c46c9d1321c1b5bf3124f6f1fb4a73
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 5c48470bcbea85efb95fafe8f1085f383211d71e..731d39546a8686471330034855d9f1568198578c 100644
+index dd9f05c767d0c27e1b76656c96893a7be7cc4442..2947c3db3e8898d49d9f1bf2d66d9f461b4dce51 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -863,6 +863,13 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -89,7 +89,7 @@ index 5c48470bcbea85efb95fafe8f1085f383211d71e..731d39546a8686471330034855d9f156
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index d78de54b4b02b0648f98c21f8eae2a806c54e5f5..6561e2113756cd69260580866c6feca368dd242f 100644
+index f02671b2f8dce4a3e754b03cb129c1bc68583cb1..04887a8dcc5343adb4ad37446d159fefed4b9635 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -62,6 +62,7 @@
