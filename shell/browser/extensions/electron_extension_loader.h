@@ -69,6 +69,12 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void FinishExtensionReload(const ExtensionId& old_extension_id,
                              UnpackedExtensionLoadResult result);
 
+  // Indexes the static declarativeNetRequest rulesets of the extension that
+  // was loaded, unless Chromium can load the indexed copies already on disk,
+  // then finishes the load.
+  void IndexRulesetsIfNeeded(
+      base::OnceCallback<void(const Extension*, const std::string&)> cb,
+      UnpackedExtensionLoadResult result);
   void FinishExtensionLoad(
       base::OnceCallback<void(const Extension*, const std::string&)> cb,
       UnpackedExtensionLoadResult result);

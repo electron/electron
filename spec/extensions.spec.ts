@@ -842,6 +842,21 @@ describe('chrome extensions', () => {
         };
       };
 
+      const blockRuleset = (marker: string) =>
+        JSON.stringify([{ id: 1, action: { type: 'block' }, condition: { urlFilter: marker } }]);
+
+      const setVersion = async (extensionPath: string, version: string) => {
+        const manifestPath = path.join(extensionPath, 'manifest.json');
+        const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+        await fs.writeFile(manifestPath, JSON.stringify({ ...manifest, version }));
+      };
+
+      // Makes a file look older than anything indexed during the test.
+      const backdate = async (file: string) => {
+        const anHourAgo = new Date(Date.now() - 3_600_000);
+        await fs.utimes(file, anHourAgo, anHourAgo);
+      };
+
       beforeEach(() => {
         customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
       });
@@ -876,6 +891,54 @@ describe('chrome extensions', () => {
         expect(await getEnabledRulesets()).toEqual(['disabled']);
         expect(await canFetch('blocked-by-enabled-ruleset')).toBe(true);
         expect(await canFetch('blocked-by-disabled-ruleset')).toBe(false);
+      });
+
+      it('reuses the indexed rulesets when the same version is loaded again', async () => {
+        const extensionPath = await copyExtension();
+        await backdate(path.join(extensionPath, 'enabled.json'));
+        await backdate(path.join(extensionPath, 'disabled.json'));
+        const indexedRuleset = path.join(extensionPath, '_metadata', 'generated_indexed_rulesets', '_ruleset1');
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        const indexedAt = (await fs.stat(indexedRuleset)).mtimeMs;
+        customSession.extensions.removeExtension(extension.id);
+
+        const reloadedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { getEnabledRulesets, canFetch } = await openExtensionPageAndTab(reloadedExtension);
+
+        expect(await getEnabledRulesets()).toEqual(['enabled']);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(false);
+        expect((await fs.stat(indexedRuleset)).mtimeMs).toBe(indexedAt);
+      });
+
+      it('indexes a ruleset again when its file changes', async () => {
+        const extensionPath = await copyExtension();
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        customSession.extensions.removeExtension(extension.id);
+        await fs.writeFile(path.join(extensionPath, 'enabled.json'), blockRuleset('blocked-by-changed-ruleset'));
+
+        const reloadedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { canFetch } = await openExtensionPageAndTab(reloadedExtension);
+
+        expect(await canFetch('blocked-by-changed-ruleset')).toBe(false);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(true);
+      });
+
+      it('indexes the rulesets again when the extension version changes', async () => {
+        const extensionPath = await copyExtension();
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        customSession.extensions.removeExtension(extension.id);
+        // An app update can install a ruleset that is older than the indexed
+        // copy of the one it replaces.
+        const ruleset = path.join(extensionPath, 'enabled.json');
+        await fs.writeFile(ruleset, blockRuleset('blocked-by-updated-ruleset'));
+        await backdate(ruleset);
+        await setVersion(extensionPath, '2.0');
+
+        const reloadedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { canFetch } = await openExtensionPageAndTab(reloadedExtension);
+
+        expect(await canFetch('blocked-by-updated-ruleset')).toBe(false);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(true);
       });
 
       it('applies a ruleset with more rules than an extension is guaranteed after a restart', async () => {
