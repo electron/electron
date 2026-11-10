@@ -15,7 +15,7 @@ makes it defer main frames until the view is eventually shown. Key the
 decision off the host's visibility, as RenderWidgetHostViewMac does.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 9da1a883ab70171621d0de59cbf123c2fa9210e1..e9ff23158cd8db2f8231731f4cb30201f7b0707b 100644
+index b65be82b0100c2bd3a7fe7e670509a96548d94d9..e64462462df8e61a18a384873c415f2b8ab7ce4a 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -889,6 +889,10 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -30,10 +30,10 @@ index 9da1a883ab70171621d0de59cbf123c2fa9210e1..e9ff23158cd8db2f8231731f4cb30201
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 95dba5fa7c201c09b75ba9a419546b953c3a74f1..150e8839f322ce2781f283dd058f9a35d293e83f 100644
+index 69e40ca5af40ac89bf8449950493a800198c6e5d..9d607ef82724ea392fa29b70a3e014dd371301bb 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1112,6 +1112,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1114,6 +1114,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
  
    base::TimeDelta GetHungRendererDelayForTesting();
  

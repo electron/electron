@@ -15,10 +15,10 @@ stderr, not when logging to a file via `--enable-logging=file` or
 `--log-file`.
 
 diff --git a/content/app/content_main.cc b/content/app/content_main.cc
-index fc483a9a449c1994213fea9f7b801e9cc53d348c..78418ea54e8d34bc2517de0128d7f96a3e530930 100644
+index 53ad96889594b4ac5ed189bd11e7b01e5b6129e4..fd9a8f6952c4096837c242ecc69ca4d66543d799 100644
 --- a/content/app/content_main.cc
 +++ b/content/app/content_main.cc
-@@ -316,18 +316,15 @@ NO_STACK_PROTECTOR int RunContentProcess(
+@@ -304,18 +304,15 @@ NO_STACK_PROTECTOR int RunContentProcess(
  
  #if BUILDFLAG(IS_WIN)
      base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
