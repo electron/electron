@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 76fb572811d0984f38ed2a4aaec34db7bb3e3b45..a3dcaa2bcab50eeb82c0b1360cdaf71faf7edb68 100644
+index cc31d12213d1f3028e806b174f04027616a0fbf5..bc10940988a88091c0028a8b17cdc107b56f584f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1170,6 +1170,7 @@ component("base") {
@@ -851,7 +851,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 1d8cd051aedd7f5cc8d472ea37a75ba5a7dc403d..763a8f7def6e0f80c58d8980187ca536959fa472 100644
+index 9bb62d8f0330d252d8efa3096a6e6a590fad8812..3ffb38f91c97df353c17651c6c8cc6fc09d1f095 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -44,6 +44,7 @@
@@ -862,7 +862,7 @@ index 1d8cd051aedd7f5cc8d472ea37a75ba5a7dc403d..763a8f7def6e0f80c58d8980187ca536
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -80,10 +81,13 @@
+@@ -81,10 +82,13 @@
  using CGRegionRef = CFTypeRef;
  
  CG_EXTERN CGSConnectionID CGSMainConnectionID(void);
@@ -876,7 +876,7 @@ index 1d8cd051aedd7f5cc8d472ea37a75ba5a7dc403d..763a8f7def6e0f80c58d8980187ca536
  
  namespace remote_cocoa {
  
-@@ -96,6 +100,7 @@ CG_EXTERN CGError CGSSetWindowCaptureExcludeShape(CGSConnectionID cid,
+@@ -97,6 +101,7 @@ CG_EXTERN CGError CGSSetWindowCaptureExcludeShape(CGSConnectionID cid,
  constexpr auto kUIPaintTimeout = base::Milliseconds(500);
  
  void ApplyCaptureExclusion(NSWindow* window, bool allow) {
@@ -884,7 +884,7 @@ index 1d8cd051aedd7f5cc8d472ea37a75ba5a7dc403d..763a8f7def6e0f80c58d8980187ca536
    CGSConnectionID connection_id = CGSMainConnectionID();
    CGSWindowID window_id = window.windowNumber;
    CGRect frame = window.frame;
-@@ -105,6 +110,9 @@ void ApplyCaptureExclusion(NSWindow* window, bool allow) {
+@@ -106,6 +111,9 @@ void ApplyCaptureExclusion(NSWindow* window, bool allow) {
      region.reset(CGRegionCreateWithRect(frame));
    }
    CGSSetWindowCaptureExcludeShape(connection_id, window_id, region.get());
@@ -894,7 +894,7 @@ index 1d8cd051aedd7f5cc8d472ea37a75ba5a7dc403d..763a8f7def6e0f80c58d8980187ca536
  }
  
  // Returns the display that the specified window is on.
-@@ -761,10 +769,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -762,10 +770,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -1228,10 +1228,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3f407a2cc55cfcf1da61fb994c7dd3eef9573174..3668e97efdc18766ff9bf15b086e085a12888867 100644
+index 0cdc4c3dc62c571ab42a51e5dd7f550ad64f4d60..f635a78098495fc165e7f1aa06a4c9fe64251b00 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -651,6 +651,7 @@ static_library("test_support") {
+@@ -649,6 +649,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1239,7 +1239,7 @@ index 3f407a2cc55cfcf1da61fb994c7dd3eef9573174..3668e97efdc18766ff9bf15b086e085a
    ]
  
    data_deps = [
-@@ -1133,6 +1134,8 @@ static_library("browsertest_support") {
+@@ -1131,6 +1132,8 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -1248,7 +1248,7 @@ index 3f407a2cc55cfcf1da61fb994c7dd3eef9573174..3668e97efdc18766ff9bf15b086e085a
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2065,6 +2068,7 @@ test("content_browsertests") {
+@@ -2064,6 +2067,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1256,7 +1256,7 @@ index 3f407a2cc55cfcf1da61fb994c7dd3eef9573174..3668e97efdc18766ff9bf15b086e085a
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3462,6 +3466,7 @@ test("content_unittests") {
+@@ -3461,6 +3465,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2171,7 +2171,7 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index d49ede611f5efaef12d713e63a337b0a8c903c96..18af6e666ce60012101ef75696b639903552339d 100644
+index 035aa7199aa261ad28eca9727bf9509c7eb0b757..dc9f7b90e821482cae4ea2b3523e1d796a751479 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -369,6 +369,13 @@ component("base") {
@@ -2292,7 +2292,7 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 6f419c1255ad8e10e50a0de3bc9599a07e8d917e..8f93adfc525f98fb569f3dd63ff9788329e387a0 100644
+index 95b8b7802ebfd3f55330dc5c69c8b592279620cc..680409b9b1983b2ca0e3f0de0792647e53180d86 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -139,6 +139,12 @@ component("display") {
@@ -2466,7 +2466,7 @@ index 84060d2c442e2786e12d9837e0128bc4536d7d0b..933f2020ae89a02a39e21a7115b5f651
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index a24f7f2fc577f8e23d2f3cc071cdcf72a3f30f80..5dc2f7ab5036718322bd53d3df56a22269bd5f00 100644
+index 8928f4f2145e4515cd5cef0ccca0609aca618e41..5ac0cc687d98fc0b68c85d3c7c7b215948acb2c3 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -801,6 +801,8 @@ component("views") {
