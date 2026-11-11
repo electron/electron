@@ -149,9 +149,12 @@ void SessionEndListenerLinux::OnPrepareForShutdown(
     return;
   }
 
-  // Cancelled or failed: the next announcement is a new session end.
+  // Cancelled or failed: the next announcement is a new session end. A quit
+  // still in flight belongs to the cancelled one, so cancelling that quit must
+  // not drop the lock taken for the next.
   if (!std::get<0>(result.value())) {
     ended_ = false;
+    quit_started_ = false;
     RequestInhibitor();
     return;
   }
