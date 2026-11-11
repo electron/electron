@@ -127,15 +127,7 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
   ElectronMenuModel* model;
   if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
       button->GetID() != id_) {
-    bool switch_in_progress = !!button_to_open_;
-    // Always update target to open.
-    button_to_open_ = button;
-    // Switching menu asynchronously to avoid crash.
-    if (!switch_in_progress) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, base::BindOnce(&MenuDelegate::CancelSelf,
-                                    weak_factory_.GetWeakPtr()));
-    }
+    ScheduleSwitchToButton(button);
   }
 
   return nullptr;
@@ -144,6 +136,30 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
 void MenuDelegate::CancelSelf() {
   if (menu_runner_)
     menu_runner_->Cancel();
+}
+
+bool MenuDelegate::SwitchToSiblingMenu(bool next) {
+  // Step from the pending target so repeated presses keep moving.
+  const int from_id = button_to_open_ ? button_to_open_->GetID() : id_;
+  views::MenuButton* button = nullptr;
+  if (!menu_bar_->GetSiblingMenuButtonByDirection(from_id, next, &button)) {
+    return false;
+  }
+
+  ScheduleSwitchToButton(button);
+  return true;
+}
+
+void MenuDelegate::ScheduleSwitchToButton(views::MenuButton* button) {
+  bool switch_in_progress = !!button_to_open_;
+  // Always update target to open.
+  button_to_open_ = button;
+  // Switching menu asynchronously to avoid crash.
+  if (!switch_in_progress) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(&MenuDelegate::CancelSelf, weak_factory_.GetWeakPtr()));
+  }
 }
 
 }  // namespace electron
