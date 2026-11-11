@@ -3261,6 +3261,7 @@ describe('BrowserWindow module', () => {
           const frame = document.createElement('iframe');
           frame.src = ${JSON.stringify(frameUrl)};
           document.body.appendChild(frame);
+          null; // don't return the iframe
         `);
         const [preconnectUrl, allowCredentials, frame] = await preconnect;
         expect(preconnectUrl).toBe('http://example.com/');
