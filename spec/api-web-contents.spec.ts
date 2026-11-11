@@ -1498,6 +1498,9 @@ describe('webContents module', () => {
       return 'both';
     }
 
+    // Leaves 'bottom' as the last-used dock state and returns the devtools-closed
+    // viewport, measured before anything was opened. Measuring it again after
+    // 'devtools-closed' could race the resize the page only learns about later.
     async function primeLastUsedDockState(w: BrowserWindow) {
       const baseline = await getViewportSize(w);
       const opened = once(w.webContents, 'devtools-opened');
@@ -1507,6 +1510,9 @@ describe('webContents module', () => {
       const closed = once(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
       await closed;
+      // Otherwise a later check for 'bottom' could pass on the size left behind here.
+      await waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'none');
+      return baseline;
     }
 
     it('can show window with activation', async () => {
@@ -1687,10 +1693,7 @@ describe('webContents module', () => {
       // Opened at WebContents creation time, while owner_window() is still null.
       // Asserting docking eligibility rather than the docked side: a mode-less
       // open restores the last-used dock state, which may well be 'undocked'.
-      app.once('web-contents-created', (_e, contents) => contents.openDevTools());
-      const w = new BrowserWindow({ show: false });
-      await w.loadURL('about:blank');
-
+      const w = await openDevToolsWhileCreating({}, (contents) => contents.openDevTools());
       expect(await devToolsCanDock(w.webContents)).toBe(true);
     });
 
@@ -1698,8 +1701,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, width: 800, height: 600 });
       await w.loadURL('about:blank');
       w.show();
-      await primeLastUsedDockState(w); // last-used = 'bottom'
-      const baseline = await getViewportSize(w);
+      const baseline = await primeLastUsedDockState(w); // last-used = 'bottom'
 
       const opened = once(w.webContents, 'devtools-opened');
       w.webContents.once('dom-ready', () => w.webContents.openDevTools());
@@ -1713,8 +1715,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, width: 800, height: 600 });
       await w.loadURL('about:blank');
       w.show();
-      await primeLastUsedDockState(w); // last-used = 'bottom'
-      const baseline = await getViewportSize(w);
+      const baseline = await primeLastUsedDockState(w); // last-used = 'bottom'
 
       const opened = once(w.webContents, 'devtools-opened');
       // @ts-expect-error — '' is not part of the mode type; testing runtime behavior
@@ -1771,10 +1772,10 @@ describe('webContents module', () => {
     // not report kBrowserWindow. These cover both call sites to make sure the dock
     // decision comes from the window association and not from the type.
     it('allows docking on an offscreen window when openDevTools() is called from web-contents-created', async () => {
-      app.once('web-contents-created', (_e, contents) => contents.openDevTools());
-      const w = new BrowserWindow({ show: false, width: 800, height: 600, webPreferences: { offscreen: true } });
-      await w.loadURL('about:blank');
-
+      const w = await openDevToolsWhileCreating(
+        { width: 800, height: 600, webPreferences: { offscreen: true } },
+        (contents) => contents.openDevTools()
+      );
       expect(await devToolsCanDock(w.webContents)).toBe(true);
     });
 
@@ -1841,22 +1842,31 @@ describe('webContents module', () => {
     }
 
     // Opens a window whose contents get openDevTools() calls from
-    // 'web-contents-created', i.e. before the window owns them.
+    // 'web-contents-created', i.e. before the window owns them, and resolves once
+    // its DevTools have opened.
     //
-    // The tests below always pass an explicit mode. A mode-less open resolves to
-    // the last-used dock state, and that cannot be isolated per test: in-memory
-    // partitions all load and save the default session's Preferences file, so a
-    // dock state left behind by an earlier test would leak in.
+    // Tests that check the dock side pass an explicit mode. A mode-less open
+    // resolves to the last-used dock state, and that cannot be isolated per test:
+    // in-memory partitions all load and save the default session's Preferences
+    // file, so a dock state left behind by an earlier test would leak in.
     async function openDevToolsWhileCreating(
       options: Electron.BrowserWindowConstructorOptions,
       onCreated: (contents: Electron.WebContents) => void
     ) {
       let opened: Promise<unknown> | undefined;
-      app.once('web-contents-created', (_e, contents) => {
+      const onWebContentsCreated = (_e: Electron.Event, contents: Electron.WebContents) => {
         opened = once(contents, 'devtools-opened');
         onCreated(contents);
+      };
+      app.once('web-contents-created', onWebContentsCreated);
+      // The event is app-wide: a listener left over from a failed attempt would
+      // otherwise fire on the next window, including the retry's.
+      defer(() => {
+        app.removeListener('web-contents-created', onWebContentsCreated);
       });
       const w = new BrowserWindow({ show: false, ...options });
+      // 'web-contents-created' is emitted synchronously while the window is built.
+      expect(opened).toBeDefined();
       await opened;
       return w;
     }
@@ -1951,10 +1961,15 @@ describe('webContents module', () => {
       async function openChild(w: BrowserWindow, onCreated: (contents: Electron.WebContents) => void) {
         let child: Electron.WebContents | undefined;
         let opened: Promise<unknown> | undefined;
-        app.once('web-contents-created', (_e, contents) => {
+        const onWebContentsCreated = (_e: Electron.Event, contents: Electron.WebContents) => {
           child = contents;
           opened = once(contents, 'devtools-opened');
           onCreated(contents);
+        };
+        app.once('web-contents-created', onWebContentsCreated);
+        // See openDevToolsWhileCreating().
+        defer(() => {
+          app.removeListener('web-contents-created', onWebContentsCreated);
         });
         await w.webContents.executeJavaScript('void window.open("about:blank")', true);
         await waitUntil(() => opened !== undefined);
