@@ -56,6 +56,10 @@ void MenuDelegate::ExecuteCommand(int id) {
 }
 
 void MenuDelegate::ExecuteCommand(int id, int mouse_event_flags) {
+  // This menu is being replaced by a sibling, so don't run its command.
+  if (button_to_select_)
+    return;
+
   observers_.Notify(&Observer::OnBeforeExecuteCommand);
   adapter_->ExecuteCommand(id, mouse_event_flags);
 }
