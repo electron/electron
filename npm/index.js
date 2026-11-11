@@ -4,6 +4,23 @@ const path = require('path');
 
 const pathFile = path.join(__dirname, 'path.txt');
 
+/**
+ * The path of the Electron executable inside a distribution, relative to the
+ * distribution's root. This is the value install.js writes to path.txt, but
+ * ELECTRON_OVERRIDE_DIST_PATH can be set before anything has been downloaded,
+ * and so before path.txt exists.
+ */
+function getDefaultExecutablePath() {
+  switch (process.platform) {
+    case 'darwin':
+      return 'Electron.app/Contents/MacOS/Electron';
+    case 'win32':
+      return 'electron.exe';
+    default:
+      return 'electron';
+  }
+}
+
 function downloadElectron() {
   console.log('Downloading Electron binary...');
   const result = spawnSync(process.execPath, [path.join(__dirname, 'install.js')], {
@@ -28,7 +45,7 @@ function getElectronPath() {
     executablePath = fs.readFileSync(pathFile, 'utf-8');
   }
   if (process.env.ELECTRON_OVERRIDE_DIST_PATH) {
-    return path.join(process.env.ELECTRON_OVERRIDE_DIST_PATH, executablePath || 'electron');
+    return path.join(process.env.ELECTRON_OVERRIDE_DIST_PATH, executablePath || getDefaultExecutablePath());
   }
   if (executablePath) {
     const fullPath = path.join(__dirname, 'dist', executablePath);
