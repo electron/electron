@@ -148,7 +148,7 @@ class SystemPreferences final
   int DoSubscribeNotification(v8::Local<v8::Value> maybe_name,
                               const NotificationCallback& callback,
                               NotificationCenterKind kind);
-  void DoUnsubscribeNotification(int request_id, NotificationCenterKind kind);
+  void DoUnsubscribeNotification(int request_id);
   void ClearNotificationSubscriptions();
 #endif
 
