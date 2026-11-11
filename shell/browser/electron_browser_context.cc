@@ -719,13 +719,6 @@ ElectronBrowserContext::GetStorageNotificationService() {
   return nullptr;
 }
 
-content::ReduceAcceptLanguageControllerDelegate*
-ElectronBrowserContext::GetReduceAcceptLanguageControllerDelegate() {
-  // Needs implementation
-  // Refs https://chromium-review.googlesource.com/c/chromium/src/+/3687391
-  return nullptr;
-}
-
 content::FileSystemAccessPermissionContext*
 ElectronBrowserContext::GetFileSystemAccessPermissionContext() {
   return FileSystemAccessPermissionContextFactory::GetForBrowserContext(this);
