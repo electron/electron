@@ -230,8 +230,7 @@ int SystemPreferences::SubscribeNotification(
 }
 
 void SystemPreferences::UnsubscribeNotification(int request_id) {
-  DoUnsubscribeNotification(
-      request_id, NotificationCenterKind::kNSDistributedNotificationCenter);
+  DoUnsubscribeNotification(request_id);
 }
 
 void SystemPreferences::PostLocalNotification(const std::string& name,
@@ -250,8 +249,7 @@ int SystemPreferences::SubscribeLocalNotification(
 }
 
 void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
-  DoUnsubscribeNotification(request_id,
-                            NotificationCenterKind::kNSNotificationCenter);
+  DoUnsubscribeNotification(request_id);
 }
 
 void SystemPreferences::PostWorkspaceNotification(const std::string& name,
@@ -272,8 +270,7 @@ int SystemPreferences::SubscribeWorkspaceNotification(
 }
 
 void SystemPreferences::UnsubscribeWorkspaceNotification(int request_id) {
-  DoUnsubscribeNotification(
-      request_id, NotificationCenterKind::kNSWorkspaceNotificationCenter);
+  DoUnsubscribeNotification(request_id);
 }
 
 int SystemPreferences::DoSubscribeNotification(
@@ -331,12 +328,14 @@ int SystemPreferences::DoSubscribeNotification(
   return request_id;
 }
 
-void SystemPreferences::DoUnsubscribeNotification(int request_id,
-                                                  NotificationCenterKind kind) {
+void SystemPreferences::DoUnsubscribeNotification(int request_id) {
   auto& subscriptions = GetSubscriptions();
   auto iter = subscriptions.find(request_id);
   if (iter != subscriptions.end()) {
-    [GetNotificationCenter(kind) removeObserver:iter->second.observer];
+    // Request ids are shared across all notification centers, so remove the
+    // observer from the center it was registered on.
+    [GetNotificationCenter(iter->second.kind)
+        removeObserver:iter->second.observer];
     subscriptions.erase(iter);
   }
 }
