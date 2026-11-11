@@ -9,7 +9,7 @@ Adds MenuDelegate::SwitchToSiblingMenu, invoked from MenuController when the use
 Left/Right at the top level with nothing to open or close in that direction.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 8a320379bd2e3d336cc98c1442f9be14342e13ab..8c60ec3443bd4cbe6f8f1bf48dd5bcf645f64b2c 100644
+index 8a320379bd2e3d336cc98c1442f9be14342e13ab..e2b3cf060281808755034621d7e297f04b60f9a1 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -2422,9 +2422,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
@@ -36,30 +36,33 @@ index 8a320379bd2e3d336cc98c1442f9be14342e13ab..8c60ec3443bd4cbe6f8f1bf48dd5bcf6
        }
        break;
  
-@@ -3935,6 +3935,54 @@ void MenuController::CloseSubmenu() {
+@@ -3935,6 +3935,45 @@ void MenuController::CloseSubmenu() {
    SetSelection(item_to_select, SELECTION_UPDATE_IMMEDIATELY);
  }
  
++namespace {
++
++// Asks the delegate to switch to an adjacent top-level menu if `selected` is
++// the root, or a direct child that cannot open a submenu.
++bool SwitchToSiblingMenuIfAllowed(MenuItemView* const selected,
++                                  const bool next) {
++  if (!selected) {
++    return false;
++  }
++  const MenuItemView* const parent = selected->GetParentMenuItem();
++  const bool can_switch =
++      !parent || (!parent->GetParentMenuItem() &&
++                  (!selected->HasSubmenu() || !selected->GetEnabled()));
++  return can_switch && selected->GetDelegate() &&
++         selected->GetDelegate()->SwitchToSiblingMenu(next);
++}
++
++}  // namespace
++
 +void MenuController::OpenSubmenuOrSwitchSiblingMenu() {
-+  MenuItemView* const selected = pending_state_.item;
-+  // If the selected item can open a submenu, open it as usual.
-+  if (selected && selected->GetParentMenuItem() && selected->HasSubmenu() &&
-+      selected->GetEnabled()) {
++  if (!SwitchToSiblingMenuIfAllowed(pending_state_.item, /*next=*/true)) {
 +    OpenSubmenuChangeSelectionIfCan();
-+    return;
 +  }
-+  // Switch from the root or a direct child that cannot open a submenu,
-+  // but not from within a nested submenu.
-+  const bool can_switch_sibling =
-+      selected &&
-+      (!selected->GetParentMenuItem() ||
-+       ((!selected->HasSubmenu() || !selected->GetEnabled()) &&
-+        !selected->GetParentMenuItem()->GetParentMenuItem()));
-+  if (can_switch_sibling && selected->GetDelegate() &&
-+      selected->GetDelegate()->SwitchToSiblingMenu(/*next=*/true)) {
-+    return;
-+  }
-+  OpenSubmenuChangeSelectionIfCan();
 +}
 +
 +void MenuController::CloseSubmenuOrSwitchSiblingMenu() {
@@ -69,23 +72,11 @@ index 8a320379bd2e3d336cc98c1442f9be14342e13ab..8c60ec3443bd4cbe6f8f1bf48dd5bcf6
 +      item && item->GetParentMenuItem() &&
 +      (item->SubmenuIsShowing() ||
 +       item->GetParentMenuItem()->GetParentMenuItem());
-+  if (can_close_submenu) {
-+    CloseSubmenu();
-+    return;
-+  }
-+  // Switch from the root or a direct child that cannot open a submenu.
 +  // Use pending_state_: keyboard selection may defer state_ updates.
-+  MenuItemView* const selected = pending_state_.item;
-+  const bool can_switch_sibling =
-+      selected &&
-+      (!selected->GetParentMenuItem() ||
-+       ((!selected->HasSubmenu() || !selected->GetEnabled()) &&
-+        !selected->GetParentMenuItem()->GetParentMenuItem()));
-+  if (can_switch_sibling && selected->GetDelegate() &&
-+      selected->GetDelegate()->SwitchToSiblingMenu(/*next=*/false)) {
-+    return;
++  if (can_close_submenu ||
++      !SwitchToSiblingMenuIfAllowed(pending_state_.item, /*next=*/false)) {
++    CloseSubmenu();
 +  }
-+  CloseSubmenu();
 +}
 +
  MenuController::SelectByCharDetails MenuController::FindChildForMnemonic(
