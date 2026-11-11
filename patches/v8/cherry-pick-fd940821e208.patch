@@ -1,0 +1,198 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Mon, 2 Nov 2026 16:56:00 +0100
+Subject: [compiler] Ignore stale kReceiver call feedback on non-apply calls
+
+CallIC only records a receiver with CallFeedbackContent::kReceiver when
+initializing monomorphic feedback for Function.prototype.apply with a
+callable receiver. Subsequent calls at the same site can transition the
+slot to a FeedbackCell or megamorphic, or match the recorded function in
+a direct call, without clearing the kReceiver bit.
+
+Normalize CallFeedbackContent to kTarget in
+JSHeapBroker::ReadFeedbackForCall when the feedback target is not
+callable, and skip Function.prototype.apply speculation in
+MaglevGraphBuilder::BuildCallWithFeedback when the call target is
+already a known constant other than apply. Drive-by, add DCHECKs that
+kReceiver feedback only ever accompanies a callable target.
+
+TAG=agy
+CONV=3215cdec-b8a8-49aa-92c8-db2159e9f5ad
+
+Bug: 579313083
+Change-Id: I06b996af19456e696f560d4d57b6d82e235ddcd0
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8691189
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111500}
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index ef2524264c242df6c4ba88c291fd4f0d895f0050..a9b7a1c5ee7cb766145428a2ab36fc31d359f97b 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -5330,6 +5330,10 @@ Reduction JSCallReducer::ReduceJSCall(Node* node) {
+     feedback_target = feedback.AsCall().target();
+   } else {
+     DCHECK_EQ(p.feedback_relation(), CallFeedbackRelation::kReceiver);
++    DCHECK_EQ(feedback.AsCall().call_feedback_content(),
++              CallFeedbackContent::kReceiver);
++    DCHECK(feedback.AsCall().target().has_value() &&
++           feedback.AsCall().target()->map(broker()).is_callable());
+     feedback_target = native_context().function_prototype_apply(broker());
+   }
+ 
+@@ -5352,6 +5356,9 @@ Reduction JSCallReducer::ReduceJSCall(Node* node) {
+     // Try to further reduce the JSCall {node}.
+     return Changed(node).FollowedBy(ReduceJSCall(node));
+   } else if (feedback_target.has_value() && feedback_target->IsFeedbackCell()) {
++    DCHECK_EQ(p.feedback_relation(), CallFeedbackRelation::kTarget);
++    DCHECK_EQ(feedback.AsCall().call_feedback_content(),
++              CallFeedbackContent::kTarget);
+     FeedbackCellRef feedback_cell = feedback_target.value().AsFeedbackCell();
+     // TODO(neis): This check seems unnecessary.
+     if (feedback_cell.feedback_vector(broker()).has_value()) {
+diff --git a/src/compiler/js-heap-broker.cc b/src/compiler/js-heap-broker.cc
+index 9c629176c82ba82eda4f1ebf72de00066980c330..a9d55b676c326d791ea6e599298f66efc9b41b7c 100644
+--- a/src/compiler/js-heap-broker.cc
++++ b/src/compiler/js-heap-broker.cc
+@@ -818,7 +818,11 @@ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForCall(
+ 
+   float frequency = nexus.ComputeCallFrequency();
+   SpeculationMode mode = nexus.GetSpeculationMode();
+-  CallFeedbackContent content = nexus.GetCallFeedbackContent();
++  CallFeedbackContent content = CallFeedbackContent::kTarget;
++  if (target_ref.has_value() && target_ref->map(this).is_callable()) {
++    DCHECK(target_ref->IsJSFunction() || target_ref->IsJSBoundFunction());
++    content = nexus.GetCallFeedbackContent();
++  }
+   return *zone()->New<CallFeedback>(target_ref, frequency, mode, content,
+                                     nexus.kind());
+ }
+diff --git a/src/compiler/processed-feedback.h b/src/compiler/processed-feedback.h
+index a4f1a260d25a334b7900423dfc9c73410beb5b53..12ad2a7e46bf283545b300711b58e7ebfdc35992 100644
+--- a/src/compiler/processed-feedback.h
++++ b/src/compiler/processed-feedback.h
+@@ -245,7 +245,11 @@ class CallFeedback : public ProcessedFeedback {
+         target_(target),
+         frequency_(frequency),
+         mode_(mode),
+-        content_(call_feedback_content) {}
++        content_(call_feedback_content) {
++    DCHECK_IMPLIES(content_ == CallFeedbackContent::kReceiver,
++                   target_.has_value() && (target_->IsJSFunction() ||
++                                           target_->IsJSBoundFunction()));
++  }
+ 
+   OptionalHeapObjectRef target() const { return target_; }
+   float frequency() const { return frequency_; }
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 9b0a11450ba56cea40d12918c3bceb25aba4be59..dd125ea623e890afe146c7402ee5426d7ab80375 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -11610,20 +11610,26 @@ ReduceResult MaglevGraphBuilder::BuildCallWithFeedback(
+             broker()->target_native_context();
+         compiler::JSFunctionRef apply_function =
+             native_context.function_prototype_apply(broker());
+-        RETURN_IF_ABORT(BuildCheckValueByReference(
+-            target_node, apply_function, DeoptimizeReason::kWrongCallTarget));
+-        PROCESS_AND_RETURN_IF_DONE(
+-            TryReduceFunctionPrototypeApplyCallWithReceiver(
+-                feedback_target, args, feedback_source),
+-            SetAccumulator);
+-        feedback_target = apply_function;
++        if (compiler::OptionalHeapObjectRef target_constant =
++                TryGetConstant<HeapObject>(target_node);
++            !target_constant.has_value() ||
++            target_constant->equals(apply_function)) {
++          RETURN_IF_ABORT(BuildCheckValueByReference(
++              target_node, apply_function, DeoptimizeReason::kWrongCallTarget));
++          PROCESS_AND_RETURN_IF_DONE(
++              TryReduceFunctionPrototypeApplyCallWithReceiver(
++                  feedback_target, args, feedback_source),
++              SetAccumulator);
++        }
+       } else {
+         DCHECK_EQ(CallFeedbackContent::kTarget, content);
++        RETURN_IF_ABORT(BuildCheckValueByReference(
++            target_node, feedback_target, DeoptimizeReason::kWrongCallTarget));
+       }
+-      RETURN_IF_ABORT(BuildCheckValueByReference(
+-          target_node, feedback_target, DeoptimizeReason::kWrongCallTarget));
+     } else if (call_feedback.target()->IsFeedbackCell() &&
+                args.mode() == CallArguments::kDefault) {
++      DCHECK_EQ(CallFeedbackContent::kTarget,
++                call_feedback.call_feedback_content());
+       compiler::FeedbackCellRef feedback_cell =
+           call_feedback.target()->AsFeedbackCell();
+       compiler::OptionalSharedFunctionInfoRef shared =
+diff --git a/test/mjsunit/maglev/regress-579313083-ic.js b/test/mjsunit/maglev/regress-579313083-ic.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1dcfbf44c84dc5e23a9c6a15052d728a79aadbe0
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-579313083-ic.js
+@@ -0,0 +1,64 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++// Case 1: Calling `closure1.apply()` records `Weak(closure1)` with `kReceiver`.
++// A subsequent direct call to `closure2` (sharing the same FeedbackCell)
++// transitions the slot to `Weak(feedback_cell)` while leaving `kReceiver` set.
++// The compiler must ignore `kReceiver` for non-callable feedback targets.
++function makeClosure() {
++  return function() {
++    return 99;
++  };
++}
++const closure1 = makeClosure();
++closure1.m = 1;
++closure1.m = Function.prototype.apply;
++const closure2 = makeClosure();
++%PrepareFunctionForOptimization(closure2);
++closure2.m = 1;
++closure2.m = closure2;
++
++function callClosureMethod(obj) {
++  return obj.m();
++}
++
++%PrepareFunctionForOptimization(callClosureMethod);
++assertEquals(99, callClosureMethod(closure1));
++assertEquals(99, callClosureMethod(closure2));
++%OptimizeFunctionOnNextCall(callClosureMethod);
++assertEquals(99, callClosureMethod(closure2));
++assertOptimized(callClosureMethod);
++
++// Case 2: Calling `targetFn.apply()` records `Weak(targetFn)` with `kReceiver`.
++// A subsequent direct call to `targetFn` at the same site matches
++// `Weak(targetFn)` in `IsMonomorphic` and leaves `kReceiver` set. When the old
++// receiver map is deprecated so `obj.m` constant-folds to `targetFn`, the
++// compiler must not speculate that the constant target is
++// `Function.prototype.apply`.
++function targetFn() {
++  return 123;
++}
++function deprecateHelper() {}
++targetFn.prop = 1;
++targetFn.m = Function.prototype.apply;
++
++function callKnownConstantTargetWithReceiverFeedback(obj) {
++  return obj.m();
++}
++
++%PrepareFunctionForOptimization(callKnownConstantTargetWithReceiverFeedback);
++assertEquals(123, callKnownConstantTargetWithReceiverFeedback(targetFn));
++
++// Deprecate `targetFn`'s map so the compiler ignores it in the LoadIC for `.m`
++// and constant-folds `obj.m` to `targetFn` from `plainObj`'s prototype.
++deprecateHelper.prop = 1.5;
++deprecateHelper.m = Function.prototype.apply;
++
++const plainObj = Object.create({ m: targetFn });
++assertEquals(123, callKnownConstantTargetWithReceiverFeedback(plainObj));
++%OptimizeFunctionOnNextCall(callKnownConstantTargetWithReceiverFeedback);
++assertEquals(123, callKnownConstantTargetWithReceiverFeedback(plainObj));
++assertOptimized(callKnownConstantTargetWithReceiverFeedback);

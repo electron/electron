@@ -1,0 +1,186 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Justin Lulejian <jlulejian@chromium.org>
+Date: Tue, 10 Nov 2026 12:19:00 -0800
+Subject: [M156] [Extensions] Restrict mimeHandlerPrivate to allowlisted
+ extensions
+
+Modifications: This also required the BUILD.gn change for
+mime_handler_apitest.cc since the test didn't exist as of M156,
+otherwise the changes are the exact same as the original change.
+
+Original change's description:
+> [Extensions] Restrict mimeHandlerPrivate to allowlisted extensions
+>
+> The mimeHandlerPrivate API only depended on the mime_types_handler
+> manifest key. That key used to be limited to the extensions in
+> kMIMETypeHandlersAllowlist. After the public mimeHandler API launched,
+> any extension can declare mime_types_handler, so mimeHandlerPrivate
+> became available to any extension that declares the key.
+>
+> After this change, mimeHandlerPrivate is only available to the
+> extensions in kMIMETypeHandlersAllowlist (the PDF viewer, QuickOffice
+> and the browser_tests test extension), on every channel. Other
+> extensions that declare mime_types_handler still get the public
+> mimeHandler API.
+>
+> Fixed: 576943246
+> Change-Id: I86653459f5780e629af0193abe48430bc3a89531
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8647529
+> Reviewed-by: Eva Su <evasu@chromium.org>
+> Reviewed-by: Toni Barzic <tbarzic@chromium.org>
+> Commit-Queue: Justin Lulejian <jlulejian@chromium.org>
+> Auto-Submit: Justin Lulejian <jlulejian@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1729278}
+
+(cherry picked from commit 8d1021c6b0a4795c67db39079292c3ab86f0d7af)
+
+Bug: 579235852,576943246
+Change-Id: I86653459f5780e629af0193abe48430bc3a89531
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8772461
+Reviewed-by: Tim <tjudkins@chromium.org>
+Commit-Queue: Justin Lulejian <jlulejian@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#2151}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/chrome/browser/extensions/api/mime_handlers/BUILD.gn b/chrome/browser/extensions/api/mime_handlers/BUILD.gn
+index 5bf5108757af4795f3f1fd73c58c2f0e9877ab9f..82d98035f94add1899c485e528a55cfe8b15309a 100644
+--- a/chrome/browser/extensions/api/mime_handlers/BUILD.gn
++++ b/chrome/browser/extensions/api/mime_handlers/BUILD.gn
+@@ -14,6 +14,7 @@ source_set("browser_tests") {
+ 
+   sources = [
+     "generic_mime_handler_browsertest.cc",
++    "mime_handler_apitest.cc",
+     "mime_handler_cookies_browsertest.cc",
+     "mime_handler_process_isolation_browsertest.cc",
+     "mime_handler_storage_partitioning_browsertest.cc",
+diff --git a/chrome/browser/extensions/api/mime_handlers/mime_handler_apitest.cc b/chrome/browser/extensions/api/mime_handlers/mime_handler_apitest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..f8c8733c7a0dc7fb886e17799e2d33c007f853ad
+--- /dev/null
++++ b/chrome/browser/extensions/api/mime_handlers/mime_handler_apitest.cc
+@@ -0,0 +1,61 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "base/files/file_path.h"
++#include "base/test/scoped_feature_list.h"
++#include "chrome/browser/extensions/extension_apitest.h"
++#include "content/public/browser/web_contents.h"
++#include "content/public/test/browser_test.h"
++#include "content/public/test/browser_test_utils.h"
++#include "extensions/common/extension.h"
++#include "extensions/common/extension_features.h"
++#include "extensions/test/test_extension_dir.h"
++
++namespace extensions {
++
++class MimeHandlerApiTest : public ExtensionApiTest {
++ private:
++  base::test::ScopedFeatureList scoped_feature_list_{
++      extensions_features::kApiMimeHandler};
++};
++
++// Tests that an extension that declares `mime_types_handler`, but whose ID is
++// not in `kMIMETypeHandlersAllowlist`
++// (extensions/common/manifest_handlers/mime_types_handler.cc), gets the public
++// `chrome.mimeHandler` API but not the private API:
++// - `chrome.mimeHandlerPrivate` is not defined in its extension pages.
++// - `Mojo` is not defined in its extension pages, since only APIs like
++//   `mimeHandlerPrivate` turn on MojoJS for a context.
++// Regression test for crbug.com/576943246.
++IN_PROC_BROWSER_TEST_F(MimeHandlerApiTest,
++                       MimeHandlerPrivateUnavailableToNonAllowlistedExtension) {
++  // Load an extension without a `key`, so its ID is not allowlisted.
++  TestExtensionDir test_dir;
++  test_dir.WriteManifest(R"({
++    "name": "Non-allowlisted MIME handler",
++    "version": "1.0",
++    "manifest_version": 3,
++    "mime_types_handler": {
++      "application/pdf": {"handler_url": "handler.html"}
++    }
++  })");
++  test_dir.WriteFile(FILE_PATH_LITERAL("handler.html"), "<html></html>");
++  const Extension* extension = LoadExtension(test_dir.UnpackedPath());
++  ASSERT_TRUE(extension);
++
++  // Open the handler page in a tab, which is a privileged extension context.
++  content::WebContents* web_contents = GetActiveWebContents();
++  ASSERT_TRUE(NavigateToURL(web_contents,
++                            extension->ResolveExtensionURL("handler.html")));
++
++  // The public API is available, so the manifest key was accepted.
++  ASSERT_EQ(true, content::EvalJs(web_contents, "!!chrome.mimeHandler"));
++
++  // Neither the private API nor the MojoJS bindings are exposed.
++  EXPECT_EQ(false,
++            content::EvalJs(web_contents, "!!chrome.mimeHandlerPrivate"));
++  EXPECT_EQ("undefined", content::EvalJs(web_contents, "typeof Mojo"));
++}
++
++}  // namespace extensions
+diff --git a/extensions/common/api/_api_features.json b/extensions/common/api/_api_features.json
+index 35cfc4355a249a454e62422ac8def1ac74e67a51..f28387ddd74ec6719a38f67db41a9071918b47c9 100644
+--- a/extensions/common/api/_api_features.json
++++ b/extensions/common/api/_api_features.json
+@@ -514,7 +514,34 @@
+     "dependencies": ["manifest:mime_types_handler"],
+     "contexts": ["privileged_extension"],
+     // "desktop_android" is not supported.
+-    "platforms": ["chromeos", "linux", "mac", "win"]
++    "platforms": ["chromeos", "linux", "mac", "win"],
++    // The public `mimeHandler` API made `mime_types_handler` available to
++    // any extension, so this API needs its own allowlist. It holds the
++    // hashed IDs of the extensions in `kMIMETypeHandlersAllowlist`.
++    // LINT.IfChange(MimeHandlerPrivateAllowlist)
++    "allowlist": [
++      // browser_tests
++      "787000072C6FBB934AF5A42275CDE73FC977D995",
++      // browser_tests (SHA-256)
++      "E2ECC66FF61D50855BDCE96E37D84AF3727F9384AB4FD8A51354DFD51B05C8DF",
++      // QuickOffice
++      "2FC374607C2DF285634B67C64A2E356C607091C3",
++      // QuickOffice (SHA-256)
++      "5F81F9FE1F4F499490466BC3861653FE72DE22E2BA8E4E5769DED9FB2C7EE2D0",
++      // QuickOffice component extension
++      "12E618C3C6E97495AAECF2AC12DEB082353241C6",
++      // QuickOffice component extension (SHA-256)
++      "0EEEFAA87E292CD986DD0528E90F9128A936B1C4E1C53E7FAA0244594C69DF94",
++      // QuickOffice Editor
++      "3727DD3E564B6055387425027AD74C58784ACC15",
++      // QuickOffice Editor (SHA-256)
++      "04C5C683BDBBDA3120FDD1043E96E551185C57F38BE14EE17B5993F6AD4C592F",
++      // PDF
++      "CBCC42ABED43A4B58FE3810E62AFFA010EB0349F",
++      // PDF (SHA-256)
++      "CDF9DD8503F39D9609C6C191E04450FCCEB41BCF9712F361A9013DEF8B9C7552"
++    ]
++    // LINT.ThenChange(//extensions/common/manifest_handlers/mime_types_handler.cc:MimeTypeHandlersAllowlist)
+   },
+   "mojoPrivate": {
+     "contexts": ["privileged_extension"],
+diff --git a/extensions/common/manifest_handlers/mime_types_handler.cc b/extensions/common/manifest_handlers/mime_types_handler.cc
+index 4c928b9fd49dfc387a24ff06980010b456bc2722..4f50ac1b0bd99a3097219b7c9924a9718f4f96ac 100644
+--- a/extensions/common/manifest_handlers/mime_types_handler.cc
++++ b/extensions/common/manifest_handlers/mime_types_handler.cc
+@@ -43,6 +43,10 @@ namespace {
+ // wins; (3) among allowlisted handlers a higher index in this array wins.
+ // As a result, if multiple allowlisted versions of quickoffice are
+ // installed the higher-indexed entry wins.
++//
++// The `allowlist` of the `mimeHandlerPrivate` feature holds the hashed IDs
++// of these extensions.
++// LINT.IfChange(MimeTypeHandlersAllowlist)
+ constexpr const char* kMIMETypeHandlersAllowlist[] = {
+     extension_misc::kPdfExtensionId,
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -51,6 +55,7 @@ constexpr const char* kMIMETypeHandlersAllowlist[] = {
+     extension_misc::kQuickOfficeInternalExtensionId,
+     extension_misc::kQuickOfficeExtensionId,
+     extension_misc::kMimeHandlerPrivateTestExtensionId};
++// LINT.ThenChange(//extensions/common/api/_api_features.json:MimeHandlerPrivateAllowlist)
+ 
+ constexpr SkColor kQuickOfficeExtensionBackgroundColor =
+     SkColorSetRGB(241, 241, 241);

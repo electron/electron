@@ -1,0 +1,535 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Fri, 16 Oct 2026 14:49:54 -0400
+Subject: [M157] D3D11: Reject mixed 3D/non-3D and overlapping layers
+
+Reject framebuffers mixing 3D and non-3D attachments on D3D11 and
+overlapping texture layer ranges in colorAttachmentsAreUniqueImages so
+OMSetRenderTargets never silently fails and leaves stale render targets
+bound. (this requires
+https://chromium-review.git.corp.google.com/c/chromium/src/+/8611537)
+
+(cherry picked from commit b64f67868464507ee62605c5a9108f68083e35ad)
+
+Test: angle_end2end_tests --gtest_filter="FramebufferTest_ES3.Mixed3D*:WebGL2CompatibilityTest.UniqueFramebufferAttachments*:HardenedContextTest.UniqueFramebufferAttachments*"
+Bug: b/574035865
+Change-Id: I30f21c2859a227c25efecad824055a024f3332a4
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8594325
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8712409
+
+Electron adaptation notes (45-x-y):
+Context conflict in src/tests/angle_end2end_tests_expectations.txt (test
+expectations only); the upstream expectation lines were kept verbatim. All
+libANGLE hunks applied unchanged.
+
+diff --git a/src/libANGLE/ErrorStrings.h b/src/libANGLE/ErrorStrings.h
+index 48c91ed76f8e9ec0e56597172fa8ed6dba127d76..34b6ef7955db8e4e85eb6bd9e61c9509dd040786 100644
+--- a/src/libANGLE/ErrorStrings.h
++++ b/src/libANGLE/ErrorStrings.h
+@@ -207,6 +207,7 @@ inline constexpr const char *kFramebufferIncompleteMultiviewMismatch = "Framebuf
+ inline constexpr const char *kFramebufferIncompleteMultiviewViewsMismatch = "Framebuffer is incomplete: Attachments have inconsistent multiview view counts.";
+ inline constexpr const char *kFramebufferIncompleteSurfaceless = "Framebuffer is incomplete: Framebuffer is surfaceless.";
+ inline constexpr const char *kFramebufferIncompleteUnsupportedMissmatchedDimensions = "Framebuffer is incomplete: Mismatched attachment sizes are unsupported.";
++inline constexpr const char *kFramebufferIncompleteUnsupportedMixed3DAndNon3DAttachments = "Framebuffer is incomplete: Mixing 3D and non-3D attachments is unsupported.";
+ inline constexpr const char *kFramebufferIncompleteUnsupportedNonUniqueAttachments = "Framebuffer is incomplete: Non-unique attachments are unsupported.";
+ inline constexpr const char *kFramebufferIncompleteUnsupportedSeparateDepthStencilBuffers = "Framebuffer is incomplete: Separate depth and stencil buffers are unsupported.";
+ inline constexpr const char *kFramebufferIncompleteUnsupportedSeparateDepthStencilBuffersCombinedFormat = "Framebuffer is incomplete: Combined depth/stencil formats cannot be used with separate depth and stencil buffers.";
+diff --git a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp
+index fd4818d42903fb63438b37454a8072a7f02eb849..79a3dc6133c0d6a1c9ae0367f0e60cb966b9693a 100644
+--- a/src/libANGLE/Framebuffer.cpp
++++ b/src/libANGLE/Framebuffer.cpp
+@@ -669,6 +669,39 @@ bool FramebufferState::colorAttachmentsAreUniqueImages() const
+             {
+                 return false;
+             }
++
++            // Also check if two attachments on the same texture and mip level have overlapping
++            // layer ranges. For example, glFramebufferTextureMultiviewOVR can attach a range of
++            // layers [baseViewIndex, baseViewIndex + numViews) from a 2D array texture. Even if
++            // two attachments have different baseViewIndex values (so firstAttachment !=
++            // secondAttachment), their layer ranges can still overlap (e.g. layers [0, 2) and
++            // [1, 3) both include layer 1).
++            if (firstAttachment.type() == GL_TEXTURE && secondAttachment.type() == GL_TEXTURE &&
++                firstAttachment.getResource() == secondAttachment.getResource())
++            {
++                const ImageIndex &firstIndex  = firstAttachment.getTextureImageIndex();
++                const ImageIndex &secondIndex = secondAttachment.getTextureImageIndex();
++                if (firstIndex.getLevelIndex() == secondIndex.getLevelIndex())
++                {
++                    // If either attachment covers the entire mip level rather than specific
++                    // layer(s), they must overlap.
++                    if (!firstIndex.hasLayer() || !secondIndex.hasLayer())
++                    {
++                        return false;
++                    }
++
++                    // Check whether the half-open layer intervals [firstStart, firstEnd) and
++                    // [secondStart, secondEnd) overlap.
++                    const GLint firstStart  = firstIndex.getLayerIndex();
++                    const GLint firstEnd    = firstStart + firstIndex.getLayerCount();
++                    const GLint secondStart = secondIndex.getLayerIndex();
++                    const GLint secondEnd   = secondStart + secondIndex.getLayerCount();
++                    if (firstStart < secondEnd && secondStart < firstEnd)
++                    {
++                        return false;
++                    }
++                }
++            }
+         }
+     }
+ 
+diff --git a/src/libANGLE/renderer/d3d/FramebufferD3D.cpp b/src/libANGLE/renderer/d3d/FramebufferD3D.cpp
+index 204b3a753c149788d69140da04cc6a3a7ba2c714..7656e1988210870f5c56829bbf977bd8455ba235 100644
+--- a/src/libANGLE/renderer/d3d/FramebufferD3D.cpp
++++ b/src/libANGLE/renderer/d3d/FramebufferD3D.cpp
+@@ -284,6 +284,42 @@ gl::FramebufferStatus FramebufferD3D::checkStatus(const gl::Context *context) co
+             gl::err::kFramebufferIncompleteUnsupportedMissmatchedDimensions);
+     }
+ 
++    // D3D11's OMSetRenderTargets requires all bound RenderTargetViews and the DepthStencilView to
++    // have matching resource dimensions; otherwise the call fails and leaves the previously bound
++    // targets active on the device context. 3D texture color attachments use
++    // D3D11_RTV_DIMENSION_TEXTURE3D, so they cannot be mixed with non-3D color attachments (such
++    // as 2D textures, 2D array textures, cube maps, or renderbuffers).
++    bool has3DAttachment    = false;
++    bool hasNon3DAttachment = false;
++    for (const gl::FramebufferAttachment &attachment : mState.getColorAttachments())
++    {
++        if (attachment.isAttached())
++        {
++            if (attachment.type() == GL_TEXTURE &&
++                attachment.getTextureImageIndex().getType() == gl::TextureType::_3D)
++            {
++                has3DAttachment = true;
++            }
++            else
++            {
++                hasNon3DAttachment = true;
++            }
++        }
++    }
++    // D3D11 does not support 3D depth/stencil views (D3D11_DSV_DIMENSION_TEXTURE3D does not
++    // exist), so any depth or stencil attachment is always non-3D and cannot be bound alongside a
++    // 3D texture color attachment in OMSetRenderTargets.
++    if (mState.getDepthAttachment() != nullptr || mState.getStencilAttachment() != nullptr)
++    {
++        hasNon3DAttachment = true;
++    }
++    if (has3DAttachment && hasNon3DAttachment)
++    {
++        return gl::FramebufferStatus::Incomplete(
++            GL_FRAMEBUFFER_UNSUPPORTED,
++            gl::err::kFramebufferIncompleteUnsupportedMixed3DAndNon3DAttachments);
++    }
++
+     return gl::FramebufferStatus::Complete();
+ }
+ 
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 417ab86653287ae44d5988a7cee934667aa052c5..ccf056ad87fd8c5dff4d8aa9d248b5d0e5f46346 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -3152,6 +3152,21 @@
+ 568338695 ARM GLES : ClearTestES3.DrawClearInvalidateClear/* = SKIP
+ 568338695 PIXEL4ORXL GLES : ClearTestES3.DrawClearInvalidateClear/* = SKIP
+ 
++// Detaching depth while stencil remains attached on a packed depth-stencil buffer does not update
++// Vulkan pipeline depth/stencil state when FramebufferDesc is unchanged.
++568687942 VULKAN : FramebufferTest_ES3.DetachDepthWhileStencilRemainsAttached/* = SKIP
++568687942 PIXEL4ORXL GLES : FramebufferTest_ES3.DetachDepthWhileStencilRemainsAttached/* = SKIP
++
++// D3D11 does not support mixing 3D and non-3D attachments on the same framebuffer.
++574035865 D3D11 : FramebufferTest_ES3.AttachmentWith3DLayers/* = SKIP
++
++// OpenGL multiview emulation attaches the entire mip level via glFramebufferTexture and uses a
++// single baseViewIndex uniform (from the first attachment) to offset gl_Layer across all
++// attachments, so it cannot render to different baseViewIndex ranges on different attachments
++// (b/575564312).
++575564312 OPENGL : WebGL2CompatibilityTest.UniqueFramebufferAttachmentsMultiview/* = SKIP
++575564312 OPENGL : HardenedContextTest.UniqueFramebufferAttachmentsMultiview/* = SKIP
++
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ // Slow tests, should appear last in this file
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+diff --git a/src/tests/gl_tests/FramebufferMultiviewTest.cpp b/src/tests/gl_tests/FramebufferMultiviewTest.cpp
+index 0eeda6550a5309881960638fce423c413b339216..62ce08911599f9e46c9f524d57c12b7e56d638f8 100644
+--- a/src/tests/gl_tests/FramebufferMultiviewTest.cpp
++++ b/src/tests/gl_tests/FramebufferMultiviewTest.cpp
+@@ -460,6 +460,19 @@ TEST_P(FramebufferMultiviewTest, IncompleteViewTargetsLayered)
+                                      2);
+     ASSERT_GL_NO_ERROR();
+     ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // Test that non-overlapping view ranges of the same texture are complete, whereas overlapping
++    // view ranges of the same texture are rejected on D3D11 (and in hardened/WebGL contexts).
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, tex, 0, 2, 2);
++    ASSERT_GL_NO_ERROR();
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, tex, 0, 1, 2);
++    ASSERT_GL_NO_ERROR();
++    if (IsD3D11())
++    {
++        EXPECT_GLENUM_EQ(GL_FRAMEBUFFER_UNSUPPORTED, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++    }
+ }
+ 
+ // Test that glClear clears the contents of the color buffer for only the attached layers to a
+diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
+index 4012c1bfa75aa32ab18caddf258eac137350c5cb..5bce6d8afcf363081a64858d5ed4f9e1dfe4957a 100644
+--- a/src/tests/gl_tests/FramebufferTest.cpp
++++ b/src/tests/gl_tests/FramebufferTest.cpp
+@@ -1370,7 +1370,186 @@ TEST_P(FramebufferTest_ES3, AttachmentWith3DLayers)
+     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texA, 0);
+     glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, texB, 0, 0);
++    ASSERT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++    EXPECT_GL_NO_ERROR();
++}
++
++// Check that attachments with the same width and height but different 3D texture depth (layer
++// counts) are complete.
++TEST_P(FramebufferTest_ES3, AttachmentsWithDifferentDepths)
++{
++    GLTexture tex2D;
++    glBindTexture(GL_TEXTURE_2D, tex2D);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLTexture tex2DArray;
++    glBindTexture(GL_TEXTURE_2D_ARRAY, tex2DArray);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, /*depth=*/2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++
++    GLTexture tex3DA;
++    glBindTexture(GL_TEXTURE_3D, tex3DA);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 4, 4, /*depth=*/1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++
++    GLTexture tex3DB;
++    glBindTexture(GL_TEXTURE_3D, tex3DB);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 4, 4, /*depth=*/2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++
++    GLFramebuffer framebuffer;
++    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
++
++    // Two 3D textures with different z-depths (1 vs. 2) have matching 2D slice dimensions (4x4).
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex3DA, 0, 0);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, tex3DB, 0, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // A 2D texture (depth 1) and a 2D array texture (depth 2) also have matching 2D dimensions.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2D, 0);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, tex2DArray, 0, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    EXPECT_GL_NO_ERROR();
++}
++
++// Verify that attempting to render to a framebuffer with mixed 2D and 3D color attachments (which
++// is unsupported on D3D11 because OMSetRenderTargets requires all bound views to have the same
++// resource dimension) does not corrupt the previously bound framebuffer's render target.
++TEST_P(FramebufferTest_ES3, Mixed2DAnd3DColorAttachmentsDoNotCorruptPreviousFramebuffer)
++{
++    constexpr GLsizei kSize = 4;
++
++    // Bind firstFbo first and clear it to green so its render target is active on the GPU.
++    GLTexture firstTex;
++    glBindTexture(GL_TEXTURE_2D, firstTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLFramebuffer firstFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, firstFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, firstTex, 0);
+     ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glViewport(0, 0, kSize, kSize);
++    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++
++    // Switch to a different framebuffer (mixedColorFbo) with a 2D color attachment and a 3D color
++    // attachment, and draw red to it.
++    GLTexture tex2D;
++    glBindTexture(GL_TEXTURE_2D, tex2D);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLTexture tex3D;
++    glBindTexture(GL_TEXTURE_3D, tex3D);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kSize, kSize, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++
++    GLFramebuffer mixedColorFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, mixedColorFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2D, 0);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, tex3D, 0, 0);
++    const GLenum drawBuffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
++    glDrawBuffers(2, drawBuffers);
++
++    constexpr char kFS[] = R"(#version 300 es
++precision mediump float;
++layout(location = 0) out vec4 out0;
++layout(location = 1) out vec4 out1;
++void main()
++{
++    out0 = vec4(1.0, 0.0, 0.0, 1.0);
++    out1 = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++    ANGLE_GL_PROGRAM(mrtRedProgram, essl3_shaders::vs::Simple(), kFS);
++
++    const GLenum mixedColorStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
++    EXPECT_TRUE(mixedColorStatus == GL_FRAMEBUFFER_COMPLETE ||
++                mixedColorStatus == GL_FRAMEBUFFER_UNSUPPORTED);
++    drawQuad(mrtRedProgram, essl3_shaders::PositionAttrib(), 0.5f);
++    if (mixedColorStatus == GL_FRAMEBUFFER_COMPLETE)
++    {
++        // On backends that support mixed 2D/3D attachments, mixedColorFbo should now be red.
++        EXPECT_GL_NO_ERROR();
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    }
++    else
++    {
++        // On backends where mixed 2D/3D attachments are unsupported (D3D11), the draw must be
++        // rejected with GL_INVALID_FRAMEBUFFER_OPERATION.
++        EXPECT_GL_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION);
++    }
++
++    // In either case, drawing while mixedColorFbo was bound must not have overwritten firstFbo,
++    // which must still be green.
++    glBindFramebuffer(GL_FRAMEBUFFER, firstFbo);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    EXPECT_GL_NO_ERROR();
++}
++
++// Verify that attempting to render to a framebuffer with a 3D color attachment and a 2D depth
++// renderbuffer attachment (which is unsupported on D3D11 because OMSetRenderTargets requires the
++// depth/stencil view to have the same resource dimension as the render target views) does not
++// corrupt the previously bound framebuffer's render target.
++TEST_P(FramebufferTest_ES3, Mixed3DColorAndDepthAttachmentsDoNotCorruptPreviousFramebuffer)
++{
++    constexpr GLsizei kSize = 4;
++
++    // Bind firstFbo first and clear it to green so its render target is active on the GPU.
++    GLTexture firstTex;
++    glBindTexture(GL_TEXTURE_2D, firstTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLFramebuffer firstFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, firstFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, firstTex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glViewport(0, 0, kSize, kSize);
++    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++
++    // Switch to a different framebuffer (mixedDepthFbo) with a 3D color attachment and a 2D depth
++    // renderbuffer attachment, and draw red to it.
++    GLTexture tex3D;
++    glBindTexture(GL_TEXTURE_3D, tex3D);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kSize, kSize, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++
++    GLRenderbuffer depthRbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, depthRbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, kSize, kSize);
++
++    GLFramebuffer mixedDepthFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, mixedDepthFbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex3D, 0, 0);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRbo);
++
++    ANGLE_GL_PROGRAM(redProgram, essl3_shaders::vs::Simple(), essl3_shaders::fs::Red());
++
++    const GLenum mixedDepthStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
++    EXPECT_TRUE(mixedDepthStatus == GL_FRAMEBUFFER_COMPLETE ||
++                mixedDepthStatus == GL_FRAMEBUFFER_UNSUPPORTED);
++    drawQuad(redProgram, essl3_shaders::PositionAttrib(), 0.5f);
++    if (mixedDepthStatus == GL_FRAMEBUFFER_COMPLETE)
++    {
++        // On backends that support 3D color + 2D depth attachments, mixedDepthFbo should now be
++        // red.
++        EXPECT_GL_NO_ERROR();
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    }
++    else
++    {
++        // On backends where 3D color + 2D depth attachments are unsupported (D3D11), the draw must
++        // be rejected with GL_INVALID_FRAMEBUFFER_OPERATION.
++        EXPECT_GL_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION);
++    }
++
++    // In either case, drawing while mixedDepthFbo was bound must not have overwritten firstFbo,
++    // which must still be green.
++    glBindFramebuffer(GL_FRAMEBUFFER, firstFbo);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+     EXPECT_GL_NO_ERROR();
+ }
+ 
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index f1e559cd9721d709a4bb76beef2ee783d4b7ea40..043b1b61d88e5a0ae56507e5a94c85d90813085a 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -5721,10 +5721,10 @@ TEST_P(RobustResourceInitTestES3, ClearSliceOf3DInvalidateAnotherAttachmentReadb
+ 
+     // Attach a second attachment and invalidate it.
+     GLTexture toInvalidate;
+-    glBindTexture(GL_TEXTURE_2D, toInvalidate);
+-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++    glBindTexture(GL_TEXTURE_3D, toInvalidate);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                  nullptr);
+-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, toInvalidate, 0);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, toInvalidate, 0, 0);
+     ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
+     ASSERT_GL_NO_ERROR();
+ 
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index f304aa2bfcfafef0df4f2a69c12405212ae2496e..286b97e842bde21e7c681e749621027d358f03c8 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -4550,8 +4550,7 @@ void main() {
+     drawBuffersFeedbackLoop(program, {{GL_COLOR_ATTACHMENT0, GL_NONE}}, GL_INVALID_OPERATION);
+ }
+ 
+-// WebGL requires that all framebuffer attachments are unique
+-TEST_P(WebGL2CompatibilityTest, UniqueFramebufferAttachments)
++void TestUniqueFramebufferAttachments()
+ {
+     GLTexture tex0;
+     FillTexture2D(tex0, 8, 8, GLColor::red, 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+@@ -4564,20 +4563,125 @@ TEST_P(WebGL2CompatibilityTest, UniqueFramebufferAttachments)
+     EXPECT_GLENUM_EQ(GL_FRAMEBUFFER_UNSUPPORTED, glCheckFramebufferStatus(GL_FRAMEBUFFER));
+ }
+ 
++// WebGL requires that all framebuffer attachments are unique
++TEST_P(WebGL2CompatibilityTest, UniqueFramebufferAttachments)
++{
++    TestUniqueFramebufferAttachments();
++}
++
+ // Hardened contexts also require that all framebuffer color attachments are unique
+ TEST_P(HardenedContextTest, UniqueFramebufferAttachments)
+ {
+-    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++    TestUniqueFramebufferAttachments();
++}
+ 
+-    GLTexture tex0;
+-    FillTexture2D(tex0, 8, 8, GLColor::red, 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+-    ASSERT_GL_NO_ERROR();
++// Shared helper for WebGL2CompatibilityTest and HardenedContextTest. Takes drawQuadFn as a
++// callback because ANGLETestBase::drawQuad is protected and the two fixtures are separate
++// subclasses of ANGLETest<>.
++template <typename DrawQuadFn>
++void TestUniqueFramebufferAttachmentsMultiview(DrawQuadFn drawQuadFn)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_OVR_multiview2"));
++
++    constexpr char kVS[] = R"(#version 300 es
++#extension GL_OVR_multiview2 : require
++layout(num_views = 2) in;
++in vec4 a_position;
++void main()
++{
++    gl_Position = a_position;
++})";
++    constexpr char kFS[] = R"(#version 300 es
++#extension GL_OVR_multiview2 : require
++precision mediump float;
++layout(location = 0) out vec4 out0;
++layout(location = 1) out vec4 out1;
++void main()
++{
++    out0 = (gl_ViewID_OVR == 0u) ? vec4(1.0, 0.0, 0.0, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);
++    out1 = (gl_ViewID_OVR == 0u) ? vec4(0.0, 0.0, 1.0, 1.0) : vec4(1.0, 1.0, 0.0, 1.0);
++})";
++    ANGLE_GL_PROGRAM(multiviewProgram, kVS, kFS);
++
++    GLTexture texArray;
++    glBindTexture(GL_TEXTURE_2D_ARRAY, texArray);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 8, 8, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+ 
+     GLFramebuffer fbo;
+     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex0, 0);
+-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex0, 0);
++    const GLenum drawBuffers[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
++    glDrawBuffers(2, drawBuffers);
++    glViewport(0, 0, 8, 8);
++
++    GLFramebuffer readFbo;
++    auto expectLayerColors = [&](const GLColor &layer0, const GLColor &layer1,
++                                 const GLColor &layer2, const GLColor &layer3) {
++        const std::array<GLColor, 4> expected = {layer0, layer1, layer2, layer3};
++        glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
++        for (GLint layer = 0; layer < 4; ++layer)
++        {
++            glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texArray, 0,
++                                      layer);
++            ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_READ_FRAMEBUFFER);
++            EXPECT_PIXEL_COLOR_EQ(0, 0, expected[layer]);
++        }
++        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    };
++
++    // Note: GL_OVR_multiview2 requires all attachments on a framebuffer to have the same
++    // numViews (otherwise glCheckFramebufferStatus returns
++    // GL_FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR before attachment uniqueness is checked).
++    // Test both interval orderings ([0, 2) + [2, 4) and [2, 4) + [0, 2)).
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texArray, 0, 0, 2);
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, texArray, 0, 2, 2);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    drawQuadFn(multiviewProgram);
++    EXPECT_GL_NO_ERROR();
++    expectLayerColors(GLColor::red, GLColor::green, GLColor::blue, GLColor::yellow);
++
++    // Attaching overlapping layer ranges [0, 2) and [1, 3) (or [1, 3) and [0, 2)) violates
++    // attachment uniqueness (layer 1 is shared) and must return GL_FRAMEBUFFER_UNSUPPORTED.
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, texArray, 0, 1, 2);
+     EXPECT_GLENUM_EQ(GL_FRAMEBUFFER_UNSUPPORTED, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++    drawQuadFn(multiviewProgram);
++    EXPECT_GL_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION);
++    expectLayerColors(GLColor::red, GLColor::green, GLColor::blue, GLColor::yellow);
++
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texArray, 0, 1, 2);
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, texArray, 0, 0, 2);
++    EXPECT_GLENUM_EQ(GL_FRAMEBUFFER_UNSUPPORTED, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++    drawQuadFn(multiviewProgram);
++    EXPECT_GL_ERROR(GL_INVALID_FRAMEBUFFER_OPERATION);
++    expectLayerColors(GLColor::red, GLColor::green, GLColor::blue, GLColor::yellow);
++
++    // Reversed non-overlapping layer ranges [2, 4) and [0, 2) are also complete and render to
++    // their respective layers.
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texArray, 0, 2, 2);
++    glFramebufferTextureMultiviewOVR(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, texArray, 0, 0, 2);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    drawQuadFn(multiviewProgram);
++    EXPECT_GL_NO_ERROR();
++    expectLayerColors(GLColor::blue, GLColor::yellow, GLColor::red, GLColor::green);
++}
++
++// Verify that non-overlapping multiview layer ranges of the same 2D array texture are allowed and
++// render to their respective layers, whereas overlapping multiview layer ranges are rejected in
++// WebGL contexts.
++TEST_P(WebGL2CompatibilityTest, UniqueFramebufferAttachmentsMultiview)
++{
++    TestUniqueFramebufferAttachmentsMultiview([this](GLuint program) {
++        drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    });
++}
++
++// Verify that non-overlapping multiview layer ranges of the same 2D array texture are allowed and
++// render to their respective layers, whereas overlapping multiview layer ranges are rejected in
++// hardened contexts.
++TEST_P(HardenedContextTest, UniqueFramebufferAttachmentsMultiview)
++{
++    TestUniqueFramebufferAttachmentsMultiview([this](GLuint program) {
++        drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    });
+ }
+ 
+ // This tests that texture base level for immutable textures is clamped to the valid range, unlike

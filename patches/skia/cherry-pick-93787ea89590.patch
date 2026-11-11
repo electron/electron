@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Thu, 5 Nov 2026 10:27:06 -0500
+Subject: [M156] [ganesh] Guard atlas index against float imprecision during
+ interpolation
+
+Original change's description:
+> [ganesh] Guard atlas index against float imprecision during interpolation
+>
+> Updates Ganesh's text shaders to apply the same approach added to
+> Graphite when not using kFlat. Since Ganesh's flat interpolation is
+> only a hint and not a guarantee, this always adds the 1/2 and cast.
+>
+> Bug: 581903854
+> Change-Id: I9d4c5d239372abf472fc4a396f91b3bb4afc5d82
+> Fixed: 581903854
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1418296
+> Reviewed-by: Thomas Smith <thomsmit@google.com>
+> Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+
+(cherry picked from commit 38754fa5507019297d5bf2aff36d490c4caf7c14)
+
+Bug: 582593862,581903854,581903854
+Change-Id: I9d4c5d239372abf472fc4a396f91b3bb4afc5d82
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1421998
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/gpu/ganesh/effects/GrAtlasedShaderHelpers.h b/src/gpu/ganesh/effects/GrAtlasedShaderHelpers.h
+index ec1db1b2c96b1906a948f695c367238adf941827..2a5d0deb3a52a051df665fba8f31559686d0c9cc 100644
+--- a/src/gpu/ganesh/effects/GrAtlasedShaderHelpers.h
++++ b/src/gpu/ganesh/effects/GrAtlasedShaderHelpers.h
+@@ -91,7 +91,11 @@ static inline void append_multitexture_lookup(GrGeometryProcessor::ProgramImpl::
+ 
+     // conditionally load from the indexed texture sampler
+     for (int i = 0; i < numTextureSamplers-1; ++i) {
+-        args.fFragBuilder->codeAppendf("if (%s == %d) { %s = ", texIdx.fsIn(), i, colorName);
++        // Add 1/2 and cast to an int to ensure floating point error during interpolation doesn't
++        // cause incorrect atlas lookups (these varyings are marked kCanBeFlat, but that leaves
++        // the possibility that they may still be interpolated).
++        args.fFragBuilder->codeAppendf("if (int(%s + 0.5) == %d) { %s = ",
++                                       texIdx.fsIn(), i, colorName);
+         args.fFragBuilder->appendTextureLookup(args.fTexSamplers[i],
+                                                coordName);
+         args.fFragBuilder->codeAppend("; } else ");
+@@ -118,7 +122,7 @@ static inline void append_multitexture_lookup_lcd(GrGeometryProcessor::ProgramIm
+ 
+     // conditionally load from the indexed texture sampler
+     for (int i = 0; i < numTextureSamplers; ++i) {
+-        args.fFragBuilder->codeAppendf("if (%s == %d) {", texIdx.fsIn(), i);
++        args.fFragBuilder->codeAppendf("if (int(%s + 0.5) == %d) {", texIdx.fsIn(), i);
+ 
+         // green is distance to uv center
+         args.fFragBuilder->codeAppendf("%s.y = ", distanceName);

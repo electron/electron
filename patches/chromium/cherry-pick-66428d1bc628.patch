@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Thu, 5 Nov 2026 05:39:41 -0800
+Subject: SimpleSynchronousEntry::ScanSparseFile: verify header key as well.
+
+This is a defense-in-depth follow up to
+https://chromium-review.googlesource.com/c/chromium/src/+/8656066
+
+(I have no reason to believe it's necessary to backport this).
+
+Bug: 577260644
+Change-Id: If9ff2d135c17951ba3f3a45dc0b581fd28b8404e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8663843
+Reviewed-by: Tsuyoshi Horo <horo@chromium.org>
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1736313}
+
+diff --git a/net/disk_cache/entry_unittest.cc b/net/disk_cache/entry_unittest.cc
+index 08d6aba3ba337470059b3c0c289f4467c00b3323..08284eb887716cbb090c1c05416ddeb86a374c06 100644
+--- a/net/disk_cache/entry_unittest.cc
++++ b/net/disk_cache/entry_unittest.cc
+@@ -5076,6 +5076,74 @@ TEST_F(DiskCacheEntryTest, SimpleCacheSparseErrorHandling) {
+   EXPECT_FALSE(base::PathExists(path_s));
+ }
+ 
++// Defense in depth for http://crbug.com/577260644
++TEST_F(DiskCacheEntryTest, SimpleCacheSparseKeyValidate) {
++  enum class Failure { kWrongKey, kHeaderSizeCorrupt, kFileToShort };
++
++  SetBackendToTest(BackendToTest::kSimple);
++  InitCache();
++
++  std::string key("a key");
++
++  disk_cache::SimpleFileTracker::EntryFileKey num_key(
++      disk_cache::simple_util::GetEntryHashKey(key));
++  base::FilePath path_0 = cache_path_.AppendASCII(
++      disk_cache::simple_util::GetFilenameFromEntryFileKeyAndFileIndex(num_key,
++                                                                       0));
++  base::FilePath path_s = cache_path_.AppendASCII(
++      disk_cache::simple_util::GetSparseFilenameFromEntryFileKey(num_key));
++
++  for (auto failure : {Failure::kWrongKey, Failure::kHeaderSizeCorrupt,
++                       Failure::kFileToShort}) {
++    disk_cache::Entry* entry = nullptr;
++    ASSERT_THAT(CreateEntry(key, &entry), IsOk());
++
++    const int kSize = 1024;
++    auto buffer = CacheTestCreateAndFillBuffer(kSize, false);
++
++    EXPECT_EQ(kSize, WriteSparseData(entry, 0, buffer.get(), kSize));
++    entry->Close();
++
++    disk_cache::FlushCacheThreadForTesting();
++    EXPECT_TRUE(base::PathExists(path_0));
++    EXPECT_TRUE(base::PathExists(path_s));
++
++    base::File file_s(path_s, base::File::FLAG_OPEN | base::File::FLAG_READ |
++                                  base::File::FLAG_WRITE);
++    switch (failure) {
++      case Failure::kWrongKey: {
++        // Corrupt the key in the sparse file, trying to simulate a scenario
++        // where a mismatched one somehow ended up there. The key starts just
++        // right after the SimpleFileHeader.
++        ASSERT_TRUE(file_s.WriteAndCheck(sizeof(disk_cache::SimpleFileHeader),
++                                         base::byte_span_from_cstring("b")));
++        break;
++      }
++
++      case Failure::kHeaderSizeCorrupt: {
++        uint32_t bad_len = 0xF0000000;
++        ASSERT_TRUE(file_s.WriteAndCheck(
++            offsetof(disk_cache::SimpleFileHeader, key_length),
++            base::byte_span_from_ref(bad_len)));
++        break;
++      }
++
++      case Failure::kFileToShort: {
++        file_s.SetLength(sizeof(disk_cache::SimpleFileHeader) + key.size() - 1);
++        break;
++      }
++    };
++
++    file_s.Close();
++
++    // Try to re-open, it should fail since the header is messed up.
++    ASSERT_EQ(OpenEntry(key, &entry), net::ERR_FAILED);
++    // ...and files should be deleted.
++    EXPECT_FALSE(base::PathExists(path_0));
++    EXPECT_FALSE(base::PathExists(path_s));
++  }
++}
++
+ TEST_F(DiskCacheEntryTest, SimpleCacheCreateCollision) {
+   // These two keys collide; this test is that we properly handled creation
+   // of both.
+diff --git a/net/disk_cache/simple/simple_synchronous_entry.cc b/net/disk_cache/simple/simple_synchronous_entry.cc
+index 7c352146be0e79c4983f317a7becbf7253b325ff..6cf29212d50145578b58ef3fe6dcce3e101434d4 100644
+--- a/net/disk_cache/simple/simple_synchronous_entry.cc
++++ b/net/disk_cache/simple/simple_synchronous_entry.cc
+@@ -2029,6 +2029,21 @@ bool SimpleSynchronousEntry::ScanSparseFile(CacheFile* sparse_file,
+     return false;
+   }
+ 
++  size_t expected_header_size = GetHeaderSize(header.key_length);
++  if (expected_header_size > static_cast<size_t>(sparse_file->GetLength())) {
++    return false;
++  }
++
++  std::vector<char> key_data(header.key_length);
++  if (!sparse_file->ReadAndCheck(sizeof(header),
++                                 base::as_writable_byte_span(key_data))) {
++    return false;
++  }
++
++  if (key_.has_value() && *key_ != base::as_string_view(key_data)) {
++    return false;
++  }
++
+   sparse_ranges_.clear();
+ 
+   uint64_t range_header_offset = sizeof(header) + key_->size();
