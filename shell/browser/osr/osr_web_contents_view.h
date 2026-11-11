@@ -96,6 +96,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
       const gfx::Vector2d& cursor_offset,
       const gfx::Rect& drag_obj_rect,
       const blink::mojom::DragEventSourceInfo& event_info) override;
+  void CancelDrag() override {}
   void UpdateDragOperation(ui::mojom::DragOperation operation,
                            bool document_is_handling_drag,
                            content::RenderWidgetHostImpl* source_rwh) override {
