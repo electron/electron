@@ -185,6 +185,30 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
 }
 #endif  // BUILDFLAG(IS_WIN)
 
+// Returns true if `child_components` is the same as or a descendant of
+// `parent_components`, ignoring case differences.
+bool IsPathOrDescendantIgnoreCase(
+    const std::vector<base::FilePath::StringType>& parent_components,
+    const std::vector<base::FilePath::StringType>& child_components) {
+  if (parent_components.empty() ||
+      parent_components.size() > child_components.size()) {
+    return false;
+  }
+
+  return std::equal(parent_components.begin(), parent_components.end(),
+                    child_components.begin(),
+                    base::FilePath::CompareEqualIgnoreCase);
+}
+
+// Returns true if `parent_components` is a strict parent of
+// `child_components`, ignoring case differences.
+bool IsParentIgnoreCase(
+    const std::vector<base::FilePath::StringType>& parent_components,
+    const std::vector<base::FilePath::StringType>& child_components) {
+  return parent_components.size() < child_components.size() &&
+         IsPathOrDescendantIgnoreCase(parent_components, child_components);
+}
+
 bool ShouldBlockAccessToPath(
     base::FilePath path,
     HandleType handle_type,
@@ -211,7 +235,10 @@ bool ShouldBlockAccessToPath(
   }
 #endif
 
+  const std::vector<base::FilePath::StringType> path_components =
+      path.GetComponents();
   base::FilePath nearest_ancestor;
+  std::vector<base::FilePath::StringType> nearest_ancestor_components;
   BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
   auto should_block_with_rule = [&](const base::FilePath& block_path,
                                     BlockType block_type) -> bool {
@@ -224,15 +251,19 @@ bool ShouldBlockAccessToPath(
       return false;
     }
 
-    if (path == block_path || path.IsParent(block_path)) {
+    std::vector<base::FilePath::StringType> block_components =
+        block_path.GetComponents();
+    if (IsPathOrDescendantIgnoreCase(path_components, block_components)) {
       VLOG(1) << "Blocking access to " << path << " because it is a parent of "
               << block_path;
       return true;
     }
 
-    if (block_path.IsParent(path) &&
-        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block_path))) {
+    if (IsParentIgnoreCase(block_components, path_components) &&
+        (nearest_ancestor.empty() ||
+         IsParentIgnoreCase(nearest_ancestor_components, block_components))) {
       nearest_ancestor = block_path;
+      nearest_ancestor_components = std::move(block_components);
       nearest_ancestor_block_type = block_type;
     }
     return false;
@@ -254,8 +285,6 @@ bool ShouldBlockAccessToPath(
   // root up to the end of the matched subrange (e.g., `/foo/bar/.git/hooks`).
   // This path is then evaluated against the regular block rules. Matches
   // Chrome's ShouldBlockAccessToPath().
-  const std::vector<base::FilePath::StringType> path_components =
-      path.GetComponents();
   for (const auto& rule : block_path_rules.suffix_block_path_rules_) {
     const std::vector<base::FilePath::StringType> rule_components =
         base::FilePath(rule.path).GetComponents();

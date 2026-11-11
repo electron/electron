@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Pfaffe <pfaffe@chromium.org>
+Date: Mon, 9 Nov 2026 05:39:07 -0800
+Subject: Copy attributes before applying them
+
+Fixed: 583122799
+Change-Id: I8e8426a7b8feaf747d1d937bcb416d881d6e1906
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8774528
+Commit-Queue: Alex Rudenko <alexrudenko@chromium.org>
+Auto-Submit: Philip Pfaffe <pfaffe@chromium.org>
+Reviewed-by: Alex Rudenko <alexrudenko@chromium.org>
+Commit-Queue: Philip Pfaffe <pfaffe@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1739052}
+
+diff --git a/third_party/blink/renderer/core/inspector/dom_patch_support.cc b/third_party/blink/renderer/core/inspector/dom_patch_support.cc
+index f73556d3fa3d644962a52aa757d25b443017ef43..da2ffa0bf9c94c6e44639a3ede82712bbf45c96d 100644
+--- a/third_party/blink/renderer/core/inspector/dom_patch_support.cc
++++ b/third_party/blink/renderer/core/inspector/dom_patch_support.cc
+@@ -219,7 +219,14 @@ bool DOMPatchSupport::InnerPatchNode(Digest* old_digest,
+ 
+     // FIXME: Create a function in Element for copying properties.
+     // cloneDataFromElement() is close but not enough for this case.
+-    for (auto& attribute : new_element->AttributesWithoutUpdate()) {
++    //
++    // SetAttribute() may run script (e.g. custom element reactions), which
++    // could mutate the attribute storage of |new_element| and invalidate an
++    // AttributeCollection (a non-owning span) iterating over it. Take an
++    // owning copy of the attributes first.
++    const AttributeVector new_attributes(
++        new_element->AttributesWithoutUpdate());
++    for (const Attribute& attribute : new_attributes) {
+       if (!dom_editor_->SetAttribute(old_element,
+                                      attribute.GetName().ToString(),
+                                      attribute.Value(), exception_state))
