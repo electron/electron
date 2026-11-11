@@ -1117,9 +1117,9 @@ Returns:
     `input-datetime-local`, `input-email`, `input-file`, `input-hidden`,
     `input-image`, `input-month`, `input-number`, `input-password`, `input-radio`,
     `input-range`, `input-reset`, `input-search`, `input-submit`, `input-telephone`,
-    `input-text`, `input-time`, `input-url`, `input-week`, `output`, `reset-button`,
-    `select-list`, `select-list`, `select-multiple`, `select-one`, `submit-button`,
-    and `text-area`,
+    `input-text`, `input-time`, `input-url`, `input-week`, `output`, `range-group`,
+    `reset-button`, `select-list`, `select-list`, `select-multiple`, `select-one`,
+    `submit-button`, and `text-area`,
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
