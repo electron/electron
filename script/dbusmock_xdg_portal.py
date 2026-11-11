@@ -52,9 +52,6 @@ def load(mock, parameters):
     ])
     mock.AddProperty(INHIBIT_IFACE, 'version',
                      dbus.UInt32(parameters.get('inhibit_version', 4)))
-    mock.AddMethods(INHIBIT_IFACE, [
-        ('CreateMonitor', 'sa{sv}', 'o', handle_create_monitor),
-    ])
 
 
 @dbus.service.method(MOCK_IFACE, in_signature='as', out_signature='')
@@ -108,15 +105,20 @@ def handle_file_chooser_call(self, _parent_window, _title, _options):
     return dbus.ObjectPath(request_path)
 
 
-def handle_create_monitor(self, _parent_window, options):
+@dbus.service.method(INHIBIT_IFACE, in_signature='sa{sv}', out_signature='o',
+                     sender_keyword='sender')
+def CreateMonitor(self, _parent_window, options, sender=None):
     """Create a session state monitor and answer its request.
 
     The session handle is reported through the Request Response signal, as the
-    portal does.
+    portal does. Like the portal, it is built from the caller's unique name and
+    session_handle_token, so a client that predicts it (as Chromium does) sees
+    StateChanged signals sent before the Response arrives.
     """
     self.monitor_serial += 1
     token = str(options.get('session_handle_token', f'mock{self.monitor_serial}'))
-    session_path = f'{MAIN_OBJ}/session/mock/{token}'
+    sender_id = str(sender).removeprefix(':').replace('.', '_')
+    session_path = f'{MAIN_OBJ}/session/{sender_id}/{token}'
     self.AddObject(session_path, SESSION_IFACE, {},
                    [('Close', '', '', 'pass')])
     self.monitor_sessions.append(session_path)
