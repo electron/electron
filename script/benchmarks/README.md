@@ -122,7 +122,10 @@ action only accepts well-known schemes.
 
 The [Benchmarks History workflow](../../.github/workflows/benchmarks-history.yml)
 measures how performance changed across Electron majors. It is dispatched by
-hand. [`resolve-history.mts`](resolve-history.mts) resolves every requested
+hand and is meant as a one-time backfill, not an ongoing comparison. Every run
+must use the same anchor, 45.3.0 (the default), so that ratios stay comparable
+across runs. When a new major goes stable, dispatch the workflow with just that
+major (e.g. `majors=46`) to add it to the series. [`resolve-history.mts`](resolve-history.mts) resolves every requested
 major to its latest stable release with fiddle-core, and the workflow runs one
 job per major (six at a time) on the same runner type and container as the
 nightly run. In each job the candidate is that major's release and the
@@ -141,15 +144,16 @@ host, and the anchor is the same in every job. Each job sends:
 
 Both are tagged `electron_major`, `electron_version`, `chromium_version`,
 `anchor_version`, `history_run_id` (the workflow run's id), `benchmark`,
-`platform`, `arch` and `cpu_model`. Filter a dashboard on one
-`history_run_id` so ratios from runs with different anchors are not mixed.
+`platform`, `arch` and `cpu_model`. Filter a dashboard on
+`anchor_version:45.3.0` so ratios from runs with different anchors are not
+mixed.
 No regression gauges or nightly series are sent, so history runs never
 trigger the nightly monitors.
 
 | Input | Default | |
 | --- | --- | --- |
 | `majors` | `15-latest` | Ranges and lists, e.g. `30-45` or `22,28,33-latest`. `latest` is the newest major with a stable release; majors without one are left out. |
-| `anchor` | `latest-stable` | Any released version. |
+| `anchor` | `45.3.0` | Any released version, or `latest-stable`. Keep the default so runs stay comparable. |
 | `rounds` | `5` | Interleaved rounds per job. |
 | `suites` | all five | Same as nightly. |
 | `upload-to-datadog` | `true` | Unlike nightly, because the data is the point of the run. Turn it off for a trial run. |

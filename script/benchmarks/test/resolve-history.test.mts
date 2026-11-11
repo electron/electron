@@ -4,13 +4,15 @@ import { BaseVersions } from '@electron/fiddle-core';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { latestStableInMajor, parseMajors, resolveHistory } from '../resolve-history.mts';
+import { DEFAULT_ANCHOR, latestStableInMajor, parseMajors, resolveHistory } from '../resolve-history.mts';
 
 const versions = new BaseVersions(
   [
     '47.0.0-nightly.20261029',
     '46.0.0-beta.4',
     '46.0.0-alpha.1',
+    '45.3.1',
+    '45.3.0',
     '45.2.3',
     '45.2.2',
     '45.0.0',
@@ -56,7 +58,7 @@ describe('parseMajors', () => {
 
 describe('latestStableInMajor', () => {
   it('skips prereleases', () => {
-    assert.equal(latestStableInMajor(versions, 45), '45.2.3');
+    assert.equal(latestStableInMajor(versions, 45), '45.3.1');
     assert.equal(latestStableInMajor(versions, 44), '44.11.0');
     assert.equal(latestStableInMajor(versions, 46), undefined);
     assert.equal(latestStableInMajor(versions, 29), undefined);
@@ -64,19 +66,25 @@ describe('latestStableInMajor', () => {
 });
 
 describe('resolveHistory', () => {
-  it('resolves every major to its latest stable release and the anchor to the latest stable', () => {
+  it('resolves every major to its latest stable release and the anchor to the pinned default', () => {
+    assert.equal(DEFAULT_ANCHOR, '45.3.0');
     assert.deepEqual(resolveHistory(versions, { majors: '29-latest' }), {
-      anchor: '45.2.3',
+      anchor: '45.3.0',
       jobs: [
         { major: 30, version: '30.5.1' },
         { major: 44, version: '44.11.0' },
-        { major: 45, version: '45.2.3' }
+        { major: 45, version: '45.3.1' }
       ],
       missing: [29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43]
     });
   });
 
-  it('accepts an explicit anchor', () => {
+  it('uses the default anchor for an empty one', () => {
+    assert.equal(resolveHistory(versions, { majors: '30', anchor: '' }).anchor, '45.3.0');
+  });
+
+  it('accepts latest-stable or an explicit anchor', () => {
+    assert.equal(resolveHistory(versions, { majors: '30', anchor: 'latest-stable' }).anchor, '45.3.1');
     assert.equal(resolveHistory(versions, { majors: '30', anchor: '44.3.2' }).anchor, '44.3.2');
     assert.throws(() => resolveHistory(versions, { majors: '30', anchor: '44.0.0' }), /Unknown anchor/);
   });

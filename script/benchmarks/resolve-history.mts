@@ -8,7 +8,10 @@
 //
 // Usage:
 //   node script/benchmarks/resolve-history.mts --majors 22-latest
-//     [--anchor latest-stable|<version>]
+//     [--anchor <version>|latest-stable]
+//
+// --anchor defaults to DEFAULT_ANCHOR, pinned so that history runs made at
+// different times are compared against the same version.
 //
 // --majors is a comma-separated list of majors and ranges, e.g. "30-45",
 // "22,28,33-latest". "latest" is the newest major with a stable release.
@@ -62,16 +65,21 @@ export function parseMajors(spec: string, latestMajor: number): number[] {
   return [...majors].sort((a, b) => a - b);
 }
 
+// The anchor every history run uses unless told otherwise. Don't change it:
+// ratios are only comparable between runs with the same anchor.
+export const DEFAULT_ANCHOR = '45.3.0';
+
 export function resolveHistory(
   versions: Versions,
-  { majors: spec, anchor = 'latest-stable' }: { majors: string; anchor?: string }
+  { majors: spec, anchor = DEFAULT_ANCHOR }: { majors: string; anchor?: string }
 ): { anchor: string; jobs: HistoryJob[]; missing: number[] } {
   const latestMajor = latestStableMajor(versions);
-  let anchorVersion = anchor;
-  if (!anchor || anchor === 'latest-stable') {
+  // An empty anchor (a blanked workflow input) means the default.
+  let anchorVersion = anchor || DEFAULT_ANCHOR;
+  if (anchorVersion === 'latest-stable') {
     anchorVersion = versions.latestStable!.version;
-  } else if (!versions.isVersion(anchor)) {
-    throw new Error(`Unknown anchor version ${anchor}`);
+  } else if (!versions.isVersion(anchorVersion)) {
+    throw new Error(`Unknown anchor version ${anchorVersion}`);
   }
   const jobs: HistoryJob[] = [];
   const missing: number[] = [];
@@ -88,7 +96,7 @@ async function main() {
   const { values: args } = parseArgs({
     options: {
       majors: { type: 'string' },
-      anchor: { type: 'string', default: 'latest-stable' }
+      anchor: { type: 'string', default: DEFAULT_ANCHOR }
     }
   });
   if (!args.majors) throw new Error('--majors is required');

@@ -2,9 +2,13 @@ name: Benchmarks History
 
 # Measures Electron's performance across major versions with the benchmarks in
 # script/benchmarks/ (see its README). One job per major runs that major's
-# latest stable release against a fixed anchor version (default: the latest
-# stable release), interleaved on one runner like the nightly Benchmarks
-# workflow does.
+# latest stable release against a fixed anchor version (default: 45.3.0, pinned
+# so that runs made at different times share an anchor), interleaved on one
+# runner like the nightly Benchmarks workflow does.
+#
+# Dispatch it by hand, once to backfill the past majors and then with just the
+# new major (e.g. majors=46) when one goes stable. Keep the default anchor so
+# every run's ratios stay comparable.
 #
 # Runners are shared cloud VMs that change hosts between jobs, so raw values
 # from different jobs are not comparable. Each job sends its candidate's ratio
@@ -27,8 +31,8 @@ on:
         required: false
       anchor:
         type: string
-        description: 'Version every major is compared against (default: the latest stable release)'
-        default: 'latest-stable'
+        description: 'Version every major is compared against: a version or latest-stable. Keep the default so ratios stay comparable across runs.'
+        default: '45.3.0'
         required: false
       rounds:
         type: string
