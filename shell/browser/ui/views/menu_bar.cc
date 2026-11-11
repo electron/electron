@@ -115,9 +115,10 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
   return false;
 }
 
-bool MenuBar::GetSiblingMenuButtonByDirection(int current_id,
-                                              bool next,
-                                              views::MenuButton** button) {
+bool MenuBar::GetSiblingMenuButtonByDirection(
+    const int current_id,
+    const bool next,
+    views::MenuButton** const button) const {
   if (!menu_model_)
     return false;
 

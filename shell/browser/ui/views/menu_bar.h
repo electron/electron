@@ -58,9 +58,10 @@ class MenuBar : public views::AccessiblePaneView,
   // separators, hidden items, and disabled items. |next| selects the following
   // item when true and the preceding one when false. Returns false if there
   // is no eligible item other than |current_id|.
-  bool GetSiblingMenuButtonByDirection(int current_id,
-                                       bool next,
-                                       views::MenuButton** button);
+  [[nodiscard]] bool GetSiblingMenuButtonByDirection(
+      int current_id,
+      bool next,
+      views::MenuButton** button) const;
 
   // Selects |button| without executing commands. |open_submenu| opens submenu
   // headers immediately and preserves this mode when selecting commands.

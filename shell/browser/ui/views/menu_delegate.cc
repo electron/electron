@@ -145,7 +145,7 @@ void MenuDelegate::CancelSelf() {
     menu_runner_->Cancel();
 }
 
-bool MenuDelegate::SwitchToSiblingMenu(bool next) {
+bool MenuDelegate::SwitchToSiblingMenu(const bool next) {
   // Step from the pending target so repeated presses keep moving.
   const int from_id =
       button_to_select_ ? button_to_select_.view()->GetID() : id_;
@@ -158,7 +158,7 @@ bool MenuDelegate::SwitchToSiblingMenu(bool next) {
   return true;
 }
 
-void MenuDelegate::ScheduleSwitchToButton(views::MenuButton* button) {
+void MenuDelegate::ScheduleSwitchToButton(views::MenuButton* const button) {
   bool switch_in_progress = !!button_to_select_;
   // Always update the target menu-bar item.
   button_to_select_.SetView(button);
