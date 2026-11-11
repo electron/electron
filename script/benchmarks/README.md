@@ -118,6 +118,20 @@ use `--headless`, because crossbench's window setup calls
 are navigated with JavaScript from `about:blank`, because crossbench's `get`
 action only accepts well-known schemes.
 
+## Stored results
+
+Datadog is the live view of the results; the `benchmarks` blob container is
+the permanent record. Every run that sends to Datadog also uploads each job's
+`metadata.json`, `comparison.json` and `summary.md` (not the raw rounds and
+traces, which stay in the run's artifacts for 30 days) to
+`https://dev-cdn.electronjs.org/benchmarks/`, at
+`nightly/<YYYY-MM-DD>/<run id>-<attempt>/<platform>-<arch>/` for the nightly
+workflow (the date is the day the run started, in UTC) and
+`history/<anchor>/<major>/<run id>-<attempt>/<platform>-<arch>/` for the
+history workflow. The upload is a separate `upload-results` job in the
+`benchmarks-upload` environment, so the jobs that run Electron builds never
+get its credentials. Existing files are never overwritten.
+
 ## History across major versions
 
 The [Benchmarks History workflow](../../.github/workflows/benchmarks-history.yml)
@@ -156,7 +170,7 @@ trigger the nightly monitors.
 | `anchor` | `45.3.0` | Any released version, or `latest-stable`. Keep the default so runs stay comparable. |
 | `rounds` | `5` | Interleaved rounds per job. |
 | `suites` | all five | Same as nightly. |
-| `upload-to-datadog` | `true` | Unlike nightly, because the data is the point of the run. Turn it off for a trial run. |
+| `upload-to-datadog` | `true` | Also saves the summaries to blob storage (see [Stored results](#stored-results)). Unlike nightly, because the data is the point of the run. Turn it off for a trial run. |
 
 Old versions are run with `run.mts --best-effort --timeout-minutes 15`:
 stories whose APIs a version lacks are skipped (see the harness capabilities

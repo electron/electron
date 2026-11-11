@@ -18,7 +18,9 @@ name: Benchmarks History
 # the next.
 #
 # Unlike the nightly workflow, upload-to-datadog defaults to true: the data is
-# the point of a run. Suites an old version can't run are skipped, and a job
+# the point of a run. With it, each job's summary files are also kept in the
+# benchmarks blob container (https://dev-cdn.electronjs.org/benchmarks/history/),
+# the permanent record of the run. Suites an old version can't run are skipped, and a job
 # only fails when it measured nothing.
 
 on:
@@ -46,7 +48,7 @@ on:
         required: false
       upload-to-datadog:
         type: boolean
-        description: 'Send the history series to Datadog'
+        description: 'Send the history series to Datadog and keep the summaries in blob storage'
         default: true
         required: false
 
@@ -114,3 +116,79 @@ jobs:
       run-timeout-minutes: 105
     secrets:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # Keeps the summary files of every job in the benchmarks blob container, the
+  # permanent record of the run (Datadog is the live view), at
+  # history/<anchor>/<major>/<run id>-<attempt>/<platform>-<arch>/. Runs after
+  # the jobs that failed or were cancelled too, so the majors that finished are
+  # kept. Only this job gets the Azure credentials, never the jobs that run
+  # Electron builds, and its failure leaves their results alone.
+  upload-results:
+    needs: [setup, benchmark-linux-x64]
+    if: ${{ always() && github.repository == 'electron/electron' && needs.setup.result == 'success' && inputs.upload-to-datadog }}
+    runs-on: ubuntu-latest
+    # Holds the Azure OIDC credentials for the benchmarks container.
+    environment: benchmarks-upload
+    permissions:
+      contents: read
+      # For the Azure OIDC login.
+      id-token: write
+    steps:
+    # Each summary artifact holds one folder named after its results artifact,
+    # so merging keeps them apart.
+    - name: Download Result Summaries
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        pattern: benchmark-history-*-summary
+        path: summaries
+        merge-multiple: true
+    - name: Stage Uploads
+      id: stage
+      env:
+        ANCHOR: ${{ needs.setup.outputs.anchor }}
+      run: |
+        if ! [[ "$ANCHOR" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+          echo "::error::Unexpected anchor version '$ANCHOR'"
+          exit 1
+        fi
+        count=0
+        shopt -s nullglob
+        for dir in summaries/benchmark-history-*/; do
+          name=$(basename "$dir")
+          if ! [[ "$name" =~ ^benchmark-history-([a-z]+-[a-z0-9]+)-([0-9]+)$ ]]; then
+            echo "::warning::Skipping unexpected summary folder $dir"
+            continue
+          fi
+          dest="upload/history/$ANCHOR/${BASH_REMATCH[2]}/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT/${BASH_REMATCH[1]}"
+          for f in metadata.json comparison.json summary.md; do
+            if [ -f "$dir/$f" ]; then
+              mkdir -p "$dest"
+              cp "$dir/$f" "$dest/"
+              count=$((count + 1))
+            fi
+          done
+        done
+        echo "count=$count" >> "$GITHUB_OUTPUT"
+        if [ "$count" = 0 ]; then echo "::notice::No benchmark results to upload"; fi
+    - name: Azure Login
+      if: ${{ steps.stage.outputs.count != '0' }}
+      uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
+      with:
+        client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_OIDC_SUBSCRIPTION_ID }}
+    - name: Upload Results to Azure
+      if: ${{ steps.stage.outputs.count != '0' }}
+      env:
+        AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_BENCHMARKS_STORAGE_ACCOUNT_NAME }}
+      run: |
+        az storage blob upload-batch \
+          --account-name "$AZURE_STORAGE_ACCOUNT" \
+          --destination benchmarks \
+          --source upload \
+          --overwrite false \
+          --auth-mode login
+        echo "## Uploaded Benchmark Results" >> "$GITHUB_STEP_SUMMARY"
+        (cd upload && find . -type f | sort) | while read -r f; do
+          echo "- https://dev-cdn.electronjs.org/benchmarks/${f#./}" >> "$GITHUB_STEP_SUMMARY"
+        done
