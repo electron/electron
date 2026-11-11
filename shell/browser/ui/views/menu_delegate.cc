@@ -105,8 +105,11 @@ void MenuDelegate::OnMenuClosed(views::MenuItemView* menu) {
   observers_.Notify(&Observer::OnMenuClosed);
 
   // Only select the pending menu-bar item after the current menu closes.
-  if (button_to_select_)
-    menu_bar_->SelectMenuButton(button_to_select_, /*open_submenu=*/true);
+  if (button_to_select_) {
+    menu_bar_->SelectMenuButton(
+        static_cast<views::MenuButton*>(button_to_select_.view()),
+        /*open_submenu=*/true);
+  }
   delete this;
 }
 
@@ -140,7 +143,8 @@ void MenuDelegate::CancelSelf() {
 
 bool MenuDelegate::SwitchToSiblingMenu(bool next) {
   // Step from the pending target so repeated presses keep moving.
-  const int from_id = button_to_open_ ? button_to_open_->GetID() : id_;
+  const int from_id =
+      button_to_select_ ? button_to_select_.view()->GetID() : id_;
   views::MenuButton* button = nullptr;
   if (!menu_bar_->GetSiblingMenuButtonByDirection(from_id, next, &button)) {
     return false;
@@ -153,7 +157,7 @@ bool MenuDelegate::SwitchToSiblingMenu(bool next) {
 void MenuDelegate::ScheduleSwitchToButton(views::MenuButton* button) {
   bool switch_in_progress = !!button_to_select_;
   // Always update the target menu-bar item.
-  button_to_select_ = button;
+  button_to_select_.SetView(button);
   // Defer menu cancellation to avoid re-entrant switching.
   if (!switch_in_progress) {
     content::GetUIThreadTaskRunner({})->PostTask(

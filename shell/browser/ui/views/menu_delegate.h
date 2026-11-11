@@ -11,6 +11,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "ui/views/controls/menu/menu_delegate.h"
+#include "ui/views/view_tracker.h"
 
 namespace gfx {
 class FontList;
@@ -82,8 +83,8 @@ class MenuDelegate : public views::MenuDelegate {
   std::unique_ptr<views::MenuRunner> menu_runner_;
 
   // The item to select after the current menu closes. Submenu headers open;
-  // command items only receive focus.
-  raw_ptr<views::MenuButton> button_to_select_ = nullptr;
+  // command items only receive focus. Cleared if the button is deleted.
+  views::ViewTracker button_to_select_;
   bool hold_first_switch_ = false;
 
   base::ObserverList<Observer>::Unchecked observers_;
