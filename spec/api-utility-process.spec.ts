@@ -8,6 +8,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import { createRequire } from 'node:module';
+import * as net from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
@@ -641,10 +642,22 @@ describe('utilityProcess module', { retry: 0 }, () => {
       return output;
     };
 
+    // Other spec files run at the same time, and node.spec.ts starts inspectors
+    // on the default port and on fixed ports. Pick a port nothing is using so
+    // a clash can't stop the inspector from starting.
+    const getFreePort = async () => {
+      const server = net.createServer();
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const { port } = server.address() as net.AddressInfo;
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      return port;
+    };
+
     it('supports starting the v8 inspector with --inspect-brk', async () => {
+      const port = await getFreePort();
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: 'pipe',
-        execArgv: ['--inspect-brk']
+        execArgv: [`--inspect-brk=${port}`]
       });
       // If the expected output never arrives the test fails on mocha's timeout
       // without reaching kill(); let the global afterEach reap the child then.
@@ -653,13 +666,14 @@ describe('utilityProcess module', { retry: 0 }, () => {
     });
 
     it('supports starting the v8 inspector with --inspect and a provided port', async () => {
+      const port = await getFreePort();
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: 'pipe',
-        execArgv: ['--inspect=17364']
+        execArgv: [`--inspect=${port}`]
       });
       deferKillUtilityProcess(child);
       const output = await outputUntil(child, /Debugger listening on ws:/m);
-      expect(output, 'should be listening on port 17364').toContain(':17364');
+      expect(output, `should be listening on port ${port}`).toContain(`:${port}/`);
     });
 
     it('supports changing dns verbatim with --dns-result-order', async () => {
