@@ -1,0 +1,228 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Tue, 3 Nov 2026 08:39:06 -0800
+Subject: Swap pending snap sets before iterating in
+ ExecutePendingSnapUpdates()
+
+LocalFrameView::ExecutePendingSnapUpdates() previously iterated directly
+over `pending_snap_updates_` and `pending_perform_snap_`. If
+SnapCoordinator::UpdateSnapContainerData() walked a dirty flat tree (for
+example via Element::CanvasForDrawing()) and detached scroll containers,
+disposing their PaintLayerScrollableArea instances called
+LocalFrameView::RemovePendingSnapUpdate() and mutated or shrunk the hash
+table mid-iteration.
+
+Swap `pending_snap_updates_` and `pending_perform_snap_` into local sets
+before iterating, and skip any PaintLayerScrollableArea whose layout box
+is detached. Also erase disposed scrollable areas from
+`pending_perform_snap_` in RemovePendingSnapUpdate(), and guard the
+post-layout call in LocalFrameView::RunStyleAndLayoutLifecyclePhases()
+with SlotAssignmentRecalcForbiddenScope.
+
+R=awogbemila@chromium.org
+
+Bug: 576855527
+Change-Id: If807701fae01cf6787c6c155f8911ec358801935
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8685261
+Reviewed-by: David A <awogbemila@chromium.org>
+Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1734065}
+
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index 82c9b3e206b08e77d23eda0038a746538991efed..f44f144cad94b46e8c2e6bae809cd463d617a132 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -2836,7 +2836,11 @@ bool LocalFrameView::RunStyleAndLayoutLifecyclePhases(
+     frame_view.PerformScrollAnchoringAdjustments();
+   });
+ 
+-  ExecutePendingSnapUpdates();
++  {
++    SlotAssignmentRecalcForbiddenScope forbid_slot_recalc(
++        *frame_->GetDocument());
++    ExecutePendingSnapUpdates();
++  }
+ 
+   ExecutePendingScrollMarkerSelectionUpdates();
+ 
+@@ -5597,38 +5601,55 @@ void LocalFrameView::RemovePendingSnapUpdate(PaintLayerScrollableArea* object) {
+   if (pending_snap_updates_) {
+     pending_snap_updates_->erase(object);
+   }
++  if (pending_perform_snap_) {
++    pending_perform_snap_->erase(object);
++  }
+ }
+ 
+ void LocalFrameView::ExecutePendingSnapUpdates() {
+-  if (pending_snap_updates_) {
+-    // Some scroll containers might be mid-scroll animation. Defer snapping
+-    // those containers until after the scroll animation is done.
+-    HeapHashSet<Member<PaintLayerScrollableArea>> deferred_updates;
++  if (pending_snap_updates_ && !pending_snap_updates_->empty()) {
++    // Move to a local set before iterating, since updating snap container data
++    // may detach layout objects and mutate `pending_snap_updates_`.
++    HeapHashSet<Member<PaintLayerScrollableArea>> snap_updates;
++    pending_snap_updates_->swap(snap_updates);
++
+     // Iteration order of the objects doesn't matter as the snap-areas are
+     // contained within each scroll-container.
+-    for (PaintLayerScrollableArea* scrollable_area : *pending_snap_updates_) {
++    for (PaintLayerScrollableArea* scrollable_area : snap_updates) {
+       auto* snap_container = scrollable_area->GetLayoutBox();
++      if (!snap_container) {
++        continue;
++      }
+       DCHECK(snap_container->IsScrollContainer());
+       if (SnapCoordinator::UpdateSnapContainerData(*snap_container)) {
+-        if (!pending_perform_snap_) {
+-          pending_perform_snap_ = MakeGarbageCollected<
+-              GCedHeapHashSet<Member<PaintLayerScrollableArea>>>();
++        if (!scrollable_area->GetLayoutBox()) {
++          continue;
+         }
+         if (scrollable_area->HasRunningAnimation()) {
+-          deferred_updates.insert(scrollable_area);
++          // Some scroll containers might be mid-scroll animation. Defer
++          // snapping those containers until after the scroll animation is done.
++          pending_snap_updates_->insert(scrollable_area);
+         } else {
++          if (!pending_perform_snap_) {
++            pending_perform_snap_ = MakeGarbageCollected<
++                GCedHeapHashSet<Member<PaintLayerScrollableArea>>>();
++          }
+           pending_perform_snap_->insert(scrollable_area);
+         }
+       }
+     }
+-    pending_snap_updates_->swap(deferred_updates);
+   }
+ 
+-  if (pending_perform_snap_ && !ShouldDeferLayoutSnap()) {
+-    for (PaintLayerScrollableArea* scrollable_area : *pending_perform_snap_) {
++  if (pending_perform_snap_ && !pending_perform_snap_->empty() &&
++      !ShouldDeferLayoutSnap()) {
++    HeapHashSet<Member<PaintLayerScrollableArea>> perform_snap;
++    pending_perform_snap_->swap(perform_snap);
++    for (PaintLayerScrollableArea* scrollable_area : perform_snap) {
++      if (!scrollable_area->GetLayoutBox()) {
++        continue;
++      }
+       scrollable_area->SnapAfterLayout();
+     }
+-    pending_perform_snap_->clear();
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/core/input/scroll_snap_test.cc b/third_party/blink/renderer/core/input/scroll_snap_test.cc
+index 2a125c852ab8e4f3c764bf7ac026684bdccd3196..60210717cf8aed3b32fa54b32d996b57259b79ef 100644
+--- a/third_party/blink/renderer/core/input/scroll_snap_test.cc
++++ b/third_party/blink/renderer/core/input/scroll_snap_test.cc
+@@ -4,8 +4,13 @@
+ 
+ #include "cc/base/features.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/dom/element_traversal.h"
++#include "third_party/blink/renderer/core/dom/shadow_root.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/frame/local_frame_view.h"
+ #include "third_party/blink/renderer/core/html/html_element.h"
++#include "third_party/blink/renderer/core/html/html_slot_element.h"
++#include "third_party/blink/renderer/core/html_names.h"
+ #include "third_party/blink/renderer/core/input/event_handler.h"
+ #include "third_party/blink/renderer/core/input/scroll_manager.h"
+ #include "third_party/blink/renderer/core/layout/layout_box.h"
+@@ -595,4 +600,93 @@ TEST_F(ScrollSnapTest, SnapAreaResizeDuringScrollAnimation) {
+   EXPECT_EQ(scroller->scrollLeft(), box5->OffsetLeft());
+ }
+ 
++TEST_F(ScrollSnapTest, ExecutePendingSnapUpdatesDetachingScrollers) {
++  v8::HandleScope HandleScope(
++      WebView().GetPage()->GetAgentGroupScheduler().Isolate());
++  WebView().MainFrameViewWidget()->Resize(gfx::Size(400, 400));
++  SimRequest request("https://example.com/test.html", "text/html");
++  LoadURL("https://example.com/test.html");
++  request.Complete(R"HTML(
++    <!DOCTYPE html>
++    <style>
++      .scroller {
++        width: 50px;
++        height: 50px;
++        overflow: scroll;
++        scroll-snap-type: y mandatory;
++      }
++      .area {
++        height: 100px;
++        scroll-snap-align: start;
++      }
++    </style>
++    <div id="outer" class="scroller">
++      <canvas content="drawable">
++        <div id="host"></div>
++      </canvas>
++    </div>
++    <script>
++      const host = document.getElementById('host');
++      const root = host.attachShadow({mode: 'open', slotAssignment: 'manual'});
++      const visibleSlot = document.createElement('slot');
++      visibleSlot.id = 'visible';
++      const lock = document.createElement('div');
++      lock.style.contentVisibility = 'hidden';
++      const lockedSlot = document.createElement('slot');
++      lockedSlot.id = 'locked';
++      lock.appendChild(lockedSlot);
++      root.append(visibleSlot, lock);
++
++      const assigned = [];
++      const trigger = document.createElement('div');
++      trigger.className = 'area';
++      trigger.setAttribute('drawable', '');
++      host.appendChild(trigger);
++      assigned.push(trigger);
++      for (let i = 0; i < 16; ++i) {
++        const scroller = document.createElement('div');
++        scroller.className = 'scroller';
++        const area = document.createElement('div');
++        area.className = 'area';
++        scroller.appendChild(area);
++        host.appendChild(scroller);
++        assigned.push(scroller);
++      }
++      visibleSlot.assign(...assigned);
++    </script>
++  )HTML");
++  Compositor().BeginFrame();
++
++  Element* outer = GetElementById("outer");
++  Element* host = GetElementById("host");
++  ASSERT_TRUE(outer);
++  ASSERT_TRUE(host);
++  LocalFrameView* frame_view = GetDocument().View();
++  ASSERT_TRUE(frame_view);
++  frame_view->AddPendingSnapUpdate(
++      outer->GetLayoutBoxForScrolling()->GetScrollableArea());
++
++  HeapVector<Member<Node>> scrollers;
++  for (Element& child : ElementTraversal::ChildrenOf(*host)) {
++    if (child.FastHasAttribute(html_names::kDrawableAttr)) {
++      continue;
++    }
++    scrollers.push_back(&child);
++    frame_view->AddPendingSnapUpdate(
++        child.GetLayoutBoxForScrolling()->GetScrollableArea());
++  }
++  ASSERT_EQ(scrollers.size(), 16u);
++
++  auto* locked_slot = To<HTMLSlotElement>(
++      host->GetShadowRoot()->getElementById(AtomicString("locked")));
++  ASSERT_TRUE(locked_slot);
++  locked_slot->Assign(scrollers);
++
++  // Updating `#outer` maps its drawable snap area, which walks the flat tree
++  // via Element::CanvasForDrawing(), recalculating the dirty slot assignment
++  // into the display-locked slot and detaching all 16 inner scroll containers
++  // while iterating `pending_snap_updates_`.
++  frame_view->ExecutePendingSnapUpdates();
++}
++
+ }  // namespace blink

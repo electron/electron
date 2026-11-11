@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Flack <flackr@chromium.org>
+Date: Wed, 28 Oct 2026 10:44:35 -0700
+Subject: Copy timelines before servicing animations
+
+If new timelines are constructed while servicing animations,
+inserting into timelines_ would invalidate the iterator.
+
+No wpt test added as there is no known way to trigger timeline
+construction during ServiceAnimations.
+
+Bug: 567611698
+Change-Id: I84c88b92657f7c95b529d6f4846e2711e4c55e24
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8663813
+Reviewed-by: Kevin Ellis <kevers@chromium.org>
+Commit-Queue: Robert Flack <flackr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729291}
+
+diff --git a/third_party/blink/renderer/core/animation/document_animations.cc b/third_party/blink/renderer/core/animation/document_animations.cc
+index 04b89600a1245e03e5641536ccb95805a3453324..9228a3641a265954ede4e70cb87c4ad8ac206b14 100644
+--- a/third_party/blink/renderer/core/animation/document_animations.cc
++++ b/third_party/blink/renderer/core/animation/document_animations.cc
+@@ -66,10 +66,12 @@ namespace {
+ 
+ void UpdateAnimationTiming(
+     Document& document,
+-    HeapHashSet<WeakMember<AnimationTimeline>>& timelines,
++    const HeapHashSet<WeakMember<AnimationTimeline>>& timelines,
+     TimingUpdateReason reason) {
+-  for (auto& timeline : timelines)
++  HeapVector<Member<AnimationTimeline>> timelines_to_service(timelines);
++  for (auto& timeline : timelines_to_service) {
+     timeline->ServiceAnimations(reason);
++  }
+   document.GetWorkletAnimationController().UpdateAnimationTimings(reason);
+ }
+ }  // namespace
+diff --git a/third_party/blink/renderer/core/animation/document_animations_test.cc b/third_party/blink/renderer/core/animation/document_animations_test.cc
+index 53b6797e8af10283f8cfb24313885a3af186d761..c11e683c201e876b87f35ad06677e6ac0d2112e4 100644
+--- a/third_party/blink/renderer/core/animation/document_animations_test.cc
++++ b/third_party/blink/renderer/core/animation/document_animations_test.cc
+@@ -116,6 +116,31 @@ TEST_F(DocumentAnimationsTest, UpdateAnimationTimingServicesAllTimelines) {
+   document->GetDocumentAnimations().UpdateAnimationTimingForAnimationFrame();
+ }
+ 
++// Regression test for crbug.com/567611698: adding new timelines while servicing
++// animations must not invalidate iteration over the document's timelines set.
++TEST_F(DocumentAnimationsTest,
++       UpdateAnimationTimingAllowsTimelineAdditionDuringService) {
++  MockAnimationTimeline* timeline1 =
++      MakeGarbageCollected<MockAnimationTimeline>(document);
++  MockAnimationTimeline* timeline2 =
++      MakeGarbageCollected<MockAnimationTimeline>(document);
++
++  HeapVector<Member<MockAnimationTimeline>> added_timelines;
++  EXPECT_CALL(*timeline1, ServiceAnimations(_))
++      .WillOnce([&](TimingUpdateReason) {
++        for (int i = 0; i < 64; ++i) {
++          auto* added = MakeGarbageCollected<MockAnimationTimeline>(document);
++          EXPECT_CALL(*added, ServiceAnimations(_)).Times(0);
++          added_timelines.push_back(added);
++        }
++      });
++  EXPECT_CALL(*timeline2, ServiceAnimations(_));
++
++  document->GetDocumentAnimations().UpdateAnimationTimingForAnimationFrame();
++  EXPECT_GE(document->GetDocumentAnimations().GetTimelinesForTesting().size(),
++            66u);
++}
++
+ // Test correctness of DocumentAnimations::UpdateAnimations.
+ TEST_F(DocumentAnimationsTest, UpdateAnimationsUpdatesAllTimelines) {
+   // Test that all timelines are traversed to schedule next service.

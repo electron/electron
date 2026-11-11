@@ -1,0 +1,239 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mike Taylor <miketaylr@chromium.org>
+Date: Tue, 3 Nov 2026 17:27:31 -0800
+Subject: Don't expose nested pseudo-elements as snap event targets
+
+PaintLayerScrollableArea::GetSnapEventTargetAlongAxis() retargeted a
+pseudo-element snap target to its parentElement(). For nested
+pseudo-elements such as ::column::scroll-marker, the parent is itself a
+pseudo-element (::column), which was then exposed to script through
+SnapEvent.snapTargetInline/snapTargetBlock. This is a variant of
+crbug.com/570638836, where a pseudo-element leaked through the
+LargestContentfulPaint API.
+
+With a pseudo-element in hand, script could give it an id shared with
+other elements and then run querySelector() with :dir(), which can
+synchronously recalculate slot assignment and dispose the pseudo-element.
+That clears the TreeOrderedMap entry's ordered list while
+SelectorQuery::Execute() is iterating over it by reference.
+
+Cq-Exclude-Trybots: chrome/try.security:vuln-scan-dispatcher
+
+Bug: 575524700
+Change-Id: I438b017b1de7c74dfd7e2d3fc053e966e1267d8d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8614941
+Commit-Queue: Mike Taylor <miketaylr@chromium.org>
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: David A <awogbemila@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1734647}
+
+diff --git a/third_party/blink/renderer/core/paint/paint_layer_scrollable_area.cc b/third_party/blink/renderer/core/paint/paint_layer_scrollable_area.cc
+index cdbe636ac962158f2434c05a2411f1442659ca64..b94a40f9cbec9490a5c25f85119cc1e867a7e7f8 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer_scrollable_area.cc
++++ b/third_party/blink/renderer/core/paint/paint_layer_scrollable_area.cc
+@@ -3547,8 +3547,11 @@ Node* PaintLayerScrollableArea::GetSnapEventTargetAlongAxis(
+     return nullptr;
+   }
+   Node* node = GetSnapTargetAlongAxis(ids.value(), axis);
+-  if (node && node->IsPseudoElement()) {
+-    node = node->parentElement();
++  if (!node || !node->isConnected()) {
++    return nullptr;
++  }
++  if (PseudoElement* pseudo_element = DynamicTo<PseudoElement>(node)) {
++    return &pseudo_element->UltimateOriginatingElement();
+   }
+   return node;
+ }
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-scroll-snap/snap-events/snap-events-with-disposed-pseudo-target.tentative.html b/third_party/blink/web_tests/external/wpt/css/css-scroll-snap/snap-events/snap-events-with-disposed-pseudo-target.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..6f69150f56aa3756b15af6df00d68db2b2ac66d6
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-scroll-snap/snap-events/snap-events-with-disposed-pseudo-target.tentative.html
+@@ -0,0 +1,108 @@
++<!DOCTYPE html>
++<html>
++  <head>
++    <meta charset="utf-8">
++    <title>CSS Scroll Snap 2 Test: Snap Events with a disposed pseudo-element target.</title>
++    <link rel="help" href="https://drafts.csswg.org/css-scroll-snap-2/#snap-events">
++    <link rel="help" href="https://crbug.com/575524700">
++    <script src="/resources/testharness.js"></script>
++    <script src="/resources/testharnessreport.js"></script>
++    <script src="/resources/testdriver.js"></script>
++    <script src="/resources/testdriver-actions.js"></script>
++    <script src="/resources/testdriver-vendor.js"></script>
++    <script src="/css/css-scroll-snap/snap-events/resources/common.js"></script>
++    <script src="/css/css-scroll-snap/snap-events/resources/user-scroll-common.js"></script>
++    <script src="/dom/events/scrolling/scroll_support.js"></script>
++  </head>
++  <body>
++    <style>
++      .scroller {
++        overflow: scroll;
++        width: 200px;
++        height: 200px;
++        border: solid 1px black;
++        scroll-snap-type: y mandatory;
++        position: absolute;
++      }
++      .space {
++        height: 300vh;
++        width: 300vw;
++        position: absolute;
++      }
++      .scroller::before, .scroller::after {
++        scroll-snap-align: start;
++        height: 50px;
++        width: 50px;
++        display: block;
++      }
++      .scroller::before {
++        content: "before";
++        background-color: blue;
++      }
++      .scroller::after {
++        content: "after";
++        background-color: orange;
++        margin-top: 100px;
++      }
++      .scroller.no-after::after {
++        content: none;
++      }
++    </style>
++    <div class="scroller" id="scroller">
++      <div class="space"></div>
++    </div>
++
++    <script>
++      promise_test(async (t) => {
++        checkSnapEventSupport("scrollsnapchanging");
++        checkSnapEventSupport("scrollsnapchange");
++        await waitForCompositorCommit();
++
++        const targets = [];
++        for (const type of ["scrollsnapchanging", "scrollsnapchange"]) {
++          scroller.addEventListener(type, (evt) => {
++            targets.push(evt.snapTargetBlock, evt.snapTargetInline);
++          });
++        }
++
++        // On every frame, re-create ::after so that it is a snap area after
++        // that frame's layout, then dispose it again between frames with a
++        // style-only update. Snap targets resolved from compositor scroll
++        // state at the start of the next frame then refer to a disposed
++        // pseudo-element.
++        let running = true;
++        t.add_cleanup(() => { running = false; });
++        function toggle() {
++          if (!running) {
++            return;
++          }
++          scroller.classList.remove("no-after");
++          t.step_timeout(() => {
++            scroller.classList.add("no-after");
++            getComputedStyle(scroller).color;
++          }, 0);
++          requestAnimationFrame(toggle);
++        }
++        requestAnimationFrame(toggle);
++
++        const scrollend_promise = new Promise(resolve => {
++          scroller.addEventListener("scrollend", resolve, { once: true });
++        });
++        await snap_event_touch_scroll_helper(
++            { x: scroller.clientWidth / 2, y: scroller.clientHeight / 2 },
++            { x: scroller.clientWidth / 2, y: 0 });
++        await scrollend_promise;
++        for (let i = 0; i < 10; ++i) {
++          await new Promise(resolve => requestAnimationFrame(resolve));
++        }
++        running = false;
++
++        for (const target of targets) {
++          assert_true(target === null || target === scroller,
++                      "snap target is null or the originating element");
++        }
++      }, "Snap events don't expose or crash on a snap target pseudo-element " +
++         "that was disposed since the last layout");
++    </script>
++  </body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-scroll-snap/snap-events/snap-events-with-nested-pseudo-target.tentative.html b/third_party/blink/web_tests/external/wpt/css/css-scroll-snap/snap-events/snap-events-with-nested-pseudo-target.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..49cd075e3d5945e7f3886a6fc028751b4012578b
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-scroll-snap/snap-events/snap-events-with-nested-pseudo-target.tentative.html
+@@ -0,0 +1,72 @@
++<!DOCTYPE html>
++<html>
++  <head>
++    <meta charset="utf-8">
++    <title>CSS Scroll Snap 2 Test: Snap Events with nested pseudo-element targets.</title>
++    <link rel="help" href="https://drafts.csswg.org/css-scroll-snap-2/#snap-events">
++    <link rel="help" href="https://drafts.csswg.org/css-overflow-5/#scroll-markers">
++    <script src="/resources/testharness.js"></script>
++    <script src="/resources/testharnessreport.js"></script>
++    <script src="/css/css-scroll-snap/snap-events/resources/common.js"></script>
++    <script src="/dom/events/scrolling/scroll_support.js"></script>
++  </head>
++  <body>
++    <style>
++      #scroller {
++        overflow: scroll;
++        width: 100px;
++        height: 200px;
++        scroll-snap-type: x mandatory;
++        scrollbar-width: none;
++      }
++      #multicol {
++        overflow: hidden;
++        columns: 1;
++        column-fill: auto;
++        width: 100px;
++        height: 50px;
++        scroll-marker-group: after;
++      }
++      #multicol::scroll-marker-group {
++        display: flex;
++        width: 400px;
++      }
++      #multicol::column::scroll-marker {
++        content: "";
++        flex: none;
++        width: 100px;
++        height: 20px;
++        scroll-snap-align: start;
++      }
++    </style>
++    <div id="scroller">
++      <div id="multicol">
++        <div style="height: 200px;"></div>
++      </div>
++    </div>
++
++    <script>
++      // The snap areas are ::column::scroll-marker pseudo-elements, whose
++      // parent is a ::column pseudo-element. The snap target exposed to script
++      // must be the element that ultimately originates them, not ::column.
++      const test_data = {
++        scroller: scroller,
++        scrolling_function: async () => {
++          scroller.scrollTo({left: 200});
++        },
++        expected_snap_targets: { block: null, inline: multicol },
++        expected_scroll_offsets: { x: 200, y: 0 },
++      };
++
++      promise_test(async (t) => {
++        await test_scrollsnapchange(t, test_data);
++      }, "snapTarget for scrollsnapchange is the originating element when a " +
++         "snap area belongs to a nested pseudo-element");
++
++      promise_test(async (t) => {
++        await test_snap_event(t, test_data, "scrollsnapchanging");
++      }, "snapTarget for scrollsnapchanging is the originating element when a " +
++         "snap area belongs to a nested pseudo-element");
++    </script>
++  </body>
++</html>

@@ -1,0 +1,518 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Fri, 6 Nov 2026 14:08:08 +0100
+Subject: [objects] Disallow JSObject modifications during GC and GC callbacks
+
+Prevent re-entrant modifications to Map transitions, descriptors, and
+JSObject shapes from GC callbacks, weak handle callbacks, and Oilpan
+sweeping/finalizers, which can corrupt in-progress map and descriptor
+updates when triggered mid-operation.
+
+Bug: 577366752
+
+TAG=agy
+CONV=4430a477-e227-4e18-b858-0966ccdab79f
+
+Change-Id: I4f770e4dbe7c39d94f19ffa24a2fd2c15f616fb6
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8747642
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111759}
+
+Electron adaptation notes (44-x-y):
+src/heap/cppgc-js/cpp-heap.cc: this branch has no WeakProcessingForGlobalHandlesScope and does not yet wrap ExecutePreFinalizers()/CompactSpacesIfEnabled() in SweepingOnMutatorThreadForGlobalHandlesScope, so only the DCHECKs are added in FinishMarkingAndProcessWeakness() and those two emplace() call-site hunks have no counterpart (the scope class itself and the sweeping observer are updated as upstream). src/objects/map.cc: Map::ReplaceDescriptors() conflicted on unrelated context; the CHECK is added at the top as upstream.
+
+diff --git a/src/common/assert-scope.h b/src/common/assert-scope.h
+index 6f4ec2d5007c8cd69a3e5550596147a4d1a7e2e0..1f9499717c35f2ea40d11c67c4d448c6cea0e8d3 100644
+--- a/src/common/assert-scope.h
++++ b/src/common/assert-scope.h
+@@ -75,21 +75,25 @@ class V8_NODISCARD PerThreadAssertScope
+ 
+ // Per-isolate assert scopes.
+ 
+-#define PER_ISOLATE_DCHECK_TYPE(V, enable)                              \
+-  /* Scope to document where we do not expect javascript execution. */  \
+-  /* Scope to introduce an exception to DisallowJavascriptExecution. */ \
+-  V(AllowJavascriptExecution, DisallowJavascriptExecution,              \
+-    javascript_execution_assert, enable)                                \
+-  /* Scope to document where we do not expect deoptimization. */        \
+-  /* Scope to introduce an exception to DisallowDeoptimization. */      \
+-  V(AllowDeoptimization, DisallowDeoptimization, deoptimization_assert, \
+-    enable)                                                             \
+-  /* Scope to document where we do not expect deoptimization. */        \
+-  /* Scope to introduce an exception to DisallowDeoptimization. */      \
+-  V(AllowCompilation, DisallowCompilation, compilation_assert, enable)  \
+-  /* Scope to document where we do not expect exceptions. */            \
+-  /* Scope to introduce an exception to DisallowExceptions. */          \
+-  V(AllowExceptions, DisallowExceptions, no_exception_assert, enable)
++#define PER_ISOLATE_DCHECK_TYPE(V, enable)                                \
++  /* Scope to document where we do not expect javascript execution. */    \
++  /* Scope to introduce an exception to DisallowJavascriptExecution. */   \
++  V(AllowJavascriptExecution, DisallowJavascriptExecution,                \
++    javascript_execution_assert, enable)                                  \
++  /* Scope to document where we do not expect deoptimization. */          \
++  /* Scope to introduce an exception to DisallowDeoptimization. */        \
++  V(AllowDeoptimization, DisallowDeoptimization, deoptimization_assert,   \
++    enable)                                                               \
++  /* Scope to document where we do not expect deoptimization. */          \
++  /* Scope to introduce an exception to DisallowDeoptimization. */        \
++  V(AllowCompilation, DisallowCompilation, compilation_assert, enable)    \
++  /* Scope to document where we do not expect exceptions. */              \
++  /* Scope to introduce an exception to DisallowExceptions. */            \
++  V(AllowExceptions, DisallowExceptions, no_exception_assert, enable)     \
++  /* Scope to document where we do not expect JS object modifications. */ \
++  /* Scope to introduce an exception to DisallowJSObjectModification. */  \
++  V(AllowJSObjectModification, DisallowJSObjectModification,              \
++    js_object_modification_assert, enable)
+ 
+ #define PER_ISOLATE_CHECK_TYPE(V, enable)                                    \
+   /* Scope in which javascript execution leads to exception being thrown. */ \
+diff --git a/src/execution/isolate.h b/src/execution/isolate.h
+index 9c5cc6b63b4de6706abc712e138d2bcc163385b9..9865c0c8dcd139b18eed9e251230dad2d524d676 100644
+--- a/src/execution/isolate.h
++++ b/src/execution/isolate.h
+@@ -543,6 +543,7 @@ using DebugObjectCache = std::vector<Handle<HeapObject>>;
+   V(bool, deoptimization_assert, true)                                      \
+   V(bool, compilation_assert, true)                                         \
+   V(bool, no_exception_assert, true)                                        \
++  V(bool, js_object_modification_assert, true)                              \
+   V(uint32_t, wasm_switch_to_the_central_stack_counter, 0)
+ 
+ #define THREAD_LOCAL_TOP_ACCESSOR(type, name)                         \
+diff --git a/src/handles/global-handles.cc b/src/handles/global-handles.cc
+index e03603371cd89f055ee9974e3404fae71a99b617..34928c5402d2d844294faf39a1966a51b3e170e3 100644
+--- a/src/handles/global-handles.cc
++++ b/src/handles/global-handles.cc
+@@ -745,6 +745,7 @@ void GlobalHandles::ProcessWeakYoungObjects(
+ 
+ void GlobalHandles::InvokeSecondPassPhantomCallbacks() {
+   DCHECK(!AllowJavascriptExecution::IsAllowed(isolate()));
++  DCHECK(!AllowJSObjectModification::IsAllowed(isolate()));
+   DCHECK(AllowGarbageCollection::IsAllowed());
+ 
+   if (second_pass_callbacks_.empty()) return;
+@@ -856,6 +857,8 @@ size_t GlobalHandles::InvokeFirstPassWeakCallbacks() {
+ 
+ void GlobalHandles::PendingPhantomCallback::Invoke(Isolate* isolate,
+                                                    InvocationType type) {
++  DCHECK(!AllowJavascriptExecution::IsAllowed(isolate));
++  DCHECK(!AllowJSObjectModification::IsAllowed(isolate));
+   Data::Callback* callback_addr = nullptr;
+   if (type == kFirstPass) {
+     callback_addr = &callback_;
+@@ -895,6 +898,7 @@ void GlobalHandles::PostGarbageCollectionProcessing(
+           DCHECK(second_pass_callbacks_task_posted_);
+           second_pass_callbacks_task_posted_ = false;
+           DisallowJavascriptExecution no_js(isolate());
++          DisallowJSObjectModification no_js_object_modification(isolate());
+           InvokeSecondPassPhantomCallbacks();
+         }));
+   }
+diff --git a/src/heap/cppgc-js/cpp-heap.cc b/src/heap/cppgc-js/cpp-heap.cc
+index b897df95238089747abe7da4eae2a8808b8e02f5..07a6bd49e978d26f67a5a7d03380a075d297683d 100644
+--- a/src/heap/cppgc-js/cpp-heap.cc
++++ b/src/heap/cppgc-js/cpp-heap.cc
+@@ -556,33 +556,42 @@ namespace {
+ 
+ class SweepingOnMutatorThreadForGlobalHandlesScope final {
+  public:
+-  explicit SweepingOnMutatorThreadForGlobalHandlesScope(
+-      TracedHandles& traced_handles)
+-      : traced_handles_(traced_handles) {
+-    traced_handles_.SetIsSweepingOnMutatorThread(true);
++  explicit SweepingOnMutatorThreadForGlobalHandlesScope(Isolate& isolate)
++      : isolate_(isolate),
++        no_js_(&isolate),
++        no_js_object_modification_(&isolate) {
++    isolate_.traced_handles()->SetIsSweepingOnMutatorThread(true);
+   }
+   ~SweepingOnMutatorThreadForGlobalHandlesScope() {
+-    traced_handles_.SetIsSweepingOnMutatorThread(false);
++    isolate_.traced_handles()->SetIsSweepingOnMutatorThread(false);
+   }
+ 
+-  TracedHandles& traced_handles_;
++ private:
++  Isolate& isolate_;
++  // Mutator-thread sweeping runs CppHeap pre-finalizers and C++ destructors
++  // (both during the atomic pause and outside it via incremental sweep tasks or
++  // lazy sweeping on Oilpan allocation). Disallow JS execution and JSObject
++  // modification during these embedder finalizers.
++  DisallowJavascriptExecution no_js_;
++  DisallowJSObjectModification no_js_object_modification_;
+ };
+ 
+ class SweepingOnMutatorThreadForGlobalHandlesObserver final
+     : public cppgc::internal::Sweeper::SweepingOnMutatorThreadObserver {
+  public:
+   SweepingOnMutatorThreadForGlobalHandlesObserver(CppHeap& cpp_heap,
+-                                                  TracedHandles& traced_handles)
++                                                  Isolate& isolate)
+       : cppgc::internal::Sweeper::SweepingOnMutatorThreadObserver(
+             cpp_heap.sweeper()),
+-        traced_handles_(traced_handles) {}
++        isolate_(isolate) {}
+ 
+-  void Start() override { traced_handles_.SetIsSweepingOnMutatorThread(true); }
++  void Start() override { scope_.emplace(isolate_); }
+ 
+-  void End() override { traced_handles_.SetIsSweepingOnMutatorThread(false); }
++  void End() override { scope_.reset(); }
+ 
+  private:
+-  TracedHandles& traced_handles_;
++  Isolate& isolate_;
++  std::optional<SweepingOnMutatorThreadForGlobalHandlesScope> scope_;
+ };
+ 
+ class MoveListenerImpl final : public HeapProfilerNativeMoveListener,
+@@ -643,7 +652,7 @@ void CppHeap::AttachIsolate(Isolate* isolate) {
+   UpdateGCCapabilitiesFromFlags();
+   sweeping_on_mutator_thread_observer_ =
+       std::make_unique<SweepingOnMutatorThreadForGlobalHandlesObserver>(
+-          *this, *isolate_->traced_handles());
++          *this, *isolate_);
+   no_gc_scope_--;
+ 
+   // Propagate overridden stack state to the attached heap, if necessary.
+@@ -985,6 +994,10 @@ void CppHeap::FinishMarkingAndProcessWeakness() {
+ 
+   {
+     cppgc::subtle::DisallowGarbageCollectionScope disallow_gc_scope(*this);
++    if (isolate_) {
++      DCHECK(!AllowJavascriptExecution::IsAllowed(isolate_));
++      DCHECK(!AllowJSObjectModification::IsAllowed(isolate_));
++    }
+     marker_->LeaveAtomicPause();
+   }
+   marker_.reset();
+@@ -1033,7 +1046,7 @@ void CppHeap::CompactAndSweep() {
+       std::optional<SweepingOnMutatorThreadForGlobalHandlesScope>
+           global_handles_scope;
+       if (isolate_) {
+-        global_handles_scope.emplace(*isolate_->traced_handles());
++        global_handles_scope.emplace(*isolate_);
+       }
+       compactable_space_handling = compactor_.CompactSpacesIfEnabled();
+     }
+diff --git a/src/heap/gc-callbacks.h b/src/heap/gc-callbacks.h
+index e40e6b7de9be0e6e9ff47d76bac45165e83ffa99..ddc8c877af2e02dcdda595b48daa0c7a97effc3c 100644
+--- a/src/heap/gc-callbacks.h
++++ b/src/heap/gc-callbacks.h
+@@ -39,6 +39,10 @@ class GCCallbacks final {
+     AllowGarbageCollection scope;
+     for (const CallbackData& callback_data : callbacks_) {
+       if (gc_type & callback_data.gc_type) {
++        Isolate* isolate = reinterpret_cast<Isolate*>(callback_data.isolate);
++        USE(isolate);
++        DCHECK(!AllowJavascriptExecution::IsAllowed(isolate));
++        DCHECK(!AllowJSObjectModification::IsAllowed(isolate));
+         callback_data.callback(callback_data.isolate, gc_type,
+                                gc_callback_flags, callback_data.user_data);
+       }
+diff --git a/src/heap/heap.cc b/src/heap/heap.cc
+index e9423f6d42e6d74bbbf46bc70595382d644b7ba0..36f388ac45ea32a2f7b25e6769c78dafde587858 100644
+--- a/src/heap/heap.cc
++++ b/src/heap/heap.cc
+@@ -1421,6 +1421,7 @@ namespace {
+ template <typename Callback>
+ void InvokeExternalCallbacks(Isolate* isolate, Callback callback) {
+   DCHECK(!AllowJavascriptExecution::IsAllowed(isolate));
++  DCHECK(!AllowJSObjectModification::IsAllowed(isolate));
+   AllowGarbageCollection allow_gc;
+   // Temporary override any embedder stack state as callbacks may create
+   // their own state on the stack and recursively trigger GC.
+@@ -1468,8 +1469,14 @@ void Heap::CollectGarbage(
+   // collection is triggered. Note that these callbacks may trigger another
+   // garbage collection since they may allocate.
+ 
+-  // JS execution is not allowed in any of the callbacks.
++  // JS execution and object modifications are not allowed during GC or in any
++  // of the embedder callbacks triggered below: first-pass weak callbacks
++  // (GlobalHandles::InvokeFirstPassWeakCallbacks), second-pass phantom
++  // callbacks (PostGarbageCollectionProcessing), GC prologue and epilogue
++  // callbacks (v8::Isolate::GCCallback), and CppHeap pre-finalizers and object
++  // finalizers (C++ destructors).
+   DisallowJavascriptExecution no_js(isolate());
++  DisallowJSObjectModification no_js_object_modification(isolate());
+ 
+   // Some custom flushing (currently: FlushBytecodeFromSFI) can create
+   // fresh TrustedPointerTableEntries during GC. These must not be affected
+@@ -1832,6 +1839,13 @@ void Heap::StartIncrementalMarking(GCFlags gc_flags,
+     return;
+   }
+ 
++  // Completing sweeping below may trigger embedder CppHeap object finalizers
++  // (C++ destructors, via FinishSweepingIfRunning / FinishSweepingIfOutOfWork),
++  // and incremental_marking()->Start() triggers embedder GC prologue and
++  // epilogue callbacks.
++  DisallowJavascriptExecution no_js(isolate());
++  DisallowJSObjectModification no_js_object_modification(isolate());
++
+   TRACE_EVENT(
+       "v8",
+       perfetto::StaticString(IsYoungGenerationCollector(collector)
+diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
+index 7c1207802c8719968da0148d0072185ef82fdfdd..5f5ab3aea6d223358021b95d5ab6314b839da23a 100644
+--- a/src/objects/js-objects.cc
++++ b/src/objects/js-objects.cc
+@@ -966,6 +966,7 @@ void JSReceiver::DeleteNormalizedProperty(DirectHandle<JSReceiver> object,
+                                           InternalIndex entry) {
+   DCHECK(!object->HasFastProperties());
+   Isolate* isolate = Isolate::Current();
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   DCHECK(entry.is_found());
+ 
+   if (IsJSGlobalObject(*object)) {
+@@ -2861,6 +2862,7 @@ Maybe<bool> JSObject::SetNormalizedProperty(DirectHandle<JSObject> object,
+   DCHECK(!object->HasFastProperties());
+   DCHECK(IsUniqueName(*name));
+   Isolate* isolate = Isolate::Current();
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+ 
+   uint32_t hash = name->hash();
+ 
+@@ -3549,6 +3551,7 @@ void MigrateFastToSlow(Isolate* isolate, DirectHandle<JSObject> object,
+ void JSObject::MigrateToMap(Isolate* isolate, DirectHandle<JSObject> object,
+                             DirectHandle<Map> new_map,
+                             int expected_additional_properties) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   if (object->map() == *new_map) return;
+   DirectHandle<Map> old_map(object->map(), isolate);
+   NotifyMapChange(old_map, new_map, isolate);
+@@ -3987,9 +3990,10 @@ void JSObject::NormalizeProperties(Isolate* isolate,
+ void JSObject::MigrateSlowToFast(DirectHandle<JSObject> object,
+                                  int unused_property_fields,
+                                  const char* reason) {
++  Isolate* isolate = Isolate::Current();
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   if (object->HasFastProperties()) return;
+   DCHECK(!IsJSGlobalObject(*object));
+-  Isolate* isolate = Isolate::Current();
+   Factory* factory = isolate->factory();
+ 
+   DirectHandle<NameDictionary> dictionary;
+@@ -5503,6 +5507,7 @@ Maybe<bool> JSObject::SetPrototype(Isolate* isolate,
+ // static
+ void JSObject::SetImmutableProto(Isolate* isolate,
+                                  DirectHandle<JSObject> object) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   DirectHandle<Map> map(object->map(), isolate);
+ 
+   // Nothing to do if prototype is already set.
+@@ -5599,6 +5604,7 @@ Maybe<bool> JSObject::AddDataElement(Isolate* isolate,
+                                      DirectHandle<JSObject> object,
+                                      uint32_t index, DirectHandle<Object> value,
+                                      PropertyAttributes attributes) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   DCHECK(object->map()->is_extensible());
+ 
+   uint32_t old_length = 0;
+diff --git a/src/objects/lookup.cc b/src/objects/lookup.cc
+index ef19b59ae1c06431acc2c22c5c5a3f2f03b5ebc3..19bb5668278118e790cb50ebc4fb2d6eaddb1f97 100644
+--- a/src/objects/lookup.cc
++++ b/src/objects/lookup.cc
+@@ -432,6 +432,7 @@ void LookupIterator::InternalUpdateProtector(
+ }
+ 
+ void LookupIterator::PrepareForDataProperty(DirectHandle<Object> value) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate_));
+   DCHECK(state_ == DATA || state_ == ACCESSOR);
+   DCHECK(HolderIsReceiverOrHiddenPrototype());
+   DCHECK(!IsWasmObject(*receiver_));
+@@ -564,6 +565,7 @@ void LookupIterator::PrepareForDataProperty(DirectHandle<Object> value) {
+ 
+ void LookupIterator::ReconfigureDataProperty(DirectHandle<Object> value,
+                                              PropertyAttributes attributes) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate_));
+   DCHECK(state_ == DATA || state_ == ACCESSOR);
+   DCHECK(HolderIsReceiverOrHiddenPrototype());
+ 
+@@ -732,6 +734,7 @@ void LookupIterator::PrepareTransitionToDataProperty(
+ Maybe<bool> LookupIterator::ApplyTransitionToDataProperty(
+     DirectHandle<JSTransitionableReceiver> receiver,
+     Maybe<ShouldThrow> should_throw) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate_));
+   DCHECK_EQ(TRANSITION, state_);
+ 
+   DCHECK_IMPLIES(!receiver.is_identical_to(GetStoreTarget<JSReceiver>()),
+@@ -826,6 +829,7 @@ Maybe<bool> LookupIterator::ApplyTransitionToDataProperty(
+ }
+ 
+ void LookupIterator::Delete() {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate_));
+   DirectHandle<JSReceiver> holder = Cast<JSReceiver>(holder_);
+   if (IsElement(*holder)) {
+     DirectHandle<JSObject> object = Cast<JSObject>(holder);
+diff --git a/src/objects/map-inl.h b/src/objects/map-inl.h
+index 63cfe9edd10f76eaa20cc1e24aa90ea3ad9d77db..ff8f439cf1771a88e1007c434b0fe5389fcfebd5 100644
+--- a/src/objects/map-inl.h
++++ b/src/objects/map-inl.h
+@@ -959,6 +959,7 @@ void Map::clear_padding() {
+ }
+ 
+ void Map::AppendDescriptor(Isolate* isolate, Descriptor* desc) {
++  DCHECK(AllowJSObjectModification::IsAllowed(isolate));
+   Tagged<DescriptorArray> descriptors = instance_descriptors();
+   int number_of_own_descriptors = NumberOfOwnDescriptors();
+   DCHECK(descriptors->number_of_descriptors() == number_of_own_descriptors);
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index 84999a3a34da86a4d016193e08944da9b0b70fc4..e9112f7713baed955eec98c0202bc08e11073c8d 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -1268,6 +1268,7 @@ void MapUpdater::UpdateFieldType(Isolate* isolate, DirectHandle<Map> map,
+                                  PropertyConstness new_constness,
+                                  Representation new_representation,
+                                  DirectHandle<FieldType> new_type) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   // We store raw pointers in the queue, so no allocations are allowed.
+   DisallowGarbageCollection no_gc;
+   PropertyDetails details = map->instance_descriptors()->GetDetails(descriptor);
+diff --git a/src/objects/map.cc b/src/objects/map.cc
+index 8403d8bbff6fd7cef698440ffbf7c6c25c637536..236b2a956730997c62c7008287e29f5c53e15b18 100644
+--- a/src/objects/map.cc
++++ b/src/objects/map.cc
+@@ -700,6 +700,7 @@ Map::FieldCounts Map::GetFieldCounts() const {
+ }
+ 
+ void Map::DeprecateTransitionTree(Isolate* isolate) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   DCHECK(CanBeDeprecated());
+   return DeprecateTransitionTreeImpl(isolate);
+ }
+@@ -727,6 +728,7 @@ void Map::DeprecateTransitionTreeImpl(Isolate* isolate) {
+ // proper sharing of descriptor arrays.
+ void Map::ReplaceDescriptors(Isolate* isolate,
+                              Tagged<DescriptorArray> new_descriptors) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   // Don't overwrite the empty descriptor array or initial map's descriptors.
+   if (NumberOfOwnDescriptors() == 0 || IsUndefined(GetBackPointer())) {
+     return;
+@@ -903,6 +905,7 @@ DirectHandle<Map> Map::Update(Isolate* isolate, DirectHandle<Map> map) {
+ 
+ void Map::EnsureDescriptorSlack(Isolate* isolate, DirectHandle<Map> map,
+                                 int slack) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   // Only supports adding slack to owned descriptors.
+   CHECK(map->owns_descriptors());
+ 
+@@ -1617,6 +1620,7 @@ void Map::ConnectTransition(Isolate* isolate, DirectHandle<Map> parent,
+                             DirectHandle<Map> child, DirectHandle<Name> name,
+                             TransitionKindFlag transition_kind,
+                             bool force_connect) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   DCHECK_EQ(parent->map(), child->map());
+   DCHECK_IMPLIES(name->IsInteresting(isolate),
+                  child->may_have_interesting_properties());
+diff --git a/src/objects/transitions.cc b/src/objects/transitions.cc
+index 1beb5a52efbc52b98ddf9136fd7c0583e3e3eda9..5e201ec3d80942c1aa11e359273e114e698a52a0 100644
+--- a/src/objects/transitions.cc
++++ b/src/objects/transitions.cc
+@@ -413,6 +413,7 @@ bool TransitionsAccessor::PutPrototypeTransition(Isolate* isolate,
+                                                  DirectHandle<Map> map,
+                                                  DirectHandle<Object> prototype,
+                                                  DirectHandle<Map> target_map) {
++  CHECK(AllowJSObjectModification::IsAllowed(isolate));
+   DCHECK(IsUndefined(map->GetBackPointer()));
+   DCHECK(IsMap(Cast<HeapObject>(*prototype)->map()));
+ 
+diff --git a/test/unittests/api/gc-callbacks-unittest.cc b/test/unittests/api/gc-callbacks-unittest.cc
+index 572799d476509a83d931a1fd3781da17b25cde09..cd8db3166ce903989ad7f07be983279e2c67cb86 100644
+--- a/test/unittests/api/gc-callbacks-unittest.cc
++++ b/test/unittests/api/gc-callbacks-unittest.cc
+@@ -163,6 +163,95 @@ TEST_F(GCCallbacksTest, GCCallbacks) {
+   isolate->RemoveGCEpilogueCallback(EpilogueCallbackAlloc);
+ }
+ 
++TEST_F(GCCallbacksTest, DisallowJSObjectModification) {
++  // `v8_unittests` runs death tests in "threadsafe" mode, which re-spawns the
++  // process and re-runs the test from `main()` for every
++  // `EXPECT_DEATH_IF_SUPPORTED` check. Ensure `i::v8_flags.hard_abort = true`
++  // so each expected `CHECK` failure terminates immediately without `abort()` /
++  // core-dump overhead.
++  i::v8_flags.hard_abort.Set(true);
++
++  v8::Isolate* isolate = v8_isolate();
++  v8::HandleScope scope(isolate);
++  v8::Local<v8::Context> context = isolate->GetCurrentContext();
++
++  v8::Local<v8::String> existing_key = NewString("existing");
++  v8::Local<v8::String> new_key = NewString("new_prop");
++  v8::Local<v8::Value> value = v8::Integer::New(isolate, 42);
++
++  v8::Local<v8::Object> fast_obj = v8::Object::New(isolate);
++  CHECK(fast_obj->CreateDataProperty(context, existing_key, value).FromJust());
++  CHECK(Utils::OpenDirectHandle(*fast_obj)->HasFastProperties());
++
++  v8::Local<v8::Object> dict_obj = v8::Object::New(isolate);
++  CHECK(dict_obj->CreateDataProperty(context, existing_key, value).FromJust());
++  i::JSObject::NormalizeProperties(
++      i_isolate(), i::Cast<i::JSObject>(Utils::OpenDirectHandle(*dict_obj)),
++      i::KEEP_INOBJECT_PROPERTIES, 0, "test");
++  CHECK(!Utils::OpenDirectHandle(*dict_obj)->HasFastProperties());
++
++#if !defined(DEBUG) && defined(OFFICIAL_BUILD)
++  constexpr const char* kExpectedDeathMessage = "";
++#else
++  constexpr const char* kExpectedDeathMessage =
++      "Check failed: AllowJSObjectModification::IsAllowed";
++#endif
++
++  size_t prologue_count = 0;
++  size_t epilogue_count = 0;
++  using CallbackFn =
++      std::function<void(v8::Isolate*, v8::GCType, v8::GCCallbackFlags)>;
++  CallbackFn on_prologue = [&](v8::Isolate*, v8::GCType, v8::GCCallbackFlags) {
++    // Adding a new property to a fast-mode JSObject.
++    EXPECT_DEATH_IF_SUPPORTED(
++        fast_obj->CreateDataProperty(context, new_key, value).Check(),
++        kExpectedDeathMessage);
++    // Adding an indexed element to a fast-mode JSObject.
++    EXPECT_DEATH_IF_SUPPORTED(
++        fast_obj->CreateDataProperty(context, 0, value).Check(),
++        kExpectedDeathMessage);
++    // Reconfiguring an existing property on a fast-mode JSObject.
++    EXPECT_DEATH_IF_SUPPORTED(
++        fast_obj->DefineOwnProperty(context, existing_key, value, v8::ReadOnly)
++            .Check(),
++        kExpectedDeathMessage);
++    // Deleting a property from a fast-mode JSObject.
++    EXPECT_DEATH_IF_SUPPORTED(fast_obj->Delete(context, existing_key).Check(),
++                              kExpectedDeathMessage);
++    // Adding a property to a dictionary-mode JSObject.
++    EXPECT_DEATH_IF_SUPPORTED(
++        dict_obj->CreateDataProperty(context, new_key, value).Check(),
++        kExpectedDeathMessage);
++    // Deleting a property from a dictionary-mode JSObject.
++    EXPECT_DEATH_IF_SUPPORTED(dict_obj->Delete(context, existing_key).Check(),
++                              kExpectedDeathMessage);
++    prologue_count++;
++  };
++  CallbackFn on_epilogue = [&](v8::Isolate*, v8::GCType, v8::GCCallbackFlags) {
++    // Run a single representative check in epilogue to avoid spawning 6 more
++    // "threadsafe" death-test subprocesses.
++    EXPECT_DEATH_IF_SUPPORTED(
++        fast_obj->CreateDataProperty(context, new_key, value).Check(),
++        kExpectedDeathMessage);
++    epilogue_count++;
++  };
++
++  auto callback_thunk = [](v8::Isolate* isolate, v8::GCType type,
++                           v8::GCCallbackFlags flags, void* data) {
++    auto* fn = static_cast<CallbackFn*>(data);
++    (*fn)(isolate, type, flags);
++  };
++
++  isolate->AddGCPrologueCallback(callback_thunk, &on_prologue);
++  isolate->AddGCEpilogueCallback(callback_thunk, &on_epilogue);
++  InvokeMajorGC();
++  isolate->RemoveGCPrologueCallback(callback_thunk, &on_prologue);
++  isolate->RemoveGCEpilogueCallback(callback_thunk, &on_epilogue);
++
++  EXPECT_EQ(1u, prologue_count);
++  EXPECT_EQ(1u, epilogue_count);
++}
++
+ }  // namespace
+ }  // namespace v8
+ 

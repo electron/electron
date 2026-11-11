@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Thu, 22 Oct 2026 10:00:28 -0700
+Subject: WebGL2: Suppress framebuffer-render-to-layer.html on Windows D3D11
+
+Suppress conformance2/rendering/framebuffer-render-to-layer.html on
+Windows D3D11, as D3D11 does not support simultaneously binding a 3D
+color attachment and a 2D depth/stencil attachment. (This change is needed to fix the cq dry run of https://chromium-review.git.corp.google.com/c/angle/angle/+/8594325)
+
+Test: conformance2/rendering/framebuffer-render-to-layer.html
+Bug: 574035865
+Change-Id: I8032f2fc604aee2c00394eb29ad2f360c5232759
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8611537
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Cr-Commit-Position: refs/heads/main@{#1724903}
+
+diff --git a/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt b/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
+index e91172ecdd1c409df4105eb7d838ea00475b6cce..f1727eb26d5248dbb2a30cc49844995e51397fdc 100644
+--- a/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
++++ b/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
+@@ -553,6 +553,7 @@ crbug.com/365680830 [ mac arch-arm64 angle-metal ] deqp/functional/gles3/occlusi
+ crbug.com/438691606 [ win ] conformance/extensions/khr-parallel-shader-compile.html [ Failure ]
+ 
+ crbug.com/angleproject/4417 [ win angle-d3d11 ] conformance2/rendering/framebuffer-render-to-layer-angle-issue.html [ Failure ]
++crbug.com/angleproject/4417 [ win angle-d3d11 ] conformance2/rendering/framebuffer-render-to-layer.html [ Failure ]
+ crbug.com/angleproject/1465 [ win angle-d3d11 ] conformance2/glsl3/tricky-loop-conditions.html [ Failure ]
+ 
+ ## Win / NVIDIA ##

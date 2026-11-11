@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mingyu Lei <leimy@chromium.org>
+Date: Sun, 1 Nov 2026 11:17:53 -0800
+Subject: FSA: Reject symlinks in macOS copy-on-write swap file creation
+
+On macOS, `FileSystemAccessFileHandleImpl::CreateClonedSwapFile()`
+creates `.crswap` files for `createWritable({keepExistingData: true})`
+by calling `clonefile(source, swap, /*flags=*/0)` in
+`CreateCowSwapFile()`.
+
+Because `LocalFileUtil::GetLocalFilePath()` hides symlinks by mapping
+them to `FILE_ERROR_NOT_FOUND`, the preceding `FileExists(swap_url)`
+probe reports a pre-existing symlink at `<name>.crswap` as
+`FILE_ERROR_NOT_FOUND`. When `<name>.crswap` is a dangling symlink,
+`clonefile()` with `flags=0` follows the destination symlink and creates
+the cloned file at the symlink's target. Similarly, if the source path
+was replaced with a symlink, `clonefile()` would follow it.
+
+Check `base::IsLink()` on `source_url.path()` (returning
+`FILE_ERROR_NOT_FOUND`) and `swap_url.path()` (returning
+`FILE_ERROR_EXISTS` so `DidCloneSwapFile()` advances to the next unused
+swap filename) before invoking `clonefile()`.
+
+Bug: 563340397
+Change-Id: I9c4528d18a914c6b7e823f9a0d271c584e90214a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8675618
+Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+Commit-Queue: Mingyu Lei <leimy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1732471}
+
+diff --git a/content/browser/file_system_access/file_system_access_file_handle_impl.cc b/content/browser/file_system_access/file_system_access_file_handle_impl.cc
+index a159617843fec8eaf5544b921e7e460048867179..b2af995105ea63b374d88c6fef7ea79dd5d4e2e5 100644
+--- a/content/browser/file_system_access/file_system_access_file_handle_impl.cc
++++ b/content/browser/file_system_access/file_system_access_file_handle_impl.cc
+@@ -133,6 +133,18 @@ bool HasWritePermission(const base::FilePath& path) {
+ // already exists. Must be called on a sequence which allows blocking.
+ base::File::Error CreateCowSwapFile(const storage::FileSystemURL& source_url,
+                                     const storage::FileSystemURL& swap_url) {
++  // `clonefile()` operates directly on raw paths and follows symlinks when
++  // `flags` is 0, whereas `LocalFileUtil` hides symlinks by mapping them to
++  // `FILE_ERROR_NOT_FOUND`. Reject symlinks on `source_url` as not found, and
++  // treat a symlink (including a dangling symlink) at `swap_url` as an
++  // existing file so swap creation advances to the next candidate swap name
++  // instead of creating the clone at the symlink's target.
++  if (base::IsLink(source_url.path())) {
++    return base::File::Error::FILE_ERROR_NOT_FOUND;
++  }
++  if (base::IsLink(swap_url.path())) {
++    return base::File::Error::FILE_ERROR_EXISTS;
++  }
+   return clonefile(source_url.path().value().c_str(),
+                    swap_url.path().value().c_str(),
+                    /*flags=*/0) == 0
+diff --git a/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc b/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
+index 6b7ff3b1c792c00a07b0e6424535670171fe92b3..2fc6b6cf2d8ceda75a853eee914229873892b63a 100644
+--- a/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
+@@ -1337,6 +1337,65 @@ TEST_F(FileSystemAccessFileHandleSwapFileCloningTest, HandleCloneFailure) {
+   EXPECT_TRUE(writer_remote.is_valid());
+   EXPECT_EQ(GetCloneFileResult(handle_), CloneFileResult::kAttemptedAndAborted);
+ }
++
++TEST_F(FileSystemAccessFileHandleSwapFileCloningTest,
++       HandleDanglingSymlinkSwapFile) {
++  const base::FilePath swap_path = dir_.GetPath().AppendASCII("test.crswap");
++  const base::FilePath symlink_target =
++      dir_.GetPath().AppendASCII("symlink_target");
++  ASSERT_TRUE(base::CreateSymbolicLink(symlink_target, swap_path));
++  ASSERT_FALSE(base::PathExists(symlink_target));
++
++  // A dangling symlink at `test.crswap` passes `FileExists` as NOT_FOUND
++  // because `LocalFileUtil` hides symlinks, so `CreateCowSwapFile` must reject
++  // the symlink rather than letting `clonefile()` follow it and create
++  // `symlink_target`, and advance to `test.1.crswap`.
++  base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter>>
++      future;
++  handle_->CreateFileWriter(
++      /*keep_existing_data=*/true,
++      /*auto_close=*/false,
++      blink::mojom::FileSystemAccessWritableFileStreamLockMode::kSiloed,
++      future.GetCallback());
++  blink::mojom::FileSystemAccessErrorPtr result;
++  mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter> writer_remote;
++  std::tie(result, writer_remote) = future.Take();
++  EXPECT_EQ(result->status, FileSystemAccessStatus::kOk);
++  EXPECT_TRUE(writer_remote.is_valid());
++  EXPECT_EQ(GetCloneFileResult(handle_),
++            CloneFileResult::kAttemptedAndCompletedAsExpected);
++  EXPECT_FALSE(base::PathExists(symlink_target));
++  EXPECT_TRUE(base::IsLink(swap_path));
++  EXPECT_TRUE(base::PathExists(dir_.GetPath().AppendASCII("test.1.crswap")));
++}
++
++TEST_F(FileSystemAccessFileHandleSwapFileCloningTest, SymlinkSourceFileFails) {
++  const base::FilePath other_path = dir_.GetPath().AppendASCII("other");
++  ASSERT_TRUE(base::WriteFile(other_path, "secret"));
++  ASSERT_TRUE(base::DeleteFile(test_file_url_.path()));
++  ASSERT_TRUE(base::CreateSymbolicLink(other_path, test_file_url_.path()));
++
++  base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter>>
++      future;
++  handle_->CreateFileWriter(
++      /*keep_existing_data=*/true,
++      /*auto_close=*/false,
++      blink::mojom::FileSystemAccessWritableFileStreamLockMode::kSiloed,
++      future.GetCallback());
++  blink::mojom::FileSystemAccessErrorPtr result;
++  mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter> writer_remote;
++  std::tie(result, writer_remote) = future.Take();
++  EXPECT_EQ(result->status, FileSystemAccessStatus::kFileError);
++  EXPECT_EQ(result->file_error, base::File::FILE_ERROR_NOT_FOUND);
++  EXPECT_FALSE(writer_remote.is_valid());
++  EXPECT_EQ(handle_->get_swap_file_clone_result_for_testing(),
++            base::File::Error::FILE_ERROR_NOT_FOUND);
++  EXPECT_FALSE(base::PathExists(dir_.GetPath().AppendASCII("test.crswap")));
++}
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+ struct MovePermissionsTestCase {

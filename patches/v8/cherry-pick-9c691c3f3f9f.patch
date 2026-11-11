@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Wed, 4 Nov 2026 08:15:07 +0100
+Subject: [maglev] Fix bailouts messing up non-escaping use counting
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixed: 577242082
+Change-Id: Ia88286235694c9ae65ce61adff96998770f3868d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8724847
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111571}
+
+Electron adaptation notes (44-x-y):
+On this branch MaglevReducer::BuildInitializeStore_Tagged() still returns void and CHECKs that BuildStoreTaggedField() does not abort (the ReduceResult-returning refactor from crrev.com/c/8256841 is not present). The store is moved ahead of the escape/elide bookkeeping as upstream, keeping the existing CHECK in place of RETURN_IF_ABORT; the bookkeeping already uses AddNonEscapingUses(inlined_value, 1) here.
+
+diff --git a/src/maglev/maglev-reducer-inl.h b/src/maglev/maglev-reducer-inl.h
+index 3a453bef5ffe4e052c6b71b0d9542a2864e1ef68..6f8ab468c3031a59ac90e60b7a52a67f562658bb 100644
+--- a/src/maglev/maglev-reducer-inl.h
++++ b/src/maglev/maglev-reducer-inl.h
+@@ -691,6 +691,12 @@ void MaglevReducer<BaseT>::BuildInitializeStore_Tagged(
+   }
+ 
+   DCHECK(value->is_tagged());
++  // Since `value` is tagged, BuildStoreTaggedField doesn't need to do
++  // input conversions and won't abort.
++  ReduceResult result =
++      BuildStoreTaggedField(object, value, desc.offset, store_mode,
++                            PropertyKey::None(), maybe_assigned);
++  CHECK(!result.IsDoneWithAbort());
+   if (InlinedAllocation* inlined_value = value->TryCast<InlinedAllocation>()) {
+     // Add to the escape set.
+     auto escape_deps = graph()->allocations_escape_map().find(object);
+@@ -700,15 +706,9 @@ void MaglevReducer<BaseT>::BuildInitializeStore_Tagged(
+     auto& elided_map = graph()->allocations_elide_map();
+     auto elided_deps = elided_map.try_emplace(inlined_value, zone()).first;
+     elided_deps->second.push_back(object);
+-    inlined_value->AddNonEscapingUses();
++    AddNonEscapingUses(inlined_value, 1);
+   }
+ 
+-  // Since `value` is tagged, BuildStoreTaggedField doesn't need to do
+-  // input conversions and won't abort.
+-  ReduceResult result =
+-      BuildStoreTaggedField(object, value, desc.offset, store_mode,
+-                            PropertyKey::None(), maybe_assigned);
+-  CHECK(!result.IsDoneWithAbort());
+ }
+ 
+ template <typename BaseT>
+diff --git a/test/mjsunit/regress/regress-577242082.js b/test/mjsunit/regress/regress-577242082.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e9e664f056e19ab87d8737ae1f8541a8badee80f
+--- /dev/null
++++ b/test/mjsunit/regress/regress-577242082.js
+@@ -0,0 +1,30 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --maglev --allow-natives-syntax
++
++[1].values().extra = 1;
++
++function sink(...args) {}
++%PrepareFunctionForOptimization(sink);
++
++function helper(o, cond) {
++  if (cond) {
++    sink(o.a);
++  }
++}
++%PrepareFunctionForOptimization(helper);
++
++function g(cond) {
++  let iter = [1].values();
++  delete {}.a;
++  helper(iter, cond);
++}
++%PrepareFunctionForOptimization(g);
++
++helper({ a: 42 }, true);
++
++g(false);
++%OptimizeMaglevOnNextCall(g);
++g(false);

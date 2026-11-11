@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <ezemtsov@google.com>
+Date: Thu, 22 Oct 2026 17:44:06 -0700
+Subject: [media] Preserve current_sequence_header_ across AV1Decoder::Reset()
+
+`AV1Decoder::Reset()` previously cleared `current_sequence_header_`
+while keeping the configured stream dimensions and profile, so the first
+sequence header after a seek bypassed `RequiresHardwareContextReset()`.
+Track whether a post-reset sequence header is needed via
+`need_sequence_header_` while keeping `current_sequence_header_` for
+comparison.
+
+Bug: 575038730
+Test: media_unittests --gtest_filter=AV1DecoderTest.ResetThenConfigChangeOnSequenceHeaderToolFlags
+Change-Id: I29010990b62908d250624afdb18babe9665d466b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8608728
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Sangwhan Moon <sxm@chromium.org>
+Commit-Queue: Eugene Zemtsov <ezemtsov@google.com>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725362}
+
+diff --git a/media/gpu/av1_decoder.cc b/media/gpu/av1_decoder.cc
+index c84473aa0e191e91526366a763240573e3fa990c..316d347197fe17d76f07cf7216f8e38e98c93dd8 100644
+--- a/media/gpu/av1_decoder.cc
++++ b/media/gpu/av1_decoder.cc
+@@ -200,11 +200,11 @@ void AV1Decoder::Reset() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   ClearCurrentFrame();
+ 
+-  // We must reset the |current_sequence_header_| to ensure we don't try to
+-  // decode frames using an incorrect sequence header. If the first
+-  // DecoderBuffer after the reset doesn't contain a sequence header, we'll just
+-  // skip it and will keep skipping until we get a sequence header.
+-  current_sequence_header_.reset();
++  // We must require a new sequence header after a reset to ensure we don't try
++  // to decode frames using an incorrect sequence header, while keeping
++  // `current_sequence_header_` so the first post-reset sequence header can be
++  // compared against the current hardware configuration.
++  need_sequence_header_ = true;
+   stream_id_ = 0;
+   on_error_ = false;
+ 
+@@ -241,8 +241,9 @@ void AV1Decoder::SetStream(int32_t id,
+     return;
+   }
+ 
+-  if (current_sequence_header_)
++  if (current_sequence_header_ && !need_sequence_header_) {
+     parser_->set_sequence_header(*current_sequence_header_);
++  }
+   if (decoder_buffer_->decrypt_config()) {
+     decrypt_config_ = decoder_buffer_->decrypt_config()->Clone();
+   } else {
+@@ -399,6 +400,7 @@ AcceleratedVideoDecoder::DecodeResult AV1Decoder::DecodeInternal() {
+                                          new_sequence_header);
+ 
+         current_sequence_header_ = new_sequence_header;
++        need_sequence_header_ = false;
+         ClearReferenceFrames();
+ 
+         // Issue kConfigChange if the sequence header changed significantly,
+@@ -429,7 +431,7 @@ AcceleratedVideoDecoder::DecodeResult AV1Decoder::DecodeInternal() {
+       }
+     }
+ 
+-    if (!current_sequence_header_) {
++    if (need_sequence_header_) {
+       // Decoding is not doable because we haven't received a sequence header.
+       // This occurs when seeking a video.
+       DVLOG(3) << "Discarded the current frame because no sequence header has "
+diff --git a/media/gpu/av1_decoder.h b/media/gpu/av1_decoder.h
+index 9fdc4c6fba4f5a5c9351c2c5055d645b479625b0..e27d692609fb286128406d75178ec27e116c84cf 100644
+--- a/media/gpu/av1_decoder.h
++++ b/media/gpu/av1_decoder.h
+@@ -179,6 +179,9 @@ class MEDIA_GPU_EXPORT AV1Decoder : public AcceleratedVideoDecoder {
+   const std::unique_ptr<AV1Accelerator> accelerator_;
+   AV1ReferenceFrameVector ref_frames_;
+ 
++  // True initially and after Reset()/Flush() until a sequence header OBU is
++  // received in the stream.
++  bool need_sequence_header_ = true;
+   std::optional<libgav1::ObuSequenceHeader> current_sequence_header_;
+   std::optional<libgav1::ObuFrameHeader> current_frame_header_;
+   libgav1::RefCountedBufferPtr current_frame_;
+diff --git a/media/gpu/av1_decoder_unittest.cc b/media/gpu/av1_decoder_unittest.cc
+index 03b6acaef42f3407252b7044dc2a4ec8cbab0a5c..eb479325621b28d29c43d0786023ddb2a54067c5 100644
+--- a/media/gpu/av1_decoder_unittest.cc
++++ b/media/gpu/av1_decoder_unittest.cc
+@@ -737,6 +737,86 @@ TEST_F(AV1DecoderTest, ConfigChangeOnSequenceHeaderToolFlags) {
+             seq_header_b.use_128x128_superblock);
+ }
+ 
++// Same as ConfigChangeOnSequenceHeaderToolFlags, but the new coded video
++// sequence arrives right after a Reset() (e.g. on seek or Flush()). Reset()
++// does not destroy the accelerator's hardware context, so a coding-tool flag
++// change in sequence B must still emit kConfigChange before any frame of B is
++// submitted.
++TEST_F(AV1DecoderTest, ResetThenConfigChangeOnSequenceHeaderToolFlags) {
++  constexpr uint8_t kSequenceA[] = {0x12, 0x00, 0x0a, 0x0c, 0x00, 0x00, 0x00,
++                                    0x63, 0xfc, 0x13, 0xfc, 0x0b, 0x3c, 0x01,
++                                    0x00, 0x14, 0x32, 0x08, 0x10, 0x46, 0x40,
++                                    0x00, 0x00, 0x18, 0x00, 0x80};
++  constexpr uint8_t kSequenceB[] = {0x12, 0x00, 0x0a, 0x0d, 0x00, 0x00, 0x00,
++                                    0x63, 0xfc, 0x13, 0xfc, 0x0b, 0x3c, 0xff,
++                                    0xcc, 0x00, 0xa0, 0x32, 0x09, 0x10, 0x00,
++                                    0x8c, 0x80, 0x00, 0x00, 0x30, 0x00, 0x80};
++  constexpr gfx::Size kFrameSize(1280, 720);
++
++  const std::vector<DecodeResult> expected = {
++      DecodeResult::kConfigChange, DecodeResult::kRanOutOfStreamData};
++
++  // Use a non-zero stream id so that the Reset() helper's sanity checks apply.
++  bitstream_id_ = 1;
++
++  libgav1::ObuSequenceHeader seq_header_a = {};
++  {
++    ::testing::InSequence sequence;
++    EXPECT_CALL(*mock_accelerator_, CreateAV1Picture(_))
++        .WillOnce(Return(base::MakeRefCounted<FakeAV1Picture>()));
++    EXPECT_CALL(*mock_accelerator_, SubmitDecode(_, _, _, _, _))
++        .WillOnce(DoAll(SaveArg<1>(&seq_header_a),
++                        Return(AV1Decoder::AV1Accelerator::Status::kOk)));
++    EXPECT_CALL(*mock_accelerator_, OutputPicture(_)).WillOnce(Return(true));
++    auto buffer = DecoderBuffer::CopyFrom(kSequenceA);
++    ASSERT_EQ(Decode(buffer), expected);
++    testing::Mock::VerifyAndClearExpectations(mock_accelerator_);
++  }
++  ASSERT_FALSE(seq_header_a.enable_order_hint);
++  ASSERT_FALSE(seq_header_a.enable_ref_frame_mvs);
++  ASSERT_EQ(decoder_->GetPicSize(), kFrameSize);
++
++  Reset();
++  EXPECT_EQ(decoder_->GetPicSize(), kFrameSize);
++  EXPECT_EQ(decoder_->GetProfile(), AV1PROFILE_PROFILE_MAIN);
++  EXPECT_EQ(decoder_->GetBitDepth(), 8u);
++
++  // A frame OBU without a preceding sequence header OBU after Reset() must not
++  // be decoded using the retained pre-reset sequence header. Bytes 16..26 of
++  // kSequenceA are the standalone OBU_FRAME (key frame) without the leading
++  // temporal delimiter and sequence header OBUs.
++  {
++    EXPECT_CALL(*mock_accelerator_, CreateAV1Picture(_)).Times(0);
++    EXPECT_CALL(*mock_accelerator_, SubmitDecode(_, _, _, _, _)).Times(0);
++    auto headerless_frame =
++        DecoderBuffer::CopyFrom(base::span(kSequenceA).subspan(16u));
++    EXPECT_EQ(Decode(headerless_frame),
++              std::vector<DecodeResult>{DecodeResult::kDecodeError});
++    testing::Mock::VerifyAndClearExpectations(mock_accelerator_);
++  }
++
++  decoder_->Reset();
++
++  libgav1::ObuSequenceHeader seq_header_b = {};
++  {
++    ::testing::InSequence sequence;
++    EXPECT_CALL(*mock_accelerator_, CreateAV1Picture(_))
++        .WillOnce(Return(base::MakeRefCounted<FakeAV1Picture>()));
++    EXPECT_CALL(*mock_accelerator_, SubmitDecode(_, _, _, _, _))
++        .WillOnce(DoAll(SaveArg<1>(&seq_header_b),
++                        Return(AV1Decoder::AV1Accelerator::Status::kOk)));
++    EXPECT_CALL(*mock_accelerator_, OutputPicture(_)).WillOnce(Return(true));
++    auto buffer = DecoderBuffer::CopyFrom(kSequenceB);
++    EXPECT_EQ(Decode(buffer), expected);
++    testing::Mock::VerifyAndClearExpectations(mock_accelerator_);
++  }
++  EXPECT_TRUE(seq_header_b.enable_order_hint);
++  EXPECT_TRUE(seq_header_b.enable_ref_frame_mvs);
++  EXPECT_NE(seq_header_a.order_hint_bits, seq_header_b.order_hint_bits);
++  EXPECT_EQ(seq_header_a.max_frame_width, seq_header_b.max_frame_width);
++  EXPECT_EQ(seq_header_a.max_frame_height, seq_header_b.max_frame_height);
++}
++
+ TEST_F(AV1DecoderTest, Reset) {
+   constexpr gfx::Size kFrameSize(320, 240);
+   constexpr gfx::Size kRenderSize(320, 240);

@@ -1,0 +1,495 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Mon, 9 Nov 2026 08:53:34 -0800
+Subject: [ImageCapture] Scope device session lookups to the requesting frame
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MediaStreamManager::VideoDeviceIdToSessionId() searched all active
+device requests for a matching video device ID and returned the
+session ID of the first match, regardless of which frame opened the
+device. Since device IDs are per-origin rather than per-frame, two
+frames using the same camera share a device ID but have distinct
+sessions, so the lookup could resolve to a session that does not
+belong to the caller.
+
+Add a GlobalRenderFrameHostId parameter to VideoDeviceIdToSessionId()
+and only consider requests made by that frame. ImageCaptureImpl now
+passes the ID of its own RenderFrameHost when resolving the source ID
+for GetPhotoState(), SetPhotoOptions() and TakePhoto(). If the frame
+has no active session for the device, the lookup returns an empty
+token and the request is answered with the default (empty) response,
+as before.
+
+Note that this means an ImageCapture object only resolves sessions
+opened by the frame in which it was created; a frame holding a track
+opened by a different frame (other than via track transfer) will get
+empty results.
+
+Add unit tests covering lookups from the owning frame, from other
+frames, and from a second frame that opens the same camera.
+
+Fixed: 579300424
+Change-Id: I51b922f0134e45636dab47ebb4b2b146692222ff
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8756671
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1739222}
+
+Electron adaptation notes (44-x-y):
+image_capture_impl.cc on this branch passes the MediaStreamManager explicitly from BrowserMainLoop instead of using MediaStreamManager::GetInstance(); that parameter is kept and the GlobalRenderFrameHostId is added next to it. VideoDeviceIdToSessionId() keeps the branch's DCHECK_CURRENTLY_ON. media_stream_manager_unittest.cc conflicted on unrelated test drift and its test-only hunk was not carried; image_capture_impl_unittest.cc applied verbatim.
+
+diff --git a/content/browser/image_capture/image_capture_impl.cc b/content/browser/image_capture/image_capture_impl.cc
+index fac1f6d2d897b82856de3fc1114780950940368b..0389b5da7715df80153cf2bcd24ade1807216ff9 100644
+--- a/content/browser/image_capture/image_capture_impl.cc
++++ b/content/browser/image_capture/image_capture_impl.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "content/browser/image_capture/image_capture_impl.h"
+ 
++#include <string>
+ #include <utility>
+ 
+ #include "base/functional/bind.h"
+@@ -32,11 +33,13 @@ namespace {
+ 
+ void GetPhotoStateOnIOThread(const std::string& source_id,
+                              MediaStreamManager* media_stream_manager,
++                             GlobalRenderFrameHostId render_frame_host_id,
+                              ImageCaptureImpl::GetPhotoStateCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+ 
+   const base::UnguessableToken session_id =
+-      media_stream_manager->VideoDeviceIdToSessionId(source_id);
++      media_stream_manager->VideoDeviceIdToSessionId(source_id,
++                                                     render_frame_host_id);
+   if (session_id.is_empty())
+     return;
+ 
+@@ -47,12 +50,14 @@ void GetPhotoStateOnIOThread(const std::string& source_id,
+ void SetPhotoOptionsOnIOThread(
+     const std::string& source_id,
+     MediaStreamManager* media_stream_manager,
++    GlobalRenderFrameHostId render_frame_host_id,
+     media::mojom::PhotoSettingsPtr settings,
+     ImageCaptureImpl::SetPhotoOptionsCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+ 
+   const base::UnguessableToken session_id =
+-      media_stream_manager->VideoDeviceIdToSessionId(source_id);
++      media_stream_manager->VideoDeviceIdToSessionId(source_id,
++                                                     render_frame_host_id);
+   if (session_id.is_empty())
+     return;
+   media_stream_manager->video_capture_manager()->SetPhotoOptions(
+@@ -61,6 +66,7 @@ void SetPhotoOptionsOnIOThread(
+ 
+ void TakePhotoOnIOThread(const std::string& source_id,
+                          MediaStreamManager* media_stream_manager,
++                         GlobalRenderFrameHostId render_frame_host_id,
+                          ImageCaptureImpl::TakePhotoCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+   TRACE_EVENT_INSTANT0(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
+@@ -68,7 +74,8 @@ void TakePhotoOnIOThread(const std::string& source_id,
+                        TRACE_EVENT_SCOPE_PROCESS);
+ 
+   const base::UnguessableToken session_id =
+-      media_stream_manager->VideoDeviceIdToSessionId(source_id);
++      media_stream_manager->VideoDeviceIdToSessionId(source_id,
++                                                     render_frame_host_id);
+   if (session_id.is_empty())
+     return;
+ 
+@@ -108,6 +115,7 @@ void ImageCaptureImpl::GetPhotoState(const std::string& source_id,
+       FROM_HERE,
+       base::BindOnce(&GetPhotoStateOnIOThread, source_id,
+                      BrowserMainLoop::GetInstance()->media_stream_manager(),
++                     render_frame_host().GetGlobalId(),
+                      std::move(scoped_callback)));
+ }
+ 
+@@ -139,7 +147,8 @@ void ImageCaptureImpl::SetPhotoOptions(const std::string& source_id,
+       FROM_HERE,
+       base::BindOnce(&SetPhotoOptionsOnIOThread, source_id,
+                      BrowserMainLoop::GetInstance()->media_stream_manager(),
+-                     std::move(settings), std::move(scoped_callback)));
++                     render_frame_host().GetGlobalId(), std::move(settings),
++                     std::move(scoped_callback)));
+ }
+ 
+ void ImageCaptureImpl::TakePhoto(const std::string& source_id,
+@@ -157,6 +166,7 @@ void ImageCaptureImpl::TakePhoto(const std::string& source_id,
+       FROM_HERE,
+       base::BindOnce(&TakePhotoOnIOThread, source_id,
+                      BrowserMainLoop::GetInstance()->media_stream_manager(),
++                     render_frame_host().GetGlobalId(),
+                      std::move(scoped_callback)));
+ }
+ 
+diff --git a/content/browser/image_capture/image_capture_impl_unittest.cc b/content/browser/image_capture/image_capture_impl_unittest.cc
+index 4f33217ef43bce78cf272d3dd7b7d947661ceb7e..8ea807a4cc6255652933f2ff433fe893dcead6f1 100644
+--- a/content/browser/image_capture/image_capture_impl_unittest.cc
++++ b/content/browser/image_capture/image_capture_impl_unittest.cc
+@@ -4,23 +4,97 @@
+ 
+ #include "content/browser/image_capture/image_capture_impl.h"
+ 
++#include <memory>
++#include <string>
++#include <tuple>
++#include <utility>
++
++#include "base/functional/bind.h"
++#include "base/functional/callback.h"
++#include "base/functional/callback_helpers.h"
++#include "base/memory/weak_ptr.h"
++#include "base/run_loop.h"
+ #include "base/test/test_future.h"
++#include "base/unguessable_token.h"
++#include "build/build_config.h"
++#include "content/browser/media/media_devices_util.h"
++#include "content/browser/renderer_host/media/fake_video_capture_provider.h"
++#include "content/browser/renderer_host/media/media_stream_manager.h"
++#include "content/browser/renderer_host/media/media_stream_ui_proxy.h"
++#include "content/browser/renderer_host/media/video_capture_controller.h"
++#include "content/browser/renderer_host/media/video_capture_controller_event_handler.h"
++#include "content/browser/renderer_host/media/video_capture_manager.h"
+ #include "content/public/browser/browser_context.h"
++#include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/permission_controller.h"
+ #include "content/public/browser/permission_descriptor_util.h"
++#include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/web_contents.h"
++#include "content/public/test/navigation_simulator.h"
+ #include "content/public/test/permissions_test_utils.h"
+-#include "content/test/test_render_frame_host.h"
++#include "content/public/test/test_renderer_host.h"
++#include "media/audio/audio_system_impl.h"
++#include "media/audio/mock_audio_manager.h"
++#include "media/audio/test_audio_thread.h"
++#include "media/capture/video_capture_types.h"
++#include "mojo/public/cpp/bindings/remote.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/public/common/mediastream/media_stream_request.h"
++#include "third_party/blink/public/common/permissions/permission_utils.h"
++#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
++#include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
++#include "ui/gfx/geometry/size.h"
++#include "url/gurl.h"
++#include "url/origin.h"
+ 
+ namespace content {
+ 
+ namespace {
++
+ constexpr char kTestUrl[] = "https://google.com";
++constexpr char kAttackerUrl[] = "https://attacker.example";
++
++class StubVideoCaptureControllerEventHandler
++    : public VideoCaptureControllerEventHandler {
++ public:
++  void OnCaptureConfigurationChanged(
++      const VideoCaptureControllerID& id) override {}
++  void OnError(const VideoCaptureControllerID& id,
++               media::VideoCaptureError error) override {}
++  void OnNewBuffer(const VideoCaptureControllerID& id,
++                   media::mojom::VideoBufferHandlePtr buffer_handle,
++                   int buffer_id) override {}
++  void OnBufferDestroyed(const VideoCaptureControllerID& id,
++                         int buffer_id) override {}
++  void OnBufferReady(const VideoCaptureControllerID& id,
++                     const ReadyBuffer& buffer) override {}
++  void OnFrameDropped(const VideoCaptureControllerID& id,
++                      media::VideoCaptureFrameDropReason reason) override {}
++  void OnNewCaptureVersion(const VideoCaptureControllerID& id,
++                           media::CaptureVersion capture_version) override {}
++  void OnFrameWithEmptyRegionCapture(
++      const VideoCaptureControllerID& id) override {}
++  void OnEnded(const VideoCaptureControllerID& id) override {}
++  void OnStarted(const VideoCaptureControllerID& id) override {
++    if (started_closure_) {
++      std::move(started_closure_).Run();
++    }
++  }
++  void OnStartedUsingGpuDecode(const VideoCaptureControllerID& id) override {}
++
++  void WaitForStart() {
++    base::RunLoop run_loop;
++    started_closure_ = run_loop.QuitClosure();
++    run_loop.Run();
++  }
++
++ private:
++  base::OnceClosure started_closure_;
++};
++
+ }  // namespace
+ 
+ class ImageCaptureImplTest : public RenderViewHostTestHarness {
+- public:
+  public:
+   ImageCaptureImplTest() = default;
+   ImageCaptureImplTest(const ImageCaptureImplTest&) = delete;
+@@ -37,6 +111,61 @@ class ImageCaptureImplTest : public RenderViewHostTestHarness {
+         /*skip_connecting_to_media_stream_manager_for_testing=*/true);
+   }
+ 
++  void TearDown() override {
++    if (audio_manager_) {
++      audio_manager_->Shutdown();
++    }
++    RenderViewHostTestHarness::TearDown();
++  }
++
++  void SetUpMediaStreamManager() {
++    audio_manager_ = std::make_unique<media::MockAudioManager>(
++        std::make_unique<media::TestAudioThread>(/*use_real_thread=*/false));
++    audio_system_ =
++        std::make_unique<media::AudioSystemImpl>(audio_manager_.get());
++    media_stream_manager_ = std::make_unique<MediaStreamManager>(
++        audio_system_.get(), std::make_unique<FakeVideoCaptureProvider>());
++    media_stream_manager_->UseFakeUIFactoryForTests(base::BindRepeating([]() {
++      return std::make_unique<FakeMediaStreamUIProxy>(
++          /*tests_use_fake_render_frame_hosts=*/true);
++    }));
++    base::RunLoop().RunUntilIdle();
++  }
++
++  std::pair<std::string, blink::MediaStreamDevice> OpenVideoStreamForFrame(
++      RenderFrameHost* rfh) {
++    blink::StreamControls controls(/*request_audio=*/false,
++                                   /*request_video=*/true);
++    MediaDeviceSaltAndOrigin salt_and_origin(
++        /*device_id_salt=*/"test_device_salt", rfh->GetLastCommittedOrigin(),
++        /*group_id_salt=*/"test_group_salt");
++    base::test::TestFuture<blink::mojom::MediaStreamRequestResult,
++                           const std::string&,
++                           blink::mojom::StreamDevicesSetPtr, bool>
++        future;
++    media_stream_manager_->GenerateStreams(
++        rfh->GetGlobalId(), /*requester_id=*/1, /*page_request_id=*/1, controls,
++        std::move(salt_and_origin), /*user_gesture=*/false,
++        blink::mojom::StreamSelectionInfo::NewSearchOnlyByDeviceId({}),
++        future.GetCallback(),
++        /*device_stopped_callback=*/base::DoNothing(),
++        /*device_changed_callback=*/base::DoNothing(),
++        /*device_request_state_change_callback=*/base::DoNothing(),
++        /*device_capture_configuration_change_callback=*/base::DoNothing(),
++        /*device_capture_handle_change_callback=*/base::DoNothing(),
++        /*zoom_level_change_callback=*/base::DoNothing());
++    auto [result, label, stream_devices_set, pan_tilt_zoom_allowed] =
++        future.Take();
++    EXPECT_EQ(result, blink::mojom::MediaStreamRequestResult::OK);
++    CHECK_EQ(stream_devices_set->stream_devices.size(), 1u);
++    CHECK(stream_devices_set->stream_devices[0]->video_device.has_value());
++    return {label, *stream_devices_set->stream_devices[0]->video_device};
++  }
++
++  MediaStreamManager* media_stream_manager() {
++    return media_stream_manager_.get();
++  }
++
+   void HideView() { web_contents()->WasHidden(); }
+ 
+   void SetPermissionForPTZ(blink::mojom::PermissionStatus status) {
+@@ -56,6 +185,13 @@ class ImageCaptureImplTest : public RenderViewHostTestHarness {
+   }
+ 
+  private:
++  // Must outlive `RenderViewHostTestHarness`'s `task_environment_` (which is
++  // reset in `RenderViewHostTestHarness::TearDown()`), because
++  // `MediaStreamManager` observes IO message loop destruction.
++  std::unique_ptr<media::MockAudioManager> audio_manager_;
++  std::unique_ptr<media::AudioSystemImpl> audio_system_;
++  std::unique_ptr<MediaStreamManager> media_stream_manager_;
++
+   mojo::Remote<media::mojom::ImageCapture> image_capture_remote_;
+   url::Origin origin_;
+ };
+@@ -113,4 +249,135 @@ TEST_F(ImageCaptureImplTest, SetPhotoOptionsWithPTZWithPermission) {
+   EXPECT_TRUE(future.Get());
+ }
+ 
++TEST_F(ImageCaptureImplTest, PhotoOperationsScopedToRequestingFrame) {
++  SetUpMediaStreamManager();
++
++  // Open and start a live camera session owned by `main_rfh()`.
++  auto [owner_label, owner_device] = OpenVideoStreamForFrame(main_rfh());
++  ASSERT_FALSE(owner_device.id.empty());
++  ASSERT_FALSE(owner_device.session_id().is_empty());
++
++  StubVideoCaptureControllerEventHandler event_handler;
++  const VideoCaptureControllerID client_id = base::UnguessableToken::Create();
++  media::VideoCaptureParams capture_params;
++  capture_params.requested_format = media::VideoCaptureFormat(
++      gfx::Size(640, 480), 30.0f, media::PIXEL_FORMAT_I420);
++  base::test::TestFuture<const base::WeakPtr<VideoCaptureController>&>
++      connect_future;
++  media_stream_manager()->video_capture_manager()->ConnectClient(
++      owner_device.session_id(), capture_params, client_id,
++      main_rfh()->GetGlobalId(), &event_handler,
++      /*is_allowed_on_lock_screen=*/false, connect_future.GetCallback());
++  base::WeakPtr<VideoCaptureController> controller = connect_future.Get();
++  ASSERT_TRUE(controller);
++  event_handler.WaitForStart();
++
++  const auto bind_image_capture = [](RenderFrameHost* rfh) {
++    mojo::Remote<media::mojom::ImageCapture> remote;
++    ImageCaptureImpl::Create(
++        rfh, remote.BindNewPipeAndPassReceiver(),
++        /*skip_connecting_to_media_stream_manager_for_testing=*/false);
++    return remote;
++  };
++
++  mojo::Remote<media::mojom::ImageCapture> owner_remote =
++      bind_image_capture(main_rfh());
++
++  double initial_exposure_time = 0.0;
++  {
++    base::test::TestFuture<media::mojom::PhotoStatePtr> state_future;
++    owner_remote->GetPhotoState(owner_device.id, state_future.GetCallback());
++    media::mojom::PhotoStatePtr state = state_future.Take();
++    EXPECT_GT(state->height->max, 0.0);
++    initial_exposure_time = state->exposure_time->current;
++
++    base::test::TestFuture<bool> options_future;
++    owner_remote->SetPhotoOptions(owner_device.id,
++                                  media::mojom::PhotoSettings::New(),
++                                  options_future.GetCallback());
++    EXPECT_TRUE(options_future.Get());
++
++    base::test::TestFuture<media::mojom::BlobPtr> photo_future;
++    owner_remote->TakePhoto(owner_device.id, photo_future.GetCallback());
++    EXPECT_FALSE(photo_future.Take()->data.empty());
++  }
++
++  // A cross-origin subframe supplying `main_rfh()`'s `source_id` must not be
++  // able to read photo state, alter camera settings, or capture photos.
++  RenderFrameHost* cross_origin_subframe =
++      NavigationSimulator::NavigateAndCommitFromDocument(
++          GURL(kAttackerUrl),
++          RenderFrameHostTester::For(main_rfh())->AppendChild("attacker"));
++  mojo::Remote<media::mojom::ImageCapture> attacker_remote =
++      bind_image_capture(cross_origin_subframe);
++
++  const auto expect_photo_ops_rejected =
++      [&](mojo::Remote<media::mojom::ImageCapture>& remote,
++          const std::string& source_id) {
++        base::test::TestFuture<media::mojom::PhotoStatePtr> state_future;
++        remote->GetPhotoState(source_id, state_future.GetCallback());
++        EXPECT_EQ(state_future.Take()->height->max, 0.0);
++
++        auto settings = media::mojom::PhotoSettings::New();
++        settings->has_exposure_time = true;
++        settings->exposure_time = initial_exposure_time + 500.0;
++        base::test::TestFuture<bool> options_future;
++        remote->SetPhotoOptions(source_id, std::move(settings),
++                                options_future.GetCallback());
++        EXPECT_FALSE(options_future.Get());
++
++        base::test::TestFuture<media::mojom::BlobPtr> photo_future;
++        remote->TakePhoto(source_id, photo_future.GetCallback());
++        EXPECT_TRUE(photo_future.Take()->data.empty());
++      };
++
++  expect_photo_ops_rejected(attacker_remote, owner_device.id);
++
++  // Verify the owner's camera settings were not modified by the rejected call.
++  {
++    base::test::TestFuture<media::mojom::PhotoStatePtr> state_future;
++    owner_remote->GetPhotoState(owner_device.id, state_future.GetCallback());
++    EXPECT_EQ(state_future.Take()->exposure_time->current,
++              initial_exposure_time);
++  }
++
++  // A same-origin subframe without its own open session is also rejected, even
++  // though its origin's HMAC `source_id` matches `owner_device.id`.
++  RenderFrameHost* same_origin_subframe =
++      NavigationSimulator::NavigateAndCommitFromDocument(
++          GURL(kTestUrl),
++          RenderFrameHostTester::For(main_rfh())->AppendChild("same_origin"));
++  mojo::Remote<media::mojom::ImageCapture> same_origin_remote =
++      bind_image_capture(same_origin_subframe);
++  expect_photo_ops_rejected(same_origin_remote, owner_device.id);
++
++  // Once the same-origin subframe opens its own stream for the camera, its
++  // `ImageCapture` operations succeed; once it closes its stream, it is
++  // rejected again while `main_rfh()`'s session remains usable.
++  auto [subframe_label, subframe_device] =
++      OpenVideoStreamForFrame(same_origin_subframe);
++  EXPECT_EQ(subframe_device.id, owner_device.id);
++  EXPECT_NE(subframe_device.session_id(), owner_device.session_id());
++  {
++    base::test::TestFuture<media::mojom::BlobPtr> photo_future;
++    same_origin_remote->TakePhoto(subframe_device.id,
++                                  photo_future.GetCallback());
++    EXPECT_FALSE(photo_future.Take()->data.empty());
++  }
++
++  media_stream_manager()->CancelRequest(subframe_label);
++  expect_photo_ops_rejected(same_origin_remote, subframe_device.id);
++  {
++    base::test::TestFuture<media::mojom::BlobPtr> photo_future;
++    owner_remote->TakePhoto(owner_device.id, photo_future.GetCallback());
++    EXPECT_FALSE(photo_future.Take()->data.empty());
++  }
++
++  media_stream_manager()->video_capture_manager()->DisconnectClient(
++      controller.get(), client_id, &event_handler,
++      media::VideoCaptureError::kNone);
++  media_stream_manager()->CancelRequest(owner_label);
++  base::RunLoop().RunUntilIdle();
++}
++
+ }  // namespace content
+diff --git a/content/browser/renderer_host/media/media_stream_manager.cc b/content/browser/renderer_host/media/media_stream_manager.cc
+index 9425f5864921b896637b5a6dc2480adcaca6c533..728f5ba937830a962988f336c233d00877228842 100644
+--- a/content/browser/renderer_host/media/media_stream_manager.cc
++++ b/content/browser/renderer_host/media/media_stream_manager.cc
+@@ -11,6 +11,7 @@
+ #include <list>
+ #include <memory>
+ #include <optional>
++#include <string>
+ #include <vector>
+ 
+ #include "base/command_line.h"
+@@ -1986,10 +1987,15 @@ bool MediaStreamManager::KeepDeviceAliveForTransfer(
+ }
+ 
+ base::UnguessableToken MediaStreamManager::VideoDeviceIdToSessionId(
+-    const std::string& device_id) const {
++    const std::string& device_id,
++    GlobalRenderFrameHostId render_frame_host_id) const {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+ 
+   for (const LabeledDeviceRequest& device_request : requests_) {
++    if (device_request.second->requesting_render_frame_host_id !=
++        render_frame_host_id) {
++      continue;
++    }
+     for (const blink::mojom::StreamDevicesPtr& stream_devices_ptr :
+          device_request.second->stream_devices_set.stream_devices) {
+       const blink::mojom::StreamDevices& devices = *stream_devices_ptr;
+diff --git a/content/browser/renderer_host/media/media_stream_manager.h b/content/browser/renderer_host/media/media_stream_manager.h
+index 547be8fc4f8ee7b0b6ff29f46d4f485451816788..4c20af6337490d367937ef77cbe1c57dc9bcc1dd 100644
+--- a/content/browser/renderer_host/media/media_stream_manager.h
++++ b/content/browser/renderer_host/media/media_stream_manager.h
+@@ -299,11 +299,12 @@ class CONTENT_EXPORT MediaStreamManager
+                   OpenDeviceCallback open_device_callback,
+                   DeviceStoppedCallback device_stopped_callback);
+ 
+-  // Find |device_id| in the list of |requests_|, and returns its session id,
+-  // or an empty base::UnguessableToken if not found. Must be called on the IO
+-  // thread.
++  // Find `device_id` in the list of `requests_` for `render_frame_host_id`,
++  // and returns its session id, or an empty base::UnguessableToken if not
++  // found. Must be called on the IO thread.
+   base::UnguessableToken VideoDeviceIdToSessionId(
+-      const std::string& device_id) const;
++      const std::string& device_id,
++      GlobalRenderFrameHostId render_frame_host_id) const;
+ 
+   // Called by UI to make sure the device monitor is started so that UI receive
+   // notifications about device changes.

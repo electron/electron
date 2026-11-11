@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Wed, 11 Nov 2026 10:01:29 -0800
+Subject: [M158] Remove SK_LEGACY_ALPHA_RUNS
+
+Cherry-picking to M158 to resolve consistent test failures on chromium-m158/mac15-arm64-rel-tests.
+Example failure: https://ci.chromium.org/b/8665850631947349441
+
+Merge-Approval-Bypass: [Gardener] Fixing failing tests
+
+Original change's description:
+> Remove SK_LEGACY_ALPHA_RUNS
+>
+> * Remove flag guarding robustness fixes in the RunBasedAdditiveBlitter, and rebase some subtly affected images.
+>
+> Bug: chromium:569286603
+> Change-Id: I27d54abe4bd83db41444f74317e04bcb78ae8921
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8712611
+> Reviewed-by: Robert Phillips <robertphillips@google.com>
+> Commit-Queue: Thomas Smith <thomsmit@google.com>
+> Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1735518}
+
+(cherry picked from commit 606539275da69f9846d5a40cf8dbbb584d37ed05)
+
+CONV=905e0b43-d399-41c3-9d56-c21f54705cb6
+
+Bug: chromium:569286603, chromium :583971020
+Change-Id: I27d54abe4bd83db41444f74317e04bcb78ae8921
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8761712
+Auto-Submit: Joe Downing <joedow@chromium.org>
+Reviewed-by: Carlos Knippschild <carlosk@chromium.org>
+Commit-Queue: Tibor Goldschwendt <tiborg@chromium.org>
+Reviewed-by: Tibor Goldschwendt <tiborg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8127@{#1684}
+Cr-Branched-From: df5c5abe6527926adf7ebf8540a8e6a0f9df7945-refs/heads/main@{#1727472}
+
+Electron adaptation notes (44-x-y):
+Removes the SK_LEGACY_ALPHA_RUNS define added by the preceding pick (placed at a different position on this branch). The upstream change also updates five binary Blink web_tests baseline PNGs; binary hunks do not survive Electron's patch export/apply round trip and the baselines are test-only, so they are not carried.
+
+diff --git a/skia/config/SkUserConfig.h b/skia/config/SkUserConfig.h
+index 5260d050d257b73bdc280ae96ef98ab33fa9f8f1..8ba62b2d7b2190e68ae74c0361baa7b7d79f6cc0 100644
+--- a/skia/config/SkUserConfig.h
++++ b/skia/config/SkUserConfig.h
+@@ -145,8 +145,6 @@ SK_API void SkLog_FileLine(const char* file,
+ 
+ #define SK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER
+ 
+-#define SK_LEGACY_ALPHA_RUNS
+-
+ ///////////////////////// Imported from BUILD.gn and skia_common.gypi
+ 
+ /* In some places Skia can use static initializers for global initialization,

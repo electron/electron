@@ -1,0 +1,204 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Sat, 7 Nov 2026 11:27:10 -0800
+Subject: MSE: Ensure merged GOPs are split or removed on continuation appends
+
+When a continuation append starts with a buffer timestamp earlier than
+highest_timestamp_in_append_sequence_, PrepareRangesForNextAppend()
+previously clamped buffers_start_timestamp to
+highest_buffered_end_time_in_append_sequence_. When the highest frame in
+the append sequence had an estimated duration, a subsequent range
+starting between highest_timestamp_in_append_sequence_ and
+highest_buffered_end_time_in_append_sequence_ could be merged into
+range_for_next_append_ and then skipped during overlap removal or
+splitting, allowing keyframes with earlier PTS to be appended after it.
+
+Clamp buffers_start_timestamp to highest_timestamp_in_append_sequence_ +
+1us instead, and add bounds and monotonicity CHECKs on keyframe_map_
+indices in SourceBufferRange.
+
+Fixed: 581629247
+Change-Id: I727f69af9b62054392cde886ff64549ebdd5cdae
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8736002
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Frank Liberato <liberato@chromium.org>
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1738515}
+
+diff --git a/media/filters/source_buffer_range.cc b/media/filters/source_buffer_range.cc
+index 0503717e6b51fd257f6218b132d250a46be29eb2..5b6dd594d8eeecbe06bce7b434f75bbd8dfa22b0 100644
+--- a/media/filters/source_buffer_range.cc
++++ b/media/filters/source_buffer_range.cc
+@@ -130,6 +130,8 @@ void SourceBufferRange::AppendBuffersToEnd(
+     memory_usage_in_bytes_ += (*itr)->GetMemoryUsage();
+ 
+     if ((*itr)->is_key_frame()) {
++      CHECK(keyframe_map_.empty() ||
++            (*itr)->timestamp() >= keyframe_map_.rbegin()->first);
+       keyframe_map_.insert(std::make_pair(
+           (*itr)->timestamp(), buffers_.size() - 1 + keyframe_map_index_base_));
+     }
+@@ -184,6 +186,7 @@ void SourceBufferRange::Seek(base::TimeDelta timestamp) {
+ 
+   auto result = GetFirstKeyframeAtOrBefore(timestamp);
+   next_buffer_index_ = result->second - keyframe_map_index_base_;
++  CHECK_GE(next_buffer_index_, 0);
+   CHECK_LT(next_buffer_index_, static_cast<int>(buffers_.size()))
+       << next_buffer_index_ << ", size = " << buffers_.size();
+ }
+@@ -263,6 +266,7 @@ std::unique_ptr<SourceBufferRange> SourceBufferRange::SplitRange(
+   // into |removed_buffers|.
+   int keyframe_index =
+       new_beginning_keyframe->second - keyframe_map_index_base_;
++  CHECK_GE(keyframe_index, 0);
+   CHECK_LT(keyframe_index, static_cast<int>(buffers_.size()));
+   BufferQueue::iterator starting_point = buffers_.begin() + keyframe_index;
+   BufferQueue removed_buffers =
+@@ -333,6 +337,8 @@ size_t SourceBufferRange::DeleteGOPFromFront(BufferQueue* deleted_buffers) {
+   int end_index = keyframe_map_.size() > 0
+                       ? keyframe_map_.begin()->second - keyframe_map_index_base_
+                       : buffers_.size();
++  CHECK_GE(end_index, 0);
++  CHECK_LE(end_index, static_cast<int>(buffers_.size()));
+ 
+   // Delete buffers from the beginning of the buffered range up until (but not
+   // including) the next keyframe.
+@@ -383,6 +389,7 @@ size_t SourceBufferRange::DeleteGOPFromBack(BufferQueue* deleted_buffers) {
+   // The index of the first buffer in the last GOP is equal to the new size of
+   // |buffers_| after that GOP is deleted.
+   size_t goal_size = back->second - keyframe_map_index_base_;
++  CHECK_LE(goal_size, buffers_.size());
+   keyframe_map_.erase(back);
+ 
+   size_t total_bytes_deleted = 0;
+@@ -417,6 +424,8 @@ size_t SourceBufferRange::GetRemovalGOP(
+   if (gop_itr == keyframe_map_.end())
+     return 0;
+   int keyframe_index = gop_itr->second - keyframe_map_index_base_;
++  CHECK_GE(keyframe_index, 0);
++  CHECK_LT(keyframe_index, static_cast<int>(buffers_.size()));
+   BufferQueue::const_iterator buffer_itr = buffers_.begin() + keyframe_index;
+   auto gop_end = keyframe_map_.end();
+   if (end_timestamp < GetBufferedEndTimestamp())
+@@ -435,6 +444,8 @@ size_t SourceBufferRange::GetRemovalGOP(
+     int next_gop_index = gop_itr == keyframe_map_.end()
+                              ? buffers_.size()
+                              : gop_itr->second - keyframe_map_index_base_;
++    CHECK_GE(next_gop_index, 0);
++    CHECK_LE(next_gop_index, static_cast<int>(buffers_.size()));
+     BufferQueue::const_iterator next_gop_start =
+         buffers_.begin() + next_gop_index;
+     for (; buffer_itr != next_gop_start; ++buffer_itr) {
+@@ -599,6 +610,7 @@ base::TimeDelta SourceBufferRange::FindHighestBufferedTimestampAtOrBefore(
+   // Scan forward in |buffers_| to find the highest frame with timestamp <=
+   // |timestamp|. Stop once a frame with timestamp > |timestamp| is encountered.
+   size_t key_index = key_iter->second - keyframe_map_index_base_;
++  CHECK_LT(key_index, buffers_.size());
+   SourceBufferRange::BufferQueue::const_iterator search_iter =
+       buffers_.begin() + key_index;
+   CHECK(search_iter != buffers_.end());
+@@ -833,14 +845,17 @@ size_t SourceBufferRange::GetBufferIndexAt(base::TimeDelta timestamp,
+   // a GOP may not match the DTS-sorted sequence of frames within the GOP.
+   DCHECK_GT(buffers_.size(), 0u);
+   size_t search_index = gop_iter->second - keyframe_map_index_base_;
++  CHECK_LT(search_index, buffers_.size());
+   SourceBufferRange::BufferQueue::const_iterator search_iter =
+       buffers_.begin() + search_index;
+   gop_iter++;
+ 
++  size_t next_gop_index = gop_iter == keyframe_map_.end()
++                              ? buffers_.size()
++                              : gop_iter->second - keyframe_map_index_base_;
++  CHECK_LE(next_gop_index, buffers_.size());
+   SourceBufferRange::BufferQueue::const_iterator next_gop_start =
+-      gop_iter == keyframe_map_.end()
+-          ? buffers_.end()
+-          : buffers_.begin() + (gop_iter->second - keyframe_map_index_base_);
++      buffers_.begin() + next_gop_index;
+ 
+   while (search_iter != next_gop_start) {
+     if (((*search_iter)->timestamp() > timestamp) ||
+@@ -947,8 +962,10 @@ void SourceBufferRange::UpdateEndTimeUsingLastGOP() {
+ 
+   // Iterate through the frames of the last GOP in this range, finding the
+   // frame with the highest PTS.
++  size_t last_gop_index = last_gop->second - keyframe_map_index_base_;
++  CHECK_LT(last_gop_index, buffers_.size());
+   for (BufferQueue::const_iterator buffer_itr =
+-           buffers_.begin() + (last_gop->second - keyframe_map_index_base_);
++           buffers_.begin() + last_gop_index;
+        buffer_itr != buffers_.end(); ++buffer_itr) {
+     UpdateEndTime(*buffer_itr);
+   }
+diff --git a/media/filters/source_buffer_stream.cc b/media/filters/source_buffer_stream.cc
+index b9b9b12ea3fb7d132b4b1a6a8345c65e47d4d534..8112ea241865ff41fa5e8bdce2f4a7f1ea73d8d1 100644
+--- a/media/filters/source_buffer_stream.cc
++++ b/media/filters/source_buffer_stream.cc
+@@ -1233,12 +1233,18 @@ void SourceBufferStream::PrepareRangesForNextAppend(
+   // 2. Delete the buffers that |new_buffers| overlaps.
+   // There may be buffers in |new_buffers| with timestamp before
+   // |highest_timestamp_in_append_sequence_| that shouldn't trigger removal of
+-  // stuff before |highest_timestamp_in_append_sequence_|.
++  // stuff at or before |highest_timestamp_in_append_sequence_|. Using
++  // |highest_timestamp_in_append_sequence_ + 1us| instead of
++  // |highest_buffered_end_time_in_append_sequence_| ensures that any subsequent
++  // range merged into |range_for_next_append_| (or buffered after it) starting
++  // before |highest_buffered_end_time_in_append_sequence_| is still split or
++  // overlap-removed as needed before appending |new_buffers|.
+   if (highest_timestamp_in_append_sequence_ != kNoTimestamp &&
+       buffers_start_timestamp < highest_timestamp_in_append_sequence_) {
+     DCHECK(highest_timestamp_in_append_sequence_ <=
+            highest_buffered_end_time_in_append_sequence_);
+-    buffers_start_timestamp = highest_buffered_end_time_in_append_sequence_;
++    buffers_start_timestamp =
++        highest_timestamp_in_append_sequence_ + base::Microseconds(1);
+   }
+ 
+   if (new_coded_frame_group_) {
+diff --git a/media/filters/source_buffer_stream_unittest.cc b/media/filters/source_buffer_stream_unittest.cc
+index cfb3a756675ee809bf844b4dcafb856f5983a619..1414d576fcbf1a949712e1aefc9edfcde5f4681b 100644
+--- a/media/filters/source_buffer_stream_unittest.cc
++++ b/media/filters/source_buffer_stream_unittest.cc
+@@ -5867,4 +5867,42 @@ TEST_F(SourceBufferStreamTest,
+   EXPECT_FALSE(GarbageCollect(base::Milliseconds(0), 0));
+ }
+ 
++TEST_F(SourceBufferStreamTest,
++       MergedRangeSplitBeforeBufferedEndTimeOnContinuationAppend) {
++  // 1. Append a range at [25ms, 35ms).
++  NewCodedFrameGroupAppend("25|10D10K");
++  CheckExpectedRangesByTimestamp("{ [25,35) }");
++
++  // 2. Append a new coded frame group starting at 5ms with an estimated 45ms
++  // duration keyframe at 5ms and a non-keyframe at 5ms ([5ms, 50ms)). Because
++  // GetTimestampInterval() uses 1us for estimated durations,
++  // RemoveInternal(5ms, 6ms) preserves [25ms, 35ms). Append() records
++  // highest_timestamp_in_append_sequence_ = 5ms and
++  // highest_buffered_end_time_in_append_sequence_ = 50ms, and then merges
++  // [25ms, 35ms) into range_for_next_append_ (updating the merged range's
++  // highest_frame_ to 25|10D10K, so the buffered range is [5ms, 35ms)).
++  NewCodedFrameGroupAppend("5|0D45EK 5|5D1");
++  CheckExpectedRangesByTimestamp("{ [5,35) }");
++
++  // 3. Continue the coded frame group with a SAP-Type-2 non-keyframe at
++  // PTS=0ms (< 5ms) ending at 5ms (exercising the early-return SplitRange()
++  // path), followed by another continuation starting at PTS=0ms with keyframes
++  // at 15ms and 20ms (exercising the overlap removal path). In both cases, the
++  // merged 25ms GOP must be split off before appending so that keyframes in
++  // the range remain in non-decreasing PTS order.
++  AppendBuffers("0|10D5");
++  CheckExpectedRangesByTimestamp("{ [5,35) }");
++  AppendBuffers("0|12D5 15|15D5K 20|20D5K");
++  CheckExpectedRangesByTimestamp("{ [5,35) }");
++
++  // 4. Seek to 15ms, evict the front GOP via GC, and remove [0ms, 22ms)
++  // (which rounds up to the 25ms keyframe and calls SplitRange(25ms) after
++  // DeleteGOPFromFront()).
++  SeekToTimestampMs(15);
++  SetMemoryLimit(3);
++  EXPECT_TRUE(GarbageCollect(base::Milliseconds(15), 0));
++  RemoveInMs(0, 22, 50);
++  CheckExpectedRangesByTimestamp("{ [25,35) }");
++}
++
+ }  // namespace media

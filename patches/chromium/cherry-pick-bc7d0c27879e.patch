@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Wed, 28 Oct 2026 09:52:46 -0700
+Subject: Add legacy alpha runs flag
+
+Bug: chromium:569286603
+Bug: chromium:577625521
+Change-Id: Ic2d8907885e0ec723b7b1d72d1273a9f98b12899
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8671658
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Cr-Commit-Position: refs/heads/main@{#1729248}
+
+Electron adaptation notes (44-x-y):
+skia/config/SkUserConfig.h on this branch lacks the surrounding SK_SUPPORT_LEGACY_GRAPHITE_RRECT_BLUR / SK_DISABLE_GRAPHITE_NONINTEGRAL_VARYINGS_FLAT_INTERPOLATION defines; the define is placed after the branch's last legacy define. This pick exists only so that the following 'Remove SK_LEGACY_ALPHA_RUNS' pick applies as upstream; the net effect on the file is no define.
+
+diff --git a/skia/config/SkUserConfig.h b/skia/config/SkUserConfig.h
+index 8ba62b2d7b2190e68ae74c0361baa7b7d79f6cc0..5260d050d257b73bdc280ae96ef98ab33fa9f8f1 100644
+--- a/skia/config/SkUserConfig.h
++++ b/skia/config/SkUserConfig.h
+@@ -145,6 +145,8 @@ SK_API void SkLog_FileLine(const char* file,
+ 
+ #define SK_GRAPHITE_USE_LEGACY_RRECT_CLIP_SHADER
+ 
++#define SK_LEGACY_ALPHA_RUNS
++
+ ///////////////////////// Imported from BUILD.gn and skia_common.gypi
+ 
+ /* In some places Skia can use static initializers for global initialization,

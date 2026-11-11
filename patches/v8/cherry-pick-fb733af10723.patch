@@ -1,0 +1,263 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Tue, 27 Oct 2026 14:22:54 +0100
+Subject: [maglev] CreateObjectLiteral and CreateArrayLiteral can write
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+They can make a prototype go into fast mode, which changes its map.
+
+Bug: 575525282, 574059463
+Change-Id: I3298cf355d6751a71f1c8e4f42a2797f2c4acbd7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8668740
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111225}
+
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index b726fe6b76c70b93e42a0de070547128bcba87f8..7672eb1df6bfb715fff11f7ecdc0b9d6f50d6dac 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -5538,7 +5538,9 @@ class CreateArrayLiteral : public FixedInputValueNodeT<0, CreateArrayLiteral> {
+   static constexpr OpProperties kProperties =
+       OpProperties::Call() | OpProperties::CanAllocate() |
+       OpProperties::CanThrow() | OpProperties::LazyDeopt() |
+-      OpProperties::NotIdempotent();
++      OpProperties::NotIdempotent() |
++      // The runtime call may make prototype maps fast.
++      OpProperties::CanWrite();
+ 
+   int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+@@ -5606,7 +5608,9 @@ class CreateObjectLiteral
+   static constexpr OpProperties kProperties =
+       OpProperties::Call() | OpProperties::CanAllocate() |
+       OpProperties::CanThrow() | OpProperties::LazyDeopt() |
+-      OpProperties::NotIdempotent();
++      OpProperties::NotIdempotent() |
++      // The runtime call may make prototype maps fast.
++      OpProperties::CanWrite();
+ 
+   int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+diff --git a/test/mjsunit/regress/regress-575525282-1.js b/test/mjsunit/regress/regress-575525282-1.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a1f789c7e020459d5b19808a717e2d31378649d
+--- /dev/null
++++ b/test/mjsunit/regress/regress-575525282-1.js
+@@ -0,0 +1,70 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++// The 32-bit word that optimized code hands to script as a tagged pointer (low bit set).
++// Cage base + 0xdead0000 lies 3.48 GiB into V8's 4-GiB pointer-compression
++// cage, far above everything this page allocates there.
++const WORD = 0xdead0001;
++// Compressed address of the read-only string "name".
++const NAME = 0xe29;
++
++// 1. Map setup
++function f(flag) { if (flag) return { a: 1, b: { c: 2 } }; return 0; }
++%PrepareFunctionForOptimization(f);
++f(true);
++f(true);
++const sib = { a: 1, z: 0 };
++
++// Resulting maps:
++//-> M1 (a: smi) -> M2 (a: smi, b: HeapObject)
++//            \
++//             ---> M3 (a: smi, z: smi)
++
++// This deprecates all above maps.
++sib.a = 1.5;
++
++// 2. Object.prototype with more properties, one of them "name" and one element.
++const A = Object.prototype;
++A.name = 'TRUE';
++A[0] = 7;
++
++// 3. Object.prototype goes to dictionary mode: Object.assign from a source of
++// more than 1020 properties normalizes its target first; the first getter
++// throws, so nothing is stored.
++const big = {};
++Object.defineProperty(big, 'g0', { enumerable: true, get() { throw 1; } });
++for (let i = 0; i < 1100; i++) big['p' + i] = i;
++try { Object.assign(A, big); } catch (e) {}
++
++// 4. The function under test:
++// Every double of the array literal holds the two words NAME (low) and
++// WORD (high).
++const dv = new DataView(new ArrayBuffer(8));
++dv.setUint32(0, NAME, true); dv.setUint32(4, WORD, true);
++const h = new Function('A', 'flag',
++    'A[0]; ' + // Map check
++    'f(flag); ' + // Object literal
++    // Big double array
++    'var o = [' +
++    Array(2048).fill(String(dv.getFloat64(0, true))).join(',') +
++    ']; ' +
++    'var x = A.name; ' + // Property load from an object whose map we already
++                         // checked
++    'return [x.length, o];');
++
++// 5. Warm-up without the literal
++%PrepareFunctionForOptimization(h);
++h(A, false);
++%OptimizeMaglevOnNextCall(h);
++
++assertFalse(%HasFastProperties(A));
++
++// 6. One call with the literal.
++h(A, true);
++assertUnoptimized(h);
++
++// Creating the object literal optimized the prototype.
++assertTrue(%HasFastProperties(A));
+diff --git a/test/mjsunit/regress/regress-575525282-2.js b/test/mjsunit/regress/regress-575525282-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..28d7eb03a038683e90df8815f10e36df7a79ed71
+--- /dev/null
++++ b/test/mjsunit/regress/regress-575525282-2.js
+@@ -0,0 +1,66 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++// 1. Map setup
++function f(flag) {
++  if (flag) return {a: 1, b: {c: 2}};
++  return 0;
++}
++%PrepareFunctionForOptimization(f);
++f(true);
++f(true);
++const sib = { a: 1, z: 0 };
++
++// Resulting maps:
++//-> M1 (a: smi) -> M2 (a: smi, b: HeapObject)
++//            \
++//             ---> M3 (a: smi, z: smi)
++
++// This deprecates all above maps.
++sib.a = 1.5;
++
++// 2. Object.prototype with more properties, one of them "x1" and one element.
++//    Populate enough fast properties with ('x1', 'WRONG', 0) triples so that
++//    when Object.prototype later transitions back from dictionary mode to fast
++//    mode, a stale LoadDictionaryField for "x1" reads 'WRONG' in-bounds from
++//    the new PropertyArray instead of 'TRUE'.
++const A = Object.prototype;
++A.x1 = 'TRUE';
++A[0] = 7;
++for (let i = 0; i < 80; i++) {
++  A['k' + i] = (i % 3 === 0) ? 'x1' : (i % 3 === 1 ? 'WRONG' : 0);
++}
++
++// 3. Object.prototype goes to dictionary mode: Object.assign from a source of
++// more than 1020 properties normalizes its target first; the first getter
++// throws, so nothing is stored.
++const big = {};
++Object.defineProperty(big, 'g0', { enumerable: true, get() { throw 1; } });
++for (let i = 0; i < 1100; i++) big['p' + i] = i;
++try { Object.assign(A, big); } catch (e) {}
++
++// 4. The function under test:
++function h(A, flag) {
++  A[0];         // Map check
++  f(flag);      // Object literal
++  return A.x1;  // Property load from an object whose map we already checked
++}
++
++// 5. Warm-up without the literal
++%PrepareFunctionForOptimization(h);
++assertEquals('TRUE', h(A, false));
++%OptimizeMaglevOnNextCall(h);
++assertEquals('TRUE', h(A, false));
++assertMaglevved(h);
++
++assertFalse(%HasFastProperties(A));
++
++// 6. One call with the literal.
++assertEquals('TRUE', h(A, true));
++assertUnoptimized(h);
++
++// Creating the object literal optimized the prototype.
++assertTrue(%HasFastProperties(A));
+diff --git a/test/mjsunit/regress/regress-575525282-3.js b/test/mjsunit/regress/regress-575525282-3.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fda9eadb752b3224a0a9957c141c945f5bec616b
+--- /dev/null
++++ b/test/mjsunit/regress/regress-575525282-3.js
+@@ -0,0 +1,66 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++// 1. Map setup
++function f(flag) {
++  if (flag) return [{a: 1, b: 2}];
++  return 0;
++}
++%PrepareFunctionForOptimization(f);
++f(true);
++f(true);
++const sib = { a: 1, z: 0 };
++
++// Resulting maps:
++//-> M1 (a: smi) -> M2 (a: smi, b: smi)
++//            \
++//             ---> M3 (a: smi, z: smi)
++
++// This deprecates all above maps.
++sib.a = 1.5;
++
++// 2. Object.prototype with more properties, one of them "x1" and one element.
++//    Populate enough fast properties with ('x1', 'WRONG', 0) triples so that
++//    when Object.prototype later transitions back from dictionary mode to fast
++//    mode, a stale LoadDictionaryField for "x1" reads 'WRONG' in-bounds from
++//    the new PropertyArray instead of 'TRUE'.
++const A = Object.prototype;
++A.x1 = 'TRUE';
++A[0] = 7;
++for (let i = 0; i < 80; i++) {
++  A['k' + i] = (i % 3 === 0) ? 'x1' : (i % 3 === 1 ? 'WRONG' : 0);
++}
++
++// 3. Object.prototype goes to dictionary mode: Object.assign from a source of
++// more than 1020 properties normalizes its target first; the first getter
++// throws, so nothing is stored.
++const big = {};
++Object.defineProperty(big, 'g0', { enumerable: true, get() { throw 1; } });
++for (let i = 0; i < 1100; i++) big['p' + i] = i;
++try { Object.assign(A, big); } catch (e) {}
++
++// 4. The function under test:
++function h(A, flag) {
++  A[0];         // Map check
++  f(flag);      // Array literal with nested object literal
++  return A.x1;  // Property load from an object whose map we already checked
++}
++
++// 5. Warm-up without the literal
++%PrepareFunctionForOptimization(h);
++assertEquals('TRUE', h(A, false));
++%OptimizeMaglevOnNextCall(h);
++assertEquals('TRUE', h(A, false));
++assertMaglevved(h);
++
++assertFalse(%HasFastProperties(A));
++
++// 6. One call with the literal.
++assertEquals('TRUE', h(A, true));
++assertUnoptimized(h);
++
++// Creating the array literal optimized the prototype.
++assertTrue(%HasFastProperties(A));

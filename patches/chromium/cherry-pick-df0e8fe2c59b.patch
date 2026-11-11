@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Mon, 2 Nov 2026 10:34:32 -0800
+Subject: [PDF] Prevent page unloading in PDFiumPage::GenerateThumbnail()
+
+PDFs with JS can potentially trigger page unloading while
+GenerateThumbnail() is rendering. Use ScopedPageUnloadPreventer to make
+sure that does not happen.
+
+Bug: 579818899
+Change-Id: I7525abd9f21a678510318493e32523a08f231574
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8694663
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+Auto-Submit: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1733082}
+
+diff --git a/pdf/pdfium/pdfium_page.cc b/pdf/pdfium/pdfium_page.cc
+index a79e744fc8e073a05fa50251c24368d224bb73fe..901661db7a6a98b542f9ec0adf9b950357902b4f 100644
+--- a/pdf/pdfium/pdfium_page.cc
++++ b/pdf/pdfium/pdfium_page.cc
+@@ -2052,6 +2052,9 @@ Thumbnail PDFiumPage::GenerateThumbnail(float device_pixel_ratio) {
+   DCHECK(available());
+ 
+   FPDF_PAGE page = GetPage();
++  // Make sure `page` stays valid for the duration of this function.
++  ScopedPageUnloadPreventer scoped_unload_preventer(this);
++
+   const bool has_alpha = !!FPDFPage_HasTransparency(page);
+   const int format = has_alpha ? FPDFBitmap_BGRA : FPDFBitmap_BGRx;
+ 

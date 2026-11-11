@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 2 Nov 2026 13:19:53 -0500
+Subject: [ganesh] Compute op bounds in device space to match tessellator
+ calculations
+
+Bug: 577346516
+Fixed: 577346516
+Change-Id: I4308b8752e53424ce74d59300160319e103dac48
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1413857
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/gpu/ganesh/ops/AALinearizingConvexPathRenderer.cpp b/src/gpu/ganesh/ops/AALinearizingConvexPathRenderer.cpp
+index 648c325f75f316ed4a82e4d783dd0f785b229c85..e3a280ab8386eda72c7e918c9022e7f9738e74f6 100644
+--- a/src/gpu/ganesh/ops/AALinearizingConvexPathRenderer.cpp
++++ b/src/gpu/ganesh/ops/AALinearizingConvexPathRenderer.cpp
+@@ -150,20 +150,21 @@ public:
+         fPaths.emplace_back(
+                 PathData{viewMatrix, path, color, strokeWidth, miterLimit, style, join});
+ 
+-        // compute bounds
+-        SkRect bounds = path.getBounds();
+-        SkScalar w = strokeWidth;
+-        if (w > 0) {
+-            w /= 2;
+-            SkScalar maxScale = viewMatrix.getMaxScale();
+-            // We should not have a perspective matrix, thus we should have a valid scale.
+-            SkASSERT(maxScale != -1);
+-            if (SkPaint::kMiter_Join == join && w * maxScale > 1.f) {
+-                w *= miterLimit;
+-            }
+-            bounds.outset(w, w);
++        // Compute bounds in device space, which is the coordinate space that GrAAConvexTessellator
++        // operates in. This does not support perspective, so getMaxScale() should be valid.
++        // NOTE: strokeWidth is negative for fills; pin the outset to be above 0 in that case
++        SkASSERT(viewMatrix.getMaxScale() > 0);
++        const float effectiveStrokeWidth = viewMatrix.getMaxScale() * strokeWidth;
++        float devOutset = std::max(0.f, 0.5f * effectiveStrokeWidth) + 0.5f; // + 1/2 for AA
++        if (join == SkPaint::kMiter_Join) {
++            // A miter limit below 1 cannot shrink the stroke
++            devOutset *= std::max(miterLimit, 1.f);
+         }
+-        this->setTransformedBounds(bounds, viewMatrix, HasAABloat::kYes, IsHairline::kNo);
++        // Slack for the AA ring's own bevel/miter around a bevelled stroke corner and for the
++        // rounding of coordinates near pixel centers.
++        devOutset += 1.f;
++        SkRect devBounds = viewMatrix.mapRect(path.getBounds()).makeOutset(devOutset, devOutset);
++        this->setBounds(devBounds, HasAABloat::kYes, IsHairline::kNo);
+     }
+ 
+     const char* name() const override { return "AAFlatteningConvexPathOp"; }

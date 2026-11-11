@@ -1,0 +1,208 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Fri, 30 Oct 2026 13:40:59 +0100
+Subject: [ic] Use StoreGlobalProxy handler for non-contextual stores to global
+
+Ensure stores to existing properties on JSGlobalObject through
+JSGlobalProxy use a StoreThroughPrototype handler with StoreGlobalProxy
+so that access checks and prototype chain validity checks are enforced,
+and remove the now-unused StoreHandler::StoreGlobal handler.
+
+TAG=agy
+CONV=de586dfb-b208-4009-af79-183febca17e6
+
+Fixed: 574222006
+Change-Id: I2c89603783851557ca5b412c1b609ab8d3996137
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8691329
+Auto-Submit: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111486}
+
+diff --git a/src/ic/accessor-assembler.cc b/src/ic/accessor-assembler.cc
+index 52aec124a61305e15969bf35efbc47d9dbdeec19..26acf5536e926c4675abba5518fc94e485faa947 100644
+--- a/src/ic/accessor-assembler.cc
++++ b/src/ic/accessor-assembler.cc
+@@ -1546,7 +1546,7 @@ void AccessorAssembler::HandleStoreICHandlerCase(
+     ICMode ic_mode, ElementSupport support_elements) {
+   Label if_smi_handler(this), if_nonsmi_handler(this);
+   Label if_proto_handler(this), call_handler(this),
+-      store_transition_or_global_or_accessor(this);
++      store_transition_or_accessor(this);
+ 
+   Branch(TaggedIsSmi(handler), &if_smi_handler, &if_nonsmi_handler);
+ 
+@@ -1677,8 +1677,7 @@ void AccessorAssembler::HandleStoreICHandlerCase(
+   BIND(&if_nonsmi_handler);
+   {
+     TNode<HeapObjectReference> ref_handler = CAST(handler);
+-    GotoIf(IsWeakOrCleared(ref_handler),
+-           &store_transition_or_global_or_accessor);
++    GotoIf(IsWeakOrCleared(ref_handler), &store_transition_or_accessor);
+     TNode<HeapObject> strong_handler = CAST(handler);
+     TNode<Map> handler_map = LoadMap(strong_handler);
+     Branch(IsCodeMap(handler_map), &call_handler, &if_proto_handler);
+@@ -1703,39 +1702,17 @@ void AccessorAssembler::HandleStoreICHandlerCase(
+     }
+   }
+ 
+-  BIND(&store_transition_or_global_or_accessor);
++  BIND(&store_transition_or_accessor);
+   {
+     // Load value or miss if the {handler} weak cell is cleared.
+     CSA_DCHECK(this, IsWeakOrCleared(handler));
+     TNode<HeapObject> strong_handler = GetHeapObjectAssumeWeak(handler, miss);
+ 
+-    Label store_global(this), store_transition(this), store_accessor(this);
++    Label store_transition(this), store_accessor(this);
+     TNode<Map> strong_handler_map = LoadMap(strong_handler);
+-    GotoIf(IsPropertyCellMap(strong_handler_map), &store_global);
+     Branch(IsAccessorPairMap(strong_handler_map), &store_accessor,
+            &store_transition);
+ 
+-    BIND(&store_global);
+-    {
+-      if (p->IsDefineNamedOwn()) {
+-        // The global proxy has its attributes set in the global object,
+-        // which can't be handled by StoreGlobalIC_PropertyCellCase when
+-        // defining public fields. Handle it in runtime.
+-        GotoIf(IsJSGlobalProxy(CAST(p->receiver())), &if_slow);
+-      } else if (p->IsDefineKeyedOwn()) {
+-        Label proceed_defining(this);
+-        // StoreGlobalIC_PropertyCellCase doesn't support definition
+-        // of private fields, so handle them in runtime.
+-        GotoIfNot(IsSymbol(CAST(p->name())), &proceed_defining);
+-        Branch(IsAnyPrivateName(CAST(p->name())), &if_slow, &proceed_defining);
+-        BIND(&proceed_defining);
+-      }
+-
+-      TNode<PropertyCell> property_cell = CAST(strong_handler);
+-      ExitPoint direct_exit(this);
+-      StoreGlobalIC_PropertyCellCase(property_cell, p->value(), &direct_exit,
+-                                     miss);
+-    }
+     BIND(&store_accessor);
+     {
+       TNode<AccessorPair> pair = CAST(strong_handler);
+diff --git a/src/ic/handler-configuration.cc b/src/ic/handler-configuration.cc
+index 63dbf68c790e66ed6508348d3a419a1c964e0222..9b12fe2aec96d9145a7f9eec7aa34fe297d69f72 100644
+--- a/src/ic/handler-configuration.cc
++++ b/src/ic/handler-configuration.cc
+@@ -508,11 +508,6 @@ Handle<StoreHandler> StoreHandler::StoreInterceptorHolderIsReceiver(
+   return handler;
+ }
+ 
+-// static
+-MaybeObjectHandle StoreHandler::StoreGlobal(Handle<PropertyCell> cell) {
+-  return MaybeObjectHandle::Weak(cell);
+-}
+-
+ // static
+ Handle<Object> StoreHandler::StoreProxy(Isolate* isolate,
+                                         DirectHandle<Map> receiver_map,
+diff --git a/src/ic/handler-configuration.h b/src/ic/handler-configuration.h
+index df9e366332e10a561914973d20b5282fca95bd77..3064dcc16694df34544867351a4624342ff3b4be 100644
+--- a/src/ic/handler-configuration.h
++++ b/src/ic/handler-configuration.h
+@@ -365,10 +365,6 @@ V8_OBJECT class StoreHandler final : public DataHandler {
+                                    Handle<JSProxy> proxy,
+                                    DirectHandle<JSReceiver> receiver);
+ 
+-  // Creates a handler for storing a property to the property cell of a global
+-  // object.
+-  static MaybeObjectHandle StoreGlobal(Handle<PropertyCell> cell);
+-
+   // Creates a Smi-handler for storing a property to a global proxy object.
+   static inline DirectHandle<Smi> StoreGlobalProxy(Isolate* isolate);
+ 
+diff --git a/src/ic/ic-inl.h b/src/ic/ic-inl.h
+index e19ce57f2e9e004a2df988d1d364132ea3ad553e..842a94128979b1cc5c027ef9c56274343d469670 100644
+--- a/src/ic/ic-inl.h
++++ b/src/ic/ic-inl.h
+@@ -30,8 +30,7 @@ bool IC::IsHandler(Tagged<MaybeObject> object) {
+   Tagged<HeapObject> heap_object;
+   return (IsSmi(object) && (object.ptr() != kNullAddress)) ||
+          (object.GetHeapObjectIfWeak(&heap_object) &&
+-          (IsMap(heap_object) || IsPropertyCell(heap_object) ||
+-           IsAccessorPair(heap_object))) ||
++          (IsMap(heap_object) || IsAccessorPair(heap_object))) ||
+          (object.GetHeapObjectIfStrong(&heap_object) &&
+           (IsDataHandler(heap_object) || IsCode(heap_object)));
+ }
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index 070b76cf96d8ba1a1905587958dc520a7b6a389e..eead1a26cb14e197225f11f56067b7e21bd4efbb 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -2430,16 +2430,6 @@ MaybeObjectHandle StoreIC::ComputeHandler(LookupIterator* lookup) {
+       if (IsJSGlobalObject(*store_target)) {
+         TRACE_HANDLER_STATS(isolate(), StoreIC_StoreGlobalTransitionDH);
+ 
+-        if (IsJSGlobalObject(*lookup_start_object_map())) {
+-          DCHECK(IsStoreGlobalIC());
+-#ifdef DEBUG
+-          DirectHandle<JSObject> holder = lookup->GetHolder<JSObject>();
+-          DCHECK_EQ(*lookup->GetReceiver(), *holder);
+-          DCHECK_EQ(*store_target, *holder);
+-#endif
+-          return StoreHandler::StoreGlobal(
+-              indirect_handle(lookup->transition_cell(), isolate()));
+-        }
+         if (IsDefineKeyedOwnIC()) {
+           // Private field can't be deleted from this global object and can't
+           // be overwritten, so install slow handler in order to make store IC
+@@ -2656,9 +2646,19 @@ MaybeObjectHandle StoreIC::ComputeHandler(LookupIterator* lookup) {
+       }
+       if (lookup->is_dictionary_holder()) {
+         if (IsJSGlobalObject(*holder)) {
++          DCHECK(!IsStoreGlobalIC());
++          DCHECK(IsJSGlobalProxy(*receiver));
++          if (IsAnyDefineOwn()) {
++            TRACE_HANDLER_STATS(isolate(), StoreIC_SlowStub);
++            return MaybeObjectHandle(StoreHandler::StoreSlow(isolate()));
++          }
+           TRACE_HANDLER_STATS(isolate(), StoreIC_StoreGlobalDH);
+-          return MaybeObjectHandle(StoreHandler::StoreGlobal(
+-              indirect_handle(lookup->GetPropertyCell(), isolate())));
++          DirectHandle<Smi> smi_handler =
++              StoreHandler::StoreGlobalProxy(isolate());
++          Handle<Object> handler = StoreHandler::StoreThroughPrototype(
++              isolate(), lookup_start_object_map(), holder, *smi_handler,
++              MaybeObjectDirectHandle::Weak(lookup->GetPropertyCell()));
++          return MaybeObjectHandle(handler);
+         }
+         TRACE_HANDLER_STATS(isolate(), StoreIC_StoreNormalDH);
+         DCHECK(holder.is_identical_to(receiver));
+diff --git a/test/mjsunit/regress/regress-574222006.js b/test/mjsunit/regress/regress-574222006.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..6a01234502813ef6560b89ac34574dc5df6fbc16
+--- /dev/null
++++ b/test/mjsunit/regress/regress-574222006.js
+@@ -0,0 +1,28 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++const realm = Realm.create();
++Realm.eval(realm, `
++  var x = 1;
++  function store(o) { o.x = 2; }
++  const objs = [{a: 1}, {b: 1}, {c: 1}, {d: 1}, {e: 1}];
++  for (let i = 0; i < 10; i++) {
++    for (const o of objs) store(o);
++  }
++  store(globalThis);
++`);
++
++const target = Realm.global(realm);
++
++function write(o) {
++  o.x = 42;
++}
++const objs = [{a: 1}, {b: 1}, {c: 1}, {d: 1}, {e: 1}];
++for (let i = 0; i < 10; i++) {
++  for (const o of objs) write(o);
++}
++
++Realm.eval(realm, 'store(globalThis);');
++assertThrows(() => write(target), TypeError);
++assertEquals(2, Realm.eval(realm, 'x'));

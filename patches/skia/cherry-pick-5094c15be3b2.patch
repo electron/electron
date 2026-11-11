@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 2 Nov 2026 13:01:12 -0500
+Subject: [M157] [graphite] Fix miter inflation for wedges
+
+Original change's description:
+> [graphite] Fix miter inflation for wedges
+>
+> Bug: 580865537
+> Fixed: 580865537
+> Change-Id: I865734bb619ee2ce023ff61d67a00e1bfc68930e
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1412420
+> Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+> Commit-Queue: Thomas Smith <thomsmit@google.com>
+> Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+(cherry picked from commit d80db8f8f856edfdef362d6160f7d3b10cbfae25)
+
+Bug: 581670028,580865537,580865537
+Change-Id: I865734bb619ee2ce023ff61d67a00e1bfc68930e
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1416636
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/gpu/graphite/ClipStack.cpp b/src/gpu/graphite/ClipStack.cpp
+index 0a40893a205c97157ef226c9c70001e387637e81..19e3395d2f56b6d7b21b3e4980dc78bafe68d665 100644
+--- a/src/gpu/graphite/ClipStack.cpp
++++ b/src/gpu/graphite/ClipStack.cpp
+@@ -1387,8 +1387,11 @@ bool ClipStack::DrawShape::applyStyle(const SkStrokeRec& style, const Rect& devi
+             // well to handle rendering that pads beyond the 1/2px outset in the subpixel case.
+             const float effectiveStrokeWidth = std::max(localAAOutset, style.getWidth());
+             // Rectangles, rounded rectangles, and lines do not produce miters so don't count the
+-            // pessimistic limit against their draw bounds.
+-            const float effectiveMiterLimit = fShape.isPath() ? style.getMiter() : 1.f;
++            // pessimistic limit against their draw bounds. Arcs that don't fill the center do not
++            // form miters (but wedges can).
++            const float effectiveMiterLimit =
++                    (fShape.isPath() || (fShape.isArc() && fShape.arc().isWedge()))
++                            ? style.getMiter() : 1.f;
+             // Rectangles and rounded rectangles don't have caps, so don't count that against their
+             // draw bounds (if we could efficiently know a path was a closed contour, it could
+             // be included here too).

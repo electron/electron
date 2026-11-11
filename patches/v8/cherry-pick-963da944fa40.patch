@@ -1,0 +1,212 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Mon, 2 Nov 2026 14:38:33 +0100
+Subject: [maglev] Do not unwrap lossy conversions in KNA
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+NodeInfo tracks a NodeType without tracking representation, even though
+NodeType's meaning depends on representation (e.g. kSmi means Smi-tagged
+for tagged values, but only Smi-sized for untagged values). Unwrapping
+all conversions with ValueNode::Unwrap shared a single NodeInfo across
+mismatched representations and confused checks, such as eliding CheckSmi
+on a HeapNumber(0.0) after checking that its untagged value fits in a
+Smi.
+
+Introduce KnownNodeAspects::UnwrapNode to only share NodeInfo across
+conversions where NodeType invariants match.
+
+Fixed: 578322433
+Change-Id: I3371f3df90251339baa28d9dd9b65211b102e117
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8691333
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111488}
+
+diff --git a/src/maglev/maglev-known-node-aspects.h b/src/maglev/maglev-known-node-aspects.h
+index be6962109f2ea7de9f2e98e6d36e13009859a5b7..66ac9061cf70a45d70c32dfbacad7489794f1945 100644
+--- a/src/maglev/maglev-known-node-aspects.h
++++ b/src/maglev/maglev-known-node-aspects.h
+@@ -457,12 +457,10 @@ class KnownNodeAspects {
+   }
+ 
+   const NodeInfo* TryGetInfoFor(ValueNode* node) const {
+-    node = node->Unwrap();
+     return const_cast<KnownNodeAspects*>(this)->TryGetInfoFor(node);
+   }
+ 
+   NodeInfo* TryGetInfoFor(ValueNode* node) {
+-    node = node->Unwrap();
+     auto info_it = FindInfo(node);
+     if (!IsValid(info_it)) return nullptr;
+     return &info_it->second;
+@@ -478,8 +476,8 @@ class KnownNodeAspects {
+ 
+   NodeInfo* GetOrCreateInfoFor(compiler::JSHeapBroker* broker,
+                                ValueNode* node) {
+-    node = node->Unwrap();
+-    auto info_it = FindInfo(node);
++    node = UnwrapNode(node);
++    auto info_it = node_infos_.find(node);
+     if (IsValid(info_it)) return &info_it->second;
+     auto res = &node_infos_.emplace(node, NodeInfo()).first->second;
+     res->IntersectType(node->GetStaticType(broker));
+@@ -487,7 +485,6 @@ class KnownNodeAspects {
+   }
+ 
+   ValueNode* TryGetAlternativeFor(ValueNode* node, UseRepresentation repr) {
+-    node = node->Unwrap();
+     auto info_it = FindInfo(node);
+     if (!IsValid(info_it)) return nullptr;
+     return info_it->second.alternative().get(repr);
+@@ -971,12 +968,58 @@ class KnownNodeAspects {
+     return it->second->UnwrapIdentities();
+   }
+ 
++  // Only unwrap conversions that preserve `NodeType` invariants across
++  // representations (e.g. `kSmi` means Smi-tagged for tagged values, but only
++  // Smi-sized for untagged values).
++  // TODO(496266449): Remove once `kTagged` is split into `kSmi` and
++  // `kTaggedPointer` representations.
++  static ValueNode* UnwrapNode(ValueNode* node) {
++    while (true) {
++      if (node->Is<Identity>() || node->Is<ReturnedValue>()) {
++        node = node->input_node(0);
++        continue;
++      }
++      if (!node->is_conversion()) break;
++      switch (node->opcode()) {
++        case Opcode::kCheckedNumberToInt32:
++        case Opcode::kCheckedNumberToFloat64:
++        case Opcode::kUnsafeNumberToFloat64:
++        case Opcode::kCheckedObjectToIndex:
++        case Opcode::kUnsafeInt32ToUint32:
++          return node;
++        // kForceHeapNumber allocates a HeapNumber even for Smi-sized inputs.
++        case Opcode::kInt32ToNumber:
++          if (node->Cast<Int32ToNumber>()->conversion_mode() ==
++              NumberConversionMode::kForceHeapNumber) {
++            return node;
++          }
++          break;
++        case Opcode::kFloat64ToTagged:
++          if (node->Cast<Float64ToTagged>()->conversion_mode() ==
++              NumberConversionMode::kForceHeapNumber) {
++            return node;
++          }
++          break;
++        case Opcode::kHoleyFloat64ToTagged:
++          if (node->Cast<HoleyFloat64ToTagged>()->conversion_mode() ==
++              NumberConversionMode::kForceHeapNumber) {
++            return node;
++          }
++          break;
++        default:
++          break;
++      }
++      node = node->input_node(0);
++    }
++    return node;
++  }
++
+   NodeInfos::iterator FindInfo(ValueNode* node) {
+-    node = node->Unwrap();
++    node = UnwrapNode(node);
+     return node_infos_.find(node);
+   }
+   NodeInfos::const_iterator FindInfo(ValueNode* node) const {
+-    node = node->Unwrap();
++    node = UnwrapNode(node);
+     return node_infos_.find(node);
+   }
+   bool IsValid(NodeInfos::iterator& it) { return it != node_infos_.end(); }
+diff --git a/test/mjsunit/maglev/regress-578322433.js b/test/mjsunit/maglev/regress-578322433.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..513a436420e9e87d407e1e029c25e8dfd640440e
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-578322433.js
+@@ -0,0 +1,81 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --expose-gc --maglev-non-eager-inlining
++// Flags: --max-maglev-eager-inlined-bytecode-size=0
++
++function zero() {
++  return 0;
++}
++%PrepareFunctionForOptimization(zero);
++
++// CheckedNumberToInt32 must not propagate Smi range back to its tagged input.
++let v_int32 = 0;
++v_int32 = %AllocateHeapNumberWithValue(0);
++let v_smi1 = 1;
++let v_smi2 = 1;
++
++function foo_int32(x) {
++  v_int32 = x;
++  let y = x + zero();
++  v_smi1 = y;
++  v_smi2 = x;
++}
++
++function read_smi2() {
++  return v_smi2 + 1;
++}
++
++%PrepareFunctionForOptimization(foo_int32);
++%PrepareFunctionForOptimization(read_smi2);
++foo_int32(0);
++assertEquals(1, read_smi2());
++%OptimizeMaglevOnNextCall(read_smi2);
++assertEquals(1, read_smi2());
++
++// Tenure v_smi2's ContextCell before allocating a young HeapNumber(0.0) so an
++// elided write barrier also leaves an unrecorded old-to-new pointer.
++gc();
++let hn0_int32 = %AllocateHeapNumberWithValue(0);
++
++%OptimizeMaglevOnNextCall(foo_int32);
++foo_int32(hn0_int32);
++gc({type: 'minor'});
++assertEquals(1, read_smi2());
++assertEquals(0, v_smi1);
++assertEquals(0, v_smi2);
++
++// CheckedNumberToFloat64 must not propagate Smi range back to its tagged input.
++let v_f64 = 0;
++v_f64 = 1.5;
++let v_f64_smi1 = 1;
++let v_f64_smi2 = 1;
++
++function foo_f64(x) {
++  v_f64 = x;
++  let y = x + zero();
++  v_f64_smi1 = y;
++  v_f64_smi2 = x;
++}
++
++function read_f64_smi2() {
++  return v_f64_smi2 + 1;
++}
++
++%PrepareFunctionForOptimization(foo_f64);
++%PrepareFunctionForOptimization(read_f64_smi2);
++foo_f64(0);
++assertEquals(1, read_f64_smi2());
++%OptimizeMaglevOnNextCall(read_f64_smi2);
++assertEquals(1, read_f64_smi2());
++
++gc();
++let hn0_f64 = %AllocateHeapNumberWithValue(0);
++
++%OptimizeMaglevOnNextCall(foo_f64);
++foo_f64(hn0_f64);
++gc({type: 'minor'});
++assertEquals(1, read_f64_smi2());
++assertEquals(0, v_f64_smi1);
++assertEquals(0, v_f64_smi2);

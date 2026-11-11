@@ -1,0 +1,291 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 9 Nov 2026 14:11:44 -0500
+Subject: Add unit tests for anisotropically scaled/rotated stroked rrects
+
+This adds a test harness in CanvasTest.cpp (maybe worth pulling into
+a separate header at some point) that lets you write a rendering
+function targeting an SkCanvas*, and then returns a validation lambda
+that processes the final SkBitmap. The harness handles running it on
+CPU, Ganesh, and Graphite plus avoiding protected mode and dealilng
+with the build defines.
+
+Moves the ManyRect test into this harness as a proof of concept, and
+then adds two new tests to cover the elliptical stroke rrect rendering
+bugs that occurred when under an anisotropic scale and a 90 degree
+rotation. I confirmed by undoing https://skia-review.git.corp.google.com/c/skia/+/1420157
+that the first test catches the bug in the EllipseOp and the
+second test catches the bug in EllipticalRRectOp.
+
+Bug: 578685706
+Change-Id: I912783f34d29496d041e3e38217e5576d246c866
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1421859
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+
+diff --git a/tests/CanvasTest.cpp b/tests/CanvasTest.cpp
+index a1550d980524ed0c201d86f31c665373e3119b2e..07e44abc27ffe794a75b59b60e1a1b1c4aa2b023 100644
+--- a/tests/CanvasTest.cpp
++++ b/tests/CanvasTest.cpp
+@@ -65,11 +65,13 @@ class SkPicture;
+ 
+ #if defined(SK_GANESH)
+ #include "include/gpu/ganesh/SkSurfaceGanesh.h"
++#include "src/gpu/ganesh/GrDirectContextPriv.h"
+ #endif
+ 
+ #if defined(SK_GRAPHITE)
+ #include "include/gpu/graphite/Context.h"
+ #include "include/gpu/graphite/Surface.h"
++#include "src/gpu/graphite/RecorderPriv.h"
+ #endif
+ 
+ struct ClipRectVisitor {
+@@ -754,40 +756,222 @@ DEF_TEST(Canvas_saveLayer_colorSpace, reporter) {
+     REPORTER_ASSERT(reporter, pm.getColor(0, 0) == SK_ColorBLUE);
+ }
+ 
+-// Draw a lot of rectangles with different colors. On the GPU, the different colors make this
+-// relatively difficult to batch.
+-void test_many_draws(skiatest::Reporter* reporter, SkSurface* surface) {
+-    SkCanvas* canvas = surface->getCanvas();
+-    SkPaint paint;
+-    for (int i = 0; i < 10000; ++i) {
+-        paint.setColor((0xFF << 24) | i);
+-        canvas->drawRect(SkRect::MakeXYWH(0, 0, 1, 1), paint);
++
++///////////////////////////////////////////////////////////////////////////////////////////////////
++// SkCanvas rasterization tests that run on CPU and GPU backends. Tests provide a "fiddle"-like
++// function to render into a canvas, and a validation function that operates on the resulting bitmap
++// The harness handles GPU context creation, submission, async readback, and protected content.
++//
++// If a GM could instead be verified without human intervention, consider adding the test here.
++// Use either
++//    DEF_CANVAS_TEST(name, ctsEnforcement, imageInfo, canvas) { ... } or
++//    DEF_SIMPLE_CANVAS_TEST(name, ctsEnforcement,  W, H, canvas) { ... }
++
++using CanvasValidationFn = void(*)(skiatest::Reporter*, const SkBitmap&);
++using CanvasTestFn = CanvasValidationFn(*)(SkCanvas*);
++
++void run_cpu_canvas_test(skiatest::Reporter* reporter,
++                         const SkImageInfo& imageInfo,
++                         CanvasTestFn render) {
++    auto surface = SkSurfaces::Raster(imageInfo);
++    REPORTER_ASSERT(reporter, SkToBool(surface), "Failed to create CPU-backed SkSurface");
++    if (surface) {
++        auto validate = render(surface->getCanvas());
++        SkBitmap result;
++        result.allocPixels(imageInfo);
++        REPORTER_ASSERT(reporter, surface->readPixels(result, 0, 0), "CPU readback failed");
++        validate(reporter, result);
+     }
+ }
+ 
+ #if defined(SK_GANESH)
+-DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(TestManyDrawsGanesh,
+-                                       reporter,
+-                                       contextInfo,
+-                                       CtsEnforcement::kApiLevel_202404) {
+-    SkImageInfo ii = SkImageInfo::Make(SkISize::Make(1, 1),
+-                                       SkColorType::kRGBA_8888_SkColorType,
+-                                       SkAlphaType::kPremul_SkAlphaType);
++void run_ganesh_canvas_test(skiatest::Reporter* reporter,
++                            const sk_gpu_test::ContextInfo& contextInfo,
++                            const SkImageInfo& imageInfo,
++                            CanvasTestFn render) {
+     GrDirectContext* context = contextInfo.directContext();
+-    sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(context, skgpu::Budgeted::kYes, ii);
+-    test_many_draws(reporter, surface.get());
++    auto surface = SkSurfaces::RenderTarget(context, skgpu::Budgeted::kYes, imageInfo);
++    REPORTER_ASSERT(reporter, SkToBool(surface), "Failed to create Ganesh-backed SkSurface");
++    if (surface) {
++        auto validate = render(surface->getCanvas());
++        if (context->priv().caps()->supportsProtectedContent()) {
++            return; // skip the readback and validation
++        }
++        SkBitmap result;
++        result.allocPixels(imageInfo);
++        REPORTER_ASSERT(reporter, surface->readPixels(result, 0, 0), "Ganesh readback failed");
++        validate(reporter, result);
++    }
+ }
++
++#define DEF_GANESH_CANVAS_TEST(name, ctsEnforcement, imageInfo, renderFn) \
++    DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(name##_Ganesh, reporter, contextInfo, ctsEnforcement) { \
++        run_ganesh_canvas_test(reporter, contextInfo, imageInfo, renderFn); \
++    }
++
++#else
++#define DEF_GANESH_CANVAS_TEST(name, ctsEnforcement, imageInfo, renderFn)
+ #endif
+ 
+ #if defined(SK_GRAPHITE)
+-DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(TestManyDrawsGraphite, reporter, context,
+-                                         CtsEnforcement::kApiLevel_202404) {
++void run_graphite_canvas_test(skiatest::Reporter* reporter,
++                              skgpu::graphite::Context* context,
++                              const SkImageInfo& imageInfo,
++                              CanvasTestFn render) {
+     using namespace skgpu::graphite;
+-    SkImageInfo ii = SkImageInfo::Make(SkISize::Make(1, 1),
+-                                       SkColorType::kRGBA_8888_SkColorType,
+-                                       SkAlphaType::kPremul_SkAlphaType);
+-    std::unique_ptr<Recorder> recorder = context->makeRecorder();
+-    sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(recorder.get(), ii);
+-    test_many_draws(reporter, surface.get());
++
++    auto recorder = context->makeRecorder();
++    auto surface = SkSurfaces::RenderTarget(recorder.get(), imageInfo);
++    REPORTER_ASSERT(reporter, SkToBool(surface), "Failed to create Graphite-backed SkSurface");
++    if (surface) {
++        auto validate = render(surface->getCanvas());
++        if (recorder->priv().caps()->protectedSupport()) {
++            return; // skip the readback and validation
++        }
++        SkBitmap result;
++        result.allocPixels(imageInfo);
++        REPORTER_ASSERT(reporter, surface->readPixels(result, 0, 0), "Graphite readback failed");
++        validate(reporter, result);
++    }
+ }
++
++#define DEF_GRAPHITE_CANVAS_TEST(name, ctsEnforcement, imageInfo, renderFn) \
++    DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(name##_Graphite, reporter, context, ctsEnforcement) { \
++        run_graphite_canvas_test(reporter, context, imageInfo, renderFn); \
++    }
++
++#else
++#define DEF_GRAPHITE_CANVAS_TEST(name, ctsEnforcement, imageInfo, renderFn)
+ #endif
++
++#define DEF_CANVAS_TEST(name, ctsEnforcement, imageInfo, canvas) \
++    static CanvasValidationFn render_##name(SkCanvas*); \
++    DEF_TEST(name##_CPU, reporter) { run_cpu_canvas_test(reporter, imageInfo, render_##name); } \
++    DEF_GANESH_CANVAS_TEST(name, ctsEnforcement, imageInfo, render_##name) \
++    DEF_GRAPHITE_CANVAS_TEST(name, ctsEnforcement, imageInfo, render_##name) \
++    CanvasValidationFn render_##name(SkCanvas* canvas)
++
++#define DEF_SIMPLE_CANVAS_TEST(name, ctsEnforcement,  W, H, canvas) \
++    DEF_CANVAS_TEST(name, ctsEnforcement, \
++                    SkImageInfo::Make({W, H}, kRGBA_8888_SkColorType, kPremul_SkAlphaType), \
++                    canvas)
++
++// End impl for DEV_CANVAS_TEST
++///////////////////////////////////////////////////////////////////////////////////////////////////
++
++// Draw a lot of rectangles with different colors. On the GPU, the different colors make this
++// relatively difficult to batch.
++DEF_SIMPLE_CANVAS_TEST(TestManyDraws, CtsEnforcement::kNextRelease, 1, 1, canvas) {
++    SkPaint paint;
++    for (int i = 0; i < 10000; ++i) {
++        paint.setColor((0xFF << 24) | i);
++        canvas->drawRect(SkRect::MakeXYWH(0, 0, 1, 1), paint);
++    }
++    return [](skiatest::Reporter*, const SkBitmap&) {};
++}
++
++// Test that optimizations applied to rectStaysRect() transforms calculate both stroke and corner
++// radii correctly in device space.
++DEF_SIMPLE_CANVAS_TEST(TestAnisotropicStrokedEllipse, CtsEnforcement::kNextRelease, 35, 35, canvas) {
++    // Move off of the origin
++    canvas->translate(5, 5);
++    // Swaps X and Y axes
++    canvas->rotate(90);
++    // Flips and makes scale anisotropic
++    canvas->scale(1, -1);
++    canvas->scale(.66f, 1.f);
++
++    SkPaint p;
++    p.setAntiAlias(true);
++    p.setStroke(true);
++    p.setStrokeWidth(5.f);
++    canvas->drawRRect(SkRRect::MakeOval(SkRect::MakeWH(20.f, 22.f)), p);
++
++    return [](skiatest::Reporter* reporter, const SkBitmap& result) {
++        // If the scale factors / X/Y axes aren't swapped correctly, these test points are
++        // incorrectly rendered with coverage instead of transparent.
++        struct Expectation {
++            SkIPoint fPixel;
++            bool fInShape;
++        };
++
++        static auto kTestPoints = std::to_array<Expectation>({
++            // Inside of stroked ellipse's top/bottom edge (if device radii are transposed, this
++            // region is inflated and these points get rasterized incorrectly)
++            { .fPixel={15, 7},  .fInShape=false },
++            { .fPixel={15, 15}, .fInShape=false },
++            // Inside of stroked ellipse's left/right edge (if device radii are transposed, this
++            // region is deflated and the points are not rasterized)
++            { .fPixel={7, 11},  .fInShape=true },
++            { .fPixel={24, 11}, .fInShape=true },
++        });
++        for (auto t : kTestPoints) {
++            SkColor actualColor = result.getColor(t.fPixel.fX, t.fPixel.fY);
++            bool actualInShape = actualColor != SK_ColorTRANSPARENT;
++            if (t.fInShape) {
++                REPORTER_ASSERT(reporter, actualInShape,
++                                "Expected (%d,%d) to be in stroked ellipse",
++                                t.fPixel.fX, t.fPixel.fY);
++            } else {
++                REPORTER_ASSERT(reporter, !actualInShape,
++                                "Expected (%d,%d) to be untouched by stroked ellipse",
++                                t.fPixel.fX, t.fPixel.fY);
++            }
++        }
++    };
++}
++
++DEF_SIMPLE_CANVAS_TEST(TestAnisotropicStrokedEllipticalRRect,
++                       CtsEnforcement::kNextRelease,
++                       80, 35, canvas) {
++    // Move off of the origin
++    canvas->translate(5, 5);
++    // Swaps X and Y axes
++    canvas->rotate(90);
++    // Flips and makes scale anisotropic
++    canvas->scale(1, -1);
++    canvas->scale(.66f, 1.f);
++
++    SkPaint p;
++    p.setAntiAlias(true);
++    p.setStroke(true);
++    p.setStrokeWidth(5.f);
++
++    float xRad = 10.f;
++    float yRad = 25.f;
++    SkRRect ellipticalRRect = SkRRect::MakeRectXY(
++            SkRect::MakeWH(2*xRad + 10.f, 2*yRad + 10.f), xRad, yRad);
++
++    canvas->drawRRect(ellipticalRRect, p);
++
++    return [](skiatest::Reporter* reporter, const SkBitmap& result) {
++        // If the scale factors / X/Y axes aren't swapped correctly, these test points are
++        // incorrectly rendered with coverage instead of transparent.
++        struct Expectation {
++            SkIPoint fPixel;
++            bool fInShape;
++        };
++
++        static auto kTestPoints = std::to_array<Expectation>({
++            // Inside of the left/right-hand vertical edges; it gets bumped in by incorrectly
++            // becoming part of the rounded corner if the transform is handled incorrectly.
++            { .fPixel={8, 11},  .fInShape=false },
++            { .fPixel={8, 18},  .fInShape=false },
++            { .fPixel={61, 11}, .fInShape=false },
++            { .fPixel={61, 18}, .fInShape=false },
++        });
++        for (auto t : kTestPoints) {
++            SkColor actualColor = result.getColor(t.fPixel.fX, t.fPixel.fY);
++            bool actualInShape = actualColor != SK_ColorTRANSPARENT;
++            if (t.fInShape) {
++                REPORTER_ASSERT(reporter, actualInShape,
++                                "Expected (%d,%d) to be in stroked rrect",
++                                t.fPixel.fX, t.fPixel.fY);
++            } else {
++                REPORTER_ASSERT(reporter, !actualInShape,
++                                "Expected (%d,%d) to be untouched by stroked rrect",
++                                t.fPixel.fX, t.fPixel.fY);
++            }
++        }
++    };
++}

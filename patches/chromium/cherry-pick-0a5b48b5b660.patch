@@ -1,0 +1,188 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Tue, 10 Nov 2026 18:35:03 -0800
+Subject: [M150-LTS] Defer WorkerProcessHandle destruction via DeleteSoon in
+ EmbeddedWorkerInstance
+
+Destroying an EmbeddedWorkerInstance (for example, when dropping the
+last ServiceWorkerRegistration or ServiceWorkerVersion reference)
+previously destroyed WorkerProcessHandle synchronously in
+ReleaseProcess(). When the last worker reference on a
+RenderProcessHostImpl dropped, DecrementWorkerRefCount() -> Cleanup()
+synchronously fired RenderProcessExited() / RenderProcessHostDestroyed()
+on the caller's stack, which could tear down callers such as
+DedicatedWorkerHost, SharedWorkerHost, or NavigationRequest mid-method.
+
+Defer WorkerProcessHandle destruction via DeleteSoon when `in_dtor_` is
+true in EmbeddedWorkerInstance::ReleaseProcess(), and guard
+`process_manager_` in ~WorkerProcessHandle() in case the manager is
+destroyed before the deferred task runs.
+
+NO_IFTTT = This is to cherry-pick the patch to the M150 branch.
+
+(cherry picked from commit 9bfc328cb45a4395d3563bc557b946078504ca4b)
+
+Bug: 568699166
+Change-Id: Ie117777292289fa9edc77714f8f98b761adac4c8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8568797
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1735823}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8771467
+Reviewed-by: Michael Ershov <miersh@google.com>
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4598}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/content/browser/service_worker/embedded_worker_instance.cc b/content/browser/service_worker/embedded_worker_instance.cc
+index 950510903ad4f7f12f7b88de72b9ffb8763f85db..e8aff7d10c860fa5746cb96f6b0dfe7f4ba48530 100644
+--- a/content/browser/service_worker/embedded_worker_instance.cc
++++ b/content/browser/service_worker/embedded_worker_instance.cc
+@@ -13,6 +13,7 @@
+ #include "base/functional/callback.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/observer_list.h"
++#include "base/task/sequenced_task_runner.h"
+ #include "base/time/time.h"
+ #include "base/trace_event/trace_event.h"
+ #include "content/browser/bad_message.h"
+@@ -189,7 +190,9 @@ class EmbeddedWorkerInstance::WorkerProcessHandle {
+ 
+   ~WorkerProcessHandle() {
+     DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-    process_manager_->ReleaseWorkerProcess(embedded_worker_id_);
++    if (process_manager_) {
++      process_manager_->ReleaseWorkerProcess(embedded_worker_id_);
++    }
+   }
+ 
+   ChildProcessId process_id() const { return process_id_; }
+@@ -1044,7 +1047,12 @@ void EmbeddedWorkerInstance::ReleaseProcess() {
+ 
+   instance_host_receiver_.reset();
+   devtools_proxy_.reset();
+-  process_handle_.reset();
++  if (in_dtor_ && process_handle_) {
++    base::SequencedTaskRunner::GetCurrentDefault()->DeleteSoon(
++        FROM_HERE, std::move(process_handle_));
++  } else {
++    process_handle_.reset();
++  }
+   subresource_loader_updater_.reset();
+   coep_reporter_.reset();
+   status_ = blink::EmbeddedWorkerStatus::kStopped;
+diff --git a/content/browser/service_worker/embedded_worker_instance_unittest.cc b/content/browser/service_worker/embedded_worker_instance_unittest.cc
+index 2948cee4eaf0870b66e50329802ae61280f5e6fc..3cca9095c32d9643ea28c59ccfb12df4c50ba93a 100644
+--- a/content/browser/service_worker/embedded_worker_instance_unittest.cc
++++ b/content/browser/service_worker/embedded_worker_instance_unittest.cc
+@@ -5,18 +5,26 @@
+ #include "content/browser/service_worker/embedded_worker_instance.h"
+ 
+ #include <stdint.h>
++
+ #include <utility>
+ #include <vector>
+ 
++#include "base/functional/callback_helpers.h"
+ #include "base/run_loop.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "base/test/test_future.h"
++#include "content/browser/renderer_host/render_process_host_impl.h"
+ #include "content/browser/service_worker/embedded_worker_test_helper.h"
+ #include "content/browser/service_worker/fake_embedded_worker_instance_client.h"
+ #include "content/browser/service_worker/service_worker_context_core.h"
++#include "content/browser/service_worker/service_worker_context_wrapper.h"
++#include "content/browser/service_worker/service_worker_context_wrapper_test_api.h"
++#include "content/browser/service_worker/service_worker_process_manager.h"
+ #include "content/browser/service_worker/service_worker_version.h"
++#include "content/browser/storage_partition_impl.h"
+ #include "content/public/browser/child_process_host.h"
+ #include "content/public/test/embedded_worker_instance_test_harness.h"
++#include "content/public/test/mock_render_process_host.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+@@ -32,6 +40,36 @@ namespace {
+ using RegistrationAndVersionPair =
+     EmbeddedWorkerTestHelper::RegistrationAndVersionPair;
+ 
++class EmbeddedWorkerMockRenderProcessHostFactory
++    : public MockRenderProcessHostFactory {
++ public:
++  explicit EmbeddedWorkerMockRenderProcessHostFactory(
++      EmbeddedWorkerTestHelper* helper)
++      : helper_(helper) {}
++
++  MockRenderProcessHost* last_created_host() const {
++    return last_created_host_;
++  }
++
++ protected:
++  std::unique_ptr<MockRenderProcessHost> BuildRenderProcessHost(
++      BrowserContext* browser_context,
++      SiteInstance* site_instance) override {
++    auto host = MockRenderProcessHostFactory::BuildRenderProcessHost(
++        browser_context, site_instance);
++    host->OverrideBinderForTesting(
++        blink::mojom::EmbeddedWorkerInstanceClient::Name_,
++        base::BindRepeating(&EmbeddedWorkerTestHelper::OnInstanceClientRequest,
++                            base::Unretained(helper_)));
++    last_created_host_ = host.get();
++    return host;
++  }
++
++ private:
++  const raw_ptr<EmbeddedWorkerTestHelper> helper_;
++  raw_ptr<MockRenderProcessHost> last_created_host_ = nullptr;
++};
++
+ }  // namespace
+ 
+ class EmbeddedWorkerInstanceTest : public EmbeddedWorkerInstanceTestHarness,
+@@ -509,4 +547,46 @@ TEST_F(EmbeddedWorkerInstanceTest, HasFetchHandler) {
+   worker2->Stop();
+ }
+ 
++TEST_F(EmbeddedWorkerInstanceTest,
++       DestroyWorkerWhileRunningDefersHandleDestruction) {
++  const GURL scope("http://example.com/");
++  const GURL url("http://example.com/worker.js");
++
++  // Exercise the real AllocateWorkerProcess / ReleaseWorkerProcess path so
++  // worker refcounts on MockRenderProcessHost are updated.
++  helper_->context_wrapper()->process_manager()->SetProcessIdForTest(
++      ChildProcessId());
++  ServiceWorkerContextWrapperTestApi(helper_->context_wrapper())
++      .set_storage_partition(static_cast<StoragePartitionImpl*>(
++          helper_->browser_context()->GetDefaultStoragePartition()));
++  EmbeddedWorkerMockRenderProcessHostFactory factory(helper_.get());
++  RenderProcessHostImpl::set_render_process_host_factory_for_testing(&factory);
++  base::ScopedClosureRunner reset_factory(base::BindOnce(
++      &RenderProcessHostImpl::set_render_process_host_factory_for_testing,
++      nullptr));
++
++  RegistrationAndVersionPair pair =
++      helper_->PrepareRegistrationAndVersion(scope, url);
++  auto worker = std::make_unique<EmbeddedWorkerInstance>(pair.second.get());
++  EXPECT_EQ(blink::EmbeddedWorkerStatus::kStopped, worker->status());
++
++  helper_->StartWorker(worker.get(), helper_->CreateStartParams(pair.second));
++  EXPECT_EQ(blink::EmbeddedWorkerStatus::kRunning, worker->status());
++  MockRenderProcessHost* rph = factory.last_created_host();
++  ASSERT_NE(nullptr, rph);
++  EXPECT_EQ(rph->GetID(), worker->process_id());
++  EXPECT_EQ(1u, rph->GetWorkerRefCount());
++
++  // Destroying the worker while it is running defers process handle destruction
++  // via DeleteSoon so worker refcount is not decremented synchronously.
++  worker.reset();
++  EXPECT_EQ(1u, rph->GetWorkerRefCount());
++
++  base::test::TestFuture<void> future;
++  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE, future.GetCallback());
++  EXPECT_TRUE(future.Wait());
++  EXPECT_EQ(0u, rph->GetWorkerRefCount());
++}
++
+ }  // namespace content

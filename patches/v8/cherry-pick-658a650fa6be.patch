@@ -1,0 +1,347 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Fri, 30 Oct 2026 14:49:41 +0000
+Subject: [wasm] Check value type before i8/i16 load elimination
+
+WasmLoadElimination::TruncateAndExtendOrType previously emitted Word32
+shifts/masks for kWasmI8 and kWasmI16 fields before checking the cached
+value's type. On unreachable cast paths where an unrelated field type
+(such as f64 or f32) was cached at the same field index, this wrapped a
+non-Word32 node in Word32 operations.
+
+Validate the cached value's Wasm type against field_type.Unpacked()
+(including dead, uninhabited, top, and non-Wasm-typed values) before
+truncating or extending packed fields.
+
+TAG=agy
+CONV=cbfcb700-d122-417f-8268-a55913494e17
+
+Fixed: 579313193
+Change-Id: Iedb9efba11df59cc53b651bad4b1a3425392b18a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8692330
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+Commit-Queue: Daniel Lehmann <dlehmann@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111487}
+
+diff --git a/src/compiler/wasm-load-elimination.cc b/src/compiler/wasm-load-elimination.cc
+index 3ab300bb0e1b921011273b361887618771fc828e..75d7f83f08af798fce9b38774b890a516c639e87 100644
+--- a/src/compiler/wasm-load-elimination.cc
++++ b/src/compiler/wasm-load-elimination.cc
+@@ -84,7 +84,40 @@ Reduction WasmLoadElimination::UpdateState(Node* node,
+ std::tuple<Node*, Node*> WasmLoadElimination::TruncateAndExtendOrType(
+     Node* value, Node* effect, Node* control, wasm::ValueType field_type,
+     bool is_signed) {
++  if (value->opcode() == IrOpcode::kDead ||
++      value->opcode() == IrOpcode::kDeadValue) {
++    return {dead(), dead()};
++  }
++
++  // The value might be untyped or have a non-Wasm type (e.g. Type::None() from
++  // DeadCodeElimination, or a JS node in case of Wasm inlined into JS). Without
++  // a concrete Wasm type we cannot verify representation compatibility.
++  if (!NodeProperties::IsTyped(value)) {
++    return {nullptr, nullptr};
++  }
++
++  Type value_type = NodeProperties::GetType(value);
++  if (!value_type.IsWasm()) {
++    return {nullptr, nullptr};
++  }
++
++  wasm::TypeInModule node_type = value_type.AsWasm();
++  if (node_type.type.is_top()) {
++    return {nullptr, nullptr};
++  }
++
++  wasm::ValueType unpacked_field_type = field_type.Unpacked();
++  if (node_type.type.is_uninhabited() ||
++      TypesUnrelated(node_type.type, unpacked_field_type, node_type.module)) {
++    // Uninhabited or unrelated types can occur as a result of unreachable code.
++    // Example: Storing a value x of type A in a struct, then casting the struct
++    // to a different struct type to then load type B from the same offset
++    // results in trying to replace the load with value x.
++    return {dead(), dead()};
++  }
++
+   if (field_type == wasm::kWasmI8 || field_type == wasm::kWasmI16) {
++    DCHECK_EQ(node_type.type, wasm::kWasmI32);
+     Node* ret = nullptr;
+     if (is_signed) {
+       int shift = 32 - 8 * field_type.value_kind_size();
+@@ -98,30 +131,10 @@ std::tuple<Node*, Node*> WasmLoadElimination::TruncateAndExtendOrType(
+                              jsgraph()->Int32Constant(mask));
+     }
+ 
+-    NodeProperties::SetType(ret, NodeProperties::GetType(value));
++    NodeProperties::SetType(ret, value_type);
+     return {ret, effect};
+   }
+ 
+-  // The value might be untyped in case of wasm inlined into JS if the value
+-  // comes from a JS node.
+-  if (!NodeProperties::IsTyped(value)) {
+-    return {value, effect};
+-  }
+-
+-  Type value_type = NodeProperties::GetType(value);
+-  if (!value_type.IsWasm()) {
+-    return {value, effect};
+-  }
+-
+-  wasm::TypeInModule node_type = value_type.AsWasm();
+-
+-  if (TypesUnrelated(node_type.type, field_type, node_type.module)) {
+-    // Unrelated types can occur as a result of unreachable code.
+-    // Example: Storing a value x of type A in a struct, then casting the struct
+-    // to a different struct type to then load type B from the same offset
+-    // results in trying to replace the load with value x.
+-    return {dead(), dead()};
+-  }
+   if (!wasm::IsSubtypeOf(node_type.type, field_type, node_type.module)) {
+     Type type = Type::Wasm({field_type, node_type.module}, graph()->zone());
+     Node* ret =
+@@ -233,10 +246,12 @@ Reduction WasmLoadElimination::ReduceWasmStructGet(Node* node) {
+       node->Kill();
+       return Replace(dead());
+     }
+-    ReplaceWithValue(node, std::get<0>(replacement), std::get<1>(replacement),
+-                     control);
+-    node->Kill();
+-    return Replace(std::get<0>(replacement));
++    if (std::get<0>(replacement) != nullptr) {
++      ReplaceWithValue(node, std::get<0>(replacement), std::get<1>(replacement),
++                       control);
++      node->Kill();
++      return Replace(std::get<0>(replacement));
++    }
+   }
+ 
+   half_state = half_state->AddField(field_info.field_index, object, node);
+diff --git a/src/compiler/wasm-load-elimination.h b/src/compiler/wasm-load-elimination.h
+index fe404181f3b82f0fef3a08c51e0d6f9fdb4c5342..204af4f23a4ce39e7da49ab92a41d780b5849ac6 100644
+--- a/src/compiler/wasm-load-elimination.h
++++ b/src/compiler/wasm-load-elimination.h
+@@ -138,7 +138,9 @@ class V8_EXPORT_PRIVATE WasmLoadElimination final
+   AbstractState const* ComputeLoopState(Node* node,
+                                         AbstractState const* state) const;
+   // Returns the replacement value and effect for a load given an initial value
+-  // node, after optional {TypeGuard}ing and i8/i16 adaptation to i32.
++  // node, after optional {TypeGuard}ing and i8/i16 adaptation to i32. Returns
++  // {dead(), dead()} if the types prove the load is unreachable, or
++  // {nullptr, nullptr} if replacement must be skipped.
+   std::tuple<Node*, Node*> TruncateAndExtendOrType(Node* value, Node* effect,
+                                                    Node* control,
+                                                    wasm::ValueType field_type,
+diff --git a/test/mjsunit/regress/wasm/regress-579313193.js b/test/mjsunit/regress/wasm/regress-579313193.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fbfe9b3ca20b6972929aa0d94b17f92edc5f6ddf
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-579313193.js
+@@ -0,0 +1,206 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++(function TestImmutableUnrelatedPackedStructGet() {
++  const builder = new WasmModuleBuilder();
++  const superStruct = builder.addStruct([]);
++  const structF64 = builder.addStruct(
++      {fields: [makeField(kWasmF64, false)], supertype: superStruct});
++  const structI8 = builder.addStruct(
++      {fields: [makeField(kWasmI8, false)], supertype: superStruct});
++  const structI16 = builder.addStruct(
++      {fields: [makeField(kWasmI16, false)], supertype: superStruct});
++
++  builder.addFunction('makeStructF64', makeSig([kWasmF64], [kWasmExternRef]))
++      .addBody([
++        kExprLocalGet, 0,
++        kGCPrefix, kExprStructNew, structF64,
++        kGCPrefix, kExprExternConvertAny,
++      ])
++      .exportFunc();
++
++  for (const [name, targetStruct, getOp] of [
++           ['getI8S', structI8, kExprStructGetS],
++           ['getI8U', structI8, kExprStructGetU],
++           ['getI16S', structI16, kExprStructGetS],
++           ['getI16U', structI16, kExprStructGetU],
++       ]) {
++    builder.addFunction(name, makeSig([kWasmExternRef], [kWasmI32]))
++        .addBody([
++          kExprLocalGet, 0,
++          kGCPrefix, kExprAnyConvertExtern,
++          kGCPrefix, kExprRefCast, superStruct,
++          kExprLocalGet, 0,
++          kGCPrefix, kExprAnyConvertExtern,
++          kGCPrefix, kExprRefCast, structF64,
++          kGCPrefix, kExprStructGet, structF64, 0,
++          kExprDrop,
++          kGCPrefix, kExprRefCast, targetStruct,
++          kGCPrefix, getOp, targetStruct, 0,
++        ])
++        .exportFunc();
++  }
++
++  const instance = builder.instantiate();
++  const s = instance.exports.makeStructF64(1.5);
++
++  for (const fn of [
++           instance.exports.getI8S,
++           instance.exports.getI8U,
++           instance.exports.getI16S,
++           instance.exports.getI16U,
++       ]) {
++    const caller = (x) => fn(x) + 1;
++    %PrepareFunctionForOptimization(caller);
++    for (let i = 0; i < 3; i++) {
++      assertTraps(kTrapIllegalCast, () => caller(s));
++    }
++    %OptimizeFunctionOnNextCall(caller);
++    assertTraps(kTrapIllegalCast, () => caller(s));
++  }
++})();
++
++(function TestMutableUnrelatedStructSetToPackedGet() {
++  const builder = new WasmModuleBuilder();
++  const superStruct = builder.addStruct([]);
++  const structF64 = builder.addStruct(
++      {fields: [makeField(kWasmF64, true)], supertype: superStruct});
++  const structF32 = builder.addStruct(
++      {fields: [makeField(kWasmF32, true)], supertype: superStruct});
++  const structI8 = builder.addStruct(
++      {fields: [makeField(kWasmI8, true)], supertype: superStruct});
++  const structI16 = builder.addStruct(
++      {fields: [makeField(kWasmI16, true)], supertype: superStruct});
++
++  builder.addFunction('makeStructF64', makeSig([kWasmF64], [kWasmExternRef]))
++      .addBody([
++        kExprLocalGet, 0,
++        kGCPrefix, kExprStructNew, structF64,
++        kGCPrefix, kExprExternConvertAny,
++      ])
++      .exportFunc();
++
++  builder.addFunction('makeStructF32', makeSig([kWasmF32], [kWasmExternRef]))
++      .addBody([
++        kExprLocalGet, 0,
++        kGCPrefix, kExprStructNew, structF32,
++        kGCPrefix, kExprExternConvertAny,
++      ])
++      .exportFunc();
++
++  builder.addFunction('setF64GetI8S',
++                      makeSig([kWasmExternRef, kWasmF64], [kWasmI32]))
++      .addBody([
++        kExprLocalGet, 0,
++        kGCPrefix, kExprAnyConvertExtern,
++        kGCPrefix, kExprRefCast, superStruct,
++        kExprLocalGet, 0,
++        kGCPrefix, kExprAnyConvertExtern,
++        kGCPrefix, kExprRefCast, structF64,
++        kExprLocalGet, 1,
++        kGCPrefix, kExprStructSet, structF64, 0,
++        kGCPrefix, kExprRefCast, structI8,
++        kGCPrefix, kExprStructGetS, structI8, 0,
++      ])
++      .exportFunc();
++
++  builder.addFunction('setF32GetI16U',
++                      makeSig([kWasmExternRef, kWasmF32], [kWasmI32]))
++      .addBody([
++        kExprLocalGet, 0,
++        kGCPrefix, kExprAnyConvertExtern,
++        kGCPrefix, kExprRefCast, superStruct,
++        kExprLocalGet, 0,
++        kGCPrefix, kExprAnyConvertExtern,
++        kGCPrefix, kExprRefCast, structF32,
++        kExprLocalGet, 1,
++        kGCPrefix, kExprStructSet, structF32, 0,
++        kGCPrefix, kExprRefCast, structI16,
++        kGCPrefix, kExprStructGetU, structI16, 0,
++      ])
++      .exportFunc();
++
++  const instance = builder.instantiate();
++  const sF64 = instance.exports.makeStructF64(2.5);
++  const sF32 = instance.exports.makeStructF32(1.25);
++
++  const callerF64 = (x) => instance.exports.setF64GetI8S(x, 3.5) + 1;
++  %PrepareFunctionForOptimization(callerF64);
++  for (let i = 0; i < 3; i++) {
++    assertTraps(kTrapIllegalCast, () => callerF64(sF64));
++  }
++  %OptimizeFunctionOnNextCall(callerF64);
++  assertTraps(kTrapIllegalCast, () => callerF64(sF64));
++
++  const callerF32 = (x) => instance.exports.setF32GetI16U(x, 2.25) + 1;
++  %PrepareFunctionForOptimization(callerF32);
++  for (let i = 0; i < 3; i++) {
++    assertTraps(kTrapIllegalCast, () => callerF32(sF32));
++  }
++  %OptimizeFunctionOnNextCall(callerF32);
++  assertTraps(kTrapIllegalCast, () => callerF32(sF32));
++})();
++
++(function TestReachablePackedLoadElimination() {
++  const builder = new WasmModuleBuilder();
++  const structPacked = builder.addStruct([
++    makeField(kWasmI8, true),
++    makeField(kWasmI16, true),
++  ]);
++
++  builder.addFunction('makePacked', makeSig([], [kWasmExternRef]))
++      .addBody([
++        kGCPrefix, kExprStructNewDefault, structPacked,
++        kGCPrefix, kExprExternConvertAny,
++      ])
++      .exportFunc();
++
++  for (const [name, fieldIdx, getOp] of [
++           ['setGetI8S', 0, kExprStructGetS],
++           ['setGetI8U', 0, kExprStructGetU],
++           ['setGetI16S', 1, kExprStructGetS],
++           ['setGetI16U', 1, kExprStructGetU],
++       ]) {
++    builder.addFunction(name, makeSig([kWasmExternRef, kWasmI32], [kWasmI32]))
++        .addBody([
++          kExprLocalGet, 0,
++          kGCPrefix, kExprAnyConvertExtern,
++          kGCPrefix, kExprRefCast, structPacked,
++          kExprLocalGet, 1,
++          kGCPrefix, kExprStructSet, structPacked, fieldIdx,
++          kExprLocalGet, 0,
++          kGCPrefix, kExprAnyConvertExtern,
++          kGCPrefix, kExprRefCast, structPacked,
++          kGCPrefix, getOp, structPacked, fieldIdx,
++        ])
++        .exportFunc();
++  }
++
++  const instance = builder.instantiate();
++  const s = instance.exports.makePacked();
++  const {setGetI8S, setGetI8U, setGetI16S, setGetI16U} = instance.exports;
++
++  function roundtrip(ref, v) {
++    return [
++      setGetI8S(ref, v),
++      setGetI8U(ref, v),
++      setGetI16S(ref, v),
++      setGetI16U(ref, v),
++    ];
++  }
++
++  %PrepareFunctionForOptimization(roundtrip);
++  for (let i = 0; i < 3; i++) {
++    assertEquals([-1, 0xff, -1, 0xffff], roundtrip(s, -1));
++  }
++  %OptimizeFunctionOnNextCall(roundtrip);
++  assertEquals([0, 0, 0, 0], roundtrip(s, 0));
++  assertEquals([-1, 0xff, -1, 0xffff], roundtrip(s, -1));
++  assertEquals([-0x80, 0x80, 0x1280, 0x1280], roundtrip(s, 0x11280));
++  assertEquals([0x7f, 0x7f, -0x7f81, 0x807f], roundtrip(s, 0x1807f));
++})();
