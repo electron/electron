@@ -31,7 +31,7 @@ const KEY_DELAY = 350;
 // bar used on Windows and Linux
 ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
   'menu bar keyboard sibling switching',
-  { tags: ['serial'] },
+  { tags: ['serial'], retry: 0 },
   () => {
     // Records the label of the last menu item activated via the keyboard
     let lastClicked: string | null = null;
