@@ -58,6 +58,10 @@ As of 160.0.8155.0, it also carries the remote desktop client-drive
 redirector server names (tsclient and client) that IsLocalUNCServer() treats
 as local UNC servers upstream in that version.
 
+It also carries the DCHECK(path.IsAbsolute()) that replaced the
+CHECK(path.IsAbsolute(), base::NotFatalUntil::M161) at the top of
+ShouldBlockAccessToPath() in that version.
+
 diff --git a/chrome/browser/file_system_access/BUILD.gn b/chrome/browser/file_system_access/BUILD.gn
 index a72d5994e39d8f299eb8b297b7907a1327c0a307..a7bd2ac0e07286c65fab2c22183439e747eef8a9 100644
 --- a/chrome/browser/file_system_access/BUILD.gn
@@ -72,10 +76,10 @@ index a72d5994e39d8f299eb8b297b7907a1327c0a307..a7bd2ac0e07286c65fab2c22183439e7
      "file_system_access_permission_context_factory.cc",
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..33dd4d5b9167ae18d344afe4f4a4cd8487246a40
+index 0000000000000000000000000000000000000000..e67f6ef0bb4d3a9cba58b1243391ea0f4d532fc2
 --- /dev/null
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_blocklist.cc
-@@ -0,0 +1,842 @@
+@@ -0,0 +1,844 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -770,7 +774,9 @@ index 0000000000000000000000000000000000000000..33dd4d5b9167ae18d344afe4f4a4cd84
 +    ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules,
 +    base::FilePath profile_path) {
 +  CHECK(!path.empty(), base::NotFatalUntil::M161);
-+  CHECK(path.IsAbsolute(), base::NotFatalUntil::M161);
++  // TODO(crbug.com/582185934): CHECK-exclusion: Convert to a CHECK once we are
++  // confident it won't be triggered.
++  DCHECK(path.IsAbsolute());
 +
 +  path = NormalizeFilePathForBlocklist(path, should_normalize_file_path);
 +  profile_path =
