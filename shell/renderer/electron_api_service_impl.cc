@@ -18,6 +18,7 @@
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_util.h"
 #include "shell/renderer/electron_ipc_native.h"
+#include "shell/renderer/inserted_css.h"
 #include "shell/renderer/preload_utils.h"
 
 #include "base/functional/callback_helpers.h"
@@ -234,7 +235,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
   for (auto& port : message.ports) {
     ports.emplace_back(
         blink::WebMessagePortConverter::EntangleAndInjectMessagePortChannel(
-            isolate, context, std::move(port)));
+            isolate, context, port));
   }
 
   std::vector<v8::Local<v8::Value>> args = {message_value};
@@ -293,20 +294,16 @@ void ElectronApiServiceImpl::ExecuteJavaScript(
 void ElectronApiServiceImpl::InsertCSS(const std::string& css,
                                        const std::string& css_origin,
                                        InsertCSSCallback callback) {
-  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   std::move(callback).Run(
-      frame->GetDocument()
-          .InsertStyleSheet(blink::WebString::FromUtf8(css), nullptr,
-                            css_origin == "user" ? blink::WebCssOrigin::kUser
-                                                 : blink::WebCssOrigin::kAuthor)
-          .Utf16());
+      InsertStyleSheet(render_frame()->GetWebFrame()->GetDocument(), css,
+                       css_origin == "user" ? blink::WebCssOrigin::kUser
+                                            : blink::WebCssOrigin::kAuthor));
 }
 
 void ElectronApiServiceImpl::RemoveInsertedCSS(
     const std::u16string& key,
     RemoveInsertedCSSCallback callback) {
-  render_frame()->GetWebFrame()->GetDocument().RemoveInsertedStyleSheet(
-      blink::WebString::FromUtf16(key));
+  RemoveInsertedStyleSheet(render_frame()->GetWebFrame()->GetDocument(), key);
   std::move(callback).Run();
 }
 
@@ -341,7 +338,7 @@ void ReleaseReceivedSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Array> data = info.Data().As<v8::Array>();
+  v8::Local<v8::Array> data = info.DataV2().As<v8::Value>().As<v8::Array>();
   v8::Local<v8::Value> imported, texture_id, release;
   if (!data->Get(context, 0).ToLocal(&imported) || !imported->IsObject() ||
       !data->Get(context, 1).ToLocal(&texture_id) ||
@@ -375,7 +372,7 @@ void ReleaseReceivedSharedTexture(
              v8::Local<v8::Value> args[] = {
                  gin::StringToV8(
                      isolate, "IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN"),
-                 info.Data()};
+                 info.DataV2().As<v8::Value>()};
              v8::Local<v8::Value> result;
              if (invoke.As<v8::Function>()
                      ->Call(context, ipc_renderer, 2, args)

@@ -323,7 +323,7 @@ struct EmitterMethods {
                      bool* internal,
                      std::string* channel) {
     v8::Isolate* isolate = info.GetIsolate();
-    v8::Local<v8::Object> data = info.Data().As<v8::Object>();
+    v8::Local<v8::Object> data = info.DataV2().As<v8::Value>().As<v8::Object>();
     *internal = data->GetInternalField(kInternal).As<v8::Value>()->IsTrue();
     if (!gin::ConvertFromV8(isolate,
                             data->GetInternalField(kTransport).As<v8::Value>(),
@@ -449,9 +449,10 @@ struct EmitterMethods {
       if (!error->ToString(context).ToLocal(&error_string))
         return;
       isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
-          isolate, base::StrCat({"Error invoking remote method '",
-                                 gin::V8ToString(isolate, info.Data()), "': ",
-                                 gin::V8ToString(isolate, error_string)}))));
+          isolate,
+          base::StrCat({"Error invoking remote method '",
+                        gin::V8ToString(isolate, info.DataV2().As<v8::Value>()),
+                        "': ", gin::V8ToString(isolate, error_string)}))));
       return;
     }
     info.GetReturnValue().Set(result);

@@ -6,28 +6,28 @@ Subject: feat: enable setting aspect ratio to 0
 Make SetAspectRatio accept 0 as valid input, which would reset to null.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 8fedc83f1f9fb5f0f5b9132bf2d882ac839ade1a..3ad82812da1a1a84aba7b42d9864505a42cf45ce 100644
+index db21f47ffcdb610e8f73d764c8905451bd07d41e..ccfb78eb803766e2f3be95b86dc976f3ff4f6598 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -744,7 +744,7 @@ void DesktopWindowTreeHostWin::SetOpacity(float opacity) {
+@@ -768,7 +768,7 @@ void DesktopWindowTreeHostWin::SetOpacity(float opacity) {
  void DesktopWindowTreeHostWin::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {
--  DCHECK(!aspect_ratio.IsEmpty());
-+  DCHECK_NE(aspect_ratio.height(), 0);
+-  CHECK(!aspect_ratio.IsEmpty(), base::NotFatalUntil::M163);
++  CHECK_NE(aspect_ratio.height(), 0, base::NotFatalUntil::M163);
    message_handler_->SetAspectRatio(aspect_ratio.width() / aspect_ratio.height(),
                                     excluded_margin);
  }
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 42fd0087319f0ce9a15b327b52403607e08d092a..4715a7d9f2e845f9ffc8e84a6d7dc4a9d3483393 100644
+index 5f8a5a26f0003c9bed8d308e626a3706de86319f..73bc629806f59e0bb6ceb89fde4947ff0b9d4b12 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -1119,8 +1119,11 @@ void HWNDMessageHandler::SetFullscreen(bool fullscreen,
+@@ -1195,8 +1195,11 @@ void HWNDMessageHandler::SetFullscreen(bool fullscreen,
  
  void HWNDMessageHandler::SetAspectRatio(float aspect_ratio,
                                          const gfx::Size& excluded_margin) {
 -  // If the aspect ratio is not in the valid range, do nothing.
--  DCHECK_GT(aspect_ratio, 0.0f);
+-  CHECK_GT(aspect_ratio, 0.0f, base::NotFatalUntil::M163);
 +  // If the aspect ratio is 0, reset it to null.
 +  if (aspect_ratio == 0.0f) {
 +    aspect_ratio_.reset();

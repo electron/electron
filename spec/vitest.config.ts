@@ -6,6 +6,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { electronPool } from './vitest/electron-pool.ts';
+import { RetryReporter } from './vitest/retry-reporter.ts';
 import { SpecTimingsReporter } from './vitest/timings-reporter.ts';
 
 const require = createRequire(import.meta.url);
@@ -71,7 +72,7 @@ process.env.ELECTRON_SPEC_WORKERS = String(maxWorkers);
 // Per test and per hook; sanitizer builds raise it (ELECTRON_SPEC_TIMEOUT).
 const timeout = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
 
-const reporters: (string | [string, Record<string, unknown>] | SpecTimingsReporter)[] = ['default'];
+const reporters: (string | [string, Record<string, unknown>] | SpecTimingsReporter | RetryReporter)[] = ['default'];
 if (process.env.GITHUB_ACTIONS === 'true') {
   // Annotates failures on the PR; vitest only adds it by itself when no
   // reporters are configured. CI checks Electron out in src/electron, not at
@@ -85,11 +86,16 @@ if (process.env.GITHUB_ACTIONS === 'true') {
     }
   ]);
 }
+// The default reporter hides a retry of a test under slowTestThreshold; list
+// every retried test so flakes can be audited from the log.
+if (isCI) {
+  reporters.push(new RetryReporter(specDir));
+}
 if (process.env.ELECTRON_SPEC_JUNIT_FILE) {
   reporters.push(['junit', { outputFile: process.env.ELECTRON_SPEC_JUNIT_FILE, includeConsoleOutput: false }]);
 }
-// Per-file wall time for script/gen-spec-weights.js; skipped for filtered runs
-// so a rerun does not overwrite the full run's numbers.
+// Per-file wall time for script/gen-spec-weights.js;
+// skipped for runs filtered by test name so a partial run does not overwrite the full run's numbers.
 if (isCI && !process.argv.some((arg) => /^(-t|--testNamePattern)/.test(arg))) {
   reporters.push(new SpecTimingsReporter(specDir));
 }

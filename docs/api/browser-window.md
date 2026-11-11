@@ -1628,6 +1628,16 @@ events. On Linux this is supported on both X11 and Wayland. On X11 the X server
 has applied the window's new input shape when the call returns; on Wayland the
 new input region is applied with the window's next frame.
 
+> [!NOTE]
+> On Windows, `forward: true` stops working temporarily when the active window is running at a
+> higher integrity level (e.g., elevated/Administrator) than your Electron app. Since Electron
+> typically runs at standard user privilege, this occurs when an elevated window—such as Task
+> Manager or an installer—takes focus. This is due to User Interface Privacy Isolation (UIPI).
+>
+> To work around it, your app must be run with Administrator privileges or configured with UIAccess
+> privileges (see the Background section under
+> [the Reference section of this page](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/jj852244(v=ws.11)#reference)).
+
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 
 * `enable` boolean
@@ -1785,7 +1795,7 @@ machine has a touch bar.
 > The TouchBar API is currently experimental and may change or be
 > removed in future Electron releases.
 
-#### `win.setBrowserView(browserView)` _Experimental_ _Deprecated_
+#### `win.setBrowserView(browserView)` _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md) | null - Attach `browserView` to `win`.
 If there are other `BrowserView`s attached, they will be removed from
@@ -1795,7 +1805,7 @@ this window.
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
-#### `win.getBrowserView()` _Experimental_ _Deprecated_
+#### `win.getBrowserView()` _Deprecated_
 
 Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
 if one is not attached. Throws an error if multiple `BrowserView`s are attached.
@@ -1804,7 +1814,7 @@ if one is not attached. Throws an error if multiple `BrowserView`s are attached.
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
-#### `win.addBrowserView(browserView)` _Experimental_ _Deprecated_
+#### `win.addBrowserView(browserView)` _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md)
 
@@ -1814,7 +1824,7 @@ Replacement API for setBrowserView supporting work with multi browser views.
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
-#### `win.removeBrowserView(browserView)` _Experimental_ _Deprecated_
+#### `win.removeBrowserView(browserView)` _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md)
 
@@ -1822,7 +1832,7 @@ Replacement API for setBrowserView supporting work with multi browser views.
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
-#### `win.setTopBrowserView(browserView)` _Experimental_ _Deprecated_
+#### `win.setTopBrowserView(browserView)` _Deprecated_
 
 * `browserView` [BrowserView](browser-view.md)
 
@@ -1833,7 +1843,7 @@ Throws an error if `browserView` is not attached to `win`.
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
-#### `win.getBrowserViews()` _Experimental_ _Deprecated_
+#### `win.getBrowserViews()` _Deprecated_
 
 Returns `BrowserView[]` - a sorted by z-index array of all BrowserViews that have been attached
 with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last element of the array.

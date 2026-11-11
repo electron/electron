@@ -208,7 +208,7 @@ Electron app. This is the tool used under the hood by Electron Forge's
 [`@electron/windows-sign`][] under the hood and supports the same `windowsSign`
 options.
 
-```js {10-11} @ts-nocheck
+```js {10-14} @ts-nocheck
 const electronInstaller = require('electron-winstaller')
 // NB: Use this syntax within an async function, Node does not have support for
 //     top-level await as of Node 12.
@@ -239,7 +239,7 @@ Electron app. This is the tool used under the hood by Electron Forge's [MSI Make
 Just like `@electron/packager`, it uses [`@electron/windows-sign`][] under the hood
 and supports the same `windowsSign` options.
 
-```js {12-13} @ts-nocheck
+```js {12-16} @ts-nocheck
 import { MSICreator } from 'electron-wix-msi'
 
 // Step 1: Instantiate the MSICreator

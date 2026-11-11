@@ -106,6 +106,14 @@ describe('net module', () => {
       expect(await result).toEqual({ data: { ok: true }, code: 0 });
     });
 
+    it('acknowledges the result so that the child can exit', async () => {
+      const child = new EventEmitter() as EventEmitter & { postMessage(message: unknown): void };
+      child.postMessage = () => child.emit('exit', 0);
+      const result = waitForUtilityResult(child);
+      child.emit('message', { ok: true });
+      expect(await result).toEqual({ data: { ok: true }, code: 0 });
+    });
+
     it('fails without waiting for the timeout when the child exits before posting a result', async () => {
       const child = new EventEmitter();
       const result = waitForUtilityResult(child);
@@ -1936,6 +1944,43 @@ describe('net module', () => {
           });
           const resp = await net.fetch(serverUrl, { method: 'POST', body, duplex: 'half' } as RequestInit);
           expect(await resp.text()).toBe(expected);
+        });
+
+        test('rejects when a ReadableStream upload body stream fails', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            request.resume();
+            request.on('end', () => response.end());
+          });
+          const expectedError = new Error('upload stream failure');
+          const body = new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('partial-data'));
+              controller.error(expectedError);
+            }
+          });
+
+          await expect(net.fetch(serverUrl, { method: 'POST', body, duplex: 'half' } as RequestInit)).rejects.toThrow(
+            'upload stream failure'
+          );
+        });
+
+        test('aborts and rejects when a ReadableStream upload is cancelled mid-stream', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            request.resume();
+            request.on('end', () => response.end());
+          });
+          let streamController: ReadableStreamDefaultController<Uint8Array>;
+          const body = new ReadableStream<Uint8Array>({
+            start(controller) {
+              streamController = controller;
+              controller.enqueue(new TextEncoder().encode('chunk 1'));
+            }
+          });
+
+          const fetchPromise = net.fetch(serverUrl, { method: 'POST', body, duplex: 'half' } as RequestInit);
+          streamController!.error(new Error('stream aborted mid-upload'));
+
+          await expect(fetchPromise).rejects.toThrow('stream aborted mid-upload');
         });
 
         test('can read response as an array buffer', async () => {

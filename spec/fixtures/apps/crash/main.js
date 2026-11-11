@@ -73,10 +73,14 @@ app.whenReady().then(() => {
     const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     w.webContents.on('render-process-gone', () => process.exit(0));
     w.webContents.on('did-finish-load', () => {
+      // Fill the heap with arrays of doubles, which hold no pointers. V8 runs
+      // about twenty full GCs near the heap limit before it gives up; arrays of
+      // pointers make each of them trace the whole heap, which on slow machines
+      // took long enough for the exit timer below to end the app first.
       w.webContents.executeJavaScript(`
         function oomTrigger() {
           const arr = [];
-          while (true) arr.push(new Array(10000).fill('x'.repeat(100)));
+          while (true) arr.push(new Array(10000).fill(0.5));
         }
         oomTrigger();
       `);
@@ -103,11 +107,12 @@ app.whenReady().then(() => {
     const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     w.webContents.on('render-process-gone', () => process.exit(0));
     w.webContents.on('did-finish-load', () => {
+      // Arrays of doubles, as in 'renderer-oom', so the GCs near the limit are quick.
       w.webContents.executeJavaScript(`
         const blob = new Blob([\`
           function workerLeakMemory() {
             const arr = [];
-            while (true) { arr.push(new Array(1000).fill("x".repeat(1000))); }
+            while (true) { arr.push(new Array(1000).fill(0.5)); }
           }
           function triggerWorkerOom() { workerLeakMemory(); }
           triggerWorkerOom();

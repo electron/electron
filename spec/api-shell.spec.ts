@@ -3,7 +3,8 @@ import { BrowserWindow, app } from 'electron/main';
 
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -19,13 +20,22 @@ describe('shell module', () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
 
+    // On Windows, opening an http URL launches the default browser (Edge on
+    // CI), which then phones home. Use a throwaway per-user URL scheme whose
+    // handler requests the local test server instead, so ShellExecute is
+    // still exercised without starting a browser.
+    const winScheme = `electron-test-${randomBytes(4).toString('hex')}`;
+    const winSchemeKey = `HKCU\\Software\\Classes\\${winScheme}`;
+
     afterAll(() => {
-      if (process.env.CI && process.platform === 'win32') {
-        // Edge may cause issues with visibility tests, so make sure it is closed after testing.
-        const killEdge = 'Get-Process | Where Name -Like "msedge" | Stop-Process';
-        execSync(killEdge, { shell: 'powershell.exe' });
+      if (process.platform === 'win32') {
+        try {
+          execFileSync('reg', ['delete', winSchemeKey, '/f'], { stdio: 'ignore' });
+        } catch {
+          // The key was never created.
+        }
       }
-    }, 60000);
+    });
 
     beforeEach(() => {
       envVars = {
@@ -68,7 +78,16 @@ describe('shell module', () => {
         server = http.createServer((req, res) => {
           res.end();
         });
-        url = (await listen(server)).url;
+        const { port } = await listen(server);
+        // The handler ignores the opened URL (%1), so nothing from it reaches
+        // the command line.
+        const curl = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'curl.exe');
+        const command = `${curl} -s -o NUL --noproxy 127.0.0.1 http://127.0.0.1:${port}/`;
+        execFileSync('reg', ['add', winSchemeKey, '/v', 'URL Protocol', '/d', '', '/f'], { stdio: 'ignore' });
+        execFileSync('reg', ['add', `${winSchemeKey}\\shell\\open\\command`, '/ve', '/d', command, '/f'], {
+          stdio: 'ignore'
+        });
+        url = `${winScheme}://open`;
         requestReceived = new Promise<void>((resolve) => server.on('connection', () => resolve()));
       }
       return { url, requestReceived };
@@ -119,9 +138,14 @@ describe('shell module', () => {
         });
         expect(w.isFocused()).toBe(true);
 
-        await Promise.all<void>([shell.openExternal(url), once(w, 'blur') as Promise<any>]);
+        // Read the focus state when 'blur' arrives. By the time openExternal()
+        // also resolves, the activation requests made above or the browser
+        // finishing its launch can already have handed focus back to the
+        // window, which says nothing about whether opening the link removed it.
+        const focusedWhenBlurred = once(w, 'blur').then(() => w.isFocused());
+        await shell.openExternal(url);
 
-        expect(w.isFocused()).toBe(false);
+        expect(await focusedWhenBlurred).toBe(false);
       }
     );
   });

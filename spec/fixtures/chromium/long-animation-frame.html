@@ -4,23 +4,29 @@
     <div id="update"></div>
     <script>
       var hasAttributionPromise = new Promise((resolve) => {
+        let busyLoopStart;
+        // A slow host can report other long frames too, such as a first paint
+        // with no script in it, or one that also ran a short executeJavaScript()
+        // call that has no URL. Only check the frame that ran the busy loop.
         new PerformanceObserver((list) => {
-          const entries = list.getEntries();
-          const has_attribution =
-            entries.length > 0 &&
-            entries.every(
-              ({ scripts }) =>
-                scripts.length > 0 &&
-                scripts.every(({ sourceURL }) => sourceURL === location.href),
+          for (const { startTime, duration, scripts } of list.getEntries()) {
+            if (busyLoopStart === undefined || startTime > busyLoopStart || startTime + duration < busyLoopStart) {
+              continue;
+            }
+            resolve(
+              scripts.some(
+                ({ invoker, sourceURL }) => invoker === 'FrameRequestCallback' && sourceURL === location.href
+              )
             );
-          resolve(has_attribution);
-        }).observe({ entryTypes: ["long-animation-frame"] });
+            return;
+          }
+        }).observe({ type: 'long-animation-frame', buffered: true });
 
         // Produce a long animation frame
         requestAnimationFrame(() => {
-          const before = performance.now();
-          document.querySelector("#update").innerHTML = "Update";
-          while (performance.now() < before + 60) {}
+          busyLoopStart = performance.now();
+          document.querySelector('#update').innerHTML = 'Update';
+          while (performance.now() < busyLoopStart + 60) {}
           requestAnimationFrame(() => {});
         });
       });

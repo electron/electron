@@ -524,6 +524,8 @@ void ShowOpenDialogForNSWindow(const DialogSettings& settings,
   SetupOpenDialogForProperties(dialog, settings.properties);
 
   __block OpenDialogCallback cb = std::move(callback);
+  // A copy is needed: the block below would capture a reference by reference.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   scoped_refptr<base::SequencedTaskRunner> task_runner =
       base::SequencedTaskRunner::GetCurrentDefault();
   [dialog
@@ -643,6 +645,8 @@ void ShowSaveDialogForNSWindow(const DialogSettings& settings,
   [dialog setCanSelectHiddenExtension:YES];
 
   __block SaveDialogCallback cb = std::move(callback);
+  // A copy is needed: the block below would capture a reference by reference.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   scoped_refptr<base::SequencedTaskRunner> task_runner =
       base::SequencedTaskRunner::GetCurrentDefault();
   [dialog

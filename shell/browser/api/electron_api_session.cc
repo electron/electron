@@ -967,10 +967,17 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
 }
 
 void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
-                                            v8::Local<v8::Value> val) {
+                                            v8::Local<v8::Value> val,
+                                            gin::Arguments* args) {
+  bool use_system_picker = false;
+  gin_helper::Dictionary opts;
+  if (args->GetNext(&opts)) {
+    opts.Get("useSystemPicker", &use_system_picker);
+  }
+
   if (val->IsNull()) {
     browser_context_->SetDisplayMediaRequestHandler(
-        DisplayMediaRequestHandler());
+        DisplayMediaRequestHandler(), /*use_system_picker=*/false);
     return;
   }
   DisplayMediaRequestHandler handler;
@@ -979,7 +986,7 @@ void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
         "Display media request handler must be null or a function");
     return;
   }
-  browser_context_->SetDisplayMediaRequestHandler(handler);
+  browser_context_->SetDisplayMediaRequestHandler(handler, use_system_picker);
 }
 
 void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
@@ -1150,9 +1157,8 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
                      base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
-std::string Session::RegisterPreloadScript(
-    gin_helper::ErrorThrower thrower,
-    const PreloadScript& new_preload_script) {
+std::string Session::RegisterPreloadScript(gin_helper::ErrorThrower thrower,
+                                           PreloadScript new_preload_script) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
 
@@ -1183,11 +1189,16 @@ std::string Session::RegisterPreloadScript(
     }
   }
 
-  preload_scripts.push_back(new_preload_script);
+  if (std::string error; !new_preload_script.ParseUrlPatterns(&error)) {
+    thrower.ThrowError(error);
+    return "";
+  }
+
+  preload_scripts.push_back(std::move(new_preload_script));
   // A service worker that starts after this point picks up the new preload
   // automatically — GetServiceWorkerStartupData() rebuilds from
   // SessionPreferences on every StartWorker.
-  return new_preload_script.id;
+  return preload_scripts.back().id;
 }
 
 void Session::UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
@@ -1843,8 +1854,7 @@ Session* Session::FromPath(gin::Arguments* args,
     return nullptr;
   }
 
-  browser_context =
-      ElectronBrowserContext::FromPath(std::move(path), std::move(options));
+  browser_context = ElectronBrowserContext::FromPath(path, std::move(options));
 
   return FromOrCreate(args->isolate(), browser_context);
 }
@@ -1877,7 +1887,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod<&Session::SetPermissionCheckHandler>(
           "setPermissionCheckHandler")
       .SetMethod<&Session::SetDisplayMediaRequestHandler>(
-          "_setDisplayMediaRequestHandler")
+          "setDisplayMediaRequestHandler")
       .SetMethod<&Session::SetDevicePermissionHandler>(
           "setDevicePermissionHandler")
       .SetMethod<&Session::SetUSBProtectedClassesHandler>(

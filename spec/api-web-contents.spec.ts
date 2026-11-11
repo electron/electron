@@ -11,6 +11,7 @@ import {
   Menu
 } from 'electron/main';
 
+import * as dbus from 'dbus-native';
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
@@ -20,10 +21,11 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import { promisify } from 'node:util';
 import * as vm from 'node:vm';
 
 import { captureWithTabSourceId } from './lib/media-helpers.ts';
-import { containsText, readPDF, readPDFs } from './lib/pdf-helpers.ts';
+import { containsText, readPDF } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
@@ -41,7 +43,7 @@ import type { AddressInfo } from 'node:net';
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
-describe('webContents module', () => {
+describe('webContents module', { retry: 0 }, () => {
   describe('getAllWebContents() API', () => {
     afterEach(closeAllWindows);
     it('returns an array of web contents', async () => {
@@ -671,7 +673,10 @@ describe('webContents module', () => {
 
     it('resolves when navigating within the page', async () => {
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-      await setTimeout();
+      // loadFile() resolves on did-finish-load, and did-stop-loading can come
+      // later. A did-stop-loading that arrives after the next loadURL() has
+      // started would reject it, so start from a page that has stopped loading.
+      if (w.webContents.isLoading()) await once(w.webContents, 'did-stop-loading');
       await w.loadURL(w.getURL() + '#foo');
     });
 
@@ -1325,7 +1330,9 @@ describe('webContents module', () => {
         webPreferences: { partition }
       });
 
-      wcv.webContents.navigationHistory.restore({
+      // Wait for the restored page to load, so the script below runs in it
+      // rather than in the initial empty document that it replaces.
+      await wcv.webContents.navigationHistory.restore({
         entries: [
           {
             url: urlPage1,
@@ -2101,6 +2108,146 @@ describe('webContents module', () => {
     );
   });
 
+  // Drives the DevTools "save" embedder message against the mock
+  // xdg-desktop-portal FileChooser that script/dbus_mock.py hosts on the fake
+  // session bus.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('DevTools save embedder message', { tags: ['serial'] }, () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+    let queueResponse: (uris: string[]) => Promise<void>;
+    let clearQueuedResponses: () => Promise<void>;
+
+    beforeAll(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+      queueResponse = promisify(mock.QueueResponse.bind(mock));
+      clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
+    });
+
+    afterAll(() => {
+      bus?.connection.end();
+    });
+
+    afterEach(closeAllWindows);
+
+    const makeTempDir = () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-save-'));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      return dir;
+    };
+
+    const readFile = (file: string) => (fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null);
+
+    // Opens DevTools for a new window and records every savedURL and
+    // canceledSaveURL that the embedder sends to the frontend.
+    const openDevTools = async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      const devtools = w.webContents.devToolsWebContents!;
+      await waitUntil(() => devtools.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+      await devtools.executeJavaScript(`
+        window.saveEvents = [];
+        for (const name of ['savedURL', 'canceledSaveURL']) {
+          const original = DevToolsAPI[name];
+          DevToolsAPI[name] = function (...args) {
+            window.saveEvents.push([name, ...args]);
+            return original?.apply(this, args);
+          };
+        }
+        true;
+      `);
+      return devtools;
+    };
+
+    const save = (devtools: WebContents, saveURL: string, content: string, saveAs = false) =>
+      devtools.executeJavaScript(
+        `DevToolsAPI.sendMessageToEmbedder('save', [${JSON.stringify(saveURL)}, ${JSON.stringify(content)}, ${saveAs}, false], null)`
+      );
+
+    const saveEvents = (devtools: WebContents): Promise<string[][]> => devtools.executeJavaScript('window.saveEvents');
+
+    const saveFileCalls = async () => (await getCalls()).filter((call) => call[1] === 'SaveFile');
+
+    it('reuses the saved path for a repeat save of the same URL', async () => {
+      const target = path.join(makeTempDir(), 'saved.txt');
+      const devtools = await openDevTools();
+
+      await clearCalls();
+      await queueResponse([url.pathToFileURL(target).href]);
+      defer(() => clearQueuedResponses());
+
+      // The first save has no stored path, so it asks the portal for one.
+      await save(devtools, 'devtools-save-test.txt', 'first');
+      await waitUntil(() => readFile(target) === 'first');
+
+      // The second save of the same URL must write to the stored path
+      // without asking again.
+      await save(devtools, 'devtools-save-test.txt', 'second');
+      await waitUntil(() => readFile(target) === 'second');
+
+      expect(await saveFileCalls()).toHaveLength(1);
+    });
+
+    it('asks again after a cancelled save of the same URL', async () => {
+      const saveURL = 'devtools-cancel-test.txt';
+      const target = path.join(makeTempDir(), 'saved.txt');
+      const devtools = await openDevTools();
+
+      await clearCalls();
+      defer(() => clearQueuedResponses());
+
+      // Nothing is queued, so the portal cancels the first save.
+      await save(devtools, saveURL, 'first');
+      await waitUntil(async () => (await saveEvents(devtools)).length === 1);
+      expect(await saveEvents(devtools)).toEqual([['canceledSaveURL', saveURL]]);
+
+      // The cancel must not leave a stored path behind, so the next save
+      // asks the portal again and writes to the path it returns.
+      await queueResponse([url.pathToFileURL(target).href]);
+      await save(devtools, saveURL, 'second');
+      await waitUntil(() => readFile(target) === 'second');
+
+      expect(await saveFileCalls()).toHaveLength(2);
+    });
+
+    it('writes a "Save as" of an already saved URL to the newly picked path', async () => {
+      const saveURL = 'devtools-save-as-test.txt';
+      const dir = makeTempDir();
+      const first = path.join(dir, 'first.txt');
+      const second = path.join(dir, 'second.txt');
+      const devtools = await openDevTools();
+
+      await clearCalls();
+      defer(() => clearQueuedResponses());
+
+      await queueResponse([url.pathToFileURL(first).href]);
+      await save(devtools, saveURL, 'old');
+      await waitUntil(() => readFile(first) === 'old');
+
+      await queueResponse([url.pathToFileURL(second).href]);
+      await save(devtools, saveURL, 'new', true);
+      await waitUntil(async () => (await saveEvents(devtools)).length === 2);
+      expect((await saveEvents(devtools))[1]).toEqual(['savedURL', saveURL, second]);
+      await waitUntil(() => readFile(second) === 'new');
+
+      expect(readFile(first)).toBe('old');
+      expect(await saveFileCalls()).toHaveLength(2);
+    });
+  });
+
   describe('DevTools native integration', () => {
     afterEach(closeAllWindows);
 
@@ -2529,6 +2676,81 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents.adjustSelection()', () => {
+    type Selection = { start: number; end: number };
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      w.webContents.focus();
+    });
+
+    afterEach(closeAllWindows);
+
+    const getSelection = (): Promise<Selection> =>
+      w.webContents.executeJavaScript(
+        '({ start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd })'
+      );
+
+    // Focuses an input holding "Hello World" and selects [start, end)
+    const select = async ({ start, end }: Selection) => {
+      await w.webContents.executeJavaScript(`{
+        const input = document.createElement('input');
+        input.value = 'Hello World';
+        document.body.appendChild(input);
+        input.focus();
+        input.setSelectionRange(${start}, ${end});
+      }`);
+      expect(await getSelection()).toEqual({ start, end });
+    };
+
+    // The adjustment reaches the renderer asynchronously, so poll for it
+    const expectSelection = async (expected: Selection) => {
+      let actual = await getSelection();
+      await waitUntil(
+        async () => {
+          actual = await getSelection();
+          return actual.start === expected.start && actual.end === expected.end;
+        },
+        { rate: 50, timeout: 2000 }
+      ).catch(() => {
+        // Fall through so the assertion below reports the selection we got
+      });
+      expect(actual).toEqual(expected);
+    };
+
+    it('moves only the start of the selection', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ start: 1 });
+      await expectSelection({ start: 1, end: 5 });
+    });
+
+    it('moves only the end of the selection', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ end: 6 });
+      await expectSelection({ start: 0, end: 11 });
+    });
+
+    it('moves both ends of the selection forward', async () => {
+      await select({ start: 0, end: 5 });
+      w.webContents.adjustSelection({ start: 1, end: 5 });
+      await expectSelection({ start: 1, end: 10 });
+    });
+
+    it('moves the end of the selection backward', async () => {
+      await select({ start: 0, end: 11 });
+      w.webContents.adjustSelection({ start: 2, end: -3 });
+      await expectSelection({ start: 2, end: 8 });
+    });
+
+    it('moves both ends of the selection backward', async () => {
+      await select({ start: 6, end: 11 });
+      w.webContents.adjustSelection({ start: -6, end: -6 });
+      await expectSelection({ start: 0, end: 5 });
+    });
+  });
+
   describe('insertCSS', () => {
     afterEach(closeAllWindows);
     it('supports inserting CSS', async () => {
@@ -2550,6 +2772,34 @@ describe('webContents module', () => {
         'window.getComputedStyle(document.body).getPropertyValue("background-repeat")'
       );
       expect(result).toBe('repeat');
+    });
+
+    it('supports removing CSS inserted with the user origin', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const getBackgroundRepeat = 'getComputedStyle(document.body).backgroundRepeat';
+      const key = await w.webContents.insertCSS('body { background-repeat: round !important; }', {
+        cssOrigin: 'user'
+      });
+      expect(await w.webContents.executeJavaScript(getBackgroundRepeat)).toBe('round');
+      await w.webContents.removeInsertedCSS(key);
+      expect(await w.webContents.executeJavaScript(getBackgroundRepeat)).toBe('repeat');
+    });
+
+    it('removes user and author origin CSS independently', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const getStyle =
+        '(({ backgroundRepeat, backgroundAttachment }) => [backgroundRepeat, backgroundAttachment])(getComputedStyle(document.body))';
+      const userKey = await w.webContents.insertCSS('body { background-repeat: round !important; }', {
+        cssOrigin: 'user'
+      });
+      const authorKey = await w.webContents.insertCSS('body { background-attachment: fixed; }');
+      expect(await w.webContents.executeJavaScript(getStyle)).toEqual(['round', 'fixed']);
+      await w.webContents.removeInsertedCSS(userKey);
+      expect(await w.webContents.executeJavaScript(getStyle)).toEqual(['repeat', 'fixed']);
+      await w.webContents.removeInsertedCSS(authorKey);
+      expect(await w.webContents.executeJavaScript(getStyle)).toEqual(['repeat', 'scroll']);
     });
   });
 
@@ -2976,10 +3226,11 @@ describe('webContents module', () => {
 
       const origWebContents = w.webContents;
 
-      // Destroy the original WebContents
+      // Destroy the original WebContents. destroy() disposes it from a posted
+      // task, so wait for that rather than for a timer.
+      const destroyed = once(origWebContents, 'destroyed');
       w.webContents.destroy();
-
-      await setTimeout();
+      await destroyed;
 
       // Original should be destroyed, but cloned should still be alive
       expect(origWebContents.isDestroyed()).toBe(true);
@@ -4394,11 +4645,11 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     const testing = () => process._linkedBinding('electron_common_testing');
     // The hang monitor reports after kHungRendererDelay (15 s) plus a 1 s ping.
-    const hangAndPoke = async (w: BrowserWindow, ms = 0) => {
-      w.webContents
-        .executeJavaScript(ms ? `{ const end = Date.now() + ${ms}; while (Date.now() < end) {} }` : 'while (true) {}')
-        .catch(() => {});
-      await setTimeout(200);
+    // The key's own keydown handler hangs the page, so the key can't be acked
+    // before the hang starts. A sync XHR hang, as in the hidden-window test,
+    // would end at the simulated suspend, which fails pending requests.
+    const hangAndPoke = async (w: BrowserWindow) => {
+      await w.webContents.executeJavaScript("addEventListener('keydown', () => { while (true) {} })");
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
     };
 
@@ -4425,9 +4676,29 @@ describe('webContents module', () => {
     );
 
     it('is not followed by responsive just because the window is hidden', { timeout: 90000 }, async () => {
+      // The page stays hung in a synchronous XHR until the test answers it,
+      // rather than spinning for a fixed time that a slow host can use up
+      // before the hang is reported a second time.
+      let release: (() => void) | undefined;
+      const server = http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        release = () => res.end('released');
+      });
+      defer(() => {
+        release?.();
+        server.close();
+      });
+      const { url: serverUrl } = await listen(server);
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
-      await hangAndPoke(w, 40000);
+      const requested = once(server, 'request');
+      w.webContents
+        .executeJavaScript(
+          `{ const xhr = new XMLHttpRequest(); xhr.open('GET', ${JSON.stringify(serverUrl)}, false); xhr.send(); }`
+        )
+        .catch(() => {});
+      await requested;
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
       await once(w.webContents, 'unresponsive');
       const events: string[] = [];
       w.webContents.on('responsive', () => events.push('responsive'));
@@ -4438,8 +4709,10 @@ describe('webContents module', () => {
       w.show();
       // Still hung and visible again: reported again after one delay.
       await once(w.webContents, 'unresponsive');
-      // The spin ends ~40 s in; the pending key event is then acked.
-      await once(w.webContents, 'responsive');
+      // End the hang; the pending key event is then acked.
+      const responsive = once(w.webContents, 'responsive');
+      release!();
+      await responsive;
       expect(events).toEqual(['unresponsive', 'responsive']);
     });
 
@@ -4550,7 +4823,11 @@ describe('webContents module', () => {
   describe('setIgnoreMenuShortcuts(ignore)', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
-    const trackShortcutInvocations = (contents: WebContents) => {
+    // Windows marks a covered window hidden and shows it again only some time
+    // after it is raised, so keep the windows above everything there.
+    const alwaysOnTop = process.platform === 'win32';
+
+    const trackShortcutInvocations = (window: BrowserWindow, contents: WebContents) => {
       const previousMenu = Menu.getApplicationMenu();
       let invocations = 0;
       Menu.setApplicationMenu(
@@ -4567,21 +4844,43 @@ describe('webContents module', () => {
         if (!contents.isDestroyed() && contents.debugger.isAttached()) contents.debugger.detach();
       });
 
-      return async (expectedInvocations: number) => {
-        const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
-        if (process.platform === 'darwin') {
-          // Native macOS menu input requires kVK_F13 and NSF13FunctionKey.
-          await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
-            ...base,
-            type: 'rawKeyDown',
-            nativeVirtualKeyCode: 0x69,
-            text: '\uF710'
-          });
-        } else {
-          contents.sendInputEvent({ type: 'keyDown', keyCode: 'F13' });
+      // Presses F13 in contents and returns the invocation count once the
+      // browser has finished handling the press.
+      return async () => {
+        // Windows and Linux hand accelerators only to the active window
+        // (View::CanHandleAccelerators), and page or DevTools focus can be set
+        // inside a window that isn't active. So focus the window itself. On
+        // macOS, window.focus() can't activate the app while another app is
+        // frontmost, so take activation first.
+        if (!window.isFocused()) {
+          if (process.platform === 'darwin') app.focus({ steal: true });
+          window.focus();
         }
+        await waitUntil(() => window.isFocused());
+        if (contents.getType() === 'webview') {
+          // CDP sends key events to the focused frame, so focus must be in the guest.
+          await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
+          await waitUntil(() => contents.executeJavaScript('document.hasFocus()'));
+        }
+        // Keys from a hidden widget never reach the menu.
+        await waitUntil(async () => (await contents.executeJavaScript('document.visibilityState')) === 'visible');
+        const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
+        // CDP keeps key events that lack a native key code away from the
+        // browser's unhandled-key handling, where menu shortcuts run. Only
+        // macOS turns the code into a native event, and its menu needs
+        // kVK_F13 and NSF13FunctionKey; elsewhere any non-zero code works.
+        await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
+          ...base,
+          type: 'rawKeyDown',
+          ...(process.platform === 'darwin'
+            ? { nativeVirtualKeyCode: 0x69, text: '\uF710' }
+            : { nativeVirtualKeyCode: 124 })
+        });
+        // CDP answers each event when its ack arrives, just before the browser
+        // offers an unhandled keyDown to the menu. Both events go to the same
+        // widget, which acks them in order, so once the keyUp is answered the
+        // keyDown has either invoked the menu or been ignored.
         await contents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
-        await waitUntil(() => invocations >= expectedInvocations);
         return invocations;
       };
     };
@@ -4597,15 +4896,14 @@ describe('webContents module', () => {
     it('honors the initial ignoreMenuShortcuts preference', async () => {
       const window = new BrowserWindow({
         show: true,
+        alwaysOnTop,
         webPreferences: { ignoreMenuShortcuts: true } as Electron.WebPreferences
       });
       await window.loadURL('about:blank');
-      window.webContents.focus();
-      await waitUntil(() => window.webContents.isFocused());
-      const sendShortcut = trackShortcutInvocations(window.webContents);
-      expect(await sendShortcut(0)).toBe(0);
+      const sendShortcut = trackShortcutInvocations(window, window.webContents);
+      expect(await sendShortcut()).toBe(0);
       window.webContents.setIgnoreMenuShortcuts(false);
-      expect(await sendShortcut(1)).toBe(1);
+      expect(await sendShortcut()).toBe(1);
     });
 
     it('does not crash for detached DevTools without preferences', async () => {
@@ -4624,7 +4922,7 @@ describe('webContents module', () => {
 
     for (const target of ['webview', 'docked DevTools'] as const) {
       it(`uses the source settings for ${target}`, async () => {
-        const window = new BrowserWindow({ show: true, webPreferences: { webviewTag: true } });
+        const window = new BrowserWindow({ show: true, alwaysOnTop, webPreferences: { webviewTag: true } });
         let source: WebContents;
         if (target === 'webview') {
           const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
@@ -4637,25 +4935,20 @@ describe('webContents module', () => {
         } else {
           await window.loadURL('about:blank');
           const devToolsOpened = once(window.webContents, 'devtools-opened');
-          const devToolsFocused = once(window.webContents, 'devtools-focused');
-          window.webContents.openDevTools({ mode: 'right', activate: true });
-          await Promise.all([devToolsOpened, devToolsFocused]);
+          window.webContents.openDevTools({ mode: 'right' });
+          await devToolsOpened;
           source = window.webContents.devToolsWebContents!;
           expect(source.getLastWebPreferences()).toBe(null);
           source.setIgnoreMenuShortcuts(false);
         }
 
-        const sendShortcut = trackShortcutInvocations(source);
+        const sendShortcut = trackShortcutInvocations(window, source);
         let expectedInvocations = 0;
         for (const ignore of [true, false, true, false]) {
-          if (target === 'webview') {
-            window.focus();
-            await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
-          }
           window.webContents.setIgnoreMenuShortcuts(!ignore);
           source.setIgnoreMenuShortcuts(ignore);
           if (!ignore) expectedInvocations++;
-          expect(await sendShortcut(expectedInvocations)).toBe(expectedInvocations);
+          expect(await sendShortcut()).toBe(expectedInvocations);
         }
       });
     }
@@ -4806,11 +5099,7 @@ describe('webContents module', () => {
 
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
-  describe('destroy()', { retry: 3 }, () => {
-    // These tests are flaky on Windows CI and we don't know why, but their
-    // purpose is to make sure Electron does not crash so it is fine to retry
-    // them a few times.
-
+  describe('destroy()', () => {
     let server: http.Server;
     let serverUrl: string;
 
@@ -5271,6 +5560,11 @@ describe('webContents module', () => {
         waitUntil(async () => (await framesInHalfSecond(wc, frame)) === 0, { timeout: 10000 });
       const startsPainting = (wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
         waitUntil(async () => (await framesInHalfSecond(wc, frame)) > 0, { timeout: 10000 });
+      // The page learns its visibility from the browser separately from its
+      // widget being shown or hidden, so it can still report the old state for
+      // a moment after frames have started or stopped.
+      const becomes = (state: string, wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
+        waitUntil(async () => (await visibilityState(wc, frame)) === state, { timeout: 10000 });
 
       // Regression test: re-enabling throttling on a hidden page used to leave
       // the RenderWidgetHost shown (from the setBackgroundThrottling(false)
@@ -5281,13 +5575,13 @@ describe('webContents module', () => {
         await w.loadURL('about:blank');
         w.hide();
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
         w.webContents.setBackgroundThrottling(false);
         await startsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('visible');
+        await becomes('visible', w.webContents);
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
       });
 
       // Same, but with throttling disabled before the window is hidden (the
@@ -5303,10 +5597,10 @@ describe('webContents module', () => {
         expect(await visibilityState(w.webContents)).toBe('visible');
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
         w.show();
         await startsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('visible');
+        await becomes('visible', w.webContents);
       });
 
       // Cross-process iframes have their own RenderWidgetHost; re-enabling
@@ -5327,12 +5621,15 @@ describe('webContents module', () => {
         await w.loadURL(serverUrl);
         const child = w.webContents.mainFrame.frames.find((f) => f.name === 'child')!;
         expect(child.osProcessId).not.toBe(w.webContents.mainFrame.osProcessId);
+        // Start from an iframe that is rendering: until Blink has seen it on
+        // screen it may hold back the iframe's frames, hidden or not.
+        await startsPainting(w.webContents, child);
         w.hide();
         await setTimeout(500);
         expect(await framesInHalfSecond(w.webContents, child)).toBeGreaterThan(0);
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents, child);
-        expect(await visibilityState(w.webContents, child)).toBe('hidden');
+        await becomes('hidden', w.webContents, child);
         w.webContents.setBackgroundThrottling(false);
         await startsPainting(w.webContents, child);
         w.show();
@@ -5536,7 +5833,10 @@ describe('webContents module', () => {
 
     type PageSizeString = Exclude<Required<Electron.PrintToPDFOptions>['pageSize'], Electron.Size>;
 
-    it('with custom page sizes', async () => {
+    describe('with custom page sizes', () => {
+      // One print and parse per test: printing and parsing all eleven sizes in
+      // a single test left too little headroom in the per-test timeout on slow
+      // Windows and macOS x64 CI hosts.
       const paperFormats: Record<PageSizeString, ElectronInternal.PageSize> = {
         Letter: { width: 8.5, height: 11 },
         Legal: { width: 8.5, height: 14 },
@@ -5551,27 +5851,15 @@ describe('webContents module', () => {
         A6: { width: 4.13, height: 5.83 }
       };
 
-      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      for (const [format, size] of Object.entries(paperFormats) as [PageSizeString, ElectronInternal.PageSize][]) {
+        it(format, async () => {
+          await w.loadFile(path.join(fixturesPath, 'api', 'print-to-pdf-small.html'));
+          const pdfInfo = await readPDF(await w.webContents.printToPDF({ pageSize: format }));
 
-      const formats = Object.keys(paperFormats) as PageSizeString[];
-      const pdfs = [];
-      for (const format of formats) {
-        pdfs.push(await w.webContents.printToPDF({ pageSize: format }));
-      }
-
-      // Parse every PDF in one pdf.js subprocess: one Electron launch per
-      // format is enough to push this test past its timeout on slow CI hosts.
-      const pdfInfos = await readPDFs(pdfs);
-
-      const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
-
-      for (const [i, format] of formats.entries()) {
-        // page.view is [top, left, width, height].
-        const width = pdfInfos[i].view[2] / 72;
-        const height = pdfInfos[i].view[3] / 72;
-
-        expect(approxEq(width, paperFormats[format].width)).toBe(true);
-        expect(approxEq(height, paperFormats[format].height)).toBe(true);
+          // page.view is [top, left, width, height], in points.
+          expect(Math.abs(pdfInfo.view[2] / 72 - size.width)).toBeLessThanOrEqual(0.01);
+          expect(Math.abs(pdfInfo.view[3] / 72 - size.height)).toBeLessThanOrEqual(0.01);
+        });
       }
     });
 
@@ -5942,6 +6230,38 @@ describe('webContents module', () => {
       expect(params.frame).toBeTypeOf('object');
       expect(params.x).toBeTypeOf('number');
       expect(params.y).toBeTypeOf('number');
+    });
+
+    it('releases the right-clicked node once the page removes it', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.webContents.executeJavaScript(`{
+        const target = document.createElement('div');
+        target.id = 'target';
+        target.style.cssText = 'position: fixed; inset: 0;';
+        target.payload = {};
+        document.body.append(target);
+        window.payloadRef = new WeakRef(target.payload);
+      }
+      undefined;`);
+
+      const contextMenu = once(w.webContents, 'context-menu');
+      const opts = { x: 10, y: 10, button: 'right' as const };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+      await contextMenu;
+
+      await w.webContents.executeJavaScript("document.getElementById('target').remove()");
+      // Move off the removed node so hover state doesn't keep it.
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 20, y: 20 });
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 30, y: 30 });
+      await setTimeout(100);
+
+      const collected = await w.webContents.executeJavaScript(`(async () => {
+        await gc({ type: 'major', execution: 'async' });
+        return window.payloadRef.deref() === undefined;
+      })()`);
+      expect(collected).toBe(true);
     });
 
     // Skipping due to lack of native click support.

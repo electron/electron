@@ -51,7 +51,7 @@ index 6f081c26ca4cffe76104eae5a4130a81a93a539d..7da4c199de1d2721a2e6ba9cb10ba0bc
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
  
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 9a83a1d2d2f9bf68ac8b832744b34fbe00ca724e..6e42d6a1bfe1cab905a4dc8927f6f169ef20da52 100644
+index 827a8a94b0a185638678d63e3e8f9f5e380cca28..7e60fda45f824974b3403a376d8aa9b35b0a1f84 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -55,6 +55,7 @@
@@ -165,7 +165,7 @@ index 9a83a1d2d2f9bf68ac8b832744b34fbe00ca724e..6e42d6a1bfe1cab905a4dc8927f6f169
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 7671e78815ae39310f4916abbdb4c5a06a65fc08..83f8698e402e06e87767b975d0fe0da2b8b4a024 100644
+index 1a1c86974a2946b43b9762cd001fd7032c5ad6ed..fa4ddf1146eb8ae044c9411a3b3156a476521349 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -30,7 +30,9 @@
@@ -178,7 +178,7 @@ index 7671e78815ae39310f4916abbdb4c5a06a65fc08..83f8698e402e06e87767b975d0fe0da2
  #include "chrome/browser/win/chrome_process_finder.h"
  #include "chrome/common/chrome_constants.h"
  #include "chrome/common/chrome_paths.h"
-@@ -166,6 +168,7 @@ bool ProcessLaunchNotification(
+@@ -168,6 +170,7 @@ bool ProcessLaunchNotification(
  }
  
  bool DisplayShouldKillMessageBox() {
@@ -186,7 +186,7 @@ index 7671e78815ae39310f4916abbdb4c5a06a65fc08..83f8698e402e06e87767b975d0fe0da2
    TRACE_EVENT0("startup", "ProcessSingleton:DisplayShouldKillMessageBox");
  
    // Ensure there is an instance of ResourceBundle that is initialized for
-@@ -176,6 +179,10 @@ bool DisplayShouldKillMessageBox() {
+@@ -178,6 +181,10 @@ bool DisplayShouldKillMessageBox() {
               NULL, l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
               l10n_util::GetStringUTF16(IDS_BROWSER_HUNGBROWSER_MESSAGE)) !=
           chrome::MESSAGE_BOX_RESULT_NO;
@@ -197,7 +197,7 @@ index 7671e78815ae39310f4916abbdb4c5a06a65fc08..83f8698e402e06e87767b975d0fe0da2
  }
  
  // Function was copied from Process::Terminate.
-@@ -330,11 +337,14 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -332,11 +339,14 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -213,7 +213,7 @@ index 7671e78815ae39310f4916abbdb4c5a06a65fc08..83f8698e402e06e87767b975d0fe0da2
        user_data_dir_(user_data_dir),
        should_kill_remote_process_callback_(
            base::BindRepeating(&DisplayShouldKillMessageBox)) {}
-@@ -448,7 +458,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -450,7 +460,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
  bool ProcessSingleton::Create() {
    TRACE_EVENT0("startup", "ProcessSingleton::Create");
  
@@ -222,7 +222,7 @@ index 7671e78815ae39310f4916abbdb4c5a06a65fc08..83f8698e402e06e87767b975d0fe0da2
  
    remote_window_ = FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -457,7 +467,7 @@ bool ProcessSingleton::Create() {
+@@ -459,7 +469,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -231,7 +231,7 @@ index 7671e78815ae39310f4916abbdb4c5a06a65fc08..83f8698e402e06e87767b975d0fe0da2
      if (!only_me.is_valid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -488,6 +498,17 @@ bool ProcessSingleton::Create() {
+@@ -490,6 +500,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());

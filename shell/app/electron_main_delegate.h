@@ -63,10 +63,13 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 
  private:
   std::unique_ptr<content::ContentBrowserClient> browser_client_;
-  std::unique_ptr<content::ContentClient> content_client_;
   std::unique_ptr<content::ContentGpuClient> gpu_client_;
   std::unique_ptr<content::ContentRendererClient> renderer_client_;
   std::unique_ptr<content::ContentUtilityClient> utility_client_;
+  // Declared after the per-process clients so it is destroyed first: the
+  // base content::ContentClient holds raw_ptrs to them, and releasing those
+  // after the pointees are freed trips the dangling pointer detector.
+  std::unique_ptr<content::ContentClient> content_client_;
   std::unique_ptr<tracing::TracingSamplerProfiler> tracing_sampler_profiler_;
 
   memory_system::MemorySystem memory_system_;

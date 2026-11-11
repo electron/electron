@@ -44,6 +44,7 @@
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "shell/renderer/electron_render_frame_observer.h"
+#include "shell/renderer/inserted_css.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -673,11 +674,8 @@ class WebFrameRenderer final
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
-      return web_frame->ToWebLocalFrame()
-          ->GetDocument()
-          .InsertStyleSheet(blink::WebString::FromUtf8(css), nullptr,
-                            css_origin)
-          .Utf16();
+      return InsertStyleSheet(web_frame->ToWebLocalFrame()->GetDocument(), css,
+                              css_origin);
     }
     return {};
   }
@@ -689,8 +687,8 @@ class WebFrameRenderer final
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
-      web_frame->ToWebLocalFrame()->GetDocument().RemoveInsertedStyleSheet(
-          blink::WebString::FromUtf16(key));
+      RemoveInsertedStyleSheet(web_frame->ToWebLocalFrame()->GetDocument(),
+                               key);
     }
   }
 
@@ -1097,7 +1095,8 @@ void ListenHook(const v8::FunctionCallbackInfo<v8::Value>& info) {
     if (gin::ConvertFromV8(isolate, self, &frame) && frame)
       frame->EnsureIsolatedWorldCreatedEvent(isolate, self);
   }
-  v8::Local<v8::Function> method = info.Data().As<v8::Function>();
+  v8::Local<v8::Function> method =
+      info.DataV2().As<v8::Value>().As<v8::Function>();
   v8::LocalVector<v8::Value> args(isolate);
   for (int i = 0; i < info.Length(); ++i)
     args.push_back(info[i]);

@@ -120,6 +120,7 @@ class RendererClientBase : public content::ContentRendererClient
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
+  void SetRuntimeFeaturesDefaultsBeforeBlinkInitialization() override;
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void SetPendingCreateNewWindowStartupData(mojo_base::BigBuffer data) override;
@@ -169,6 +170,11 @@ class RendererClientBase : public content::ContentRendererClient
   void WebViewCreated(blink::WebView* web_view,
                       bool was_created_by_renderer,
                       const url::Origin* outermost_origin) override;
+  std::unique_ptr<blink::URLLoaderThrottleProvider>
+  CreateURLLoaderThrottleProvider(
+      blink::URLLoaderThrottleProviderType provider_type) override;
+  bool ShouldNotifyServiceWorkerOnWebSocketActivity(
+      v8::Local<v8::Context> context) override;
 
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

@@ -174,9 +174,8 @@ v8::Local<v8::Value> ServiceWorkerContext::GetAllRunningWorkerInfo(
   const base::flat_map<int64_t, content::ServiceWorkerRunningInfo>& info_map =
       service_worker_context_->GetRunningServiceWorkerInfos();
   for (const auto& iter : info_map) {
-    builder.Set(
-        base::NumberToString(iter.first),
-        ServiceWorkerRunningInfoToDict(isolate, std::move(iter.second)));
+    builder.Set(base::NumberToString(iter.first),
+                ServiceWorkerRunningInfoToDict(isolate, iter.second));
   }
   return builder.Build();
 }
@@ -191,8 +190,7 @@ v8::Local<v8::Value> ServiceWorkerContext::GetInfoFromVersionID(
     thrower.ThrowError("Could not find service worker with that version_id");
     return {};
   }
-  return ServiceWorkerRunningInfoToDict(thrower.isolate(),
-                                        std::move(iter->second));
+  return ServiceWorkerRunningInfoToDict(thrower.isolate(), iter->second);
 }
 
 v8::Local<v8::Value> ServiceWorkerContext::GetFromVersionID(

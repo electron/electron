@@ -89,7 +89,7 @@ void BundledDataSource::StartDataRequest(
   const std::string path = content::URLDataSource::URLToRequestPath(url);
   // Serve request from local bundle.
   std::string bundled_path_prefix(chrome::kChromeUIDevToolsBundledPath);
-  bundled_path_prefix += "/";
+  bundled_path_prefix += '/';
   if (base::StartsWith(path, bundled_path_prefix,
                        base::CompareCase::INSENSITIVE_ASCII)) {
     StartBundledDataRequest(path.substr(bundled_path_prefix.length()),

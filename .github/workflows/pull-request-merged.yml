@@ -55,7 +55,7 @@ jobs:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
           org: electron
       - name: Find Release Project Board
-        uses: dsanders11/project-actions/find-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/find-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         id: find-release-board
         with:
           include-closed: true
@@ -63,7 +63,7 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       - name: Add Merged PR to Release Project Board
         if: ${{ steps.find-release-board.outputs.number && steps.find-release-board.outputs.closed == 'false' }}
-        uses: dsanders11/project-actions/add-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/add-item@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         with:
           project-number: ${{ steps.find-release-board.outputs.number }}
           field: Semver

@@ -25,6 +25,8 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/node_includes.h"
+#include "url/gurl.h"
+#include "url/origin.h"
 
 namespace electron::renderer_startup_data {
 
@@ -108,9 +110,13 @@ mojom::PreloadScriptDataPtr ReadPreloadScript(
 }
 
 // Session-registered preloads of |type| plus the env/execPath snapshot.
+// |origin| is the security origin of the frame document at |url|, or null for
+// a service worker scope.
 mojom::RendererStartupDataPtr BuildInternal(
     content::BrowserContext* browser_context,
     PreloadScript::ScriptType type,
+    const GURL& url,
+    const url::Origin* origin,
     const preload_code_cache::Scope& scope,
     std::vector<preload_code_cache::ServedPreload>* served,
     bool sandboxed) {
@@ -123,6 +129,10 @@ mojom::RendererStartupDataPtr BuildInternal(
         continue;
       if (!script.file_path.IsAbsolute())
         continue;
+      if (!(origin ? script.MatchesDocument(url, *origin)
+                   : script.MatchesURL(url))) {
+        continue;
+      }
       data->preload_scripts.push_back(ReadPreloadScript(
           script.id, script.file_path, scope, served, sandboxed));
     }
@@ -140,20 +150,24 @@ mojom::RendererStartupDataPtr BuildInternal(
 }  // namespace
 
 mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
-                                    PreloadScript::ScriptType type) {
-  return BuildInternal(browser_context, type, preload_code_cache::Scope(),
-                       nullptr, /*sandboxed=*/true);
+                                    PreloadScript::ScriptType type,
+                                    const GURL& url) {
+  return BuildInternal(browser_context, type, url, /*origin=*/nullptr,
+                       preload_code_cache::Scope(), nullptr,
+                       /*sandboxed=*/true);
 }
 
-mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh) {
+mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh,
+                                            const GURL& url,
+                                            const url::Origin& origin) {
   const preload_code_cache::Scope scope =
       preload_code_cache::ScopeForFrame(rfh);
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   const bool sandboxed = IsFrameInSandboxedRenderer(rfh);
   std::vector<preload_code_cache::ServedPreload> served;
   auto data = BuildInternal(rfh->GetBrowserContext(),
-                            PreloadScript::ScriptType::kWebFrame, scope,
-                            sandboxed ? &served : nullptr, sandboxed);
+                            PreloadScript::ScriptType::kWebFrame, url, &origin,
+                            scope, sandboxed ? &served : nullptr, sandboxed);
 
   // The per-WebContents webPreferences.preload runs last. May be absent for a
   // WebContents that never went through a BrowserWindow/webContents

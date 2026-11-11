@@ -32,10 +32,10 @@ index dad4fbbf16f060a76bc7842135506f30aed7ffc0..d874d4b1e4079b392ba7652ea6bfc7de
        "NCRYPTO_ENGINE_COMPAT=1",
        "OPENSSL_SUPPRESS_DEPRECATED",
 diff --git a/unofficial.gni b/unofficial.gni
-index 87eb30961cfb44c31995f9768b3c81585bcc8736..16ca92f90e5c08f35cc806e952229cd8a35fd725 100644
+index 938dae0fd95a0bb408f576b27a048b45a5131d0e..11063952c4395967e7c7969ad1c92e08e12686e1 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -143,7 +143,10 @@ template("node_gn_build") {
+@@ -154,7 +154,10 @@ template("node_gn_build") {
                              [ "node.gyp" ])
  
    source_set("libnode") {
@@ -47,10 +47,10 @@ index 87eb30961cfb44c31995f9768b3c81585bcc8736..16ca92f90e5c08f35cc806e952229cd8
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
-@@ -366,6 +369,7 @@ template("node_gn_build") {
-       "src/builtin_info.h",
+@@ -381,6 +384,7 @@ template("node_gn_build") {
+       "tools",
+       get_label_info(node_simdutf_path, "dir"),
      ]
-     include_dirs = [ "src", "tools" ]
 +    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
  
      if (!is_win) {

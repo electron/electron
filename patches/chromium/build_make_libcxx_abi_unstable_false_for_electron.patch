@@ -15,7 +15,7 @@ References:
 * third_party/libc++/src/include/__configuration/abi.h
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index a9ab1614b67e2df7b379c1d8a4147265a15747db..f1c60c7d0a320e5a1e9a9e454ef0e084c594258c 100644
+index a50ea2354e34b52b69ecb6b103c25375ec4f770f..8f477cc225edd513d498389cb2c58ce57bfea480 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
 @@ -18,7 +18,11 @@
@@ -32,7 +32,7 @@ index a9ab1614b67e2df7b379c1d8a4147265a15747db..f1c60c7d0a320e5a1e9a9e454ef0e084
  #define _LIBCPP_ABI_FORCE_ITANIUM 0
  #define _LIBCPP_ABI_FORCE_MICROSOFT 0
 diff --git a/components/password_manager/core/browser/password_form_manager.cc b/components/password_manager/core/browser/password_form_manager.cc
-index 3602205e9ced2f5229ed71e28c03b757c17d2468..4d2837dc32068e6d6ce93c173a2dd563c37341ab 100644
+index 7e8bb30716e17345d4ddea8d7f10002df01148c9..6304a34b30e008da1b96d20af9117f207aece71b 100644
 --- a/components/password_manager/core/browser/password_form_manager.cc
 +++ b/components/password_manager/core/browser/password_form_manager.cc
 @@ -41,6 +41,7 @@

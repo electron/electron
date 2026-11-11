@@ -6,7 +6,6 @@
 
 #include "extensions/common/constants.h"
 #include "extensions/common/manifest_handlers/background_info.h"
-#include "extensions/renderer/dispatcher.h"
 #include "shell/common/world_ids.h"
 
 namespace electron {
@@ -22,21 +21,6 @@ bool ElectronExtensionsRendererClient::IsIncognitoProcess() const {
 
 int ElectronExtensionsRendererClient::GetLowestIsolatedWorldId() const {
   return WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS;
-}
-
-void ElectronExtensionsRendererClient::RunScriptsAtDocumentStart(
-    content::RenderFrame* render_frame) {
-  dispatcher()->RunScriptsAtDocumentStart(render_frame);
-}
-
-void ElectronExtensionsRendererClient::RunScriptsAtDocumentEnd(
-    content::RenderFrame* render_frame) {
-  dispatcher()->RunScriptsAtDocumentEnd(render_frame);
-}
-
-void ElectronExtensionsRendererClient::RunScriptsAtDocumentIdle(
-    content::RenderFrame* render_frame) {
-  dispatcher()->RunScriptsAtDocumentIdle(render_frame);
 }
 
 }  // namespace electron

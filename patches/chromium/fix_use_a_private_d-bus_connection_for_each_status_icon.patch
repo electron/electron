@@ -17,7 +17,7 @@ as this patch already did in sandboxes.
 Upstream bug: https://issues.chromium.org/issues/554905106
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 110fdb5e1654433ff31a6893ee7a8c830a702d60..e6b0edeadb45114ef2c662e6187dcf16aa32353c 100644
+index 1e7915eea274e3a0605fc492ce9f7249cbe61a44..33504ef7e51b988554ad8447467cdf9b41b590a3 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -29,7 +29,6 @@
@@ -40,7 +40,7 @@ index 110fdb5e1654433ff31a6893ee7a8c830a702d60..e6b0edeadb45114ef2c662e6187dcf16
 @@ -242,10 +239,11 @@ scoped_refptr<dbus::Bus> CreateSessionBus() {
  
  scoped_refptr<dbus::Bus> GetBusForNewStatusIcon() {
-   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   CHECK_CURRENTLY_ON(content::BrowserThread::UI, base::NotFatalUntil::M162);
 -  if (!g_shared_bus_in_use) {
 -    g_shared_bus_in_use = true;
 -    return dbus_thread_linux::GetSharedSessionBus();

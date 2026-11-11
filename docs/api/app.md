@@ -836,6 +836,34 @@ identity — packaged apps should always set it explicitly.
 
 This API must be called before the `ready` event. The value can also be set using `desktopName` in `package.json`.
 
+### `app.setActivationToken(token)` _Linux_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54989
+```
+-->
+
+* `token` string - An [XDG activation](https://wayland.app/protocols/xdg-activation-v1) token, or a
+  [startup notification](https://specifications.freedesktop.org/startup-notification-spec/latest/) ID on X11.
+
+Sets the token that the next window activation uses, for example
+[`win.focus()`](base-window.md#winfocus) or [`win.show()`](base-window.md#winshow).
+
+A Wayland compositor only lets an app raise and focus one of its windows when
+the request carries a token that proves the user asked for it. Electron passes
+such tokens along by itself when the app is launched or when one of its
+[`Notification`](notification.md)s is clicked. Use this method when the app gets
+a token some other way, for example from a notification it sent over D-Bus
+itself or from another process, and wants the window it activates next to come
+to the front. The token is used once. Set it before the window is created or
+shown, or once the window is on screen: a token that is set while a new window
+is still being shown may not be used.
+
+On X11 the token is set as the `_NET_STARTUP_ID` of the next window that is
+created or activated, which is where window managers read it.
+
 ### `app.getLocale()`
 
 Returns `string` - The current application locale, fetched using Chromium's `l10n_util` library.

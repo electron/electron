@@ -16,6 +16,7 @@ app.whenReady().then(() => {
   child.on('message', (data) => {
     process.stdout.write(data);
     process.stdout.end();
+    child.postMessage('ack');
   });
   child.on('exit', () => {
     app.quit();

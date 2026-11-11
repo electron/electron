@@ -56,6 +56,11 @@ runs:
         fix_angle_git() {
           cd src/third_party/angle
           rm -f .git/objects/info/alternates
+          # Since git 2.54, auto maintenance writes a commit-graph that also
+          # lists commits only found via the alternates; drop it with them or
+          # the fetch aborts ("in the commit graph file but not in the object
+          # database").
+          rm -rf .git/objects/info/commit-graph .git/objects/info/commit-graphs
           git remote set-url origin https://github.com/google/angle.git
           cp .git/config .git/config.backup
           git remote remove origin

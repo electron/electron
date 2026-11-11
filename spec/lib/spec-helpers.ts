@@ -116,7 +116,21 @@ class RemoteControlApp {
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
   const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...ciGpuArgs, ...extraArgs], options);
+  // The app quits by itself after --remote-app-timeout (30s unless given) in
+  // case nothing stops it. Sanitizer builds give each test 180s
+  // (ELECTRON_SPEC_TIMEOUT) and are slow enough that a test can still be
+  // talking to the app after 30s, which then fails with "socket hang up" or
+  // hangs. Keep the app alive at least as long as the test may run; defer()
+  // below stops it when the test is done.
+  const specTimeout = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
+  const timeoutArgs = extraArgs.some((arg) => arg.startsWith('--remote-app-timeout='))
+    ? []
+    : [`--remote-app-timeout=${specTimeout}`];
+  const appProcess = childProcess.spawn(
+    process.execPath,
+    [appPath, ...ciGpuArgs, ...timeoutArgs, ...extraArgs],
+    options
+  );
   // Register cleanup before awaiting the port so a stalled startup that trips
   // the test's timeout doesn't leak the child into the in-job retry.
   defer(() => {
@@ -127,13 +141,42 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
   appProcess.stderr.on('data', (d) => {
     process.stderr.write(d);
   });
-  const port = await new Promise<number>((resolve) => {
-    appProcess.stdout.on('data', (d) => {
+  // Fail as soon as the app goes away before it reports its port, instead of
+  // waiting for the test's timeout.
+  const port = await new Promise<number>((resolve, reject) => {
+    let stderr = '';
+    const onStderr = (d: Buffer) => {
+      stderr += d.toString();
+    };
+    const onStdout = (d: Buffer) => {
       const m = /Listening: (\d+)/.exec(d.toString());
       if (m && m[1] != null) {
+        done();
         resolve(Number(m[1]));
       }
-    });
+    };
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      done();
+      reject(
+        new Error(
+          `remote-control app exited (code ${code}, signal ${signal}) before reporting its port.\n\nstderr:\n${stderr}`
+        )
+      );
+    };
+    const onError = (err: Error) => {
+      done();
+      reject(new Error(`remote-control app failed to start: ${err.message}\n\nstderr:\n${stderr}`, { cause: err }));
+    };
+    const done = () => {
+      appProcess.stderr.off('data', onStderr);
+      appProcess.stdout.off('data', onStdout);
+      appProcess.off('exit', onExit);
+      appProcess.off('error', onError);
+    };
+    appProcess.stderr.on('data', onStderr);
+    appProcess.stdout.on('data', onStdout);
+    appProcess.on('exit', onExit);
+    appProcess.on('error', onError);
   });
   return new RemoteControlApp(appProcess, port);
 }
@@ -177,12 +220,27 @@ export async function spawnAndWait(
 
   let timedOut = false;
   let killTimeoutId: NodeJS.Timeout | undefined;
+  let stopReadingTimeoutId: NodeJS.Timeout | undefined;
+  let stdioHeldOpen = false;
+  // 'close' also waits for stdout and stderr to close, and a descendant that
+  // inherited them can keep them open long after the child has exited (Windows
+  // testing builds hand both to their sandboxed child processes). So once
+  // timed out, stop reading them a moment after the child exits.
+  const stopReadingSoon = () => {
+    stopReadingTimeoutId = globalThis.setTimeout(() => {
+      stdioHeldOpen = true;
+      child.stdout.destroy();
+      child.stderr.destroy();
+    }, 1000);
+  };
   const timeoutId = globalThis.setTimeout(() => {
     timedOut = true;
     child.kill();
     killTimeoutId = globalThis.setTimeout(() => {
       child.kill('SIGKILL');
     }, killTimeout);
+    if (child.exitCode !== null || child.signalCode !== null) stopReadingSoon();
+    else child.once('exit', stopReadingSoon);
   }, timeout);
 
   const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve, reject) => {
@@ -193,12 +251,16 @@ export async function spawnAndWait(
   }).finally(() => {
     globalThis.clearTimeout(timeoutId);
     if (killTimeoutId) globalThis.clearTimeout(killTimeoutId);
+    if (stopReadingTimeoutId) globalThis.clearTimeout(stopReadingTimeoutId);
   });
 
   const output = formatSpawnOutput(stdout, stderr, stripOutput);
   if (timedOut) {
+    const status = stdioHeldOpen
+      ? `It exited with code ${code} and signal ${signal}, but its stdout or stderr stayed open.`
+      : `Process closed with code ${code} and signal ${signal}.`;
     throw new Error(
-      `Timed out after ${timeout}ms waiting for ${command} ${args.join(' ')} to exit. Process closed with code ${code} and signal ${signal}.\n\nstdout:\n${output.stdout}\n\nstderr:\n${output.stderr}`
+      `Timed out after ${timeout}ms waiting for ${command} ${args.join(' ')} to exit. ${status}\n\nstdout:\n${output.stdout}\n\nstderr:\n${output.stderr}`
     );
   }
 

@@ -1025,10 +1025,6 @@ Returns:
   * `lineNumber` Integer - Line number in the log source
   * `sourceId` string - URL of the log source
   * `frame` WebFrameMain - Frame that logged the message
-* `level` Integer _Deprecated_ - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
-* `message` string _Deprecated_ - The actual console message
-* `line` Integer _Deprecated_ - The line number of the source that triggered this console message
-* `sourceId` string _Deprecated_
 
 Emitted when the associated window logs a console message.
 
@@ -2190,10 +2186,6 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 * `inputEvent` [MouseInputEvent](structures/mouse-input-event.md) | [MouseWheelInputEvent](structures/mouse-wheel-input-event.md) | [KeyboardInputEvent](structures/keyboard-input-event.md)
 
 Sends an input `event` to the page.
-
-> [!NOTE]
-> The [`BrowserWindow`](browser-window.md) containing the contents needs to be focused for
-`sendInputEvent()` to work.
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 

@@ -12,6 +12,7 @@
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
+#include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/notimplemented.h"
 #include "base/strings/string_number_conversions.h"
@@ -20,16 +21,22 @@
 #include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/service_worker_context.h"
+#include "content/public/browser/storage_partition.h"
 #include "extensions/browser/extension_file_task_runner.h"
 #include "extensions/browser/extension_pref_names.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_util.h"
 #include "extensions/browser/pref_names.h"
+#include "extensions/browser/service_worker/service_worker_task_queue.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handlers/background_info.h"
+#include "third_party/blink/public/common/service_worker/service_worker_status_code.h"
+#include "third_party/blink/public/common/storage_key/storage_key.h"
 
 namespace extensions {
 
@@ -145,6 +152,36 @@ void ElectronExtensionLoader::FinishExtensionLoad(
     base::OnceCallback<void(const Extension*, const std::string&)> cb,
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
+  base::OnceClosure add_extension = base::BindOnce(
+      &ElectronExtensionLoader::AddLoadedExtension, weak_factory_.GetWeakPtr(),
+      std::move(cb), extension, result.second);
+
+  // A worker registered by a previous launch keeps running the script it was
+  // registered with, and the extension's files can change between launches
+  // without its version changing. Unregister it so the worker is registered
+  // again from the files being loaded now.
+  auto* task_queue = ServiceWorkerTaskQueue::Get(browser_context_);
+  if (extension && BackgroundInfo::IsServiceWorkerBased(extension.get()) &&
+      task_queue->RetrieveRegisteredServiceWorkerVersion(extension->id())
+          .IsValid()) {
+    task_queue->RemoveRegisteredServiceWorkerInfo(extension->id());
+    util::GetStoragePartitionForExtensionId(extension->id(), browser_context_)
+        ->GetServiceWorkerContext()
+        ->UnregisterServiceWorkerImmediately(
+            extension->url(),
+            blink::StorageKey::CreateFirstParty(extension->origin()),
+            base::IgnoreArgs<blink::ServiceWorkerStatusCode>(
+                std::move(add_extension)));
+    return;
+  }
+
+  std::move(add_extension).Run();
+}
+
+void ElectronExtensionLoader::AddLoadedExtension(
+    base::OnceCallback<void(const Extension*, const std::string&)> cb,
+    scoped_refptr<const Extension> extension,
+    const std::string& error_or_warnings) {
   if (extension) {
     ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
 
@@ -179,7 +216,7 @@ void ElectronExtensionLoader::FinishExtensionLoad(
     }
   }
 
-  std::move(cb).Run(extension.get(), result.second);
+  std::move(cb).Run(extension.get(), error_or_warnings);
 }
 
 void ElectronExtensionLoader::FinishExtensionReload(

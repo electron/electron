@@ -33,7 +33,6 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
-#include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "third_party/electron_node/src/tracing/agent.h"
 
@@ -59,6 +58,21 @@
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/common/crash_keys.h"
 #endif
+
+// node_watchdog.h picks its POSIX or Windows members with Node's __POSIX__
+// define, which Node's own targets set and Electron's do not. Windows needs
+// <windows.h>, included above.
+#include "electron/push_and_undef_node_defines.h"
+#if BUILDFLAG(IS_POSIX) && !defined(__POSIX__)
+#define __POSIX__
+#define ELECTRON_DEFINED_POSIX_FOR_NODE_WATCHDOG
+#endif
+#include "third_party/electron_node/src/node_watchdog.h"
+#if defined(ELECTRON_DEFINED_POSIX_FOR_NODE_WATCHDOG)
+#undef __POSIX__
+#undef ELECTRON_DEFINED_POSIX_FOR_NODE_WATCHDOG
+#endif
+#include "electron/pop_node_defines.h"
 
 namespace {
 
@@ -161,9 +175,8 @@ int NodeMain() {
   v8_crashpad_support::SetUp();
 #endif
 
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
 #if BUILDFLAG(IS_LINUX)
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   int pid = -1;
   std::optional<std::string> fd_string = os_env->GetVar("CRASHDUMP_SIGNAL_FD");
   std::optional<std::string> pid_string =
@@ -200,6 +213,10 @@ int NodeMain() {
     // Parse Node.js cli flags and strip out disallowed options.
     std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
+    // Silently ignore the obsolete workaround while applications migrate to
+    // automatic NUL detection.
+    if (base::CommandLine::ForCurrentProcess()->HasSwitch("no-stdio-init"))
+      std::erase(args, "--no-stdio-init");
     // Match the other process types (see NodeBindings::ParseNodeCliFlags); an
     // explicit --js-source-phase-imports later on the command line still wins.
     // Kept out of process.execArgv below so fork() does not accumulate it.
@@ -211,20 +228,11 @@ int NodeMain() {
         node::ProcessInitializationFlags::kNoInitializeV8 |
         node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
 
-    if (command_line->HasSwitch(switches::kNoStdioInit)) {
-      process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
-      // remove the option to avoid node error "bad option: --no-stdio-init"
-      std::string option = std::string("--") + switches::kNoStdioInit;
-      std::erase(args, option);
-    } else {
 #if BUILDFLAG(IS_WIN)
-      if (!platform_util::IsNulDeviceEnabled()) {
-        LOG(FATAL) << "Unable to open nul device needed for initialization,"
-                      "aborting startup. As a workaround, try starting with --"
-                   << switches::kNoStdioInit;
-      }
+    // Node.js aborts when it cannot replace missing stdio handles with NUL.
+    if (!platform_util::IsNulDeviceEnabled())
+      process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
 #endif
-    }
 
     std::shared_ptr<node::InitializationResult> result =
         node::InitializeOncePerProcess(
@@ -291,6 +299,10 @@ int NodeMain() {
 
     v8::Isolate::Scope isolate_scope(isolate);
     v8::Locker locker(isolate);
+    // Implements --process-timeout, as node::NodeMainInstance::Run() does.
+    // Declared before the Environment so that the timeout still applies while
+    // the Environment is being freed.
+    std::unique_ptr<node::ProcessTimeoutWatchdog> process_timeout;
     node::Environment* env = nullptr;
     node::IsolateData* isolate_data = nullptr;
     {
@@ -353,12 +365,15 @@ int NodeMain() {
     }
 
     v8::HandleScope scope(isolate);
+    process_timeout = node::ProcessTimeoutWatchdog::MaybeStart(env);
     electron::util::FeedEnvironmentCodeCache(env);
     node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
 
     // Potential reasons we get Nothing here may include: the env
     // is stopping, or the user hooks process.emit('exit').
     exit_code = node::SpinEventLoop(env).FromMaybe(1);
+    if (process_timeout)
+      process_timeout->OnEnvironmentStopping();
 
     node::ResetStdio();
 

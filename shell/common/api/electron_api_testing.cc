@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/functional/bind.h"
@@ -18,18 +19,27 @@
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/synchronization/lock.h"
 #include "base/task/sequenced_task_runner.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
+#include "content/browser/media/capture/screenshot_capture_request_impl.h"  // nogncheck
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/desktop_capture.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_peer.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/net/network_context_service.h"
+#include "shell/browser/net/network_context_service_factory.h"
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
@@ -57,9 +67,56 @@
 #include <windows.h>
 #endif
 
+namespace node::crypto {
+NODE_EXTERN void AddBlockedSPKIForTesting(const uint8_t* sha256_hash);
+NODE_EXTERN void ClearBlockedSPKIsForTesting();
+}  // namespace node::crypto
+
 namespace {
 
 std::atomic<int> live_callback_holder_probes{0};
+
+// Stands in for the native screen capture picker: reports a session id and
+// then holds the request open, like a picker nobody has answered yet.
+std::atomic<int> system_picker_stub_opens{0};
+base::Lock& SystemPickerStubLock() {
+  static base::NoDestructor<base::Lock> lock;
+  return *lock;
+}
+std::vector<base::OnceCallback<void(webrtc::DesktopCapturer::Source)>>&
+HeldSystemPickerCallbacks() {
+  static base::NoDestructor<
+      std::vector<base::OnceCallback<void(webrtc::DesktopCapturer::Source)>>>
+      held;
+  return *held;
+}
+
+void StubSystemPickerOpen(
+    content::DesktopMediaID::Type type,
+    base::OnceCallback<void(content::DesktopMediaID::Id)> created_callback,
+    base::OnceCallback<void(webrtc::DesktopCapturer::Source)> picker_callback,
+    base::OnceCallback<void()> cancel_callback,
+    base::OnceCallback<void()> error_callback) {
+  const int id = ++system_picker_stub_opens;
+  std::move(created_callback).Run(id);
+  base::AutoLock lock(SystemPickerStubLock());
+  HeldSystemPickerCallbacks().push_back(std::move(picker_callback));
+}
+
+void SetSystemPickerStubForTesting(bool enabled) {
+  content::desktop_capture::SetOpenNativeScreenCapturePickerCallbackForTesting(
+      enabled ? base::BindRepeating(&StubSystemPickerOpen)
+              : content::desktop_capture::OpenNativePickerCallbackForTesting());
+  if (!enabled) {
+    system_picker_stub_opens = 0;
+    base::AutoLock lock(SystemPickerStubLock());
+    HeldSystemPickerCallbacks().clear();
+  }
+}
+
+int GetSystemPickerStubOpenCount() {
+  return system_picker_stub_opens.load();
+}
 
 class CallbackHolderProbe {
  public:
@@ -113,9 +170,9 @@ v8::Local<v8::Value> SerializeWasmModuleForTesting(
   }
   auto serialized =
       module.As<v8::WasmModuleObject>()->GetCompiledModule().Serialize();
+  const auto bytes = serialized.as_span();
   return node::Buffer::Copy(
-             isolate, reinterpret_cast<const char*>(serialized.buffer.get()),
-             serialized.size)
+             isolate, reinterpret_cast<const char*>(bytes.data()), bytes.size())
       .ToLocalChecked();
 }
 
@@ -153,7 +210,7 @@ v8::Local<v8::Value> CompileWasmModuleWithCacheForTesting(
             std::span(cached_bytes.span().data(), cached_bytes.span().size()));
       },
       [resolve = std::move(resolve)](ModuleResult result) {
-        resolve.Run(std::move(result));
+        resolve.Run(result);
       });
   auto result = gin_helper::Dictionary::CreateEmpty(isolate);
   result.Set("accepted", accepted);
@@ -290,6 +347,31 @@ v8::Local<v8::Promise> SimulateNetworkServiceCrash(v8::Isolate* isolate) {
                          std::move(promise))));
   content::RestartNetworkService();
   return handle;
+}
+
+// Blocks until |session|'s NetworkContext has received every proxy config sent
+// to it so far. Flushing the NetworkContext first makes sure it has been
+// recreated if the network service restarted.
+void FlushSessionProxyConfigForTesting(electron::api::Session* session) {
+  auto* browser_context = session->browser_context();
+  browser_context->GetDefaultStoragePartition()
+      ->FlushNetworkInterfaceForTesting();
+  electron::NetworkContextServiceFactory::GetForContext(browser_context)
+      ->FlushProxyConfigMonitorForTesting();
+}
+
+void AddNodeBlockedSPKIForTesting(gin_helper::ErrorThrower thrower,
+                                  const std::string& hex) {
+  std::vector<uint8_t> hash;
+  if (!base::HexStringToBytes(hex, &hash) || hash.size() != 32) {
+    thrower.ThrowTypeError("expected a 64 character hex SHA-256");
+    return;
+  }
+  node::crypto::AddBlockedSPKIForTesting(hash.data());
+}
+
+void ClearNodeBlockedSPKIsForTesting() {
+  node::crypto::ClearBlockedSPKIsForTesting();
 }
 
 void HoldRepeatingCallbackForTesting(const base::RepeatingClosure& callback) {
@@ -537,6 +619,14 @@ void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
       SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
 }
 
+// Fails a V8 API check: setting an internal field on a plain object, which
+// has none. V8 reports that through the isolate's fatal error handler with
+// location "v8::Object::SetInternalField()", so specs can exercise how each
+// process type handles V8 fatal errors.
+void TriggerV8FatalError(v8::Isolate* isolate) {
+  v8::Object::New(isolate)->SetInternalField(0, v8::Undefined(isolate));
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -560,6 +650,10 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(
       "isPlatformCaretBrowsingEnabled");
   dict.SetMethod<&SimulateNetworkServiceCrash>("simulateNetworkServiceCrash");
+  dict.SetMethod<&FlushSessionProxyConfigForTesting>(
+      "flushSessionProxyConfigForTesting");
+  dict.SetMethod<&AddNodeBlockedSPKIForTesting>("addNodeBlockedSPKI");
+  dict.SetMethod<&ClearNodeBlockedSPKIsForTesting>("clearNodeBlockedSPKIs");
   dict.SetMethod<&SimulatePowerEvent>("simulatePowerEvent");
   dict.SetMethod<&SimulateWebAuthnUvLockedPinSecurityKey>(
       "simulateWebAuthnUvLockedPinSecurityKey");
@@ -587,6 +681,10 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&CommitPendingLocalStateWrites>(
       "commitPendingLocalStateWrites");
   dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
+  dict.SetMethod<&TriggerV8FatalError>("triggerV8FatalError");
+  dict.SetMethod<&SetSystemPickerStubForTesting>(
+      "setSystemPickerStubForTesting");
+  dict.SetMethod<&GetSystemPickerStubOpenCount>("getSystemPickerStubOpenCount");
 }
 
 }  // namespace

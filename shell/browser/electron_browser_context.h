@@ -102,7 +102,12 @@ class ElectronBrowserContext : public content::BrowserContext {
   InterceptState* intercept_state() const { return intercept_state_.get(); }
   void InterceptedProtocolsChanged();
   scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
-      scoped_refptr<network::SharedURLLoaderFactory> factory);
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> factory);
+
+  // The net module's factory for file: URLs. Interception is decided per
+  // request, so one factory serves every request in this context.
+  [[nodiscard]] scoped_refptr<network::SharedURLLoaderFactory>
+  GetFileURLLoaderFactory();
 
   base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -158,7 +163,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   bool ChooseDisplayMediaDevice(const content::MediaStreamRequest& request,
                                 content::MediaResponseCallback callback);
-  void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler);
+  void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler,
+                                     bool use_system_picker);
 
   ~ElectronBrowserContext() override;
 
@@ -231,12 +237,15 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // Shared URLLoaderFactory.
   scoped_refptr<content::ReconnectableURLLoaderFactory> url_loader_factory_;
+  // Created on first use by GetFileURLLoaderFactory().
+  scoped_refptr<network::SharedURLLoaderFactory> file_url_loader_factory_;
   scoped_refptr<InterceptState> intercept_state_;
 
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
   DisplayMediaRequestHandler display_media_request_handler_;
+  bool use_system_picker_ = false;
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;

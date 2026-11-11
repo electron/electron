@@ -40,7 +40,7 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 Run these once at the start of each upgrade session:
 
 1. **Clear rerere cache** (if enabled): `git rerere clear` in both the electron and `..` repos. Stale recorded resolutions from a prior attempt can silently apply wrong merges.
-2. **Ensure pre-commit hooks are installed**: Check that `.git/hooks/pre-commit` exists. If not, run `yarn husky` to install it. The hook runs `lint-staged` which handles clang-format for C++ files.
+2. **Ensure pre-commit hooks are installed**: Check that `git config core.hooksPath` prints `.husky/_` and that `.husky/_/pre-commit` exists (husky does not use `.git/hooks/`). If not, run `yarn husky` to install it. The hook runs `lint-staged`, which handles clang-format for C++ files and runs `script/lint-roller-chromium-changes.mjs` on every commit.
 
 ## Workflow
 
@@ -55,7 +55,20 @@ Run these once at the start of each upgrade session:
    - IMPORTANT: Once `git am --continue` succeeds you MUST run `e patches {target}` to export fixes
    - Return to step 1
 4. When `e sync --3` succeeds, run `e patches all`
-5. If the sync changed `build/siso_revision` (the `gen_siso_revision` hook rewrites it when the new Chromium pins a different siso), commit that file on its own as `chore: update siso revision`. CI builds siso from this file and gn-check fails the roll if it is stale.
+5. **Regenerate the derived file lists.** Electron checks in lists that mirror Chromium's DEPS pins, and the gn-check CI job fails the roll on every platform if any of them is stale. The roller bot bumps `DEPS` without running the pre-commit hook that normally regenerates them, so run the generators by hand now (the gn-check job runs the `--check` form of each):
+   ```bash
+   node script/gen-hunspell-filenames.js   # filenames.hunspell.gni (from ../third_party/hunspell_dictionaries)
+   node script/gen-libc++-filenames.js     # filenames.libcxx.gni / filenames.libcxxabi.gni
+   node script/gen-siso-revision.js        # build/siso_revision (the gen_siso_revision sync hook usually did this already)
+   node script/gen-filenames.mts --check   # fails only if lib/ or docs/api changed; regenerate without --check if it does
+   ```
+   Then `git status` and commit each changed file on its own:
+   - `build/siso_revision` → `chore: update siso revision` (exact title, no body). CI builds siso from this file.
+   - `filenames.libcxx.gni` → `chore: update libc++ filenames` (exact title, no body, that file only).
+   - `filenames.hunspell.gni` (and `filenames.libcxxabi.gni`, which has no dedicated pattern) → a `{CL-Number}: {upstream CL original title}` commit with a `Ref:` line, where the CL is the upstream commit that moved the pin. Find it from the dep's new SHA in Chromium's `DEPS` (hunspell is `src/third_party/hunspell_dictionaries`, libc++abi is `src/third_party/libc++abi/src`):
+     ```bash
+     cd .. && git log --format='%h %s%n%(trailers:key=Reviewed-on,valueonly)' refs/patches/upstream-head -S<new-dep-sha> -- DEPS
+     ```
 6. **Read `references/phase-one-commit-guidelines.md` NOW**, then commit changes following those instructions exactly.
 
 ## Commands Reference
@@ -110,6 +123,7 @@ Run Phase Two immediately after Phase One is complete.
 Phase Two is complete when:
 - `e build -k 999 -- --quiet` exits with code 0 (no build failures)
 - `e start --version` has been run to check Electron launches
+- `npm run gn-check` exits with code 0 and every `script/gen-*` `--check` passes (see step 7 — this is what the gn-check CI job runs, and it fails the roll independently of the build)
 - All changes are committed per the commit guidelines
 
 Do not stop until these criteria are met. Do not delete code or features, never comment out code in order to take short cut. Make all existing code, logic and intention work.
@@ -140,9 +154,19 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
     - Commit them immediately with: `git commit -am "chore: update patches"`
 5. Return to step 1
 6. When `e build` succeeds, run `e start --version`
-7. Check if you have any pending changes in the Chromium repo by running `git status`
+7. **Run the gn-check CI job locally.** CI runs `linux-gn-check`, `macos-gn-check` and `windows-gn-check` on every roll; a green build does not imply they pass. Run exactly what the job runs (see `.github/workflows/pipeline-segment-electron-gn-check.yml`), from the electron directory:
+    ```bash
+    npm run gn-check                          # `gn check` on electron targets against the current out dir
+    node script/gen-hunspell-filenames.js --check
+    node script/gen-libc++-filenames.js --check
+    node script/gen-siso-revision.js --check
+    node script/gen-filenames.mts --check
+    ```
+    - A `gn check` failure means a header is included from a target that is not in `deps` — fix `BUILD.gn`/`filenames.gni` (or the include) in Electron, then re-run. CI checks the `testing` and `release` graphs on all three platforms, so an include guarded by another platform's `BUILDFLAG` can still fail there; read the included header's `BUILD.gn` visibility/deps when the local check passes but CI does not.
+    - A `gen-*` `--check` failure means a derived list is stale: run the generator without `--check` and commit per Phase One step 5.
+8. Check if you have any pending changes in the Chromium repo by running `git status`
     - If you have changes follow the instructions below in "A. Patch Fixes" to correctly commit those modifications into the appropriate patch file
-8. Final commit self-check: run `git log --format='%h %B'` over the commits this upgrade added (everything since the `chore: bump chromium in DEPS` commit) and verify that each upstream CL is referenced by exactly one non-fixup commit — full messages, not just titles, since `Ref:` lines live in commit bodies. If a CL appears in more than one non-fixup commit, consolidate with `git commit --fixup` + autosquash rebase per `references/phase-two-commit-guidelines.md`
+9. Final commit self-check: run `git log --format='%h %B'` over the commits this upgrade added (everything since the `chore: bump chromium in DEPS` commit) and verify that each upstream CL is referenced by exactly one non-fixup commit — full messages, not just titles, since `Ref:` lines live in commit bodies. If a CL appears in more than one non-fixup commit, consolidate with `git commit --fixup` + autosquash rebase per `references/phase-two-commit-guidelines.md`
 
 ## Commands Reference
 
@@ -150,7 +174,9 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 |---------|---------|
 | `e build -k 999 -- --quiet` | Build Electron, continue on errors, suppress status lines |
 | `e build -t {target}.o` | Build just one specific target to verify a fix |
+| `e build --no-remote -t {target}.o` | Same, built locally — use when the remote executor fails on toolchain/module inputs rather than on Electron code |
 | `e start --version` | Validate Electron launches after successful build |
+| `npm run gn-check` | `gn check` over Electron targets, as the gn-check CI job runs it |
 
 ## Two Types of Build Fixes
 

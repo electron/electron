@@ -1,0 +1,12 @@
+// Copyright (c) 2026 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+// Global scope of the context Electron runs service worker preload scripts in.
+
+[
+    Exposed=PreloadRealm,
+    Global=PreloadRealm
+] interface PreloadRealmGlobalScope {};
+
+PreloadRealmGlobalScope includes UniversalGlobalScope;

@@ -105,6 +105,7 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/platform/platform_handle.h"
 #include "mojo/public/cpp/system/platform_handle.h"
+#include "net/base/net_errors.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/web_sandbox_flags.h"
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
@@ -199,6 +200,8 @@
 #include "ui/events/base_event_utils.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/widget.h"
+#include "url/gurl.h"
+#include "url/url_constants.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -291,20 +294,20 @@ struct Converter<WindowOpenDisposition> {
                                    WindowOpenDisposition val) {
     std::string_view disposition = "other";
     switch (val) {
-      case WindowOpenDisposition::CURRENT_TAB:
+      case WindowOpenDisposition::kCurrentTab:
         disposition = "default";
         break;
-      case WindowOpenDisposition::NEW_FOREGROUND_TAB:
+      case WindowOpenDisposition::kNewForegroundTab:
         disposition = "foreground-tab";
         break;
-      case WindowOpenDisposition::NEW_BACKGROUND_TAB:
+      case WindowOpenDisposition::kNewBackgroundTab:
         disposition = "background-tab";
         break;
-      case WindowOpenDisposition::NEW_POPUP:
-      case WindowOpenDisposition::NEW_WINDOW:
+      case WindowOpenDisposition::kNewPopup:
+      case WindowOpenDisposition::kNewWindow:
         disposition = "new-window";
         break;
-      case WindowOpenDisposition::SAVE_TO_DISK:
+      case WindowOpenDisposition::kSaveToDisk:
         disposition = "save-to-disk";
         break;
       default:
@@ -435,7 +438,7 @@ struct Converter<content::NavigationEntry*> {
         if (!page_state.IsValid())
           return false;
 
-        entry->SetPageState(std::move(page_state), restore_context.get());
+        entry->SetPageState(page_state, restore_context.get());
       }
     }
 
@@ -2191,9 +2194,7 @@ void WebContents::OnDidAddMessageToConsole(
   dict.Set("lineNumber", line_no);
   dict.Set("sourceId", source_id);
 
-  // TODO(samuelmaddock): remove the deprecated positional arguments.
-  EmitWithoutEvent("console-message", event_object, static_cast<int32_t>(level),
-                   message, line_no, source_id);
+  EmitWithoutEvent("console-message", event_object);
 }
 
 void WebContents::WebContentsCreatedWithFullParams(
@@ -2415,7 +2416,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     base::OnceCallback<void(content::NavigationHandle&)>
         navigation_handle_callback) {
   auto weak_this = WeakRef();
-  if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+  if (params.disposition != WindowOpenDisposition::kCurrentTab) {
     // A link opened into a new window (modifier-click, middle-click,
     // target=_blank form post routed here, ...) is a popup like window.open()
     // and is subject to the same embedder policy; see
@@ -2853,7 +2854,18 @@ void WebContents::OnReadAvailableTypes(
       render_frame_host,
       !types.empty(),
   };
+  auto weak_this = WeakRef();
   Emit("context-menu", event_data);
+
+  if (!weak_this->Get() || !web_contents())
+    return;
+
+  // Apps show their own menu, or none, in response to the event above, so
+  // nothing reports the renderer's context menu closed the way Chrome's
+  // RenderViewContextMenu does. Until it is, Blink's ContextMenuController
+  // keeps the right-clicked node and its ancestors alive, even after the page
+  // removes them.
+  web_contents()->NotifyContextMenuClosed(GURL());
 }
 
 void WebContents::DidReceiveFindReply(int request_id,
@@ -3063,7 +3075,8 @@ void WebContents::HandleNewRenderFrame(
     const bool allow_subframes =
         web_preferences && web_preferences->AllowsNodeIntegrationInSubFrames();
     if (!render_frame_host->GetParent() || allow_subframes)
-      SendRendererStartupData(render_frame_host);
+      SendRendererStartupData(render_frame_host, GURL(url::kAboutBlankURL),
+                              render_frame_host->GetLastCommittedOrigin());
   }
 }
 
@@ -3517,10 +3530,24 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
-  SendRendererStartupData(rfh);
+  // loadURL(dataUrl, {baseURLForDataURL}) commits the data: URL as a document
+  // at the base URL, so match URL filters against that. Same condition as
+  // content::NavigationRequest::IsLoadDataWithBaseURL().
+  const GURL& base_url = navigation_handle->GetBaseURLForDataURL();
+  const bool is_load_data_with_base_url =
+      navigation_handle->IsInPrimaryMainFrame() &&
+      navigation_handle->GetNetErrorCode() == net::OK &&
+      url.SchemeIs(url::kDataScheme) && base_url.is_valid();
+
+  // Has a value whenever the navigation has a RenderFrameHost to commit in.
+  SendRendererStartupData(
+      rfh, is_load_data_with_base_url ? base_url : url,
+      navigation_handle->GetOriginToCommit().value_or(url::Origin()));
 }
 
-void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
+void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
+                                          const GURL& url,
+                                          const url::Origin& origin) {
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
@@ -3531,7 +3558,7 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::BuildForFrame(rfh);
+    data = renderer_startup_data::BuildForFrame(rfh, url, origin);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
@@ -3655,13 +3682,13 @@ void WebContents::DidFinishNavigation(
 }
 
 void WebContents::NotifyPageTitleUpdated(
-    content::NavigationEntry* entry,
+    const content::NavigationEntry* entry,
     bool from_same_document_history_navigation) {
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
-    auto title = entry->GetTitle();
-    auto url = entry->GetURL();
+    const auto& title = entry->GetTitle();
+    const auto& url = entry->GetURL();
     if (url.SchemeIsFile() && title.empty()) {
       final_title = base::UTF8ToUTF16(url.ExtractFileName());
       explicit_set = false;
@@ -4046,7 +4073,7 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
 
   GURL base_url_for_data_url;
   if (options.Get("baseURLForDataURL", &base_url_for_data_url)) {
-    params.base_url_for_data_url = base_url_for_data_url;
+    params.base_url_for_data_url = std::move(base_url_for_data_url);
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 
@@ -5208,7 +5235,7 @@ void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
   gin_helper::Dictionary dict;
   if (args->GetNext(&dict)) {
     dict.Get("start", &start_adjust);
-    dict.Get("matchCase", &end_adjust);
+    dict.Get("end", &end_adjust);
   }
 
   // The selection menu is a Chrome-specific piece of UI.
@@ -5975,7 +6002,7 @@ void WebContents::PostMessage(v8::Isolate* isolate,
         "webContents has no main frame to post to");
     return;
   }
-  frame->PostMessage(isolate, channel, message, std::move(transfer));
+  frame->PostMessage(isolate, channel, message, transfer);
 }
 
 void WebContents::SendInternal(gin::Arguments* args) {
@@ -6243,7 +6270,7 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
   const base::FilePath* path = nullptr;
 
   if (!save_as)
-    base::FindOrNull(saved_files_, url);
+    path = base::FindOrNull(saved_files_, url);
 
   if (path == nullptr) {
     file_dialog::DialogSettings settings;
@@ -6251,8 +6278,11 @@ void WebContents::DevToolsSaveToFile(const std::string& url,
     settings.force_detached = offscreen_;
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
-    if (auto new_path = file_dialog::ShowSaveDialogSync(settings)) {
-      auto [iter, _] = saved_files_.try_emplace(url, std::move(*new_path));
+    // On Linux a cancelled dialog yields an empty path rather than nullopt.
+    if (auto new_path = file_dialog::ShowSaveDialogSync(settings);
+        new_path && !new_path->empty()) {
+      // A fresh pick (e.g. "Save as") replaces any path stored for |url|.
+      auto [iter, _] = saved_files_.insert_or_assign(url, std::move(*new_path));
       path = &iter->second;
     }
   }

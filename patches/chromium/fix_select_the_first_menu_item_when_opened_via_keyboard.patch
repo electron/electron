@@ -11,10 +11,10 @@ PlatformStyle::kAutoSelectFirstMenuItemFromKeyboard
 covers the other views platforms.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index a298c9448632204383795f22d3898f46920d64a6..fc6788c75b13474e4aa18874a89df2342f22678a 100644
+index 588d406ea4d798b68ad57846c6d3638483e7025e..7b14e578063221d7b22ad14e9876937ab3ece203 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -821,6 +821,22 @@ void MenuController::Run(Widget* parent,
+@@ -894,6 +894,22 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
@@ -37,8 +37,8 @@ index a298c9448632204383795f22d3898f46920d64a6..fc6788c75b13474e4aa18874a89df234
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2824,18 +2840,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
-       return;
+@@ -3170,18 +3186,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+       submenu_focus_manager_observations_.AddObservation(focus_manager);
      }
  
 -    // Figure out if the mouse is under the menu; if so, remember the mouse

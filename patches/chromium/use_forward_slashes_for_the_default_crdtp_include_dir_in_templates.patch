@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Wed, 21 Oct 2026 11:32:00 -0700
+Subject: Use forward slashes for the default crdtp include dir in templates
+
+Without this includes in generated source files on Windows look like
+`#include "third_party/inspector_protocol\crdtp/cbor.h"` which can
+confuse static analysis tools such as clang-tidy.
+
+Refs https://chromium-review.googlesource.com/c/deps/inspector_protocol/+/8624663
+
+diff --git a/third_party/inspector_protocol/code_generator.py b/third_party/inspector_protocol/code_generator.py
+index 259313e258710cfb3ba4eee63aa3193123a4c230..71c88f0a3065d730476e0569dac28e0fc687cb1e 100755
+--- a/third_party/inspector_protocol/code_generator.py
++++ b/third_party/inspector_protocol/code_generator.py
+@@ -5,6 +5,7 @@
+ 
+ import os
+ import os.path
++import posixpath
+ import sys
+ import argparse
+ import collections
+@@ -121,7 +122,7 @@ def read_config():
+         ".lib.export_macro": "",
+         ".lib.export_header": False,
+         ".crdtp": False,
+-        ".crdtp.dir": os.path.join(inspector_protocol_dir, "crdtp"),
++        ".crdtp.dir": posixpath.join(inspector_protocol_dir, "crdtp"),
+         ".crdtp.namespace": "crdtp",
+     }
+     for key_value in config_values:

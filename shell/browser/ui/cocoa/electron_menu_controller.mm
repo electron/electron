@@ -235,8 +235,12 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 
 - (void)cancel {
   if (isMenuOpen_) {
-    [menu_ cancelTracking];
+    // Clear the flag first so that a -menuDidClose: delivered during the
+    // cancel is ignored and the close is only reported once, from here.
     isMenuOpen_ = NO;
+    // Cancel without the fade-out animation: while it runs, a following
+    // -popUpMenuPositioningItem:atLocation:inView: silently shows nothing.
+    [menu_ cancelTrackingWithoutAnimation];
     if (model_)
       model_->MenuWillClose();
     if (!popupCloseCallback.is_null()) {

@@ -36,3 +36,12 @@
   else on screen.
 - Each process has its own `userData` directory; do not assume the default
   path, ask `app.getPath('userData')`.
+
+## Garbage collection and C++ heap (`cppgc`)
+
+- Prefer `collectGarbage()` from `spec/lib/heapsnapshot-helpers.js` (or
+  `await v8Util.requestGarbageCollectionForTesting({ execution: 'async' })`)
+  over `setTimeout(0)` + synchronous `v8Util.requestGarbageCollectionForTesting()`.
+- Only use synchronous version when a test specifically requires collection to
+  happen within the current task before yielding to the event loop (or on a Node
+  worker thread where no Chromium `SequencedTaskRunner` is bound).

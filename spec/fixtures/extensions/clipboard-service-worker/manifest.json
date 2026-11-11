@@ -1,0 +1,9 @@
+{
+  "name": "clipboard-service-worker",
+  "version": "1.0",
+  "permissions": ["clipboardWrite"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "manifest_version": 3
+}

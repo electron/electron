@@ -1,0 +1,569 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 15 Oct 2026 13:25:31 +0900
+Subject: inspector: avoid JS execution in DOMStorage.getDOMStorageItems
+
+Protocol messages from a remote frontend are dispatched from a V8 API
+interrupt, where executing JavaScript is disallowed.
+
+DOMStorageAgent::getDOMStorageItems() previously looked up
+globalThis.localStorage and globalThis.sessionStorage via
+v8::Object::Get(), invoking their lazy JS getters on globalThis. In
+addition, Storage::GetAll() opened the backing store via
+Storage::Open(), which threw a JS Error on failure only for the
+inspector agent to catch it with v8::TryCatch.
+
+Track live Storage instances in webstorage::BindingData when the
+inspector subclasses construct them in Storage::New(), using the flag
+they pass to tell localStorage from sessionStorage, since both can be
+in memory. Check HasRealNamedCallbackProperty() before reading the
+global property so the lazy JS getter is not invoked during an
+interrupt. When the store has not yet been initialized by JS
+during an interrupt, read the SQLite backing file directly for
+localStorage and return an empty map for sessionStorage. Factor
+Storage::OpenConnection() to return open errors as a C++ string rather
+than throwing a JS exception in Storage::GetAll().
+
+Backported from https://github.com/nodejs/node/pull/66740
+(upstream commit c43f994f82934bc1b9e516789666ffa430325838).
+
+Co-authored-by: Christian Aurich Zanettini Martins <christian.aurichzm@gmail.com>
+Signed-off-by: deepak1556 <hop2deep@gmail.com>
+Signed-off-by: Christian Aurich Zanettini Martins <christian.aurichzm@gmail.com>
+
+diff --git a/src/base_object_types.h b/src/base_object_types.h
+index 1a63e1da1e84969b60e548a373660542f4ab5740..14638d55e4f91f1a4edc96d5a9ecd7715a280bac 100644
+--- a/src/base_object_types.h
++++ b/src/base_object_types.h
+@@ -25,7 +25,8 @@ namespace node {
+   V(http2_binding_data, http2::BindingData)                                    \
+   V(http_parser_binding_data, http_parser::BindingData)                        \
+   V(quic_binding_data, quic::BindingData)                                      \
+-  V(sqlite_binding_data, sqlite::BindingData)
++  V(sqlite_binding_data, sqlite::BindingData)                                  \
++  V(webstorage_binding_data, webstorage::BindingData)
+ 
+ // List of (non-binding) BaseObjects that are serializable in the snapshot.
+ // The first argument should match what the type passes to
+diff --git a/src/inspector/dom_storage_agent.cc b/src/inspector/dom_storage_agent.cc
+index 7d3ce9dc5d06a478b8d0b14323684c6410412e9f..a317c9559cafa43f3ee278f01d298e10c2f5fc28 100644
+--- a/src/inspector/dom_storage_agent.cc
++++ b/src/inspector/dom_storage_agent.cc
+@@ -1,7 +1,10 @@
+ #include "dom_storage_agent.h"
+ #include <optional>
++#include "base_object-inl.h"
+ #include "env-inl.h"
+ #include "inspector/inspector_object_utils.h"
++#include "node_realm-inl.h"
++#include "path.h"
+ #include "util.h"
+ #include "v8-exception.h"
+ #include "v8-isolate.h"
+@@ -100,38 +103,35 @@ protocol::DispatchResponse DOMStorageAgent::getDOMStorageItems(
+       is_local_storage ? &local_storage_map_ : &session_storage_map_;
+   std::optional<StorageMap> storage_map_fallback;
+   if (storage_map->empty()) {
+-    auto web_storage_obj = getWebStorage(is_local_storage);
++    bool is_uninitialized = false;
++    auto web_storage_obj = getWebStorage(is_local_storage, &is_uninitialized);
+     // Each way of failing below says something different about the store, so
+     // each reports a different reason. A frontend that cannot read a store
+     // otherwise has no way to tell a missing one from a corrupt one.
+-    if (!web_storage_obj) {
++    if (!web_storage_obj && !is_uninitialized) {
+       return protocol::DispatchResponse::ServerError(
+           "Could not read DOM storage items: storage is unavailable");
+     }
+-    // A message from a remote frontend is dispatched without a HandleScope
+-    // on the stack, and opening the backing file can throw, so give the
+-    // exception a scope to be allocated in and somewhere to land.
+-    v8::HandleScope handle_scope(env_->isolate());
+-    v8::TryCatch try_catch(env_->isolate());
+-    storage_map_fallback = web_storage_obj.value()->GetAll();
+-    if (try_catch.HasCaught()) {
+-      // Pass the reason along; "the file was written by a newer Node.js" and
+-      // "the file is locked" are not the same problem to the user. Read it
+-      // off the Message, which was built when the exception was thrown.
+-      // Converting the exception itself would call a user-patchable
+-      // Error.prototype.toString, and there is no JavaScript frame here to
+-      // run it from.
+-      Local<v8::Message> message = try_catch.Message();
+-      if (!message.IsEmpty()) {
+-        Utf8Value reason(env_->isolate(), message->Get());
+-        return protocol::DispatchResponse::ServerError(
+-            std::string("Could not read DOM storage items: ") + reason.out());
++    std::string open_error;
++    if (web_storage_obj) {
++      storage_map_fallback = web_storage_obj.value()->GetAll(&open_error);
++    } else if (is_local_storage) {
++      std::string location = env_->options()->localstorage_file;
++      if (location != node::webstorage::kInMemoryPath) {
++        location = ToNamespacedPath(env_, location);
+       }
+-      // V8 builds that Message on a best-effort basis, so the throw is all we
+-      // can report when it is missing.
++      storage_map_fallback =
++          node::webstorage::Storage::ReadAllFromFile(location, &open_error);
++    } else {
++      storage_map_fallback.emplace();
++    }
++    if (!open_error.empty()) {
++      // Pass the reason along; "the file was written by a newer Node.js" and
++      // "the file is locked" are not the same problem to the user. Prefix with
++      // "Uncaught Error: " to match the v8::Message format without invoking
++      // JavaScript during a V8 interrupt.
+       return protocol::DispatchResponse::ServerError(
+-          "Could not read DOM storage items: the backing store could not be "
+-          "opened");
++          "Could not read DOM storage items: Uncaught Error: " + open_error);
+     }
+     if (!storage_map_fallback.has_value()) {
+       return protocol::DispatchResponse::ServerError(
+@@ -318,26 +318,60 @@ void DOMStorageAgent::registerStorage(Local<Context> context,
+ }
+ 
+ std::optional<node::webstorage::Storage*> DOMStorageAgent::getWebStorage(
+-    bool is_local_storage) {
++    bool is_local_storage, bool* is_uninitialized) {
++  *is_uninitialized = false;
++  if (!env_->options()->webstorage) {
++    return std::nullopt;
++  }
++  if (is_local_storage && env_->options()->localstorage_file.empty()) {
++    return std::nullopt;
++  }
++  if (auto* binding = env_->principal_realm()
++                          ->GetBindingData<node::webstorage::BindingData>()) {
++    const auto& storage_ptr =
++        is_local_storage ? binding->local_storage : binding->session_storage;
++    if (storage_ptr) {
++      return storage_ptr.get();
++    }
++  }
++  if (env_->no_browser_globals()) {
++    return std::nullopt;
++  }
+   v8::Isolate* isolate = env_->isolate();
+   v8::HandleScope handle_scope(isolate);
+-  v8::Local<v8::Object> global = env_->context()->Global();
++  v8::Local<v8::Context> context = env_->context();
++  v8::Local<v8::Object> global = context->Global();
++  v8::Local<v8::String> prop_name =
++      is_local_storage ? FIXED_ONE_BYTE_STRING(isolate, "localStorage")
++                       : FIXED_ONE_BYTE_STRING(isolate, "sessionStorage");
++  // Protocol messages from a remote frontend are dispatched from a V8 API
++  // interrupt, where executing JavaScript is disallowed. Both globals are
++  // defined as lazy JS getters, so check whether the property is still an
++  // accessor before reading it.
++  bool is_accessor = false;
++  if (!global->HasRealNamedCallbackProperty(context, prop_name)
++           .To(&is_accessor)) {
++    return std::nullopt;
++  }
++  if (is_accessor) {
++    if (env_->is_processing_v8_interrupt()) {
++      *is_uninitialized = true;
++      return std::nullopt;
++    }
++    if (!env_->can_call_into_js()) {
++      return std::nullopt;
++    }
++  }
+   v8::Local<v8::Value> web_storage_val;
+   v8::TryCatch try_catch(isolate);
+-  if (!global
+-           ->Get(env_->context(),
+-                 is_local_storage
+-                     ? FIXED_ONE_BYTE_STRING(isolate, "localStorage")
+-                     : FIXED_ONE_BYTE_STRING(isolate, "sessionStorage"))
+-           .ToLocal(&web_storage_val) ||
++  if (!global->Get(context, prop_name).ToLocal(&web_storage_val) ||
+       !web_storage_val->IsObject() || try_catch.HasCaught()) {
+     return std::nullopt;
+-  } else {
+-    node::webstorage::Storage* storage;
+-    ASSIGN_OR_RETURN_UNWRAP(
+-        &storage, web_storage_val.As<v8::Object>(), std::nullopt);
+-    return storage;
+   }
++  node::webstorage::Storage* storage;
++  ASSIGN_OR_RETURN_UNWRAP(
++      &storage, web_storage_val.As<v8::Object>(), std::nullopt);
++  return storage;
+ }
+ 
+ bool DOMStorageAgent::canEmit(const std::string& domain) {
+diff --git a/src/inspector/dom_storage_agent.h b/src/inspector/dom_storage_agent.h
+index a6eecbb8d37c957803d81c16fad2ecf3f5fad3b1..08c2be15014786d74a9f617cc6b802824c67f6ec 100644
+--- a/src/inspector/dom_storage_agent.h
++++ b/src/inspector/dom_storage_agent.h
+@@ -54,7 +54,7 @@ class DOMStorageAgent : public protocol::DOMStorage::Backend,
+  private:
+   typedef std::unordered_map<std::u16string, std::u16string> StorageMap;
+   std::optional<node::webstorage::Storage*> getWebStorage(
+-      bool is_local_storage);
++      bool is_local_storage, bool* is_uninitialized);
+   std::unique_ptr<protocol::DOMStorage::Frontend> frontend_;
+   StorageMap local_storage_map_ = {};
+   StorageMap session_storage_map_ = {};
+diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
+index 204fd463126f2d5f1cbecb15aee738d3985ac68e..52c3db7d9c2127e25d80579f39b85dd67de8c929 100644
+--- a/src/node_webstorage.cc
++++ b/src/node_webstorage.cc
+@@ -8,6 +8,7 @@
+ #include "node.h"
+ #include "node_errors.h"
+ #include "node_mem-inl.h"
++#include "node_realm-inl.h"
+ #include "path.h"
+ #include "simdutf.h"
+ #include "sqlite3.h"
+@@ -98,6 +99,14 @@ static void ThrowQuotaExceededException(Local<Context> context) {
+   isolate->ThrowException(exception);
+ }
+ 
++BindingData::BindingData(Realm* realm, Local<Object> wrap)
++    : BaseObject(realm, wrap) {}
++
++void BindingData::MemoryInfo(MemoryTracker* tracker) const {
++  tracker->TrackField("local_storage", local_storage);
++  tracker->TrackField("session_storage", session_storage);
++}
++
+ Storage::Storage(Environment* env,
+                  Local<Object> object,
+                  std::string_view location)
+@@ -117,7 +126,8 @@ void Storage::MemoryInfo(MemoryTracker* tracker) const {
+   tracker->TrackField("location", location_);
+ }
+ 
+-Maybe<void> Storage::Open() {
++conn_unique_ptr Storage::OpenConnection(std::string_view location,
++                                        std::string* error) {
+   static const int kCurrentSchemaVersion = 1;
+   static constexpr std::string_view get_schema_version_sql =
+       "SELECT schema_version FROM nodejs_webstorage_state";
+@@ -180,21 +190,24 @@ Maybe<void> Storage::Open() {
+       ""
+       "INSERT OR IGNORE INTO nodejs_webstorage_state (total_size) VALUES (0);";
+ 
+-  sqlite3* db = db_.get();
+-  if (db != nullptr) {
+-    return JustVoid();
+-  }
+-
+-  int r = sqlite3_open(location_.c_str(), &db);
++  sqlite3* db = nullptr;
++  std::string loc(location);
++  int r = sqlite3_open(loc.c_str(), &db);
+   // Adopt the connection before anything below can return early, so that a
+   // failure does not leak it. sqlite3_open() allocates a connection to be
+   // closed even when it fails. This is declared ahead of the statement below
+   // so that the statement is finalized first; sqlite3_close() fails while a
+   // statement is still open, and conn_deleter treats that as fatal.
+   auto conn = conn_unique_ptr(db);
+-  CHECK_ERROR_OR_THROW(env(), r, SQLITE_OK, Nothing<void>());
++  if (r != SQLITE_OK) {
++    if (error != nullptr) *error = sqlite3_errstr(r);
++    return nullptr;
++  }
+   r = sqlite3_exec(db, init_sql_v0.data(), nullptr, nullptr, nullptr);
+-  CHECK_ERROR_OR_THROW(env(), r, SQLITE_OK, Nothing<void>());
++  if (r != SQLITE_OK) {
++    if (error != nullptr) *error = sqlite3_errstr(r);
++    return nullptr;
++  }
+ 
+   // Get the current schema version, used to determine schema migrations.
+   sqlite3_stmt* s = nullptr;
+@@ -204,22 +217,30 @@ Maybe<void> Storage::Open() {
+                          &s,
+                          nullptr);
+   auto stmt = stmt_unique_ptr(s);
+-  CHECK_ERROR_OR_THROW(env(), r, SQLITE_OK, Nothing<void>());
+-  CHECK_ERROR_OR_THROW(
+-      env(), sqlite3_step(stmt.get()), SQLITE_ROW, Nothing<void>());
+-  CHECK_COLUMN_TYPE_OR_THROW(env(),
+-                             stmt.get(),
+-                             0,
+-                             SQLITE_INTEGER,
+-                             "expected schema_version to be an integer",
+-                             Nothing<void>());
++  if (r != SQLITE_OK) {
++    if (error != nullptr) *error = sqlite3_errstr(r);
++    return nullptr;
++  }
++  r = sqlite3_step(stmt.get());
++  if (r != SQLITE_ROW) {
++    if (error != nullptr) *error = sqlite3_errstr(r);
++    return nullptr;
++  }
++  if (sqlite3_column_type(stmt.get(), 0) != SQLITE_INTEGER) {
++    if (error != nullptr) {
++      *error = "localStorage database is malformed: "
++               "expected schema_version to be an integer";
++    }
++    return nullptr;
++  }
+   int schema_version = sqlite3_column_int(stmt.get(), 0);
+   stmt = nullptr;  // Force finalization.
+ 
+   if (schema_version > kCurrentSchemaVersion) {
+-    THROW_ERR_INVALID_STATE(
+-        env(), "localStorage was created with a newer version of Node.js");
+-    return Nothing<void>();
++    if (error != nullptr) {
++      *error = "localStorage was created with a newer version of Node.js";
++    }
++    return nullptr;
+   }
+ 
+   if (schema_version < kCurrentSchemaVersion) {
+@@ -229,10 +250,25 @@ Maybe<void> Storage::Open() {
+         std::to_string(kCurrentSchemaVersion) + ";";
+     r = sqlite3_exec(
+         db, set_user_version_sql.c_str(), nullptr, nullptr, nullptr);
+-    CHECK_ERROR_OR_THROW(env(), r, SQLITE_OK, Nothing<void>());
++    if (r != SQLITE_OK) {
++      if (error != nullptr) *error = sqlite3_errstr(r);
++      return nullptr;
++    }
+   }
+ 
+-  db_ = std::move(conn);
++  return conn;
++}
++
++Maybe<void> Storage::Open() {
++  if (db_ != nullptr) {
++    return JustVoid();
++  }
++  std::string error;
++  db_ = OpenConnection(location_, &error);
++  if (db_ == nullptr) {
++    THROW_ERR_INVALID_STATE(env(), "%s", error.c_str());
++    return Nothing<void>();
++  }
+   return JustVoid();
+ }
+ 
+@@ -255,7 +291,15 @@ void Storage::New(const FunctionCallbackInfo<Value>& args) {
+     ToNamespacedPath(env, &location);
+   }
+ 
+-  new Storage(env, args.This(), location.ToStringView());
++  Storage* storage = new Storage(env, args.This(), location.ToStringView());
++  // The inspector subclasses pass whether this is localStorage, which the
++  // location cannot tell: --localstorage-file=:memory: is valid too.
++  BindingData* binding_data = realm->GetBindingData<BindingData>();
++  if (binding_data != nullptr && args[2]->IsBoolean()) {
++    auto& slot = args[2]->IsTrue() ? binding_data->local_storage
++                                   : binding_data->session_storage;
++    slot = BaseObjectWeakPtr<Storage>(storage);
++  }
+ }
+ 
+ Maybe<void> Storage::Clear() {
+@@ -310,23 +354,18 @@ MaybeLocal<Array> Storage::Enumerate() {
+   return Array::New(env()->isolate(), values.data(), values.size());
+ }
+ 
+-std::optional<std::unordered_map<std::u16string, std::u16string>>
+-Storage::GetAll() {
+-  if (!Open().IsJust()) {
+-    return std::nullopt;
+-  }
+-
++static std::optional<Storage::StorageMap> ReadAllFromDb(sqlite3* db) {
+   static constexpr std::string_view sql =
+       "SELECT key, value FROM nodejs_webstorage";
+   sqlite3_stmt* s = nullptr;
+-  int r = sqlite3_prepare_v2(db_.get(), sql.data(), sql.size(), &s, nullptr);
++  int r = sqlite3_prepare_v2(db, sql.data(), sql.size(), &s, nullptr);
+   auto stmt = stmt_unique_ptr(s);
+   // Unlike the other accessors, this one has no JavaScript caller to throw at,
+   // so every failure below is reported to the inspector agent instead.
+   if (r != SQLITE_OK) {
+     return std::nullopt;
+   }
+-  std::unordered_map<std::u16string, std::u16string> result;
++  Storage::StorageMap result;
+   while ((r = sqlite3_step(stmt.get())) == SQLITE_ROW) {
+     if (sqlite3_column_type(stmt.get(), 0) != SQLITE_BLOB ||
+         sqlite3_column_type(stmt.get(), 1) != SQLITE_BLOB) {
+@@ -350,6 +389,25 @@ Storage::GetAll() {
+   return result;
+ }
+ 
++std::optional<Storage::StorageMap> Storage::GetAll(std::string* error) {
++  if (db_ == nullptr) {
++    db_ = OpenConnection(location_, error);
++    if (db_ == nullptr) {
++      return std::nullopt;
++    }
++  }
++  return ReadAllFromDb(db_.get());
++}
++
++std::optional<Storage::StorageMap> Storage::ReadAllFromFile(
++    std::string_view location, std::string* error) {
++  conn_unique_ptr conn = OpenConnection(location, error);
++  if (conn == nullptr) {
++    return std::nullopt;
++  }
++  return ReadAllFromDb(conn.get());
++}
++
+ MaybeLocal<Value> Storage::Length() {
+   if (!Open().IsJust()) {
+     return {};
+@@ -762,8 +820,13 @@ static void Initialize(Local<Object> target,
+                        Local<Value> unused,
+                        Local<Context> context,
+                        void* priv) {
+-  Environment* env = Environment::GetCurrent(context);
++  Realm* realm = Realm::GetCurrent(context);
++  Environment* env = realm->env();
+   Isolate* isolate = env->isolate();
++  Realm* principal = env->principal_realm();
++  if (principal->GetBindingData<BindingData>() == nullptr) {
++    principal->AddBindingData<BindingData>(target);
++  }
+   auto ctor_tmpl = NewFunctionTemplate(isolate, Storage::New);
+   auto inst_tmpl = ctor_tmpl->InstanceTemplate();
+ 
+diff --git a/src/node_webstorage.h b/src/node_webstorage.h
+index 02de9c79b84ce98a5c066c4178e428974540908b..a28e929d9a6c48687b502fef701f741369e00312 100644
+--- a/src/node_webstorage.h
++++ b/src/node_webstorage.h
+@@ -27,6 +27,22 @@ using stmt_unique_ptr = std::unique_ptr<sqlite3_stmt, stmt_deleter>;
+ 
+ static constexpr std::string_view kInMemoryPath = ":memory:";
+ 
++class Storage;
++
++class BindingData : public BaseObject {
++ public:
++  SET_BINDING_ID(webstorage_binding_data)
++
++  BindingData(Realm* realm, v8::Local<v8::Object> wrap);
++
++  void MemoryInfo(MemoryTracker* tracker) const override;
++  SET_MEMORY_INFO_NAME(BindingData)
++  SET_SELF_SIZE(BindingData)
++
++  BaseObjectWeakPtr<Storage> local_storage;
++  BaseObjectWeakPtr<Storage> session_storage;
++};
++
+ class Storage : public BaseObject {
+  public:
+   Storage(Environment* env,
+@@ -42,18 +58,22 @@ class Storage : public BaseObject {
+   v8::MaybeLocal<v8::Value> LoadKey(const int index);
+   v8::Maybe<void> Remove(v8::Local<v8::Name> key);
+   v8::Maybe<void> Store(v8::Local<v8::Name> key, v8::Local<v8::Value> value);
++  using StorageMap = std::unordered_map<std::u16string, std::u16string>;
+   // Returns nothing if the backing store could not be read, e.g. because it
+-  // holds values of an unexpected type. Opening the store can also throw, so
+-  // the caller must hold a v8::TryCatch: an empty return does not say which of
+-  // the two happened, and a pending exception is left for the caller to
+-  // handle.
+-  std::optional<std::unordered_map<std::u16string, std::u16string>> GetAll();
++  // holds values of an unexpected type. If opening the store fails, *error is
++  // populated with the failure reason instead of throwing a JS exception, so
++  // that this can be called from V8 interrupts where JS execution is forbidden.
++  std::optional<StorageMap> GetAll(std::string* error = nullptr);
++  static std::optional<StorageMap> ReadAllFromFile(std::string_view location,
++                                                   std::string* error);
+ 
+   SET_MEMORY_INFO_NAME(Storage)
+   SET_SELF_SIZE(Storage)
+ 
+  private:
+   v8::Maybe<void> Open();
++  static conn_unique_ptr OpenConnection(std::string_view location,
++                                        std::string* error);
+ 
+   ~Storage() override;
+   std::string location_;
+diff --git a/src/path.cc b/src/path.cc
+index f4b8d4577bd1e693c99cd0efd961973b5ccea326..5fcb7dfb4ed5713f5a95fbcaa04f723e6c5da6c0 100644
+--- a/src/path.cc
++++ b/src/path.cc
+@@ -282,9 +282,20 @@ std::string PathResolve(Environment* env,
+ void ToNamespacedPath(Environment* env, BufferValue* path) {
+ #ifdef _WIN32
+   if (path->length() == 0) return;
+-  std::string resolved_path = node::PathResolve(env, {path->ToStringView()});
++  std::string namespaced = ToNamespacedPath(env, path->ToStringView());
++  size_t new_length = namespaced.size();
++  path->AllocateSufficientStorage(new_length + 1);
++  path->SetLength(new_length);
++  memcpy(path->out(), namespaced.c_str(), new_length + 1);
++#endif
++}
++
++std::string ToNamespacedPath(Environment* env, std::string_view path) {
++#ifdef _WIN32
++  if (path.empty()) return std::string();
++  std::string resolved_path = node::PathResolve(env, {path});
+   if (resolved_path.size() <= 2) {
+-    return;
++    return std::string(path);
+   }
+ 
+   // SAFETY: We know that resolved_path.size() > 2, therefore accessing [0],
+@@ -295,34 +306,19 @@ void ToNamespacedPath(Environment* env, BufferValue* path) {
+       if (resolved_path[2] != '?' && resolved_path[2] != '.') {
+         // Matched non-long UNC root, convert the path to a long UNC path
+         std::string_view unc_prefix = R"(\\?\UNC\)";
+-        size_t new_length = unc_prefix.size() + resolved_path.size() - 2;
+-        path->AllocateSufficientStorage(new_length + 1);
+-        path->SetLength(new_length);
+-        memcpy(path->out(), unc_prefix.data(), unc_prefix.size());
+-        memcpy(path->out() + unc_prefix.size(),
+-               resolved_path.c_str() + 2,
+-               resolved_path.size() - 2 + 1);
+-        return;
++        return std::string(unc_prefix) + resolved_path.substr(2);
+       }
+     }
+   } else if (IsWindowsDeviceRoot(resolved_path[0]) && resolved_path[1] == ':' &&
+              resolved_path[2] == '\\') {
+     // Matched device root, convert the path to a long UNC path
+     std::string_view new_prefix = R"(\\?\)";
+-    size_t new_length = new_prefix.size() + resolved_path.size();
+-    path->AllocateSufficientStorage(new_length + 1);
+-    path->SetLength(new_length);
+-    memcpy(path->out(), new_prefix.data(), new_prefix.size());
+-    memcpy(path->out() + new_prefix.size(),
+-           resolved_path.c_str(),
+-           resolved_path.size() + 1);
+-    return;
++    return std::string(new_prefix) + resolved_path;
+   }
+ 
+-  size_t new_length = resolved_path.size();
+-  path->AllocateSufficientStorage(new_length + 1);
+-  path->SetLength(new_length);
+-  memcpy(path->out(), resolved_path.c_str(), resolved_path.size() + 1);
++  return resolved_path;
++#else
++  return std::string(path);
+ #endif
+ }
+ 
+diff --git a/src/path.h b/src/path.h
+index 67f21eba2a62791ba6a282bd7f1c467c9a399e3c..678ecdf9a5a52f70923a67e0f6088f1b48278e17 100644
+--- a/src/path.h
++++ b/src/path.h
+@@ -27,6 +27,7 @@ constexpr bool IsWindowsDriveLetter(const std::string_view path) noexcept;
+ #endif  // _WIN32
+ 
+ void ToNamespacedPath(Environment* env, BufferValue* path);
++std::string ToNamespacedPath(Environment* env, std::string_view path);
+ void FromNamespacedPath(std::string* path);
+ 
+ }  // namespace node

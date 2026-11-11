@@ -22,7 +22,7 @@ When building an application menu in Electron, each top-level array menu item **
 Electron will set a default menu for your app if this API is never called. Below is an example of
 that default menu being created manually using shorthand [`MenuItem` roles](./menus.md#roles).
 
-```js title='Manually creating the default menu' @ts-expect-error=[94]
+```js title='Manually creating the default menu' @ts-expect-error=[93]
 const { shell } = require('electron/common')
 const { app, Menu } = require('electron/main')
 
@@ -108,7 +108,6 @@ const template = [
       {
         label: 'Learn More',
         click: async () => {
-          const { shell } = require('electron')
           await shell.openExternal('https://electronjs.org')
         }
       }
@@ -134,7 +133,7 @@ Menu.setApplicationMenu(menu)
 Defining each submenu explicitly can get very verbose. If you want to re-use default submenus
 in your app, you can use various submenu-related roles provided by Electron.
 
-```js title='Using default roles for each submenu' @ts-expect-error=[24]
+```js title='Using default roles for each submenu' @ts-expect-error=[23]
 const { shell } = require('electron/common')
 const { app, Menu } = require('electron/main')
 
@@ -150,7 +149,6 @@ const template = [
       {
         label: 'Learn More',
         click: async () => {
-          const { shell } = require('electron')
           await shell.openExternal('https://electronjs.org')
         }
       }

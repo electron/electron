@@ -348,7 +348,7 @@ std::string RecursiveDumpAXPlatformNodeAsString(
       str += attribute + " ";
     }
   }
-  str += "\n";
+  str += '\n';
   for (size_t i = 0, child_count = node_delegate->GetChildCount();
        i < child_count; i++) {
     gfx::NativeViewAccessible child = node_delegate->ChildAtIndex(i);

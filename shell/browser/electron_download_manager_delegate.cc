@@ -274,7 +274,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
   } else {
     download::DownloadTargetInfo target_info;
     target_info.target_path = path;
-    target_info.intermediate_path = path;
+    target_info.intermediate_path = std::move(path);
     target_info.target_disposition =
         download::DownloadItem::TARGET_DISPOSITION_PROMPT;
     target_info.insecure_download_status = item->GetInsecureDownloadStatus();
@@ -316,7 +316,7 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
                    : download::DOWNLOAD_INTERRUPT_REASON_NONE;
   download::DownloadTargetInfo target_info;
   target_info.target_path = path;
-  target_info.intermediate_path = path;
+  target_info.intermediate_path = std::move(path);
   target_info.target_disposition =
       download::DownloadItem::TARGET_DISPOSITION_PROMPT;
   target_info.insecure_download_status = item->GetInsecureDownloadStatus();
@@ -348,7 +348,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
   if (!save_path.empty()) {
     download::DownloadTargetInfo target_info;
     target_info.target_path = save_path;
-    target_info.intermediate_path = save_path;
+    target_info.intermediate_path = std::move(save_path);
     std::move(*callback).Run(std::move(target_info));
     return true;
   }

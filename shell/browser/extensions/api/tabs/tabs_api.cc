@@ -361,7 +361,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   // TODO: Add proper support for split views
   tab.split_view_id = -1;
 
-  return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
+  return RespondNow(ArgumentList(tabs::Get::Results::Create(tab)));
 }
 
 ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
@@ -693,7 +693,7 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   // TODO: Add proper support for split views
   tab.split_view_id = -1;
 
-  return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
+  return ArgumentList(tabs::Get::Results::Create(tab));
 }
 
 }  // namespace extensions

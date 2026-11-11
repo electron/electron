@@ -1,0 +1,456 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Mon, 19 Oct 2026 23:25:05 -0700
+Subject: test: expect UNABLE_TO_GET_ISSUER_CERT_LOCALLY under BoringSSL
+
+BoringSSL rewrote its certificate chain verification and no longer
+reports X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE after the verify
+callback suppressed X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY, which
+is what Node.js's callback always does:
+https://boringssl-review.googlesource.com/c/boringssl/+/103849
+
+A leaf certificate whose issuer is not in the trust store therefore now
+fails with UNABLE_TO_GET_ISSUER_CERT_LOCALLY under BoringSSL, while
+OpenSSL still reports UNABLE_TO_VERIFY_LEAF_SIGNATURE. Export the
+expected code from test/common/crypto as sslVerificationFailureError and
+use it in the affected tests.
+
+Will attempt to upstream this change to Node.js.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+
+diff --git a/test/client-proxy/test-https-proxy-request-handshake-failure.mjs b/test/client-proxy/test-https-proxy-request-handshake-failure.mjs
+index 251d136afaa6c1ce857842caccd69199160e5e48..82ce172ccd4f4f9b170f44ef05d1a4d4bfd9a6cc 100644
+--- a/test/client-proxy/test-https-proxy-request-handshake-failure.mjs
++++ b/test/client-proxy/test-https-proxy-request-handshake-failure.mjs
+@@ -13,6 +13,7 @@ if (!common.hasCrypto)
+ // https must be dynamically imported so that builds without crypto support
+ // can skip it.
+ const { default: https } = await import('node:https');
++const { sslVerificationFailureError } = await import('../common/crypto.js');
+ 
+ const server = https.createServer({
+   cert: fixtures.readKey('agent8-cert.pem'),
+@@ -36,8 +37,8 @@ const { code, signal, stderr, stdout } = await runProxiedRequest({
+   HTTPS_PROXY: `http://localhost:${proxy.address().port}`,
+ });
+ 
+-// The proxy client should get a UNABLE_TO_VERIFY_LEAF_SIGNATURE during TLS handshake.
+-assert.match(stderr, /UNABLE_TO_VERIFY_LEAF_SIGNATURE/);
++// The proxy client should get a certificate verification error during TLS handshake.
++assert.match(stderr, new RegExp(sslVerificationFailureError));
+ assert.strictEqual(stdout, '');
+ assert.strictEqual(code, 0);
+ assert.strictEqual(signal, null);
+diff --git a/test/common/crypto.js b/test/common/crypto.js
+index 49678e0de43ac0b2568a75d9ef112472c0c16240..8f05c39345d66919d4c1629295add89c60fa49ab 100644
+--- a/test/common/crypto.js
++++ b/test/common/crypto.js
+@@ -125,6 +125,11 @@ const hasOpenSSL = (major = 0, minor = 0, patch = 0) => {
+ 
+ const isBoringSSL = process.features.openssl_is_boringssl;
+ 
++// The error code reported when a certificate's issuer isn't in the trust
++// store. BoringSSL no longer reports UNABLE_TO_VERIFY_LEAF_SIGNATURE.
++const sslVerificationFailureError = isBoringSSL ?
++  'UNABLE_TO_GET_ISSUER_CERT_LOCALLY' : 'UNABLE_TO_VERIFY_LEAF_SIGNATURE';
++
+ const hasFIPS = (major = 0, minor = 0, patch = 0) => {
+   return crypto.getFips() === 1 && hasOpenSSL(major, minor, patch);
+ };
+@@ -147,6 +152,7 @@ module.exports = {
+   hasOpenSSL,
+   hasFIPS,
+   isBoringSSL,
++  sslVerificationFailureError,
+   get hasOpenSSL3() {
+     return hasOpenSSL(3);
+   },
+diff --git a/test/parallel/test-http2-session-reuse-different-authority.js b/test/parallel/test-http2-session-reuse-different-authority.js
+index d76f17a728f3366db7b1e45d49f4173f18fdea4e..03a2ce61a11354323629075a88d4299854f5265a 100644
+--- a/test/parallel/test-http2-session-reuse-different-authority.js
++++ b/test/parallel/test-http2-session-reuse-different-authority.js
+@@ -8,6 +8,7 @@ const fixtures = require('../common/fixtures');
+ const h2 = require('http2');
+ const tls = require('tls');
+ const { once } = require('events');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ function load(name) {
+   return fixtures.readKey(name);
+@@ -125,7 +126,7 @@ server.on('stream', (stream) => {
+         session: first.session,
+       }),
+       {
+-        code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
++        code: sslVerificationFailureError,
+       },
+     );
+ 
+@@ -136,7 +137,7 @@ server.on('stream', (stream) => {
+         maxVersion: 'TLSv1.2',
+       }),
+       {
+-        code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
++        code: sslVerificationFailureError,
+       },
+     );
+   } finally {
+diff --git a/test/parallel/test-https-agent-create-connection.js b/test/parallel/test-https-agent-create-connection.js
+index 56e967476c8b3a36820f833bd3f12666b0408634..de465c7515bedb120f3fd6b8e4630340ec55a243 100644
+--- a/test/parallel/test-https-agent-create-connection.js
++++ b/test/parallel/test-https-agent-create-connection.js
+@@ -7,6 +7,7 @@ if (!common.hasCrypto)
+ 
+ const assert = require('assert');
+ const https = require('https');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ const agent = new https.Agent();
+ 
+@@ -17,7 +18,7 @@ const options = {
+ 
+ const expectedHeader = /^HTTP\/1\.1 200 OK/;
+ const expectedBody = /hello world\n/;
+-const expectCertError = /^UNABLE_TO_VERIFY_LEAF_SIGNATURE$/;
++const expectCertError = new RegExp(`^${sslVerificationFailureError}$`);
+ 
+ function checkRequest(socket, server) {
+   let result = '';
+diff --git a/test/parallel/test-https-session-reuse-different-servername.js b/test/parallel/test-https-session-reuse-different-servername.js
+index 138acd693501d21d0a0e7f145e3b441f2df2cf5d..3117136b3ef7131fb45378e59f36239f26da101c 100644
+--- a/test/parallel/test-https-session-reuse-different-servername.js
++++ b/test/parallel/test-https-session-reuse-different-servername.js
+@@ -8,6 +8,7 @@ const fixtures = require('../common/fixtures');
+ const https = require('https');
+ const tls = require('tls');
+ const { once } = require('events');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ function load(name) {
+   return fixtures.readKey(name);
+@@ -104,7 +105,7 @@ const server = https.createServer({
+         ca: [load('ca1-cert.pem')],
+       }),
+       {
+-        code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
++        code: sslVerificationFailureError,
+       },
+     );
+ 
+@@ -116,7 +117,7 @@ const server = https.createServer({
+         ca: [load('ca1-cert.pem')],
+       }),
+       {
+-        code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
++        code: sslVerificationFailureError,
+       },
+     );
+   } finally {
+diff --git a/test/parallel/test-https-simple.js b/test/parallel/test-https-simple.js
+index b0562a1cd98174a22169d2b93eeb964812418e88..c898301252cc475940581edd9e2e3e1dbc9c17f6 100644
+--- a/test/parallel/test-https-simple.js
++++ b/test/parallel/test-https-simple.js
+@@ -28,6 +28,7 @@ if (!common.hasCrypto)
+ 
+ const assert = require('assert');
+ const https = require('https');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ // Assert that the IP-as-servername deprecation warning does not occur.
+ process.on('warning', common.mustNotCall());
+@@ -93,7 +94,7 @@ server.listen(0, common.mustCall(() => {
+   const checkCertReq = https.request(options, common.mustNotCall()).end();
+ 
+   checkCertReq.on('error', common.mustCall((e) => {
+-    assert.strictEqual(e.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++    assert.strictEqual(e.code, sslVerificationFailureError);
+     done();
+   }));
+ }));
+diff --git a/test/parallel/test-https-strict.js b/test/parallel/test-https-strict.js
+index a72168289d54bb1c59e3058a7a1f0c54a1f1427c..32d2956be4c0693eee3f60ed4b201efa50cc8588 100644
+--- a/test/parallel/test-https-strict.js
++++ b/test/parallel/test-https-strict.js
+@@ -37,6 +37,7 @@ common.expectWarning(
+ 
+ const assert = require('assert');
+ const https = require('https');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ function read(fname) {
+   return fixtures.readKey(fname);
+@@ -167,7 +168,7 @@ function allListening() {
+   const port3 = server3.address().port;
+ 
+   // server1: host 'agent1', signed by ca1
+-  makeReq('/inv1', port1, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++  makeReq('/inv1', port1, sslVerificationFailureError);
+   makeReq('/inv1-ca1', port1, 'ERR_TLS_CERT_ALTNAME_INVALID',
+           null, ca1);
+   makeReq('/inv1-ca1ca2', port1, 'ERR_TLS_CERT_ALTNAME_INVALID',
+@@ -175,7 +176,7 @@ function allListening() {
+   makeReq('/val1-ca1', port1, null, 'agent1', ca1);
+   makeReq('/val1-ca1ca2', port1, null, 'agent1', [ca1, ca2]);
+   makeReq('/inv1-ca2', port1,
+-          'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'agent1', ca2);
++          sslVerificationFailureError, 'agent1', ca2);
+ 
+   // server2: self-signed, host = 'agent2'
+   // doesn't matter that thename matches, all of these will error.
+@@ -186,14 +187,14 @@ function allListening() {
+           'agent2', [ca1, ca2]);
+ 
+   // server3: host 'agent3', signed by ca2
+-  makeReq('/inv3', port3, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++  makeReq('/inv3', port3, sslVerificationFailureError);
+   makeReq('/inv3-ca2', port3, 'ERR_TLS_CERT_ALTNAME_INVALID', null, ca2);
+   makeReq('/inv3-ca1ca2', port3, 'ERR_TLS_CERT_ALTNAME_INVALID',
+           null, [ca1, ca2]);
+   makeReq('/val3-ca2', port3, null, 'agent3', ca2);
+   makeReq('/val3-ca1ca2', port3, null, 'agent3', [ca1, ca2]);
+   makeReq('/inv3-ca1', port3,
+-          'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'agent1', ca1);
++          sslVerificationFailureError, 'agent1', ca1);
+ 
+ }
+ 
+diff --git a/test/parallel/test-tls-addca.js b/test/parallel/test-tls-addca.js
+index a99d53f55d3fe43b993536f88278d418222bd5ab..a186ebbe30913d44cf1d117cf64fa4cd2825bea3 100644
+--- a/test/parallel/test-tls-addca.js
++++ b/test/parallel/test-tls-addca.js
+@@ -9,6 +9,7 @@ const fixtures = require('../common/fixtures');
+ const {
+   assert, connect, keys, tls
+ } = require(fixtures.path('tls-connect'));
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ const contextWithoutCert = tls.createSecureContext({});
+ const contextWithCert = tls.createSecureContext({});
+@@ -34,7 +35,7 @@ connect({
+   server: serverOptions,
+ }, common.mustCall((err, pair, cleanup) => {
+   assert(err);
+-  assert.strictEqual(err.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++  assert.strictEqual(err.code, sslVerificationFailureError);
+   cleanup();
+ 
+   // This time it should connect because contextWithCert includes the needed CA
+diff --git a/test/parallel/test-tls-client-auth.js b/test/parallel/test-tls-client-auth.js
+index da06156e2e070e1039fcc21732eded103b32d3ca..67f24bd9401d629e859aca907069a5d0afe11ff3 100644
+--- a/test/parallel/test-tls-client-auth.js
++++ b/test/parallel/test-tls-client-auth.js
+@@ -6,7 +6,9 @@ const fixtures = require('../common/fixtures');
+ if (!common.hasCrypto) {
+   common.skip('missing crypto');
+ }
+-const { hasOpenSSL, isBoringSSL } = require('../common/crypto');
++const {
++  hasOpenSSL, isBoringSSL, sslVerificationFailureError
++} = require('../common/crypto');
+ 
+ const {
+   assert, connect, keys, tls
+@@ -185,7 +187,7 @@ connect({
+     cert: server.single,
+   },
+ }, common.mustCall((err, pair, cleanup) => {
+-  assert.strictEqual(err.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++  assert.strictEqual(err.code, sslVerificationFailureError);
+   return cleanup();
+ }));
+ 
+diff --git a/test/parallel/test-tls-client-cert-resumption.js b/test/parallel/test-tls-client-cert-resumption.js
+index 790809678d664fc06e73a0b6a3bb98f3e915b15f..b2ab1d495e3b6dc2dc32941dcd411e624711c095 100644
+--- a/test/parallel/test-tls-client-cert-resumption.js
++++ b/test/parallel/test-tls-client-cert-resumption.js
+@@ -23,6 +23,7 @@ const crypto = require('crypto');
+ const tls = require('tls');
+ const fixtures = require('../common/fixtures');
+ const { once } = require('events');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ const ca = fixtures.readKey('ca1-cert.pem');
+ const serverCert = {
+@@ -47,7 +48,7 @@ const CLIENTS = {
+       cert: fixtures.readKey('agent3-cert.pem'),
+     },
+     authorized: false,
+-    authorizationError: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
++    authorizationError: sslVerificationFailureError,
+     peerCN: 'agent3',
+   },
+   missing: {                                          // No client certificate
+diff --git a/test/parallel/test-tls-friendly-error-message.js b/test/parallel/test-tls-friendly-error-message.js
+index 84471da487b2e9eb7ec15b4564596c701ad025e7..b3b13d78a9b18b0b56459ae372e1664cb7fa31d7 100644
+--- a/test/parallel/test-tls-friendly-error-message.js
++++ b/test/parallel/test-tls-friendly-error-message.js
+@@ -27,6 +27,7 @@ if (!common.hasCrypto)
+ const fixtures = require('../common/fixtures');
+ const assert = require('assert');
+ const tls = require('tls');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ const key = fixtures.readKey('agent1-key.pem');
+ const cert = fixtures.readKey('agent1-cert.pem');
+@@ -39,6 +40,6 @@ tls.createServer({ key, cert }).on('connection', common.mustCall(function() {
+ })).listen(0, common.mustCall(function() {
+   const options = { port: this.address().port, rejectUnauthorized: true };
+   tls.connect(options).on('error', common.mustCall(function(err) {
+-    assert.strictEqual(err.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++    assert.strictEqual(err.code, sslVerificationFailureError);
+   }));
+ }));
+diff --git a/test/parallel/test-tls-session-reuse-different-servername.js b/test/parallel/test-tls-session-reuse-different-servername.js
+index c3ae4be15785f25c5d2fc81cb7843c943f0b78fd..14690a608857c57db781b2e6ea2b4f551bded99f 100644
+--- a/test/parallel/test-tls-session-reuse-different-servername.js
++++ b/test/parallel/test-tls-session-reuse-different-servername.js
+@@ -7,6 +7,7 @@ const assert = require('assert');
+ const fixtures = require('../common/fixtures');
+ const tls = require('tls');
+ const { once } = require('events');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ function load(name) {
+   return fixtures.readKey(name);
+@@ -90,7 +91,7 @@ async function testVersion(minVersion, maxVersion) {
+         return socket;
+       }),
+       {
+-        code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
++        code: sslVerificationFailureError,
+       },
+     );
+ 
+@@ -107,7 +108,7 @@ async function testVersion(minVersion, maxVersion) {
+         return socket;
+       }),
+       {
+-        code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
++        code: sslVerificationFailureError,
+       },
+     );
+   } finally {
+diff --git a/test/parallel/test-tls-set-default-ca-certificates-append-fetch.mjs b/test/parallel/test-tls-set-default-ca-certificates-append-fetch.mjs
+index ca8436b22b0a70221de26412be7b043a87c7117d..1990e42d24d3812ec93e5555388a298622610e0c 100644
+--- a/test/parallel/test-tls-set-default-ca-certificates-append-fetch.mjs
++++ b/test/parallel/test-tls-set-default-ca-certificates-append-fetch.mjs
+@@ -14,6 +14,7 @@ if (!common.hasCrypto) common.skip('missing crypto');
+ const { includesCert } = await import('../common/tls.js');
+ const { default: https } = await import('node:https');
+ const { default: tls } = await import('node:tls');
++const { sslVerificationFailureError } = await import('../common/crypto.js');
+ 
+ const bundledCerts = tls.getCACertificates('bundled');
+ const fixtureCert = fixtures.readKey('fake-startcom-root-cert.pem');
+@@ -37,7 +38,7 @@ const url = `https://localhost:${server.address().port}/hello-world`;
+ await assert.rejects(
+   fetch(url),
+   (err) => {
+-    assert.strictEqual(err.cause.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++    assert.strictEqual(err.cause.code, sslVerificationFailureError);
+     return true;
+   },
+ );
+diff --git a/test/parallel/test-tls-set-default-ca-certificates-append-https-request.js b/test/parallel/test-tls-set-default-ca-certificates-append-https-request.js
+index d7a3baded420de712e9cfea42a94bef522135d7e..2b21f24415df60aaedba50d0880cb63adee0699e 100644
+--- a/test/parallel/test-tls-set-default-ca-certificates-append-https-request.js
++++ b/test/parallel/test-tls-set-default-ca-certificates-append-https-request.js
+@@ -11,6 +11,7 @@ const https = require('https');
+ const tls = require('tls');
+ const fixtures = require('../common/fixtures');
+ const { includesCert } = require('../common/tls');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ const bundledCerts = tls.getCACertificates('bundled');
+ const fixtureCert = fixtures.readKey('fake-startcom-root-cert.pem');
+@@ -43,7 +44,7 @@ server.listen(0, common.mustCall(() => {
+   req1.on('error', common.mustCall((err) => {
+     console.log(err);
+     // Should fail with certificate verification error
+-    assert.strictEqual(err.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++    assert.strictEqual(err.code, sslVerificationFailureError);
+ 
+     // Now add the fake-startcom-root-cert to bundled certs - connection should succeed
+     tls.setDefaultCACertificates([...bundledCerts, fixtureCert]);
+diff --git a/test/parallel/test-tls-set-default-ca-certificates-reset-fetch.mjs b/test/parallel/test-tls-set-default-ca-certificates-reset-fetch.mjs
+index 479b415d4c518c741edf1e66f9feb6dc9aa74ab0..d0c1abd0b6f0d34c044f0fabe026c43c5433b3a0 100644
+--- a/test/parallel/test-tls-set-default-ca-certificates-reset-fetch.mjs
++++ b/test/parallel/test-tls-set-default-ca-certificates-reset-fetch.mjs
+@@ -13,6 +13,7 @@ if (!common.hasCrypto) common.skip('missing crypto');
+ 
+ const { default: https } = await import('node:https');
+ const { default: tls } = await import('node:tls');
++const { sslVerificationFailureError } = await import('../common/crypto.js');
+ 
+ // Test HTTPS connection fails with bundled CA, succeeds after adding custom CA.
+ const server = https.createServer({
+@@ -39,7 +40,7 @@ tls.setDefaultCACertificates([]);
+ await assert.rejects(
+   fetch(`https://127.0.0.1:${server.address().port}/empty-ca-test`),
+   (err) => {
+-    assert.strictEqual(err.cause.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++    assert.strictEqual(err.cause.code, sslVerificationFailureError);
+     return true;
+   },
+ );
+diff --git a/test/parallel/test-tls-set-default-ca-certificates-reset-https-request.js b/test/parallel/test-tls-set-default-ca-certificates-reset-https-request.js
+index 7389cacf6d66826310fee2868394cc1b8efc34ae..5aa399301c2d2305e2f70a5983d6de9962b8f506 100644
+--- a/test/parallel/test-tls-set-default-ca-certificates-reset-https-request.js
++++ b/test/parallel/test-tls-set-default-ca-certificates-reset-https-request.js
+@@ -9,6 +9,7 @@ const assert = require('assert');
+ const https = require('https');
+ const tls = require('tls');
+ const fixtures = require('../common/fixtures');
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ // Test HTTPS connection succeeds with proper CA, fails after removing it
+ const server = https.createServer({
+@@ -49,7 +50,7 @@ server.listen(0, common.mustCall(() => {
+ 
+       req2.on('error', common.mustCall((err) => {
+         // Should fail with certificate verification error.
+-        assert.strictEqual(err.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++        assert.strictEqual(err.code, sslVerificationFailureError);
+         server.close();
+       }));
+ 
+diff --git a/test/parallel/test-tls-socket-default-options.js b/test/parallel/test-tls-socket-default-options.js
+index 8dfd912285dce57f2a0ebebf27d1e41d6729514b..b0d243dce10c49cb7d6f4e2486d24b023032b8d3 100644
+--- a/test/parallel/test-tls-socket-default-options.js
++++ b/test/parallel/test-tls-socket-default-options.js
+@@ -8,13 +8,14 @@ const assert = require('assert');
+ const {
+   connect, keys, tls
+ } = require(fixtures.path('tls-connect'));
++const { sslVerificationFailureError } = require('../common/crypto');
+ 
+ test(undefined, (err) => {
+-  assert.strictEqual(err.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++  assert.strictEqual(err.code, sslVerificationFailureError);
+ });
+ 
+ test({}, (err) => {
+-  assert.strictEqual(err.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++  assert.strictEqual(err.code, sslVerificationFailureError);
+ });
+ 
+ test(
+@@ -31,7 +32,7 @@ test(
+   { secureContext: tls.createSecureContext(), ca: keys.agent1.ca },
+   (err) => {
+     assert.strictEqual(err.code,
+-                       'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++                       sslVerificationFailureError);
+   });
+ 
+ function test(client, callback) {
+@@ -42,7 +43,7 @@ function test(client, callback) {
+       cert: keys.agent1.cert,
+     },
+   }, common.mustCall(function(err, pair, cleanup) {
+-    assert.strictEqual(err.code, 'UNABLE_TO_VERIFY_LEAF_SIGNATURE');
++    assert.strictEqual(err.code, sslVerificationFailureError);
+     let recv = '';
+     pair.server.server.once('secureConnection', common.mustCall((conn) => {
+       conn.on('data', (data) => recv += data);

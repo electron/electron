@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7986619e0 100644
+index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705131d9cc3 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -52,7 +52,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -232,7 +239,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -248,7 +255,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -61,7 +61,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -595,7 +602,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -611,7 +618,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -70,7 +70,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -656,14 +663,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
+@@ -672,14 +679,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
  void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
  
@@ -87,7 +87,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
  
    // Close and reset the picture-in-picture window controller, if it exists.
    if (pip_window_controller_) {
-@@ -706,6 +713,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -722,6 +729,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
  }
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -95,7 +95,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
  void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
      content::WebContents* parent_web_contents,
      std::unique_ptr<content::WebContents> child_web_contents,
-@@ -754,6 +762,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+@@ -773,6 +781,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
    }
    document_pip_host_ = host->GetWeakPtr();
  }
@@ -103,7 +103,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
  
  std::unique_ptr<AutoPipSettingOverlayView>
  PictureInPictureWindowManager::GetOverlayView(
-@@ -764,6 +773,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -783,6 +792,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -111,7 +111,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -802,6 +812,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -821,6 +831,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -121,7 +121,7 @@ index 811bac8db0a6a391d8e6f33aec0f7c8cdd2cf753..6371f604c2ea63c2baa76a212100f6d7
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index b7abd2bb5d160bad8944aea46e7dfb64a46d11d8..4fcbfb36ad341d30ec3de5b080620c710a37b5b0 100644
+index ad8cd28e110b069be8c11cacc0351feef036ab77..576889e2b5bf622319e6feea45467d5a9f7b3831 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -13,6 +13,7 @@
@@ -162,7 +162,7 @@ index b7abd2bb5d160bad8944aea46e7dfb64a46d11d8..4fcbfb36ad341d30ec3de5b080620c71
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index e1154047af16efd14465539696de7b55e5ba50cc..4fbb0e6d1b3c8a99bdc81a97821c01149df27e4e 100644
+index b786b9b6ac62573fc2977e2a075b3de1f17fdf35..4c8bfbd57122e7cda8ae1e60353387c7464f9518 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -116,8 +116,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
@@ -291,7 +291,7 @@ index e1154047af16efd14465539696de7b55e5ba50cc..4fbb0e6d1b3c8a99bdc81a97821c0114
  
    // When the window is first shown, make the title and top controls
    // visible for a few seconds.
-@@ -2372,10 +2390,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
+@@ -2374,10 +2392,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
  }
  
  bool VideoOverlayWindowViews::IsOverlayViewShown() const {
@@ -307,7 +307,7 @@ index e1154047af16efd14465539696de7b55e5ba50cc..4fbb0e6d1b3c8a99bdc81a97821c0114
    if (overlay_view_) {
      // Remove and delete the outgoing view.  Note the trailing `T` on the method
      // name -- this removes `overlay_view_` and returns a unique_ptr to it which
-@@ -2384,6 +2407,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
+@@ -2386,6 +2409,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
      GetContentsView()->RemoveChildViewT(overlay_view_.ExtractAsDangling());
      OnSizeConstraintsChanged();
    }

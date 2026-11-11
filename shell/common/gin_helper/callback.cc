@@ -60,7 +60,7 @@ struct TranslatorHolder {
 void CallTranslator(const v8::FunctionCallbackInfo<v8::Value>& info) {
   gin::Arguments args(info);
   auto* holder =
-      static_cast<TranslatorHolder*>(info.Data().As<v8::External>()->Value(
+      static_cast<TranslatorHolder*>(info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (holder->one_time && holder->called) {

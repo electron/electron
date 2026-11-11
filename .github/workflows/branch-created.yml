@@ -15,6 +15,9 @@ jobs:
   release-branch-created:
     name: Release Branch Created
     if: ${{ github.repository == 'electron/electron' && (github.event_name == 'workflow_dispatch' || (github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller'))) }}
+    concurrency:
+      group: branch-created-${{ github.event.inputs.branch-name || github.event.ref }}
+      cancel-in-progress: false
     permissions:
       contents: read
       pull-requests: write
@@ -74,27 +77,27 @@ jobs:
           UNSUPPORTED_MAJOR=$((NEXT_UNSUPPORTED_MAJOR - 1))
 
           # Create new labels
-          gh label create ${NEXT_MAJOR}-x-y --color 8d9ee8 || true
-          gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || true
-          gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || true
-          gh label create in-flight/$MAJOR-x-y --color db69a6 || true
-          gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || true
+          gh label create ${NEXT_MAJOR}-x-y --color 8d9ee8 || echo "::warning::Failed to create or update label ${NEXT_MAJOR}-x-y"
+          gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || echo "::warning::Failed to create or update label target/$MAJOR-x-y"
+          gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || echo "::warning::Failed to create or update label merged/$MAJOR-x-y"
+          gh label create in-flight/$MAJOR-x-y --color db69a6 || echo "::warning::Failed to create or update label in-flight/$MAJOR-x-y"
+          gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || echo "::warning::Failed to create or update label needs-manual-bp/$MAJOR-x-y"
 
           # Change color of old labels
-          gh label edit $UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit target/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit merged/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit in-flight/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit needs-manual-bp/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+          gh label edit $UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label $UNSUPPORTED_MAJOR-x-y"
+          gh label edit target/$UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label target/$UNSUPPORTED_MAJOR-x-y"
+          gh label edit merged/$UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label merged/$UNSUPPORTED_MAJOR-x-y"
+          gh label edit in-flight/$UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label in-flight/$UNSUPPORTED_MAJOR-x-y"
+          gh label edit needs-manual-bp/$UNSUPPORTED_MAJOR-x-y --color ededed || echo "::warning::Failed to update color of label needs-manual-bp/$UNSUPPORTED_MAJOR-x-y"
 
           # Add the new target label to any PRs which:
           #   * target the previous major
           #   * are in-flight for the previous major
           #   * need manual backport for the previous major
           for PREVIOUS_MAJOR_LABEL in target/$PREVIOUS_MAJOR-x-y in-flight/$PREVIOUS_MAJOR-x-y needs-manual-bp/$PREVIOUS_MAJOR-x-y; do
-            PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --jq .[].number --json number --limit 500)
+            PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --search "-label:target/$MAJOR-x-y" --jq .[].number --json number --limit 500)
             if [[ $PULL_REQUESTS ]]; then
-              echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || true
+              echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || echo "::error::Failed to add label target/$MAJOR-x-y to one or more PRs with label $PREVIOUS_MAJOR_LABEL"
             fi
           done
       - name: Generate GitHub App token
@@ -156,9 +159,18 @@ jobs:
                 "stable-date": stableDate,
                 "next-alpha-date": nextAlphaDate.toISOString().split('T')[0],
             }))
-      - name: Create Release Project Board
+      - name: Find Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/copy-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/find-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
+        id: find-release-board
+        with:
+          fail-if-project-not-found: false
+          limit: 1000
+          title: ${{ steps.generate-project-metadata.outputs.major }}-x-y
+          token: ${{ steps.generate-token.outputs.token }}
+      - name: Create Release Project Board
+        if: ${{ steps.check-major-version.outputs.MAJOR && !steps.find-release-board.outputs.id }}
+        uses: dsanders11/project-actions/copy-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         id: create-release-board
         with:
           drafts: true
@@ -173,9 +185,9 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       - name: Randomly Assign Draft Issues to Release WG Members
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/github-script@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/github-script@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         env:
-          PROJECT_ID: ${{ steps.create-release-board.outputs.id }}
+          PROJECT_ID: ${{ steps.find-release-board.outputs.id || steps.create-release-board.outputs.id }}
         with:
           token: ${{ steps.generate-token.outputs.token }}
           script: |
@@ -200,10 +212,11 @@ jobs:
             }
 
             const projectId = process.env.PROJECT_ID;
-            const draftIssues = await actions.getDraftIssues(projectId);
+            const draftIssues = (await actions.getDraftIssues(projectId))
+              .filter(issue => issue.content.assignees.nodes.length === 0);
 
             if (draftIssues.length === 0) {
-              core.info('No draft issues found in the project');
+              core.info('No unassigned draft issues found in the project');
               return;
             }
 
@@ -227,10 +240,10 @@ jobs:
             core.info(`Assigned ${draftIssues.length} draft issues to ${eligible.length} team members`);
       - name: Add Merged PRs to Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/github-script@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/github-script@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         env:
-          PROJECT_ID: ${{ steps.create-release-board.outputs.id }}
-          PROJECT_NUMBER: ${{ steps.create-release-board.outputs.number }}
+          PROJECT_ID: ${{ steps.find-release-board.outputs.id || steps.create-release-board.outputs.id }}
+          PROJECT_NUMBER: ${{ steps.find-release-board.outputs.number || steps.create-release-board.outputs.number }}
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
         with:
           token: ${{ steps.generate-token.outputs.token }}
@@ -238,6 +251,52 @@ jobs:
             const projectId = process.env.PROJECT_ID;
             const projectNumber = process.env.PROJECT_NUMBER;
             const major = process.env.MAJOR;
+
+            const pullRequestItems = new Map();
+            let cursor = null;
+            let hasNextPage;
+
+            do {
+              const { node: project } = await github.graphql(`
+                query($projectId: ID!, $cursor: String) {
+                  node(id: $projectId) {
+                    ... on ProjectV2 {
+                      items(first: 100, after: $cursor) {
+                        nodes {
+                          id
+                          type
+                          content {
+                            ... on PullRequest {
+                              url
+                            }
+                          }
+                          fieldValueByName(name: "Semver") {
+                            ... on ProjectV2ItemFieldSingleSelectValue {
+                              name
+                            }
+                          }
+                        }
+                        pageInfo {
+                          hasNextPage
+                          endCursor
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { projectId, cursor });
+
+              for (const item of project.items.nodes) {
+                if (item.type !== 'PULL_REQUEST' || !item.content?.url) continue;
+
+                pullRequestItems.set(item.content.url, {
+                  id: item.id,
+                  semver: item.fieldValueByName?.name,
+                });
+              }
+
+              ({ hasNextPage, endCursor: cursor } = project.items.pageInfo);
+            } while (hasNextPage);
 
             // Maps the `semver/*` label to the matching "Semver" field option
             const semverLabelToField = {
@@ -260,8 +319,13 @@ jobs:
               // want pull requests which have actually been merged
               if (!pr.pull_request?.merged_at) continue;
 
-              core.info(`Adding #${pr.number} to the release project board`);
-              const itemId = await actions.addItem('electron', projectNumber, pr.html_url);
+              let item = pullRequestItems.get(pr.html_url);
+              if (!item) {
+                core.info(`Adding #${pr.number} to the release project board`);
+                const itemId = await actions.addItem('electron', projectNumber, pr.html_url);
+                item = { id: itemId, semver: undefined };
+                pullRequestItems.set(pr.html_url, item);
+              }
 
               const semverLabel = pr.labels
                 .map(label => (typeof label === 'string' ? label : label.name))
@@ -269,11 +333,14 @@ jobs:
 
               if (semverLabel) {
                 const fieldValue = semverLabelToField[semverLabel];
+                if (item.semver === fieldValue) continue;
+
                 core.info(`Setting Semver to "${fieldValue}" for #${pr.number}`);
-                await actions.editItem(projectId, itemId, {
+                await actions.editItem(projectId, item.id, {
                   field: 'Semver',
                   fieldValue,
                 });
+                item.semver = fieldValue;
               }
             }
       - name: Dump Release Project Board Contents
@@ -281,18 +348,19 @@ jobs:
         run: gh project item-list "$BOARD_NUMBER" --owner electron --format json | jq
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-          BOARD_NUMBER: ${{ steps.create-release-board.outputs.number }}
+          BOARD_NUMBER: ${{ steps.find-release-board.outputs.number || steps.create-release-board.outputs.number }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/find-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/find-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         id: find-prev-release-board
         with:
           fail-if-project-not-found: false
+          limit: 1000
           title: ${{ steps.generate-project-metadata.outputs.prev-prev-major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
       - name: Close Previous Release Project Board
         if: ${{ steps.find-prev-release-board.outputs.number }}
-        uses: dsanders11/project-actions/close-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        uses: dsanders11/project-actions/close-project@d5490cb5784c8570b072fbf02f974fd5ee3e145f # v2.1.0
         with:
           project-number: ${{ steps.find-prev-release-board.outputs.number }}
           token: ${{ steps.generate-token.outputs.token }}

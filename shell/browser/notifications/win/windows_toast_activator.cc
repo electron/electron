@@ -433,13 +433,13 @@ void HandleToastActivation(const std::wstring& invoked_args,
   // Expected invoked_args format:
   // type=<click|action|reply>&action=<index>&tag=<hash> Parse simple key=value
   // pairs separated by '&'.
-  std::wstring args = invoked_args;
   std::wstring type;
   std::wstring action_index_str;
   std::wstring tag_str;
 
-  for (const auto& token : base::SplitString(args, L"&", base::KEEP_WHITESPACE,
-                                             base::SPLIT_WANT_NONEMPTY)) {
+  for (const auto& token :
+       base::SplitString(invoked_args, L"&", base::KEEP_WHITESPACE,
+                         base::SPLIT_WANT_NONEMPTY)) {
     auto kv = base::SplitString(token, L"=", base::KEEP_WHITESPACE,
                                 base::SPLIT_WANT_NONEMPTY);
     if (kv.size() != 2)

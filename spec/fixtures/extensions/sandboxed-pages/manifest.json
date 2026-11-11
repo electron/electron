@@ -1,0 +1,8 @@
+{
+  "name": "sandboxed-pages",
+  "version": "1.0",
+  "sandbox": {
+    "pages": ["sandboxed.html"]
+  },
+  "manifest_version": 3
+}
