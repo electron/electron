@@ -139,8 +139,10 @@ void MenuDelegate::CancelSelf() {
 }
 
 bool MenuDelegate::SwitchToSiblingMenu(bool next) {
+  // Step from the pending target so repeated presses keep moving.
+  const int from_id = button_to_open_ ? button_to_open_->GetID() : id_;
   views::MenuButton* button = nullptr;
-  if (!menu_bar_->GetSiblingMenuButtonByDirection(id_, next, &button)) {
+  if (!menu_bar_->GetSiblingMenuButtonByDirection(from_id, next, &button)) {
     return false;
   }
 
