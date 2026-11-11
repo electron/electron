@@ -2396,8 +2396,7 @@ content::WebContents* WebContents::AddNewContents(
     if (was_blocked)
       *was_blocked = true;
     api_web_contents->Destroy();
-  } else if (auto* child = weak_child->Get();
-             child && !child->IsDestroyed()) {
+  } else if (auto* child = weak_child->Get(); child && !child->IsDestroyed()) {
     // The span in which an owner was promised ends here. If the handlers gave
     // the child a window, a deferred openDevTools() has already run. If not —
     // say a createWindow handler kept the contents out of any widget — don't

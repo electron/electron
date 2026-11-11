@@ -563,7 +563,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
     // What inspect calls made while the open was pending should show once it
     // runs. A worker takes precedence over an element, whatever the order: once
     // a worker's agent is attached, InspectElement() does nothing.
-    std::optional<gfx::Point> inspect_point;    // inspectElement()
+    std::optional<gfx::Point> inspect_point;     // inspectElement()
     std::optional<std::string> attach_agent_id;  // the worker inspectors
   };
 
