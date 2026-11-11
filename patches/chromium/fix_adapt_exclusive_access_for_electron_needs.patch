@@ -16,9 +16,18 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 9b923b442f9ba3bcf1dba0380c7efecc563d002a..bbf9c87540d4fcbc628ac0eab7bb37a9b8cdc1ad 100644
+index 9b923b442f9ba3bcf1dba0380c7efecc563d002a..42de1ed0d1ead610a3da13bab59993e39d8d0b03 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
+@@ -39,7 +39,7 @@
+ #include "media/media_buildflags.h"
+ #include "services/metrics/public/cpp/metrics_utils.h"
+ 
+-#if BUILDFLAG(ENABLE_MEDIA_REMOTING)
++#if 0
+ #include "chrome/browser/media/cast_remoting_connector.h"
+ #endif
+ #include "services/metrics/public/cpp/ukm_builders.h"
 @@ -54,7 +54,7 @@
  #include "components/prefs/pref_service.h"
  #endif
@@ -43,6 +52,15 @@ index 9b923b442f9ba3bcf1dba0380c7efecc563d002a..bbf9c87540d4fcbc628ac0eab7bb37a9
  }
  
  }  // namespace
+@@ -219,7 +218,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+   CHECK(web_contents, base::NotFatalUntil::M162);
+ 
+   if (MaybeToggleFullscreenWithinTab(web_contents, true)) {
+-#if BUILDFLAG(ENABLE_MEDIA_REMOTING)
++#if 0
+     if (auto* connector = CastRemotingConnector::Get(web_contents)) {
+       connector->DidAcquireFullscreen(requesting_frame);
+     }
 @@ -229,7 +228,7 @@ void FullscreenController::EnterFullscreenModeForTab(
      return;
    }
@@ -52,6 +70,24 @@ index 9b923b442f9ba3bcf1dba0380c7efecc563d002a..bbf9c87540d4fcbc628ac0eab7bb37a9
    if (!popunder_preventer_) {
      popunder_preventer_ = std::make_unique<PopunderPreventer>(web_contents);
    } else {
+@@ -287,7 +286,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+         requesting_another_screen) {
+       EnterFullscreenModeInternal(FullscreenInternalOption::kTab,
+                                   requesting_frame, fullscreen_tab_params);
+-#if BUILDFLAG(ENABLE_MEDIA_REMOTING)
++#if 0
+       if (auto* connector = CastRemotingConnector::Get(web_contents)) {
+         connector->DidAcquireFullscreen(requesting_frame);
+       }
+@@ -301,7 +300,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+     exclusive_access_manager()->UpdateBubble(base::NullCallback());
+   }
+ 
+-#if BUILDFLAG(ENABLE_MEDIA_REMOTING)
++#if 0
+   if (auto* connector = CastRemotingConnector::Get(web_contents)) {
+     connector->DidAcquireFullscreen(requesting_frame);
+   }
 @@ -380,12 +379,14 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
