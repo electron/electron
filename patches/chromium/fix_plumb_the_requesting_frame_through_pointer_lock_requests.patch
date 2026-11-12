@@ -152,10 +152,10 @@ index 5b87ed5def8b6ff737cdc59aa577fd49f7ab257a..a9b3a67e80a325079b9519da1a6436d5
    virtual void UnlockPointer(RenderWidgetHostImpl* render_widget_host) {}
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2d86031631185bbd0648ee2986f44ce8db69de61..5df87ee987ef8feb1ffb96c25e4188b3c42908a7 100644
+index e46a13c42a05adf08a43e05038a09accea1746e5..940460820dc139bc33838923844b864cb89c6743 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -3700,6 +3700,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
+@@ -3708,6 +3708,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
  }
  
  void RenderWidgetHostImpl::RequestMouseLock(
@@ -163,7 +163,7 @@ index 2d86031631185bbd0648ee2986f44ce8db69de61..5df87ee987ef8feb1ffb96c25e4188b3
      bool from_user_gesture,
      bool unadjusted_movement,
      input::InputRouterImpl::RequestMouseLockCallback response) {
-@@ -3736,7 +3737,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
+@@ -3744,7 +3745,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
      return;
    }
  
@@ -173,7 +173,7 @@ index 2d86031631185bbd0648ee2986f44ce8db69de61..5df87ee987ef8feb1ffb96c25e4188b3
    // We need to reset |is_last_unlocked_by_target_| here as we don't know
    // request source in |LostPointerLock()|.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 9d607ef82724ea392fa29b70a3e014dd371301bb..bf91dd3aa31a667963a70ee0c8b4d7ba4208bf4c 100644
+index 1f98cfb4e20c914f45b18af7ff8a87ea16e44d1e..ddec45c46d7e572ea7fb129ed8cf11387690b91f 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -893,6 +893,7 @@ class CONTENT_EXPORT RenderWidgetHostImpl
