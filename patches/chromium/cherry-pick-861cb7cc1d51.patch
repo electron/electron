@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Tue, 13 Oct 2026 16:48:50 -0700
+Subject: Missing ConsumeWhitespace() for canvas font parsing
+
+Regression from [1]. This was not covered by tests, so adding test with
+preceding and succeeding spaces.
+
+[1] https://crrev.com/bee3d49b29f60f62928286df103412ce62a73936
+
+Bug: 572988452
+Change-Id: Ib5aaafe5f83fae99ce23b33ef30d5ca2d34ca869
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8573817
+Auto-Submit: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: Kevin Babbitt <kbabbitt@microsoft.com>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Commit-Queue: Kevin Babbitt <kbabbitt@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1718107}
+
+diff --git a/third_party/blink/renderer/core/css/parser/css_parser.cc b/third_party/blink/renderer/core/css/parser/css_parser.cc
+index 896d73c774d6b01d803e4f65cd1cdb2646c4437e..1c0f86ef6adce27a906ba02de950bb8043c1f270 100644
+--- a/third_party/blink/renderer/core/css/parser/css_parser.cc
++++ b/third_party/blink/renderer/core/css/parser/css_parser.cc
+@@ -491,6 +491,7 @@ MutableCSSPropertyValueSet* CSSParser::ParseFont(
+   CSSParserLocalContext local_context(CSSPropertyName(CSSPropertyID::kFont),
+                                       CSSPropertyID::kFont);
+   CSSParserTokenStream stream(string);
++  stream.ConsumeWhitespace();
+   HeapVector<CSSPropertyValue, 64> parsed_properties;
+ 
+   if (GetCSSPropertyFont().ParseShorthand(/*important=*/true, stream,
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/text/2d.text.font.parse.basic.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/text/2d.text.font.parse.basic.html
+index 91b09d92e015cc2e546320d8c38959751682eff8..576b472efa21bb95bdbd2def41bea60d34af5124 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/text/2d.text.font.parse.basic.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/text/2d.text.font.parse.basic.html
+@@ -26,6 +26,9 @@ _addTest(function(canvas, ctx) {
+   ctx.font = '20PX   SERIF';
+   _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
+ 
++  ctx.font = '  15px sans-serif  ';
++  _assertSame(ctx.font, '15px sans-serif', "ctx.font", "'15px sans-serif'");
++
+ });
+ </script>
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.basic.html b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.basic.html
+index a53cf40193611b78a1ee5195a54fb52a2b8ae8f1..f8e9479aee350b0b5e93cc4615feee30b18edf61 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.basic.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.basic.html
+@@ -26,6 +26,9 @@ t.step(function() {
+ 
+   ctx.font = '20PX   SERIF';
+   _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
++
++  ctx.font = '  15px sans-serif  ';
++  _assertSame(ctx.font, '15px sans-serif', "ctx.font", "'15px sans-serif'");
+   t.done();
+ 
+ });
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.basic.worker.js b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.basic.worker.js
+index 3596aab66bce5a807a85171ef9ab23fc57e0ef75..58a18072152e0d41cc95b0808d739b62b2cb2895 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.basic.worker.js
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/offscreen/text/2d.text.font.parse.basic.worker.js
+@@ -21,6 +21,9 @@ t.step(function() {
+ 
+   ctx.font = '20PX   SERIF';
+   _assertSame(ctx.font, '20px serif', "ctx.font", "'20px serif'");
++
++  ctx.font = '  15px sans-serif  ';
++  _assertSame(ctx.font, '15px sans-serif', "ctx.font", "'15px sans-serif'");
+   t.done();
+ });
+ done();
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/tools/yaml/text.yaml b/third_party/blink/web_tests/external/wpt/html/canvas/tools/yaml/text.yaml
+index 58056126ac5982ee32b5576a4efa01948d09cb56..0a8d6bbf6ec09d8d9c4f9b33afa096a8c7e06649 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/tools/yaml/text.yaml
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/tools/yaml/text.yaml
+@@ -6,6 +6,9 @@
+     ctx.font = '20PX   SERIF';
+     @assert ctx.font === '20px serif'; @moz-todo
+ 
++    ctx.font = '  15px sans-serif  ';
++    @assert ctx.font === '15px sans-serif';
++
+ - name: 2d.text.font.parse.tiny
+   code: |
+     ctx.font = '1px sans-serif';
