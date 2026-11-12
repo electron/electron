@@ -838,7 +838,7 @@ Returns:
     `input-image`, `input-month`, `input-number`, `input-password`, `input-radio`,
     `input-range`, `input-reset`, `input-search`, `input-submit`, `input-telephone`,
     `input-text`, `input-time`, `input-url`, `input-week`, `output`, `range-group`,
-    `reset-button`, `select-list`, `select-list`, `select-multiple`, `select-one`,
+    `reset-button`, `select-list`, `select-multiple`, `select-one`,
     `submit-button`, and `text-area`,
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
