@@ -658,7 +658,7 @@ describe('command line switches', () => {
       });
     }
 
-    it('preserves a valid locale', async () => {
+    it('starts with a valid locale', async () => {
       await testLocaleEnvironment({ LANG: 'fr_FR.UTF-8' }, 'fr');
     });
 
@@ -688,6 +688,19 @@ describe('command line switches', () => {
 
     it('honors --lang with an invalid LANG', async () => {
       await testLocaleEnvironment({ LANG: invalidLocale }, 'fr', 'fr');
+    });
+
+    it('starts with an invalid LANG when run as node', async () => {
+      const env: NodeJS.ProcessEnv = { ...process.env, ELECTRON_RUN_AS_NODE: '1', LANG: invalidLocale };
+      for (const name of Object.keys(env)) {
+        if (name === 'LANGUAGE' || name.startsWith('LC_')) delete env[name];
+      }
+      const result = await spawnAndWait(process.execPath, ['-e', 'new Intl.DateTimeFormat().format(0)'], {
+        env,
+        timeout: 10000
+      });
+      expect(result.signal, result.stderr).toBeNull();
+      expect(result.code, result.stderr).toBe(0);
     });
   });
 
