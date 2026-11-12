@@ -23,7 +23,7 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index f458a74a61cdc92e63bfbec4be9c84bc9c0d4b09..a88f4f78cf6c2aa94b86895d5be0a4c155dd1ef5 100644
+index 351dc920e2e3b38b5ebdc02f9cd7669ace0ec6c6..4a7298806766a2937c708215436df40730731491 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -250,6 +250,7 @@ @implementation NativeWidgetMacNSWindow {
@@ -67,7 +67,7 @@ index f458a74a61cdc92e63bfbec4be9c84bc9c0d4b09..a88f4f78cf6c2aa94b86895d5be0a4c1
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 3ffb38f91c97df353c17651c6c8cc6fc09d1f095..4fe4033b6d8196dfe78409a3fa794e3a4dcaa61d 100644
+index 5e6d12662dc30c89890220b993ab32ebb1ef675a..a0f5ca109d0203b946dd8cfaa8eebc9cd57d7593 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -619,7 +619,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -141,7 +141,7 @@ index 42ee6c6e8f48319a257c8e304ec50dbe58e9b50d..d7ef5d2ca29c3428183486a05c2a81df
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 2d94f6ba8b4c03213a071e6411a20919c4ba8134..85f4c3b74313d9c05df2c7fa0a6109100e662d58 100644
+index 02ecd234a946169575607e7b4ef809b74f0ffead..7bb15736c8fddabaca315633ac08e06dec102d48 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -251,6 +251,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -163,7 +163,7 @@ index 2d94f6ba8b4c03213a071e6411a20919c4ba8134..85f4c3b74313d9c05df2c7fa0a610910
  void Widget::InitParams::SetParent(Widget* parent_widget) {
    SetParent(parent_widget->GetNativeView());
  }
-@@ -519,6 +531,7 @@ void Widget::Init(InitParams params) {
+@@ -518,6 +530,7 @@ void Widget::Init(InitParams params) {
  
    params.child |= (params.type == InitParams::TYPE_CONTROL);
    is_top_level_ = !params.child;
