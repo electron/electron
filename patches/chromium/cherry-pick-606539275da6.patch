@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Wed, 4 Nov 2026 11:49:28 -0800
+Subject: Remove SK_LEGACY_ALPHA_RUNS
+
+* Remove flag guarding robustness fixes in the RunBasedAdditiveBlitter, and rebase some subtly affected images.
+
+Bug: chromium:569286603
+Change-Id: I27d54abe4bd83db41444f74317e04bcb78ae8921
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8712611
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Cr-Commit-Position: refs/heads/main@{#1735518}
+
+Electron adaptation notes (43-x-y): Only the SkUserConfig.h hunk (removing SK_LEGACY_ALPHA_RUNS) is carried. The binary web_tests/*-expected.png rebaselines cannot be applied from the Gerrit patch (no full index) and are test-only, so they are not carried.
+
+diff --git a/skia/config/SkUserConfig.h b/skia/config/SkUserConfig.h
+index 819d49f5bfb4187c37d88f0c6814a0e04ea0e990..5a76d82c70395120c261b8fd3a22f983df57552b 100644
+--- a/skia/config/SkUserConfig.h
++++ b/skia/config/SkUserConfig.h
+@@ -143,8 +143,6 @@ SK_API void SkLog_FileLine(const char* file,
+ 
+ #define SK_SUPPORT_LEGACY_RRECT_TRANSFORM
+ 
+-#define SK_LEGACY_ALPHA_RUNS
+-
+ ///////////////////////// Imported from BUILD.gn and skia_common.gypi
+ 
+ /* In some places Skia can use static initializers for global initialization,

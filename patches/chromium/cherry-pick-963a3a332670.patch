@@ -1,0 +1,190 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Wed, 4 Nov 2026 05:19:20 +0000
+Subject: [M150-LTS][a11y] Skip nested child updates while iterating children
+
+ClearChildren(), RemoveSubtreeInternal() and RemoveIncludedSubtree()
+walk an object's children_ and call into code that can update the
+tree. That code can come back to the same object and clear or rebuild
+its children_ while the outer loop is still walking it, for example
+through aria-owns processing or image map updates.
+
+This CL adds AXObject::GuardedCachedChildrenIncludingIgnored(), which
+those loops use in place of CachedChildrenIncludingIgnored(). Until the
+loop ends, nested calls on that object return early:
+- UpdateChildrenIfNecessary() leaves the children dirty, so a later
+  call rebuilds them.
+- ClearChildren() skips clearing, because the outer loop is already
+  detaching or removing those children.
+
+A nested call can still detach the object, so each caller checks
+IsDetached() after its loop before using the object again.
+
+Outside of these nested calls the behavior is unchanged, because the
+guard only lives as long as those loops and only affects the object
+whose children are being walked.
+
+NO_IFTTT=This CL is to cherry-pick the patch to the M150 branch.
+
+Bug: 574792758, 578690679
+Cq-Include-Trybots: luci.chromium.try:linux-blink-web-tests-force-accessibility-rel,fuchsia-x64-accessibility-rel,linux-blink-rel,mac15.arm64-blink-rel,win11-blink-rel,android-15-chrome-blink-rel
+Change-Id: Ic33a228f481148daf45c57a370945fbb7047aca1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8670121
+Reviewed-by: Jacques Newman <janewman@microsoft.com>
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Commit-Queue: Sky Debreuil <skydebreuil@google.com>
+Cr-Commit-Position: refs/heads/main@{#1731660}
+(cherry picked from commit d37ac99a2d63d8f843b53f867f41e6dd937d1bfe)
+
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object.cc b/third_party/blink/renderer/modules/accessibility/ax_object.cc
+index 5cf0d1d0618fb56dc2e088d55d6ce1dd9d8ed26e..83d7e21e0192dc777572658ac03345b6dea0e150 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_object.cc
+@@ -6852,6 +6852,12 @@ void AXObject::UpdateChildrenIfNecessary() {
+     return;
+   }
+ 
++  // A loop up the stack is walking children_. Leave them dirty, so a later call
++  // rebuilds them.
++  if (children_guarded_) {
++    return;
++  }
++
+   if (AXObjectCache().IsFrozen()) {
+     // TODO(crbug.com/500793607): Investigate and convert to CHECK.
+     DCHECK(!AXObjectCache().IsFrozen())
+@@ -6872,6 +6878,10 @@ void AXObject::UpdateChildrenIfNecessary() {
+   UpdateCachedAttributeValuesIfNeeded();
+ 
+   ClearChildren();
++  // Clearing the children can remove |this|.
++  if (IsDetached()) {
++    return;
++  }
+   AddChildren();
+   CHECK(!children_dirty_);
+   CHECK(!child_cached_values_need_update_);
+@@ -7023,8 +7033,14 @@ void AXObject::ClearChildren() {
+       << this;
+ #endif
+ 
++  // A loop up the stack is walking children_ to detach or remove them.
++  // Clearing them here would free the vector under that loop.
++  if (children_guarded_) {
++    return;
++  }
++
+   // Detach included children from their parent (this).
+-  for (const auto& child : children_) {
++  for (const auto& child : GuardedCachedChildrenIncludingIgnored()) {
+     // Check parent first, as the child might be several levels down if there
+     // are unincluded nodes in between, in which case the cached parent will
+     // also be a descendant (unlike children_, parent_ does not skip levels).
+@@ -7037,6 +7053,11 @@ void AXObject::ClearChildren() {
+ 
+   children_.clear();
+ 
++  // Detaching the children can remove |this|.
++  if (IsDetached()) {
++    return;
++  }
++
+   Node* node = GetNode();
+   if (!node) {
+     return;
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object.h b/third_party/blink/renderer/modules/accessibility/ax_object.h
+index 8df66d6b92e659efe033436e8b7f955e771523ea..83e2bc9046b72f43d8e963bc8a35408f0708821e 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object.h
++++ b/third_party/blink/renderer/modules/accessibility/ax_object.h
+@@ -34,6 +34,7 @@
+ #include <ostream>
+ #include <utility>
+ 
++#include "base/auto_reset.h"
+ #include "base/dcheck_is_on.h"
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/raw_ref.h"
+@@ -1277,6 +1278,31 @@ class MODULES_EXPORT AXObject : public GarbageCollected<AXObject> {
+     return children_;
+   }
+ 
++  // Range adapter for `AXObject::children_`, sets `AXObject::children_guarded_`
++  // while alive to avoid re-entrant modification of `children_`.
++  class GuardedChildren {
++    STACK_ALLOCATED();
++
++   public:
++    explicit GuardedChildren(AXObject& object)
++        : children_(object.children_),
++          guarded_(&object.children_guarded_, true) {}
++
++    auto begin() const { return children_.begin(); }
++    auto end() const { return children_.end(); }
++
++   private:
++    const AXObjectVector& children_;
++    base::AutoReset<bool> guarded_;
++  };
++
++  // Like CachedChildrenIncludingIgnored(), but holds a reentrancy guard on this
++  // object for the loop, so nested calls can't clear or rebuild its children_
++  // while the loop runs.
++  GuardedChildren GuardedCachedChildrenIncludingIgnored() {
++    return GuardedChildren(*this);
++  }
++
+   // Sets the parent AXObject directly. If the parent of this object is known,
+   // this can be faster than using ComputeParent().
+   void SetParent(AXObject* new_parent);
+@@ -1580,6 +1606,8 @@ class MODULES_EXPORT AXObject : public GarbageCollected<AXObject> {
+   // When true, actions may use more expensive layout-based computations.
+   // e.g. DefaultActionVerb::kClickInHitTest.
+   bool use_layout_based_action_ = false;
++  // While true children_ is being walked and must not be cleared or rebuilt.
++  bool children_guarded_ = false;
+ 
+   // The final role, taking into account the ARIA role and native role.
+   ax::mojom::blink::Role role_;
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+index fee91b6c091cb608ae63bc4aeaabf0b8c6345a03..3095f8828a2a471c58bdb701ca6abcb2f46a5550 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+@@ -2084,11 +2084,12 @@ void AXObjectCacheImpl::RemoveIncludedSubtree(AXObject* object,
+     return;
+   }
+ 
+-  for (const auto& ax_child : object->CachedChildrenIncludingIgnored()) {
+-    RemoveIncludedSubtree(ax_child, /* remove_root */ true);
++  for (const auto& ax_child : object->GuardedCachedChildrenIncludingIgnored()) {
++    RemoveIncludedSubtree(ax_child, /*remove_root=*/true);
+   }
+-  if (remove_root) {
+-    Remove(object, /* notify_parent */ false);
++  // Removing the children can remove |object|.
++  if (remove_root && !object->IsDetached()) {
++    Remove(object, /*notify_parent=*/false);
+   }
+ }
+ 
+@@ -2181,7 +2182,8 @@ void AXObjectCacheImpl::RemoveSubtreeInternal(
+ 
+   // When removing children, use the cached children to avoid creating a child
+   // just to destroy it.
+-  for (AXObject* ax_included_child : object->CachedChildrenIncludingIgnored()) {
++  for (AXObject* ax_included_child :
++       object->GuardedCachedChildrenIncludingIgnored()) {
+     if (ax_included_child->ParentObjectIfPresent() != object) {
+       continue;
+     }
+@@ -2199,6 +2201,11 @@ void AXObjectCacheImpl::RemoveSubtreeInternal(
+     }
+   }
+ 
++  // Removing the children can remove |object|.
++  if (object->IsDetached()) {
++    return;
++  }
++
+   // The code below uses ChildrenChangedWithCleanLayout() instead of
+   // notify_parent param in Remove(), which would be queued, and it needs to
+   // happen immediately.

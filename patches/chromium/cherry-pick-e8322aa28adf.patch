@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mike Taylor <miketaylr@chromium.org>
+Date: Thu, 22 Oct 2026 20:04:59 -0700
+Subject: [navigation] Match MHTML MIME types case-insensitively in the browser
+
+Per RFC 2045 Section 5.1, media types and subtypes are case-insensitive.
+However, browser process MHTML classification in
+NavigationRequest::IsMhtmlMimeType(), download_utils::MustDownload(),
+and IntentHandler.isMhtmlMimeType() used exact, case-sensitive string
+equality for "multipart/related" and "message/rfc822". Meanwhile,
+non-HTTP loaders like Android's ContentURLLoader forwarded unnormalized
+MIME types from ContentProvider.getType().
+
+Bug: 574381704
+Change-Id: I5aa204c725c075d36ee31f7bafebda89b5f4fe58
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8620417
+Reviewed-by: Ted Choc <tedchoc@chromium.org>
+Commit-Queue: Mike Taylor <miketaylr@chromium.org>
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725439}
+
+Electron adaptation notes (43-x-y): content/browser/navigation_mhtml_browsertest.cc is test-only and conflicted; it is not carried.
+
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/IntentHandler.java b/chrome/android/java/src/org/chromium/chrome/browser/IntentHandler.java
+index 6fdac3bc4f88ca05458b68eac353f5c67e550281..2890146ca4d91422d57ba457c9b51d61ee4540cb 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/IntentHandler.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/IntentHandler.java
+@@ -1351,7 +1351,8 @@ public class IntentHandler {
+ 
+     /** Return true if the type is one of the Mime types used for MHTML */
+     static boolean isMhtmlMimeType(String type) {
+-        return type.equals("multipart/related") || type.equals("message/rfc822");
++        return type.equalsIgnoreCase("multipart/related")
++                || type.equalsIgnoreCase("message/rfc822");
+     }
+ 
+     /**
+diff --git a/chrome/android/junit/src/org/chromium/chrome/browser/IntentHandlerRobolectricTest.java b/chrome/android/junit/src/org/chromium/chrome/browser/IntentHandlerRobolectricTest.java
+index 09715c3bcb509bb3b5aa8f6b00ba18b558ad7534..293b1e3c98262b64799cd38bc23e580c30bbe799 100644
+--- a/chrome/android/junit/src/org/chromium/chrome/browser/IntentHandlerRobolectricTest.java
++++ b/chrome/android/junit/src/org/chromium/chrome/browser/IntentHandlerRobolectricTest.java
+@@ -164,8 +164,12 @@ public class IntentHandlerRobolectricTest {
+         {"file://foo.mht", "application/octet-stream"},
+         {"file://foo", "multipart/related"},
+         {"file://foo", "message/rfc822"},
++        {"file://foo", "Multipart/Related"},
++        {"file://foo", "Message/RFC822"},
+         {"content://example.com/1", "multipart/related"},
+         {"content://example.com/1", "message/rfc822"},
++        {"content://example.com/1", "Multipart/Related"},
++        {"content://example.com/1", "Message/RFC822"},
+     };
+ 
+     private static final String[][] INTENT_URLS_AND_TYPES_NOT_FOR_MHTML = {
+@@ -455,6 +459,17 @@ public class IntentHandlerRobolectricTest {
+         Assert.assertEquals(
+                 "Foo: bar\nX-Chrome-intent-type: message/rfc822",
+                 IntentHandler.maybeAddAdditionalContentHeaders(intent, contentUrl, "Foo: bar"));
++
++        // Mixed-case MHTML types.
++        intent.setType("Multipart/Related");
++        Assert.assertEquals(
++                "X-Chrome-intent-type: Multipart/Related",
++                IntentHandler.maybeAddAdditionalContentHeaders(intent, contentUrl, null));
++
++        intent.setType("Message/RFC822");
++        Assert.assertEquals(
++                "X-Chrome-intent-type: Message/RFC822",
++                IntentHandler.maybeAddAdditionalContentHeaders(intent, contentUrl, null));
+     }
+ 
+     @Test
+diff --git a/content/browser/android/content_url_loader_factory.cc b/content/browser/android/content_url_loader_factory.cc
+index 5116151a335689629891159c5589254acaa1b86f..30f35e09ccee6d3f5b079501c4acfcdd088bb551 100644
+--- a/content/browser/android/content_url_loader_factory.cc
++++ b/content/browser/android/content_url_loader_factory.cc
+@@ -14,6 +14,7 @@
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
+ #include "base/functional/bind.h"
++#include "base/strings/string_util.h"
+ #include "base/task/sequenced_task_runner.h"
+ #include "base/task/task_traits.h"
+ #include "base/task/thread_pool.h"
+@@ -97,6 +98,8 @@ void GetMimeType(const network::ResourceRequest& request,
+ 
+   if (out_mime_type->empty())
+     *out_mime_type = base::GetContentUriMimeType(content_path);
++
++  *out_mime_type = base::ToLowerASCII(*out_mime_type);
+ }
+ 
+ class ContentURLLoader : public network::mojom::URLLoader {
+diff --git a/content/browser/loader/download_utils_impl.cc b/content/browser/loader/download_utils_impl.cc
+index 8fd76cbe781db5c15bf6e254903f9eec55bb94d9..c8be3896e4b34ac57389e5cf0dfa26ce6c96fe78 100644
+--- a/content/browser/loader/download_utils_impl.cc
++++ b/content/browser/loader/download_utils_impl.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "content/browser/loader/download_utils_impl.h"
+ 
++#include "base/strings/string_util.h"
+ #include "build/build_config.h"
+ #include "content/public/browser/content_browser_client.h"
+ #include "content/public/common/content_client.h"
+@@ -56,7 +57,8 @@ bool MustDownload(BrowserContext* browser_context,
+             browser_context, url, mime_type)) {
+       return true;
+     }
+-    if (mime_type == "multipart/related" || mime_type == "message/rfc822") {
++    if (base::EqualsCaseInsensitiveASCII(mime_type, "multipart/related") ||
++        base::EqualsCaseInsensitiveASCII(mime_type, "message/rfc822")) {
+       // Always allow rendering mhtml for content:// (on Android) and file:///.
+       if (ShouldAlwaysRenderMhtmlAsHtml(url)) {
+         return false;
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index f7ef840fa86b5716ea15738948d5b50d7eb210f1..cceb866ba22edb5d30e88e399de1d606439f14c7 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -972,7 +972,8 @@ ukm::SourceId GetPageUkmSourceId(FrameTreeNode* frame_tree_node) {
+ }
+ 
+ bool IsMhtmlMimeType(const std::string& mime_type) {
+-  return mime_type == "multipart/related" || mime_type == "message/rfc822";
++  return base::EqualsCaseInsensitiveASCII(mime_type, "multipart/related") ||
++         base::EqualsCaseInsensitiveASCII(mime_type, "message/rfc822");
+ }
+ 
+ network::mojom::WebSandboxFlags GetSandboxFlagsInitiator(

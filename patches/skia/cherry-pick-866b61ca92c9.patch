@@ -1,0 +1,399 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Wed, 28 Oct 2026 15:02:01 -0400
+Subject: Reland "Fix heap-buffer-overflow in RunBasedAdditiveBlitter and AAA
+ convex walker"
+
+Original change's description:
+> Revert "Fix heap-buffer-overflow in RunBasedAdditiveBlitter and AAA convex walker"
+>
+> This reverts commit 77134dabf84855d57d5bf9f50ee41b61858a48fe.
+>
+> Reason for revert: Experiment to see if this is blocking the Chrome roll
+>
+> Failure Link: <LINK TO FAILURE>
+>
+> Original change's description:
+> > Fix heap-buffer-overflow in RunBasedAdditiveBlitter and AAA convex walker
+> >
+> > When rasterizing a convex path clipped against the right edge of the clip rect:
+> > 1. SkEdgeBuilder::combineVertical could cancel opposite-winding vertical edges on the right clip boundary when an X-reversed curve segment separated two same-winding vertical segments. Because convex edge walkers (aaa_walk_convex_edges and walk_simple_edges) do not use winding numbers and require both a left and right edge at every scanline, cancelling opposite-winding vertical edges created a Y-gap with zero edges. Guard opposite-winding vertical cancellation with fCanCullToTheRight.
+> > 2. In aaa_walk_convex_edges, when advancing past finished edges across a Y-gap, y was not advanced to std::max({y, leftE->fUpperY, riteE->fUpperY}), causing goY(y) to evaluate the new edge far above its fUpperY and overflow 32-bit signed SkFixed. Advance y (and flush the blitter if y changed) when adopting new edges, and use saturating arithmetic in SkAnalyticEdge::goY.
+> > 3. Clamp left, rite, nextLeft, and nextRite to [leftBound, riteBound] across all trapezoid row stages in aaa_walk_convex_edges.
+> > 4. Guard against non-positive run lengths (len <= 0 / width <= 0) after left/right clipping in RunBasedAdditiveBlitter::blitAntiH and SafeRLEAdditiveBlitter::blitAntiH before calling SkAlphaRuns::add.
+> >
+> > Change-Id: I32e483b7ee4fc8e8fd340977580121f4e2b0c2cf
+> > Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1392839
+> > Auto-Submit: Thomas Smith <thomsmit@google.com>
+> > Commit-Queue: Robert Phillips <robertphillips@google.com>
+> > Reviewed-by: Robert Phillips <robertphillips@google.com>
+>
+> No-Presubmit: true
+> No-Tree-Checks: true
+> No-Try: true
+> Change-Id: Id3ef44f4b3c0683193fd31a2d960aaf6afe899f0
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1406736
+> Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> Auto-Submit: Robert Phillips <robertphillips@google.com>
+> Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+Change-Id: I684970e968ee9c680c5c8c2def0b42bacee86e27
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1408636
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+
+Electron adaptation notes (43-x-y): gn/tests.gni: only RasterizationTests.cpp is added (RawPtrTest.cpp from the upstream context does not exist here). tests/BUILD.bazel filegroups do not exist on this branch and are not carried.
+
+diff --git a/gn/tests.gni b/gn/tests.gni
+index 5a841ea041e8bc333cb08044a008f306c6c1f169..00ef8f7b642b3e46d94620cac398322f51025847 100644
+--- a/gn/tests.gni
++++ b/gn/tests.gni
+@@ -182,6 +182,7 @@ tests_sources = [
+   "$_tests/RandomTest.cpp",
+   "$_tests/RasterPipelineBuilderTest.cpp",
+   "$_tests/RasterPipelineCodeGeneratorTest.cpp",
++  "$_tests/RasterizationTests.cpp",
+   "$_tests/ReadPixelsTest.cpp",
+   "$_tests/RecordDrawTest.cpp",
+   "$_tests/RecordOptsTest.cpp",
+diff --git a/src/core/SkAnalyticEdge.h b/src/core/SkAnalyticEdge.h
+index e9f7407e0b13d07de654750346a0c046eed52042..6984a1585935de7687948147903365d1e5add5d9 100644
+--- a/src/core/SkAnalyticEdge.h
++++ b/src/core/SkAnalyticEdge.h
+@@ -58,12 +58,20 @@ struct SkAnalyticEdge {
+     // Update fX, fY of this edge so fY = y
+     inline void goY(SkFixed y) {
+         if (y == fY + SK_Fixed1) {
++#if defined(SK_LEGACY_ALPHA_RUNS)
+             fX = fX + fDX;
++#else
++            fX = Sk32_sat_add(fX, fDX);
++#endif
+             fY = y;
+         } else if (y != fY) {
+             // Drop lower digits as our alpha only has 8 bits
+             // (fDX and y - fUpperY may be greater than SK_Fixed1)
++#if defined(SK_LEGACY_ALPHA_RUNS)
+             fX = fUpperX + SkFixedMul(fDX, y - fUpperY);
++#else
++            fX = Sk64_pin_to_s32(fUpperX + ((int64_t)fDX * (y - fUpperY) >> 16));
++#endif
+             fY = y;
+         }
+     }
+@@ -72,7 +80,11 @@ struct SkAnalyticEdge {
+         SkASSERT(yShift >= 0 && yShift <= kDefaultAccuracy);
+         SkASSERT(fDX == 0 || y - fY == SK_Fixed1 >> yShift);
+         fY = y;
++#if defined(SK_LEGACY_ALPHA_RUNS)
+         fX += fDX >> yShift;
++#else
++        fX = Sk32_sat_add(fX, fDX >> yShift);
++#endif
+     }
+ 
+     bool setLine(const SkPoint& p0, const SkPoint& p1);
+diff --git a/src/core/SkEdgeBuilder.cpp b/src/core/SkEdgeBuilder.cpp
+index d7bbd24080fa62274ad7791a077740606532d5de..1bb286e3931fe71c500db98e975bf5d93c2d2a58 100644
+--- a/src/core/SkEdgeBuilder.cpp
++++ b/src/core/SkEdgeBuilder.cpp
+@@ -39,6 +39,11 @@ SkEdgeBuilder::Combine SkBasicEdgeBuilder::combineVertical(const SkEdge* edge, S
+         }
+         return kNo_Combine;
+     }
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++    if (!fCanCullToTheRight) {
++        return kNo_Combine;
++    }
++#endif
+     if (edge->fFirstY == last->fFirstY) {
+         if (edge->fLastY == last->fLastY) {
+             return kTotal_Combine;
+@@ -88,6 +93,11 @@ SkEdgeBuilder::Combine SkAnalyticEdgeBuilder::combineVertical(const SkAnalyticEd
+         }
+         return kNo_Combine;
+     }
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++    if (!fCanCullToTheRight) {
++        return kNo_Combine;
++    }
++#endif
+     if (approximately_equal(edge->fUpperY, last->fUpperY)) {
+         if (approximately_equal(edge->fLowerY, last->fLowerY)) {
+             return kTotal_Combine;
+@@ -347,6 +357,9 @@ int SkEdgeBuilder::buildEdges(const SkPathRaw& raw,
+                               const SkIRect* shiftedClip) {
+     // If we're convex, then we need both edges, even if the right edge is past the clip.
+     const bool canCullToTheRight = !raw.isKnownToBeConvex();
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++    fCanCullToTheRight = canCullToTheRight;
++#endif
+ 
+     // We can use our buildPoly() optimization if all the segments are lines.
+     // (Edges are homogeneous and stored contiguously in memory, no need for indirection.)
+diff --git a/src/core/SkEdgeBuilder.h b/src/core/SkEdgeBuilder.h
+index 32e387183045242380e8f6c9142458651e00a2d8..0049c9a721f261b866f4a9b7892274fa43e316e1 100644
+--- a/src/core/SkEdgeBuilder.h
++++ b/src/core/SkEdgeBuilder.h
+@@ -34,6 +34,9 @@ protected:
+     void**              fEdgeList = nullptr;
+     SkTDArray<void*>    fList;
+     SkSTArenaAlloc<512> fAlloc;
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++    bool                fCanCullToTheRight = true;
++#endif
+ 
+     enum Combine {
+         kNo_Combine,
+diff --git a/src/core/SkScan_AAAPath.cpp b/src/core/SkScan_AAAPath.cpp
+index a1e389fa1b7c7dfdd72508a0ebe677e3c6c6aa84..4a838a3a01ddfcd913b08c44af911d52f062e20b 100644
+--- a/src/core/SkScan_AAAPath.cpp
++++ b/src/core/SkScan_AAAPath.cpp
+@@ -321,7 +321,11 @@ protected:
+ 
+     int fOffsetX;
+ 
++#if defined(SK_LEGACY_ALPHA_RUNS)
+     bool check(int x, int width) const { return x >= 0 && x + width <= fWidth; }
++#else
++    bool check(int x, int width) const { return x >= 0 && width >= 0 && x + width <= fWidth; }
++#endif
+ 
+     // extra one to store the zero at the end
+     int getRunsSz() const { return (fWidth + 1 + (fWidth + 2) / 2) * sizeof(int16_t); }
+@@ -410,6 +414,11 @@ void RunBasedAdditiveBlitter::blitAntiH(int x, int y, const SkAlpha antialias[],
+         x = 0;
+     }
+     len = std::min(len, fWidth - x);
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++    if (len <= 0) {
++        return;
++    }
++#endif
+     SkASSERT(check(x, len));
+ 
+     if (x < fOffsetX) {
+@@ -446,6 +455,17 @@ void RunBasedAdditiveBlitter::blitAntiH(int x, int y, int width, SkAlpha alpha)
+     checkY(y);
+     x -= fLeft;
+ 
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++    if (x < 0) {
++        width += x;
++        x = 0;
++    }
++    width = std::min(width, fWidth - x);
++    if (width <= 0) {
++        return;
++    }
++#endif
++
+     if (x < fOffsetX) {
+         fOffsetX = 0;
+     }
+@@ -480,6 +500,11 @@ void SafeRLEAdditiveBlitter::blitAntiH(int x, int y, const SkAlpha antialias[],
+         x = 0;
+     }
+     len = std::min(len, fWidth - x);
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++    if (len <= 0) {
++        return;
++    }
++#endif
+     SkASSERT(check(x, len));
+ 
+     if (x < fOffsetX) {
+@@ -518,6 +543,17 @@ void SafeRLEAdditiveBlitter::blitAntiH(int x, int y, int width, SkAlpha alpha) {
+     checkY(y);
+     x -= fLeft;
+ 
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++    if (x < 0) {
++        width += x;
++        x = 0;
++    }
++    width = std::min(width, fWidth - x);
++    if (width <= 0) {
++        return;
++    }
++#endif
++
+     if (x < fOffsetX) {
+         fOffsetX = 0;
+     }
+@@ -1053,6 +1089,7 @@ static void aaa_walk_convex_edges(SkAnalyticEdge*  prevHead,
+     for (;;) {
+         // We have to check fLowerY first because some edges might be alone (e.g., there's only
+         // a left edge but no right edge in a given y scan line) due to precision limit.
++#if defined(SK_LEGACY_ALPHA_RUNS)
+         while (leftE->fLowerY <= y) {  // Due to smooth jump, we may pass multiple short edges
+             if (!leftE->update(y)) {
+                 if (SkFixedFloorToInt(currE->fUpperY) >= stop_y) {
+@@ -1071,6 +1108,31 @@ static void aaa_walk_convex_edges(SkAnalyticEdge*  prevHead,
+                 currE = (SkAnalyticEdge*)currE->fNext;
+             }
+         }
++#else
++        while (leftE->fLowerY <= y || riteE->fLowerY <= y) {
++            while (leftE->fLowerY <= y) {  // Due to smooth jump, we may pass multiple short edges
++                if (!leftE->update(y)) {
++                    if (SkFixedFloorToInt(currE->fUpperY) >= stop_y) {
++                        goto END_WALK;
++                    }
++                    leftE = currE;
++                    currE = (SkAnalyticEdge*)currE->fNext;
++                }
++            }
++            while (riteE->fLowerY <= y) {  // Due to smooth jump, we may pass multiple short edges
++                if (!riteE->update(y)) {
++                    if (SkFixedFloorToInt(currE->fUpperY) >= stop_y) {
++                        goto END_WALK;
++                    }
++                    riteE = currE;
++                    currE = (SkAnalyticEdge*)currE->fNext;
++                }
++            }
++            SkFixed prevY = y;
++            y = std::max({y, leftE->fUpperY, riteE->fUpperY});
++            blitter->flush_if_y_changed(prevY, y);
++        }
++#endif
+ 
+         SkASSERT(leftE);
+         SkASSERT(riteE);
+@@ -1096,9 +1158,15 @@ static void aaa_walk_convex_edges(SkAnalyticEdge*  prevHead,
+         }
+         local_bot_fixed = std::min(local_bot_fixed, SkIntToFixed(stop_y));
+ 
++#if defined(SK_LEGACY_ALPHA_RUNS)
+         SkFixed left  = std::max(leftBound, leftE->fX);
+         SkFixed dLeft = leftE->fDX;
+         SkFixed rite  = std::min(riteBound, riteE->fX);
++#else
++        SkFixed left  = std::clamp(leftE->fX, leftBound, riteBound);
++        SkFixed dLeft = leftE->fDX;
++        SkFixed rite  = std::clamp(riteE->fX, leftBound, riteBound);
++#endif
+         SkFixed dRite = riteE->fDX;
+         if (0 == (dLeft | dRite)) {
+             int     fullLeft    = SkFixedCeilToInt(left);
+@@ -1196,6 +1264,10 @@ static void aaa_walk_convex_edges(SkAnalyticEdge*  prevHead,
+             const SkFixed kSnapMask  = (-1 ^ (kSnapDigit - 1));
+             left += kSnapHalf;
+             rite += kSnapHalf;  // For fast rounding
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++            const SkFixed minX = leftBound + kSnapHalf;
++            const SkFixed maxX = riteBound + kSnapHalf;
++#endif
+ 
+             // Number of blit_trapezoid_row calls we'll have
+             int count = SkFixedCeilToInt(local_bot_fixed) - SkFixedFloorToInt(y);
+@@ -1215,8 +1287,15 @@ static void aaa_walk_convex_edges(SkAnalyticEdge*  prevHead,
+                     count--;
+                     SkFixed nextY    = SkFixedCeilToFixed(y + 1);
+                     SkFixed dY       = nextY - y;
++#if defined(SK_LEGACY_ALPHA_RUNS)
+                     SkFixed nextLeft = left + SkFixedMul(dLeft, dY);
+                     SkFixed nextRite = rite + SkFixedMul(dRite, dY);
++#else
++                    SkFixed nextLeft =
++                            std::clamp(Sk32_sat_add(left, SkFixedMul(dLeft, dY)), minX, maxX);
++                    SkFixed nextRite =
++                            std::clamp(Sk32_sat_add(rite, SkFixedMul(dRite, dY)), minX, maxX);
++#endif
+                     SkASSERT((left & kSnapMask) >= leftBound && (rite & kSnapMask) <= riteBound &&
+                              (nextLeft & kSnapMask) >= leftBound &&
+                              (nextRite & kSnapMask) <= riteBound);
+@@ -1242,7 +1321,13 @@ static void aaa_walk_convex_edges(SkAnalyticEdge*  prevHead,
+                     if (isUsingMask) {
+                         maskRow = static_cast<MaskAdditiveBlitter*>(blitter)->getRow(y >> 16);
+                     }
++#if defined(SK_LEGACY_ALPHA_RUNS)
+                     SkFixed nextY = y + SK_Fixed1, nextLeft = left + dLeft, nextRite = rite + dRite;
++#else
++                    SkFixed nextY    = y + SK_Fixed1;
++                    SkFixed nextLeft = std::clamp(Sk32_sat_add(left, dLeft), minX, maxX);
++                    SkFixed nextRite = std::clamp(Sk32_sat_add(rite, dRite), minX, maxX);
++#endif
+                     SkASSERT((left & kSnapMask) >= leftBound && (rite & kSnapMask) <= riteBound &&
+                              (nextLeft & kSnapMask) >= leftBound &&
+                              (nextRite & kSnapMask) <= riteBound);
+@@ -1273,8 +1358,13 @@ static void aaa_walk_convex_edges(SkAnalyticEdge*  prevHead,
+             // Smooth jumping to integer y may make the last nextLeft/nextRite out of bound.
+             // Take them back into the bound here.
+             // Note that we substract kSnapHalf later so we have to add them to leftBound/riteBound
++#if defined(SK_LEGACY_ALPHA_RUNS)
+             SkFixed nextLeft = std::max(left + SkFixedMul(dLeft, dY), leftBound + kSnapHalf);
+             SkFixed nextRite = std::min(rite + SkFixedMul(dRite, dY), riteBound + kSnapHalf);
++#else
++            SkFixed nextLeft = std::clamp(Sk32_sat_add(left, SkFixedMul(dLeft, dY)), minX, maxX);
++            SkFixed nextRite = std::clamp(Sk32_sat_add(rite, SkFixedMul(dRite, dY)), minX, maxX);
++#endif
+             SkASSERT((left & kSnapMask) >= leftBound && (rite & kSnapMask) <= riteBound &&
+                      (nextLeft & kSnapMask) >= leftBound && (nextRite & kSnapMask) <= riteBound);
+             blit_trapezoid_row(blitter,
+diff --git a/tests/RasterizationTests.cpp b/tests/RasterizationTests.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..67e9690d9e8ec6b235e31e6dfd9a685b7e7da462
+--- /dev/null
++++ b/tests/RasterizationTests.cpp
+@@ -0,0 +1,59 @@
++/*
++ * Copyright 2026 Google LLC
++ *
++ * Use of this source code is governed by a BSD-style license that can be
++ * found in the LICENSE file.
++ */
++
++#include "include/core/SkCanvas.h"
++#include "include/core/SkColor.h"
++#include "include/core/SkImageInfo.h"
++#include "include/core/SkPaint.h"
++#include "include/core/SkPath.h"
++#include "include/core/SkPathBuilder.h"
++#include "include/core/SkPixmap.h"
++#include "include/core/SkRect.h"
++#include "include/core/SkRefCnt.h"
++#include "include/core/SkSurface.h"
++#include "tests/Test.h"
++
++#include <initializer_list>
++
++#if !defined(SK_LEGACY_ALPHA_RUNS)
++DEF_TEST(path_aaa_walk_convex_vertical_clip, reporter) {
++    SkPath path = SkPathBuilder()
++                          .moveTo(161564.5f, 20.75f)
++                          .lineTo(41564.5f, 40.75f)
++                          .quadTo(20784.5f, 170.625f, 4.5f, 300.5f)
++                          .lineTo(160004.5f, 40.75f)
++                          .close()
++                          .detach();
++    REPORTER_ASSERT(reporter, path.isConvex());
++
++    // Also test a wide oval clipped on the right (similar to the SVG/CSS clip-path PoCs).
++    SkPath oval = SkPath::Oval(SkRect::MakeLTRB(-22120.f, -296.f, 160004.5f, 300.f));
++    REPORTER_ASSERT(reporter, oval.isConvex());
++
++    for (bool aa : {false, true}) {
++        auto surface = SkSurfaces::Raster(SkImageInfo::MakeN32Premul(300, 300));
++        SkCanvas* canvas = surface->getCanvas();
++        canvas->clear(SK_ColorTRANSPARENT);
++
++        SkPaint paint;
++        paint.setAntiAlias(aa);
++        paint.setColor(SK_ColorBLACK);
++        canvas->drawPath(path, paint);
++
++        SkPixmap pm;
++        REPORTER_ASSERT(reporter, surface->peekPixels(&pm));
++        // At y = 299, the quadratic edge enters the clip from the right (x ~ 298.75 at y = 298.75
++        // down to x ~ 124.2 at y = 300), so pixels near the bottom-right corner must be covered.
++        REPORTER_ASSERT(reporter, pm.getColor(295, 299) == SK_ColorBLACK);
++        // Pixels outside the path (top-left) must remain untouched.
++        REPORTER_ASSERT(reporter, pm.getColor(0, 0) == SK_ColorTRANSPARENT);
++
++        canvas->clear(SK_ColorTRANSPARENT);
++        canvas->drawPath(oval, paint);
++    }
++}
++#endif

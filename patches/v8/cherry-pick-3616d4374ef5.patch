@@ -1,0 +1,195 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Wed, 4 Nov 2026 10:01:21 +0100
+Subject: [maglev] Merge dead subgraph loops on early abort
+
+When building a loop with MaglevSubGraphBuilder::BeginLoop, an early
+abort (e.g. SetPossibleMaps failing with an empty NodeType in
+TryReduceArrayPrototypeSort or TryReduceArrayIteratingBuiltin) can
+return before EndLoop is reached. That left the loop header in the graph
+with an unmerged backedge predecessor and null loop phi input.
+
+Make LoopLabel call MergeDeadLoop in its destructor if EndLoop was not
+called.
+
+Fixed: 577305517
+Change-Id: I69678bcd0d13f5ca7fed14e9d3aa4cc32d89d8fa
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8689947
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111589}
+
+Electron adaptation notes (43-x-y): MaglevSubGraphBuilder::LoopLabel on this branch stores a MergePointInterpreterFrameState* (not LoopMergePointInterpreterFrameState*) and EndLoop calls MergeLoop(builder_, *dummy_unit_, variable_frame_, block); the fix (V8_NODISCARD, deleted copy/move, destructor that MergeDeadLoop()s an unbound label, disarming in EndLoop) is applied on top of those signatures. The DeoptFrameScope classes that precede LoopLabel on this branch are untouched.
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index ee79818f7d26772c50db8b08a8ff61666f8437b4..a7ab49a9c0e31badb14c0a0f32ff0061b1516101 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -434,14 +434,31 @@ class V8_NODISCARD MaglevGraphBuilder::EagerDeoptFrameScope
+   MaglevGraphBuilder::LazyDeoptFrameScope* parent_;
+ };
+ 
+-class MaglevGraphBuilder::MaglevSubGraphBuilder::LoopLabel {
++class V8_NODISCARD MaglevGraphBuilder::MaglevSubGraphBuilder::LoopLabel {
+  public:
++  LoopLabel(const LoopLabel&) = delete;
++  LoopLabel(LoopLabel&&) = delete;
++  LoopLabel& operator=(const LoopLabel&) = delete;
++  LoopLabel& operator=(LoopLabel&&) = delete;
++
++  ~LoopLabel() {
++    if (merge_state_ != nullptr) {
++      // An early abort exited the subgraph before EndLoop was reached.
++      DCHECK_NULL(sub_builder_->builder_->current_block());
++      merge_state_->MergeDeadLoop(*sub_builder_->dummy_unit_);
++    }
++  }
++
+  private:
+-  explicit LoopLabel(MergePointInterpreterFrameState* merge_state,
+-                     BasicBlock* loop_header)
+-      : merge_state_(merge_state), loop_header_(loop_header) {}
++  LoopLabel(MaglevSubGraphBuilder* sub_builder,
++            MergePointInterpreterFrameState* merge_state,
++            BasicBlock* loop_header)
++      : sub_builder_(sub_builder),
++        merge_state_(merge_state),
++        loop_header_(loop_header) {}
+ 
+   friend class MaglevSubGraphBuilder;
++  MaglevSubGraphBuilder* sub_builder_;
+   MergePointInterpreterFrameState* merge_state_ = nullptr;
+   BasicBlock* loop_header_;
+ };
+@@ -621,7 +638,7 @@ MaglevGraphBuilder::MaglevSubGraphBuilder::BeginLoop(
+   builder_->ProcessMergePointPredecessors(*loop_state, loop_header_ref);
+   builder_->StartNewBlock(nullptr, loop_state, loop_header_ref);
+ 
+-  return LoopLabel{loop_state, loop_header_ref.block_ptr()};
++  return LoopLabel{this, loop_state, loop_header_ref.block_ptr()};
+ }
+ 
+ template <typename ControlNodeT, typename... Args>
+@@ -678,8 +695,12 @@ void MaglevGraphBuilder::MaglevSubGraphBuilder::MergeDeadInterpreterFrameState(
+ }
+ 
+ void MaglevGraphBuilder::MaglevSubGraphBuilder::EndLoop(LoopLabel* loop_label) {
++  // Ensure EndLoop is called only once and disarm ~LoopLabel().
++  MergePointInterpreterFrameState* merge_state = loop_label->merge_state_;
++  DCHECK_NOT_NULL(merge_state);
++  loop_label->merge_state_ = nullptr;
+   if (builder_->current_block() == nullptr) {
+-    loop_label->merge_state_->MergeDeadLoop(*dummy_unit_);
++    merge_state->MergeDeadLoop(*dummy_unit_);
+     return;
+   }
+ 
+@@ -687,10 +708,9 @@ void MaglevGraphBuilder::MaglevSubGraphBuilder::EndLoop(LoopLabel* loop_label) {
+       builder_->FinishBlockNoAbort<JumpLoop>({}, loop_label->loop_header_);
+   {
+     BorrowParentKnownNodeAspectsAndVOs borrow(this);
+-    loop_label->merge_state_->MergeLoop(builder_, *dummy_unit_, variable_frame_,
+-                                        block);
++    merge_state->MergeLoop(builder_, *dummy_unit_, variable_frame_, block);
+   }
+-  block->set_predecessor_id(loop_label->merge_state_->predecessor_count() - 1);
++  block->set_predecessor_id(merge_state->predecessor_count() - 1);
+ }
+ 
+ void MaglevGraphBuilder::MaglevSubGraphBuilder::Bind(Label* label) {
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index a1209bae63d81952d39e60038be891c7c99ed1b1..fca85bc1f31bc7783e5f10876ca5fd32733ee535 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -291,7 +291,7 @@ class MaglevGraphBuilder {
+     using Label = Base::Label;
+     using LabelForTrackingInterpreterFrameState =
+         Base::LabelForTrackingInterpreterFrameState;
+-    class LoopLabel;
++    class V8_NODISCARD LoopLabel;
+ 
+     MaglevSubGraphBuilder(MaglevGraphBuilder* builder, int variable_count);
+     LoopLabel BeginLoop(std::initializer_list<Variable*> loop_vars);
+diff --git a/test/mjsunit/maglev/regress-577305517.js b/test/mjsunit/maglev/regress-577305517.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..3795d5ca3e1b05b7dd2a3d2456a4d96bf2cd56bc
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-577305517.js
+@@ -0,0 +1,76 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++([].values()).foo = 1;
++const smi_obj = {p: 42};
++
++function nop() {}
++%NeverOptimizeFunction(nop);
++
++// Test early abort right after MaglevSubGraphBuilder::BeginLoop in
++// Array.prototype.sort.
++(function testSort() {
++  const sort = Array.prototype.sort;
++  function cmp(a, b) {
++    return a - b;
++  }
++  function inner(iter, arr, skip) {
++    if (skip) return 0;
++    let v = iter.p;
++    return sort.call(arr, cmp);
++  }
++  function test(arr, skip) {
++    let iter = arr.values();
++    nop();
++    let elem = arr[0];
++    return inner(iter, arr, skip);
++  }
++
++  %PrepareFunctionForOptimization(cmp);
++  %PrepareFunctionForOptimization(inner);
++  %PrepareFunctionForOptimization(test);
++  for (let i = 0; i < 10; ++i) {
++    inner(smi_obj, [2, 1], false);
++    test([2, 1], true);
++  }
++  %OptimizeMaglevOnNextCall(test);
++  assertEquals(0, test([2, 1], true));
++  assertEquals([1, 2], test([2, 1], false));
++})();
++
++// Test the same early abort in Array.prototype.forEach
++// (TryReduceArrayIteratingBuiltin).
++(function testForEach() {
++  const forEach = Array.prototype.forEach;
++  let sum = 0;
++  function cb(x) {
++    sum += x;
++  }
++  function inner(iter, arr, skip) {
++    if (skip) return 0;
++    let v = iter.p;
++    return forEach.call(arr, cb);
++  }
++  function test(arr, skip) {
++    let iter = arr.values();
++    nop();
++    let elem = arr[0];
++    return inner(iter, arr, skip);
++  }
++
++  %PrepareFunctionForOptimization(cb);
++  %PrepareFunctionForOptimization(inner);
++  %PrepareFunctionForOptimization(test);
++  for (let i = 0; i < 10; ++i) {
++    inner(smi_obj, [2, 1], false);
++    test([2, 1], true);
++  }
++  sum = 0;
++  %OptimizeMaglevOnNextCall(test);
++  assertEquals(0, test([2, 1], true));
++  assertEquals(undefined, test([2, 1], false));
++  assertEquals(3, sum);
++})();

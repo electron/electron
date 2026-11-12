@@ -1,0 +1,183 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Sat, 17 Oct 2026 05:57:49 +0200
+Subject: [M150-LTS][scopes] Restore synthetic eval heritage skip bit from
+ inner scope
+
+When Scope::DeserializeScopeChain injects a synthetic EVAL_SCOPE for a
+context-less eval, DeclarationScope::RecalcPrivateNameContextChain has
+already propagated private_name_lookup_skips_outer_class down to its
+first child scope (or to ParseInfo flags if no inner scope allocated a
+ScopeInfo). Reading the skip bit from the weak top-level eval SFI in
+script->infos()[kFunctionLiteralIdTopLevel] loses the bit once GC
+collects the eval's top-level SFI, causing lazy compilation of functions
+inside a class heritage eval to bind private names to the inner class.
+
+Restore private_name_lookup_skips_outer_class on the synthetic
+EVAL_SCOPE from current_scope (and clear it on current_scope) or from
+parse_info->flags(), and ensure DoParseFunction marks the function scope
+with RecordNeedsPrivateNameContextChainRecalc() when the flag is set.
+
+TAG=agy
+CONV=905f9f91-322f-467a-9f81-1f78a365b0d8
+Bug: 572988453, 573962535
+
+R=ishell@chromium.org
+
+Change-Id: I3c10ebc38cf1646eb2f203ee64b92118dd3aa715
+Fixed: 572988453
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8588555
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111023}
+(cherry picked from commit 9ac4be9ae1649358b15481c30c3070a33c748373)
+
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 03fa16cc40611c0df9f52b94484b7805243305f8..33914832675bd109816bda2f678d0d762c238156 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -470,9 +470,14 @@ Scope* Scope::DeserializeScopeChain(
+       eval_scope->set_start_position(position);
+       eval_scope->set_end_position(position);
+       eval_scope->set_eval_position(position);
+-
+       if (current_scope != nullptr) {
++        eval_scope->set_private_name_lookup_skips_outer_class(
++            current_scope->private_name_lookup_skips_outer_class());
++        current_scope->set_private_name_lookup_skips_outer_class(false);
+         eval_scope->AddInnerScope(current_scope);
++      } else if (parse_info != nullptr) {
++        eval_scope->set_private_name_lookup_skips_outer_class(
++            parse_info->flags().private_name_lookup_skips_outer_class());
+       }
+       current_scope = eval_scope;
+       if (innermost_scope == nullptr) innermost_scope = current_scope;
+@@ -1478,7 +1483,12 @@ bool DeclarationScope::AllocateVariables(ParseInfo* info) {
+   }
+ 
+   // Don't allocate variables of preparsed scopes.
+-  if (!was_lazily_parsed()) AllocateVariablesRecursively();
++  if (!was_lazily_parsed()) {
++    AllocateVariablesRecursively();
++    if (needs_private_name_context_chain_recalc()) {
++      RecalcPrivateNameContextChain();
++    }
++  }
+ 
+   return true;
+ }
+@@ -2971,10 +2981,6 @@ void DeclarationScope::AllocateScopeInfos(ParseInfo* parse_info,
+     }
+   }
+ 
+-  if (scope->needs_private_name_context_chain_recalc()) {
+-    scope->RecalcPrivateNameContextChain();
+-  }
+-
+   Tagged<WeakFixedArray> infos = script->infos();
+   std::unordered_map<int, Handle<ScopeInfo>> scope_infos_to_reuse;
+   if (infos->ulength().value() != 0) {
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index 4ab1f1024cb2e3c5aad974c31fc92e280a77978b..120402ef3bb4cfb771d785ed78835e03a1576110 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -1259,6 +1259,9 @@ FunctionLiteral* Parser::DoParseFunction(Isolate* isolate, ParseInfo* info,
+     }
+ 
+     if (has_error()) return nullptr;
++    if (V8_UNLIKELY(flags().private_name_lookup_skips_outer_class())) {
++      result->scope()->RecordNeedsPrivateNameContextChainRecalc();
++    }
+     result->set_requires_instance_members_initializer(
+         flags().requires_instance_members_initializer());
+     result->set_class_scope_has_private_brand(
+diff --git a/test/mjsunit/regress/regress-572988453.js b/test/mjsunit/regress/regress-572988453.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f0dd7bcd2a4315509a2c52bc5fbd9996b8391c43
+--- /dev/null
++++ b/test/mjsunit/regress/regress-572988453.js
+@@ -0,0 +1,34 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --expose-gc --stress-flush-code
++
++class Outer {
++  #a = 'outer_a';
++  #b = 'outer_b';
++
++  static make() {
++    let fn;
++    class Inner extends (() => {
++      try {
++        throw null;
++      } catch (e) {
++        fn = (function(o) {
++          return o.#a + ':' + o.#b;
++        });
++      }
++      return Object;
++    })() {
++      #a() {}
++      #b() {}
++    }
++    return {fn, Inner};
++  }
++}
++
++const {fn, Inner} = Outer.make();
++assertEquals('outer_a:outer_b', fn(new Outer()));
++for (let i = 0; i < 4; i++) gc();
++assertEquals('outer_a:outer_b', fn(new Outer()));
++assertThrows(() => fn(new Inner()), TypeError);
+diff --git a/test/mjsunit/regress/regress-573962535.js b/test/mjsunit/regress/regress-573962535.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..29db88a4be5700df18ce034a363877db63e06db5
+--- /dev/null
++++ b/test/mjsunit/regress/regress-573962535.js
+@@ -0,0 +1,44 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --expose-gc --no-compilation-cache --stress-flush-code
++// Flags: --stress-lazy-source-positions
++
++class B {
++  #x = 'B';
++  static makeHeritageEvalFunction() {
++    let g;
++    let h;
++    let nested;
++    let nestedEval;
++    class C extends (
++      g = eval('0, function(o) { return o.#x; }'),
++      h = eval('(() => (o) => o.#x)()'),
++      nested = eval('(() => { let ctx = 1; return (o) => { () => ctx; return o.#x; }; })()'),
++      nestedEval = eval("eval('0, function(o) { return o.#x; }')"),
++      Object
++    ) {
++      #x = 'C';
++    }
++    return {g, h, nested, nestedEval, C};
++  }
++}
++
++const {g, h, nested, nestedEval, C} = B.makeHeritageEvalFunction();
++
++// Drop the eval's top-level SharedFunctionInfo and flush bytecode before
++// lazy compilation.
++for (let i = 0; i < 4; i++) gc();
++
++assertEquals('B', g(new B()));
++assertThrows(() => g(new C()), TypeError);
++
++assertEquals('B', h(new B()));
++assertThrows(() => h(new C()), TypeError);
++
++assertEquals('B', nested(new B()));
++assertThrows(() => nested(new C()), TypeError);
++
++assertEquals('B', nestedEval(new B()));
++assertThrows(() => nestedEval(new C()), TypeError);

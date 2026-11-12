@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Thu, 29 Oct 2026 02:48:52 +0000
+Subject: [M150-LTS][FSA] Block /run in sensitive path blocklist
+
+Add /run with kBlockAllChildren to the sensitive-directory blocklist on
+Linux, ChromeOS, and Android.
+
+This prevents sites from obtaining read/write directory access to per-
+session runtime directories (such as /run/user/<uid>/dbus-1/services).
+
+Bug: 577376424
+Change-Id: I06035274613fb65514af217c92071c66785e446f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8650678
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1727713}
+(cherry picked from commit 5c478d556a47f7dc4e95677e5bc8a1335c37255c)
+
+Electron adaptation notes (43-x-y): Electron's refactor_expose_file_system_access_blocklist.patch moves the kBlockPaths table from chrome_file_system_access_permission_context.cc into chrome_file_system_access_permission_context.h, so the new /run rule is added to the table in the header (same position, before the ~/.dbus rule). The unittest hunks are test-only and conflicted; they are not carried.
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+index ecaf446100e3b1ca0d3799f6405fc85127d3bd58..bc606b39016361eb7ebc9f42d045a5e5ee49fb31 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -709,6 +709,11 @@ class ChromeFileSystemAccessPermissionContext
+                                   BlockType::kBlockAllChildren),
+         BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
+                                   BlockType::kBlockAllChildren),
++        // And runtime data in /run, including per-session runtime directories
++        // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
++        // crbug.com/577376424.
++        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
++                                  BlockType::kBlockAllChildren),
+         // Block ~/.dbus as well, just in case, although there probably isn't much
+         // a website can do with access to that directory and its contents.
+         BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),

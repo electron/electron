@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 2 Nov 2026 13:01:12 -0500
+Subject: [graphite] Fix miter inflation for wedges
+
+Bug: 580865537
+Fixed: 580865537
+Change-Id: I865734bb619ee2ce023ff61d67a00e1bfc68930e
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1412420
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+Electron adaptation notes (43-x-y): Shape::getInflationRadius() does not exist on this branch; the equivalent effectiveMiterLimit computation lives in ClipStack.cpp (RawElement stroke outset), so the wedge-arc condition is applied there.
+
+diff --git a/src/gpu/graphite/ClipStack.cpp b/src/gpu/graphite/ClipStack.cpp
+index 044cea5f6ab9878ecdc1113384b3ec2e45684c7b..8fd237e99e71ca9d98c4fddafbdf834cef67cdde 100644
+--- a/src/gpu/graphite/ClipStack.cpp
++++ b/src/gpu/graphite/ClipStack.cpp
+@@ -1387,7 +1387,10 @@ bool ClipStack::DrawShape::applyStyle(const SkStrokeRec& style, const Rect& devi
+             const float strokeWidth = std::max(localAAOutset, style.getWidth());
+             // Rectangles, rounded rectangles, and lines do not produce miters so don't count the
+             // pessimistic limit against their draw bounds.
+-            const float effectiveMiterLimit = fShape.isPath() ? style.getMiter() : 1.f;
++            // Arcs that don't fill the center do not form miters (but wedges can).
++            const float effectiveMiterLimit =
++                    (fShape.isPath() || (fShape.isArc() && fShape.arc().isWedge()))
++                            ? style.getMiter() : 1.f;
+             // Rectangles and rounded rectangles don't have caps, so don't count that against their
+             // draw bounds (if we could efficiently know a path was a closed contour, it could
+             // be included here too).

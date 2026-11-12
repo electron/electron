@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Flack <flackr@chromium.org>
+Date: Sun, 8 Nov 2026 22:52:37 -0800
+Subject: [M150-LTS] Copy timelines before servicing animations
+
+If new timelines are constructed while servicing animations,
+inserting into timelines_ would invalidate the iterator.
+
+No wpt test added as there is no known way to trigger timeline
+construction during ServiceAnimations.
+
+NO_IFTTT = This is to cherry-pick the patch to the M150 branch.
+
+(cherry picked from commit 4416173bfc6b153e9420fe05557d3cf2435d0345)
+
+Bug: 567611698
+Change-Id: I84c88b92657f7c95b529d6f4846e2711e4c55e24
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8663813
+Reviewed-by: Kevin Ellis <kevers@chromium.org>
+Commit-Queue: Robert Flack <flackr@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1729291}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8723741
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Reviewed-by: Robert Flack <flackr@chromium.org>
+Reviewed-by: Giovanni Pezzino <giovax@google.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4583}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/core/animation/document_animations.cc b/third_party/blink/renderer/core/animation/document_animations.cc
+index f881945651c90f023213e2837be84492f7074a53..75d0ecf0bb3335f205a7c69b23f46515c23b8c88 100644
+--- a/third_party/blink/renderer/core/animation/document_animations.cc
++++ b/third_party/blink/renderer/core/animation/document_animations.cc
+@@ -66,10 +66,12 @@ namespace {
+ 
+ void UpdateAnimationTiming(
+     Document& document,
+-    HeapHashSet<WeakMember<AnimationTimeline>>& timelines,
++    const HeapHashSet<WeakMember<AnimationTimeline>>& timelines,
+     TimingUpdateReason reason) {
+-  for (auto& timeline : timelines)
++  HeapVector<Member<AnimationTimeline>> timelines_to_service(timelines);
++  for (auto& timeline : timelines_to_service) {
+     timeline->ServiceAnimations(reason);
++  }
+   document.GetWorkletAnimationController().UpdateAnimationTimings(reason);
+ }
+ }  // namespace
+diff --git a/third_party/blink/renderer/core/animation/document_animations_test.cc b/third_party/blink/renderer/core/animation/document_animations_test.cc
+index 061e2fc4c5d1b948024b3d27b9c0ca002c3eaec0..2725d36c19da738bade6592111549cc0a5519cd5 100644
+--- a/third_party/blink/renderer/core/animation/document_animations_test.cc
++++ b/third_party/blink/renderer/core/animation/document_animations_test.cc
+@@ -117,6 +117,31 @@ TEST_F(DocumentAnimationsTest, UpdateAnimationTimingServicesAllTimelines) {
+   document->GetDocumentAnimations().UpdateAnimationTimingForAnimationFrame();
+ }
+ 
++// Regression test for crbug.com/567611698: adding new timelines while servicing
++// animations must not invalidate iteration over the document's timelines set.
++TEST_F(DocumentAnimationsTest,
++       UpdateAnimationTimingAllowsTimelineAdditionDuringService) {
++  MockAnimationTimeline* timeline1 =
++      MakeGarbageCollected<MockAnimationTimeline>(document);
++  MockAnimationTimeline* timeline2 =
++      MakeGarbageCollected<MockAnimationTimeline>(document);
++
++  HeapVector<Member<MockAnimationTimeline>> added_timelines;
++  EXPECT_CALL(*timeline1, ServiceAnimations(_))
++      .WillOnce([&](TimingUpdateReason) {
++        for (int i = 0; i < 64; ++i) {
++          auto* added = MakeGarbageCollected<MockAnimationTimeline>(document);
++          EXPECT_CALL(*added, ServiceAnimations(_)).Times(0);
++          added_timelines.push_back(added);
++        }
++      });
++  EXPECT_CALL(*timeline2, ServiceAnimations(_));
++
++  document->GetDocumentAnimations().UpdateAnimationTimingForAnimationFrame();
++  EXPECT_GE(document->GetDocumentAnimations().GetTimelinesForTesting().size(),
++            66u);
++}
++
+ // Test correctness of DocumentAnimations::UpdateAnimations.
+ TEST_F(DocumentAnimationsTest, UpdateAnimationsUpdatesAllTimelines) {
+   // Test that all timelines are traversed to schedule next service.

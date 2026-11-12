@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Thu, 5 Nov 2026 13:01:06 -0500
+Subject: [graphite] Gracefully handle pathological number of clip draws
+
+* In the DrawListLayer system, clip draws are recorded immediately when updateForClipStack is called. However, these draws were not counted against the maximum draw pass draw limits, leading to scenarios where pipeline data structures could overflow.
+
+* Now, needsFlushBeforeDraw ingests the clipElements, makes a second pass through the clip elements to count the undrawnElements, and uses this to count if drawListLayer is enabled.
+
+* Additionally, if after flushing, the number of remaining clip draws exceeds the drawPass' max number of draws, the draw fails and logs a warning. This guards both sorting and layer systems.
+
+Bug: b/574218401
+Change-Id: Ie8a475b0936be6a958c26f701648ac0447dfd322
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1407316
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Auto-Submit: Thomas Smith <thomsmit@google.com>
+
+Electron adaptation notes (43-x-y): Include paths use this branch's layout (include/private/base/..., src/base/SkTBlockList.h, src/gpu/graphite/Draw*.h). ClipStack::updateClipStateForDraw keeps this branch's return type. The SK_ENABLE_SPARSE_STRIPS block in Device::drawGeometry does not exist on this branch (upstream context only).
+
+diff --git a/src/gpu/graphite/ClipStack.cpp b/src/gpu/graphite/ClipStack.cpp
+index 0868347fa47f407f16a0197b3ff32e70b89c3097..044cea5f6ab9878ecdc1113384b3ec2e45684c7b 100644
+--- a/src/gpu/graphite/ClipStack.cpp
++++ b/src/gpu/graphite/ClipStack.cpp
+@@ -1902,6 +1902,16 @@ Clip ClipStack::visitClipStackForDraw(const Transform& localToDevice,
+     return draw.toClip(geometry, style, nonMSAAClip, cs.shader());
+ }
+ 
++int ClipStack::CountPendingElementDraws(SkSpan<const Element* const> elements) {
++    int undrawnCount = 0;
++    for (const Element* e : elements) {
++        if (!static_cast<const RawElement*>(e)->hasPendingDraw()) {
++            ++undrawnCount;
++        }
++    }
++    return undrawnCount;
++}
++
+ std::pair<CompressedPaintersOrder, Insertion> ClipStack::updateClipStateForDraw(
+         const Clip& clip,
+         const ElementList& effectiveElements,
+diff --git a/src/gpu/graphite/ClipStack.h b/src/gpu/graphite/ClipStack.h
+index 14af9d61d6d2a40814475f5b05418eaac6abdf1e..057e62749ce04aa336319eba4dfd2769c2934bb0 100644
+--- a/src/gpu/graphite/ClipStack.h
++++ b/src/gpu/graphite/ClipStack.h
+@@ -10,6 +10,7 @@
+ 
+ #include "include/core/SkRefCnt.h"
+ #include "include/core/SkShader.h"
++#include "include/core/SkSpan.h"
+ #include "include/private/base/SkAssert.h"
+ #include "include/private/base/SkTArray.h"
+ #include "src/base/SkTBlockList.h"
+@@ -104,6 +105,10 @@ public:
+                                SkStrokeRec* style,
+                                ElementList* outEffectiveElements) const;
+ 
++    // Returns the number of elements in `elements` that have not yet been drawn in the current
++    // pass.
++    static int CountPendingElementDraws(SkSpan<const Element* const> elements);
++
+     // Update the per-clip element state for later rendering using pre-computed clip state data for
+     // a particular draw. The provided 'z' value is the depth value that the draw will use if it's
+     // not clipped out entirely.
+diff --git a/src/gpu/graphite/Device.cpp b/src/gpu/graphite/Device.cpp
+index a7e3a6c610377b261d165f92145418d4d1ba242d..315ccd2dd94ab0e48cb5f728d2d39d337c75ad4e 100644
+--- a/src/gpu/graphite/Device.cpp
++++ b/src/gpu/graphite/Device.cpp
+@@ -1527,10 +1527,7 @@ void Device::drawGeometry(const Transform& localToDevice,
+     // Calculate the clipped bounds of the draw and determine the clip elements that affect the
+     // draw without updating the clip stack.
+     ClipStack::ElementList clipElements;
+-    Clip clip = fClip.visitClipStackForDraw(localToDevice,
+-                                            &geometry,
+-                                            &style,
+-                                            &clipElements);
++    Clip clip = fClip.visitClipStackForDraw(localToDevice, &geometry, &style, &clipElements);
+     if (clip.isClippedOut()) {
+         // Clipped out, so don't record anything.
+         return;
+@@ -1593,8 +1590,26 @@ void Device::drawGeometry(const Transform& localToDevice,
+     DstReadStrategy dstReadStrategy = shading.dstReadRequired() ?
+                                       fDC->dstReadStrategy() : DstReadStrategy::kNoneRequired;
+     // TODO (thomsmit): Adjust this when the draw limit is removed.
+-    const bool needsFlush = this->needsFlushBeforeDraw(numNewRenderSteps, dstReadStrategy);
++    const bool needsFlush =
++            this->needsFlushBeforeDraw(numNewRenderSteps, clipElements, dstReadStrategy);
+     if (needsFlush) {
++        // If no flush was needed, DrawListLayer only had to fit the undrawn clip elements into the
++        // current DrawList because any already-drawn clips were already recorded and accounted for
++        // in `fDC->pendingRenderSteps()` using their actual render step counts.
++        //
++        // However, flushing finalizes the current DrawPass and resets all clip elements in the
++        // stack to undrawn (since the depth attachment does not persist across DrawPasses). In the
++        // new DrawList, all `clipElements.size()` effective clips would have to be re-recorded into
++        // the same pass as the draw. If the draw and all of its effective clips conservatively
++        // require more render steps than a fresh DrawList can hold, skip the draw immediately
++        // without flushing pending work.
++        if (numNewRenderSteps + clipElements.size() * Renderer::kMaxRenderSteps >
++            DrawList::kMaxRenderSteps) {
++            SKIA_LOG_W("Skipping draw: clip stack requires too many render steps for a single "
++                       "pass.");
++            return;
++        }
++
+         if (pathAtlas != nullptr) {
+             // We need to flush work for all devices associated with the current Recorder.
+             // Otherwise we may end up with outstanding draws that depend on past atlas state.
+@@ -1836,7 +1851,7 @@ void Device::drawClipShape(const Transform& localToDevice,
+ 
+     // This call represents one of the deferred clip shapes that's already pessimistically counted
+     // in needsFlushBeforeDraw(), so the DrawContext should have room to add it.
+-    SkASSERT(fDC->pendingRenderSteps() + renderer->numRenderSteps() < DrawList::kMaxRenderSteps);
++    SkASSERT(fDC->pendingRenderSteps() + renderer->numRenderSteps() <= DrawList::kMaxRenderSteps);
+ 
+     // Anti-aliased clipping requires the renderer to use MSAA to modify the depth per sample, so
+     // analytic coverage renderers cannot be used.
+@@ -1875,6 +1890,8 @@ std::pair<DrawParams*, Insertion> Device::drawClipShapeImmediate(const Transform
+         return {nullptr, {}};
+     }
+ 
++    SkASSERT(fDC->pendingRenderSteps() + renderer->numRenderSteps() <= DrawList::kMaxRenderSteps);
++
+     if (localToDevice.type() == Transform::Type::kPerspective) {
+         SkPath devicePath = shape.asPath().makeTransform(localToDevice.matrix().asM33());
+         return fDC->recordDraw(renderer, Transform::Identity(), Geometry(Shape(devicePath)), clip,
+@@ -2165,9 +2182,16 @@ void Device::internalFlush() {
+     fRecorder->priv().atlasProvider()->compact();
+ }
+ 
+-bool Device::needsFlushBeforeDraw(int numNewRenderSteps, DstReadStrategy dstReadStrategy) {
++bool Device::needsFlushBeforeDraw(int numNewRenderSteps,
++                                  SkSpan<const ClipStack::Element* const> clipElements,
++                                  DstReadStrategy dstReadStrategy) {
+     // Must also account for the elements in the clip stack that might need to be recorded.
+-    numNewRenderSteps += fClip.maxDeferredClipDraws() * Renderer::kMaxRenderSteps;
++    // When using DrawListLayer, clip elements are recorded immediately on first use so already-
++    // drawn clip elements are already accounted for in fDC->pendingRenderSteps().
++    int clipElementsToRecord = fRecorder->priv().caps()->useDrawListLayer()
++                                       ? ClipStack::CountPendingElementDraws(clipElements)
++                                       : fClip.maxDeferredClipDraws();
++    numNewRenderSteps += clipElementsToRecord * Renderer::kMaxRenderSteps;
+     bool needsFlush =
+             // Need flush if we don't have room to record into the current list.
+             (DrawList::kMaxRenderSteps - fDC->pendingRenderSteps()) < numNewRenderSteps ||
+diff --git a/src/gpu/graphite/Device.h b/src/gpu/graphite/Device.h
+index a2e631c02a59b721b55f817958fd69a892c9c21b..cb617248b3d9de05dce840bd265f6641c9b34f8e 100644
+--- a/src/gpu/graphite/Device.h
++++ b/src/gpu/graphite/Device.h
+@@ -345,7 +345,9 @@ private:
+                                        const SkStrokeRec&,
+                                        const Rect& drawBounds) const;
+ 
+-    bool needsFlushBeforeDraw(int numNewRenderSteps, DstReadStrategy);
++    bool needsFlushBeforeDraw(int numNewRenderSteps,
++                              SkSpan<const ClipStack::Element* const> clipElements,
++                              DstReadStrategy);
+ 
+     // Flush internal work, such as pending clip draws and atlas uploads, into the Device's DrawTask
+     void internalFlush();
+diff --git a/tests/graphite/DeviceTest.cpp b/tests/graphite/DeviceTest.cpp
+index a5ee270af09a809be61496f99f17a91237b76c37..80b75b3f21cae48b224debca6ce8cde8ea406b1d 100644
+--- a/tests/graphite/DeviceTest.cpp
++++ b/tests/graphite/DeviceTest.cpp
+@@ -9,12 +9,16 @@
+ 
+ #include "include/core/SkBitmap.h"
+ #include "include/core/SkCanvas.h"
++#include "include/core/SkPathBuilder.h"
+ #include "include/core/SkPixmap.h"
+ #include "include/core/SkVertices.h"
+ #include "include/gpu/graphite/Context.h"
+ #include "include/gpu/graphite/Recorder.h"
+ #include "include/gpu/graphite/Surface.h"
+ 
++#include "src/gpu/graphite/Renderer.h"
++#include "src/gpu/graphite/draw/DrawListBase.h"
++
+ namespace skgpu::graphite {
+ 
+ // Tests that vertex transparency will affect draw order.
+@@ -81,4 +85,66 @@ DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS(DeviceTestVertexTransparency, reporter, conte
+             reporter, color == expected, "Wrong color, expected %08x, found %08x", expected, color);
+ }
+ 
++// Tests that large clip stacks flush appropriately when handleable and safely skip draws when a
++// single draw's effective clip elements exceed DrawListBase::kMaxRenderSteps.
++DEF_GRAPHITE_TEST_FOR_ALL_CONTEXTS(DeviceTestClipRenderStepLimits,
++                                   reporter,
++                                   context,
++                                   CtsEnforcement::kNextRelease) {
++    std::unique_ptr<Recorder> recorder = context->makeRecorder();
++    SkImageInfo ii = SkImageInfo::Make(SkISize::Make(64, 64),
++                                       SkColorType::kRGBA_8888_SkColorType,
++                                       SkAlphaType::kPremul_SkAlphaType);
++    sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(recorder.get(), ii);
++    SkCanvas* canvas = surface->getCanvas();
++
++    SkPaint paint;
++    paint.setColor(SK_ColorGREEN);
++
++    auto makeClipTriangle = [](int index) {
++        float shift = index * 0.01f;
++        SkPathBuilder builder;
++        builder.moveTo(shift, 0.f);
++        builder.lineTo(64.f, 8.f + shift * 0.5f);
++        builder.lineTo(8.f, 64.f - shift);
++        builder.close();
++        return builder.detach();
++    };
++
++    // 1. Handleable case: accumulate clips and draws that fit within a single pass individually
++    //    but require flushing across multiple batches when total render steps approach
++    //    DrawListBase::kMaxRenderSteps, while also issuing multiple draws under the same clip stack
++    //    to exercise already-drawn clip tracking (`undrawnClipElements < clipElements.size()`).
++    for (int batch = 0; batch < 10; ++batch) {
++        canvas->save();
++        for (int subBatch = 0; subBatch < 2; ++subBatch) {
++            for (int i = 0; i < 150; ++i) {
++                canvas->clipPath(makeClipTriangle(batch * 1000 + subBatch * 150 + i),
++                                 SkClipOp::kIntersect,
++                                 /*doAntiAlias=*/false);
++            }
++            canvas->drawRect(SkRect::MakeWH(64, 64), paint);
++            canvas->drawRect(SkRect::MakeWH(64, 64), paint);
++        }
++        canvas->restore();
++    }
++
++    // 2. Pathological case: a single draw with more effective clip elements than can fit in one
++    //    DrawList even after flushing. This should be skipped without asserting or overflowing.
++    constexpr int kPathologicalClipCount =
++            DrawListBase::kMaxRenderSteps / Renderer::kMaxRenderSteps + 10;
++    canvas->save();
++    for (int i = 0; i < kPathologicalClipCount; ++i) {
++        canvas->clipPath(makeClipTriangle(20000 + i), SkClipOp::kIntersect, /*doAntiAlias=*/false);
++    }
++    canvas->drawRect(SkRect::MakeWH(64, 64), paint);
++    canvas->restore();
++
++    // 3. Subsequent normal draw after restoring the pathological clip stack should still succeed.
++    canvas->drawRect(SkRect::MakeWH(64, 64), paint);
++
++    std::unique_ptr<Recording> recording = recorder->snap();
++    REPORTER_ASSERT(reporter, recording != nullptr);
++}
++
+ }  // namespace skgpu::graphite

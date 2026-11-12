@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nathan Sanchez <nathanasanchez@google.com>
+Date: Tue, 10 Nov 2026 10:59:23 -0500
+Subject: [M150-LTS][Ganesh] Ensure flush token is advanced at the end of every
+ flush
+
+Ensure the token tracker moves forward once per flush, even if no draws
+were executed, so per-flush token comparisons in GrDrawOpAtlas stay
+accurate across flushes.
+
+Bug: 576944655
+Change-Id: I4983f9cca45be1657557b680d5fdda51045266e8
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1410039
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+(cherry picked from commit 7c733dd2a0bd5673dfd643d4c02b3d5738a7be3d)
+
+Electron adaptation notes (43-x-y): GrOpFlushState::reset() on this branch also resets fDeferredUploadFailed (from an earlier backport); both are kept.
+
+diff --git a/src/gpu/Token.h b/src/gpu/Token.h
+index 1c5319eeec4ccd63f96dd6dde977c11468756e59..be476647f2430dab5097643cc782867511cf1789 100644
+--- a/src/gpu/Token.h
++++ b/src/gpu/Token.h
+@@ -92,6 +92,7 @@ private:
+ 
+     Token issueDrawToken() { return ++fCurrentDrawToken; }
+     Token issueFlushToken() { return ++fCurrentFlushToken; }
++    void catchUpFlushToken() { fCurrentFlushToken = fCurrentDrawToken; }
+ 
+     Token fCurrentDrawToken = Token::InvalidToken();
+     Token fCurrentFlushToken = Token::InvalidToken();
+diff --git a/src/gpu/ganesh/GrOpFlushState.cpp b/src/gpu/ganesh/GrOpFlushState.cpp
+index 9b20ac81b7fd048564b354ad361ac5dec144ff87..abec1d14c65afb9c6ed4a14b77785734d44ce4ee 100644
+--- a/src/gpu/ganesh/GrOpFlushState.cpp
++++ b/src/gpu/ganesh/GrOpFlushState.cpp
+@@ -127,6 +127,12 @@ void GrOpFlushState::reset() {
+     fDraws.reset();
+     fBaseDrawToken = skgpu::Token::InvalidToken();
+     fDeferredUploadFailed = false;
++    // Advance the tokens at the end of every flush, even one that executed no draws, so that work
++    // scheduled during this flush is never considered pending by a later flush.
++    if (fTokenTracker) {
++        fTokenTracker->issueDrawToken();
++        fTokenTracker->catchUpFlushToken();
++    }
+ }
+ 
+ bool GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,

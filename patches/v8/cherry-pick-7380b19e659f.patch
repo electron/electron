@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Mon, 9 Nov 2026 02:17:19 +0000
+Subject: [M150-LTS][arm64] Use MacroAssembler::Add in PopTempStackSlots
+
+Use MacroAssembler::Add instead of raw Assembler::add in
+CodeGenerator::PopTempStackSlots and
+MacroAssembler::LoadStoreMacroComplex to handle immediates that cannot
+be encoded in a single ADD instruction, and promote the range check in
+Assembler::ImmAddSub to a CHECK.
+
+TAG=agy
+
+Fixed: 578656106
+Change-Id: I697c02790e9547a2e1aaf142b4a06ba6de95994c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8713383
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111585}
+(cherry picked from commit e6031048e7e5119f9fa89d569b221c13d16452a0)
+
+diff --git a/src/codegen/arm64/assembler-arm64-inl.h b/src/codegen/arm64/assembler-arm64-inl.h
+index c6d1fa8a020f1211b07d1e047853b70e627bba53..58f380b9bd53c8aa2b0635d1a00e631e205cfa0f 100644
+--- a/src/codegen/arm64/assembler-arm64-inl.h
++++ b/src/codegen/arm64/assembler-arm64-inl.h
+@@ -967,7 +967,7 @@ Instr Assembler::SF(Register rd) {
+ }
+ 
+ Instr Assembler::ImmAddSub(int imm) {
+-  DCHECK(IsImmAddSub(imm));
++  CHECK(IsImmAddSub(imm));
+   if (is_uint12(imm)) {  // No shift required.
+     imm <<= ImmAddSub_offset;
+   } else {
+diff --git a/src/codegen/arm64/assembler-arm64.cc b/src/codegen/arm64/assembler-arm64.cc
+index f3309d324808ef462943781899bb67c15a81cb37..fe9b2311abcdb84a13d632124bcfa0ab805d14ac 100644
+--- a/src/codegen/arm64/assembler-arm64.cc
++++ b/src/codegen/arm64/assembler-arm64.cc
+@@ -4044,7 +4044,7 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
+   DCHECK(!operand.NeedsRelocation(this));
+   if (operand.IsImmediate()) {
+     int64_t immediate = operand.ImmediateValue();
+-    DCHECK(IsImmAddSub(immediate));
++    CHECK(IsImmAddSub(immediate));
+     Instr dest_reg = (S == SetFlags) ? Rd(rd) : RdSP(rd);
+     Emit(SF(rd) | AddSubImmediateFixed | op | Flags(S) |
+          ImmAddSub(static_cast<int>(immediate)) | dest_reg | RnSP(rn));
+diff --git a/src/codegen/arm64/macro-assembler-arm64.cc b/src/codegen/arm64/macro-assembler-arm64.cc
+index c466e81f9c2f976113c9889bfdb27b48f776496e..d8644a8cfbf90dc67a05e920b48327caa6f477c4 100644
+--- a/src/codegen/arm64/macro-assembler-arm64.cc
++++ b/src/codegen/arm64/macro-assembler-arm64.cc
+@@ -979,11 +979,11 @@ void MacroAssembler::LoadStoreMacroComplex(const CPURegister& rt,
+     // Post-index beyond unscaled addressing range.
+     DCHECK(!is_imm_unscaled);
+     LoadStore(rt, MemOperand(addr.base()), op);
+-    add(addr.base(), addr.base(), offset);
++    Add(addr.base(), addr.base(), offset);
+   } else {
+     // Pre-index beyond unscaled addressing range.
+     DCHECK(!is_imm_unscaled && addr.IsPreIndex());
+-    add(addr.base(), addr.base(), offset);
++    Add(addr.base(), addr.base(), offset);
+     LoadStore(rt, MemOperand(addr.base()), op);
+   }
+ }
+diff --git a/src/compiler/backend/arm64/code-generator-arm64.cc b/src/compiler/backend/arm64/code-generator-arm64.cc
+index 4c750a6ead2b7bd1b84a639f809fa4ba64c2cf86..2ac99fb8abaf06a87b3d674e28d28b1b8e0d6dd8 100644
+--- a/src/compiler/backend/arm64/code-generator-arm64.cc
++++ b/src/compiler/backend/arm64/code-generator-arm64.cc
+@@ -4688,7 +4688,7 @@ void CodeGenerator::Pop(InstructionOperand* dest, MachineRepresentation rep) {
+ void CodeGenerator::PopTempStackSlots() {
+   if (temp_slots_ > 0) {
+     frame_access_state()->IncreaseSPDelta(-temp_slots_);
+-    __ add(sp, sp, Operand(temp_slots_ * kSystemPointerSize));
++    __ Add(sp, sp, Operand(temp_slots_ * kSystemPointerSize));
+     temp_slots_ = 0;
+   }
+ }
+diff --git a/test/cctest/compiler/test-code-generator.cc b/test/cctest/compiler/test-code-generator.cc
+index 0994e2462e4a7933c17c05c94dea61ae5afaac3e..ac4b2783a3c4562bce8e30fcace45335e973d1b8 100644
+--- a/test/cctest/compiler/test-code-generator.cc
++++ b/test/cctest/compiler/test-code-generator.cc
+@@ -1123,7 +1123,8 @@ constexpr int TestEnvironment::kDoubleConstantCount;
+ class CodeGeneratorTester {
+  public:
+   explicit CodeGeneratorTester(TestEnvironment* environment,
+-                               int extra_stack_space = 0)
++                               int extra_stack_space = 0,
++                               int scratch_spill_slots = 0)
+       : zone_(environment->main_zone()),
+         info_(base::ArrayVector("test"), environment->main_zone(),
+               CodeKind::FOR_TESTING),
+@@ -1158,6 +1159,11 @@ class CodeGeneratorTester {
+         i++;
+       }
+     }
++    if (scratch_spill_slots > 0) {
++      int end_slot = frame_.AllocateSpillSlot(
++          scratch_spill_slots * kSystemPointerSize, kSimd128Size);
++      first_scratch_spill_slot_ = end_slot - scratch_spill_slots + 1;
++    }
+ 
+     constexpr size_t kMaxUnoptimizedFrameHeight = 0;
+     constexpr size_t kMaxPushedArgumentCount = 0;
+@@ -1333,6 +1339,8 @@ class CodeGeneratorTester {
+     return Finalize();
+   }
+ 
++  int first_scratch_spill_slot() const { return first_scratch_spill_slot_; }
++
+  private:
+   Zone* zone_;
+   OptimizedCompilationInfo info_;
+@@ -1341,6 +1349,7 @@ class CodeGeneratorTester {
+   CodeGenerator* generator_;
+   // List of operands to be moved from stack parameters to spill slots.
+   std::vector<std::pair<LocationOperand, LocationOperand>> spill_slots_;
++  int first_scratch_spill_slot_ = 0;
+ };
+ 
+ // The following fuzz tests will assemble a lot of moves, wrap them in
+@@ -1630,6 +1639,54 @@ TEST(AssembleTailCallGap) {
+   }
+ }
+ 
++TEST(PopTempStackSlots) {
++  if (kSystemPointerSize == 8 && !TestSimd128Moves()) return;
++
++  constexpr MachineRepresentation kTwoSlotRep =
++      kSystemPointerSize == 8 ? MachineRepresentation::kSimd128
++                              : MachineRepresentation::kFloat64;
++
++  TestEnvironment env;
++  Handle<FixedArray> state_in = env.GenerateInitialState();
++
++  // Test both a small number of temporary stack slots and a larger count whose
++  // byte size exceeds 4095 and is not a multiple of 4096.
++  for (int num_cycles : {4, 260}) {
++    const int scratch_slots = num_cycles * 4;
++    CodeGeneratorTester c(&env, 0, scratch_slots);
++    ParallelMove* moves = env.main_zone()->New<ParallelMove>(env.main_zone());
++
++    for (int i = 0; i < num_cycles; i++) {
++      int base = c.first_scratch_spill_slot() + i * 4;
++      AllocatedOperand pair_lo(LocationOperand::STACK_SLOT, kTwoSlotRep,
++                               base + 1);
++      AllocatedOperand pair_hi(LocationOperand::STACK_SLOT, kTwoSlotRep,
++                               base + 3);
++      AllocatedOperand slot_0(LocationOperand::STACK_SLOT,
++                              MachineRepresentation::kTagged, base + 0);
++      AllocatedOperand slot_1(LocationOperand::STACK_SLOT,
++                              MachineRepresentation::kTagged, base + 1);
++      AllocatedOperand slot_2(LocationOperand::STACK_SLOT,
++                              MachineRepresentation::kTagged, base + 2);
++      AllocatedOperand slot_3(LocationOperand::STACK_SLOT,
++                              MachineRepresentation::kTagged, base + 3);
++      moves->AddMove(pair_lo, pair_hi);
++      moves->AddMove(slot_2, slot_0);
++      moves->AddMove(slot_3, slot_1);
++    }
++
++    c.CheckAssembleMoves(moves);
++
++    Handle<Code> test = c.FinalizeForExecuting();
++    if (v8_flags.print_code) {
++      Print(*test);
++    }
++
++    DirectHandle<FixedArray> actual = env.Run(test, state_in);
++    env.CheckState(actual, state_in);
++  }
++}
++
+ #if V8_ENABLE_WEBASSEMBLY
+ namespace {
+ 

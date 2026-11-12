@@ -1,1 +1,3 @@
 update_icu_to_2a51536df.patch
+cherry-pick-f338a36b97f0.patch
+cherry-pick-a0ea93436c52.patch

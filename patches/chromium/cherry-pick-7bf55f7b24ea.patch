@@ -1,0 +1,308 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Thu, 5 Nov 2026 06:49:27 +0000
+Subject: [M150-LTS] Avoid re-entrant slot assignment recalc
+
+SlotAssignment::RecalcAssignment() could be re-entered for the same
+shadow root while it was still walking its slot list, because
+HTMLSlotElement::DidRecalcAssignedNodes() can run script. Bail out of
+the re-entrant call instead. needs_assignment_recalc_ stays set, so the
+pending work is picked up by the next lifecycle update.
+
+The script came from HTMLInputElement::DidChangeIsInCanvasSubtree(),
+which cleared the suggested value even when there was none. That
+rebuilds date fields and moves focus. Skip the clear when there is
+nothing to hide. An active autofill preview can still reach this path,
+so the guard stays until crbug.com/574469802 moves that work out of
+recalc.
+
+Script run from that loop can also rebuild the slot list without
+re-entering recalc, so the loop now iterates a copy and skips slots
+that have left the shadow root. Earlier fixes in this area use the same
+kind of defensive copy.
+
+Fixed: 573335176
+Change-Id: Icd4a8f6405d65292a9527002773542ccbc911d56
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8592884
+Commit-Queue: Leo Lee <leolee@microsoft.com>
+Reviewed-by: Dan Clark <daniec@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1724473}
+(cherry picked from commit 55fb677befdd6cc84489e39ccb58cf8afad55669)
+
+diff --git a/third_party/blink/renderer/core/dom/slot_assignment.cc b/third_party/blink/renderer/core/dom/slot_assignment.cc
+index e03ad9e5e2d9f8a6e7d7b2e57fb3567a1441d010..fc5415e6ab6d11a9d771517ae21f59f63be9bb99 100644
+--- a/third_party/blink/renderer/core/dom/slot_assignment.cc
++++ b/third_party/blink/renderer/core/dom/slot_assignment.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/dom/slot_assignment.h"
+ 
++#include "base/auto_reset.h"
+ #include "third_party/blink/renderer/core/accessibility/ax_object_cache.h"
+ #include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/element_traversal.h"
+@@ -233,6 +234,15 @@ void SlotAssignment::SetNeedsAssignmentRecalc() {
+ void SlotAssignment::RecalcAssignment() {
+   if (!needs_assignment_recalc_)
+     return;
++  // DidRecalcAssignedNodes() below can run script that re-enters here, which
++  // would rebuild slots_ while the outer call is iterating it. Bail out; the
++  // recalc stays pending and runs on the next lifecycle update. This is a
++  // stopgap: script should not run here at all. Remove this or upgrade it to a
++  // CHECK once the remaining sources are gone (crbug.com/574469802).
++  if (in_recalc_assignment_) {
++    return;
++  }
++  base::AutoReset<bool> in_recalc(&in_recalc_assignment_, true);
+   {
+     NestingLevelIncrementer slot_assignment_recalc_depth(
+         owner_->GetDocument().SlotAssignmentRecalcDepth());
+@@ -331,7 +341,14 @@ void SlotAssignment::RecalcAssignment() {
+           .RemoveShadowRootNeedingRecalc(*owner_);
+     }
+ 
+-    for (auto& slot : Slots()) {
++    // Defense in depth: script is not supposed to run here, but
++    // DidRecalcAssignedNodes() still can (crbug.com/574469802) and add or
++    // remove slots. Iterate over a copy and skip slots that left this root.
++    const HeapVector<Member<HTMLSlotElement>> slots = Slots();
++    for (auto& slot : slots) {
++      if (slot->ContainingShadowRoot() != owner_) {
++        continue;
++      }
+       // TODO(crbug.com/1208573): Consider if we really need to be using
+       // IsInLockedSubtreeCrossingFrames, or if
+       // LockedInclusiveAncestorPreventingStyleWithinTreeScope is good enough
+diff --git a/third_party/blink/renderer/core/dom/slot_assignment.h b/third_party/blink/renderer/core/dom/slot_assignment.h
+index 2d1cff9176221cfabb7209efcdf01fc5693ed75b..9ae983305910a253ef1641055e9e5d52c72de1f3 100644
+--- a/third_party/blink/renderer/core/dom/slot_assignment.h
++++ b/third_party/blink/renderer/core/dom/slot_assignment.h
+@@ -73,6 +73,10 @@ class SlotAssignment final : public GarbageCollected<SlotAssignment> {
+   unsigned needs_collect_slots_ : 1;
+   unsigned needs_assignment_recalc_ : 1;
+   unsigned slot_count_ : 30;
++  // True while RecalcAssignment() is running for this shadow root. Used to
++  // bail out of re-entrant recalcs, which would rebuild slots_ while an outer
++  // RecalcAssignment() is still iterating it.
++  bool in_recalc_assignment_ = false;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+index 2769ca90cc92d0ecde0e02fea2519e2979db2fb6..6cda87ed481cca4ca39ec2b008e31b0af5ee9595 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+@@ -15,9 +15,13 @@
+ #include "third_party/abseil-cpp/absl/status/status.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_evaluation_result.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_function.h"
++#include "third_party/blink/renderer/core/dom/focused_element_change_observer.h"
+ #include "third_party/blink/renderer/core/dom/shadow_root.h"
+ #include "third_party/blink/renderer/core/html/canvas/canvas_rendering_context.h"
+ #include "third_party/blink/renderer/core/html/canvas/recording_test_utils.h"
++#include "third_party/blink/renderer/core/html/forms/html_input_element.h"
++#include "third_party/blink/renderer/core/html/html_slot_element.h"
++#include "third_party/blink/renderer/core/page/focus_controller.h"
+ #include "third_party/blink/renderer/core/page/page_animator.h"
+ #include "third_party/blink/renderer/core/paint/paint_layer.h"
+ #include "third_party/blink/renderer/core/script/classic_script.h"
+@@ -600,4 +604,181 @@ TEST_P(HTMLCanvasElementTest, HTMLInCanvasUseCounter) {
+   EXPECT_TRUE(GetDocument().IsUseCounted(WebFeature::kHTMLInCanvas));
+ }
+ 
++// Moving a focused <input type=date> with no suggested value into a canvas
++// subtree must not rebuild its fields, so slot assignment recalc does not move
++// focus or run script.
++TEST_P(HTMLCanvasElementTest, SlotIntoCanvasWithoutSuggestedValueKeepsFocus) {
++  class FocusChangeCounter final : public GarbageCollected<FocusChangeCounter>,
++                                   public FocusedElementChangeObserver {
++   public:
++    void DidChangeFocus() override { ++count_; }
++    int Count() const { return count_; }
++
++   private:
++    int count_ = 0;
++  };
++
++  ScopedCanvasDrawElementForTest forced_canvas_draw_element_feature(true);
++  GetPage().GetFocusController().SetActive(true);
++  GetPage().GetFocusController().SetFocused(true);
++
++  GetDocument().body()->SetHTMLUnsafeWithoutTrustedTypes(
++      "<div id=\"host\">"
++      "<template shadowrootmode=\"open\">"
++      "<slot name=\"outside\"></slot>"
++      "<canvas content=\"drawable\"><slot id=\"inside\" name=\"inside\">"
++      "</slot></canvas>"
++      "</template>"
++      "<input id=\"d\" type=\"date\" value=\"2001-02-03\" slot=\"outside\">"
++      "</div>");
++  UpdateAllLifecyclePhasesForTest();
++
++  auto* host = GetDocument().getElementById(AtomicString("host"));
++  auto* date =
++      To<HTMLInputElement>(GetDocument().getElementById(AtomicString("d")));
++  auto* inside = To<HTMLSlotElement>(
++      host->GetShadowRoot()->getElementById(AtomicString("inside")));
++  date->Focus();
++  Element* focused = GetDocument().FocusedElement();
++  ASSERT_TRUE(focused);
++  EXPECT_FALSE(date->IsInCanvasSubtree());
++  // Make the date field layout stale, as in date.value = date.value;
++  // date.defaultValue = '2003-04-05'. Without this, DateTimeEditElement::
++  // GetLayout() returns early and would not move focus even without the fix.
++  date->SetValue(date->Value());
++  date->setAttribute(html_names::kValueAttr, AtomicString("2003-04-05"));
++
++  auto* counter = MakeGarbageCollected<FocusChangeCounter>();
++  GetDocument().AddFocusedElementChangeObserver(counter);
++
++  date->setAttribute(html_names::kSlotAttr, AtomicString("inside"));
++  inside->AssignedNodes();
++
++  EXPECT_TRUE(date->IsInCanvasSubtree());
++  EXPECT_EQ(0, counter->Count());
++  EXPECT_EQ(focused, GetDocument().FocusedElement());
++}
++
++// Regression test for crbug.com/573335176. Moving a focused <input type=date>
++// that shows an autofill preview into a canvas subtree clears the preview,
++// which rebuilds the fields and makes slot assignment recalc dispatch a blur.
++// A handler
++// that re-enters recalc through assignedNodes() must bail out, so the slot it
++// adds has no assigned nodes until the next recalc. This checks the re-entrancy
++// guard directly instead of relying on the freed memory read crashing.
++TEST_P(HTMLCanvasElementTest, ReentrantSlotRecalcDuringDidRecalcAssignedNodes) {
++#if DCHECK_IS_ON()
++  // Reaching this path trips a separate, pre-existing DCHECK:
++  // RecalcAssignment() holds a FlatTreeTraversalForbiddenScope while the date
++  // field dispatches focus and blur. See crbug.com/574469802.
++  GTEST_SKIP() << "Blocked by a pre-existing DCHECK in Element::Focus()";
++#else
++  class ReentrantRecalcObserver final
++      : public GarbageCollected<ReentrantRecalcObserver>,
++        public FocusedElementChangeObserver {
++   public:
++    explicit ReentrantRecalcObserver(ShadowRoot* shadow_root, Element* spare)
++        : shadow_root_(shadow_root), spare_(spare) {}
++
++    void DidChangeFocus() override {
++      if (invoked_) {
++        return;
++      }
++      invoked_ = true;
++      // Records that the blur really was dispatched from inside
++      // SlotAssignment::RecalcAssignment(), so this test cannot silently stop
++      // covering the re-entrant path.
++      reentrant_ = shadow_root_->GetDocument().IsInSlotAssignmentRecalc();
++
++      // Add a slot and move a light child into it so the assignment is dirty,
++      // then re-enter recalc through assignedNodes(). Without the fix this
++      // nested recalc rebuilds slots_ (freeing the buffer the outer loop is
++      // iterating) and assigns |spare_| to the new slot. With the fix the
++      // re-entrant recalc bails, so the new slot has no assigned nodes yet.
++      auto* extra =
++          MakeGarbageCollected<HTMLSlotElement>(shadow_root_->GetDocument());
++      extra->setAttribute(html_names::kNameAttr, AtomicString("extra"));
++      shadow_root_->AppendChild(extra);
++      spare_->setAttribute(html_names::kSlotAttr, AtomicString("extra"));
++      assigned_in_handler_ = extra->AssignedNodes().size();
++    }
++
++    bool Invoked() const { return invoked_; }
++    bool Reentrant() const { return reentrant_; }
++    wtf_size_t AssignedInHandler() const { return assigned_in_handler_; }
++
++    void Trace(Visitor* visitor) const override {
++      visitor->Trace(shadow_root_);
++      visitor->Trace(spare_);
++      FocusedElementChangeObserver::Trace(visitor);
++    }
++
++   private:
++    Member<ShadowRoot> shadow_root_;
++    Member<Element> spare_;
++    bool invoked_ = false;
++    bool reentrant_ = false;
++    wtf_size_t assigned_in_handler_ = 0;
++  };
++
++  ScopedCanvasDrawElementForTest forced_canvas_draw_element_feature(true);
++  GetDocument().GetSettings()->SetScriptEnabled(true);
++  GetPage().GetFocusController().SetActive(true);
++  GetPage().GetFocusController().SetFocused(true);
++
++  // The <input> starts in the second slot and is moved to the first, so the
++  // re-entrant recalc happens while the outer DidRecalcAssignedNodes() loop is
++  // still running. No filler slots are needed because the test asserts the
++  // re-entrancy behavior rather than relying on a freed-buffer read crashing.
++  GetDocument().body()->SetHTMLUnsafeWithoutTrustedTypes(
++      "<canvas id=\"cv\" content=\"drawable\"><div id=\"host\">"
++      "<template shadowrootmode=\"open\">"
++      "<slot id=\"s1\" name=\"first\"></slot>"
++      "<slot id=\"s2\" name=\"second\"></slot>"
++      "</template>"
++      "<input id=\"d\" type=\"date\" value=\"2001-02-03\" slot=\"second\">"
++      "<span id=\"spare\" slot=\"unslotted\"></span>"
++      "</div></canvas>");
++  UpdateAllLifecyclePhasesForTest();
++
++  auto* host = GetDocument().getElementById(AtomicString("host"));
++  auto* date =
++      To<HTMLInputElement>(GetDocument().getElementById(AtomicString("d")));
++  auto* shadow_root = host->GetShadowRoot();
++  auto* s1 =
++      To<HTMLSlotElement>(shadow_root->getElementById(AtomicString("s1")));
++
++  s1->AssignedNodes();
++  date->SetValue("2001-02-04");
++  // Clear the bit on the <input> only, so that re-slotting it flips the bit
++  // back on and clears the suggested value, which rebuilds the date fields.
++  // The slots themselves stay in the canvas subtree.
++  date->SetIsInCanvasSubtree(false);
++  date->SetSuggestedValue("2005-06-07");
++  ASSERT_FALSE(date->SuggestedValue().IsNull());
++  date->Focus();
++  date->setAttribute(html_names::kValueAttr, AtomicString("2003-04-05"));
++
++  auto* observer = MakeGarbageCollected<ReentrantRecalcObserver>(
++      shadow_root, GetDocument().getElementById(AtomicString("spare")));
++  GetDocument().AddFocusedElementChangeObserver(observer);
++
++  // Moving the <input> to the first slot re-assigns slots and dispatches the
++  // blur from inside the DidRecalcAssignedNodes() loop.
++  date->setAttribute(html_names::kSlotAttr, AtomicString("first"));
++  s1->AssignedNodes();
++
++  ASSERT_TRUE(observer->Invoked());
++  EXPECT_TRUE(observer->Reentrant());
++  EXPECT_TRUE(date->SuggestedValue().IsNull());
++  // The re-entrant recalc must have bailed out instead of rebuilding slots_,
++  // so the slot added during the handler has no assigned nodes yet.
++  EXPECT_EQ(0u, observer->AssignedInHandler());
++
++  // The deferred recalc is picked up here and produces the correct assignment.
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_EQ(date->AssignedSlot(), s1);
++#endif  // DCHECK_IS_ON()
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element.cc b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+index 8ecc9999f00e2fc82f2b29bc60546dad32ab3b3b..f59ffc02deec394df0ca65d56a2753e477195b5d 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+@@ -1332,9 +1332,11 @@ void HTMLInputElement::SetSuggestedValue(const String& value) {
+ void HTMLInputElement::DidChangeIsCanvasOrInCanvasSubtree() {
+   TextControlElement::DidChangeIsCanvasOrInCanvasSubtree();
+   if (RuntimeEnabledFeatures::CanvasDrawElementEnabled(GetExecutionContext()) &&
+-      IsInCanvasSubtree()) {
++      IsInCanvasSubtree() && !SuggestedValue().IsNull()) {
+     // Hide suggested values when under canvas, to prevent leaking this
+-    // information to javascript.
++    // information to javascript. Skip when there is nothing to hide:
++    // SetSuggestedValue() always rebuilds the view, which can move focus and run
++    // script during slot assignment recalc (crbug.com/574469802).
+     SetSuggestedValue(String());
+   }
+ }

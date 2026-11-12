@@ -1,0 +1,172 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Mon, 2 Nov 2026 11:59:43 +0100
+Subject: [M150] [ic] Fix handling of detached globals
+
+Original change's description:
+> [ic] Fix handling of detached globals
+>
+> Invalidate the JSGlobalObject's prototype validity cell in
+> Isolate::DetachGlobal so pre-existing LoadGlobalIC/StoreGlobalIC
+> prototype handlers are invalidated when the global proxy is detached.
+> Also bail out to the slow stub in LoadGlobalIC/StoreGlobalIC when the
+> JSGlobalObject is detached and the lookup is not an own data property,
+> so non-PropertyCell handlers that pass the rebound JSGlobalProxy as
+> receiver without access checks are not installed.
+>
+> Fixed: 575524702
+>
+> TAG=agy
+> CONV=f28304c6-fb7c-4cb4-8c6f-d968fec19b22
+>
+> Change-Id: If760cc33832a203bc4fc929f3677a640e8e04ad4
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8704635
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Auto-Submit: Igor Sheludko <ishell@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Igor Sheludko <ishell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111481}
+
+(cherry picked from commit b884bf81a47c8e8369ca2b41ef86c8465c9d6463)
+
+Bug: 583536443,575524702
+Change-Id: If760cc33832a203bc4fc929f3677a640e8e04ad4
+
+diff --git a/src/d8/d8.cc b/src/d8/d8.cc
+index 56499569a7bc69ec50988e5bfd2a8ead122a937b..3afdfd0397781db34bd40fab59093cda6206b81c 100644
+--- a/src/d8/d8.cc
++++ b/src/d8/d8.cc
+@@ -4532,8 +4532,10 @@ Local<ObjectTemplate> Shell::CreateGlobalTemplate(Isolate* isolate) {
+   global_template->Set(Symbol::GetToStringTag(isolate),
+                        String::NewFromUtf8Literal(isolate, "global"));
+   global_template->Set(isolate, "onerror", v8::Null(isolate));
+-  global_template->Set(isolate, "version",
+-                       FunctionTemplate::New(isolate, Version));
++  Local<FunctionTemplate> version_func_template =
++      FunctionTemplate::New(isolate, Version);
++  version_func_template->SetAcceptAnyReceiver(false);
++  global_template->Set(isolate, "version", version_func_template);
+ 
+   global_template->Set(isolate, "print", FunctionTemplate::New(isolate, Print));
+   global_template->Set(isolate, "printErr",
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index 80e39c7c3260ef9d005f45e5ddba302fb490e18e..35d7b4792a77adb22955d32c7285ce00fe8c5b17 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -7911,6 +7911,9 @@ void Isolate::DetachGlobal(DirectHandle<NativeContext> env) {
+   // Set security token back to default (unique) state making sure that only
+   // accesses from the same native context are allowed.
+   env->set_security_token(env->global_object());
++  // Invalidate LoadGlobalIC/StoreGlobalIC handlers to enforce access checks
++  // for the rewired global proxy from the detached context.
++  JSObject::InvalidatePrototypeValidityCell(env->global_object());
+ }
+ 
+ void Isolate::SetIsLoading(bool is_loading) {
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index 72bffdf7d40267bbee566ada5d4c6f70e9bf57d7..dd214b8e5ed32c8f308a356a66d0fd92ba060fcf 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -1083,6 +1083,18 @@ void LoadIC::UpdateCaches(LookupIterator* lookup) {
+         TraceIC("LoadGlobalIC", lookup->name());
+         return;
+       }
++      // Own DATA properties above are accessed directly via PropertyCell on the
++      // JSGlobalObject and don't involve the JSGlobalProxy. For anything else
++      // (e.g. prototype accessors), the handler would substitute global_proxy
++      // as the receiver without performing an access check on it, and
++      // LookupIterator didn't fail an access check because JSGlobalObject
++      // belongs to the current (detached) native context while its global_proxy
++      // may have been rebound to a new cross-origin context.
++      if (Cast<JSGlobalObject>(*lookup->GetReceiver())->IsDetached()) {
++        SetCache(lookup->GetName(), LoadHandler::LoadSlow(isolate()));
++        TraceIC("LoadGlobalIC", lookup->GetName());
++        return;
++      }
+     }
+     handler = ComputeHandler(lookup);
+     CHECK(lookup->state() == LookupIterator::STRING_LOOKUP_START_OBJECT ||
+@@ -2366,6 +2378,16 @@ void StoreIC::UpdateCaches(LookupIterator* lookup, DirectHandle<Object> value,
+         TraceIC("StoreGlobalIC", lookup->GetName());
+         return;
+       }
++      // See comment in LoadIC::UpdateCaches: own DATA properties above use
++      // PropertyCell on the JSGlobalObject directly, whereas other handlers
++      // (e.g. prototype accessors) substitute global_proxy as the receiver,
++      // which may have been rebound to a cross-origin context upon detachment.
++      if (Cast<JSGlobalObject>(*lookup->GetReceiver())->IsDetached()) {
++        set_slow_stub_reason("detached global object");
++        SetCache(lookup->GetName(), StoreHandler::StoreSlow(isolate()));
++        TraceIC("StoreGlobalIC", lookup->GetName());
++        return;
++      }
+     }
+     handler = ComputeHandler(lookup);
+   } else {
+diff --git a/test/mjsunit/regress/regress-575524702.js b/test/mjsunit/regress/regress-575524702.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a2b5244c57932edcec92954d3e6986dc755c2f5b
+--- /dev/null
++++ b/test/mjsunit/regress/regress-575524702.js
+@@ -0,0 +1,61 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Case 1: StoreGlobalIC / LoadGlobalIC warmed up BEFORE cross-origin
++// Realm.navigate().
++(function TestPreNavigationWarmup() {
++  const r1 = Realm.createAllowCrossRealmAccess();
++
++  const [setLeak, getLeak, RealmTypeError] = Realm.eval(r1, `
++    Object.defineProperty(Object.prototype, "leak", {
++      get: version,
++      set: version,
++      configurable: true
++    });
++    function setLeak(v) {
++      leak = v;
++    }
++    function getLeak() {
++      return leak;
++    }
++    for (let i = 0; i < 10; i++) {
++      setLeak(i);
++      getLeak();
++    }
++    [setLeak, getLeak, TypeError];
++  `);
++
++  Realm.navigate(r1);
++
++  assertThrows(() => setLeak(1), RealmTypeError, "no access");
++  assertThrows(() => getLeak(), RealmTypeError, "no access");
++})();
++
++// Case 2: StoreGlobalIC / LoadGlobalIC warmed up AFTER cross-origin
++// Realm.navigate().
++(function TestPostNavigationWarmup() {
++  const r2 = Realm.createAllowCrossRealmAccess();
++
++  const [setLeak, getLeak, RealmTypeError] = Realm.eval(r2, `
++    Object.defineProperty(Object.prototype, "leak2", {
++      get: version,
++      set: version,
++      configurable: true
++    });
++    function setLeak(v) {
++      leak2 = v;
++    }
++    function getLeak() {
++      return leak2;
++    }
++    [setLeak, getLeak, TypeError];
++  `);
++
++  Realm.navigate(r2);
++
++  for (let i = 0; i < 10; i++) {
++    assertThrows(() => setLeak(i), RealmTypeError, "no access");
++    assertThrows(() => getLeak(), RealmTypeError, "no access");
++  }
++})();

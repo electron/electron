@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Thu, 5 Nov 2026 12:10:18 +0100
+Subject: [maglev] Check that SubgraphBase::Label is bound before destruction
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bug: 580867734, 558240761
+Change-Id: Ia44b9ecec39e7c1e7fbe2056380c91b99077295b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8727407
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111683}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index b2b147b31095b6b58c4399e019aa6e7ff92738f5..fa2bb5c92fdfc8f3378ff1f041c908045adb5ac7 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -715,11 +715,13 @@ void MaglevGraphBuilder::MaglevSubGraphBuilder::EndLoop(LoopLabel* loop_label) {
+ 
+ void MaglevGraphBuilder::MaglevSubGraphBuilder::Bind(Label* label) {
+   DCHECK_NULL(builder_->current_block());
++  CHECK_NOT_NULL(label->variable_merge_state_);
+ 
+   DCHECK_NULL(variable_frame_.known_node_aspects());
+   variable_frame_.CopyFrom(*dummy_unit_, *label->variable_merge_state_);
+ 
+   if (label->ShouldTrackInterpreterFrameState()) {
++    DCHECK_NOT_NULL(label->merge_state_);
+     DCHECK_EQ(*label->future_bind_offset_,
+               builder_->iterator_.current_offset());
+     builder_->current_interpreter_frame_.CopyFrom(*compilation_unit(),
+@@ -746,6 +748,9 @@ void MaglevGraphBuilder::MaglevSubGraphBuilder::Bind(Label* label) {
+   builder_->ProcessMergePointPredecessors(*label->variable_merge_state_,
+                                           label->ref_);
+   builder_->StartNewBlock(nullptr, label->variable_merge_state_, label->ref_);
++
++  label->variable_merge_state_ = nullptr;
++  label->merge_state_ = nullptr;
+ }
+ 
+ template <typename FCond, typename FTrue, typename FFalse>
+diff --git a/src/maglev/maglev-graph-optimizer.cc b/src/maglev/maglev-graph-optimizer.cc
+index 5596ff2cfb464060ddf172f0d0e3f799579cc050..acb62baf924cdb54a75c8d0861e11184f8cadf35 100644
+--- a/src/maglev/maglev-graph-optimizer.cc
++++ b/src/maglev/maglev-graph-optimizer.cc
+@@ -216,8 +216,10 @@ void Subgraph<MaglevGraphOptimizer>::Goto(Label* label) {
+ 
+ void Subgraph<MaglevGraphOptimizer>::Bind(Label* label) {
+   DCHECK_NULL(reducer_->current_block());
+-  DCHECK_NOT_NULL(label->variable_merge_state_);
++  CHECK_NOT_NULL(label->variable_merge_state_);
++  DCHECK_NULL(label->merge_state_);
+   MergePointInterpreterFrameState* merge_state = label->variable_merge_state_;
++  label->variable_merge_state_ = nullptr;
+   DCHECK_EQ(merge_state->predecessors_so_far(), label->predecessor_count_);
+   DCHECK_GT(label->predecessor_count_, 0);
+ 
+diff --git a/src/maglev/maglev-reducer.h b/src/maglev/maglev-reducer.h
+index 748b4cbc34788d3fe8465b610530cadff2e750ca..688f2ddb4f35a526d960f6aa1c5554da1c1dc173 100644
+--- a/src/maglev/maglev-reducer.h
++++ b/src/maglev/maglev-reducer.h
+@@ -1288,6 +1288,21 @@ class SubgraphBase {
+     // NOLINTNEXTLINE(runtime/explicit)
+     Label(const LabelForTrackingInterpreterFrameState& label);
+ 
++    Label(const Label&) = delete;
++    Label(Label&&) = delete;
++    Label& operator=(const Label&) = delete;
++    Label& operator=(Label&&) = delete;
++
++    ~Label() {
++      // If variable_merge_state_ is non-null, at least one finalized BasicBlock
++      // in the graph has a control node whose BasicBlockRef is linked into
++      // `ref_` (in kRefList state) waiting for Bind() to resolve it to a target
++      // BasicBlock*. Destroying an unbound Label with live predecessors would
++      // leave dangling BasicBlockRef* pointers in the graph.
++      CHECK_NULL(variable_merge_state_);
++      DCHECK_NULL(merge_state_);
++    }
++
+     BasicBlockRef* ref() { return &ref_; }
+     int predecessor_count() const { return predecessor_count_; }
+     bool ShouldTrackInterpreterFrameState() const {

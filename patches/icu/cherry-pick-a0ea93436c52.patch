@@ -1,0 +1,369 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Wed, 28 Oct 2026 03:42:21 +0900
+Subject: [icu] Fix usearch CE index overflow and FCD loop
+
+Cherry-pick upstream ICU fixes for ICU-23568 (574e55d50531), ICU-22511
+(75dec2921c73 and d76909c20d46), and ICU-23569 (3fa621389fc7).
+
+Previously, CEIBuffer::get(), CEIBuffer::getPrevious(),
+usearch_search(), and usearch_searchBackwards() tracked
+collation-element indexes in int32_t, causing signed overflow and
+negative ring-buffer subscripts past INT32_MAX processed collation
+elements. In addition, FCDUTF16CollationIterator::previousCodePoint()
+and FCDUIterCollationIterator::previousCodePoint() checked trailing
+combining classes on raw UTF-16 trail surrogates, missing supplementary
+characters with non-zero tccc and entering an infinite backtracking
+loop.
+
+Widen CEIBuffer and search collation-element indexes to int64_t, and
+check paired lead surrogates via CollationFCD::hasTcccBefore() and
+U16_IS_TRAIL() during backward FCD iteration.
+
+Bug: 574025697
+Test: blink_unittests --gtest_filter=TextSearcherIcuTest.*
+Change-Id: I982b1d76cdbc03b2d357d53dba32ce49ef505c4c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/deps/icu/+/8668040
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+
+Electron adaptation notes (43-x-y): upstream's bookkeeping copies of the change under patches/ (patches/collation_fcd_tccc.patch, patches/usearch_ceibuffer_64bit.patch) are left out, as the existing update_icu_to_2a51536df.patch does for patches/charstr.patch, because their blank diff context lines trip Electron's trailing-whitespace patch lint; the source changes themselves (source/i18n/collationfcd.h, uitercollationiterator.cpp, usearch.cpp, utf16collationiterator.cpp) are carried in full. README.chromium still lists them, matching upstream.
+
+diff --git a/README.chromium b/README.chromium
+index 6f8df83c0cbf3aa13391eaa5ff1b6391a8508f4b..1ad19b303270976311c0583c3a54aebf504e15b8 100644
+--- a/README.chromium
++++ b/README.chromium
+@@ -288,3 +288,18 @@ D. Local Modifications
+   - https://unicode-org.atlassian.net/browse/ICU-23539
+   - https://github.com/unicode-org/icu/pull/4264
+   - https://crbug.com/567827593
++
++18. Use 64-bit CE indexes in usearch CEIBuffer.
++  - patches/usearch_ceibuffer_64bit.patch
++  - https://unicode-org.atlassian.net/browse/ICU-23568
++  - https://github.com/unicode-org/icu/pull/4295
++  - https://crbug.com/574025697
++
++19. Fix FCD collation iterator backward tccc check on supplementary characters.
++  - patches/collation_fcd_tccc.patch
++  - https://unicode-org.atlassian.net/browse/ICU-22511
++  - https://unicode-org.atlassian.net/browse/ICU-23569
++  - https://github.com/unicode-org/icu/pull/3914
++  - https://github.com/unicode-org/icu/pull/4214
++  - https://github.com/unicode-org/icu/pull/4296
++  - https://crbug.com/574025697
+diff --git a/source/i18n/collationfcd.h b/source/i18n/collationfcd.h
+index c9ca54234f66ab012d0e6d11dd8c97a7be5b6c99..a5a758fcb44f08bc76243189c0c4aa4d1bb50690 100644
+--- a/source/i18n/collationfcd.h
++++ b/source/i18n/collationfcd.h
+@@ -80,6 +80,24 @@ public:
+             (tcccBits[i] & (static_cast<uint32_t>(1) << (c & 0x1f))) != 0;
+     }
+ 
++    static inline UBool hasTcccBefore(const char16_t *start, const char16_t *pos) {
++        if (pos != start) {
++            char16_t prev = *--pos;
++            if (U16_IS_TRAIL(prev)) {
++                // hasTccc(<low-surrogate>) always returns false.
++                // To test possible trailing ccc, we need to check the high surrogate
++                // (or previous character for unpaired surrogate).
++                if (pos != start) {
++                    char16_t prev2 = *(pos - 1);
++                    return U16_IS_LEAD(prev2) && hasTccc(prev2);
++                }
++            } else {
++                return hasTccc(prev);
++            }
++        }
++        return false;
++    }
++
+     static inline UBool mayHaveLccc(UChar32 c) {
+         // Handles all of Unicode 0..10FFFF.
+         // c can be negative, e.g., U_SENTINEL.
+diff --git a/source/i18n/uitercollationiterator.cpp b/source/i18n/uitercollationiterator.cpp
+index e0d91514852c3e4186852494b9c8585c7c6e753b..17e8184d6fb640b1fdece49e28672664c418818f 100644
+--- a/source/i18n/uitercollationiterator.cpp
++++ b/source/i18n/uitercollationiterator.cpp
+@@ -215,7 +215,8 @@ FCDUIterCollationIterator::previousCodePoint(UErrorCode &errorCode) {
+             if(CollationFCD::hasLccc(c)) {
+                 UChar32 prev = U_SENTINEL;
+                 if(CollationFCD::maybeTibetanCompositeVowel(c) ||
+-                        CollationFCD::hasTccc(prev = iter.previous(&iter))) {
++                        U16_IS_TRAIL(prev = iter.previous(&iter)) ||
++                        CollationFCD::hasTccc(prev)) {
+                     iter.next(&iter);
+                     if(prev >= 0) {
+                         iter.next(&iter);
+diff --git a/source/i18n/usearch.cpp b/source/i18n/usearch.cpp
+index e36d0f2cfe53d9dd191e5d4db45ceb74c79eb3d0..d10c53bc20d1c9cfeed1b4e3f36a2494f967ccc1 100644
+--- a/source/i18n/usearch.cpp
++++ b/source/i18n/usearch.cpp
+@@ -1374,8 +1374,8 @@ struct CEIBuffer {
+     CEI                  defBuf[DEFAULT_CEBUFFER_SIZE];
+     CEI                 *buf;
+     int32_t              bufSize;
+-    int32_t              firstIx;
+-    int32_t              limitIx;
++    int64_t              firstIx;
++    int64_t              limitIx;
+     UCollationElements  *ceIter;
+     UStringSearch       *strSearch;
+ 
+@@ -1383,8 +1383,8 @@ struct CEIBuffer {
+ 
+                CEIBuffer(UStringSearch *ss, UErrorCode *status);
+                ~CEIBuffer();
+-   const CEI   *get(int32_t index);
+-   const CEI   *getPrevious(int32_t index);
++   const CEI   *get(int64_t index);
++   const CEI   *getPrevious(int64_t index);
+ };
+ 
+ 
+@@ -1437,8 +1437,8 @@ CEIBuffer::~CEIBuffer() {
+ //   where n is the largest index to have been fetched by some previous call to this function.
+ //   The CE value will be UCOL__PROCESSED_NULLORDER at end of input.
+ //
+-const CEI *CEIBuffer::get(int32_t index) {
+-    int i = index % bufSize;
++const CEI *CEIBuffer::get(int64_t index) {
++    int i = static_cast<int>(index % bufSize);
+ 
+     if (index>=firstIx && index<limitIx) {
+         // The request was for an entry already in our buffer.
+@@ -1480,8 +1480,8 @@ const CEI *CEIBuffer::get(int32_t index) {
+ //   where n is the largest index to have been fetched by some previous call to this function.
+ //   The CE value will be UCOL__PROCESSED_NULLORDER at end of input.
+ //
+-const CEI *CEIBuffer::getPrevious(int32_t index) {
+-    int i = index % bufSize;
++const CEI *CEIBuffer::getPrevious(int64_t index) {
++    int i = static_cast<int>(index % bufSize);
+ 
+     if (index>=firstIx && index<limitIx) {
+         // The request was for an entry already in our buffer.
+@@ -1792,7 +1792,7 @@ U_CAPI UBool U_EXPORT2 usearch_search(UStringSearch  *strsrch,
+         return false;
+     }
+ 
+-    int32_t    targetIx = 0;
++    int64_t    targetIx = 0;
+     const CEI *targetCEI = nullptr;
+     int32_t    patIx;
+     UBool      found;
+@@ -1823,7 +1823,7 @@ U_CAPI UBool U_EXPORT2 usearch_search(UStringSearch  *strsrch,
+         found = true;
+         //  Inner loop checks for a match beginning at each
+         //  position from the outer loop.
+-        int32_t targetIxOffset = 0;
++        int64_t targetIxOffset = 0;
+         int64_t patCE = 0;
+         // For targetIx > 0, this ceb.get gets a CE that is as far back in the ring buffer
+         // (compared to the last CE fetched for the previous targetIx value) as we need to go
+@@ -2104,7 +2104,7 @@ U_CAPI UBool U_EXPORT2 usearch_searchBackwards(UStringSearch  *strsrch,
+     }
+ 
+     CEIBuffer ceb(strsrch, status);
+-    int32_t    targetIx = 0;
++    int64_t    targetIx = 0;
+ 
+     /*
+      * Pre-load the buffer with the CE's for the grapheme
+@@ -2142,7 +2142,7 @@ U_CAPI UBool U_EXPORT2 usearch_searchBackwards(UStringSearch  *strsrch,
+     int32_t    patIx;
+     UBool      found;
+ 
+-    int32_t  limitIx = targetIx;
++    int64_t  limitIx = targetIx;
+     int32_t  mStart = -1;
+     int32_t  mLimit = -1;
+     int32_t  minLimit;
+@@ -2170,7 +2170,7 @@ U_CAPI UBool U_EXPORT2 usearch_searchBackwards(UStringSearch  *strsrch,
+         }
+         //  Inner loop checks for a match beginning at each
+         //  position from the outer loop.
+-        int32_t targetIxOffset = 0;
++        int64_t targetIxOffset = 0;
+         for (patIx = strsrch->pattern.pcesLength - 1; patIx >= 0; patIx -= 1) {
+             int64_t patCE = strsrch->pattern.pces[patIx];
+ 
+diff --git a/source/i18n/utf16collationiterator.cpp b/source/i18n/utf16collationiterator.cpp
+index 64c454b5d368078d9113e7a91c34ebdde05245fc..0d0e0b10e372b1c859d41220af3490562a45b88b 100644
+--- a/source/i18n/utf16collationiterator.cpp
++++ b/source/i18n/utf16collationiterator.cpp
+@@ -295,15 +295,14 @@ FCDUTF16CollationIterator::previousCodePoint(UErrorCode &errorCode) {
+                 return U_SENTINEL;
+             }
+             c = *--pos;
+-            if(CollationFCD::hasLccc(c)) {
+-                if(CollationFCD::maybeTibetanCompositeVowel(c) ||
+-                        (pos != start && CollationFCD::hasTccc(*(pos - 1)))) {
+-                    ++pos;
+-                    if(!previousSegment(errorCode)) {
+-                        return U_SENTINEL;
+-                    }
+-                    c = *--pos;
++            if (CollationFCD::hasLccc(c) &&
++                    (CollationFCD::maybeTibetanCompositeVowel(c) ||
++                        CollationFCD::hasTcccBefore(start, pos))) {
++                ++pos;
++                if(!previousSegment(errorCode)) {
++                    return U_SENTINEL;
+                 }
++                c = *--pos;
+             }
+             break;
+         } else if(checkDir == 0 && pos != start) {
+diff --git a/source/test/intltest/collationtest.cpp b/source/test/intltest/collationtest.cpp
+index 25da189344ee8724323ba469546e9845d1e651dc..37c8039cea1e4c3ee0fbe9fb8f29ea0926a6eec8 100644
+--- a/source/test/intltest/collationtest.cpp
++++ b/source/test/intltest/collationtest.cpp
+@@ -90,6 +90,7 @@ public:
+     void TestCollatorPredicateTypes();
+     void TestUCollatorPredicateTypes();
+     void TestCollatorMap();
++    void TestColItrInfiniteLoop22511();
+ 
+ private:
+     void checkFCD(const char *name, CollationIterator &ci, CodePointIterator &cpi);
+@@ -168,6 +169,7 @@ void CollationTest::runIndexedTest(int32_t index, UBool exec, const char *&name,
+     TESTCASE_AUTO(TestCollatorPredicateTypes);
+     TESTCASE_AUTO(TestUCollatorPredicateTypes);
+     TESTCASE_AUTO(TestCollatorMap);
++    TESTCASE_AUTO(TestColItrInfiniteLoop22511);
+     TESTCASE_AUTO_END;
+ }
+ 
+@@ -1911,6 +1913,7 @@ void CollationTest::TestHang22414() {
+         errorCode.reset();
+     }
+ }
++
+ void CollationTest::TestBuilderContextsOverflow() {
+     IcuTestErrorCode errorCode(*this, "TestBuilderContextsOverflow");
+     // ICU-20715: Bad memory access in what looks like a bogus CharsTrie after
+@@ -2122,4 +2125,58 @@ void CollationTest::TestCollatorMap() {
+     assertEquals(R"(u16m["a"])", 2, um[u"a"]);
+ }
+ 
++void CollationTest::TestColItrInfiniteLoop22511() {
++    IcuTestErrorCode errorCode(*this, "TestColItrInfiniteLoop22511");
++    const char16_t* testCases[][2] = {
++        {
++            u"\u0100\u032a\u01e0\U00011100\u031c",
++            u"A\u0304\u032a\u01e0\U00011100\u031c"  // Equivalent to above, but U+0100 is decomposed to U+0041 U+0304.
++        },
++        {
++            u"\u0100\u032a\u01e0\xdd00\u031c",      // High surrogate 0xd804 is dropped
++            u"A\u0304\u032a\u01e0\xdd00\u031c"      // Equivalent to above, but U+0100 is decomposed
++        },
++        {
++            u"\u0100\u032a\u01e0\xd804\u031c",      // Low surrogate 0xdd00 is dropped
++            u"A\u0304\u032a\u01e0\xd804\u031c"      // Equivalent to above, but U+0100 is decomposed
++        },
++        {
++            u"\U000105D2\u0F82\U0001D16D\u0344",
++            u"\U000105D2\u0F82\U0001D16D\u0308\u0301"
++        },
++        {nullptr, nullptr}
++    };
++
++    StringPiece sp1 = u8"\u0100\u032a\u01e0\U00011100\u031c";   // UTF-8 equivalent to str1a
++    StringPiece sp2 = u8"A\u0304\u032a\u01e0\U00011100\u031c";  // UTF-8 equivalent to str1b
++
++    int32_t num_locales = 0;
++    const icu::Locale* locales = icu::Locale::getAvailableLocales(num_locales);
++    for (int32_t i = 0; i < num_locales; i++) {
++        errorCode.reset();
++        icu::Locale l = locales[i];
++        LocalPointer<Collator> coll(Collator::createInstance(l, errorCode));
++        errorCode.assertSuccess();
++        coll->setStrength(icu::Collator::IDENTICAL);
++        for (int j = 0; testCases[j][0] != nullptr; j++) {
++            UCollationResult result = coll->compare(testCases[j][0], -1, testCases[j][1], -1, errorCode);
++            errorCode.assertSuccess();
++            assertEquals(UnicodeString("Locale ") + l.getName() + "UTF16 case:" + j, UCOL_EQUAL, result);
++
++            UCharIterator iter1, iter2;
++            uiter_setString(&iter1, testCases[j][0], -1);
++            uiter_setString(&iter2, testCases[j][1], -1);
++            result = coll->compare(iter1, iter2, errorCode);
++            errorCode.assertSuccess();
++            assertEquals(UnicodeString("Locale ") + l.getName() + "UCharIterator case:" + j, UCOL_EQUAL, result);
++        }
++
++        // Also test the UTF-8 versions
++        UCollationResult result = coll->compareUTF8(sp1, sp2, errorCode);
++        errorCode.assertSuccess();
++        assertEquals(UnicodeString("Locale ") + l.getName() + " UTF-8", UCOL_EQUAL, result);
++    }
++}
++
++
+ #endif  // !UCONFIG_NO_COLLATION
+diff --git a/source/test/intltest/srchtest.cpp b/source/test/intltest/srchtest.cpp
+index 81bbf861a97ac2874913cf0b41f1829d4336f651..dc13af75ccd651712cf4ce3cef918afb59865390 100644
+--- a/source/test/intltest/srchtest.cpp
++++ b/source/test/intltest/srchtest.cpp
+@@ -171,6 +171,7 @@ void StringSearchTest::runIndexedTest(int32_t index, UBool exec,
+         CASE(35, TestCoverage)
+         CASE(36, TestDiacriticMatch)
+         CASE(37, TestBug22775)
++        CASE(38, TestCEIndexOverflow)
+         default: name = ""; break;
+     }
+ #else
+@@ -2473,6 +2474,41 @@ void StringSearchTest::TestBug22775() {
+     stringSearch.next(errorCode);
+ }
+ 
++void StringSearchTest::TestCEIndexOverflow() {
++    IcuTestErrorCode errorCode(*this, "TestCEIndexOverflow()");
++    LocalPointer<RuleBasedCollator> collator(
++        dynamic_cast<RuleBasedCollator *>(
++            Collator::createInstance(Locale("en@collation=search"), errorCode)),
++        errorCode);
++    if (errorCode.errDataIfFailureAndReset()) { return; }
++    collator->setAttribute(UCOL_STRENGTH, UCOL_PRIMARY, errorCode);
++    collator->setAttribute(UCOL_ALTERNATE_HANDLING, UCOL_NON_IGNORABLE, errorCode);
++
++    // U+FDFA expands to 18 nonzero primary CEs; 119,304,647 * 18 == 2,147,483,646 (INT32_MAX - 1).
++    int32_t repetitions = quick ? 1000 : 119304647;
++    UnicodeString pattern(65, u'A', 65);
++    {
++        UnicodeString text(repetitions + pattern.length() + 1, 0xfdfa, repetitions);
++        text.append(pattern).append(u'!');
++        if (!assertFalse("forward text allocation", text.isBogus())) { return; }
++        StringSearch search(pattern, text, collator.getAlias(), nullptr, errorCode);
++        if (errorCode.errIfFailureAndReset()) { return; }
++        assertEquals("forward match", repetitions, search.first(errorCode));
++        assertEquals("forward match length", pattern.length(), search.getMatchedLength());
++        if (errorCode.errIfFailureAndReset()) { return; }
++    }
++    {
++        UnicodeString shortPattern(u"XYZ");
++        UnicodeString text(repetitions + shortPattern.length(), 0xfdfa, repetitions);
++        text.insert(0, shortPattern);
++        if (!assertFalse("backward text allocation", text.isBogus())) { return; }
++        StringSearch search(shortPattern, text, collator.getAlias(), nullptr, errorCode);
++        if (errorCode.errIfFailureAndReset()) { return; }
++        assertEquals("backward match", 0, search.last(errorCode));
++        assertEquals("backward match length", shortPattern.length(), search.getMatchedLength());
++    }
++}
++
+ #endif /* !UCONFIG_NO_BREAK_ITERATION */
+ 
+ #endif /* #if !UCONFIG_NO_COLLATION */
+diff --git a/source/test/intltest/srchtest.h b/source/test/intltest/srchtest.h
+index 006ff97c1cab75a8207bb96d86a5ad4a9435c2e0..1b3548242d58f9579bbf9f6b8eb0025b8615ddd4 100644
+--- a/source/test/intltest/srchtest.h
++++ b/source/test/intltest/srchtest.h
+@@ -92,6 +92,7 @@ private:
+     void TestCoverage();
+     void TestDiacriticMatch();
+     void TestBug22775();
++    void TestCEIndexOverflow();
+ #endif
+ };
+ 

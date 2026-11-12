@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Thu, 5 Nov 2026 05:12:13 -0800
+Subject: HttpCache::Transaction: avoid stale bits in response_ after restarts
+
+Bug: 578664961
+Change-Id: I542de2e43a3fc053661526dec8026b755d30f050
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8716870
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1736291}
+
+Electron adaptation notes (43-x-y): net/http/http_cache_unittest.cc is test-only and conflicted; it is not carried.
+
+diff --git a/net/http/http_cache_transaction.cc b/net/http/http_cache_transaction.cc
+index 94d460fc777f2449e453e508963da2aab11cc9e6..f9e41d9f071d9a2ba5d366104b365734d0ec91fe 100644
+--- a/net/http/http_cache_transaction.cc
++++ b/net/http/http_cache_transaction.cc
+@@ -1659,9 +1659,18 @@ int HttpCache::Transaction::DoCacheReadResponseComplete(int result) {
+   // Record the time immediately before the cached response is parsed.
+   read_headers_since_ = TimeTicks::Now();
+ 
+-  if (result != cache_buf_->size() ||
+-      !HttpCache::ParseResponseInfo(cache_buf_->span(), &response_,
+-                                    &truncated_)) {
++  bool cache_ok = (result == cache_buf_->size());
++
++  if (cache_ok) {
++    // Make sure we clear `response_` in case it has left over data;
++    // ParseResponseInfo expects a fresh object.
++    // See crbug.com/578664961
++    response_ = HttpResponseInfo();
++    cache_ok = HttpCache::ParseResponseInfo(cache_buf_->span(), &response_,
++                                            &truncated_);
++  }
++
++  if (!cache_ok) {
+     return OnCacheReadError(result, true);
+   }
+ 

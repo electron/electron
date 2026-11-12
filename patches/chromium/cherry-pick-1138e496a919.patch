@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Fri, 6 Nov 2026 20:15:57 -0800
+Subject: [FSA] Match sensitive-path blocklist rules case-insensitively
+
+This CL updates ChromeFileSystemAccessPermissionContext to evaluate
+sensitive-path blocklist rules and home directory dotfile checks
+case-insensitively.
+
+Previously, while suffix blocklist rules compared path components
+case-insensitively, regular blocklist rules and the home directory
+dotfile check relied on case-sensitive path comparisons. When saving a
+new file that does not yet exist on disk, path normalization cannot
+canonicalize the on-disk casing, allowing case-variant paths such as
+_VIMRC or VIMFILES to bypass sensitive-path checks on case-insensitive
+filesystems.
+
+Fixed: 581785712
+Change-Id: I7ea8209d12234f9b7795dd723df8385ff38ccf88
+
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8739261
+Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1738334}
+
+Electron adaptation notes (43-x-y): This branch has neither the home dot-file blocking (GetBlockedHomeDotPath / kFileSystemAccessBlockHomeDotFiles) nor the 3-argument IsPathOrDescendantIgnoreCase helper, so only the ShouldBlockAccessToPath part of the fix is ported: the component-wise IsPathOrDescendantIgnoreCase / IsParentIgnoreCase helpers are added and the regular block rules and nearest-ancestor tracking compare path components case-insensitively. The unittest hunks are test-only and conflicted; they are not carried. The same change is ported into Electron's own copy of ShouldBlockAccessToPath in shell/browser/file_system_access/file_system_access_permission_context.cc in a separate commit.
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+index a15241af20d598cd1f73fb5477f5b2f56c2ffef8..06c5acfc2120deecc29f2310282bc5c3f49708cc 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -296,6 +296,30 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+ // NOTE IF THERE IS A CONFLICT ABOVE, you will need to copy the changes in the
+ // removed block over to chrome_file_system_access_permission_context.h.
+ 
++// Returns true if `child_components` is the same as or a descendant of
++// `parent_components`, ignoring case differences.
++bool IsPathOrDescendantIgnoreCase(
++    const std::vector<base::FilePath::StringType>& parent_components,
++    const std::vector<base::FilePath::StringType>& child_components) {
++  if (parent_components.empty() ||
++      parent_components.size() > child_components.size()) {
++    return false;
++  }
++
++  return std::equal(parent_components.begin(), parent_components.end(),
++                    child_components.begin(),
++                    base::FilePath::CompareEqualIgnoreCase);
++}
++
++// Returns true if `parent_components` is a strict parent of
++// `child_components`, ignoring case differences.
++bool IsParentIgnoreCase(
++    const std::vector<base::FilePath::StringType>& parent_components,
++    const std::vector<base::FilePath::StringType>& child_components) {
++  return parent_components.size() < child_components.size() &&
++         IsPathOrDescendantIgnoreCase(parent_components, child_components);
++}
++
+ // Checks if `path` should be blocked by the `rules`.
+ // The BlockType of the nearest ancestor of a path to check is what
+ // ultimately determines if a path is blocked or not. If a blocked path is a
+@@ -331,7 +355,10 @@ bool ShouldBlockAccessToPath(
+   }
+ #endif
+ 
++  const std::vector<base::FilePath::StringType> path_components =
++      path.GetComponents();
+   base::FilePath nearest_ancestor;
++  std::vector<base::FilePath::StringType> nearest_ancestor_components;
+   BlockType nearest_ancestor_block_type = BlockType::kDontBlockChildren;
+   auto should_block_with_rule = [&](const base::FilePath& block_path,
+                                     BlockType block_type) -> bool {
+@@ -340,15 +367,19 @@ bool ShouldBlockAccessToPath(
+       return false;
+     }
+ 
+-    if (path == block_path || path.IsParent(block_path)) {
++    std::vector<base::FilePath::StringType> block_components =
++        block_path.GetComponents();
++    if (IsPathOrDescendantIgnoreCase(path_components, block_components)) {
+       LOG(ERROR) << "Blocking access to " << path
+                  << " because it is a parent of " << block_path;
+       return true;
+     }
+ 
+-    if (block_path.IsParent(path) &&
+-        (nearest_ancestor.empty() || nearest_ancestor.IsParent(block_path))) {
++    if (IsParentIgnoreCase(block_components, path_components) &&
++        (nearest_ancestor.empty() ||
++         IsParentIgnoreCase(nearest_ancestor_components, block_components))) {
+       nearest_ancestor = block_path;
++      nearest_ancestor_components = std::move(block_components);
+       nearest_ancestor_block_type = block_type;
+     }
+     return false;
+@@ -371,9 +402,6 @@ bool ShouldBlockAccessToPath(
+     }
+   }
+ 
+-  std::vector<base::FilePath::StringType> path_components =
+-      path.GetComponents();
+-
+   // Checks if the path components contain the components of the suffix rule.
+   // For example, if the rule is `.git/hooks`, it will block paths like
+   // `/foo/bar/.git/hooks`. The `std::search` identifies the matching subrange

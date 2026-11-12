@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrea Orru <andreaorru@chromium.org>
+Date: Mon, 2 Nov 2026 14:18:27 -0800
+Subject: [Extensions] Avoid copy fallback in final install move
+
+Extension installs are staged in a temporary directory inside the
+profile and then moved into place with base::Move(). If the rename
+fails, base::Move() falls back to a recursive copy that follows
+symlinks, so a process that can write to the profile could make the
+browser copy files from outside the profile into it.
+
+The staging directory is on the same file system as the install
+directory by construction, so the copy fallback is never needed for this
+move. On POSIX, use base::ReplaceFile() (a plain rename()) instead and
+fail the install if it fails. Windows keeps base::Move(), as
+base::ReplaceFile() is meant for files there.
+
+Fixed: 578693038
+Change-Id: Ifd285b3cce60e9277ce726d965ee5b25758d19f2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8695656
+Reviewed-by: Justin Lulejian <jlulejian@chromium.org>
+Commit-Queue: Andrea Orru <andreaorru@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1733309}
+
+diff --git a/extensions/common/file_util.cc b/extensions/common/file_util.cc
+index b130a6ef0d3ddc76e7329bc1ad82948ce149ad05..b7cd76028bba28a72540befd60cf139239e0d57f 100644
+--- a/extensions/common/file_util.cc
++++ b/extensions/common/file_util.cc
+@@ -196,10 +196,22 @@ base::FilePath InstallExtension(const base::FilePath& unpacked_source_dir,
+   // may still be lost.
+   FlushFilesInDir(crx_temp_source, FlushOneOrAllFiles::kAllFiles);
+ 
+-  // The target version_dir does not exists yet, so base::Move() is using
+-  // rename() on POSIX systems. It is atomic in the sense that it will
+-  // either complete successfully or in the event of data loss be reverted.
+-  if (!base::Move(crx_temp_source, version_dir)) {
++  // `crx_temp_source` is on the same file system as `version_dir` (see
++  // GetInstallTempDir()) and `version_dir` does not exist yet, so a plain
++  // rename() is enough. It is atomic in the sense that it will either complete
++  // successfully or in the event of data loss be reverted.
++  //
++  // On POSIX, don't use base::Move(). If rename() fails, it falls back to a
++  // base::CopyDirectory() that follows symlinks. The staging directory may be
++  // writable by a less privileged process (e.g. the network service on macOS),
++  // so that fallback could copy an arbitrary directory into the profile.
++#if BUILDFLAG(IS_POSIX)
++  const bool moved =
++      base::ReplaceFile(crx_temp_source, version_dir, /*error=*/nullptr);
++#else
++  const bool moved = base::Move(crx_temp_source, version_dir);
++#endif
++  if (!moved) {
+     LOG(ERROR) << "Installing extension from : " << crx_temp_source.value()
+                << " into : " << version_dir.value() << " failed.";
+     return base::FilePath();
+diff --git a/extensions/common/file_util_unittest.cc b/extensions/common/file_util_unittest.cc
+index 2a14c1441167e6d6e6186bbbddd0995274347788..e72f7cf5af36c4fef3e42838fadf02d710949240 100644
+--- a/extensions/common/file_util_unittest.cc
++++ b/extensions/common/file_util_unittest.cc
+@@ -401,6 +401,35 @@ TEST_F(FileUtilTest, InstallExtensionRejectsSymlinkTempDir) {
+   EXPECT_TRUE(base::DirectoryExists(src));
+ }
+ 
++#if BUILDFLAG(IS_POSIX)
++// Verifies that on POSIX, InstallExtension does not fall back to
++// base::CopyDirectory when the final rename() into `version_dir` fails.
++TEST_F(FileUtilTest, InstallExtensionDoesNotFallBackToCopyOnPosix) {
++  base::ScopedTempDir temp;
++  ASSERT_TRUE(temp.CreateUniqueTempDir());
++
++  base::FilePath profile_dir = temp.GetPath().AppendASCII("Default");
++  base::FilePath extensions_dir = profile_dir.AppendASCII("TestExtensions");
++  base::FilePath extension_dir = extensions_dir.AppendASCII(kExtensionId);
++  ASSERT_TRUE(base::CreateDirectory(extension_dir));
++
++  // A dangling symlink at `1.0_0` is picked as `version_dir` (base::PathExists
++  // follows symlinks) and makes the final rename() fail.
++  base::FilePath dangling_version_dir = extension_dir.AppendASCII("1.0_0");
++  ASSERT_TRUE(base::CreateSymbolicLink(temp.GetPath().AppendASCII("missing"),
++                                       dangling_version_dir));
++
++  base::FilePath src = temp.GetPath().AppendASCII("src");
++  ASSERT_TRUE(base::CreateDirectory(src));
++
++  base::FilePath installed_path =
++      file_util::InstallExtension(src, kExtensionId, "1.0", extensions_dir);
++  EXPECT_TRUE(installed_path.empty());
++  EXPECT_TRUE(base::IsLink(dangling_version_dir));
++  EXPECT_FALSE(base::DirectoryExists(dangling_version_dir));
++}
++#endif  // BUILDFLAG(IS_POSIX)
++
+ TEST_F(FileUtilTest, LoadExtensionWithMetadataFolder) {
+   RunUnderscoreDirectoriesTest({"_metadata"});
+ }

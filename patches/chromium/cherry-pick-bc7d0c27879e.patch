@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Wed, 28 Oct 2026 09:52:46 -0700
+Subject: Add legacy alpha runs flag
+
+Bug: chromium:569286603
+Bug: chromium:577625521
+Change-Id: Ic2d8907885e0ec723b7b1d72d1273a9f98b12899
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8671658
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Cr-Commit-Position: refs/heads/main@{#1729248}
+
+Electron adaptation notes (43-x-y): skia/config/SkUserConfig.h on this branch lacks the neighbouring SK_USE_SAFE_INSET_FOR_TEXTURE_SAMPLING / SK_GRAPHITE_* / SK_LEGACY_LINEAR_INSET defines; only the SK_LEGACY_ALPHA_RUNS define is added.
+
+diff --git a/skia/config/SkUserConfig.h b/skia/config/SkUserConfig.h
+index 5a76d82c70395120c261b8fd3a22f983df57552b..819d49f5bfb4187c37d88f0c6814a0e04ea0e990 100644
+--- a/skia/config/SkUserConfig.h
++++ b/skia/config/SkUserConfig.h
+@@ -143,6 +143,8 @@ SK_API void SkLog_FileLine(const char* file,
+ 
+ #define SK_SUPPORT_LEGACY_RRECT_TRANSFORM
+ 
++#define SK_LEGACY_ALPHA_RUNS
++
+ ///////////////////////// Imported from BUILD.gn and skia_common.gypi
+ 
+ /* In some places Skia can use static initializers for global initialization,

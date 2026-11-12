@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Justin Lulejian <jlulejian@chromium.org>
+Date: Wed, 28 Oct 2026 10:24:06 -0700
+Subject: [Extensions] Restrict mimeHandlerPrivate to allowlisted extensions
+
+The mimeHandlerPrivate API only depended on the mime_types_handler
+manifest key. That key used to be limited to the extensions in
+kMIMETypeHandlersAllowlist. After the public mimeHandler API launched,
+any extension can declare mime_types_handler, so mimeHandlerPrivate
+became available to any extension that declares the key.
+
+After this change, mimeHandlerPrivate is only available to the
+extensions in kMIMETypeHandlersAllowlist (the PDF viewer, QuickOffice
+and the browser_tests test extension), on every channel. Other
+extensions that declare mime_types_handler still get the public
+mimeHandler API.
+
+Fixed: 576943246
+Change-Id: I86653459f5780e629af0193abe48430bc3a89531
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8647529
+Reviewed-by: Eva Su <evasu@chromium.org>
+Reviewed-by: Toni Barzic <tbarzic@chromium.org>
+Commit-Queue: Justin Lulejian <jlulejian@chromium.org>
+Auto-Submit: Justin Lulejian <jlulejian@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729278}
+
+Electron adaptation notes (43-x-y): chrome/browser/extensions/api/mime_handlers/mime_handler_apitest.cc does not exist on this branch; the test-only hunk is not carried. Electron's PDF viewer uses extension_misc::kPdfExtensionId, which stays allowlisted. This branch's tools/json_schema_compiler/feature_compiler.py only accepts hex-encoded SHA1 hashes in feature allowlists (SHA-256 support is newer), so the five SHA-256 entries of the mimeHandlerPrivate allowlist are not carried; the SHA1 entries for the same extensions (including PDF) are kept.
+
+diff --git a/extensions/common/api/_api_features.json b/extensions/common/api/_api_features.json
+index e8e07eb451c5d2d70211e8c6d48db00f6b28a3d3..15f4c654483ad21af883bee7eab544c7de6a075e 100644
+--- a/extensions/common/api/_api_features.json
++++ b/extensions/common/api/_api_features.json
+@@ -519,7 +519,24 @@
+     "dependencies": ["manifest:mime_types_handler"],
+     "contexts": ["privileged_extension"],
+     // "desktop_android" is not supported.
+-    "platforms": ["chromeos", "linux", "mac", "win"]
++    "platforms": ["chromeos", "linux", "mac", "win"],
++    // The public `mimeHandler` API made `mime_types_handler` available to
++    // any extension, so this API needs its own allowlist. It holds the
++    // hashed IDs of the extensions in `kMIMETypeHandlersAllowlist`.
++    // LINT.IfChange(MimeHandlerPrivateAllowlist)
++    "allowlist": [
++      // browser_tests
++      "787000072C6FBB934AF5A42275CDE73FC977D995",
++      // QuickOffice
++      "2FC374607C2DF285634B67C64A2E356C607091C3",
++      // QuickOffice component extension
++      "12E618C3C6E97495AAECF2AC12DEB082353241C6",
++      // QuickOffice Editor
++      "3727DD3E564B6055387425027AD74C58784ACC15",
++      // PDF
++      "CBCC42ABED43A4B58FE3810E62AFFA010EB0349F"
++    ]
++    // LINT.ThenChange(//extensions/common/manifest_handlers/mime_types_handler.cc:MimeTypeHandlersAllowlist)
+   },
+   "mojoPrivate": {
+     "contexts": ["privileged_extension"],
+diff --git a/extensions/common/manifest_handlers/mime_types_handler.cc b/extensions/common/manifest_handlers/mime_types_handler.cc
+index 5191b25de84276d8758ee2b3a000883e66e223a6..675f892602f744ee0952660fbe9e3ce85f1ed908 100644
+--- a/extensions/common/manifest_handlers/mime_types_handler.cc
++++ b/extensions/common/manifest_handlers/mime_types_handler.cc
+@@ -42,6 +42,10 @@ namespace {
+ // wins; (3) among allowlisted handlers a higher index in this array wins.
+ // As a result, if multiple allowlisted versions of quickoffice are
+ // installed the higher-indexed entry wins.
++//
++// The `allowlist` of the `mimeHandlerPrivate` feature holds the hashed IDs
++// of these extensions.
++// LINT.IfChange(MimeTypeHandlersAllowlist)
+ constexpr const char* kMIMETypeHandlersAllowlist[] = {
+     extension_misc::kPdfExtensionId,
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -50,6 +54,7 @@ constexpr const char* kMIMETypeHandlersAllowlist[] = {
+     extension_misc::kQuickOfficeInternalExtensionId,
+     extension_misc::kQuickOfficeExtensionId,
+     extension_misc::kMimeHandlerPrivateTestExtensionId};
++// LINT.ThenChange(//extensions/common/api/_api_features.json:MimeHandlerPrivateAllowlist)
+ 
+ constexpr SkColor kQuickOfficeExtensionBackgroundColor =
+     SkColorSetRGB(241, 241, 241);

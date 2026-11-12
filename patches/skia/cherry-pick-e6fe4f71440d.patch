@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nathan Sanchez <nathanasanchez@google.com>
+Date: Mon, 2 Nov 2026 14:25:27 -0500
+Subject: [Graphite] Only allow clip path key bounds within int16_t
+
+We determine if the unclipped bounds will fit within int16_t (the
+assumption made prior with asserts), otherwise we key by the save record
+ID. In addition to doing this, we also ensure that we don't OR in the
+sign extension of the int16_t value within the key.
+
+Bug: 578656869
+Change-Id: I9b5208523d410ad6f84b62d7b37df263c7db7d79
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1414056
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+
+Electron adaptation notes (43-x-y): Include paths use this branch's layout (include/private/base/SkFloatingPoint.h, SkTFitsIn.h, SkTo.h).
+
+diff --git a/src/gpu/graphite/RasterPathUtils.cpp b/src/gpu/graphite/RasterPathUtils.cpp
+index 8557d35bc4803cf71224457d103c3a9ce874012c..3678e3dde3e6d1eba005c3ced25b34729adc177d 100644
+--- a/src/gpu/graphite/RasterPathUtils.cpp
++++ b/src/gpu/graphite/RasterPathUtils.cpp
+@@ -9,6 +9,9 @@
+ 
+ #include "include/core/SkStrokeRec.h"
+ #include "include/private/base/SkFixed.h"
++#include "include/private/base/SkFloatingPoint.h"
++#include "include/private/base/SkTFitsIn.h"
++#include "include/private/base/SkTo.h"
+ #include "src/base/SkFloatBits.h"
+ #include "src/core/SkBlitter_A8.h"
+ #include "src/gpu/graphite/geom/Shape.h"
+@@ -185,56 +188,72 @@ skgpu::UniqueKey GenerateClipMaskKey(uint32_t stackRecordID,
+     skgpu::UniqueKey maskKey;
+     // if the element list is too large we just use the stackRecordID
+     if (elementsForMask->size() <= kMaxShapeCountForKey) {
+-        static constexpr int kXformKeySize = 5;
+-        uint16_t keySize = includeBounds ? 2 : 0;
+-        // Iterate through to get key size; given kMaxShapeCountForKey and Shape's own key size
+-        // limitations, this should always fit safely within a 16-bit number
+-        for (int i = 0; i < elementsForMask->size(); ++i) {
+-            keySize += kXformKeySize + (*elementsForMask)[i]->fShape.keySize();
+-        }
+-
+-        skgpu::UniqueKey::Builder builder(&maskKey, kDomain, keySize, "Clip Path Mask");
+-        int elementKeyIndex = 0;
+         Rect unclippedBounds = Rect::InfiniteInverted();
+         for (int i = 0; i < elementsForMask->size(); ++i) {
+             const ClipStack::Element* element = (*elementsForMask)[i];
+-
+-            // Add transform key and get packed fractional translation bits
+-            uint32_t fracBits = add_transform_key(&builder,
+-                                                    elementKeyIndex,
+-                                                    element->fLocalToDevice);
+-            uint32_t opBits = static_cast<uint32_t>(element->fOp);
+-            builder[elementKeyIndex + 4] = fracBits | (opBits << 16);
+-
+-            const Shape& shape = element->fShape;
+-            shape.writeKey(&builder[elementKeyIndex + kXformKeySize],
+-                            /*includeInverted=*/true);
+-
+-            elementKeyIndex += kXformKeySize + shape.keySize();
+-
+-            Rect transformedBounds = element->fLocalToDevice.mapRect(element->fShape.bounds());
+-            unclippedBounds.join(transformedBounds);
++            unclippedBounds.join(element->fLocalToDevice.mapRect(element->fShape.bounds()));
+         }
+ 
+         // The keyBounds are the maskDeviceBounds relative to the full transformed mask. We use
+         // this to ensure we capture the situation where the maskDeviceBounds are equal in two
+         // cases but actually enclose different regions of the full mask due to an integer
+         // translation (which is not captured in the key) in the element transforms.
+-        *keyBounds = maskDeviceBounds.makeOffset(-unclippedBounds.left(),
+-                                                    -unclippedBounds.top());
+-
+-        if (includeBounds) {
+-            SkASSERT(SkTFitsIn<int16_t>(keyBounds->left()));
+-            SkASSERT(SkTFitsIn<int16_t>(keyBounds->top()));
+-            SkASSERT(SkTFitsIn<int16_t>(keyBounds->right()));
+-            SkASSERT(SkTFitsIn<int16_t>(keyBounds->bottom()));
+-
+-            builder[elementKeyIndex] = keyBounds->left() | (keyBounds->top() << 16);
+-            builder[elementKeyIndex+1] = keyBounds->right() | (keyBounds->bottom() << 16);
++        const SkIRect pathKeyBounds =
++                maskDeviceBounds.makeOffset(-sk_float_floor2int(unclippedBounds.left()),
++                                            -sk_float_floor2int(unclippedBounds.top()));
++
++        // The clip atlas relies on keyBounds being an exact translation of maskDeviceBounds, and
++        // the ProxyCache key packs them into 16 bits. If the result can't fit within 16 bits,
++        // fall back to the SaveRecord key below.
++        if (SkTFitsIn<int16_t>(pathKeyBounds.left()) &&
++            SkTFitsIn<int16_t>(pathKeyBounds.top()) &&
++            SkTFitsIn<int16_t>(pathKeyBounds.right()) &&
++            SkTFitsIn<int16_t>(pathKeyBounds.bottom())) {
++            SkASSERT(pathKeyBounds.size() == maskDeviceBounds.size());
++
++            static constexpr int kXformKeySize = 5;
++            uint16_t keySize = includeBounds ? 2 : 0;
++            // Iterate through to get key size; given kMaxShapeCountForKey and Shape's own key size
++            // limitations, this should always fit safely within a 16-bit number
++            for (int i = 0; i < elementsForMask->size(); ++i) {
++                keySize += kXformKeySize + (*elementsForMask)[i]->fShape.keySize();
++            }
++
++            skgpu::UniqueKey::Builder builder(&maskKey, kDomain, keySize, "Clip Path Mask");
++            int elementKeyIndex = 0;
++            for (int i = 0; i < elementsForMask->size(); ++i) {
++                const ClipStack::Element* element = (*elementsForMask)[i];
++
++                // Add transform key and get packed fractional translation bits
++                uint32_t fracBits = add_transform_key(&builder,
++                                                      elementKeyIndex,
++                                                      element->fLocalToDevice);
++                uint32_t opBits = static_cast<uint32_t>(element->fOp);
++                builder[elementKeyIndex + 4] = fracBits | (opBits << 16);
++
++                const Shape& shape = element->fShape;
++                shape.writeKey(&builder[elementKeyIndex + kXformKeySize],
++                               /*includeInverted=*/true);
++
++                elementKeyIndex += kXformKeySize + shape.keySize();
++            }
++
++            *keyBounds = pathKeyBounds;
++
++            if (includeBounds) {
++                // Take each value's 16-bit bits before widening so a negative value doesn't
++                // sign-extend and overwrite the other half of the word.
++                auto pack = [](int32_t lo, int32_t hi) {
++                    return static_cast<uint32_t>(static_cast<uint16_t>(SkTo<int16_t>(lo))) |
++                           (static_cast<uint32_t>(static_cast<uint16_t>(SkTo<int16_t>(hi))) << 16);
++                };
++                builder[elementKeyIndex]     = pack(keyBounds->left(), keyBounds->top());
++                builder[elementKeyIndex + 1] = pack(keyBounds->right(), keyBounds->bottom());
++            }
++
++            *usesPathKey = true;
++            return maskKey;
+         }
+-
+-        *usesPathKey = true;
+-        return maskKey;
+     }
+ 
+     // Either we have too many elements or at least one shape can't create a key
