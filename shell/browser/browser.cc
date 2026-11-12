@@ -18,8 +18,11 @@
 #include "base/threading/thread_restrictions.h"
 #include "build/config/compiler/compiler_buildflags.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
+#include "services/network/public/mojom/cookie_manager.mojom.h"
 #include "shell/browser/browser_observer.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
@@ -171,6 +174,17 @@ void Browser::Shutdown() {
   is_quitting_ = true;
 
   observers_.Notify(&BrowserObserver::OnQuit);
+
+  // Start flushing cookies and DOM storage now so persistence overlaps with
+  // the rest of shutdown. Mirrors browser_shutdown::OnShutdownStarting().
+  for (auto* browser_context : ElectronBrowserContext::BrowserContexts()) {
+    browser_context->ForEachLoadedStoragePartition(
+        [](content::StoragePartition* partition) {
+          partition->GetCookieManagerForBrowserProcess()->FlushCookieStore(
+              base::NullCallback());
+          partition->Flush();
+        });
+  }
 
 #if BUILDFLAG(CLANG_PROFILING_INSIDE_SANDBOX) && BUILDFLAG(CLANG_PGO_PROFILING)
   // In PGO-instrumented builds, sandboxed child processes write their
