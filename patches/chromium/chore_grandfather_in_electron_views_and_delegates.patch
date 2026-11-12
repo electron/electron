@@ -45,10 +45,10 @@ index 816c447f0f5c7cfd04e5629e624a5bd4774fff03..2c244362296a7b66cbd7b4ff9aa63823
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index 86f9976f5c913547b24a8090ca524c2a04b69018..98feb4d0a051dfa25dd6f5f207900ca2fbb0bbbd 100644
+index 298f2848afa9a358f8d8c22c5289f3316f86310d..ba8c8be88fb22f9a5c382157a2378511e1b90c3d 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
-@@ -167,6 +167,12 @@ namespace crostini {
+@@ -166,6 +166,12 @@ namespace crostini {
  class AppRestartDialog;
  }
  
@@ -61,7 +61,7 @@ index 86f9976f5c913547b24a8090ca524c2a04b69018..98feb4d0a051dfa25dd6f5f207900ca2
  namespace exo {
  class ShellSurfaceBase;
  }
-@@ -356,6 +362,7 @@ class VIEWS_EXPORT WidgetDelegate {
+@@ -355,6 +361,7 @@ class VIEWS_EXPORT WidgetDelegate {
  
    class OwnedByWidgetPassKey {
     private:
@@ -69,7 +69,7 @@ index 86f9976f5c913547b24a8090ca524c2a04b69018..98feb4d0a051dfa25dd6f5f207900ca2
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `SetOwnedByWidget()`.
-@@ -446,6 +453,7 @@ class VIEWS_EXPORT WidgetDelegate {
+@@ -444,6 +451,7 @@ class VIEWS_EXPORT WidgetDelegate {
    };
    class RegisterDeleteCallbackPassKey {
     private:
@@ -77,7 +77,7 @@ index 86f9976f5c913547b24a8090ca524c2a04b69018..98feb4d0a051dfa25dd6f5f207900ca2
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `RegisterDeleteDelegateCallback()`.
-@@ -900,6 +908,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
+@@ -898,6 +906,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
    View* GetContentsView() override;
  
   private:
