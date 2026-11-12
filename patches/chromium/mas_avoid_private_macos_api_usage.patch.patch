@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index cc31d12213d1f3028e806b174f04027616a0fbf5..bc10940988a88091c0028a8b17cdc107b56f584f 100644
+index 798a755b926af261bc5d55dd61c62d33391e4ec2..62ea1ee1df2dd804910207694c924db09aa68063 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1170,6 +1170,7 @@ component("base") {
@@ -259,10 +259,10 @@ index 419a051968c58ae5a761708e4d942e8975c70852..a77032dd43f5fcbe29c54b622b34607f
  
  }  // namespace base::mac
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index 7e09a9d4a676c7a91b3a68ef6e173c590c384b5a..2f86e619a4441c0d290834da431931216426bf3e 100644
+index cdab3d401aa84bdeac25bd35b044f27f1b55ce0e..d1aebf385341f0cfdcf94215cf1c5c726cd7b31c 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -85,6 +85,10 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
+@@ -84,6 +84,10 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/thread_restrictions.h"
  #include "base/trace_event/trace_event.h"
@@ -273,7 +273,7 @@ index 7e09a9d4a676c7a91b3a68ef6e173c590c384b5a..2f86e619a4441c0d290834da43193121
  
  #if BUILDFLAG(IS_MAC)
  #include "base/apple/mach_port_rendezvous_mac.h"
-@@ -93,9 +97,11 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
+@@ -92,9 +96,11 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
  extern "C" {
  // Changes the current thread's directory to a path or directory file
  // descriptor.
@@ -285,7 +285,7 @@ index 7e09a9d4a676c7a91b3a68ef6e173c590c384b5a..2f86e619a4441c0d290834da43193121
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs,
                                            int disclaim);
-@@ -176,13 +182,27 @@ class PosixSpawnFileActions {
+@@ -175,13 +181,27 @@ class PosixSpawnFileActions {
  
  #if !BUILDFLAG(IS_MAC)
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -313,7 +313,7 @@ index 7e09a9d4a676c7a91b3a68ef6e173c590c384b5a..2f86e619a4441c0d290834da43193121
  }
  #endif
  
-@@ -306,16 +326,16 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -305,16 +325,16 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
