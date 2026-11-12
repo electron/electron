@@ -12,7 +12,7 @@
 
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/i18n/rtl.h"
+#include "base/i18n/icubridge/default_icu_locale.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -424,7 +424,8 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #if BUILDFLAG(IS_MAC)
   fake_browser_process_->SetSystemLocale(GetCurrentSystemLocale());
 #else
-  fake_browser_process_->SetSystemLocale(base::i18n::GetConfiguredLocale());
+  fake_browser_process_->SetSystemLocale(
+      std::string(base::i18n::GetDefaultIcuLocale().tag_string()));
 #endif
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
