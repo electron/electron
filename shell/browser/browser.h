@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/files/file_path.h"
-#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -360,12 +359,6 @@ class Browser : private WindowListObserver {
   void OnWindowCloseCancelled(NativeWindow* window) override;
   void OnWindowAllClosed() override;
 
-  // Writes every session's cookies and DOM storage to disk, then quits the
-  // main message loop.
-  void FlushStoragePartitionsThenQuit();
-  void OnStoragePartitionsFlushed();
-  void QuitMainMessageLoop();
-
   // Observers of the browser.
   base::ObserverList<BrowserObserver,
                      false,
@@ -387,9 +380,6 @@ class Browser : private WindowListObserver {
   // Null until/unless the default main message loop is running.
   base::OnceClosure quit_main_message_loop_;
 
-  // Shutdown is waiting for the storage partitions to flush to disk.
-  bool awaiting_storage_flush_ = false;
-
   int badge_count_ = 0;
 
   std::unique_ptr<gin_helper::Promise<void>> ready_promise_;
@@ -410,8 +400,6 @@ class Browser : private WindowListObserver {
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 #endif
-
-  base::WeakPtrFactory<Browser> weak_factory_{this};
 };
 
 }  // namespace electron
