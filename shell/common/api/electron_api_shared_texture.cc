@@ -285,11 +285,13 @@ v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
   auto exported = client_shared_image->Export();
 
   // Use mojo to serialize the exported shared image.
-  mojo::Message message(0, 0, MOJO_CREATE_MESSAGE_FLAG_UNLIMITED_SIZE, 0);
+  mojo::Message message(
+      0, 0, MOJO_CREATE_MESSAGE_FLAG_UNLIMITED_SIZE, 0,
+      {sizeof(gpu::mojom::internal::ExportedSharedImage_Data), 0});
   mojo::internal::MessageFragment<
       gpu::mojom::internal::ExportedSharedImage_Data>
       data(message);
-  data.Allocate();
+  data.ClaimInitialPayload();
   mojo::internal::Serializer<gpu::mojom::ExportedSharedImageDataView,
                              gpu::ExportedSharedImage>::Serialize(exported,
                                                                   data);
