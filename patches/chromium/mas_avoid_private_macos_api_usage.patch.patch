@@ -660,7 +660,7 @@ index db34eeac4b7353d77705403234bdd9b50c2c475e..940f6a04b84ec0044f4cdd29bcbdef3c
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc9c0d4b09 100644
+index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669ace0ec6c6 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -24,6 +24,7 @@
@@ -773,7 +773,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
  // Constrains the frame rect during an active window move loop so that the top
  // of the window does not exceed the menu bar / visible top of the display,
  // while allowing smooth unrestricted dragging across display boundaries without
-@@ -563,6 +593,8 @@ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+@@ -593,6 +623,8 @@ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
    return [super constrainFrameRect:frameRect toScreen:screen];
  }
  
@@ -782,7 +782,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
  // AppKit's internal screen layout manager invokes
  // _setFrame:fromAdjustmentToScreen: and _setFrameAfterMove: asynchronously
  // during screen layout changes or display boundary transitions to adjust the
-@@ -611,6 +643,8 @@ - (void)_setFrameAfterMove:(NSRect)frameRect {
+@@ -633,6 +665,8 @@ - (void)_setFrameAfterMove:(NSRect)frameRect {
    }
  }
  
@@ -791,7 +791,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
  - (NSWindow*)topmostVisibleChildModalWindow {
    if (!_bridge) {
      return nil;
-@@ -654,12 +688,14 @@ - (BOOL)_usesCustomDrawing {
+@@ -676,12 +710,14 @@ - (BOOL)_usesCustomDrawing {
  // if it were valid to set that style for windows, setting the window style
  // recalculates and re-caches a bunch of stuff, so a surgical override is the
  // cleanest approach.
@@ -806,7 +806,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -991,9 +1027,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -1013,9 +1049,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -818,7 +818,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -1060,6 +1098,7 @@ - (void)reallySaveRestorableState {
+@@ -1082,6 +1120,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -826,7 +826,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -1072,6 +1111,7 @@ - (void)invalidateRestorableState {
+@@ -1094,6 +1133,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -834,7 +834,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -1250,6 +1290,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1272,6 +1312,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -842,7 +842,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -1267,6 +1308,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1289,6 +1330,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -851,7 +851,7 @@ index a1256ab4c54f8ae4aa5295670c0b8d790e19b1f6..f458a74a61cdc92e63bfbec4be9c84bc
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 9bb62d8f0330d252d8efa3096a6e6a590fad8812..3ffb38f91c97df353c17651c6c8cc6fc09d1f095 100644
+index a03504fe505da971990de15abef2420c9f78ef4c..5e6d12662dc30c89890220b993ab32ebb1ef675a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -44,6 +44,7 @@
@@ -979,7 +979,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index c397252346e0e8779cf7bca2ba733dd575327f2f..122d028da1219c379cfb6f5940855e7f6a791616 100644
+index 330b2fcdcae28fed130ef414cff1ed807e90c965..faa0b26e98b0d32f65b5b132196458d8424c4b24 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -37,6 +37,7 @@
@@ -990,7 +990,7 @@ index c397252346e0e8779cf7bca2ba733dd575327f2f..122d028da1219c379cfb6f5940855e7f
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2573,15 +2574,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2577,15 +2578,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1013,10 +1013,10 @@ index c397252346e0e8779cf7bca2ba733dd575327f2f..122d028da1219c379cfb6f5940855e7f
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0666c022908874dcc42bed0936bf71a3c43a092d..36252261837160195cf1e993d103b2f6a3b0919a 100644
+index de8a3b35084057b092ea2f373dffeb67e8a33637..cfb307712c45ff2156acefb1340741d3e2cb4b9d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -396,6 +396,7 @@ source_set("browser") {
+@@ -395,6 +395,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0cdc4c3dc62c571ab42a51e5dd7f550ad64f4d60..f635a78098495fc165e7f1aa06a4c9fe64251b00 100644
+index 03fd8523cb6b3cee0938e7d817c98a0b9231ac77..96516bca251b25a154b13740720264bfaaa69b4c 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index bf9c2c4b6485a2cf28df4daffb56673d52779a91..56cef50c0f48c5990ee0d6063a60dc543546dddb 100644
+index 6ee931905ad43ab54c62ff5ee81ec6f1713327fd..9e20c53fc63d6c2d9e2f51e7b123672af9a3c758 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -2309,7 +2309,7 @@ index 95b8b7802ebfd3f55330dc5c69c8b592279620cc..680409b9b1983b2ca0e3f0de0792647e
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
-index 247a69d993c8ce38761265fae823ac85cd43c354..9aa09eebe63988c8a98d51f85ff935344dc968b9 100644
+index ad6328970c179944e957dd1079bd3847e5574a60..0d3eedf23a8fe3e90f7ff4c58f419c564e5f1eb8 100644
 --- a/ui/display/mac/ca_display_link_mac.mm
 +++ b/ui/display/mac/ca_display_link_mac.mm
 @@ -21,15 +21,18 @@
@@ -2331,7 +2331,7 @@ index 247a69d993c8ce38761265fae823ac85cd43c354..9aa09eebe63988c8a98d51f85ff93534
  
  // Undocumented SkyLight framework functions.
  // SLSGetDisplayLink() is a private function (SPI) that creates a CADisplayLink
-@@ -307,6 +310,15 @@ void RecordWindowServerEventPumpResult(
+@@ -306,6 +309,15 @@ void RecordWindowServerEventPumpResult(
  
    weak_ptr_ = weak_factory_.GetWeakPtr();
  
@@ -2347,7 +2347,7 @@ index 247a69d993c8ce38761265fae823ac85cd43c354..9aa09eebe63988c8a98d51f85ff93534
    base::Thread::Options thread_options;
    thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
    thread_options.thread_type = base::ThreadType::kBackground;
-@@ -316,6 +328,7 @@ void RecordWindowServerEventPumpResult(
+@@ -315,6 +327,7 @@ void RecordWindowServerEventPumpResult(
        FROM_HERE,
        base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
                       base::Unretained(this)));
@@ -2355,7 +2355,7 @@ index 247a69d993c8ce38761265fae823ac85cd43c354..9aa09eebe63988c8a98d51f85ff93534
  }
  
  // In a standard out-of-process GPU scenario,
-@@ -333,6 +346,7 @@ void RecordWindowServerEventPumpResult(
+@@ -332,6 +345,7 @@ void RecordWindowServerEventPumpResult(
  
    shutdown_ = true;
  
@@ -2363,7 +2363,7 @@ index 247a69d993c8ce38761265fae823ac85cd43c354..9aa09eebe63988c8a98d51f85ff93534
    // Send an empty message to wake up the thread and quit the while loop.
    // See WindowServerEventPumpThread::PumpWindowServerEvents() for details.
    CGSConnectionID connection_id = CGSMainConnectionID();
-@@ -356,10 +370,12 @@ void RecordWindowServerEventPumpResult(
+@@ -355,10 +369,12 @@ void RecordWindowServerEventPumpResult(
          << "CGSGetEventPort() in ~WindowServerEventPumpThread failed. Error: "
          << err;
    }
@@ -2376,7 +2376,7 @@ index 247a69d993c8ce38761265fae823ac85cd43c354..9aa09eebe63988c8a98d51f85ff93534
  void WindowServerEventPumpThread::PumpWindowServerEvents() {
    {
      TRACE_EVENT0("gpu",
-@@ -514,6 +530,7 @@ void RecordWindowServerEventPumpResult(
+@@ -513,6 +529,7 @@ void RecordWindowServerEventPumpResult(
      }
    }
  }

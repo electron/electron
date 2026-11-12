@@ -46,10 +46,10 @@ index 3df34fa489dd98ef126a6ccf304ef7cb484429d6..06cc8fb96fb0967113f39b0f6382885f
                  'internal-forced-visited-'
              ):
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 0a3752cfeaa658071c73fec27bbda25ddb8a877d..197b6a077538c6d435f6c699555fab3bbf585aed 100644
+index a295b8d7adeb4274938cef1d542803819ecbd9d8..25bb6697535349246c1354b1f2d2044589da4ff3 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -10453,6 +10453,27 @@
+@@ -10463,6 +10463,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -204,7 +204,7 @@ index 3a378e7ad63d2b5c9bdaae6606ade1e10d16e5b1..9bc870fcaa5eedaf70399822bf0976f4
      // Keep the border box as the origin rect so that inset/outset contours
      // derived from it (e.g. the inner border) remain aligned to it.
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 2627405222f79ff04a70406ffa5b587151e63c57..2734c6a93cf78395d7b727ed902445533c740bd3 100644
+index e1975cd98d65beb3c30d40dd6295d60fbcb2f118..77e83e28b781be563d0511928e4fdac4c32d1297 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1731,6 +1731,8 @@ component("platform") {
@@ -315,7 +315,7 @@ index aac33fed6b728961596ed73ef40caa1c711c5206..49cc2c8260ada3a5370e6cf47016b699
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 18278ee3876a05e4b79f9432f16b59a85bcda623..4e924bc9a998efde5efa387e1072c9c1df4363b8 100644
+index 8a73dcda0e33d368539708c888c5cced63556c0e..36a86a907d97287c46d4ecd8dc101a809af51598 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@

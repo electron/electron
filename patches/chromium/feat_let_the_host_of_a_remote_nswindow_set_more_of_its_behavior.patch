@@ -26,7 +26,7 @@ it ever does.
 Co-Authored-By: Claude <noreply@anthropic.com>
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-index aab9c770f3eb651c3146567b843bbd7ec9075fda..36a1d4fc112e898e5b22132a762e63ba2cd51dd9 100644
+index f298dddb6e9e18c82ee04d447f99ace48e21fcf4..df3176092618d88aa180baff93552b248fd801a5 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 @@ -321,6 +321,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
@@ -40,7 +40,7 @@ index aab9c770f3eb651c3146567b843bbd7ec9075fda..36a1d4fc112e898e5b22132a762e63ba
    void MakeFirstResponder() override;
    void SortSubviews(
        const std::vector<uint64_t>& associated_subview_ids) override;
-@@ -493,6 +497,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+@@ -497,6 +501,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
    bool is_tooltip_ = false;
    bool window_initialized_ = false;
    bool is_tracked_by_occlusion_checker_ = false;
@@ -52,7 +52,7 @@ index aab9c770f3eb651c3146567b843bbd7ec9075fda..36a1d4fc112e898e5b22132a762e63ba
  
    raw_ptr<NativeWidgetNSWindowBridge> parent_ =
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 4fe4033b6d8196dfe78409a3fa794e3a4dcaa61d..16f46cd1eaff8213780ff8d0b3f1e2368ce2f5cc 100644
+index a0f5ca109d0203b946dd8cfaa8eebc9cd57d7593..7fdabf29725eb82ebeb361f4db251479a7cb4528 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -1635,6 +1635,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -147,7 +147,7 @@ index 070acf4960f67ac5f3fa9a3446e6a20ae464cea3..d86bf3540264d19b817f8d14dc431c99
  
  #endif  // COMPONENTS_REMOTE_COCOA_APP_SHIM_VIEWS_NSWINDOW_DELEGATE_H_
 diff --git a/components/remote_cocoa/app_shim/views_nswindow_delegate.mm b/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
-index e221b6ff8a067febd7538abd42cafa5893448c9f..dbd61f601d9ae278fa193ab89da98dde5b2a4d44 100644
+index 45ff0c75529df7627591eb42a4f46c816edb71e8..aa44799c239400213dccbe51ebdd5d42f8ce1189 100644
 --- a/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
 +++ b/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
 @@ -147,6 +147,11 @@ - (void)setAspectRatio:(float)aspectRatio
