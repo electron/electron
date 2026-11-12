@@ -11,10 +11,10 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
-index f19ffb568400a4ad879623f5eb07371442ab41b1..320a950c5e438fa18d2ff20d23f402246af6fbad 100644
+index 672860e5836521da6fdbd34832b7d3763443b32b..b851fd405ac77570d1e43b2099c96ab4a9fad3d7 100644
 --- a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
 +++ b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
-@@ -383,7 +383,8 @@ gfx::GpuMemoryBufferHandle D3DImageBackingFactory::CreateGpuMemoryBufferHandle(
+@@ -435,7 +435,8 @@ gfx::GpuMemoryBufferHandle D3DImageBackingFactory::CreateGpuMemoryBufferHandle(
    // so make sure that the usage is one that we support.
    DCHECK(usage == gfx::BufferUsage::GPU_READ ||
           usage == gfx::BufferUsage::SCANOUT ||
@@ -23,15 +23,16 @@ index f19ffb568400a4ad879623f5eb07371442ab41b1..320a950c5e438fa18d2ff20d23f40224
 +         usage == gfx::BufferUsage::SCANOUT_VEA_CPU_READ)
        << "Incorrect usage, usage=" << gfx::BufferUsageToString(usage);
  
-   D3D11_TEXTURE2D_DESC desc = {
-@@ -397,7 +398,9 @@ gfx::GpuMemoryBufferHandle D3DImageBackingFactory::CreateGpuMemoryBufferHandle(
-       D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
-       0,
-       D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
--          D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX};
-+          static_cast<UINT>(usage == gfx::BufferUsage::SCANOUT_VEA_CPU_READ
-+                                ? D3D11_RESOURCE_MISC_SHARED
-+                                : D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX)};
+   // Packed YUV formats cannot be bound as render targets.
+@@ -454,7 +455,10 @@ gfx::GpuMemoryBufferHandle D3DImageBackingFactory::CreateGpuMemoryBufferHandle(
+                                bind_flags,
+                                0,
+                                D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
+-                                   D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX};
++                                   static_cast<UINT>(
++                                       usage == gfx::BufferUsage::SCANOUT_VEA_CPU_READ
++                                           ? D3D11_RESOURCE_MISC_SHARED
++                                           : D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX)};
  
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
