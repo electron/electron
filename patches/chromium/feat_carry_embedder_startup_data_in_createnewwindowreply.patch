@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 7eafa65e7111426d6b9f1f2734003ba2027a3630..08533c7697cbdc21f7bfd061fc468d2fa463cd05 100644
+index 39e356e432e0e7d51c583a21244f7bf6cb590625..f627b97558ddc6eb0f6ff761869c401873198f41 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11224,7 +11224,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11222,7 +11222,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -71,10 +71,10 @@ index 6334636936118cc801e977be7a69e77044b5ddbc..08c46c9d1321c1b5bf3124f6f1fb4a73
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index dd9f05c767d0c27e1b76656c96893a7be7cc4442..2947c3db3e8898d49d9f1bf2d66d9f461b4dce51 100644
+index da85027723f23506828bf1a0f59776ebd6eb8434..bf9b922b854f85b5909fa13ae902cebe3cf5c9e9 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -863,6 +863,13 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -859,6 +859,13 @@ bool ContentBrowserClient::CanCreateWindow(
    return true;
  }
  
@@ -89,7 +89,7 @@ index dd9f05c767d0c27e1b76656c96893a7be7cc4442..2947c3db3e8898d49d9f1bf2d66d9f46
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f02671b2f8dce4a3e754b03cb129c1bc68583cb1..04887a8dcc5343adb4ad37446d159fefed4b9635 100644
+index fafccda959c082997d1b6066736ba44d87e4df8a..f5cbe5c3ceee21f3d68f7abcd59f2976e942a003 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -62,6 +62,7 @@
