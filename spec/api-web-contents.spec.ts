@@ -1798,22 +1798,35 @@ describe('webContents module', { retry: 0 }, () => {
       expect(await devToolsCanDock(w.webContents)).toBe(true);
     });
 
+    // closeAllWindows() won't reach contents that belong to no window, and an
+    // attempt that times out never gets to the end of its body. Close their
+    // DevTools and destroy them after the test either way, so that one stalled
+    // attempt does not leave them alive for the retry and the rest of the file.
+    function destroyAfterTest(contents: Electron.WebContents) {
+      defer(async () => {
+        if (contents.isDestroyed()) return;
+        contents.closeDevTools();
+        const destroyed = once(contents, 'destroyed');
+        contents.destroy();
+        await destroyed;
+      });
+    }
+
     it('detaches when the contents belong to no window', async () => {
       // A WebContentsView only gets an owner window once it is added to one, so
       // an unattached one has none, permanently — docked DevTools would be
       // embedded in a view that is in no widget, and nobody would see them.
       const view = new WebContentsView();
+      destroyAfterTest(view.webContents);
       await view.webContents.loadURL('about:blank');
 
       const opened = once(view.webContents, 'devtools-opened');
-      view.webContents.openDevTools();
+      // Without activation, so focus plays no part in the detached window.
+      // @ts-expect-error — mode is left out on purpose: the default must resolve to detach
+      view.webContents.openDevTools({ activate: false });
       await opened;
 
       expect(await devToolsCanDock(view.webContents)).toBe(false);
-
-      const destroyed = once(view.webContents, 'destroyed');
-      view.webContents.destroy(); // closeAllWindows() won't reach this one
-      await destroyed;
     });
 
     it('does not let a reused webPreferences object mark other contents as owned by a window', async () => {
@@ -1823,10 +1836,12 @@ describe('webContents module', { retry: 0 }, () => {
       const webPreferences = {};
       const w = new BrowserWindow({ show: false, webPreferences });
       const view = new WebContentsView({ webPreferences });
+      destroyAfterTest(view.webContents);
       await view.webContents.loadURL('about:blank');
 
       const viewOpened = once(view.webContents, 'devtools-opened');
-      view.webContents.openDevTools();
+      // @ts-expect-error — mode is left out on purpose: the default must resolve to detach
+      view.webContents.openDevTools({ activate: false });
       // A leaked mark would leave this waiting for an owner that never comes.
       await viewOpened;
       expect(await devToolsCanDock(view.webContents)).toBe(false);
@@ -1835,10 +1850,6 @@ describe('webContents module', { retry: 0 }, () => {
       w.webContents.openDevTools();
       await windowOpened;
       expect(await devToolsCanDock(w.webContents)).toBe(true);
-
-      const destroyed = once(view.webContents, 'destroyed');
-      view.webContents.destroy(); // closeAllWindows() won't reach this one
-      await destroyed;
     });
 
     // The dock side Electron resolved for the open DevTools. Whenever DevTools may
@@ -2020,13 +2031,10 @@ describe('webContents module', { retry: 0 }, () => {
 
         const child = await openChild(w, (contents) => {
           guest = contents;
+          destroyAfterTest(contents);
           contents.openDevTools();
         });
         expect(await devToolsCanDock(child)).toBe(false);
-
-        const destroyed = once(child, 'destroyed');
-        child.destroy(); // closeAllWindows() won't reach this one
-        await destroyed;
       });
     });
   });
