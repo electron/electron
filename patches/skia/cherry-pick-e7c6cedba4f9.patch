@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julia Lavrova <jlavrova@google.com>
+Date: Fri, 30 Oct 2026 16:48:33 +0000
+Subject: Make SkRemoteGlyphCache_b576664769 bounds check scaler independent
+
+The test pinned the oversized glyph to 4071x65527, the size FreeType
+reports. The Mac NativeFonts_Fontations bots run dm with --nativeFonts,
+so the test font goes through CoreText, which outsets glyph bounds by
+1 pixel on each side, and the exact size check fails. Check instead that
+the glyph is too big for a distance field (SkComputeDistanceFieldSize
+returns 0), which is the condition SDFMaskFilter rejects.
+
+Without this change Test-Mac14 and Test-Mac15
+...-Debug-All-NativeFonts_Fontations fail with
+"glyph.width() == 4071 && glyph.height() == 65527".
+
+Bug: b/576664769
+Assisted-by: Gemini Pro Next
+Change-Id: If28c824816f07a3176f6fe8f53e04e9e3ab16c33
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1411716
+Reviewed-by: Alexis Cruz-Ayala <alexisdavidc@google.com>
+Commit-Queue: Julia Lavrova <jlavrova@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/tests/SkRemoteGlyphCacheTest.cpp b/tests/SkRemoteGlyphCacheTest.cpp
+index 52e3c30f7348fa9f0d7ed91a5c9628ca98d19d17..edd0bf8ff363fed9c77fc037ab612f4f4b66a186 100644
+--- a/tests/SkRemoteGlyphCacheTest.cpp
++++ b/tests/SkRemoteGlyphCacheTest.cpp
+@@ -35,6 +35,7 @@
+ #include "include/private/base/SkMutex.h"
+ #include "include/private/chromium/SkChromeRemoteGlyphCache.h"
+ #include "include/private/chromium/Slug.h"
++#include "src/core/SkDistanceFieldGen.h"
+ #include "src/core/SkFontMetricsPriv.h"
+ #include "src/core/SkFontPriv.h"
+ #include "src/core/SkGlyph.h"
+@@ -1673,7 +1674,8 @@ DEF_TEST(SkRemoteGlyphCache_b576664769, reporter) {
+             }
+ 
+ #if !defined(SK_DISABLE_SDF_TEXT)
+-            // Verify direct scaler context with SDFMaskFilter rejects 4071x65527 bounds upfront
++            // Verify direct scaler context with SDFMaskFilter rejects the oversized bounds.
++            // Exact bounds are scaler specific: FreeType gives 4071x65527, CoreText outsets by 1
+             SkFont sdfFont(realTf, 162.f);
+             SkPaint sdfPaint;
+             sdfPaint.setMaskFilter(sktext::gpu::SDFMaskFilter::Make());
+@@ -1682,7 +1684,8 @@ DEF_TEST(SkRemoteGlyphCache_b576664769, reporter) {
+             std::unique_ptr<SkScalerContext> ctx = strikeSpec.createScalerContext();
+             SkArenaAlloc alloc{256};
+             SkGlyph glyph = ctx->makeGlyph(SkPackedGlyphID{gid}, &alloc);
+-            REPORTER_ASSERT(reporter, glyph.width() == 4071 && glyph.height() == 65527);
++            REPORTER_ASSERT(reporter,
++                            SkComputeDistanceFieldSize(glyph.width(), glyph.height()) == 0);
+             REPORTER_ASSERT(reporter, !SkGlyphDigest::FitsInAtlas(glyph));
+             REPORTER_ASSERT(reporter, glyph.maskFormat() != SkMask::kSDF_Format);
+ #endif

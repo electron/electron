@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Justin Lulejian <jlulejian@chromium.org>
+Date: Thu, 22 Oct 2026 14:55:20 -0700
+Subject: [Extensions] Fix UAF in PostMessageSupport::PostJavaScriptMessage
+
+Before this change, `PostMessageSupport::PostJavaScriptMessage()`
+acquired a `WeakPtr` to `this` after calling
+`target_frame->GlobalProxy(isolate)`. When `target_frame` had not yet
+initialized its main-world V8 context (e.g., an `<iframe>` with
+`sandbox="allow-same-origin"`), `GlobalProxy()` lazily created the V8
+context and installed `chrome.loadTimes` bindings. A page-defined
+JavaScript setter on a child frame named `chrome` could run during
+context creation and synchronously detach the `MimeHandlerView` frame,
+destroying `PostMessageSupport` before `GlobalProxy()` returned and
+causing a heap-use-after-free when calling `weak_factory_.GetWeakPtr()`.
+
+After this change, `PostMessageSupport::PostJavaScriptMessage()` safely
+returns early without accessing freed memory if `this` is destroyed
+during lazy V8 context initialization inside `GlobalProxy()`.
+
+Bug: 569674220
+Change-Id: Ica5ac362fd0d267cd00a41850df43a4f5c98d2ab
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8600383
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Auto-Submit: Justin Lulejian <jlulejian@chromium.org>
+Commit-Queue: Justin Lulejian <jlulejian@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725231}
+
+diff --git a/chrome/browser/guest_view/mime_handler_view/chrome_mime_handler_view_browsertest.cc b/chrome/browser/guest_view/mime_handler_view/chrome_mime_handler_view_browsertest.cc
+index 30555baf9bb9a5df4dfe4558c6b8b0c3c4e59003..5cd05c255858d61ae42b38e06aa004775010354c 100644
+--- a/chrome/browser/guest_view/mime_handler_view/chrome_mime_handler_view_browsertest.cc
++++ b/chrome/browser/guest_view/mime_handler_view/chrome_mime_handler_view_browsertest.cc
+@@ -17,6 +17,7 @@
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/tabs/tab_strip_model.h"
+ #include "chrome/test/base/ui_test_utils.h"
++#include "components/guest_view/browser/guest_view_base.h"
+ #include "components/guest_view/browser/guest_view_manager.h"
+ #include "components/guest_view/browser/guest_view_manager_delegate.h"
+ #include "components/guest_view/browser/test_guest_view_manager.h"
+@@ -55,6 +56,7 @@
+ #include "net/test/embedded_test_server/embedded_test_server.h"
+ #include "net/test/embedded_test_server/http_request.h"
+ #include "printing/buildflags/buildflags.h"
++#include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
+ #include "ui/views/accessibility/view_accessibility.h"
+ #include "ui/views/view.h"
+@@ -874,3 +876,106 @@ IN_PROC_BROWSER_TEST_P(ChromeMimeHandlerViewTest, PostMessageGetterOverwrite) {
+ 
+   ASSERT_TRUE(content::ExecJs(web_contents, kReproScript));
+ }
++
++// Verifies that synchronous destruction of `extensions::PostMessageSupport` via
++// JavaScript setters triggered during lazy V8 context initialization inside
++// `blink::WebFrame::GlobalProxy()` in
++// `extensions::PostMessageSupport::PostJavaScriptMessage()`:
++// - does not cause a heap-use-after-free,
++// - does not crash the renderer process.
++// Regression test for https://crbug.com/569674220.
++IN_PROC_BROWSER_TEST_P(ChromeMimeHandlerViewTest,
++                       PostMessageTargetContextCreationDestroysSupport) {
++  // Register the test `extensions::MimeHandlerViewGuest` and navigate to the
++  // test page.
++  TestGuestViewManager* manager = GetGuestViewManager();
++  TestMimeHandlerViewGuest::RegisterTestGuestViewType(manager);
++  ASSERT_TRUE(LoadTestExtension());
++
++  ASSERT_TRUE(ui_test_utils::NavigateToURL(
++      browser(), embedded_test_server()->GetURL("/title1.html")));
++
++  auto* web_contents = GetEmbedderWebContents();
++
++  // Create an `<iframe>` that loads a `MimeHandlerView` resource so that the
++  // `<iframe>`'s document is the template page managed by
++  // `extensions::MimeHandlerViewContainerManager`.
++  const char kSetupScript[] = R"(
++    (() => {
++      const iframe = document.createElement('iframe');
++      iframe.src = 'testEmbedded.csv';
++      document.body.appendChild(iframe);
++    })();
++  )";
++  ASSERT_TRUE(content::ExecJs(web_contents, kSetupScript));
++
++  // Wait for the guest view to be created, attached, and loaded so that
++  // `extensions::PostMessageSupport::is_active()` is true.
++  {
++    SCOPED_TRACE("Waiting for guest view to be created and loaded");
++    guest_view::GuestViewBase* guest = manager->WaitForNextGuestViewCreated();
++    ASSERT_TRUE(guest);
++    ASSERT_TRUE(manager->WaitUntilAttachedAndLoaded(guest));
++  }
++
++  // Replace the internal `<embed>` element inside `iframe` with a same-named
++  // sandboxed `<iframe>` in the top document whose V8 context is lazily
++  // initialized during `savedPostMessage({})`.
++  const char kReproScript[] = R"(
++    (async () => {
++      // Wait for the inner `<embed>` to expose its `postMessage` binding, save
++      // a reference to it, and remove the `<embed>` so its frame name
++      // (`internalid`) can be reused.
++      const iframe = document.querySelector('iframe');
++      while (typeof iframe.contentDocument.querySelector('embed')?.postMessage
++                 !== 'function') {
++        await new Promise(r => setTimeout(r));
++      }
++      const innerEmbed = iframe.contentDocument.querySelector('embed');
++      const internalid = innerEmbed.getAttribute('internalid');
++      const savedPostMessage = innerEmbed.postMessage;
++      innerEmbed.remove();
++
++      // Create a replacement frame with `name = internalid` and
++      // `sandbox="allow-same-origin"` so its main-world V8 context is not
++      // initialized until `savedPostMessage({})` accesses its window proxy.
++      const target = document.createElement('iframe');
++      target.name = internalid;
++      target.setAttribute('sandbox', 'allow-same-origin');
++      target.srcdoc = '<iframe srcdoc="<iframe name=below></iframe>"></iframe>';
++      const targetLoaded = new Promise(resolve => {
++        target.onload = resolve;
++      });
++      document.body.appendChild(target);
++      await targetLoaded;
++
++      // Name `target`'s child frame `'chrome'` (reached via its grandchild so
++      // `target.contentWindow` is not accessed early) so `window.chrome` on
++      // `target` resolves to `child` during lazy V8 context creation.
++      const child = window.open('', 'below').parent;
++      child.name = 'chrome';
++
++      // When `LoadTimesBindings::Install()` sets `chrome.loadTimes` during
++      // `target`'s V8 context creation, remove `iframe` to synchronously
++      // destroy `extensions::PostMessageSupport` inside `savedPostMessage({})`.
++      let loadTimesSetterRan = false;
++      Object.defineProperty(child, 'loadTimes', {
++        configurable: true,
++        set() {
++          loadTimesSetterRan = true;
++          iframe.remove();
++        }
++      });
++
++      if (loadTimesSetterRan) {
++        return false;
++      }
++      savedPostMessage({});
++      return loadTimesSetterRan;
++    })();
++  )";
++
++  // Executing `kReproScript` invokes `savedPostMessage({})` and returns true
++  // only if the `loadTimes` setter ran synchronously during that call.
++  EXPECT_EQ(true, content::EvalJs(web_contents, kReproScript));
++}
+diff --git a/extensions/renderer/guest_view/mime_handler_view/post_message_support.cc b/extensions/renderer/guest_view/mime_handler_view/post_message_support.cc
+index 0c17acc35c66dbaf548f5ebdb59614488b2caa89..2e683175d06b4cf908ea6a632e196dfdf2d1859b 100644
+--- a/extensions/renderer/guest_view/mime_handler_view/post_message_support.cc
++++ b/extensions/renderer/guest_view/mime_handler_view/post_message_support.cc
+@@ -142,12 +142,18 @@ void PostMessageSupport::PostJavaScriptMessage(v8::Isolate* isolate,
+     return;
+   }
+ 
++  auto weak_this = weak_factory_.GetWeakPtr();
+   v8::Context::Scope context_scope(
+       delegate_->GetSourceFrame()->MainWorldScriptContext());
+   v8::Local<v8::Object> target_window_proxy =
+       target_frame->GlobalProxy(isolate);
++  if (!weak_this) {
++    // Calling `blink::WebFrame::GlobalProxy()` may lazily initialize the target
++    // frame's V8 context and execute a malicious script that destroys `this`.
++    // See https://crbug.com/569674220
++    return;
++  }
+   gin::Dictionary window_object(isolate, target_window_proxy);
+-  auto weak_this = weak_factory_.GetWeakPtr();
+   v8::Local<v8::Function> post_message;
+   if (!window_object.Get(std::string(kPostMessageName), &post_message)) {
+     return;

@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 2 Nov 2026 19:07:16 -0800
+Subject: [MSE] Clean up cross-document MediaSource state on context
+ destruction
+
+When a main-thread MediaSource's execution context (such as an iframe)
+is destroyed:
+- Clear media_source_attachment_ and attachment_tracer_ even if the
+  MediaSource was still in kClosed because attachment had started but
+  not yet completed, rather than retaining strong/traced references to
+  the attachment and surviving media element.
+- Reject StartAttachingToMediaElement() when context_already_destroyed_
+  is set instead of DCHECKing, since an object URL registered in another
+  document remains valid after the MediaSource's document is detached.
+- Guard SeekableInternal(), OnTrackChanged(), and OnElementError() in
+  SameThreadMediaSourceAttachment when media_source_context_destroyed_
+  is set, matching BufferedInternal() and OnElementTimeUpdate().
+
+Bug: 577171064
+Change-Id: I56a7fd5a7d454e97a5a23f59d383845854be55ac
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8711858
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1733610}
+
+diff --git a/third_party/blink/renderer/modules/mediasource/media_source.cc b/third_party/blink/renderer/modules/mediasource/media_source.cc
+index e87f24fdc334e5e154af9ede4a2f642b9f141af8..66abe5dea1b8890bfbce579d51b5b674d3df95f5 100644
+--- a/third_party/blink/renderer/modules/mediasource/media_source.cc
++++ b/third_party/blink/renderer/modules/mediasource/media_source.cc
+@@ -1357,11 +1357,11 @@ MediaSourceTracer* MediaSource::StartAttachingToMediaElement(
+ 
+   DCHECK(IsMainThread());
+ 
+-  if (media_source_attachment_ || attachment_tracer_) {
++  if (media_source_attachment_ || attachment_tracer_ ||
++      context_already_destroyed_) {
+     return nullptr;
+   }
+ 
+-  DCHECK(!context_already_destroyed_);
+   DCHECK(IsClosed());
+ 
+   TRACE_EVENT_BEGIN("media", "MediaSource::StartAttachingToMediaElement",
+@@ -1453,14 +1453,21 @@ void MediaSource::ContextDestroyed() {
+         media_source_attachment_->OnMediaSourceContextDestroyed();
+       }
+ 
+-      // For consistency, though redundant for same-thread operation, prevent
+-      // subsequent attachment start from succeeding. This flag is meaningful in
+-      // cross-thread attachment usage.
++      // Prevent subsequent attachment start from succeeding (for instance, if a
++      // cross-document caller still holds an unrevoked object URL after this
++      // MediaSource's context is destroyed).
+       context_already_destroyed_ = true;
+     }
+ 
+     if (!IsClosed()) {
+       SetReadyState(ReadyState::kClosed);
++    } else {
++      // If attachment started, but did not yet complete before our context was
++      // destroyed, we are still in kClosed so OnReadyStateChange() will not
++      // run; drop the attachment and tracer references explicitly.
++      base::AutoLock lock(attachment_link_lock_);
++      media_source_attachment_.reset();
++      attachment_tracer_ = nullptr;
+     }
+     web_media_source_.reset();
+     return;
+diff --git a/third_party/blink/renderer/modules/mediasource/same_thread_media_source_attachment.cc b/third_party/blink/renderer/modules/mediasource/same_thread_media_source_attachment.cc
+index 4fad83bc41cada63101502e69b9d50e9b51422ef..ff1c0bc34622c4aa4ba1fbb12c86bd0830a72f7b 100644
+--- a/third_party/blink/renderer/modules/mediasource/same_thread_media_source_attachment.cc
++++ b/third_party/blink/renderer/modules/mediasource/same_thread_media_source_attachment.cc
+@@ -300,6 +300,10 @@ WebTimeRanges SameThreadMediaSourceAttachment::BufferedInternal(
+ 
+ WebTimeRanges SameThreadMediaSourceAttachment::SeekableInternal(
+     MediaSourceTracer* tracer) const {
++  if (media_source_context_destroyed_) {
++    return {};
++  }
++
+   VerifyCalledWhileContextsAliveForDebugging();
+ 
+   // Since the attached MediaSource, HTMLMediaElement and the element's player's
+@@ -312,6 +316,10 @@ WebTimeRanges SameThreadMediaSourceAttachment::SeekableInternal(
+ 
+ void SameThreadMediaSourceAttachment::OnTrackChanged(MediaSourceTracer* tracer,
+                                                      TrackBase* track) {
++  if (media_source_context_destroyed_) {
++    return;
++  }
++
+   // In this same thread implementation, the MSE side of the attachment can loop
+   // back into this from SourceBuffer's initialization segment received
+   // algorithm notifying the element, which then calls this. Regardless, we are
+@@ -337,6 +345,10 @@ void SameThreadMediaSourceAttachment::OnElementTimeUpdate(double time) {
+ void SameThreadMediaSourceAttachment::OnElementError() {
+   DVLOG(3) << __func__ << " this=" << this;
+ 
++  if (media_source_context_destroyed_) {
++    return;
++  }
++
+   VerifyCalledWhileContextsAliveForDebugging();
+ 
+   DCHECK(!element_has_error_)
+diff --git a/third_party/blink/web_tests/http/tests/media/media-source/mediasource-iframe-detach-during-attach.html b/third_party/blink/web_tests/http/tests/media/media-source/mediasource-iframe-detach-during-attach.html
+index ea328a3cd6f23bf9b1b51c835d497a2edb161a55..25878f5cb422207f2beba5e5cd7cce6d9b7ebbb8 100644
+--- a/third_party/blink/web_tests/http/tests/media/media-source/mediasource-iframe-detach-during-attach.html
++++ b/third_party/blink/web_tests/http/tests/media/media-source/mediasource-iframe-detach-during-attach.html
+@@ -35,6 +35,8 @@ async_test(t => {
+                   'readyState after attachment completes');
+     assert_true(isNaN(mediaSource.duration),
+                 'duration after attachment completes');
++    assert_equals(video.buffered.length, 0, 'buffered.length');
++    assert_equals(video.seekable.length, 0, 'seekable.length');
+ 
+     // Detach the media element, which destroys its player and demuxer.
+     video.removeAttribute('src');
+@@ -47,5 +49,34 @@ async_test(t => {
+ 
+   video.src = URL.createObjectURL(mediaSource);
+ }, 'MediaSource stays closed if its context is destroyed during attachment');
++
++promise_test(async t => {
++  const iframe = document.createElement('iframe');
++  document.body.appendChild(iframe);
++  const mediaSource = new iframe.contentWindow.MediaSource();
++
++  // Register the object URL in the main document so it is not auto-revoked
++  // when the iframe's context is destroyed, then destroy the iframe before
++  // starting attachment.
++  const url = URL.createObjectURL(mediaSource);
++  t.add_cleanup(() => URL.revokeObjectURL(url));
++  iframe.remove();
++
++  const video = document.createElement('video');
++  document.body.appendChild(video);
++  t.add_cleanup(() => {
++    video.removeAttribute('src');
++    video.load();
++    video.remove();
++  });
++
++  const errorPromise = new Promise(resolve => {
++    video.addEventListener('error', resolve, {once: true});
++  });
++  video.src = url;
++  await errorPromise;
++  assert_equals(video.error.code, MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED);
++  assert_equals(mediaSource.readyState, 'closed');
++}, 'Attaching to a MediaSource whose context is already destroyed fails cleanly');
+ </script>
+ </body>

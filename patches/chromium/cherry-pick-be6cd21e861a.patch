@@ -1,0 +1,268 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Wed, 11 Nov 2026 06:37:49 +0000
+Subject: [M150-LTS] cc: Don't cache record shaders that use SharedImages
+
+SkImages opened through the SharedImageProvider borrow their textures
+only for the current raster pass. A record shader whose record opened
+one was still stored in the service-side transfer cache, and a later
+pass could reuse it, after the SharedImage may have been destroyed.
+
+Deserialize the record with a provider that notes whether any
+SharedImage was opened, including by nested records. If it was, resolve
+the shader for this use only: don't create a cache entry and don't use
+an existing one.
+
+Also reject shaders other than image shaders that carry an image, which
+clients never serialize.
+
+Bug: 574410140
+Change-Id: Ie03077fb7a8713ecc69c3052abe539d05b2e74f2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8727052
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1739074}
+(cherry picked from commit 84831be73739894554d0a078096bb6a801ba68e6)
+
+diff --git a/cc/paint/gpu_raster_pixeltest.cc b/cc/paint/gpu_raster_pixeltest.cc
+index 1d7659449dd5dafff5ffa721df41623a9bcb61ca..e9d07d297e5d073084f5cda13dc36bdab1a3dfbf 100644
+--- a/cc/paint/gpu_raster_pixeltest.cc
++++ b/cc/paint/gpu_raster_pixeltest.cc
+@@ -1331,6 +1331,7 @@ class TestMailboxBacking : public TextureBacking {
+ 
+   const SkImageInfo& GetSkImageInfo() override { return info_; }
+   gpu::Mailbox GetMailbox() const override { return mailbox_; }
++  void set_mailbox(const gpu::Mailbox& mailbox) { mailbox_ = mailbox; }
+   sk_sp<SkImage> GetSkImageViaReadback() override { return nullptr; }
+   bool readPixels(const SkImageInfo& dstInfo,
+                   void* dstPixels,
+@@ -1386,6 +1387,79 @@ TEST_F(GpuRasterPixelTest, DrawMailboxBackedImage) {
+   ExpectEquals(actual_bitmap, expected_bitmap);
+ }
+ 
++// A record shader that draws a SharedImage must not be reused from the GPU
++// process's transfer cache by a later raster, since the client can destroy the
++// SharedImage once the raster that used it ends.
++TEST_F(GpuRasterPixelTest, RecordShaderDoesNotReuseDestroyedSharedImage) {
++  RasterOptions options(gfx::Size(16, 16));
++  options.image_provider_raster_mode = PlaybackImageProvider::RasterMode::kGpu;
++  SkImageInfo info = SkImageInfo::MakeN32Premul(options.resource_size.width(),
++                                                options.resource_size.height());
++
++  auto* ri = raster_context_provider_->RasterInterface();
++  auto* sii = raster_context_provider_->SharedImageInterface();
++  auto create_image = [&](const SkColor4f& color) {
++    SkBitmap bitmap;
++    bitmap.allocPixels(info);
++    bitmap.eraseColor(color);
++    scoped_refptr<gpu::ClientSharedImage> shared_image =
++        CreateClientSharedImage(ri, sii, options,
++                                viz::SinglePlaneFormat::kRGBA_8888);
++    shared_image->UpdateDestructionSyncToken(
++        UploadPixels(ri, shared_image, info, bitmap));
++    return shared_image;
++  };
++  scoped_refptr<gpu::ClientSharedImage> red_image =
++      create_image(SkColors::kRed);
++  scoped_refptr<gpu::ClientSharedImage> green_image =
++      create_image(SkColors::kGreen);
++
++  // The record shader draws a texture-backed image, which is serialized as its
++  // SharedImage mailbox. Both rasters use the same shader, so they send the
++  // same shader id and tile, and only the mailbox changes.
++  auto backing = sk_make_sp<TestMailboxBacking>(red_image->mailbox(), info);
++  auto paint_image =
++      PaintImageBuilder::WithDefault()
++          .set_id(PaintImage::GetNextId())
++          .set_texture_backing(backing, PaintImage::GetNextContentId())
++          .TakePaintImage();
++  PaintOpBuffer shader_buffer;
++  shader_buffer.push<DrawImageOp>(paint_image, 0.f, 0.f);
++  auto shader = PaintShader::MakePaintRecord(
++      shader_buffer.ReleaseAsRecord(), gfx::RectToSkRect(gfx::Rect(16, 16)),
++      SkTileMode::kClamp, SkTileMode::kClamp, nullptr,
++      PaintShader::ScalingBehavior::kFixedScale);
++
++  auto display_item_list = base::MakeRefCounted<DisplayItemList>();
++  display_item_list->StartPaint();
++  PaintFlags flags;
++  flags.setShader(shader);
++  display_item_list->push<DrawRectOp>(gfx::RectToSkRect(gfx::Rect(16, 16)),
++                                      flags);
++  display_item_list->EndPaintOfUnpaired(gfx::Rect(options.resource_size));
++  display_item_list->Finalize();
++
++  SkBitmap first_result = Raster(display_item_list, options);
++  EXPECT_EQ(SK_ColorRED, first_result.getColor(8, 8));
++
++  // The client destroys the red image after the first raster. New images may
++  // reuse its texture. Finishing lets backends that defer texture deletion
++  // until the GPU is done (e.g. Vulkan) actually delete it.
++  gpu::SyncToken post_raster_token;
++  ri->GenUnverifiedSyncTokenCHROMIUM(post_raster_token.GetData());
++  red_image->UpdateDestructionSyncToken(post_raster_token);
++  red_image.reset();
++  std::vector<scoped_refptr<gpu::ClientSharedImage>> other_images;
++  for (int i = 0; i < 4; ++i) {
++    other_images.push_back(create_image(SkColors::kBlue));
++    ri->Finish();
++  }
++
++  backing->set_mailbox(green_image->mailbox());
++  SkBitmap second_result = Raster(display_item_list, options);
++  EXPECT_EQ(SK_ColorGREEN, second_result.getColor(8, 8));
++}
++
+ TEST_F(GpuRasterPixelTest, Preclear) {
+   gfx::Rect rect(10, 10);
+   auto display_item_list = base::MakeRefCounted<DisplayItemList>();
+diff --git a/cc/paint/paint_op_buffer.h b/cc/paint/paint_op_buffer.h
+index d6b6e8e5cceae83f7c4beb288294a822a36c33bb..8eacaa3820c4d4c09a1319d030cc7a57641ffdc1 100644
+--- a/cc/paint/paint_op_buffer.h
++++ b/cc/paint/paint_op_buffer.h
+@@ -101,6 +101,8 @@ class CC_PAINT_EXPORT SharedImageProvider {
+   };
+ 
+   virtual ~SharedImageProvider() = default;
++  // The returned SkImage may borrow the SharedImage's texture, and must not be
++  // used after this provider is destroyed.
+   virtual sk_sp<SkImage> OpenSharedImageForRead(const gpu::Mailbox& mailbox,
+                                                 Error& error) = 0;
+ };
+diff --git a/cc/paint/paint_op_reader.cc b/cc/paint/paint_op_reader.cc
+index 06adf918b123e50199fa62f6625070190cb27af6..b48f652ac74bd4ff3e3122cd56e67536824f4758 100644
+--- a/cc/paint/paint_op_reader.cc
++++ b/cc/paint/paint_op_reader.cc
+@@ -19,6 +19,7 @@
+ #include "base/containers/span.h"
+ #include "base/debug/dump_without_crashing.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/stack_allocated.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/notreached.h"
+ #include "base/numerics/safe_math.h"
+@@ -70,6 +71,30 @@ bool IsValidPaintShaderScalingBehavior(PaintShader::ScalingBehavior behavior) {
+          behavior == PaintShader::ScalingBehavior::kFixedScale;
+ }
+ 
++// Forwards to another SharedImageProvider and records whether any SharedImage
++// was opened through it. Nested records are deserialized with the same
++// provider, so this also sees SharedImages opened by records nested inside the
++// record being read.
++class TrackingSharedImageProvider final : public SharedImageProvider {
++  STACK_ALLOCATED();
++
++ public:
++  explicit TrackingSharedImageProvider(SharedImageProvider& provider)
++      : provider_(provider) {}
++
++  sk_sp<SkImage> OpenSharedImageForRead(const gpu::Mailbox& mailbox,
++                                        Error& error) override {
++    opened_shared_image_ = true;
++    return provider_.OpenSharedImageForRead(mailbox, error);
++  }
++
++  bool opened_shared_image() const { return opened_shared_image_; }
++
++ private:
++  SharedImageProvider& provider_;
++  bool opened_shared_image_ = false;
++};
++
+ }  // namespace
+ 
+ // Being a friend to `PaintOpReader`, this cannot be in the anonymous namespace.
+@@ -733,10 +758,17 @@ void PaintOpReader::Read(sk_sp<PaintShader>* shader) {
+   ReadSimple(&ref.end_degrees_);
+   Read(&ref.gradient_interpolation_);
+   Read(&ref.image_);
++  // Only image shaders use an image; clients never serialize one for any other
++  // shader type.
++  if (ref.image_ && shader_type != PaintShader::Type::kImage) {
++    SetInvalid(DeserializationError::kUnexpectedPaintShaderType);
++    return;
++  }
+   bool has_record = false;
+   Read(&has_record);
+   PaintShader::RecordShaderId shader_id = PaintShader::kInvalidRecordShaderId;
+   size_t shader_size = 0;
++  bool record_opened_shared_image = false;
+   if (has_record) {
+     if (shader_type != PaintShader::Type::kPaintRecord) {
+       SetInvalid(DeserializationError::kUnexpectedPaintShaderType);
+@@ -748,12 +780,22 @@ void PaintOpReader::Read(sk_sp<PaintShader>* shader) {
+       return;
+     }
+ 
++    // Note whether the record opens any SharedImages, see below.
++    std::optional<TrackingSharedImageProvider> tracking_provider;
++    PaintOp::DeserializeOptions record_options = options_;
++    if (options_.shared_image_provider) {
++      tracking_provider.emplace(*options_.shared_image_provider);
++      record_options.shared_image_provider = &tracking_provider.value();
++    }
++
+     // Track dependent transfer cache entries to make cached shader size
+     // more realistic.
+     size_t pre_size = options_.transfer_cache->GetTotalEntrySizes();
+-    size_t record_size = Read(&ref.record_);
++    size_t record_size = Read(&ref.record_, record_options);
+     size_t post_size = options_.transfer_cache->GetTotalEntrySizes();
+     shader_size = post_size - pre_size + record_size;
++    record_opened_shared_image =
++        tracking_provider && tracking_provider->opened_shared_image();
+ 
+     ref.id_ = shader_id;
+   }
+@@ -880,6 +922,16 @@ void PaintOpReader::Read(sk_sp<PaintShader>* shader) {
+     return;
+   }
+ 
++  // SkImages opened through `options_.shared_image_provider` borrow their
++  // textures only until the end of the current raster pass, after which the
++  // client can destroy the SharedImages. A shader whose record holds such
++  // images must neither be cached past this pass nor replaced by a cached
++  // version, so resolve it for this use only.
++  if (record_opened_shared_image) {
++    (*shader)->ResolveSkObjects();
++    return;
++  }
++
+   // Record shaders have shader ids.  Attempt to use cached versions of
+   // these so that Skia can cache based on SkPictureShader::fUniqueId.
+   // These shaders are always serialized (and assumed to not be large
+@@ -1742,6 +1794,11 @@ void PaintOpReader::ReadLightingSpotPaintFilter(
+ }
+ 
+ size_t PaintOpReader::Read(std::optional<PaintRecord>* record) {
++  return Read(record, options_);
++}
++
++size_t PaintOpReader::Read(std::optional<PaintRecord>* record,
++                           const PaintOp::DeserializeOptions& options) {
+   size_t size_bytes = 0;
+   ReadSize(&size_bytes);
+ 
+@@ -1766,7 +1823,7 @@ size_t PaintOpReader::Read(std::optional<PaintRecord>* record) {
+     return 0;
+ 
+   auto span = remaining_.first(size_bytes);
+-  sk_sp<PaintOpBuffer> buffer = PaintOpBuffer::MakeFromMemory(span, options_);
++  sk_sp<PaintOpBuffer> buffer = PaintOpBuffer::MakeFromMemory(span, options);
+   if (!buffer) {
+     SetInvalid(DeserializationError::kPaintOpBufferMakeFromMemoryFailure);
+     return 0;
+diff --git a/cc/paint/paint_op_reader.h b/cc/paint/paint_op_reader.h
+index a4c95a901cf5501f3e3943f48cd7bb746c171c92..96d6f4ecd9702bfa1b0f9c9d83937271203a6c09 100644
+--- a/cc/paint/paint_op_reader.h
++++ b/cc/paint/paint_op_reader.h
+@@ -361,6 +361,9 @@ class CC_PAINT_EXPORT PaintOpReader {
+ 
+   // Returns the size of the read record, 0 if error.
+   size_t Read(std::optional<PaintRecord>* record);
++  // Same, but deserializes the record with `options` instead of `options_`.
++  size_t Read(std::optional<PaintRecord>* record,
++              const PaintOp::DeserializeOptions& options);
+ 
+   void Read(SkRegion* region);
+   uint8_t* CopyScratchSpace(size_t bytes);

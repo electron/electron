@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Fri, 6 Nov 2026 16:56:29 -0500
+Subject: [M150-LTS][ganesh] Fix skew matrix multiply in EllipticalRRectOp and
+ avoid self intersections
+
+Also audited the other rrect ops for their 2x2 matrix math and added
+comments justifying their correctness.
+
+Bug: 578685706
+Change-Id: I84c777206f8fc3f9aef7530ed289ae21dbec4691
+Fixed: 578685706
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1420157
+Commit-Queue: Robert Phillips <robertphillips@google.com>
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+(cherry picked from commit 3ecdbc38a95549d83c0f725fc1362a3c8503cde0)
+
+diff --git a/src/gpu/ganesh/ops/GrOvalOpFactory.cpp b/src/gpu/ganesh/ops/GrOvalOpFactory.cpp
+index 462ec9ccfa215adfadd300890c4e01e152473555..6e46fdbf699b3af60476ca5310529bf162bf5011 100644
+--- a/src/gpu/ganesh/ops/GrOvalOpFactory.cpp
++++ b/src/gpu/ganesh/ops/GrOvalOpFactory.cpp
+@@ -27,6 +27,7 @@
+ #include "src/core/SkColorData.h"
+ #include "src/core/SkMatrixPriv.h"
+ #include "src/core/SkRRectPriv.h"
++#include "src/core/SkRectPriv.h"
+ #include "src/core/SkSLTypeShared.h"
+ #include "src/gpu/BufferWriter.h"
+ #include "src/gpu/KeyBuilder.h"
+@@ -1886,18 +1887,25 @@ public:
+         params.fCenter = viewMatrix.mapPoint(ellipse.center());
+         SkScalar ellipseXRadius = SkScalarHalf(ellipse.width());
+         SkScalar ellipseYRadius = SkScalarHalf(ellipse.height());
++        // This computes `|viewMatrix * (ellipseXRadius, ellipseYRadius)|`. Since `viewMatrix` is
++        // rectStaysRect, this is sufficient to compute the separate device-space X and Y axis radii
++        // since it is either [sx 0][0 sy]*(ex, ey) = (sx*ex, sy*ey) or it is
++        // [0 kx][ky 0]*(ex,ey) = (kx*ey, ky*ex). Adding them together (since one condition is zero)
++        // leads to (sx*ex + kx*ey, ky*ex + sy*ey).
+         params.fXRadius = SkScalarAbs(viewMatrix[SkMatrix::kMScaleX] * ellipseXRadius +
+                                       viewMatrix[SkMatrix::kMSkewX] * ellipseYRadius);
+         params.fYRadius = SkScalarAbs(viewMatrix[SkMatrix::kMSkewY] * ellipseXRadius +
+                                       viewMatrix[SkMatrix::kMScaleY] * ellipseYRadius);
+ 
+-        // do (potentially) anisotropic mapping of stroke
++        // do (potentially) anisotropic mapping of stroke; using the same math as above, except
++        // both local radii are `strokeWidth`.
++        SkASSERT(viewMatrix.rectStaysRect());
+         SkVector scaledStroke;
+         SkScalar strokeWidth = stroke.getWidth();
+         scaledStroke.fX = SkScalarAbs(
+-                strokeWidth * (viewMatrix[SkMatrix::kMScaleX] + viewMatrix[SkMatrix::kMSkewY]));
++                strokeWidth * (viewMatrix[SkMatrix::kMScaleX] + viewMatrix[SkMatrix::kMSkewX]));
+         scaledStroke.fY = SkScalarAbs(
+-                strokeWidth * (viewMatrix[SkMatrix::kMSkewX] + viewMatrix[SkMatrix::kMScaleY]));
++                strokeWidth * (viewMatrix[SkMatrix::kMSkewY] + viewMatrix[SkMatrix::kMScaleY]));
+ 
+         SkStrokeRec::Style style = stroke.getStyle();
+         bool isStrokeOnly =
+@@ -3233,9 +3241,14 @@ GrOp::Owner GrOvalOpFactory::MakeCircularRRectOp(GrRecordingContext* context,
+     SkRect bounds;
+     viewMatrix.mapRect(&bounds, rrectBounds);
+ 
++    // Since this op requires the matrix to be a similarity matrix, `scaledRadius` is computed as
++    // the length of `viewMatrix * (radius, 0) = radius * (sx, ky)`. Since rectStaysRect is true,
++    // one of sx or ky is 0, so |sx + ky| is the same as the length.
+     SkScalar radius = SkRRectPriv::GetSimpleRadii(rrect).fX;
+     SkScalar scaledRadius = SkScalarAbs(radius * (viewMatrix[SkMatrix::kMScaleX] +
+                                                   viewMatrix[SkMatrix::kMSkewY]));
++    scaledRadius = std::min(scaledRadius, SkRectPriv::HalfWidth(bounds));
++    scaledRadius = std::min(scaledRadius, SkRectPriv::HalfHeight(bounds));
+ 
+     // Do mapping of stroke. Use -1 to indicate fill-only draws.
+     SkScalar scaledStroke = -1;
+@@ -3283,12 +3296,18 @@ GrOp::Owner make_rrect_op(GrRecordingContext* context,
+     SkRect bounds;
+     viewMatrix.mapRect(&bounds, rrectBounds);
+ 
++    // Map the local radii to device space, see EllipseOp::Make()
+     SkVector radii = SkRRectPriv::GetSimpleRadii(rrect);
+     SkScalar xRadius = SkScalarAbs(viewMatrix[SkMatrix::kMScaleX] * radii.fX +
+-                                   viewMatrix[SkMatrix::kMSkewY] * radii.fY);
+-    SkScalar yRadius = SkScalarAbs(viewMatrix[SkMatrix::kMSkewX] * radii.fX +
++                                   viewMatrix[SkMatrix::kMSkewX] * radii.fY);
++    SkScalar yRadius = SkScalarAbs(viewMatrix[SkMatrix::kMSkewY] * radii.fX +
+                                    viewMatrix[SkMatrix::kMScaleY] * radii.fY);
+ 
++    // Enforce the corner radii not crossing over each other, which is normally guaranteed by
++    // SkRRect, but this is post transformation.
++    xRadius = std::min(xRadius, SkRectPriv::HalfWidth(bounds));
++    yRadius = std::min(yRadius, SkRectPriv::HalfHeight(bounds));
++
+     SkStrokeRec::Style style = stroke.getStyle();
+ 
+     // Do (potentially) anisotropic mapping of stroke. Use -1s to indicate fill-only draws.
+@@ -3303,10 +3322,11 @@ GrOp::Owner make_rrect_op(GrRecordingContext* context,
+         if (SkStrokeRec::kHairline_Style == style) {
+             scaledStroke.set(1, 1);
+         } else {
++            // See EllipseOp::Make()
+             scaledStroke.fX = SkScalarAbs(
+-                    strokeWidth * (viewMatrix[SkMatrix::kMScaleX] + viewMatrix[SkMatrix::kMSkewY]));
++                    strokeWidth * (viewMatrix[SkMatrix::kMScaleX] + viewMatrix[SkMatrix::kMSkewX]));
+             scaledStroke.fY = SkScalarAbs(
+-                    strokeWidth * (viewMatrix[SkMatrix::kMSkewX] + viewMatrix[SkMatrix::kMScaleY]));
++                    strokeWidth * (viewMatrix[SkMatrix::kMSkewY] + viewMatrix[SkMatrix::kMScaleY]));
+         }
+ 
+         // if half of strokewidth is greater than radius, we don't handle that right now
+@@ -3316,12 +3336,6 @@ GrOp::Owner make_rrect_op(GrRecordingContext* context,
+         }
+     }
+ 
+-    // The matrix may have a rotation by an odd multiple of 90 degrees.
+-    if (viewMatrix.getScaleX() == 0) {
+-        std::swap(xRadius, yRadius);
+-        std::swap(scaledStroke.fX, scaledStroke.fY);
+-    }
+-
+     // The way the effect interpolates the offset-to-ellipse/circle-center attribute only works on
+     // the interior of the rrect if the radii are >= 0.5. Otherwise, the inner rect of the nine-
+     // patch will have fractional coverage. This only matters when the interior is actually filled.

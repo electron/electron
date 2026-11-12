@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nathan Sanchez <nathanasanchez@google.com>
+Date: Thu, 29 Oct 2026 10:31:01 -0400
+Subject: [Graphite] Treat inverse fills which cover the scissor as flood fill
+
+Bug: 574216555
+Change-Id: Iceb6cdbbe0980cbd0336bdd0be01c1f6535eaa0d
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1408118
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+
+diff --git a/src/gpu/graphite/ClipStack.cpp b/src/gpu/graphite/ClipStack.cpp
+index aeeaf581ef3184ac6fba34f583af0e8237a06d42..0868347fa47f407f16a0197b3ff32e70b89c3097 100644
+--- a/src/gpu/graphite/ClipStack.cpp
++++ b/src/gpu/graphite/ClipStack.cpp
+@@ -1297,9 +1297,12 @@ public:
+     void resetToFloodFill();
+     bool intersectClipElement(const RawElement& clip);
+ 
+-    // Sync any modifications back to `geometry` and return a Clip object encapsulating the
+-    // tracked bounds of the now-clipped draw.
+-    Clip toClip(Geometry* geometry, const NonMSAAClip& analyticClip, const SkShader* clipShader);
++    // Sync any modifications back to `geometry` and `style` and return a Clip object encapsulating
++    // the tracked bounds of the now-clipped draw.
++    Clip toClip(Geometry* geometry,
++                SkStrokeRec* style,
++                const NonMSAAClip& analyticClip,
++                const SkShader* clipShader);
+ 
+ private:
+     Transform fLocalToDevice;
+@@ -1444,9 +1447,16 @@ void ClipStack::DrawShape::applyScissor(const Rect& scissor) {
+     fScissor.intersect(scissor); // For first call, fScissor is infinite so this is assignment
+     fOuterBounds.intersect(scissor);
+     fInnerBounds.intersect(scissor);
++
++    // An inverse fill whose shape is entirely outside of the scissor covers every pixel that can
++    // be drawn, so it can be replaced with a flood fill.
++    if (fShape.inverted() && fOuterBounds.isEmptyNegativeOrNaN()) {
++        this->resetToFloodFill();
++    }
+ }
+ 
+ Clip ClipStack::DrawShape::toClip(Geometry* geometry,
++                                  SkStrokeRec* style,
+                                   const NonMSAAClip& analyticClip,
+                                   const SkShader* clipShader) {
+     if (fShapeWasModified) {
+@@ -1460,6 +1470,7 @@ Clip ClipStack::DrawShape::toClip(Geometry* geometry,
+             SkASSERT(fEdgeFlags == EdgeAAQuad::Flags::kAll);
+             geometry->setShape(fShape);
+         }
++        style->setFillStyle();
+         // Reconstruct new transformedShapeBounds and outer bounds
+         fTransformedShapeBounds = fLocalToDevice.mapRect(fShape.bounds());
+         fOuterBounds = fTransformedShapeBounds.makeIntersect(fScissor);
+@@ -1477,11 +1488,16 @@ Clip ClipStack::DrawShape::toClip(Geometry* geometry,
+ }
+ 
+ void ClipStack::DrawShape::resetToFloodFill() {
+-    if (this->shapeCanBeModified() && !fShape.isFloodFill()) {
++    // An inverse-filled shape that is replaced by the clip or scissor can always become a flood
++    // fill.
++    const bool canReset = this->shapeCanBeModified() || fShape.inverted();
++    if (canReset && !fShape.isFloodFill()) {
+         fShape.reset();
+         fShape.setInverted(true);
+         fEdgeFlags = EdgeAAQuad::Flags::kAll;
+         fOuterBounds = fInnerBounds = Rect::InfiniteInverted();
++        fShapeMatchesGeometry = true;
++        fShapeCompatibleWithIntersectShape = true;
+         fShapeWasModified = true;
+     }
+ }
+@@ -1741,7 +1757,7 @@ AnalyticClip can_apply_analytic_clip(const Shape& shape, const Transform& localT
+ 
+ Clip ClipStack::visitClipStackForDraw(const Transform& localToDevice,
+                                       Geometry* geometry,
+-                                      const SkStrokeRec& style,
++                                      SkStrokeRec* style,
+                                       ClipStack::ElementList* outEffectiveElements) const {
+     static const Clip kClippedOut = {
+             Rect::InfiniteInverted(), Rect::InfiniteInverted(), SkIRect::MakeEmpty(),
+@@ -1757,7 +1773,7 @@ Clip ClipStack::visitClipStackForDraw(const Transform& localToDevice,
+     const Rect deviceBounds = this->deviceBounds();
+ 
+     DrawShape draw{localToDevice, *geometry};
+-    if (!draw.applyStyle(style, deviceBounds)) {
++    if (!draw.applyStyle(*style, deviceBounds)) {
+         return kClippedOut;
+     }
+ 
+@@ -1780,7 +1796,7 @@ Clip ClipStack::visitClipStackForDraw(const Transform& localToDevice,
+         case DrawInfluence::kNone:
+             // The draw is unaffected by the clip stack (except possibly `scissor`), and there's no
+             // need to visit each clip element.
+-            return draw.toClip(geometry, {}, cs.shader());
++            return draw.toClip(geometry, style, {}, cs.shader());
+ 
+         case DrawInfluence::kReplacesDraw:
+             // The draw covers the clip entirely. Replace the shape with a flood fill, which can
+@@ -1883,7 +1899,7 @@ Clip ClipStack::visitClipStackForDraw(const Transform& localToDevice,
+         }
+     }
+ 
+-    return draw.toClip(geometry, nonMSAAClip, cs.shader());
++    return draw.toClip(geometry, style, nonMSAAClip, cs.shader());
+ }
+ 
+ std::pair<CompressedPaintersOrder, Insertion> ClipStack::updateClipStateForDraw(
+diff --git a/src/gpu/graphite/ClipStack.h b/src/gpu/graphite/ClipStack.h
+index 421f870ca19d0a16890a8dd6f0aef0923fa8bab9..14af9d61d6d2a40814475f5b05418eaac6abdf1e 100644
+--- a/src/gpu/graphite/ClipStack.h
++++ b/src/gpu/graphite/ClipStack.h
+@@ -101,7 +101,7 @@ public:
+     using ElementList = skia_private::STArray<4, const Element*>;
+     Clip visitClipStackForDraw(const Transform&,
+                                Geometry*,
+-                               const SkStrokeRec&,
++                               SkStrokeRec* style,
+                                ElementList* outEffectiveElements) const;
+ 
+     // Update the per-clip element state for later rendering using pre-computed clip state data for
+diff --git a/src/gpu/graphite/Device.cpp b/src/gpu/graphite/Device.cpp
+index 2a5e1aa6246cf890093ac7de70fe8d479b67959f..a7e3a6c610377b261d165f92145418d4d1ba242d 100644
+--- a/src/gpu/graphite/Device.cpp
++++ b/src/gpu/graphite/Device.cpp
+@@ -1529,7 +1529,7 @@ void Device::drawGeometry(const Transform& localToDevice,
+     ClipStack::ElementList clipElements;
+     Clip clip = fClip.visitClipStackForDraw(localToDevice,
+                                             &geometry,
+-                                            style,
++                                            &style,
+                                             &clipElements);
+     if (clip.isClippedOut()) {
+         // Clipped out, so don't record anything.
+diff --git a/src/gpu/graphite/PathAtlas.cpp b/src/gpu/graphite/PathAtlas.cpp
+index c8750cdf2ee777927c52e8af6a12a2461c2b7b5c..6b25135931fa600ee3fa3e2158acd18a6da7a10c 100644
+--- a/src/gpu/graphite/PathAtlas.cpp
++++ b/src/gpu/graphite/PathAtlas.cpp
+@@ -40,12 +40,12 @@ std::pair<const Renderer*, std::optional<CoverageMaskShape>> PathAtlas::addShape
+         const Shape& shape,
+         const Transform& localToDevice,
+         const SkStrokeRec& style) {
+-    // It is possible for the transformed shape bounds to be fully clipped out while the draw still
+-    // produces coverage due to an inverse fill. In this case, don't render any mask;
+-    // CoverageMaskShapeRenderStep will automatically handle the simple fill. We'll handle this
+-    // by adding an empty mask.
+-    // TODO: We could have addShape() handle this fully except we need a valid TextureProxy still.
+-    const bool emptyMask = transformedShapeBounds.isEmptyNegativeOrNaN();
++    // Inverse fills that don't intersect the scissor are drawn as flood fills, so
++    // there is always a non-empty region of the shape to rasterize here.
++    SkASSERT(!transformedShapeBounds.isEmptyNegativeOrNaN());
++    if (transformedShapeBounds.isEmptyNegativeOrNaN()) {
++        return std::make_pair(nullptr, std::nullopt);
++    }
+ 
+     // Round out the shape bounds to preserve any fractional offset so that it is present in the
+     // translation that we use when deriving the atlas-space transform later.
+@@ -54,7 +54,7 @@ std::pair<const Renderer*, std::optional<CoverageMaskShape>> PathAtlas::addShape
+     CoverageMaskShape::MaskInfo maskInfo;
+     // This size does *not* include any padding that the atlas may place around the mask. This size
+     // represents the area the shape can actually modify.
+-    maskInfo.fMaskSize = emptyMask ? skvx::half2(0) : skvx::cast<uint16_t>(maskBounds.size());
++    maskInfo.fMaskSize = skvx::cast<uint16_t>(maskBounds.size());
+     // We use the origin of the clipped mask bounds relative to the full mask to distinguish
+     // between clips of the same size.
+     Rect shapeDevBounds = localToDevice.mapRect(shape.bounds());

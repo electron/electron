@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lokbondo Kung <lokokung@google.com>
+Date: Thu, 29 Oct 2026 13:12:09 -0700
+Subject: [vulkan] Reset the recording context in Queue::DestroyImpl.
+
+- Prior to this change, Queue::DestroyImpl freed the current recording
+  context's command pool and buffer, but left the dangling handles in
+  mRecordingContext. If the recording context was used after the
+  device was destroyed (e.g. by SharedTextureMemory::EndAccess
+  performing an export transition submit), commands would be recorded
+  into a freed VkCommandBuffer, causing a heap use-after-free in the
+  driver.
+- This change resets mRecordingContext after freeing its resources so
+  that no dangling handles survive destruction. Any later use of the
+  recording context sees null handles instead of freed objects.
+
+Bug: 577377985
+Change-Id: I5440510d199218309d2da4ef9fcdf50529610fe9
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/354676
+Commit-Queue: Loko Kung <lokokung@google.com>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+
+diff --git a/src/dawn/native/vulkan/QueueVk.cpp b/src/dawn/native/vulkan/QueueVk.cpp
+index e5d683ddda97fe246a6f274abd86211e09628e1b..102a94e93859c8d5b4538887822e80390ad7bcb8 100644
+--- a/src/dawn/native/vulkan/QueueVk.cpp
++++ b/src/dawn/native/vulkan/QueueVk.cpp
+@@ -440,8 +440,10 @@ void Queue::DestroyImpl(DestroyReason reason) {
+     for (VkSemaphore semaphore : mRecordingContext.waitSemaphores) {
+         device->fn.DestroySemaphore(vkDevice, semaphore, nullptr);
+     }
+-    mRecordingContext.waitSemaphores.clear();
+-    mRecordingContext.signalSemaphores.clear();
++    // Reset the recording context so that no dangling handles to the freed command pool/buffer
++    // survive destruction. Any later attempt to use the recording context then sees null handles
++    // instead of using freed objects.
++    mRecordingContext = CommandRecordingContext();
+ 
+     // Free any recycled command pools.
+     mUnusedCommands.Use([&](auto unusedCommands) {

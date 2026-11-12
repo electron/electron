@@ -1,0 +1,219 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Wed, 28 Oct 2026 02:18:56 +0900
+Subject: [icu] Cap formatted digits and check range status
+
+Cherry-pick upstream ICU-23144 (commit 7964695d9f4b) and ICU-23539
+(commit 11e6fff63958) into third_party/icu.
+
+Guard writeNumber(), writeIntegerDigits(), and writeFractionDigits()
+against magnitudes exceeding 999,999 digits so formatting fails
+immediately with U_ILLEGAL_ARGUMENT_ERROR, and return early in
+formatRange() when number formatting or string insertion fails before
+applying modifiers.
+
+Bug: 567827593
+Test: intltest format/NumberTest
+Change-Id: I2d9b394a331755ea92c01e04ab90ee42bd9a406a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/deps/icu/+/8668341
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+
+Electron adaptation notes (43-x-y): README.chromium: resolved the local-modifications list conflict by keeping this branch's entries and adding only entries 16 and 17 from the upstream change; entry 15 (patches/reordering_buffer_overflow.patch) does not exist on this branch and was not added. upstream's bookkeeping copies of the change under patches/ (patches/number_max_digits.patch, patches/numrange_impl.patch) are left out, as the existing update_icu_to_2a51536df.patch does for patches/charstr.patch, because their blank diff context lines trip Electron's trailing-whitespace patch lint; the source changes themselves (source/i18n/number_formatimpl.cpp, numrange_impl.cpp) are carried in full. README.chromium still lists them, matching upstream.
+
+diff --git a/README.chromium b/README.chromium
+index 3e93de45d95ab225a7313e97a0f85ee6ae35ac22..6f8df83c0cbf3aa13391eaa5ff1b6391a8508f4b 100644
+--- a/README.chromium
++++ b/README.chromium
+@@ -276,3 +276,15 @@ D. Local Modifications
+   - https://unicode-org.atlassian.net/browse/ICU-23537
+   - https://github.com/unicode-org/icu/pull/4243
+   - https://crbug.com/565133743
++
++16. Limit maximum formatted digits in NumberFormatterImpl.
++  - patches/number_max_digits.patch
++  - https://unicode-org.atlassian.net/browse/ICU-23144
++  - https://github.com/unicode-org/icu/pull/4076
++  - https://crbug.com/567827593
++
++17. Return early in NumberRangeFormatterImpl::formatRange on failure.
++  - patches/numrange_impl.patch
++  - https://unicode-org.atlassian.net/browse/ICU-23539
++  - https://github.com/unicode-org/icu/pull/4264
++  - https://crbug.com/567827593
+diff --git a/source/i18n/number_formatimpl.cpp b/source/i18n/number_formatimpl.cpp
+index 45baa94615edfa2fd08b94476d0fc09ec32128ec..9a96dab78330019c1cde9992203f9f5e7fa777c7 100644
+--- a/source/i18n/number_formatimpl.cpp
++++ b/source/i18n/number_formatimpl.cpp
+@@ -24,6 +24,17 @@ using namespace icu;
+ using namespace icu::number;
+ using namespace icu::number::impl;
+ 
++namespace {
++
++// Maximum number of integer or fraction digits we will output during formatting.
++// Set to 999,999 to allow valid large-range performance tests (e.g., test21684_Performance
++// formatting -1e99999) while preventing runaway loops, allocation spikes, and timeouts
++// when formatting numbers with hugely out-of-bounds magnitudes (like scale/1e200000000).
++// This value may be tuned to a smaller value later if necessary.
++constexpr int32_t kMaxFormattedDigits = 999999;
++
++}  // namespace
++
+ 
+ NumberFormatterImpl::NumberFormatterImpl(const MacroProps& macros, UErrorCode& status)
+     : NumberFormatterImpl(macros, true, status) {
+@@ -537,6 +548,11 @@ int32_t NumberFormatterImpl::writeNumber(
+                 status);
+ 
+     } else {
++        if (quantity.getUpperDisplayMagnitude() + 1 > kMaxFormattedDigits ||
++            -quantity.getLowerDisplayMagnitude() > kMaxFormattedDigits) {
++            status = U_ILLEGAL_ARGUMENT_ERROR;
++            return 0;
++        }
+         // Add the integer digits
+         length += writeIntegerDigits(
+             micros,
+@@ -594,8 +610,13 @@ int32_t NumberFormatterImpl::writeIntegerDigits(
+         FormattedStringBuilder& string,
+         int32_t index,
+         UErrorCode& status) {
++    if (U_FAILURE(status)) { return 0; }
+     int length = 0;
+     int integerCount = quantity.getUpperDisplayMagnitude() + 1;
++    if (integerCount > kMaxFormattedDigits) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++        return 0;
++    }
+     for (int i = 0; i < integerCount; i++) {
+         // Add grouping separator
+         if (micros.grouping.groupAtPosition(i, quantity)) {
+@@ -629,8 +650,13 @@ int32_t NumberFormatterImpl::writeFractionDigits(
+         FormattedStringBuilder& string,
+         int32_t index,
+         UErrorCode& status) {
++    if (U_FAILURE(status)) { return 0; }
+     int length = 0;
+     int fractionCount = -quantity.getLowerDisplayMagnitude();
++    if (fractionCount > kMaxFormattedDigits) {
++        status = U_ILLEGAL_ARGUMENT_ERROR;
++        return 0;
++    }
+     for (int i = 0; i < fractionCount; i++) {
+         // Get and append the next digit value
+         int8_t nextDigit = quantity.getDigit(-i - 1);
+diff --git a/source/i18n/numrange_impl.cpp b/source/i18n/numrange_impl.cpp
+index 0b1590158a4c6ee487f69c7dddceac384422ad38..7c6cabd7d4a954697a84015c0c432b1397eb2fc3 100644
+--- a/source/i18n/numrange_impl.cpp
++++ b/source/i18n/numrange_impl.cpp
+@@ -391,6 +391,7 @@ void NumberRangeFormatterImpl::formatRange(UFormattedNumberRangeData& data,
+     FormattedStringBuilder tempString;
+     NumberFormatterImpl::writeNumber(micros2.simple, data.quantity2, tempString, 0, status);
+     length2 += string.insert(UPRV_INDEX_2, tempString, status);
++    if (U_FAILURE(status)) { return; }
+ 
+     // TODO: Support padding?
+ 
+diff --git a/source/test/intltest/numbertest.h b/source/test/intltest/numbertest.h
+index 9043f591f242eff44f03c4000c75ae3ee53787f0..32aca96df5614795e52ff7224bc2222e04611fcf 100644
+--- a/source/test/intltest/numbertest.h
++++ b/source/test/intltest/numbertest.h
+@@ -305,6 +305,7 @@ class NumberSkeletonTest : public IntlTest {
+     void perUnitInArabic();
+     void perUnitToSkeleton();
+     void measurementSystemOverride();
++    void testIssue23144();
+ 
+     void runIndexedTest(int32_t index, UBool exec, const char*& name, char* par = nullptr) override;
+ 
+@@ -335,6 +336,7 @@ class NumberRangeFormatterTest : public IntlTestWithFieldPosition {
+     void testCreateLNRFFromNumberingSystemInSkeleton();
+     void test22288_DifferentStartEndSettings();
+     void test23110_PercentApproximately();
++    void test23539_LargeRangeError();
+ 
+     void runIndexedTest(int32_t index, UBool exec, const char*& name, char* par = nullptr) override;
+ 
+diff --git a/source/test/intltest/numbertest_range.cpp b/source/test/intltest/numbertest_range.cpp
+index d05dbc283688eebaff8c39f1150791e1c89980ee..e1d9dc37c975d10831ddffaaab7a816e4e5c2abf 100644
+--- a/source/test/intltest/numbertest_range.cpp
++++ b/source/test/intltest/numbertest_range.cpp
+@@ -61,6 +61,7 @@ void NumberRangeFormatterTest::runIndexedTest(int32_t index, UBool exec, const c
+         TESTCASE_AUTO(testCreateLNRFFromNumberingSystemInSkeleton);
+         TESTCASE_AUTO(test22288_DifferentStartEndSettings);
+         TESTCASE_AUTO(test23110_PercentApproximately);
++        TESTCASE_AUTO(test23539_LargeRangeError);
+     TESTCASE_AUTO_END;
+ }
+ 
+@@ -1204,6 +1205,41 @@ void NumberRangeFormatterTest::test23110_PercentApproximately() {
+         u"500,000% – 500,000,000%");
+ }
+ 
++void NumberRangeFormatterTest::test23539_LargeRangeError() {
++    IcuTestErrorCode status(*this, "test23539_LargeRangeError");
++    CurrencyUnit eur(u"EUR", status);
++    if (status.errIfFailureAndReset("CurrencyUnit EUR")) {
++        return;
++    }
++
++    LocalizedNumberRangeFormatter lnrf = NumberRangeFormatter::withLocale("bn-u-nu-mathsanb")
++        .numberFormatterBoth(
++            NumberFormatter::with()
++                .unit(eur)
++                .unitWidth(UNUM_UNIT_WIDTH_ISO_CODE)
++                .precision(Precision::integer()));
++
++    Formattable smallNeg(-1);
++    Formattable smallPos(1);
++    Formattable hugeNeg("-1e220000000", status);
++    Formattable hugePos("1e220000000", status);
++    if (status.errIfFailureAndReset("Formattable setup")) {
++        return;
++    }
++
++    lnrf.formatFormattableRange(smallNeg, hugePos, status);
++    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
++
++    lnrf.formatFormattableRange(hugeNeg, smallPos, status);
++    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
++
++    lnrf.formatFormattableRange(hugeNeg, hugePos, status);
++    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
++
++    lnrf.formatFormattableRange(hugePos, hugePos, status);
++    status.expectErrorAndReset(U_ILLEGAL_ARGUMENT_ERROR);
++}
++
+ void  NumberRangeFormatterTest::assertFormatRange(
+       const char16_t* message,
+       const UnlocalizedNumberRangeFormatter& f,
+diff --git a/source/test/intltest/numbertest_skeletons.cpp b/source/test/intltest/numbertest_skeletons.cpp
+index 91fc07451a6a751c1f9bb8f80f3058c3018acc6d..9a319d1d236ba53bcce85d74dfa6fdc315fe0664 100644
+--- a/source/test/intltest/numbertest_skeletons.cpp
++++ b/source/test/intltest/numbertest_skeletons.cpp
+@@ -35,6 +35,7 @@ void NumberSkeletonTest::runIndexedTest(int32_t index, UBool exec, const char*&
+         TESTCASE_AUTO(perUnitInArabic);
+         TESTCASE_AUTO(perUnitToSkeleton);
+         TESTCASE_AUTO(measurementSystemOverride);
++        TESTCASE_AUTO(testIssue23144);
+     TESTCASE_AUTO_END;
+ }
+ 
+@@ -572,4 +573,16 @@ void NumberSkeletonTest::measurementSystemOverride() {
+     }
+ }
+ 
++void NumberSkeletonTest::testIssue23144() {
++    IcuTestErrorCode status(*this, "testIssue23144");
++    UErrorCode err = U_ZERO_ERROR;
++    UnlocalizedNumberFormatter nf = NumberFormatter::forSkeleton(u"scale/1e200000000", err);
++    if (!assertSuccess("forSkeleton", err)) {
++        return;
++    }
++    FormattedNumber fn = nf.locale("en").formatDouble(1.0, err);
++    assertEquals("Expected U_ILLEGAL_ARGUMENT_ERROR when formatting hugely out-of-bounds magnitude",
++                 U_ILLEGAL_ARGUMENT_ERROR, err);
++}
++
+ #endif /* #if !UCONFIG_NO_FORMATTING */

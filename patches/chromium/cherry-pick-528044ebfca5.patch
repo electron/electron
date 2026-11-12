@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Mon, 9 Nov 2026 13:04:01 -0800
+Subject: [M150] [PDF] Prevent page unloading in
+ PDFiumPage::GenerateThumbnail()
+
+Original change's description:
+> [PDF] Prevent page unloading in PDFiumPage::GenerateThumbnail()
+>
+> PDFs with JS can potentially trigger page unloading while
+> GenerateThumbnail() is rendering. Use ScopedPageUnloadPreventer to make
+> sure that does not happen.
+>
+> Bug: 579818899
+> Change-Id: I7525abd9f21a678510318493e32523a08f231574
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8694663
+> Reviewed-by: Tom Sepez <tsepez@chromium.org>
+> Commit-Queue: Tom Sepez <tsepez@chromium.org>
+> Auto-Submit: Lei Zhang <thestig@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1733082}
+
+(cherry picked from commit df0e8fe2c59b03d95759c13e330ccd08d3951643)
+
+Bug: 582032485,579818899
+Change-Id: I7525abd9f21a678510318493e32523a08f231574
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8773695
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Pure-Cherry-Pick: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4589}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/pdf/pdfium/pdfium_page.cc b/pdf/pdfium/pdfium_page.cc
+index a79e744fc8e073a05fa50251c24368d224bb73fe..901661db7a6a98b542f9ec0adf9b950357902b4f 100644
+--- a/pdf/pdfium/pdfium_page.cc
++++ b/pdf/pdfium/pdfium_page.cc
+@@ -2052,6 +2052,9 @@ Thumbnail PDFiumPage::GenerateThumbnail(float device_pixel_ratio) {
+   DCHECK(available());
+ 
+   FPDF_PAGE page = GetPage();
++  // Make sure `page` stays valid for the duration of this function.
++  ScopedPageUnloadPreventer scoped_unload_preventer(this);
++
+   const bool has_alpha = !!FPDFPage_HasTransparency(page);
+   const int format = has_alpha ? FPDFBitmap_BGRA : FPDFBitmap_BGRx;
+ 

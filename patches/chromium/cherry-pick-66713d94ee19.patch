@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 10 Nov 2026 03:19:54 +0000
+Subject: [M150-LTS][a11y-image-desc] Guard AXImageAnnotator::OnImageAnnotated
+ re-entrancy
+
+Updating layout and AX across all documents inside OnImageAnnotated()
+can synchronously run script or frame observers and detach the frame or
+deactivate the document, destroying `this`. Require a non-null active AX
+context before and after UpdateAXForAllDocuments(), and guard `this`
+with a WeakPtr across the update.
+
+AX-Relnotes: n/a.
+Bug: 580869107
+Change-Id: Ib1f6f51d26a29d9b22949816684e4a736e513950
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8721771
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Commit-Queue: Ramin Halavati <rhalavati@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1737305}
+(cherry picked from commit 87638e8e5c988a5e26d4905b69eced454e64b86a)
+
+diff --git a/content/renderer/accessibility/annotations/ax_image_annotator.cc b/content/renderer/accessibility/annotations/ax_image_annotator.cc
+index 8758b6673f0355097c62ce4d10d714d5677bd7b6..5ca2c078fca6e0b9075ab78cf6b89a8f7ce09e56 100644
+--- a/content/renderer/accessibility/annotations/ax_image_annotator.cc
++++ b/content/renderer/accessibility/annotations/ax_image_annotator.cc
+@@ -10,6 +10,7 @@
+ #include <vector>
+ 
+ #include "base/base64.h"
++#include "base/check.h"
+ #include "base/command_line.h"
+ #include "base/containers/fixed_flat_map.h"
+ #include "base/i18n/char_iterator.h"
+@@ -30,6 +31,7 @@
+ #include "services/image_annotation/public/mojom/image_annotation.mojom-forward.h"
+ #include "services/metrics/public/cpp/mojo_ukm_recorder.h"
+ #include "services/metrics/public/cpp/ukm_builders.h"
++#include "third_party/blink/public/web/web_ax_context.h"
+ #include "third_party/blink/public/web/web_ax_object.h"
+ #include "third_party/blink/public/web/web_document.h"
+ #include "third_party/blink/public/web/web_element.h"
+@@ -675,8 +677,26 @@ SkBitmap AXImageAnnotator::GetImageData(const blink::WebAXObject& image) {
+ void AXImageAnnotator::OnImageAnnotated(
+     const blink::WebAXObject& image,
+     image_annotation::mojom::AnnotateImageResultPtr result) {
+-  DCHECK(render_accessibility_->GetAXContext());
+-  render_accessibility_->GetAXContext()->UpdateAXForAllDocuments();
++  blink::WebAXContext* ax_context = render_accessibility_->GetAXContext();
++  CHECK(ax_context);
++  // Bail out if the document is already shutting down or stopped.
++  if (!ax_context->HasActiveDocument()) {
++    return;
++  }
++
++  // Updating layout and AX across all documents can synchronously run script or
++  // frame observers (crbug.com/580869107) and destroy `this` or deactivate the
++  // document.
++  base::WeakPtr<AXImageAnnotator> weak_this = weak_factory_.GetWeakPtr();
++  ax_context->UpdateAXForAllDocuments();
++  if (!weak_this) {
++    return;
++  }
++  ax_context = render_accessibility_->GetAXContext();
++  CHECK(ax_context);
++  if (!ax_context->HasActiveDocument()) {
++    return;
++  }
+ 
+   const auto it = image_annotations_.find(image.AxID());
+   if (it == image_annotations_.end()) {

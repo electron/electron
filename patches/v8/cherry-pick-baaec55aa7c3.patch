@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Wed, 4 Nov 2026 13:58:46 +0100
+Subject: [M150] [turbofan] Fix self-referential DeadValue in
+ EscapeAnalysisReducer
+
+Original change's description:
+> [turbofan] Fix self-referential DeadValue in EscapeAnalysisReducer
+>
+> EscapeAnalysisReducer::Finalize created DeadValue(load) before replacing
+> uses of load with dead_value, which rewrote dead_value's own input to
+> itself. Because of this cycle, dead_value could not be scheduled and
+> mapped to an invalid OpIndex when lowering a consuming Phi in
+> Turboshaft, causing an out-of-bounds access in the OperationBuffer.
+>
+> Fixed: 579278668
+> Change-Id: Ia3e7fbc3c94994f5da3a202672509b2f39b6c520
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8722294
+> Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111667}
+
+(cherry picked from commit 1a89a496a2987998f56ec951a7b57413b02782e5)
+
+Bug: 583592327,579278668
+Change-Id: Ia3e7fbc3c94994f5da3a202672509b2f39b6c520
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8776791
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#141}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/compiler/escape-analysis-reducer.cc b/src/compiler/escape-analysis-reducer.cc
+index 4d54bdf1baa7b5ff4da0524b1b97fb6d2f959f17..1b83aca3b58d0bce37fd403b31f48946b6f35f42 100644
+--- a/src/compiler/escape-analysis-reducer.cc
++++ b/src/compiler/escape-analysis-reducer.cc
+@@ -309,6 +309,7 @@ void EscapeAnalysisReducer::Finalize() {
+               NodeProperties::SetType(load, Type::None());
+               NodeProperties::SetType(dead_value, Type::None());
+               NodeProperties::ReplaceUses(load, dead_value, load);
++              NodeProperties::ReplaceValueInput(dead_value, load, 0);
+               continue;
+             }
+ 
+diff --git a/src/compiler/verifier.cc b/src/compiler/verifier.cc
+index 600a223e13fdd626ae1ddff3c24e9f30e10b1255..6ac491b6945fd7999460b49055267add75e34cb2 100644
+--- a/src/compiler/verifier.cc
++++ b/src/compiler/verifier.cc
+@@ -303,6 +303,7 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
+       UNREACHABLE();
+     case IrOpcode::kDeadValue:
+       CheckValueInputIs(node, 0, Type::None());
++      CHECK_NE(NodeProperties::GetValueInput(node, 0), node);
+       CheckTypeIs(node, Type::None());
+       break;
+     case IrOpcode::kUnreachable:
+diff --git a/test/mjsunit/compiler/regress-579278668.js b/test/mjsunit/compiler/regress-579278668.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ae5ba2d6d1099d5d0e08fabb7e3c45ed72399b87
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-579278668.js
+@@ -0,0 +1,47 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++class DoubleHolder extends Array {}
++
++const box = { f2: false };
++function double_getter() {
++  let f2 = box.f2;
++  let p0 = this[0];
++  let p1 = f2 ? 1.5 : p0;
++  if (p1 === 0.0) return 1;
++  return p1;
++}
++function array_getter() {
++  return this[0];
++}
++Object.defineProperty(DoubleHolder.prototype, "trigger", { get: double_getter });
++Object.defineProperty(Array.prototype, "trigger", { get: array_getter });
++
++function access(o) {
++  return o.trigger;
++}
++
++function victim(...args) {
++  return access(args);
++}
++
++const double_arr = new DoubleHolder();
++double_arr[0] = 1.1;
++
++%PrepareFunctionForOptimization(double_getter);
++%PrepareFunctionForOptimization(array_getter);
++%PrepareFunctionForOptimization(access);
++%PrepareFunctionForOptimization(victim);
++
++for (let i = 0; i < 10; i++) {
++  box.f2 = (i % 2 === 0);
++  access(double_arr);
++  access([1, 2]);
++}
++
++assertEquals(1, victim(1, 2));
++%OptimizeFunctionOnNextCall(victim);
++assertEquals(1, victim(1, 2));

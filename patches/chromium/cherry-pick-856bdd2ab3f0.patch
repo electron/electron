@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mike Taylor <miketaylr@chromium.org>
+Date: Tue, 27 Oct 2026 01:31:21 -0700
+Subject: [navigation] Add kill switch for case-insensitive MHTML download
+ check
+
+https://crrev.com/c/8620417 made download_utils::MustDownload() match
+MHTML MIME types case-insensitively. As a result, MHTML responses with a
+mixed-case MIME type (e.g. "Multipart/Related") for URLs other than
+file: and content: are now downloaded instead of rendered. On WebView,
+apps can hit this by returning such a MIME type from
+shouldInterceptRequest().
+
+Add kCaseInsensitiveMhtmlMustDownload, enabled by default, so this part
+of the change can be turned off (e.g. for WebView via Finch) if it
+causes compatibility problems. When disabled, such responses are
+rendered, but NavigationRequest still classifies them as MHTML and
+applies the MHTML sandbox and an opaque origin.
+
+Also expose the feature in WebView's developer UI.
+
+Bug: 574381704
+Change-Id: I3fef10bec55a6bc6f5004ee787e0688817b00224
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8652378
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Commit-Queue: Mike Taylor <miketaylr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1727834}
+
+Electron adaptation notes (43-x-y): kCaseInsensitiveMhtmlMustDownload is inserted before kChildProcessSecurityPolicyRust in content_features.cc keeping this branch's surrounding comment. android_webview ProductionSupportedFlagList.java and navigation_mhtml_browsertest.cc conflicted and are not carried (Android-only / test-only).
+
+diff --git a/content/browser/loader/download_utils_impl.cc b/content/browser/loader/download_utils_impl.cc
+index c8be3896e4b34ac57389e5cf0dfa26ce6c96fe78..3bc0677fe35c3e01d34f50097ba2251d1d80d5c0 100644
+--- a/content/browser/loader/download_utils_impl.cc
++++ b/content/browser/loader/download_utils_impl.cc
+@@ -4,10 +4,12 @@
+ 
+ #include "content/browser/loader/download_utils_impl.h"
+ 
++#include "base/feature_list.h"
+ #include "base/strings/string_util.h"
+ #include "build/build_config.h"
+ #include "content/public/browser/content_browser_client.h"
+ #include "content/public/common/content_client.h"
++#include "content/public/common/content_features.h"
+ #include "net/http/http_content_disposition.h"
+ #include "net/http/http_response_headers.h"
+ #include "third_party/blink/public/common/mime_util/mime_util.h"
+@@ -35,6 +37,18 @@ bool ShouldAlwaysRenderMhtmlAsHtml(const GURL& url) {
+   return false;
+ }
+ 
++// Returns true if `mime_type` is one of the MHTML MIME types. Matching is
++// case-insensitive unless the kCaseInsensitiveMhtmlMustDownload kill switch is
++// disabled.
++bool IsMhtmlMimeTypeForDownload(const std::string& mime_type) {
++  if (!base::FeatureList::IsEnabled(
++          features::kCaseInsensitiveMhtmlMustDownload)) {
++    return mime_type == "multipart/related" || mime_type == "message/rfc822";
++  }
++  return base::EqualsCaseInsensitiveASCII(mime_type, "multipart/related") ||
++         base::EqualsCaseInsensitiveASCII(mime_type, "message/rfc822");
++}
++
+ }  // namespace
+ 
+ namespace content {
+@@ -57,8 +71,7 @@ bool MustDownload(BrowserContext* browser_context,
+             browser_context, url, mime_type)) {
+       return true;
+     }
+-    if (base::EqualsCaseInsensitiveASCII(mime_type, "multipart/related") ||
+-        base::EqualsCaseInsensitiveASCII(mime_type, "message/rfc822")) {
++    if (IsMhtmlMimeTypeForDownload(mime_type)) {
+       // Always allow rendering mhtml for content:// (on Android) and file:///.
+       if (ShouldAlwaysRenderMhtmlAsHtml(url)) {
+         return false;
+diff --git a/content/public/common/content_features.cc b/content/public/common/content_features.cc
+index 060453a7150693e1e7742299c9ce24a8f9781193..35126886f66714c926b501682e6216eec6e0dc1e 100644
+--- a/content/public/common/content_features.cc
++++ b/content/public/common/content_features.cc
+@@ -237,6 +237,17 @@ BASE_FEATURE(kBypassRedirectChecksPerRequest, base::FEATURE_ENABLED_BY_DEFAULT);
+ BASE_FEATURE(kCacheControlNoStoreEnterBackForwardCache,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// When enabled, download_utils::MustDownload() matches the MHTML MIME types
++// "multipart/related" and "message/rfc822" case-insensitively, so MHTML served
++// with a mixed-case MIME type (e.g. "Multipart/Related") over schemes other
++// than file: and content: is downloaded rather than rendered. When disabled,
++// such responses are rendered, but NavigationRequest still treats them as
++// MHTML and applies the MHTML sandbox. Kill switch for
++// https://crbug.com/574381704.
++// TODO(crbug.com/574381704): Remove once the change has shipped to stable.
++BASE_FEATURE(kCaseInsensitiveMhtmlMustDownload,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // Enables the experimental Rust implementation of
+ // ChildProcessSecurityPolicy. See https://crbug.com/482216433.
+ BASE_FEATURE(kChildProcessSecurityPolicyRust,
+diff --git a/content/public/common/content_features.h b/content/public/common/content_features.h
+index 2c28849c1f4a8b37eb14aac9e45df5cdba392c1c..ae9931326ecd1bd795654e6c1356d8e0a857aef1 100644
+--- a/content/public/common/content_features.h
++++ b/content/public/common/content_features.h
+@@ -93,6 +93,7 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(
+     kBrokerFileOperationsOnDiskCacheInNetworkService);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kBypassRedirectChecksPerRequest);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kCacheControlNoStoreEnterBackForwardCache);
++CONTENT_EXPORT BASE_DECLARE_FEATURE(kCaseInsensitiveMhtmlMustDownload);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kChildProcessSecurityPolicyRust);
+ inline constexpr const char kChildProcessSecurityPolicyRustPolicyName[] =
+     "policy";

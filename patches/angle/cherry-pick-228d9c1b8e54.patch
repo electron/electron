@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Amirali Abdolrashidi <abdolrashidi@google.com>
+Date: Wed, 28 Oct 2026 14:20:49 -0700
+Subject: Vulkan: Fix stale buffer usage on attrib re-enable
+
+  If the buffer for a disabled attribute is respecified while the VAO
+is unbound, and then the attribute is re-enabled, the pending attribute
+enable bit (DIRTY_ATTRIB_ENABLED) is cleared because the new enabled
+state matches the last synced state. This bypasses the buffer update,
+causing the backend to use a stale buffer that may have been destroyed.
+
+This change will add checks to the disabled attributes to make sure if
+their bindings should be processed to replace potentially destroyed
+buffers.
+
+* Updated VertexArrayVk::checkBufferForDirtyBits() so it would check
+  disabled attribute indices as well to set a dirty bit for their
+  binding index.
+
+* Added unit test to VertexAttributeTest:
+  RedrawAfterDisableUnbindReallocRebindEnable
+
+Bug: chromium:574209539
+Change-Id: I4127f4a68e75ee96ff6ed32b00890f54e5e2d036
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8678798
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index a12438558fbcf15cc730cfbc2243b7320e526ba8..677bdd92c377e91a8c95c7431e1c4cf2a5ee36f6 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -932,8 +932,7 @@ gl::VertexArray::DirtyBits VertexArrayVk::checkBufferForDirtyBits(
+ {
+     gl::VertexArray::DirtyBits dirtyBits;
+ 
+-    const std::vector<gl::VertexAttribute> &attribs = mState.getVertexAttributes();
+-    const std::vector<gl::VertexBinding> &bindings  = mState.getVertexBindings();
++    const std::vector<gl::VertexBinding> &bindings = mState.getVertexBindings();
+ 
+     // Element buffer is not in bindings yet, has to handle separately.
+     dirtyBits.set(gl::VertexArray::DIRTY_BIT_ELEMENT_ARRAY_BUFFER);
+@@ -945,11 +944,14 @@ gl::VertexArray::DirtyBits VertexArrayVk::checkBufferForDirtyBits(
+     {
+         const gl::Buffer *bufferGL    = getVertexArrayBuffer(bindingIndex);
+         vk::BufferSerial bufferSerial = vk::GetImpl(bufferGL)->getBufferSerial();
+-        gl::AttributesMask enabledAttributeMask =
+-            bindings[bindingIndex].getBoundAttributesMask() & mState.getEnabledAttributesMask();
+-        for (size_t attribIndex : enabledAttributeMask)
++
++        // If the buffer for a disabled attribute is respecified when the VAO is unbound and then it
++        // gets re-enabled, the enable-attribute dirty bit is cleared. Without checking the disabled
++        // attributes here, a stale buffer may be bound and used for the next draw in such cases.
++        const gl::AttributesMask boundAttributeMask =
++            bindings[bindingIndex].getBoundAttributesMask();
++        for (size_t attribIndex : boundAttributeMask)
+         {
+-            ASSERT(attribs[attribIndex].enabled);
+             if (!bufferSerial.valid() || bufferSerial != mCurrentArrayBufferSerial[attribIndex])
+             {
+                 dirtyBits.set(gl::VertexArray::DIRTY_BIT_BINDING_0 + bindingIndex);
+diff --git a/src/tests/gl_tests/VertexAttributeTest.cpp b/src/tests/gl_tests/VertexAttributeTest.cpp
+index 84972c48777aa5f609e53aab751eace7fc97ac60..90808dcff86bb0efbdfe4a478a4169da9934d841 100644
+--- a/src/tests/gl_tests/VertexAttributeTest.cpp
++++ b/src/tests/gl_tests/VertexAttributeTest.cpp
+@@ -1061,6 +1061,108 @@ void main() {
+     EXPECT_PIXEL_COLOR_EQ(64, 64, GLColor::green);
+ }
+ 
++// Test that disabling an attribute, unbinding VAO, reallocating buffer, rebinding VAO and enabling
++// attribute works.
++TEST_P(VertexAttributeTest, RedrawAfterDisableUnbindReallocRebindEnable)
++{
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3 &&
++                       !IsGLExtensionEnabled("GL_OES_vertex_array_object"));
++
++    constexpr char kVS[] = R"(attribute vec3 posIn;
++void main()
++{
++    gl_Position = vec4(posIn, 1.0);
++    gl_PointSize = 1.0;
++})";
++    constexpr char kFS[] = R"(precision mediump float;
++void main()
++{
++    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++
++    // Create and bind a vertex array.
++    GLuint vao;
++    if (getClientMajorVersion() >= 3)
++    {
++        glGenVertexArrays(1, &vao);
++        glBindVertexArray(vao);
++    }
++    else
++    {
++        glGenVertexArraysOES(1, &vao);
++        glBindVertexArrayOES(vao);
++    }
++
++    // Define a large buffer to be used for the attribute.
++    const GLsizeiptr kLargeBufferSize = 16 * 1024 * 1024;
++    GLBuffer buffer;
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    glBufferData(GL_ARRAY_BUFFER, kLargeBufferSize, nullptr, GL_STATIC_DRAW);
++
++    std::vector<GLfloat> zeroData(16, 0.0f);
++    glBufferSubData(GL_ARRAY_BUFFER, 0, zeroData.size() * sizeof(GLfloat), zeroData.data());
++
++    // Define and enable the vertex attribute in the program.
++    GLint attribLocation = glGetAttribLocation(program, "posIn");
++    ASSERT_NE(-1, attribLocation);
++
++    glEnableVertexAttribArray(attribLocation);
++    glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
++
++    // Clear and draw a pixel in a one-pixel viewport.
++    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glViewport(0, 0, 1, 1);
++    glDrawArrays(GL_POINTS, 0, 1);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::white);
++    EXPECT_GL_NO_ERROR();
++
++    // Disable the attribute and unbind the VAO.
++    glDisableVertexAttribArray(attribLocation);
++    if (getClientMajorVersion() >= 3)
++    {
++        glBindVertexArray(0);
++    }
++    else
++    {
++        glBindVertexArrayOES(0);
++    }
++
++    // Redefine the large buffer with a different usage.
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    glBufferData(GL_ARRAY_BUFFER, kLargeBufferSize, nullptr, GL_DYNAMIC_DRAW);
++    glBufferSubData(GL_ARRAY_BUFFER, 0, zeroData.size() * sizeof(GLfloat), zeroData.data());
++
++    // Rebind the VAO and re-enable the attribute.
++    if (getClientMajorVersion() >= 3)
++    {
++        glBindVertexArray(vao);
++    }
++    else
++    {
++        glBindVertexArrayOES(vao);
++    }
++    glEnableVertexAttribArray(attribLocation);
++
++    // Clear and draw another pixel.
++    glClear(GL_COLOR_BUFFER_BIT);
++    glDrawArrays(GL_POINTS, 0, 1);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::white);
++    EXPECT_GL_NO_ERROR();
++
++    if (getClientMajorVersion() >= 3)
++    {
++        glDeleteVertexArrays(1, &vao);
++    }
++    else
++    {
++        glDeleteVertexArraysOES(1, &vao);
++    }
++}
++
+ class VertexAttributeTestES3 : public VertexAttributeTest
+ {
+   protected:

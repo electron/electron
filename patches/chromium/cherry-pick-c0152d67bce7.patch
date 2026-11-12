@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Sun, 8 Nov 2026 17:48:14 -0800
+Subject: [M150-LTS][html-in-canvas] Fix display-locked painting in
+ PaintReplaced
+
+This patch adds a ChildPaintBlockedByDisplayLock() check to
+LayoutEmbeddedObject::PaintReplaced, matching
+LayoutEmbeddedContent::PaintReplaced and other LayoutReplaced
+painters. Without this check, applying content-visibility: hidden to
+an <object> or <embed> skipped the child LocalFrameView during
+PrePaint while still painting it during Paint from stale paint property
+nodes.
+
+Fixed: 578655807
+Change-Id: I07220d6f9cb9ba21fc7c448732a833d0667ec1c8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8695057
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Auto-Submit: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1734600}
+(cherry picked from commit e6fc4de844268339177a881e2a80e91e2a9f42c9)
+
+diff --git a/third_party/blink/renderer/core/layout/layout_embedded_object.cc b/third_party/blink/renderer/core/layout/layout_embedded_object.cc
+index 84413bf6eaa0a16b36d8f06edc2fe6a3c9b5adb3..d57845cf4472bd0429257d08fafab37985a54be7 100644
+--- a/third_party/blink/renderer/core/layout/layout_embedded_object.cc
++++ b/third_party/blink/renderer/core/layout/layout_embedded_object.cc
+@@ -90,6 +90,9 @@ void LayoutEmbeddedObject::PaintReplaced(
+     const PaintInfo& paint_info,
+     const PhysicalOffset& paint_offset) const {
+   NOT_DESTROYED();
++  if (ChildPaintBlockedByDisplayLock()) {
++    return;
++  }
+   CountSvgFilterPaint();
+   EmbeddedObjectPainter(*this).PaintReplaced(paint_info, paint_offset);
+ }
+diff --git a/third_party/blink/renderer/core/paint/paint_layer_test.cc b/third_party/blink/renderer/core/paint/paint_layer_test.cc
+index 6a200b4f464c3ba89de4e0f1958dea98993ee164..3b0485466e2d8a9ece847795579b15240db25c7a 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer_test.cc
++++ b/third_party/blink/renderer/core/paint/paint_layer_test.cc
+@@ -8,6 +8,7 @@
+ #include "third_party/blink/renderer/core/dom/pseudo_element.h"
+ #include "third_party/blink/renderer/core/events/mouse_event.h"
+ #include "third_party/blink/renderer/core/html/html_iframe_element.h"
++#include "third_party/blink/renderer/core/html/html_plugin_element.h"
+ #include "third_party/blink/renderer/core/layout/hit_test_location.h"
+ #include "third_party/blink/renderer/core/layout/layout_box_model_object.h"
+ #include "third_party/blink/renderer/core/layout/layout_view.h"
+@@ -2698,4 +2699,31 @@ TEST_P(PaintLayerTest, HitTestScrollMarkerPseudoElement) {
+   EXPECT_EQ(scroller->scrollTop(), 100);
+ }
+ 
++TEST_P(PaintLayerTest, ContentVisibilityHiddenObjectDoesNotPaintSubframe) {
++  GetDocument().body()->SetInnerHTMLWithoutTrustedTypes(R"HTML(
++    <object id="target" type="text/html" data="about:blank"
++            style="width: 100px; height: 100px"></object>
++  )HTML");
++  GetDocument().UpdateStyleAndLayoutTree();
++  To<HTMLPlugInElement>(GetElementById("target"))->UpdatePlugin();
++  SetChildFrameHTML(R"HTML(
++    <div id="child" style="width: 50px; height: 50px; background: green"></div>
++  )HTML");
++  UpdateAllLifecyclePhasesForTest();
++
++  const auto* child =
++      ChildDocument().getElementById(AtomicString("child"))->GetLayoutObject();
++  EXPECT_THAT(ContentDisplayItems(),
++              ElementsAre(VIEW_SCROLLING_BACKGROUND_DISPLAY_ITEM,
++                          IsSameId(child->Id(), kBackgroundType)));
++
++  GetElementById("target")->setAttribute(
++      html_names::kStyleAttr,
++      AtomicString("width: 100px; height: 100px; content-visibility: hidden"));
++  UpdateAllLifecyclePhasesForTest();
++
++  EXPECT_THAT(ContentDisplayItems(),
++              ElementsAre(VIEW_SCROLLING_BACKGROUND_DISPLAY_ITEM));
++}
++
+ }  // namespace blink

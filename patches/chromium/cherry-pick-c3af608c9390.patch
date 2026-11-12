@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <samuel.r.attard@gmail.com>
+Date: Mon, 19 Oct 2026 11:11:41 -0700
+Subject: [CSS] Run the marking barrier when switching a CSSSelector to
+ RareData
+
+CreateRareData() and SetSelectorList() switch the active DataUnion
+member by placement-new'ing a Member from the new pointer. Member's
+initializing constructor skips the marking write barrier, which is only
+sound for a freshly constructed object, but the parser's :host:has()
+fix-up performs this switch on a selector that already lives in its
+(possibly already traced) arena. Construct the Member empty and assign
+instead, so the barrier runs.
+
+Bug: 574409610
+Change-Id: I4c9a319986a7e149c4f168561fab17fae580c212
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8600147
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: Daniil Sakhapov <sakhapov@chromium.org>
+Commit-Queue: Samuel Attard <samuel.r.attard@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#1722127}
+
+Electron adaptation notes (43-x-y): This branch has no inline CSSSelectorList storage (HasInlineSelectorList / SetSelectorList inline path), so only the CreateRareData() value_ -> rare_data_ transition is changed to placement-new an empty Member and assign it (running the marking write barrier). css_selector_test.cc is test-only and conflicted; it is not carried.
+
+diff --git a/third_party/blink/renderer/core/css/css_selector.cc b/third_party/blink/renderer/core/css/css_selector.cc
+index 6cd5fa2dddf86dfa388523a229d8cfcf55a8f8f2..f1be900d83d1ef108d8afdf7445a1f2704fe830a 100644
+--- a/third_party/blink/renderer/core/css/css_selector.cc
++++ b/third_party/blink/renderer/core/css/css_selector.cc
+@@ -153,9 +153,18 @@ void CSSSelector::CreateRareData() {
+   // to be careful to correctly manage explicitly destruction of |value_|
+   // followed by placement new of |rare_data_|. A straight-assignment will
+   // compile and may kinda work, but will be undefined behavior.
++  //
++  // The new Member is placement-new'ed empty and then *assigned*, rather
++  // than constructed from the pointer: Member's initializing constructor
++  // deliberately skips the marking write barrier (a freshly constructed
++  // object is always white), but this CSSSelector may already live inside a
++  // HeapVector backing that incremental marking has traced (the parser
++  // mutates selectors in its arena in place), in which case only the
++  // assigning barrier gets the new RareData marked.
+   auto* rare_data = MakeGarbageCollected<RareData>(data_.value_);
+   data_.value_.~AtomicString();
+-  new (&data_.rare_data_) Member<RareData>(rare_data);
++  new (&data_.rare_data_) Member<RareData>();
++  data_.rare_data_ = rare_data;
+   bits_.set<HasRareDataField>(true);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/css_selector.h b/third_party/blink/renderer/core/css/css_selector.h
+index bdbeffdf939193d419481d4c2db4da80568149d9..49201e5e1170a8b71252856ace053e2689d4298e 100644
+--- a/third_party/blink/renderer/core/css/css_selector.h
++++ b/third_party/blink/renderer/core/css/css_selector.h
+@@ -29,6 +29,7 @@
+ 
+ #include "base/check_op.h"
+ #include "base/compiler_specific.h"
++#include "base/gtest_prod_util.h"
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/core/css/parser/css_nesting_type.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_mode.h"
+@@ -717,6 +718,9 @@ class CORE_EXPORT CSSSelector {
+   static String FormatPseudoTypeForDebugging(PseudoType);
+ 
+  private:
++  FRIEND_TEST_ALL_PREFIXES(CSSSelectorGCTest,
++                           InlineSelectorListToRareDataDuringMarking);
++
+   // Trace() branches on the match/pseudo_type flags,
+   // RuleData bucketing sets is_covered_by_bucketing,
+   // and these could happen concurrently. This trips up TSan,
+@@ -796,7 +800,7 @@ class CORE_EXPORT CSSSelector {
+   template <bool expand_pseudo_references>
+   String SelectorTextInternal(uintptr_t scope_id) const;
+ 
+-  struct RareData : public GarbageCollected<RareData> {
++  struct CORE_EXPORT RareData : public GarbageCollected<RareData> {
+     explicit RareData(const AtomicString& value);
+     // Does not deep copy `selector_list_`.
+     RareData(const RareData&);
