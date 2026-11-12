@@ -161,9 +161,6 @@ class LinuxUiGetterImpl : public ui::LinuxUiGetter {
 
   // ui::LinuxUiGetter
   ui::LinuxUiTheme* GetForWindow(aura::Window* window) override {
-    return GetForProfile(nullptr);
-  }
-  ui::LinuxUiTheme* GetForProfile(Profile* profile) override {
     return ui::GetLinuxUiTheme(ui::SystemTheme::kGtk);
   }
 };

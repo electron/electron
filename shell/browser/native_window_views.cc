@@ -2015,7 +2015,7 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
     return std::make_unique<NativeFrameView>(this, widget);
 
   if (has_frame()) {
-    if (auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr)) {
+    if (auto* linux_ui_theme = ui::LinuxUiTheme::GetDefault()) {
       auto getter = base::BindRepeating(
           [](ui::LinuxUiTheme* theme, bool tiled,
              bool maximized) -> ui::WindowFrameProvider* {

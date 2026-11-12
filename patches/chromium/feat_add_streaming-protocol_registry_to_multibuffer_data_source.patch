@@ -104,7 +104,7 @@ index 3de117a1b242c5881e7e94eb9b204ffa449c5623..e4450d8da26fda240f6e9b8dcce89475
    using InitializeCB = base::OnceCallback<void(bool)>;
    void Initialize(InitializeCB init_cb) override;
 diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
-index 438a394cc05efc1a0195c0e622fd827f8c96c864..34513090243de1289491808b9b55eb8d62589187 100644
+index b67d14078a2a171560a85df2576068e6fdaec5b0..27350bc8291f43b961e8f2c57b47c249384dada1 100644
 --- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 +++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 @@ -8,6 +8,7 @@
@@ -123,20 +123,19 @@ index 438a394cc05efc1a0195c0e622fd827f8c96c864..34513090243de1289491808b9b55eb8d
  #include "third_party/blink/renderer/platform/media/resource_fetch_context.h"
  #include "third_party/blink/renderer/platform/media/url_index.h"
  #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
-@@ -460,6 +462,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
-       do_fail = true;
+@@ -479,6 +481,15 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+         return;  // "this" may be deleted now.
      }
    } else {
 +    // For non-HTTP protocols, only set range_supported for registered streaming schemes
 +    const std::string scheme = destination_url_data->url().Protocol().Ascii();
 +
-+    if (std::ranges::any_of(*MultiBufferDataSource::GetStreamingSchemes(),
-+                         [&scheme](const std::string& streaming_scheme) {
-+                           return base::EqualsCaseInsensitiveASCII(scheme, streaming_scheme);
-+                         })) {
-+      destination_url_data->set_range_supported();
-+    }
++    range_supported = std::ranges::any_of(
++        *MultiBufferDataSource::GetStreamingSchemes(),
++        [&scheme](const std::string& streaming_scheme) {
++          return base::EqualsCaseInsensitiveASCII(scheme, streaming_scheme);
++        });
 +
      if (content_length != kPositionNotSpecified) {
-       destination_url_data->set_length(content_length + byte_pos());
-     }
+       resolved_length = content_length + byte_pos();
+       if (!HasCompatibleLengths(*destination_url_data, resolved_length)) {
