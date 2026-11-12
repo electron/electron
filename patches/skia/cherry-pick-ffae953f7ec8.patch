@@ -270,7 +270,7 @@ index 5cac961e748ca1021a63014df80f83e011456db4..23744dc58716efbae442c9b140fe21f2
          return this->writePixels(surface,
                                   rect,
 diff --git a/src/gpu/ganesh/GrOpFlushState.cpp b/src/gpu/ganesh/GrOpFlushState.cpp
-index c334cf9349ee2c65c2497904d01ca6c0a1d29f80..9b20ac81b7fd048564b354ad361ac5dec144ff87 100644
+index d148ff515c1a21a6d3412e343bca400c84b1a6d9..abec1d14c65afb9c6ed4a14b77785734d44ce4ee 100644
 --- a/src/gpu/ganesh/GrOpFlushState.cpp
 +++ b/src/gpu/ganesh/GrOpFlushState.cpp
 @@ -59,15 +59,17 @@ void GrOpFlushState::executeDrawsAndUploadsForMeshDrawOp(
@@ -305,11 +305,16 @@ index c334cf9349ee2c65c2497904d01ca6c0a1d29f80..9b20ac81b7fd048564b354ad361ac5de
      }
      // Setup execution iterators.
      fCurrDraw = fDraws.begin();
-@@ -122,9 +126,10 @@ void GrOpFlushState::reset() {
+@@ -122,6 +126,7 @@ void GrOpFlushState::reset() {
      fInlineUploads.reset();
      fDraws.reset();
      fBaseDrawToken = skgpu::Token::InvalidToken();
 +    fDeferredUploadFailed = false;
+     // Advance the tokens at the end of every flush, even one that executed no draws, so that work
+     // scheduled during this flush is never considered pending by a later flush.
+     if (fTokenTracker) {
+@@ -130,7 +135,7 @@ void GrOpFlushState::reset() {
+     }
  }
  
 -void GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
@@ -317,7 +322,7 @@ index c334cf9349ee2c65c2497904d01ca6c0a1d29f80..9b20ac81b7fd048564b354ad361ac5de
                                bool shouldPrepareSurfaceForSampling) {
      GrDeferredTextureUploadWritePixelsFn wp = [this, shouldPrepareSurfaceForSampling](
                                                        GrTextureProxy* dstProxy,
-@@ -132,8 +137,11 @@ void GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
+@@ -138,8 +143,11 @@ void GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
                                                        GrColorType colorType,
                                                        const void* buffer,
                                                        size_t rowBytes) {
@@ -330,7 +335,7 @@ index c334cf9349ee2c65c2497904d01ca6c0a1d29f80..9b20ac81b7fd048564b354ad361ac5de
              return false;
          }
          GrCaps::SupportedWrite supportedWrite = fGpu->caps()->supportedWritePixelsColorType(
-@@ -163,7 +171,7 @@ void GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
+@@ -169,7 +177,7 @@ void GrOpFlushState::doUpload(GrDeferredTextureUploadFn& upload,
                                         rowBytes,
                                         shouldPrepareSurfaceForSampling);
      };
