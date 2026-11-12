@@ -13,7 +13,7 @@ The exposed copy also carries the upstream macOS firmlink handling
 against the blocklist the same way Chrome matches them.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c45fc3132 100644
+index 20784acf0b2787b2e72a13aa6a2f00f17799fade..4549472efb772a48fee53c77aa7148f3afd7fd40 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -91,11 +91,13 @@
@@ -30,7 +30,7 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
  #include "components/tabs/public/tab_interface.h"
  #if BUILDFLAG(ENABLE_PLATFORM_APPS)
  #include "extensions/browser/extension_registry.h"  // nogncheck
-@@ -401,316 +403,10 @@ bool IsAllowedWslHomePath(const base::FilePath& path) {
+@@ -401,321 +403,10 @@ bool IsAllowedWslHomePath(const base::FilePath& path) {
  }
  #endif
  
@@ -261,6 +261,11 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
 -                                BlockType::kBlockAllChildren),
 -      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
 -                                BlockType::kBlockAllChildren),
+-      // And runtime data in /run, including per-session runtime directories
+-      // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
+-      // crbug.com/577376424.
+-      BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
+-                                BlockType::kBlockAllChildren),
 -      // Block ~/.dbus as well, just in case, although there probably isn't much
 -      // a website can do with access to that directory and its contents.
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
@@ -349,9 +354,9 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
 +// NOTE IF THERE IS A CONFLICT ABOVE, you will need to copy the changes in the
 +// removed block over to chrome_file_system_access_permission_context.h.
  
- // Checks if `path` should be blocked by the `rules`.
- // The BlockType of the nearest ancestor of a path to check is what
-@@ -1794,16 +1490,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
+ // Returns true if `child_components` is the same as or a descendant of
+ // `parent_components`, ignoring case differences.
+@@ -1818,16 +1509,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
    std::unique_ptr<base::RetainingOneShotTimer> cleanup_timer;
  };
  
@@ -368,7 +373,7 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
  ChromeFileSystemAccessPermissionContext::
      ChromeFileSystemAccessPermissionContext(content::BrowserContext* context,
                                              const base::Clock* clock)
-@@ -1822,7 +1508,7 @@ ChromeFileSystemAccessPermissionContext::
+@@ -1846,7 +1527,7 @@ ChromeFileSystemAccessPermissionContext::
  #if BUILDFLAG(IS_ANDROID)
    one_time_permissions_tracker_.Observe(
        OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
@@ -377,7 +382,7 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -3306,7 +2992,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -3330,7 +3011,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -386,7 +391,7 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3664,11 +3350,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3688,11 +3369,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          AccessTrigger access_trigger,
          GrantType grant_type) {
@@ -399,7 +404,7 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3719,6 +3401,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3743,6 +3420,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)
@@ -408,7 +413,7 @@ index 2dcc3cd1f1c0fe7bfa4a31960af70272ae36a026..9c60126db8e46598832202ba0d47d10c
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 05ee182cf840bc925697a2bfa3d1c281579296c4..53eb33076332cc9ff7dfb0b75387fabff239bf67 100644
+index 05ee182cf840bc925697a2bfa3d1c281579296c4..214970b4f1e44dd6533c1b7526c2e4674e4ad269 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -433,7 +438,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..53eb33076332cc9ff7dfb0b75387fabf
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,325 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,330 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -671,6 +676,11 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..53eb33076332cc9ff7dfb0b75387fabf
 +        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/boot"),
 +                                  BlockType::kBlockAllChildren),
 +        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
++                                  BlockType::kBlockAllChildren),
++        // And runtime data in /run, including per-session runtime directories
++        // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
++        // crbug.com/577376424.
++        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
 +                                  BlockType::kBlockAllChildren),
 +        // Block ~/.dbus as well, just in case, although there probably isn't much
 +        // a website can do with access to that directory and its contents.

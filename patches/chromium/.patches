@@ -247,3 +247,4 @@ cherry-pick-180fed5ac901.patch
 cherry-pick-843b3673310d.patch
 cherry-pick-572371b33186.patch
 cherry-pick-32500ff6785c.patch
+fix_guard_devtools_fetch_resume_and_body_collection.patch
