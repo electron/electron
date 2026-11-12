@@ -25,6 +25,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
+#include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -448,13 +449,20 @@ ElectronBrowserContext::~ElectronBrowserContext() {
 }
 
 void ElectronBrowserContext::InitPrefs() {
-  auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
   ScopedAllowBlockingForElectron allow_blocking;
   PrefServiceFactory prefs_factory;
-  scoped_refptr<JsonPrefStore> pref_store =
-      base::MakeRefCounted<JsonPrefStore>(prefs_path);
-  pref_store->ReadPrefs();  // Synchronous.
-  prefs_factory.set_user_prefs(pref_store);
+  if (in_memory_) {
+    // An in-memory session shares its path with the default session, so a
+    // JsonPrefStore here would read and overwrite the default session's
+    // Preferences file.
+    prefs_factory.set_user_prefs(base::MakeRefCounted<InMemoryPrefStore>());
+  } else {
+    auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
+    scoped_refptr<JsonPrefStore> pref_store =
+        base::MakeRefCounted<JsonPrefStore>(prefs_path);
+    pref_store->ReadPrefs();  // Synchronous.
+    prefs_factory.set_user_prefs(pref_store);
+  }
 
   // Apply any proxy switches from the command line to this session once, here.
   // Session::SetProxy() writes to the same store, so applying them again later
