@@ -24,10 +24,10 @@ sent once body EOF, upstream completion and DevTools continuation have all
 happened, in any order. The new invariant CHECKs are NotFatalUntil::M162.
 
 diff --git a/content/browser/devtools/devtools_url_loader_interceptor.cc b/content/browser/devtools/devtools_url_loader_interceptor.cc
-index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f1907c4cfe76 100644
+index 3155d1948f3b8cc2d7070f3e1563598ed2f2c0a1..dfd49e3496151fa87507cbbbdbe952e9576bdfa9 100644
 --- a/content/browser/devtools/devtools_url_loader_interceptor.cc
 +++ b/content/browser/devtools/devtools_url_loader_interceptor.cc
-@@ -208,7 +208,8 @@ class BodyReader : public mojo::DataPipeDrainer::Client {
+@@ -206,7 +206,8 @@ class BodyReader : public mojo::DataPipeDrainer::Client {
    void AddCallback(std::unique_ptr<GetResponseBodyCallback> callback) {
      if (data_complete_) {
        CHECK(callbacks_.empty(), base::NotFatalUntil::M159);
@@ -37,7 +37,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
        return;
      }
      callbacks_.push_back(std::move(callback));
-@@ -239,7 +240,7 @@ class BodyReader : public mojo::DataPipeDrainer::Client {
+@@ -237,7 +238,7 @@ class BodyReader : public mojo::DataPipeDrainer::Client {
    std::vector<std::unique_ptr<GetResponseBodyCallback>> callbacks_;
    base::OnceClosure download_complete_callback_;
    scoped_refptr<base::RefCountedString> body_;
@@ -46,7 +46,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
    bool data_complete_ = false;
  };
  
-@@ -257,11 +258,17 @@ void BodyReader::OnDataComplete() {
+@@ -255,11 +256,17 @@ void BodyReader::OnDataComplete() {
    data_complete_ = true;
    body_pipe_drainer_.reset();
    // TODO(caseq): only encode if necessary.
@@ -69,7 +69,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
  }
  
  struct ResponseMetadata {
-@@ -275,7 +282,6 @@ struct ResponseMetadata {
+@@ -273,7 +280,6 @@ struct ResponseMetadata {
    std::optional<mojo_base::BigBuffer> cached_metadata;
    size_t encoded_length = 0;
    size_t transfer_size = 0;
@@ -77,7 +77,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
  };
  
  void RemoveUnsafeRequestHeadersOnRedirect(net::HttpRequestHeaders& headers) {
-@@ -498,6 +504,8 @@ class InterceptionJob : public network::mojom::URLLoaderClient,
+@@ -496,6 +502,8 @@ class InterceptionJob : public network::mojom::URLLoaderClient,
        std::unique_ptr<InterceptedRequestInfo> request_info);
  
    void ResponseBodyComplete();
@@ -86,7 +86,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
  
    bool ShouldBypassForResponse() const {
      if (state_ == State::kResponseTaken)
-@@ -612,6 +620,8 @@ class InterceptionJob : public network::mojom::URLLoaderClient,
+@@ -610,6 +618,8 @@ class InterceptionJob : public network::mojom::URLLoaderClient,
  
    std::unique_ptr<BodyReader> body_reader_;
    std::unique_ptr<ResponseMetadata> response_metadata_;
@@ -95,7 +95,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
    std::vector<net::SourceStreamType> client_side_content_decoding_types_;
    mojo::ScopedDataPipeConsumerHandle body_;
  
-@@ -1296,9 +1306,10 @@ void InterceptionJob::GetResponseBody(
+@@ -1279,9 +1289,10 @@ void InterceptionJob::GetResponseBody(
    }
    bool body_reader_created = !body_reader_;
    if (!body_reader_) {
@@ -109,7 +109,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
    }
    body_reader_->AddCallback(std::move(callback));
    // Needs to happen after |AddCallback| to avoid a DCHECK.
-@@ -1319,7 +1330,7 @@ void InterceptionJob::TakeResponseBodyPipe(
+@@ -1302,7 +1313,7 @@ void InterceptionJob::TakeResponseBodyPipe(
    CHECK(!!response_metadata_, base::NotFatalUntil::M159);
    state_ = State::kResponseTaken;
    pending_response_body_pipe_callback_ = std::move(callback);
@@ -118,7 +118,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
    if (body_)
      StartLoadingResponseBody(std::move(body_));
  }
-@@ -1445,11 +1456,9 @@ Response InterceptionJob::InnerContinueRequest(
+@@ -1428,11 +1439,9 @@ Response InterceptionJob::InnerContinueRequest(
    }
  
    if (body_reader_) {
@@ -132,7 +132,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
      return Response::Success();
    }
  
-@@ -1459,8 +1468,8 @@ Response InterceptionJob::InnerContinueRequest(
+@@ -1442,8 +1451,8 @@ Response InterceptionJob::InnerContinueRequest(
            "Unable to continue request as is after body is taken");
      }
      // TODO(caseq): report error if other modifications are present.
@@ -143,7 +143,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
        return Response::Success();
      }
      CHECK_EQ(State::kResponseReceived, state_, base::NotFatalUntil::M159);
-@@ -1469,7 +1478,11 @@ Response InterceptionJob::InnerContinueRequest(
+@@ -1452,7 +1461,11 @@ Response InterceptionJob::InnerContinueRequest(
                                 std::move(body_),
                                 std::move(response_metadata_->cached_metadata));
      response_metadata_.reset();
@@ -156,7 +156,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
      return Response::Success();
    }
  
-@@ -1638,11 +1651,12 @@ Response InterceptionJob::ProcessResponseOverride(
+@@ -1622,11 +1635,12 @@ Response InterceptionJob::ProcessResponseOverride(
  
    response_metadata_->transfer_size = body_size;
  
@@ -173,7 +173,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
  
    base::OnceClosure continue_after_cookies_set;
    std::string location;
-@@ -1757,6 +1771,7 @@ void InterceptionJob::ProcessRedirectByClient(const GURL& redirect_url) {
+@@ -1741,6 +1755,7 @@ void InterceptionJob::ProcessRedirectByClient(const GURL& redirect_url) {
  
  void InterceptionJob::SendResponse(scoped_refptr<base::RefCountedMemory> body,
                                     size_t offset) {
@@ -181,7 +181,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
    base::span<const uint8_t> bytes_to_write;
    if (body) {
      bytes_to_write = base::as_byte_span(*body).subspan(offset);
-@@ -1786,21 +1801,33 @@ void InterceptionJob::SendResponse(scoped_refptr<base::RefCountedMemory> body,
+@@ -1770,21 +1785,33 @@ void InterceptionJob::SendResponse(scoped_refptr<base::RefCountedMemory> body,
  
    if (response_metadata_->transfer_size)
      client_->OnTransferSizeUpdated(response_metadata_->transfer_size);
@@ -219,7 +219,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
  
    state_ = State::kRequestSent;
  
-@@ -1823,6 +1850,7 @@ void InterceptionJob::StartRequest() {
+@@ -1807,6 +1834,7 @@ void InterceptionJob::StartRequest() {
  }
  
  void InterceptionJob::CancelRequest() {
@@ -227,7 +227,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
    if (state_ == State::kNotStarted)
      return;
    client_receiver_.reset();
-@@ -1891,8 +1919,8 @@ void InterceptionJob::FetchCookies(base::OnceClosure callback) {
+@@ -1875,8 +1903,8 @@ void InterceptionJob::FetchCookies(base::OnceClosure callback) {
  
    cookie_manager_->GetCookieList(
        request.url, options, net::CookiePartitionKeyCollection(),
@@ -238,7 +238,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
  }
  
  void InterceptionJob::NotifyClient(
-@@ -1917,19 +1945,31 @@ void InterceptionJob::NotifyClient(
+@@ -1901,19 +1929,31 @@ void InterceptionJob::NotifyClient(
        (have_cookies == want_cookies ? 0 : 1) +
        (have_request_bodies == want_request_bodies ? 0 : 1);
  
@@ -277,7 +277,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
    }
  }
  
-@@ -2169,6 +2209,8 @@ void InterceptionJob::StartLoadingResponseBody(
+@@ -2150,6 +2190,8 @@ void InterceptionJob::StartLoadingResponseBody(
  
  void InterceptionJob::OnComplete(
      const network::URLLoaderCompletionStatus& status) {
@@ -286,7 +286,7 @@ index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f190
    // No need to listen to the channel any more, so just reset it, so if the pipe
    // is closed by the other end, |shutdown| isn't run.
    client_receiver_.reset();
-@@ -2183,21 +2225,20 @@ void InterceptionJob::OnComplete(
+@@ -2164,21 +2206,20 @@ void InterceptionJob::OnComplete(
        return;
      }
      response_metadata_ = std::make_unique<ResponseMetadata>();
