@@ -47,6 +47,23 @@ describe('session module', () => {
     it('returns existing session with same partition', () => {
       expect(session.fromPartition('test')).toBe(session.fromPartition('test'));
     });
+
+    it('does not use the default session preferences for an in-memory session', async () => {
+      const userDataPath = fs.mkdtempSync(path.join(app.getPath('temp'), 'electron-in-memory-prefs-'));
+      defer(() => fs.rmSync(userDataPath, { recursive: true, force: true }));
+      fs.writeFileSync(
+        path.join(userDataPath, 'Preferences'),
+        JSON.stringify({ browser: { enable_spellchecking: false } })
+      );
+
+      const appPath = path.join(fixtures, 'api', 'in-memory-session-prefs');
+      const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, userDataPath], {
+        timeout: 20_000
+      });
+
+      expect(code, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
+      expect(stdout).toContain(JSON.stringify({ spellCheckerEnabled: true }));
+    });
   });
 
   describe('session.fromPath(path)', () => {
