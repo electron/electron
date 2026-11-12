@@ -226,3 +226,4 @@ cherry-pick-9f85e246754e.patch
 cherry-pick-a60eca9cfabf.patch
 cherry-pick-972a57101640.patch
 add_entries_to_the_spki_blocklist.patch
+fix_guard_devtools_fetch_resume_and_body_collection.patch
