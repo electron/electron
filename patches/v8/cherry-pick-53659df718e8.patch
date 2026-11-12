@@ -33,7 +33,7 @@ call keeps the branch's (task, AllocationType::kYoung) form. No semantic
 change to the fix.
 
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index 0fd2110bce8ce1f1f0ecf8ef4460bf609cf6d27f..7ba85329beb91a5dacefc360a3ebe612b0e90da1 100644
+index bbc5374b14ed040a6e4a467a1792f3a824fc20d4..806e861ec40b3d3d6d2ef141d3f685c632e7fe5c 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
 @@ -640,6 +640,8 @@ void MaglevGraphBuilder::MaglevSubGraphBuilder::MergeIntoLabel(
@@ -45,7 +45,7 @@ index 0fd2110bce8ce1f1f0ecf8ef4460bf609cf6d27f..7ba85329beb91a5dacefc360a3ebe612
      label->variable_merge_state_->Merge(
          builder_->graph(), builder_->is_tracing(), *dummy_unit_,
          variable_frame_, predecessor, builder_->GetCurrentScopeInfo());
-@@ -12495,52 +12497,54 @@ ReduceResult MaglevGraphBuilder::VisitIntrinsicAsyncFunctionAwait(
+@@ -12486,52 +12488,54 @@ ReduceResult MaglevGraphBuilder::VisitIntrinsicAsyncFunctionAwait(
  
    MaglevSubGraphBuilder sub_graph(this, 1);
    MaglevSubGraphBuilder::Variable ret_val(0);

@@ -87,10 +87,10 @@ index a4f1a260d25a334b7900423dfc9c73410beb5b53..12ad2a7e46bf283545b300711b58e7eb
    OptionalHeapObjectRef target() const { return target_; }
    float frequency() const { return frequency_; }
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index 9b0a11450ba56cea40d12918c3bceb25aba4be59..dd125ea623e890afe146c7402ee5426d7ab80375 100644
+index 41e89d9806d2ced1f0abd9ecb8f1673f1ed298be..bbc5374b14ed040a6e4a467a1792f3a824fc20d4 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
-@@ -11610,20 +11610,26 @@ ReduceResult MaglevGraphBuilder::BuildCallWithFeedback(
+@@ -11603,20 +11603,26 @@ ReduceResult MaglevGraphBuilder::BuildCallWithFeedback(
              broker()->target_native_context();
          compiler::JSFunctionRef apply_function =
              native_context.function_prototype_apply(broker());

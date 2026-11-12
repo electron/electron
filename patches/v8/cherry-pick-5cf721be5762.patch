@@ -68,7 +68,7 @@ kDefineNamedOwnInLiteral checks in CheckHeapObjectTypeMatchesDescriptor and
 HandleStoreFieldAndReturn, and every other file, are as upstream.
 
 diff --git a/src/baseline/baseline-compiler.cc b/src/baseline/baseline-compiler.cc
-index b09ed33e0085ae69714293c83f44041d6775c7cb..4875b110c38114325b497f1e270d1773ddca71f0 100644
+index b45a1942ac9fa05df5c8a8884197ea2d74ead034..988b7bce751b0e30d365837644533fa69bd86d53 100644
 --- a/src/baseline/baseline-compiler.cc
 +++ b/src/baseline/baseline-compiler.cc
 @@ -1212,7 +1212,11 @@ void BaselineCompiler::VisitDefineNamedOwnProperty() {
@@ -594,10 +594,10 @@ index 73eee42791aef1be47dd8efe08e9544d3846b67b..7b62e6c927960ef59ef238ec9c50e863
  
  // SetKeyedProperty <object> <key> <slot>
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index cb9ba177b1389051048cd1eb9509b66291ec688c..9b0a11450ba56cea40d12918c3bceb25aba4be59 100644
+index 2d0ecf8d8d985097fdf53c68ec99df412c3f8989..41e89d9806d2ced1f0abd9ecb8f1673f1ed298be 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
-@@ -7016,11 +7016,12 @@ ReduceResult MaglevGraphBuilder::VisitDefineNamedOwnPropertyHelper(
+@@ -7021,11 +7021,12 @@ ReduceResult MaglevGraphBuilder::VisitDefineNamedOwnPropertyHelper(
        broker()->GetFeedbackForPropertyAccess(
            feedback_source, compiler::AccessMode::kStore, name);
  
@@ -677,10 +677,10 @@ index 499f75cb9a360eab84f70e6f75a9e748854f997f..b35fab1512e09b276439d74d4b3e86ab
  
  void GapMove::PrintParams(std::ostream& os) const {
 diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
-index a2badf6c94cef102a51dbe82d51e4671737e6ba0..0328a453298770437984b07eadde06acfb721fed 100644
+index c1b16a843499f102d8d724ba9a3ef9c560e1f1d4..08e70c7e514ab43d00179d45ebc91368bc2c6672 100644
 --- a/src/maglev/maglev-ir.h
 +++ b/src/maglev/maglev-ir.h
-@@ -9975,8 +9975,11 @@ class DefineNamedOwnGeneric
+@@ -9977,8 +9977,11 @@ class DefineNamedOwnGeneric
      : public FixedInputValueNodeT<3, DefineNamedOwnGeneric> {
   public:
    explicit DefineNamedOwnGeneric(uint64_t bitfield, compiler::NameRef name,
@@ -693,7 +693,7 @@ index a2badf6c94cef102a51dbe82d51e4671737e6ba0..0328a453298770437984b07eadde06ac
  
    // The implementation currently calls runtime.
    static constexpr OpProperties kProperties = OpProperties::JSCall();
-@@ -9986,6 +9989,7 @@ class DefineNamedOwnGeneric
+@@ -9988,6 +9991,7 @@ class DefineNamedOwnGeneric
    compiler::NameRef name() const { return name_; }
    compiler::FeedbackSource feedback() const { return feedback_; }
  
@@ -701,7 +701,7 @@ index a2badf6c94cef102a51dbe82d51e4671737e6ba0..0328a453298770437984b07eadde06ac
  
    int MaxCallStackArgs() const;
    void SetValueLocationConstraints();
-@@ -9993,6 +9997,7 @@ class DefineNamedOwnGeneric
+@@ -9995,6 +9999,7 @@ class DefineNamedOwnGeneric
    void PrintParams(std::ostream&) const;
  
   private:
