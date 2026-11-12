@@ -287,6 +287,7 @@ cherry-pick-2ec1ba2211a0.patch
 cherry-pick-73c78a52d2b7.patch
 cherry-pick-c0e830bdda6e.patch
 fix_guard_devtools_fetch_resume_and_body_collection.patch
+cherry-pick-861cb7cc1d51.patch
 fix_handle_a_null_pending_call_in_dbus_objectproxy.patch
 cherry-pick-431b8be6a111.patch
 cherry-pick-6442ebe52d91.patch
