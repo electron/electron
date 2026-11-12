@@ -70,12 +70,15 @@ runs:
       tar -cf ../gitcache.tar .
       cd ..
       echo "Compressed gitcache to $(du -sh gitcache.tar | cut -f1 -d' ')"
-      # remove the old cache file if it exists 
-      if [ -f $CACHE_DRIVE/gitcache.tar ]; then
-        echo "Removing old gitcache.tar from $CACHE_DRIVE"
-        rm $CACHE_DRIVE/gitcache.tar
-      fi      
-      cp ./gitcache.tar $CACHE_DRIVE/
+      final_cache_path=$CACHE_DRIVE/gitcache.tar
+      # Upload to a run-unique temp name first so an interrupted copy can't
+      # leave a truncated file at the final path. Orphaned temp files get
+      # swept by the clean-orphaned-cache-uploads workflow.
+      tmp_cache_path=$final_cache_path.upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+      echo "Uploading to temp path: $tmp_cache_path"
+      cp ./gitcache.tar $tmp_cache_path
+      mv -f $tmp_cache_path $final_cache_path
+      echo "Git cache persisted in $final_cache_path"
   - name: Wait for active SSH sessions
     shell: bash
     if: always() && !cancelled()
