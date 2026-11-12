@@ -48,7 +48,7 @@ describe('session module', { retry: 0 }, () => {
       expect(session.fromPartition('test')).toBe(session.fromPartition('test'));
     });
 
-    it('does not use the default session preferences for an in-memory session', async () => {
+    it("does not load the default session's preferences into an in-memory session", async () => {
       const userDataPath = fs.mkdtempSync(path.join(app.getPath('temp'), 'electron-in-memory-prefs-'));
       defer(() => fs.rmSync(userDataPath, { recursive: true, force: true }));
       fs.writeFileSync(
