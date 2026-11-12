@@ -1389,8 +1389,8 @@ void InspectableWebContents::ReadyToCommitNavigation(
     return;
   }
 
-  // The extension API is only for subframes hosting DevTools extension pages.
-  if (!frontend_host_ || navigation_handle->IsInMainFrame())
+  if (!frontend_host_ ||
+      !navigation_handle->GetURL().SchemeIs("chrome-extension"))
     return;
 
   auto origin = navigation_handle->GetURL().DeprecatedGetOriginAsURL().spec();
