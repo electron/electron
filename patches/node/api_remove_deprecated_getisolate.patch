@@ -85,7 +85,7 @@ index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe961
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 0b7ebcebadf11023e0cfad105f53518ff31e09e1..1bab35b2a7e6ae652991235999ee1270612b0c7c 100644
+index 66009ad82bf0c74a2e2411e8e39802cc0a851c9a..ba6f0be326fe342f4169c93d0a821b3aa0a31761 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -1179,7 +1179,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
