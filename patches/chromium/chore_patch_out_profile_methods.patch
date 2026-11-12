@@ -43,7 +43,7 @@ index ba02974778b98b83456e79ba62a9d6b30680039c..fd2e7a592cdeca42393d2e3f9f2a0e6c
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index eeeea6cfa75da6dac064686e5c8bca800c84604e..367a050d7d0250e91c7351f649f21eedec925c68 100644
+index 8de223abf069bde259ee49141e8ceda3400cea93..2c1ad81cf34a3796782507d22eed6f632479ad02 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -16,8 +16,6 @@
@@ -55,7 +55,7 @@ index eeeea6cfa75da6dac064686e5c8bca800c84604e..367a050d7d0250e91c7351f649f21eed
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/common/chrome_features.h"
  #include "chrome/common/extensions/api/pdf_viewer_private.h"
-@@ -266,10 +264,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -267,10 +265,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -69,7 +69,7 @@ index eeeea6cfa75da6dac064686e5c8bca800c84604e..367a050d7d0250e91c7351f649f21eed
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -375,7 +376,6 @@ base::DictValue GetStrings(PdfViewerContext context) {
+@@ -376,7 +377,6 @@ base::DictValue GetStrings(PdfViewerContext context) {
  
  base::DictValue GetAdditionalData(content::WebContents* web_contents) {
    content::BrowserContext* context = web_contents->GetBrowserContext();
@@ -77,7 +77,7 @@ index eeeea6cfa75da6dac064686e5c8bca800c84604e..367a050d7d0250e91c7351f649f21eed
    // NOTE: This function should not include any data used for $i18n{}
    // replacements. The i18n string resources should be added using GetStrings()
    // above instead.
-@@ -385,10 +385,13 @@ base::DictValue GetAdditionalData(content::WebContents* web_contents) {
+@@ -386,10 +386,13 @@ base::DictValue GetAdditionalData(content::WebContents* web_contents) {
                 chrome_pdf::features::kPdfGetSaveDataInBlocks));
    dict.Set("pdfGlicSummarizeEnabled",
             ShouldShowGlicSummarizeButton(web_contents));
@@ -92,7 +92,7 @@ index eeeea6cfa75da6dac064686e5c8bca800c84604e..367a050d7d0250e91c7351f649f21eed
    dict.Set(
        "pdfSearchifySaveEnabled",
        base::FeatureList::IsEnabled(chrome_pdf::features::kPdfSearchifySave));
-@@ -533,11 +536,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -534,11 +537,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  

@@ -50,10 +50,10 @@ index 225a92411ec5bc1a7badc7909994055065cc2606..0a3e803d35a876f140963293793e941a
  
    auto* script_controller =
 diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
-index 07c9dd9c4ffa9b0b805187acce4f0eef4b641ceb..158a1b496753c192d5fe4525234e94dc5f413571 100644
+index 7361d1e456fb1b333044d2812f05b56bbce272b4..734bccf97c1f9597bd10a15f5e5237a79ec0d2a3 100644
 --- a/third_party/blink/renderer/core/execution_context/execution_context.h
 +++ b/third_party/blink/renderer/core/execution_context/execution_context.h
-@@ -164,6 +164,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+@@ -165,6 +165,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
    virtual bool IsShadowRealmGlobalScope() const { return false; }
    virtual bool IsJSExecutionForbidden() const { return false; }
  

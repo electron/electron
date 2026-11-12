@@ -52,10 +52,10 @@ index aab9c770f3eb651c3146567b843bbd7ec9075fda..36a1d4fc112e898e5b22132a762e63ba
  
    raw_ptr<NativeWidgetNSWindowBridge> parent_ =
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 2ed39852ac416ab401600a214a587471e439634d..d94f5b07c2724393524ba18efe1088dc4ca7bdfb 100644
+index 4fe4033b6d8196dfe78409a3fa794e3a4dcaa61d..16f46cd1eaff8213780ff8d0b3f1e2368ce2f5cc 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -1634,6 +1634,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1635,6 +1635,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    gfx::ApplyNSWindowSizeConstraints(window_, min_size, max_size,
                                      shows_resize_controls,
                                      shows_fullscreen_controls);
@@ -63,7 +63,7 @@ index 2ed39852ac416ab401600a214a587471e439634d..d94f5b07c2724393524ba18efe1088dc
  }
  
  void NativeWidgetNSWindowBridge::OnShowAnimationComplete() {
-@@ -2061,7 +2062,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2062,7 +2063,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  void NativeWidgetNSWindowBridge::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {
@@ -75,7 +75,7 @@ index 2ed39852ac416ab401600a214a587471e439634d..d94f5b07c2724393524ba18efe1088dc
    [window_delegate_ setAspectRatio:aspect_ratio.width() / aspect_ratio.height()
                      excludedMargin:excluded_margin];
  }
-@@ -2141,6 +2145,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2142,6 +2146,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    [window_ setIgnoresMouseEvents:ignores_mouse_events];
  }
  
@@ -133,10 +133,10 @@ index 2ed39852ac416ab401600a214a587471e439634d..d94f5b07c2724393524ba18efe1088dc
    [window_ makeFirstResponder:bridged_view_];
  }
 diff --git a/components/remote_cocoa/app_shim/views_nswindow_delegate.h b/components/remote_cocoa/app_shim/views_nswindow_delegate.h
-index 40b1e27ecca25715dd6677743c9f520576cd657b..751d8af8b8f03c1de9f1f1b143057fe6b3e7648d 100644
+index 070acf4960f67ac5f3fa9a3446e6a20ae464cea3..d86bf3540264d19b817f8d14dc431c9928952e51 100644
 --- a/components/remote_cocoa/app_shim/views_nswindow_delegate.h
 +++ b/components/remote_cocoa/app_shim/views_nswindow_delegate.h
-@@ -52,6 +52,9 @@ REMOTE_COCOA_APP_SHIM_EXPORT
+@@ -69,6 +69,9 @@ REMOTE_COCOA_APP_SHIM_EXPORT
  - (void)setAspectRatio:(float)aspectRatio
          excludedMargin:(const gfx::Size&)excludedMargin;
  
@@ -147,10 +147,10 @@ index 40b1e27ecca25715dd6677743c9f520576cd657b..751d8af8b8f03c1de9f1f1b143057fe6
  
  #endif  // COMPONENTS_REMOTE_COCOA_APP_SHIM_VIEWS_NSWINDOW_DELEGATE_H_
 diff --git a/components/remote_cocoa/app_shim/views_nswindow_delegate.mm b/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
-index 1aa3983953a5e292fd57a9e4a860a49c6942f7e5..f2c394a8afe4a09ab473e000938c42dfe0e2ea42 100644
+index e221b6ff8a067febd7538abd42cafa5893448c9f..dbd61f601d9ae278fa193ab89da98dde5b2a4d44 100644
 --- a/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
 +++ b/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
-@@ -153,6 +153,11 @@ - (void)setAspectRatio:(float)aspectRatio
+@@ -147,6 +147,11 @@ - (void)setAspectRatio:(float)aspectRatio
    _excludedMargin = excludedMargin;
  }
  

@@ -29,7 +29,7 @@ before first show.
 This patch can be removed if the changes are upstreamed to Chromium.
 
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-index 8108d93d44651329ed882cfc0bee7d258fafe537..4650c2c5f4b2c908d051ccf8c6d1391a243549bf 100644
+index 498aa2d49d3f7cb30b398d12ba98ceac074894fc..99fbb97195850a10e0ec4e6466ec508fc4a8a76b 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 @@ -544,7 +544,8 @@ - (void)updateWebContentsVisibility {
