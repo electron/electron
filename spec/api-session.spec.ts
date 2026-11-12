@@ -25,7 +25,7 @@ import { setTimeout } from 'node:timers/promises';
 import { defer, deferKillUtilityProcess, ifit, listen, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
-describe('session module', () => {
+describe('session module', { retry: 0 }, () => {
   const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const url = 'http://127.0.0.1';
 

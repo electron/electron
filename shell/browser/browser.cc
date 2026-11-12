@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 
+#include "base/barrier_closure.h"
 #include "base/clang_profiling_buildflags.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
@@ -18,8 +19,11 @@
 #include "base/threading/thread_restrictions.h"
 #include "build/config/compiler/compiler_buildflags.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
+#include "services/network/public/mojom/cookie_manager.mojom.h"
 #include "shell/browser/browser_observer.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
@@ -46,6 +50,9 @@ LaunchItem::LaunchItem(const LaunchItem& other) = default;
 #endif
 
 namespace {
+
+// How long quitting waits for the cookie stores to reach disk.
+constexpr base::TimeDelta kStorageFlushTimeout = base::Seconds(5);
 
 // Call |quit| after Chromium is fully started.
 //
@@ -187,6 +194,57 @@ void Browser::Shutdown() {
   }
 #endif
 
+  FlushStoragePartitionsThenQuit();
+}
+
+void Browser::FlushStoragePartitionsThenQuit() {
+  // The network service batches cookie writes and otherwise only commits them
+  // to disk while it tears down each NetworkContext, after the browser has
+  // stopped listening. If the network service dies or is killed during that
+  // teardown, recently set cookies are lost. Mirror
+  // chrome/browser/lifetime/browser_shutdown.cc and flush every loaded storage
+  // partition now, but also wait for the cookie stores to report that they are
+  // on disk before quitting the main message loop.
+  std::vector<content::StoragePartition*> partitions;
+  for (auto* browser_context : ElectronBrowserContext::BrowserContexts()) {
+    browser_context->ForEachLoadedStoragePartition(
+        [&partitions](content::StoragePartition* partition) {
+          partitions.push_back(partition);
+        });
+  }
+
+  if (partitions.empty() ||
+      !base::SingleThreadTaskRunner::HasCurrentDefault()) {
+    QuitMainMessageLoop();
+    return;
+  }
+
+  awaiting_storage_flush_ = true;
+  // A flush whose network service has gone away never answers, so do not let
+  // it hold up quitting forever.
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+      FROM_HERE,
+      base::BindOnce(&Browser::OnStoragePartitionsFlushed,
+                     weak_factory_.GetWeakPtr()),
+      kStorageFlushTimeout);
+
+  base::RepeatingClosure barrier = base::BarrierClosure(
+      partitions.size(), base::BindOnce(&Browser::OnStoragePartitionsFlushed,
+                                        weak_factory_.GetWeakPtr()));
+  for (auto* partition : partitions) {
+    partition->GetCookieManagerForBrowserProcess()->FlushCookieStore(barrier);
+    partition->Flush();
+  }
+}
+
+void Browser::OnStoragePartitionsFlushed() {
+  if (!awaiting_storage_flush_)
+    return;
+  awaiting_storage_flush_ = false;
+  QuitMainMessageLoop();
+}
+
+void Browser::QuitMainMessageLoop() {
   if (quit_main_message_loop_) {
     RunQuitClosure(std::move(quit_main_message_loop_));
   } else {
@@ -280,7 +338,7 @@ void Browser::PreCreateThreads() {
 }
 
 void Browser::SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure) {
-  if (is_shutdown_)
+  if (is_shutdown_ && !awaiting_storage_flush_)
     RunQuitClosure(std::move(quit_closure));
   else
     quit_main_message_loop_ = std::move(quit_closure);
