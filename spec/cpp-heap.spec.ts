@@ -98,11 +98,13 @@ describe('cpp heap', { retry: 0 }, () => {
 
               // Reload discards the context but not the isolate: an
               // isolate wide cache must not keep the old global alive.
-              const loaded = once(window.webContents, 'did-finish-load', {
-                signal: AbortSignal.timeout(20_000)
-              });
+              // Use the runner's timeout, which also scales for sanitizer builds.
+              const loaded = once(window.webContents, 'did-finish-load');
+              // stderr is forwarded even if the remote call never completes.
+              console.error(`Template cache reload ${i}: waiting for did-finish-load`);
               window.webContents.reload();
               await loaded;
+              console.error(`Template cache reload ${i}: did-finish-load received`);
               rendererPids.push(window.webContents.getOSProcessId());
               counts.push(await countMarkers());
             }
@@ -132,11 +134,11 @@ describe('cpp heap', { retry: 0 }, () => {
           const cachedOnMain = first === testing.getCachedCallbackTemplateForTesting() && first() === 42;
           const worker = new Worker(fixture);
           try {
-            const signal = AbortSignal.timeout(20_000);
-            const [[message], [code]] = await Promise.all([
-              once(worker, 'message', { signal }),
-              once(worker, 'exit', { signal })
-            ]);
+            // Use the runner's timeout, which also scales for sanitizer builds.
+            // stderr is forwarded even if the remote call never completes.
+            console.error('Template cache worker: waiting for message and exit');
+            const [[message], [code]] = await Promise.all([once(worker, 'message'), once(worker, 'exit')]);
+            console.error('Template cache worker: message and exit received');
             return { cachedOnMain, message, code };
           } finally {
             await worker.terminate();
@@ -157,10 +159,12 @@ describe('cpp heap', { retry: 0 }, () => {
             const testing = process._linkedBinding('electron_common_testing');
             const before = testing.getLiveCallbackHolderProbeCountForTesting();
             const worker = new Worker(fixture);
-            const signal = AbortSignal.timeout(20_000);
+            // Use the runner's timeout, which also scales for sanitizer builds.
             // Register both listeners before the worker can send or exit.
-            const ready = once(worker, 'message', { signal });
-            const exited = once(worker, 'exit', { signal });
+            const ready = once(worker, 'message');
+            const exited = once(worker, 'exit');
+            // stderr is forwarded even if the remote call never completes.
+            console.error(`Callback holder worker ${mode}: waiting for message and exit`);
             try {
               const [state, [code]] = await Promise.all([
                 ready.then(async ([message]) => {
@@ -174,6 +178,7 @@ describe('cpp heap', { retry: 0 }, () => {
                 }),
                 exited
               ]);
+              console.error(`Callback holder worker ${mode}: message and exit received`);
               return {
                 ...state,
                 code,
@@ -1786,16 +1791,22 @@ describe('cpp heap', { retry: 0 }, () => {
         guest.on('destroyed', () => {
           destroyedEvents++;
         });
-        const destroyed = once(guest, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        // Use the runner's timeout, which also scales for sanitizer builds.
+        const destroyed = once(guest, 'destroyed');
+        // stderr is forwarded even if the remote call never completes.
+        console.error('Deferred guest destruction: waiting for guest destroyed');
         guest.destroy();
         const destroyedOnReturn = guest.isDestroyed();
         const eventsOnReturn = destroyedEvents;
         guest.destroy();
         await destroyed;
+        console.error('Deferred guest destruction: guest destroyed received');
         await new Promise((resolve) => setTimeout(resolve, 0));
-        const embedderDestroyed = once(embedder, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        const embedderDestroyed = once(embedder, 'destroyed');
+        console.error('Deferred guest destruction: waiting for embedder destroyed');
         embedder.destroy();
         await embedderDestroyed;
+        console.error('Deferred guest destruction: embedder destroyed received');
         return { type, destroyedOnReturn, eventsOnReturn, destroyedEvents, destroyed: guest.isDestroyed() };
       });
 
@@ -1874,9 +1885,13 @@ describe('cpp heap', { retry: 0 }, () => {
           guest.attachToIframe(embedder, embedderFrame.frameToken);
 
           const guestFrame = guest.mainFrame;
-          const destroyed = once(guest, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          // Use the runner's timeout, which also scales for sanitizer builds.
+          const destroyed = once(guest, 'destroyed');
+          // stderr is forwarded even if the remote call never completes.
+          console.error('Attached guest frames: waiting for guest destroyed');
           guest.destroy();
           await destroyed;
+          console.error('Attached guest frames: guest destroyed received');
 
           let frameError = '';
           try {
@@ -1892,9 +1907,11 @@ describe('cpp heap', { retry: 0 }, () => {
         })();
 
         const frameReleased = await collectGarbage(() => !frameState.frameRef.deref());
-        const embedderDestroyed = once(embedder, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        const embedderDestroyed = once(embedder, 'destroyed');
+        console.error('Attached guest frames: waiting for embedder destroyed');
         embedder.destroy();
         await embedderDestroyed;
+        console.error('Attached guest frames: embedder destroyed received');
 
         return {
           frameDestroyed: frameState.frameDestroyed,
@@ -1916,19 +1933,27 @@ describe('cpp heap', { retry: 0 }, () => {
           const { randomUUID } = require('node:crypto');
           const { once } = require('node:events');
           const customSession = session.fromPartition(`persist:cppgc-background-page-${randomUUID()}`);
-          const created = once(app, 'web-contents-created', { signal: AbortSignal.timeout(10000) });
+          // Use the runner's timeout, which also scales for sanitizer builds.
+          const created = once(app, 'web-contents-created');
+          // stderr is forwarded even if the remote call never completes.
+          console.error('Background page frames: waiting for web-contents-created');
           const extension = await customSession.extensions.loadExtension(extensionPath);
           const [, backgroundPage] = await created;
+          console.error('Background page frames: web-contents-created received');
 
           try {
             if (backgroundPage.isLoading()) {
-              await once(backgroundPage, 'did-finish-load', { signal: AbortSignal.timeout(10000) });
+              console.error('Background page frames: waiting for did-finish-load');
+              await once(backgroundPage, 'did-finish-load');
+              console.error('Background page frames: did-finish-load received');
             }
             const type = backgroundPage.getType();
             const frame = backgroundPage.mainFrame;
-            const destroyed = once(backgroundPage, 'destroyed', { signal: AbortSignal.timeout(10000) });
+            const destroyed = once(backgroundPage, 'destroyed');
+            console.error('Background page frames: waiting for destroyed');
             backgroundPage.destroy();
             await destroyed;
+            console.error('Background page frames: destroyed received');
 
             let frameError = '';
             try {
@@ -1968,9 +1993,13 @@ describe('cpp heap', { retry: 0 }, () => {
           'Electron / WebContentsView',
           'Electron / WebContents'
         ]);
-        const destroyed = once(view.webContents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        // Use the runner's timeout, which also scales for sanitizer builds.
+        const destroyed = once(view.webContents, 'destroyed');
+        // stderr is forwarded even if the remote call never completes.
+        console.error('WebContentsView retention: waiting for destroyed');
         view.webContents.close();
         await destroyed;
+        console.error('WebContentsView retention: destroyed received');
 
         const released = await collectGarbage(() => !ref.deref());
         return { retained, retainedByView, released };
@@ -1998,10 +2027,14 @@ describe('cpp heap', { retry: 0 }, () => {
           destroyedEvents++;
           destroyedDuringEvent = contents.isDestroyed();
         });
-        const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        // Use the runner's timeout, which also scales for sanitizer builds.
+        const destroyed = once(contents, 'destroyed');
+        // stderr is forwarded even if the remote call never completes.
+        console.error('Destroyed wrapper methods: waiting for destroyed');
         contents.destroy();
         contents.destroy();
         await destroyed;
+        console.error('Destroyed wrapper methods: destroyed received');
 
         await collectGarbage();
         let methodError = '';
@@ -2041,27 +2074,35 @@ describe('cpp heap', { retry: 0 }, () => {
         const v8Util = process._linkedBinding('electron_common_v8_util');
         const contents = webContents.create();
         await contents.loadURL('about:blank');
-        const opened = once(contents, 'devtools-opened', { signal: AbortSignal.timeout(10000) });
+        // Use the runner's timeout, which also scales for sanitizer builds.
+        const opened = once(contents, 'devtools-opened');
+        // stderr is forwarded even if the remote call never completes.
+        console.error('DevTools root: waiting for devtools-opened');
         contents.openDevTools({ mode: 'detach', activate: false });
         v8Util.requestGarbageCollectionForTesting();
         await opened;
+        console.error('DevTools root: devtools-opened received');
         const ref = new WeakRef(contents.devToolsWebContents);
         const rooted = snapshotContainsRetainingPath(takeHeapSnapshot(), [
           'C++ Persistent roots',
           'Electron / WebContents'
         ]);
-        const closed = once(contents, 'devtools-closed', { signal: AbortSignal.timeout(10000) });
+        const closed = once(contents, 'devtools-closed');
+        console.error('DevTools root: waiting for devtools-closed');
         contents.closeDevTools();
         await closed;
+        console.error('DevTools root: devtools-closed received');
 
         const released = await collectGarbage(() => !ref.deref());
         const rootReleased = !snapshotContainsRetainingPath(takeHeapSnapshot(), [
           'C++ Persistent roots',
           'Electron / WebContents'
         ]);
-        const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        const destroyed = once(contents, 'destroyed');
+        console.error('DevTools root: waiting for destroyed');
         contents.close();
         await destroyed;
+        console.error('DevTools root: destroyed received');
         return { rooted, released, rootReleased };
       }, snapshotHelperPath);
 
