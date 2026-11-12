@@ -1,0 +1,828 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Mon, 2 Nov 2026 13:10:46 +0100
+Subject: [M156] [ic] Fix the megamorphic cache variant of the
+ DefineNamedOwn-inside-class bug
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [ic] Fix the megamorphic cache variant of the DefineNamedOwn-inside-class bug
+>
+> Previous fix: https://chromium-review.googlesource.com/c/v8/v8/+/8501161
+>
+> Turns out, there's a variant of this bug where the handlers for
+> DefineNamedOwn and DefineNamedOwnInLiteral are shared via the
+> megamorphic cache.
+>
+> DefineNamedOwnInLiteral can be made megamorphic like this:
+> {__proto__: prototype, value}
+>
+> Thus, we no longer can decide based on the handler whether we should
+> invalidate the constness, but we can decide it based on the call site.
+> This way we can still use the same megamorphic cache for the Define
+> handlers.
+>
+> 1) StoreIC::ComputeHandler: Remove the logic that we can store to const
+>    fields with kMutable type handlers. Create kConst handlers instead.
+>
+> 2) AccessorAssembler::HandleStoreFieldAndReturn: When handling
+>    DefineNamedOwnInLiteral, allow using kConst handlers without checking
+>    the constness of the value.
+>
+> 3) Wire up "in literal" vs "not in literal" throughout the IC layer. We
+>    distinguish based on the bytecode we're handling. Add a StoreICMode
+>    for keeping track of that.
+>
+> TAG=agy
+> CONV=6b85f44b-a64d-4597-9836-a71bc2161edf
+>
+> Fixed: 576439987
+> Change-Id: I1aad8f81bdc3c5ddc713c984f8e0d8206023f8b5
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8691330
+> Reviewed-by: Igor Sheludko <ishell@chromium.org>
+> Commit-Queue: Marja Hölttä <marja@chromium.org>
+> Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#111587}
+
+(cherry picked from commit df78e0051bb566bcfc9d9dfe931fd86e276a5f32)
+
+Bug: 582139208,576439987
+Change-Id: I1aad8f81bdc3c5ddc713c984f8e0d8206023f8b5
+
+Electron adaptation notes (45-x-y):
+Taken from the author's pending [M156] rebase (8744094), whose
+src/ic/accessor-assembler.cc was uploaded with unresolved conflict markers.
+On 15.6, HandleStoreICSmiHandlerCase and HandleStoreFieldAndReturn do not
+yet take a StoreICMode (that plumbing and the maybe_initializing_store switch
+come from the unrelated main-only change 535c5a6fddb "[objects] Use
+UninitializedHeapNumber for uninitialized double fields"), so the mode is
+threaded through mechanically here: StoreICParameters::mode() is added, both
+helpers gain a StoreICMode parameter, HandleStoreICHandlerCase passes
+p->mode(), and the four HandleStoreFieldAndReturn call sites forward it. The
+upstream hunk that adds kDefineNamedOwnInLiteral to the
+maybe_initializing_store switch has no counterpart on this branch and is
+omitted; the branch's existing Float64SilenceNaN handling is kept. The
+kDefineNamedOwnInLiteral checks in CheckHeapObjectTypeMatchesDescriptor and
+HandleStoreFieldAndReturn, and every other file, are as upstream.
+
+diff --git a/src/baseline/baseline-compiler.cc b/src/baseline/baseline-compiler.cc
+index b45a1942ac9fa05df5c8a8884197ea2d74ead034..988b7bce751b0e30d365837644533fa69bd86d53 100644
+--- a/src/baseline/baseline-compiler.cc
++++ b/src/baseline/baseline-compiler.cc
+@@ -1212,7 +1212,11 @@ void BaselineCompiler::VisitDefineNamedOwnProperty() {
+ }
+ 
+ void BaselineCompiler::VisitDefineNamedOwnPropertyInLiteral() {
+-  VisitDefineNamedOwnProperty();
++  CallBuiltin<Builtin::kDefineNamedOwnInLiteralICBaseline>(
++      RegisterOperand(0),               // object
++      Constant<Name>(1),                // name
++      kInterpreterAccumulatorRegister,  // value
++      FeedbackSlotAsTagged(2));         // slot
+ }
+ 
+ void BaselineCompiler::VisitSetKeyedProperty() {
+diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
+index cdf10357995696210e681945aa8a386f128635a0..a463e83a1fc4e72192d4e4c65a51dd7adabb730d 100644
+--- a/src/builtins/builtins-definitions.h
++++ b/src/builtins/builtins-definitions.h
+@@ -875,6 +875,9 @@ constexpr int kGearboxGenericBuiltinIdOffset = -2;
+   TFH(DefineNamedOwnIC, StoreWithVector)                                       \
+   TFH(DefineNamedOwnICTrampoline, Store)                                       \
+   TFH(DefineNamedOwnICBaseline, StoreBaseline)                                 \
++  TFH(DefineNamedOwnInLiteralIC, StoreWithVector)                              \
++  TFH(DefineNamedOwnInLiteralICTrampoline, Store)                              \
++  TFH(DefineNamedOwnInLiteralICBaseline, StoreBaseline)                        \
+   TFH(KeyedStoreIC, StoreWithVector)                                           \
+   TFH(KeyedStoreICTrampoline, Store)                                           \
+   TFH(KeyedStoreICTrampoline_Megamorphic, Store)                               \
+diff --git a/src/builtins/builtins-handler-gen.cc b/src/builtins/builtins-handler-gen.cc
+index 5cde9dda602b03c37b874560ff3ad5502a4b20c8..03ac859b89a627322ddcfa2b5e36d0ba0e6081e8 100644
+--- a/src/builtins/builtins-handler-gen.cc
++++ b/src/builtins/builtins-handler-gen.cc
+@@ -69,6 +69,8 @@ void Builtins::Generate_StoreIC_NoFeedback(
+   StoreICNoFeedbackGenerator::Generate(state);
+ }
+ 
++// For the "no feedback" case, we don't need to distinguish between "in literal"
++// and "not in literal".
+ void Builtins::Generate_DefineNamedOwnIC_NoFeedback(
+     compiler::CodeAssemblerState* state) {
+   DefineNamedOwnICNoFeedbackGenerator::Generate(state);
+diff --git a/src/builtins/builtins-ic-gen.cc b/src/builtins/builtins-ic-gen.cc
+index a3aac16a6be8e539ca48e0a15ae9bcff82403727..4a101c8e371f819f5a827c0dc384f7d031394a87 100644
+--- a/src/builtins/builtins-ic-gen.cc
++++ b/src/builtins/builtins-ic-gen.cc
+@@ -187,17 +187,32 @@ void Builtins::Generate_StoreICBaseline(compiler::CodeAssemblerState* state) {
+ }
+ void Builtins::Generate_DefineNamedOwnIC(compiler::CodeAssemblerState* state) {
+   AccessorAssembler assembler(state);
+-  assembler.GenerateDefineNamedOwnIC();
++  assembler.GenerateDefineNamedOwnIC(false);
+ }
+ void Builtins::Generate_DefineNamedOwnICTrampoline(
+     compiler::CodeAssemblerState* state) {
+   AccessorAssembler assembler(state);
+-  assembler.GenerateDefineNamedOwnICTrampoline();
++  assembler.GenerateDefineNamedOwnICTrampoline(false);
+ }
+ void Builtins::Generate_DefineNamedOwnICBaseline(
+     compiler::CodeAssemblerState* state) {
+   AccessorAssembler assembler(state);
+-  assembler.GenerateDefineNamedOwnICBaseline();
++  assembler.GenerateDefineNamedOwnICBaseline(false);
++}
++void Builtins::Generate_DefineNamedOwnInLiteralIC(
++    compiler::CodeAssemblerState* state) {
++  AccessorAssembler assembler(state);
++  assembler.GenerateDefineNamedOwnIC(true);
++}
++void Builtins::Generate_DefineNamedOwnInLiteralICTrampoline(
++    compiler::CodeAssemblerState* state) {
++  AccessorAssembler assembler(state);
++  assembler.GenerateDefineNamedOwnICTrampoline(true);
++}
++void Builtins::Generate_DefineNamedOwnInLiteralICBaseline(
++    compiler::CodeAssemblerState* state) {
++  AccessorAssembler assembler(state);
++  assembler.GenerateDefineNamedOwnICBaseline(true);
+ }
+ void Builtins::Generate_KeyedStoreIC(compiler::CodeAssemblerState* state) {
+   AccessorAssembler assembler(state);
+diff --git a/src/codegen/code-factory.cc b/src/codegen/code-factory.cc
+index 606d885b42bf4705bc2abcb4c649dd402e48dbed..95381dfdd09810256c66839d98bd03b1d6e15a1b 100644
+--- a/src/codegen/code-factory.cc
++++ b/src/codegen/code-factory.cc
+@@ -50,6 +50,16 @@ Callable CodeFactory::DefineNamedOwnICInOptimizedCode(Isolate* isolate) {
+   return Builtins::CallableFor(isolate, Builtin::kDefineNamedOwnIC);
+ }
+ 
++Callable CodeFactory::DefineNamedOwnInLiteralIC(Isolate* isolate) {
++  return Builtins::CallableFor(isolate,
++                               Builtin::kDefineNamedOwnInLiteralICTrampoline);
++}
++
++Callable CodeFactory::DefineNamedOwnInLiteralICInOptimizedCode(
++    Isolate* isolate) {
++  return Builtins::CallableFor(isolate, Builtin::kDefineNamedOwnInLiteralIC);
++}
++
+ // static
+ Callable CodeFactory::StringAdd(Isolate* isolate, StringAddFlags flags) {
+   return Builtins::CallableFor(isolate, Builtins::StringAdd(flags));
+diff --git a/src/codegen/code-factory.h b/src/codegen/code-factory.h
+index df32614b67e57150f46d26ce0059f98bb033fea3..b4216241d601d8ffbb3d945fed01eaf43cc204dc 100644
+--- a/src/codegen/code-factory.h
++++ b/src/codegen/code-factory.h
+@@ -39,6 +39,8 @@ class V8_EXPORT_PRIVATE CodeFactory final {
+                                               TypeofMode typeof_mode);
+   static Callable DefineNamedOwnIC(Isolate* isolate);
+   static Callable DefineNamedOwnICInOptimizedCode(Isolate* isolate);
++  static Callable DefineNamedOwnInLiteralIC(Isolate* isolate);
++  static Callable DefineNamedOwnInLiteralICInOptimizedCode(Isolate* isolate);
+ 
+   static Callable CallApiCallback(Isolate* isolate);
+ 
+diff --git a/src/compiler/js-generic-lowering.cc b/src/compiler/js-generic-lowering.cc
+index d32bb061c04a6d373d743491922431c322bd2816..24626cae225ee8913431a04051db024da3d14bb1 100644
+--- a/src/compiler/js-generic-lowering.cc
++++ b/src/compiler/js-generic-lowering.cc
+@@ -482,13 +482,18 @@ void JSGenericLowering::LowerJSDefineNamedOwnProperty(Node* node) {
+     node->InsertInput(zone(), 1, jsgraph()->ConstantNoHole(p.name(), broker()));
+     node->InsertInput(zone(), 3,
+                       jsgraph()->TaggedIndexConstant(p.feedback().index()));
+-    Callable callable = CodeFactory::DefineNamedOwnIC(isolate());
++    Callable callable = p.in_literal()
++                            ? CodeFactory::DefineNamedOwnInLiteralIC(isolate())
++                            : CodeFactory::DefineNamedOwnIC(isolate());
+     ReplaceWithBuiltinCall(node, callable, flags);
+   } else {
+     node->InsertInput(zone(), 1, jsgraph()->ConstantNoHole(p.name(), broker()));
+     node->InsertInput(zone(), 3,
+                       jsgraph()->TaggedIndexConstant(p.feedback().index()));
+-    Callable callable = CodeFactory::DefineNamedOwnICInOptimizedCode(isolate());
++    Callable callable =
++        p.in_literal()
++            ? CodeFactory::DefineNamedOwnInLiteralICInOptimizedCode(isolate())
++            : CodeFactory::DefineNamedOwnICInOptimizedCode(isolate());
+     ReplaceWithBuiltinCall(node, callable, flags);
+   }
+ }
+diff --git a/src/compiler/turboshaft/turbolev-graph-builder.cc b/src/compiler/turboshaft/turbolev-graph-builder.cc
+index a6e00c86105e3f2419d2228740e0cbb1fe298095..21a419b545a67a5d39eb0bd55b96bfe407215b36 100644
+--- a/src/compiler/turboshaft/turbolev-graph-builder.cc
++++ b/src/compiler/turboshaft/turbolev-graph-builder.cc
+@@ -2372,8 +2372,11 @@ class GraphBuildingNodeProcessor {
+                            __ HeapConstant(node->feedback().vector),
+                            Map(node->ContextInput())};
+ 
+-    GENERATE_AND_MAP_BUILTIN_CALL(node, Builtin::kDefineNamedOwnIC, frame_state,
+-                                  base::VectorOf(arguments));
++    GENERATE_AND_MAP_BUILTIN_CALL(node,
++                                  node->in_literal()
++                                      ? Builtin::kDefineNamedOwnInLiteralIC
++                                      : Builtin::kDefineNamedOwnIC,
++                                  frame_state, base::VectorOf(arguments));
+     return maglev::ProcessResult::kContinue;
+   }
+ 
+diff --git a/src/ic/accessor-assembler.cc b/src/ic/accessor-assembler.cc
+index 0dfd75a46494d14a2314cd7e42316735d30d181d..65db8d56f8bdee825af7c44943c4fca189f91ae6 100644
+--- a/src/ic/accessor-assembler.cc
++++ b/src/ic/accessor-assembler.cc
+@@ -1642,7 +1642,8 @@ void AccessorAssembler::HandleStoreICHandlerCase(
+ 
+       BIND(&data);
+       // Handle non-transitioning field stores.
+-      HandleStoreICSmiHandlerCase(handler_word, CAST(holder), p->value(), miss);
++      HandleStoreICSmiHandlerCase(handler_word, CAST(holder), p->value(),
++                                  p->mode(), miss);
+     }
+ 
+     BIND(&if_proxy);
+@@ -1662,7 +1663,7 @@ void AccessorAssembler::HandleStoreICHandlerCase(
+                         p->slot(), p->vector(), p->receiver(), p->name());
+       } else {
+         Runtime::FunctionId id;
+-        if (p->IsDefineNamedOwn()) {
++        if (p->IsAnyDefineNamedOwn()) {
+           id = Runtime::kDefineNamedOwnIC_Slow;
+         } else if (p->IsDefineKeyedOwn()) {
+           id = Runtime::kDefineKeyedOwnIC_Slow;
+@@ -2333,6 +2334,7 @@ void AccessorAssembler::HandleStoreToProxy(const StoreICParameters* p,
+ void AccessorAssembler::HandleStoreICSmiHandlerCase(TNode<Word32T> handler_word,
+                                                     TNode<JSObject> holder,
+                                                     TNode<Object> value,
++                                                    StoreICMode mode,
+                                                     Label* miss) {
+   Comment("field store");
+ #ifdef DEBUG
+@@ -2360,17 +2362,18 @@ void AccessorAssembler::HandleStoreICSmiHandlerCase(TNode<Word32T> handler_word,
+   {
+     Comment("store tagged field");
+     HandleStoreFieldAndReturn(handler_word, holder, value, std::nullopt,
+-                              Representation::Tagged(), miss);
++                              Representation::Tagged(), mode, miss);
+   }
+ 
+   BIND(&if_heap_object_field);
+   {
+     Comment("heap object field checks");
+-    CheckHeapObjectTypeMatchesDescriptor(handler_word, holder, value, miss);
++    CheckHeapObjectTypeMatchesDescriptor(handler_word, holder, value, mode,
++                                         miss);
+ 
+     Comment("store heap object field");
+     HandleStoreFieldAndReturn(handler_word, holder, value, std::nullopt,
+-                              Representation::HeapObject(), miss);
++                              Representation::HeapObject(), mode, miss);
+   }
+ 
+   BIND(&if_smi_field);
+@@ -2380,7 +2383,7 @@ void AccessorAssembler::HandleStoreICSmiHandlerCase(TNode<Word32T> handler_word,
+ 
+     Comment("store smi field");
+     HandleStoreFieldAndReturn(handler_word, holder, value, std::nullopt,
+-                              Representation::Smi(), miss);
++                              Representation::Smi(), mode, miss);
+   }
+ 
+   BIND(&if_double_field);
+@@ -2397,21 +2400,25 @@ void AccessorAssembler::HandleStoreICSmiHandlerCase(TNode<Word32T> handler_word,
+ 
+     Comment("store double field");
+     HandleStoreFieldAndReturn(handler_word, holder, value, double_value,
+-                              Representation::Double(), miss);
++                              Representation::Double(), mode, miss);
+   }
+ }
+ 
+ void AccessorAssembler::CheckHeapObjectTypeMatchesDescriptor(
+     TNode<Word32T> handler_word, TNode<JSObject> holder, TNode<Object> value,
+-    Label* bailout) {
++    StoreICMode mode, Label* bailout) {
+   GotoIf(TaggedIsSmi(value), bailout);
+ 
+   Label done(this);
+   // Skip field type check in favor of constant value check when storing
+   // to constant field.
+-  GotoIf(Word32Equal(DecodeWord32<StoreHandler::KindBits>(handler_word),
+-                     STORE_KIND(kConstField)),
+-         &done);
++  if (mode != StoreICMode::kDefineNamedOwnInLiteral) {
++    // DefineNamedOwnInLiteral skips the constant value check
++    // when storing, so we need to do this field type check here.
++    GotoIf(Word32Equal(DecodeWord32<StoreHandler::KindBits>(handler_word),
++                       STORE_KIND(kConstField)),
++           &done);
++  }
+   TNode<IntPtrT> descriptor =
+       Signed(DecodeWordFromWord32<StoreHandler::DescriptorBits>(handler_word));
+   TNode<MaybeObject> field_type =
+@@ -2489,7 +2496,7 @@ void AccessorAssembler::GotoIfNotSameNumberBitPattern(TNode<Float64T> left,
+ void AccessorAssembler::HandleStoreFieldAndReturn(
+     TNode<Word32T> handler_word, TNode<JSObject> holder, TNode<Object> value,
+     std::optional<TNode<Float64T>> double_value, Representation representation,
+-    Label* miss) {
++    StoreICMode mode, Label* miss) {
+   bool store_value_as_double = representation.IsDouble();
+ 
+   if (store_value_as_double) {
+@@ -2527,12 +2534,16 @@ void AccessorAssembler::HandleStoreFieldAndReturn(
+     offset = actual_offset.value();
+   }
+ 
+-  // Do constant value check if necessary.
++  // Do constant value check if necessary. In
++  // StoreICMode::kDefineNamedOwnInLiteral, we can store to const fields without
++  // invalidating the constness.
+   Label do_store(this);
+-  GotoIfNot(Word32Equal(DecodeWord32<StoreHandler::KindBits>(handler_word),
+-                        STORE_KIND(kConstField)),
+-            &do_store);
+-  {
++  if (mode == StoreICMode::kDefineNamedOwnInLiteral) {
++    Goto(&do_store);
++  } else {
++    GotoIfNot(Word32Equal(DecodeWord32<StoreHandler::KindBits>(handler_word),
++                          STORE_KIND(kConstField)),
++              &do_store);
+     if (store_value_as_double) {
+       TNode<Float64T> current_value =
+           LoadObjectField<Float64T>(property_storage, offset);
+@@ -4245,16 +4256,17 @@ void AccessorAssembler::StoreIC(const StoreICParameters* p) {
+   {
+     // TODO(v8:12548): refactor SetNamedIC as a subclass of StoreIC, which can
+     // be called here and below when !p->IsDefineNamedOwn().
+-    auto builtin = p->IsDefineNamedOwn() ? Builtin::kDefineNamedOwnIC_NoFeedback
+-                                         : Builtin::kStoreIC_NoFeedback;
++    auto builtin = p->IsAnyDefineNamedOwn()
++                       ? Builtin::kDefineNamedOwnIC_NoFeedback
++                       : Builtin::kStoreIC_NoFeedback;
+     TailCallBuiltin(builtin, p->context(), p->receiver(), p->name(),
+                     p->value());
+   }
+ 
+   BIND(&miss);
+   {
+-    auto runtime = p->IsDefineNamedOwn() ? Runtime::kDefineNamedOwnIC_Miss
+-                                         : Runtime::kStoreIC_Miss;
++    auto runtime = p->IsAnyDefineNamedOwn() ? Runtime::kDefineNamedOwnIC_Miss
++                                            : Runtime::kStoreIC_Miss;
+     TailCallRuntime(runtime, p->context(), p->value(), p->slot(), p->vector(),
+                     p->receiver(), p->name());
+   }
+@@ -5528,7 +5540,7 @@ void AccessorAssembler::GenerateStoreICBaseline() {
+                   vector);
+ }
+ 
+-void AccessorAssembler::GenerateDefineNamedOwnIC() {
++void AccessorAssembler::GenerateDefineNamedOwnIC(bool in_literal) {
+   using Descriptor = StoreWithVectorDescriptor;
+ 
+   auto receiver = Parameter<JSAny>(Descriptor::kReceiver);
+@@ -5541,13 +5553,14 @@ void AccessorAssembler::GenerateDefineNamedOwnIC() {
+ 
+   StoreICParameters p =
+       MakeStoreICParameters(context, receiver, name, value, flags, slot, vector,
+-                            StoreICMode::kDefineNamedOwn);
++                            in_literal ? StoreICMode::kDefineNamedOwnInLiteral
++                                       : StoreICMode::kDefineNamedOwn);
+   // StoreIC is a generic helper than handle both set and define own
+   // named stores.
+   StoreIC(&p);
+ }
+ 
+-void AccessorAssembler::GenerateDefineNamedOwnICTrampoline() {
++void AccessorAssembler::GenerateDefineNamedOwnICTrampoline(bool in_literal) {
+   using Descriptor = StoreDescriptor;
+ 
+   auto receiver = Parameter<JSAny>(Descriptor::kReceiver);
+@@ -5557,11 +5570,12 @@ void AccessorAssembler::GenerateDefineNamedOwnICTrampoline() {
+   auto context = Parameter<Context>(Descriptor::kContext);
+   TNode<FeedbackVector> vector = LoadFeedbackVectorForStub();
+ 
+-  TailCallBuiltin(Builtin::kDefineNamedOwnIC, context, receiver, name, value,
+-                  slot, vector);
++  Builtin builtin = in_literal ? Builtin::kDefineNamedOwnInLiteralIC
++                               : Builtin::kDefineNamedOwnIC;
++  TailCallBuiltin(builtin, context, receiver, name, value, slot, vector);
+ }
+ 
+-void AccessorAssembler::GenerateDefineNamedOwnICBaseline() {
++void AccessorAssembler::GenerateDefineNamedOwnICBaseline(bool in_literal) {
+   using Descriptor = StoreWithVectorDescriptor;
+ 
+   auto receiver = Parameter<JSAny>(Descriptor::kReceiver);
+@@ -5571,8 +5585,9 @@ void AccessorAssembler::GenerateDefineNamedOwnICBaseline() {
+   TNode<FeedbackVector> vector = LoadFeedbackVectorFromBaseline();
+   TNode<Context> context = LoadContextFromBaseline();
+ 
+-  TailCallBuiltin(Builtin::kDefineNamedOwnIC, context, receiver, name, value,
+-                  slot, vector);
++  Builtin builtin = in_literal ? Builtin::kDefineNamedOwnInLiteralIC
++                               : Builtin::kDefineNamedOwnIC;
++  TailCallBuiltin(builtin, context, receiver, name, value, slot, vector);
+ }
+ 
+ void AccessorAssembler::GenerateKeyedStoreIC() {
+diff --git a/src/ic/accessor-assembler.h b/src/ic/accessor-assembler.h
+index ec33f43b1284393db3c0c430e181c3c248e7792b..75e9a56a929f0bdff1a63787dca16fd3cfd9c86f 100644
+--- a/src/ic/accessor-assembler.h
++++ b/src/ic/accessor-assembler.h
+@@ -57,9 +57,9 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+   void GenerateStoreICTrampoline();
+   void GenerateStoreICTrampoline_Megamorphic();
+   void GenerateStoreICBaseline();
+-  void GenerateDefineNamedOwnIC();
+-  void GenerateDefineNamedOwnICTrampoline();
+-  void GenerateDefineNamedOwnICBaseline();
++  void GenerateDefineNamedOwnIC(bool in_literal);
++  void GenerateDefineNamedOwnICTrampoline(bool in_literal);
++  void GenerateDefineNamedOwnICBaseline(bool in_literal);
+   void GenerateStoreGlobalIC();
+   void GenerateStoreGlobalICTrampoline();
+   void GenerateStoreGlobalICBaseline();
+@@ -313,6 +313,8 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+     // TODO(v8:12548): rename to kDefineKeyedOwnInLiteral
+     kDefault,
+     kDefineNamedOwn,
++    // Initializing store inside a literal; does not invalidate constness.
++    kDefineNamedOwnInLiteral,
+     kDefineKeyedOwn,
+   };
+ 
+@@ -357,11 +359,18 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+     bool IsDefineNamedOwn() const {
+       return mode_ == StoreICMode::kDefineNamedOwn;
+     }
++    bool IsDefineNamedOwnInLiteral() const {
++      return mode_ == StoreICMode::kDefineNamedOwnInLiteral;
++    }
++    bool IsAnyDefineNamedOwn() const {
++      return IsDefineNamedOwn() || IsDefineNamedOwnInLiteral();
++    }
+     bool IsDefineKeyedOwn() const {
+       return mode_ == StoreICMode::kDefineKeyedOwn;
+     }
+     bool IsAnyDefineOwn() const {
+-      return IsDefineNamedOwn() || IsDefineKeyedOwn();
++      return IsDefineNamedOwn() || IsDefineNamedOwnInLiteral() ||
++             IsDefineKeyedOwn();
+     }
+ 
+     StubCache* stub_cache(Isolate* isolate) const {
+@@ -369,6 +378,8 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+                               : isolate->store_stub_cache();
+     }
+ 
++    StoreICMode mode() const { return mode_; }
++
+     StoreICParameters WithName(TNode<Object> name) const {
+       return StoreICParameters(context_, receiver_, receiver_map_, name, value_,
+                                flags_, slot_, vector_, mode_);
+@@ -643,14 +654,15 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+                                  ElementSupport support_elements);
+   void HandleStoreICSmiHandlerCase(TNode<Word32T> handler_word,
+                                    TNode<JSObject> holder, TNode<Object> value,
+-                                   Label* miss);
++                                   StoreICMode mode, Label* miss);
+   void HandleStoreICSmiHandlerJSSharedStructFieldCase(
+       TNode<Context> context, TNode<Word32T> handler_word,
+       TNode<JSObject> holder, TNode<Object> value);
+   void HandleStoreFieldAndReturn(TNode<Word32T> handler_word,
+                                  TNode<JSObject> holder, TNode<Object> value,
+                                  std::optional<TNode<Float64T>> double_value,
+-                                 Representation representation, Label* miss);
++                                 Representation representation,
++                                 StoreICMode mode, Label* miss);
+ 
+   TNode<MaybeObject> CheckPrototypeValidityCell(
+       TNode<Object> maybe_validity_cell, Label* miss);
+@@ -691,7 +703,7 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+   void CheckHeapObjectTypeMatchesDescriptor(TNode<Word32T> handler_word,
+                                             TNode<JSObject> holder,
+                                             TNode<Object> value,
+-                                            Label* bailout);
++                                            StoreICMode mode, Label* bailout);
+   // Double fields store double values in a mutable box, where stores are
+   // writes into this box rather than HeapNumber assignment.
+   void CheckDescriptorConsidersNumbersMutable(TNode<Word32T> handler_word,
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index f6e7d6422a2732b2fb142b0c8c3a136592482fc9..d009f8b88968b5d733789bb793444ac1753f6ddb 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -2706,16 +2706,9 @@ MaybeObjectHandle StoreIC::ComputeHandler(LookupIterator* lookup) {
+           return MaybeObjectHandle(StoreHandler::StoreSharedStructField(
+               isolate(), descriptor, index, lookup->representation()));
+         }
+-        PropertyConstness constness = lookup->constness();
+-        if (constness == PropertyConstness::kConst &&
+-            IsDefineNamedOwnICKind(nexus()->kind())) {
+-          // DefineNamedOwnICs are used for initializing object literals
+-          // therefore we must store the value unconditionally even to
+-          // VariableMode::kConst fields.
+-          constness = PropertyConstness::kMutable;
+-        }
+         return MaybeObjectHandle(StoreHandler::StoreField(
+-            isolate(), descriptor, index, constness, lookup->representation()));
++            isolate(), descriptor, index, lookup->constness(),
++            lookup->representation()));
+       }
+ 
+       // -------------- Constant properties --------------
+@@ -3518,10 +3511,9 @@ RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
+ 
+   FeedbackSlot vector_slot = FeedbackVector::ToSlot(slot);
+ 
+-  // When there is no feedback vector it is OK to use the SetNamedStrict as
+-  // the feedback slot kind. We only reuse this for DefineNamedOwnIC when
+-  // installing the handler for storing const properties. This will happen only
+-  // when feedback vector is available.
++  // When there is no feedback vector it is OK to use SetNamedStrict as the
++  // feedback slot kind because StoreIC::Store deduces strictness from the
++  // caller frame rather than the feedback slot kind.
+   FeedbackSlotKind kind = FeedbackSlotKind::kSetNamedStrict;
+   Handle<FeedbackVector> vector = Handle<FeedbackVector>();
+   if (!IsUndefined(*maybe_vector)) {
+@@ -3537,6 +3529,9 @@ RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
+   RETURN_RESULT_OR_FAILURE(isolate, ic.Store(receiver, key, value));
+ }
+ 
++// Shared between DefineNamedOwn and DefineNamedOwnInLiteral. This
++// is fine, since the IC handlers we create are identical - only when using the
++// handler we check whether we're in the "in literal" case or not.
+ RUNTIME_FUNCTION(Runtime_DefineNamedOwnIC_Miss) {
+   HandleScope scope(isolate);
+   DCHECK_EQ(5, args.length());
+@@ -3569,6 +3564,7 @@ RUNTIME_FUNCTION(Runtime_DefineNamedOwnIC_Miss) {
+   RETURN_RESULT_OR_FAILURE(isolate, ic.Store(receiver, key, value));
+ }
+ 
++// Also usable for both DefineNamedOwn and DefineNamedOwnInLiteral.
+ RUNTIME_FUNCTION(Runtime_DefineNamedOwnIC_Slow) {
+   HandleScope scope(isolate);
+   DCHECK_EQ(3, args.length());
+diff --git a/src/ic/keyed-store-generic.cc b/src/ic/keyed-store-generic.cc
+index f213fb0d4b6a24a500001ec3a715ddd8e9cb5a24..f41abcaecd0a10a34386ab3e61fd16bbea093e7f 100644
+--- a/src/ic/keyed-store-generic.cc
++++ b/src/ic/keyed-store-generic.cc
+@@ -1339,6 +1339,9 @@ void KeyedStoreGenericAssembler::StoreIC_NoFeedback() {
+     // checks, strings and string wrappers, proxies) are handled in the runtime.
+     GotoIf(IsSpecialReceiverInstanceType(instance_type), &miss);
+     {
++      // Using KeyedStoreGenericAssembler for named stores is a hack (see
++      // DefineNamedOwnICNoFeedbackGenerator::Generate). For the "no feedback"
++      // case, using kDefineNamedOwn is fine below.
+       StoreICParameters p = MakeStoreICParameters(
+           context, receiver, receiver_map, name, value, std::nullopt, {},
+           UndefinedConstant(),
+diff --git a/src/interpreter/interpreter-generator.cc b/src/interpreter/interpreter-generator.cc
+index 73eee42791aef1be47dd8efe08e9544d3846b67b..7b62e6c927960ef59ef238ec9c50e86366cc81a6 100644
+--- a/src/interpreter/interpreter-generator.cc
++++ b/src/interpreter/interpreter-generator.cc
+@@ -756,7 +756,8 @@ IGNITION_HANDLER(DefineNamedOwnProperty, InterpreterSetNamedPropertyAssembler) {
+ // this.
+ IGNITION_HANDLER(DefineNamedOwnPropertyInLiteral,
+                  InterpreterSetNamedPropertyAssembler) {
+-  SetNamedProperty(Builtin::kDefineNamedOwnIC, NamedPropertyType::kOwn);
++  SetNamedProperty(Builtin::kDefineNamedOwnInLiteralIC,
++                   NamedPropertyType::kOwn);
+ }
+ 
+ // SetKeyedProperty <object> <key> <slot>
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 2d0ecf8d8d985097fdf53c68ec99df412c3f8989..41e89d9806d2ced1f0abd9ecb8f1673f1ed298be 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -7021,11 +7021,12 @@ ReduceResult MaglevGraphBuilder::VisitDefineNamedOwnPropertyHelper(
+       broker()->GetFeedbackForPropertyAccess(
+           feedback_source, compiler::AccessMode::kStore, name);
+ 
+-  auto build_generic_access = [this, object, &name, &feedback_source]() {
++  auto build_generic_access = [this, object, &name, in_literal,
++                               &feedback_source]() {
+     ValueNode* context = GetContext();
+     ValueNode* value = GetAccumulator();
+     return AddNewNode<DefineNamedOwnGeneric>({context, object, value}, name,
+-                                             feedback_source);
++                                             in_literal, feedback_source);
+   };
+   switch (processed_feedback.kind()) {
+     case compiler::ProcessedFeedback::kInsufficient:
+diff --git a/src/maglev/maglev-ir.cc b/src/maglev/maglev-ir.cc
+index 499f75cb9a360eab84f70e6f75a9e748854f997f..b35fab1512e09b276439d74d4b3e86abc0f5e964 100644
+--- a/src/maglev/maglev-ir.cc
++++ b/src/maglev/maglev-ir.cc
+@@ -5371,10 +5371,16 @@ void SetNamedGeneric::GenerateCode(MaglevAssembler* masm,
+ 
+ int DefineNamedOwnGeneric::MaxCallStackArgs() const {
+   using D = CallInterfaceDescriptorFor<Builtin::kDefineNamedOwnIC>::type;
++  static_assert(
++      std::is_same_v<D, CallInterfaceDescriptorFor<
++                            Builtin::kDefineNamedOwnInLiteralIC>::type>);
+   return D::GetStackParameterCount();
+ }
+ void DefineNamedOwnGeneric::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kDefineNamedOwnIC>::type;
++  static_assert(
++      std::is_same_v<D, CallInterfaceDescriptorFor<
++                            Builtin::kDefineNamedOwnInLiteralIC>::type>);
+   UseFixed(ContextInput(), kContextRegister);
+   UseFixed(ObjectInput(), D::GetRegisterParameter(D::kReceiver));
+   UseFixed(ValueInput(), D::GetRegisterParameter(D::kValue));
+@@ -5382,14 +5388,25 @@ void DefineNamedOwnGeneric::SetValueLocationConstraints() {
+ }
+ void DefineNamedOwnGeneric::GenerateCode(MaglevAssembler* masm,
+                                          const ProcessingState& state) {
+-  __ CallBuiltin<Builtin::kDefineNamedOwnIC>(
+-      ContextInput(),                               // context
+-      ObjectInput(),                                // receiver
+-      name().object(),                              // name
+-      ValueInput(),                                 // value
+-      TaggedIndex::FromIntptr(feedback().index()),  // feedback slot
+-      feedback().vector                             // feedback vector
+-  );
++  if (in_literal()) {
++    __ CallBuiltin<Builtin::kDefineNamedOwnInLiteralIC>(
++        ContextInput(),                               // context
++        ObjectInput(),                                // receiver
++        name().object(),                              // name
++        ValueInput(),                                 // value
++        TaggedIndex::FromIntptr(feedback().index()),  // feedback slot
++        feedback().vector                             // feedback vector
++    );
++  } else {
++    __ CallBuiltin<Builtin::kDefineNamedOwnIC>(
++        ContextInput(),                               // context
++        ObjectInput(),                                // receiver
++        name().object(),                              // name
++        ValueInput(),                                 // value
++        TaggedIndex::FromIntptr(feedback().index()),  // feedback slot
++        feedback().vector                             // feedback vector
++    );
++  }
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
+@@ -9376,7 +9393,7 @@ void SetNamedGeneric::PrintParams(std::ostream& os) const {
+ }
+ 
+ void DefineNamedOwnGeneric::PrintParams(std::ostream& os) const {
+-  os << "(" << *name_.object() << ")";
++  os << "(" << *name_.object() << ", in_literal:" << in_literal() << ")";
+ }
+ 
+ void GapMove::PrintParams(std::ostream& os) const {
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index c1b16a843499f102d8d724ba9a3ef9c560e1f1d4..08e70c7e514ab43d00179d45ebc91368bc2c6672 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -9977,8 +9977,11 @@ class DefineNamedOwnGeneric
+     : public FixedInputValueNodeT<3, DefineNamedOwnGeneric> {
+  public:
+   explicit DefineNamedOwnGeneric(uint64_t bitfield, compiler::NameRef name,
++                                 bool in_literal,
+                                  const compiler::FeedbackSource& feedback)
+-      : Base(bitfield), name_(name), feedback_(feedback) {}
++      : Base(bitfield | InLiteralField::encode(in_literal)),
++        name_(name),
++        feedback_(feedback) {}
+ 
+   // The implementation currently calls runtime.
+   static constexpr OpProperties kProperties = OpProperties::JSCall();
+@@ -9988,6 +9991,7 @@ class DefineNamedOwnGeneric
+   compiler::NameRef name() const { return name_; }
+   compiler::FeedbackSource feedback() const { return feedback_; }
+ 
++  bool in_literal() const { return InLiteralField::decode(bitfield()); }
+ 
+   int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+@@ -9995,6 +9999,7 @@ class DefineNamedOwnGeneric
+   void PrintParams(std::ostream&) const;
+ 
+  private:
++  using InLiteralField = NextBitField<bool, 1>;
+   const compiler::NameRef name_;
+   const compiler::FeedbackSource feedback_;
+ };
+diff --git a/test/mjsunit/regress/regress-576439987.js b/test/mjsunit/regress/regress-576439987.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..cf531d9d6daebde42e5abaf6843fac6f134156c9
+--- /dev/null
++++ b/test/mjsunit/regress/regress-576439987.js
+@@ -0,0 +1,62 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --expose-gc --maglev
++
++const prototypes = Array.from({length: 50}, (_, i) => ({['p' + i]: i}));
++const empty = new Uint8Array(0);
++const replacement = new Uint8Array([77]);
++
++// Uses DefineNamedOwnPropertyInLiteral for writing the value.
++function make(prototype, value) { return {__proto__: prototype, value}; }
++
++// Evil base class; the ctor always returns the object you passed in instead of
++// a new instance of Base.
++class Base { constructor(object) { return object; } }
++
++let nextValue = empty;
++
++// Uses DefineNamedOwnProperty for writing the value. Because of the base
++// class, the object we're writing the value in might or might not already have
++// a property called "value".
++class Define extends Base { value = nextValue; }
++
++// Make both the DefineNamedOwnPropertyInLiteral and the DefineNamedOwnProperty
++// call sites megamorphic.
++for (let i = 0; i < 50; ++i) {
++  make(prototypes[i % prototypes.length], empty);
++  new Define({['q' + i]: i});
++}
++
++const victim = make(prototypes[0], empty);
++function overwrite(value) {
++  nextValue = value;
++  make(prototypes[0], empty);  // Cache the literal's initializing handler.
++  new Define(victim);          // Reuse it for a non-initializing store.
++}
++
++function read() { return victim.value[0]; }
++%PrepareFunctionForOptimization(read);
++read();
++
++const buffer = new ArrayBuffer(64 * 1024 * 1024);
++let view = new Uint8Array(buffer);
++view[0] = 133;
++overwrite(view);
++
++%OptimizeMaglevOnNextCall(read);
++read();
++assertMaglevved(read);
++
++overwrite(replacement);
++view = null;
++assertEquals(77, victim.value[0]);
++assertEquals(77, read());
++assertMaglevved(read);
++
++gc();
++buffer.transfer(0);
++assertEquals(77, read());
++
++assertMaglevved(read);
+diff --git a/test/unittests/objects/feedback-vector-unittest.cc b/test/unittests/objects/feedback-vector-unittest.cc
+index 2787c8641390b6225352d283bd26d437b00ef88d..911a4cb801d28578f003a508e43fe45311510c51 100644
+--- a/test/unittests/objects/feedback-vector-unittest.cc
++++ b/test/unittests/objects/feedback-vector-unittest.cc
+@@ -745,7 +745,7 @@ TEST_F(FeedbackVectorTest, VectorStoreICBasic) {
+   CHECK_EQ(InlineCacheState::MONOMORPHIC, nexus.ic_state());
+ }
+ 
+-TEST_F(FeedbackVectorTest, DefineNamedOwnIC) {
++TEST_F(FeedbackVectorTest, DefineNamedOwnInLiteralIC) {
+   if (!i::v8_flags.use_ic) return;
+   v8_flags.allow_natives_syntax = true;
+ 
+@@ -770,6 +770,35 @@ TEST_F(FeedbackVectorTest, DefineNamedOwnIC) {
+   CHECK_EQ(InlineCacheState::MONOMORPHIC, nexus.ic_state());
+ }
+ 
++TEST_F(FeedbackVectorTest, DefineNamedOwnIC) {
++  if (!i::v8_flags.use_ic) return;
++  v8_flags.lazy_feedback_allocation.Set(false);
++
++  v8::HandleScope scope(v8_isolate());
++  Isolate* isolate = i_isolate();
++
++  TryRunJS(
++      "var C = class {"
++      "  a = 1;"
++      "};"
++      "new C();"
++      "new C();"
++      "new C();");
++  DirectHandle<JSFunction> c = GetFunction("C");
++  DirectHandle<JSFunction> initializer = Cast<JSFunction>(
++      JSReceiver::GetProperty(isolate, c,
++                              isolate->factory()->class_fields_symbol())
++          .ToHandleChecked());
++  // There should be one IC slot in the instance members initializer.
++  Handle<FeedbackVector> feedback_vector(initializer->feedback_vector(),
++                                         isolate);
++  FeedbackVectorHelper helper(feedback_vector);
++  CHECK_EQ(1, helper.slot_count());
++  CHECK_SLOT_KIND(helper, 0, FeedbackSlotKind::kDefineNamedOwn);
++  FeedbackNexus nexus(isolate, feedback_vector, helper.slot(0));
++  CHECK_EQ(InlineCacheState::MONOMORPHIC, nexus.ic_state());
++}
++
+ TEST_F(FeedbackVectorTest, MaxLengthAndSizeFor) {
+   static_assert(FeedbackVector::SizeFor(0) == FeedbackVector::kHeaderSize);
+   static_assert(FeedbackVector::SizeFor(10) ==

@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Fri, 6 Nov 2026 15:33:43 -0800
+Subject: [M157] Treat recorderer snap() failure as a failure
+
+Original change's description:
+> Treat recorderer snap() failure as a failure
+>
+> GraphiteFlush() was treating recorder->snap() returning null as
+> success, even thoguh it only returns null for an error. Treat it as a
+> failure to flush instead.
+>
+> Fixed: 574795295
+> Change-Id: I1fc9363c26c92884273240a9f3d952bb21a5c547
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8717309
+> Reviewed-by: Greg Daniel <egdaniel@google.com>
+> Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+> Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1737029}
+
+(cherry picked from commit 75c83fdef57820ed3939a64e07a1085746627d95)
+
+Bug: 582594875,574795295
+Change-Id: I1fc9363c26c92884273240a9f3d952bb21a5c547
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8759697
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Pure-Cherry-Pick: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8103@{#1318}
+Cr-Branched-From: e7baefea94b4a90087e3043e4a8effec33c2025f-refs/heads/main@{#1717349}
+
+diff --git a/gpu/command_buffer/service/graphite_utils.cc b/gpu/command_buffer/service/graphite_utils.cc
+index 9dd217e037cf950525786fb1b68a956e2de3ccd8..43b9f47f4195b127e882be0c883c84ff13a179cd 100644
+--- a/gpu/command_buffer/service/graphite_utils.cc
++++ b/gpu/command_buffer/service/graphite_utils.cc
+@@ -71,7 +71,8 @@ bool GraphiteFlush(GraphiteSharedContext* context,
+   if (recording) {
+     return context->insertRecording({recording.get()});
+   }
+-  return true;
++  // Snap will only return null if there is an error.
++  return false;
+ }
+ 
+ bool GraphiteFlushAndSubmit(GraphiteSharedContext* context,

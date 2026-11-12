@@ -1,0 +1,202 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nathan Sanchez <nathanasanchez@google.com>
+Date: Tue, 3 Nov 2026 18:55:55 +0000
+Subject: [M157] [Vulkan] Sleep after device lost on certain GPUs
+
+Original change's description:
+> [Vulkan] Sleep after device lost on certain GPUs
+>
+> This mimics the similar approach taken in Dawn
+> (https://dawn-review.git.corp.google.com/c/dawn/+/314796/) where we
+> sleep for 1ms after vkQueueSubmit or vkQueueWaitIdle
+>
+> Bug: 580857377
+> Change-Id: I9811a29ffccc0b30402ee77ec78872fb58525283
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1414538
+> Auto-Submit: Nathan Sanchez <nathanasanchez@google.com>
+> Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+> Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+> Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+
+(cherry picked from commit 4232e029dc217b7e736d00fe9e0fc777bd48ca94)
+
+Bug: 582139444,580857377
+Change-Id: I9811a29ffccc0b30402ee77ec78872fb58525283
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1421856
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/gpu/ganesh/vk/GrVkCaps.cpp b/src/gpu/ganesh/vk/GrVkCaps.cpp
+index ee876221d37cce2808f55fb593d8e0efc784a201..55b4c69703b1ed6f80897f44d5cc89da1ab502c1 100644
+--- a/src/gpu/ganesh/vk/GrVkCaps.cpp
++++ b/src/gpu/ganesh/vk/GrVkCaps.cpp
+@@ -520,6 +520,14 @@ void GrVkCaps::applyDriverCorrectnessWorkarounds(const GrContextOptions& context
+         fShouldAlwaysUseDedicatedImageMemory = true;
+     }
+ 
++    const skgpu::DriverVersion driverVersion = skgpu::ParseVulkanDriverVersion(
++            VK_DRIVER_ID_ARM_PROPRIETARY, properties.driverVersion);
++    if (skgpu::kARM_VkVendor == properties.vendorID &&
++        driverVersion >= skgpu::DriverVersion(42, 0) &&
++        driverVersion < skgpu::DriverVersion(56, 0)) {
++        fSleepAfterLostDeviceWait = true;
++    }
++
+     // On Mali galaxy s7 and s9 we see lots of rendering issues with image filters dropping out when
+     // using only primary command buffers. We also see issues on the P30 running android 28.
+     if (skgpu::kARM_VkVendor == properties.vendorID && androidAPIVersion <= 28) {
+diff --git a/src/gpu/ganesh/vk/GrVkCaps.h b/src/gpu/ganesh/vk/GrVkCaps.h
+index 614c21f3852a9210337cb64faf1498cb94979cc3..210ae7afcdb25abb78705e1026178df4ddb65ae5 100644
+--- a/src/gpu/ganesh/vk/GrVkCaps.h
++++ b/src/gpu/ganesh/vk/GrVkCaps.h
+@@ -118,6 +118,10 @@ public:
+     // vkWaitForFences on each outstanding command buffer to make sure the driver signals the fence.
+     bool mustSyncCommandBuffersWithQueue() const { return fMustSyncCommandBuffersWithQueue; }
+ 
++    // On device loss, some Mali drivers may return from vkQueueWaitIdle and vkDeviceWaitIdle
++    // before it's safe to destroy the device. crbug.com/580857377
++    bool sleepAfterLostDeviceWait() const { return fSleepAfterLostDeviceWait; }
++
+     // Returns true if we should always make dedicated allocations for VkImages.
+     bool shouldAlwaysUseDedicatedImageMemory() const {
+         return fShouldAlwaysUseDedicatedImageMemory;
+@@ -454,6 +458,7 @@ private:
+     skia_private::STArray<1, skgpu::VulkanYcbcrConversionInfo> fYcbcrInfos;
+ 
+     bool fMustSyncCommandBuffersWithQueue = false;
++    bool fSleepAfterLostDeviceWait = false;
+     bool fShouldAlwaysUseDedicatedImageMemory = false;
+ 
+     bool fAvoidUpdateBuffers = false;
+diff --git a/src/gpu/ganesh/vk/GrVkCommandBuffer.cpp b/src/gpu/ganesh/vk/GrVkCommandBuffer.cpp
+index 29eead38776e091152e43bf29190c7b76e7a8732..cb588e0f7b0b63b426cee27de1efb2340f7e4795 100644
+--- a/src/gpu/ganesh/vk/GrVkCommandBuffer.cpp
++++ b/src/gpu/ganesh/vk/GrVkCommandBuffer.cpp
+@@ -24,7 +24,9 @@
+ #include "src/gpu/ganesh/vk/GrVkUtil.h"
+ 
+ #include <algorithm>
++#include <chrono>
+ #include <cstring>
++#include <thread>
+ 
+ class GrGpu;
+ 
+@@ -679,6 +681,9 @@ bool GrVkPrimaryCommandBuffer::submitToQueue(
+         // restart the whole device, so waiting on the queue shouldn't have any performance impact.
+         if (submitResult == VK_ERROR_DEVICE_LOST) {
+             GR_VK_CALL(gpu->vkInterface(), QueueWaitIdle(queue));
++            if (gpu->vkCaps().sleepAfterLostDeviceWait()) {
++                std::this_thread::sleep_for(std::chrono::milliseconds(1));
++            }
+         } else {
+             SkASSERT(submitResult == VK_ERROR_OUT_OF_HOST_MEMORY ||
+                      submitResult == VK_ERROR_OUT_OF_DEVICE_MEMORY);
+diff --git a/src/gpu/ganesh/vk/GrVkGpu.cpp b/src/gpu/ganesh/vk/GrVkGpu.cpp
+index 0c7e4193c79f8486a262e17fe894bee3fbe58922..8f3c0a90112598330c715779e85c4b38321f1786 100644
+--- a/src/gpu/ganesh/vk/GrVkGpu.cpp
++++ b/src/gpu/ganesh/vk/GrVkGpu.cpp
+@@ -72,9 +72,11 @@
+ #include "src/gpu/vk/VulkanUtilsPriv.h"
+ 
+ #include <algorithm>
++#include <chrono>
+ #include <cstring>
+ #include <functional>
+ #include <numeric>
++#include <thread>
+ #include <utility>
+ 
+ class GrAttachment;
+@@ -2234,11 +2236,17 @@ bool GrVkGpu::onSubmitToGpu(const GrSubmitInfo& info) {
+ }
+ 
+ void GrVkGpu::finishOutstandingGpuWork() {
+-    VK_CALL(QueueWaitIdle(fQueue));
++    VkResult res;
++    VK_CALL_RET(res, QueueWaitIdle(fQueue));
+ 
+     if (this->vkCaps().mustSyncCommandBuffersWithQueue()) {
+         fResourceProvider.forceSyncAllCommandBuffers();
+     }
++
++    if (this->vkCaps().sleepAfterLostDeviceWait() &&
++        (res == VK_ERROR_DEVICE_LOST || this->isDeviceLost())) {
++        std::this_thread::sleep_for(std::chrono::milliseconds(1));
++    }
+ }
+ 
+ void GrVkGpu::onReportSubmitHistograms() {
+diff --git a/src/gpu/graphite/vk/VulkanCaps.cpp b/src/gpu/graphite/vk/VulkanCaps.cpp
+index 1e29f4f2683a71741d520164d89610feb58cfb7f..45bbf0216da3bb7ab6b36df04464fd044e8f00a2 100644
+--- a/src/gpu/graphite/vk/VulkanCaps.cpp
++++ b/src/gpu/graphite/vk/VulkanCaps.cpp
+@@ -628,6 +628,12 @@ void VulkanCaps::applyDriverCorrectnessWorkarounds(const PhysicalDevicePropertie
+         fShouldAlwaysUseDedicatedImageMemory = true;
+     }
+ 
++    if (isARMProprietary &&
++        driverVersion >= skgpu::DriverVersion(42, 0) &&
++        driverVersion < skgpu::DriverVersion(56, 0)) {
++        fSleepAfterLostDeviceWait = true;
++    }
++
+     // On Qualcomm the gpu resolves an area larger than the render pass bounds when using
+     // discardable msaa attachments. This causes the resolve to resolve uninitialized data from the
+     // msaa image into the resolve image. This was reproed on a Pixel4 using the DstReadShuffle GM
+diff --git a/src/gpu/graphite/vk/VulkanCaps.h b/src/gpu/graphite/vk/VulkanCaps.h
+index de0241b5ed0213cce71879c55f2e36e4bad3eb1a..08a02fc6a4bd249be03fdae697f38a0f27fec0a3 100644
+--- a/src/gpu/graphite/vk/VulkanCaps.h
++++ b/src/gpu/graphite/vk/VulkanCaps.h
+@@ -89,6 +89,7 @@ public:
+     }
+ 
+     bool mustLoadFullImageForMSAA() const { return fMustLoadFullImageForMSAA; }
++    bool sleepAfterLostDeviceWait() const { return fSleepAfterLostDeviceWait; }
+ 
+     bool supportsFrameBoundary() const { return fSupportsFrameBoundary; }
+ 
+@@ -224,6 +225,7 @@ private:
+ 
+     // Flags to enable workarounds for driver bugs
+     bool fMustLoadFullImageForMSAA = false;
++    bool fSleepAfterLostDeviceWait = false;
+ 
+     // Cache the ReadonlySrcStageMask; optimistically adding the compute bit is a violation of the
+     // spec if we don't have compute support, so initialize and cache it here instead.
+diff --git a/src/gpu/graphite/vk/VulkanCommandBuffer.cpp b/src/gpu/graphite/vk/VulkanCommandBuffer.cpp
+index 0004e61e859239ded1da0286e23e73c4c22f7d44..fec4e6a0b4b7c9013dbf88ce9f249bcb102c1c0f 100644
+--- a/src/gpu/graphite/vk/VulkanCommandBuffer.cpp
++++ b/src/gpu/graphite/vk/VulkanCommandBuffer.cpp
+@@ -32,6 +32,9 @@
+ #include "src/gpu/graphite/vk/VulkanTexture.h"
+ #include "src/gpu/vk/VulkanUtilsPriv.h"
+ 
++#include <chrono>
++#include <thread>
++
+ using namespace skia_private;
+ 
+ namespace skgpu::graphite {
+@@ -543,6 +546,9 @@ bool VulkanCommandBuffer::submit(VkQueue queue, const SubmitInfo& submitInfo) {
+         // restart the whole device, so waiting on the queue shouldn't have any performance impact.
+         if (submitResult == VK_ERROR_DEVICE_LOST) {
+             VULKAN_CALL(fSharedContext->interface(), QueueWaitIdle(queue));
++            if (fSharedContext->vulkanCaps().sleepAfterLostDeviceWait()) {
++                std::this_thread::sleep_for(std::chrono::milliseconds(1));
++            }
+         } else {
+             SkASSERT(submitResult == VK_ERROR_OUT_OF_HOST_MEMORY ||
+                      submitResult == VK_ERROR_OUT_OF_DEVICE_MEMORY);
+@@ -594,6 +600,10 @@ void VulkanCommandBuffer::waitUntilFinished() {
+                                                  /*waitAll=*/true,
+                                                  /*timeout=*/UINT64_MAX));
+     }
++    if (result == VK_ERROR_DEVICE_LOST &&
++        fSharedContext->vulkanCaps().sleepAfterLostDeviceWait()) {
++        std::this_thread::sleep_for(std::chrono::milliseconds(1));
++    }
+     if (result != VK_SUCCESS && !fSharedContext->isDeviceLost()) {
+         SkDebugf("vkWaitForFences() failed. Error: %d\n", result);
+     }

@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
+Date: Wed, 14 Oct 2026 15:36:45 +0000
+Subject: [intl] Bound BigInt and decimal string inputs to NumberFormat
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reject overly large BigInts and decimal strings before passing them to
+ICU number.
+
+This is a temporary workaround until the required ICU fixes land
+(see bug).
+
+TAG=agy
+CONV=798ad278-786b-499c-8796-c3dd8a3d59a2
+
+Bug: 567827593
+Change-Id: I2dc57dabbd4e056cec235843381440339bf4cd32
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8576041
+Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110731}
+
+diff --git a/src/objects/js-number-format.cc b/src/objects/js-number-format.cc
+index f772782e64048566da02e14d60a29c714211880c..3b40f835db33b256f29cc2e5beb840b23b234266 100644
+--- a/src/objects/js-number-format.cc
++++ b/src/objects/js-number-format.cc
+@@ -1483,6 +1483,13 @@ MaybeDirectHandle<JSNumberFormat> JSNumberFormat::New(
+ 
+ namespace {
+ 
++// TODO(567827593): Remove once fixed in ICU.
++constexpr uint32_t kMaxIcuFormattedDigits = 999'000;
++
++bool ExceedsMaxIcuFormattedDigits(DirectHandle<String> string) {
++  return string->length() > kMaxIcuFormattedDigits;
++}
++
+ template <typename StringHandle>
+ int32_t SignedStringLength(StringHandle string) {
+   uint32_t unsigned_length = string->length();
+@@ -1495,6 +1502,10 @@ icu::number::FormattedNumber FormatDecimalString(
+     Isolate* isolate, const icu::number::LocalizedNumberFormatter* lfmt,
+     Handle<String> string, UErrorCode& status) {
+   string = String::Flatten(isolate, string);
++  if (ExceedsMaxIcuFormattedDigits(string)) {
++    status = U_ILLEGAL_ARGUMENT_ERROR;
++    return {};
++  }
+   DisallowGarbageCollection no_gc;
+   const String::FlatContent& flat = string->GetFlatContent(no_gc);
+   int32_t length = SignedStringLength(string);
+@@ -1535,6 +1546,9 @@ Maybe<icu::number::FormattedNumber> IcuFormatNumber(
+     Handle<String> big_int_string;
+     ASSIGN_RETURN_ON_EXCEPTION(isolate, big_int_string,
+                                BigInt::ToString(isolate, big_int));
++    if (ExceedsMaxIcuFormattedDigits(big_int_string)) {
++      THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kIcuError));
++    }
+     big_int_string = String::Flatten(isolate, big_int_string);
+     DisallowGarbageCollection no_gc;
+     const String::FlatContent& flat = big_int_string->GetFlatContent(no_gc);
+@@ -1549,6 +1563,9 @@ Maybe<icu::number::FormattedNumber> IcuFormatNumber(
+       // https://github.com/tc39/proposal-intl-numberformat-v3/pull/82
+       DirectHandle<String> string =
+           String::Flatten(isolate, Cast<String>(numeric_obj));
++      if (ExceedsMaxIcuFormattedDigits(string)) {
++        THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kIcuError));
++      }
+       DisallowGarbageCollection no_gc;
+       const String::FlatContent& flat = string->GetFlatContent(no_gc);
+       int32_t length = SignedStringLength(string);
+@@ -1769,6 +1786,9 @@ Maybe<icu::Formattable> IntlMathematicalValue::ToFormattable(
+   }
+   DirectHandle<String> string;
+   ASSIGN_RETURN_ON_EXCEPTION(isolate, string, ToString(isolate));
++  if (ExceedsMaxIcuFormattedDigits(string)) {
++    THROW_NEW_ERROR(isolate, NewTypeError(MessageTemplate::kIcuError));
++  }
+   UErrorCode status = U_ZERO_ERROR;
+   {
+     DisallowGarbageCollection no_gc;
+diff --git a/test/mjsunit/regress/regress-567827593.js b/test/mjsunit/regress/regress-567827593.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5340da56dbe55b7e6ad40174ecf5b17cac6651d7
+--- /dev/null
++++ b/test/mjsunit/regress/regress-567827593.js
+@@ -0,0 +1,26 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++if (this.Intl) {
++  const nf = new Intl.NumberFormat('bn-u-nu-mathsanb', {
++    style: 'currency',
++    currency: 'USD',
++    minimumSignificantDigits: 1,
++  });
++
++  const huge_bigint = -(1n << 4000000n);
++  assertThrows(() => nf.format(huge_bigint), TypeError);
++  assertThrows(() => nf.formatToParts(huge_bigint), TypeError);
++  assertThrows(() => nf.formatRange(huge_bigint, huge_bigint), TypeError);
++  assertThrows(
++      () => nf.formatRangeToParts(huge_bigint, huge_bigint), TypeError);
++  assertThrows(() => huge_bigint.toLocaleString('bn-u-nu-mathsanb'), TypeError);
++
++  const huge_str = '1.' + '0'.repeat(1000000);
++  assertThrows(() => nf.format(huge_str), TypeError);
++  assertThrows(() => nf.formatRange(huge_str, huge_str), TypeError);
++
++  const sci_nf = new Intl.NumberFormat('en', {notation: 'scientific'});
++  assertEquals('1E-400', sci_nf.format('1e-400'));
++}
