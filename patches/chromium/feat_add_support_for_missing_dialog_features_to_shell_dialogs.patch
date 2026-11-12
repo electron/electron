@@ -164,10 +164,10 @@ index a8f17e0ff0420725f331e63ca19f2d3818df70cb..42962e1d3eb8e9c0d35a87c4f303d102
    void OnFileChooserDestroy(GtkWidget* dialog);
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index 12a514b89c20b5ab5a20a17aa557da187c243a8a..278c397f78492574a751e512fb0de17a2b47a5c8 100644
+index 20968e38845712590a59ecbd57cd50be67e199bb..b64065a8bf419fb4f4d7512509532b6fe6f6efc1 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
-@@ -224,6 +224,20 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
+@@ -201,6 +201,20 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
                    const GURL* caller = nullptr);
    bool HasMultipleFileTypeChoices();
  
