@@ -8,7 +8,7 @@ import {
   type MenuItemConstructorOptions
 } from 'electron/main';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFailed } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -610,10 +610,12 @@ describe('MenuItems', () => {
       await wcv.webContents.loadURL(htmlUrl);
       await changeTitle(wcv);
 
+      // Listen for both before triggering the reload so neither can be missed.
       const didStartLoading = once(wcv.webContents, 'did-start-loading');
+      const didFinishLoad = once(wcv.webContents, 'did-finish-load');
       expect(executeByRole(role, w, wcv.webContents)).toBe(true);
       await didStartLoading;
-      await once(wcv.webContents, 'did-finish-load');
+      await didFinishLoad;
 
       // If the page was reloaded, the title should have been reset.
       expect(wcv.webContents.getTitle()).toBe(title);
@@ -624,17 +626,35 @@ describe('MenuItems', () => {
       const wcv = new WebContentsView();
       w.contentView.addChildView(wcv);
 
+      // Report which wait stalled if the test times out.
+      let step = 'loading the page';
+      onTestFailed(() => {
+        console.error(`${role} role on DevTools webContents stalled while ${step}`);
+      });
+
       await wcv.webContents.loadURL(htmlUrl);
       await changeTitle(wcv);
 
+      // The role routes to the inspected page whatever the dock state, so open
+      // detached and inactive: docking into a hidden, unsized view or taking
+      // focus would only depend on the last-used dock state and the runner.
+      step = 'waiting for devtools-opened';
       const opened = once(wcv.webContents, 'devtools-opened');
-      wcv.webContents.openDevTools();
+      wcv.webContents.openDevTools({ mode: 'detach', activate: false });
       await opened;
 
+      const devToolsWebContents = wcv.webContents.devToolsWebContents;
+      expect(devToolsWebContents).not.toBeNull();
+
+      // Listen for both before triggering the reload so neither can be missed.
       const didStartLoading = once(wcv.webContents, 'did-start-loading');
-      expect(executeByRole(role, w, wcv.webContents.devToolsWebContents!)).toBe(true);
+      const didFinishLoad = once(wcv.webContents, 'did-finish-load');
+      expect(executeByRole(role, w, devToolsWebContents!)).toBe(true);
+      step = 'waiting for did-start-loading';
       await didStartLoading;
-      await once(wcv.webContents, 'did-finish-load');
+      step = 'waiting for did-finish-load';
+      await didFinishLoad;
+      step = 'checking the title';
 
       // If the page was reloaded, the title should have been reset.
       expect(wcv.webContents.getTitle()).toBe(title);
