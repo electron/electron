@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index 8889ecb5136428c9eeb007243fba474fa4dd9738..76e32e0b98a136f1a8966c67ef3e214a924521ae 100644
+index ce2b55ae3d104b2480b4611e8de447ee86a33774..5d2bdf23982aaa88ec0a36b80b6acba868e9ae37 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2853,6 +2853,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2867,6 +2867,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,10 +33,10 @@ index 8889ecb5136428c9eeb007243fba474fa4dd9738..76e32e0b98a136f1a8966c67ef3e214a
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2947c3db3e8898d49d9f1bf2d66d9f461b4dce51..490eab5e6d6ef6f1778b6856726a6f1574db5dd7 100644
+index bf9b922b854f85b5909fa13ae902cebe3cf5c9e9..5402a3da761ed08073c766811a5f7eff9687ce9f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -870,6 +870,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -866,6 +866,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,7 +51,7 @@ index 2947c3db3e8898d49d9f1bf2d66d9f461b4dce51..490eab5e6d6ef6f1778b6856726a6f15
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 04887a8dcc5343adb4ad37446d159fefed4b9635..fea0f0f7750accef47e88676dcee26ad76be492e 100644
+index f5cbe5c3ceee21f3d68f7abcd59f2976e942a003..ec367821314e3591c3f3afa2d2efe6e9cccc4d37 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1348,6 +1348,17 @@ class CONTENT_EXPORT ContentBrowserClient {
