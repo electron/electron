@@ -8,10 +8,10 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 1bab35b2a7e6ae652991235999ee1270612b0c7c..083e650823472920db76b201ca5616a87112cd84 100644
+index ba6f0be326fe342f4169c93d0a821b3aa0a31761..420991e1d14e0c26797db4e324cf7b78fa11dd8d 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -2880,7 +2880,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+@@ -2885,7 +2885,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
  void SecureContext::CtxGetter(const FunctionCallbackInfo<Value>& info) {
    SecureContext* sc;
    ASSIGN_OR_RETURN_UNWRAP(&sc, info.This());
@@ -113,7 +113,7 @@ index c3a6fbed06efc92e3cc0ac59ab51c8b802033c81..39523bd256c8bf22597ba79dd06ea451
    Local<BigInt> ret = BigInt::NewFromUnsigned(isolate, value);
    args.GetReturnValue().Set(ret);
 diff --git a/src/stream_base.cc b/src/stream_base.cc
-index ad9affc538732fcc88ef839598b9cbf7e22fd79d..74717fbae8776bdba7c288308c5c1cc7fc8393ef 100644
+index afc2288f186d2c74045b6d09e7e91029b8f4b79f..fee0f81552b728be8e18f79fd0f4a111a36556c9 100644
 --- a/src/stream_base.cc
 +++ b/src/stream_base.cc
 @@ -685,7 +685,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
