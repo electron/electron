@@ -13,6 +13,21 @@ const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
 // Tests only run properly on macOS arm64 for now
 const skip = process.platform !== 'darwin' || process.arch !== 'arm64';
+// Each wait gets its own deadline, shorter than the test timeout, so a stall
+// fails with the step that stalled instead of a bare test timeout.
+const STEP_TIMEOUT_MS = 20_000;
+
+const step = <T>(description: string, promise: Promise<T>): Promise<T> => {
+  let timer: ReturnType<typeof globalThis.setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timer = globalThis.setTimeout(
+      () => reject(new Error(`Timed out after ${STEP_TIMEOUT_MS}ms waiting for ${description}`)),
+      STEP_TIMEOUT_MS
+    );
+  });
+  return Promise.race([promise, deadline]).finally(() => globalThis.clearTimeout(timer));
+};
+
 ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
   const dirPath = path.join(fixtures, 'api', 'shared-texture');
   const osrPath = path.join(dirPath, 'osr.html');
@@ -80,27 +95,55 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
       });
     });
 
+    const verifyCapture = async (targetFrame: Electron.WebFrameMain) => {
+      const captured = await win.webContents.capturePage({ x: 16, y: 16, width: 128, height: 128 });
+      const verified = once(ipcMain, 'verify-captured-image-done');
+      targetFrame.send('verify-captured-image', {
+        captured: captured.toDataURL(),
+        target: targetImage.toDataURL()
+      });
+      const [, result] = await step('the renderer to compare the captured image', verified);
+      // Allow tiny color-space and device-pixel-ratio resizing differences, not missing frames.
+      expect(result.total).toBeGreaterThan(0);
+      expect(result.difference / result.total).toBeLessThan(0.01);
+    };
+
     const run = async () => {
       const ready = once(ipcMain, 'shared-texture-ready');
-      const [[readyEvent]] = await Promise.all([
-        ready,
-        win.loadFile(path.join(dirPath, api, iframe ? 'frame.html' : 'index.html'))
-      ]);
+      const [[readyEvent]] = await step(
+        'the receiving page to set up WebGPU',
+        Promise.all([ready, win.loadFile(path.join(dirPath, api, iframe ? 'frame.html' : 'index.html'))])
+      );
       const event: Electron.IpcMainEvent = readyEvent;
       const targetFrame = event.senderFrame;
       expect(targetFrame).toBe(iframe ? win.webContents.mainFrame.frames[0] : win.webContents.mainFrame);
       if (!targetFrame) throw new Error('Target frame not found');
 
-      const texture = await captureTexture();
+      const texture = await step('an offscreen paint with a shared texture', captureTexture());
+      // The pixels are checked as soon as the receiver has drawn the frame. Releasing the texture
+      // goes through the receiver's VideoFrame teardown, GPU sync tokens and IPC, which can take
+      // several seconds on a busy machine, so it is checked separately afterwards.
+      const rendered = once(ipcMain, 'shared-texture-rendered');
       if (api === 'subtle') {
         const imported = sharedTexture.subtle.importSharedTexture(texture.textureInfo);
+        let importReleased = false;
+        const releaseImport = () =>
+          new Promise<void>((resolve) => {
+            importReleased = true;
+            imported.release(() => {
+              texture.release();
+              resolve();
+            });
+          });
         const done = once(ipcMain, 'shared-texture-done');
         targetFrame.send('shared-texture', imported.startTransferSharedTexture());
         try {
-          await done;
+          await step('the receiver to draw the shared texture', rendered);
+          await verifyCapture(targetFrame);
+          await step('the receiver to release its imported texture', done);
+          await step('the main process release callback', releaseImport());
         } finally {
-          await new Promise<void>((resolve) => imported.release(resolve));
-          texture.release();
+          if (!importReleased) releaseImport();
         }
       } else {
         let releaseSource: () => void;
@@ -115,36 +158,28 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
           }
         });
         try {
-          await sharedTexture.sendSharedTexture({ frame: targetFrame, importedSharedTexture: imported });
+          await step(
+            'sendSharedTexture() to finish',
+            sharedTexture.sendSharedTexture({ frame: targetFrame, importedSharedTexture: imported })
+          );
         } finally {
           imported.release();
         }
-        await released;
+        await step('the receiver to draw the shared texture', rendered);
+        await verifyCapture(targetFrame);
+        await step('all references to the shared texture to be released', released);
       }
-
-      const captured = await win.webContents.capturePage({ x: 16, y: 16, width: 128, height: 128 });
-      const verified = once(ipcMain, 'verify-captured-image-done');
-      targetFrame.send('verify-captured-image', {
-        captured: captured.toDataURL(),
-        target: targetImage.toDataURL()
-      });
-      const [, result] = await verified;
-      // Allow tiny color-space and device-pixel-ratio resizing differences, not missing frames.
-      expect(result.total).toBeGreaterThan(0);
-      expect(result.difference / result.total).toBeLessThan(0.01);
     };
 
     await Promise.race([run(), rendererError]);
   };
 
   describe('import shared texture produced by osr', () => {
-    it('successfully imported and rendered with subtle api', { timeout: 10000 }, () => runSharedTextureTest('subtle'));
+    it('successfully imported and rendered with subtle api', () => runSharedTextureTest('subtle'));
 
-    it('successfully imported and rendered with managed api, without iframe', { timeout: 10000 }, () =>
-      runSharedTextureTest('managed')
-    );
+    it('successfully imported and rendered with managed api, without iframe', () => runSharedTextureTest('managed'));
 
-    it('keeps subtle methods usable after the imported object is garbage collected', { timeout: 10000 }, async () => {
+    it('keeps subtle methods usable after the imported object is garbage collected', async () => {
       const v8Util = process._linkedBinding('electron_common_v8_util');
       const texture = await captureTexture();
       try {
@@ -173,8 +208,6 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
       }
     });
 
-    it('successfully imported and rendered with managed api, with iframe', { timeout: 10000 }, () =>
-      runSharedTextureTest('managed', true)
-    );
+    it('successfully imported and rendered with managed api, with iframe', () => runSharedTextureTest('managed', true));
   });
 });

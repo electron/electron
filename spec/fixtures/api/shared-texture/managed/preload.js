@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('textures', {
       const { importedSharedTexture: imported } = data;
       try {
         await cb(imported);
+        ipcRenderer.send('shared-texture-rendered');
       } catch (error) {
         ipcRenderer.send('shared-texture-error', error.stack);
       } finally {
