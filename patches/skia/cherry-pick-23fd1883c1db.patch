@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Thu, 29 Oct 2026 16:16:56 -0400
+Subject: [Ganesh] Initialize fCurrentRenderPass in GrVkOpsRenderPass.
+
+Bug: 579276256
+Change-Id: I4d2a29b1e23fca7ad6e8370a3f6ca2a18d2a3566
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1410456
+Reviewed-by: Nathan Sanchez <nathanasanchez@google.com>
+Auto-Submit: Greg Daniel <egdaniel@google.com>
+Commit-Queue: Nathan Sanchez <nathanasanchez@google.com>
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+
+diff --git a/src/gpu/ganesh/vk/GrVkOpsRenderPass.h b/src/gpu/ganesh/vk/GrVkOpsRenderPass.h
+index 90c60ae3795834844ddbef3326a4b73e7cd1205f..5af6d558cd0b0a1280d69d9b77a4e5628c68b527 100644
+--- a/src/gpu/ganesh/vk/GrVkOpsRenderPass.h
++++ b/src/gpu/ganesh/vk/GrVkOpsRenderPass.h
+@@ -126,7 +126,7 @@ private:
+ 
+     sk_sp<GrVkFramebuffer>                      fFramebuffer;
+     std::unique_ptr<GrVkSecondaryCommandBuffer> fCurrentSecondaryCommandBuffer;
+-    const GrVkRenderPass*                       fCurrentRenderPass;
++    const GrVkRenderPass*                       fCurrentRenderPass = nullptr;
+     SkIRect                                     fCurrentPipelineBounds;
+     GrVkPipelineState*                          fCurrentPipelineState = nullptr;
+     bool                                        fCurrentCBIsEmpty = true;

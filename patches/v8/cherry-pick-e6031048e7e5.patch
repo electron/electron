@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Tue, 3 Nov 2026 18:31:51 +0100
+Subject: [arm64] Use MacroAssembler::Add in PopTempStackSlots
+
+Use MacroAssembler::Add instead of raw Assembler::add in
+CodeGenerator::PopTempStackSlots and
+MacroAssembler::LoadStoreMacroComplex to handle immediates that cannot
+be encoded in a single ADD instruction, and promote the range check in
+Assembler::ImmAddSub to a CHECK.
+
+TAG=agy
+
+Fixed: 578656106
+Change-Id: I697c02790e9547a2e1aaf142b4a06ba6de95994c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8713383
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111585}
+
+Electron adaptation notes (44-x-y):
+The regression test lives in test/cctest/compiler/test-code-generator.cc on this branch (upstream moved it to test/unittests/compiler/code-generator-unittest.cc) and the test-only hunk did not apply; it was not carried. All code hunks applied verbatim.
+
+diff --git a/src/codegen/arm64/assembler-arm64-inl.h b/src/codegen/arm64/assembler-arm64-inl.h
+index fc8b4c83ff8fba3d24fd75a72a53c9a6c61dc245..abd4c5e63e8fc650fb613f0f7b9bcdde26344389 100644
+--- a/src/codegen/arm64/assembler-arm64-inl.h
++++ b/src/codegen/arm64/assembler-arm64-inl.h
+@@ -983,7 +983,7 @@ Instr Assembler::SF(Register rd) {
+ }
+ 
+ Instr Assembler::ImmAddSub(int imm) {
+-  DCHECK(IsImmAddSub(imm));
++  CHECK(IsImmAddSub(imm));
+   if (is_uint12(imm)) {  // No shift required.
+     imm <<= ImmAddSub_offset;
+   } else {
+diff --git a/src/codegen/arm64/assembler-arm64.cc b/src/codegen/arm64/assembler-arm64.cc
+index e3a6685ede1b64932b5aca383b28bea391e07400..af1c92fca71bc1ef632f594bff9c9e8deeba3718 100644
+--- a/src/codegen/arm64/assembler-arm64.cc
++++ b/src/codegen/arm64/assembler-arm64.cc
+@@ -4043,7 +4043,7 @@ void Assembler::AddSub(const Register& rd, const Register& rn,
+   DCHECK(!operand.NeedsRelocation(this));
+   if (operand.IsImmediate()) {
+     int64_t immediate = operand.ImmediateValue();
+-    DCHECK(IsImmAddSub(immediate));
++    CHECK(IsImmAddSub(immediate));
+     Instr dest_reg = (S == SetFlags) ? Rd(rd) : RdSP(rd);
+     Emit(SF(rd) | AddSubImmediateFixed | op | Flags(S) |
+          ImmAddSub(static_cast<int>(immediate)) | dest_reg | RnSP(rn));
+diff --git a/src/codegen/arm64/macro-assembler-arm64.cc b/src/codegen/arm64/macro-assembler-arm64.cc
+index f6af185086ba5790c2f014f56097936a0828416a..c3f1834d13e4eedbb2958e693be91ae1476661d9 100644
+--- a/src/codegen/arm64/macro-assembler-arm64.cc
++++ b/src/codegen/arm64/macro-assembler-arm64.cc
+@@ -979,11 +979,11 @@ void MacroAssembler::LoadStoreMacroComplex(const CPURegister& rt,
+     // Post-index beyond unscaled addressing range.
+     DCHECK(!is_imm_unscaled);
+     LoadStore(rt, MemOperand(addr.base()), op);
+-    add(addr.base(), addr.base(), offset);
++    Add(addr.base(), addr.base(), offset);
+   } else {
+     // Pre-index beyond unscaled addressing range.
+     DCHECK(!is_imm_unscaled && addr.IsPreIndex());
+-    add(addr.base(), addr.base(), offset);
++    Add(addr.base(), addr.base(), offset);
+     LoadStore(rt, MemOperand(addr.base()), op);
+   }
+ }
+diff --git a/src/compiler/backend/arm64/code-generator-arm64.cc b/src/compiler/backend/arm64/code-generator-arm64.cc
+index e6f536ccbb8afd068ffc63c0af1b3ff291ff4883..eef8f3c2a9706cca51a48b8a474aa43d0988388a 100644
+--- a/src/compiler/backend/arm64/code-generator-arm64.cc
++++ b/src/compiler/backend/arm64/code-generator-arm64.cc
+@@ -4752,7 +4752,7 @@ void CodeGenerator::Pop(InstructionOperand* dest, MachineRepresentation rep) {
+ void CodeGenerator::PopTempStackSlots() {
+   if (temp_slots_ > 0) {
+     frame_access_state()->IncreaseSPDelta(-temp_slots_);
+-    __ add(sp, sp, Operand(temp_slots_ * kSystemPointerSize));
++    __ Add(sp, sp, Operand(temp_slots_ * kSystemPointerSize));
+     temp_slots_ = 0;
+   }
+ }

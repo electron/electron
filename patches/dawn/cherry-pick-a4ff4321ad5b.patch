@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lokbondo Kung <lokokung@google.com>
+Date: Thu, 5 Nov 2026 05:24:25 -0800
+Subject: [native] Fix shared memory EndAccess after device loss/destruction.
+
+- Prior to this change, when the device is lost or destroyed while a
+  SharedTextureMemory or SharedBufferMemory access is open, the work
+  recorded during that access may never run, and EndAccess could
+  misreport the resource as initialized or use freed Vulkan objects.
+- This change validates that the device is alive before calling into
+  the backend in EndAccess. If the device is lost, the backend part of
+  EndAccess is skipped entirely and an error is returned, so EndAccess
+  returns wgpu::Status::Error and no new fence is exported.
+- When the backend part of EndAccess fails, including because the
+  device is lost, a resource that was used during the access is now
+  reported as uninitialized. A resource that wasn't used during the
+  access keeps the initialized state that was set on BeginAccess.
+- This change also adds regression tests.
+
+Bug: 577360270, 577377985, 495450692
+Change-Id: If09e7d267a395755050cea51e5708474e41cd7d4
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/354295
+Commit-Queue: Loko Kung <lokokung@google.com>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+
+Electron adaptation notes (44-x-y):
+This branch's Dawn has no MaybeUnknownError/ResultOrUnknownError and SharedResourceMemory::Resource exposes IsInitialized() rather than IsResourceInitialized(); the EndAccess changes use the branch's MaybeError/ResultOrError types and IsInitialized(). The new white-box tests in src/dawn/tests/white_box/SharedTextureMemoryTests.{h,cpp} were not carried: they depend on the newer wgpu::Status-returning BeginAccess API and a CheckCleared helper that do not exist on this branch.
+
+diff --git a/src/dawn/native/SharedResourceMemory.cpp b/src/dawn/native/SharedResourceMemory.cpp
+index e124fdf4dfd1a1182c29a5d4fc9769377acbd1fa..3d8bc744db580e46fd79ef2e2d60caf02c23e140 100644
+--- a/src/dawn/native/SharedResourceMemory.cpp
++++ b/src/dawn/native/SharedResourceMemory.cpp
+@@ -313,13 +313,15 @@ MaybeError SharedResourceMemory::EndAccess(Resource* resource, EndAccessState* s
+ 
+     DAWN_CHECK(!resource->IsError());
+     ExecutionSerial lastUsageSerial = resource->OnEndAccess();
++    // If the last usage serial is non-zero, the resource was used by GPU commands during this
++    // access.
++    const bool usedDuringAccess = lastUsageSerial != kBeginningOfGPUTime;
+ 
+-    // If the last usage serial is non-zero, the texture was used.
+-    // Call the error-generating part of the EndAccess implementation to export a fence.
+-    // This is separated out because writing the output state must happen regardless of whether
+-    // or not EndAccessInternal succeeds.
++    // If the resource was used, call the error-generating part of the EndAccess implementation to
++    // export a fence. This is separated out because writing the output state must happen
++    // regardless of whether or not EndAccessInternal succeeds.
+     MaybeError err;
+-    if (lastUsageSerial != kBeginningOfGPUTime) {
++    if (usedDuringAccess) {
+         ResultOrError<FenceAndSignalValue> result =
+             EndAccessInternal(lastUsageSerial, resource, state);
+         if (result.IsSuccess()) {
+@@ -350,7 +352,16 @@ MaybeError SharedResourceMemory::EndAccess(Resource* resource, EndAccessState* s
+         state->fences = {};
+         state->signaledValues = {};
+     }
+-    state->initialized = resource->IsInitialized();
++    // If EndAccessInternal failed, including because the device is lost (or destroyed), commands
++    // using the resource during this access may not have been flushed, may have been dropped
++    // without ever executing (e.g. a queue.writeTexture recorded in a passive pending command
++    // context, or a submit that failed), or may have been in the middle of executing when the
++    // device was lost, even though the resource was already marked as initialized on the CPU side.
++    // In that case, conservatively report the resource as uninitialized so that the next user
++    // lazily clears it instead of reading back undefined contents. If the resource wasn't used
++    // during the access, its initialized state is still the one set on BeginAccess.
++    bool dirtyDueToErrors = !err.IsSuccess() && usedDuringAccess;
++    state->initialized = resource->IsInitialized() && !dirtyDueToErrors;
+     return err;
+ }
+ 
+@@ -359,12 +370,15 @@ ResultOrError<FenceAndSignalValue> SharedResourceMemory::EndAccessInternal(
+     ExecutionSerial lastUsageSerial,
+     Resource* resource,
+     EndAccessState* rawState) {
++    // If the device is lost (including when it is destroyed), the backend can't record or submit
++    // any more commands, and the commands using the resource may have been dropped, so there is
++    // nothing to export for them. Return an error so that EndAccess reports the resource as
++    // uninitialized, and so that the backend part of EndAccess is skipped entirely.
++    DAWN_TRY(GetDevice()->ValidateIsAlive());
+     UnpackedPtr<EndAccessState> state;
+     DAWN_TRY_ASSIGN(state, ValidateAndUnpack(rawState));
+-    if (!GetDevice()->IsLost()) {
+-        // Ensure that commands are submitted before exporting fences with the last usage serial.
+-        DAWN_TRY(GetDevice()->GetQueue()->EnsureCommandsFlushed(lastUsageSerial));
+-    }
++    // Ensure that commands are submitted before exporting fences with the last usage serial.
++    DAWN_TRY(GetDevice()->GetQueue()->EnsureCommandsFlushed(lastUsageSerial));
+     return EndAccessImpl(resource, lastUsageSerial, state);
+ }
+ 

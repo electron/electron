@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Fri, 6 Nov 2026 12:24:26 -0800
+Subject: Prevent duplicate render pass ids
+
+If the root render pass CompositorRenderPassId of the last
+CompositorFrame from the same surface is reused for a non-root render
+pass, the same AggregatedRenderPassId was assigned to both non-root and
+new root render pass. This ID collision is problematic so detect it and
+assign a new AggregatedRenderPassId.
+
+Fixed: 580875215
+Change-Id: Ia51c5299e36967e2b3242e0deceec2e02b633d7f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8746183
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1737951}
+
+diff --git a/components/viz/service/display/resolved_frame_data.cc b/components/viz/service/display/resolved_frame_data.cc
+index 82b3bdebdf80ec4afb973390e30bc260a2ac1bb1..52647ac06567aff8cb59242d55c89d19e0906e57 100644
+--- a/components/viz/service/display/resolved_frame_data.cc
++++ b/components/viz/service/display/resolved_frame_data.cc
+@@ -226,6 +226,12 @@ void ResolvedFrameData::UpdateActiveFrame(
+       } else {
+         remapped_id = render_pass_id_generator.GenerateNextId();
+       }
++    } else if (!is_root && remapped_id == prev_root_pass_id_) {
++      // The CompositorRenderPassId from last frames root render pass was reused
++      // for a non-root render pass this frame. Keep using `prev_root_pass_id_`
++      // for the root, to avoid unnecessary backing reallocations, and assign a
++      // new id to this render pass.
++      remapped_id = render_pass_id_generator.GenerateNextId();
+     }
+     fixed.remapped_id = remapped_id;
+     fixed.is_root = is_root;
+diff --git a/components/viz/service/display/resolved_frame_data_unittest.cc b/components/viz/service/display/resolved_frame_data_unittest.cc
+index d188459d95432e4c4b85775d77b424a59c26b521..43b68e16d3c6d837ef27eb64aa908417c643d157 100644
+--- a/components/viz/service/display/resolved_frame_data_unittest.cc
++++ b/components/viz/service/display/resolved_frame_data_unittest.cc
+@@ -342,10 +342,38 @@ TEST_F(ResolvedFrameDataTest, ReusePreviousRootPassId) {
+                                    prev_root_pass_id);
+ 
+   resolved_frame.UpdateForAggregation(render_pass_id_generator_);
++  EXPECT_EQ(resolved_frame.GetRootRenderPassData().remapped_id(),
++            prev_root_pass_id);
++  resolved_frame.ResetAfterAggregation();
+ 
++  // Submitting another frame with the same root pass ID should continue to use
++  // `prev_root_pass_id`.
++  SubmitCompositorFrame(MakeSimpleFrame());
++  resolved_frame.UpdateForAggregation(render_pass_id_generator_);
+   EXPECT_EQ(resolved_frame.GetRootRenderPassData().remapped_id(),
+             prev_root_pass_id);
++  resolved_frame.ResetAfterAggregation();
+ 
++  // Submitting a frame where the original root pass ID becomes a non-root pass
++  // and a new root pass ID is introduced should not assign `prev_root_pass_id`
++  // a second time.
++  auto frame =
++      CompositorFrameBuilder()
++          .AddRenderPass(
++              RenderPassBuilder(CompositorRenderPassId{1}, kOutputRect)
++                  .AddSolidColorQuad(kOutputRect, SkColors::kRed))
++          .AddRenderPass(
++              RenderPassBuilder(CompositorRenderPassId{2}, kOutputRect)
++                  .AddRenderPassQuad(kOutputRect, CompositorRenderPassId{1}))
++          .Build();
++  SubmitCompositorFrame(std::move(frame));
++  resolved_frame.UpdateForAggregation(render_pass_id_generator_);
++  ASSERT_TRUE(resolved_frame.is_valid());
++  EXPECT_NE(resolved_frame.GetRenderPassDataById(CompositorRenderPassId{1})
++                .remapped_id(),
++            prev_root_pass_id);
++  EXPECT_EQ(resolved_frame.GetRootRenderPassData().remapped_id(),
++            prev_root_pass_id);
+   resolved_frame.ResetAfterAggregation();
+ }
+ 

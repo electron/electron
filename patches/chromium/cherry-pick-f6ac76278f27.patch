@@ -1,0 +1,133 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Fri, 6 Nov 2026 08:28:36 -0800
+Subject: Disallow differing origins in most synchronous about:blank commits
+
+Problem: the synchronous about:blank commit origin check is loose in
+ways that a compromised renderer can use to commit a document in a new
+same-process frame with an origin it shouldn't have:
+- When the browser-derived origin is opaque, it only compares the
+  precursor, not the nonce. This lets the frame claim another
+  cross-process document's opaque origin and get its StorageKey.
+- When the browser-derived origin isn't opaque, it accepts any opaque
+  origin from the renderer, including one with a file:// precursor. In
+  an unlocked process (e.g. for most sites on Android), a later commit
+  with that origin gets access to file: URLs.
+- It skips the check entirely when the renderer reports a file: origin.
+
+These exceptions were added for popups opened from CSP-sandboxed
+documents with allow-popups-to-escape-sandbox, where the browser used
+to derive a different origin than the renderer. crrev.com/c/7596676
+fixed that, so the browser now derives the same origin as the renderer
+for new frames: either inherited from the creator, or derived from a
+sandbox origin token that the browser also sends to the renderer.
+
+This CL requires the origins to match exactly, except in these cases,
+which are temporary:
+- When kUseSandboxTokenForOriginDerivation is disabled, opaque origins
+  with the same precursor are still allowed. The feature will be
+  removed in crrev.com/c/8692865.
+- Opaque origins without a precursor are still allowed to differ. The
+  renderer creates these on its own for main frames without a creator
+  or reused after a crash, so the browser can't predict them yet. They
+  aren't tied to any site, so they can't be used to get another site's
+  origin or access to file: URLs. crrev.com/c/8690429 will make the
+  browser pick these origins.
+- File origins only skip the check if the browser also expects a file
+  origin, until https://crbug.com/582733579 is fixed.
+
+TAG=agy
+CONV=59af5a80-ec88-4c69-8bed-b903325efcfe
+
+Bug: 573236782, 580853808
+Change-Id: I7c772d8b87c5c96128579b393919b15df25252cc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8658238
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1737668}
+
+Electron adaptation notes (44-x-y):
+content/browser/security_exploit_browsertest.cc conflicted on unrelated test drift and the test-only hunk was not carried. The render_frame_host_impl.cc hunk applied verbatim.
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index f31d1b3888e282ad6a50d1350670982a11199d47..5d5932266838de2266174bb20d24c89df5726a46 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -16346,37 +16346,52 @@ bool RenderFrameHostImpl::DidCommitNavigationInternal(
+     // Guest views currently don't appear to set the origin correctly for
+     // synchronous new window commits under MPArch.
+     //
+-    // TODO(https://crbug.com/511083727): Re-enable this check for file origins
+-    // once issues around Origin dropping UNC hosts are resolved.
+-    if (is_synchronous_about_blank_commit &&
+-        params->origin.scheme() != url::kFileScheme &&
++    // TODO(crbug.com/582733579): Re-enable this check for file origins once
++    // issues around Origin dropping UNC hosts are resolved. Until then, only
++    // skip it when the browser also expects a file origin, so that other
++    // frames can't claim one (see https://crbug.com/580853808).
++    const bool is_file_origin_commit =
++        params->origin.scheme() == url::kFileScheme &&
++        last_committed_origin_.scheme() == url::kFileScheme;
++    if (is_synchronous_about_blank_commit && !is_file_origin_commit &&
+         (!frame_tree_->is_guest() ||
+          !base::FeatureList::IsEnabled(features::kGuestViewMPArch))) {
+-      bool origin_matches = false;
+-      if (last_committed_origin_.opaque()) {
+-        // When the browser-derived origin is opaque, the renderer-reported
+-        // origin must also be opaque with a matching precursor.
+-        // TODO(crbug.com/486082219): Compare origin nonces as well once nonces
+-        // are synchronized for popups opened from CSP-sandboxed documents with
+-        // allow-popups-to-escape-sandbox.
++      // The renderer-reported origin should match the browser-derived one
++      // exactly, including the nonce: it's either inherited from the creator,
++      // or derived from a sandbox origin token that the browser also sends to
++      // the renderer.
++      bool origin_matches = params->origin == last_committed_origin_;
++      if (!origin_matches &&
++          !base::FeatureList::IsEnabled(
++              blink::features::kUseSandboxTokenForOriginDerivation)) {
++        // Without sandbox origin tokens, the browser and the renderer derive
++        // opaque origins with different nonces, so only compare precursors.
++        // TODO(crbug.com/402272788): Remove along with the feature.
+         origin_matches =
+-            params->origin.opaque() &&
++            params->origin.opaque() && last_committed_origin_.opaque() &&
+             params->origin.GetTupleOrPrecursorTupleIfOpaque() ==
+                 last_committed_origin_.GetTupleOrPrecursorTupleIfOpaque();
+-      } else if (params->origin.opaque()) {
+-        // The browser-derived origin is not opaque but the renderer-reported
+-        // one is. This can legitimately (but incorrectly) happen for popups
+-        // opened from CSP-sandboxed documents with
+-        // allow-popups-to-escape-sandbox, where the browser sees no sandbox
+-        // flags on the frame but the renderer still inherits CSP sandbox flags
+-        // for the document.
+-        // TODO(crbug.com/486082219): Remove this handling once the incorrect
+-        // case above can no longer happen and browser & renderer origins are
+-        // always consistent.
+-        origin_matches = true;
+-      } else {
++      }
++      if (!origin_matches && params->origin.opaque() &&
++          !params->origin.GetTupleOrPrecursorTupleIfOpaque().IsValid()) {
++        // Temporarily allow nonces to differ for opaque origins without a
++        // precursor. The renderer creates these itself for the initial empty
++        // document of a main frame that has no creator or was reused after a
++        // crash, and for frames created under it.
++        //
++        // In the crash case, the difference can be more than the nonce, since
++        // the browser may still have the previous document's non-opaque
++        // origin.
++        //
++        // In all of these cases, `params->origin` becomes the new committed
++        // origin, which is opaque, has no precursor, and isn't tied to any
++        // site.
++        // TODO(crbug.com/582296961): Remove once the browser picks these
++        // origins.
+         origin_matches =
+-            params->origin.CanBeDerivedFrom(last_committed_origin_.GetURL());
++            !last_committed_origin_.opaque() ||
++            !last_committed_origin_.GetTupleOrPrecursorTupleIfOpaque()
++                 .IsValid();
+       }
+       if (!origin_matches) {
+         bad_message::ReceivedBadMessage(

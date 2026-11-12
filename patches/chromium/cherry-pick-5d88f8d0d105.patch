@@ -1,0 +1,240 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Thu, 29 Oct 2026 08:02:11 -0700
+Subject: SimpleCache: fix cleanup bug on key collision (at file level)
+
+The old file removal code relied on sparse_file_open_ being set, but it
+won't be for the colliding case since we won't get this far, spotting
+the problem at _0 file.
+
+Bug: 577260644
+Change-Id: I1da5ab33041bb761abaccd3ef2bdf875f4389c02
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8656066
+Reviewed-by: Tsuyoshi Horo <horo@chromium.org>
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1730326}
+
+diff --git a/net/disk_cache/entry_unittest.cc b/net/disk_cache/entry_unittest.cc
+index 51776ad866c22a62c3d2649e856e18adcc31d4ae..08d6aba3ba337470059b3c0c289f4467c00b3323 100644
+--- a/net/disk_cache/entry_unittest.cc
++++ b/net/disk_cache/entry_unittest.cc
+@@ -15,6 +15,7 @@
+ #include "base/strings/string_number_conversions.h"
+ #include "base/strings/string_util.h"
+ #include "base/test/metrics/histogram_tester.h"
++#include "base/test/run_until.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "base/threading/platform_thread.h"
+ #include "base/time/time.h"
+@@ -5115,6 +5116,60 @@ TEST_F(DiskCacheEntryTest, SimpleCacheCreateCollision) {
+   entry2->Close();
+ }
+ 
++// See crbug.com/577260644. Credit to that report for the colliding keys as
++// well.
++TEST_F(DiskCacheEntryTest, SimpleCacheCollisionSparse) {
++  SetBackendToTest(BackendToTest::kSimple);
++  InitCache();
++
++  const char kKey1[] =
++      "1/0/_dk_http://localhost http://b717344cdfbead8a.localhost "
++      "http://good.localhost:8000/account.json";
++
++  const char kKey2[] =
++      "1/0/_dk_http://localhost http://localhost "
++      "http://localhost:8000/range-of-own-file?f315f8f12d1cfb21";
++
++  const int kSize = 64;
++  const int kOffset = 256;
++
++  {
++    disk_cache::Entry* entry = nullptr;
++    ASSERT_THAT(CreateEntry(kKey1, &entry), IsOk());
++    auto buf = CacheTestCreateAndFillBuffer(kSize, false);
++    EXPECT_EQ(kSize, WriteSparseData(entry, kOffset, buf.get(), kSize));
++    entry->Close();
++
++    EXPECT_TRUE(base::test::RunUntil([&]() {
++      return simple_cache_impl_->GetNumActiveEntriesForTesting() == 0;
++    }));
++  }
++
++  {
++    disk_cache::EntryResult entry_result = OpenOrCreateEntry(kKey2);
++    ASSERT_THAT(entry_result.net_error(), IsOk());
++    ASSERT_FALSE(entry_result.opened());
++    disk_cache::Entry* entry = entry_result.ReleaseEntry();
++    ASSERT_TRUE(nullptr != entry);
++    entry->Close();
++    EXPECT_TRUE(base::test::RunUntil([&]() {
++      return simple_cache_impl_->GetNumActiveEntriesForTesting() == 0;
++    }));
++  }
++
++  {
++    disk_cache::Entry* entry = nullptr;
++    ASSERT_THAT(OpenEntry(kKey2, &entry), IsOk());
++
++    TestRangeResultCompletionCallback cb;
++    RangeResult result = cb.GetResult(
++        entry->GetAvailableRange(kOffset, kSize * 2, cb.callback()));
++    EXPECT_EQ(net::OK, result.net_error);
++    EXPECT_EQ(0, result.available_len);
++    entry->Close();
++  }
++}
++
+ TEST_F(DiskCacheEntryTest, SimpleCacheConvertToSparseStream2LeftOver) {
+   // Testcase for what happens when we have a sparse stream and a left over
+   // empty stream 2 file.
+diff --git a/net/disk_cache/simple/simple_backend_impl.h b/net/disk_cache/simple/simple_backend_impl.h
+index 72456eb20b9c9c748672fd1abb1b8d9958d31c6c..e74aebdcad3786f76fd9f7266a5a6783e5a38d09 100644
+--- a/net/disk_cache/simple/simple_backend_impl.h
++++ b/net/disk_cache/simple/simple_backend_impl.h
+@@ -85,6 +85,10 @@ class NET_EXPORT_PRIVATE SimpleBackendImpl final : public Backend,
+   void SetTaskRunnerForTesting(
+       scoped_refptr<base::SequencedTaskRunner> task_runner);
+ 
++  size_t GetNumActiveEntriesForTesting() const {
++    return active_entries_.size();
++  }
++
+   // Finishes initialization. Always asynchronous.
+   void Init(CompletionOnceCallback completion_callback);
+ 
+diff --git a/net/disk_cache/simple/simple_entry_impl.cc b/net/disk_cache/simple/simple_entry_impl.cc
+index 22715f3e2dd713796bd7ccbd9b16a59360d6e8f8..21b3305abc4d9b0a5ee2cf4abe7414f1d7a3f7db 100644
+--- a/net/disk_cache/simple/simple_entry_impl.cc
++++ b/net/disk_cache/simple/simple_entry_impl.cc
+@@ -1411,7 +1411,8 @@ void SimpleEntryImpl::DoomEntryInternal(net::CompletionOnceCallback callback) {
+     prioritized_task_runner_->PostTaskAndReplyWithResult(
+         FROM_HERE,
+         base::BindOnce(&SimpleSynchronousEntry::Doom,
+-                       base::Unretained(synchronous_entry_)),
++                       base::Unretained(synchronous_entry_),
++                       /*sparse_file_may_be_unchecked=*/false),
+         base::BindOnce(&SimpleEntryImpl::DoomOperationComplete, this,
+                        std::move(callback), state_),
+         entry_priority_);
+diff --git a/net/disk_cache/simple/simple_synchronous_entry.cc b/net/disk_cache/simple/simple_synchronous_entry.cc
+index a0260d4c07836ac4aa69f1dd240203aaca6c7e8a..7c352146be0e79c4983f317a7becbf7253b325ff 100644
+--- a/net/disk_cache/simple/simple_synchronous_entry.cc
++++ b/net/disk_cache/simple/simple_synchronous_entry.cc
+@@ -398,7 +398,7 @@ void SimpleSynchronousEntry::OpenEntry(
+         out_results->stream_prefetch_data);
+   }
+   if (out_results->result != net::OK) {
+-    sync_entry->Doom();
++    sync_entry->Doom(/*sparse_file_may_be_unchecked=*/true);
+     sync_entry->CloseFiles();
+     out_results->sync_entry = nullptr;
+     out_results->unbound_file_operations =
+@@ -437,7 +437,7 @@ void SimpleSynchronousEntry::CreateEntry(
+   }
+   if (out_results->result != net::OK) {
+     if (out_results->result != net::ERR_FILE_EXISTS)
+-      sync_entry->Doom();
++      sync_entry->Doom(/*sparse_file_may_be_unchecked=*/true);
+     sync_entry->CloseFiles();
+     out_results->unbound_file_operations =
+         std::move(sync_entry->unbound_file_operations_);
+@@ -486,7 +486,7 @@ void SimpleSynchronousEntry::OpenOrCreateEntry(
+         if (optimistic_create) {
+           // In this case, ::OpenOrCreateEntry already returned claiming it made
+           // a new entry. Try extra-hard to make that the actual case.
+-          sync_entry->Doom();
++          sync_entry->Doom(/*sparse_file_may_be_unchecked=*/true);
+           sync_entry->CloseFiles();
+           file_operations = std::move(sync_entry->unbound_file_operations_);
+           sync_entry = nullptr;
+@@ -498,7 +498,7 @@ void SimpleSynchronousEntry::OpenOrCreateEntry(
+         break;
+       default:
+         // Trouble. Fail this time.
+-        sync_entry->Doom();
++        sync_entry->Doom(/*sparse_file_may_be_unchecked=*/true);
+         sync_entry->CloseFiles();
+         out_results->unbound_file_operations =
+             std::move(sync_entry->unbound_file_operations_);
+@@ -545,14 +545,14 @@ int SimpleSynchronousEntry::DeleteEntryFilesInternal(
+   return deleted_well ? net::OK : net::ERR_FAILED;
+ }
+ 
+-int SimpleSynchronousEntry::Doom() {
++int SimpleSynchronousEntry::Doom(bool sparse_file_may_be_unchecked) {
+   BackendFileOperations* file_operations = nullptr;
+   ScopedFileOperationsBinding binding(this, &file_operations);
+-  return DoomInternal(file_operations);
++  return DoomInternal(file_operations, sparse_file_may_be_unchecked);
+ }
+ 
+-int SimpleSynchronousEntry::DoomInternal(
+-    BackendFileOperations* file_operations) {
++int SimpleSynchronousEntry::DoomInternal(BackendFileOperations* file_operations,
++                                         bool sparse_file_may_be_unchecked) {
+   if (entry_file_key_.doom_generation != 0u) {
+     // Already doomed.
+     return true;
+@@ -582,6 +582,13 @@ int SimpleSynchronousEntry::DoomInternal(
+       FilePath new_name =
+           path_.AppendASCII(GetSparseFilenameFromEntryFileKey(entry_file_key_));
+       ok = file_operations->ReplaceFile(old_name, new_name, &out_error) && ok;
++    } else if (sparse_file_may_be_unchecked) {
++      FilePath to_delete =
++          path_.AppendASCII(GetSparseFilenameFromEntryFileKey(orig_key));
++      ok = file_operations->DeleteFile(to_delete,
++                                       BackendFileOperations::DeleteFileMode::
++                                           kEnsureImmediateAvailability) &&
++           ok;
+     }
+ 
+     SIMPLE_CACHE_UMA(TIMES, "DiskDoomLatency", cache_type_,
+@@ -1518,8 +1525,9 @@ int SimpleSynchronousEntry::InitializeForOpen(
+       // knowing what our key is. We must therefore read the header immediately
+       // to discover it, so SimpleEntryImpl can make it available to
+       // disk_cache::Entry::GetKey().
+-      if (!file.IsOK() || !CheckHeaderAndKey(file.get(), i))
++      if (!file.IsOK() || !CheckHeaderAndKey(file.get(), i)) {
+         return net::ERR_FAILED;
++      }
+     } else {
+       // If we do know which key were are looking for, we still need to
+       // check that the file actually has it (rather than just being a hash
+@@ -1535,8 +1543,9 @@ int SimpleSynchronousEntry::InitializeForOpen(
+       int ret_value_stream_0 = ReadAndValidateStream0AndMaybe1(
+           file_operations, out_entry_stat->data_size(1), out_entry_stat,
+           stream_prefetch_data);
+-      if (ret_value_stream_0 != net::OK)
++      if (ret_value_stream_0 != net::OK) {
+         return ret_value_stream_0;
++      }
+     } else {
+       out_entry_stat->set_data_size(
+           2, GetDataSizeFromFileSize(key_size, out_entry_stat->data_size(2)));
+diff --git a/net/disk_cache/simple/simple_synchronous_entry.h b/net/disk_cache/simple/simple_synchronous_entry.h
+index 3e2a227f1f1a82e8e40b7cbae5e16ae04fc52fed..828915f3d415d26838b38320d9b1e289f28bbe51 100644
+--- a/net/disk_cache/simple/simple_synchronous_entry.h
++++ b/net/disk_cache/simple/simple_synchronous_entry.h
+@@ -231,7 +231,11 @@ class SimpleSynchronousEntry {
+   // it again, but allowing operations to continue to be executed through that
+   // instance. The renamed file will be removed once the entry is closed.
+   // Returns a net error code.
+-  int Doom();
++  //
++  // `sparse_file_may_be_unchecked` should be set to true if there was problem
++  // during initialization, which may result in sparse file not being open
++  // despite existing.
++  int Doom(bool sparse_file_may_be_unchecked);
+ 
+   // Deletes an entry from the file system.  This variant should only be used
+   // if there is no actual open instance around, as it doesn't account for
+@@ -482,7 +486,8 @@ class SimpleSynchronousEntry {
+                                         uint64_t entry_hash,
+                                         BackendFileOperations* file_operations);
+ 
+-  int DoomInternal(BackendFileOperations* file_operations);
++  int DoomInternal(BackendFileOperations* file_operations,
++                   bool sparse_file_may_be_unchecked = false);
+ 
+   base::FilePath GetFilenameFromFileIndex(int file_index) const;
+ 

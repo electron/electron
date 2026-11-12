@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Mon, 26 Oct 2026 21:00:44 -0700
+Subject: [FSA] Block /run in sensitive path blocklist
+
+Add /run with kBlockAllChildren to the sensitive-directory blocklist on
+Linux, ChromeOS, and Android.
+
+This prevents sites from obtaining read/write directory access to per-
+session runtime directories (such as /run/user/<uid>/dbus-1/services).
+
+Bug: 577376424
+Change-Id: I06035274613fb65514af217c92071c66785e446f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8650678
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1727713}
+
+Electron adaptation notes (44-x-y):
+Electron's refactor_expose_file_system_access_blocklist.patch relocates the kBlockPaths table into chrome_file_system_access_permission_context.h, so the /run rule is added there (same position, after /etc).
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+index 696cf3bef0ec2797bb4acfdf1cb54e8d2d670bf7..fafd956302128d0590a09ab82bff3bc07cea322a 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -706,6 +706,11 @@ class ChromeFileSystemAccessPermissionContext
+                                   BlockType::kBlockAllChildren),
+         BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/etc"),
+                                   BlockType::kBlockAllChildren),
++        // And runtime data in /run, including per-session runtime directories
++        // (/run/user/<uid>, the default $XDG_RUNTIME_DIR), see
++        // crbug.com/577376424.
++        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/run"),
++                                  BlockType::kBlockAllChildren),
+         // Block ~/.dbus as well, just in case, although there probably isn't much
+         // a website can do with access to that directory and its contents.
+         BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+index a111ad1d5d0455dd3451d865bbe19001280cb1d3..405f1510e9bfe315294019b153bfeafecf56d278 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
+@@ -896,6 +896,29 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+                 permission_context(), PathInfo(FILE_PATH_LITERAL("/dev")),
+                 HandleType::kDirectory, UserAction::kNone),
+             SensitiveDirectoryResult::kAbort);
++#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
++  // /run and its children should be blocked across access triggers.
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(), PathInfo(FILE_PATH_LITERAL("/run")),
++                HandleType::kDirectory, AccessTrigger::kOpen),
++            SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(
++      ConfirmSensitiveEntryAccessSync(
++          permission_context(), PathInfo(FILE_PATH_LITERAL("/run/user/1000")),
++          HandleType::kDirectory, AccessTrigger::kOpen),
++      SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(
++      ConfirmSensitiveEntryAccessSync(
++          permission_context(), PathInfo(FILE_PATH_LITERAL("/run/user/1000")),
++          HandleType::kDirectory, AccessTrigger::kProgrammaticWrite),
++      SensitiveDirectoryResult::kAbort);
++  EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
++                permission_context(),
++                PathInfo(temp_dir_.GetPath().AppendASCII("run")),
++                HandleType::kDirectory, AccessTrigger::kOpen),
++            SensitiveDirectoryResult::kAllowed);
++#endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) ||
++        // BUILDFLAG(IS_ANDROID)
+ #elif BUILDFLAG(IS_WIN)
+   EXPECT_EQ(ConfirmSensitiveEntryAccessSync(
+                 permission_context(),
+@@ -1643,6 +1666,7 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+       {kNoBasePathKey, FILE_PATH_LITERAL("/sys"), true, false},
+       {kNoBasePathKey, FILE_PATH_LITERAL("/boot"), true, false},
+       {kNoBasePathKey, FILE_PATH_LITERAL("/etc"), true, false},
++      {kNoBasePathKey, FILE_PATH_LITERAL("/run"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".dbus"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".local/share"), true, false},
+       {base::DIR_HOME, FILE_PATH_LITERAL(".fonts.conf"), true, false},

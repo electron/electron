@@ -1,0 +1,1710 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Wed, 4 Nov 2026 16:01:11 -0500
+Subject: [M156] Validate direct-mask Slug data during deserialization
+
+Original change's description:
+> Validate direct-mask Slug data during deserialization
+>
+> Direct-mask glyphs are packed into the glyph atlas without padding when
+> atlas bilerp is unsupported, so they are only safe to draw at integer
+> device positions, with an integer translation of their creation matrix.
+> Slug deserialization did not enforce this: a crafted Slug could supply
+> fractional or non-finite glyph positions, or a direct-mask creation
+> matrix that differs from the Slug's initial position matrix (bypassing
+> SlugImpl::canDraw), leading to out-of-bounds atlas sampling under MSAA.
+> Unbounded offsets could also overflow the float-to-int conversion used
+> when clipping direct-mask quads.
+>
+> Deserialization now requires:
+> * direct-mask glyph positions to be finite integers within +/-2^21;
+> * direct-mask creation matrices to equal the Slug's initial position
+>   matrix, and canDrawDirect to match the SubRun type;
+> * finite bounds, origins, matrices, scales and SDFT ranges, and
+>   invertible, non-perspective creation matrices;
+> * all glyph positions to be finite and within 1e14;
+> * boolean flags to be 0 or 1 (read with readBool; the wire format is
+>   unchanged).
+>
+> At draw time, VertexFiller::CanUseDirect also requires the offset
+> between the creation matrix and the position matrix to be a finite
+> integer within +/-2^21. The position matrix is computed exactly as at
+> creation (single-precision preTranslate), so drawing with an unchanged
+> matrix always yields a zero offset. SlugImpl::canDraw now only gates
+> Slugs that contain direct-mask SubRuns; every other SubRun type is
+> padded in the atlas (entries are keyed by padding) or doesn't use it.
+>
+> Creation and deserialization share the same checks, so every Slug that
+> is created deserializes. SlugImpl::Make returns null if the position
+> matrix overflows or the bounds or origin are invalid. In
+> SubRunContainer::MakeInAlloc, which is used by all GPU text, not just
+> Slugs:
+> * direct masks are only used if the position matrix is finite,
+>   invertible, and has a translation within 1e14. Otherwise the glyphs
+>   fall back to drawables or paths;
+> * direct-mask glyphs whose device position exceeds 2^21 fall back to
+>   the drawable/path/transformed-mask stages;
+> * SDFT and transformed-mask SubRuns are only created if their creation
+>   matrix (and SDFT matrix range) is valid. For example, an infinite
+>   fGlyphsAsPathsFontSize gives large text an infinite SDFT range, so
+>   that text now uses direct masks or paths instead;
+> * glyphs with positions beyond 1e14 are rejected.
+>
+> Bug: 577341943
+> Change-Id: Ic81bc3ba9ea0af3a213047b3abdf40950a991cca
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1407596
+> Reviewed-by: Thomas Smith <thomsmit@google.com>
+> Reviewed-by: Nathan Sanchez <nathanasanchez@google.com>
+> Commit-Queue: Greg Daniel <egdaniel@google.com>
+
+(cherry picked from commit 65fc456950898760ac04706208b270a332b83e0a)
+
+Bug: 581669254,577341943
+Change-Id: Ic81bc3ba9ea0af3a213047b3abdf40950a991cca
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1415820
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+
+diff --git a/src/text/gpu/SlugImpl.cpp b/src/text/gpu/SlugImpl.cpp
+index 4e135f0d38c1f4c0e8bf942201537b18dd1e5ff4..666fe2f3575c5c43af2997b5686303dc4d83d5c2 100644
+--- a/src/text/gpu/SlugImpl.cpp
++++ b/src/text/gpu/SlugImpl.cpp
+@@ -19,6 +19,7 @@
+ #include "src/text/GlyphRun.h"
+ #include "src/text/gpu/SubRunAllocator.h"
+ #include "src/text/gpu/SubRunContainer.h"
++#include "src/text/gpu/VertexFiller.h"
+ 
+ #include <memory>
+ #include <utility>
+@@ -36,6 +37,19 @@ SlugImpl::SlugImpl(SubRunAllocator&& alloc,
+         , fSourceBounds{sourceBounds}
+         , fOrigin{origin} {}
+ 
++namespace {
++SkMatrix position_matrix(const SkMatrix& drawMatrix, SkPoint drawOrigin) {
++    SkMatrix position_matrix = drawMatrix;
++    return position_matrix.preTranslate(drawOrigin.x(), drawOrigin.y());
++}
++
++// Every Slug has finite, non-empty source bounds and a finite origin. Slugs are only created with
++// values that pass this check, and deserialization rejects any that don't.
++bool valid_bounds_and_origin(SkRect sourceBounds, SkPoint origin) {
++    return sourceBounds.isFinite() && !sourceBounds.isEmpty() && origin.isFinite();
++}
++}  // namespace
++
+ void SlugImpl::doFlatten(SkWriteBuffer& buffer) const {
+     buffer.writeRect(fSourceBounds);
+     buffer.writePoint(fOrigin);
+@@ -45,10 +59,10 @@ void SlugImpl::doFlatten(SkWriteBuffer& buffer) const {
+ 
+ sk_sp<Slug> SlugImpl::MakeFromBuffer(SkReadBuffer& buffer, const SkStrikeClient* client) {
+     SkRect sourceBounds = buffer.readRect();
+-    if (!buffer.validate(!sourceBounds.isEmpty())) {
++    SkPoint origin = buffer.readPoint();
++    if (!buffer.validate(valid_bounds_and_origin(sourceBounds, origin))) {
+         return nullptr;
+     }
+-    SkPoint origin = buffer.readPoint();
+     int allocSizeHint = gpu::SubRunContainer::AllocSizeHintFromBuffer(buffer);
+ 
+     auto [initializer, _, alloc] =
+@@ -66,33 +80,20 @@ sk_sp<Slug> SlugImpl::MakeFromBuffer(SkReadBuffer& buffer, const SkStrikeClient*
+             initializer.initialize(std::move(alloc), std::move(container), sourceBounds, origin));
+ }
+ 
+-namespace {
+-SkMatrix position_matrix(const SkMatrix& drawMatrix, SkPoint drawOrigin) {
+-    SkMatrix position_matrix = drawMatrix;
+-    return position_matrix.preTranslate(drawOrigin.x(), drawOrigin.y());
+-}
+-
+-bool valid_slug_matrices(const SkMatrix& creationMatrix, const SkMatrix& positionMatrix) {
+-    if (creationMatrix == positionMatrix) {
+-        return true;
+-    }
+-
+-    SkVector translation = positionMatrix.mapOrigin() - creationMatrix.mapOrigin();
+-    return creationMatrix.getScaleX() == positionMatrix.getScaleX() &&
+-           creationMatrix.getScaleY() == positionMatrix.getScaleY() &&
+-           creationMatrix.getSkewX()  == positionMatrix.getSkewX()  &&
+-           creationMatrix.getSkewY()  == positionMatrix.getSkewY()  &&
+-           !positionMatrix.hasPerspective() && !creationMatrix.hasPerspective() &&
+-           SkScalarIsInt(translation.x()) && SkScalarIsInt(translation.y());
+-}
+-}  // namespace
+-
+ bool SlugImpl::canDraw(const SkMatrix& drawMatrix, bool supportBilerpAtlas) const {
+-    if (supportBilerpAtlas) {
++    // Only direct-mask glyphs are packed into the atlas without padding, and only when the atlas
++    // doesn't support bilerp. Every other SubRun type is either padded in the atlas (atlas
++    // entries are keyed by padding, so they are never shared with direct masks) or doesn't use
++    // the atlas at all, so it can be drawn with any matrix.
++    if (supportBilerpAtlas || !fSubRuns->hasDirectMaskSubRuns()) {
+         return true;
+     }
+-    const SkMatrix positionMatrix = position_matrix(drawMatrix, fOrigin);
+-    return valid_slug_matrices(this->initialPositionMatrix(), positionMatrix);
++    // Direct masks may only be drawn with a bounded integer translation of their creation
++    // matrix. Use the same check, on the same single-precision positionMatrix, that the backends
++    // use when drawing the direct-mask SubRuns.
++    auto [canUseDirect, _] = VertexFiller::CanUseDirect(this->initialPositionMatrix(),
++                                                       position_matrix(drawMatrix, fOrigin));
++    return canUseDirect;
+ }
+ 
+ sk_sp<SlugImpl> SlugImpl::Make(const SkMatrix& viewMatrix,
+@@ -100,12 +101,19 @@ sk_sp<SlugImpl> SlugImpl::Make(const SkMatrix& viewMatrix,
+                                const SkPaint& paint,
+                                SkStrikeDeviceInfo strikeDeviceInfo,
+                                sktext::StrikeForGPUCacheInterface* strikeCache) {
++    // Only make Slugs that can be deserialized: SlugImpl::MakeFromBuffer requires valid bounds and
++    // origin, and SubRunContainer::MakeFromBufferInAlloc requires a finite positionMatrix (its
++    // translation can overflow even when the viewMatrix and origin are finite).
++    const SkMatrix positionMatrix = position_matrix(viewMatrix, glyphRunList.origin());
++    if (!positionMatrix.isFinite() ||
++        !valid_bounds_and_origin(glyphRunList.sourceBounds(), glyphRunList.origin())) {
++        return nullptr;
++    }
++
+     size_t subRunSizeHint = gpu::SubRunContainer::EstimateAllocSize(glyphRunList);
+     auto [initializer, _, alloc] =
+             SubRunAllocator::AllocateClassMemoryAndArena<SlugImpl>(subRunSizeHint);
+ 
+-    const SkMatrix positionMatrix = position_matrix(viewMatrix, glyphRunList.origin());
+-
+     auto subRuns = gpu::SubRunContainer::MakeInAlloc(glyphRunList,
+                                                      positionMatrix,
+                                                      paint,
+diff --git a/src/text/gpu/SubRunContainer.cpp b/src/text/gpu/SubRunContainer.cpp
+index 0539376bdddb94d04a11cdcdbfc53678b3a768f7..2ddac3764b5953584720ef752c51ccf7320af6df 100644
+--- a/src/text/gpu/SubRunContainer.cpp
++++ b/src/text/gpu/SubRunContainer.cpp
+@@ -52,6 +52,7 @@
+ 
+ #include <algorithm>
+ #include <climits>
++#include <cmath>
+ #include <cstdint>
+ #include <new>
+ #include <optional>
+@@ -116,6 +117,33 @@ SkGlyphRect glyph_bounds_from_left_top(SkGlyphDigest digest, int inset, SkPoint
+     return glyph_bounds(digest, inset, offset);
+ }
+ 
++// Bound glyph coordinates to 1e14f (~2^46). This accommodates arbitrarily large page
++// layouts while rejecting extreme float values (such as near FLT_MAX) where precision loss
++// collapses glyph bounds (e.g. left + width == left) and downstream double-precision
++// calculations (53-bit mantissa) would risk losing subpixel precision.
++constexpr SkScalar kMaxGlyphPositionCoord = 1e14f;
++bool valid_glyph_position(SkPoint pt) {
++    return pt.isFinite() &&
++           std::abs(pt.x()) <= kMaxGlyphPositionCoord &&
++           std::abs(pt.y()) <= kMaxGlyphPositionCoord;
++}
++
++// The creation matrix of every atlas SubRun must be finite, have no perspective, and be invertible
++// (it is inverted to draw with any other matrix). SubRuns are only created with matrices that pass
++// these checks, and deserialization rejects any that don't, so every created SubRun deserializes.
++// The isFinite() check is not redundant with invert(), which accepts infinite scale factors
++// (their inverse is 0).
++bool valid_creation_matrix(const SkMatrix& m) {
++    return m.isFinite() && !m.hasPerspective() && m.invert().has_value();
++}
++
++// A DirectMaskSubRun's creation matrix is the positionMatrix, whose translation must also be a
++// valid glyph position.
++bool valid_direct_creation_matrix(const SkMatrix& m) {
++    return valid_creation_matrix(m) &&
++           valid_glyph_position({m.getTranslateX(), m.getTranslateY()});
++}
++
+ // Returns the empty span if there is a problem reading the positions.
+ SkSpan<SkPoint> make_points_from_buffer(SkReadBuffer& buffer, SubRunAllocator* alloc) {
+     uint32_t glyphCount = buffer.getArrayCount();
+@@ -128,14 +156,21 @@ SkSpan<SkPoint> make_points_from_buffer(SkReadBuffer& buffer, SubRunAllocator* a
+                          BagOfBytes::WillCountFit<SkPoint>(glyphCount))) { return {}; }
+ 
+     SkPoint* positionsData = alloc->makePODArray<SkPoint>(glyphCount);
+-    if (!buffer.readPointArray({positionsData, glyphCount})) { return {}; }
+-    return {positionsData, glyphCount};
++    SkSpan<SkPoint> positions{positionsData, glyphCount};
++    if (!buffer.readPointArray(positions)) { return {}; }
++
++    for (const SkPoint& pt : positions) {
++        if (!buffer.validate(valid_glyph_position(pt))) {
++            return {};
++        }
++    }
++    return positions;
+ }
+ 
+-SkRect reconstruct_safe_bounds(SkSpan<const SkPoint> leftTop,
+-                               GlyphVector* glyphVector,
+-                               skglyph::ActionType actionType,
+-                               int inset) {
++std::optional<SkRect> reconstruct_safe_bounds(SkSpan<const SkPoint> leftTop,
++                                              GlyphVector* glyphVector,
++                                              skglyph::ActionType actionType,
++                                              int inset) {
+     int count = leftTop.size();
+ 
+     StrikeForGPU* strike = glyphVector->strikePromise().strike();
+@@ -145,10 +180,15 @@ SkRect reconstruct_safe_bounds(SkSpan<const SkPoint> leftTop,
+     for (int i = 0; i < count; ++i) {
+         SkPackedGlyphID packedID = glyphVector->getPackedGlyphID(i);
+         SkGlyphDigest digest = strike->digestFor(actionType, packedID);
+-        boundingRect = skglyph::rect_union(
+-                boundingRect, glyph_bounds_from_left_top(digest, inset, leftTop[i]));
++        const SkGlyphRect glyphBounds =
++                glyph_bounds_from_left_top(digest, inset, leftTop[i]);
++        if (!glyphBounds.rect().isFinite()) {
++            return std::nullopt;
++        }
++        boundingRect = skglyph::rect_union(boundingRect, glyphBounds);
+     }
+-    return boundingRect.empty() ? SkRect::MakeEmpty() : boundingRect.rect();
++    SkRect rect = boundingRect.empty() ? SkRect::MakeEmpty() : boundingRect.rect();
++    return rect.isFinite() ? std::optional<SkRect>{rect} : std::nullopt;
+ }
+ 
+ void flatten_vertex_filler(SkWriteBuffer &buffer, const VertexFiller& vf) {
+@@ -166,12 +206,17 @@ std::optional<VertexFiller> make_vertex_filler_from_buffer(SkReadBuffer& buffer,
+     MaskFormat maskFormat = buffer.read32LE(MaskFormat::kLast);
+ 
+     const bool canDrawDirect = buffer.readBool();
++    if (!buffer.validate(canDrawDirect == (actionType == skglyph::kDirectMask))) {
++        return std::nullopt;
++    }
+ 
+     SkMatrix creationMatrix;
+     buffer.readMatrix(&creationMatrix);
+     // The only valid creationMatrices do not have perspective and many rendering parts assume
+-    // they are non-affine, so reject any malformed matrices here.
+-    if (!buffer.validate(!creationMatrix.hasPerspective())) {
++    // they are non-affine, so reject any malformed matrices here. Use the same checks that are
++    // applied when SubRuns are created.
++    if (!buffer.validate(canDrawDirect ? valid_direct_creation_matrix(creationMatrix)
++                                       : valid_creation_matrix(creationMatrix))) {
+         return std::nullopt;
+     }
+ 
+@@ -184,9 +229,21 @@ std::optional<VertexFiller> make_vertex_filler_from_buffer(SkReadBuffer& buffer,
+         return std::nullopt;
+     }
+ 
+-    SkRect safeBounds = reconstruct_safe_bounds(leftTop, glyphVector, actionType, inset);
++    if (canDrawDirect) {
++        for (const SkPoint& pt : leftTop) {
++            if (!buffer.validate(VertexFiller::ValidDirectPosition(pt))) {
++                return std::nullopt;
++            }
++        }
++    }
++
++    std::optional<SkRect> safeBounds =
++            reconstruct_safe_bounds(leftTop, glyphVector, actionType, inset);
++    if (!buffer.validate(safeBounds.has_value())) {
++        return std::nullopt;
++    }
+ 
+-    return VertexFiller{maskFormat, creationMatrix, safeBounds, leftTop, canDrawDirect};
++    return VertexFiller{maskFormat, creationMatrix, *safeBounds, leftTop, canDrawDirect};
+ }
+ 
+ // -- PathOpSubmitter ------------------------------------------------------------------------------
+@@ -257,7 +314,7 @@ int PathOpSubmitter::unflattenSize() const {
+ void PathOpSubmitter::flatten(SkWriteBuffer& buffer) const {
+     fStrikePromise.flatten(buffer);
+ 
+-    buffer.writeInt(fIsAntiAliased);
++    buffer.writeBool(fIsAntiAliased);
+     buffer.writeScalar(fStrikeToSourceScale);
+     buffer.writePointArray(fPositions);
+     for (IDOrPath& idOrPath : fIDsOrPaths) {
+@@ -274,10 +331,12 @@ std::optional<PathOpSubmitter> PathOpSubmitter::MakeFromBuffer(SkReadBuffer& buf
+         return std::nullopt;
+     }
+ 
+-    bool isAntiAlias = buffer.readInt();
++    bool isAntiAlias = buffer.readBool();
+ 
+     SkScalar strikeToSourceScale = buffer.readScalar();
+-    if (!buffer.validate(0 < strikeToSourceScale)) { return std::nullopt; }
++    if (!buffer.validate(SkIsFinite(strikeToSourceScale) && 0 < strikeToSourceScale)) {
++        return std::nullopt;
++    }
+ 
+     SkSpan<SkPoint> positions = make_points_from_buffer(buffer, alloc);
+     if (positions.empty()) { return std::nullopt; }
+@@ -432,6 +491,7 @@ public:
+     }
+     const AtlasSubRun* testingOnly_atlasSubRun() const override { return nullptr; }
+     static SubRunOwner MakeFromBuffer(SkReadBuffer& buffer,
++                                      const SkMatrix& initialPositionMatrix,
+                                       SubRunAllocator* alloc,
+                                       const SkStrikeClient* client);
+ 
+@@ -452,6 +512,7 @@ void PathSubRun::doFlatten(SkWriteBuffer& buffer) const {
+ }
+ 
+ SubRunOwner PathSubRun::MakeFromBuffer(SkReadBuffer& buffer,
++                                       const SkMatrix& /*initialPositionMatrix*/,
+                                        SubRunAllocator* alloc,
+                                        const SkStrikeClient* client) {
+     auto pathOpSubmitter = PathOpSubmitter::MakeFromBuffer(buffer, alloc, client);
+@@ -534,7 +595,9 @@ std::optional<DrawableOpSubmitter> DrawableOpSubmitter::MakeFromBuffer(
+     }
+ 
+     SkScalar strikeToSourceScale = buffer.readScalar();
+-    if (!buffer.validate(0 < strikeToSourceScale)) { return std::nullopt; }
++    if (!buffer.validate(SkIsFinite(strikeToSourceScale) && 0 < strikeToSourceScale)) {
++        return std::nullopt;
++    }
+ 
+     SkSpan<SkPoint> positions = make_points_from_buffer(buffer, alloc);
+     if (positions.empty()) { return std::nullopt; }
+@@ -625,6 +688,7 @@ public:
+     }
+ 
+     static SubRunOwner MakeFromBuffer(SkReadBuffer& buffer,
++                                      const SkMatrix& initialPositionMatrix,
+                                       SubRunAllocator* alloc,
+                                       const SkStrikeClient* client);
+ 
+@@ -659,6 +723,7 @@ void DrawableSubRun::doFlatten(SkWriteBuffer& buffer) const {
+ }
+ 
+ SubRunOwner DrawableSubRun::MakeFromBuffer(SkReadBuffer& buffer,
++                                           const SkMatrix& /*initialPositionMatrix*/,
+                                            SubRunAllocator* alloc,
+                                            const SkStrikeClient* client) {
+     auto drawableOpSubmitter = DrawableOpSubmitter::MakeFromBuffer(buffer, alloc, client);
+@@ -702,6 +767,7 @@ public:
+     }
+ 
+     static SubRunOwner MakeFromBuffer(SkReadBuffer& buffer,
++                                      const SkMatrix& initialPositionMatrix,
+                                       SubRunAllocator* alloc,
+                                       const SkStrikeClient* client) {
+         auto glyphVector = GlyphVector::MakeFromBuffer(buffer, client, alloc);
+@@ -711,6 +777,10 @@ public:
+                                                            skglyph::kDirectMask, kGlyphInsetting);
+         if (!buffer.validate(vertexFiller.has_value())) { return nullptr; }
+ 
++        if (!buffer.validate(vertexFiller->creationMatrix() == initialPositionMatrix)) {
++            return nullptr;
++        }
++
+         SkASSERT(buffer.isValid());
+         return alloc->makeUnique<DirectMaskSubRun>(std::move(*vertexFiller),
+                                                    std::move(*glyphVector));
+@@ -801,6 +871,7 @@ public:
+     }
+ 
+     static SubRunOwner MakeFromBuffer(SkReadBuffer& buffer,
++                                      const SkMatrix& /*initialPositionMatrix*/,
+                                       SubRunAllocator* alloc,
+                                       const SkStrikeClient* client) {
+         auto glyphVector = GlyphVector::MakeFromBuffer(buffer, client, alloc);
+@@ -930,11 +1001,13 @@ public:
+     }
+ 
+     static SubRunOwner MakeFromBuffer(SkReadBuffer& buffer,
++                                      const SkMatrix& /*initialPositionMatrix*/,
+                                       SubRunAllocator* alloc,
+                                       const SkStrikeClient* client) {
+-        int useLCD = buffer.readInt();
+-        int isAntiAliased = buffer.readInt();
++        const bool useLCD = buffer.readBool();
++        const bool isAntiAliased = buffer.readBool();
+         SDFTMatrixRange matrixRange = SDFTMatrixRange::MakeFromBuffer(buffer);
++        if (!buffer.isValid()) { return nullptr; }
+ 
+         auto glyphVector = GlyphVector::MakeFromBuffer(buffer, client, alloc);
+         if (!buffer.validate(glyphVector.has_value())) { return nullptr; }
+@@ -988,8 +1061,8 @@ public:
+ protected:
+     SubRunStreamTag subRunStreamTag() const override { return SubRunStreamTag::kSDFTStreamTag; }
+     void doFlatten(SkWriteBuffer& buffer) const override {
+-        buffer.writeInt(fUseLCDText);
+-        buffer.writeInt(fAntiAliased);
++        buffer.writeBool(fUseLCDText);
++        buffer.writeBool(fAntiAliased);
+         fMatrixRange.flatten(buffer);
+         fGlyphVector.flatten(buffer);
+         flatten_vertex_filler(buffer, fVertexFiller);
+@@ -1041,9 +1114,11 @@ void SubRun::flatten(SkWriteBuffer& buffer) const {
+ }
+ 
+ SubRunOwner SubRun::MakeFromBuffer(SkReadBuffer& buffer,
++                                   const SkMatrix& initialPositionMatrix,
+                                    SubRunAllocator* alloc,
+                                    const SkStrikeClient* client) {
+     using Maker = SubRunOwner (*)(SkReadBuffer&,
++                                  const SkMatrix&,
+                                   SubRunAllocator*,
+                                   const SkStrikeClient*);
+ 
+@@ -1063,7 +1138,7 @@ SubRunOwner SubRun::MakeFromBuffer(SkReadBuffer& buffer,
+     }
+     auto maker = makers[subRunTypeInt];
+     if (!buffer.validate(maker != nullptr)) { return nullptr; }
+-    return maker(buffer, alloc, client);
++    return maker(buffer, initialPositionMatrix, alloc, client);
+ }
+ 
+ // -- SubRunContainer ------------------------------------------------------------------------------
+@@ -1106,17 +1181,17 @@ SubRunContainerOwner SubRunContainer::MakeFromBufferInAlloc(SkReadBuffer& buffer
+                                                             SubRunAllocator* alloc) {
+     SkMatrix positionMatrix;
+     buffer.readMatrix(&positionMatrix);
+-    if (!buffer.isValid()) { return nullptr; }
++    if (!buffer.validate(positionMatrix.isFinite())) {
++        return nullptr;
++    }
+     SubRunContainerOwner container = alloc->makeUnique<SubRunContainer>(positionMatrix);
+ 
+     int subRunCount = buffer.readInt();
+     if (!buffer.validate(subRunCount > 0)) { return nullptr; }
+     for (int i = 0; i < subRunCount; ++i) {
+-        auto subRunOwner = SubRun::MakeFromBuffer(buffer, alloc, client);
++        auto subRunOwner = SubRun::MakeFromBuffer(buffer, positionMatrix, alloc, client);
+         if (!buffer.validate(subRunOwner != nullptr)) { return nullptr; }
+-        if (subRunOwner != nullptr) {
+-            container->fSubRuns.append(std::move(subRunOwner));
+-        }
++        container->fSubRuns.append(std::move(subRunOwner));
+     }
+     return container;
+ }
+@@ -1164,9 +1239,20 @@ prepare_for_SDFT_drawing(StrikeForGPU* strike,
+         switch (const SkGlyphDigest digest = strike->digestFor(skglyph::kSDFT, packedID);
+                 digest.actionFor(skglyph::kSDFT)) {
+             case GlyphAction::kAccept: {
++                // Glyphs whose creation-space position or bounds are unusable (non-finite or
++                // beyond kMaxGlyphPositionCoord) are rejected so a later stage can draw them.
+                 SkPoint mappedPos = creationMatrix.mapPoint(pos);
++                if (!mappedPos.isFinite()) {
++                    rejectedBuffer[rejectedSize++] = std::make_tuple(glyphID, pos);
++                    break;
++                }
+                 const SkGlyphRect glyphBounds =
+                         glyph_bounds(digest, SDFTSubRun::kGlyphInsetting, mappedPos);
++                if (!glyphBounds.rect().isFinite() ||
++                    !valid_glyph_position(glyphBounds.leftTop())) {
++                    rejectedBuffer[rejectedSize++] = std::make_tuple(glyphID, pos);
++                    break;
++                }
+                 boundingRect = skglyph::rect_union(boundingRect, glyphBounds);
+                 acceptedBuffer[acceptedSize++] = std::make_tuple(packedID, glyphBounds.leftTop());
+                 break;
+@@ -1194,6 +1280,10 @@ prepare_for_direct_mask_drawing(StrikeForGPU* strike,
+                                 SkZip<SkPackedGlyphID, SkPoint, SkMask::Format> acceptedBuffer,
+                                 SkZip<SkGlyphID, SkPoint> rejectedBuffer,
+                                 skglyph::ActionType actionType) {
++    // The positionMatrix becomes the creationMatrix of the DirectMaskSubRuns, so the caller only
++    // uses direct masks when it is a valid direct creation matrix.
++    SkASSERT(valid_direct_creation_matrix(positionMatrix));
++
+     const SkIPoint mask = strike->roundingSpec().ignorePositionFieldMask;
+     const SkPoint halfSampleFreq = strike->roundingSpec().halfAxisSampleFreq;
+ 
+@@ -1212,6 +1302,11 @@ prepare_for_direct_mask_drawing(StrikeForGPU* strike,
+         }
+ 
+         const SkPoint mappedPos = positionMatrixWithRounding.mapPoint(pos);
++        if (!mappedPos.isFinite()) {
++            // Like the other stages, let a later stage try to draw this glyph.
++            rejectedBuffer[rejectedSize++] = std::make_tuple(glyphID, pos);
++            continue;
++        }
+         const SkPackedGlyphID packedID{glyphID, mappedPos, mask};
+         switch (const SkGlyphDigest digest = strike->digestFor(actionType, packedID);
+                 digest.actionFor(actionType)) {
+@@ -1221,6 +1316,11 @@ prepare_for_direct_mask_drawing(StrikeForGPU* strike,
+                 const SkGlyphRect glyphBounds = glyph_bounds(digest,
+                                                              DirectMaskSubRun::kGlyphInsetting,
+                                                              roundedPos);
++                if (!VertexFiller::ValidDirectPosition(glyphBounds.leftTop()) ||
++                    !glyphBounds.rect().isFinite()) {
++                    rejectedBuffer[rejectedSize++] = std::make_tuple(glyphID, pos);
++                    break;
++                }
+                 boundingRect = skglyph::rect_union(boundingRect, glyphBounds);
+                 acceptedBuffer[acceptedSize++] =
+                         std::make_tuple(packedID, glyphBounds.leftTop(), digest.maskFormat());
+@@ -1260,9 +1360,20 @@ prepare_for_mask_drawing(StrikeForGPU* strike,
+         switch (const SkGlyphDigest digest = strike->digestFor(kMask, packedID);
+                 digest.actionFor(kMask)) {
+             case GlyphAction::kAccept: {
++                // Report glyphs whose creation-space position or bounds are unusable (non-finite
++                // or beyond kMaxGlyphPositionCoord) as rejected, consistent with the other stages.
+                 const SkPoint mappedPos = creationMatrix.mapPoint(pos);
++                if (!mappedPos.isFinite()) {
++                    rejectedBuffer[rejectedSize++] = std::make_tuple(glyphID, pos);
++                    break;
++                }
+                 const SkGlyphRect glyphBounds =
+                         glyph_bounds(digest, TransformedMaskSubRun::kGlyphInsetting, mappedPos);
++                if (!glyphBounds.rect().isFinite() ||
++                    !valid_glyph_position(glyphBounds.leftTop())) {
++                    rejectedBuffer[rejectedSize++] = std::make_tuple(glyphID, pos);
++                    break;
++                }
+                 boundingRect = skglyph::rect_union(boundingRect, glyphBounds);
+                 acceptedBuffer[acceptedSize++] =
+                         std::make_tuple(packedID, glyphBounds.leftTop(), digest.maskFormat());
+@@ -1290,7 +1401,7 @@ prepare_for_path_drawing(StrikeForGPU* strike,
+     int rejectedSize = 0;
+     StrikeMutationMonitor m{strike};
+     for (const auto [glyphID, pos] : source) {
+-        if (!SkIsFinite(pos.x(), pos.y())) {
++        if (!valid_glyph_position(pos)) {
+             continue;
+         }
+ 
+@@ -1318,7 +1429,7 @@ prepare_for_drawable_drawing(StrikeForGPU* strike,
+     int rejectedSize = 0;
+     StrikeMutationMonitor m{strike};
+     for (const auto [glyphID, pos] : source) {
+-        if (!SkIsFinite(pos.x(), pos.y())) {
++        if (!valid_glyph_position(pos)) {
+             continue;
+         }
+ 
+@@ -1428,6 +1539,10 @@ SubRunContainerOwner SubRunContainer::MakeInAlloc(
+ 
+     const SkPoint glyphRunListLocation = glyphRunList.sourceBounds().center();
+ 
++    // The positionMatrix becomes the creationMatrix of any DirectMaskSubRuns, so direct masks can
++    // only be used if it is a valid direct creation matrix (for example, not singular).
++    const bool canUseDirectMasks = valid_direct_creation_matrix(positionMatrix);
++
+     // Handle all the runs in the glyphRunList
+     for (auto& glyphRun : glyphRunList) {
+         SkZip<const SkGlyphID, const SkPoint> source = glyphRun.source();
+@@ -1453,20 +1568,23 @@ SubRunContainerOwner SubRunContainer::MakeInAlloc(
+                                 runFont, runPaint, deviceProps, positionMatrix,
+                                 glyphRunListLocation, *subRunControl);
+ 
+-                if (!SkScalarNearlyZero(strikeToSourceScale)) {
++                // The creationMatrix needs to scale the strike data when inverted and
++                // multiplied by the positionMatrix. The final CTM should be:
++                //   [positionMatrix][scale by strikeToSourceScale],
++                // which should equal the following because of the transform during the vertex
++                // calculation,
++                //   [positionMatrix][creationMatrix]^-1.
++                // So, the creation matrix needs to be
++                //   [scale by 1/strikeToSourceScale].
++                const SkScalar creationScale = sk_ieee_float_divide(1.f, strikeToSourceScale);
++                const SkMatrix creationMatrix = SkMatrix::Scale(creationScale, creationScale);
++
++                // Only create SDFTSubRuns whose matrix range and creationMatrix pass the same
++                // checks that deserialization applies.
++                if (!SkScalarNearlyZero(strikeToSourceScale) && matrixRange.isValid() &&
++                    valid_creation_matrix(creationMatrix)) {
+                     sk_sp<StrikeForGPU> strike = strikeSpec.findOrCreateScopedStrike(strikeCache);
+ 
+-                    // The creationMatrix needs to scale the strike data when inverted and
+-                    // multiplied by the positionMatrix. The final CTM should be:
+-                    //   [positionMatrix][scale by strikeToSourceScale],
+-                    // which should equal the following because of the transform during the vertex
+-                    // calculation,
+-                    //   [positionMatrix][creationMatrix]^-1.
+-                    // So, the creation matrix needs to be
+-                    //   [scale by 1/strikeToSourceScale].
+-                    SkMatrix creationMatrix =
+-                            SkMatrix::Scale(1.f/strikeToSourceScale, 1.f/strikeToSourceScale);
+-
+                     auto acceptedBuffer = SkMakeZip(acceptedPackedGlyphIDs, acceptedPositions);
+                     auto [accepted, rejected, creationBounds] = prepare_for_SDFT_drawing(
+                             strike.get(), creationMatrix, source, acceptedBuffer, rejectedBuffer);
+@@ -1491,7 +1609,7 @@ SubRunContainerOwner SubRunContainer::MakeInAlloc(
+                 as_MFB(runPaint.getMaskFilter())->getFormat() == SkMask::k3D_Format;
+             // Direct Mask case
+             // Handle all the directly mapped mask subruns.
+-            if (!source.empty() && !positionMatrix.hasPerspective() && !needsAutoLayer) {
++            if (!source.empty() && canUseDirectMasks && !needsAutoLayer) {
+                 // Process masks including ARGB - this should be the 99.99% case.
+                 // This will handle medium size emoji that are sharing the run with SDFT drawn text.
+                 // If things are too big they will be passed along to the drawing of last resort
+@@ -1654,35 +1772,40 @@ SubRunContainerOwner SubRunContainer::MakeInAlloc(
+                 creationMatrix.postScale(reductionFactor, reductionFactor);
+             }
+ 
+-            // Draw using the creationMatrix.
+-            SkStrikeSpec strikeSpec = SkStrikeSpec::MakeTransformMask(
+-                    runFont, runPaint, deviceProps, scalerContextFlags, creationMatrix);
++            // TransformedMaskSubRuns invert the creationMatrix to draw, and deserialization
++            // rejects creation matrices that aren't valid, so these glyphs can't be drawn if
++            // conditioning didn't produce a valid one.
++            if (valid_creation_matrix(creationMatrix)) {
++                // Draw using the creationMatrix.
++                SkStrikeSpec strikeSpec = SkStrikeSpec::MakeTransformMask(
++                        runFont, runPaint, deviceProps, scalerContextFlags, creationMatrix);
+ 
+-            sk_sp<StrikeForGPU> strike = strikeSpec.findOrCreateScopedStrike(strikeCache);
++                sk_sp<StrikeForGPU> strike = strikeSpec.findOrCreateScopedStrike(strikeCache);
+ 
+-            auto acceptedBuffer =
+-                    SkMakeZip(acceptedPackedGlyphIDs, acceptedPositions, acceptedFormats);
+-            auto [accepted, rejected, creationBounds] =
+-                prepare_for_mask_drawing(
+-                        strike.get(), creationMatrix, source, acceptedBuffer, rejectedBuffer);
+-            source = rejected;
++                auto acceptedBuffer =
++                        SkMakeZip(acceptedPackedGlyphIDs, acceptedPositions, acceptedFormats);
++                auto [accepted, rejected, creationBounds] =
++                    prepare_for_mask_drawing(
++                            strike.get(), creationMatrix, source, acceptedBuffer, rejectedBuffer);
++                source = rejected;
+ 
+-            if (creationBehavior == kAddSubRuns && !accepted.empty()) {
++                if (creationBehavior == kAddSubRuns && !accepted.empty()) {
+ 
+-                auto addGlyphsWithSameFormat =
+-                        [&, bounds = creationBounds](
+-                                SkZip<const SkPackedGlyphID, const SkPoint> subrun,
+-                                MaskFormat format) {
+-                            container->fSubRuns.append(
+-                                    TransformedMaskSubRun::Make(subrun,
+-                                                                container->initialPosition(),
+-                                                                strike->strikePromise(),
+-                                                                creationMatrix,
+-                                                                bounds,
+-                                                                format,
+-                                                                alloc));
+-                        };
+-                add_multi_mask_format(addGlyphsWithSameFormat, accepted);
++                    auto addGlyphsWithSameFormat =
++                            [&, bounds = creationBounds](
++                                    SkZip<const SkPackedGlyphID, const SkPoint> subrun,
++                                    MaskFormat format) {
++                                container->fSubRuns.append(
++                                        TransformedMaskSubRun::Make(subrun,
++                                                                    container->initialPosition(),
++                                                                    strike->strikePromise(),
++                                                                    creationMatrix,
++                                                                    bounds,
++                                                                    format,
++                                                                    alloc));
++                            };
++                    add_multi_mask_format(addGlyphsWithSameFormat, accepted);
++                }
+             }
+         }
+     }
+@@ -1709,4 +1832,13 @@ bool SubRunContainer::canReuse(const SkPaint& paint, const SkMatrix& positionMat
+     return true;
+ }
+ 
++bool SubRunContainer::hasDirectMaskSubRuns() const {
++    for (const SubRun& subRun : fSubRuns) {
++        if (subRun.canDrawDirect()) {
++            return true;
++        }
++    }
++    return false;
++}
++
+ }  // namespace sktext::gpu
+diff --git a/src/text/gpu/SubRunContainer.h b/src/text/gpu/SubRunContainer.h
+index dc56ccfe56f518b52a05ecc080e06794ec029d9f..b18d1dc16091285d8530fa4dcb8d4a578c3ec363 100644
+--- a/src/text/gpu/SubRunContainer.h
++++ b/src/text/gpu/SubRunContainer.h
+@@ -73,6 +73,7 @@ public:
+ 
+     void flatten(SkWriteBuffer& buffer) const;
+     static SubRunOwner MakeFromBuffer(SkReadBuffer& buffer,
++                                      const SkMatrix& initialPositionMatrix,
+                                       sktext::gpu::SubRunAllocator* alloc,
+                                       const SkStrikeClient* client);
+ 
+@@ -84,6 +85,10 @@ public:
+     // position.
+     virtual bool canReuse(const SkPaint& paint, const SkMatrix& positionMatrix) const = 0;
+ 
++    // Returns true if this SubRun draws direct masks, which are packed into the atlas without
++    // padding when atlas bilerp is unsupported.
++    virtual bool canDrawDirect() const { return false; }
++
+     // Return the underlying atlas SubRun if it exists. Otherwise, return nullptr.
+     // * Don't use this API. It is only to support testing.
+     virtual const AtlasSubRun* testingOnly_atlasSubRun() const = 0;
+@@ -139,6 +144,8 @@ public:
+     };
+     virtual GlyphParams glyphParams() const = 0;
+ 
++    bool canDrawDirect() const override { return fVertexFiller.canDrawDirect(); }
++
+     const VertexFiller& vertexFiller() const { return fVertexFiller; }
+ 
+     GlyphVector& glyphVector() const { return fGlyphVector; }
+@@ -230,6 +237,7 @@ public:
+ 
+     const SkMatrix& initialPosition() const { return fInitialPositionMatrix; }
+     bool isEmpty() const { return fSubRuns.isEmpty(); }
++    bool hasDirectMaskSubRuns() const;
+     bool canReuse(const SkPaint& paint, const SkMatrix& positionMatrix) const;
+ 
+ private:
+diff --git a/src/text/gpu/SubRunControl.cpp b/src/text/gpu/SubRunControl.cpp
+index abac07ebaba17330f999f821c7105c7168f8e218..209729b829caf2f96fe2629890455eeff7948544 100644
+--- a/src/text/gpu/SubRunControl.cpp
++++ b/src/text/gpu/SubRunControl.cpp
+@@ -145,6 +145,10 @@ bool SDFTMatrixRange::matrixInRange(const SkMatrix& matrix) const {
+     return fMatrixMin < maxScale && maxScale <= fMatrixMax;
+ }
+ 
++bool SDFTMatrixRange::isValid() const {
++    return SkIsFinite(fMatrixMin, fMatrixMax) && 0 <= fMatrixMin && 0 <= fMatrixMax;
++}
++
+ void SDFTMatrixRange::flatten(SkWriteBuffer& buffer) const {
+     buffer.writeScalar(fMatrixMin);
+     buffer.writeScalar(fMatrixMax);
+@@ -153,7 +157,11 @@ void SDFTMatrixRange::flatten(SkWriteBuffer& buffer) const {
+ SDFTMatrixRange SDFTMatrixRange::MakeFromBuffer(SkReadBuffer& buffer) {
+     SkScalar min = buffer.readScalar();
+     SkScalar max = buffer.readScalar();
+-    return SDFTMatrixRange{min, max};
++    SDFTMatrixRange range{min, max};
++    if (!buffer.validate(range.isValid())) {
++        return SDFTMatrixRange{0, 0};
++    }
++    return range;
+ }
+ #endif // !defined(SK_DISABLE_SDF_TEXT)
+ 
+diff --git a/src/text/gpu/SubRunControl.h b/src/text/gpu/SubRunControl.h
+index 406170c72f790c1c1683c5e9292ecacd93feac37..098869b030e7f8dddd06f5bbd7fd86a39e5a92bc 100644
+--- a/src/text/gpu/SubRunControl.h
++++ b/src/text/gpu/SubRunControl.h
+@@ -29,6 +29,10 @@ class SDFTMatrixRange {
+ public:
+     SDFTMatrixRange(SkScalar min, SkScalar max) : fMatrixMin{min}, fMatrixMax{max} {}
+     bool matrixInRange(const SkMatrix& matrix) const;
++    // Returns true if both limits are finite and non-negative. SDFTSubRuns are only created with
++    // valid ranges, and deserialization rejects invalid ones. A valid range may have min > max
++    // (e.g. perspective text below the minimum SDFT size); such a range never matches.
++    bool isValid() const;
+     void flatten(SkWriteBuffer& buffer) const;
+     static SDFTMatrixRange MakeFromBuffer(SkReadBuffer& buffer);
+ 
+diff --git a/src/text/gpu/VertexFiller.cpp b/src/text/gpu/VertexFiller.cpp
+index baee3b71c43eed3a37e0ca7ee625de5edafb899f..41c3960c4fc177e8f6e739375c07fbae2bdacaf7 100644
+--- a/src/text/gpu/VertexFiller.cpp
++++ b/src/text/gpu/VertexFiller.cpp
+@@ -18,12 +18,24 @@
+ #include "src/text/gpu/SubRunAllocator.h"
+ #include "src/text/gpu/SubRunContainer.h"
+ 
++#include <cmath>
+ #include <optional>
+ 
+ using MaskFormat = skgpu::MaskFormat;
+ 
+ namespace sktext::gpu {
+ 
++bool VertexFiller::ValidDirectPosition(SkPoint pt) {
++    // Single-precision floats have a 24-bit significand. At or below 2^21, floats can represent
++    // all 1/4 subpixel increments (ULP <= 0.25f) and exact integers. Bounding direct coordinates
++    // and offsets to 2^21 ensures that glyph bounds and sums remain well within the 2^24 exact
++    // integer range, prevents subpixel rounding absorption (e.g. pt + 0.5f == pt), and avoids
++    // 32-bit integer overflow.
++    return pt.isFinite() &&
++           std::abs(pt.x()) <= kMaxDirectCoord && std::abs(pt.y()) <= kMaxDirectCoord &&
++           SkScalarIsInt(pt.x()) && SkScalarIsInt(pt.y());
++}
++
+ VertexFiller::VertexFiller(MaskFormat maskFormat,
+                            const SkMatrix& creationMatrix,
+                            SkRect creationBounds,
+@@ -42,6 +54,13 @@ VertexFiller VertexFiller::Make(MaskFormat maskType,
+                                 SubRunAllocator *alloc,
+                                 FillerType fillerType) {
+     SkSpan<SkPoint> leftTop = alloc->makePODSpan<SkPoint>(positions);
++#if defined(SK_DEBUG)
++    if (fillerType == kIsDirect) {
++        for (const SkPoint& pt : leftTop) {
++            SkASSERT(ValidDirectPosition(pt));
++        }
++    }
++#endif
+     return VertexFiller{
+             maskType, creationMatrix, creationBounds, leftTop, fillerType == kIsDirect};
+ }
+@@ -55,22 +74,34 @@ SkMatrix VertexFiller::viewDifference(const SkMatrix &positionMatrix) const {
+ 
+ // Check for integer translate with the same 2x2 matrix.
+ // Returns the translation, and true if the change from creation matrix to the position matrix
+-// supports using direct glyph masks.
++// supports using direct glyph masks. Returns {false, {0, 0}} otherwise.
+ std::tuple<bool, SkVector> VertexFiller::CanUseDirect(
+         const SkMatrix& creationMatrix, const SkMatrix& positionMatrix) {
+-    // The existing direct glyph info can be used if the creationMatrix, and the
+-    // positionMatrix have the same 2x2, the translation between them is integer, and no
+-    // perspective is involved. Calculate the translation in source space to a translation in
+-    // device space by mapping (0, 0) through both the creationMatrix and the positionMatrix;
+-    // take the difference.
+-    SkVector translation = positionMatrix.mapOrigin() - creationMatrix.mapOrigin();
+-    return {creationMatrix.getScaleX() == positionMatrix.getScaleX() &&
+-            creationMatrix.getScaleY() == positionMatrix.getScaleY() &&
+-            creationMatrix.getSkewX()  == positionMatrix.getSkewX()  &&
+-            creationMatrix.getSkewY()  == positionMatrix.getSkewY()  &&
+-            !positionMatrix.hasPerspective() && !creationMatrix.hasPerspective() &&
+-            SkScalarIsInt(translation.x()) && SkScalarIsInt(translation.y()),
+-            translation};
++    // The existing direct glyph info can be used if the creationMatrix and the positionMatrix
++    // have the same 2x2, no perspective is involved, and the translation between them is a valid
++    // direct-mask offset.
++    if (!creationMatrix.isFinite() || !positionMatrix.isFinite() ||
++        creationMatrix.hasPerspective() || positionMatrix.hasPerspective() ||
++        creationMatrix.getScaleX() != positionMatrix.getScaleX() ||
++        creationMatrix.getScaleY() != positionMatrix.getScaleY() ||
++        creationMatrix.getSkewX()  != positionMatrix.getSkewX()  ||
++        creationMatrix.getSkewY()  != positionMatrix.getSkewY()) {
++        return {false, {0, 0}};
++    }
++
++    // Both translations are single-precision results of the same SkMatrix::preTranslate math, so
++    // drawing with an unchanged matrix yields an exact zero offset. Take the difference in double
++    // and require it to be exactly representable as a float so that rounding can't turn a
++    // non-integer (or overflowing) difference into an integer. Float rounding of very large
++    // translations can't cause atlas sampling problems: the validated integer offset is what
++    // positions the glyph quads.
++    const double dx = (double)positionMatrix.getTranslateX() - creationMatrix.getTranslateX();
++    const double dy = (double)positionMatrix.getTranslateY() - creationMatrix.getTranslateY();
++    const SkVector offset = {(float)dx, (float)dy};
++    if ((double)offset.x() != dx || (double)offset.y() != dy || !ValidDirectPosition(offset)) {
++        return {false, {0, 0}};
++    }
++    return {true, offset};
+ }
+ 
+ bool VertexFiller::isLCD() const { return fMaskFormat == MaskFormat::kA565; }
+@@ -100,26 +131,20 @@ std::tuple<bool, SkRect> VertexFiller::deviceRectAndCheckTransform(
+ std::tuple<SkRect, SkMatrix> VertexFiller::boundsAndDeviceMatrix(const SkMatrix& localToDevice,
+                                                                  SkPoint drawOrigin,
+                                                                  bool supportBilerpAtlas) const {
+-    // The baked-in matrix differs from the current localToDevice by a translation if the
+-    // upper 2x2 remains the same, and there's no perspective. Since there's no projection,
+-    // Z is irrelevant, so it's okay that fCreationMatrix is an SkMatrix and has
+-    // discarded the 3rd row/col, and can ignore those values in localToDevice.
+-    const bool compatibleMatrix = localToDevice.rc(0, 0) == fCreationMatrix.rc(0, 0) &&
+-                                  localToDevice.rc(0, 1) == fCreationMatrix.rc(0, 1) &&
+-                                  localToDevice.rc(1, 0) == fCreationMatrix.rc(1, 0) &&
+-                                  localToDevice.rc(1, 1) == fCreationMatrix.rc(1, 1) &&
+-                                  !localToDevice.hasPerspective() &&
+-                                  !fCreationMatrix.hasPerspective();
+-
+-    if (compatibleMatrix) {
+-        SkPoint mappedOrigin = localToDevice.mapPoint(drawOrigin);
+-        auto offset = mappedOrigin -
+-                      SkPoint{fCreationMatrix.getTranslateX(), fCreationMatrix.getTranslateY()};
+-        if (SkScalarIsInt(offset.fX) && SkScalarIsInt(offset.fY)) {
+-            // The offset is an integer (but make sure), which means the generated mask can be
+-            // accessed without changing how texels would be sampled.
+-            return {fCreationBounds, SkMatrix::Translate(offset)};
+-        }
++    // Compute the positionMatrix exactly as it was computed when the glyphs were created, so
++    // that drawing with an unchanged matrix yields a zero offset. The baked-in matrix differs from
++    // the current positionMatrix by a translation if the upper 2x2 remains the same, and there's
++    // no perspective. Since there's no projection, Z is irrelevant, so it's okay that
++    // fCreationMatrix is an SkMatrix and has discarded the 3rd row/col, and can ignore those
++    // values in localToDevice.
++    SkMatrix positionMatrix = localToDevice;
++    positionMatrix.preTranslate(drawOrigin.x(), drawOrigin.y());
++
++    if (auto [directDrawCompatible, offset] = CanUseDirect(fCreationMatrix, positionMatrix);
++        directDrawCompatible) {
++        // The offset is a bounded integer, which means the generated mask can be accessed
++        // without changing how texels would be sampled.
++        return {fCreationBounds, SkMatrix::Translate(offset)};
+     }
+ 
+     if (fCanDrawDirect && !supportBilerpAtlas) {
+@@ -129,14 +154,13 @@ std::tuple<SkRect, SkMatrix> VertexFiller::boundsAndDeviceMatrix(const SkMatrix&
+         return {SkRect::MakeEmpty(), SkMatrix::I()};
+     }
+ 
+-    // Otherwise compute the relative transformation from fCreationMatrix to
+-    // localToDevice, with the drawOrigin applied. If fCreationMatrix or the
+-    // concatenation is not invertible the returned Transform is marked invalid and the draw
+-    // will be automatically dropped.
+-    SkMatrix positionMatrix = localToDevice;
+-    positionMatrix.preTranslate(drawOrigin.x(), drawOrigin.y());
+-    const SkMatrix viewDifference = this->viewDifference(positionMatrix);
+-    return {fCreationBounds, viewDifference};
++    // Otherwise compute the relative transformation from fCreationMatrix to positionMatrix. If
++    // fCreationMatrix is not invertible, return empty bounds so the draw is dropped.
++    const std::optional<SkMatrix> inverse = fCreationMatrix.invert();
++    if (!inverse) {
++        return {SkRect::MakeEmpty(), SkMatrix::I()};
++    }
++    return {fCreationBounds, SkMatrix::Concat(positionMatrix, *inverse)};
+ }
+ 
+ }  // namespace sktext::gpu
+diff --git a/src/text/gpu/VertexFiller.h b/src/text/gpu/VertexFiller.h
+index e7fc1576d08cdde0a6d98974cbf7f43df8272172..78da1ee8042be5107a5556c7ec20025d1837408e 100644
+--- a/src/text/gpu/VertexFiller.h
++++ b/src/text/gpu/VertexFiller.h
+@@ -90,12 +90,25 @@ public:
+     }
+     SkMatrix viewDifference(const SkMatrix& positionMatrix) const;
+ 
+-private:
+-    friend class AtlasSubRun;
+-
++    // Direct-mask glyph positions and draw offsets are limited to +/-kMaxDirectCoord. Their sum
++    // then stays well inside the range where floats represent every integer exactly, and inside
++    // the int32 range used when clipping direct-mask quads.
++    static constexpr SkScalar kMaxDirectCoord = 1 << 21;  // 2,097,152
++
++    // Returns true if pt is finite, integral, and within +/-kMaxDirectCoord. Direct-mask glyphs
++    // are packed into the atlas without padding, so their device positions must be integers for
++    // texel centers to align with pixel centers.
++    static bool ValidDirectPosition(SkPoint pt);
++
++    // Returns true, and the device-space offset, if positionMatrix differs from creationMatrix
++    // only by an integer translation that is a valid direct-mask offset; otherwise returns
++    // {false, {0, 0}}. positionMatrix must be computed the same way it was at creation time,
++    // i.e. drawMatrix.preTranslate(drawOrigin) in single precision, so that drawing with an
++    // unchanged matrix yields a bit-exact zero offset.
+     static std::tuple<bool, SkVector> CanUseDirect(const SkMatrix& creationMatrix,
+                                                    const SkMatrix& positionMatrix);
+ 
++private:
+     const skgpu::MaskFormat fMaskFormat;
+     const bool fCanDrawDirect;
+     const SkMatrix fCreationMatrix;
+diff --git a/tests/SlugTest.cpp b/tests/SlugTest.cpp
+index 74676f16c98489b8a22aad4df48a77c758f67de2..ef7a4026450729e8aa981a84c7f0f7ddf64cd6b5 100644
+--- a/tests/SlugTest.cpp
++++ b/tests/SlugTest.cpp
+@@ -14,6 +14,7 @@
+ #include "include/core/SkPaint.h"
+ #include "include/core/SkRefCnt.h"
+ #include "include/core/SkSurface.h"
++#include "include/core/SkSurfaceProps.h"
+ #include "include/core/SkTextBlob.h"
+ #include "include/core/SkTypeface.h"
+ #include "include/core/SkTypes.h"
+@@ -30,6 +31,7 @@
+ #include "tests/Test.h"
+ #include "tools/ToolUtils.h"
+ #include "tools/fonts/FontToolUtils.h"
++#include "tools/text/gpu/TextBlobTools.h"
+ 
+ #if defined(SK_GRAPHITE)
+ #include "include/gpu/graphite/Context.h"
+@@ -273,6 +275,115 @@ DEF_TEST(VertexFiller_boundsAndDeviceMatrix, reporter) {
+         REPORTER_ASSERT(reporter, !b.isEmpty());
+         REPORTER_ASSERT(reporter, m == SkMatrix::Translate(0.5f, 0.0f));
+     }
++
++    // 6. Translations whose difference overflows float (to infinity) must be dropped and
++    // canUseDirect returns false.
++    {
++        sktext::gpu::VertexFiller infFiller(skgpu::MaskFormat::kA8,
++                                            SkMatrix::Translate(-2e38f, 0.0f),
++                                            bounds,
++                                            SkSpan(positions, 1),
++                                            /*canDrawDirect=*/true);
++        auto [b, m] = infFiller.boundsAndDeviceMatrix(SkMatrix::I(), {2e38f, 0.0f},
++                                                      /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, b.isEmpty());
++        auto [directOk, vec] = infFiller.canUseDirect(SkMatrix::Translate(2e38f, 0.0f));
++        REPORTER_ASSERT(reporter, !directOk);
++    }
++
++    // 7. Magnitude translation bypass: must be dropped and canUseDirect returns false.
++    {
++        auto [b, m] = directFiller.boundsAndDeviceMatrix(SkMatrix::I(), {1e25f, 0.0f},
++                                                         /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, b.isEmpty());
++        auto [directOk, vec] = directFiller.canUseDirect(SkMatrix::Translate(1e25f, 0.0f));
++        REPORTER_ASSERT(reporter, !directOk);
++    }
++
++    // 8. Offsets are limited to +/-kMaxDirectCoord so that direct-mask vertex positions stay
++    // exactly representable and convert safely to integers.
++    {
++        constexpr SkScalar kMax = sktext::gpu::VertexFiller::kMaxDirectCoord;
++        auto [okAtLimit, offsetAtLimit] =
++                directFiller.canUseDirect(SkMatrix::Translate(kMax, -kMax));
++        REPORTER_ASSERT(reporter, okAtLimit);
++        REPORTER_ASSERT(reporter, offsetAtLimit == SkVector::Make(kMax, -kMax));
++        auto [okPastLimit, _] = directFiller.canUseDirect(SkMatrix::Translate(kMax + 1, 0.0f));
++        REPORTER_ASSERT(reporter, !okPastLimit);
++        auto [b, m] = directFiller.boundsAndDeviceMatrix(SkMatrix::I(), {0.0f, kMax + 1},
++                                                         /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, b.isEmpty());
++    }
++
++    // 9. Large opposing translations: drawMatrix = Translate(-3e6f, 0) and drawOrigin = {3e6f, 0}
++    // exceed kMaxDirectCoord individually, but the net offset {0, 0} is in range.
++    {
++        auto [b, m] = directFiller.boundsAndDeviceMatrix(SkMatrix::Translate(-3e6f, 0.0f),
++                                                         {3e6f, 0.0f},
++                                                         /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, !b.isEmpty());
++        REPORTER_ASSERT(reporter, m == SkMatrix::I());
++    }
++}
++
++// The draw-time direct-mask check must reproduce the single-precision positionMatrix computed at
++// creation (drawMatrix.preTranslate(drawOrigin)). Recomputing it any other way (e.g. in double)
++// turns creation-time float rounding into a fractional offset and rejects an unchanged matrix.
++DEF_TEST(VertexFiller_CanUseDirect_matchesCreationRounding, reporter) {
++    const SkRect bounds = SkRect::MakeXYWH(10, 10, 20, 20);
++    const SkPoint positions[] = {{10, 10}};
++    auto make_filler = [&](const SkMatrix& drawMatrix, SkPoint drawOrigin) {
++        SkMatrix creationMatrix = drawMatrix;
++        creationMatrix.preTranslate(drawOrigin.x(), drawOrigin.y());
++        return sktext::gpu::VertexFiller(skgpu::MaskFormat::kA8,
++                                         creationMatrix,
++                                         bounds,
++                                         SkSpan(positions, 1),
++                                         /*canDrawDirect=*/true);
++    };
++
++    // None of these translation sums are exactly representable as floats.
++    SkMatrix scaled = SkMatrix::Scale(1.25f, 1.25f);
++    scaled.postTranslate(0.3f, 0.7f);
++    const struct {
++        SkMatrix drawMatrix;
++        SkPoint drawOrigin;
++    } kCases[] = {
++        {SkMatrix::Translate(100.7f, 0.0f), {10.3f, 30.0f}},
++        {scaled,                            {10.3f, 30.1f}},
++        {SkMatrix::Translate(0.1f, 0.2f),   {0.2f, 0.1f}},
++    };
++    for (const auto& c : kCases) {
++        // Drawing with the creation matrix must use the direct path with a zero offset.
++        auto [b, m] = make_filler(c.drawMatrix, c.drawOrigin)
++                              .boundsAndDeviceMatrix(c.drawMatrix, c.drawOrigin,
++                                                     /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, !b.isEmpty());
++        REPORTER_ASSERT(reporter, m == SkMatrix::I());
++    }
++
++    // Integer device-space moves of a rounded creation translation (100.7f + 10.3f rounds to
++    // 111.0f) stay direct; fractional moves don't.
++    const SkPoint origin = {10.3f, 30.0f};
++    const sktext::gpu::VertexFiller filler =
++            make_filler(SkMatrix::Translate(100.7f, 0.0f), origin);
++    {
++        auto [b, m] = filler.boundsAndDeviceMatrix(SkMatrix::Translate(101.7f, 0.0f), origin,
++                                                   /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, !b.isEmpty());
++        REPORTER_ASSERT(reporter, m == SkMatrix::Translate(1.0f, 0.0f));
++    }
++    {
++        auto [b, m] = filler.boundsAndDeviceMatrix(SkMatrix::Translate(100.7f, 1.0f), origin,
++                                                   /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, !b.isEmpty());
++        REPORTER_ASSERT(reporter, m == SkMatrix::Translate(0.0f, 1.0f));
++    }
++    {
++        auto [b, m] = filler.boundsAndDeviceMatrix(SkMatrix::Translate(101.2f, 0.0f), origin,
++                                                   /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, b.isEmpty());
++    }
+ }
+ 
+ namespace {
+@@ -361,6 +472,53 @@ DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(Slug_fractional_replay_ganesh,
+     }, reporter);
+ }
+ 
++DEF_GANESH_TEST_FOR_CONTEXTS(Slug_fractional_replay_bilerp_ganesh,
++                             skgpu::IsRenderingContext,
++                             reporter,
++                             ctxInfo,
++                             [](GrContextOptions* options) {
++                                 options->fSupportBilerpFromGlyphAtlas = true;
++                             },
++                             CtsEnforcement::kNever) {
++    auto dContext = ctxInfo.directContext();
++    SkImageInfo info = SkImageInfo::MakeN32Premul(64, 64);
++    auto surface = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kNo, info);
++    REPORTER_ASSERT(reporter, surface);
++
++    sk_sp<SkTextBlob> blob = make_test_blob();
++    sk_sp<sktext::gpu::Slug> slug =
++            sktext::gpu::Slug::ConvertBlob(surface->getCanvas(), *blob, {10, 30}, SkPaint());
++    REPORTER_ASSERT(reporter, slug != nullptr);
++
++    SkCanvas* canvas = surface->getCanvas();
++    SkPaint paint;
++    paint.setColor(SK_ColorBLACK);
++
++    // 1. Identity draw: renders text.
++    canvas->clear(SK_ColorWHITE);
++    slug->draw(canvas, paint);
++    dContext->flushAndSubmit();
++    REPORTER_ASSERT(reporter, surface_has_non_white_pixels(surface.get()));
++
++    // 2. Fractional translation: when fSupportBilerpFromGlyphAtlas is true, text must draw.
++    canvas->clear(SK_ColorWHITE);
++    canvas->save();
++    canvas->translate(0.5f, 0.0f);
++    slug->draw(canvas, paint);
++    canvas->restore();
++    dContext->flushAndSubmit();
++    REPORTER_ASSERT(reporter, surface_has_non_white_pixels(surface.get()));
++
++    // 3. Matrix scale: when fSupportBilerpFromGlyphAtlas is true, text must draw.
++    canvas->clear(SK_ColorWHITE);
++    canvas->save();
++    canvas->scale(1.5f, 1.5f);
++    slug->draw(canvas, paint);
++    canvas->restore();
++    dContext->flushAndSubmit();
++    REPORTER_ASSERT(reporter, surface_has_non_white_pixels(surface.get()));
++}
++
+ #if defined(SK_GRAPHITE)
+ DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(Slug_fractional_replay_graphite,
+                                          reporter,
+@@ -385,3 +543,536 @@ DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(Slug_fractional_replay_graphite,
+ }
+ #endif
+ 
++// Slugs must stay drawable at their own creation matrix, and at integer translations of it, when
++// the creation-time translation sum is not exactly representable as a float.
++DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(Slug_inexact_translation_replay_ganesh,
++                                       reporter,
++                                       ctxInfo,
++                                       CtsEnforcement::kNever) {
++    auto dContext = ctxInfo.directContext();
++    auto surface = SkSurfaces::RenderTarget(
++            dContext, skgpu::Budgeted::kNo, SkImageInfo::MakeN32Premul(256, 64));
++    REPORTER_ASSERT(reporter, surface);
++    SkCanvas* canvas = surface->getCanvas();
++    sk_sp<SkTextBlob> blob = make_test_blob();
++
++    // 100.7f + 10.3f rounds, so the creation matrix holds a rounded translation.
++    canvas->save();
++    canvas->translate(100.7f, 0.0f);
++    sk_sp<sktext::gpu::Slug> slug =
++            sktext::gpu::Slug::ConvertBlob(canvas, *blob, {10.3f, 30.0f}, SkPaint());
++    canvas->restore();
++    REPORTER_ASSERT(reporter, slug != nullptr);
++    if (!slug) {
++        return;
++    }
++    auto slugImpl = static_cast<const sktext::gpu::SlugImpl*>(slug.get());
++    REPORTER_ASSERT(reporter, slugImpl->subRuns()->hasDirectMaskSubRuns());
++
++    // The creation matrix and integer device-space translations of it can be drawn without
++    // atlas bilerp support; a fractional translation can't.
++    REPORTER_ASSERT(reporter, slugImpl->canDraw(SkMatrix::Translate(100.7f, 0.0f), false));
++    REPORTER_ASSERT(reporter, slugImpl->canDraw(SkMatrix::Translate(101.7f, 0.0f), false));
++    REPORTER_ASSERT(reporter, slugImpl->canDraw(SkMatrix::Translate(100.7f, 1.0f), false));
++    REPORTER_ASSERT(reporter, !slugImpl->canDraw(SkMatrix::Translate(101.2f, 0.0f), false));
++
++    SkPaint paint;
++    paint.setColor(SK_ColorBLACK);
++    canvas->clear(SK_ColorWHITE);
++    canvas->save();
++    canvas->translate(100.7f, 0.0f);
++    slug->draw(canvas, paint);
++    canvas->restore();
++    dContext->flushAndSubmit();
++    REPORTER_ASSERT(reporter, surface_has_non_white_pixels(surface.get()));
++}
++
++#if defined(SK_GRAPHITE)
++// Graphite drops direct-mask SubRuns whose transform isn't an integer translation when atlas
++// bilerp is unsupported (the default), so both ordinary text and Slugs must compute their
++// draw-time offset exactly as the creation matrix was computed.
++DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(Slug_inexact_translation_replay_graphite,
++                                         reporter,
++                                         context,
++                                         CtsEnforcement::kNever) {
++    using namespace skgpu::graphite;
++    if (context->supportsProtectedContent()) {
++        return;
++    }
++    std::unique_ptr<Recorder> recorder = context->makeRecorder();
++    sk_sp<SkSurface> surface =
++            SkSurfaces::RenderTarget(recorder.get(), SkImageInfo::MakeN32Premul(256, 64));
++    REPORTER_ASSERT(reporter, surface);
++    SkCanvas* canvas = surface->getCanvas();
++    sk_sp<SkTextBlob> blob = make_test_blob();
++    SkPaint paint;
++    paint.setColor(SK_ColorBLACK);
++    auto flush = [&]() {
++        std::unique_ptr<Recording> recording = recorder->snap();
++        context->insertRecording({recording.get()});
++        context->submit(SyncToCpu::kYes);
++    };
++
++    // Ordinary text.
++    canvas->clear(SK_ColorWHITE);
++    canvas->save();
++    canvas->translate(100.7f, 0.0f);
++    canvas->drawTextBlob(blob, 10.3f, 30.0f, paint);
++    canvas->restore();
++    flush();
++    REPORTER_ASSERT(reporter, surface_has_non_white_pixels(surface.get()));
++
++    // A Slug drawn with the matrix it was created with.
++    canvas->clear(SK_ColorWHITE);
++    canvas->save();
++    canvas->translate(100.7f, 0.0f);
++    sk_sp<sktext::gpu::Slug> slug =
++            sktext::gpu::Slug::ConvertBlob(canvas, *blob, {10.3f, 30.0f}, SkPaint());
++    REPORTER_ASSERT(reporter, slug != nullptr);
++    if (slug) {
++        slug->draw(canvas, paint);
++    }
++    canvas->restore();
++    flush();
++    REPORTER_ASSERT(reporter, surface_has_non_white_pixels(surface.get()));
++}
++#endif
++
++namespace {
++sk_sp<SkTextBlob> make_positioned_test_blob(SkScalar size, SkPoint pos) {
++    auto typeface = ToolUtils::CreatePortableTypeface("serif", SkFontStyle());
++    SkFont font(typeface, size);
++    SkTextBlobBuilder builder;
++    const SkTextBlobBuilder::RunBuffer& runBuf = builder.allocRunPos(font, 1);
++    font.textToGlyphs("A", 1, SkTextEncoding::kUTF8, SkSpan(runBuf.glyphs, 1));
++    runBuf.points()[0] = pos;
++    return builder.make();
++}
++}  // namespace
++
++// Every Slug that creation produces must deserialize: creation enforces the same invariants that
++// deserialization checks. Exercise matrices and font sizes that stress those invariants.
++DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(Slug_creation_round_trips,
++                                       reporter,
++                                       ctxInfo,
++                                       CtsEnforcement::kNever) {
++    auto dContext = ctxInfo.directContext();
++    const SkImageInfo info = SkImageInfo::MakeN32Premul(256, 256);
++    auto surface = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kNo, info);
++    // Device independent fonts make small text eligible for SDFT.
++    const SkSurfaceProps difProps(SkSurfaceProps::kUseDeviceIndependentFonts_Flag,
++                                  kUnknown_SkPixelGeometry);
++    auto difSurface =
++            SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kNo, info, 0, &difProps);
++    REPORTER_ASSERT(reporter, surface && difSurface);
++    if (!surface || !difSurface) {
++        return;
++    }
++
++    SkMatrix rotate;
++    rotate.setRotate(45);
++    SkMatrix perspective;
++    perspective.setPerspY(0.001f);
++
++    const struct {
++        const char* name;
++        SkMatrix ctm;
++        SkScalar fontSize;
++        SkPoint glyphPos;
++        SkPoint origin;
++        bool deviceIndependentFonts;
++        bool expectSlug;
++    } kCases[] = {
++        {"identity", SkMatrix::I(), 16, {0, 0}, {10, 30}, false, true},
++        {"rotate", rotate, 16, {0, 0}, {10, 30}, false, true},
++        {"perspective", perspective, 16, {0, 0}, {10, 30}, false, true},
++        {"inexact translation", SkMatrix::Translate(100.7f, 0), 16, {0, 0}, {10.3f, 30},
++         false, true},
++        {"compensated large translation", SkMatrix::Translate(5e6f, 0), 16, {-5e6f, 30}, {0, 0},
++         false, true},
++        {"SDFT", SkMatrix::I(), 40, {0, 0}, {10, 60}, true, true},
++        // Singular matrices can't be inverted, so these glyphs can't be direct masks.
++        {"nearly singular skew", SkMatrix::MakeAll(1e-12f, 1, 0, 0, 1, 0, 0, 0, 1), 16, {0, 0},
++         {10, 30}, false, false},
++        {"singular", SkMatrix::MakeAll(1, 1, 0, 1, 1, 0, 0, 0, 1), 16, {0, 0}, {10, 30},
++         false, false},
++        // The positionMatrix translation overflows to infinity even though the inputs are finite.
++        {"overflowing translation", SkMatrix::Scale(1e31f, 1), 16, {0, 0}, {1e8f, 30},
++         false, false},
++        // Extreme font sizes with compensating scales.
++        {"tiny font, huge scale", SkMatrix::Scale(2.5e38f, 2.5e38f), 1e-37f, {0, 0}, {0, 0},
++         true, false},
++        {"huge font, tiny scale", SkMatrix::Scale(4e-29f, 4e-29f), 1e30f, {0, 0}, {0, 0},
++         true, false},
++    };
++    for (const auto& c : kCases) {
++        SkCanvas* canvas =
++                c.deviceIndependentFonts ? difSurface->getCanvas() : surface->getCanvas();
++        canvas->save();
++        canvas->setMatrix(c.ctm);
++        sk_sp<sktext::gpu::Slug> slug = sktext::gpu::Slug::ConvertBlob(
++                canvas, *make_positioned_test_blob(c.fontSize, c.glyphPos), c.origin, SkPaint());
++        canvas->restore();
++        REPORTER_ASSERT(reporter, slug || !c.expectSlug, "%s", c.name);
++        if (!slug) {
++            continue;
++        }
++        sk_sp<SkData> data = slug->serialize();
++        REPORTER_ASSERT(reporter, data, "%s", c.name);
++        if (data) {
++            REPORTER_ASSERT(reporter,
++                            sktext::gpu::Slug::Deserialize(data->data(), data->size(), nullptr),
++                            "%s", c.name);
++        }
++    }
++}
++
++static void set_unbounded_glyphs_as_paths_options(GrContextOptions* options) {
++    options->fGlyphsAsPathsFontSize = SK_ScalarInfinity;
++}
++
++// With no glyphs-as-paths limit, the largest SDFT size bucket has an infinite maximum matrix scale,
++// which deserialization rejects. Creation must not make SDFTSubRuns with such a range; the glyphs
++// use another SubRun type instead, so the Slug still round-trips.
++DEF_GANESH_TEST_FOR_CONTEXTS(Slug_unbounded_sdft_range_round_trips,
++                             skgpu::IsRenderingContext,
++                             reporter,
++                             ctxInfo,
++                             set_unbounded_glyphs_as_paths_options,
++                             CtsEnforcement::kNever) {
++    auto surface = SkSurfaces::RenderTarget(ctxInfo.directContext(), skgpu::Budgeted::kNo,
++                                            SkImageInfo::MakeN32Premul(256, 256));
++    REPORTER_ASSERT(reporter, surface);
++    if (!surface) {
++        return;
++    }
++    // 200 is above the minimum SDFT size, and in the largest SDFT size bucket on all platforms.
++    sk_sp<sktext::gpu::Slug> slug = sktext::gpu::Slug::ConvertBlob(
++            surface->getCanvas(), *make_positioned_test_blob(200, {0, 0}), {10, 200}, SkPaint());
++    REPORTER_ASSERT(reporter, slug);
++    if (!slug) {
++        return;
++    }
++    sk_sp<SkData> data = slug->serialize();
++    REPORTER_ASSERT(reporter, data);
++    if (data) {
++        REPORTER_ASSERT(reporter,
++                        sktext::gpu::Slug::Deserialize(data->data(), data->size(), nullptr));
++    }
++}
++
++DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(Slug_deserialize_rejects_fractional_direct_positions,
++                                       reporter,
++                                       ctxInfo,
++                                       CtsEnforcement::kNextRelease) {
++    auto dContext = ctxInfo.directContext();
++    SkImageInfo info = SkImageInfo::MakeN32Premul(64, 64);
++    auto surface = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kNo, info);
++    REPORTER_ASSERT(reporter, surface);
++
++    sk_sp<SkTextBlob> blob = make_test_blob();
++    sk_sp<sktext::gpu::Slug> slug =
++            sktext::gpu::Slug::ConvertBlob(surface->getCanvas(), *blob, {10, 30}, SkPaint());
++    REPORTER_ASSERT(reporter, slug != nullptr);
++    if (!slug) {
++        return;
++    }
++    // The byte offsets below assume the Slug holds a single direct-mask SubRun, serialized last.
++    REPORTER_ASSERT(reporter, static_cast<const sktext::gpu::SlugImpl*>(slug.get())
++                                      ->subRuns()->hasDirectMaskSubRuns());
++
++    sk_sp<SkData> data = slug->serialize();
++    REPORTER_ASSERT(reporter, data != nullptr && data->size() >= 52);
++    if (!data || data->size() < 52) {
++        return;
++    }
++
++    // 1. Verify that the original untampered Slug deserializes successfully.
++    sk_sp<sktext::gpu::Slug> validSlug =
++            sktext::gpu::Slug::Deserialize(data->data(), data->size(), nullptr);
++    REPORTER_ASSERT(reporter, validSlug != nullptr);
++
++    // In a single-glyph direct mask SubRun, the last 12 bytes of the serialized buffer
++    // are the point array: uint32_t count (1), float x, float y.
++    const size_t countOffset = data->size() - 12;
++    const size_t xOffset = data->size() - 8;
++    const size_t yOffset = data->size() - 4;
++
++    uint32_t count = 0;
++    float origX = 0.0f;
++    float origY = 0.0f;
++    memcpy(&count, (const uint8_t*)data->data() + countOffset, sizeof(count));
++    memcpy(&origX, (const uint8_t*)data->data() + xOffset, sizeof(origX));
++    memcpy(&origY, (const uint8_t*)data->data() + yOffset, sizeof(origY));
++
++    REPORTER_ASSERT(reporter, count == 1);
++    REPORTER_ASSERT(reporter, SkScalarIsInt(origX) && SkScalarIsInt(origY));
++
++    auto try_deserialize_mutated = [](const SkData* src, size_t offset, auto mutatedValue) -> bool {
++        SkTDArray<uint8_t> mutatedData;
++        mutatedData.append(src->size(), (const uint8_t*)src->data());
++        memcpy(mutatedData.data() + offset, &mutatedValue, sizeof(mutatedValue));
++        sk_sp<sktext::gpu::Slug> result =
++                sktext::gpu::Slug::Deserialize(mutatedData.data(), mutatedData.size(), nullptr);
++        return result != nullptr;
++    };
++
++    // 2. Fractional X coordinate must be rejected.
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), xOffset, origX + 0.5f));
++
++    // 3. Fractional Y coordinate must be rejected.
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), yOffset, origY + 0.5f));
++
++    // 4. Non-finite coordinates must be rejected.
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), xOffset, SK_ScalarNaN));
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), yOffset, SK_ScalarInfinity));
++
++    // 5. Extremely large float (out of magnitude bounds) must be rejected.
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), xOffset, 1e25f));
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), yOffset, -1e25f));
++
++    // 6. Flipping canDrawDirect to 0 in a DirectMaskSubRun must be rejected.
++    const size_t canDrawDirectOffset = data->size() - 52;
++    uint32_t origCanDrawDirect = 0;
++    memcpy(&origCanDrawDirect, (const uint8_t*)data->data() + canDrawDirectOffset,
++           sizeof(origCanDrawDirect));
++    REPORTER_ASSERT(reporter, origCanDrawDirect == 1);
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), canDrawDirectOffset, 0u));
++
++    // Sanity check the layout: the serialized creation matrix must equal the Slug's initial
++    // position matrix, Translate(10, 30), stored as 9 floats.
++    const size_t creationMatrixOffset = data->size() - 48;
++    {
++        SkScalar serializedMatrix[9];
++        memcpy(serializedMatrix, (const uint8_t*)data->data() + creationMatrixOffset,
++               sizeof(serializedMatrix));
++        SkScalar expectedMatrix[9];
++        SkMatrix::Translate(10, 30).get9(expectedMatrix);
++        for (int i = 0; i < 9; ++i) {
++            REPORTER_ASSERT(reporter, serializedMatrix[i] == expectedMatrix[i]);
++        }
++    }
++
++    // 7. Non-finite creationMatrix must be rejected.
++    REPORTER_ASSERT(reporter,
++                    !try_deserialize_mutated(data.get(), creationMatrixOffset, SK_ScalarNaN));
++
++    // 8. creationMatrix mismatch relative to initialPositionMatrix must be rejected: a different
++    // 2x2, and an integer translation that passes every other check.
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), creationMatrixOffset, 2.0f));
++    const size_t creationTransXOffset =
++            creationMatrixOffset + SkMatrix::kMTransX * sizeof(SkScalar);
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), creationTransXOffset, 11.0f));
++
++    // 9. Slug creation with large coordinates must not assert in VertexFiller::Make
++    // and falls back to path rendering.
++    {
++        surface->getCanvas()->save();
++        surface->getCanvas()->translate(1e10f, 0);
++        sk_sp<sktext::gpu::Slug> largeSlug =
++                sktext::gpu::Slug::ConvertBlob(surface->getCanvas(), *blob, {0, 0}, SkPaint());
++        surface->getCanvas()->restore();
++        REPORTER_ASSERT(reporter, largeSlug != nullptr);
++    }
++
++    // 10. Deserialization must reject non-finite origins.
++    const size_t originXOffset = 16;
++    const size_t originYOffset = 20;
++    {
++        // Sanity check the layout: the origin follows the 16-byte source bounds.
++        float origOriginX = 0.0f;
++        float origOriginY = 0.0f;
++        memcpy(&origOriginX, (const uint8_t*)data->data() + originXOffset, sizeof(origOriginX));
++        memcpy(&origOriginY, (const uint8_t*)data->data() + originYOffset, sizeof(origOriginY));
++        REPORTER_ASSERT(reporter, origOriginX == 10.0f && origOriginY == 30.0f);
++    }
++    REPORTER_ASSERT(reporter,
++                    !try_deserialize_mutated(data.get(), originXOffset, SK_ScalarInfinity));
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), originXOffset, SK_ScalarNaN));
++    REPORTER_ASSERT(reporter,
++                    !try_deserialize_mutated(data.get(), originYOffset, SK_ScalarInfinity));
++    REPORTER_ASSERT(reporter, !try_deserialize_mutated(data.get(), originYOffset, SK_ScalarNaN));
++
++    // Deserializing with oversized origin succeeds because origin is finite, but canDraw
++    // without bilerp atlas drops the draw due to translation bounds.
++    {
++        SkTDArray<uint8_t> mutatedData;
++        mutatedData.append(data->size(), (const uint8_t*)data->data());
++        float largeOrigin = 8388608.0f;
++        memcpy(mutatedData.data() + originXOffset, &largeOrigin, sizeof(largeOrigin));
++        sk_sp<sktext::gpu::Slug> result =
++                sktext::gpu::Slug::Deserialize(mutatedData.data(), mutatedData.size(), nullptr);
++        REPORTER_ASSERT(reporter, result != nullptr);
++        auto slugImpl = static_cast<const sktext::gpu::SlugImpl*>(result.get());
++        REPORTER_ASSERT(reporter, !slugImpl->canDraw(SkMatrix::I(), /*supportBilerpAtlas=*/false));
++    }
++
++    // 11. Non-direct SubRuns (here SDFT) store creation-space positions. These don't need to be
++    // integers, but must be finite and within kMaxGlyphPositionCoord (1e14). Perspective text uses
++    // SDFT when the context supports it; otherwise this case is skipped.
++    {
++        SkMatrix persMatrix;
++        persMatrix.setPerspY(0.001f);
++        surface->getCanvas()->save();
++        surface->getCanvas()->concat(persMatrix);
++        sk_sp<sktext::gpu::Slug> sdftSlug =
++                sktext::gpu::Slug::ConvertBlob(surface->getCanvas(), *blob, {10, 30}, SkPaint());
++        surface->getCanvas()->restore();
++        REPORTER_ASSERT(reporter, sdftSlug != nullptr);
++
++        const sktext::gpu::AtlasSubRun* sdftSubRun = nullptr;
++        if (sdftSlug) {
++            auto sdftSlugImpl = static_cast<const sktext::gpu::SlugImpl*>(sdftSlug.get());
++            sdftSubRun = sktext::gpu::TextBlobTools::FirstSubRun(sdftSlugImpl->subRuns().get());
++        }
++        sk_sp<SkData> sdftData = sdftSlug ? sdftSlug->serialize() : nullptr;
++        if (sdftSubRun && sdftSubRun->glyphParams().isSDF && sdftData && sdftData->size() >= 48) {
++            // The SDFT SubRun holds the single glyph, so its vertex filler is serialized last: the
++            // 9-float creation matrix, then the point array.
++            const size_t sdftCountOffset = sdftData->size() - 12;
++            const size_t sdftXOffset = sdftData->size() - 8;
++            uint32_t sdftCount = 0;
++            float sdftX = 0.0f;
++            memcpy(&sdftCount, (const uint8_t*)sdftData->data() + sdftCountOffset,
++                   sizeof(sdftCount));
++            memcpy(&sdftX, (const uint8_t*)sdftData->data() + sdftXOffset, sizeof(sdftX));
++            REPORTER_ASSERT(reporter, sdftCount == 1);
++
++            REPORTER_ASSERT(reporter,
++                            try_deserialize_mutated(sdftData.get(), sdftXOffset, sdftX + 0.5f));
++            REPORTER_ASSERT(reporter,
++                            !try_deserialize_mutated(sdftData.get(), sdftXOffset, 1e15f));
++            REPORTER_ASSERT(reporter,
++                            !try_deserialize_mutated(sdftData.get(), sdftXOffset, -3.4028234e38f));
++            REPORTER_ASSERT(reporter,
++                            !try_deserialize_mutated(sdftData.get(), sdftXOffset, SK_ScalarNaN));
++
++            // The creation matrix is a pure scale. An infinite scale passes invert() (its inverse
++            // is 0), so only the finiteness check on creation matrices rejects it.
++            const size_t sdftMatrixOffset = sdftData->size() - 48;
++            SkScalar serializedMatrix[9];
++            memcpy(serializedMatrix, (const uint8_t*)sdftData->data() + sdftMatrixOffset,
++                   sizeof(serializedMatrix));
++            const SkScalar sdftScale = serializedMatrix[SkMatrix::kMScaleX];
++            SkScalar expectedMatrix[9];
++            SkMatrix::Scale(sdftScale, sdftScale).get9(expectedMatrix);
++            REPORTER_ASSERT(reporter, sdftScale > 0);
++            for (int i = 0; i < 9; ++i) {
++                REPORTER_ASSERT(reporter, serializedMatrix[i] == expectedMatrix[i]);
++            }
++            const size_t sdftScaleXOffset =
++                    sdftMatrixOffset + SkMatrix::kMScaleX * sizeof(SkScalar);
++            REPORTER_ASSERT(reporter,
++                            !try_deserialize_mutated(sdftData.get(), sdftScaleXOffset,
++                                                     SK_ScalarInfinity));
++        }
++    }
++
++    // 12. ConvertBlob with coordinates near FLT_MAX must not produce slugs with extreme/infinite
++    // bounds that fail deserialization.
++    {
++        surface->getCanvas()->save();
++        surface->getCanvas()->rotate(45.0f);
++        sk_sp<sktext::gpu::Slug> nearMaxSlug =
++                sktext::gpu::Slug::ConvertBlob(
++                        surface->getCanvas(), *blob, {3.402823e38f, 0}, SkPaint());
++        surface->getCanvas()->restore();
++        // The extreme coordinates exceed kMaxGlyphPositionCoord and are cleanly dropped.
++        REPORTER_ASSERT(reporter, nearMaxSlug == nullptr);
++    }
++
++    // 13. Perspective initialPositionMatrix must deserialize successfully for non-direct runs.
++    {
++        SkMatrix persMatrix;
++        persMatrix.setPerspY(0.001f);
++        surface->getCanvas()->save();
++        surface->getCanvas()->concat(persMatrix);
++        sk_sp<sktext::gpu::Slug> persSlug =
++                sktext::gpu::Slug::ConvertBlob(surface->getCanvas(), *blob, {10, 30}, SkPaint());
++        surface->getCanvas()->restore();
++        REPORTER_ASSERT(reporter, persSlug != nullptr);
++        sk_sp<SkData> persData = persSlug->serialize();
++        REPORTER_ASSERT(reporter, persData != nullptr && persData->size() > 0);
++        sk_sp<sktext::gpu::Slug> deserializedPersSlug =
++                sktext::gpu::Slug::Deserialize(persData->data(), persData->size(), nullptr);
++        REPORTER_ASSERT(reporter, deserializedPersSlug != nullptr);
++        auto persSlugImpl = static_cast<const sktext::gpu::SlugImpl*>(deserializedPersSlug.get());
++        REPORTER_ASSERT(reporter, persSlugImpl->canDraw(persMatrix, /*supportBilerpAtlas=*/false));
++    }
++
++    // 14. Large canvas translation (> 2^21) with a glyph that maps on-screen ({0, 30})
++    // produces a valid direct-mask Slug that serializes, deserializes, and draws.
++    {
++        auto typeface = ToolUtils::CreatePortableTypeface("serif", SkFontStyle());
++        SkFont testFont(typeface, 16);
++        SkTextBlobBuilder posBuilder;
++        const SkTextBlobBuilder::RunBuffer& runBuf = posBuilder.allocRunPos(testFont, 1);
++        testFont.textToGlyphs("A", 1, SkTextEncoding::kUTF8, SkSpan(runBuf.glyphs, 1));
++        runBuf.points()[0] = {-5e6f, 30};
++        sk_sp<SkTextBlob> posBlob = posBuilder.make();
++        REPORTER_ASSERT(reporter, posBlob != nullptr);
++
++        surface->getCanvas()->save();
++        surface->getCanvas()->translate(5e6f, 0);
++        sk_sp<sktext::gpu::Slug> largeTransSlug =
++                sktext::gpu::Slug::ConvertBlob(
++                        surface->getCanvas(), *posBlob, {0, 0}, SkPaint());
++        surface->getCanvas()->restore();
++        REPORTER_ASSERT(reporter, largeTransSlug != nullptr);
++
++        sk_sp<SkData> largeTransData = largeTransSlug->serialize();
++        REPORTER_ASSERT(reporter, largeTransData != nullptr && largeTransData->size() > 0);
++        sk_sp<sktext::gpu::Slug> deserialized = sktext::gpu::Slug::Deserialize(
++                largeTransData->data(), largeTransData->size(), nullptr);
++        REPORTER_ASSERT(reporter, deserialized != nullptr);
++        auto slugImpl = static_cast<const sktext::gpu::SlugImpl*>(deserialized.get());
++        REPORTER_ASSERT(reporter, slugImpl->subRuns()->hasDirectMaskSubRuns());
++        REPORTER_ASSERT(reporter, slugImpl->canDraw(SkMatrix::Translate(5e6f, 0),
++                                                    /*supportBilerpAtlas=*/false));
++
++        // When device coordinates exceed 2^21 without compensating glyph offsets,
++        // direct mask drawing falls back to path rendering.
++        surface->getCanvas()->save();
++        surface->getCanvas()->translate(5e6f, 0);
++        sk_sp<sktext::gpu::Slug> fallbackSlug =
++                sktext::gpu::Slug::ConvertBlob(
++                        surface->getCanvas(), *blob, {0, 30}, SkPaint());
++        surface->getCanvas()->restore();
++        REPORTER_ASSERT(reporter, fallbackSlug != nullptr);
++        auto fbSlugImpl = static_cast<const sktext::gpu::SlugImpl*>(fallbackSlug.get());
++        REPORTER_ASSERT(reporter, !fbSlugImpl->subRuns()->hasDirectMaskSubRuns());
++        REPORTER_ASSERT(reporter, fbSlugImpl->canDraw(SkMatrix::Translate(5e6f, 0),
++                                                      /*supportBilerpAtlas=*/false));
++        // Without direct-mask SubRuns the Slug never samples unpadded atlas entries, so it can be
++        // drawn with integer and fractional translations without bilerp atlas support.
++        REPORTER_ASSERT(reporter, fbSlugImpl->canDraw(SkMatrix::Translate(5e6f + 10.0f, 5.0f),
++                                                      /*supportBilerpAtlas=*/false));
++        REPORTER_ASSERT(reporter, fbSlugImpl->canDraw(SkMatrix::Translate(5e6f + 10.5f, 5.0f),
++                                                      /*supportBilerpAtlas=*/false));
++    }
++
++    // 15. Opposing large translation Slug can draw when replayed with creation matrix.
++    {
++        surface->getCanvas()->save();
++        surface->getCanvas()->translate(-3e6f, 0);
++        sk_sp<sktext::gpu::Slug> opposingSlug =
++                sktext::gpu::Slug::ConvertBlob(
++                        surface->getCanvas(), *blob, {3e6f, 30}, SkPaint());
++        surface->getCanvas()->restore();
++        REPORTER_ASSERT(reporter, opposingSlug != nullptr);
++        auto oppSlugImpl = static_cast<const sktext::gpu::SlugImpl*>(opposingSlug.get());
++        REPORTER_ASSERT(reporter, oppSlugImpl->canDraw(SkMatrix::Translate(-3e6f, 0),
++                                                       /*supportBilerpAtlas=*/false));
++
++        // Verify end-to-end execution through GPU op creation and vertex generation.
++        SkPaint testPaint;
++        testPaint.setColor(SK_ColorBLACK);
++        surface->getCanvas()->clear(SK_ColorWHITE);
++        surface->getCanvas()->save();
++        surface->getCanvas()->translate(-3e6f, 0);
++        opposingSlug->draw(surface->getCanvas(), testPaint);
++        surface->getCanvas()->restore();
++        dContext->flushAndSubmit();
++        REPORTER_ASSERT(reporter, surface_has_non_white_pixels(surface.get()));
++    }
++}

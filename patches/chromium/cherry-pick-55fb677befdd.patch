@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leo Lee <leolee@microsoft.com>
+Date: Wed, 21 Oct 2026 23:21:09 -0700
+Subject: Avoid re-entrant slot assignment recalc
+
+SlotAssignment::RecalcAssignment() could be re-entered for the same
+shadow root while it was still walking its slot list, because
+HTMLSlotElement::DidRecalcAssignedNodes() can run script. Bail out of
+the re-entrant call instead. needs_assignment_recalc_ stays set, so the
+pending work is picked up by the next lifecycle update.
+
+The script came from HTMLInputElement::DidChangeIsInCanvasSubtree(),
+which cleared the suggested value even when there was none. That
+rebuilds date fields and moves focus. Skip the clear when there is
+nothing to hide. An active autofill preview can still reach this path,
+so the guard stays until crbug.com/574469802 moves that work out of
+recalc.
+
+Script run from that loop can also rebuild the slot list without
+re-entering recalc, so the loop now iterates a copy and skips slots
+that have left the shadow root. Earlier fixes in this area use the same
+kind of defensive copy.
+
+Fixed: 573335176
+Change-Id: Icd4a8f6405d65292a9527002773542ccbc911d56
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8592884
+Commit-Queue: Leo Lee <leolee@microsoft.com>
+Reviewed-by: Dan Clark <daniec@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1724473}
+
+Electron adaptation notes (44-x-y):
+third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc conflicted on unrelated neighbouring tests and the test-only hunk was not carried. Code hunks applied verbatim.
+
+diff --git a/third_party/blink/renderer/core/dom/slot_assignment.cc b/third_party/blink/renderer/core/dom/slot_assignment.cc
+index 0ace27f68ef5a0f39bd551d4dd2d9df255a811d0..6578595241caff4bb27433f901bd1d9424bf86b4 100644
+--- a/third_party/blink/renderer/core/dom/slot_assignment.cc
++++ b/third_party/blink/renderer/core/dom/slot_assignment.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/dom/slot_assignment.h"
+ 
++#include "base/auto_reset.h"
+ #include "third_party/blink/renderer/core/accessibility/ax_object_cache.h"
+ #include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/element_traversal.h"
+@@ -232,6 +233,15 @@ void SlotAssignment::SetNeedsAssignmentRecalc() {
+ void SlotAssignment::RecalcAssignment() {
+   if (!needs_assignment_recalc_)
+     return;
++  // DidRecalcAssignedNodes() below can run script that re-enters here, which
++  // would rebuild slots_ while the outer call is iterating it. Bail out; the
++  // recalc stays pending and runs on the next lifecycle update. This is a
++  // stopgap: script should not run here at all. Remove this or upgrade it to a
++  // CHECK once the remaining sources are gone (crbug.com/574469802).
++  if (in_recalc_assignment_) {
++    return;
++  }
++  base::AutoReset<bool> in_recalc(&in_recalc_assignment_, true);
+   {
+     NestingLevelIncrementer slot_assignment_recalc_depth(
+         owner_->GetDocument().SlotAssignmentRecalcDepth());
+@@ -330,7 +340,14 @@ void SlotAssignment::RecalcAssignment() {
+           .RemoveShadowRootNeedingRecalc(*owner_);
+     }
+ 
+-    for (auto& slot : Slots()) {
++    // Defense in depth: script is not supposed to run here, but
++    // DidRecalcAssignedNodes() still can (crbug.com/574469802) and add or
++    // remove slots. Iterate over a copy and skip slots that left this root.
++    const HeapVector<Member<HTMLSlotElement>> slots = Slots();
++    for (auto& slot : slots) {
++      if (slot->ContainingShadowRoot() != owner_) {
++        continue;
++      }
+       // TODO(crbug.com/1208573): Consider if we really need to be using
+       // IsInLockedSubtreeCrossingFrames, or if
+       // LockedInclusiveAncestorPreventingStyleWithinTreeScope is good enough
+diff --git a/third_party/blink/renderer/core/dom/slot_assignment.h b/third_party/blink/renderer/core/dom/slot_assignment.h
+index 2d1cff9176221cfabb7209efcdf01fc5693ed75b..9ae983305910a253ef1641055e9e5d52c72de1f3 100644
+--- a/third_party/blink/renderer/core/dom/slot_assignment.h
++++ b/third_party/blink/renderer/core/dom/slot_assignment.h
+@@ -73,6 +73,10 @@ class SlotAssignment final : public GarbageCollected<SlotAssignment> {
+   unsigned needs_collect_slots_ : 1;
+   unsigned needs_assignment_recalc_ : 1;
+   unsigned slot_count_ : 30;
++  // True while RecalcAssignment() is running for this shadow root. Used to
++  // bail out of re-entrant recalcs, which would rebuild slots_ while an outer
++  // RecalcAssignment() is still iterating it.
++  bool in_recalc_assignment_ = false;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element.cc b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+index 22ca7cd81141312a87ea8c997ac296fa9d1dfd0a..273dc958a420d3cc116bf23be0a628fc8a6960f5 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+@@ -1367,9 +1367,11 @@ void HTMLInputElement::SetSuggestedValue(const String& value) {
+ void HTMLInputElement::DidChangeIsInCanvasSubtree(
+     CanvasSubtreePropagation propagation_behavior) {
+   TextControlElement::DidChangeIsInCanvasSubtree(propagation_behavior);
+-  if (IsInCanvasSubtree()) {
+-    // Hide suggested values when under canvas, to prevent leaking this
+-    // information to javascript.
++  // Hide suggested values when under canvas, to prevent leaking this
++  // information to javascript. Skip when there is nothing to hide:
++  // SetSuggestedValue() always rebuilds the view, which can move focus and run
++  // script during slot assignment recalc (crbug.com/574469802).
++  if (IsInCanvasSubtree() && !SuggestedValue().IsNull()) {
+     SetSuggestedValue(String());
+   }
+   if (auto* email_input = DynamicTo<EmailInputType>(input_type_.Get())) {

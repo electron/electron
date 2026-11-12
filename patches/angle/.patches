@@ -52,3 +52,7 @@ translator_work_around_monomorphizer_crash_vs_comma_corner_case.patch
 vulkan_reject_non-8-bit_cross-format_transfers_in_copytexture.patch
 vulkan_sync_dirty_disabled_active_attributes.patch
 gl_add_defer_gl_delete_buffers_workaround.patch
+cherry-pick-07b55263ce27.patch
+cherry-pick-228d9c1b8e54.patch
+cherry-pick-b64f67868464.patch
+cherry-pick-70f6fee7c9b1.patch

@@ -10,3 +10,5 @@ split_buffer_-_texture_copies_to_work_around_intel_row-pitch.patch
 enable_splitbuffertexturecopyforoversizedrow_on_arm_imgtec_and.patch
 fix_use-after-free_for_empty_buffer_texture_copy_workarounds.patch
 cherry-pick-d758dd0ff515.patch
+cherry-pick-e8595cc5ee53.patch
+cherry-pick-a4ff4321ad5b.patch

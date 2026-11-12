@@ -1,0 +1,862 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julia Lavrova <jlavrova@google.com>
+Date: Thu, 29 Oct 2026 21:48:13 +0000
+Subject: Fix integer overflow and oversized glyph rasterization in SDF
+ generation
+
+Skip prepareForImage in RemoteStrike::writePendingGlyphs and guard the
+setImageHasBeenCalled assert in SkGlyph::flattenImage when a glyph
+exceeds atlas dimensions so oversized glyphs are not rasterized into
+discarded buffers. Validate positive dimensions and check that the
+padded distance field and 17-byte-per-pixel scratch buffers fit in int
+in SkComputeDistanceFieldSize and SkDistanceFieldGen, reject oversized
+masks upfront in SDFMaskFilterImpl::filterMask, switch temporary
+allocations to canfail variants, and free the destination image when
+SDFMaskFilter fails.
+
+Testing:
+- Without the fix, rendering the HTML/font reproducer in Chromium calls
+  SkGenerateDistanceFieldFromA8Image(4071, 65527) and aborts in
+  sk_out_of_memory(); with the fix, the oversized glyph falls back to a
+  path without entering SkGenerateDistanceFieldFromA8Image.
+- DistanceFieldTest exercises A8, LCD16, and BW distance field
+  generation and SkComputeDistanceFieldBufferSize at the exact
+  INT_MAX / 17 (126,322,560 pixels: 10927x11540 vs 10928x11540)
+  overflow boundary, non-positive dimensions, and SDFMaskFilter bounds
+  overflow.
+- SkRemoteGlyphCache_b576664769 tests SkStrikeServer to SkStrikeClient
+  serialization of a font with an oversized hmtx advance and zero-contour
+  glyf entries under both FreeType (dm) and Fontations (dm --fontations).
+- Verified on 32-bit (x86) and 64-bit (x86_64 ASAN) Linux and Windows
+  trybots, Canary-Android, and Canary-Chromium.
+
+Bug: b/576664769
+Assisted-by: Gemini Pro Orchestrator
+Change-Id: I6acc0e0be78b530c3756f0967f3373b6b1098bed
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1404196
+Commit-Queue: Julia Lavrova <jlavrova@google.com>
+Reviewed-by: Alexis Cruz-Ayala <alexisdavidc@google.com>
+
+diff --git a/gn/tests.gni b/gn/tests.gni
+index eeed19f38731c6a6776ee3f0b5c42da7f760a729..c784b01a815429cfdd71ba12cafbe7a26693e2fe 100644
+--- a/gn/tests.gni
++++ b/gn/tests.gni
+@@ -63,6 +63,7 @@ tests_sources = [
+   "$_tests/DirectMaskLimitTest.cpp",
+   "$_tests/DiscardableMemoryPoolTest.cpp",
+   "$_tests/DiscardableMemoryTest.cpp",
++  "$_tests/DistanceFieldTest.cpp",
+   "$_tests/DrawBitmapRectTest.cpp",
+   "$_tests/DrawPathTest.cpp",
+   "$_tests/DrawTextTest.cpp",
+diff --git a/src/core/SkDistanceFieldGen.cpp b/src/core/SkDistanceFieldGen.cpp
+index e3af384f9e3b124c83d8127d88432801c4617d94..0dcb556d33347d3c02a8fa5383ab15588ff3a7a4 100644
+--- a/src/core/SkDistanceFieldGen.cpp
++++ b/src/core/SkDistanceFieldGen.cpp
+@@ -10,11 +10,13 @@
+ #include "include/core/SkPoint.h"
+ #include "include/core/SkScalar.h"
+ #include "include/private/SkMalloc.h"
++#include "include/private/SkTFitsIn.h"
+ #include "include/private/SkTPin.h"
+ #include "include/private/SkTemplates.h"
+ #include "src/core/SkAutoMalloc.h"
+ #include "src/core/SkMask.h"
+ #include "src/core/SkPointPriv.h"
++#include "src/core/SkSafeMath.h"
+ 
+ #include <cstdint>
+ #include <cstring>
+@@ -349,13 +351,75 @@ static unsigned char pack_distance_field_val(float dist) {
+ }
+ #endif
+ 
++// Owns all temporary storage for one distance field generation:
++// the DFData working grid, its edge flags, and the padded 8-bit source copy
++class DFScratch {
++public:
++    static size_t ComputeTotalSize(int w, int h, size_t* gridCountOut = nullptr) {
++        if (w <= 0 || h <= 0) {
++            return 0;
++        }
++        constexpr int kPad = SK_DistanceFieldPad + 1;
++        SkSafeMath safe;
++        const size_t gridCount = safe.mul(safe.addInt(w, 2 * kPad), safe.addInt(h, 2 * kPad));
++        const size_t copyCount = safe.mul(safe.addInt(w, 2), safe.addInt(h, 2));
++        const size_t dataBytes = safe.mul(gridCount, sizeof(DFData));
++        const size_t total = safe.add(safe.add(dataBytes, gridCount), copyCount);
++        // The transform uses int pointer offsets over the padded grid
++        if (!safe || !SkTFitsIn<int>(total)) {
++            return 0;
++        }
++        if (gridCountOut) {
++            *gridCountOut = gridCount;
++        }
++        return total;
++    }
++
++    DFScratch(int w, int h) {
++        size_t gridCount = 0;
++        const size_t total = ComputeTotalSize(w, h, &gridCount);
++        if (total == 0) {
++            return;
++        }
++        fStorage.reset(sk_calloc_canfail(total));
++        if (!fStorage) {
++            return;
++        }
++        fData = static_cast<DFData*>(fStorage.get());
++        fEdge = reinterpret_cast<unsigned char*>(fData + gridCount);
++        fCopy = fEdge + gridCount;
++    }
++
++    explicit operator bool() const { return fStorage != nullptr; }
++
++    DFData* data() const { return fData; }
++    unsigned char* edge() const { return fEdge; }
++    unsigned char* copy() const { return fCopy; }
++
++private:
++    UniqueVoidPtr fStorage;
++    DFData* fData = nullptr;
++    unsigned char* fEdge = nullptr;
++    unsigned char* fCopy = nullptr;
++};
++
++size_t SkComputeDistanceFieldSize(int w, int h) {
++    // Reject dimensions whose distance field or DFScratch buffer cannot be allocated
++    if (DFScratch::ComputeTotalSize(w, h) == 0) {
++        return 0;
++    }
++    return static_cast<size_t>(w + 2 * SK_DistanceFieldPad) *
++           static_cast<size_t>(h + 2 * SK_DistanceFieldPad);
++}
++
+ // assumes a padded 8-bit image and distance field
+ // width and height are the original width and height of the image
+ static bool generate_distance_field_from_image(unsigned char* distanceField,
+-                                               const unsigned char* copyPtr,
+-                                               int width, int height) {
++                                               const DFScratch& scratch,
++                                               int width,
++                                               int height) {
+     SkASSERT(distanceField);
+-    SkASSERT(copyPtr);
++    SkASSERT(scratch);
+ 
+     // we expand our temp data by one more on each side to simplify
+     // the scanning code -- will always be treated as infinitely far away
+@@ -365,15 +429,18 @@ static bool generate_distance_field_from_image(unsigned char* distanceField,
+     int dataWidth = width + 2*pad;
+     int dataHeight = height + 2*pad;
+ 
+-    // create zeroed temp DFData+edge storage
+-    UniqueVoidPtr storage(sk_calloc_throw(dataWidth*dataHeight*(sizeof(DFData) + 1)));
+-    DFData*        dataPtr = (DFData*)storage.get();
+-    unsigned char* edgePtr = (unsigned char*)storage.get() + dataWidth*dataHeight*sizeof(DFData);
++    DFData* dataPtr = scratch.data();
++    unsigned char* edgePtr = scratch.edge();
+ 
+     // copy glyph into distance field storage
+-    init_glyph_data(dataPtr, edgePtr, copyPtr,
+-                    dataWidth, dataHeight,
+-                    width+2, height+2, SK_DistanceFieldPad);
++    init_glyph_data(dataPtr,
++                    edgePtr,
++                    scratch.copy(),
++                    dataWidth,
++                    dataHeight,
++                    width + 2,
++                    height + 2,
++                    SK_DistanceFieldPad);
+ 
+     // create initial distance data, particularly at edges
+     init_distances(dataPtr, edgePtr, dataWidth, dataHeight);
+@@ -482,9 +549,11 @@ bool SkGenerateDistanceFieldFromA8Image(unsigned char* distanceField,
+     SkASSERT(distanceField);
+     SkASSERT(image);
+ 
+-    // create temp data
+-    SkAutoSMalloc<1024> copyStorage((width+2)*(height+2)*sizeof(char));
+-    unsigned char* copyPtr = (unsigned char*) copyStorage.get();
++    DFScratch scratch(width, height);
++    if (!scratch) {
++        return false;
++    }
++    unsigned char* copyPtr = scratch.copy();
+ 
+     // we copy our source image into a padded copy to ensure we catch edge transitions
+     // around the outside
+@@ -500,7 +569,7 @@ bool SkGenerateDistanceFieldFromA8Image(unsigned char* distanceField,
+     }
+     sk_bzero(currDestPtr, (width+2)*sizeof(char));
+ 
+-    return generate_distance_field_from_image(distanceField, copyPtr, width, height);
++    return generate_distance_field_from_image(distanceField, scratch, width, height);
+ }
+ 
+ // assumes a 16-bit lcd mask and 8-bit distance field
+@@ -510,9 +579,11 @@ bool SkGenerateDistanceFieldFromLCD16Mask(unsigned char* distanceField,
+     SkASSERT(distanceField);
+     SkASSERT(image);
+ 
+-    // create temp data
+-    SkAutoSMalloc<1024> copyStorage((w+2)*(h+2)*sizeof(char));
+-    unsigned char* copyPtr = (unsigned char*) copyStorage.get();
++    DFScratch scratch(w, h);
++    if (!scratch) {
++        return false;
++    }
++    unsigned char* copyPtr = scratch.copy();
+ 
+     // we copy our source image into a padded copy to ensure we catch edge transitions
+     // around the outside
+@@ -530,7 +601,7 @@ bool SkGenerateDistanceFieldFromLCD16Mask(unsigned char* distanceField,
+     }
+     sk_bzero(currDestPtr, (w+2)*sizeof(char));
+ 
+-    return generate_distance_field_from_image(distanceField, copyPtr, w, h);
++    return generate_distance_field_from_image(distanceField, scratch, w, h);
+ }
+ 
+ // assumes a 1-bit image and 8-bit distance field
+@@ -540,9 +611,11 @@ bool SkGenerateDistanceFieldFromBWImage(unsigned char* distanceField,
+     SkASSERT(distanceField);
+     SkASSERT(image);
+ 
+-    // create temp data
+-    SkAutoSMalloc<1024> copyStorage((width+2)*(height+2)*sizeof(char));
+-    unsigned char* copyPtr = (unsigned char*) copyStorage.get();
++    DFScratch scratch(width, height);
++    if (!scratch) {
++        return false;
++    }
++    unsigned char* copyPtr = scratch.copy();
+ 
+     // we copy our source image into a padded copy to ensure we catch edge transitions
+     // around the outside
+@@ -566,7 +639,7 @@ bool SkGenerateDistanceFieldFromBWImage(unsigned char* distanceField,
+     }
+     sk_bzero(currDestPtr, (width+2)*sizeof(char));
+ 
+-    return generate_distance_field_from_image(distanceField, copyPtr, width, height);
++    return generate_distance_field_from_image(distanceField, scratch, width, height);
+ }
+ 
+ #endif // !defined(SK_DISABLE_SDF_TEXT)
+diff --git a/src/core/SkDistanceFieldGen.h b/src/core/SkDistanceFieldGen.h
+index 8374dbe05bec085b43f4b62c3646f4ce338b0100..bbb72e10924582de4374191af21923244eb7db1f 100644
+--- a/src/core/SkDistanceFieldGen.h
++++ b/src/core/SkDistanceFieldGen.h
+@@ -72,9 +72,7 @@ bool SkGenerateDistanceFieldFromBWImage(unsigned char* distanceField,
+  *  @param w                 Width of the original image.
+  *  @param h                 Height of the original image.
+  */
+-inline size_t SkComputeDistanceFieldSize(int w, int h) {
+-    return (w + 2*SK_DistanceFieldPad) * (h + 2*SK_DistanceFieldPad) * sizeof(unsigned char);
+-}
++size_t SkComputeDistanceFieldSize(int w, int h);
+ 
+ #endif // !defined(SK_DISABLE_SDF_TEXT)
+ 
+diff --git a/src/core/SkGlyph.cpp b/src/core/SkGlyph.cpp
+index 0ed78b3ad94fab1023cf4aca5e5c751b69f892a8..01cd0834d8d06ead4b01578acd715c3800e1c597 100644
+--- a/src/core/SkGlyph.cpp
++++ b/src/core/SkGlyph.cpp
+@@ -351,10 +351,9 @@ void SkGlyph::flattenMetrics(SkWriteBuffer& buffer) const {
+ }
+ 
+ void SkGlyph::flattenImage(SkWriteBuffer& buffer) const {
+-    SkASSERT(this->setImageHasBeenCalled());
+-
+-    // If the glyph is empty or too big, then no image data is sent.
++    // If the glyph is empty or too big, then no image data is sent
+     if (!this->isEmpty() && SkGlyphDigest::FitsInAtlas(*this)) {
++        SkASSERT(this->setImageHasBeenCalled());
+         buffer.writeByteArray(this->image(), this->imageSize());
+     }
+ }
+diff --git a/src/text/gpu/SDFMaskFilter.cpp b/src/text/gpu/SDFMaskFilter.cpp
+index 0870d36a74c84d74181606296452dafe1e746f97..467132c412b5b39c0f97f15e6111c63084eeaf77 100644
+--- a/src/text/gpu/SDFMaskFilter.cpp
++++ b/src/text/gpu/SDFMaskFilter.cpp
+@@ -53,6 +53,12 @@ bool SDFMaskFilterImpl::filterMask(SkMaskBuilder* dst, const SkMask& src,
+         && src.fFormat != SkMask::kLCD16_Format) {
+         return false;
+     }
++    // Reject dimensions whose distance field or scratch storage cannot be allocated
++    if (SkComputeDistanceFieldSize(src.fBounds.width(), src.fBounds.height()) == 0) {
++        dst->image() = nullptr;
++        dst->bounds().setEmpty();
++        return false;
++    }
+ 
+     *dst = SkMaskBuilder::PrepareDestination(SK_DistanceFieldPad, SK_DistanceFieldPad, src);
+     dst->format() = SkMask::kSDF_Format;
+@@ -69,19 +75,26 @@ bool SDFMaskFilterImpl::filterMask(SkMaskBuilder* dst, const SkMask& src,
+         return false;
+     }
+ 
++    bool success = false;
+     if (src.fFormat == SkMask::kA8_Format) {
+-        return SkGenerateDistanceFieldFromA8Image(dst->image(), src.fImage,
+-                                                  src.fBounds.width(), src.fBounds.height(),
+-                                                  src.fRowBytes);
++        success = SkGenerateDistanceFieldFromA8Image(
++                dst->image(), src.fImage, src.fBounds.width(), src.fBounds.height(), src.fRowBytes);
+     } else if (src.fFormat == SkMask::kLCD16_Format) {
+-        return SkGenerateDistanceFieldFromLCD16Mask(dst->image(), src.fImage,
+-                                                     src.fBounds.width(), src.fBounds.height(),
+-                                                     src.fRowBytes);
++        success = SkGenerateDistanceFieldFromLCD16Mask(
++                dst->image(), src.fImage, src.fBounds.width(), src.fBounds.height(), src.fRowBytes);
+     } else {
+-        return SkGenerateDistanceFieldFromBWImage(dst->image(), src.fImage,
+-                                                  src.fBounds.width(), src.fBounds.height(),
+-                                                  src.fRowBytes);
++        success = SkGenerateDistanceFieldFromBWImage(
++                dst->image(), src.fImage, src.fBounds.width(), src.fBounds.height(), src.fRowBytes);
++    }
++
++    // Release the destination buffer when distance field generation fails
++    if (!success) {
++        SkMaskBuilder::FreeImage(dst->image());
++        dst->image() = nullptr;
++        dst->bounds().setEmpty();
++        return false;
+     }
++    return true;
+ }
+ 
+ void SDFMaskFilterImpl::computeFastBounds(const SkRect& src,
+diff --git a/src/text/gpu/SkChromeRemoteGlyphCache.cpp b/src/text/gpu/SkChromeRemoteGlyphCache.cpp
+index b9995e5d3679cb8bb54ee81cb8cd7b6622dfba44..31f2a46bafab8b725f099f275fd710de00955569 100644
+--- a/src/text/gpu/SkChromeRemoteGlyphCache.cpp
++++ b/src/text/gpu/SkChromeRemoteGlyphCache.cpp
+@@ -185,9 +185,11 @@ void RemoteStrike::writePendingGlyphs(SkWriteBuffer& buffer) {
+         fHaveSentFontMetrics = true;
+     }
+ 
+-    // Make sure to install all the mask data into the glyphs before sending.
++    // Oversized glyphs are rejected by the atlas and sent as metrics-only
+     for (SkGlyph& glyph: fMasksToSend) {
+-        this->prepareForImage(&glyph);
++        if (SkGlyphDigest::FitsInAtlas(glyph)) {
++            this->prepareForImage(&glyph);
++        }
+     }
+ 
+     // Make sure to install all the path data into the glyphs before sending.
+diff --git a/tests/BUILD.bazel b/tests/BUILD.bazel
+index 8e076f9b0cd0613810bc606cdbe82e86d185bbfc..3867ad764efc522502723b60fe659db597117a1d 100644
+--- a/tests/BUILD.bazel
++++ b/tests/BUILD.bazel
+@@ -122,6 +122,7 @@ filegroup(
+         "DeviceTest.cpp",
+         "DiscardableMemoryPoolTest.cpp",
+         "DiscardableMemoryTest.cpp",
++        "DistanceFieldTest.cpp",
+         "DrawBitmapRectTest.cpp",
+         "DrawPathTest.cpp",
+         "DrawTextTest.cpp",
+diff --git a/tests/DistanceFieldTest.cpp b/tests/DistanceFieldTest.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d36753a2ac449ce4d74727fbd86a262d8fd160e
+--- /dev/null
++++ b/tests/DistanceFieldTest.cpp
+@@ -0,0 +1,243 @@
++/*
++ * Copyright 2026 Google LLC
++ *
++ * Use of this source code is governed by a BSD-style license that can be
++ * found in the LICENSE file.
++ */
++
++#include "include/core/SkBitmap.h"
++#include "include/core/SkMaskFilter.h"
++#include "include/core/SkMatrix.h"
++#include "src/core/SkDistanceFieldGen.h"
++#include "src/core/SkMask.h"
++#include "src/core/SkMaskFilterBase.h"
++#include "src/text/gpu/SDFMaskFilter.h"
++#include "tests/Test.h"
++
++#include <cstdint>
++#include <limits>
++#include <vector>
++
++#if !defined(SK_DISABLE_SDF_TEXT)
++
++DEF_TEST(DistanceField_ComputeSize, reporter) {
++    // Non-positive dimensions return 0
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(0, 0) == 0);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(-1, 10) == 0);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(10, -1) == 0);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(-10, -10) == 0);
++
++    constexpr int kPad = SK_DistanceFieldPad;
++    size_t expected = (16 + 2 * kPad) * (16 + 2 * kPad);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(16, 16) == expected);
++
++    // Overflow dimensions must return 0 instead of wrapping
++    constexpr int kMaxInt = std::numeric_limits<int>::max();
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(kMaxInt, kMaxInt) == 0);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(kMaxInt, 1) == 0);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(1, kMaxInt) == 0);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(1 << 30, 1 << 30) == 0);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(kMaxInt - 1, 10) == 0);
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(4071, 65527) == 0);
++
++    // Exact DFScratch total buffer boundary (gridBytes + edgeBytes + copyBytes <= INT_MAX):
++    // For w=48067, h=2472: total=2,147,483,644 <= INT_MAX (2,147,483,647)
++    // For w=48068, h=2472: total=2,147,528,312 > INT_MAX
++    REPORTER_ASSERT(reporter,
++                    SkComputeDistanceFieldSize(48067, 2472) ==
++                            static_cast<size_t>(48067 + 2 * kPad) * (2472 + 2 * kPad));
++    REPORTER_ASSERT(reporter, SkComputeDistanceFieldSize(48068, 2472) == 0);
++}
++
++DEF_TEST(DistanceField_A8, reporter) {
++    std::vector<unsigned char> df(64);
++    std::vector<unsigned char> src(64, 0xFF);
++
++    // Non-positive dimensions must fail without reading or writing buffers
++    REPORTER_ASSERT(reporter, !SkGenerateDistanceFieldFromA8Image(df.data(), src.data(), 0, 8, 8));
++    REPORTER_ASSERT(reporter, !SkGenerateDistanceFieldFromA8Image(df.data(), src.data(), 8, 0, 8));
++    REPORTER_ASSERT(reporter, !SkGenerateDistanceFieldFromA8Image(df.data(), src.data(), -1, 8, 8));
++    REPORTER_ASSERT(reporter, !SkGenerateDistanceFieldFromA8Image(df.data(), src.data(), 8, -1, 8));
++
++    // Integer overflow in dimensions must fail without allocating
++    constexpr int kMaxInt = std::numeric_limits<int>::max();
++    REPORTER_ASSERT(reporter,
++                    !SkGenerateDistanceFieldFromA8Image(df.data(), src.data(), kMaxInt, 1, 8));
++    REPORTER_ASSERT(reporter,
++                    !SkGenerateDistanceFieldFromA8Image(df.data(), src.data(), 1, kMaxInt, 8));
++    REPORTER_ASSERT(
++            reporter,
++            !SkGenerateDistanceFieldFromA8Image(df.data(), src.data(), 1 << 30, 1 << 30, 8));
++    // Exploit dimensions (4071x65527): required storage overflows int without allocating
++    REPORTER_ASSERT(reporter,
++                    !SkGenerateDistanceFieldFromA8Image(df.data(), src.data(), 4071, 65527, 4071));
++
++    // Valid small image: 8x8 with a centered 4x4 opaque square
++    constexpr int kW = 8;
++    constexpr int kH = 8;
++    std::vector<unsigned char> a8(kW * kH, 0);
++    for (int y = 2; y < 6; ++y) {
++        for (int x = 2; x < 6; ++x) {
++            a8[y * kW + x] = 0xFF;
++        }
++    }
++    size_t dfSize = SkComputeDistanceFieldSize(kW, kH);
++    std::vector<unsigned char> dfOut(dfSize);
++    REPORTER_ASSERT(reporter,
++                    SkGenerateDistanceFieldFromA8Image(dfOut.data(), a8.data(), kW, kH, kW));
++}
++
++DEF_TEST(DistanceField_LCD16, reporter) {
++    std::vector<unsigned char> df(64);
++    std::vector<uint16_t> src(64, 0xFFFF);
++
++    REPORTER_ASSERT(
++            reporter,
++            !SkGenerateDistanceFieldFromLCD16Mask(
++                    df.data(), reinterpret_cast<const unsigned char*>(src.data()), 0, 8, 16));
++    REPORTER_ASSERT(
++            reporter,
++            !SkGenerateDistanceFieldFromLCD16Mask(
++                    df.data(), reinterpret_cast<const unsigned char*>(src.data()), 8, 0, 16));
++    REPORTER_ASSERT(
++            reporter,
++            !SkGenerateDistanceFieldFromLCD16Mask(
++                    df.data(), reinterpret_cast<const unsigned char*>(src.data()), -1, 8, 16));
++
++    constexpr int kMaxInt = std::numeric_limits<int>::max();
++    REPORTER_ASSERT(
++            reporter,
++            !SkGenerateDistanceFieldFromLCD16Mask(
++                    df.data(), reinterpret_cast<const unsigned char*>(src.data()), kMaxInt, 1, 16));
++    REPORTER_ASSERT(reporter,
++                    !SkGenerateDistanceFieldFromLCD16Mask(
++                            df.data(),
++                            reinterpret_cast<const unsigned char*>(src.data()),
++                            4071,
++                            65527,
++                            4071 * 2));
++
++    constexpr int kW = 8;
++    constexpr int kH = 8;
++    std::vector<uint16_t> lcd(kW * kH, 0);
++    for (int y = 2; y < 6; ++y) {
++        for (int x = 2; x < 6; ++x) {
++            lcd[y * kW + x] = 0xFFFF;
++        }
++    }
++    size_t dfSize = SkComputeDistanceFieldSize(kW, kH);
++    std::vector<unsigned char> dfOut(dfSize);
++    REPORTER_ASSERT(
++            reporter,
++            SkGenerateDistanceFieldFromLCD16Mask(dfOut.data(),
++                                                 reinterpret_cast<const unsigned char*>(lcd.data()),
++                                                 kW,
++                                                 kH,
++                                                 kW * 2));
++}
++
++DEF_TEST(DistanceField_BW, reporter) {
++    std::vector<unsigned char> df(64);
++    std::vector<unsigned char> src(8, 0xFF);
++
++    REPORTER_ASSERT(reporter, !SkGenerateDistanceFieldFromBWImage(df.data(), src.data(), 0, 8, 1));
++    REPORTER_ASSERT(reporter, !SkGenerateDistanceFieldFromBWImage(df.data(), src.data(), 8, 0, 1));
++    REPORTER_ASSERT(reporter, !SkGenerateDistanceFieldFromBWImage(df.data(), src.data(), -1, 8, 1));
++
++    constexpr int kMaxInt = std::numeric_limits<int>::max();
++    REPORTER_ASSERT(reporter,
++                    !SkGenerateDistanceFieldFromBWImage(df.data(), src.data(), kMaxInt, 1, 1));
++    REPORTER_ASSERT(reporter,
++                    !SkGenerateDistanceFieldFromBWImage(df.data(), src.data(), 4071, 65527, 509));
++
++    constexpr int kW = 8;
++    constexpr int kH = 8;
++    std::vector<unsigned char> bw(kH, 0);
++    for (int y = 2; y < 6; ++y) {
++        bw[y] = 0x3C;
++    }
++    size_t dfSize = SkComputeDistanceFieldSize(kW, kH);
++    std::vector<unsigned char> dfOut(dfSize);
++    REPORTER_ASSERT(reporter,
++                    SkGenerateDistanceFieldFromBWImage(dfOut.data(), bw.data(), kW, kH, 1));
++}
++
++DEF_TEST(DistanceField_SDFMaskFilter, reporter) {
++    sk_sp<SkMaskFilter> filter = sktext::gpu::SDFMaskFilter::Make();
++    REPORTER_ASSERT(reporter, filter != nullptr);
++
++    constexpr int kW = 8;
++    constexpr int kH = 8;
++    std::vector<unsigned char> a8(kW * kH, 0xFF);
++
++    // Valid mask filter execution
++    SkMaskBuilder srcMask;
++    srcMask.bounds().setWH(kW, kH);
++    srcMask.format() = SkMask::kA8_Format;
++    srcMask.rowBytes() = kW;
++    srcMask.image() = a8.data();
++
++    SkMaskBuilder dstMask;
++    bool success = as_MFB(filter)->filterMask(&dstMask, srcMask, SkMatrix::I(), nullptr);
++    REPORTER_ASSERT(reporter, success);
++    REPORTER_ASSERT(reporter, dstMask.image() != nullptr);
++    REPORTER_ASSERT(reporter, dstMask.format() == SkMask::kSDF_Format);
++    REPORTER_ASSERT(reporter, dstMask.bounds().width() == kW + 2 * SK_DistanceFieldPad);
++    REPORTER_ASSERT(reporter, dstMask.bounds().height() == kH + 2 * SK_DistanceFieldPad);
++    SkMaskBuilder::FreeImage(dstMask.image());
++
++    // Empty or negative dimensions must clean up allocated destination image without leaking
++    SkMaskBuilder emptyMask;
++    emptyMask.bounds().setEmpty();
++    emptyMask.format() = SkMask::kA8_Format;
++    emptyMask.rowBytes() = 0;
++    emptyMask.image() = a8.data();
++
++    SkMaskBuilder emptyDst;
++    bool emptyFailed = as_MFB(filter)->filterMask(&emptyDst, emptyMask, SkMatrix::I(), nullptr);
++    REPORTER_ASSERT(reporter, !emptyFailed);
++    REPORTER_ASSERT(reporter, emptyDst.image() == nullptr);
++    REPORTER_ASSERT(reporter, emptyDst.bounds().isEmpty());
++
++    SkMaskBuilder negativeMask;
++    negativeMask.bounds().setLTRB(0, 0, -1, 10);
++    negativeMask.format() = SkMask::kA8_Format;
++    negativeMask.rowBytes() = 0;
++    negativeMask.image() = a8.data();
++
++    SkMaskBuilder negativeDst;
++    bool negFailed = as_MFB(filter)->filterMask(&negativeDst, negativeMask, SkMatrix::I(), nullptr);
++    REPORTER_ASSERT(reporter, !negFailed);
++    REPORTER_ASSERT(reporter, negativeDst.image() == nullptr);
++    REPORTER_ASSERT(reporter, negativeDst.bounds().isEmpty());
++
++    // Oversized exploit dimensions (4071x65527) must fail both bounds-only and image filtering
++    // without allocating the 255 MB destination buffer
++    SkMaskBuilder oversizedBoundsOnly;
++    oversizedBoundsOnly.bounds().setWH(4071, 65527);
++    oversizedBoundsOnly.format() = SkMask::kA8_Format;
++    oversizedBoundsOnly.rowBytes() = 4071;
++    oversizedBoundsOnly.image() = nullptr;
++
++    SkMaskBuilder oversizedBoundsDst;
++    REPORTER_ASSERT(reporter,
++                    !as_MFB(filter)->filterMask(
++                            &oversizedBoundsDst, oversizedBoundsOnly, SkMatrix::I(), nullptr));
++    REPORTER_ASSERT(reporter, oversizedBoundsDst.image() == nullptr);
++    REPORTER_ASSERT(reporter, oversizedBoundsDst.bounds().isEmpty());
++
++    SkMaskBuilder oversizedMask;
++    oversizedMask.bounds().setWH(4071, 65527);
++    oversizedMask.format() = SkMask::kA8_Format;
++    oversizedMask.rowBytes() = 4071;
++    oversizedMask.image() = a8.data();
++
++    SkMaskBuilder oversizedDst;
++    REPORTER_ASSERT(
++            reporter,
++            !as_MFB(filter)->filterMask(&oversizedDst, oversizedMask, SkMatrix::I(), nullptr));
++    REPORTER_ASSERT(reporter, oversizedDst.image() == nullptr);
++    REPORTER_ASSERT(reporter, oversizedDst.bounds().isEmpty());
++}
++
++#endif  // !defined(SK_DISABLE_SDF_TEXT)
+diff --git a/tests/SkRemoteGlyphCacheTest.cpp b/tests/SkRemoteGlyphCacheTest.cpp
+index f0084695b03a3dbb945f3a289480c4736bd67cdb..53ad66a759b36d49500cc12c016be20be6d1bce0 100644
+--- a/tests/SkRemoteGlyphCacheTest.cpp
++++ b/tests/SkRemoteGlyphCacheTest.cpp
+@@ -14,6 +14,7 @@
+ #include "include/core/SkData.h"
+ #include "include/core/SkFont.h"
+ #include "include/core/SkFontMetrics.h"
++#include "include/core/SkFontMgr.h"
+ #include "include/core/SkFontStyle.h"
+ #include "include/core/SkFontTypes.h"
+ #include "include/core/SkGraphics.h"
+@@ -46,6 +47,7 @@
+ #include "src/core/SkTypeface_remote.h"
+ #include "src/core/SkWriteBuffer.h"
+ #include "src/text/StrikeForGPU.h"
++#include "src/text/gpu/SDFMaskFilter.h"
+ #include "src/text/gpu/SlugImpl.h"
+ #include "src/text/gpu/SubRunContainer.h"
+ #include "src/text/gpu/SubRunControl.h"
+@@ -1492,3 +1494,231 @@ DEF_TEST(SkRemoteGlyphCache_b513780208, reporter) {
+     // now validates that path glyphs have an expected mask format.
+     REPORTER_ASSERT(reporter, !client.readStrikeData(blob->data(), blob->size()));
+ }
++
++DEF_TEST(SkRemoteGlyphCache_b576664769, reporter) {
++    class OversizedGlyphTypeface : public TestEmptyTypeface {
++    public:
++        explicit OversizedGlyphTypeface(int* generateImageCount)
++                : fGenerateImageCount(generateImageCount) {}
++
++    protected:
++        std::unique_ptr<SkScalerContext> onCreateScalerContext(
++                const SkScalerContextEffects& effects, const SkDescriptor* desc) const override {
++            class ScalerContext : public SkScalerContext {
++            public:
++                ScalerContext(SkTypeface& tf,
++                              const SkScalerContextEffects& effects,
++                              const SkDescriptor* desc,
++                              int* generateImageCount)
++                        : SkScalerContext(tf, effects, desc)
++                        , fGenerateImageCount(generateImageCount) {}
++
++            protected:
++                GlyphMetrics generateMetrics(const SkGlyph& glyph, SkArenaAlloc*) override {
++                    GlyphMetrics mx(glyph.maskFormat());
++                    mx.advance = {10, 0};
++                    mx.bounds = SkRect::MakeWH(4071, 65527);
++                    return mx;
++                }
++                void generateImage(const SkGlyph&, void*) override { ++(*fGenerateImageCount); }
++                std::optional<GeneratedPath> generatePath(const SkGlyph&) override {
++                    return {{SkPath::Rect(SkRect::MakeWH(4071, 65527)), false}};
++                }
++                void generateFontMetrics(SkFontMetrics* metrics) override {
++                    if (metrics) {
++                        sk_bzero(metrics, sizeof(*metrics));
++                    }
++                }
++
++            private:
++                int* const fGenerateImageCount;
++            };
++            return std::make_unique<ScalerContext>(
++                    *const_cast<OversizedGlyphTypeface*>(this), effects, desc, fGenerateImageCount);
++        }
++
++    private:
++        int* const fGenerateImageCount;
++    };
++
++    // Oversized glyphs exceeding atlas dimensions must be rejected from atlas and
++    // sent as path/metrics only without calling prepareForImage or asserting in flattenImage
++    for (bool dftSupport : {false, true}) {
++        int generateImageCount = 0;
++        sk_sp<DiscardableManager> discardableManager = sk_make_sp<DiscardableManager>();
++        SkStrikeServer server(discardableManager.get());
++        SkStrikeClient client(discardableManager, /*isLogging=*/false);
++
++        auto serverTypeface = sk_make_sp<OversizedGlyphTypeface>(&generateImageCount);
++        const SkTypefaceID serverTypefaceID = serverTypeface->uniqueID();
++
++        SkFont font(serverTypeface, 32.f);
++        SkGlyphID glyphID = 1;
++        SkPoint pos = {0.f, 0.f};
++        SkPaint paint;
++
++        SkSurfaceProps props(SkSurfaceProps::kUseDeviceIndependentFonts_Flag,
++                             kUnknown_SkPixelGeometry);
++        std::unique_ptr<SkCanvas> analysisCanvas = server.makeAnalysisCanvas(
++                100, 100, props, nullptr, dftSupport, /*DFTPerspSupport=*/false);
++        analysisCanvas->drawGlyphs({&glyphID, 1}, {&pos, 1}, {0, 0}, font, paint);
++
++        std::vector<uint8_t> serverStrikeData;
++        server.writeStrikeData(&serverStrikeData);
++
++        REPORTER_ASSERT(reporter, generateImageCount == 0);
++        REPORTER_ASSERT(reporter, !serverStrikeData.empty());
++        REPORTER_ASSERT(reporter,
++                        client.readStrikeData(serverStrikeData.data(), serverStrikeData.size()));
++
++        auto clientTypeface = client.retrieveTypefaceUsingServerIDForTest(serverTypefaceID);
++        REPORTER_ASSERT(reporter, clientTypeface != nullptr);
++
++        discardableManager->unlockAndDeleteAll();
++    }
++
++    // Minimal TrueType font (UPEM=162, glyph 1 'A' bbox [0,-32768,4071,32759] -> 4071x65527)
++    static constexpr uint8_t kOversizedTtf[] = {
++            0x00, 0x01, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x80, 0x00, 0x03, 0x00, 0x40, 0x4f, 0x53,
++            0x2f, 0x32, 0x52, 0x51, 0x60, 0x40, 0x00, 0x00, 0x00, 0xcc, 0x00, 0x00, 0x00, 0x60,
++            0x63, 0x6d, 0x61, 0x70, 0x00, 0x0c, 0x00, 0x74, 0x00, 0x00, 0x01, 0x2c, 0x00, 0x00,
++            0x00, 0x2c, 0x66, 0x70, 0x67, 0x6d, 0xb0, 0x00, 0x21, 0x00, 0x00, 0x00, 0x01, 0x58,
++            0x00, 0x00, 0x00, 0x03, 0x67, 0x6c, 0x79, 0x66, 0x96, 0x1d, 0x16, 0x0e, 0x00, 0x00,
++            0x01, 0x5c, 0x00, 0x00, 0x00, 0x90, 0x68, 0x65, 0x61, 0x64, 0x6f, 0x06, 0x3d, 0x97,
++            0x00, 0x00, 0x01, 0xec, 0x00, 0x00, 0x00, 0x36, 0x68, 0x68, 0x65, 0x61, 0x10, 0x6b,
++            0x0f, 0xca, 0x00, 0x00, 0x02, 0x24, 0x00, 0x00, 0x00, 0x24, 0x68, 0x6d, 0x74, 0x78,
++            0x11, 0xdb, 0x00, 0x00, 0x00, 0x00, 0x02, 0x48, 0x00, 0x00, 0x00, 0x08, 0x6c, 0x6f,
++            0x63, 0x61, 0x00, 0x00, 0x00, 0x90, 0x00, 0x00, 0x02, 0x50, 0x00, 0x00, 0x00, 0x0c,
++            0x6d, 0x61, 0x78, 0x70, 0x00, 0x29, 0x00, 0x2a, 0x00, 0x00, 0x02, 0x5c, 0x00, 0x00,
++            0x00, 0x20, 0x6e, 0x61, 0x6d, 0x65, 0x08, 0x2a, 0x1f, 0xf9, 0x00, 0x00, 0x02, 0x7c,
++            0x00, 0x00, 0x00, 0xa2, 0x70, 0x6f, 0x73, 0x74, 0xff, 0xef, 0x00, 0x0a, 0x00, 0x00,
++            0x03, 0x20, 0x00, 0x00, 0x00, 0x20, 0x70, 0x72, 0x65, 0x70, 0xb0, 0x00, 0x21, 0x00,
++            0x00, 0x00, 0x03, 0x40, 0x00, 0x00, 0x00, 0x03, 0x00, 0x04, 0x0f, 0xe7, 0x01, 0x90,
++            0x00, 0x05, 0x00, 0x00, 0x00, 0x64, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64,
++            0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x32, 0x00, 0x00, 0x00, 0x00,
++            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
++            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4e, 0x4f, 0x4e, 0x45,
++            0x00, 0x40, 0x00, 0x41, 0x00, 0x41, 0x00, 0x82, 0xff, 0xe0, 0x00, 0x00, 0x00, 0x82,
++            0x00, 0x20, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x00, 0x78,
++            0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0x00, 0x01,
++            0x00, 0x00, 0x00, 0x0c, 0x00, 0x04, 0x00, 0x20, 0x00, 0x00, 0x00, 0x04, 0x00, 0x04,
++            0x00, 0x01, 0x00, 0x00, 0x00, 0x41, 0xff, 0xff, 0x00, 0x00, 0x00, 0x41, 0xff, 0xff,
++            0xff, 0xc0, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xb0, 0x00, 0x21, 0x00, 0x00, 0x06,
++            0x00, 0x00, 0x80, 0x00, 0x0f, 0xe7, 0x7f, 0xf7, 0x00, 0x03, 0x00, 0x07, 0x00, 0x0b,
++            0x00, 0x0f, 0x00, 0x13, 0x00, 0x17, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
++            0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
++            0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x03, 0xe7,
++            0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x03, 0x84, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00,
++            0x03, 0xde, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x04, 0x2d, 0x00, 0x00, 0x00, 0x01,
++            0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x7f, 0xf6, 0x00, 0x01,
++            0x00, 0x00, 0xff, 0xff, 0xff, 0x99, 0x00, 0x04, 0x00, 0x00, 0xff, 0xfc, 0xfc, 0x7e,
++            0x00, 0x02, 0x00, 0x00, 0xff, 0xfe, 0xf8, 0x31, 0x00, 0x01, 0x00, 0x00, 0xff, 0xff,
++            0x8b, 0xc2, 0x00, 0x01, 0x00, 0x00, 0xff, 0xff, 0x80, 0x00, 0x00, 0x01, 0x00, 0x00,
++            0xff, 0xff, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x0a, 0xa1, 0x77, 0x70,
++            0x5f, 0x0f, 0x3c, 0xf5, 0x00, 0x0b, 0x00, 0xa2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00,
++            0x0f, 0xe7, 0x7f, 0xf7, 0x00, 0x00, 0x00, 0x08, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00,
++            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x82, 0xff, 0xe0, 0x00, 0x00, 0x0f, 0xe7,
++            0x00, 0x00, 0x00, 0x00, 0x0f, 0xe7, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x01, 0xf4, 0x00, 0x00,
++            0x0f, 0xe7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++            0x00, 0x90, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x18, 0x00, 0x06, 0x00, 0x00,
++            0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20,
++            0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x4e, 0x00, 0x03,
++            0x00, 0x01, 0x04, 0x09, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x01,
++            0x04, 0x09, 0x00, 0x02, 0x00, 0x0e, 0x00, 0x02, 0x00, 0x03, 0x00, 0x01, 0x04, 0x09,
++            0x00, 0x03, 0x00, 0x1a, 0x00, 0x10, 0x00, 0x03, 0x00, 0x01, 0x04, 0x09, 0x00, 0x04,
++            0x00, 0x02, 0x00, 0x2a, 0x00, 0x03, 0x00, 0x01, 0x04, 0x09, 0x00, 0x05, 0x00, 0x16,
++            0x00, 0x2c, 0x00, 0x03, 0x00, 0x01, 0x04, 0x09, 0x00, 0x06, 0x00, 0x12, 0x00, 0x42,
++            0x00, 0x45, 0x00, 0x52, 0x00, 0x65, 0x00, 0x67, 0x00, 0x75, 0x00, 0x6c, 0x00, 0x61,
++            0x00, 0x72, 0x00, 0x45, 0x00, 0x20, 0x00, 0x52, 0x00, 0x65, 0x00, 0x67, 0x00, 0x75,
++            0x00, 0x6c, 0x00, 0x61, 0x00, 0x72, 0x00, 0x20, 0x00, 0x50, 0x00, 0x4f, 0x00, 0x43,
++            0x00, 0x45, 0x00, 0x56, 0x00, 0x65, 0x00, 0x72, 0x00, 0x73, 0x00, 0x69, 0x00, 0x6f,
++            0x00, 0x6e, 0x00, 0x20, 0x00, 0x31, 0x00, 0x2e, 0x00, 0x30, 0x00, 0x45, 0x00, 0x2d,
++            0x00, 0x52, 0x00, 0x65, 0x00, 0x67, 0x00, 0x75, 0x00, 0x6c, 0x00, 0x61, 0x00, 0x72,
++            0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xec, 0x00, 0x0a,
++            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xb0, 0x00, 0x21, 0x00,
++    };
++
++    if (sk_sp<SkFontMgr> fm = ToolUtils::TestFontMgr()) {
++        sk_sp<SkTypeface> realTf =
++                fm->makeFromData(SkData::MakeWithoutCopy(kOversizedTtf, sizeof(kOversizedTtf)));
++        if (realTf) {
++            SkGlyphID gid = realTf->unicharToGlyph('A');
++            REPORTER_ASSERT(reporter, gid == 1);
++
++            SkSurfaceProps props(SkSurfaceProps::kUseDeviceIndependentFonts_Flag,
++                                 kUnknown_SkPixelGeometry);
++            for (bool dftSupport : {false, true}) {
++                sk_sp<DiscardableManager> discardableManager = sk_make_sp<DiscardableManager>();
++                SkStrikeServer server(discardableManager.get());
++                SkStrikeClient client(discardableManager, /*isLogging=*/false);
++
++                // 200px selects the 162px SDF strike where 1 font unit == 1 device pixel
++                SkFont font(realTf, 200.f);
++                SkPoint pos = {20.f, 120.f};
++                SkPaint paint;
++                std::unique_ptr<SkCanvas> analysisCanvas = server.makeAnalysisCanvas(
++                        800, 600, props, nullptr, dftSupport, /*DFTPerspSupport=*/false);
++                analysisCanvas->drawGlyphs({&gid, 1}, {&pos, 1}, {0, 0}, font, paint);
++
++                std::vector<uint8_t> serverStrikeData;
++                server.writeStrikeData(&serverStrikeData);
++                REPORTER_ASSERT(reporter, !serverStrikeData.empty());
++                REPORTER_ASSERT(
++                        reporter,
++                        client.readStrikeData(serverStrikeData.data(), serverStrikeData.size()));
++                discardableManager->unlockAndDeleteAll();
++            }
++
++#if !defined(SK_DISABLE_SDF_TEXT)
++            // Verify direct scaler context with SDFMaskFilter rejects 4071x65527 bounds upfront
++            SkFont sdfFont(realTf, 162.f);
++            SkPaint sdfPaint;
++            sdfPaint.setMaskFilter(sktext::gpu::SDFMaskFilter::Make());
++            SkStrikeSpec strikeSpec = SkStrikeSpec::MakeMask(
++                    sdfFont, sdfPaint, props, SkScalerContextFlags::kNone, SkMatrix::I());
++            std::unique_ptr<SkScalerContext> ctx = strikeSpec.createScalerContext();
++            SkArenaAlloc alloc{256};
++            SkGlyph glyph = ctx->makeGlyph(SkPackedGlyphID{gid}, &alloc);
++            REPORTER_ASSERT(reporter, glyph.width() == 4071 && glyph.height() == 65527);
++            REPORTER_ASSERT(reporter, !SkGlyphDigest::FitsInAtlas(glyph));
++            REPORTER_ASSERT(reporter, glyph.maskFormat() != SkMask::kSDF_Format);
++#endif
++        }
++
++        // 0-contour variant: empty outline glyphs zap bounds to 0x0
++        uint8_t zeroContourTtf[sizeof(kOversizedTtf)];
++        memcpy(zeroContourTtf, kOversizedTtf, sizeof(kOversizedTtf));
++        zeroContourTtf[348] = 0;
++        zeroContourTtf[349] = 0;
++        if (sk_sp<SkTypeface> zeroTf = fm->makeFromData(
++                    SkData::MakeWithoutCopy(zeroContourTtf, sizeof(zeroContourTtf)))) {
++            SkGlyphID gid = zeroTf->unicharToGlyph('A');
++            SkSurfaceProps props(SkSurfaceProps::kUseDeviceIndependentFonts_Flag,
++                                 kUnknown_SkPixelGeometry);
++            SkFont font(zeroTf, 162.f);
++            SkPaint paint;
++            SkStrikeSpec strikeSpec = SkStrikeSpec::MakeMask(
++                    font, paint, props, SkScalerContextFlags::kNone, SkMatrix::I());
++            std::unique_ptr<SkScalerContext> ctx = strikeSpec.createScalerContext();
++            SkArenaAlloc alloc{256};
++            SkGlyph glyph = ctx->makeGlyph(SkPackedGlyphID{gid}, &alloc);
++            REPORTER_ASSERT(reporter, glyph.width() == 0 && glyph.height() == 0);
++            REPORTER_ASSERT(reporter, SkGlyphDigest::FitsInAtlas(glyph));
++
++#if !defined(SK_DISABLE_SDF_TEXT)
++            SkPaint sdfPaint;
++            sdfPaint.setMaskFilter(sktext::gpu::SDFMaskFilter::Make());
++            SkStrikeSpec sdfStrikeSpec = SkStrikeSpec::MakeMask(
++                    font, sdfPaint, props, SkScalerContextFlags::kNone, SkMatrix::I());
++            std::unique_ptr<SkScalerContext> sdfCtx = sdfStrikeSpec.createScalerContext();
++            SkArenaAlloc sdfAlloc{256};
++            SkGlyph sdfGlyph = sdfCtx->makeGlyph(SkPackedGlyphID{gid}, &sdfAlloc);
++            REPORTER_ASSERT(reporter, sdfGlyph.width() == 0 && sdfGlyph.height() == 0);
++            REPORTER_ASSERT(reporter, SkGlyphDigest::FitsInAtlas(sdfGlyph));
++#endif
++        }
++    }
++}

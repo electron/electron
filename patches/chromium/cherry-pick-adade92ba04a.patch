@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 2 Nov 2026 17:28:45 -0800
+Subject: [MSE] Don't open a MediaSource whose context died mid-attachment
+
+If the context owning a MediaSource (e.g. a same-origin iframe) is
+destroyed after a media element in another document starts attaching
+to it, but before the element's player opens its ChunkDemuxer, then
+SameThreadMediaSourceAttachment::CompleteAttachingToMediaElement()
+would still open the already-closed MediaSource and hand it a
+WebMediaSource referencing the player's demuxer.
+
+Since SameThreadMediaSourceAttachment::Close() skips closing a
+MediaSource whose context is destroyed, nothing released that
+WebMediaSource before the player destroyed the demuxer, so subsequent
+MediaSource calls (e.g. reading duration) used the freed demuxer.
+
+Like CrossThreadMediaSourceAttachment already does, skip completing
+the attachment if the MediaSource's context has been destroyed.
+
+Fixed: 577171064
+Change-Id: I7bc07bda57cdda1454c7963430800b133ddbbb52
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8708355
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1733536}
+
+diff --git a/third_party/blink/renderer/modules/mediasource/same_thread_media_source_attachment.cc b/third_party/blink/renderer/modules/mediasource/same_thread_media_source_attachment.cc
+index f70753785e3a0a35fe706de9f3a12e2701a7ad14..4fad83bc41cada63101502e69b9d50e9b51422ef 100644
+--- a/third_party/blink/renderer/modules/mediasource/same_thread_media_source_attachment.cc
++++ b/third_party/blink/renderer/modules/mediasource/same_thread_media_source_attachment.cc
+@@ -251,6 +251,16 @@ SameThreadMediaSourceAttachment::StartAttachingToMediaElement(
+ void SameThreadMediaSourceAttachment::CompleteAttachingToMediaElement(
+     MediaSourceTracer* tracer,
+     std::unique_ptr<WebMediaSource> web_media_source) {
++  // The MediaSource's context (e.g. a since-detached iframe) may have been
++  // destroyed after attachment started, but before the media element's player
++  // opened its demuxer. The MediaSource closed itself upon that context
++  // destruction, and Close() will not be called on it again, so it must not be
++  // opened now: nothing would then release |web_media_source| before the
++  // player destroys the demuxer which |web_media_source| references.
++  if (media_source_context_destroyed_) {
++    return;
++  }
++
+   VerifyCalledWhileContextsAliveForDebugging();
+ 
+   GetMediaSource(tracer)->CompleteAttachingToMediaElement(
+diff --git a/third_party/blink/web_tests/http/tests/media/media-source/mediasource-iframe-detach-during-attach.html b/third_party/blink/web_tests/http/tests/media/media-source/mediasource-iframe-detach-during-attach.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..ea328a3cd6f23bf9b1b51c835d497a2edb161a55
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/media/media-source/mediasource-iframe-detach-during-attach.html
+@@ -0,0 +1,51 @@
++<!DOCTYPE html>
++<title>Destroying a MediaSource's context during attachment keeps it closed</title>
++<script src="/w3c/resources/testharness.js"></script>
++<script src="/w3c/resources/testharnessreport.js"></script>
++<body>
++<script>
++// Regression test for https://crbug.com/577171064: when the context owning a
++// MediaSource is destroyed after a media element in another document starts
++// attaching to it, but before that attachment completes, the MediaSource must
++// remain closed. Otherwise it would open with a reference to the media
++// element's demuxer, which dangles once the element's player is destroyed.
++async_test(t => {
++  // The window load event is delayed until the media element finishes
++  // attaching to the MediaSource, so the test must start before load.
++  assert_equals(document.readyState, 'loading', 'document.readyState');
++
++  const iframe = document.createElement('iframe');
++  document.body.appendChild(iframe);
++  const mediaSource = new iframe.contentWindow.MediaSource();
++
++  const video = document.createElement('video');
++  document.body.appendChild(video);
++
++  // 'loadstart' is queued just before the media element starts attaching to
++  // the MediaSource, and fires before the element's player finishes opening
++  // the MediaSource. Destroy the MediaSource's context in that window.
++  video.addEventListener('loadstart', t.step_func(() => {
++    iframe.remove();
++    assert_equals(mediaSource.readyState, 'closed',
++                  'readyState after context destruction');
++  }), {once: true});
++
++  window.addEventListener('load', t.step_func(() => {
++    assert_equals(mediaSource.readyState, 'closed',
++                  'readyState after attachment completes');
++    assert_true(isNaN(mediaSource.duration),
++                'duration after attachment completes');
++
++    // Detach the media element, which destroys its player and demuxer.
++    video.removeAttribute('src');
++    video.load();
++
++    assert_equals(mediaSource.readyState, 'closed', 'readyState after detach');
++    assert_true(isNaN(mediaSource.duration), 'duration after detach');
++    t.done();
++  }));
++
++  video.src = URL.createObjectURL(mediaSource);
++}, 'MediaSource stays closed if its context is destroyed during attachment');
++</script>
++</body>

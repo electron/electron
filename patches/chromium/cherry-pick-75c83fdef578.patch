@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Thu, 5 Nov 2026 16:20:04 -0800
+Subject: Treat recorderer snap() failure as a failure
+
+GraphiteFlush() was treating recorder->snap() returning null as
+success, even thoguh it only returns null for an error. Treat it as a
+failure to flush instead.
+
+Fixed: 574795295
+Change-Id: I1fc9363c26c92884273240a9f3d952bb21a5c547
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8717309
+Reviewed-by: Greg Daniel <egdaniel@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1737029}
+
+diff --git a/gpu/command_buffer/service/graphite_utils.cc b/gpu/command_buffer/service/graphite_utils.cc
+index 9dd217e037cf950525786fb1b68a956e2de3ccd8..43b9f47f4195b127e882be0c883c84ff13a179cd 100644
+--- a/gpu/command_buffer/service/graphite_utils.cc
++++ b/gpu/command_buffer/service/graphite_utils.cc
+@@ -71,7 +71,8 @@ bool GraphiteFlush(GraphiteSharedContext* context,
+   if (recording) {
+     return context->insertRecording({recording.get()});
+   }
+-  return true;
++  // Snap will only return null if there is an error.
++  return false;
+ }
+ 
+ bool GraphiteFlushAndSubmit(GraphiteSharedContext* context,

@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sky Debreuil <skydebreuil@google.com>
+Date: Fri, 6 Nov 2026 14:03:32 -0800
+Subject: [a11y] Copy children when marking unincluded subtrees dirty
+
+MarkAXSubtreeDirtyWithCleanLayout() walks an unincluded object's
+children_ and marks each included child dirty. Updating cached values
+on those children can update the tree and come back to clear or rebuild
+the object's children_ while the outer loop is still walking it.
+
+This CL copies ChildrenIncludingIgnored() into a local HeapVector before
+looping in MarkAXSubtreeDirtyWithCleanLayout(), and skips children that
+detached during an earlier iteration.
+
+This loop only runs on unincluded objects, and outside of nested updates
+the behavior is unchanged.
+
+Bug: 580921803
+Change-Id: I5aea421ffaf00b21c7d9bf083f84b5a1011ee957
+Cq-Include-Trybots: luci.chromium.try:linux-blink-web-tests-force-accessibility-rel,fuchsia-x64-accessibility-rel,linux-blink-rel,mac15.arm64-blink-rel,win11-blink-rel,android-15-chrome-blink-rel
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8710172
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Auto-Submit: Sky Debreuil <skydebreuil@google.com>
+Reviewed-by: Free Debreuil <freedebreuil@google.com>
+Commit-Queue: Sky Debreuil <skydebreuil@google.com>
+Cr-Commit-Position: refs/heads/main@{#1738063}
+
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+index 42f6b439914fafc117c7ee2a11ff4434bc8ca4fb..fc5d10dd33d694daf45c6a031d3cc82e4ea0599e 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+@@ -5811,8 +5811,11 @@ void AXObjectCacheImpl::MarkAXSubtreeDirtyWithCleanLayout(AXObject* obj) {
+     return;
+   }
+   if (!obj->IsIncludedInTree()) {
+-    for (const auto& included_child : obj->ChildrenIncludingIgnored()) {
+-      MarkAXSubtreeDirtyWithCleanLayout(included_child);
++    HeapVector<Member<AXObject>> children = obj->ChildrenIncludingIgnored();
++    for (AXObject* included_child : children) {
++      if (!included_child->IsDetached()) {
++        MarkAXSubtreeDirtyWithCleanLayout(included_child);
++      }
+     }
+     return;
+   }

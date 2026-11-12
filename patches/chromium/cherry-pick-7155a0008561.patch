@@ -1,0 +1,567 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Wed, 28 Oct 2026 13:57:08 -0700
+Subject: Prevent dirty slot assignments during layout and frame rect updates
+
+FlatTreeTraversal::TraverseParent calls Node::AssignedSlot, which
+triggers SlotAssignment::RecalcAssignment if a shadow root still has
+NeedsSlotAssignmentRecalc() set. During RecalcAssignment,
+HTMLSlotElement::DetachDisplayLockedAssignedNodesLayoutTreeIfNeeded
+synchronously detaches the layout tree of display-locked assigned
+nodes. If a shadow root remains dirty into layout (e.g.
+BlockNode::AttachScrollMarkers) or frame rect propagation
+(LocalFrameView::PropagateFrameRectsRecursively), detaching the layout
+tree mutates vectors being iterated on the stack, such as
+ColumnPseudoElementsVector or LocalFrameView::plugins_.
+
+A slottable Node stores two slot pointers on FlatTreeNodeData:
+assigned_slot_ (the <slot> it is currently slotted into in the flat
+tree as a direct child of that slot's host) and manually_assigned_slot_
+(the candidate <slot> imperatively assigned via
+HTMLSlotElement.prototype.assign(), which the DOM spec requires
+preserving even while the node is outside the shadow host). However,
+Blink also uses SlotAssignmentMode::kManual internally for User-Agent
+shadow roots on <details>, <select>, and <optgroup>, which run
+Element::ManuallyAssignSlots() during
+SlotAssignment::RecalcAssignment() and call ua_slot->Assign() on their
+current children.
+
+Shadow roots could remain dirty past
+SlotAssignmentEngine::RecalcSlotAssignments() for two reasons:
+
+1. HTMLSlotElement::Assign() treated UA slots identically to author
+   slots and shared Node::ManuallyAssignedSlot() for both. When a node
+   previously passed to an author slot's assign() was moved into a
+   <details> element, <details>'s UA slot assignment ran
+   ManuallyAssignSlots() -> content_slot_->Assign() inside
+   RecalcAssignment(), saw previous_slot = node->ManuallyAssignedSlot()
+   pointing to the author <slot>, erased the node from the author
+   slot's manually_assigned_nodes_, overwrote
+   node->SetManuallyAssignedSlot(content_slot_), and called
+   DidSlotChange() -> SetNeedsAssignmentRecalc() on the author shadow
+   root mid-recalc. Because
+   SlotAssignmentEngine::RecalcSlotAssignments() performs a single pass
+   over a snapshot of shadow_roots_needing_recalc_, the newly dirtied
+   author shadow root remained dirty after RecalcSlotAssignments()
+   returned. Sharing Node::ManuallyAssignedSlot() also violated the DOM
+   spec by destroying the node's author slot.assign() association when
+   moved into <details> (and conversely allowed
+   author_slot.assign(details_child) to steal a child from <details>'s
+   UA slot).
+
+2. SlotAssignment::DidRemoveSlot() for manual slotting cleared
+   candidate nodes without calling SetNeedsAssignmentRecalc().
+
+This patch fixes these issues by construction:
+
+- In HTMLSlotElement::Assign(), only read or modify
+  Node::ManuallyAssignedSlot() and previous_slot when
+  !IsInUserAgentShadowRoot(). UA slots only update their own
+  manually_assigned_nodes_ set without touching
+  Node::ManuallyAssignedSlot() or dirtying author shadow roots. In
+  SlotAssignment::FindSlotInManualSlotting(), check the UA slots'
+  ManuallyAssignedNodes() when owner_->IsUserAgent() is true.
+- Call SetNeedsAssignmentRecalc() in SlotAssignment::DidRemoveSlot()
+  when a removed manual slot had candidate assigned nodes.
+- Add SlotAssignmentRecalcForbiddenScope in
+  LocalFrameView::PerformLayout() and
+  LocalFrameView::PropagateFrameRectsRecursively() to enforce via
+  DCHECK that slot assignment recalculation is never triggered in those
+  phases.
+
+Fixed: 576736463, 575533210
+Change-Id: Ib359a4b0ce88d60d6f90fdf5964979c0fdd23878
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8652233
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729487}
+
+Electron adaptation notes (44-x-y):
+Mirrors the M150-LTS merge (crrev.com/c/8722709): this branch has no LocalFrameView::PropagateFrameRectsRecursively(), so the SlotAssignmentRecalcForbiddenScope is only added to PerformLayout() alongside the ForAllChildViewsAndPlugins() DCHECKs; the slot_assignment / html_slot_element fix applies verbatim.
+
+diff --git a/third_party/blink/renderer/core/dom/slot_assignment.cc b/third_party/blink/renderer/core/dom/slot_assignment.cc
+index 6578595241caff4bb27433f901bd1d9424bf86b4..fc5415e6ab6d11a9d771517ae21f59f63be9bb99 100644
+--- a/third_party/blink/renderer/core/dom/slot_assignment.cc
++++ b/third_party/blink/renderer/core/dom/slot_assignment.cc
+@@ -61,6 +61,7 @@ void SlotAssignment::DidRemoveSlot(HTMLSlotElement& slot) {
+   if (owner_->IsManualSlotting()) {
+     auto& candidates = slot.ManuallyAssignedNodes();
+     if (candidates.size()) {
++      SetNeedsAssignmentRecalc();
+       slot.DidSlotChangeAfterRemovedFromShadowTree();
+     }
+     return;
+@@ -400,12 +401,23 @@ HTMLSlotElement* SlotAssignment::FindSlotByName(
+ }
+ 
+ HTMLSlotElement* SlotAssignment::FindSlotInManualSlotting(Node& node) {
++  if (!node.IsChildOfShadowHost() || node.parentElement() != owner_->host()) {
++    return nullptr;
++  }
++  // User-agent manual-slotting shadow roots (<details>, <select>, <optgroup>)
++  // do not set `node.ManuallyAssignedSlot()` in `HTMLSlotElement::Assign()` so
++  // they do not clobber imperative author `slot.assign()` associations. Look
++  // up the node directly in the UA slots' `ManuallyAssignedNodes()` sets.
++  if (owner_->IsUserAgent()) {
++    for (HTMLSlotElement* slot : Slots()) {
++      if (slot->ManuallyAssignedNodes().Contains(&node)) {
++        return slot;
++      }
++    }
++    return nullptr;
++  }
+   auto* slot = node.ManuallyAssignedSlot();
+-  if (slot && slot->ContainingShadowRoot() == owner_ &&
+-      node.IsChildOfShadowHost() && node.parentElement() == owner_->host())
+-    return slot;
+-
+-  return nullptr;
++  return (slot && slot->ContainingShadowRoot() == owner_) ? slot : nullptr;
+ }
+ 
+ void SlotAssignment::CollectSlots() {
+diff --git a/third_party/blink/renderer/core/dom/slot_assignment_test.cc b/third_party/blink/renderer/core/dom/slot_assignment_test.cc
+index ca5f697fb267c2898f8f4e57e7a896888f8fc810..1ab2db875d2f84ac6aba0fbbb94ba824263b8441 100644
+--- a/third_party/blink/renderer/core/dom/slot_assignment_test.cc
++++ b/third_party/blink/renderer/core/dom/slot_assignment_test.cc
+@@ -10,8 +10,10 @@
+ #include "third_party/blink/renderer/core/dom/node.h"
+ #include "third_party/blink/renderer/core/dom/node_traversal.h"
+ #include "third_party/blink/renderer/core/dom/shadow_root.h"
++#include "third_party/blink/renderer/core/dom/slot_assignment_engine.h"
+ #include "third_party/blink/renderer/core/dom/text.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
++#include "third_party/blink/renderer/core/html/custom/custom_element_registry_assignment.h"
+ #include "third_party/blink/renderer/core/html/html_collection.h"
+ #include "third_party/blink/renderer/core/html/html_div_element.h"
+ #include "third_party/blink/renderer/core/html/html_slot_element.h"
+@@ -184,4 +186,184 @@ TEST_F(SlotAssignmentTest, RebuildDistributedChildrenDuringRecalc) {
+   EXPECT_FALSE(shadow_root->NeedsSlotAssignmentRecalc());
+ }
+ 
++// Regression test for crbug.com/576736463 and crbug.com/575533210.
++// Verifies that moving a node with an author manual slot assignment into a UA
++// manual-slotting host (<details>) does not overwrite the node's author manual
++// slot assignment or dirty the author shadow root during
++// SlotAssignmentEngine::RecalcSlotAssignments().
++TEST_F(SlotAssignmentTest,
++       UserAgentManualSlottingPreservesAuthorManualAssignment) {
++  SetBody(R"HTML(
++    <div id="host">
++      <div id="c1"></div>
++      <div id="n"></div>
++    </div>
++    <div id="parking" style="display:none"></div>
++    <details id="details" open>
++      <summary>Summary</summary>
++    </details>
++  )HTML");
++
++  Element* host = GetDocument().getElementById(AtomicString("host"));
++  Element* c1 = GetDocument().getElementById(AtomicString("c1"));
++  Element* n = GetDocument().getElementById(AtomicString("n"));
++  Element* parking = GetDocument().getElementById(AtomicString("parking"));
++  Element* details = GetDocument().getElementById(AtomicString("details"));
++  ASSERT_NE(nullptr, host);
++  ASSERT_NE(nullptr, c1);
++  ASSERT_NE(nullptr, n);
++  ASSERT_NE(nullptr, parking);
++  ASSERT_NE(nullptr, details);
++
++  ShadowRoot& host_shadow_root = host->AttachShadowRootInternal(
++      ShadowRootMode::kOpen, FocusDelegation::kNone,
++      SlotAssignmentMode::kManual, CustomElementRegistryAssignment::Inherit(),
++      /*serializable=*/false, /*clonable=*/false,
++      /*reference_target=*/g_null_atom);
++  host_shadow_root.SetInnerHTMLWithoutTrustedTypes(
++      "<div style='content-visibility: hidden'><slot id='s1'></slot></div>"
++      "<slot id='s2'></slot>");
++  auto* s1 =
++      To<HTMLSlotElement>(host_shadow_root.getElementById(AtomicString("s1")));
++  auto* s2 =
++      To<HTMLSlotElement>(host_shadow_root.getElementById(AtomicString("s2")));
++  ASSERT_NE(nullptr, s1);
++  ASSERT_NE(nullptr, s2);
++
++  s1->Assign(c1);
++  s2->Assign(n);
++  GetDocument().View()->UpdateAllLifecyclePhasesForTest();
++  EXPECT_EQ(s2, n->AssignedSlot());
++
++  // Move `n` out of `host` into `#parking` and update lifecycle so
++  // `host_shadow_root` is clean while `n` retains its manual assignment to
++  // `s2`.
++  parking->appendChild(n);
++  GetDocument().View()->UpdateAllLifecyclePhasesForTest();
++  EXPECT_FALSE(host_shadow_root.NeedsSlotAssignmentRecalc());
++  EXPECT_TRUE(s2->ManuallyAssignedNodes().Contains(n));
++
++  // Move `n` from `#parking` into `<details>`. Only `<details>`'s UA shadow
++  // root needs slot assignment recalc.
++  ShadowRoot* details_shadow_root = details->UserAgentShadowRoot();
++  ASSERT_NE(nullptr, details_shadow_root);
++  details->appendChild(n);
++  EXPECT_FALSE(host_shadow_root.NeedsSlotAssignmentRecalc());
++  EXPECT_TRUE(details_shadow_root->NeedsSlotAssignmentRecalc());
++
++  // Recalculating `<details>`'s UA slot assignment must not steal `n`'s author
++  // manual slot assignment from `s2` or dirty `host_shadow_root`.
++  GetDocument().GetSlotAssignmentEngine().RecalcSlotAssignments();
++  EXPECT_FALSE(host_shadow_root.NeedsSlotAssignmentRecalc());
++  EXPECT_FALSE(details_shadow_root->NeedsSlotAssignmentRecalc());
++  EXPECT_FALSE(GetDocument().IsSlotAssignmentDirty());
++  EXPECT_TRUE(s2->ManuallyAssignedNodes().Contains(n));
++  EXPECT_EQ(s2, n->ManuallyAssignedSlot());
++  ASSERT_NE(nullptr, n->AssignedSlot());
++  EXPECT_EQ(details_shadow_root, n->AssignedSlot()->ContainingShadowRoot());
++
++  // Full lifecycle update (including PerformLayout and
++  // PropagateFrameRectsRecursively) must complete with clean slot assignments.
++  GetDocument().View()->UpdateAllLifecyclePhasesForTest();
++
++  // Moving `n` back to `host` restores its flat-tree assignment to `s2`.
++  host->appendChild(n);
++  GetDocument().View()->UpdateAllLifecyclePhasesForTest();
++  EXPECT_EQ(s2, n->AssignedSlot());
++}
++
++TEST_F(SlotAssignmentTest, AuthorManualAssignOfUserAgentSlottedNode) {
++  SetBody(R"HTML(
++    <div id="host">
++      <div id="c1"></div>
++    </div>
++    <details id="details" open>
++      <div id="details_child"></div>
++    </details>
++  )HTML");
++
++  Element* host = GetDocument().getElementById(AtomicString("host"));
++  Element* c1 = GetDocument().getElementById(AtomicString("c1"));
++  Element* details = GetDocument().getElementById(AtomicString("details"));
++  Element* details_child =
++      GetDocument().getElementById(AtomicString("details_child"));
++  ASSERT_NE(nullptr, host);
++  ASSERT_NE(nullptr, c1);
++  ASSERT_NE(nullptr, details);
++  ASSERT_NE(nullptr, details_child);
++
++  ShadowRoot& host_shadow_root = host->AttachShadowRootInternal(
++      ShadowRootMode::kOpen, FocusDelegation::kNone,
++      SlotAssignmentMode::kManual, CustomElementRegistryAssignment::Inherit(),
++      /*serializable=*/false, /*clonable=*/false,
++      /*reference_target=*/g_null_atom);
++  host_shadow_root.SetInnerHTMLWithoutTrustedTypes(
++      "<div style='content-visibility: hidden'><slot id='s1'></slot></div>");
++  auto* s1 =
++      To<HTMLSlotElement>(host_shadow_root.getElementById(AtomicString("s1")));
++  ASSERT_NE(nullptr, s1);
++
++  GetDocument().View()->UpdateAllLifecyclePhasesForTest();
++
++  ShadowRoot* details_shadow_root = details->UserAgentShadowRoot();
++  ASSERT_NE(nullptr, details_shadow_root);
++  ASSERT_NE(nullptr, details_child->AssignedSlot());
++  EXPECT_EQ(details_shadow_root,
++            details_child->AssignedSlot()->ContainingShadowRoot());
++
++  HeapVector<Member<Node>> assigned;
++  assigned.push_back(c1);
++  assigned.push_back(details_child);
++  s1->Assign(assigned);
++
++  // Assigning `details_child` to an author slot while it is a child of
++  // `<details>` must not dirty `<details>`'s UA shadow root or remove
++  // `details_child` from `<details>`'s UA slot.
++  EXPECT_FALSE(details_shadow_root->NeedsSlotAssignmentRecalc());
++  GetDocument().GetSlotAssignmentEngine().RecalcSlotAssignments();
++  EXPECT_FALSE(host_shadow_root.NeedsSlotAssignmentRecalc());
++  EXPECT_FALSE(details_shadow_root->NeedsSlotAssignmentRecalc());
++  EXPECT_FALSE(GetDocument().IsSlotAssignmentDirty());
++  ASSERT_NE(nullptr, details_child->AssignedSlot());
++  EXPECT_EQ(details_shadow_root,
++            details_child->AssignedSlot()->ContainingShadowRoot());
++}
++
++TEST_F(SlotAssignmentTest, RemoveManualSlotWithAssignedNodes) {
++  SetBody(R"HTML(
++    <div id="host">
++      <div id="c1">Hello</div>
++    </div>
++  )HTML");
++
++  Element* host = GetDocument().getElementById(AtomicString("host"));
++  Element* c1 = GetDocument().getElementById(AtomicString("c1"));
++  ASSERT_NE(nullptr, host);
++  ASSERT_NE(nullptr, c1);
++
++  ShadowRoot& shadow_root = host->AttachShadowRootInternal(
++      ShadowRootMode::kOpen, FocusDelegation::kNone,
++      SlotAssignmentMode::kManual, CustomElementRegistryAssignment::Inherit(),
++      /*serializable=*/false, /*clonable=*/false,
++      /*reference_target=*/g_null_atom);
++  shadow_root.SetInnerHTMLWithoutTrustedTypes(
++      "<slot id='s1'></slot><slot id='s2'></slot>");
++  auto* s1 =
++      To<HTMLSlotElement>(shadow_root.getElementById(AtomicString("s1")));
++  ASSERT_NE(nullptr, s1);
++
++  s1->Assign(c1);
++  GetDocument().View()->UpdateAllLifecyclePhasesForTest();
++  EXPECT_EQ(s1, c1->AssignedSlot());
++  EXPECT_NE(nullptr, c1->GetLayoutObject());
++
++  s1->remove();
++  EXPECT_TRUE(shadow_root.NeedsSlotAssignmentRecalc());
++
++  GetDocument().View()->UpdateAllLifecyclePhasesForTest();
++  EXPECT_FALSE(shadow_root.NeedsSlotAssignmentRecalc());
++  EXPECT_EQ(nullptr, c1->AssignedSlot());
++  EXPECT_EQ(nullptr, c1->GetLayoutObject());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index f44f144cad94b46e8c2e6bae809cd463d617a132..835611550109f39e71422c3666d6fd7a78e24b43 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -72,6 +72,7 @@
+ #include "third_party/blink/renderer/core/dom/dom_node_ids.h"
+ #include "third_party/blink/renderer/core/dom/flat_tree_traversal.h"
+ #include "third_party/blink/renderer/core/dom/scroll_marker_group_pseudo_element.h"
++#include "third_party/blink/renderer/core/dom/slot_assignment_recalc_forbidden_scope.h"
+ #include "third_party/blink/renderer/core/dom/static_node_list.h"
+ #include "third_party/blink/renderer/core/editing/drag_caret.h"
+ #include "third_party/blink/renderer/core/editing/frame_selection.h"
+@@ -396,10 +397,21 @@ void LocalFrameView::Trace(Visitor* visitor) const {
+ 
+ void LocalFrameView::ForAllChildViewsAndPlugins(
+     base::FunctionRef<void(EmbeddedContentView&)> function) {
++#if DCHECK_IS_ON()
++  const unsigned initial_child_count = frame_->Tree().ChildCount();
++#endif
+   for (Frame* child = frame_->Tree().FirstChild(); child;
+        child = child->Tree().NextSibling()) {
++#if DCHECK_IS_ON()
++    Frame* next_sibling = child->Tree().NextSibling();
++#endif
+     if (child->View())
+       function(*child->View());
++#if DCHECK_IS_ON()
++    DCHECK_EQ(child->Tree().Parent(), frame_);
++    DCHECK_EQ(child->Tree().NextSibling(), next_sibling);
++    DCHECK_EQ(frame_->Tree().ChildCount(), initial_child_count);
++#endif
+   }
+ 
+   for (const auto& plugin : plugins_) {
+@@ -736,6 +748,7 @@ void LocalFrameView::PerformLayout() {
+   const bool has_subtree_layout_roots = HasSubtreeLayoutRoots();
+ 
+   Document* document = GetFrame().GetDocument();
++  SlotAssignmentRecalcForbiddenScope forbid_slot_recalc(*document);
+   if (!has_subtree_layout_roots) {
+     Node* body = document->body();
+     if (IsA<HTMLFrameSetElement>(body) && body->GetLayoutObject()) {
+diff --git a/third_party/blink/renderer/core/html/html_slot_element.cc b/third_party/blink/renderer/core/html/html_slot_element.cc
+index bb1d9a1d6605875e27cadefd92db574860b241ca..2e9c6dd0f1dc1452697f0ddede4f09b9803a183b 100644
+--- a/third_party/blink/renderer/core/html/html_slot_element.cc
++++ b/third_party/blink/renderer/core/html/html_slot_element.cc
+@@ -213,26 +213,33 @@ void HTMLSlotElement::Assign(const HeapVector<Member<Node>>& nodes) {
+   if (nodes.empty() && manually_assigned_nodes_.empty())
+     return;
+ 
++  // A slottable's manual slot assignment on Node (`ManuallyAssignedSlot()`)
++  // tracks imperative author slot assignment via `HTMLSlotElement.assign()`.
++  // User-agent shadow roots (`<details>`, `<select>`, `<optgroup>`) also use
++  // `Assign()` during `ManuallyAssignSlots()` inside `RecalcAssignment()`,
++  // which must not overwrite or clear an author `<slot>`'s manual assignment
++  // for a node, or dirty another shadow root mid-recalc.
++  const bool is_user_agent_slot = IsInUserAgentShadowRoot();
++
+   bool updated = false;
+   HeapHashSet<Member<HTMLSlotElement>> changed_slots;
+   HeapLinkedHashSet<WeakMember<Node>> added_nodes;
+   for (Node* node : nodes) {
+     added_nodes.insert(node);
+-    if (auto* previous_slot = node->ManuallyAssignedSlot()) {
+-      if (previous_slot == this)
+-        continue;
+-      previous_slot->manually_assigned_nodes_.erase(node);
+-      if (previous_slot->SupportsAssignment())
+-        changed_slots.insert(previous_slot);
+-    }
+-    updated = true;
+-    node->SetManuallyAssignedSlot(this);
+-  }
+-
+-  HeapLinkedHashSet<WeakMember<Node>> removed_nodes;
+-  for (Node* node : manually_assigned_nodes_) {
+-    if (!added_nodes.Contains(node)) {
+-      removed_nodes.insert(node);
++    if (!is_user_agent_slot) {
++      if (auto* previous_slot = node->ManuallyAssignedSlot()) {
++        if (previous_slot == this) {
++          continue;
++        }
++        previous_slot->manually_assigned_nodes_.erase(node);
++        if (previous_slot->SupportsAssignment()) {
++          changed_slots.insert(previous_slot);
++        }
++      }
++      updated = true;
++      node->SetManuallyAssignedSlot(this);
++    } else if (!manually_assigned_nodes_.Contains(node)) {
++      updated = true;
+     }
+   }
+ 
+@@ -246,12 +253,16 @@ void HTMLSlotElement::Assign(const HeapVector<Member<Node>>& nodes) {
+       }
+     }
+   }
+-  DCHECK(updated || removed_nodes.empty());
+ 
+   ShadowRoot* shadow_root = ContainingShadowRoot();
+   if (updated) {
+-    for (auto removed_node : removed_nodes)
+-      removed_node->SetManuallyAssignedSlot(nullptr);
++    if (!is_user_agent_slot) {
++      for (Node* node : manually_assigned_nodes_) {
++        if (!added_nodes.Contains(node)) {
++          node->SetManuallyAssignedSlot(nullptr);
++        }
++      }
++    }
+     manually_assigned_nodes_.Swap(added_nodes);
+     // The slot might not be located in a shadow root yet.
+     if (shadow_root) {
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-overflow/scroll-markers/column-scroll-marker-manual-slot-recalc-crash.html b/third_party/blink/web_tests/external/wpt/css/css-overflow/scroll-markers/column-scroll-marker-manual-slot-recalc-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..b70544547b64a87116719d75d2ff4fa10b579c8e
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-overflow/scroll-markers/column-scroll-marker-manual-slot-recalc-crash.html
+@@ -0,0 +1,64 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<link rel="author" href="mailto:masonf@chromium.org">
++<link rel="help" href="https://crbug.com/576736463">
++
++<style>
++  .multicol {
++    columns: 4;
++    column-fill: auto;
++    height: 40px;
++    width: 200px;
++    overflow: auto;
++    scroll-marker-group: after;
++  }
++  .multicol::scroll-marker-group {
++    display: flex;
++    height: 10px;
++  }
++  .multicol::column::scroll-marker {
++    content: open-quote;
++    width: 5px;
++    height: 5px;
++  }
++  .spacer {
++    height: 200px;
++  }
++</style>
++<div id="host">
++  <div id="c1" class="multicol">
++    <div class="spacer"></div>
++    <svg><rect id="g" width="10" height="10"/></svg>
++  </div>
++  <div id="c2" class="multicol"><div class="spacer"></div></div>
++  <span id="n">n</span>
++</div>
++<div id="parking" style="display:none"></div>
++<details id="details" style="display:none">
++  <span id="details_child">x</span>
++</details>
++<script>
++  const sr = host.attachShadow({mode: "open", slotAssignment: "manual"});
++  sr.innerHTML = `
++    <div id="lock"><slot id="s1"></slot></div>
++    <slot id="s2"></slot>
++    <slot id="s3"></slot>
++  `;
++  const lock = sr.getElementById("lock");
++  const s1 = sr.getElementById("s1");
++  const s2 = sr.getElementById("s2");
++  const s3 = sr.getElementById("s3");
++
++  s1.assign(c1);
++  s2.assign(c2);
++  s3.assign(n);
++  document.body.offsetTop;
++
++  lock.style.contentVisibility = "hidden";
++  parking.appendChild(n);
++  document.body.offsetTop;
++
++  g.setAttribute("systemLanguage", "en");
++  details.appendChild(n);
++  document.body.offsetTop;
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/shadow-dom/manual-slot-assignment-with-details.html b/third_party/blink/web_tests/external/wpt/shadow-dom/manual-slot-assignment-with-details.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc0a3c0e60c562d0e625d341d45e9dd459c2a432
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/shadow-dom/manual-slot-assignment-with-details.html
+@@ -0,0 +1,53 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<link rel="author" href="mailto:masonf@chromium.org">
++<link rel="help" href="https://dom.spec.whatwg.org/#dom-slot-assign">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++
++<div id="host">
++  <span id="child">child</span>
++</div>
++<details id="details" open>
++  <summary>Summary</summary>
++  <span id="details_child">details child</span>
++</details>
++
++<script>
++test(() => {
++  const sr = host.attachShadow({mode: "open", slotAssignment: "manual"});
++  const slot = document.createElement("slot");
++  sr.appendChild(slot);
++
++  slot.assign(child);
++  assert_array_equals(slot.assignedNodes(), [child]);
++
++  let slotchangeCount = 0;
++  slot.addEventListener("slotchange", () => {
++    slotchangeCount++;
++  });
++
++  // Moving `child` into `<details>` (which uses UA manual slot assignment,
++  // at least in Chromium) must not clear `child`'s manual assignment to `slot`.
++  details.appendChild(child);
++  document.body.offsetTop;
++  assert_array_equals(slot.assignedNodes(), []);
++
++  // Moving `child` back into `host` must restore its assignment to `slot`
++  // without calling `slot.assign(child)` again.
++  host.appendChild(child);
++  document.body.offsetTop;
++  assert_array_equals(slot.assignedNodes(), [child]);
++
++  // Assigning `details_child` to `slot` while it is still a child of
++  // `<details>` must remember the manual assignment for when `details_child`
++  // later becomes a child of `host`.
++  slot.assign(child, details_child);
++  document.body.offsetTop;
++  assert_array_equals(slot.assignedNodes(), [child]);
++
++  host.appendChild(details_child);
++  document.body.offsetTop;
++  assert_array_equals(slot.assignedNodes(), [child, details_child]);
++}, "UA slot assignment on <details> (manual slotting in Chromium) does not clobber author slot.assign()");
++</script>

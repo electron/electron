@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrew Paseltiner <apaseltiner@chromium.org>
+Date: Mon, 2 Nov 2026 07:25:09 -0800
+Subject: Prevent UAF in LegacyRenderWidgetHostHWND after UpdateTooltip
+
+UpdateTooltip can synchronously dispatch accessibility events
+(::NotifyWinEvent / ::UiaRaiseAutomationEvent) when hiding an open
+tooltip, potentially leading to the destruction of `this`. Add
+base::WeakPtr guards after `host_->UpdateTooltip()` in `UpdateParent()`
+and `InitOrDeleteSelf()` to detect when `this` has been freed
+mid-method.
+
+Fixed: 578659604
+Change-Id: I41054df3fec04bca853c96b0720ab8724e4e77d5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8687443
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Andrew Paseltiner <apaseltiner@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1732872}
+
+diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+index df3a2b39bf607e440170a2290839fa421a6e4785..2872ecb789858b81a502f5824fc492cf93f49243 100644
+--- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
++++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+@@ -128,8 +128,9 @@ void LegacyRenderWidgetHostHWND::UpdateParent(HWND new_parent) {
+   // call altogether.
+   const HWND current_parent = GetParent();
+   if (current_parent != new_parent) {
+-    // ::SetParent and CreateDirectManipulationHelper (CoCreateInstance /
+-    // IDirectManipulationManager::Activate / Enable) can synchronously dispatch
++    // ::SetParent, CreateDirectManipulationHelper (CoCreateInstance /
++    // IDirectManipulationManager::Activate / Enable), and UpdateTooltip
++    // (NotifyWinEvent / UiaRaiseAutomationEvent) can synchronously dispatch
+     // window messages. Re-entrant dispatch may reach
+     // RenderWidgetHostViewAura::OnWindowDestroying ->
+     // LegacyRenderWidgetHostHWND::Destroy() -> ::DestroyWindow() ->
+@@ -153,6 +154,9 @@ void LegacyRenderWidgetHostHWND::UpdateParent(HWND new_parent) {
+     // Reset tooltips when parent changed; otherwise tooltips could stay open as
+     // the former parent wouldn't be forwarded any mouse leave messages.
+     host_->UpdateTooltip(std::u16string());
++    if (!ref) {
++      return;
++    }
+ 
+     // Store parent before hide to reroute pointer events while hidden.
+     // See comment in OnPointer for more details.
+@@ -239,7 +243,7 @@ bool LegacyRenderWidgetHostHWND::InitOrDeleteSelf(HWND parent) {
+   set_window_class_name(ui::kLegacyRenderWidgetHostHwnd);
+   set_window_name(L"Chrome Legacy Window");
+ 
+-  // WindowImpl::Init (::CreateWindowEx), NotifyWinEvent, and
++  // WindowImpl::Init (::CreateWindowEx), NotifyWinEvent, UpdateTooltip, and
+   // DirectManipulationHelper::CreateInstance (CoCreateInstance / Activate /
+   // Enable) can synchronously dispatch window messages. Re-entrant dispatch may
+   // reach RenderWidgetHostViewAura::OnWindowDestroying ->
+@@ -316,6 +320,9 @@ bool LegacyRenderWidgetHostHWND::InitOrDeleteSelf(HWND parent) {
+   base::win::DisableFlicks(hwnd());
+ 
+   host_->UpdateTooltip(std::u16string());
++  if (!ref) {
++    return false;
++  }
+ 
+   // Instruct aura::WindowTreeHost to use the HWND's parent for lookup.
+   window_tree_host_prop_ = std::make_unique<ui::ViewProp>(

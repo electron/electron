@@ -1,0 +1,424 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Wed, 4 Nov 2026 14:30:36 -0500
+Subject: [M156] Reject fractional Slug replay for direct masks when atlas
+ bilerp is unsupported
+
+Original change's description:
+> Reject fractional Slug replay for direct masks when atlas bilerp is unsupported
+>
+> When fSupportBilerpFromGlyphAtlas is false (e.g. Chrome's configuration),
+> direct-mask glyphs are packed in the shared TextAtlasManager with 0
+> padding. Replaying a Slug with a fractional translation or incompatible
+> matrix causes sampling outside the glyph's atlas boundaries under MSAA,
+> leaking neighboring glyph texels across origins.
+>
+> 1. Promote Slug matrix validation to release mode via SlugImpl::canDraw
+>    in both Ganesh and Graphite Device::drawSlug, dropping draws when
+>    the matrix difference includes non-integer translation or transform
+>    without atlas bilerp support.
+> 2. In VertexFiller::boundsAndDeviceMatrix, return empty bounds for direct
+>    masks when supportBilerpAtlas is false and the transform is not an
+>    integer translation, dropping the draw and preventing any fractional
+>    maskToDevice from reaching the GPU.
+> 3. Add unit tests for VertexFiller::boundsAndDeviceMatrix and end-to-end
+>    fractional Slug replay validation in Ganesh and Graphite.
+>
+> Bug: 576950618
+> Change-Id: I4d28a5e831b8e870b8377ba231c67c03567f0e76
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1405797
+> Reviewed-by: Thomas Smith <thomsmit@google.com>
+> Reviewed-by: Nathan Sanchez <nathanasanchez@google.com>
+> Commit-Queue: Greg Daniel <egdaniel@google.com>
+
+(cherry picked from commit 6cfa510947b383694c08d9183dc22887d5349112)
+
+Bug: 581669721,576950618
+Change-Id: I4d28a5e831b8e870b8377ba231c67c03567f0e76
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1416496
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+Reviewed-by: Greg Daniel <egdaniel@google.com>
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+
+diff --git a/src/gpu/ganesh/Device.cpp b/src/gpu/ganesh/Device.cpp
+index d61e2309148ad68c69173fbf9cb3fed85fc29e16..125fb0ab0177add3c80e02ab1bbc8bedbe5ad383 100644
+--- a/src/gpu/ganesh/Device.cpp
++++ b/src/gpu/ganesh/Device.cpp
+@@ -1402,46 +1402,14 @@ sk_sp<sktext::gpu::Slug> Device::convertGlyphRunListToSlug(const sktext::GlyphRu
+                                        SkStrikeCache::GlobalStrikeCache());
+ }
+ 
+-#if defined(SK_DEBUG)
+-static bool valid_slug_matrices(const SkMatrix& creationMatrix, const SkMatrix& positionMatrix) {
+-    // A Slug can be drawn with:
+-    //   The exact same matrix that was used for creation
+-    // - OR -
+-    //   A non-perspective matrix that has the same 2x2 and a relative integer translation
+-    //
+-    // For the second case, calculate the translation in source space to a translation in
+-    // device space by mapping (0, 0) through both the creationMatrix and the positionMatrix;
+-    // take the difference.
+-    if (creationMatrix == positionMatrix) {
+-        return true;
+-    }
+-
+-    SkVector translation = positionMatrix.mapOrigin() - creationMatrix.mapOrigin();
+-    return creationMatrix.getScaleX() == positionMatrix.getScaleX() &&
+-           creationMatrix.getScaleY() == positionMatrix.getScaleY() &&
+-           creationMatrix.getSkewX() == positionMatrix.getSkewX() &&
+-           creationMatrix.getSkewY() == positionMatrix.getSkewY() &&
+-           !positionMatrix.hasPerspective() && !creationMatrix.hasPerspective() &&
+-           SkScalarIsInt(translation.x()) && SkScalarIsInt(translation.y());
+-}
+-#endif
+-
+-
+ void Device::drawSlug(SkCanvas* canvas, const sktext::gpu::Slug* slug, const SkPaint& paint) {
+     SkASSERT(canvas);
+     SkASSERT(slug);
+     const sktext::gpu::SlugImpl* slugImpl = static_cast<const sktext::gpu::SlugImpl*>(slug);
+-#if defined(SK_DEBUG)
+-    if (!fContext->priv().options().fSupportBilerpFromGlyphAtlas) {
+-        // We can draw a slug if the atlas has padding or if the creation matrix and the
+-        // drawing matrix are the same (up to integer translation).
+-        // If they are the same, then the Slug will use the direct drawing code and not use bi-lerp.
+-        SkMatrix slugMatrix = slugImpl->initialPositionMatrix();
+-        SkMatrix positionMatrix = this->localToDevice();
+-        positionMatrix.preTranslate(slugImpl->origin().x(), slugImpl->origin().y());
+-        SkASSERT(valid_slug_matrices(slugMatrix, positionMatrix));
++    if (!slugImpl->canDraw(this->localToDevice(),
++                           fContext->priv().options().fSupportBilerpFromGlyphAtlas)) {
++        return;
+     }
+-#endif
+     auto atlasDelegate = [&](const sktext::gpu::AtlasSubRun* subRun,
+                              SkPoint drawOrigin,
+                              const SkPaint& paint,
+diff --git a/src/gpu/graphite/Device.cpp b/src/gpu/graphite/Device.cpp
+index 0d950f11a42d8176d9bc293da977a0595b435268..93e2779ba16b5684e497d38a702f0c33c3631447 100644
+--- a/src/gpu/graphite/Device.cpp
++++ b/src/gpu/graphite/Device.cpp
+@@ -1472,7 +1472,13 @@ void Device::drawAtlasSubRun(const sktext::gpu::AtlasSubRun* subRun,
+     auto& glyphData = subRun->glyphVector().accessBackendData<GlyphData>();
+ 
+     auto [bounds, maskToDevice] =
+-            subRun->vertexFiller().boundsAndDeviceMatrix(localToDevice, drawOrigin);
++            subRun->vertexFiller().boundsAndDeviceMatrix(
++                    localToDevice, drawOrigin,
++                    fRecorder->priv().caps()->supportBilerpFromGlyphAtlas());
++
++    if (bounds.isEmpty()) {
++        return;
++    }
+ 
+     for (int subRunCursor = 0; subRunCursor < subRunEnd;) {
+         // For the remainder of the run, add any atlas uploads to the Recorder's TextAtlasManager
+@@ -2387,6 +2393,10 @@ sk_sp<sktext::gpu::Slug> Device::convertGlyphRunListToSlug(const sktext::GlyphRu
+ 
+ void Device::drawSlug(SkCanvas* canvas, const sktext::gpu::Slug* slug, const SkPaint& paint) {
+     auto slugImpl = static_cast<const sktext::gpu::SlugImpl*>(slug);
++    if (!slugImpl->canDraw(this->localToDevice(),
++                           fRecorder->priv().caps()->supportBilerpFromGlyphAtlas())) {
++        return;
++    }
+     slugImpl->subRuns()->draw(canvas, slugImpl->origin(), paint, slugImpl, this->atlasDelegate());
+ }
+ 
+diff --git a/src/text/gpu/SlugImpl.cpp b/src/text/gpu/SlugImpl.cpp
+index 738a7dbf7815ae72eb6c3ade5e39c8bb970ad5e8..4e135f0d38c1f4c0e8bf942201537b18dd1e5ff4 100644
+--- a/src/text/gpu/SlugImpl.cpp
++++ b/src/text/gpu/SlugImpl.cpp
+@@ -66,11 +66,35 @@ sk_sp<Slug> SlugImpl::MakeFromBuffer(SkReadBuffer& buffer, const SkStrikeClient*
+             initializer.initialize(std::move(alloc), std::move(container), sourceBounds, origin));
+ }
+ 
++namespace {
+ SkMatrix position_matrix(const SkMatrix& drawMatrix, SkPoint drawOrigin) {
+     SkMatrix position_matrix = drawMatrix;
+     return position_matrix.preTranslate(drawOrigin.x(), drawOrigin.y());
+ }
+ 
++bool valid_slug_matrices(const SkMatrix& creationMatrix, const SkMatrix& positionMatrix) {
++    if (creationMatrix == positionMatrix) {
++        return true;
++    }
++
++    SkVector translation = positionMatrix.mapOrigin() - creationMatrix.mapOrigin();
++    return creationMatrix.getScaleX() == positionMatrix.getScaleX() &&
++           creationMatrix.getScaleY() == positionMatrix.getScaleY() &&
++           creationMatrix.getSkewX()  == positionMatrix.getSkewX()  &&
++           creationMatrix.getSkewY()  == positionMatrix.getSkewY()  &&
++           !positionMatrix.hasPerspective() && !creationMatrix.hasPerspective() &&
++           SkScalarIsInt(translation.x()) && SkScalarIsInt(translation.y());
++}
++}  // namespace
++
++bool SlugImpl::canDraw(const SkMatrix& drawMatrix, bool supportBilerpAtlas) const {
++    if (supportBilerpAtlas) {
++        return true;
++    }
++    const SkMatrix positionMatrix = position_matrix(drawMatrix, fOrigin);
++    return valid_slug_matrices(this->initialPositionMatrix(), positionMatrix);
++}
++
+ sk_sp<SlugImpl> SlugImpl::Make(const SkMatrix& viewMatrix,
+                                const sktext::GlyphRunList& glyphRunList,
+                                const SkPaint& paint,
+diff --git a/src/text/gpu/SlugImpl.h b/src/text/gpu/SlugImpl.h
+index b8b89f97ca4496f714b28e688cba899b878b35f2..bc0483748394fc8ce939bcd4694863edc74184e1 100644
+--- a/src/text/gpu/SlugImpl.h
++++ b/src/text/gpu/SlugImpl.h
+@@ -56,6 +56,8 @@ public:
+ 
+     const gpu::SubRunContainerOwner& subRuns() const { return fSubRuns; }
+ 
++    bool canDraw(const SkMatrix& drawMatrix, bool supportBilerpAtlas) const;
++
+     // Change memory management to handle the data after Slug, but in the same allocation
+     // of memory. Only allow placement new.
+     void operator delete(void* p) { ::operator delete(p); }
+diff --git a/src/text/gpu/VertexFiller.cpp b/src/text/gpu/VertexFiller.cpp
+index 7a3672a2ad56dfdd25b1fa64893fd2684f44df65..baee3b71c43eed3a37e0ca7ee625de5edafb899f 100644
+--- a/src/text/gpu/VertexFiller.cpp
++++ b/src/text/gpu/VertexFiller.cpp
+@@ -98,7 +98,8 @@ std::tuple<bool, SkRect> VertexFiller::deviceRectAndCheckTransform(
+ }
+ 
+ std::tuple<SkRect, SkMatrix> VertexFiller::boundsAndDeviceMatrix(const SkMatrix& localToDevice,
+-                                                                 SkPoint drawOrigin) const {
++                                                                 SkPoint drawOrigin,
++                                                                 bool supportBilerpAtlas) const {
+     // The baked-in matrix differs from the current localToDevice by a translation if the
+     // upper 2x2 remains the same, and there's no perspective. Since there's no projection,
+     // Z is irrelevant, so it's okay that fCreationMatrix is an SkMatrix and has
+@@ -121,6 +122,13 @@ std::tuple<SkRect, SkMatrix> VertexFiller::boundsAndDeviceMatrix(const SkMatrix&
+         }
+     }
+ 
++    if (fCanDrawDirect && !supportBilerpAtlas) {
++        // Direct-mask glyphs have no padding in the atlas when atlas bilerp is unsupported.
++        // Drawing with a fractional translation or non-identical matrix causes sampling
++        // outside the glyph's atlas bounds, leaking neighboring atlas texels.
++        return {SkRect::MakeEmpty(), SkMatrix::I()};
++    }
++
+     // Otherwise compute the relative transformation from fCreationMatrix to
+     // localToDevice, with the drawOrigin applied. If fCreationMatrix or the
+     // concatenation is not invertible the returned Transform is marked invalid and the draw
+diff --git a/src/text/gpu/VertexFiller.h b/src/text/gpu/VertexFiller.h
+index 06a1af80424c83f37d7c46a4a26eae2d756c0cc9..e7fc1576d08cdde0a6d98974cbf7f43df8272172 100644
+--- a/src/text/gpu/VertexFiller.h
++++ b/src/text/gpu/VertexFiller.h
+@@ -29,8 +29,8 @@ enum class MaskFormat : int;
+ }
+ 
+ namespace sktext::gpu {
+-class SubRunAllocator;
+ class AtlasSubRun;
++class SubRunAllocator;
+ 
+ enum FillerType {
+     kIsDirect,
+@@ -65,7 +65,8 @@ public:
+     int unflattenSize() const { return fLeftTop.size_bytes(); }
+ 
+     std::tuple<SkRect, SkMatrix> boundsAndDeviceMatrix(const SkMatrix& localToDevice,
+-                                                       SkPoint drawOrigin) const;
++                                                       SkPoint drawOrigin,
++                                                       bool supportBilerpAtlas = true) const;
+ 
+     // Return true if the positionMatrix represents an integer translation. Return the device
+     // bounding box of all the glyphs. If the bounding box is empty, then something went singular
+diff --git a/tests/SlugTest.cpp b/tests/SlugTest.cpp
+index b09a24e525b3c3ba134b14d95da65bcf75385bee..74676f16c98489b8a22aad4df48a77c758f67de2 100644
+--- a/tests/SlugTest.cpp
++++ b/tests/SlugTest.cpp
+@@ -24,12 +24,20 @@
+ #include "include/private/chromium/Slug.h"
+ #include "src/gpu/MaskFormat.h"
+ #include "src/text/gpu/SlugImpl.h"
++#include "src/text/gpu/VertexFiller.h"
+ #include "src/utils/SkFloatUtils.h"
+ #include "tests/CtsEnforcement.h"
+ #include "tests/Test.h"
+ #include "tools/ToolUtils.h"
+ #include "tools/fonts/FontToolUtils.h"
+ 
++#if defined(SK_GRAPHITE)
++#include "include/gpu/graphite/Context.h"
++#include "include/gpu/graphite/Recorder.h"
++#include "include/gpu/graphite/Recording.h"
++#include "include/gpu/graphite/Surface.h"
++#endif
++
+ #include <cstdint>
+ #include <cstring>
+ 
+@@ -213,3 +221,167 @@ DEF_GANESH_TEST_FOR_CONTEXTS(Slug_b520571816,
+             sktext::gpu::Slug::Deserialize(writableData.get(), size, nullptr);
+     REPORTER_ASSERT(reporter, forgedSlug == nullptr);
+ }
++
++DEF_TEST(VertexFiller_boundsAndDeviceMatrix, reporter) {
++    const SkRect bounds = SkRect::MakeXYWH(10, 10, 20, 20);
++    const SkPoint positions[] = {{10, 10}};
++    sktext::gpu::VertexFiller directFiller(skgpu::MaskFormat::kA8,
++                                           SkMatrix::I(),
++                                           bounds,
++                                           SkSpan(positions, 1),
++                                           /*canDrawDirect=*/true);
++
++    // 1. Integer translation with supportBilerpAtlas = false: succeeds.
++    {
++        auto [b, m] = directFiller.boundsAndDeviceMatrix(SkMatrix::I(), {5.0f, 5.0f},
++                                                         /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, !b.isEmpty());
++        REPORTER_ASSERT(reporter, m == SkMatrix::Translate(5.0f, 5.0f));
++    }
++
++    // 2. Fractional translation with supportBilerpAtlas = false: dropped.
++    {
++        auto [b, m] = directFiller.boundsAndDeviceMatrix(SkMatrix::I(), {0.5f, 0.0f},
++                                                         /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, b.isEmpty());
++    }
++
++    // 3. Matrix scale with supportBilerpAtlas = false: dropped.
++    {
++        auto [b, m] = directFiller.boundsAndDeviceMatrix(SkMatrix::Scale(2.0f, 2.0f), {0.0f, 0.0f},
++                                                         /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, b.isEmpty());
++    }
++
++    // 4. Fractional translation with supportBilerpAtlas = true: allowed.
++    {
++        auto [b, m] = directFiller.boundsAndDeviceMatrix(SkMatrix::I(), {0.5f, 0.0f},
++                                                         /*supportBilerpAtlas=*/true);
++        REPORTER_ASSERT(reporter, !b.isEmpty());
++        REPORTER_ASSERT(reporter, m == SkMatrix::Translate(0.5f, 0.0f));
++    }
++
++    // 5. Non-direct filler (e.g. transformed/SDFT) with supportBilerpAtlas = false: allowed.
++    sktext::gpu::VertexFiller transformedFiller(skgpu::MaskFormat::kA8,
++                                                SkMatrix::I(),
++                                                bounds,
++                                                SkSpan(positions, 1),
++                                                /*canDrawDirect=*/false);
++    {
++        auto [b, m] = transformedFiller.boundsAndDeviceMatrix(SkMatrix::I(), {0.5f, 0.0f},
++                                                              /*supportBilerpAtlas=*/false);
++        REPORTER_ASSERT(reporter, !b.isEmpty());
++        REPORTER_ASSERT(reporter, m == SkMatrix::Translate(0.5f, 0.0f));
++    }
++}
++
++namespace {
++sk_sp<SkTextBlob> make_test_blob() {
++    auto typeface = ToolUtils::CreatePortableTypeface("serif", SkFontStyle());
++    SkFont font(typeface);
++    font.setSize(16);
++
++    static const char* kText = "A";
++    SkTextBlobBuilder builder;
++    const SkTextBlobBuilder::RunBuffer& runBuf = builder.allocRun(font, 1, 0, 0);
++    font.textToGlyphs(kText, 1, SkTextEncoding::kUTF8, SkSpan(runBuf.glyphs, 1));
++    return builder.make();
++}
++
++bool surface_has_non_white_pixels(SkSurface* surface) {
++    SkBitmap bm;
++    bm.allocPixels(surface->imageInfo());
++    if (!surface->readPixels(bm, 0, 0)) {
++        return false;
++    }
++    for (int y = 0; y < bm.height(); ++y) {
++        for (int x = 0; x < bm.width(); ++x) {
++            if (bm.getColor(x, y) != SK_ColorWHITE) {
++                return true;
++            }
++        }
++    }
++    return false;
++}
++
++template <typename FlushFn>
++void run_slug_fractional_replay_test(SkSurface* surface,
++                                     const sktext::gpu::Slug* slug,
++                                     FlushFn flushFn,
++                                     skiatest::Reporter* reporter) {
++    SkCanvas* canvas = surface->getCanvas();
++    SkPaint paint;
++    paint.setColor(SK_ColorBLACK);
++
++    // 1. Integer translation: should draw.
++    canvas->clear(SK_ColorWHITE);
++    canvas->save();
++    canvas->translate(5.0f, 5.0f);
++    slug->draw(canvas, paint);
++    canvas->restore();
++    flushFn();
++    REPORTER_ASSERT(reporter, surface_has_non_white_pixels(surface));
++
++    // 2. Fractional translation: must be dropped.
++    canvas->clear(SK_ColorWHITE);
++    canvas->save();
++    canvas->translate(0.5f, 0.0f);
++    slug->draw(canvas, paint);
++    canvas->restore();
++    flushFn();
++    REPORTER_ASSERT(reporter, !surface_has_non_white_pixels(surface));
++
++    // 3. Matrix scale: must be dropped.
++    canvas->clear(SK_ColorWHITE);
++    canvas->save();
++    canvas->scale(1.5f, 1.5f);
++    slug->draw(canvas, paint);
++    canvas->restore();
++    flushFn();
++    REPORTER_ASSERT(reporter, !surface_has_non_white_pixels(surface));
++}
++}  // namespace
++
++DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(Slug_fractional_replay_ganesh,
++                                       reporter,
++                                       ctxInfo,
++                                       CtsEnforcement::kNextRelease) {
++    auto dContext = ctxInfo.directContext();
++    SkImageInfo info = SkImageInfo::MakeN32Premul(64, 64);
++    auto surface = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kNo, info);
++    REPORTER_ASSERT(reporter, surface);
++
++    sk_sp<SkTextBlob> blob = make_test_blob();
++    sk_sp<sktext::gpu::Slug> slug =
++            sktext::gpu::Slug::ConvertBlob(surface->getCanvas(), *blob, {10, 30}, SkPaint());
++    REPORTER_ASSERT(reporter, slug != nullptr);
++
++    run_slug_fractional_replay_test(surface.get(), slug.get(), [&]() {
++        dContext->flushAndSubmit();
++    }, reporter);
++}
++
++#if defined(SK_GRAPHITE)
++DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(Slug_fractional_replay_graphite,
++                                         reporter,
++                                         context,
++                                         CtsEnforcement::kNever) {
++    using namespace skgpu::graphite;
++    std::unique_ptr<Recorder> recorder = context->makeRecorder();
++    SkImageInfo info = SkImageInfo::MakeN32Premul(64, 64);
++    sk_sp<SkSurface> surface = SkSurfaces::RenderTarget(recorder.get(), info);
++    REPORTER_ASSERT(reporter, surface);
++
++    sk_sp<SkTextBlob> blob = make_test_blob();
++    sk_sp<sktext::gpu::Slug> slug =
++            sktext::gpu::Slug::ConvertBlob(surface->getCanvas(), *blob, {10, 30}, SkPaint());
++    REPORTER_ASSERT(reporter, slug != nullptr);
++
++    run_slug_fractional_replay_test(surface.get(), slug.get(), [&]() {
++        std::unique_ptr<Recording> recording = recorder->snap();
++        context->insertRecording({recording.get()});
++        context->submit(SyncToCpu::kYes);
++    }, reporter);
++}
++#endif
++

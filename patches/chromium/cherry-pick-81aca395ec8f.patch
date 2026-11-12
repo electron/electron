@@ -1,0 +1,506 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Flack <flackr@chromium.org>
+Date: Tue, 3 Nov 2026 12:53:30 -0800
+Subject: Avoid iterating mutated trigger maps during snapshot update
+
+Updating timeline triggers or validating animation snapshots can
+resolve style-dependent timeline offsets, synchronously recalculating
+slot assignments and cancelling CSS animations on detached elements.
+Cancelling an animation disassociates it from its trigger's behavior
+map and removes emptied triggers from the timeline's trigger set,
+invalidating iterators when iterating either collection directly.
+
+Copy the timeline's triggers upfront and collect triggered animations
+before validating snapshots, skipping animations cancelled before
+validation.
+
+Bug: 567611696
+Change-Id: I26f71b47c18f1fd4896ed013aab54eeab8382f61
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8702101
+Commit-Queue: Robert Flack <flackr@chromium.org>
+Reviewed-by: David A <awogbemila@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1734367}
+
+diff --git a/third_party/blink/renderer/core/animation/scroll_snapshot_timeline.cc b/third_party/blink/renderer/core/animation/scroll_snapshot_timeline.cc
+index 44e1bfa27184c671a258d94faaaf7c8a712fdcf7..f8a85309e060a94e93fa41d24f41571be17c4d10 100644
+--- a/third_party/blink/renderer/core/animation/scroll_snapshot_timeline.cc
++++ b/third_party/blink/renderer/core/animation/scroll_snapshot_timeline.cc
+@@ -16,6 +16,7 @@
+ #include "third_party/blink/renderer/core/layout/layout_box.h"
+ #include "third_party/blink/renderer/core/paint/paint_layer_scrollable_area.h"
+ #include "third_party/blink/renderer/platform/geometry/physical_direction.h"
++#include "third_party/blink/renderer/platform/heap/collection_support/heap_vector.h"
+ #include "third_party/blink/renderer/platform/text/writing_direction_mode.h"
+ 
+ namespace blink {
+@@ -230,30 +231,45 @@ bool ScrollSnapshotTimeline::UpdateSnapshotInternal(bool service_animations) {
+ 
+   if (RuntimeEnabledFeatures::TimelineTriggerEnabled() &&
+       (snapshot_changed || update_triggers_)) {
+-    for (TimelineTrigger* trigger : GetTriggers()) {
+-      bool trigger_changed = !trigger->Update();
+-      if (trigger_changed) {
+-        for (auto& [animation, behaviors] : trigger->BehaviorMap()) {
+-          // A time-driven animation triggered by a TimelineTrigger should not
+-          // be idle (it should have a resolved current time) because triggers
+-          // should not remain attached to idle animations.
+-          // scroll-driven animations pick up their start times post-layout
+-          // and may not yet have resolved current times.
+-          if (animation->timeline() &&
+-              animation->timeline()->IsMonotonicallyIncreasing()) {
+-            DCHECK(animation->CurrentTimeInternal());
+-          }
+-          // Avoid superfluous snapshot validation, by skipping the call if it
+-          // will be invoked in the loop below.
+-          if (!animations.Contains(animation)) {
+-            if (should_skip_validation(animation)) {
+-              continue;
+-            }
+-            animation->OnValidateSnapshot(true);
+-          }
++    // Resolving style-dependent timeline offsets during TimelineTrigger::Update
++    // or Animation::OnValidateSnapshot can synchronously recalculate slot
++    // assignments, detaching elements and cancelling CSS animations. That
++    // disassociates animations from triggers and removes emptied triggers from
++    // `triggers_`, so copy the triggers upfront and collect triggered
++    // animations before validating snapshots.
++    HeapVector<Member<TimelineTrigger>> triggers(GetTriggers());
++    HeapVector<Member<Animation>> animations_to_validate;
++    for (TimelineTrigger* trigger : triggers) {
++      if (trigger->Update()) {
++        continue;
++      }
++      snapshot_changed = true;
++      for (Animation* animation : trigger->BehaviorMap().Keys()) {
++        // A time-driven animation triggered by a TimelineTrigger should not
++        // be idle (it should have a resolved current time) because triggers
++        // should not remain attached to idle animations.
++        // scroll-driven animations pick up their start times post-layout
++        // and may not yet have resolved current times.
++        if (animation->timeline() &&
++            animation->timeline()->IsMonotonicallyIncreasing()) {
++          DCHECK(animation->CurrentTimeInternal());
++        }
++        // Avoid superfluous snapshot validation, by skipping the call if it
++        // will be invoked in the loop below.
++        if (animations.Contains(animation) ||
++            should_skip_validation(animation)) {
++          continue;
+         }
++        animations_to_validate.push_back(animation);
++      }
++    }
++    for (Animation* animation : animations_to_validate) {
++      // A later TimelineTrigger::Update or earlier OnValidateSnapshot call may
++      // have cancelled `animation` and disassociated it from its trigger.
++      if (animation->GetTriggers().empty()) {
++        continue;
+       }
+-      snapshot_changed |= trigger_changed;
++      animation->OnValidateSnapshot(true);
+     }
+     update_triggers_ = false;
+   }
+diff --git a/third_party/blink/web_tests/external/wpt/scroll-animations/animation-trigger/animation-trigger-removed-during-snapshot.tentative.html b/third_party/blink/web_tests/external/wpt/scroll-animations/animation-trigger/animation-trigger-removed-during-snapshot.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..0c646d11569a06330273cf36d4696d597e3fdc43
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/scroll-animations/animation-trigger/animation-trigger-removed-during-snapshot.tentative.html
+@@ -0,0 +1,397 @@
++<!DOCTYPE html>
++<html>
++<head>
++  <meta charset="utf-8">
++  <title>TimelineTrigger set and animation map mutated during snapshot update</title>
++  <link rel="help" href="https://drafts.csswg.org/animation-triggers-1/#timeline-triggers">
++  <script src="/resources/testharness.js"></script>
++  <script src="/resources/testharnessreport.js"></script>
++  <script src="/web-animations/testcommon.js"></script>
++  <script src="support/support.js"></script>
++  <style>
++    @keyframes css-anim {
++      from { opacity: 0.2; }
++      to { opacity: 0.8; }
++    }
++    .scroller {
++      overflow-y: scroll;
++      width: 200px;
++      height: 200px;
++    }
++    .spacer {
++      width: 50px;
++      height: 600px;
++    }
++    .target, .recalc-target {
++      width: 20px;
++      height: 20px;
++      opacity: 0;
++    }
++    .detached {
++      width: 20px;
++      height: 20px;
++      animation: css-anim 100s linear;
++    }
++  </style>
++</head>
++<body>
++<script>
++const DURATION_MS = 1;
++
++function createTriggeredAnimation(target) {
++  return new Animation(
++    new KeyframeEffect(
++      target,
++      [{ opacity: 0.5 }, { opacity: 1 }],
++      { duration: DURATION_MS, fill: "both" }
++    ),
++    document.timeline
++  );
++}
++
++function createTrigger(timeline, activationRangeStart = "50px",
++                       activationRangeEnd = "200px") {
++  return new TimelineTrigger([{
++    timeline,
++    activationRangeStart,
++    activationRangeEnd,
++  }]);
++}
++
++function setupFixture(test, {
++  slotScroller = false,
++  recalcTarget = false,
++  detachedCount = 12,
++  targetCount = 8,
++  includeUnslottedWaapiTarget = false,
++} = {}) {
++  assertAnimationTriggerSupport();
++
++  const container = document.createElement("div");
++  test.add_cleanup(() => container.remove());
++  document.body.appendChild(container);
++
++  const host = document.createElement("div");
++  const shadow = host.attachShadow({ mode: "open" });
++  const keepSlot = document.createElement("slot");
++  keepSlot.name = "keep";
++  const removeSlot = document.createElement("slot");
++  removeSlot.name = "remove";
++  shadow.append(keepSlot, removeSlot);
++  container.appendChild(host);
++
++  const scroller = document.createElement("div");
++  scroller.className = "scroller";
++  const spacer = document.createElement("div");
++  spacer.className = "spacer";
++  scroller.appendChild(spacer);
++  if (slotScroller) {
++    scroller.slot = "keep";
++    host.appendChild(scroller);
++  } else {
++    container.appendChild(scroller);
++  }
++
++  let recalcElement = null;
++  if (recalcTarget) {
++    recalcElement = document.createElement("div");
++    recalcElement.className = "recalc-target";
++    recalcElement.slot = "keep";
++    host.appendChild(recalcElement);
++  }
++
++  const detachedElements = [];
++  for (let i = 0; i < detachedCount; i++) {
++    const el = document.createElement("div");
++    el.className = "detached";
++    el.slot = "remove";
++    host.appendChild(el);
++    detachedElements.push(el);
++  }
++
++  let unslottedWaapiTarget = null;
++  if (includeUnslottedWaapiTarget) {
++    unslottedWaapiTarget = document.createElement("div");
++    unslottedWaapiTarget.className = "target";
++    unslottedWaapiTarget.slot = "remove";
++    host.appendChild(unslottedWaapiTarget);
++  }
++
++  const targets = [];
++  for (let i = 0; i < targetCount; i++) {
++    const el = document.createElement("div");
++    el.className = "target";
++    container.appendChild(el);
++    targets.push(el);
++  }
++
++  // Force initial style and layout so CSS animations exist on slotted elements
++  // while scroller starts at scrollTop = 0.
++  scroller.offsetTop;
++  assert_equals(scroller.scrollTop, 0, "scroller starts at top");
++
++  const timeline = new ScrollTimeline({ source: scroller });
++  return {
++    scroller,
++    removeSlot,
++    recalcElement,
++    detachedElements,
++    unslottedWaapiTarget,
++    targets,
++    timeline,
++  };
++}
++
++function addConnectedTriggers(timeline, targetsSlice, expectedAnimations,
++                              connectedAnimations) {
++  for (const target of targetsSlice) {
++    const trigger = createTrigger(timeline);
++    const anim = createTriggeredAnimation(target);
++    trigger.addAnimation(anim, "play-forwards", "reset");
++    expectedAnimations.push(anim);
++    connectedAnimations.push({ anim, target });
++  }
++}
++
++function addDetachedTriggers(timeline, detachedSlice, emptiedTriggers,
++                             cancelledCssAnimations) {
++  for (const el of detachedSlice) {
++    const trigger = createTrigger(timeline);
++    const cssAnim = el.getAnimations()[0];
++    trigger.addAnimation(cssAnim, "play-forwards", "reset");
++    emptiedTriggers.push(trigger);
++    cancelledCssAnimations.push(cssAnim);
++  }
++}
++
++async function scrollAndAssertOriginalActions({
++  scroller,
++  removeSlot,
++  expectedAnimations,
++  connectedAnimations,
++  emptiedTriggers,
++  cancelledCssAnimations,
++}) {
++  for (const anim of expectedAnimations) {
++    assert_equals(anim.playState, "paused", "animation starts paused for trigger");
++    assert_times_equal(anim.currentTime, 0, "animation starts at currentTime 0");
++  }
++
++  // Scroll into the activation range first, then rename the slot without
++  // flushing layout so slot recalculation runs lazily during the next frame's
++  // timeline snapshot update and detaches the unslotted elements.
++  scroller.scrollTop = 100;
++  removeSlot.name = "unmatched";
++
++  await Promise.all(expectedAnimations.map((anim) => anim.finished));
++
++  for (const { anim, target } of connectedAnimations) {
++    assert_equals(anim.playState, "finished",
++      "surviving triggered animation finished");
++    assert_times_equal(anim.currentTime, DURATION_MS,
++      "surviving triggered animation reached end");
++    assert_equals(getComputedStyle(target).opacity, "1",
++      "surviving target has animated end style");
++  }
++
++  for (const trigger of emptiedTriggers) {
++    assert_array_equals(trigger.getAnimations(), [],
++      "emptied trigger has no remaining animations");
++  }
++
++  for (const cssAnim of cancelledCssAnimations) {
++    assert_equals(cssAnim.playState, "idle",
++      "unslotted CSS animation was cancelled");
++    assert_equals(cssAnim.currentTime, null,
++      "unslotted CSS animation has unresolved currentTime");
++  }
++}
++
++promise_test(async (test) => {
++  const {
++    scroller,
++    removeSlot,
++    recalcElement,
++    detachedElements,
++    unslottedWaapiTarget,
++    targets,
++    timeline,
++  } = setupFixture(test, {
++    recalcTarget: true,
++    detachedCount: 20,
++    targetCount: 10,
++    includeUnslottedWaapiTarget: true,
++  });
++
++  const expectedAnimations = [];
++  const connectedAnimations = [];
++  const cancelledCssAnimations = [];
++  const emptiedTriggers = [];
++
++  addConnectedTriggers(timeline, targets.slice(0, 4), expectedAnimations,
++                       connectedAnimations);
++  addDetachedTriggers(timeline, detachedElements.slice(0, 6), emptiedTriggers,
++                      cancelledCssAnimations);
++
++  // Configure a trigger whose animation resolves a style-dependent calc() range
++  // offset during OnValidateSnapshot, triggering slot recalculation while also
++  // having both cancelled CSS animations and surviving animations on itself.
++  const recalcTrigger = createTrigger(timeline);
++  const survivingBefore = createTriggeredAnimation(targets[4]);
++  recalcTrigger.addAnimation(survivingBefore, "play-forwards", "reset");
++  expectedAnimations.push(survivingBefore);
++  connectedAnimations.push({ anim: survivingBefore, target: targets[4] });
++
++  for (const el of detachedElements.slice(12, 16)) {
++    const cssAnim = el.getAnimations()[0];
++    recalcTrigger.addAnimation(cssAnim, "play-forwards", "reset");
++    cancelledCssAnimations.push(cssAnim);
++  }
++
++  const recalcAnim = createTriggeredAnimation(recalcElement);
++  recalcAnim.rangeStart = "calc(10px + 10%)";
++  recalcTrigger.addAnimation(recalcAnim, "play-forwards", "reset");
++  expectedAnimations.push(recalcAnim);
++  connectedAnimations.push({ anim: recalcAnim, target: recalcElement });
++
++  for (const el of detachedElements.slice(16, 20)) {
++    const cssAnim = el.getAnimations()[0];
++    recalcTrigger.addAnimation(cssAnim, "play-forwards", "reset");
++    cancelledCssAnimations.push(cssAnim);
++  }
++
++  const survivingAfter = createTriggeredAnimation(targets[5]);
++  recalcTrigger.addAnimation(survivingAfter, "play-forwards", "reset");
++  expectedAnimations.push(survivingAfter);
++  connectedAnimations.push({ anim: survivingAfter, target: targets[5] });
++
++  addDetachedTriggers(timeline, detachedElements.slice(6, 12), emptiedTriggers,
++                      cancelledCssAnimations);
++  addConnectedTriggers(timeline, targets.slice(6, 10), expectedAnimations,
++                       connectedAnimations);
++
++  // Script-constructed WAAPI animations do not cancel when their target is
++  // unslotted, so its trigger action must also occur.
++  const unslottedWaapiTrigger = createTrigger(timeline);
++  const unslottedWaapiAnim = createTriggeredAnimation(unslottedWaapiTarget);
++  unslottedWaapiTrigger.addAnimation(unslottedWaapiAnim, "play-forwards", "reset");
++  expectedAnimations.push(unslottedWaapiAnim);
++
++  await scrollAndAssertOriginalActions({
++    scroller,
++    removeSlot,
++    expectedAnimations,
++    connectedAnimations,
++    emptiedTriggers,
++    cancelledCssAnimations,
++  });
++
++  assert_equals(unslottedWaapiAnim.playState, "finished",
++    "WAAPI animation on unslotted target still triggered and finished");
++  assert_times_equal(unslottedWaapiAnim.currentTime, DURATION_MS,
++    "WAAPI animation on unslotted target reached end");
++  assert_array_equals(
++    recalcTrigger.getAnimations(),
++    [survivingBefore, recalcAnim, survivingAfter],
++    "cancelled CSS animations were disassociated from recalcTrigger"
++  );
++}, "Timeline snapshot update handles trigger set and animation map shrinking during OnValidateSnapshot while performing all original trigger actions");
++
++promise_test(async (test) => {
++  const {
++    scroller,
++    removeSlot,
++    recalcElement,
++    detachedElements,
++    targets,
++    timeline,
++  } = setupFixture(test, {
++    recalcTarget: true,
++    detachedCount: 12,
++    targetCount: 8,
++  });
++
++  const expectedAnimations = [];
++  const connectedAnimations = [];
++  const cancelledCssAnimations = [];
++  const emptiedTriggers = [];
++
++  addConnectedTriggers(timeline, targets.slice(0, 4), expectedAnimations,
++                       connectedAnimations);
++  addDetachedTriggers(timeline, detachedElements.slice(0, 6), emptiedTriggers,
++                      cancelledCssAnimations);
++
++  // recalcTrigger itself has no cancelled animations; only the timeline's
++  // trigger set shrinks when OnValidateSnapshot triggers slot recalculation.
++  const recalcTrigger = createTrigger(timeline);
++  const recalcAnim = createTriggeredAnimation(recalcElement);
++  recalcAnim.rangeStart = "calc(10px + 10%)";
++  recalcTrigger.addAnimation(recalcAnim, "play-forwards", "reset");
++  expectedAnimations.push(recalcAnim);
++  connectedAnimations.push({ anim: recalcAnim, target: recalcElement });
++
++  addDetachedTriggers(timeline, detachedElements.slice(6, 12), emptiedTriggers,
++                      cancelledCssAnimations);
++  addConnectedTriggers(timeline, targets.slice(4, 8), expectedAnimations,
++                       connectedAnimations);
++
++  await scrollAndAssertOriginalActions({
++    scroller,
++    removeSlot,
++    expectedAnimations,
++    connectedAnimations,
++    emptiedTriggers,
++    cancelledCssAnimations,
++  });
++}, "Timeline snapshot update handles timeline trigger set shrinking during OnValidateSnapshot even when active trigger's animation map is unchanged");
++
++promise_test(async (test) => {
++  const {
++    scroller,
++    removeSlot,
++    detachedElements,
++    targets,
++    timeline,
++  } = setupFixture(test, {
++    slotScroller: true,
++    detachedCount: 12,
++    targetCount: 9,
++  });
++
++  const expectedAnimations = [];
++  const connectedAnimations = [];
++  const cancelledCssAnimations = [];
++  const emptiedTriggers = [];
++
++  addConnectedTriggers(timeline, targets.slice(0, 4), expectedAnimations,
++                       connectedAnimations);
++  addDetachedTriggers(timeline, detachedElements.slice(0, 6), emptiedTriggers,
++                      cancelledCssAnimations);
++
++  const calcBoundaryTrigger = createTrigger(
++    timeline,
++    "calc(50px + 0%)",
++    "calc(200px + 0%)"
++  );
++  const calcTriggerAnim = createTriggeredAnimation(targets[4]);
++  calcBoundaryTrigger.addAnimation(calcTriggerAnim, "play-forwards", "reset");
++  expectedAnimations.push(calcTriggerAnim);
++  connectedAnimations.push({ anim: calcTriggerAnim, target: targets[4] });
++
++  addDetachedTriggers(timeline, detachedElements.slice(6, 12), emptiedTriggers,
++                      cancelledCssAnimations);
++  addConnectedTriggers(timeline, targets.slice(5, 9), expectedAnimations,
++                       connectedAnimations);
++
++  await scrollAndAssertOriginalActions({
++    scroller,
++    removeSlot,
++    expectedAnimations,
++    connectedAnimations,
++    emptiedTriggers,
++    cancelledCssAnimations,
++  });
++}, "Timeline snapshot update handles trigger set shrinking during TimelineTrigger::Update while performing all original trigger actions");
++</script>
++</body>
++</html>

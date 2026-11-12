@@ -1,0 +1,275 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Thu, 5 Nov 2026 16:06:12 +0100
+Subject: [maglev] Use WithFallback in VisitIntrinsicAsyncFunctionAwait
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Introduce SubgraphBase::WithFallback and use it in
+VisitIntrinsicAsyncFunctionAwait so that both the fallback and join
+labels are always bound or trimmed even when the fast path aborts after
+branching to the fallback path. Also upgrade predecessor-count checks in
+MergeIntoLabel, TrimPredecessorsAndBind, and
+MergePointInterpreterFrameState::Merge to CHECKs.
+
+Fixed: 580867734
+Bug: 558240761
+Change-Id: I3be168d60330d5a06a4aba84ed18ccaa33a8ae92
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8741062
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111756}
+
+Electron adaptation notes (44-x-y):
+MergeIntoLabel(): the CHECK_LT is added in front of the existing Merge() call; this branch does not wrap that call in BorrowParentKnownNodeAspectsAndVOs. VisitIntrinsicAsyncFunctionAwait(): restructured with WithFallback as upstream, keeping this branch's JSPromise::HasHandlerBit and BuildInlinedAllocation(task, AllocationType::kYoung) spellings inside the fast path.
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 051ef6f77f165eecd43250e16bcc905b8c314329..1dd9c68a907ccb9641893d1f08bb44a8fdd3b9c9 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -753,6 +753,8 @@ void MaglevGraphBuilder::MaglevSubGraphBuilder::MergeIntoLabel(
+ 
+   } else {
+     // If there already is a frame state, merge.
++    CHECK_LT(label->variable_merge_state_->predecessors_so_far(),
++             label->predecessor_count_);
+     label->variable_merge_state_->Merge(
+         builder_->graph(), builder_->is_tracing(), *dummy_unit_,
+         variable_frame_, predecessor, builder_->GetCurrentScopeInfo());
+@@ -12320,52 +12322,54 @@ ReduceResult MaglevGraphBuilder::VisitIntrinsicAsyncFunctionAwait(
+ 
+   MaglevSubGraphBuilder sub_graph(this, 1);
+   MaglevSubGraphBuilder::Variable ret_val(0);
+-  MaglevSubGraphBuilder::Label slow_path(&sub_graph, 3);
+-  MaglevSubGraphBuilder::Label done(&sub_graph, 2, {&ret_val});
+-
+-  RETURN_IF_ABORT(sub_graph.GotoIfTrue<BranchIfSmi>(&slow_path, {value}));
+-
+-  ValueNode* value_map;
+-  GET_VALUE_OR_ABORT(value_map, BuildLoadMap(value));
+-  RETURN_IF_ABORT(sub_graph.GotoIfFalse<BranchIfReferenceEqual>(
+-      &slow_path, {value_map, GetConstant(promise_map)}));
+-
+-  ValueNode* flags;
+-  GET_VALUE_OR_ABORT(
+-      flags,
+-      BuildLoadTaggedField(value, offsetof(JSPromise, flags_), NodeType::kSmi));
+-  RETURN_IF_ABORT(sub_graph.GotoIfFalse<BranchIfReferenceEqual>(
+-      &slow_path,
+-      {flags, GetSmiConstant(static_cast<int>(Promise::kFulfilled))}));
+ 
+-  ValueNode* fulfilled_value;
+-  GET_VALUE_OR_ABORT(
+-      fulfilled_value,
+-      BuildLoadTaggedField(value, offsetof(JSPromise, reactions_or_result_)));
++  RETURN_IF_ABORT(sub_graph.WithFallback(
++      {&ret_val},
++      [&](MaglevSubGraphBuilder::Label* slow_path) -> ReduceResult {
++        RETURN_IF_ABORT(sub_graph.GotoIfTrue<BranchIfSmi>(slow_path, {value}));
+ 
+-  RETURN_IF_ABORT(BuildStoreTaggedFieldNoWriteBarrier(
+-      value,
+-      GetSmiConstant(static_cast<int>(Promise::kFulfilled) |
+-                     JSPromise::HasHandlerBit::kMask),
+-      offsetof(JSPromise, flags_), StoreTaggedMode::kDefault));
+-
+-  VirtualObject* task = reducer_.CreateAsyncResumeTask(
+-      async_function_object, fulfilled_value,
+-      GetSmiConstant(AsyncResumeTask::kAsyncFunctionAwait));
+-  ValueNode* task_node;
+-  GET_VALUE_OR_ABORT(
+-      task_node, reducer_.BuildInlinedAllocation(task, AllocationType::kYoung));
+-  BuildCallBuiltin<Builtin::kEnqueueMicrotask>({task_node});
++        ValueNode* value_map;
++        GET_VALUE_OR_ABORT(value_map, BuildLoadMap(value));
++        RETURN_IF_ABORT(sub_graph.GotoIfFalse<BranchIfReferenceEqual>(
++            slow_path, {value_map, GetConstant(promise_map)}));
+ 
+-  sub_graph.set(ret_val, outer_promise);
+-  sub_graph.Goto(&done);
++        ValueNode* flags;
++        GET_VALUE_OR_ABORT(
++            flags, BuildLoadTaggedField(value, offsetof(JSPromise, flags_),
++                                        NodeType::kSmi));
++        RETURN_IF_ABORT(sub_graph.GotoIfFalse<BranchIfReferenceEqual>(
++            slow_path,
++            {flags, GetSmiConstant(static_cast<int>(Promise::kFulfilled))}));
+ 
+-  sub_graph.Bind(&slow_path);
+-  sub_graph.set(ret_val, BuildCallBuiltin<Builtin::kAsyncFunctionAwait>(
+-                             {async_function_object, value}));
+-  sub_graph.Goto(&done);
++        ValueNode* fulfilled_value;
++        GET_VALUE_OR_ABORT(
++            fulfilled_value,
++            BuildLoadTaggedField(value,
++                                 offsetof(JSPromise, reactions_or_result_)));
++
++        RETURN_IF_ABORT(BuildStoreTaggedFieldNoWriteBarrier(
++            value,
++            GetSmiConstant(static_cast<int>(Promise::kFulfilled) |
++                           JSPromise::HasHandlerBit::kMask),
++            offsetof(JSPromise, flags_), StoreTaggedMode::kDefault));
++
++        VirtualObject* task = reducer_.CreateAsyncResumeTask(
++            async_function_object, fulfilled_value,
++            GetSmiConstant(AsyncResumeTask::kAsyncFunctionAwait));
++        ValueNode* task_node;
++        GET_VALUE_OR_ABORT(task_node, reducer_.BuildInlinedAllocation(
++                                          task, AllocationType::kYoung));
++        BuildCallBuiltin<Builtin::kEnqueueMicrotask>({task_node});
++
++        sub_graph.set(ret_val, outer_promise);
++        return ReduceResult::Done();
++      },
++      [&]() -> ReduceResult {
++        sub_graph.set(ret_val, BuildCallBuiltin<Builtin::kAsyncFunctionAwait>(
++                                   {async_function_object, value}));
++        return ReduceResult::Done();
++      }));
+ 
+-  sub_graph.Bind(&done);
+   SetAccumulator(sub_graph.get(ret_val));
+   return ReduceResult::Done();
+ }
+diff --git a/src/maglev/maglev-interpreter-frame-state.cc b/src/maglev/maglev-interpreter-frame-state.cc
+index 9b3067ced200dcd57267f47053e4b5b099dc6656..826fa7f57585b3c58ccc97f900caee5c28bb86a6 100644
+--- a/src/maglev/maglev-interpreter-frame-state.cc
++++ b/src/maglev/maglev-interpreter-frame-state.cc
+@@ -468,7 +468,7 @@ void MergePointInterpreterFrameState::Merge(
+     InterpreterFrameState& unmerged, BasicBlock* predecessor,
+     compiler::OptionalScopeInfoRef context_scope_info) {
+   DCHECK_GT(predecessor_count_, 1);
+-  DCHECK_LT(predecessors_so_far_, predecessor_count_);
++  CHECK_LT(predecessors_so_far_, predecessor_count_);
+ 
+   predecessors_[predecessors_so_far_] = predecessor;
+ 
+diff --git a/src/maglev/maglev-reducer-inl.h b/src/maglev/maglev-reducer-inl.h
+index 6f8ab468c3031a59ac90e60b7a52a67f562658bb..7683306938e997fffb6d91f74019508c0805a916 100644
+--- a/src/maglev/maglev-reducer-inl.h
++++ b/src/maglev/maglev-reducer-inl.h
+@@ -6292,7 +6292,7 @@ ReduceResult SubgraphBase<DerivedT, BaseT>::TrimPredecessorsAndBind(
+                   ? 0
+                   : label->merge_state_->predecessors_so_far());
+   }
+-  DCHECK_LE(predecessors_so_far, label->predecessor_count_);
++  CHECK_LE(predecessors_so_far, label->predecessor_count_);
+   reducer_->set_current_block(nullptr);
+   ReducePredecessorCount(label,
+                          label->predecessor_count_ - predecessors_so_far);
+@@ -6301,6 +6301,31 @@ ReduceResult SubgraphBase<DerivedT, BaseT>::TrimPredecessorsAndBind(
+   return ReduceResult::Done();
+ }
+ 
++template <typename DerivedT, typename BaseT>
++template <typename FFast, typename FSlow>
++ReduceResult SubgraphBase<DerivedT, BaseT>::WithFallback(
++    std::initializer_list<Variable*> vars, FFast&& fast_path_fn,
++    FSlow&& fallback_fn, int max_fallback_predecessors) {
++  Label fallback(this, max_fallback_predecessors);
++  Label done(this, 2, vars);
++
++  MaybeReduceResult fast_result = fast_path_fn(&fallback);
++  CHECK(fast_result.IsDone());
++  DCHECK_EQ(fast_result.IsDoneWithAbort(),
++            reducer_->current_block() == nullptr);
++  GotoOrTrim(&done);
++
++  if (!TrimPredecessorsAndBind(&fallback).IsDoneWithAbort()) {
++    MaybeReduceResult fallback_result = fallback_fn();
++    CHECK(fallback_result.IsDone());
++    DCHECK_EQ(fallback_result.IsDoneWithAbort(),
++              reducer_->current_block() == nullptr);
++  }
++  GotoOrTrim(&done);
++
++  return TrimPredecessorsAndBind(&done);
++}
++
+ inline bool IsSmallFunction(int bytecode_length,
+                             base::Vector<ValueNode*> arguments,
+                             UseRepresentationSet use_repr_hints,
+diff --git a/src/maglev/maglev-reducer.h b/src/maglev/maglev-reducer.h
+index 6b5298b21d1d0720da2e6fe0d59da0d1d3a02079..3a3de602c271e41740913f2b99adae4d0cfa0946 100644
+--- a/src/maglev/maglev-reducer.h
++++ b/src/maglev/maglev-reducer.h
+@@ -1824,10 +1824,24 @@ class SubgraphBase {
+     static_cast<DerivedT*>(this)->Goto(label);
+   }
+ 
++  // Default upper bound on the number of branches a WithFallback fast path may
++  // emit into its fallback label; unused predecessors are trimmed when binding.
++  static constexpr int kMaxFallbackPredecessors = 4;
++
+   void ReducePredecessorCount(Label* label, unsigned num = 1);
+ 
+   V8_NODISCARD ReduceResult TrimPredecessorsAndBind(Label* label);
+ 
++  // Emits `fast_path_fn(&fallback)`, followed by `fallback_fn()` if `fallback`
++  // is reachable, merging `vars` at the join point. Both the `fallback` and
++  // join labels are always bound or trimmed even when `fast_path_fn` or
++  // `fallback_fn` aborts.
++  template <typename FFast, typename FSlow>
++  V8_NODISCARD ReduceResult
++  WithFallback(std::initializer_list<Variable*> vars, FFast&& fast_path_fn,
++               FSlow&& fallback_fn,
++               int max_fallback_predecessors = kMaxFallbackPredecessors);
++
+  protected:
+   SubgraphBase(MaglevReducer<BaseT>* reducer, MaglevCompilationUnit* dummy_unit)
+       : reducer_(reducer),
+diff --git a/test/mjsunit/maglev/regress-580867734.js b/test/mjsunit/maglev/regress-580867734.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b66ea09eff04ea209ffdf960fbaba39d0807b911
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-580867734.js
+@@ -0,0 +1,45 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++// Regression test for crbug.com/580867734: Maglev's inline AsyncFunctionAwait
++// fast path aborted (unconditional deopt) after branching to its slow-path
++// label, leaving the label unbound. The empty inner loop and `x = 2` keep
++// `savedIter` a loop phi whose type is statically known not to be a JSPromise.
++
++function makeIter(a, bail) {
++  if (bail) throw 0;
++  a.x;
++  return a.values();
++}
++
++%PrepareFunctionForOptimization(makeIter);
++let warmArr = [2, 4];
++warmArr.x = 42;
++makeIter(warmArr, false);
++try { makeIter(2, true); } catch (e) {}
++
++async function trigger(doBreak, bail, n) {
++  let x = 2;
++  let savedIter;
++  for (let j = 0; ; j++) {
++    for (let k = 0; k < 0; k++) {}
++    if (doBreak) {
++      savedIter = makeIter(x, bail);
++      break;
++    }
++    if (j >= n) return 42;
++    x = 2;
++  }
++  return await savedIter;
++}
++
++%PrepareFunctionForOptimization(trigger);
++trigger(false, false, 1);
++trigger(true, true, 0).catch(() => {});
++%OptimizeFunctionOnNextCall(trigger);
++assertPromiseResult(trigger(false, false, 1), v => assertEquals(42, v));
++assertPromiseResult(
++    trigger(true, true, 0), () => assertUnreachable(), e => assertEquals(0, e));

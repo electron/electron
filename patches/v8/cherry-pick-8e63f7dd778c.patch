@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Mon, 2 Nov 2026 11:04:02 +0100
+Subject: [maglev] Don't reuse outer kReceiver call feedback in reduced apply
+
+For a direct `fn.apply(this, args)` call, BuildCallWithFeedback
+already checks that the `kReceiver` feedback target is a JSFunction
+and passes it to TryReduceFunctionPrototypeApplyCallWithReceiver.
+However, TryReduceFunctionPrototypeApply also read the current
+speculation feedback and treated any `kReceiver` target as the
+receiver of `apply`. When `Function.prototype.apply` is reached via
+an outer `Function.prototype.call` or `Function.prototype.apply`
+reduction (such as `Function.prototype.apply.call(x)`), that
+feedback belongs to the outer call rather than the inner `apply`,
+and can even hold a FeedbackCell like `many_closures_cell`.
+
+Pass an empty receiver target from TryReduceFunctionPrototypeApply,
+and tighten TryReduceFunctionPrototypeApplyCallWithReceiver to take
+an OptionalJSFunctionRef.
+
+TAG=agy
+CONV=3215cdec-b8a8-49aa-92c8-db2159e9f5ad
+
+Fixed: 579313083
+Change-Id: I6f7ad21566277c8fda4ca09409c9f148dab330af
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8689231
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111474}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 763d20b2e55247d7a1c30a4134fc07c0a17ad2f0..6b87fc76bd07bf0086974126b12f9da482e6bfe3 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -9476,19 +9476,12 @@ MaybeReduceResult MaglevGraphBuilder::TryReduceFunctionPrototypeCall(
+ 
+ MaybeReduceResult MaglevGraphBuilder::TryReduceFunctionPrototypeApply(
+     compiler::JSFunctionRef target, CallArguments& args) {
+-  compiler::OptionalHeapObjectRef maybe_receiver;
+-  if (current_speculation_feedback().IsValid()) {
+-    const compiler::ProcessedFeedback& processed_feedback =
+-        broker()->GetFeedbackForCall(current_speculation_feedback());
+-    DCHECK_EQ(processed_feedback.kind(), compiler::ProcessedFeedback::kCall);
+-    const compiler::CallFeedback& call_feedback = processed_feedback.AsCall();
+-    if (call_feedback.call_feedback_content() ==
+-        CallFeedbackContent::kReceiver) {
+-      maybe_receiver = call_feedback.target();
+-    }
+-  }
++  // We should have taken the `BuildCallWithFeedback` path for the typical
++  // Function.prototype.apply speculation-based optimization. If we are on this
++  // code path, we must be inside an apply inside another inlining and shouldn't
++  // use the feedback receiver.
+   return TryReduceFunctionPrototypeApplyCallWithReceiver(
+-      maybe_receiver, args, current_speculation_feedback());
++      {}, args, current_speculation_feedback());
+ }
+ 
+ namespace {
+@@ -11584,7 +11577,7 @@ MaybeReduceResult MaglevGraphBuilder::TryReduceCallForNewClosure(
+ 
+ MaybeReduceResult
+ MaglevGraphBuilder::TryReduceFunctionPrototypeApplyCallWithReceiver(
+-    compiler::OptionalHeapObjectRef maybe_receiver, CallArguments& args,
++    compiler::OptionalJSFunctionRef maybe_receiver, CallArguments& args,
+     const compiler::FeedbackSource& feedback_source) {
+   if (args.mode() != CallArguments::kDefault) return {};
+ 
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index 1121b1feff1b78b061c9a97f65c64e41706497bf..7823e01716659bfd13431b6d10e9f61c54a0d419 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -1044,7 +1044,7 @@ class MaglevGraphBuilder {
+       compiler::OptionalSharedFunctionInfoRef maybe_shared,
+       CallArguments& args);
+   MaybeReduceResult TryReduceFunctionPrototypeApplyCallWithReceiver(
+-      compiler::OptionalHeapObjectRef maybe_receiver, CallArguments& args,
++      compiler::OptionalJSFunctionRef maybe_receiver, CallArguments& args,
+       const compiler::FeedbackSource& feedback_source);
+ 
+   template <typename CallNode, typename... Args>
+diff --git a/test/mjsunit/maglev/regress-579313083.js b/test/mjsunit/maglev/regress-579313083.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b70e9e597738eb5191c33af172607691f966d7ce
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-579313083.js
+@@ -0,0 +1,56 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++const sinWithApply = Math.sin;
++sinWithApply.call = Function.prototype.apply;
++
++function inner(fn, cond, breakCond) {
++  let x = true;
++  while (cond) {
++    // Inner loop resets `x`'s known type in KNA to the unfinalized outer loop
++    // Phi type (`kUnknown`) before `fn.call(x)`, while `FinishLoop` later types
++    // the outer Phi as `kBoolean` before `!x`.
++    for (let k = 0; k < 0; k++) {}
++    fn.call(x);
++    if (breakCond) break;
++    x = false;
++  }
++  return !x;
++}
++
++function outer(breakCond) {
++  return inner(Function.prototype.apply, true, breakCond);
++}
++
++%PrepareFunctionForOptimization(inner);
++%PrepareFunctionForOptimization(outer);
++
++// 1. Calling `fn.call` when it is `Function.prototype.apply` on `Math.sin`
++// records `Weak(Math.sin)` with `CallFeedbackContent::kReceiver`.
++inner(sinWithApply, true, true);
++
++// 2. Calling `fn.call` when `fn` is `Function.prototype.apply` transitions the
++// slot to `many_closures_cell` while `CallFeedbackContent::kReceiver` remains
++// set. When `outer` inlines `inner` with constant `Function.prototype.apply`,
++// reducing `fn.call(x)` reduces `Function.prototype.apply` and must not
++// speculate that `x` equals `many_closures_cell`.
++assertThrows(() => outer(false), TypeError);
++
++%OptimizeFunctionOnNextCall(outer);
++assertThrows(() => outer(false), TypeError);
++
++// Nested `Function.prototype.apply.apply(target)` records `kReceiver` with
++// `Function.prototype.apply` for the outer `apply` call; the inner `apply`
++// reduction must not reuse that feedback for `target` and deopt.
++function nestedApply(target) {
++  return Function.prototype.apply.apply(target);
++}
++
++%PrepareFunctionForOptimization(nestedApply);
++assertEquals(42, nestedApply(() => 42));
++%OptimizeFunctionOnNextCall(nestedApply);
++assertEquals(42, nestedApply(() => 42));
++assertOptimized(nestedApply);

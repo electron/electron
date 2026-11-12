@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Fri, 6 Nov 2026 11:47:31 -0500
+Subject: [ganesh] Handle negative determinants in StrokeIterator for hairline
+ square caps
+
+A negative determinant is perfectly valid, e.g. from a negative Y scale.
+Without this fix, the outset to form a square cap on zero-length
+lines would be length 1 in local space, but the negative Y scale could
+scale this square arbitrarily large.
+
+Using |det| could work, but would result in flipping the square
+(not visually noticeable). Instead I opted to just always apply the
+inverse determinant and then check for finiteness afterwards to
+handle scenarios where the outset itself overflows when det was a
+subnormal value.
+
+Bug: 578685477
+Change-Id: I843ac39e92dfd927de82bf0ca87e3a02c8e9ab26
+Fixed: 578685477
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1420276
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+Reviewed-by: Greg Daniel <egdaniel@google.com>
+
+diff --git a/src/gpu/tessellate/StrokeIterator.h b/src/gpu/tessellate/StrokeIterator.h
+index 54fc7ebde97b6b4b4bf359ab6235382a9c0c770d..0d3e3864e12881db25dd42f6b93ed5d089589c9e 100644
+--- a/src/gpu/tessellate/StrokeIterator.h
++++ b/src/gpu/tessellate/StrokeIterator.h
+@@ -245,19 +245,18 @@ private:
+                         SkASSERT(!fViewMatrix->hasPerspective());
+                         float a=fViewMatrix->getScaleX(), b=fViewMatrix->getSkewX(),
+                               c=fViewMatrix->getSkewY(),  d=fViewMatrix->getScaleY();
+-                        float det = a*d - b*c;
+-                        if (det > 0) {
+-                            // outset = inverse(|a b|) * |.5|
+-                            //                  |c d|    | 0|
+-                            //
+-                            //     == 1/det * | d -b| * |.5|
+-                            //                |-c  a|   | 0|
+-                            //
+-                            //     == | d| * .5/det
+-                            //        |-c|
+-                            outset = SkVector{d, -c} * (.5f / det);
+-                        } else {
+-                            outset = {1, 0};
++                        // outset = inverse(|a b|) * |.5|
++                        //                  |c d|    | 0|
++                        //
++                        //     == 1/det * | d -b| * |.5|
++                        //                |-c  a|   | 0|
++                        //
++                        //     == | d| * .5/det
++                        //        |-c|
++                        outset = SkVector{d, -c} * sk_ieee_float_divide(0.5f, a*d - b*c);
++                        if (!SkIsFinite(outset.fX, outset.fY)) {
++                            // Don't outset any geometry if the matrix is not invertible.
++                            outset = {0, 0};
+                         }
+                     }
+                     fEndingCapPts = {*fLastDegenerateStrokePt - outset,

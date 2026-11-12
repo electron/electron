@@ -1,0 +1,381 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Tue, 3 Nov 2026 14:11:19 +0000
+Subject: [compiler] Mark string-keyed ordered hash lookups as writing
+
+FindOrderedHashMapEntry and FindOrderedHashSetEntry can internalize a
+non-internalized string key in place into a ThinString via
+String::MakeThin (since https://crrev.com/c/6965654), overwriting its
+payload (e.g., ConsString::first_ with ThinString::actual_).
+
+Declare heap write effects on string-keyed ordered hash table lookups in
+Turboshaft, TurboFan, and Maglev so load elimination, value numbering,
+and dead-code elimination do not reuse stale string fields across them,
+while keeping Int32 Map lookups read-only and non-allocating.
+
+TAG=agy
+CONV=4ef03ae9-b9cb-42a7-ba49-b808f1c575c2
+
+Fixed: 577461556
+Change-Id: I3358127d2643477b0f91a7be2abdfd9b208aa28c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8715069
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111547}
+
+Electron adaptation notes (44-x-y):
+test/unittests/compiler/turboshaft/late-load-elimination-reducer-unittest.cc conflicted on unrelated neighbouring tests; only the FindOrderedHashEntry_Invalidates_String_First_Load test added by this change was carried. Code hunks applied verbatim.
+
+diff --git a/src/compiler/simplified-operator.cc b/src/compiler/simplified-operator.cc
+index 80159d7cc658fb980e1cef45c0d3a6189d0085cb..47a492b0136328b4653e7196f74af3dd0b80ec6b 100644
+--- a/src/compiler/simplified-operator.cc
++++ b/src/compiler/simplified-operator.cc
+@@ -1167,9 +1167,12 @@ struct SimplifiedOperatorGlobalCache final {
+   DEOPTIMIZE_REASON_LIST(CHECK_IF)
+ #undef CHECK_IF
+ 
++  // Looking up a string key can internalize it in place into a ThinString,
++  // so Operator::kNoWrite (and thus Operator::kEliminatable) does not hold.
+   struct FindOrderedHashMapEntryOperator final : public Operator {
+     FindOrderedHashMapEntryOperator()
+-        : Operator(IrOpcode::kFindOrderedHashMapEntry, Operator::kEliminatable,
++        : Operator(IrOpcode::kFindOrderedHashMapEntry,
++                   Operator::kNoThrow | Operator::kNoDeopt,
+                    "FindOrderedHashMapEntry", 2, 1, 1, 1, 1, 0) {}
+   };
+   FindOrderedHashMapEntryOperator kFindOrderedHashMapEntry;
+@@ -1183,9 +1186,12 @@ struct SimplifiedOperatorGlobalCache final {
+   FindOrderedHashMapEntryForInt32KeyOperator
+       kFindOrderedHashMapEntryForInt32Key;
+ 
++  // Looking up a string key can internalize it in place into a ThinString,
++  // so Operator::kNoWrite (and thus Operator::kEliminatable) does not hold.
+   struct FindOrderedHashSetEntryOperator final : public Operator {
+     FindOrderedHashSetEntryOperator()
+-        : Operator(IrOpcode::kFindOrderedHashSetEntry, Operator::kEliminatable,
++        : Operator(IrOpcode::kFindOrderedHashSetEntry,
++                   Operator::kNoThrow | Operator::kNoDeopt,
+                    "FindOrderedHashSetEntry", 2, 1, 1, 1, 1, 0) {}
+   };
+   FindOrderedHashSetEntryOperator kFindOrderedHashSetEntry;
+diff --git a/src/compiler/turboshaft/builtin-call-descriptors.h b/src/compiler/turboshaft/builtin-call-descriptors.h
+index c73e1d66cc7ec88107a2c0a6d616d6c4df15f3aa..7ae12da8c19297926fbfd858cbc2494d2644087d 100644
+--- a/src/compiler/turboshaft/builtin-call-descriptors.h
++++ b/src/compiler/turboshaft/builtin-call-descriptors.h
+@@ -300,15 +300,19 @@ struct builtin : CallDescriptorBuilder {
+     static constexpr auto kFunction = B;
+     struct Arguments : ArgumentsBase {
+       ARG(V<Object>, table)
+-      ARG(V<Smi>, key)
++      ARG(V<Object>, key)
+     };
+     using returns_t = std::tuple<V<Smi>>;
+ 
+     static constexpr bool kCanTriggerLazyDeopt = false;
+     static constexpr bool kNeedsContext = true;
+-    static constexpr Operator::Properties kProperties = Operator::kEliminatable;
+-    static constexpr OpEffects kEffects =
+-        base_effects.AssumesConsistentHeap().CanReadMemory().CanAllocate();
++    static constexpr Operator::Properties kProperties =
++        Operator::kNoThrow | Operator::kNoDeopt;
++    // Looking up a string key can internalize it in place into a ThinString.
++    static constexpr OpEffects kEffects = base_effects.AssumesConsistentHeap()
++                                              .CanReadMemory()
++                                              .CanWriteHeapMemory()
++                                              .CanAllocate();
+   };
+   using FindOrderedHashMapEntry =
+       FindOrderedHashEntry<Builtin::kFindOrderedHashMapEntry>;
+diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
+index ab3b571a75006f6dbe7fe21ff5249ec38d03bfad..f4cbc24877543231bcc11e667454ef5c0307cd62 100644
+--- a/src/compiler/turboshaft/operations.h
++++ b/src/compiler/turboshaft/operations.h
+@@ -7422,8 +7422,22 @@ struct FindOrderedHashEntryOp
+   };
+   Kind kind;
+ 
+-  static constexpr OpEffects effects =
+-      OpEffects().CanDependOnChecks().CanReadMemory().CanAllocate();
++  OpEffects Effects() const {
++    switch (kind) {
++      case Kind::kFindOrderedHashMapEntry:
++      case Kind::kFindOrderedHashSetEntry:
++        // Looking up a string key can internalize it in place into a
++        // ThinString, overwriting its payload (e.g., ConsString::first_).
++        return OpEffects()
++            .CanDependOnChecks()
++            .CanReadMemory()
++            .CanWriteHeapMemory()
++            .CanAllocate();
++      case Kind::kFindOrderedHashMapEntryForInt32Key:
++        return OpEffects().CanDependOnChecks().CanReadMemory();
++    }
++    UNREACHABLE();
++  }
+   base::Vector<const RegisterRepresentation> outputs_rep() const {
+     switch (kind) {
+       case Kind::kFindOrderedHashMapEntry:
+@@ -10492,6 +10506,8 @@ inline OpEffects Operation::Effects() const {
+       return Cast<StoreOp>().Effects();
+     case Opcode::kCall:
+       return Cast<CallOp>().Effects();
++    case Opcode::kFindOrderedHashEntry:
++      return Cast<FindOrderedHashEntryOp>().Effects();
+     case Opcode::kDidntThrow:
+       return Cast<DidntThrowOp>().Effects();
+     case Opcode::kTaggedBitcast:
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index 7672eb1df6bfb715fff11f7ecdc0b9d6f50d6dac..47050e4651c6297050eeece61acea0ff2011d06c 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -8084,9 +8084,11 @@ class MapPrototypeGet : public FixedInputValueNodeT<2, MapPrototypeGet> {
+  public:
+   explicit MapPrototypeGet(uint64_t bitfield) : Base(bitfield) {}
+ 
++  // Looking up a string key can allocate and internalize the key in place.
+   static constexpr OpProperties kProperties =
+       OpProperties::Call() | OpProperties::CanAllocate() |
+-      OpProperties::CanRead() | OpProperties::TaggedValue();
++      OpProperties::CanRead() | OpProperties::CanWrite() |
++      OpProperties::TaggedValue();
+   DECLARE_INPUTS(Table, Key)
+   DECLARE_INPUT_TYPES(Tagged, Tagged)
+ 
+@@ -8118,11 +8120,11 @@ class SetPrototypeHas : public FixedInputValueNodeT<2, SetPrototypeHas> {
+  public:
+   explicit SetPrototypeHas(uint64_t bitfield) : Base(bitfield) {}
+ 
+-  // CanAllocate is needed, since finding strings in hash tables does an
+-  // equality comparison which flattens strings.
++  // Looking up a string key can allocate and internalize the key in place.
+   static constexpr OpProperties kProperties =
+       OpProperties::Call() | OpProperties::CanAllocate() |
+-      OpProperties::CanRead() | OpProperties::TaggedValue();
++      OpProperties::CanRead() | OpProperties::CanWrite() |
++      OpProperties::TaggedValue();
+   DECLARE_INPUTS(Table, Key)
+   DECLARE_INPUT_TYPES(Tagged, Tagged)
+ 
+diff --git a/test/mjsunit/compiler/regress-577461556.js b/test/mjsunit/compiler/regress-577461556.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a3e836aa001b6c4d45ef53638973a234f15527d3
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-577461556.js
+@@ -0,0 +1,58 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++const receiver = {prefix_for_key_check_long_enough: 0x1234};
++
++function testMapHas(obj, map, suffix) {
++  const key = 'prefix_for_key_check_long_enough' + suffix;
++  const has = map.has(key);
++  return [obj[key], has];
++}
++
++function testMapGet(obj, map, suffix) {
++  const key = 'prefix_for_key_check_long_enough' + suffix;
++  const val = map.get(key);
++  return [obj[key], val];
++}
++
++function testSetHas(obj, set, suffix) {
++  const key = 'prefix_for_key_check_long_enough' + suffix;
++  const has = set.has(key);
++  return [obj[key], has];
++}
++
++// Map.prototype.has
++{
++  const map = new Map([['prefix_for_key_check_long_enough_hit', 42]]);
++  %PrepareFunctionForOptimization(testMapHas);
++  assertEquals([0x1234, false], testMapHas(receiver, map, ''));
++  assertEquals([0x1234, false], testMapHas(receiver, map, ''));
++  %OptimizeFunctionOnNextCall(testMapHas);
++  assertEquals([undefined, false], testMapHas(receiver, map, '_miss'));
++  assertEquals([undefined, true], testMapHas(receiver, map, '_hit'));
++}
++
++// Map.prototype.get
++{
++  const map = new Map([['prefix_for_key_check_long_enough_hit', 42]]);
++  %PrepareFunctionForOptimization(testMapGet);
++  assertEquals([0x1234, undefined], testMapGet(receiver, map, ''));
++  assertEquals([0x1234, undefined], testMapGet(receiver, map, ''));
++  %OptimizeFunctionOnNextCall(testMapGet);
++  assertEquals([undefined, undefined], testMapGet(receiver, map, '_miss'));
++  assertEquals([undefined, 42], testMapGet(receiver, map, '_hit'));
++}
++
++// Set.prototype.has
++{
++  const set = new Set(['prefix_for_key_check_long_enough_hit']);
++  %PrepareFunctionForOptimization(testSetHas);
++  assertEquals([0x1234, false], testSetHas(receiver, set, ''));
++  assertEquals([0x1234, false], testSetHas(receiver, set, ''));
++  %OptimizeFunctionOnNextCall(testSetHas);
++  assertEquals([undefined, false], testSetHas(receiver, set, '_miss'));
++  assertEquals([undefined, true], testSetHas(receiver, set, '_hit'));
++}
+diff --git a/test/mjsunit/turbolev/regress-577461556.js b/test/mjsunit/turbolev/regress-577461556.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..54cecad7b54158b51116c512ad8074d1fbd82692
+--- /dev/null
++++ b/test/mjsunit/turbolev/regress-577461556.js
+@@ -0,0 +1,48 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbolev --turbofan
++
++const prefix = 'ABCDEFGHIJKLMNO';
++const key = %ConstructInternalizedString(prefix + 'P');
++
++function inspect(s, expected) {
++  return [s === expected, s.length, s.charCodeAt(15)];
++}
++%PrepareFunctionForOptimization(inspect);
++inspect(key, prefix);
++%OptimizeFunctionOnNextCall(inspect);
++inspect(key, prefix);
++
++function testMapGet(map, suffix) {
++  const s = prefix + ('P' + suffix);
++  const found = map.get(s);
++  return [found, ...inspect(s, prefix)];
++}
++
++function testSetHas(set, suffix) {
++  const s = prefix + ('P' + suffix);
++  const found = set.has(s);
++  return [found, ...inspect(s, prefix)];
++}
++
++// Map.prototype.get
++{
++  const map = new Map([[key, 42]]);
++  %PrepareFunctionForOptimization(testMapGet);
++  assertEquals([42, false, 16, 80], testMapGet(map, ''));
++  assertEquals([42, false, 16, 80], testMapGet(map, ''));
++  %OptimizeFunctionOnNextCall(testMapGet);
++  assertEquals([42, false, 16, 80], testMapGet(map, ''));
++}
++
++// Set.prototype.has
++{
++  const set = new Set([key]);
++  %PrepareFunctionForOptimization(testSetHas);
++  assertEquals([true, false, 16, 80], testSetHas(set, ''));
++  assertEquals([true, false, 16, 80], testSetHas(set, ''));
++  %OptimizeFunctionOnNextCall(testSetHas);
++  assertEquals([true, false, 16, 80], testSetHas(set, ''));
++}
+diff --git a/test/unittests/compiler/turboshaft/late-load-elimination-reducer-unittest.cc b/test/unittests/compiler/turboshaft/late-load-elimination-reducer-unittest.cc
+index c7f09484af305a137389c12d4bfae32d01ff401e..348fc42c910c998024035f7b4d70574da923a091 100644
+--- a/test/unittests/compiler/turboshaft/late-load-elimination-reducer-unittest.cc
++++ b/test/unittests/compiler/turboshaft/late-load-elimination-reducer-unittest.cc
+@@ -8,7 +8,9 @@
+ #include "src/compiler/turboshaft/wasm-load-elimination-reducer.h"
+ #endif
+ 
++#include "src/compiler/access-builder.h"
+ #include "src/compiler/turboshaft/assembler.h"
++#include "src/compiler/turboshaft/builtin-call-descriptors.h"
+ #include "src/compiler/turboshaft/copying-phase.h"
+ #include "src/compiler/turboshaft/machine-optimization-reducer.h"
+ #include "src/compiler/turboshaft/operations.h"
+@@ -18,6 +20,7 @@
+ #include "src/compiler/turboshaft/required-optimization-reducer.h"
+ #include "src/compiler/turboshaft/variable-reducer.h"
+ #include "src/flags/flags.h"
++#include "src/objects/string.h"
+ #include "test/common/flag-utils.h"
+ #include "test/unittests/compiler/turboshaft/reducer-test.h"
+ 
+@@ -491,6 +494,81 @@ TEST_F(LateLoadEliminationReducerTest,
+ #endif
+ }
+ 
++TEST_F(LateLoadEliminationReducerTest,
++       FindOrderedHashEntry_Invalidates_String_First_Load) {
++  {
++    auto effects_test = CreateFromGraph(2, [](auto& Asm) {
++      V<Object> table = Asm.GetParameter(0);
++      V<Smi> key = V<Smi>::Cast(Asm.GetParameter(1));
++      V<Smi> C(map_op) = __ FindOrderedHashMapEntry(table, key);
++      V<Smi> C(set_op) = __ FindOrderedHashSetEntry(table, key);
++      V<WordPtr> C(int32_op) =
++          __ FindOrderedHashMapEntryForInt32Key(table, __ Word32Constant(0));
++      __ Return(__ Word32Constant(0),
++                base::VectorOf<OpIndex>({map_op, set_op, int32_op}));
++    });
++    const Operation* map_op = effects_test.GetCapture("map_op").Get();
++    EXPECT_TRUE(map_op->Effects().can_write());
++    EXPECT_TRUE(map_op->Effects().can_allocate);
++
++    const Operation* set_op = effects_test.GetCapture("set_op").Get();
++    EXPECT_TRUE(set_op->Effects().can_write());
++    EXPECT_TRUE(set_op->Effects().can_allocate);
++
++    const Operation* int32_op = effects_test.GetCapture("int32_op").Get();
++    EXPECT_FALSE(int32_op->Effects().can_write());
++    EXPECT_FALSE(int32_op->Effects().can_allocate);
++    EXPECT_TRUE(int32_op->Effects().produces.load_heap_memory);
++  }
++
++  EXPECT_EQ(AccessBuilder::ForConsStringFirst().offset,
++            AccessBuilder::ForThinStringActual().offset);
++
++  auto test = CreateFromGraph(3, [](auto& Asm) {
++    V<Object> table = Asm.GetParameter(0);
++    V<String> first0 = V<String>::Cast(Asm.GetParameter(1));
++    V<String> first1 = V<String>::Cast(Asm.GetParameter(2));
++
++    auto escaped_alloc = __ template Allocate<ConsString>(
++        __ WordPtrConstant(sizeof(ConsString)), AllocationType::kYoung,
++        AllocationAlignment::kTaggedAligned);
++    __ InitializeField(escaped_alloc, AccessBuilder::ForConsStringFirst(),
++                       first0);
++    V<ConsString> escaped_str =
++        __ FinishInitialization(std::move(escaped_alloc));
++
++    auto local_alloc = __ template Allocate<ConsString>(
++        __ WordPtrConstant(sizeof(ConsString)), AllocationType::kYoung,
++        AllocationAlignment::kTaggedAligned);
++    __ InitializeField(local_alloc, AccessBuilder::ForConsStringFirst(),
++                       first1);
++    V<ConsString> local_str = __ FinishInitialization(std::move(local_alloc));
++
++    V<Smi> entry = __ template CallBuiltin<builtin::FindOrderedHashMapEntry>(
++        Asm.context(), {.table = table, .key = escaped_str});
++
++    // String::MakeThin overwrites ConsString::first_ with ThinString::actual_.
++    V<String> C(escaped_load) = __ template LoadField<String>(
++        escaped_str, AccessBuilder::ForThinStringActual());
++    V<String> C(local_load) = __ template LoadField<String>(
++        local_str, AccessBuilder::ForConsStringFirst());
++
++    __ Return(__ Word32Constant(0),
++              base::VectorOf<OpIndex>({entry, escaped_load, local_load}));
++  });
++
++  test.Run<LateLoadEliminationReducer>();
++
++  // The load from the escaped ConsString must NOT be replaced with `first0`.
++  const LoadOp* escaped_load = test.GetCapturedAs<LoadOp>("escaped_load");
++  ASSERT_NE(escaped_load, nullptr);
++
++  // Non-escaping allocations remain eligible for load elimination.
++  if (!LATE_LOAD_ELIM_VERIFY) {
++    ASSERT_TRUE(test.GetCapture("local_load").IsEmpty());
++  }
++}
++
+ #if V8_ENABLE_WEBASSEMBLY
+ 
+ class WasmLateLoadEliminationReducerTest
