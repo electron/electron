@@ -33,7 +33,7 @@ const uuid = require('uuid');
 
 const fixtures = path.join(import.meta.dirname, 'fixtures');
 
-describe('chrome extensions', () => {
+describe('chrome extensions', { retry: 0 }, () => {
   const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
 
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
@@ -726,7 +726,7 @@ describe('chrome extensions', () => {
     // TODO(jkleinsc) fix this flaky test on WOA
     ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads a devtools extension', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
+      await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
       const winningMessage = once(ipcMain, 'winning');
       const w = new BrowserWindow({
         show: true,
