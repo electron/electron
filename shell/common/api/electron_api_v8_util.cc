@@ -17,6 +17,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_util.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
 
