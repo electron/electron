@@ -9797,6 +9797,58 @@ describe('BrowserWindow module', () => {
           expect(savedState.right - savedState.left).toBe(newBounds.width);
           expect(savedState.bottom - savedState.top).toBe(newBounds.height);
         });
+
+        for (const WindowClass of [BrowserWindow, BaseWindow]) {
+          ifit(process.platform === 'win32')(
+            `should persist the final hidden ${WindowClass.name} bounds when its parent is destroyed`,
+            async () => {
+              await createAndSaveWindowState(preferencesPath, windowName, { width: 400, height: 300 });
+              const parent = new WindowClass({ show: false });
+              const w = new WindowClass({ name: windowName, parent, windowStatePersistence: true, show: false });
+              const initialModTime = getPrefsModTime(preferencesPath);
+              const bounds = { x: 100, y: 150, width: 500, height: 450 };
+              w.setBounds(bounds);
+
+              // Windows destroys owned native windows without calling Widget::Close().
+              const closed = once(w, 'closed');
+              parent.destroy();
+              await closed;
+              await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+              const savedState = getWindowStateFromDisk(windowName, preferencesPath);
+              expect(savedState).toMatchObject({
+                left: bounds.x,
+                top: bounds.y,
+                right: bounds.x + bounds.width,
+                bottom: bounds.y + bounds.height
+              });
+            }
+          );
+
+          it.each(['close', 'destroy'] as const)(
+            `should persist the final hidden ${WindowClass.name} bounds on %s`,
+            async (method) => {
+              await createAndSaveWindowState(preferencesPath, windowName, { width: 400, height: 300 });
+              const w = new WindowClass({ name: windowName, windowStatePersistence: true, show: false });
+              const initialModTime = getPrefsModTime(preferencesPath);
+              const bounds = { x: 100, y: 150, width: 500, height: 450 };
+              w.setBounds(bounds);
+
+              const closed = once(w, 'closed');
+              w[method]();
+              await closed;
+              await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+              const savedState = getWindowStateFromDisk(windowName, preferencesPath);
+              expect(savedState).toMatchObject({
+                left: bounds.x,
+                top: bounds.y,
+                right: bounds.x + bounds.width,
+                bottom: bounds.y + bounds.height
+              });
+            }
+          );
+        }
       });
 
       // FIXME(nilayarya): Figure out why these tests fail on macOS-x64
