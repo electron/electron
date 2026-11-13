@@ -60,6 +60,28 @@ or [`ses.setPermissionCheckHandler(handler)`](api/session.md#sessetpermissionche
 Web content lost the ability to trigger this permission in Electron 46 when
 `document.requestStorageAccessFor` was removed.
 
+### Deprecated: `preconnect` event on `session`
+
+The `preconnect` event on `Session` is deprecated. Use the
+[`preconnect` event on `WebFrameMain`](api/web-frame-main.md#event-preconnect)
+instead, since preconnection hints belong to the frame that requested them.
+The session event continues to forward hints from live frames with a
+deprecation warning. Hints from frames that have already been destroyed are
+no longer emitted.
+
+```js
+// Deprecated
+win.webContents.session.on('preconnect', (event, url, allowCredentials, frame) => {})
+
+// Replace with:
+win.webContents.mainFrame.on('preconnect', (event, url, allowCredentials) => {})
+
+// To observe newly created frames, including subframes:
+win.webContents.on('frame-created', (event, { frame }) => {
+  frame?.on('preconnect', (event, url, allowCredentials) => {})
+})
+```
+
 ## Breaking API Changes (46.0)
 
 ### Removed: `--experimental-transform-types` command-line switch
