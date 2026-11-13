@@ -39,8 +39,9 @@ class PendingReceiver;
 namespace electron {
 
 namespace api {
+class FileFetchBody;
 class SimpleURLLoaderWrapper;
-}
+}  // namespace api
 
 class ElectronBrowserContext;
 
@@ -187,6 +188,13 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       base::WeakPtr<ElectronBrowserContext> browser_context,
       const gin_helper::Dictionary& dict,
       bool tag_response_opaque);
+  // Sends the body of a net.fetch() file Response that protocol.handle()
+  // returned untouched, with the handler's |head| as is, as relaying that
+  // Response would.
+  static void StartLoadingFetchedFile(
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      network::mojom::URLResponseHeadPtr head,
+      api::FileFetchBody& body);
   static void StartLoadingRelay(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
@@ -201,6 +209,11 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 
   // Helper to send string as response.
   static void SendContents(
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      network::mojom::URLResponseHeadPtr head,
+      std::string data);
+  // SendContents() without the header that allows any origin.
+  static void SendBody(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       network::mojom::URLResponseHeadPtr head,
       std::string data);

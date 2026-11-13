@@ -28,6 +28,7 @@
 #include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/native_peer.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "url/gurl.h"
 #include "v8/include/cppgc/member.h"
@@ -36,6 +37,10 @@
 namespace gin {
 class Arguments;
 }  // namespace gin
+
+namespace gin_helper {
+class Dictionary;
+}  // namespace gin_helper
 
 namespace net {
 class AuthChallengeInfo;
@@ -130,6 +135,13 @@ class SimpleURLLoaderWrapper final
  public:
   ~SimpleURLLoaderWrapper() override;
   static SimpleURLLoaderWrapper* Create(gin::Arguments* args);
+  // The request Create() starts for |opts|, except for the credentials mode,
+  // which Create() sets. Throws a TypeError and returns null when |opts| are
+  // invalid. webRequest reports a net.fetch() answered without a URL loader
+  // as this request.
+  [[nodiscard]] static std::unique_ptr<network::ResourceRequest> CreateRequest(
+      gin::Arguments* args,
+      const gin_helper::Dictionary& opts);
 
   void Cancel();
 
@@ -209,6 +221,41 @@ class SimpleURLLoaderWrapper final
   int64_t content_length_ = -1;
   gin_helper::SelfKeepAlive<SimpleURLLoaderWrapper> keep_alive_{this};
   gin::WeakCellFactory<SimpleURLLoaderWrapper> weak_factory_{this};
+};
+
+// The body of a net.fetch() file: response. JS reads it, or protocol.handle()
+// serves it.
+class FileFetchBody final : public gin::Wrappable<FileFetchBody> {
+ public:
+  [[nodiscard]] static FileFetchBody* Create(v8::Isolate* isolate,
+                                             std::string bytes);
+
+  // Make public for cppgc::MakeGarbageCollected.
+  FileFetchBody(v8::Isolate* isolate, std::string bytes);
+  ~FileFetchBody() override;
+
+  // disable copy
+  FileFetchBody(const FileFetchBody&) = delete;
+  FileFetchBody& operator=(const FileFetchBody&) = delete;
+
+  // The bytes, or nothing once the body has been taken, read or discarded.
+  [[nodiscard]] std::optional<std::string> Take();
+
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+
+ private:
+  class Bytes;
+
+  // The bytes, as a Uint8Array.
+  v8::Local<v8::Value> Read(v8::Isolate* isolate);
+  void Discard();
+
+  std::unique_ptr<Bytes, NativePeerBase::Deleter> bytes_;
 };
 
 }  // namespace electron::api
