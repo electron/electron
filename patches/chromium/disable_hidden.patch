@@ -43,7 +43,7 @@ index 161aa7a8790c01d8a1e65be3c00b9aee7aaefd41..cecda05cfe48287d0cdc76172dc9f9a2
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index f5383a4738c89def33c75a3e5f1c24016bddf727..f7b24fc51d56ae193c2ec184a2eb3c8989a3db6f 100644
+index 9c0a3cfccea69ed692f43999f5d80a1806adc792..c65df08e434fefbe87276495d8c9c5969698ef48 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -790,7 +790,7 @@ void RenderWidgetHostViewAura::HideImpl() {
@@ -55,7 +55,7 @@ index f5383a4738c89def33c75a3e5f1c24016bddf727..f7b24fc51d56ae193c2ec184a2eb3c89
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
        aura::Window* parent = window_->parent();
-@@ -4003,7 +4003,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
+@@ -4017,7 +4017,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
  void RenderWidgetHostViewAura::DidNavigate() {
    CHECK(delegated_frame_host_) << "Cannot be invoked during destruction.";
  
