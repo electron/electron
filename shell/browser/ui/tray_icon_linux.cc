@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/tray_icon_linux.h"
 
+#include "base/check_op.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
 #include "shell/browser/browser.h"
@@ -38,7 +39,13 @@ TrayIconLinux::TrayIconLinux()
   status_icon_dbus_->SetDelegate(this);
 }
 
-TrayIconLinux::~TrayIconLinux() = default;
+TrayIconLinux::~TrayIconLinux() {
+  if (auto* status_icon = GetStatusIcon())
+    status_icon->SetDelegate(nullptr);
+  // The D-Bus icon may still be waiting for a StatusNotifierWatcher.
+  if (status_icon_dbus_)
+    status_icon_dbus_->SetDelegate(nullptr);
+}
 
 void TrayIconLinux::SetImage(const gfx::Image& image) {
   image_ = GetBestImageRep(image.AsImageSkia());
@@ -85,11 +92,36 @@ void TrayIconLinux::OnImplInitializationFailed() {
     case StatusIconType::kGtk:
       status_icon_gtk_.reset();
       status_icon_type_ = StatusIconType::kNone;
+      // Keep the menu for the D-Bus icon, which may still initialize.
+      if (status_icon_dbus_)
+        return;
       menu_model_ = nullptr;
       return;
     case StatusIconType::kNone:
       NOTREACHED();
   }
+}
+
+void TrayIconLinux::OnImplInitializationDelayed() {
+  // Only the D-Bus icon delays initialization. Keep it, and use the GTK icon
+  // until it initializes.
+  CHECK_EQ(status_icon_type_, StatusIconType::kDbus);
+  status_icon_gtk_ = std::make_unique<StatusIconGtk>();
+  status_icon_type_ = StatusIconType::kGtk;
+  status_icon_gtk_->SetDelegate(this);
+}
+
+void TrayIconLinux::OnImplInitialized() {
+  if (status_icon_type_ == StatusIconType::kDbus || !status_icon_dbus_)
+    return;
+
+  // The D-Bus icon initialized after a delay. Replace the fallback with it, and
+  // update it with any changes made since it read its initial state.
+  status_icon_gtk_.reset();
+  status_icon_type_ = StatusIconType::kDbus;
+  status_icon_dbus_->UpdatePlatformContextMenu(menu_model_);
+  status_icon_dbus_->SetToolTip(tool_tip_);
+  status_icon_dbus_->SetImage(image_);
 }
 
 void TrayIconLinux::OnClick() {

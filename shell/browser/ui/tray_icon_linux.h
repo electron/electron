@@ -36,6 +36,8 @@ class TrayIconLinux : public TrayIcon, public ui::StatusIconLinux::Delegate {
   const std::u16string& GetToolTip() const override;
   ui::MenuModel* GetMenuModel() const override;
   void OnImplInitializationFailed() override;
+  void OnImplInitializationDelayed() override;
+  void OnImplInitialized() override;
 
  private:
   enum class StatusIconType {
