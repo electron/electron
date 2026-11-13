@@ -6,17 +6,21 @@ Follow the guidelines below for building **Electron itself** on macOS, for the p
 
 ## Prerequisites
 
-* macOS >= 12
-* [Xcode](https://developer.apple.com/technologies/tools/). The exact version
-  needed depends on what branch you are building, but the latest version of
-  Xcode is generally a good bet for building `main`.
-* Python >= 3.9
-* [Node.js](https://nodejs.org/download/) >= 22.18.0
+* macOS >= 13 to run Electron; the build host must support the selected Xcode version.
+* [Xcode](https://developer.apple.com/technologies/tools/) with the macOS SDK
+  recommended by Chromium for the branch you are building.
+  The SDK version for official builds is specified in `build/config/mac/mac_sdk.gni`
+  in the Chromium checkout.
+  * See [the Chromium build documentation](https://chromium.googlesource.com/chromium/src/+/main/docs/mac_build_instructions.md)
+  for SDK requirements.
+* Python 3.10 through 3.15 for Node.js development and testing. Chromium downloads a
+  separate hermetic Python for GN build scripts.
+* [Node.js](https://nodejs.org/download/) 22.22.1 or later.
 
 ### Arm64-specific prerequisites
 
-* Rosetta 2
-  * We recommend installing Rosetta if using dependencies that need to cross-compile on x64 and arm64 machines. Rosetta can be installed by using the softwareupdate command line tool.
+* Rosetta 2 is required when running x64-only build tools on Apple silicon,
+  including for x64 release builds.
   * `$ softwareupdate --install-rosetta`
 
 ## Building Electron
@@ -36,7 +40,9 @@ xcrun: error: unable to load libxcrun
  (mach-o file, but is an incompatible architecture (have (x86_64), need (arm64e))), '/Users/<user>/.electron_build_tools/third_party/Xcode/Xcode-11.1.0.app/Contents/Developer/usr/lib/libxcrun.dylib (http://xcode-11.1.0.app/Contents/Developer/usr/lib/libxcrun.dylib)' (mach-o file, but is an incompatible architecture (have (x86_64), need (arm64e)))).`
 ```
 
-If you are on arm64 architecture, the build script may be pointing to the wrong Xcode version (11.x.y doesn't support arm64). Navigate to `/Users/<user>/.electron_build_tools/third_party/Xcode/` and rename `Xcode-13.3.0.app` to `Xcode.app` to ensure the right Xcode version is used.
+On Apple silicon, this error can mean that the build is using an Xcode toolchain
+with x64-only binaries. Make sure the configured Xcode installation supports
+your host architecture and includes the required macOS SDK.
 
 ### Certificates fail to verify
 
