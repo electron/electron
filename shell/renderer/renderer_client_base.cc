@@ -240,17 +240,26 @@ void RendererClientBase::BindProcess(v8::Isolate* isolate,
   process->SetReadOnly("contextId", context_id);
 }
 
+// static
+bool RendererClientBase::IsPreloadFrame(content::RenderFrame* render_frame) {
+  if (render_frame->IsMainFrame() ||
+      render_frame->GetBlinkPreferences().node_integration_in_sub_frames)
+    return true;
+  // Pushed by the browser ahead of CommitNavigation, so it describes the
+  // document being committed by the time its script contexts are created.
+  auto* api_service = ElectronApiServiceImpl::Get(render_frame);
+  return api_service && api_service->startup_data() &&
+         api_service->startup_data()->all_frames;
+}
+
 bool RendererClientBase::ShouldLoadPreload(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
-  auto prefs = render_frame->GetBlinkPreferences();
-  bool is_main_frame = render_frame->IsMainFrame();
   bool is_devtools =
       IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
-  bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
 
-  return (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
+  return (IsPreloadFrame(render_frame) || is_devtools) &&
          !IsWebViewFrame(isolate, context, render_frame);
 }
 
@@ -444,9 +453,8 @@ void RendererClientBase::DidClearWindowObject(
   // runs script. Preload scripts and Node.js have to run even in a document
   // with no scripts of its own, so force the context for the frames Electron
   // injects into (see ShouldLoadPreload()); leave every other frame alone.
-  const auto& prefs = render_frame->GetBlinkPreferences();
-  if ((render_frame->IsMainFrame() || prefs.node_integration_in_sub_frames ||
-       IsDevTools(render_frame) || IsDevToolsExtension(render_frame)) &&
+  if ((IsPreloadFrame(render_frame) || IsDevTools(render_frame) ||
+       IsDevToolsExtension(render_frame)) &&
       HasScriptsToInject(render_frame)) {
     blink::WebLocalFrame* web_frame = render_frame->GetWebFrame();
     v8::HandleScope handle_scope(

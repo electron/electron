@@ -43,9 +43,18 @@ mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
 // ScopedAllowBlockingForElectron.
 // For a frame without the sandbox (Node.js integration) only the preload
 // paths are filled in: that renderer loads the files itself.
+// With |all_frames_only|, for a subframe that only gets preloads registered
+// with allFrames, the other preloads and webPreferences.preload are left out
+// and |all_frames| is set if any preload matched.
 mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh,
                                             const GURL& url,
-                                            const url::Origin& origin);
+                                            const url::Origin& origin,
+                                            bool all_frames_only = false);
+
+// Whether a frame preload registered with allFrames matches |rfh|'s current
+// document. Such a subframe gets Electron's renderer IPC without
+// nodeIntegrationInSubFrames.
+bool HasAllFramesPreload(content::RenderFrameHost* rfh);
 
 // Whether |rfh| lives in a sandboxed renderer process (sandbox bundle) rather
 // than one with Node.js integration.

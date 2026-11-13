@@ -123,7 +123,7 @@ integration and can use node APIs like `require` and `process` to access low
 level system resources. Node integration is disabled by default in the guest
 page.
 
-### `nodeintegrationinsubframes`
+### `nodeintegrationinsubframes` _Deprecated_
 
 ```html
 <webview src="https://www.google.com/" nodeintegrationinsubframes></webview>
@@ -133,6 +133,10 @@ A `boolean` for the experimental option for enabling Node.js support in sub-fram
 inside the `webview`. All your preloads will load for every iframe, you can
 use `process.isMainFrame` to determine if you are in the main frame or not.
 This option is disabled by default in the guest page.
+
+**Deprecated:** Register a preload script with `allFrames: true` using
+[`ses.registerPreloadScript()`](session.md#sesregisterpreloadscriptscript) on the
+guest's session instead.
 
 ### `plugins`
 

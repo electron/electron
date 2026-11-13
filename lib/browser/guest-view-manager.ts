@@ -2,6 +2,7 @@ import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseWebViewWebPreferences } from '@electron/internal/browser/parse-features-string';
 import { webViewEvents } from '@electron/internal/browser/web-view-events';
+import * as deprecate from '@electron/internal/common/deprecate';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import {
   syncMethods,
@@ -36,7 +37,16 @@ const webViewConsoleMessageLevels: Record<Electron.WebContentsConsoleMessageEven
 const guestInstances = new Map<number, GuestInstance>();
 const embedderElementsMap = new Map<string, number>();
 
+const nodeIntegrationInSubFramesAttributeDeprecated = deprecate.warnOnce(
+  '<webview> nodeintegrationinsubframes attribute',
+  'session.registerPreloadScript() with allFrames'
+);
+
 function makeWebPreferences(embedder: Electron.WebContents, params: Record<string, any>) {
+  if (params.nodeintegrationinsubframes) {
+    nodeIntegrationInSubFramesAttributeDeprecated();
+  }
+
   // parse the 'webpreferences' attribute string, if set
   // this uses the same parsing rules as window.open uses for its features
   const parsedWebPreferences =

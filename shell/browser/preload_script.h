@@ -43,6 +43,10 @@ struct PreloadScript {
   // scripts. Without it an about:blank popup escapes the opener's filters.
   bool match_origin_as_fallback = false;
 
+  // Frame preloads only. Also runs in every subframe whose document matches
+  // the URL filters, not just in the main frame.
+  bool all_frames = false;
+
   // If set, use the deprecated validation behavior of Session.setPreloads
   bool deprecated = false;
 
