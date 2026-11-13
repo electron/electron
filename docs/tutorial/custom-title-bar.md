@@ -163,9 +163,10 @@ win.on('window-controls-overlay-changed', (_event, _bounds, overlaid) => {
 })
 ```
 
-`revealNativeTitlebar` keeps the system title bar and places the custom title bar below
-it. It requires `titleBarStyle: 'hidden'` or `'hiddenInset'` on a local window, without
-`appShim`.
+Choose `revealNativeTitlebar` to keep the system title bar and place the custom title bar below
+it, or `revealTrafficLights` to hide the system title bar and slide the native traffic
+lights horizontally into the custom title bar. Both modes are opt-in and require
+`titleBarStyle: 'hidden'` or `'hiddenInset'` on a local window, without `appShim`.
 
 Position the title bar using the existing Window Controls Overlay CSS environment
 variables. Keep the file or page content in place so the revealed title bar
@@ -217,7 +218,7 @@ title bar in a separate `WebContentsView` can use the window's
 event to obtain geometry relative to the window's content area.
 
 :::warning Mac App Store
-This option uses private macOS APIs and is unavailable in Mac App Store builds of
+These modes use private macOS APIs and are unavailable in Mac App Store builds of
 Electron (`is_mas_build = true`).
 :::
 

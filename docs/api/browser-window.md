@@ -1859,6 +1859,8 @@ with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last 
 changes:
   - pr-url: https://github.com/electron/electron/pull/55721
     description: "Added macOS support."
+  - pr-url: https://github.com/electron/electron/pull/55795
+    description: "Added the `fullscreen` option on macOS."
 ```
 -->
 
@@ -1866,10 +1868,18 @@ changes:
   * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled.
   * `symbolColor` String (optional) _Windows_ _Linux_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels.
+  * `fullscreen` string (optional) _macOS_ - The fullscreen custom title bar mode. Can be `revealNativeTitlebar` or `revealTrafficLights`. Omitting it leaves the mode unchanged.
 
 On a window with Window Controls Overlay already enabled, this method updates the style of the title bar overlay.
 
 On Linux, the `symbolColor` is automatically calculated to have minimum accessible contrast to the `color` if not explicitly set.
+
+On macOS, `fullscreen` can only be updated when the window opted in with
+`titleBarOverlay.fullscreen` in its constructor; this method cannot enable the
+feature on an existing window. The mode can be switched while the window is
+fullscreen, for example to restore the native title bar while hiding an app's
+custom chrome. An invalid mode, a window without constructor opt-in, or a Mac
+App Store build throws a `TypeError`.
 
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look

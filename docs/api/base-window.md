@@ -1609,6 +1609,8 @@ machine has a touch bar.
 changes:
   - pr-url: https://github.com/electron/electron/pull/55721
     description: "Added macOS support."
+  - pr-url: https://github.com/electron/electron/pull/55795
+    description: "Added the `fullscreen` option on macOS."
 ```
 -->
 
@@ -1616,10 +1618,13 @@ changes:
   * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled.
   * `symbolColor` String (optional) _Windows_ _Linux_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels.
+  * `fullscreen` string (optional) _macOS_ - The fullscreen custom title bar mode. Can be `revealNativeTitlebar` or `revealTrafficLights`. Omitting it leaves the mode unchanged.
 
 On a Window with Window Controls Overlay already enabled, this method updates the style of the title bar overlay.
 
 On Linux, the `symbolColor` is automatically calculated to have minimum accessible contrast to the `color` if not explicitly set.
+
+On macOS, `fullscreen` can only be updated when the window opted in with `titleBarOverlay.fullscreen` in its constructor. `fullscreen` is only available in non-Mac App Store builds.
 
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
