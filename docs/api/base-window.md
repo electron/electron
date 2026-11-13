@@ -276,6 +276,27 @@ Emitted when the window enters a full-screen state.
 
 Emitted when the window leaves a full-screen state.
 
+#### Event: 'window-controls-overlay-changed'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/55721
+```
+-->
+
+Returns:
+
+* `event` Event
+* `bounds` [Rectangle](structures/rectangle.md) - The area available for custom title bar content in pixels, relative to the window's content area. Excludes native window controls.
+* `overlaid` boolean - True when the user has moused into the menu bar area on macOS in fullscreen and your app's title bar has shifted down to avoid the menu bar. Always `false` outside fullscreen, when the reveal is hidden, or when the fullscreen custom title bar feature is disabled. Always `false` on other platforms.
+
+Emitted when the Window Controls Overlay geometry or the `overlaid` state
+changes. On macOS in fullscreen, this requires `titleBarOverlay.fullscreen`.
+
+Use `overlaid` to style custom chrome while it covers content, for example by
+making a translucent title bar opaque.
+
 #### Event: 'always-on-top-changed'
 
 Returns:
@@ -1581,16 +1602,27 @@ machine has a touch bar.
 > The TouchBar API is currently experimental and may change or be
 > removed in future Electron releases.
 
-#### `win.setTitleBarOverlay(options)` _Windows_ _Linux_
+#### `win.setTitleBarOverlay(options)`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55721
+    description: "Added macOS support, including the `fullscreen` option."
+```
+-->
 
 * `options` Object
-  * `color` String (optional) - The CSS color of the Window Controls Overlay when enabled.
-  * `symbolColor` String (optional) - The CSS color of the symbols on the Window Controls Overlay when enabled.
+  * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled.
+  * `symbolColor` String (optional) _Windows_ _Linux_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels.
+  * `fullscreen` string (optional) _macOS_ - The fullscreen custom title bar mode. Can be `revealNativeTitlebar` or `revealTrafficLights`. Omitting it leaves the mode unchanged.
 
 On a Window with Window Controls Overlay already enabled, this method updates the style of the title bar overlay.
 
 On Linux, the `symbolColor` is automatically calculated to have minimum accessible contrast to the `color` if not explicitly set.
+
+On macOS, `fullscreen` can only be updated when the window opted in with `titleBarOverlay.fullscreen` in its constructor. `fullscreen` is only available in non-Mac App Store builds.
 
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc

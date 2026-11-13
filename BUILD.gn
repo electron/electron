@@ -738,6 +738,12 @@ source_set("electron_lib") {
   }
   if (is_mac) {
     sources += filenames.lib_sources_mac
+    if (!is_mas_build) {
+      sources += [
+        "shell/browser/ui/cocoa/fullscreen_titlebar_tracker.h",
+        "shell/browser/ui/cocoa/fullscreen_titlebar_tracker.mm",
+      ]
+    }
   }
   if (is_posix) {
     sources += filenames.lib_sources_posix

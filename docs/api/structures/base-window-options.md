@@ -104,6 +104,7 @@
   * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
   * `symbolColor` String (optional) _Windows_ _Linux_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels. Default is system height.
+  * `fullscreen` string (optional) _macOS_ - Enables the Window Controls Overlay for a custom title bar in native macOS fullscreen. Can be `revealNativeTitlebar` or `revealTrafficLights`. With `revealNativeTitlebar`, the available geometry follows the bottom of the system title bar when the menu bar is revealed. With `revealTrafficLights`, the system title bar is hidden and its native window controls slide horizontally into the content area. Ignored on other platforms. Not available in Mac App Store builds, which exclude the private macOS APIs this feature requires. See [Fullscreen custom title bars](../../tutorial/custom-title-bar.md#fullscreen-custom-title-bars-macos).
 * `accentColor` boolean | string (optional) _Windows_ - The accent color for the window. By default, follows user preference in System Settings. Set to `false` to explicitly disable, or set the color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha values will be ignored.
 * `trafficLightPosition` [Point](point.md) (optional) _macOS_ -
   Set a custom position for the traffic light buttons in frameless windows.

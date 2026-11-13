@@ -17,6 +17,7 @@
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "gin/arguments.h"
 #include "include/core/SkColor.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
@@ -547,6 +548,10 @@ std::optional<gfx::Rect> NativeWindow::GetWindowControlsOverlayRect() {
   return overlay_rect_;
 }
 
+bool NativeWindow::IsTitleBarOverlayOverlaid() const {
+  return false;
+}
+
 void NativeWindow::SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect) {
   overlay_rect_ = overlay_rect;
 }
@@ -733,6 +738,11 @@ void NativeWindow::NotifyWindowSystemContextMenu(int x,
                                                  bool* prevent_default) {
   observers_.Notify(&NativeWindowObserver::OnSystemContextMenu, x, y,
                     prevent_default);
+}
+
+void NativeWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
+                                      gin::Arguments* args) {
+  args->ThrowTypeError("Titlebar overlay is not available for this window");
 }
 
 void NativeWindow::NotifyLayoutWindowControlsOverlay() {
