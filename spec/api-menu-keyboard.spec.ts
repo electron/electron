@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, waitUntil } from './lib/spec-helpers.ts';
+import { ifdescribe, isWayland, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -29,7 +29,8 @@ const display = screen.getPrimaryDisplay();
 const KEY_DELAY = 350;
 
 // Menu-bar keyboard navigation uses the Views menu bar on Windows and Linux.
-ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
+// robotjs injects input via XTest, which can't reach native Wayland windows.
+ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
   'menu bar keyboard sibling switching',
   { tags: ['serial'], retry: 0 },
   () => {
