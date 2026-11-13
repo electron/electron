@@ -1,0 +1,10 @@
+{
+  "name": "chrome-declarativeNetRequest",
+  "version": "1.0",
+  "permissions": ["declarativeNetRequest"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "manifest_version": 3
+}

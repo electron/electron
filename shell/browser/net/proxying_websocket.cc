@@ -8,9 +8,11 @@
 
 #include "base/functional/bind.h"
 #include "base/strings/string_util.h"
+#include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/global_routing_id.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "net/base/ip_endpoint.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -27,11 +29,17 @@ ProxyingWebSocket::ProxyingWebSocket(
     int process_id,
     int render_frame_id,
     content::BrowserContext* browser_context,
-    uint64_t* request_id_generator)
+    uint64_t* request_id_generator,
+    mojo::PendingRemote<network::mojom::WebSocketAuthenticationHandler>
+        outer_auth_handler,
+    mojo::PendingRemote<network::mojom::TrustedHeaderClient>
+        outer_header_client)
     : web_request_{web_request},
       request_(request),
       factory_(std::move(factory)),
       forwarding_handshake_client_(std::move(handshake_client)),
+      outer_auth_handler_(std::move(outer_auth_handler)),
+      outer_header_client_(std::move(outer_header_client)),
       request_headers_(request.headers),
       response_(network::mojom::URLResponseHead::New()),
       has_extra_headers_(has_extra_headers),
@@ -175,6 +183,8 @@ void ProxyingWebSocket::OnAuthRequired(
   response_->headers = headers;
   response_->remote_endpoint = remote_endpoint;
   auth_required_callback_ = std::move(callback);
+  if (outer_auth_handler_)
+    auth_info_ = auth_info;
 
   auto continuation =
       base::BindRepeating(&ProxyingWebSocket::OnHeadersReceivedCompleteForAuth,
@@ -203,9 +213,29 @@ void ProxyingWebSocket::OnBeforeSendHeaders(
     OnBeforeSendHeadersCallback callback) {
   DCHECK(receiver_as_header_client_.is_bound());
 
-  request_headers_ = headers;
   on_before_send_headers_callback_ = std::move(callback);
+  if (outer_header_client_) {
+    outer_header_client_->OnBeforeSendHeaders(
+        request_url, headers,
+        mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+            base::BindOnce(&ProxyingWebSocket::OnOuterBeforeSendHeaders,
+                           weak_factory_.GetWeakPtr(), headers),
+            net::OK, std::optional<net::HttpRequestHeaders>(),
+            std::optional<base::DictValue>()));
+    return;
+  }
+
+  request_headers_ = headers;
   OnBeforeRequestComplete(net::OK);
+}
+
+void ProxyingWebSocket::OnOuterBeforeSendHeaders(
+    const net::HttpRequestHeaders& original_headers,
+    int32_t result,
+    const std::optional<net::HttpRequestHeaders>& headers,
+    std::optional<base::DictValue> net_log_events) {
+  request_headers_ = headers ? *headers : original_headers;
+  OnBeforeRequestComplete(result);
 }
 
 void ProxyingWebSocket::OnHeadersReceived(
@@ -216,6 +246,8 @@ void ProxyingWebSocket::OnHeadersReceived(
   DCHECK(receiver_as_header_client_.is_bound());
 
   on_headers_received_callback_ = std::move(callback);
+  if (outer_header_client_)
+    ssl_info_ = ssl_info;
   response_->headers = base::MakeRefCounted<net::HttpResponseHeaders>(headers);
 
   ContinueToHeadersReceived();
@@ -234,7 +266,12 @@ void ProxyingWebSocket::StartProxying(
     int render_frame_id,
     const url::Origin& origin,
     content::BrowserContext* browser_context,
-    uint64_t* request_id_generator) {
+    uint64_t* request_id_generator,
+    std::vector<network::mojom::HttpHeaderPtr> outer_additional_headers,
+    mojo::PendingRemote<network::mojom::WebSocketAuthenticationHandler>
+        outer_auth_handler,
+    mojo::PendingRemote<network::mojom::TrustedHeaderClient>
+        outer_header_client) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   network::ResourceRequest request;
   request.url = url;
@@ -242,12 +279,15 @@ void ProxyingWebSocket::StartProxying(
   if (user_agent) {
     request.headers.SetHeader(net::HttpRequestHeaders::kUserAgent, *user_agent);
   }
+  for (const auto& header : outer_additional_headers)
+    request.headers.SetHeader(header->name, header->value);
   request.request_initiator = origin;
 
   auto* proxy = new ProxyingWebSocket(
       web_request, std::move(factory), request, std::move(handshake_client),
       has_extra_headers, process_id, render_frame_id, browser_context,
-      request_id_generator);
+      request_id_generator, std::move(outer_auth_handler),
+      std::move(outer_header_client));
   proxy->Start();
 }
 
@@ -358,8 +398,30 @@ void ProxyingWebSocket::OnHeadersReceivedComplete(int error_code) {
     std::optional<std::string> headers;
     if (override_headers_)
       headers = override_headers_->raw_headers();
-    std::move(on_headers_received_callback_)
-        .Run(net::OK, headers, std::nullopt);
+    if (outer_header_client_) {
+      // The outer proxy's answer goes to the network service, falling back to
+      // this proxy's headers where the outer proxy leaves them alone.
+      outer_header_client_->OnHeadersReceived(
+          headers ? *headers : response_->headers->raw_headers(),
+          response_->remote_endpoint, ssl_info_,
+          mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+              base::BindOnce(
+                  [](OnHeadersReceivedCallback callback,
+                     const std::optional<std::string>& own_headers,
+                     int32_t result,
+                     const std::optional<std::string>& outer_headers,
+                     const std::optional<GURL>&
+                         preserve_fragment_on_redirect_url) {
+                    std::move(callback).Run(
+                        result, outer_headers ? outer_headers : own_headers,
+                        preserve_fragment_on_redirect_url);
+                  },
+                  std::move(on_headers_received_callback_), headers),
+              net::OK, std::optional<std::string>(), std::optional<GURL>()));
+    } else {
+      std::move(on_headers_received_callback_)
+          .Run(net::OK, headers, std::nullopt);
+    }
   }
 
   if (override_headers_) {
@@ -384,7 +446,15 @@ void ProxyingWebSocket::OnAuthRequiredComplete(
         AUTH_REQUIRED_RESPONSE_NO_ACTION:
     case api::WebRequest::AuthRequiredResponse::
         AUTH_REQUIRED_RESPONSE_CANCEL_AUTH:
-      std::move(auth_required_callback_).Run(std::nullopt);
+      if (outer_auth_handler_ && auth_info_) {
+        outer_auth_handler_->OnAuthRequired(
+            *auth_info_, response_->headers, response_->remote_endpoint,
+            mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+                std::move(auth_required_callback_),
+                std::optional<net::AuthCredentials>()));
+      } else {
+        std::move(auth_required_callback_).Run(std::nullopt);
+      }
       break;
 
     case api::WebRequest::AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_SET_AUTH:

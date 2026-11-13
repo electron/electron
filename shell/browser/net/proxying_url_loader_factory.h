@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
+#include "base/feature_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
@@ -42,6 +43,16 @@ class PendingReceiver;
 template <typename T>
 class PendingRemote;
 }  // namespace mojo
+
+namespace features {
+
+// Routes a session's requests to extensions (chrome.webRequest and
+// chrome.declarativeNetRequest) as well as to session.webRequest when the
+// latter has listeners. When disabled, such a session's requests go to
+// session.webRequest alone.
+BASE_DECLARE_FEATURE(kExtensionsAlongsideWebRequest);
+
+}  // namespace features
 
 namespace electron {
 
@@ -254,6 +265,16 @@ class ProxyingURLLoaderFactory
 
   bool IsForServiceWorkerScript() const;
 
+  // Whether `factory` has listeners to tell about the loader the network
+  // service calls `request_id`, or about a CORS preflight when there is no ID.
+  // A factory that shares its header client is only told about those loaders.
+  static bool HandlesLoader(base::WeakPtr<ProxyingURLLoaderFactory> factory,
+                            std::optional<int32_t> request_id);
+
+  base::WeakPtr<ProxyingURLLoaderFactory> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   void OnTargetFactoryError();
   void OnProxyBindingError();
@@ -298,6 +319,8 @@ class ProxyingURLLoaderFactory
   base::flat_map<int32_t, uint64_t> network_request_id_to_web_request_id_;
 
   std::vector<std::string> ignore_connections_limit_domains_;
+
+  base::WeakPtrFactory<ProxyingURLLoaderFactory> weak_factory_{this};
 };
 
 }  // namespace electron
