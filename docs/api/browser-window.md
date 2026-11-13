@@ -1852,11 +1852,19 @@ with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last 
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
-#### `win.setTitleBarOverlay(options)` _Windows_ _Linux_
+#### `win.setTitleBarOverlay(options)`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55721
+    description: "Added macOS support."
+```
+-->
 
 * `options` Object
-  * `color` String (optional) - The CSS color of the Window Controls Overlay when enabled.
-  * `symbolColor` String (optional) - The CSS color of the symbols on the Window Controls Overlay when enabled.
+  * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled.
+  * `symbolColor` String (optional) _Windows_ _Linux_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels.
 
 On a window with Window Controls Overlay already enabled, this method updates the style of the title bar overlay.
