@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('textures', {
       // Step 6: Let the renderer render using WebGPU
       try {
         await cb(importedSubtle);
+        ipcRenderer.send('shared-texture-rendered');
       } catch (error) {
         ipcRenderer.send('shared-texture-error', error.stack);
       } finally {
