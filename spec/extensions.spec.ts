@@ -309,6 +309,21 @@ describe('chrome extensions', { retry: 0 }, () => {
     expect(bg).toBe('red');
   });
 
+  it('loads an extension that has a _metadata folder without a warning and keeps the folder', async () => {
+    const extensionPath = await fs.mkdtemp(path.join(os.tmpdir(), 'electron-extension-'));
+    defer(() => fs.rm(extensionPath, { recursive: true, force: true }));
+    await fs.cp(path.join(fixtures, 'extensions', 'persistent-state'), extensionPath, { recursive: true });
+    // An extension from the Chrome Web Store ships with this file.
+    const verifiedContents = path.join(extensionPath, '_metadata', 'verified_contents.json');
+    await fs.mkdir(path.dirname(verifiedContents));
+    await fs.writeFile(verifiedContents, '[]');
+
+    const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+    await expectWarningMessages(() => customSession.extensions.loadExtension(extensionPath));
+
+    expect(await fs.readFile(verifiedContents, 'utf8')).toBe('[]');
+  });
+
   it('does not crash when loading an extension with missing manifest', async () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const promise = customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'missing-manifest'));
@@ -792,6 +807,226 @@ describe('chrome extensions', { retry: 0 }, () => {
         contents.executeJavaScript(`fetch('${url}/blocked-in-tab').then(() => true, () => false)`);
       expect(await canFetch(otherTab.webContents)).toBe(true);
       expect(await canFetch(tab.webContents)).toBe(false);
+    });
+
+    describe('static rulesets', () => {
+      let customSession: Session;
+
+      // Loading the extension writes its indexed rulesets into its directory,
+      // so load a copy of the fixture.
+      const copyExtension = async () => {
+        const extensionPath = await fs.mkdtemp(path.join(os.tmpdir(), 'electron-static-rulesets-'));
+        defer(() => fs.rm(extensionPath, { recursive: true, force: true }));
+        await fs.cp(path.join(fixtures, 'extensions', 'static-rulesets'), extensionPath, { recursive: true });
+        return extensionPath;
+      };
+
+      const openExtensionPageAndTab = async (extension: Extension, { expectRulesets = true } = {}) => {
+        const page = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+        const tab = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+        await Promise.all([page.loadURL(`${extension.url}page.html`), tab.loadURL(url)]);
+        const getEnabledRulesets = (): Promise<string[]> =>
+          page.webContents.executeJavaScript('chrome.declarativeNetRequest.getEnabledRulesets()');
+        // Chromium loads the rulesets after the extension has loaded.
+        if (expectRulesets) {
+          await waitUntil(async () => (await getEnabledRulesets()).length > 0);
+        }
+        return {
+          getEnabledRulesets,
+          updateEnabledRulesets: (options: object): Promise<void> =>
+            page.webContents.executeJavaScript(
+              `chrome.declarativeNetRequest.updateEnabledRulesets(${JSON.stringify(options)})`
+            ),
+          canFetch: (marker: string): Promise<boolean> =>
+            tab.webContents.executeJavaScript(`fetch('${url}/${marker}').then(() => true, () => false)`)
+        };
+      };
+
+      const blockRuleset = (marker: string) =>
+        JSON.stringify([{ id: 1, action: { type: 'block' }, condition: { urlFilter: marker } }]);
+
+      const setVersion = async (extensionPath: string, version: string) => {
+        const manifestPath = path.join(extensionPath, 'manifest.json');
+        const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+        await fs.writeFile(manifestPath, JSON.stringify({ ...manifest, version }));
+      };
+
+      // Makes a file look older than anything indexed during the test.
+      const backdate = async (file: string) => {
+        const anHourAgo = new Date(Date.now() - 3_600_000);
+        await fs.utimes(file, anHourAgo, anHourAgo);
+      };
+
+      beforeEach(() => {
+        customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      });
+
+      it('applies a ruleset that the manifest enables', async () => {
+        const extension = await customSession.extensions.loadExtension(await copyExtension());
+        const { getEnabledRulesets, canFetch } = await openExtensionPageAndTab(extension);
+
+        expect(await getEnabledRulesets()).toEqual(['enabled']);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(false);
+      });
+
+      it('does not apply a ruleset that the manifest disables', async () => {
+        const extension = await customSession.extensions.loadExtension(await copyExtension());
+        const { getEnabledRulesets, canFetch } = await openExtensionPageAndTab(extension);
+
+        expect(await getEnabledRulesets()).not.toContain('disabled');
+        expect(await canFetch('blocked-by-disabled-ruleset')).toBe(true);
+      });
+
+      it('keeps the rulesets chosen with updateEnabledRulesets when the extension is loaded again', async () => {
+        const extensionPath = await copyExtension();
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        const { updateEnabledRulesets } = await openExtensionPageAndTab(extension);
+        await updateEnabledRulesets({ disableRulesetIds: ['enabled'], enableRulesetIds: ['disabled'] });
+        await closeAllWindows();
+        customSession.extensions.removeExtension(extension.id);
+
+        const reloadedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { getEnabledRulesets, canFetch } = await openExtensionPageAndTab(reloadedExtension);
+
+        expect(await getEnabledRulesets()).toEqual(['disabled']);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(true);
+        expect(await canFetch('blocked-by-disabled-ruleset')).toBe(false);
+      });
+
+      it('returns to the rulesets the manifest enables when the extension version changes', async () => {
+        const extensionPath = await copyExtension();
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        const { updateEnabledRulesets } = await openExtensionPageAndTab(extension);
+        await updateEnabledRulesets({ disableRulesetIds: ['enabled'], enableRulesetIds: ['disabled'] });
+        await closeAllWindows();
+        customSession.extensions.removeExtension(extension.id);
+        await setVersion(extensionPath, '2.0');
+
+        const updatedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { getEnabledRulesets, canFetch } = await openExtensionPageAndTab(updatedExtension);
+
+        expect(await getEnabledRulesets()).toEqual(['enabled']);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(false);
+        expect(await canFetch('blocked-by-disabled-ruleset')).toBe(true);
+      });
+
+      it('reuses the indexed rulesets when the same version is loaded again', async () => {
+        const extensionPath = await copyExtension();
+        await backdate(path.join(extensionPath, 'enabled.json'));
+        await backdate(path.join(extensionPath, 'disabled.json'));
+        const indexedRuleset = path.join(extensionPath, '_metadata', 'generated_indexed_rulesets', '_ruleset1');
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        const indexedAt = (await fs.stat(indexedRuleset)).mtimeMs;
+        customSession.extensions.removeExtension(extension.id);
+
+        const reloadedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { getEnabledRulesets, canFetch } = await openExtensionPageAndTab(reloadedExtension);
+
+        expect(await getEnabledRulesets()).toEqual(['enabled']);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(false);
+        expect((await fs.stat(indexedRuleset)).mtimeMs).toBe(indexedAt);
+      });
+
+      it('indexes a ruleset again when its file changes', async () => {
+        const extensionPath = await copyExtension();
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        customSession.extensions.removeExtension(extension.id);
+        await fs.writeFile(path.join(extensionPath, 'enabled.json'), blockRuleset('blocked-by-changed-ruleset'));
+
+        const reloadedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { canFetch } = await openExtensionPageAndTab(reloadedExtension);
+
+        expect(await canFetch('blocked-by-changed-ruleset')).toBe(false);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(true);
+      });
+
+      it('indexes the rulesets again when the extension version changes', async () => {
+        const extensionPath = await copyExtension();
+        const extension = await customSession.extensions.loadExtension(extensionPath);
+        customSession.extensions.removeExtension(extension.id);
+        // An app update can install a ruleset that is older than the indexed
+        // copy of the one it replaces.
+        const ruleset = path.join(extensionPath, 'enabled.json');
+        await fs.writeFile(ruleset, blockRuleset('blocked-by-updated-ruleset'));
+        await backdate(ruleset);
+        await setVersion(extensionPath, '2.0');
+
+        const reloadedExtension = await customSession.extensions.loadExtension(extensionPath);
+        const { canFetch } = await openExtensionPageAndTab(reloadedExtension);
+
+        expect(await canFetch('blocked-by-updated-ruleset')).toBe(false);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(true);
+      });
+
+      it('applies a ruleset with more rules than an extension is guaranteed after a restart', async () => {
+        // Rules beyond the 30,000 that every extension is guaranteed come from
+        // an allocation that Chromium stores in the profile.
+        const extensionPath = await copyExtension();
+        const rules = Array.from({ length: 30_001 }, (_, index) => ({
+          id: index + 1,
+          action: { type: 'block' },
+          condition: { urlFilter: `blocked-by-rule-${index + 1}` }
+        }));
+        await fs.writeFile(path.join(extensionPath, 'enabled.json'), JSON.stringify(rules));
+        const partition = `persist:${crypto.randomUUID()}`;
+
+        const getEnabledRulesetsInNewApp = async () => {
+          const rc = await startRemoteControlApp();
+          const exitPromise = once(rc.process, 'exit');
+
+          const enabledRulesets = await rc.remotely(
+            async (partition: string, extensionPath: string) => {
+              const { BrowserWindow, session } = require('electron/main');
+              const { setTimeout } = require('node:timers/promises');
+
+              const customSession = session.fromPartition(partition);
+              const extension = await customSession.extensions.loadExtension(extensionPath);
+              const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+              await w.loadURL(`${extension.url}page.html`);
+              // Chromium loads the rulesets after the extension has loaded.
+              let enabledRulesets: string[] = [];
+              for (let i = 0; i < 40 && !enabledRulesets.length; i++) {
+                if (i > 0) await setTimeout(250);
+                enabledRulesets = await w.webContents.executeJavaScript(
+                  'chrome.declarativeNetRequest.getEnabledRulesets()'
+                );
+              }
+
+              // Give Chromium some time to write the extension's state to disk.
+              await setTimeout(500);
+
+              global.setTimeout(() => require('electron').app.quit());
+
+              return enabledRulesets;
+            },
+            partition,
+            extensionPath
+          );
+
+          await exitPromise;
+          return enabledRulesets;
+        };
+
+        expect(await getEnabledRulesetsInNewApp()).toEqual(['enabled']);
+        expect(await getEnabledRulesetsInNewApp()).toEqual(['enabled']);
+      });
+
+      it('loads an extension without its static rulesets when one of them is invalid', async () => {
+        const extensionPath = await copyExtension();
+        await fs.writeFile(path.join(extensionPath, 'disabled.json'), '{}');
+
+        const extension: Extension = await expectWarningMessages(
+          () => customSession.extensions.loadExtension(extensionPath),
+          {
+            name: 'ExtensionLoadWarning',
+            message: /Static declarativeNetRequest rulesets were not loaded: disabled\.json/
+          }
+        );
+        const { getEnabledRulesets, canFetch } = await openExtensionPageAndTab(extension, { expectRulesets: false });
+
+        expect(await getEnabledRulesets()).toEqual([]);
+        expect(await canFetch('blocked-by-enabled-ruleset')).toBe(true);
+      });
     });
   });
 
@@ -1433,18 +1668,24 @@ describe('chrome extensions', { retry: 0 }, () => {
         await fs.writeFile(path.join(extensionPath, 'page.html'), '<!doctype html>');
         await fs.writeFile(
           path.join(extensionPath, 'background.js'),
-          `chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            sendResponse({ marker: ${JSON.stringify(marker)} });
+          `let installed = null;
+          chrome.runtime.onInstalled.addListener((details) => { installed = details; });
+          chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            sendResponse({ marker: ${JSON.stringify(marker)}, installed });
           });`
         );
       };
 
-      const runRemoteControlApp = async () => {
-        const rc = await startRemoteControlApp();
+      // The feature is set either way, so that the specs do not depend on its
+      // default.
+      const runRemoteControlApp = async (expectInstalled: boolean, { onInstalled = true } = {}) => {
+        const rc = await startRemoteControlApp([
+          `--${onInstalled ? 'enable' : 'disable'}-features=ExtensionRuntimeOnInstalled`
+        ]);
         const exitPromise = once(rc.process, 'exit');
 
         const state = await rc.remotely(
-          async (partition: string, extensionPath: string) => {
+          async (partition: string, extensionPath: string, expectInstalled: boolean) => {
             const { BrowserWindow, session } = require('electron/main');
             const { setTimeout } = require('node:timers/promises');
 
@@ -1453,7 +1694,14 @@ describe('chrome extensions', { retry: 0 }, () => {
             const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
             await w.loadURL(`${extension.url}page.html`);
 
-            const state = await w.webContents.executeJavaScript('chrome.runtime.sendMessage({})');
+            // onInstalled is dispatched once the worker has started. When none
+            // is expected, give a stray one a second to show up.
+            let state;
+            for (let i = 0; i < 40; i++) {
+              state = await w.webContents.executeJavaScript('chrome.runtime.sendMessage({})');
+              if (state.installed || (!expectInstalled && i >= 4)) break;
+              await setTimeout(250);
+            }
 
             // Give Chromium some time to write the extension's prefs to disk.
             await setTimeout(500);
@@ -1463,7 +1711,8 @@ describe('chrome extensions', { retry: 0 }, () => {
             return state;
           },
           partition,
-          extensionPath
+          extensionPath,
+          expectInstalled
         );
 
         await exitPromise;
@@ -1477,11 +1726,11 @@ describe('chrome extensions', { retry: 0 }, () => {
       const extension = await setUpRestartingExtension();
 
       await extension.write('1.0', 'first');
-      expect((await extension.launch()).marker).toBe('first');
+      expect((await extension.launch(true)).marker).toBe('first');
 
       // Same version, new script.
       await extension.write('1.0', 'second');
-      expect((await extension.launch()).marker).toBe('second');
+      expect((await extension.launch(false)).marker).toBe('second');
     });
 
     it('persists alarms and dynamic content scripts across restarts', async () => {
@@ -1570,6 +1819,29 @@ describe('chrome extensions', { retry: 0 }, () => {
       await w.loadURL(`${extension.url}page.html`);
       const result = await w.webContents.executeJavaScript("chrome.runtime.sendMessage('from a service worker')");
       expect(result).toEqual({ written: true });
+    });
+
+    it('emits runtime.onInstalled for a first load and a new version only', async () => {
+      const extension = await setUpRestartingExtension();
+
+      await extension.write('1.0', 'first');
+      expect((await extension.launch(true)).installed).toEqual({ reason: 'install' });
+
+      expect((await extension.launch(false)).installed).toBeNull();
+
+      await extension.write('2.0', 'second');
+      expect((await extension.launch(true)).installed).toEqual({ reason: 'update', previousVersion: '1.0' });
+    });
+
+    it('does not emit runtime.onInstalled when ExtensionRuntimeOnInstalled is disabled', async () => {
+      const extension = await setUpRestartingExtension();
+
+      await extension.write('1.0', 'first');
+      expect((await extension.launch(false, { onInstalled: false })).installed).toBeNull();
+
+      // The load was still recorded, so it is not a new install once the
+      // feature is enabled.
+      expect((await extension.launch(false)).installed).toBeNull();
     });
 
     it('can run chrome extension APIs', async () => {

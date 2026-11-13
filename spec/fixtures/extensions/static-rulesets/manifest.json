@@ -1,0 +1,12 @@
+{
+  "name": "static-rulesets",
+  "version": "1.0",
+  "permissions": ["declarativeNetRequest"],
+  "declarative_net_request": {
+    "rule_resources": [
+      { "id": "enabled", "enabled": true, "path": "enabled.json" },
+      { "id": "disabled", "enabled": false, "path": "disabled.json" }
+    ]
+  },
+  "manifest_version": 3
+}

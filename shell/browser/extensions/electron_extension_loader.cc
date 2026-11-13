@@ -4,10 +4,13 @@
 
 #include "shell/browser/extensions/electron_extension_loader.h"
 
+#include <optional>
+#include <set>
 #include <utility>
 
 #include "base/auto_reset.h"
 #include "base/command_line.h"
+#include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
@@ -20,47 +23,107 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
+#include "base/values.h"
+#include "base/version.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/storage_partition.h"
+#include "extensions/browser/api/declarative_net_request/file_backed_ruleset_source.h"
+#include "extensions/browser/api/declarative_net_request/install_index_helper.h"
+#include "extensions/browser/api/declarative_net_request/prefs_helper.h"
+#include "extensions/browser/api/runtime/runtime_api.h"
 #include "extensions/browser/extension_file_task_runner.h"
 #include "extensions/browser/extension_pref_names.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_util.h"
 #include "extensions/browser/pref_names.h"
+#include "extensions/browser/ruleset_parse_result.h"
 #include "extensions/browser/service_worker/service_worker_task_queue.h"
+#include "extensions/common/api/declarative_net_request/dnr_manifest_data.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/file_util.h"
+#include "extensions/common/install_warning.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handlers/background_info.h"
 #include "third_party/blink/public/common/service_worker/service_worker_status_code.h"
 #include "third_party/blink/public/common/storage_key/storage_key.h"
 
+namespace features {
+
+BASE_FEATURE(kExtensionRuntimeOnInstalled,
+             "ExtensionRuntimeOnInstalled",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
+}  // namespace features
+
 namespace extensions {
+
+// What loading an unpacked extension from disk produced.
+struct UnpackedExtensionLoadResult {
+  base::FilePath extension_dir;
+
+  scoped_refptr<Extension> extension;
+
+  // Why the load failed. Empty if `extension` is set.
+  std::string error;
+
+  // Whether every static declarativeNetRequest ruleset of the extension has an
+  // indexed copy on disk that was written after the ruleset last changed.
+  bool indexed_rulesets_are_current = false;
+
+  // Set if the rulesets were indexed during this load: what ExtensionPrefs
+  // needs to store about each of them, keyed by ruleset ID. Empty if they
+  // could not be indexed.
+  std::optional<base::DictValue> ruleset_install_prefs;
+};
 
 namespace {
 
-std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
-    const base::FilePath& extension_dir,
-    int load_flags) {
+// Extension pref holding the version of the extension this session loaded
+// last.
+constexpr char kPrefLastLoadedVersion[] = "electron_last_loaded_version";
+
+// Returns the version of the extension that this session loaded last. It is
+// not valid if the session has not loaded the extension before.
+base::Version GetLastLoadedVersion(const ExtensionPrefs* extension_prefs,
+                                   const ExtensionId& extension_id) {
+  std::string last_loaded_version;
+  extension_prefs->ReadPrefAsString(extension_id, kPrefLastLoadedVersion,
+                                    &last_loaded_version);
+  return base::Version(last_loaded_version);
+}
+
+// Returns whether every static declarativeNetRequest ruleset of `extension` has
+// an indexed copy in its _metadata folder that is newer than the ruleset.
+bool AreIndexedRulesetsCurrent(const Extension& extension) {
+  using declarative_net_request::FileBackedRulesetSource;
+  for (const FileBackedRulesetSource& source :
+       FileBackedRulesetSource::CreateStatic(
+           extension, FileBackedRulesetSource::RulesetFilter::kIncludeAll)) {
+    base::File::Info ruleset_info;
+    base::File::Info indexed_info;
+    // A ruleset as new as its indexed copy may have changed after it was
+    // indexed.
+    if (!base::GetFileInfo(source.json_path(), &ruleset_info) ||
+        !base::GetFileInfo(source.indexed_path(), &indexed_info) ||
+        ruleset_info.last_modified >= indexed_info.last_modified) {
+      return false;
+    }
+  }
+  return true;
+}
+
+UnpackedExtensionLoadResult LoadUnpacked(const base::FilePath& extension_dir,
+                                         int load_flags) {
   // app_shell only supports unpacked extensions.
   // NOTE: If you add packed extension support consider removing the flag
   // FOLLOW_SYMLINKS_ANYWHERE below. Packed extensions should not have symlinks.
   if (!base::DirectoryExists(extension_dir)) {
     std::string err = "Extension directory not found: " +
                       base::UTF16ToUTF8(extension_dir.LossyDisplayName());
-    return std::make_pair(nullptr, err);
-  }
-
-  // remove _metadata folder. Otherwise, the following warning will be thrown
-  // Cannot load extension with file or directory name _metadata.
-  // Filenames starting with "_" are reserved for use by the system.
-  // see: https://bugs.chromium.org/p/chromium/issues/detail?id=377278
-  base::FilePath metadata_dir = extension_dir.Append(kMetadataFolder);
-  if (base::DirectoryExists(metadata_dir)) {
-    base::DeletePathRecursively(metadata_dir);
+    return {.error = std::move(err)};
   }
 
   std::u16string load_error;
@@ -71,17 +134,70 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
     std::string err = "Loading extension at " +
                       base::UTF16ToUTF8(extension_dir.LossyDisplayName()) +
                       " failed with: " + base::UTF16ToUTF8(load_error);
-    return std::make_pair(nullptr, err);
+    return {.error = std::move(err)};
   }
 
+  const bool indexed_rulesets_are_current =
+      AreIndexedRulesetsCurrent(*extension);
+  return {.extension_dir = extension_dir,
+          .extension = std::move(extension),
+          .indexed_rulesets_are_current = indexed_rulesets_are_current};
+}
+
+// Indexes the static declarativeNetRequest rulesets of the extension that was
+// loaded, as Chromium does when it installs an extension. RulesMonitorService
+// only loads a ruleset whose checksum is in ExtensionPrefs, and the checksum
+// comes from indexing the ruleset. The indexed rulesets are written to the
+// extension's _metadata folder.
+UnpackedExtensionLoadResult IndexRulesets(UnpackedExtensionLoadResult result) {
+  if (!result.extension) {
+    return result;
+  }
+
+  RulesetParseResult index_result = declarative_net_request::
+      InstallIndexHelper::IndexAndPersistRulesOnInstall(*result.extension);
+  result.ruleset_install_prefs.emplace();
+  if (index_result.error) {
+    // Indexing fails if the extension directory is read-only, which is common
+    // for an extension that ships inside an app. Such an extension works
+    // without its static rulesets, so warn rather than fail the load. None of
+    // the rulesets are loaded, because indexing stops at the first failure.
+    result.extension->AddInstallWarning(InstallWarning(
+        "Static declarativeNetRequest rulesets were not loaded: " +
+        *index_result.error));
+  } else {
+    result.extension->AddInstallWarnings(std::move(index_result.warnings));
+    result.ruleset_install_prefs =
+        std::move(index_result.ruleset_install_prefs);
+  }
+  return result;
+}
+
+// A reload indexes the rulesets whether or not they changed, as reloading an
+// unpacked extension does in Chromium.
+UnpackedExtensionLoadResult LoadUnpackedAndIndexRulesets(
+    const base::FilePath& extension_dir,
+    int load_flags) {
+  return IndexRulesets(LoadUnpacked(extension_dir, load_flags));
+}
+
+// Returns the warnings to report for an extension loaded from `extension_dir`.
+std::string GetLoadWarnings(const Extension& extension,
+                            const base::FilePath& extension_dir) {
   std::string warnings;
   // Log warnings.
-  if (!extension->install_warnings().empty()) {
+  if (!extension.install_warnings().empty()) {
     std::string warning_prefix =
         "Warnings loading extension at " +
         base::UTF16ToUTF8(extension_dir.LossyDisplayName());
 
-    for (const auto& warning : extension->install_warnings()) {
+    // Chromium warns about every top-level name that starts with "_". The
+    // _metadata folder is expected: it holds the indexed rulesets, and an
+    // extension from the Chrome Web Store ships with one.
+    const std::string metadata_folder_warning = base::UTF16ToUTF8(
+        file_util::ReservedFilenameWarning(base::FilePath(kMetadataFolder)));
+
+    for (const auto& warning : extension.install_warnings()) {
       std::string unrecognized_manifest_error = ErrorUtils::FormatErrorMessage(
           manifest_errors::kUnrecognizedManifestKey, warning.key);
 
@@ -89,6 +205,8 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
         // filter kUnrecognizedManifestKey error. This error does not have any
         // impact e.g: Unrecognized manifest key 'minimum_chrome_version' etc.
         LOG(WARNING) << warning_prefix << ": " << warning.message;
+      } else if (warning.message == metadata_folder_warning) {
+        continue;
       } else {
         warnings += "  " + warning.message + "\n";
       }
@@ -99,7 +217,87 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
     }
   }
 
-  return std::make_pair(extension, warnings);
+  return warnings;
+}
+
+// Returns whether Chromium can load `extension`'s static rulesets from the
+// indexed copies an earlier load left on disk, so that they need not be indexed
+// again. As for an extension Chromium has installed, that holds until the
+// extension's version changes. Unlike there, the app can change an extension's
+// files at any time, so a ruleset newer than its indexed copy is indexed again
+// too.
+bool CanReuseIndexedRulesets(ExtensionPrefs* extension_prefs,
+                             const UnpackedExtensionLoadResult& result) {
+  const Extension& extension = *result.extension;
+  const auto& rulesets =
+      declarative_net_request::DNRManifestData::GetRulesets(extension);
+  if (rulesets.empty()) {
+    return true;
+  }
+
+  const base::Version last_loaded_version =
+      GetLastLoadedVersion(extension_prefs, extension.id());
+  if (!result.indexed_rulesets_are_current || !last_loaded_version.IsValid() ||
+      last_loaded_version != extension.version()) {
+    return false;
+  }
+
+  // The indexed copies are of no use to this session without their checksums.
+  const declarative_net_request::PrefsHelper prefs_helper(*extension_prefs);
+  for (const auto& ruleset : rulesets) {
+    int checksum = 0;
+    if (!prefs_helper.GetStaticRulesetChecksum(extension.id(), ruleset.id,
+                                               checksum)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Forgets the static rulesets and rules that an extension enabled or disabled
+// with the declarativeNetRequest API, as Chromium does when it updates an
+// extension: they refer to the rulesets of the version that made the choice.
+void ResetRulesetChoices(ExtensionPrefs* extension_prefs,
+                         const Extension& extension) {
+  // This also drops the checksums, which belong to the previous version too.
+  extension_prefs->UpdateExtensionPref(
+      extension.id(), ExtensionPrefs::kDNRStaticRulesetPref, std::nullopt);
+
+  std::set<declarative_net_request::RulesetID> enabled_by_manifest;
+  for (const auto& ruleset :
+       declarative_net_request::DNRManifestData::GetRulesets(extension)) {
+    if (ruleset.enabled) {
+      enabled_by_manifest.insert(ruleset.id);
+    }
+  }
+  declarative_net_request::PrefsHelper(*extension_prefs)
+      .SetEnabledStaticRulesets(extension.id(), enabled_by_manifest);
+}
+
+// Stores what RulesMonitorService needs in order to load `extension`'s static
+// declarativeNetRequest rulesets. Must be called before the extension is added.
+//
+// ExtensionPrefs::OnExtensionInstalled() would also store this, but it replaces
+// everything stored about the extension's static rulesets. An extension is
+// loaded again on every launch, so that would drop the rulesets and rules the
+// extension enabled or disabled with the declarativeNetRequest API. Only
+// replace the entry of each ruleset instead.
+void StoreRulesetInstallPrefs(ExtensionPrefs* extension_prefs,
+                              const Extension& extension,
+                              base::DictValue ruleset_install_prefs) {
+  for (const auto& ruleset :
+       declarative_net_request::DNRManifestData::GetRulesets(extension)) {
+    const std::string ruleset_id = base::NumberToString(ruleset.id.value());
+    // A ruleset that was not indexed has no entry, which removes a checksum
+    // stored by an earlier load.
+    std::optional<base::Value> ruleset_prefs =
+        ruleset_install_prefs.Extract(ruleset_id);
+    extension_prefs->UpdateExtensionPref(
+        extension.id(),
+        ExtensionPrefs::JoinPrefs(
+            {ExtensionPrefs::kDNRStaticRulesetPref, ruleset_id}),
+        std::move(ruleset_prefs));
+  }
 }
 
 }  // namespace
@@ -122,7 +320,7 @@ void ElectronExtensionLoader::LoadExtension(
     base::OnceCallback<void(const Extension*, const std::string&)> cb) {
   GetExtensionFileTaskRunner()->PostTaskAndReplyWithResult(
       FROM_HERE, base::BindOnce(&LoadUnpacked, extension_dir, load_flags),
-      base::BindOnce(&ElectronExtensionLoader::FinishExtensionLoad,
+      base::BindOnce(&ElectronExtensionLoader::IndexRulesetsIfNeeded,
                      weak_factory_.GetWeakPtr(), std::move(cb)));
 }
 
@@ -148,13 +346,28 @@ void ElectronExtensionLoader::UnloadExtension(
   extension_registrar_->RemoveExtension(extension_id, reason);
 }
 
+void ElectronExtensionLoader::IndexRulesetsIfNeeded(
+    base::OnceCallback<void(const Extension*, const std::string&)> cb,
+    UnpackedExtensionLoadResult result) {
+  if (!result.extension ||
+      CanReuseIndexedRulesets(ExtensionPrefs::Get(browser_context_), result)) {
+    FinishExtensionLoad(std::move(cb), std::move(result));
+    return;
+  }
+
+  GetExtensionFileTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&IndexRulesets, std::move(result)),
+      base::BindOnce(&ElectronExtensionLoader::FinishExtensionLoad,
+                     weak_factory_.GetWeakPtr(), std::move(cb)));
+}
+
 void ElectronExtensionLoader::FinishExtensionLoad(
     base::OnceCallback<void(const Extension*, const std::string&)> cb,
-    std::pair<scoped_refptr<const Extension>, std::string> result) {
-  scoped_refptr<const Extension> extension = result.first;
+    UnpackedExtensionLoadResult result) {
+  scoped_refptr<const Extension> extension = result.extension;
   base::OnceClosure add_extension = base::BindOnce(
       &ElectronExtensionLoader::AddLoadedExtension, weak_factory_.GetWeakPtr(),
-      std::move(cb), extension, result.second);
+      std::move(cb), std::move(result));
 
   // A worker registered by a previous launch keeps running the script it was
   // registered with, and the extension's files can change between launches
@@ -180,9 +393,11 @@ void ElectronExtensionLoader::FinishExtensionLoad(
 
 void ElectronExtensionLoader::AddLoadedExtension(
     base::OnceCallback<void(const Extension*, const std::string&)> cb,
-    scoped_refptr<const Extension> extension,
-    const std::string& error_or_warnings) {
+    UnpackedExtensionLoadResult result) {
+  scoped_refptr<const Extension> extension = std::move(result.extension);
+  std::string error_or_warnings = std::move(result.error);
   if (extension) {
+    error_or_warnings = GetLoadWarnings(*extension, result.extension_dir);
     ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
 
     if (BackgroundInfo::IsServiceWorkerBased(extension.get())) {
@@ -196,7 +411,52 @@ void ElectronExtensionLoader::AddLoadedExtension(
           base::Value(false));
     }
 
+    // The version this session loaded last tells a first install and an update
+    // apart from a relaunch.
+    const base::Version previous_version =
+        GetLastLoadedVersion(extension_prefs, extension->id());
+
+    // GlobalRulesTracker starts every launch with no declarativeNetRequest
+    // rules allocated to this extension, but the allocation it stores in
+    // ExtensionPrefs outlives the launch. Drop the stored one so that the two
+    // agree. Rules are allocated again when the rulesets are loaded.
+    if (loaded_extension_ids_.insert(extension->id()).second) {
+      declarative_net_request::PrefsHelper(*extension_prefs)
+          .SetAllocatedGlobalRuleCount(extension->id(), /*rule_count=*/0);
+    }
+
+    if (previous_version.IsValid() &&
+        previous_version != extension->version()) {
+      ResetRulesetChoices(extension_prefs, *extension);
+    }
+
+    if (result.ruleset_install_prefs) {
+      StoreRulesetInstallPrefs(extension_prefs, *extension,
+                               std::move(*result.ruleset_install_prefs));
+    }
+
     extension_registrar_->AddExtension(extension);
+
+    if (!previous_version.IsValid() ||
+        previous_version != extension->version()) {
+      // The version is stored whether or not the event is emitted: reusing the
+      // indexed rulesets depends on it, and an extension that was loaded while
+      // the feature was disabled is not a new install once it is enabled.
+      extension_prefs->UpdateExtensionPref(
+          extension->id(), kPrefLastLoadedVersion,
+          base::Value(extension->VersionString()));
+      // Chromium dispatches runtime.onInstalled from its install flow, which
+      // loading an unpacked extension on every launch does not go through.
+      if (base::FeatureList::IsEnabled(
+              features::kExtensionRuntimeOnInstalled)) {
+        base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+            FROM_HERE,
+            base::BindOnce(&RuntimeEventRouter::DispatchOnInstalledEvent,
+                           base::UnsafeDangling(
+                               static_cast<void*>(browser_context_.get())),
+                           extension->id(), previous_version, false));
+      }
+    }
 
     // Write extension install time to ExtensionPrefs.
     // This is required by extensions::WebRequestAPI
@@ -221,9 +481,14 @@ void ElectronExtensionLoader::AddLoadedExtension(
 
 void ElectronExtensionLoader::FinishExtensionReload(
     const ExtensionId& old_extension_id,
-    std::pair<scoped_refptr<const Extension>, std::string> result) {
-  scoped_refptr<const Extension> extension = result.first;
+    UnpackedExtensionLoadResult result) {
+  scoped_refptr<const Extension> extension = std::move(result.extension);
   if (extension) {
+    if (result.ruleset_install_prefs) {
+      StoreRulesetInstallPrefs(ExtensionPrefs::Get(browser_context_),
+                               *extension,
+                               std::move(*result.ruleset_install_prefs));
+    }
     extension_registrar_->AddExtension(extension);
   }
 }
@@ -263,7 +528,8 @@ void ElectronExtensionLoader::DoLoadExtensionForReload(
   // extension will cause the file access permission to be dropped.
   int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
   GetExtensionFileTaskRunner()->PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&LoadUnpacked, path, load_flags),
+      FROM_HERE,
+      base::BindOnce(&LoadUnpackedAndIndexRulesets, path, load_flags),
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionReload,
                      weak_factory_.GetWeakPtr(), extension_id));
   did_schedule_reload_ = true;
