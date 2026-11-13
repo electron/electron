@@ -125,10 +125,10 @@ index 52741b8bcf2527337ea465aaa1ab3b65ed5e7316..0479029913b068a32a810a5360ac91bd
  
  NODE_BINDING_PER_ISOLATE_INIT(
 diff --git a/src/node_http2.cc b/src/node_http2.cc
-index f27fedf044e154a880e3c0815f3a85e4c8f44003..1a38f5f39b3b63692468cbc75100fc5ceed1c57b 100644
+index 2a4ff215e79d9bf905db8398285dcdf0340a39d9..17bd889e509fc96dac634371a1cb4a43486aba97 100644
 --- a/src/node_http2.cc
 +++ b/src/node_http2.cc
-@@ -3742,6 +3742,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
+@@ -3825,6 +3825,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
    return;
  }
  }  // namespace http2
@@ -143,13 +143,13 @@ index f27fedf044e154a880e3c0815f3a85e4c8f44003..1a38f5f39b3b63692468cbc75100fc5c
  
  NODE_BINDING_CONTEXT_AWARE_INTERNAL(http2, node::http2::Initialize)
 diff --git a/src/node_http2.h b/src/node_http2.h
-index 27c5b3a0ddec369d45e2061cf171a80095f8717e..877607ce04e35b3e1af78507920795bbb78abe2f 100644
+index ff4c59c2cbcf73e1dde8335308b020d63cf50343..4c64bc1dc642c1c80548b651406d046538a0c484 100644
 --- a/src/node_http2.h
 +++ b/src/node_http2.h
-@@ -148,6 +148,96 @@ struct Http2RcBufferPointerTraits {
- using Http2Headers = NgHeaders<Http2HeadersTraits>;
+@@ -157,6 +157,95 @@ using Http2Headers = NgHeaders<Http2HeadersTraits>;
  using Http2RcBufferPointer = NgRcBufPointer<Http2RcBufferPointerTraits>;
  
+ class Http2Stream;
 +}  // namespace http2
 +
 +// ThinLTO: class template instantiations always have weak (linkonce_odr)
@@ -239,10 +239,9 @@ index 27c5b3a0ddec369d45e2061cf171a80095f8717e..877607ce04e35b3e1af78507920795bb
 +};
 +
 +namespace http2 {
-+
+ 
  struct NgHttp2StreamWrite : public MemoryRetainer {
-   BaseObjectPtr<AsyncWrap> req_wrap;
-   uv_buf_t buf;
+   // Completed once all buffers from the request have been consumed.
 diff --git a/src/node_union_bytes.h b/src/node_union_bytes.h
 index 4a3f67980fdc925699cc67e40736bddce8f7b857..c8e69ea97ab3c79f395b029be711902d1395dd56 100644
 --- a/src/node_union_bytes.h
