@@ -9,7 +9,7 @@ Adds MenuDelegate::SwitchToSiblingMenu, invoked from MenuController when the use
 Left/Right at the top level with nothing to open or close in that direction.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 8a320379bd2e3d336cc98c1442f9be14342e13ab..e2b3cf060281808755034621d7e297f04b60f9a1 100644
+index 8a320379bd2e3d336cc98c1442f9be14342e13ab..fc5c3a25bad1e8f7bae5a927cd2173d1e6a6a8c8 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -2422,9 +2422,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
@@ -36,7 +36,7 @@ index 8a320379bd2e3d336cc98c1442f9be14342e13ab..e2b3cf060281808755034621d7e297f0
        }
        break;
  
-@@ -3935,6 +3935,45 @@ void MenuController::CloseSubmenu() {
+@@ -3935,6 +3935,46 @@ void MenuController::CloseSubmenu() {
    SetSelection(item_to_select, SELECTION_UPDATE_IMMEDIATELY);
  }
  
@@ -67,7 +67,8 @@ index 8a320379bd2e3d336cc98c1442f9be14342e13ab..e2b3cf060281808755034621d7e297f0
 +
 +void MenuController::CloseSubmenuOrSwitchSiblingMenu() {
 +  MenuItemView* item = state_.item;
-+  // If there is a submenu to close, close it as usual.
++  // Use state_ here because CloseSubmenu() acts on state_.item, so this
++  // matches whether it has a submenu to close.
 +  const bool can_close_submenu =
 +      item && item->GetParentMenuItem() &&
 +      (item->SubmenuIsShowing() ||
