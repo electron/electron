@@ -32,6 +32,10 @@ class ElectronExtensionWebContentsObserver
   friend class content::WebContentsUserData<
       ElectronExtensionWebContentsObserver>;
 
+  // ExtensionWebContentsObserver:
+  void InitializeRenderFrame(
+      content::RenderFrameHost* render_frame_host) override;
+
   explicit ElectronExtensionWebContentsObserver(
       content::WebContents* web_contents);
 
