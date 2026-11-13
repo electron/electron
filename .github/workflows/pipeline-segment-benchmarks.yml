@@ -50,6 +50,26 @@ on:
         description: 'Skip the run when the latest nightly was published more than 25 hours ago'
         required: false
         default: false
+      history:
+        type: boolean
+        description: 'One job of a version-ladder run (benchmarks-history.yml): the baseline is the anchor, suites the candidate fails in the first two rounds are skipped, and only the history series are sent'
+        required: false
+        default: false
+      artifact-name:
+        type: string
+        description: 'Name of the results artifact (default: benchmark-results-<platform>-<arch>)'
+        required: false
+        default: ''
+      timeout-minutes:
+        type: number
+        description: 'Timeout of the whole job'
+        required: false
+        default: 300
+      run-timeout-minutes:
+        type: number
+        description: 'Timeout of the benchmark step, which must leave time for the other steps'
+        required: false
+        default: 270
     secrets:
       DD_API_KEY:
         required: false
@@ -60,7 +80,7 @@ jobs:
   benchmark:
     runs-on: ${{ inputs.runs-on }}
     container: ${{ fromJSON(inputs.container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash from build-image-sha; there is no static digest to pin
-    timeout-minutes: 300
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:
       contents: read
     # Callers' defaults do not propagate into reusable workflows.
@@ -111,18 +131,24 @@ jobs:
         node script/benchmarks/fetch-targets.mts "${args[@]}"
     - name: Run Benchmarks (linux)
       if: ${{ inputs.target-platform == 'linux' && steps.fetch.outputs.skip != 'true' }}
-      timeout-minutes: 270
+      timeout-minutes: ${{ inputs.run-timeout-minutes }}
       env:
         ROUNDS: ${{ inputs.rounds }}
         SUITES: ${{ inputs.suites }}
+        HISTORY: ${{ inputs.history }}
       run: |
+        args=()
+        # Old versions can hang where they can't run a suite; no invocation
+        # of a healthy run takes more than a few minutes.
+        if [ "$HISTORY" = "true" ]; then args+=(--best-effort --timeout-minutes 15); fi
         xvfb-run -a -s "-screen 0 1920x1200x24" \
           node script/benchmarks/run.mts \
             --targets "$RUNNER_TEMP/benchmark-targets/targets.json" \
             --out "$RUNNER_TEMP/benchmark-results" \
             --rounds "$ROUNDS" \
             --suites "$SUITES" \
-            --python python
+            --python python \
+            "${args[@]}"
     # Compare and upload even when the run step failed: run.mts exits
     # non-zero on any failed crossbench invocation (so the job still ends red),
     # and the comparison and raw results are the diagnostics.
@@ -131,15 +157,42 @@ jobs:
       env:
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         UPLOAD_TO_DATADOG: ${{ inputs.upload-to-datadog }}
+        HISTORY: ${{ inputs.history }}
       run: |
         args=(--results "$RUNNER_TEMP/benchmark-results")
         if [ "$UPLOAD_TO_DATADOG" != "true" ]; then args+=(--dry-run); fi
+        # Tags the history series with this workflow run's id (GITHUB_RUN_ID).
+        if [ "$HISTORY" = "true" ]; then args+=(--history); fi
         node script/benchmarks/compare.mts "${args[@]}"
+    # The summary files on their own, in a folder named after the results
+    # artifact, for the calling workflow's upload-results job to keep in blob
+    # storage. That job never needs the raw rounds and traces. These run before
+    # the large raw upload so a job timeout during that upload can't lose them.
+    - name: Stage Result Summary
+      if: ${{ !cancelled() && steps.fetch.outputs.skip != 'true' }}
+      env:
+        SUMMARY_NAME: ${{ inputs.artifact-name || format('benchmark-results-{0}-{1}', inputs.target-platform, inputs.target-arch) }}
+      run: |
+        dest="$RUNNER_TEMP/benchmark-summary/$SUMMARY_NAME"
+        mkdir -p "$dest"
+        for f in metadata.json comparison.json summary.md; do
+          if [ -f "$RUNNER_TEMP/benchmark-results/$f" ]; then
+            cp "$RUNNER_TEMP/benchmark-results/$f" "$dest/"
+          fi
+        done
+    - name: Upload Result Summary
+      if: ${{ !cancelled() && steps.fetch.outputs.skip != 'true' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: ${{ inputs.artifact-name || format('benchmark-results-{0}-{1}', inputs.target-platform, inputs.target-arch) }}-summary
+        path: ${{ runner.temp }}/benchmark-summary
+        if-no-files-found: ignore
+        retention-days: 30
     - name: Upload Results
       if: ${{ !cancelled() && steps.fetch.outputs.skip != 'true' }}
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
-        name: benchmark-results-${{ inputs.target-platform }}-${{ inputs.target-arch }}
+        name: ${{ inputs.artifact-name || format('benchmark-results-{0}-{1}', inputs.target-platform, inputs.target-arch) }}
         path: |
           ${{ runner.temp }}/benchmark-results
           !${{ runner.temp }}/benchmark-results/**/*.xlsx

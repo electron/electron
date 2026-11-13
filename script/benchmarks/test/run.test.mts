@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { runCrossbench } from '../run.mts';
+import { capLogs, runCrossbench } from '../run.mts';
 
 const FIXTURE = fileURLToPath(new URL('fixtures/spawn-descendant.mts', import.meta.url));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'benchmarks-run-test-'));
@@ -52,5 +52,26 @@ describe('runCrossbench', { skip: process.platform === 'win32' && 'uses POSIX pr
   it('reports a command that cannot start as a failure', async () => {
     const code = await runCrossbench(path.join(tmp, 'missing'), [], path.join(tmp, 'missing.log'), 10_000);
     assert.notEqual(code, 0);
+  });
+});
+
+describe('capLogs', () => {
+  it('cuts the middle out of logs over the limit', () => {
+    const dir = path.join(tmp, 'logs');
+    fs.mkdirSync(path.join(dir, 'story', '0'), { recursive: true });
+    const big = path.join(dir, 'story', '0', 'browser.stdout.log');
+    fs.writeFileSync(big, `${'a'.repeat(100)}${'b'.repeat(1000)}${'c'.repeat(100)}`);
+    const small = path.join(dir, 'story', '0', 'cb.log');
+    fs.writeFileSync(small, 'x'.repeat(500));
+    const data = path.join(dir, 'story', '0', 'trace.json');
+    fs.writeFileSync(data, 'y'.repeat(2000));
+    capLogs(dir, { maxBytes: 1000, keepBytes: 100 });
+    const cut = fs.readFileSync(big, 'utf8');
+    assert.ok(cut.startsWith('a'.repeat(100)));
+    assert.ok(cut.endsWith('c'.repeat(100)));
+    assert.match(cut, /cut 1000 bytes/);
+    assert.ok(!cut.includes('bb'));
+    assert.equal(fs.statSync(small).size, 500);
+    assert.equal(fs.statSync(data).size, 2000);
   });
 });

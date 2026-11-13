@@ -1,0 +1,194 @@
+name: Benchmarks History
+
+# Measures Electron's performance across major versions with the benchmarks in
+# script/benchmarks/ (see its README). One job per major runs that major's
+# latest stable release against a fixed anchor version (default: 45.3.0, pinned
+# so that runs made at different times share an anchor), interleaved on one
+# runner like the nightly Benchmarks workflow does.
+#
+# Dispatch it by hand, once to backfill the past majors and then with just the
+# new major (e.g. majors=46) when one goes stable. Keep the default anchor so
+# every run's ratios stay comparable.
+#
+# Runners are shared cloud VMs that change hosts between jobs, so raw values
+# from different jobs are not comparable. Each job sends its candidate's ratio
+# to the anchor (electron.perf.history.ratio.<metric>), which is; the raw
+# medians (electron.perf.history.<metric>) are only for context. Every point
+# is tagged with history_run_id, so one run's ladder can be told apart from
+# the next.
+#
+# Unlike the nightly workflow, upload-to-datadog defaults to true: the data is
+# the point of a run. With it, each job's summary files are also kept in the
+# benchmarks blob container (https://dev-cdn.electronjs.org/benchmarks/history/),
+# the permanent record of the run. Suites an old version can't run are skipped, and a job
+# only fails when it measured nothing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      majors:
+        type: string
+        description: 'Electron majors, e.g. 30-45 or 22,28,33-latest ("latest" is the newest stable major). Each runs its latest stable release.'
+        default: '15-latest'
+        required: false
+      anchor:
+        type: string
+        description: 'Version every major is compared against: a version or latest-stable. Keep the default so ratios stay comparable across runs.'
+        default: '45.3.0'
+        required: false
+      rounds:
+        type: string
+        description: 'Interleaved rounds per job'
+        default: '5'
+        required: false
+      suites:
+        type: string
+        description: 'Comma-separated suites: loading, trace, file_loading, speedometer, jetstream'
+        default: 'loading,trace,file_loading,speedometer,jetstream'
+        required: false
+      upload-to-datadog:
+        type: boolean
+        description: 'Send the history series to Datadog and keep the summaries in blob storage'
+        default: true
+        required: false
+
+permissions: {}
+
+jobs:
+  setup:
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
+      anchor: ${{ steps.resolve.outputs.anchor }}
+      matrix: ${{ steps.resolve.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+    - name: Setup Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 22.23.4
+    - name: Get Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+    # Only @electron/fiddle-core is needed; no native modules.
+    - name: Install Dependencies
+      run: node script/yarn.js install --immutable --mode=skip-build
+    # Resolved once here, so every job uses the same anchor and versions even
+    # if a release ships while the run is in progress.
+    - name: Resolve Versions
+      id: resolve
+      env:
+        MAJORS: ${{ inputs.majors }}
+        ANCHOR: ${{ inputs.anchor }}
+      run: node script/benchmarks/resolve-history.mts --majors "$MAJORS" --anchor "$ANCHOR"
+
+  benchmark-linux-x64:
+    name: benchmark-linux-x64 (${{ matrix.major }})
+    needs: setup
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      # Each job holds a 32-core runner for about an hour (five rounds of
+      # every suite; the nightly run takes about ten minutes a round).
+      max-parallel: 6
+      matrix:
+        include: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    uses: ./.github/workflows/pipeline-segment-benchmarks.yml
+    with:
+      target-platform: linux
+      target-arch: x64
+      runs-on: electron-arc-centralus-linux-amd64-32core
+      container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
+      candidate: ${{ matrix.version }}
+      baseline: ${{ needs.setup.outputs.anchor }}
+      rounds: ${{ inputs.rounds }}
+      suites: ${{ inputs.suites }}
+      upload-to-datadog: ${{ inputs.upload-to-datadog }}
+      history: true
+      artifact-name: benchmark-history-linux-x64-${{ matrix.major }}
+      timeout-minutes: 120
+      run-timeout-minutes: 105
+    secrets:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # Keeps the summary files of every job in the benchmarks blob container, the
+  # permanent record of the run (Datadog is the live view), at
+  # history/<anchor>/<major>/<run id>-<attempt>/<platform>-<arch>/. Runs after
+  # the jobs that failed or were cancelled too, so the majors that finished are
+  # kept. Only this job gets the Azure credentials, never the jobs that run
+  # Electron builds, and its failure leaves their results alone.
+  upload-results:
+    needs: [setup, benchmark-linux-x64]
+    if: ${{ always() && github.repository == 'electron/electron' && needs.setup.result == 'success' && inputs.upload-to-datadog }}
+    runs-on: ubuntu-latest
+    # Holds the Azure OIDC credentials for the benchmarks container.
+    environment: benchmarks-upload
+    permissions:
+      contents: read
+      # For the Azure OIDC login.
+      id-token: write
+    steps:
+    # Each summary artifact holds one folder named after its results artifact,
+    # so merging keeps them apart.
+    - name: Download Result Summaries
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        pattern: benchmark-history-*-summary
+        path: summaries
+        merge-multiple: true
+    - name: Stage Uploads
+      id: stage
+      env:
+        ANCHOR: ${{ needs.setup.outputs.anchor }}
+      run: |
+        if ! [[ "$ANCHOR" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+          echo "::error::Unexpected anchor version '$ANCHOR'"
+          exit 1
+        fi
+        count=0
+        shopt -s nullglob
+        for dir in summaries/benchmark-history-*/; do
+          name=$(basename "$dir")
+          if ! [[ "$name" =~ ^benchmark-history-([a-z]+-[a-z0-9]+)-([0-9]+)$ ]]; then
+            echo "::warning::Skipping unexpected summary folder $dir"
+            continue
+          fi
+          dest="upload/history/$ANCHOR/${BASH_REMATCH[2]}/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT/${BASH_REMATCH[1]}"
+          for f in metadata.json comparison.json summary.md; do
+            if [ -f "$dir/$f" ]; then
+              mkdir -p "$dest"
+              cp "$dir/$f" "$dest/"
+              count=$((count + 1))
+            fi
+          done
+        done
+        echo "count=$count" >> "$GITHUB_OUTPUT"
+        if [ "$count" = 0 ]; then echo "::notice::No benchmark results to upload"; fi
+    - name: Azure Login
+      if: ${{ steps.stage.outputs.count != '0' }}
+      uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
+      with:
+        client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_OIDC_SUBSCRIPTION_ID }}
+    - name: Upload Results to Azure
+      if: ${{ steps.stage.outputs.count != '0' }}
+      env:
+        AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_BENCHMARKS_STORAGE_ACCOUNT_NAME }}
+      run: |
+        az storage blob upload-batch \
+          --account-name "$AZURE_STORAGE_ACCOUNT" \
+          --destination benchmarks \
+          --source upload \
+          --overwrite false \
+          --auth-mode login
+        echo "## Uploaded Benchmark Results" >> "$GITHUB_STEP_SUMMARY"
+        (cd upload && find . -type f | sort) | while read -r f; do
+          echo "- https://dev-cdn.electronjs.org/benchmarks/${f#./}" >> "$GITHUB_STEP_SUMMARY"
+        done
