@@ -151,8 +151,10 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
       request_id_,
       content::GlobalRenderFrameHostId(factory_->render_process_id_,
                                        frame_routing_id_),
-      factory_->navigation_ui_data_ ? factory_->navigation_ui_data_->DeepCopy()
-                                    : nullptr,
+      factory_->navigation_ui_data_
+          ? std::make_unique<extensions::ExtensionNavigationUIData>(
+                *factory_->navigation_ui_data_)
+          : nullptr,
       request_for_info, false,
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
       factory_->IsForServiceWorkerScript(), factory_->navigation_id_));

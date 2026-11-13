@@ -97,7 +97,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-#include "base/i18n/rtl.h"
+#include "base/i18n/icubridge/default_icu_locale.h"
 #include "components/language/core/browser/language_prefs.h"
 #include "components/spellcheck/browser/pref_names.h"
 #include "components/spellcheck/common/spellcheck_common.h"
@@ -500,7 +500,7 @@ void ElectronBrowserContext::InitPrefs() {
   // No configured dictionaries, the default will be en-US
   if (prefs()->GetList(spellcheck::prefs::kSpellCheckDictionaries).empty()) {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
-        base::i18n::GetConfiguredLocale());
+        std::string(base::i18n::GetDefaultIcuLocale().tag_string()));
     if (!default_code.empty()) {
       base::ListValue language_codes;
       language_codes.Append(default_code);

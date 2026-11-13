@@ -46,10 +46,10 @@ index 6d54c2bc01f32a0d987aadb8eb0684d0ec0444d4..40f64c7705427bbe3fa4e3c056519676
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a8907a2b71bd 100644
+index 52b7e10e2fd6917707e9d9d6b892bd2b1388941f..8bc8c55472cf9168d96838311b852c6d80a6f874 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -31,6 +31,61 @@
+@@ -32,6 +32,61 @@
                                                      std::optional<float>,
                                                      bool)>;
  using ErrorCallback = base::RepeatingCallback<void(NSError*)>;
@@ -111,30 +111,35 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
  
  namespace {
  std::tuple<std::optional<gfx::Rect>,
-@@ -184,18 +239,22 @@ @interface ScreenCaptureKitDeviceHelper
+@@ -185,6 +240,7 @@ @interface ScreenCaptureKitDeviceHelper
      : NSObject <SCStreamDelegate, SCStreamOutput>
  
  - (instancetype)initWithSampleCallback:(SampleCallback)sampleCallback
 +                         cancelCallback:(CancelCallback)cancelCallback
-                          errorCallback:(ErrorCallback)errorCallback;
- @end
+                          errorCallback:(ErrorCallback)errorCallback
+                     disconnectCallback:
+                         (base::RepeatingClosure)disconnectCallback;
+@@ -192,16 +248,19 @@ - (instancetype)initWithSampleCallback:(SampleCallback)sampleCallback
  
  @implementation ScreenCaptureKitDeviceHelper {
    SampleCallback _sampleCallback;
 +  CancelCallback _cancelCallback;
    ErrorCallback _errorCallback;
+   base::RepeatingClosure _disconnectCallback;
  }
  
  - (instancetype)initWithSampleCallback:(SampleCallback)sampleCallback
 +                         cancelCallback:(CancelCallback)cancelCallback
-                          errorCallback:(ErrorCallback)errorCallback {
+                          errorCallback:(ErrorCallback)errorCallback
+                     disconnectCallback:
+                         (base::RepeatingClosure)disconnectCallback {
    if (self = [super init]) {
      _sampleCallback = sampleCallback;
 +    _cancelCallback = cancelCallback;
      _errorCallback = errorCallback;
-   }
-   return self;
-@@ -287,15 +346,13 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
+     _disconnectCallback = std::move(disconnectCallback);
+ 
+@@ -317,15 +376,13 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
  
    explicit ScreenCaptureKitDeviceMac(
        const DesktopMediaID& source,
@@ -152,7 +157,7 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
          stream_created_callback_(std::move(stream_created_callback)),
          device_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()),
          pip_screen_capture_coordinator_proxy_(
-@@ -305,21 +362,43 @@ explicit ScreenCaptureKitDeviceMac(
+@@ -335,6 +392,10 @@ explicit ScreenCaptureKitDeviceMac(
          device_task_runner_,
          base::BindRepeating(&ScreenCaptureKitDeviceMac::OnStreamSample,
                              weak_factory_.GetWeakPtr()));
@@ -163,11 +168,13 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
      ErrorCallback error_callback = base::BindPostTask(
          device_task_runner_,
          base::BindRepeating(&ScreenCaptureKitDeviceMac::OnStreamError,
-                             weak_factory_.GetWeakPtr()));
+@@ -361,16 +422,34 @@ explicit ScreenCaptureKitDeviceMac(
+         device_task_runner_, weak_factory_.GetWeakPtr());
      helper_ = [[ScreenCaptureKitDeviceHelper alloc]
          initWithSampleCallback:sample_callback
 +                 cancelCallback:cancel_callback
-                  errorCallback:error_callback];
+                  errorCallback:error_callback
+             disconnectCallback:disconnect_callback];
      if (pip_screen_capture_coordinator_proxy_) {
        pip_screen_capture_coordinator_proxy_->AddObserver(this);
      }
@@ -195,8 +202,8 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
 +    }
      CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
            base::NotFatalUntil::M160);
-     if (pip_screen_capture_coordinator_proxy_) {
-@@ -391,7 +470,7 @@ void CreateStream(SCContentFilter* filter) {
+     OnStop();
+@@ -443,7 +522,7 @@ void CreateStream(SCContentFilter* filter) {
        return;
      }
  
@@ -205,7 +212,7 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
        // Update the content size. This step is neccessary when used together
        // with SCContentSharingPicker. If the Chrome picker is used, it will
        // change to retina resolution if applicable.
-@@ -400,6 +479,9 @@ void CreateStream(SCContentFilter* filter) {
+@@ -452,6 +531,9 @@ void CreateStream(SCContentFilter* filter) {
                      filter.contentRect.size.height * filter.pointPixelScale);
      }
  
@@ -215,7 +222,7 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-@@ -413,6 +495,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -465,6 +547,7 @@ void CreateStream(SCContentFilter* filter) {
      stream_ = [[SCStream alloc] initWithFilter:filter
                                   configuration:config
                                        delegate:helper_];
@@ -223,7 +230,7 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -584,7 +667,7 @@ void OnStreamError(NSError* _Nullable error) {
+@@ -636,7 +719,7 @@ void OnStreamError(NSError* _Nullable error) {
        if (fullscreen_module_) {
          fullscreen_module_->Reset();
        }
@@ -232,7 +239,7 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
      } else {
        std::string error_string = base::StrCat(
            {"Stream delegate called didStopWithError: ",
-@@ -681,33 +764,42 @@ void OnStateChanged(
+@@ -749,33 +832,42 @@ void OnStateChanged(
    }
  
    // IOSurfaceCaptureDeviceBase:
@@ -297,7 +304,7 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
    }
    void OnStop() override {
      CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
-@@ -772,8 +864,7 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -840,8 +932,7 @@ void ResetStreamTo(SCWindow* window) override {
  
   private:
    const DesktopMediaID source_;
@@ -307,7 +314,7 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
    StreamCallback stream_created_callback_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
  
-@@ -790,6 +881,10 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -858,6 +949,10 @@ void ResetStreamTo(SCWindow* window) override {
    // Helper class that acts as output and delegate for `stream_`.
    ScreenCaptureKitDeviceHelper* __strong helper_;
  
@@ -318,7 +325,7 @@ index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a890
    // This is used to detect when a captured presentation enters fullscreen mode.
    // If this happens, the module will call the ResetStreamTo function.
    std::unique_ptr<ScreenCaptureKitFullscreenModule> fullscreen_module_;
-@@ -805,6 +900,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -873,6 +968,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
