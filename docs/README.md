@@ -53,6 +53,7 @@ an issue:
   * [Manually Enabling Accessibility Features](tutorial/accessibility.md#manually-enabling-accessibility-features)
 * [Testing and Debugging](tutorial/application-debugging.md)
   * [Debugging the Main Process](tutorial/debugging-main-process.md)
+  * [Debugging Preload Scripts](tutorial/debugging-preload-scripts.md)
   * [Debugging with Visual Studio Code](tutorial/debugging-vscode.md)
   * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
   * [DevTools Extension](tutorial/devtools-extension.md)
