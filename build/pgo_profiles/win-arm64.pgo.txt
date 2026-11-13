@@ -1,1 +1,1 @@
-electron-win-arm64-1794519640-45e9809479.profdata 56375da9cd5c67ee230b3dfdd4c879b69cfaeddcb0d67376e8d6baff62041456
+electron-win-arm64-1794600228-878cd403a6.profdata 785ce6e2a6c047b7bac4f9386c8bc3a0d128fb4acfc6e7b1ba23ab2c6e765c9a
