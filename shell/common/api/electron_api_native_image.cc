@@ -9,12 +9,16 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/to_vector.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
+#include "base/functional/function_ref.h"
 #include "base/logging.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/pattern.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/thread_pool.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "net/base/data_url.h"
@@ -23,10 +27,12 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -150,6 +156,106 @@ base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
                                             base::span<const uint8_t> bytes) {
   return electron::Buffer::Copy(isolate, bytes)
       .FromMaybe(v8::Local<v8::Value>());
+}
+
+struct FromBufferOptions {
+  int width = 0;
+  int height = 0;
+  double scale_factor = 1.;
+};
+
+FromBufferOptions GetFromBufferOptions(gin::Arguments* args) {
+  FromBufferOptions result;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    options.Get("width", &result.width);
+    options.Get("height", &result.height);
+    options.Get("scaleFactor", &result.scale_factor);
+  }
+  return result;
+}
+
+struct ToBitmapParams {
+  SkBitmap src;
+  SkImageInfo dst_info;
+};
+
+ToBitmapParams GetToBitmapParams(const gfx::Image& image,
+                                 gin::Arguments* args) {
+  float scale = 1.0f;
+  gfx::ColorSpace color_space = gfx::ColorSpace::CreateSRGB();
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    options.Get("scaleFactor", &scale);
+    options.Get("colorSpace", &color_space);
+  }
+
+  SkBitmap src = image.AsImageSkia().GetRepresentation(scale).GetBitmap();
+  auto dst_info = SkImageInfo::MakeN32Premul(src.dimensions(),
+                                             color_space.ToSkColorSpace());
+  return {std::move(src), std::move(dst_info)};
+}
+
+// Chromium tasks do not run while an ESM entry point loads, so a reply posted
+// before the app is ready would never settle a top-level await. Nothing needs
+// this thread responsive that early, so run both inline.
+template <typename T>
+void RunCodec(base::OnceCallback<T()> codec,
+              base::OnceCallback<void(T)> reply) {
+  if (electron::IsBrowserProcess() && !Browser::Get()->is_ready()) {
+    std::move(reply).Run(std::move(codec).Run());
+    return;
+  }
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE, {base::TaskPriority::USER_VISIBLE}, std::move(codec),
+      std::move(reply));
+}
+
+using BufferPromise = gin_helper::Promise<v8::Local<v8::Value>>;
+using EncodedImage = std::optional<std::vector<uint8_t>>;
+
+void ResolveWithBuffer(
+    BufferPromise promise,
+    base::FunctionRef<v8::MaybeLocal<v8::Value>(v8::Isolate*)> make_buffer) {
+  v8::Isolate* const isolate = promise.isolate();
+  v8::HandleScope handle_scope{isolate};
+  v8::Local<v8::Context> context = promise.GetContext();
+  if (context.IsEmpty())
+    return;
+  v8::Context::Scope context_scope{context};
+  v8::MicrotasksScope microtasks_scope{
+      context, v8::MicrotasksScope::kDoNotRunMicrotasks};
+
+  // Node.js throws if the context has no environment. Sandboxed contexts never
+  // have one, and a frame releases its own when it navigates.
+  v8::TryCatch try_catch{isolate};
+  v8::Local<v8::Value> buffer;
+  if (make_buffer(isolate).ToLocal(&buffer)) {
+    promise.Resolve(buffer);
+  } else {
+    promise.Reject(try_catch.Exception());
+  }
+}
+
+// A bound SkBitmap must come from an ImageSkiaRep: those are immutable, so the
+// pool thread can read the shared pixels while this thread keeps the image.
+v8::Local<v8::Promise> EncodeOnThreadPool(
+    v8::Isolate* isolate,
+    base::OnceCallback<EncodedImage()> encoder) {
+  BufferPromise promise{isolate};
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  RunCodec(
+      std::move(encoder),
+      base::BindOnce(
+          [](BufferPromise promise, EncodedImage encoded) {
+            ResolveWithBuffer(std::move(promise), [&](v8::Isolate* isolate) {
+              return electron::Buffer::Copy(
+                  isolate, encoded ? base::span<const uint8_t>(*encoded)
+                                   : base::span<const uint8_t>());
+            });
+          },
+          std::move(promise)));
+  return handle;
 }
 
 }  // namespace
@@ -279,18 +385,7 @@ v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
 
 v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
   v8::Isolate* const isolate = args->isolate();
-
-  float scale = 1.0f;
-  gfx::ColorSpace color_space = gfx::ColorSpace::CreateSRGB();
-  gin_helper::Dictionary options;
-  if (args->GetNext(&options)) {
-    options.Get("scaleFactor", &scale);
-    options.Get("colorSpace", &color_space);
-  }
-
-  const auto src = image_.AsImageSkia().GetRepresentation(scale).GetBitmap();
-  const auto dst_info = SkImageInfo::MakeN32Premul(
-      src.dimensions(), color_space.ToSkColorSpace());
+  const auto [src, dst_info] = GetToBitmapParams(image_, args);
   const size_t dst_n_bytes = dst_info.computeMinByteSize();
   v8::Local<v8::Object> dst_buf;
   if (!node::Buffer::New(isolate, dst_n_bytes).ToLocal(&dst_buf))
@@ -313,6 +408,67 @@ v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   if (!encoded_image)
     return ToBuffer(isolate, {});
   return ToBuffer(isolate, *encoded_image);
+}
+
+v8::Local<v8::Promise> NativeImage::ToPNGAsync(gin::Arguments* args) {
+  const float scale_factor = GetScaleFactorFromOptions(args);
+  return EncodeOnThreadPool(
+      args->isolate(),
+      base::BindOnce(
+          &gfx::PNGCodec::EncodeBGRASkBitmap,
+          image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap(),
+          /*discard_transparency=*/false));
+}
+
+v8::Local<v8::Promise> NativeImage::ToJPEGAsync(v8::Isolate* isolate,
+                                                int quality) {
+  return EncodeOnThreadPool(
+      isolate,
+      base::BindOnce(
+          [](const SkBitmap& bitmap, int quality) {
+            return gfx::JPEGCodec::Encode(bitmap, quality);
+          },
+          image_.AsImageSkia().GetRepresentation(1.0f).GetBitmap(), quality));
+}
+
+v8::Local<v8::Promise> NativeImage::ToBitmapAsync(gin::Arguments* args) {
+  v8::Isolate* const isolate = args->isolate();
+  BufferPromise promise{isolate};
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  // The pool thread writes straight into the Buffer's future backing store, so
+  // the reply does not have to copy the pixels on this thread.
+  auto [src, dst_info] = GetToBitmapParams(image_, args);
+  auto store = v8::ArrayBuffer::NewBackingStore(
+      isolate, dst_info.computeMinByteSize(),
+      v8::BackingStoreInitializationMode::kUninitialized);
+
+  RunCodec(
+      base::BindOnce(
+          [](const SkBitmap& src, const SkImageInfo& dst_info,
+             std::unique_ptr<v8::BackingStore> store) {
+            if (!src.readPixels(dst_info, store->Data(), dst_info.minRowBytes(),
+                                0, 0)) {
+              store.reset();
+            }
+            return store;
+          },
+          std::move(src), std::move(dst_info), std::move(store)),
+      base::BindOnce(
+          [](BufferPromise promise, std::unique_ptr<v8::BackingStore> store) {
+            ResolveWithBuffer(
+                std::move(promise),
+                [&](v8::Isolate* isolate) -> v8::MaybeLocal<v8::Value> {
+                  if (!store)
+                    return node::Buffer::New(isolate, 0);
+                  const size_t n_bytes = store->ByteLength();
+                  return node::Buffer::New(
+                      isolate, v8::ArrayBuffer::New(isolate, std::move(store)),
+                      0, n_bytes);
+                });
+          },
+          std::move(promise)));
+  return handle;
 }
 
 std::string NativeImage::ToDataURL(gin::Arguments* args) {
@@ -567,22 +723,45 @@ NativeImage* NativeImage::CreateFromBuffer(gin_helper::ErrorThrower thrower,
     return nullptr;
   }
 
-  int width = 0;
-  int height = 0;
-  double scale_factor = 1.;
-
-  gin_helper::Dictionary options;
-  if (args->GetNext(&options)) {
-    options.Get("width", &width);
-    options.Get("height", &height);
-    options.Get("scaleFactor", &scale_factor);
-  }
+  const auto [width, height, scale_factor] = GetFromBufferOptions(args);
 
   gfx::ImageSkia image_skia;
   electron::util::AddImageSkiaRepFromBuffer(
       &image_skia, electron::Buffer::as_byte_span(buffer), width, height,
       scale_factor);
   return Create(args->isolate(), gfx::Image(image_skia));
+}
+
+// static
+v8::Local<v8::Promise> NativeImage::CreateFromBufferAsync(
+    v8::Local<v8::Value> buffer,
+    gin::Arguments* args) {
+  gin_helper::Promise<gfx::Image> promise{args->isolate()};
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!node::Buffer::HasInstance(buffer)) {
+    promise.RejectWithErrorMessage("buffer must be a node Buffer");
+    return handle;
+  }
+
+  const auto [width, height, scale_factor] = GetFromBufferOptions(args);
+
+  // JS can mutate or detach `buffer` while the decode runs, so take a copy. The
+  // ImageSkia is built in the reply because it is bound to its own sequence.
+  RunCodec(base::BindOnce(
+               [](const std::vector<uint8_t>& data, int width, int height) {
+                 return electron::util::DecodeImageBuffer(data, width, height);
+               },
+               base::ToVector(electron::Buffer::as_byte_span(buffer)), width,
+               height),
+           base::BindOnce(
+               [](gin_helper::Promise<gfx::Image> promise, float scale_factor,
+                  SkBitmap bitmap) {
+                 promise.Resolve(gfx::Image(
+                     gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor)));
+               },
+               std::move(promise), scale_factor));
+  return handle;
 }
 
 // static
@@ -622,6 +801,9 @@ gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
+      .SetMethod("toPNGAsync", &NativeImage::ToPNGAsync)
+      .SetMethod("toJPEGAsync", &NativeImage::ToJPEGAsync)
+      .SetMethod("toBitmapAsync", &NativeImage::ToBitmapAsync)
       .SetMethod("getBitmap", &NativeImage::GetBitmap)
       .SetMethod("getScaleFactors", &NativeImage::GetScaleFactors)
       .SetMethod("getNativeHandle", &NativeImage::GetNativeHandle)
@@ -669,6 +851,8 @@ void Initialize(v8::Local<v8::Object> exports,
   native_image.SetMethod<&NativeImage::CreateFromPath>("createFromPath");
   native_image.SetMethod<&NativeImage::CreateFromBitmap>("createFromBitmap");
   native_image.SetMethod<&NativeImage::CreateFromBuffer>("createFromBuffer");
+  native_image.SetMethod<&NativeImage::CreateFromBufferAsync>(
+      "createFromBufferAsync");
   native_image.SetMethod<&NativeImage::CreateFromDataURL>("createFromDataURL");
   native_image.SetMethod<&NativeImage::CreateFromNamedImage>(
       "createFromNamedImage");
