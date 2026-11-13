@@ -126,6 +126,48 @@ You should call `event.preventDefault()` if you want to handle this event.
 On Windows, you have to parse `process.argv` (in the main process) to get the
 filepath.
 
+The following example handles a file that the OS passes to the app on launch on
+all platforms. On macOS the path arrives with the `open-file` event, which can
+be emitted before the `ready` event, so its listener is registered early. On
+Windows and Linux the `open-file` event is not emitted: the path is read from
+`process.argv` instead. Note that only a packaged app receives the filepath at
+`process.argv[1]`; when running unpackaged with `electron .`, the path of the
+application itself occupies that slot and the filepath follows it at
+`process.argv[2]`.
+
+```js
+const { app } = require('electron')
+
+let filePath = null
+
+// macOS: emitted by the OS when the user opens a file with the app,
+// even before `ready`.
+app.on('open-file', (event, path) => {
+  event.preventDefault()
+  filePath = path
+})
+
+app.whenReady().then(() => {
+  if (process.platform !== 'darwin' && filePath === null) {
+    // In a packaged app the executable path is `process.argv[0]` and the
+    // filepath is `process.argv[1]`. When running unpackaged with
+    // `electron .`, the path of the app itself comes first and the
+    // filepath is `process.argv[2]`.
+    filePath = process.argv[app.isPackaged ? 1 : 2]
+  }
+
+  if (filePath) {
+    console.log(`Opening file: ${filePath}`)
+  }
+})
+```
+
+On Windows and Linux, a file that the user opens with the app while it is
+already running is handed to a second instance launched by the OS. If your app
+uses `app.requestSingleInstanceLock()`, the primary instance receives the
+filepath through the `argv` array of the [`second-instance`](#event-second-instance)
+event instead, so make sure to listen for that event as well.
+
 ### Event: 'open-url' _macOS_
 
 Returns:
