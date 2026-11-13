@@ -8,7 +8,7 @@ Subject: desktop_media_list.patch
 * Ensure "OnRefreshComplete()" even if there are no items in the list
 
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 56376b8d6fba06cb7cf18bf953fb79abf45c4f5e..34b9dea6b0042d7a9f08a2e2236b1eeb3c0b1307 100644
+index a8e1f76df43a3dca6e734469ede6431281c36676..3b693e9c77e997349e64c19f8ea392334d3e5cfd 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -216,10 +216,14 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
@@ -26,7 +26,7 @@ index 56376b8d6fba06cb7cf18bf953fb79abf45c4f5e..34b9dea6b0042d7a9f08a2e2236b1eeb
  #endif
  
    return window_id;
-@@ -1041,6 +1045,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -1064,6 +1068,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));

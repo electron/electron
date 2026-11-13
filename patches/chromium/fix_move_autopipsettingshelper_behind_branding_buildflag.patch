@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705131d9cc3 100644
+index 3e4311a4bd4c1f040f5c6869f53c6e1094255916..314d964fbdf5186da02ecc4a17b9cdd55adeae3c 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -52,7 +52,7 @@ index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -248,7 +255,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -246,7 +253,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -61,7 +61,7 @@ index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -611,7 +618,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -609,7 +616,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -70,7 +70,7 @@ index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -672,14 +679,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
+@@ -668,14 +675,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
  void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
  
@@ -87,7 +87,7 @@ index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705
  
    // Close and reset the picture-in-picture window controller, if it exists.
    if (pip_window_controller_) {
-@@ -722,6 +729,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -718,6 +725,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
  }
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -95,7 +95,7 @@ index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705
  void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
      content::WebContents* parent_web_contents,
      std::unique_ptr<content::WebContents> child_web_contents,
-@@ -773,6 +781,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+@@ -769,6 +777,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
    }
    document_pip_host_ = host->GetWeakPtr();
  }
@@ -103,7 +103,7 @@ index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705
  
  std::unique_ptr<AutoPipSettingOverlayView>
  PictureInPictureWindowManager::GetOverlayView(
-@@ -783,6 +792,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -779,6 +788,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -111,7 +111,7 @@ index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -821,6 +831,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -817,6 +827,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -121,7 +121,7 @@ index a5740b8a73abd6861b8677dd1411e6c9f700fb77..c8c98338b68254efa22c2ec472599705
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index ad8cd28e110b069be8c11cacc0351feef036ab77..576889e2b5bf622319e6feea45467d5a9f7b3831 100644
+index 17be7780f9c0a6c594406b5b90c123cc4113cf4c..26e5bd13dec81fd983ed9ff99ff4bfc2e8b8280d 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -13,6 +13,7 @@
@@ -148,7 +148,7 @@ index ad8cd28e110b069be8c11cacc0351feef036ab77..576889e2b5bf622319e6feea45467d5a
  
    std::unique_ptr<AutoPipSettingOverlayView> GetOverlayView(
        views::View* anchor_view,
-@@ -431,10 +434,12 @@ class PictureInPictureWindowManager {
+@@ -410,10 +413,12 @@ class PictureInPictureWindowManager {
  
    std::unique_ptr<PictureInPictureWindowManagerUmaHelper> uma_helper_;
  
