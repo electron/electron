@@ -41,6 +41,8 @@ class ElectronDesktopWindowTreeHostLinux
 
   bool SupportsClientFrameShadow() const;
 
+  bool is_tiled() const { return is_tiled_; }
+
   // views::DesktopWindowTreeHostLinux:
   void UpdateFrameHints() override;
 
@@ -90,6 +92,7 @@ class ElectronDesktopWindowTreeHostLinux
   base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
+  bool is_tiled_ = false;
 };
 
 }  // namespace electron

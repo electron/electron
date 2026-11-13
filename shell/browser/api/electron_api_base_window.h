@@ -103,6 +103,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
+  void OnWindowTiledStateChanged(bool is_tiled) override;
   void OnWindowWillResize(const gfx::Rect& new_bounds,
                           gfx::ResizeEdge edge,
                           bool* prevent_default) override;
@@ -162,6 +163,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetTitleFromPageIfNotSetFromApi(const std::string& title);
   virtual void SetBackgroundColor(const std::string& color_name);
   std::string GetBackgroundColor() const;
+  bool SetDecorationInsets(v8::Local<v8::Object> insets, gin::Arguments* args);
   void SetIgnoreMouseEvents(bool ignore, gin::Arguments* args);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetParentWindow(v8::Local<v8::Value> value, gin::Arguments* args);
