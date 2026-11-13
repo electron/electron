@@ -48,11 +48,18 @@ function makeStreamFromFileInfo({
   offset?: number;
   length?: number;
 }): ReadableStream<Uint8Array> {
+  if (length === 0) {
+    return new (webStreams().ReadableStream)({
+      start(controller) {
+        controller.close();
+      }
+    });
+  }
   // Node's Readable.toWeb produces a WHATWG ReadableStream whose chunks are Uint8Array.
   return Readable.toWeb(
     createReadStream(filePath, {
       start: offset,
-      end: length >= 0 ? offset + length : undefined
+      end: length >= 0 ? offset + length - 1 : undefined
     })
   ) as ReadableStream<Uint8Array>;
 }
