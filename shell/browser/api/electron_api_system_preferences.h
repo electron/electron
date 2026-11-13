@@ -151,6 +151,12 @@ class SystemPreferences final
  private:
   void Dispose();
 
+#if BUILDFLAG(IS_MAC)
+  // Whether the user turned off the "Auto-play animated images" accessibility
+  // setting, asking that animated images start paused.
+  static bool PrefersAnimatedImagesStartPaused();
+#endif
+
 #if BUILDFLAG(IS_WIN)
   void OnSystemAccentColorChanged();
   void OnAccentColorChanged();

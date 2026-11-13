@@ -799,6 +799,7 @@ source_set("electron_lib") {
     }
 
     frameworks = [
+      "Accessibility.framework",
       "AuthenticationServices.framework",
       "AVFoundation.framework",
       "Carbon.framework",
