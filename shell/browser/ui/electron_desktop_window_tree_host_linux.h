@@ -10,6 +10,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
 
 #include <optional>
+#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
@@ -43,6 +44,8 @@ class ElectronDesktopWindowTreeHostLinux
 
   // views::DesktopWindowTreeHostLinux:
   void UpdateFrameHints() override;
+  void SetShape(
+      std::unique_ptr<views::Widget::ShapeRects> native_shape) override;
 
  protected:
   // views::DesktopWindowTreeHostLinuxImpl:
@@ -90,6 +93,7 @@ class ElectronDesktopWindowTreeHostLinux
   base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
+  std::optional<std::vector<gfx::Rect>> shape_rects_;
 };
 
 }  // namespace electron
