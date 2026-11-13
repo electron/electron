@@ -2092,6 +2092,68 @@ describe('chromium features', () => {
       expect(restricted).toEqual([]);
     });
 
+    it('allows reading a file in userData when approved by file-system-access-restricted', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('allow');
+      });
+
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(app.getPath('userData'), 'fsa-test-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const testFile = path.join(dir, 'test.txt');
+      fs.writeFileSync(testFile, 'hello from userData');
+
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+      await pasteHandle(w, frame, testFile);
+      await waitForHandle(frame);
+      expect(await frame.executeJavaScript('window.handle && window.handle.kind')).toBe('file');
+
+      const content = await frame.executeJavaScript(`(async () => {
+        const file = await window.handle.getFile();
+        return await file.text();
+      })()`);
+      expect(content).toBe('hello from userData');
+      expect(restricted).toEqual([testFile]);
+    });
+
+    it('rejects reading a file in userData when denied by file-system-access-restricted', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('deny');
+      });
+
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(app.getPath('userData'), 'fsa-test-deny-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const testFile = path.join(dir, 'test.txt');
+      fs.writeFileSync(testFile, 'hello');
+
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+      await pasteHandle(w, frame, testFile);
+      await waitForHandle(frame);
+      expect(await frame.executeJavaScript('window.handle && window.handle.kind')).toBe('file');
+
+      const error = await frame.executeJavaScript(`(async () => {
+        try {
+          await window.handle.getFile();
+          return 'ok';
+        } catch (e) {
+          return e.name;
+        }
+      })()`);
+      expect(error).not.toBe('ok');
+      expect(restricted).toEqual([testFile]);
+    });
+
     // A pasted directory only reaches the blocklist if it exists, so this
     // shares a fixture directory over loopback SMB and reaches it under
     // different UNC server and share names. Creating a share needs an
