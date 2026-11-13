@@ -335,6 +335,16 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
 
   it('gives a window with a hidden title bar its whole frame as content', async () => {
     const shim = await launchShim();
+    for (const WindowConstructor of [BaseWindow, BrowserWindow]) {
+      expect(
+        () =>
+          new WindowConstructor({
+            appShim: shim,
+            titleBarStyle: 'hidden',
+            titleBarOverlay: { fullscreen: 'revealNativeTitlebar' }
+          })
+      ).toThrow(/app shim windows/);
+    }
     const w = new BaseWindow({ appShim: shim, width: 400, height: 300, titleBarStyle: 'hidden' });
     await once(w, 'show');
     expect(w.getContentSize()).toEqual([400, 300]);

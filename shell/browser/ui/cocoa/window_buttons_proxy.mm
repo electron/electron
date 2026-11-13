@@ -101,9 +101,13 @@
   return NSInsetRect([self getButtonsBounds], -margin_.x(), -margin_.y());
 }
 
+- (void)setTrackingFullscreenTitlebar:(BOOL)tracking {
+  tracking_fullscreen_titlebar_ = tracking;
+}
+
 - (void)redraw {
   NSView* titleBarContainer = [self titleBarContainer];
-  if (!titleBarContainer)
+  if (!titleBarContainer || tracking_fullscreen_titlebar_)
     return;
 
   NSView* left = [self leftButton];

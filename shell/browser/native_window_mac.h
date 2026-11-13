@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
+#include "electron/mas.h"
 #include "shell/browser/native_window.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/display/display_observer.h"
@@ -24,6 +25,9 @@
 @class ElectronPreviewItem;
 @class ElectronTouchBar;
 @class WindowButtonsProxy;
+#if !IS_MAS_BUILD()
+@class FullscreenTitlebarTracker;
+#endif
 
 namespace electron {
 
@@ -129,6 +133,8 @@ class NativeWindowMac : public NativeWindow,
   bool IsVisibleOnAllWorkspaces() const override;
   void SetAutoHideCursor(bool auto_hide) override;
   void SetVibrancy(const std::string& type, int duration) override;
+  void SetTitleBarOverlay(const gin_helper::Dictionary& options,
+                          gin::Arguments* args) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
   void SetWindowButtonPosition(std::optional<gfx::Point> position) override;
@@ -155,6 +161,7 @@ class NativeWindowMac : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   std::optional<gfx::Rect> GetWindowControlsOverlayRect() override;
+  bool IsTitleBarOverlayOverlaid() const override;
   void NotifyWindowEnterFullScreen() override;
   void NotifyWindowLeaveFullScreen() override;
   void SetActive(bool is_key) override;
@@ -252,6 +259,9 @@ class NativeWindowMac : public NativeWindow,
   void SetForwardMouseMessages(bool forward);
 
   void UpdateZoomButton();
+#if !IS_MAS_BUILD()
+  void UpdateFullscreenTitlebar();
+#endif
 
   int FrameViewNonClientHitTest(const gfx::Point& point);
 
@@ -293,6 +303,11 @@ class NativeWindowMac : public NativeWindow,
 
   // Controls the position and visibility of window buttons.
   WindowButtonsProxy* __strong buttons_proxy_;
+#if !IS_MAS_BUILD()
+  FullscreenTitlebarTracker* __strong fullscreen_titlebar_tracker_;
+  bool fullscreen_titlebar_overlaid_ = false;
+  gfx::Rect fullscreen_titlebar_rect_;
+#endif
 
   std::unique_ptr<SkRegion> draggable_region_;
 

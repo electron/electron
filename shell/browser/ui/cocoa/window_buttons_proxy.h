@@ -32,6 +32,8 @@
   gfx::Point default_margin_;
   // Current height of the title bar container.
   float height_;
+  // AppKit owns the container's layout in fullscreen.
+  BOOL tracking_fullscreen_titlebar_;
 
   // Track mouse moves above window buttons.
   BOOL show_on_hover_;
@@ -54,6 +56,9 @@
 // Set height of button container
 - (void)setHeight:(const float)height;
 - (BOOL)useCustomHeight;
+
+- (NSView*)titleBarContainer;
+- (void)setTrackingFullscreenTitlebar:(BOOL)tracking;
 
 // Return the bounds of all 3 buttons, with margin on all sides.
 - (NSRect)getButtonsContainerBounds;
