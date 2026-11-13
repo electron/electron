@@ -16,6 +16,53 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (47.0)
 
+### Default Changed: the `runAsNode` fuse is disabled by default
+
+The [`runAsNode`](tutorial/fuses.md#runasnode) fuse now defaults to disabled, so
+the `ELECTRON_RUN_AS_NODE` environment variable is ignored and
+`child_process.fork()` throws unless your app enables the fuse. Use
+[`utilityProcess.fork()`](api/utility-process.md) to run a standalone Node.js
+process instead.
+
+If your app still depends on `ELECTRON_RUN_AS_NODE`, enable the fuse when you
+package it:
+
+```js @ts-nocheck
+flipFuses(require('electron'), {
+  version: FuseVersion.V1,
+  [FuseV1Options.RunAsNode]: true
+})
+```
+
+### Default Changed: the `nodeOptions` fuse is disabled by default
+
+The [`nodeOptions`](tutorial/fuses.md#nodeoptions) fuse now defaults to
+disabled, so the `NODE_OPTIONS` and `NODE_EXTRA_CA_CERTS` environment variables
+are ignored unless your app enables the fuse with
+`FuseV1Options.EnableNodeOptionsEnvironmentVariable`.
+
+### Default Changed: the `cookieEncryption` fuse is enabled by default
+
+The [`cookieEncryption`](tutorial/fuses.md#cookieencryption) fuse now defaults
+to enabled, so cookies are encrypted on disk with OS-level keys, as they are in
+Chrome. Existing plaintext cookies are encrypted when they are next written.
+This is a one-way change: once an app has run with cookie encryption enabled,
+running it with an earlier version of Electron or with the fuse disabled
+leaves its cookie store unreadable. On macOS your app should be
+[code signed](tutorial/code-signing.md#macos-apis-that-require-code-signing) for
+cookie encryption to work correctly. To keep the old behavior, disable the fuse
+with `FuseV1Options.EnableCookieEncryption`.
+
+### Default Changed: the `nodeCliInspect` fuse is disabled in packaged apps by default
+
+The [`nodeCliInspect`](tutorial/fuses.md#nodecliinspect) fuse now defaults to a
+new state that enables it when the app is not packaged and disables it when
+[`app.isPackaged`](api/app.md#appispackaged-readonly) is `true`. Packaged apps
+no longer respect `--inspect`, `--inspect-brk` and related flags, or start the
+main process inspector on `SIGUSR1`, unless the fuse is enabled with
+`FuseV1Options.EnableNodeCliInspectArguments`. Running your app with the
+`electron` executable during development is unaffected.
+
 ### Removed: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
 
 The positional arguments of the `console-message` event on `WebContents`,
