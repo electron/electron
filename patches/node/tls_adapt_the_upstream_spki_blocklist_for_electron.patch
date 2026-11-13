@@ -17,7 +17,7 @@ Electron still needs on top of it:
   Electron adds to Chromium's net blocklist.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 05e8e5f85c0ba67b90f48278a40f4a5bc8f0b37a..ce1f724ea7c7b00afceefbb1fbbded2ce87cd9ac 100644
+index 5ecaa451f9c32b89f76a365382e9f48c319e416f..793e98559df8c07701b2a461c23fa86f99f3ecba 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -1437,6 +1437,49 @@ constexpr SpkiHash kBlockedSPKIs[] = {
@@ -105,7 +105,7 @@ index 05e8e5f85c0ba67b90f48278a40f4a5bc8f0b37a..ce1f724ea7c7b00afceefbb1fbbded2c
      const FunctionCallbackInfo<Value>& args) {
    Environment* env = Environment::GetCurrent(args);
 diff --git a/src/crypto/crypto_context.h b/src/crypto/crypto_context.h
-index c2da04bbbb55b66d11449cf1bbcc0d8c8d4b0175..d83e5050f2ee637309e6e434f5f67bad3b368451 100644
+index 789020802f98aeb50cc79596c009c48594720bd7..dab28bedef35ea1d7aee64568172babaefb114df 100644
 --- a/src/crypto/crypto_context.h
 +++ b/src/crypto/crypto_context.h
 @@ -33,6 +33,12 @@ X509_STORE* GetOrCreateRootCertStore(Environment* env);
