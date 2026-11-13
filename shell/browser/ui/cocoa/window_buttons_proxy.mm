@@ -6,6 +6,11 @@
 
 #include "base/i18n/rtl.h"
 
+@interface WindowButtonsProxy () {
+  __weak NSView* fullscreen_container_;
+}
+@end
+
 @implementation ButtonsAreaHoverView : NSView
 
 - (id)initWithProxy:(WindowButtonsProxy*)proxy {
@@ -101,9 +106,13 @@
   return NSInsetRect([self getButtonsBounds], -margin_.x(), -margin_.y());
 }
 
+- (void)setFullscreenContainer:(NSView*)container {
+  fullscreen_container_ = container;
+}
+
 - (void)redraw {
   NSView* titleBarContainer = [self titleBarContainer];
-  if (!titleBarContainer)
+  if (!titleBarContainer || fullscreen_container_)
     return;
 
   NSView* left = [self leftButton];

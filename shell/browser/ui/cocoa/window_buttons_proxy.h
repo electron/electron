@@ -55,6 +55,9 @@
 - (void)setHeight:(const float)height;
 - (BOOL)useCustomHeight;
 
+- (NSView*)titleBarContainer;
+- (void)setFullscreenContainer:(NSView*)container;
+
 // Return the bounds of all 3 buttons, with margin on all sides.
 - (NSRect)getButtonsContainerBounds;
 
