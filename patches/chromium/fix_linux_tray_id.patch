@@ -13,10 +13,10 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index e08f260845778647563af254ace2dca304a3145a..1e7915eea274e3a0605fc492ce9f7249cbe61a44 100644
+index 87f41f04d2da881da3ff17e67492aa5747b47dc5..a850af1a7626c7cb62593c424058993829e45e9e 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -138,8 +138,9 @@ int NextServiceId() {
+@@ -141,8 +141,9 @@ int NextServiceId() {
    return ++status_icon_count;
  }
  
@@ -28,7 +28,7 @@ index e08f260845778647563af254ace2dca304a3145a..1e7915eea274e3a0605fc492ce9f7249
  }
  
  using DbusImage = std::tuple</*width=*/int32_t,
-@@ -250,15 +251,17 @@ scoped_refptr<dbus::Bus> GetBusForNewStatusIcon() {
+@@ -253,15 +254,17 @@ scoped_refptr<dbus::Bus> GetBusForNewStatusIcon() {
  
  }  // namespace
  
@@ -50,7 +50,7 @@ index e08f260845778647563af254ace2dca304a3145a..1e7915eea274e3a0605fc492ce9f7249
    CHECK_CURRENTLY_ON(content::BrowserThread::UI, base::NotFatalUntil::M162);
    if (bus_) {
      CheckStatusNotifierWatcherHasOwner();
-@@ -464,7 +467,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+@@ -495,7 +498,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
    SetProperty<"s">(kPropertyAttentionIconName, "", false);
    SetProperty<"s">(kPropertyAttentionMovieName, "", false);
    SetProperty<"s">(kPropertyCategory, kPropertyValueCategory, false);
@@ -61,7 +61,7 @@ index e08f260845778647563af254ace2dca304a3145a..1e7915eea274e3a0605fc492ce9f7249
    SetProperty<"s">(kPropertyStatus, kPropertyValueStatus, false);
    SetProperty<"s">(kPropertyTitle, "", false);
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index 4fa0a91af74e63a7f78bcbb02623e5f49cb757f4..d12aedd85fadfe0d596da7e3469506507b86ce0d 100644
+index 010236fef5afe8b517c6db7035bd521f2efe01ab..7805a0f4933e18aae42c3e9bbaca272b56b631a5 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 @@ -38,8 +38,9 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
@@ -76,7 +76,7 @@ index 4fa0a91af74e63a7f78bcbb02623e5f49cb757f4..d12aedd85fadfe0d596da7e346950650
  
    StatusIconLinuxDbus(const StatusIconLinuxDbus&) = delete;
    StatusIconLinuxDbus& operator=(const StatusIconLinuxDbus&) = delete;
-@@ -162,6 +163,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+@@ -179,6 +180,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
    size_t icon_file_id_ = 0;
    base::FilePath icon_file_;
  

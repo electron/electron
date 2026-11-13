@@ -185,7 +185,7 @@ index cecda05cfe48287d0cdc76172dc9f9a24c19dc23..d8d6b1579cbf9b86384434a2a69670a3
        bool unadjusted_movement,
        input::InputRouterImpl::RequestMouseLockCallback response) override;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ad1e135f2b94a59232671f5ed9718a948d62e61f..02b6e5dd69b0fe97e3e0fcc6148b7914726a8dd7 100644
+index 0a5fac1d3d521a17b6766af7f5bf1fbd2bb0dede..987efab6dfdb1c80bee94f30c9cbe2b36513312e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5553,6 +5553,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
@@ -240,7 +240,7 @@ index ad1e135f2b94a59232671f5ed9718a948d62e61f..02b6e5dd69b0fe97e3e0fcc6148b7914
      static_cast<SurfaceEmbedConnectorImpl*>(connector)
          ->SetPointerLockWidgetInParentChain(widget);
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 300e30ee281370d7feb6069efa999fe2962b9ed7..2346981c379cfb678669bb8387bf40748e9e1ebf 100644
+index 6d9ecef5b6658a5c5567a361c3f3a8bc98d7c9bf..0fa9a4b8156766a8d279538ed9fab5a1f9408fe2 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1240,6 +1240,7 @@ class CONTENT_EXPORT WebContentsImpl
@@ -251,7 +251,7 @@ index 300e30ee281370d7feb6069efa999fe2962b9ed7..2346981c379cfb678669bb8387bf4074
                              bool user_gesture,
                              bool last_unlocked_by_target) override;
    bool IsWaitingForPointerLockPrompt(
-@@ -1680,6 +1681,11 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1681,6 +1682,11 @@ class CONTENT_EXPORT WebContentsImpl
      return pointer_lock_widget_;
    }
  
@@ -263,7 +263,7 @@ index 300e30ee281370d7feb6069efa999fe2962b9ed7..2346981c379cfb678669bb8387bf4074
    const std::set<raw_ptr<RenderFrameHostImpl, SetExperimental>>&
    fullscreen_frames_for_testing() const {
      return fullscreen_frames_;
-@@ -2782,6 +2788,9 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -2790,6 +2796,9 @@ class CONTENT_EXPORT WebContentsImpl
    raw_ptr<RenderWidgetHostImpl, DanglingUntriaged> pointer_lock_widget_ =
        nullptr;
  
@@ -306,7 +306,7 @@ index cf1a0b7e6eea869bd92de78693bdc8c6f1661a68..a0c39073ac4c1e30f6f8704b1b3325ad
            pending_remote<blink.mojom.PointerLockContext>? context);
  };
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-index 12a25717a53d09fbd96d59c8db858f949791aba1..190df7be7f07d08b4193b458c54baf027fb64acc 100644
+index 83ac1bf86ad50d1404789c6358075df0f3956464..f4d5ea4262cbead3ec20ef450ffd0f987c8121b1 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 @@ -3806,6 +3806,7 @@ void WebFrameWidgetImpl::CancelComposition() {

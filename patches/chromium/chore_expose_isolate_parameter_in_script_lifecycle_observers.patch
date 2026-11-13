@@ -20,10 +20,10 @@ index 6d7d041f3ecd7a9a2fa16f2188462ee7f4282d19..db698a9a9adfd9bd2dfc8dd29932b3e4
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 3d16660fab7263ce43ee8606e063bbaa5eba7cf1..303b1372a6fe183e33fe94b5156fc9c6602c33a9 100644
+index f6c11e23c70488d8c008c9fcefb2d8bcd8a85834..d594036e94b5f2de83221551784470df65e42f2c 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -140,7 +140,8 @@ class CONTENT_EXPORT RenderFrameObserver {
+@@ -136,7 +136,8 @@ class CONTENT_EXPORT RenderFrameObserver {
                                        int32_t world_id) {}
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                               int32_t world_id) {}
@@ -34,7 +34,7 @@ index 3d16660fab7263ce43ee8606e063bbaa5eba7cf1..303b1372a6fe183e33fe94b5156fc9c6
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset(blink::mojom::ScrollType) {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d30c7493f6fc0a183cc15094d45ca47abf4e2f03..60a230ee8a82034cd8795b1e4acca33e446b2905 100644
+index b276e7640de90404fd723f22c064023b2aff79b4..9ab28468b46aed2d099cfbe72172de3d4699c594 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -5019,10 +5019,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
@@ -52,7 +52,7 @@ index d30c7493f6fc0a183cc15094d45ca47abf4e2f03..60a230ee8a82034cd8795b1e4acca33e
  }
  
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index fe00d9d4b4dda999bdc72e64fabad7c3f3304c44..6cd438dc0e5fc502dae620a8a02512e6bd33a25e 100644
+index dffcf4fc06fac61250ca8262a6ba7d37ab30041a..d5bb3632eca747a65c0ba195f693ef47c446591d 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -623,7 +623,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -167,7 +167,7 @@ index 0a3ea97d48c4d0d4c234dc88b321480a55df85c8..150ba24a544a88ab99d51b8a30af545a
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index bbdf3a7f39ba155b3ebb7b9ab79facf312301614..f2c672ed59b1cd69e4a503674b9e3073aafe5f76 100644
+index f71273f857912bd583499a9d107b07676b9275c8..bf32ab77ead2377750096f04e5121bbccf9d966c 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
 @@ -685,7 +685,8 @@ class BLINK_EXPORT WebLocalFrameClient {

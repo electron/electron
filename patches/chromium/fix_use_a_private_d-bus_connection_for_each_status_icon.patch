@@ -17,10 +17,10 @@ as this patch already did in sandboxes.
 Upstream bug: https://issues.chromium.org/issues/554905106
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 1e7915eea274e3a0605fc492ce9f7249cbe61a44..33504ef7e51b988554ad8447467cdf9b41b590a3 100644
+index a850af1a7626c7cb62593c424058993829e45e9e..6e330c794e4278dc8c6757889f10407096202411 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -29,7 +29,6 @@
+@@ -30,7 +30,6 @@
  #include "base/task/thread_pool.h"
  #include "components/dbus/menu/menu.h"
  #include "components/dbus/properties/dbus_properties.h"
@@ -28,7 +28,7 @@ index 1e7915eea274e3a0605fc492ce9f7249cbe61a44..33504ef7e51b988554ad8447467cdf9b
  #include "components/dbus/utils/bind_weak_ptr_for_export_method.h"
  #include "components/dbus/utils/call_method.h"
  #include "components/dbus/utils/export_method.h"
-@@ -228,8 +227,6 @@ base::FilePath WriteIconFile(size_t icon_file_id,
+@@ -231,8 +230,6 @@ base::FilePath WriteIconFile(size_t icon_file_id,
    return file_path;
  }
  
@@ -37,7 +37,7 @@ index 1e7915eea274e3a0605fc492ce9f7249cbe61a44..33504ef7e51b988554ad8447467cdf9b
  scoped_refptr<dbus::Bus> CreateSessionBus() {
    dbus::Bus::Options options;
    options.bus_type = dbus::Bus::SESSION;
-@@ -242,10 +239,11 @@ scoped_refptr<dbus::Bus> CreateSessionBus() {
+@@ -245,10 +242,11 @@ scoped_refptr<dbus::Bus> CreateSessionBus() {
  
  scoped_refptr<dbus::Bus> GetBusForNewStatusIcon() {
    CHECK_CURRENTLY_ON(content::BrowserThread::UI, base::NotFatalUntil::M162);
@@ -53,7 +53,7 @@ index 1e7915eea274e3a0605fc492ce9f7249cbe61a44..33504ef7e51b988554ad8447467cdf9b
    return CreateSessionBus();
  }
  
-@@ -350,17 +348,11 @@ StatusIconLinuxDbus::~StatusIconLinuxDbus() {
+@@ -353,17 +351,11 @@ StatusIconLinuxDbus::~StatusIconLinuxDbus() {
    watcher_ = nullptr;
  
    if (bus_) {
