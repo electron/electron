@@ -261,6 +261,7 @@ class NativeWindowMac : public NativeWindow,
   void UpdateZoomButton();
 #if !IS_MAS_BUILD()
   void UpdateFullscreenTitlebar();
+  void RestoreFullscreenTitlebar();
 #endif
 
   int FrameViewNonClientHitTest(const gfx::Point& point);
@@ -305,8 +306,18 @@ class NativeWindowMac : public NativeWindow,
   WindowButtonsProxy* __strong buttons_proxy_;
 #if !IS_MAS_BUILD()
   FullscreenTitlebarTracker* __strong fullscreen_titlebar_tracker_;
+  NSView* __weak fullscreen_titlebar_container_ = nil;
+  NSWindow* __weak fullscreen_toolbar_window_ = nil;
+  bool native_fullscreen_titlebar_ = false;
+  bool updating_fullscreen_titlebar_ = false;
   bool fullscreen_titlebar_overlaid_ = false;
   gfx::Rect fullscreen_titlebar_rect_;
+  bool fullscreen_container_hidden_ = false;
+  bool captured_fullscreen_appearance_ = false;
+  bool fullscreen_toolbar_opaque_ = false;
+  bool fullscreen_toolbar_ignores_mouse_ = false;
+  NSColor* __strong fullscreen_toolbar_background_ = nil;
+  bool fullscreen_had_full_size_content_view_ = false;
 #endif
 
   std::unique_ptr<SkRegion> draggable_region_;
