@@ -33,6 +33,8 @@ import {
 } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
+const features = process._linkedBinding('electron_common_features');
+
 describe('session module', { retry: 0 }, () => {
   const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const url = 'http://127.0.0.1';
@@ -47,6 +49,44 @@ describe('session module', { retry: 0 }, () => {
     it('returns existing session with same partition', () => {
       expect(session.fromPartition('test')).toBe(session.fromPartition('test'));
     });
+
+    it("does not write an in-memory session's preferences to disk", async () => {
+      const userDataPath = fs.mkdtempSync(path.join(app.getPath('temp'), 'electron-in-memory-prefs-'));
+      defer(() => fs.rmSync(userDataPath, { recursive: true, force: true }));
+      const prefsPath = path.join(userDataPath, 'Preferences');
+      // Seed the dictionary list so the default session doesn't save it at
+      // startup and race with the in-memory session's write.
+      fs.writeFileSync(prefsPath, JSON.stringify({ spellcheck: { dictionaries: ['en-US'] } }));
+
+      const appPath = path.join(fixtures, 'api', 'in-memory-session-prefs');
+      const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, userDataPath], {
+        timeout: 20_000
+      });
+
+      expect(code, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
+      const prefs = JSON.parse(fs.readFileSync(prefsPath, 'utf8'));
+      expect(prefs.download?.default_directory).toBeUndefined();
+    });
+
+    ifit(features.isBuiltinSpellCheckerEnabled())(
+      "reads the default session's live preferences in an in-memory session",
+      async () => {
+        const userDataPath = fs.mkdtempSync(path.join(app.getPath('temp'), 'electron-in-memory-prefs-'));
+        defer(() => fs.rmSync(userDataPath, { recursive: true, force: true }));
+
+        const appPath = path.join(fixtures, 'api', 'in-memory-session-prefs-sync');
+        const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, userDataPath], {
+          timeout: 20_000
+        });
+
+        expect(code, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
+        expect(JSON.parse(stdout)).toEqual({
+          inMemoryAfterDefaultChange: false,
+          defaultAfterInMemoryChange: false,
+          inMemoryAfterInMemoryChange: true
+        });
+      }
+    );
   });
 
   describe('session.fromPath(path)', () => {

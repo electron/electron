@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "base/base_paths.h"
+#include "base/check.h"
 #include "base/command_line.h"
 #include "base/containers/to_vector.h"
 #include "base/files/file_path.h"
@@ -26,6 +27,7 @@
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/prefs/json_pref_store.h"
+#include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/pref_service_factory.h"
@@ -379,6 +381,7 @@ void ElectronBrowserContext::DestroyAllContexts() {
 ElectronBrowserContext::ElectronBrowserContext(
     const PartitionOrPath partition_location,
     bool in_memory,
+    ElectronBrowserContext* original_context,
     base::DictValue options)
     : in_memory_pref_store_(new ValueMapPrefStore),
       storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
@@ -419,7 +422,7 @@ ElectronBrowserContext::ElectronBrowserContext(
       ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY));
 
   // Initialize Pref Registry.
-  InitPrefs();
+  InitPrefs(original_context);
 
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 
@@ -447,14 +450,24 @@ ElectronBrowserContext::~ElectronBrowserContext() {
   ShutdownStoragePartitions();
 }
 
-void ElectronBrowserContext::InitPrefs() {
-  auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
+void ElectronBrowserContext::InitPrefs(
+    ElectronBrowserContext* original_context) {
   ScopedAllowBlockingForElectron allow_blocking;
   PrefServiceFactory prefs_factory;
-  scoped_refptr<JsonPrefStore> pref_store =
-      base::MakeRefCounted<JsonPrefStore>(prefs_path);
-  pref_store->ReadPrefs();  // Synchronous.
-  prefs_factory.set_user_prefs(pref_store);
+  if (in_memory_) {
+    // In-memory sessions are off-the-record contexts of the default one. Like
+    // Chrome's incognito profiles, read through to the default session's live
+    // prefs but keep all writes in an in-memory overlay so that this session
+    // never writes to the default session's Preferences file.
+    CHECK(original_context);
+    prefs_factory.set_user_prefs(base::MakeRefCounted<OverlayUserPrefStore>(
+        original_context->user_pref_store()));
+  } else {
+    auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
+    user_pref_store_ = base::MakeRefCounted<JsonPrefStore>(prefs_path);
+    user_pref_store_->ReadPrefs();  // Synchronous.
+    prefs_factory.set_user_prefs(user_pref_store_);
+  }
 
   // Apply any proxy switches from the command line to this session once, here.
   // Session::SetProxy() writes to the same store, so applying them again later
@@ -1267,9 +1280,13 @@ ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::DictValue options) {
+  // In-memory sessions are off-the-record contexts of the default one.
+  ElectronBrowserContext* original_context =
+      in_memory ? GetDefaultBrowserContext() : nullptr;
   auto& context = ContextMap()[PartitionKey(partition, in_memory)];
   if (!context) {
     context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
+                                             original_context,
                                              std::move(options)});
   }
   return context.get();
@@ -1287,7 +1304,9 @@ ElectronBrowserContext* ElectronBrowserContext::FromPath(
   auto& context = ContextMap()[PartitionKey(path)];
   if (!context) {
     context.reset(
-        new ElectronBrowserContext{std::cref(path), false, std::move(options)});
+        new ElectronBrowserContext{std::cref(path), /*in_memory=*/false,
+                                   /*original_context=*/nullptr,
+                                   std::move(options)});
   }
   return context.get();
 }

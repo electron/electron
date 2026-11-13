@@ -23,6 +23,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
+class JsonPrefStore;
 class PrefService;
 class ValueMapPrefStore;
 
@@ -150,6 +151,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   ValueMapPrefStore* in_memory_pref_store() const {
     return in_memory_pref_store_.get();
   }
+  JsonPrefStore* user_pref_store() const { return user_pref_store_.get(); }
 
   ProtocolRegistry* protocol_registry() const {
     return protocol_registry_.get();
@@ -194,8 +196,11 @@ class ElectronBrowserContext : public content::BrowserContext {
       std::variant<std::reference_wrapper<const std::string>,
                    std::reference_wrapper<const base::FilePath>>;
 
+  // |original_context| is the default context for in-memory contexts, which
+  // are its off-the-record contexts, and nullptr otherwise.
   ElectronBrowserContext(const PartitionOrPath partition_location,
                          bool in_memory,
+                         ElectronBrowserContext* original_context,
                          base::DictValue options);
 
   ElectronBrowserContext(base::FilePath partition, base::DictValue options);
@@ -206,7 +211,7 @@ class ElectronBrowserContext : public content::BrowserContext {
       gin::Arguments* args);
 
   // Initialize pref registry.
-  void InitPrefs();
+  void InitPrefs(ElectronBrowserContext* original_context);
 
   // Creates a URLLoaderFactory from the default StoragePartition's current
   // NetworkContext; used by |url_loader_factory_| to (re)connect.
@@ -214,6 +219,9 @@ class ElectronBrowserContext : public content::BrowserContext {
       mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory);
 
   scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
+  // The Preferences file store. Only set for on-disk sessions; in-memory
+  // sessions overlay the default session's store instead.
+  scoped_refptr<JsonPrefStore> user_pref_store_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
   std::unique_ptr<ElectronDownloadManagerDelegate> download_manager_delegate_;
