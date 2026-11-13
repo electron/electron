@@ -106,7 +106,7 @@ permissions: {}
 
 jobs:
   build:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: $/.github/workflows/pipeline-segment-electron-build.yml
     permissions:
       contents: read
     with:
@@ -134,7 +134,7 @@ jobs:
       SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
       SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   test:
-    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    uses: $/.github/workflows/pipeline-segment-electron-test.yml
     permissions:
       contents: read
       issues: read

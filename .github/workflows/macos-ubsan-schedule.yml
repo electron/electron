@@ -32,12 +32,9 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
     - name: Set Build Image SHA
       id: build-image-sha
-      uses: ./.github/actions/build-image-sha
+      uses: $/.github/actions/build-image-sha
 
   checkout-macos:
     needs: setup
@@ -63,14 +60,14 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
+      uses: $/.github/actions/checkout
       with:
         generate-sas-token: 'true'
         target-platform: macos
 
   build-siso-macos:
     needs: setup
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
     with:
@@ -81,7 +78,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-test.yml
     cache-mode: read
     needs: [checkout-macos, build-siso-macos]
     with:

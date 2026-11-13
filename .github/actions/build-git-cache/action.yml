@@ -12,9 +12,9 @@ runs:
       # gclient rejects a git cache inside the gclient root (the workspace).
       echo "GIT_CACHE_PATH=$RUNNER_TEMP/git-cache" >> $GITHUB_ENV
   - name: Set Chromium Git Cookie
-    uses: ./src/electron/.github/actions/set-chromium-cookie
+    uses: $/.github/actions/set-chromium-cookie
   - name: Install Build Tools
-    uses: ./src/electron/.github/actions/install-build-tools
+    uses: $/.github/actions/install-build-tools
   - name: Set up cache drive
     shell: bash
     env:

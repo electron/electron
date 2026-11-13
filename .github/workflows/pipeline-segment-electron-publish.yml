@@ -187,7 +187,7 @@ jobs:
       - name: Setup SSH Debugging
         if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh ||
           env.ACTIONS_STEP_DEBUG == 'true') }}
-        uses: ./src/electron/.github/actions/ssh-debug
+        uses: $/.github/actions/ssh-debug
         with:
           tunnel: 'true'
         env:
@@ -201,7 +201,7 @@ jobs:
       # restore (the step that needs the freed disk) is a no-op on win/linux.
       - name: Free up space (macOS)
         if: ${{ inputs.target-platform == 'macos' }}
-        uses: ./src/electron/.github/actions/free-space-macos
+        uses: $/.github/actions/free-space-macos
         background: true
       - name: Setup Node.js/npm
         if: ${{ inputs.target-platform == 'macos' }}
@@ -211,7 +211,7 @@ jobs:
           cache: yarn
           cache-dependency-path: src/electron/yarn.lock
       - name: Install Dependencies
-        uses: ./src/electron/.github/actions/install-dependencies
+        uses: $/.github/actions/install-dependencies
       - name: Set GN_EXTRA_ARGS for Linux
         if: ${{ inputs.target-platform == 'linux' }}
         env:
@@ -237,9 +237,9 @@ jobs:
         run: |
           echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt"' >> $GITHUB_ENV
       - name: Set Chromium Git Cookie
-        uses: ./src/electron/.github/actions/set-chromium-cookie
+        uses: $/.github/actions/set-chromium-cookie
       - name: Install Build Tools
-        uses: ./src/electron/.github/actions/install-build-tools
+        uses: $/.github/actions/install-build-tools
       - name: Generate DEPS Hash
         run: |
           node src/electron/script/generate-deps-hash.js
@@ -264,12 +264,12 @@ jobs:
         run: brew install azcopy
       - name: Restore src cache via AZCopy
         if: ${{ inputs.target-platform != 'linux' }}
-        uses: ./src/electron/.github/actions/restore-cache-azcopy
+        uses: $/.github/actions/restore-cache-azcopy
         with:
           target-platform: ${{ inputs.target-platform }}
       - name: Restore src cache via AKS
         if: ${{ inputs.target-platform == 'linux' }}
-        uses: ./src/electron/.github/actions/restore-cache-aks
+        uses: $/.github/actions/restore-cache-aks
       - name: Checkout Electron
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -279,7 +279,7 @@ jobs:
           persist-credentials: false
       - name: Fix Sync
         if: ${{ inputs.target-platform != 'linux' }}
-        uses: ./src/electron/.github/actions/fix-sync
+        uses: $/.github/actions/fix-sync
         with:
           target-platform: ${{ inputs.target-platform }}
         env:
@@ -348,7 +348,7 @@ jobs:
           EOF
       - name: Free up space (macOS)
         if: ${{ inputs.target-platform == 'macos' }}
-        uses: ./src/electron/.github/actions/free-space-macos
+        uses: $/.github/actions/free-space-macos
       # siso runs on the build host, not the target, so the artifact is chosen by
       # build-host os/arch: win -> windows-amd64, linux (any target arch) ->
       # linux-amd64, macOS (x64 or arm64, both built on arm64 hosts) -> darwin-arm64.
@@ -411,7 +411,7 @@ jobs:
       - name: Build Electron
         if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' ||
           inputs.target-variant == 'darwin') }}
-        uses: ./src/electron/.github/actions/build-electron
+        uses: $/.github/actions/build-electron
         with:
           target-arch: ${{ inputs.target-arch }}
           target-platform: ${{ inputs.target-platform }}
@@ -436,7 +436,7 @@ jobs:
         if: ${{ !cancelled() && inputs.target-platform == 'macos' &&
           inputs.target-variant == 'all' }}
         background: true
-        uses: ./src/electron/.github/actions/upload-build-artifacts
+        uses: $/.github/actions/upload-build-artifacts
         with:
           artifact-key: darwin_${{ inputs.target-arch }}
           artifact-platform: darwin
@@ -453,7 +453,7 @@ jobs:
       - name: Build Electron (MAS)
         if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' ||
           inputs.target-variant == 'mas') }}
-        uses: ./src/electron/.github/actions/build-electron
+        uses: $/.github/actions/build-electron
         with:
           target-arch: ${{ inputs.target-arch }}
           target-platform: ${{ inputs.target-platform }}
