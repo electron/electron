@@ -22,18 +22,18 @@ it could be proposed upstream alongside crbug.com/492211919 (the sandbox
 flag check has the same local-root-only limitation).
 
 diff --git a/components/input/input_router_client.h b/components/input/input_router_client.h
-index cb1bf9e36afd47e22a7957e0c822014c75c617b0..25e72a9e95b98322b39ee6f83564af4c276f1131 100644
+index 90cfa9056373141a20f2e86e43e33c0c0b1e5cbd..aa7c528f668d267f2e0c86c84e8c831c1793a22b 100644
 --- a/components/input/input_router_client.h
 +++ b/components/input/input_router_client.h
-@@ -12,6 +12,7 @@
+@@ -14,6 +14,7 @@
  #include "components/input/event_with_latency_info.h"
  #include "components/input/native_web_keyboard_event.h"
  #include "third_party/blink/public/common/input/web_input_event.h"
 +#include "third_party/blink/public/common/tokens/tokens.h"
  #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
- #include "ui/gfx/geometry/vector2d_f.h"
-@@ -99,6 +100,7 @@ class COMPONENT_EXPORT(INPUT) InputRouterClient {
+ 
+@@ -114,6 +115,7 @@ class COMPONENT_EXPORT(INPUT) InputRouterClient {
    virtual void SetAutoscrollSelectionActiveInMainFrame(
        bool autoscroll_selection) = 0;
    virtual void RequestMouseLock(
@@ -42,7 +42,7 @@ index cb1bf9e36afd47e22a7957e0c822014c75c617b0..25e72a9e95b98322b39ee6f83564af4c
        bool unadjusted_movement,
        blink::mojom::WidgetInputHandlerHost::RequestMouseLockCallback
 diff --git a/components/input/input_router_impl.cc b/components/input/input_router_impl.cc
-index 51baeda2c2e35bb27cc12e1973e96fd047840615..ad497a826df405440b77a82247fe1bc260607370 100644
+index d0140d4a01cb3d3e6487c03ae7a82166b0363d75..a3afc4f2f93f128c21dbc7ea30498d02d7e81b71 100644
 --- a/components/input/input_router_impl.cc
 +++ b/components/input/input_router_impl.cc
 @@ -435,11 +435,13 @@ void InputRouterImpl::SetAutoscrollSelectionActiveInMainFrame(
@@ -79,10 +79,10 @@ index 016e12288ec354905f0b172a7f8b6d8ecdff8346..ad387eaf0b1d8e07593419378315ded7
                          RequestMouseLockCallback response) override;
    // Notifies touch action filter and touch event queue whether there are
 diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
-index cac25fd94d17b7005a23fad857d468910bff972a..b1fa5362c3ff3b7adbcf7e2d42fa74985f83ebe1 100644
+index ddeb9006b1be41834f809af34c87ec81f96a7d96..74af2c227e28e260851a74e821c6b9c70a7e194c 100644
 --- a/components/input/render_input_router.cc
 +++ b/components/input/render_input_router.cc
-@@ -325,11 +325,13 @@ void RenderInputRouter::SetAutoscrollSelectionActiveInMainFrame(
+@@ -326,11 +326,13 @@ void RenderInputRouter::SetAutoscrollSelectionActiveInMainFrame(
  }
  
  void RenderInputRouter::RequestMouseLock(
@@ -98,10 +98,10 @@ index cac25fd94d17b7005a23fad857d468910bff972a..b1fa5362c3ff3b7adbcf7e2d42fa7498
  
  gfx::Size RenderInputRouter::GetRootWidgetViewportSize() {
 diff --git a/components/input/render_input_router.h b/components/input/render_input_router.h
-index e5f9b1be4d0b10e9d3fcd7a48e19792a97851578..29d4b496512474f447a279c00652690d6a08be5d 100644
+index b326f67b723f2b336e1dace8c390bdae820e4d58..48f46d448675e07f1e78df14bcba6bb70c5df90a 100644
 --- a/components/input/render_input_router.h
 +++ b/components/input/render_input_router.h
-@@ -104,6 +104,7 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouter
+@@ -107,6 +107,7 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouter
    void SetAutoscrollSelectionActiveInMainFrame(
        bool autoscroll_selection) override;
    void RequestMouseLock(
@@ -110,7 +110,7 @@ index e5f9b1be4d0b10e9d3fcd7a48e19792a97851578..29d4b496512474f447a279c00652690d
        bool unadjusted_movement,
        InputRouterImpl::RequestMouseLockCallback response) override;
 diff --git a/components/input/render_input_router_client.h b/components/input/render_input_router_client.h
-index 79e79a79538612af6d3f5ff7f3fc7c973afbd6bc..ac9d5889fd106d34325f8260235dd83dd20aea21 100644
+index 5e736e2267649c5d13395ed09a5333e9999860b8..d7022f291b0ac436f76c287e7d3fd0b86c7e9822 100644
 --- a/components/input/render_input_router_client.h
 +++ b/components/input/render_input_router_client.h
 @@ -28,6 +28,7 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouterClient {
@@ -152,10 +152,10 @@ index 5b87ed5def8b6ff737cdc59aa577fd49f7ab257a..a9b3a67e80a325079b9519da1a6436d5
    virtual void UnlockPointer(RenderWidgetHostImpl* render_widget_host) {}
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 22546732ea5c8591fb0e7e46f7f279725f869d67..1dd9bec7f2155c275b823e3c987ceea9dfa22816 100644
+index 4667f2635ab51255c4e0bbb729316e32e1cb9427..5b195a8aed4275eaebcfc5ad35d2f8c9a128b0a1 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -3708,6 +3708,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
+@@ -3709,6 +3709,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
  }
  
  void RenderWidgetHostImpl::RequestMouseLock(
@@ -163,7 +163,7 @@ index 22546732ea5c8591fb0e7e46f7f279725f869d67..1dd9bec7f2155c275b823e3c987ceea9
      bool from_user_gesture,
      bool unadjusted_movement,
      input::InputRouterImpl::RequestMouseLockCallback response) {
-@@ -3744,7 +3745,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
+@@ -3745,7 +3746,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
      return;
    }
  
@@ -173,10 +173,10 @@ index 22546732ea5c8591fb0e7e46f7f279725f869d67..1dd9bec7f2155c275b823e3c987ceea9
    // We need to reset |is_last_unlocked_by_target_| here as we don't know
    // request source in |LostPointerLock()|.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 1f98cfb4e20c914f45b18af7ff8a87ea16e44d1e..ddec45c46d7e572ea7fb129ed8cf11387690b91f 100644
+index cecda05cfe48287d0cdc76172dc9f9a24c19dc23..d8d6b1579cbf9b86384434a2a69670a31500f4ca 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -893,6 +893,7 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -895,6 +895,7 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    void SetAutoscrollSelectionActiveInMainFrame(
        bool autoscroll_selection) override;
    void RequestMouseLock(
