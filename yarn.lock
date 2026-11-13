@@ -331,6 +331,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/menu-helper@npm:*, @electron-ci/menu-helper@workspace:spec/fixtures/native-addon/menu-helper":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/menu-helper@workspace:spec/fixtures/native-addon/menu-helper"
+  languageName: unknown
+  linkType: soft
+
 "@electron-ci/mouse-input@npm:*, @electron-ci/mouse-input@workspace:spec/fixtures/native-addon/mouse-input":
   version: 0.0.0-use.local
   resolution: "@electron-ci/mouse-input@workspace:spec/fixtures/native-addon/mouse-input"
@@ -2373,6 +2379,7 @@ __metadata:
     "@electron-ci/dialog-helper": "npm:*"
     "@electron-ci/echo": "npm:*"
     "@electron-ci/is-valid-window": "npm:*"
+    "@electron-ci/menu-helper": "npm:*"
     "@electron-ci/mouse-input": "npm:*"
     "@electron-ci/object-wrap": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"

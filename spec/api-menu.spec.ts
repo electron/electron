@@ -5,12 +5,13 @@ import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setImmediate, setTimeout } from 'node:timers/promises';
 
 import { singleModifierCombinations } from './lib/accelerator-helpers.ts';
-import { defer, ifit, isWayland, spawnAndWait } from './lib/spec-helpers.ts';
+import { defer, ifit, isWayland, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
@@ -1120,6 +1121,32 @@ describe('Menu module', () => {
       Menu.setApplicationMenu(menu);
       expect(Menu.getApplicationMenu(), 'application menu').not.toBeNull();
     });
+
+    ifit(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
+      'updates the native menu title after a JS label change and menu refresh',
+      async () => {
+        const { getMenuItemTitles } = createRequire(import.meta.url)('@electron-ci/menu-helper');
+        const menuTitle = 'Label refresh test';
+        const menu = Menu.buildFromTemplate([
+          { role: 'appMenu' },
+          { label: menuTitle, submenu: [{ label: 'Original label' }] }
+        ]);
+        Menu.setApplicationMenu(menu);
+
+        // Application menus are installed on the next native run loop turn.
+        await waitUntil(() => getMenuItemTitles(menuTitle, false) !== null);
+        expect(getMenuItemTitles(menuTitle, false)).toEqual(['Original label']);
+
+        const item = menu.items[1].submenu!.items[0];
+        item.label = 'Updated label';
+        expect(getMenuItemTitles(menuTitle, true)).toEqual(['Updated label']);
+
+        // Exercise another change on the same native item, including restoring
+        // its original label, so stale cached state cannot hide a regression.
+        item.label = 'Original label';
+        expect(getMenuItemTitles(menuTitle, true)).toEqual(['Original label']);
+      }
+    );
 
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(Menu.buildFromTemplate([{ label: '1' }]));
