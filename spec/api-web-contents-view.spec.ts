@@ -1,13 +1,26 @@
-import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
+import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen, ipcMain } from 'electron/main';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
+import { createRequire } from 'node:module';
+import * as path from 'node:path';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers.ts';
 import { defer, ifdescribe, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
+
+const require = createRequire(import.meta.url);
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
+
+// Try to load robotjs
+let robot: typeof import('@hurdlegroup/robotjs');
+try {
+  robot = require('@hurdlegroup/robotjs');
+} catch {
+  // ignore. tests are skipped below if this is undefined.
+}
 
 describe('WebContentsView', () => {
   afterEach(async () => {
@@ -643,6 +656,101 @@ describe('WebContentsView', () => {
       expect(v.webContents.isFocused()).toBe(false);
       await v.webContents.loadURL('data:text/html,<body>test</body>');
       expect(v.webContents.isFocused()).toBe(false);
+    });
+  });
+
+  describe('setIgnoreMouseEvents', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw when toggled', () => {
+      const v = new WebContentsView();
+      expect(() => v.setIgnoreMouseEvents(false)).not.toThrow();
+      expect(() => v.setIgnoreMouseEvents(true)).not.toThrow();
+    });
+
+    it('correctly records state when toggled', () => {
+      const v = new WebContentsView();
+      expect(v.getIgnoreMouseEvents()).toBe(false);
+      v.setIgnoreMouseEvents(true);
+      expect(v.getIgnoreMouseEvents()).toBe(true);
+      v.setIgnoreMouseEvents(false);
+      expect(v.getIgnoreMouseEvents()).toBe(false);
+    });
+
+    it('does not throw for a WebContentsView, before and after attach', async () => {
+      const w = new BaseWindow({ show: false });
+      const view = new WebContentsView();
+      expect(() => view.setIgnoreMouseEvents(false)).not.toThrow(); // before attach
+      w.contentView.addChildView(view);
+      expect(() => view.setIgnoreMouseEvents(true)).not.toThrow(); // after attach
+    });
+
+    it('survives destroy/toggle churn', () => {
+      const view = new WebContentsView();
+      view.setIgnoreMouseEvents(false);
+      view.setIgnoreMouseEvents(true);
+      view.setIgnoreMouseEvents(false);
+      view.webContents.destroy();
+      expect(() => view.setIgnoreMouseEvents(true)).not.toThrow();
+    });
+
+    it('prevents interaction when setIgnoreMouseEvents(false) is called', async function (ctx) {
+      if (!robot) {
+        ctx.skip();
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const w = new BaseWindow({ show: true, width: 400, height: 400 });
+
+      const bottom = new WebContentsView({
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      w.contentView.addChildView(bottom);
+      bottom.setBounds({ x: 0, y: 0, width: 400, height: 400 });
+
+      await bottom.webContents.loadFile(path.join(fixturesPath, 'pages', 'click.html'), {
+        query: { id: 'bottom' }
+      });
+
+      const top = new WebContentsView({
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      w.contentView.addChildView(top);
+      top.setBounds({ x: 0, y: 0, width: 400, height: 400 });
+      await top.webContents.loadFile(path.join(fixturesPath, 'pages', 'click.html'), { query: { id: 'top' } });
+      top.setIgnoreMouseEvents(true);
+
+      w.focus();
+
+      // give the window manager a beat to actually raise/activate the window
+      // before we start sending input at it
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      const clickedPromise = once(ipcMain, 'clicked');
+      const { x, y, width, height } = w.getBounds();
+      robot.moveMouse(x + Math.floor(width / 2), y + Math.floor(height / 2));
+      robot.mouseClick();
+
+      const data = await Promise.race([
+        clickedPromise,
+        new Promise<void>((resolve) => setTimeout(() => resolve(), 1000))
+      ]);
+      expect(data?.[1]).toBe('bottom');
+
+      top.setIgnoreMouseEvents(false);
+
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      const clickedPromise2 = once(ipcMain, 'clicked');
+      robot.moveMouse(x + Math.floor(width / 2), y + Math.floor(height / 2));
+      robot.mouseClick();
+
+      const data2 = await Promise.race([
+        clickedPromise2,
+        new Promise<void>((resolve) => setTimeout(() => resolve(), 1000))
+      ]);
+      expect(data2?.[1]).toBe('top');
     });
   });
 });
