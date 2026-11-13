@@ -1356,31 +1356,25 @@ void InspectableWebContents::ReadyToCommitNavigation(
             base::Unretained(this)));
     return;
   }
-}
 
-void InspectableWebContents::DidFinishNavigation(
-    content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->IsInPrimaryMainFrame() ||
-      !navigation_handle->GetURL().SchemeIs("chrome-extension") ||
-      !navigation_handle->HasCommitted())
+  if (!frontend_host_ ||
+      !navigation_handle->GetURL().SchemeIs("chrome-extension"))
     return;
-  content::RenderFrameHost* frame = navigation_handle->GetRenderFrameHost();
+
   auto origin = navigation_handle->GetURL().DeprecatedGetOriginAsURL().spec();
   auto it = extensions_api_.find(origin);
   if (it == extensions_api_.end())
     return;
-  // Injected Script from devtools frontend doesn't expose chrome,
-  // most likely bug in chromium.
-  base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
-                                         "var chrome = window.chrome ");
+
+  // Hand the DevTools extension API to the frame before it commits so that
+  // Blink runs it from DidClearWindowObject(), ahead of any of the extension
+  // page's own scripts. Injecting it after the navigation finishes races the
+  // page and can leave chrome.devtools undefined when the page first runs.
   auto script =
       absl::StrFormat("%s(\"%s\")", it->second,
                       base::Uuid::GenerateRandomV4().AsLowercaseString());
-  // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
-  // should be enough, but it seems to be a noop currently.
-  frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),
-                                   base::NullCallback(),
-                                   content::ISOLATED_WORLD_ID_GLOBAL);
+  content::DevToolsFrontendHost::SetupExtensionsAPI(
+      navigation_handle->GetRenderFrameHost(), script);
 }
 
 void InspectableWebContents::SendMessageAck(int request_id,
