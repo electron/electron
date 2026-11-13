@@ -11,12 +11,16 @@
 
 #include "ui/gfx/geometry/point.h"
 
+namespace views {
+class View;
+}
+
 @class WindowButtonsProxy;
 
 // A helper view that floats above the window buttons.
 @interface ButtonsAreaHoverView : NSView {
  @private
-  WindowButtonsProxy* proxy_;
+  __weak WindowButtonsProxy* proxy_;
 }
 - (id)initWithProxy:(WindowButtonsProxy*)proxy;
 @end
@@ -28,12 +32,13 @@
 
   // Current left-top margin of buttons.
   gfx::Point margin_;
+  BOOL has_custom_position_;
   // The default left-top margin.
   gfx::Point default_margin_;
   // Current height of the title bar container.
   float height_;
-  // AppKit owns the container's layout in fullscreen.
-  BOOL tracking_fullscreen_titlebar_;
+  // Temporary transition/miniaturize visibility, separate from caller intent.
+  BOOL visible_;
 
   // Track mouse moves above window buttons.
   BOOL show_on_hover_;
@@ -46,6 +51,7 @@
 
 - (void)setVisible:(BOOL)visible;
 - (BOOL)isVisible;
+- (void)setZoomButtonEnabled:(BOOL)enabled;
 
 // Only show window buttons when mouse moves above them.
 - (void)setShowOnHover:(BOOL)yes;
@@ -56,9 +62,15 @@
 // Set height of button container
 - (void)setHeight:(const float)height;
 - (BOOL)useCustomHeight;
+- (CGFloat)effectiveHeight;
 
+// Capture AppKit's fullscreen container after its transition has completed.
 - (NSView*)titleBarContainer;
-- (void)setTrackingFullscreenTitlebar:(BOOL)tracking;
+- (void)beginFullscreenWithContainer:(NSView*)container
+                            rootView:(views::View*)rootView
+                      customTitlebar:(BOOL)customTitlebar;
+- (void)endFullscreen;
+- (CGFloat)layoutFullscreenAtOffset:(CGFloat)offset reveal:(double)reveal;
 
 // Return the bounds of all 3 buttons, with margin on all sides.
 - (NSRect)getButtonsContainerBounds;

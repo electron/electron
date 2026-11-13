@@ -1060,9 +1060,10 @@ bool BaseWindow::IsFullscreenTitlebarValid(
   }
   std::string mode;
   if (!gin::ConvertFromV8(options.isolate(), value, &mode) ||
-      mode != "revealNativeTitlebar") {
+      (mode != "revealNativeTitlebar" && mode != "revealTrafficLights")) {
     *error_message =
-        "titleBarOverlay.fullscreen must be 'revealNativeTitlebar'";
+        "titleBarOverlay.fullscreen must be 'revealNativeTitlebar' or "
+        "'revealTrafficLights'";
     return false;
   }
 #if IS_MAS_BUILD()

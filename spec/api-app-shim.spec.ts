@@ -341,7 +341,7 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
           new WindowConstructor({
             appShim: shim,
             titleBarStyle: 'hidden',
-            titleBarOverlay: { fullscreen: 'revealNativeTitlebar' }
+            titleBarOverlay: { fullscreen: 'revealTrafficLights' }
           })
       ).toThrow(/app shim windows/);
     }
