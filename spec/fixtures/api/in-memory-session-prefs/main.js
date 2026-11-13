@@ -1,9 +1,11 @@
 const { app, session } = require('electron');
 
-app.setPath('userData', process.argv[2]);
+const path = require('node:path');
+
+const userDataPath = process.argv[2];
+app.setPath('userData', userDataPath);
 
 app.whenReady().then(() => {
-  const ses = session.fromPartition('in-memory');
-  process.stdout.write(JSON.stringify({ spellCheckerEnabled: ses.isSpellCheckerEnabled() }));
+  session.fromPartition('in-memory').setDownloadPath(path.join(userDataPath, 'in-memory-downloads'));
   app.quit();
 });

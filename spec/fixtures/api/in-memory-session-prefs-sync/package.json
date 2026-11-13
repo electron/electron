@@ -1,0 +1,4 @@
+{
+  "name": "electron-test-in-memory-session-prefs-sync",
+  "main": "main.js"
+}
