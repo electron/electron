@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "gin/wrappable.h"
+#include "shell/browser/browser_observer.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "ui/display/display_observer.h"
 #include "ui/display/screen.h"
@@ -26,9 +27,10 @@ namespace electron::api {
 
 class Screen final : public gin::Wrappable<Screen>,
                      public gin_helper::EventEmitterMixin<Screen>,
+                     private BrowserObserver,
                      private display::DisplayObserver {
  public:
-  static Screen* Create(gin_helper::ErrorThrower error_thrower);
+  static Screen* Create(v8::Isolate* isolate);
 
   static const gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -45,22 +47,42 @@ class Screen final : public gin::Wrappable<Screen>,
   Screen();
   ~Screen() override;
 
-  [[nodiscard]] gfx::Point GetCursorScreenPoint(v8::Isolate* isolate);
-  [[nodiscard]] display::Display GetPrimaryDisplay() const;
-  [[nodiscard]] std::vector<display::Display> GetAllDisplays() const;
-  [[nodiscard]] display::Display GetDisplayNearestPoint(
-      const gfx::Point& point) const;
-  [[nodiscard]] display::Display GetDisplayMatching(
-      const gfx::Rect& match_rect) const;
+  // These throw until the app is ready. They are static so that they work
+  // detached from the screen object.
+  [[nodiscard]] static gfx::Point GetCursorScreenPoint(
+      gin_helper::ErrorThrower thrower);
+  [[nodiscard]] static display::Display GetPrimaryDisplay(
+      gin_helper::ErrorThrower thrower);
+  [[nodiscard]] static std::vector<display::Display> GetAllDisplays(
+      gin_helper::ErrorThrower thrower);
+  [[nodiscard]] static display::Display GetDisplayNearestPoint(
+      gin_helper::ErrorThrower thrower,
+      const gfx::Point& point);
+  [[nodiscard]] static display::Display GetDisplayMatching(
+      gin_helper::ErrorThrower thrower,
+      const gfx::Rect& match_rect);
 
-  gfx::PointF ScreenToDIPPoint(const gfx::PointF& point_px);
-  gfx::Point DIPToScreenPoint(const gfx::Point& point_dip);
+  static gfx::PointF ScreenToDIPPoint(gin_helper::ErrorThrower thrower,
+                                      const gfx::PointF& point_px);
+  static gfx::Point DIPToScreenPoint(gin_helper::ErrorThrower thrower,
+                                     const gfx::Point& point_dip);
+
+ private:
+  // Throws and returns false before the app is ready.
+  static bool CheckReady(gin_helper::ErrorThrower thrower);
+  void ObserveDisplays();
+
+  // BrowserObserver:
+  void OnWillFinishLaunching() override;
+  void OnFinishLaunching(base::DictValue launch_info) override;
 
   // display::DisplayObserver:
   void OnDisplayAdded(const display::Display& new_display) override;
   void OnDisplaysRemoved(const display::Displays& removed_displays) override;
   void OnDisplayMetricsChanged(const display::Display& display,
                                uint32_t changed_metrics) override;
+
+  bool display_observation_started_ = false;
 };
 
 }  // namespace electron::api
