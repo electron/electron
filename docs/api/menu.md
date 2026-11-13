@@ -47,8 +47,12 @@ On Windows and Linux, pressing Alt focuses the menu bar. Left and Right move
 between top-level items, skipping separators, hidden items, and disabled items.
 After Alt alone, Enter or Up/Down opens the selected submenu. Once a drop-down
 menu has been opened, Left and Right open adjacent submenus automatically, even
-after navigating through a top-level command item. Arrow keys only highlight
-command items; Enter or their mnemonic executes them.
+after navigating through a top-level command item. Inside an open menu, Right
+opens the highlighted item's submenu and otherwise switches to the next menu,
+even from a nested submenu. Left closes an open nested submenu and otherwise
+switches to the previous menu. This matches native Win32 menu bars rather than
+WinUI. Arrow keys only highlight command items; Enter or their mnemonic
+executes them.
 
 In order to escape the `&` character in an item name, add a preceding `&`. For example, `&&File` would result in `&File` displayed on the button label.
 

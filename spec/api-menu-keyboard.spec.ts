@@ -403,11 +403,22 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       expect(lastClicked).toBe('beta-more-item');
     });
 
-    it('does not switch to a sibling menu when Left is pressed on a top-level submenu item', async () => {
+    it('switches to the previous sibling menu when Left is pressed on a top-level submenu item', async () => {
       await pressKeyAndWait(['b', ['alt']], 'beta'); // open Beta (Beta Leaf selected)
+      await pressKeys(['down']); // select Beta More (a submenu item, not open)
+      await pressKeyAndWait('left', 'alpha'); // switch to Alpha like Win32 (Alpha Item selected)
+      await pressKeys(['enter']); // activate Alpha's first item
+
+      await waitUntil(() => lastClicked !== null);
+      expect(lastClicked).toBe('alpha-item');
+    });
+
+    it('closes a nested submenu instead of switching siblings when Left is pressed inside it', async () => {
+      await pressKeyAndWait(['b', ['alt']], 'beta'); // open Beta (Beta Leaf selected)
+      await pressKeys(['down']); // select Beta More (a submenu item)
+      await pressKeyAndWait('right', 'beta-more'); // open the Beta More submenu (Beta More Item selected)
+      await pressKeyAndWait('left', 'beta-more', 'menu-will-close'); // close Beta More (NOT switch to Alpha)
       await pressKeys([
-        'down', // select Beta More (a submenu item)
-        'left', // must NOT switch to Alpha
         'up', // back to Beta Leaf
         'enter' // activate Beta Leaf
       ]);
@@ -416,17 +427,15 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       expect(lastClicked).toBe('beta-leaf');
     });
 
-    it('does not switch to a sibling menu when Right is pressed inside a nested submenu', async () => {
+    it('switches to the next sibling menu when Right is pressed on a leaf inside a nested submenu', async () => {
       await pressKeyAndWait(['b', ['alt']], 'beta'); // open Beta (Beta Leaf selected)
       await pressKeys(['down']); // select Beta More (a submenu item)
       await pressKeyAndWait('right', 'beta-more'); // open the Beta More submenu (Beta More Item selected)
-      await pressKeys([
-        'right', // must NOT switch to Gamma (still nested)
-        'enter' // activate Beta More Item
-      ]);
+      await pressKeyAndWait('right', 'gamma'); // switch to Gamma like Win32 (Gamma Item selected)
+      await pressKeys(['enter']); // activate Gamma's first item
 
       await waitUntil(() => lastClicked !== null);
-      expect(lastClicked).toBe('beta-more-item');
+      expect(lastClicked).toBe('gamma-item');
     });
   }
 );
