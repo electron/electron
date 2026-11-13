@@ -11,6 +11,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "v8/include/v8.h"
@@ -23,10 +24,24 @@ NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
 
 NetworkHintsHandlerImpl::~NetworkHintsHandlerImpl() = default;
 
+void NetworkHintsHandlerImpl::PrefetchDNS(
+    const std::vector<url::SchemeHostPort>& urls) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  if (browser_context_ &&
+      static_cast<electron::ElectronBrowserContext*>(browser_context_)
+          ->is_network_blocked()) {
+    return;
+  }
+  network_hints::SimpleNetworkHintsHandlerImpl::PrefetchDNS(urls);
+}
+
 void NetworkHintsHandlerImpl::Preconnect(const url::SchemeHostPort& url,
                                          bool allow_credentials) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
+  // Electron only reports preconnect hints as the session's 'preconnect' event
+  // and never opens a connection here, so offline sessions keep emitting it.
   if (!browser_context_) {
     return;
   }
