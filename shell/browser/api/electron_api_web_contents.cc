@@ -1745,6 +1745,14 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
+  // Set by BrowserWindow on the contents it creates; see
+  // electron_api_browser_window.cc. Consume it here, before
+  // 'web-contents-created' hands these contents to any listener: the
+  // preferences object belongs to the caller and may be reused for other
+  // contents, which must not inherit the mark.
+  if (options.GetHidden(options::kOwnedByWindow, &owned_by_window_))
+    gin_helper::Dictionary(options).DeleteHidden(options::kOwnedByWindow);
+
   // Get transparent for guest view
   options.Get("transparent", &guest_transparent_);
 
@@ -2350,8 +2358,10 @@ content::WebContents* WebContents::AddNewContents(
     type = Type::kOffScreen;
 
   v8::HandleScope handle_scope(isolate);
-  auto* api_web_contents =
-      CreateAndTake(isolate, std::move(new_contents), type);
+  // The '-add-new-contents' handlers below give the child its BrowserWindow,
+  // but 'web-contents-created' fires first, so tell it an owner is coming.
+  auto* api_web_contents = CreateAndTake(isolate, std::move(new_contents), type,
+                                         /*expects_owner_window=*/true);
 
   // Rebind the paint callback to the child WebContents. The
   // OffScreenWebContentsView was initially created with the parent's OnPaint
@@ -2378,6 +2388,7 @@ content::WebContents* WebContents::AddNewContents(
     api_web_contents->Destroy();
     return nullptr;
   }
+  auto weak_child = api_web_contents->WeakRef();
   if (Emit("-add-new-contents", wrapper, disposition, user_gesture,
            window_features.bounds.x(), window_features.bounds.y(),
            window_features.bounds.width(), window_features.bounds.height(),
@@ -2386,6 +2397,14 @@ content::WebContents* WebContents::AddNewContents(
     if (was_blocked)
       *was_blocked = true;
     api_web_contents->Destroy();
+  } else if (auto* child = weak_child->Get(); child && !child->IsDestroyed()) {
+    // The span in which an owner was promised ends here. If the handlers gave
+    // the child a window, a deferred openDevTools() has already run. If not —
+    // say a createWindow handler kept the contents out of any widget — don't
+    // leave that request, or later ones, waiting for an owner that may never
+    // come: the child now decides like any other unowned contents.
+    child->owned_by_window_ = false;
+    child->FlushPendingDevToolsOpen();
   }
 
   return nullptr;
@@ -3800,6 +3819,34 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
   auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetNativeWindow(owner_window);
+
+  // Replay an openDevTools() that was waiting for this owner.
+  if (owner_window)
+    FlushPendingDevToolsOpen();
+}
+
+void WebContents::FlushPendingDevToolsOpen() {
+  if (!pending_devtools_open_)
+    return;
+  // Clear the request before showing, in case anything re-enters.
+  PendingDevToolsOpen pending =
+      std::exchange(pending_devtools_open_, std::nullopt).value();
+  ShowDevToolsNow(pending.mode, pending.activate, pending.title);
+
+  // ShowDevTools() has attached the page's agent synchronously, so an inspect
+  // target recorded while the open was pending can be applied right away.
+  auto* inspectable = native_lifecycle_->inspectable_web_contents_.get();
+  if (!inspectable)
+    return;
+  if (pending.attach_agent_id) {
+    // The worker may have gone away meanwhile; the page stays attached then.
+    if (auto host =
+            content::DevToolsAgentHost::GetForId(*pending.attach_agent_id))
+      inspectable->AttachTo(std::move(host));
+  } else if (pending.inspect_point) {
+    inspectable->InspectElement(pending.inspect_point->x(),
+                                pending.inspect_point->y());
+  }
 }
 
 content::WebContents* WebContents::GetWebContents() const {
@@ -4507,22 +4554,60 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
   if (!enable_devtools_)
     return;
 
-  std::string state;
-  if (type_ == Type::kWebView || type_ == Type::kBackgroundPage ||
-      !owner_window()) {
-    state = "detach";
-  }
-
+  std::optional<std::string> mode;
   bool activate = true;
   std::string title;
   if (args && args->Length() == 1) {
     gin_helper::Dictionary options;
     if (args->GetNext(&options)) {
-      options.Get("mode", &state);
+      options.GetOptional("mode", &mode);
       options.Get("activate", &activate);
       options.Get("title", &title);
     }
   }
+
+  // A BrowserWindow only wires up owner_window() part-way through its
+  // constructor, and a window.open() child only once AddNewContents() has
+  // handed it to one — in both cases after the contents (and any
+  // 'web-contents-created' listener) already exist. Deciding now would depend
+  // on how early openDevTools() was called, and policies that need the window
+  // — the Window Controls Overlay check in ShowDevTools(), for one — would be
+  // skipped. So wait for the owner: SetOwnerWindow() replays this, and
+  // AddNewContents() runs it without one if the child never got a window.
+  //
+  // A further call while one is pending merges into it the way a further call
+  // behaves once DevTools are open: the first dock mode stays, since an open
+  // DevTools is not re-docked, but the later title applies and the later call
+  // can still activate them.
+  if (owned_by_window_ && !owner_window()) {
+    if (!pending_devtools_open_) {
+      pending_devtools_open_.emplace();
+      pending_devtools_open_->mode = std::move(mode);
+      pending_devtools_open_->activate = activate;
+    } else {
+      pending_devtools_open_->activate =
+          pending_devtools_open_->activate || activate;
+    }
+    pending_devtools_open_->title = std::move(title);
+    return;
+  }
+
+  ShowDevToolsNow(mode, activate, title);
+}
+
+void WebContents::ShowDevToolsNow(const std::optional<std::string>& mode,
+                                  bool activate,
+                                  const std::string& title) {
+  if (type_ == Type::kRemote || !enable_devtools_)
+    return;
+
+  std::string state;
+  if (type_ == Type::kWebView || type_ == Type::kBackgroundPage ||
+      !owner_window()) {
+    state = "detach";
+  }
+  if (mode)
+    state = *mode;
 
   DCHECK(native_lifecycle_->inspectable_web_contents_);
   native_lifecycle_->inspectable_web_contents_->SetDockState(state);
@@ -4534,6 +4619,10 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
 void WebContents::CloseDevTools() {
   if (type_ == Type::kRemote)
     return;
+
+  // Closing before the owner arrived cancels the deferred open; there are no
+  // DevTools yet for InspectableWebContents to close.
+  pending_devtools_open_.reset();
 
   if (native_lifecycle_->inspectable_web_contents_)
     native_lifecycle_->inspectable_web_contents_->CloseDevTools();
@@ -4560,6 +4649,10 @@ std::u16string WebContents::GetDevToolsTitle() {
 }
 
 void WebContents::SetDevToolsTitle(const std::u16string& title) {
+  // A pending open applies its title when it runs; keep that in step, or it
+  // would overwrite a title set after openDevTools() was called.
+  if (pending_devtools_open_)
+    pending_devtools_open_->title = base::UTF16ToUTF8(title);
   if (native_lifecycle_->inspectable_web_contents_)
     native_lifecycle_->inspectable_web_contents_->SetDevToolsTitle(title);
 }
@@ -4610,7 +4703,7 @@ void WebContents::DisableDeviceEmulation() {
 }
 
 void WebContents::ToggleDevTools() {
-  if (IsDevToolsOpened())
+  if (IsDevToolsOpened() || pending_devtools_open_)
     CloseDevTools();
   else
     OpenDevTools(nullptr);
@@ -4623,9 +4716,28 @@ void WebContents::InspectElement(int x, int y) {
   if (!enable_devtools_ || !native_lifecycle_->inspectable_web_contents_)
     return;
 
+  // With an open pending, inspect once it runs, with the caller's options and
+  // owner window, rather than opening differently now.
+  if (pending_devtools_open_) {
+    pending_devtools_open_->inspect_point = gfx::Point(x, y);
+    return;
+  }
+
+  // Not OpenDevTools(): that may defer, and InspectElement() below needs the
+  // DevTools agent to exist now or it silently does nothing.
   if (!GetDevToolsWebContents())
-    OpenDevTools(nullptr);
+    ShowDevToolsNow(std::nullopt, true, std::string());
   native_lifecycle_->inspectable_web_contents_->InspectElement(x, y);
+}
+
+void WebContents::AttachDevToolsTo(
+    const scoped_refptr<content::DevToolsAgentHost>& host) {
+  if (pending_devtools_open_) {
+    pending_devtools_open_->attach_agent_id = host->GetId();
+    return;
+  }
+  ShowDevToolsNow(std::nullopt, true, std::string());
+  native_lifecycle_->inspectable_web_contents_->AttachTo(host);
 }
 
 void WebContents::InspectSharedWorkerById(const std::string& workerId) {
@@ -4639,8 +4751,7 @@ void WebContents::InspectSharedWorkerById(const std::string& workerId) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeSharedWorker) {
       if (agent_host->GetId() == workerId) {
-        OpenDevTools(nullptr);
-        native_lifecycle_->inspectable_web_contents_->AttachTo(agent_host);
+        AttachDevToolsTo(agent_host);
         break;
       }
     }
@@ -4676,8 +4787,7 @@ void WebContents::InspectSharedWorker() {
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeSharedWorker) {
-      OpenDevTools(nullptr);
-      native_lifecycle_->inspectable_web_contents_->AttachTo(agent_host);
+      AttachDevToolsTo(agent_host);
       break;
     }
   }
@@ -4693,8 +4803,7 @@ void WebContents::InspectServiceWorker() {
   for (const auto& agent_host : content::DevToolsAgentHost::GetOrCreateAll()) {
     if (agent_host->GetType() ==
         content::DevToolsAgentHost::kTypeServiceWorker) {
-      OpenDevTools(nullptr);
-      native_lifecycle_->inspectable_web_contents_->AttachTo(agent_host);
+      AttachDevToolsTo(agent_host);
       break;
     }
   }
@@ -6746,10 +6855,13 @@ void WebContents::InitializeJS(v8::Isolate* const isolate) {
 WebContents* WebContents::CreateAndTake(
     v8::Isolate* isolate,
     std::unique_ptr<content::WebContents> web_contents,
-    Type type) {
+    Type type,
+    bool expects_owner_window) {
   auto* contents = cppgc::MakeGarbageCollected<WebContents>(
       isolate->GetCppHeap()->GetAllocationHandle(), isolate,
       std::move(web_contents), type);
+  // Before InitializeJS(), which emits 'web-contents-created'.
+  contents->owned_by_window_ = expects_owner_window;
   contents->InitializeJS(isolate);
   return contents;
 }
