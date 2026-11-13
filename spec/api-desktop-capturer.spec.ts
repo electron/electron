@@ -3,9 +3,8 @@ import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit, isWayland } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, isWayland, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 function getSourceTypes(): ('window' | 'screen')[] {
@@ -15,7 +14,22 @@ function getSourceTypes(): ('window' | 'screen')[] {
   return ['window', 'screen'];
 }
 
-describe('desktopCapturer', { tags: ['serial'] }, () => {
+// On Windows getSources() leaves out any window that takes more than 50ms to
+// answer WM_NULL, so a window a test just created can be missing from a single
+// listing. List again until |isListed| is satisfied and return that listing.
+async function getSourcesUntil(
+  options: Electron.SourcesOptions,
+  isListed: (sources: Electron.DesktopCapturerSource[]) => boolean
+) {
+  let sources: Electron.DesktopCapturerSource[] = [];
+  await waitUntil(async () => {
+    sources = await desktopCapturer.getSources(options);
+    return isListed(sources);
+  });
+  return sources;
+}
+
+describe('desktopCapturer', { tags: ['serial'], retry: 0 }, () => {
   it('should return a non-empty array of sources', async () => {
     const sources = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources).toBeInstanceOf(Array);
@@ -168,10 +182,9 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
     await wFocused;
 
     const mediaSourceId = w2.getMediaSourceId();
-    const sources = await desktopCapturer.getSources({
-      types: ['window'],
-      thumbnailSize: { width: 0, height: 0 }
-    });
+    const sources = await getSourcesUntil({ types: ['window'], thumbnailSize: { width: 0, height: 0 } }, (listed) =>
+      listed.some((source) => source.id === mediaSourceId)
+    );
     w2.destroy();
 
     expect(sources).toBeInstanceOf(Array);
@@ -243,6 +256,20 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
       }
     };
 
+    // Lists our windows in the order DesktopCapturer.getSources() returns
+    // them, i.e. from foreground to background. Other windows are left out,
+    // since one of them may be on top of ours.
+    const listOurWindows = async () => {
+      const ours = wList.map((w) => w.getMediaSourceId());
+      const keepOurs = (sources: Electron.DesktopCapturerSource[]) =>
+        sources.map((source) => source.id).filter((id) => ours.includes(id));
+      const sources = await getSourcesUntil(
+        { types: ['window'], thumbnailSize: { width: 0, height: 0 } },
+        (listed) => keepOurs(listed).length === ours.length
+      );
+      return keepOurs(sources);
+    };
+
     try {
       for (let i = 0; i < MAX_WIN; i++) {
         const w = new BrowserWindow({ show: false, width: 100, height: 100 });
@@ -264,54 +291,38 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
 
       // At this point our windows should be showing from bottom to top.
 
-      // DesktopCapturer.getSources() returns sources sorted from foreground to
-      // background, i.e. top to bottom.
-      let sources = await desktopCapturer.getSources({
-        types: ['window'],
-        thumbnailSize: { width: 0, height: 0 }
-      });
-
-      expect(sources).toBeInstanceOf(Array);
-      expect(sources).not.toHaveLength(0);
-      expect(sources.length).toBeGreaterThanOrEqual(MAX_WIN);
-
-      // Only keep our windows, they must be in the MAX_WIN first windows.
-      sources.splice(MAX_WIN, sources.length - MAX_WIN);
-      expect(sources.length).toBe(MAX_WIN);
-      expect(sources.length).toBe(wList.length);
-
-      // Check that the sources and wList are sorted in the reverse order.
+      // Check that our windows are listed in the reverse order of wList.
       // If they're not, skip remaining checks because either focus or
       // window placement are not reliable in the running test environment.
       const wListReversed = wList.slice().reverse();
-      const proceed = sources.every((source, index) => source.id === wListReversed[index].getMediaSourceId());
+      const proceed = (await listOurWindows()).every((id, index) => id === wListReversed[index].getMediaSourceId());
       if (!proceed) return;
 
       // Move windows so wList is sorted from foreground to background.
       for (const [i, w] of wList.entries()) {
         if (i < wList.length - 1) {
           const next = wList[wList.length - 1];
-          w.focus();
+          // focus() raises the window. Let that finish before moveAbove() so
+          // the raise can't land after the move and undo it.
+          if (!w.isFocused()) {
+            const wFocused = once(w, 'focus');
+            w.focus();
+            await wFocused;
+          }
           w.moveAbove(next.getMediaSourceId());
-          // Ensure the window has time to move.
-          await setTimeout(2000);
         }
       }
 
-      sources = await desktopCapturer.getSources({
-        types: ['window'],
-        thumbnailSize: { width: 0, height: 0 }
-      });
-
-      sources.splice(MAX_WIN, sources.length);
-      expect(sources.length).toBe(MAX_WIN);
-      expect(sources.length).toBe(wList.length);
-
-      // Check that the sources and wList are sorted in the same order.
-      for (const [index, source] of sources.entries()) {
-        const wID = wList[index].getMediaSourceId();
-        expect(source.id).toBe(wID);
-      }
+      // Check that our windows are listed in the same order as wList. The
+      // window server may apply the new stacking order a moment later, so
+      // poll for it rather than sleeping a fixed amount.
+      const expected = wList.map((w) => w.getMediaSourceId());
+      let order: string[] = [];
+      await waitUntil(async () => {
+        order = await listOurWindows();
+        return order.join() === expected.join();
+      }).catch(() => {});
+      expect(order).toEqual(expected);
     } finally {
       destroyWindows();
     }
@@ -332,11 +343,11 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
         title: 'desktop-capturer-test-window'
       });
       await w.loadURL('about:blank');
-      const sources = await desktopCapturer.getSources({
-        types: ['window'],
-        fetchWindowIcons: true
-      });
-      testSource = sources.find((s) => s.name === 'desktop-capturer-test-window');
+      const isTestWindow = (s: Electron.DesktopCapturerSource) => s.name === 'desktop-capturer-test-window';
+      const sources = await getSourcesUntil({ types: ['window'], fetchWindowIcons: true }, (listed) =>
+        listed.some(isTestWindow)
+      ).catch(() => []);
+      testSource = sources.find(isTestWindow);
       appIcon = testSource?.appIcon;
     });
 
