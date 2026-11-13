@@ -936,6 +936,28 @@ content::RenderFrameHost* GetRenderFrameHost(
 
   return frame_host;
 }
+
+// Returns a new Event object for a frame event. Its `frame` property lazily
+// resolves |render_frame_host| to a WebFrameMain, or is null when the event has
+// no frame. The internal `frameToken` property is read by
+// guest-view-manager.ts so that <webview> events can carry it.
+v8::Local<v8::Object> CreateFrameEvent(
+    v8::Isolate* isolate,
+    content::RenderFrameHost* render_frame_host,
+    bool is_main_frame) {
+  v8::Local<v8::Object> event_object = gin_helper::internal::Event::New(isolate)
+                                           ->GetWrapper(isolate)
+                                           .ToLocalChecked();
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("isMainFrame", is_main_frame);
+  if (render_frame_host) {
+    dict.SetGetter("frame", render_frame_host);
+    dict.Set("frameToken", render_frame_host->GetFrameToken().ToString());
+  } else {
+    dict.Set("frame", v8::Local<v8::Value>(v8::Null(isolate)));
+  }
+  return event_object;
+}
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -3265,8 +3287,15 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
       render_frame_host->GetProcess()->GetID().GetUnsafeValue();
   int frame_routing_id = render_frame_host->GetRoutingID();
   auto weak_this = WeakRef();
-  Emit("did-frame-finish-load", is_main_frame, frame_process_id,
-       frame_routing_id);
+  {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Object> event =
+        CreateFrameEvent(isolate, render_frame_host, is_main_frame);
+    // TODO(samuelmaddock): remove the deprecated positional arguments.
+    EmitWithoutEvent("did-frame-finish-load", event, is_main_frame,
+                     frame_process_id, frame_routing_id);
+  }
 
   // ⚠️WARNING!⚠️
   // Emit() triggers JS which can call destroy() on |this|. It's not safe to
@@ -3307,11 +3336,30 @@ void WebContents::EmitDidFailLoad(int error_code,
   const std::string& spec = url.possibly_invalid_spec();
   native_lifecycle_->load_url_promises_.DidFailLoad(
       error_code, error_description, spec, is_main_frame);
+
+  // Look the frame up by id, as it may have been destroyed by JS (e.g. a
+  // 'did-fail-provisional-load' listener) since the ids were taken.
+  content::RenderFrameHost* render_frame_host =
+      frame_process_id == -1 ? nullptr
+                             : content::RenderFrameHost::FromID(
+                                   frame_process_id, frame_routing_id);
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> event =
+      CreateFrameEvent(isolate, render_frame_host, is_main_frame);
+  gin_helper::Dictionary dict(isolate, event);
+  dict.Set("errorCode", error_code);
+  dict.Set("errorDescription", error_description);
+  dict.Set("url", spec);
+
+  // TODO(samuelmaddock): remove the deprecated positional arguments.
   if (frame_process_id == -1) {
-    Emit("did-fail-load", error_code, error_description, spec, is_main_frame);
+    EmitWithoutEvent("did-fail-load", event, error_code, error_description,
+                     spec, is_main_frame);
   } else {
-    Emit("did-fail-load", error_code, error_description, url, is_main_frame,
-         frame_process_id, frame_routing_id);
+    EmitWithoutEvent("did-fail-load", event, error_code, error_description, url,
+                     is_main_frame, frame_process_id, frame_routing_id);
   }
 }
 
@@ -3383,6 +3431,10 @@ bool WebContents::EmitNavigationEvent(
   dict.Set("routingId", frame_routing_id);
   dict.SetGetter("frame", frame_host);
   dict.SetGetter("initiator", initiator_frame_host);
+  // Internal, read by guest-view-manager.ts for <webview> events. Taken from
+  // the same (possibly speculative) frame host as |frame_routing_id|.
+  if (frame_host)
+    dict.Set("frameToken", frame_host->GetFrameToken().ToString());
 
   EmitWithoutEvent(event_name, event_object, url, is_same_document,
                    is_main_frame, frame_process_id, frame_routing_id);
@@ -3608,8 +3660,14 @@ void WebContents::DidFinishNavigation(
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
       native_lifecycle_->load_url_promises_.DidNavigateInPage();
-      Emit("did-navigate-in-page", url, is_main_frame, frame_process_id,
-           frame_routing_id);
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      v8::HandleScope handle_scope(isolate);
+      v8::Local<v8::Object> event =
+          CreateFrameEvent(isolate, frame_host, is_main_frame);
+      gin_helper::Dictionary(isolate, event).Set("url", url);
+      // TODO(samuelmaddock): remove the deprecated positional arguments.
+      EmitWithoutEvent("did-navigate-in-page", event, url, is_main_frame,
+                       frame_process_id, frame_routing_id);
     } else {
       const net::HttpResponseHeaders* http_response =
           navigation_handle->GetResponseHeaders();
@@ -3619,8 +3677,20 @@ void WebContents::DidFinishNavigation(
         http_status_text = http_response->GetStatusText();
         http_response_code = http_response->response_code();
       }
-      Emit("did-frame-navigate", url, http_response_code, http_status_text,
-           is_main_frame, frame_process_id, frame_routing_id);
+      {
+        v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Local<v8::Object> event =
+            CreateFrameEvent(isolate, frame_host, is_main_frame);
+        gin_helper::Dictionary dict(isolate, event);
+        dict.Set("url", url);
+        dict.Set("httpResponseCode", http_response_code);
+        dict.Set("httpStatusText", http_status_text);
+        // TODO(samuelmaddock): remove the deprecated positional arguments.
+        EmitWithoutEvent("did-frame-navigate", event, url, http_response_code,
+                         http_status_text, is_main_frame, frame_process_id,
+                         frame_routing_id);
+      }
       if (is_main_frame) {
         // Ensure zoom is updated before JS handlers see the event.
         if (auto* zc = GetZoomController())
@@ -3647,8 +3717,19 @@ void WebContents::DidFinishNavigation(
     auto url = navigation_handle->GetURL();
     int code = navigation_handle->GetNetErrorCode();
     auto description = net::ErrorToShortString(code);
-    Emit("did-fail-provisional-load", code, description, url, is_main_frame,
-         frame_process_id, frame_routing_id);
+    {
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      v8::HandleScope handle_scope(isolate);
+      v8::Local<v8::Object> event =
+          CreateFrameEvent(isolate, frame_host, is_main_frame);
+      gin_helper::Dictionary dict(isolate, event);
+      dict.Set("errorCode", code);
+      dict.Set("errorDescription", description);
+      dict.Set("url", url);
+      // TODO(samuelmaddock): remove the deprecated positional arguments.
+      EmitWithoutEvent("did-fail-provisional-load", event, code, description,
+                       url, is_main_frame, frame_process_id, frame_routing_id);
+    }
 
     // Do not emit "did-fail-load" for canceled requests.
     if (code != net::ERR_ABORTED) {
