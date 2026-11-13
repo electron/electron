@@ -114,7 +114,6 @@ declare namespace NodeJS {
 
   interface PowerMonitorBinding extends Electron.PowerMonitor {
     createPowerMonitor(): PowerMonitorBinding;
-    setListeningForShutdown(listening: boolean): void;
   }
 
   interface ServiceWorkerMainBinding {

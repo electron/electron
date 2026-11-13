@@ -16,6 +16,13 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (47.0)
 
+### Behavior Changed: `shutdown` event on Linux
+
+The [`powerMonitor`](api/power-monitor.md) `shutdown` event is now also emitted
+when the desktop portal reports a logout, not only for a system shutdown or
+reboot. If no handler calls `e.preventDefault()`, Electron now quits the
+application itself instead of waiting for the system to terminate it.
+
 ### Removed: `level`, `message`, `line`, and `sourceId` arguments in `console-message` event on `WebContents`
 
 The positional arguments of the `console-message` event on `WebContents`,

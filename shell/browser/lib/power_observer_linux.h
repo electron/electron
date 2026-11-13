@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/power_monitor/power_observer.h"
@@ -17,6 +16,8 @@
 
 namespace electron {
 
+// Takes a logind sleep delay lock and turns PrepareForSleep into suspend and
+// resume events. Session ends are handled by SessionEndListenerLinux.
 class PowerObserverLinux {
  public:
   explicit PowerObserverLinux(base::PowerSuspendObserver* suspend_observer);
@@ -26,29 +27,22 @@ class PowerObserverLinux {
   PowerObserverLinux(const PowerObserverLinux&) = delete;
   PowerObserverLinux& operator=(const PowerObserverLinux&) = delete;
 
-  void SetShutdownHandler(base::RepeatingCallback<bool()> should_shutdown);
-
  private:
   void BlockSleep();
   void UnblockSleep();
-  void BlockShutdown();
-  void UnblockShutdown();
 
   void OnLoginServiceAvailable(bool available);
-  void OnInhibitResponse(base::ScopedFD* scoped_fd, dbus::Response* response);
+  void OnInhibitResponse(dbus::Response* response);
   void OnPrepareForSleep(dbus::Signal* signal);
-  void OnPrepareForShutdown(dbus::Signal* signal);
   void OnSignalConnected(const std::string& interface,
                          const std::string& signal,
                          bool success);
 
-  base::RepeatingCallback<bool()> should_shutdown_;
   raw_ptr<base::PowerSuspendObserver> suspend_observer_ = nullptr;
 
   scoped_refptr<dbus::ObjectProxy> logind_;
   std::string lock_owner_name_;
   base::ScopedFD sleep_lock_;
-  base::ScopedFD shutdown_lock_;
   base::WeakPtrFactory<PowerObserverLinux> weak_ptr_factory_{this};
 };
 
