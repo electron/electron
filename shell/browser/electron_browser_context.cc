@@ -1280,17 +1280,15 @@ ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::DictValue options) {
-  auto& map = ContextMap();
-  const PartitionKey key(partition, in_memory);
-  if (auto it = map.find(key); it != map.end() && it->second)
-    return it->second.get();
   // In-memory sessions are off-the-record contexts of the default one.
   ElectronBrowserContext* original_context =
       in_memory ? GetDefaultBrowserContext() : nullptr;
-  auto& context = map[key];
-  context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
-                                           original_context,
-                                           std::move(options)});
+  auto& context = ContextMap()[PartitionKey(partition, in_memory)];
+  if (!context) {
+    context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
+                                             original_context,
+                                             std::move(options)});
+  }
   return context.get();
 }
 
