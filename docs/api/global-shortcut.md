@@ -61,6 +61,10 @@ portal, which changes the module's behavior in several ways:
   System Settings).
 * **Bindings persist across relaunches**, keyed by the app's portal identity: after the user accepts once,
   registering the same shortcuts on later launches re-binds them silently.
+* **Shortcuts carry a description.** `register()` accepts an object so an app can label a shortcut with
+  what it does; that text is what KDE and GNOME show in their shortcut settings. The description is not
+  part of a shortcut's identity, so changing it relabels the existing entry instead of adding a new one.
+  It only takes effect when the portal binds the shortcut, i.e. at startup or on the next launch.
 * **The portal path is enabled by default.** The `GlobalShortcutsPortal` and
   `GlobalShortcutsPortalPreferredTrigger` features are on by default, so no feature flags are needed —
   including on GNOME (see [#52221](https://github.com/electron/electron/pull/52221)).
@@ -80,7 +84,8 @@ added:
 
 Returns:
 
-* `accelerator` string - The accelerator, as it was passed to `register()`.
+* `accelerator` string - The accelerator, as it was passed to `register()`. When the shortcut was
+  registered with an object, this is its `accelerator` property.
 * `bound` boolean - Whether the portal accepted the bind request.
 
 Emitted on Linux Wayland when the `org.freedesktop.portal.GlobalShortcuts` portal resolves a
@@ -101,21 +106,25 @@ already authoritative.
 
 The `globalShortcut` module has the following methods:
 
-### `globalShortcut.register(accelerator, callback)`
+### `globalShortcut.register(shortcut, callback)`
 
 <!--
 ```YAML history
 added:
   - pr-url: https://github.com/electron/electron/pull/534
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55167
+    description: "The `shortcut` parameter now accepts a `ShortcutRegistration` object in addition to an accelerator string."
 ```
 -->
 
-* `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
+* `shortcut` (string | [ShortcutRegistration](structures/shortcut-registration.md)) - An
+  [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut, or an object describing it.
 * `callback` Function
 
 Returns `boolean` - Whether or not the shortcut was registered successfully.
 
-Registers a global shortcut of `accelerator`. The `callback` is called when
+Registers a global shortcut of `shortcut`. The `callback` is called when
 the registered shortcut is pressed by the user.
 
 When the accelerator is already taken by other applications, this call will
@@ -134,19 +143,24 @@ the app has been authorized as a [trusted accessibility client](https://develope
 * "Media Previous Track"
 * "Media Stop"
 
-### `globalShortcut.registerAll(accelerators, callback)`
+### `globalShortcut.registerAll(shortcuts, callback)`
 
 <!--
 ```YAML history
 added:
   - pr-url: https://github.com/electron/electron/pull/15542
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55167
+    description: "The `shortcuts` parameter now accepts `ShortcutRegistration` objects in addition to accelerator strings."
 ```
 -->
 
-* `accelerators` string[] - An array of [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcuts.
+* `shortcuts` (string | [ShortcutRegistration](structures/shortcut-registration.md))[] - An array of
+  [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcuts, or objects describing them.
+  Strings and objects may be mixed in the same array.
 * `callback` Function
 
-Registers a global shortcut of all `accelerator` items in `accelerators`. The `callback` is called when any of the registered shortcuts are pressed by the user.
+Registers a global shortcut of all `shortcut` items in `shortcuts`. The `callback` is called when any of the registered shortcuts are pressed by the user.
 
 When a given accelerator is already taken by other applications, this call will
 silently fail. This behavior is intended by operating systems, since they don't
@@ -160,35 +174,45 @@ the app has been authorized as a [trusted accessibility client](https://develope
 * "Media Previous Track"
 * "Media Stop"
 
-### `globalShortcut.isRegistered(accelerator)`
+### `globalShortcut.isRegistered(shortcut)`
 
 <!--
 ```YAML history
 added:
   - pr-url: https://github.com/electron/electron/pull/534
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55167
+    description: "The `shortcut` parameter now accepts a `ShortcutRegistration` object in addition to an accelerator string."
 ```
 -->
 
-* `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
+* `shortcut` (string | [ShortcutRegistration](structures/shortcut-registration.md)) - An
+  [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut, or an object describing it.
+  The object's `description`, if any, is ignored.
 
-Returns `boolean` - Whether this application has registered `accelerator`.
+Returns `boolean` - Whether this application has registered `shortcut`.
 
 When the accelerator is already taken by other applications, this call will
 still return `false`. This behavior is intended by operating systems, since they
 don't want applications to fight for global shortcuts.
 
-### `globalShortcut.unregister(accelerator)`
+### `globalShortcut.unregister(shortcut)`
 
 <!--
 ```YAML history
 added:
   - pr-url: https://github.com/electron/electron/pull/534
+changes:
+  - pr-url: https://github.com/electron/electron/pull/55167
+    description: "The `shortcut` parameter now accepts a `ShortcutRegistration` object in addition to an accelerator string."
 ```
 -->
 
-* `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
+* `shortcut` (string | [ShortcutRegistration](structures/shortcut-registration.md)) - An
+  [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut, or an object describing it.
+  The object's `description`, if any, is ignored.
 
-Unregisters the global shortcut of `accelerator`.
+Unregisters the global shortcut of `shortcut`.
 
 ### `globalShortcut.unregisterAll()`
 
