@@ -1,0 +1,275 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Etienne Pierre-doray <etiennep@chromium.org>
+Date: Mon, 19 Oct 2026 11:47:27 -0700
+Subject: [occlusion] Fix inverted manual window occlusion on window switches
+ on Mac
+
+WebContentsOcclusionCheckerMac checks whether a Chrome window is covered
+by another Chrome window by walking -[NSApplication orderedWindows] from
+front to back when main-window or window-ordering notifications fire.
+This was recently re-enabled on macOS 26 (https://crrev.com/c/8447934)
+and updated to recognize glass-frame browser windows as occluders
+(https://crrev.com/c/8372811).
+
+However, -[NSApplication orderedWindows] does not always reflect what is
+actually in front on screen:
+- During window switches (e.g. Cmd+`, Mission Control, Dock),
+  NSWindowDidBecomeMainNotification can fire before orderedWindows
+  updates to the new z-order. For two overlapping same-size windows,
+  this inverts their occlusion state: the newly active window is marked
+  kOccluded and the covered inactive window is marked kVisible.
+- In Stage Manager single-window ("One at a Time") mode, macOS keeps
+  inactive strip windows ahead of the active stage window in
+  orderedWindows with the same NSWindow frame.
+- Windows on inactive Spaces or hidden in the Stage Manager strip remain
+  in orderedWindows with isVisible == YES even though macOS reports them
+  as occluded (NSWindowOcclusionStateVisible == 0).
+
+Fix:
+1. Ignore windows that macOS itself reports as occluded
+   (!NSWindowOcclusionStateVisible) in -windowCanOccludeOtherWindows:.
+2. In -isWindowOccluded:windowList:, treat an active (key/main) window
+   as in front of inactive windows at the same NSWindowLevel regardless
+   of their relative order in orderedWindows.
+
+Bug: b:572749681, 448103577
+Change-Id: Ia8d888b76013f6d57f491488a04c657dcc97ccdd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8589157
+Reviewed-by: Steven Luong <stluong@chromium.org>
+Commit-Queue: Etienne Pierre-Doray <etiennep@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722170}
+
+diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
+index 28393a36200d6ffa5aa1012ff468c9b60261f33d..acfa4806803d4557ba092cda21c4bb551046ce45 100644
+--- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
++++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
+@@ -488,6 +488,9 @@ - (void)performOcclusionStateUpdates {
+ // gfx::IsWindowVisibleAndFullyOpaque, which the Windows occlusion tracker
+ // uses to ignore translucent layered windows and WS_EX_TRANSPARENT windows.
+ - (BOOL)windowCanOccludeOtherWindows:(NSWindow*)window {
++  if (!([window occlusionState] & NSWindowOcclusionStateVisible)) {
++    return NO;
++  }
+   if ([window alphaValue] < 1.0 || [window ignoresMouseEvents]) {
+     return NO;
+   }
+@@ -527,6 +530,10 @@ - (BOOL)isWindowOccluded:(NSWindow*)window
+   }
+ 
+   NSRect windowFrame = [window frame];
++  BOOL windowIsActive = [window isKeyWindow] || [window isMainWindow];
++  BOOL windowCanBecomeActive =
++      [window canBecomeKeyWindow] || [window canBecomeMainWindow];
++  BOOL seenWindow = NO;
+ 
+   // Determine if there's a window occluding `window`.
+   for (NSWindow* nextWindow in windowList) {
+@@ -534,9 +541,17 @@ - (BOOL)isWindowOccluded:(NSWindow*)window
+       continue;
+     }
+ 
+-    // If we come to our window in the list, we're done.
+     if (nextWindow == window) {
+-      break;
++      if (windowIsActive || !windowCanBecomeActive) {
++        break;
++      }
++      // `windowList` (from `-[NSApplication orderedWindows]`) can be stale when
++      // a window becomes active before WindowServer updates the z-order, or in
++      // Stage Manager where strip windows can precede the active stage window.
++      // Continue looping through `windowList` in case an active key/main window
++      // that is actually in front of `window` appears later in the list.
++      seenWindow = YES;
++      continue;
+     }
+ 
+     // If the next window is moving or resizing, treat it as if it doesn't
+@@ -548,6 +563,30 @@ - (BOOL)isWindowOccluded:(NSWindow*)window
+       continue;
+     }
+ 
++    BOOL nextWindowIsActive =
++        [nextWindow isKeyWindow] || [nextWindow isMainWindow];
++
++    // If `nextWindow` appears after `window` in `windowList`, it is behind
++    // `window` unless `window` is inactive and `nextWindow` is the active
++    // key/main window at the same or higher window level (which happens when
++    // NSWindowDidBecomeMainNotification fires before -[NSApplication
++    // orderedWindows] reflects the new z-order, e.g. during Cmd+` window
++    // cycling or animated window transitions).
++    if (seenWindow &&
++        (!nextWindowIsActive || [nextWindow level] < [window level])) {
++      continue;
++    }
++
++    // Conversely, an active key/main window cannot be covered by an inactive
++    // window of the same application at the same or lower window level, even
++    // if WindowServer places the inactive window ahead in -[NSApplication
++    // orderedWindows] (e.g. Stage Manager strip windows or Cmd+` window
++    // cycling).
++    if (windowIsActive && !nextWindowIsActive &&
++        [nextWindow level] <= [window level]) {
++      continue;
++    }
++
+     // Skip windows that can't visually cover the web contents beneath them.
+     if (![self windowCanOccludeOtherWindows:nextWindow]) {
+       continue;
+diff --git a/content/app_shim_remote_cocoa/window_occlusion_browsertest_mac.mm b/content/app_shim_remote_cocoa/window_occlusion_browsertest_mac.mm
+index 48962d538fb805556925eca04eda4f6586c3165b..96a9b0cd8a8bc7258e3891f3e064be54737bc230 100644
+--- a/content/app_shim_remote_cocoa/window_occlusion_browsertest_mac.mm
++++ b/content/app_shim_remote_cocoa/window_occlusion_browsertest_mac.mm
+@@ -38,6 +38,9 @@ @interface WebContentsHostWindowForOcclusionTesting : NSWindow {
+   BOOL _miniaturizedForTesting;
+ }
+ @property(assign, nonatomic) BOOL occludedForTesting;
++@property(assign, nonatomic) BOOL keyWindowForTesting;
++@property(assign, nonatomic) BOOL mainWindowForTesting;
++@property(assign, nonatomic) BOOL canBecomeKeyOrMainForTesting;
+ @property(assign, nonatomic) BOOL modifyingChildWindowList;
+ @property(assign, nonatomic) BOOL forceHiddenForTesting;
+ @end
+@@ -45,6 +48,9 @@ @interface WebContentsHostWindowForOcclusionTesting : NSWindow {
+ @implementation WebContentsHostWindowForOcclusionTesting
+ 
+ @synthesize occludedForTesting = _occludedForTesting;
++@synthesize keyWindowForTesting = _keyWindowForTesting;
++@synthesize mainWindowForTesting = _mainWindowForTesting;
++@synthesize canBecomeKeyOrMainForTesting = _canBecomeKeyOrMainForTesting;
+ @synthesize modifyingChildWindowList = _modifyingChildWindowList;
+ @synthesize forceHiddenForTesting = _forceHiddenForTesting;
+ 
+@@ -52,6 +58,24 @@ - (NSWindowOcclusionState)occlusionState {
+   return _occludedForTesting ? 0 : NSWindowOcclusionStateVisible;
+ }
+ 
++- (BOOL)isKeyWindow {
++  return _keyWindowForTesting || [super isKeyWindow];
++}
++
++- (BOOL)isMainWindow {
++  return _mainWindowForTesting || [super isMainWindow];
++}
++
++- (BOOL)canBecomeKeyWindow {
++  return _canBecomeKeyOrMainForTesting || _keyWindowForTesting ||
++         [super canBecomeKeyWindow];
++}
++
++- (BOOL)canBecomeMainWindow {
++  return _canBecomeKeyOrMainForTesting || _mainWindowForTesting ||
++         [super canBecomeMainWindow];
++}
++
+ - (void)miniaturize:(id)sender {
+   // Miniaturizing a window doesn't immediately take effect (isMiniaturized
+   // returns false) so fake it with a flag and removal from window list.
+@@ -464,7 +488,11 @@ void InitWindowB(NSRect window_frame = NSZeroRect) {
+     }
+     [window_b_ setFrame:window_frame display:NO];
+ 
++    [window_b_web_contents_view_cocoa_ setHost:&host_b_];
++
+     OrderWindowFront(window_b_);
++
++    SetWindowBWebContentsVisibility(remote_cocoa::mojom::Visibility::kVisible);
+   }
+ 
+   void OrderWindowFront(NSWindow* window) {
+@@ -545,8 +573,18 @@ void SetWindowAWebContentsVisibility(
+     host_a_.OnWindowVisibilityChanged(visibility);
+   }
+ 
++  remote_cocoa::mojom::Visibility WindowBWebContentsVisibility() {
++    return host_b_.WebContentsVisibility();
++  }
++
++  void SetWindowBWebContentsVisibility(
++      remote_cocoa::mojom::Visibility visibility) {
++    host_b_.OnWindowVisibilityChanged(visibility);
++  }
++
+   void TearDownInProcessBrowserTestFixture() override {
+     [window_a_web_contents_view_cocoa_ setHost:nullptr];
++    [window_b_web_contents_view_cocoa_ setHost:nullptr];
+   }
+ 
+   WebContentsHostWindowForOcclusionTesting* __strong window_a_;
+@@ -557,6 +595,7 @@ void TearDownInProcessBrowserTestFixture() override {
+  private:
+   base::test::ScopedFeatureList features_;
+   WebContentsNSViewHostStub host_a_;
++  WebContentsNSViewHostStub host_b_;
+ };
+ 
+ // Tests that we correctly disallow unsupported macOS versions.
+@@ -662,12 +701,68 @@ void TearDownInProcessBrowserTestFixture() override {
+   window_b_.ignoresMouseEvents = NO;
+   expect_window_a_visibility(remote_cocoa::mojom::Visibility::kOccluded);
+ 
++  // A window_b that macOS itself reports as occluded (e.g. a parked Stage
++  // Manager strip window) cannot occlude window_a.
++  [window_b_ setOccludedForTesting:YES];
++  expect_window_a_visibility(remote_cocoa::mojom::Visibility::kVisible);
++  [window_b_ setOccludedForTesting:NO];
++  expect_window_a_visibility(remote_cocoa::mojom::Visibility::kOccluded);
++
+   // As does a non-opaque window_b with a clear background.
+   window_b_.opaque = NO;
+   window_b_.backgroundColor = NSColor.clearColor;
+   expect_window_a_visibility(remote_cocoa::mojom::Visibility::kVisible);
+ }
+ 
++// Checks that when a window becomes the active key/main window while an
++// inactive window of the same application still precedes it in -[NSApplication
++// orderedWindows] (e.g. during animated window transitions, Cmd+` window
++// cycling, or Stage Manager), the active window is marked kVisible and the
++// inactive window covered by it is marked kOccluded.
++IN_PROC_BROWSER_TEST_F(WindowOcclusionBrowserTestMac,
++                       ManualOcclusionDetectionDoesNotOccludeActiveWindow) {
++  InitWindowA();
++  [window_a_ setCanBecomeKeyOrMainForTesting:YES];
++
++  // Place window_b ahead of window_a in orderedWindows with an identical frame
++  // as the initially active window.
++  InitWindowB(window_a_.frame);
++  [window_b_ setCanBecomeKeyOrMainForTesting:YES];
++  [window_b_ setKeyWindowForTesting:YES];
++  [window_b_ setMainWindowForTesting:YES];
++  WaitForOcclusionUpdate();
++  EXPECT_EQ(WindowAWebContentsVisibility(),
++            remote_cocoa::mojom::Visibility::kOccluded);
++  EXPECT_EQ(WindowBWebContentsVisibility(),
++            remote_cocoa::mojom::Visibility::kVisible);
++
++  // Simulate focus switching from window_b to window_a while inactive window_b
++  // remains ahead of window_a in -[NSApplication orderedWindows].
++  [window_b_ setKeyWindowForTesting:NO];
++  [window_b_ setMainWindowForTesting:NO];
++  [window_a_ setKeyWindowForTesting:YES];
++  [window_a_ setMainWindowForTesting:YES];
++  PostNotification(NSWindowDidResignMainNotification, window_b_);
++  PostNotification(NSWindowDidBecomeMainNotification, window_a_);
++  EXPECT_EQ(WindowAWebContentsVisibility(),
++            remote_cocoa::mojom::Visibility::kVisible);
++  EXPECT_EQ(WindowBWebContentsVisibility(),
++            remote_cocoa::mojom::Visibility::kOccluded);
++
++  // When focus switches back to window_b while still ahead of window_a,
++  // window_a should be marked occluded again and window_b should be visible.
++  [window_a_ setKeyWindowForTesting:NO];
++  [window_a_ setMainWindowForTesting:NO];
++  [window_b_ setKeyWindowForTesting:YES];
++  [window_b_ setMainWindowForTesting:YES];
++  PostNotification(NSWindowDidResignMainNotification, window_a_);
++  PostNotification(NSWindowDidBecomeMainNotification, window_b_);
++  EXPECT_EQ(WindowAWebContentsVisibility(),
++            remote_cocoa::mojom::Visibility::kOccluded);
++  EXPECT_EQ(WindowBWebContentsVisibility(),
++            remote_cocoa::mojom::Visibility::kVisible);
++}
++
+ // Checks manual occlusion detection as windows change display order.
+ IN_PROC_BROWSER_TEST_F(WindowOcclusionBrowserTestMac,
+                        ManualOcclusionDetectionOnWindowOrderChange) {
