@@ -57,8 +57,7 @@ class PreloadRealmGlobalScope final : public ScriptWrappable,
   String UserAgent() const override;
   HttpsState GetHttpsState() const override;
   ResourceFetcher* Fetcher() override;
-  void ExceptionThrown(ErrorEvent* error_event,
-                       SanitizeScriptErrors sanitize_script_errors) override;
+  void ExceptionThrown(ErrorEvent* error_event) override;
   void AddInspectorIssue(AuditsIssue issue) override;
   EventTarget* ErrorEventTarget() override;
   FrameOrWorkerScheduler* GetScheduler() override;
