@@ -59,7 +59,7 @@ index 699adf87a0ef6288b6b3f719d36737392e83ffd8..d58c847483b261321595e40890021ffa
    // Called when the browser has shown the popup.
    void DidShowPopup();
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 5c3808bac88a615eca1176874ea2e28ebe050ae6..0e6d2b1e178f569f57af165d2d53850f8e3c58ee 100644
+index 292c25f2a746aa883bea8a678e8e32c6745d81d8..299ee122d9c1350b2881527983bd44e41d1b8d40 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -1127,6 +1127,10 @@ WebPagePopupImpl* WebViewImpl::OpenPagePopup(PagePopupClient* client) {
