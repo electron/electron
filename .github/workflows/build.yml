@@ -626,13 +626,60 @@ jobs:
     name: GitHub Actions Completed
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     needs: [docs-only, checkout-macos, checkout-linux, checkout-windows, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-x64-ubsan, linux-arm64, build-siso-macos, build-siso-linux, build-siso-windows, windows-x64, windows-arm64]
     if: always() && github.repository == 'electron/electron'
+    # Bounds the wait for Apply Patches below
+    timeout-minutes: 180
     steps:
     - name: Fail if any needed job failed or was cancelled
       if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
       run: exit 1
+    # Apply Patches is a separate workflow (it tests the PR merged into the
+    # current base branch tip, and rerun-apply-patches.yml re-runs it whenever
+    # DEPS or patches change on the base branch), so it can't be listed in
+    # needs. Wait for the latest Apply Patches run for this PR head and fold
+    # its result into this check. After re-running Apply Patches,
+    # rerun-apply-patches.yml also re-runs this job, so a base branch move
+    # can't leave this check green on a stale Apply Patches result.
+    - name: Wait for Apply Patches
+      if: github.event_name == 'pull_request'
+      env:
+        GH_REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ github.token }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        NOT_FOUND=0
+        while true; do
+          if ! RUN=$(gh api "repos/${GH_REPO}/actions/workflows/apply-patches.yml/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=1" --jq '.workflow_runs[0] // empty'); then
+            echo "Failed to query Apply Patches runs, retrying..."
+          elif [ -z "$RUN" ]; then
+            NOT_FOUND=$((NOT_FOUND + 1))
+            if [ "$NOT_FOUND" -ge 10 ]; then
+              echo "::error::No Apply Patches run found for ${HEAD_SHA}"
+              exit 1
+            fi
+            echo "No Apply Patches run found for ${HEAD_SHA} yet, waiting..."
+          else
+            STATUS=$(echo "$RUN" | jq -r '.status')
+            CONCLUSION=$(echo "$RUN" | jq -r '.conclusion')
+            URL=$(echo "$RUN" | jq -r '.html_url')
+            ATTEMPT=$(echo "$RUN" | jq -r '.run_attempt')
+            if [ "$STATUS" = "completed" ]; then
+              echo "Apply Patches ${URL} (attempt ${ATTEMPT}) concluded: ${CONCLUSION}"
+              case "$CONCLUSION" in
+                success|skipped|neutral) exit 0 ;;
+                *)
+                  echo "::error::Apply Patches did not succeed: ${URL}"
+                  exit 1
+                  ;;
+              esac
+            fi
+            echo "Apply Patches ${URL} (attempt ${ATTEMPT}) is ${STATUS}, waiting..."
+          fi
+          sleep 60
+        done
     - name: GitHub Actions Jobs Done
       run: |
         echo "All GitHub Actions Jobs are done"

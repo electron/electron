@@ -35,8 +35,10 @@ jobs:
             PR_NUMBER=$(echo "$pr" | jq -r '.number')
             echo "Processing PR #${PR_NUMBER}"
 
+            ROLLUP=$(gh pr view "$PR_NUMBER" --json statusCheckRollup)
+
             # Find the Apply Patches workflow check for this PR
-            CHECK=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.workflowName == "Apply Patches" and .name == "apply-patches")] | first')
+            CHECK=$(echo "$ROLLUP" | jq -c '[.statusCheckRollup[] | select(.workflowName == "Apply Patches" and .name == "apply-patches")] | first')
 
             if [ -z "$CHECK" ] || [ "$CHECK" = "null" ]; then
               echo "  No Apply Patches workflow found for PR #${PR_NUMBER}"
@@ -80,4 +82,28 @@ jobs:
             fi
 
             gh run rerun "$RUN_ID"
+
+            # The "GitHub Actions Completed" gate in the Build workflow waits on
+            # the latest Apply Patches run, but it may already have passed on the
+            # result from before this base branch change. If that Build run is
+            # done, re-run the gate job so it goes back to pending until the
+            # Apply Patches re-run finishes, and fails if that does. If the Build
+            # run is still going, its gate job will pick up the re-run when it runs.
+            GATE_LINK=$(echo "$ROLLUP" | jq -r '[.statusCheckRollup[] | select(.workflowName == "Build" and .name == "GitHub Actions Completed")] | first | .detailsUrl // empty')
+            GATE_RUN_ID=$(echo "$GATE_LINK" | grep -oE 'runs/[0-9]+' | cut -d'/' -f2 || true)
+            GATE_JOB_ID=$(echo "$GATE_LINK" | grep -oE 'job/[0-9]+' | cut -d'/' -f2 || true)
+
+            if [ -z "$GATE_RUN_ID" ] || [ -z "$GATE_JOB_ID" ]; then
+              echo "  No GitHub Actions Completed check found for PR #${PR_NUMBER}"
+              continue
+            fi
+
+            GATE_RUN_STATUS=$(gh run view "$GATE_RUN_ID" --json status --jq '.status')
+            if [ "$GATE_RUN_STATUS" = "completed" ]; then
+              echo "  Re-running GitHub Actions Completed (job ${GATE_JOB_ID}) in Build run ${GATE_RUN_ID}"
+              gh api -X POST "repos/${GH_REPO}/actions/jobs/${GATE_JOB_ID}/rerun" > /dev/null \
+                || echo "::warning::Failed to re-run GitHub Actions Completed for PR #${PR_NUMBER}"
+            else
+              echo "  Build run ${GATE_RUN_ID} is ${GATE_RUN_STATUS}, its gate will wait for the Apply Patches re-run"
+            fi
           done
