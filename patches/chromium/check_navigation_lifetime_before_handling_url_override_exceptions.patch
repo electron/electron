@@ -31,7 +31,7 @@ Bug: 573451783,571284308
 Change-Id: I624e1bcdc6e75392e4f93c9c500a5cf88e4f2adb
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index ce6370580562eabe478ce392f78256b270a402cc..69556d347b382aa5acf72da050006a08bab719c6 100644
+index cfb53ffb854ff942d86b54ed211870e63556e742..78c3e06fd00fbf020f2e24f15cb8de2d965c9dfe 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -2896,14 +2896,23 @@ void NavigationRequest::BeginNavigationImpl() {
