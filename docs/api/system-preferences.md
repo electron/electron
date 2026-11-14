@@ -382,6 +382,8 @@ Returns `Object`:
 
 Returns an object with system animation settings.
 
+To be notified when `prefersAnimatedImagesStartPaused` changes on macOS, pass `com.apple.accessibility.reduce.motion.autoplay.animated.images.status` (the value of [`AXAnimatedImagesEnabledDidChangeNotification`](https://developer.apple.com/documentation/accessibility/axanimatedimagesenableddidchangenotification)) to [`systemPreferences.subscribeLocalNotification()`](#systempreferencessubscribelocalnotificationevent-callback-macos).
+
 ## Properties
 
 ### `systemPreferences.accessibilityDisplayShouldReduceTransparency` _macOS_ _Deprecated_
