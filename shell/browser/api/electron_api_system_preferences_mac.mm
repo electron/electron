@@ -8,6 +8,7 @@
 #include <utility>
 
 #import <AVFoundation/AVFoundation.h>
+#import <Accessibility/Accessibility.h>
 #import <Cocoa/Cocoa.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <Security/Security.h>
@@ -697,6 +698,15 @@ void SystemPreferences::RemoveUserDefault(const std::string& name) {
 
 bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {
   return [NSEvent isSwipeTrackingFromScrollEventsEnabled];
+}
+
+// static
+bool SystemPreferences::PrefersAnimatedImagesStartPaused() {
+  if (@available(macOS 14, *)) {
+    return !AXAnimatedImagesEnabled();
+  }
+  // The setting doesn't exist before macOS 14.
+  return false;
 }
 
 v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
