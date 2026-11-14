@@ -8415,12 +8415,10 @@ describe('BrowserWindow module', () => {
         });
       });
       await ow.webContents.executeJavaScript('document.getElementById("s").showPicker()', true);
-      await expect(
-        Promise.race([
-          paintedBelowSelect,
-          setTimeout(5000).then(() => Promise.reject(new Error('popup was not painted')))
-        ])
-      ).to.eventually.be.fulfilled();
+      await Promise.race([
+        paintedBelowSelect,
+        setTimeout(5000).then(() => Promise.reject(new Error('popup was not painted')))
+      ]);
     });
   });
 
