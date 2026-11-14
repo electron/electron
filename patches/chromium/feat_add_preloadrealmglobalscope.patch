@@ -305,10 +305,10 @@ index 0000000000000000000000000000000000000000..95ad9051f0e81374443f4a7bb9d8e74f
 +]
 diff --git a/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.cc b/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..51a32a4a8d16c7286cd6d1c288397d6b93fc1454
+index 0000000000000000000000000000000000000000..e3b90794a557b640e1d1c28a894c2e01ead2e6e6
 --- /dev/null
 +++ b/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.cc
-@@ -0,0 +1,149 @@
+@@ -0,0 +1,146 @@
 +// Copyright (c) 2026 Anthropic, PBC.
 +// Use of this source code is governed by the MIT license that can be
 +// found in the LICENSE file.
@@ -403,11 +403,8 @@ index 0000000000000000000000000000000000000000..51a32a4a8d16c7286cd6d1c288397d6b
 +  NOTREACHED();
 +}
 +
-+void PreloadRealmGlobalScope::ExceptionThrown(
-+    ErrorEvent* error_event,
-+    SanitizeScriptErrors sanitize_script_errors) {
-+  initiator_execution_context_->ExceptionThrown(error_event,
-+                                                sanitize_script_errors);
++void PreloadRealmGlobalScope::ExceptionThrown(ErrorEvent* error_event) {
++  initiator_execution_context_->ExceptionThrown(error_event);
 +}
 +
 +void PreloadRealmGlobalScope::AddInspectorIssue(AuditsIssue issue) {
@@ -460,10 +457,10 @@ index 0000000000000000000000000000000000000000..51a32a4a8d16c7286cd6d1c288397d6b
 +}  // namespace blink
 diff --git a/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h b/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..4d525b9ddf3009dd93280901a129a72c7a8a8990
+index 0000000000000000000000000000000000000000..39bb7175c4134be9cc76487b09b0ccb966c3e7a0
 --- /dev/null
 +++ b/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,88 @@
 +// Copyright (c) 2026 Anthropic, PBC.
 +// Use of this source code is governed by the MIT license that can be
 +// found in the LICENSE file.
@@ -524,8 +521,7 @@ index 0000000000000000000000000000000000000000..4d525b9ddf3009dd93280901a129a72c
 +  String UserAgent() const override;
 +  HttpsState GetHttpsState() const override;
 +  ResourceFetcher* Fetcher() override;
-+  void ExceptionThrown(ErrorEvent* error_event,
-+                       SanitizeScriptErrors sanitize_script_errors) override;
++  void ExceptionThrown(ErrorEvent* error_event) override;
 +  void AddInspectorIssue(AuditsIssue issue) override;
 +  EventTarget* ErrorEventTarget() override;
 +  FrameOrWorkerScheduler* GetScheduler() override;
