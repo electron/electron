@@ -44,10 +44,10 @@ index 126be43df3e568633a184e91463580a382c7cfe0..336faf631139648434aeb4b12a80138e
      const GURL& script_url,
      const blink::StorageKey& key,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 92c62d8432ac129c25b1f2e17b6f3a90a617e937..144b2e28dd84bdbab9db0ccf846a9525dfba2820 100644
+index 6df6f229679f296441a281f7fe43256b7876b185..ed3b0555fd6546c18236ef97bbc90c96fb97d1ea 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -6777,19 +6777,31 @@ WebContents* WebContentsImpl::OpenURL(
+@@ -6771,19 +6771,31 @@ WebContents* WebContentsImpl::OpenURL(
      }
    }
  
