@@ -34,10 +34,10 @@ return the root initiator ExecutionContext).
 Pending upstream crbug.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 41a5db4e019084d47763a43bd548b29faa070660..49206eb36d5d4dff4e2c26691f39ecb6db6f0f09 100644
+index ce05b1f20d2ca81bf6b00517b22de6f80d5e7803..111d79a7eb8f3361a20d6c947c77a65a1e224c25 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -450,10 +450,7 @@ static void PromiseRejectHandlerInWorker(v8::PromiseRejectMessage data) {
+@@ -448,10 +448,7 @@ static void PromiseRejectHandlerInWorker(v8::PromiseRejectMessage data) {
      return;
  
    ExecutionContext* root_worker_context =
@@ -50,11 +50,11 @@ index 41a5db4e019084d47763a43bd548b29faa070660..49206eb36d5d4dff4e2c26691f39ecb6
  
    auto* script_controller =
 diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
-index 07c9dd9c4ffa9b0b805187acce4f0eef4b641ceb..158a1b496753c192d5fe4525234e94dc5f413571 100644
+index 124d82576b41e79c8a628dc1881ff8839a21bfc8..a624d48a3a286e64d055f271f0202db7c0a2d190 100644
 --- a/third_party/blink/renderer/core/execution_context/execution_context.h
 +++ b/third_party/blink/renderer/core/execution_context/execution_context.h
 @@ -164,6 +164,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
-   virtual bool IsShadowRealmGlobalScope() const { return false; }
+   virtual bool IsSharedStorageWorkletGlobalScope() const { return false; }
    virtual bool IsJSExecutionForbidden() const { return false; }
  
 +  virtual ExecutionContext* GetRootExecutionContext() { return this; }
@@ -91,7 +91,7 @@ index 3a52d94a105bcc34c2319940eb10ff381fe975ba..5f0e35a3c07edd04750f3898fc73c79a
  
  void WorkerThreadDebugger::PauseWorkerOnStart(WorkerThread* worker_thread) {
 diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
-index 7b77d51ca3ca41a187021a13c213bbd723e997da..06620d26be43508a0c2e3e163ec0f049edf946b8 100644
+index ca89a52843b3c2b16cb7fcaafe6f8ac21de11422..8cfd4b8fa95a7333b6616a1313147e5b173c6866 100644
 --- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
 +++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
 @@ -20,10 +20,7 @@ ShadowRealmGlobalScope::ShadowRealmGlobalScope(
@@ -118,7 +118,7 @@ index 7b77d51ca3ca41a187021a13c213bbd723e997da..06620d26be43508a0c2e3e163ec0f049
    return GetRootInitiatorExecutionContext()->Url();
  }
 diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
-index 956049a3e86cba9bfd1ee15a92a49f13d105ee30..fabf4706ad2eedd4a0d00562b842276443840903 100644
+index 91c698dd0965d0c945d24ccc7512cf07247cd897..3143fa3c45749104e16bf96016d43efeeef6a04f 100644
 --- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
 +++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
 @@ -45,6 +45,7 @@ class CORE_EXPORT ShadowRealmGlobalScope final : public EventTarget,
