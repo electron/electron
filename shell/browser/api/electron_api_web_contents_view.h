@@ -48,7 +48,7 @@ class WebContentsView : public View,
   void SetBorderRadius(int radius);
 
   // DraggableRegionProvider:
-  views::View* GetDraggableRegionView() override { return view(); }
+  views::View* GetDraggableRegionView() override;
   int NonClientHitTest(const gfx::Point& point) override;
 
  protected:
