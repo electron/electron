@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index aeda262c9cf5c5f10bfbf875b2d64275e9f242c8..a65aec39f6bb2d97e3f5b0987dc9fe42a1b1ed3e 100644
+index 08e2d690146e80e4c6c0deeac47c9cc658a5b31d..7b2ef325a15496399533ac22a08f6e77055e2059 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1170,6 +1170,7 @@ component("base") {
@@ -1013,7 +1013,7 @@ index 21575a480d6016f5e9b6f62949fc5d2712780895..55297fdc2493981558f6cc8e454dae59
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a18cf97aa9d04c3e6eec9f8f30cc42ad601f77a7..db305fc5dc30481e28286fe7ff90db58271154d7 100644
+index f9e08e57c0a4230b644634216b0ddc0266c0064c..fc1e56e8aa50536230764b6c444e9bd823458cbe 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -395,6 +395,7 @@ source_set("browser") {
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 4816ecaa9c018c5613cdf6ed541fb5903622c1e3..f6365357d32c4bea1ff120bd68e903fbf7384e78 100644
+index c5fb46b0558633f861505654d378a587c691d259..5ea41f61487bc50dd38985b406562acab5b878ed 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index 4816ecaa9c018c5613cdf6ed541fb5903622c1e3..f6365357d32c4bea1ff120bd68e903fb
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3462,6 +3466,7 @@ test("content_unittests") {
+@@ -3463,6 +3467,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2309,7 +2309,7 @@ index 95b8b7802ebfd3f55330dc5c69c8b592279620cc..680409b9b1983b2ca0e3f0de0792647e
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
-index ad6328970c179944e957dd1079bd3847e5574a60..0d3eedf23a8fe3e90f7ff4c58f419c564e5f1eb8 100644
+index 16c32571a7682c4df0189de47ac3f4feb5462f11..5a60b7887f3ae78c240007ddc404601002e39875 100644
 --- a/ui/display/mac/ca_display_link_mac.mm
 +++ b/ui/display/mac/ca_display_link_mac.mm
 @@ -21,15 +21,18 @@
