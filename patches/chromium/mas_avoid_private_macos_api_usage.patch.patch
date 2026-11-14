@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 798a755b926af261bc5d55dd61c62d33391e4ec2..62ea1ee1df2dd804910207694c924db09aa68063 100644
+index 08e2d690146e80e4c6c0deeac47c9cc658a5b31d..7b2ef325a15496399533ac22a08f6e77055e2059 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1170,6 +1170,7 @@ component("base") {
@@ -979,7 +979,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 330b2fcdcae28fed130ef414cff1ed807e90c965..faa0b26e98b0d32f65b5b132196458d8424c4b24 100644
+index 21575a480d6016f5e9b6f62949fc5d2712780895..55297fdc2493981558f6cc8e454dae591ccc05ca 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -37,6 +37,7 @@
@@ -1013,7 +1013,7 @@ index 330b2fcdcae28fed130ef414cff1ed807e90c965..faa0b26e98b0d32f65b5b132196458d8
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a18cf97aa9d04c3e6eec9f8f30cc42ad601f77a7..db305fc5dc30481e28286fe7ff90db58271154d7 100644
+index f9e08e57c0a4230b644634216b0ddc0266c0064c..fc1e56e8aa50536230764b6c444e9bd823458cbe 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -395,6 +395,7 @@ source_set("browser") {
@@ -1134,10 +1134,10 @@ index 031d41c19c84c4af95f701b56a6c1f4dd7dfa05b..716b5d4f51ba7eb28116055df9b6f59a
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 3339832ee0c80de9f33b1a138db27d8d1e89bb29..55708ed138cc30b3e449afa60b48c6e91e4c75d6 100644
+index cff12172f56bde9c8bff1767fa31ca30e8449c1f..e7f8ca8185d713ac921ef4f5f86a232c3eab9abb 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -279,6 +279,7 @@ source_set("common") {
+@@ -278,6 +278,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1146,10 +1146,10 @@ index 3339832ee0c80de9f33b1a138db27d8d1e89bb29..55708ed138cc30b3e449afa60b48c6e9
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index cf78814644054c5557ba7d4192384531c56143d3..e91c3a6f5109349cf9c26a3da1d06dbbdfb8402b 100644
+index 33af1cb53032e50d55a175347758d0ba15bad5ae..4e1a096d36d5cf80e550d435534b0b7ee0f29e1d 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -321,6 +321,7 @@ target(link_target_type, "renderer") {
+@@ -320,6 +320,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index a83ba831e8dcfc5fce2406e389c588ec27e1b398..f79b2d636ef0db56377abfb552d4a6e8bfd98d8b 100644
+index c5fb46b0558633f861505654d378a587c691d259..5ea41f61487bc50dd38985b406562acab5b878ed 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index a83ba831e8dcfc5fce2406e389c588ec27e1b398..f79b2d636ef0db56377abfb552d4a6e8
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3460,6 +3464,7 @@ test("content_unittests") {
+@@ -3463,6 +3467,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1335,10 +1335,10 @@ index d73f8e50af2722299724592b73c817034b8e3b3d..bd7748cbf0be3aab349aa8ad1590e628
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 86a6d2345caae8300b7494bc02e226d4bd6dbd0b..661c23091fb8e7cc554072f80d4815e9628ac1e7 100644
+index a283079f181f2d1a621c3b4092134c44a3d34b53..125cd0e817c6ed5e5e7b615b877701b762ebf125 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -136,6 +136,7 @@ component("service") {
+@@ -134,6 +134,7 @@ component("service") {
          "QuartzCore.framework",
        ]
        defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -1825,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 6ee931905ad43ab54c62ff5ee81ec6f1713327fd..9e20c53fc63d6c2d9e2f51e7b123672af9a3c758 100644
+index a3c9c4c3779739678093d0df7ff70960a6f11838..93501f66c7a1fc6611b221a0044c73355c14fd74 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -2309,7 +2309,7 @@ index 95b8b7802ebfd3f55330dc5c69c8b592279620cc..680409b9b1983b2ca0e3f0de0792647e
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
-index ad6328970c179944e957dd1079bd3847e5574a60..0d3eedf23a8fe3e90f7ff4c58f419c564e5f1eb8 100644
+index 16c32571a7682c4df0189de47ac3f4feb5462f11..5a60b7887f3ae78c240007ddc404601002e39875 100644
 --- a/ui/display/mac/ca_display_link_mac.mm
 +++ b/ui/display/mac/ca_display_link_mac.mm
 @@ -21,15 +21,18 @@

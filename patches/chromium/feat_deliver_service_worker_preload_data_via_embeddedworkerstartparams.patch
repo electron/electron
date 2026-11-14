@@ -51,7 +51,7 @@ index bf9b922b854f85b5909fa13ae902cebe3cf5c9e9..5402a3da761ed08073c766811a5f7eff
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index f5cbe5c3ceee21f3d68f7abcd59f2976e942a003..ec367821314e3591c3f3afa2d2efe6e9cccc4d37 100644
+index 1987da8debda87fde59e927c95300fe69c14ad8a..a8ba031a642959b6a0b4755aaaec52c111b9a37b 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1348,6 +1348,17 @@ class CONTENT_EXPORT ContentBrowserClient {

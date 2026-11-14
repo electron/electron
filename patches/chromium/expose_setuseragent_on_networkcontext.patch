@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 0b9286047749ed68ef68434203e28ae85a93db02..67ae96326c26336c4af919e67e0ca3e2a1dd5c47 100644
+index 69db796c5b4b4037706e205d2196a84489236bc7..5558cdb68b10bcfd52c7d4d4cba7aeda7e998c01 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -2535,6 +2535,13 @@ NetworkContext::GetIsolatedTransactionFactory(
+@@ -2562,6 +2562,13 @@ NetworkContext::GetIsolatedTransactionFactory(
    return it->second->factory_handle;
  }
  
@@ -51,10 +51,10 @@ index 0b9286047749ed68ef68434203e28ae85a93db02..67ae96326c26336c4af919e67e0ca3e2
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 668841c8c3fa432d66ac3eb48b7ca346f6918955..20bb0bff0123d41a068aed8d18a095afaef96e25 100644
+index 1f82674b090e478a8063896b0a3277fe545e5b66..daccc65dbfb6ab5c60b45937f08a1bd78f6c06b7 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -383,6 +383,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -384,6 +384,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    GetIsolatedTransactionFactory(
        const base::UnguessableToken& throttling_profile_id,
        const GURL& url);

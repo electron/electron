@@ -304,7 +304,7 @@ void UtilityAIManager::HandleLanguageModelResult(
               enabled_output_types.begin(), enabled_output_types.end()),
           /*audio_sample_rate_hz=*/std::nullopt,
           /*audio_channel_count=*/std::nullopt,
-          /*sampling_mode=*/std::nullopt));
+          /*sampling_mode=*/std::nullopt, /*thinking_effort=*/std::nullopt));
 }
 
 void UtilityAIManager::CanCreateLanguageModel(

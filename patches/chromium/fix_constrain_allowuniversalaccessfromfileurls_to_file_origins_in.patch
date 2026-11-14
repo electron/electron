@@ -41,7 +41,7 @@ Upstream CL: https://chromium-review.googlesource.com/c/chromium/src/+/7795303
 Chromium bug: https://crbug.com/505299810
 
 diff --git a/third_party/blink/renderer/core/execution_context/window_agent_factory.cc b/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
-index 1343694eec0a22025201b43049f5e34d1644c725..0339245132ab66ff05228ced02b454346ae71149 100644
+index f9eb661d844e6d3650e5d309c8c7251f94584360..6157c399f505ba75fde0a7e1245f902d19ee869b 100644
 --- a/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
 +++ b/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
 @@ -22,19 +22,27 @@ WindowAgentFactory::WindowAgentFactory(
@@ -101,10 +101,10 @@ index a13cd92bc70a5eb20cfc46469a6be481766d793c..b26653958baa3a35b6f9a6b4f5deee2e
    // universal access privilege.
    WeakMember<WindowAgent> universal_access_agent_;
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index b6044b2982b7931369503d752f1baad03d67fc85..bb22c336f3fb5f2cbc05e7bb3422ef244d0bc519 100644
+index 1c578307f2de71d2c0f25f977cd17126b71799eb..dd1f56062376a8290b0cecd686db4a60928fa6ad 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2784,22 +2784,16 @@ bool ShouldReuseDOMWindow(LocalDOMWindow* window,
+@@ -2782,22 +2782,16 @@ bool ShouldReuseDOMWindow(LocalDOMWindow* window,
    return *window_coi_key == *navigation_coi_key;
  }
  
@@ -131,7 +131,7 @@ index b6044b2982b7931369503d752f1baad03d67fc85..bb22c336f3fb5f2cbc05e7bb3422ef24
  }
  
  // Inheriting cases use their agent's AgentClusterKey value, which is set
-@@ -2900,7 +2894,7 @@ void DocumentLoader::InitializeWindow(Document* owner_document) {
+@@ -2898,7 +2892,7 @@ void DocumentLoader::InitializeWindow(Document* owner_document) {
      // WindowAgentFactory::GetAgentForOrigin(), as the two conditions below hand
      // out universal WindowAgent objects, and thus override the AgentClusterKey
      // provided by the browser process.

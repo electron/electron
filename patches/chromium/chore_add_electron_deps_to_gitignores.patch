@@ -18,7 +18,7 @@ index 5888c0a1184b38a4b9e78dd303aee7e0c2d19a7c..923e22ca16f8acec2b2e0b11826fd270
  /google_apis/gcm/gcm.xml
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 3bd71434935b75e58c626a988aaa7de2f4046175..a822b13350e32511faf1a1205e2617dbfad2e531 100644
+index 252716f86051315fdee33c029d232b32f0d6105e..34911761b689f31116ab46d42b3d6aa80515ec2b 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -48,6 +48,7 @@
@@ -44,5 +44,5 @@ index 3bd71434935b75e58c626a988aaa7de2f4046175..a822b13350e32511faf1a1205e2617db
 -/src
 +/squirrel.mac
  /subresource-filter-ruleset/data/*
- /swift-toolchain
- /swiftshader/
+ /swift-toolchain/linux-amd64
+ /swift-toolchain/mac-amd64

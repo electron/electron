@@ -238,7 +238,7 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..b0f8d47d9ba077030ab336990c5eefc808747ded
+index 0000000000000000000000000000000000000000..4d5a2b1eebc5f52c2cd37495858bb12d7a72de30
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
 @@ -0,0 +1,160 @@
@@ -363,7 +363,7 @@ index 0000000000000000000000000000000000000000..b0f8d47d9ba077030ab336990c5eefc8
 +
 +  canvas_ = skia::CreatePlatformCanvasWithPixels(
 +      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
-+      static_cast<uint8_t*>(shm_mapping_.memory()), 0,
++      shm_mapping_.data(), 0,
 +      skia::CRASH_ON_FAILURE);
 +#endif
 +
