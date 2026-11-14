@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_UTILITY_AI_UTILITY_AI_LANGUAGE_MODEL_H_
 
 #include <list>
+#include <optional>
 #include <vector>
 
 #include "base/callback_list.h"
@@ -43,6 +44,8 @@ class UtilityAILanguageModel : public blink::mojom::AILanguageModel {
   // `blink::mojom::AILanguageModel` implementation.
   void Prompt(std::vector<blink::mojom::AILanguageModelPromptPtr> prompts,
               on_device_model::mojom::ResponseConstraintPtr constraint,
+              std::optional<blink::mojom::AILanguageModelThinkingEffort>
+                  thinking_effort,
               mojo::PendingRemote<blink::mojom::ModelStreamingResponder>
                   pending_responder) override;
   void Append(std::vector<blink::mojom::AILanguageModelPromptPtr> prompts,
