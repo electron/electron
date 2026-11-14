@@ -135,6 +135,30 @@ index 3af870df8b7b8afc9edc1881bfaf07772656df86..520463a291fb58268f2c411b0325cc79
        const blink::StorageKey& storage_key,
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
+diff --git a/content/browser/notifications/virtual_platform_notification_service.cc b/content/browser/notifications/virtual_platform_notification_service.cc
+index 9e00a2803d6082ef60dfc4865b099bbdaa10d4ba..1c1bb0d081efa5ef07b0d04757d8d40274a9cb10 100644
+--- a/content/browser/notifications/virtual_platform_notification_service.cc
++++ b/content/browser/notifications/virtual_platform_notification_service.cc
+@@ -170,6 +170,7 @@ void VirtualPlatformNotificationService::SimulateClose(
+ }
+ 
+ void VirtualPlatformNotificationService::DisplayNotification(
++    RenderFrameHost* render_frame_host,
+     const std::string& notification_id,
+     const GURL& origin,
+     const GURL& document_url,
+diff --git a/content/browser/notifications/virtual_platform_notification_service.h b/content/browser/notifications/virtual_platform_notification_service.h
+index 73485c92b9b77d2042b6544fdce90ea20581ab6d..ffb2b28c8fd10196984c8a0c97e8ba9f430bd0dc 100644
+--- a/content/browser/notifications/virtual_platform_notification_service.h
++++ b/content/browser/notifications/virtual_platform_notification_service.h
+@@ -133,6 +133,7 @@ class CONTENT_EXPORT VirtualPlatformNotificationService
+ 
+   // PlatformNotificationService:
+   void DisplayNotification(
++      RenderFrameHost* render_frame_host,
+       const std::string& notification_id,
+       const GURL& origin,
+       const GURL& document_url,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
 index 5fd08e7d587a27d948f28a1330b89269b5d95389..0386c26aee8bbc38477cd19c947a0d50db67f0ad 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
