@@ -20,10 +20,10 @@ shell/renderer/preload_realm_context.cc. This patch is specific to Electron
 and is not intended to be upstreamed.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 41a5db4e019084d47763a43bd548b29faa070660..3e62033228307ef2474c91e250db08cd72934ad6 100644
+index ce05b1f20d2ca81bf6b00517b22de6f80d5e7803..6d8e0ea589e4fa095c932ed293b10963a930c590 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -78,6 +78,7 @@
+@@ -77,6 +77,7 @@
  #include "third_party/blink/renderer/core/inspector/inspector_trace_events.h"
  #include "third_party/blink/renderer/core/inspector/main_thread_debugger.h"
  #include "third_party/blink/renderer/core/page/page.h"
@@ -31,7 +31,7 @@ index 41a5db4e019084d47763a43bd548b29faa070660..3e62033228307ef2474c91e250db08cd
  #include "third_party/blink/renderer/core/script/modulator.h"
  #include "third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h"
  #include "third_party/blink/renderer/core/timing/time_clamper.h"
-@@ -448,6 +449,11 @@ static void PromiseRejectHandlerInWorker(v8::PromiseRejectMessage data) {
+@@ -446,6 +447,11 @@ static void PromiseRejectHandlerInWorker(v8::PromiseRejectMessage data) {
    ExecutionContext* execution_context = ExecutionContext::From(script_state);
    if (!execution_context)
      return;
@@ -44,10 +44,10 @@ index 41a5db4e019084d47763a43bd548b29faa070660..3e62033228307ef2474c91e250db08cd
    ExecutionContext* root_worker_context =
        execution_context->IsShadowRealmGlobalScope()
 diff --git a/third_party/blink/renderer/bindings/generated_in_core.gni b/third_party/blink/renderer/bindings/generated_in_core.gni
-index 788f261f96ef65df2bc7fef0fa2a793da22e44ca..7b8efe1bc88c18e3ccf6e9a663c6670f46e8bea6 100644
+index d2667ba370820f00635b37f595a4272a37f0bc0a..680104351838553a74dd9b89a1f4f537c8ee5d11 100644
 --- a/third_party/blink/renderer/bindings/generated_in_core.gni
 +++ b/third_party/blink/renderer/bindings/generated_in_core.gni
-@@ -1530,6 +1530,8 @@ generated_interface_sources_in_core = [
+@@ -1520,6 +1520,8 @@ generated_interface_sources_in_core = [
    "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_preference_manager.h",
    "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_preference_object.cc",
    "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_preference_object.h",
@@ -57,10 +57,10 @@ index 788f261f96ef65df2bc7fef0fa2a793da22e44ca..7b8efe1bc88c18e3ccf6e9a663c6670f
    "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_progress_event.h",
    "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_promise_rejection_event.cc",
 diff --git a/third_party/blink/renderer/bindings/generated_in_modules.gni b/third_party/blink/renderer/bindings/generated_in_modules.gni
-index b56e9a96ebd3d598e53848fa955d02ac45628900..4f4d8a5ec938f7b4ccd336b64221d62017fb83b4 100644
+index 6d5b9b4eb49f3acbd178252563b77fe0e69e5c7b..48e37e3e2a744de717b63e1f22ca1a6285bb499e 100644
 --- a/third_party/blink/renderer/bindings/generated_in_modules.gni
 +++ b/third_party/blink/renderer/bindings/generated_in_modules.gni
-@@ -2793,6 +2793,8 @@ generated_interface_sources_in_modules = [
+@@ -2811,6 +2811,8 @@ generated_interface_sources_in_modules = [
    "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_plugin.h",
    "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_plugin_array.cc",
    "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_plugin_array.h",
@@ -70,10 +70,10 @@ index b56e9a96ebd3d598e53848fa955d02ac45628900..4f4d8a5ec938f7b4ccd336b64221d620
    "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_presentation.h",
    "$root_gen_dir/third_party/blink/renderer/bindings/modules/v8/v8_presentation_availability.cc",
 diff --git a/third_party/blink/renderer/bindings/idl_in_core.gni b/third_party/blink/renderer/bindings/idl_in_core.gni
-index f8d8e7180904bdf3a330483b8e6e7c3bf5dde439..9f495478b3a5164db9f113041a8e4e38ffb1d0fd 100644
+index 34a5ac3e0d02e235b1cd9bd5b516ae9bd3081a11..c16d58c5ad28f3fa1fa12ec641be1beaf519e96a 100644
 --- a/third_party/blink/renderer/bindings/idl_in_core.gni
 +++ b/third_party/blink/renderer/bindings/idl_in_core.gni
-@@ -828,6 +828,7 @@ static_idl_files_in_core = [
+@@ -824,6 +824,7 @@ static_idl_files_in_core = [
    "//third_party/blink/renderer/core/preferences/preference_manager.idl",
    "//third_party/blink/renderer/core/preferences/preference_object.idl",
    "//third_party/blink/renderer/core/preferences/navigator_preferences.idl",
@@ -82,10 +82,10 @@ index f8d8e7180904bdf3a330483b8e6e7c3bf5dde439..9f495478b3a5164db9f113041a8e4e38
    "//third_party/blink/renderer/core/url/url.idl",
    "//third_party/blink/renderer/core/url/url_search_params.idl",
 diff --git a/third_party/blink/renderer/bindings/scripts/bind_gen/codegen_expr.py b/third_party/blink/renderer/bindings/scripts/bind_gen/codegen_expr.py
-index aafb09af75d6adb990bf7b71f3ea5d4abe5da2dd..e7a7c0ec1e80b69c8cda9c474861fc770294c8a2 100644
+index b507bfb3943c3d300eb0f09e8a5905c480858957..79362a05e3fb2dce741b746dc881e8876bcc9049 100644
 --- a/third_party/blink/renderer/bindings/scripts/bind_gen/codegen_expr.py
 +++ b/third_party/blink/renderer/bindings/scripts/bind_gen/codegen_expr.py
-@@ -287,6 +287,7 @@ def expr_from_exposure(
+@@ -272,6 +272,7 @@ def expr_from_exposure(exposure,
          "DedicatedWorker": "IsDedicatedWorkerGlobalScope",
          "LayoutWorklet": "IsLayoutWorkletGlobalScope",
          "PaintWorklet": "IsPaintWorkletGlobalScope",
@@ -94,7 +94,7 @@ index aafb09af75d6adb990bf7b71f3ea5d4abe5da2dd..e7a7c0ec1e80b69c8cda9c474861fc77
          "ShadowRealm": "IsShadowRealmGlobalScope",
          "SharedWorker": "IsSharedWorkerGlobalScope",
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 12942929d97d2bfff86fc43c506253934fd8e68e..a56872b923bd6944a9821ee455654b18daed26f1 100644
+index 3e44e4956ea18f87bdc919bc72d2db63566c30d7..01f4fae0d916614d59c00059c536fff6663cd580 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -65,6 +65,7 @@ import("//third_party/blink/renderer/core/page/build.gni")
@@ -244,17 +244,17 @@ index 693b2e78ee0e9dfb68bd0b08565ea76ce6711620..504f48fb2e3816686b75bb14798e51e7
      [CallWith=ScriptState] constructor(DOMString type, PromiseRejectionEventInit eventInitDict);
      [CallWith=ScriptState] readonly attribute object promise;
 diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
-index 07c9dd9c4ffa9b0b805187acce4f0eef4b641ceb..c73a5b68cc3d0b0a813779b1a11812e144a767c5 100644
+index 124d82576b41e79c8a628dc1881ff8839a21bfc8..ebf9bdc0a80d9e9788034822c627ba4bb92fdc41 100644
 --- a/third_party/blink/renderer/core/execution_context/execution_context.h
 +++ b/third_party/blink/renderer/core/execution_context/execution_context.h
-@@ -160,6 +160,7 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+@@ -159,6 +159,7 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
    virtual bool IsAudioWorkletGlobalScope() const { return false; }
    virtual bool IsLayoutWorkletGlobalScope() const { return false; }
    virtual bool IsPaintWorkletGlobalScope() const { return false; }
 +  virtual bool IsPreloadRealmGlobalScope() const { return false; }
    virtual bool IsThreadedWorkletGlobalScope() const { return false; }
    virtual bool IsShadowRealmGlobalScope() const { return false; }
-   virtual bool IsJSExecutionForbidden() const { return false; }
+   virtual bool IsSharedStorageWorkletGlobalScope() const { return false; }
 diff --git a/third_party/blink/renderer/core/inspector/worker_thread_debugger.cc b/third_party/blink/renderer/core/inspector/worker_thread_debugger.cc
 index 3a52d94a105bcc34c2319940eb10ff381fe975ba..b3e3b1088239342d31090258e2d4b81d58d76fd0 100644
 --- a/third_party/blink/renderer/core/inspector/worker_thread_debugger.cc
@@ -633,15 +633,15 @@ index 7856196ec0ac3362b4745a22045f4ee71ef6370d..1c325435ccec3d29382fa394e784c131
      [CallWith=ScriptState, RaisesException, MeasureAs=DecompressionStreamConstructor] constructor(DOMString format);
      readonly attribute ReadableStream readable;
 diff --git a/third_party/blink/renderer/modules/encoding/text_decoder.idl b/third_party/blink/renderer/modules/encoding/text_decoder.idl
-index 4564e37db341e567fab74ddf93dd5f90423e3f4e..8f83f70b372d27e9176232dc7fe6c3af89fc44a1 100644
+index 9dfed6ed3c0889de6393973591d6b0eafd4e816c..e13d70509e0926b7e6e7526de9f2055c8edf65a9 100644
 --- a/third_party/blink/renderer/modules/encoding/text_decoder.idl
 +++ b/third_party/blink/renderer/modules/encoding/text_decoder.idl
 @@ -31,7 +31,7 @@
  // https://encoding.spec.whatwg.org/#textdecoder
  
  [
--    Exposed=(Window,Worker,ShadowRealm) // TODO(crbug.com/41480387): This should be Exposed=*
-+    Exposed=(Window,Worker,ShadowRealm,PreloadRealm) // TODO(crbug.com/41480387): This should be Exposed=*
+-    Exposed=(Window,Worker,SharedStorageWorklet,ShadowRealm) // TODO(crbug.com/41480387): This should be Exposed=*
++    Exposed=(Window,Worker,SharedStorageWorklet,ShadowRealm,PreloadRealm) // TODO(crbug.com/41480387): This should be Exposed=*
  ] interface TextDecoder {
      [RaisesException, MeasureAs=TextDecoderConstructor] constructor(optional DOMString label = "utf-8", optional TextDecoderOptions options = {});
      readonly attribute DOMString encoding;
@@ -659,15 +659,15 @@ index b5f09ee82ff68cd7dab3370fbefb42a96fc371df..09b2bf58080085d8eea8f46022cc97fb
      [CallWith=ScriptState, RaisesException, MeasureAs=TextDecoderStreamConstructor] constructor(optional DOMString label = "utf-8", optional TextDecoderOptions options = {});
      readonly attribute DOMString encoding;
 diff --git a/third_party/blink/renderer/modules/encoding/text_encoder.idl b/third_party/blink/renderer/modules/encoding/text_encoder.idl
-index 8085e6edc8349a9d3763f825313cc3445bf06312..245d53014a80e61b24120ff898c6398b3ef3e07c 100644
+index 9a6547f2e84b836f38a8c06f4f66af9efa93b694..231347071bd8f2a6f5c64714493fe0d3686bfb9d 100644
 --- a/third_party/blink/renderer/modules/encoding/text_encoder.idl
 +++ b/third_party/blink/renderer/modules/encoding/text_encoder.idl
 @@ -29,7 +29,7 @@
   */
  
  [
--    Exposed=(Window,Worker,ShadowRealm) // TODO(crbug.com/41480387): This should be Exposed=*
-+    Exposed=(Window,Worker,ShadowRealm,PreloadRealm) // TODO(crbug.com/41480387): This should be Exposed=*
+-    Exposed=(Window,Worker,SharedStorageWorklet,ShadowRealm) // TODO(crbug.com/41480387): This should be Exposed=*
++    Exposed=(Window,Worker,SharedStorageWorklet,ShadowRealm,PreloadRealm) // TODO(crbug.com/41480387): This should be Exposed=*
  ] interface TextEncoder {
      [CallWith=ExecutionContext, RaisesException, MeasureAs=TextEncoderConstructor] constructor();
      readonly attribute DOMString encoding;
