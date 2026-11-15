@@ -100,6 +100,8 @@ const handleWindowLifecycleEvents = function ({
   guest: WebContents;
   outlivesOpener: boolean;
 }) {
+  if (outlivesOpener) return;
+
   const closedByEmbedder = function () {
     guest.removeListener('destroyed', closedByUser);
     guest.destroy();
@@ -107,13 +109,11 @@ const handleWindowLifecycleEvents = function ({
 
   const closedByUser = function () {
     // Embedder might have been closed
-    if (!embedder.isDestroyed() && !outlivesOpener) {
+    if (!embedder.isDestroyed()) {
       embedder.removeListener('current-render-view-deleted' as any, closedByEmbedder);
     }
   };
-  if (!outlivesOpener) {
-    embedder.once('current-render-view-deleted' as any, closedByEmbedder);
-  }
+  embedder.once('current-render-view-deleted' as any, closedByEmbedder);
   guest.once('destroyed', closedByUser);
 };
 
