@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 3e4311a4bd4c1f040f5c6869f53c6e1094255916..314d964fbdf5186da02ecc4a17b9cdd55adeae3c 100644
+index a9459a17146280b01198f95ee6fb9302177d4053..e1cd71cb71a96d0908dd38a63ae5bf2866d9f75b 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -70,9 +70,9 @@ index 3e4311a4bd4c1f040f5c6869f53c6e1094255916..314d964fbdf5186da02ecc4a17b9cdd5
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -668,14 +675,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
- void PictureInPictureWindowManager::CloseWindowInternal() {
+@@ -669,14 +676,14 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
+   document_web_contents_observer_.reset();
  
 -#if !BUILDFLAG(IS_ANDROID)
 +#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
@@ -87,7 +87,7 @@ index 3e4311a4bd4c1f040f5c6869f53c6e1094255916..314d964fbdf5186da02ecc4a17b9cdd5
  
    // Close and reset the picture-in-picture window controller, if it exists.
    if (pip_window_controller_) {
-@@ -718,6 +725,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -719,6 +726,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
  }
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -95,7 +95,7 @@ index 3e4311a4bd4c1f040f5c6869f53c6e1094255916..314d964fbdf5186da02ecc4a17b9cdd5
  void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
      content::WebContents* parent_web_contents,
      std::unique_ptr<content::WebContents> child_web_contents,
-@@ -769,6 +777,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+@@ -770,6 +778,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
    }
    document_pip_host_ = host->GetWeakPtr();
  }
@@ -103,7 +103,7 @@ index 3e4311a4bd4c1f040f5c6869f53c6e1094255916..314d964fbdf5186da02ecc4a17b9cdd5
  
  std::unique_ptr<AutoPipSettingOverlayView>
  PictureInPictureWindowManager::GetOverlayView(
-@@ -779,6 +788,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -780,6 +789,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -111,7 +111,7 @@ index 3e4311a4bd4c1f040f5c6869f53c6e1094255916..314d964fbdf5186da02ecc4a17b9cdd5
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -817,6 +827,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -818,6 +828,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;

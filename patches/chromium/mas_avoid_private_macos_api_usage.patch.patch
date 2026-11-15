@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c5fb46b0558633f861505654d378a587c691d259..5ea41f61487bc50dd38985b406562acab5b878ed 100644
+index 13d64ecbf256929cf9486cabf381f078476984f3..0e12c33a2a0e35799355f32383adb3f2ea056b89 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
