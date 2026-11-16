@@ -29,10 +29,10 @@ before first show.
 This patch can be removed if the changes are upstreamed to Chromium.
 
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-index 5daf34f2e0cd022f02c5b5d923703e60db5103e1..beb01d7ea3cd60b8ab39c8cabe05d47cf3f9f215 100644
+index fecd998d96a7b017f183b5ab3a75251c1060a48b..8fca1b5ef3b4a7e57332d2d6abc2e4af3893d4c9 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-@@ -548,7 +548,8 @@ - (void)updateWebContentsVisibility {
+@@ -562,7 +562,8 @@ - (void)updateWebContentsVisibility {
    Visibility visibility = Visibility::kVisible;
    if ([self isHiddenOrHasHiddenAncestor] || ![self window])
      visibility = Visibility::kHidden;
@@ -42,7 +42,7 @@ index 5daf34f2e0cd022f02c5b5d923703e60db5103e1..beb01d7ea3cd60b8ab39c8cabe05d47c
      visibility = Visibility::kOccluded;
  
    [self updateWebContentsVisibility:visibility];
-@@ -601,12 +602,12 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -615,12 +616,12 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
  }
  
  - (void)windowChangedOcclusionState:(NSNotification*)aNotification {
