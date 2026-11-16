@@ -65,10 +65,22 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   if (!web_preferences.Has(options::kShow))
     web_preferences.Set(options::kShow, true);
 
+  // Mark the contents as belonging to this window. SetOwnerWindow() only runs
+  // once the view below exists, so a 'web-contents-created' listener calling
+  // openDevTools() in between has to learn from here that an owner is coming,
+  // and waits for it rather than deciding without one.
+  web_preferences.SetHidden(options::kOwnedByWindow, true);
+
   // Creates the WebContentsView.
   WebContentsView* web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
   CHECK(web_contents_view);
+
+  // The WebContents consumes the mark when it reads it, but an existing one
+  // passed through the `webContents` option is never constructed here and so
+  // never reads it. web_preferences is the caller's own object, so make sure
+  // the mark does not outlive this constructor either way.
+  web_preferences.DeleteHidden(options::kOwnedByWindow);
   web_contents_view->RegisterDraggableRegionProvider(window());
   auto* web_contents = web_contents_view->GetWebContents();
   window()->InitPrimaryWebContentsView(
