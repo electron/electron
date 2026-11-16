@@ -29,7 +29,7 @@ const require = createRequire(import.meta.url);
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 
-describe('utilityProcess module', () => {
+describe('utilityProcess module', { retry: 0 }, () => {
   describe('UtilityProcess constructor', () => {
     it('throws when empty script path is provided', async () => {
       expect(() => {
@@ -1032,7 +1032,11 @@ describe('utilityProcess module', () => {
       expect(loginAuthInfo!.scheme).toBe('basic');
     });
 
-    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout: 60_000 }, async () => {
+    // Growing the heap to the limit and writing the snapshot is slow, so give
+    // this test at least 60s. Sanitizer builds raise every test's timeout
+    // (ELECTRON_SPEC_TIMEOUT, 180s) and are slower still, so never go below that.
+    const heapTimeout = Math.max(60_000, Number(process.env.ELECTRON_SPEC_TIMEOUT) || 0);
+    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout: heapTimeout }, async () => {
       const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
       defer(() => fs.rm(tmpDir, { recursive: true, force: true }));
       const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
