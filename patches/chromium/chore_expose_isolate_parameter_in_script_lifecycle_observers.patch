@@ -66,7 +66,7 @@ index 7273425ab00447544e44a8dbe34a259fe85399f4..09d764ce866e0f7c82cfa87906643b87
    void DidChangeScrollOffset(blink::mojom::ScrollType) override;
    blink::WebMediaStreamDeviceObserver* MediaStreamDeviceObserver() override;
 diff --git a/content/renderer/service_worker/service_worker_context_client.cc b/content/renderer/service_worker/service_worker_context_client.cc
-index d65f227d8715ad89236910ded5fee3209d0d6558..2f82efc2d130e350fe6edd289202fb31ece3645f 100644
+index 9a742175be65950b5ee6747c1c4158919bc8104e..8c03067d79c3a44322c6d53678e17c2946b586a5 100644
 --- a/content/renderer/service_worker/service_worker_context_client.cc
 +++ b/content/renderer/service_worker/service_worker_context_client.cc
 @@ -321,6 +321,7 @@ void ServiceWorkerContextClient::WorkerContextStarted(
@@ -89,10 +89,10 @@ index d65f227d8715ad89236910ded5fee3209d0d6558..2f82efc2d130e350fe6edd289202fb31
  
  void ServiceWorkerContextClient::DidEvaluateScript(bool success) {
 diff --git a/content/renderer/service_worker/service_worker_context_client.h b/content/renderer/service_worker/service_worker_context_client.h
-index c698d80d5c1efdd5e715fc3b40a9d47fc1a44f8d..b3def35a3fb42a73c6f88e897ff0948841850648 100644
+index 829e4d40843e06c4fa0eaad3ac0783210fe7864d..278d1a0dbcc0936acfc5f2342185c1beb25b1c86 100644
 --- a/content/renderer/service_worker/service_worker_context_client.h
 +++ b/content/renderer/service_worker/service_worker_context_client.h
-@@ -163,7 +163,8 @@ class ServiceWorkerContextClient
+@@ -164,7 +164,8 @@ class CONTENT_EXPORT ServiceWorkerContextClient
    void WorkerContextStarted(
        blink::WebServiceWorkerContextProxy* proxy,
        scoped_refptr<base::SequencedTaskRunner> worker_task_runner) override;
