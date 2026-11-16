@@ -14,6 +14,21 @@ function getSourceTypes(): ('window' | 'screen')[] {
   return ['window', 'screen'];
 }
 
+// On Windows getSources() leaves out any window that takes more than 50ms to
+// answer WM_NULL, so a window a test just created can be missing from a single
+// listing. List again until |isListed| is satisfied and return that listing.
+async function getSourcesUntil(
+  options: Electron.SourcesOptions,
+  isListed: (sources: Electron.DesktopCapturerSource[]) => boolean
+) {
+  let sources: Electron.DesktopCapturerSource[] = [];
+  await waitUntil(async () => {
+    sources = await desktopCapturer.getSources(options);
+    return isListed(sources);
+  });
+  return sources;
+}
+
 describe('desktopCapturer', { tags: ['serial'], retry: 0 }, () => {
   it('should return a non-empty array of sources', async () => {
     const sources = await desktopCapturer.getSources({ types: getSourceTypes() });
@@ -167,10 +182,9 @@ describe('desktopCapturer', { tags: ['serial'], retry: 0 }, () => {
     await wFocused;
 
     const mediaSourceId = w2.getMediaSourceId();
-    const sources = await desktopCapturer.getSources({
-      types: ['window'],
-      thumbnailSize: { width: 0, height: 0 }
-    });
+    const sources = await getSourcesUntil({ types: ['window'], thumbnailSize: { width: 0, height: 0 } }, (listed) =>
+      listed.some((source) => source.id === mediaSourceId)
+    );
     w2.destroy();
 
     expect(sources).toBeInstanceOf(Array);
@@ -244,21 +258,16 @@ describe('desktopCapturer', { tags: ['serial'], retry: 0 }, () => {
 
     // Lists our windows in the order DesktopCapturer.getSources() returns
     // them, i.e. from foreground to background. Other windows are left out,
-    // since one of them may be on top of ours. On Windows a window that takes
-    // more than 50ms to answer WM_NULL is missing from the listing, so list
-    // again until all of ours are there.
+    // since one of them may be on top of ours.
     const listOurWindows = async () => {
       const ours = wList.map((w) => w.getMediaSourceId());
-      let listed: string[] = [];
-      await waitUntil(async () => {
-        const sources = await desktopCapturer.getSources({
-          types: ['window'],
-          thumbnailSize: { width: 0, height: 0 }
-        });
-        listed = sources.map((source) => source.id).filter((id) => ours.includes(id));
-        return listed.length === ours.length;
-      });
-      return listed;
+      const keepOurs = (sources: Electron.DesktopCapturerSource[]) =>
+        sources.map((source) => source.id).filter((id) => ours.includes(id));
+      const sources = await getSourcesUntil(
+        { types: ['window'], thumbnailSize: { width: 0, height: 0 } },
+        (listed) => keepOurs(listed).length === ours.length
+      );
+      return keepOurs(sources);
     };
 
     try {
@@ -334,11 +343,11 @@ describe('desktopCapturer', { tags: ['serial'], retry: 0 }, () => {
         title: 'desktop-capturer-test-window'
       });
       await w.loadURL('about:blank');
-      const sources = await desktopCapturer.getSources({
-        types: ['window'],
-        fetchWindowIcons: true
-      });
-      testSource = sources.find((s) => s.name === 'desktop-capturer-test-window');
+      const isTestWindow = (s: Electron.DesktopCapturerSource) => s.name === 'desktop-capturer-test-window';
+      const sources = await getSourcesUntil({ types: ['window'], fetchWindowIcons: true }, (listed) =>
+        listed.some(isTestWindow)
+      ).catch(() => []);
+      testSource = sources.find(isTestWindow);
       appIcon = testSource?.appIcon;
     });
 
