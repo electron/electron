@@ -5541,9 +5541,8 @@ void WebContents::OnOffScreenDragEnd(ui::mojom::DragOperation operation,
                                      bool cancelled) {
   if (defer_offscreen_drag_end_) {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE,
-        base::BindOnce(&WebContents::OnOffScreenDragEnd,
-                       weak_factory_.GetWeakPtr(), operation, cancelled));
+        FROM_HERE, base::BindOnce(&WebContents::OnOffScreenDragEnd, WeakRef(),
+                                  operation, cancelled));
     return;
   }
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
