@@ -1007,6 +1007,10 @@ and a `keyDown` for `Escape` cancels the drag. The embedder can draw `image`
 next to its own cursor while the drag is in progress. Drags started inside a
 `<webview>` hosted in offscreen contents are not supported and end immediately.
 
+The page only starts a drag once the pointer has moved past the drag threshold
+in screen coordinates, so the mouse events should carry `globalX` and `globalY`
+values that move with the cursor.
+
 ```js
 const { BrowserWindow } = require('electron')
 
@@ -1019,8 +1023,8 @@ win.webContents.on('offscreen-drag-end', () => {
 })
 // Forward the host's mouse input as usual; while a drag is in progress these
 // events move the drag and the final mouseUp performs the drop.
-// win.webContents.sendInputEvent({ type: 'mouseMove', x, y, modifiers: ['leftbuttondown'] })
-// win.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left' })
+// win.webContents.sendInputEvent({ type: 'mouseMove', x, y, globalX, globalY, modifiers: ['leftbuttondown'] })
+// win.webContents.sendInputEvent({ type: 'mouseUp', x, y, globalX, globalY, button: 'left' })
 ```
 
 #### Event: 'offscreen-drag-update'

@@ -8493,8 +8493,11 @@ describe('BrowserWindow module', () => {
 
     describe('drag and drop', () => {
       let ow: BrowserWindow;
-      const sourcePoint = { x: 50, y: 50 };
-      const targetPoint = { x: 150, y: 50 };
+      // Blink measures the drag threshold in screen coordinates, so the
+      // synthetic events need a screen position that moves with the cursor.
+      const at = (x: number, y: number) => ({ x, y, globalX: x, globalY: y });
+      const sourcePoint = at(50, 50);
+      const targetPoint = at(150, 50);
       const held = { button: 'left' as const, modifiers: ['leftbuttondown' as const] };
 
       beforeEach(async () => {
@@ -8521,7 +8524,7 @@ describe('BrowserWindow module', () => {
         ow.webContents.sendInputEvent({ type: 'mouseDown', ...sourcePoint, button: 'left', clickCount: 1 });
         let details: Electron.OffscreenDragStartDetails | null = null;
         for (let x = sourcePoint.x; !details && x < targetPoint.x; x += 5) {
-          ow.webContents.sendInputEvent({ type: 'mouseMove', x, y: sourcePoint.y, ...held });
+          ow.webContents.sendInputEvent({ type: 'mouseMove', ...at(x, sourcePoint.y), ...held });
           details = await Promise.race([started.then(([, d]) => d), setTimeout(20).then(() => null)]);
         }
         if (!details) throw new Error('renderer never started the drag');
@@ -8537,7 +8540,7 @@ describe('BrowserWindow module', () => {
         });
         let operation: string | null = null;
         for (let i = 0; !operation && i < 100; i++) {
-          ow.webContents.sendInputEvent({ type: 'mouseMove', x: targetPoint.x + (i % 2), y: targetPoint.y, ...held });
+          ow.webContents.sendInputEvent({ type: 'mouseMove', ...at(targetPoint.x + (i % 2), targetPoint.y), ...held });
           operation = await Promise.race([accepted, setTimeout(20).then(() => null)]);
         }
         if (!operation) throw new Error('drop target never accepted the drag');
@@ -8583,8 +8586,8 @@ describe('BrowserWindow module', () => {
       it('ends without a drop when released outside a drop target', async () => {
         await beginDrag();
         const ended = once(ow.webContents, 'offscreen-drag-end');
-        ow.webContents.sendInputEvent({ type: 'mouseMove', x: 50, y: 100, ...held });
-        ow.webContents.sendInputEvent({ type: 'mouseUp', x: 50, y: 100, button: 'left', clickCount: 1 });
+        ow.webContents.sendInputEvent({ type: 'mouseMove', ...at(50, 100), ...held });
+        ow.webContents.sendInputEvent({ type: 'mouseUp', ...at(50, 100), button: 'left', clickCount: 1 });
         const [, end] = await withTimeout(ended, 'offscreen-drag-end');
         expect(end).toEqual({ operation: 'none', cancelled: false });
 
@@ -8620,9 +8623,9 @@ describe('BrowserWindow module', () => {
         ow.webContents.sendInputEvent({ type: 'mouseMove', ...sourcePoint });
         ow.webContents.sendInputEvent({ type: 'mouseDown', ...sourcePoint, button: 'left', clickCount: 1 });
         for (let x = sourcePoint.x; x <= sourcePoint.x + 30; x += 5) {
-          ow.webContents.sendInputEvent({ type: 'mouseMove', x, y: sourcePoint.y, ...held });
+          ow.webContents.sendInputEvent({ type: 'mouseMove', ...at(x, sourcePoint.y), ...held });
         }
-        ow.webContents.sendInputEvent({ type: 'mouseUp', x: sourcePoint.x + 30, y: sourcePoint.y, button: 'left' });
+        ow.webContents.sendInputEvent({ type: 'mouseUp', ...at(sourcePoint.x + 30, sourcePoint.y), button: 'left' });
         const page = await withTimeout(pageDragResult(), 'dragend in page');
         expect(page.events).toContain('dragstart');
         expect(page.events.at(-1)).toBe('dragend:none');
