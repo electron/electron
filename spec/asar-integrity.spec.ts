@@ -2,6 +2,7 @@ import { createPackage, getRawHeader } from '@electron/asar';
 import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 import { resedit } from '@electron/packager/resedit';
 
+import { NtExecutable } from 'resedit';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
@@ -159,6 +160,12 @@ describe('fuses', { timeout: 120000 }, () => {
         // Register both archives in the app's integrity table.  This has to
         // happen before the fuses are flipped, which re-signs the app.
         if (process.platform === 'win32') {
+          // The executable under test may be Authenticode-signed
+          // (e.g. a signed release build), and resedit refuses to parse one by default.
+          // Editing the resources invalidates the signature anyway,
+          // so strip the certificate table from this copy before embedding.
+          const signedExe = NtExecutable.from(await fs.promises.readFile(appPath), { ignoreCert: true });
+          await fs.promises.writeFile(appPath, Buffer.from(signedExe.generate()));
           await resedit(appPath, {
             asarIntegrity: {
               'resources\\default_app.asar': {
