@@ -1,4 +1,4 @@
-From eaa1bac5d8b094256f1fa77d5f3086383b63aaca Mon Sep 17 00:00:00 2001
+From 6ba15a0ec72c078bc0cd168cf6aa176b2c1ef9c5 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Thu, 5 Nov 2026 23:17:24 +0000
 Subject: [PATCH] siso: retry a local action once when its esbuild service was
@@ -151,7 +151,7 @@ index 0000000..d452155
 +	}
 +}
 diff --git a/siso/execute/localexec/localexec.go b/siso/execute/localexec/localexec.go
-index 3363b23..c98ddac 100644
+index 3fc2f9f..22d9b2c 100644
 --- a/siso/execute/localexec/localexec.go
 +++ b/siso/execute/localexec/localexec.go
 @@ -6,6 +6,7 @@
@@ -229,6 +229,6 @@ index 3363b23..c98ddac 100644
 +	return bytes.Contains(res.StderrRaw, []byte(esbuildServiceStoppedMarker))
 +}
 +
- // fix for http://b/278658064 windows: fork/exec: Not enough memory resources are available to process this command.
- var ForkSema = semaphore.New("fork", runtime.GOMAXPROCS(0))
- 
+ // ForkSema limits concurrent local process spawns, capped on Windows even when
+ // GOMAXPROCS spans multiple processor groups.
+ var ForkSema = semaphore.New("fork", concurrencyLimit(runtime.GOMAXPROCS(0)))
