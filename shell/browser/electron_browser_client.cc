@@ -524,6 +524,9 @@ void ElectronBrowserClient::OverrideWebPreferences(
               ui::NativeTheme::PreferredColorScheme::kDark
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
+  // Chrome derives this from its toolbar color; an Electron app draws its own
+  // frame, so the native theme stands in for it.
+  prefs->preferred_root_scrollbar_color_scheme = prefs->preferred_color_scheme;
 
   SetFontDefaults(prefs);
 
@@ -546,7 +549,8 @@ bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
   return prefs.in_forced_colors != in_forced_colors ||
-         prefs.preferred_color_scheme != preferred_color_scheme;
+         prefs.preferred_color_scheme != preferred_color_scheme ||
+         prefs.preferred_root_scrollbar_color_scheme != preferred_color_scheme;
 }
 
 void ElectronBrowserClient::RegisterPendingSiteInstance(
