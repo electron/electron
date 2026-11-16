@@ -236,44 +236,25 @@ describe('session module', () => {
     });
 
     describe('with DevTools request interception', () => {
-      // TEMP diagnostics (revert before merge): `events` records what DevTools
-      // saw for the intercepted fetch, and is included in assertion messages.
-      type InterceptionEvents = { paused: unknown[]; sent: unknown[]; failed: unknown[] };
-
       // Interception is enabled before the page loads, so the document commits
       // with the DevTools-intercepted subresource factory instead of relying on
       // the factory update that Fetch.enable pushes to an already-loaded page.
       const interceptSubresources = async (
         w: BrowserWindow,
         onPaused: (requestId: string) => Promise<unknown>
-      ): Promise<{ commands: Promise<unknown>[]; events: InterceptionEvents }> => {
+      ): Promise<Promise<unknown>[]> => {
         const commands: Promise<unknown>[] = [];
-        const events: InterceptionEvents = { paused: [], sent: [], failed: [] };
         w.webContents.debugger.attach();
         w.webContents.debugger.on('message', (_event, method, params) => {
-          if (method === 'Fetch.requestPaused') {
-            events.paused.push({ url: params.request.url, resourceType: params.resourceType });
-            commands.push(onPaused(params.requestId));
-          } else if (method === 'Network.requestWillBeSent' && params.request.url.startsWith(serverUrl)) {
-            events.sent.push({ requestId: params.requestId, url: params.request.url, type: params.type });
-          } else if (method === 'Network.loadingFailed') {
-            events.failed.push({
-              requestId: params.requestId,
-              type: params.type,
-              errorText: params.errorText,
-              blockedReason: params.blockedReason,
-              corsErrorStatus: params.corsErrorStatus
-            });
-          }
+          if (method === 'Fetch.requestPaused') commands.push(onPaused(params.requestId));
         });
-        await w.webContents.debugger.sendCommand('Network.enable');
         await w.webContents.debugger.sendCommand('Fetch.enable', { patterns: [{ urlPattern: `${serverUrl}/*` }] });
-        return { commands, events };
+        return commands;
       };
 
       it('can fulfill subresource requests', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
-        const { commands, events } = await interceptSubresources(w, (requestId) =>
+        const commands = await interceptSubresources(w, (requestId) =>
           w.webContents.debugger.sendCommand('Fetch.fulfillRequest', {
             requestId,
             responseCode: 200,
@@ -282,19 +263,17 @@ describe('session module', () => {
           })
         );
         await w.loadFile(blankPage);
-        const result = await w.webContents.executeJavaScript(
-          `fetch(${JSON.stringify(`${serverUrl}/data`)}).then((r) => r.text(), (e) => 'rejected: ' + e)`
+        const text = await w.webContents.executeJavaScript(
+          `fetch(${JSON.stringify(`${serverUrl}/data`)}).then((r) => r.text())`
         );
         await Promise.all(commands);
-        await setTimeout(200);
-        const details = `DevTools events: ${JSON.stringify(events)}`;
-        expect(result, details).toBe('intercepted');
-        expect(connections, details).toBe(0);
+        expect(text).toBe('intercepted');
+        expect(connections).toBe(0);
       });
 
       it('still blocks subresource requests it continues', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { session: offlineSession() } });
-        const { commands, events } = await interceptSubresources(w, (requestId) =>
+        const commands = await interceptSubresources(w, (requestId) =>
           w.webContents.debugger.sendCommand('Fetch.continueRequest', { requestId })
         );
         await w.loadFile(blankPage);
@@ -302,11 +281,9 @@ describe('session module', () => {
           `fetch(${JSON.stringify(`${serverUrl}/data`)}).then(() => 'ok', (e) => e.name)`
         );
         await Promise.all(commands);
-        await setTimeout(200);
-        const details = `DevTools events: ${JSON.stringify(events)}`;
-        expect(commands.length, details).toBe(1);
-        expect(result, details).toBe('TypeError');
-        expect(connections, details).toBe(0);
+        expect(commands.length).toBe(1);
+        expect(result).toBe('TypeError');
+        expect(connections).toBe(0);
       });
     });
 
