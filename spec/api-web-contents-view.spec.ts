@@ -8,7 +8,7 @@ import * as path from 'node:path';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers.ts';
-import { defer, ifdescribe, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, waitUntil, isWayland } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -694,8 +694,8 @@ describe('WebContentsView', () => {
       expect(() => view.setIgnoreMouseEvents(true)).not.toThrow();
     });
 
-    it('prevents interaction when setIgnoreMouseEvents(false) is called', async function (ctx) {
-      if (!robot) {
+    it('prevents interaction when setIgnoreMouseEvents(false) is called', { tags: ['serial'] }, async function (ctx) {
+      if (!robot || isWayland) {
         ctx.skip();
       }
 
@@ -729,7 +729,15 @@ describe('WebContentsView', () => {
 
       const clickedPromise = once(ipcMain, 'clicked');
       const { x, y, width, height } = w.getBounds();
-      robot.moveMouse(x + Math.floor(width / 2), y + Math.floor(height / 2));
+
+      // see api-browser-window-ignore-mouse-events.spec.ts
+      const toScreen = (dip: Electron.Point) => (process.platform === 'darwin' ? dip : screen.dipToScreenPoint(dip));
+
+      const clickPoint = toScreen({
+        x: x + Math.floor(width / 2),
+        y: y + Math.floor(height / 2)
+      });
+      robot.moveMouse(clickPoint.x, clickPoint.y);
       robot.mouseClick();
 
       const data = await Promise.race([
@@ -743,7 +751,7 @@ describe('WebContentsView', () => {
       await new Promise((resolve) => setTimeout(resolve, 250));
 
       const clickedPromise2 = once(ipcMain, 'clicked');
-      robot.moveMouse(x + Math.floor(width / 2), y + Math.floor(height / 2));
+      robot.moveMouse(clickPoint.x, clickPoint.y);
       robot.mouseClick();
 
       const data2 = await Promise.race([
