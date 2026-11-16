@@ -70,7 +70,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   // true if |event| was consumed by an in-progress drag.
   bool HandleDragMouseEvent(const blink::WebMouseEvent& event);
   bool HandleDragKeyEvent(const blink::WebKeyboardEvent& event);
-  void CancelDrag();
+  void CancelOffScreenDrag();
 
   // NativeWindowObserver:
   void OnWindowResize() override;
@@ -121,6 +121,11 @@ class OffScreenWebContentsView : public content::WebContentsView,
       const gfx::Vector2d& cursor_offset,
       const gfx::Rect& drag_obj_rect,
       const blink::mojom::DragEventSourceInfo& event_info) override;
+  // Chromium calls this on primary-page commits, renderer crashes and teardown,
+  // before notifying observers. Offscreen drags are ended from
+  // WebContents::PrimaryMainFrameRenderProcessGone() and by clearing the drag
+  // delegate instead, so 'offscreen-drag-end' is never emitted from inside
+  // those notification loops.
   void CancelDrag() override {}
   void UpdateDragOperation(ui::mojom::DragOperation operation,
                            bool document_is_handling_drag,

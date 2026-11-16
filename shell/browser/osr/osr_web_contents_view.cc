@@ -64,7 +64,7 @@ OffScreenWebContentsView::OffScreenWebContentsView(
 
 OffScreenWebContentsView::~OffScreenWebContentsView() {
   drag_delegate_ = nullptr;
-  CancelDrag();
+  CancelOffScreenDrag();
   LiveViews().erase(this);
   if (native_window_)
     native_window_->RemoveObserver(this);
@@ -107,7 +107,7 @@ void OffScreenWebContentsView::SetDragDelegate(
   // Clear first so a drag ended by teardown does not call out to JS.
   drag_delegate_ = delegate;
   if (!delegate)
-    CancelDrag();
+    CancelOffScreenDrag();
 }
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
@@ -343,14 +343,14 @@ bool OffScreenWebContentsView::HandleDragKeyEvent(
   if (event.windows_key_code == ui::VKEY_ESCAPE) {
     if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown ||
         event.GetType() == blink::WebInputEvent::Type::kKeyDown) {
-      CancelDrag();
+      CancelOffScreenDrag();
     }
     return true;
   }
   return false;
 }
 
-void OffScreenWebContentsView::CancelDrag() {
+void OffScreenWebContentsView::CancelOffScreenDrag() {
   if (!drag_)
     return;
   DragTargetLeave();

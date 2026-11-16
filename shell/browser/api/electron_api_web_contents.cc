@@ -3209,7 +3209,7 @@ void WebContents::PrimaryMainFrameRenderProcessGone(
   // the reason below.
   if (auto* osr_wcv = GetOffScreenWebContentsView()) {
     base::AutoReset<bool> defer(&defer_offscreen_drag_end_, true);
-    osr_wcv->CancelDrag();
+    osr_wcv->CancelOffScreenDrag();
   }
 
   // This fires while RenderProcessHostImpl is still notifying observers of
