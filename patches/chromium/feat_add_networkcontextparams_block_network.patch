@@ -11,7 +11,12 @@ mDNS socket interfaces are not bound; and all host mapping is set to
 ^NOTFOUND so code built directly on the URLRequestContext (cert fetching,
 reporting) cannot reach the network either. URL loads are refused in
 network::URLLoaderFactory as well, after any factory override, so DevTools
-request interception can still fulfill requests locally.
+request interception can still fulfill requests locally. The block is
+kept separate from the Connection Allowlist check
+(IsNetworkForNetworkRestrictionsIdAndUrlAllowed), which
+CorsURLLoaderFactory applies to frame subresource factories even when a
+factory override is installed, so each caller of that check refuses
+blocked URLs explicitly instead.
 
 Electron uses this to implement sessions created with
 `networkAccess: 'none'`, which must be fully offline regardless of which
@@ -45,7 +50,7 @@ index 6ab28ad68295d1ddcb8071a36c9d7d4523c04a38..deecee42e87761d1820cc6e4fef002db
      // add console messages.
      mojo::Remote<mojom::URLLoaderClient>(std::move(client))
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 67ae96326c26336c4af919e67e0ca3e2a1dd5c47..5cc7601e58a12ff9a72ef7bcbfcc45a6320a636c 100644
+index 67ae96326c26336c4af919e67e0ca3e2a1dd5c47..67ef396af7f856b3380919df2d4114d95007ad41 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1083,6 +1083,7 @@ NetworkContext::NetworkContext(
@@ -122,7 +127,17 @@ index 67ae96326c26336c4af919e67e0ca3e2a1dd5c47..5cc7601e58a12ff9a72ef7bcbfcc45a6
    proxy_resolving_socket_factories_.Add(
        std::make_unique<ProxyResolvingSocketFactoryMojo>(url_request_context()),
        std::move(receiver));
-@@ -2832,6 +2857,7 @@ void NetworkContext::ResolveHost(
+@@ -2781,7 +2806,8 @@ void NetworkContext::CreateWebTransport(
+         url_loader_network_observer,
+     mojom::ClientSecurityStatePtr client_security_state,
+     const base::UnguessableToken& network_restrictions_id) {
+-  if (!IsNetworkForNetworkRestrictionsIdAndUrlAllowed(network_restrictions_id,
++  if (IsNetworkBlockedForUrl(url) ||
++      !IsNetworkForNetworkRestrictionsIdAndUrlAllowed(network_restrictions_id,
+                                                       url, key)) {
+     mojo::Remote<mojom::WebTransportHandshakeClient> remote_handshake_client(
+         std::move(pending_handshake_client));
+@@ -2832,6 +2858,7 @@ void NetworkContext::ResolveHost(
                         .GetURL()
                   : host->get_scheme_host_port().GetURL();
    bool is_network_disallowed_for_restrictions_id =
@@ -130,7 +145,7 @@ index 67ae96326c26336c4af919e67e0ca3e2a1dd5c47..5cc7601e58a12ff9a72ef7bcbfcc45a6
        (optional_parameters &&
         optional_parameters->network_restrictions_id.has_value() &&
         !IsHostResolutionForNetworkRestrictionsIdAndHostAllowed(
-@@ -2873,7 +2899,9 @@ void NetworkContext::CreateHostResolver(
+@@ -2873,7 +2900,9 @@ void NetworkContext::CreateHostResolver(
    net::HostResolver* internal_resolver = url_request_context_->host_resolver();
    std::unique_ptr<net::HostResolver> private_internal_resolver;
  
@@ -141,7 +156,19 @@ index 67ae96326c26336c4af919e67e0ca3e2a1dd5c47..5cc7601e58a12ff9a72ef7bcbfcc45a6
        config_overrides.value() != net::DnsConfigOverrides()) {
      // If custom configuration is needed, create a separate internal resolver
      // with the specified configuration overrides. Because we are using a non-
-@@ -3249,13 +3277,16 @@ void NetworkContext::CreateP2PSocketManager(
+@@ -3174,8 +3203,9 @@ void NetworkContext::PreconnectSockets(
+   }
+ 
+   // Preconnect is disallowed if network access is disabled for the
+-  // network_restrictions_id.
+-  if (!IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
++  // network_restrictions_id or the whole context.
++  if (IsNetworkBlockedForUrl(url) ||
++      !IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
+           network_restrictions_id, url, network_anonymization_key)) {
+     return;
+   }
+@@ -3249,13 +3279,16 @@ void NetworkContext::CreateP2PSocketManager(
      mojo::PendingReceiver<mojom::P2PTrustedSocketManager>
          trusted_socket_manager,
      mojo::PendingReceiver<mojom::P2PSocketManager> socket_manager_receiver) {
@@ -159,7 +186,7 @@ index 67ae96326c26336c4af919e67e0ca3e2a1dd5c47..5cc7601e58a12ff9a72ef7bcbfcc45a6
    socket_managers_[socket_manager.get()] = std::move(socket_manager);
  }
  #endif  // BUILDFLAG(IS_P2P_ENABLED)
-@@ -3263,6 +3294,9 @@ void NetworkContext::CreateP2PSocketManager(
+@@ -3263,6 +3296,9 @@ void NetworkContext::CreateP2PSocketManager(
  void NetworkContext::CreateMdnsResponder(
      mojo::PendingReceiver<mojom::MdnsResponder> responder_receiver) {
  #if BUILDFLAG(ENABLE_MDNS)
@@ -169,7 +196,7 @@ index 67ae96326c26336c4af919e67e0ca3e2a1dd5c47..5cc7601e58a12ff9a72ef7bcbfcc45a6
    if (!mdns_responder_manager_) {
      mdns_responder_manager_ = std::make_unique<MdnsResponderManager>();
    }
-@@ -3849,7 +3883,12 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -3849,7 +3885,12 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
              std::move(network_layer));
        }));
  
@@ -183,18 +210,16 @@ index 67ae96326c26336c4af919e67e0ca3e2a1dd5c47..5cc7601e58a12ff9a72ef7bcbfcc45a6
      builder.set_host_mapping_rules(
          command_line->GetSwitchValueASCII(switches::kHostResolverRules));
    } else if (command_line->HasSwitch(switches::kHostRules)) {
-@@ -4682,6 +4721,10 @@ bool NetworkContext::IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
-     const GURL& url,
-     const net::NetworkAnonymizationKey& network_anonymization_key,
-     bool is_redirect) {
-+  if (IsNetworkBlockedForUrl(url)) {
-+    return false;
-+  }
-+
-   if (!base::FeatureList::IsEnabled(network::features::kConnectionAllowlists)) {
-     return true;
+@@ -4519,7 +4560,7 @@ void NetworkContext::Prefetch(
+     const ResourceRequest& request,
+     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+     const base::UnguessableToken& network_restrictions_id) {
+-  if (!prefetch_enabled_) {
++  if (!prefetch_enabled_ || IsNetworkBlockedForUrl(request.url)) {
+     return;
    }
-@@ -4756,6 +4799,10 @@ bool NetworkContext::IsHostResolutionForNetworkRestrictionsIdAndHostAllowed(
+ 
+@@ -4756,6 +4797,10 @@ bool NetworkContext::IsHostResolutionForNetworkRestrictionsIdAndHostAllowed(
      const base::UnguessableToken& network_restrictions_id,
      const mojom::HostResolverHost& host,
      const net::NetworkAnonymizationKey& network_anonymization_key) {
@@ -332,3 +357,24 @@ index f561b9d5cb200ff820842c853e7995cc93953022..8570119ee91781252ea632450a740a65
    if (resource_request.web_bundle_token_params.has_value() &&
        resource_request.destination !=
            network::mojom::RequestDestination::kWebBundle) {
+diff --git a/services/network/websocket_factory.cc b/services/network/websocket_factory.cc
+index 87bfb101e8339f4812c7e6a69e9cd0dddc5cfdc3..2316490c35d915546238ad136ace740a8fa6b261 100644
+--- a/services/network/websocket_factory.cc
++++ b/services/network/websocket_factory.cc
+@@ -74,10 +74,12 @@ void WebSocketFactory::CreateWebSocket(
+     handshake_client_remote.reset();
+     return;
+   }
+-  // Enforce Connection-Allowlist restrictions for WebSocket connections. Convert
+-  // ws(s):// to http(s):// for allowlist matching, since the allowlist patterns
+-  // use HTTP schemes.
+-  if (!context_->IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
++  // Enforce Connection-Allowlist restrictions for WebSocket connections.
++  // Convert ws(s):// to http(s):// for allowlist matching, since the allowlist
++  // patterns use HTTP schemes. Also refuse every WebSocket when the whole
++  // context is blocked from the network.
++  if (context_->IsNetworkBlockedForUrl(url) ||
++      !context_->IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
+           network_restrictions_id, net::ChangeWebSocketSchemeToHttpScheme(url),
+           isolation_info.network_anonymization_key())) {
+     mojo::Remote<mojom::WebSocketHandshakeClient> handshake_client_remote(
