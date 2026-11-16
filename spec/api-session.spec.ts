@@ -264,7 +264,7 @@ describe('session module', () => {
         );
         await w.loadFile(blankPage);
         const text = await w.webContents.executeJavaScript(
-          `fetch(${JSON.stringify(`${serverUrl}/data`)}).then((r) => r.text())`
+          `fetch(${JSON.stringify(`${serverUrl}/data`)}, { signal: AbortSignal.timeout(5000) }).then((r) => r.text(), (e) => 'rejected: ' + e)`
         );
         await Promise.all(commands);
         expect(text).toBe('intercepted');
@@ -278,7 +278,7 @@ describe('session module', () => {
         );
         await w.loadFile(blankPage);
         const result = await w.webContents.executeJavaScript(
-          `fetch(${JSON.stringify(`${serverUrl}/data`)}).then(() => 'ok', (e) => e.name)`
+          `fetch(${JSON.stringify(`${serverUrl}/data`)}, { signal: AbortSignal.timeout(5000) }).then(() => 'ok', (e) => e.name)`
         );
         await Promise.all(commands);
         expect(commands.length).toBe(1);
