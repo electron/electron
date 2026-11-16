@@ -40,11 +40,12 @@ TrayIconLinux::TrayIconLinux()
 }
 
 TrayIconLinux::~TrayIconLinux() {
-  if (auto* status_icon = GetStatusIcon())
-    status_icon->SetDelegate(nullptr);
-  // The D-Bus icon may still be waiting for a StatusNotifierWatcher.
+  // Clear the delegate on every icon still alive, including a D-Bus icon that
+  // is still waiting for a StatusNotifierWatcher behind the GTK fallback.
   if (status_icon_dbus_)
     status_icon_dbus_->SetDelegate(nullptr);
+  if (status_icon_gtk_)
+    status_icon_gtk_->SetDelegate(nullptr);
 }
 
 void TrayIconLinux::SetImage(const gfx::Image& image) {
@@ -89,12 +90,15 @@ void TrayIconLinux::OnImplInitializationFailed() {
       status_icon_type_ = StatusIconType::kGtk;
       status_icon_gtk_->SetDelegate(this);
       return;
+    case StatusIconType::kDbusDelayed:
+      // The D-Bus icon doesn't report failure while its initialization is
+      // delayed, so this came from the GTK fallback. Drop it, but keep waiting
+      // for the D-Bus icon, which still needs the menu.
+      status_icon_gtk_.reset();
+      return;
     case StatusIconType::kGtk:
       status_icon_gtk_.reset();
       status_icon_type_ = StatusIconType::kNone;
-      // Keep the menu for the D-Bus icon, which may still initialize.
-      if (status_icon_dbus_)
-        return;
       menu_model_ = nullptr;
       return;
     case StatusIconType::kNone:
@@ -103,20 +107,22 @@ void TrayIconLinux::OnImplInitializationFailed() {
 }
 
 void TrayIconLinux::OnImplInitializationDelayed() {
-  // Only the D-Bus icon delays initialization. Keep it, and use the GTK icon
-  // until it initializes.
+  // Only the D-Bus icon delays initialization. Keep it, and show a GTK fallback
+  // icon until it initializes.
   CHECK_EQ(status_icon_type_, StatusIconType::kDbus);
+  status_icon_type_ = StatusIconType::kDbusDelayed;
   status_icon_gtk_ = std::make_unique<StatusIconGtk>();
-  status_icon_type_ = StatusIconType::kGtk;
   status_icon_gtk_->SetDelegate(this);
 }
 
 void TrayIconLinux::OnImplInitialized() {
-  if (status_icon_type_ == StatusIconType::kDbus || !status_icon_dbus_)
+  // Nothing to do unless the D-Bus icon initialized after a delay; it also
+  // calls this each time it re-registers with a new StatusNotifierWatcher.
+  if (status_icon_type_ != StatusIconType::kDbusDelayed)
     return;
 
-  // The D-Bus icon initialized after a delay. Replace the fallback with it, and
-  // update it with any changes made since it read its initial state.
+  // Replace the GTK fallback with the D-Bus icon, and update it with any
+  // changes made since it read its initial state.
   status_icon_gtk_.reset();
   status_icon_type_ = StatusIconType::kDbus;
   status_icon_dbus_->UpdatePlatformContextMenu(menu_model_);
@@ -138,6 +144,9 @@ ui::StatusIconLinux* TrayIconLinux::GetStatusIcon() {
   switch (status_icon_type_) {
     case StatusIconType::kDbus:
       return status_icon_dbus_.get();
+    case StatusIconType::kDbusDelayed:
+      // The GTK fallback, if it hasn't failed.
+      return status_icon_gtk_.get();
     case StatusIconType::kGtk:
       return status_icon_gtk_.get();
     case StatusIconType::kNone:
