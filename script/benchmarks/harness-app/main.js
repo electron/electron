@@ -42,14 +42,20 @@ const MIME_TYPES = {
   '.json': 'application/json'
 };
 
-const capabilities = {
-  electron: process.versions.electron,
-  chrome: process.versions.chrome,
-  registerFileProtocol: typeof protocol.registerFileProtocol === 'function',
-  handleFs: typeof protocol.handle === 'function' && typeof globalThis.Response === 'function',
-  handleNetFetch: typeof protocol.handle === 'function' && !!net && typeof net.fetch === 'function',
-  setSize: typeof ipcMain.handle === 'function'
-};
+// Before Electron 25 the protocol module only gets its methods once the app
+// is ready, so the protocol capabilities are probed after the ready event.
+function probeCapabilities() {
+  return {
+    electron: process.versions.electron,
+    chrome: process.versions.chrome,
+    registerFileProtocol: typeof protocol.registerFileProtocol === 'function',
+    handleFs: typeof protocol.handle === 'function' && typeof globalThis.Response === 'function',
+    handleNetFetch: typeof protocol.handle === 'function' && !!net && typeof net.fetch === 'function',
+    setSize: typeof ipcMain.handle === 'function'
+  };
+}
+
+let capabilities = {};
 
 // Standard schemes need a host, so URLs look like cbnet://local/<abs path>.
 const toFilePath = (requestUrl) => decodeURIComponent(new URL(requestUrl).pathname);
@@ -73,17 +79,19 @@ function registerSchemes() {
 }
 
 function startHarness() {
-  // Must happen before the ready event.
-  const supportedSchemes = Object.keys(SCHEMES).filter((scheme) => capabilities[SCHEMES[scheme]]);
+  // Must happen before the ready event, when it is not yet known which
+  // handlers this version supports. A privileged scheme without a handler
+  // is harmless: its stories are skipped.
   if (typeof protocol.registerSchemesAsPrivileged === 'function') {
     protocol.registerSchemesAsPrivileged(
-      supportedSchemes.map((scheme) => ({
+      Object.keys(SCHEMES).map((scheme) => ({
         scheme,
         privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, codeCache: true }
       }))
     );
   }
   app.whenReady().then(() => {
+    capabilities = probeCapabilities();
     registerSchemes();
     createWindow();
   });
@@ -118,8 +126,10 @@ function createWindow() {
 
 const capabilitiesArg = process.argv.find((arg) => arg.startsWith('--cb-capabilities='));
 if (capabilitiesArg) {
-  fs.writeFileSync(capabilitiesArg.slice('--cb-capabilities='.length), JSON.stringify(capabilities, null, 2));
-  app.exit(0);
+  app.whenReady().then(() => {
+    fs.writeFileSync(capabilitiesArg.slice('--cb-capabilities='.length), JSON.stringify(probeCapabilities(), null, 2));
+    app.exit(0);
+  });
 } else {
   startHarness();
 }

@@ -10,10 +10,20 @@
 // set and --dry-run is not passed:
 //   electron.perf.<metric>        median per target
 //   electron.perf.delta.<metric>  relative change in percent per comparison
+//   electron.perf.regression      1 when a metric is flagged as a regression
+//                                 in a comparison, else 0
+//   electron.perf.improvement     1 when it is flagged as an improvement
+//
+// With --history (one job of the Benchmarks History workflow, where the
+// candidate is one Electron major's latest release and the baseline the
+// anchor version), it sends only:
+//   electron.perf.history.<metric>        the candidate's median
+//   electron.perf.history.ratio.<metric>  candidate median / anchor median
 //
 // Usage:
 //   node script/benchmarks/compare.mts --results <dir> [--min-change 0.1]
 //     [--alpha 0.05] [--dry-run] [--fail-on-regression]
+//     [--history [--history-run-id <id>]]
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -346,17 +356,40 @@ interface SummaryOptions {
   problems?: string[];
   alpha: number;
   minChange: number;
+  history?: boolean;
 }
 
-export function markdownSummary({ metadata, comparisons, rejected, problems = [], alpha, minChange }: SummaryOptions) {
+export function markdownSummary({
+  metadata,
+  comparisons,
+  rejected,
+  problems = [],
+  alpha,
+  minChange,
+  history = false
+}: SummaryOptions) {
   const targets = Object.fromEntries(metadata.targets.map((target) => [target.id, target]));
   const lines = [
-    '## Electron benchmarks',
+    history
+      ? `## Electron benchmarks history: Electron ${majorOf(targets.candidate?.electronVersion ?? '?')}`
+      : '## Electron benchmarks',
     '',
     `${metadata.rounds} interleaved rounds on ${metadata.cpuModel} (${metadata.cpuCount} CPUs, ${metadata.runnerName}${metadata.vmSize ? `, ${metadata.vmSize}` : ''}), crossbench ${metadata.crossbenchRevision.slice(0, 12)}.`,
     `Flagged when Welch's t-test and Mann-Whitney U both give p < ${alpha} and the medians differ by at least ${(minChange * 100).toFixed(0)}%. Thresholds are not calibrated yet.`,
     ''
   ];
+  if (history) {
+    lines.push(
+      'History run: the reference is the anchor version. Compare majors by their ratio to the anchor, not by raw values, which come from different hosts.',
+      ''
+    );
+  }
+  if (metadata.skippedSuites?.length) {
+    lines.push(
+      `:warning: Skipped after the candidate failed them in the first two rounds: ${metadata.skippedSuites.join(', ')}`,
+      ''
+    );
+  }
   for (const problem of problems) lines.push(`:x: ${problem}`, '');
   if (rejected.length) {
     lines.push(
@@ -451,6 +484,83 @@ export function datadogSeries(
       });
     }
   }
+
+  // One 0/1 gauge per metric and comparison for each verdict, so a monitor
+  // can alert on `max:electron.perf.regression{*} by {metric,comparison}`.
+  // Every evaluated metric reports, flagged or not, so the monitor sees the
+  // flag clear on the next run. The tags are kept to low-cardinality values.
+  for (const comparison of comparisons) {
+    const candidate = targets[comparison.candidate];
+    const reference = targets[comparison.reference];
+    for (const m of comparison.metrics) {
+      for (const verdict of ['regression', 'improvement'] as const) {
+        series.push({
+          metric: `electron.perf.${verdict}`,
+          type: 3, // GAUGE
+          points: [{ timestamp, value: m.verdict === verdict ? 1 : 0 }],
+          tags: [
+            tag('platform', metadata.platform),
+            tag('arch', metadata.arch),
+            tag('metric', m.metric),
+            tag('benchmark', m.metric.split('.')[0]),
+            tag('comparison', comparison.name),
+            tag('electron_version', candidate.electronVersion),
+            tag('baseline_version', reference.electronVersion)
+          ]
+        });
+      }
+    }
+  }
+  return series;
+}
+
+const majorOf = (version: string) => version.split('.')[0];
+
+// Series for one job of a version-ladder (history) run: the candidate is the
+// latest release of one Electron major and the baseline is the anchor, run
+// interleaved on the same runner. Raw values from different jobs ran on
+// different hosts and are not comparable; the ratio to the anchor, measured
+// in the same job, is. Values that are not positive (for example a PSS that
+// could not be attributed to a process type) are left out, since their ratio
+// means nothing.
+export function historySeries(
+  { metadata, comparisons, historyRunId }: { metadata: RunMetadata; comparisons: Comparison[]; historyRunId: string },
+  now = Date.now()
+): Series[] {
+  const timestamp = Math.round(now / 1000);
+  const targets = Object.fromEntries(metadata.targets.map((target) => [target.id, target]));
+  const series: Series[] = [];
+  for (const comparison of comparisons) {
+    const candidate = targets[comparison.candidate];
+    const anchor = targets[comparison.reference];
+    const tags = [
+      tag('platform', metadata.platform),
+      tag('arch', metadata.arch),
+      tag('cpu_model', metadata.cpuModel),
+      tag('electron_major', majorOf(candidate.electronVersion)),
+      tag('electron_version', candidate.electronVersion),
+      tag('chromium_version', candidate.chromiumVersion),
+      tag('anchor_version', anchor.electronVersion),
+      tag('history_run_id', historyRunId)
+    ];
+    for (const m of comparison.metrics) {
+      if (!(m.candidateMedian > 0 && Number.isFinite(m.candidateMedian))) continue;
+      const metricTags = [...tags, tag('benchmark', m.metric.split('.')[0])];
+      series.push({
+        metric: `electron.perf.history.${m.metric}`,
+        type: 3, // GAUGE
+        points: [{ timestamp, value: m.candidateMedian }],
+        tags: metricTags
+      });
+      if (!(m.referenceMedian > 0 && Number.isFinite(m.referenceMedian))) continue;
+      series.push({
+        metric: `electron.perf.history.ratio.${m.metric}`,
+        type: 3, // GAUGE
+        points: [{ timestamp, value: m.candidateMedian / m.referenceMedian }],
+        tags: metricTags
+      });
+    }
+  }
   return series;
 }
 
@@ -474,7 +584,9 @@ async function main() {
       'min-change': { type: 'string', default: '0.1' },
       alpha: { type: 'string', default: '0.05' },
       'dry-run': { type: 'boolean', default: false },
-      'fail-on-regression': { type: 'boolean', default: false }
+      'fail-on-regression': { type: 'boolean', default: false },
+      history: { type: 'boolean', default: false },
+      'history-run-id': { type: 'string', default: process.env.GITHUB_RUN_ID ?? 'local' }
     }
   });
   if (!args.results) throw new Error('--results is required');
@@ -494,7 +606,15 @@ async function main() {
     JSON.stringify({ alpha, minChange, metadata, samples, comparisons, rejected, problems }, null, 2)
   );
 
-  const summary = markdownSummary({ metadata, comparisons, rejected, problems, alpha, minChange });
+  const summary = markdownSummary({
+    metadata,
+    comparisons,
+    rejected,
+    problems,
+    alpha,
+    minChange,
+    history: args.history
+  });
   fs.writeFileSync(path.join(resultsDir, 'summary.md'), summary);
   if (process.env.GITHUB_STEP_SUMMARY) {
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
@@ -502,7 +622,9 @@ async function main() {
     console.log(summary);
   }
 
-  const series = datadogSeries({ metadata, samples, comparisons });
+  const series = args.history
+    ? historySeries({ metadata, comparisons, historyRunId: args['history-run-id'] })
+    : datadogSeries({ metadata, samples, comparisons });
   if (args['dry-run']) {
     console.log(`[compare] dry run: would upload ${series.length} series to Datadog`);
     console.log(JSON.stringify({ series }, null, 2));

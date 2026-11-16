@@ -4,10 +4,16 @@
 // targets equally. Results land in <out>/rounds/<round>/<suite>/<target>/ and
 // <out>/metadata.json; compare.mts turns them into a comparison.
 //
+// --best-effort is for runs against old Electron versions (the Benchmarks
+// History workflow): a suite that fails for the candidate in the first two
+// rounds is not run again, since an old version that can't run it would fail
+// (or time out) every round, and the run only fails when no invocation
+// succeeded. Without it, any failed invocation fails the run.
+//
 // Usage (under Xvfb on Linux):
 //   node script/benchmarks/run.mts --targets <dir>/targets.json --out <dir>
 //     [--rounds 10] [--repeat 3] [--suites loading,trace,file_loading,speedometer]
-//     [--file-count 1500] [--work-dir <dir>] [--python python3]
+//     [--file-count 1500] [--work-dir <dir>] [--python python3] [--best-effort]
 import { type ChildProcess, execFile, execFileSync, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -279,6 +285,33 @@ export async function runCrossbench(
   return code ?? 1;
 }
 
+// A browser that loses its chromedriver connection can make chromedriver log
+// the same warning in a tight loop: Electron 25's chromedriver wrote 1.7 GB to
+// one story's browser.stdout.log in under a minute. Logs over maxBytes are cut
+// down to their first and last keepBytes, so the results stay small enough to
+// keep and upload.
+export function capLogs(dir: string, { maxBytes = 32 * 2 ** 20, keepBytes = 2 ** 20 } = {}) {
+  if (!fs.existsSync(dir)) return;
+  for (const entry of fs.readdirSync(dir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.log')) continue;
+    const file = path.join(entry.parentPath, entry.name);
+    const { size } = fs.statSync(file);
+    if (size <= maxBytes) continue;
+    const head = Buffer.alloc(keepBytes);
+    const tail = Buffer.alloc(keepBytes);
+    const fd = fs.openSync(file, 'r');
+    try {
+      fs.readSync(fd, head, 0, keepBytes, 0);
+      fs.readSync(fd, tail, 0, keepBytes, size - keepBytes);
+    } finally {
+      fs.closeSync(fd);
+    }
+    const marker = Buffer.from(`\n[run.mts: cut ${size - 2 * keepBytes} bytes from the middle of this log]\n`);
+    fs.writeFileSync(file, Buffer.concat([head, marker, tail]));
+    console.warn(`[run] cut ${file} from ${size} bytes`);
+  }
+}
+
 async function main() {
   killActiveChildrenOnSignals();
   const { values: args } = parseArgs({
@@ -292,7 +325,8 @@ async function main() {
       'work-dir': { type: 'string', default: path.join(os.tmpdir(), 'electron-benchmarks') },
       python: { type: 'string', default: 'python3' },
       port: { type: 'string', default: '8765' },
-      'timeout-minutes': { type: 'string', default: '30' }
+      'timeout-minutes': { type: 'string', default: '30' },
+      'best-effort': { type: 'boolean', default: false }
     }
   });
   if (!args.targets || !args.out) throw new Error('--targets and --out are required');
@@ -372,11 +406,13 @@ async function main() {
     `[run] host: ${metadata.cpuModel}, ${metadata.cpuCount} CPUs, ${metadata.kernel}, ${metadata.runnerName}`
   );
 
+  const skippedSuites = new Set<string>();
   try {
     for (let round = 0; round < rounds; round++) {
       // Rotate the target order every round so no target always runs first.
       const order = targets.map((_, i) => targets[(i + round) % targets.length]);
       for (const suite of suites) {
+        if (skippedSuites.has(suite)) continue;
         for (const target of order) {
           const suiteArgs: string[] = [];
           // Values each measure should have, checked by compare.mts. The
@@ -418,6 +454,7 @@ async function main() {
             parseInt(args['timeout-minutes'], 10) * 60_000
           );
           const seconds = Math.round((Date.now() - started) / 100) / 10;
+          capLogs(resultDir);
           if (exitCode !== 0) {
             console.warn(`[run] crossbench exited with ${exitCode} after ${seconds}s, see ${resultDir}.log`);
           }
@@ -432,6 +469,28 @@ async function main() {
           });
           writeMetadata();
         }
+        // In --best-effort mode a suite the candidate (the old version) failed
+        // in both of the first two rounds is most likely one it can't run (a
+        // missing API, or a chromedriver crossbench can't drive), so stop
+        // spending rounds on it. One failure can be a flake. The comparison
+        // needs both targets, so it stops for both. A baseline failure is not
+        // taken as an incompatibility.
+        if (args['best-effort'] && round === 1 && rounds > 2) {
+          const candidateFailed = (r: number) =>
+            metadata.invocations.some(
+              (invocation) =>
+                invocation.round === r &&
+                invocation.suite === suite &&
+                invocation.target === 'candidate' &&
+                invocation.exitCode !== 0
+            );
+          if (candidateFailed(0) && candidateFailed(1)) {
+            console.warn(`[run] ${suite} failed for the candidate in rounds 1 and 2; skipping it from now on`);
+            skippedSuites.add(suite);
+            metadata.skippedSuites = [...skippedSuites];
+            writeMetadata();
+          }
+        }
       }
     }
   } finally {
@@ -440,12 +499,17 @@ async function main() {
     writeMetadata();
   }
 
-  // Policy: any failed invocation fails the run. Every round still runs and
-  // metadata.json lists each invocation's exit code, so the results that did
-  // succeed can still be compared and uploaded as diagnostics.
+  // Policy: any failed invocation fails the run (in --best-effort mode, only
+  // when none succeeded). Every round still runs and metadata.json lists each
+  // invocation's exit code, so the results that did succeed can still be
+  // compared and uploaded as diagnostics.
   const failed = metadata.invocations.filter((invocation) => invocation.exitCode !== 0).length;
   console.log(`[run] ${metadata.invocations.length} crossbench runs, ${failed} failed`);
-  if (failed > 0) {
+  if (args['best-effort'] && failed > 0 && failed < metadata.invocations.length) {
+    console.warn(
+      `[run] ${failed} of ${metadata.invocations.length} crossbench runs failed; continuing (--best-effort)`
+    );
+  } else if (failed > 0) {
     console.error(`ERROR: ${failed} of ${metadata.invocations.length} crossbench runs failed`);
     process.exitCode = 1;
   }

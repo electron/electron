@@ -92,14 +92,23 @@ the CPU governor, which the CI VMs don't expose.
   p < 0.05 **and** the medians differ by at least 10%. It writes
   `comparison.json` and a Markdown summary, and sends the medians
   (`electron.perf.<metric>`) and relative changes in percent
-  (`electron.perf.delta.<metric>`) to Datadog. Only invocations that exited
-  with 0 and reported every repetition are used. It exits non-zero when there
-  are no usable results, or when candidate vs baseline has no comparable
-  metric.
+  (`electron.perf.delta.<metric>`) to Datadog. For alerting it also sends two
+  0/1 gauges per metric and comparison, `electron.perf.regression` and
+  `electron.perf.improvement`, which are 1 when that comparison flags the
+  metric that way. Every compared metric reports, flagged or not, so a flag
+  clears on the next run. They are tagged `metric`, `benchmark`, `comparison`,
+  `platform`, `arch`, `electron_version` and `baseline_version`, and nothing
+  else, so a monitor can group them by `metric` and `comparison`. Only
+  invocations that exited with 0 and reported every repetition are used. It
+  exits non-zero when there are no usable results, or when candidate vs
+  baseline has no comparable metric.
 * [`harness-app/`](harness-app) is the Electron app crossbench launches. It
   registers one custom scheme per file-loading strategy and exposes
   `cbHarness.setSize()` to the page. Features an older Electron version lacks
-  are reported by `--cb-capabilities` and their stories are skipped.
+  (for example `protocol.handle` before Electron 25) are reported by
+  `--cb-capabilities` and their stories are skipped. The capabilities are
+  probed after the app is ready, because before Electron 25 the `protocol`
+  module has no methods until then.
 
 crossbench has no Electron browser type yet, so the browser configs use a
 workaround: `type: "chromium"`, an explicit Chromium `version`, Electron's own
@@ -108,6 +117,90 @@ use `--headless`, because crossbench's window setup calls
 `Browser.getWindowForTarget`, which Electron does not implement. Custom schemes
 are navigated with JavaScript from `about:blank`, because crossbench's `get`
 action only accepts well-known schemes.
+
+## Stored results
+
+Datadog is the live view of the results; the `benchmarks` blob container is
+the permanent record. Every run that sends to Datadog also uploads each job's
+`metadata.json`, `comparison.json` and `summary.md` (not the raw rounds and
+traces, which stay in the run's artifacts for 30 days) to
+`https://dev-cdn.electronjs.org/benchmarks/`, at
+`nightly/<YYYY-MM-DD>/<run id>-<attempt>/<platform>-<arch>/` for the nightly
+workflow (the date is the day the run started, in UTC) and
+`history/<anchor>/<major>/<run id>-<attempt>/<platform>-<arch>/` for the
+history workflow. The upload is a separate `upload-results` job in the
+`benchmarks-upload` environment, so the jobs that run Electron builds never
+get its credentials. Existing files are never overwritten.
+
+## History across major versions
+
+The [Benchmarks History workflow](../../.github/workflows/benchmarks-history.yml)
+measures how performance changed across Electron majors. It is dispatched by
+hand and is meant as a one-time backfill, not an ongoing comparison. Every run
+must use the same anchor, 45.3.0 (the default), so that ratios stay comparable
+across runs. When a new major goes stable, dispatch the workflow with just that
+major (e.g. `majors=46`) to add it to the series. [`resolve-history.mts`](resolve-history.mts) resolves every requested
+major to its latest stable release with fiddle-core, and the workflow runs one
+job per major (six at a time) on the same runner type and container as the
+nightly run. In each job the candidate is that major's release and the
+baseline is a fixed **anchor** version, run interleaved as usual.
+
+The jobs run on different hosts, so their raw values can't be compared with
+each other. Their ratios to the anchor can: each one is measured on a single
+host, and the anchor is the same in every job. Each job sends:
+
+* `electron.perf.history.ratio.<metric>`: the candidate's median divided by
+  the anchor's. This is the number to chart across majors. Below 1 is faster
+  (or smaller) than the anchor for times and memory, and worse for the
+  Speedometer and JetStream scores.
+* `electron.perf.history.<metric>`: the candidate's raw median, for context
+  only.
+
+Both are tagged `electron_major`, `electron_version`, `chromium_version`,
+`anchor_version`, `history_run_id` (the workflow run's id), `benchmark`,
+`platform`, `arch` and `cpu_model`. Filter a dashboard on
+`anchor_version:45.3.0` so ratios from runs with different anchors are not
+mixed.
+No regression gauges or nightly series are sent, so history runs never
+trigger the nightly monitors.
+
+| Input | Default | |
+| --- | --- | --- |
+| `majors` | `15-latest` | Ranges and lists, e.g. `30-45` or `22,28,33-latest`. `latest` is the newest major with a stable release; majors without one are left out. |
+| `anchor` | `45.3.0` | Any released version, or `latest-stable`. Keep the default so runs stay comparable. |
+| `rounds` | `5` | Interleaved rounds per job. |
+| `suites` | all five | Same as nightly. |
+| `upload-to-datadog` | `true` | Also saves the summaries to blob storage (see [Stored results](#stored-results)). Unlike nightly, because the data is the point of the run. Turn it off for a trial run. |
+
+Old versions are run with `run.mts --best-effort --timeout-minutes 15`:
+stories whose APIs a version lacks are skipped (see the harness capabilities
+above), a suite that fails for the candidate in both of the first two rounds
+is not run again, and a job only fails when nothing could be measured. Which
+suites were dropped is in each job's step summary and `metadata.json`
+(`skippedSuites`).
+
+Electron 15 is the oldest major the default range includes: the harness
+uses `node:` imports, which the Node.js in Electron 14 and older lacks. What
+older versions can run, from one round each on Ubuntu 24.04 under Xvfb:
+
+* `loading` ran on every major tried (15, 18, 20, 22, 25, 28, 30, 33 and
+  36), and `speedometer` and `jetstream` on every major they were tried on
+  (15, 22, 25 and 30).
+* `file_loading`: `protocol.handle` arrived in Electron 25, so older majors
+  only run the `file://` and `registerFileProtocol` stories, and their
+  `ratio_to_file` only for `registerFileProtocol`.
+* `trace`: FCP and LCP from Electron 22 (Electron 15's traces have none of
+  the events the queries need), and resize latency only from Electron 40
+  (36 and older report none; 37 to 39 were not tried). Missing values are
+  listed in the summary as incomplete.
+* Memory: on some versions (36 in testing) the GPU and renderer processes
+  keep the zygote's command line, so their PSS can't be told apart and reads
+  as 0. History runs leave out values that are not positive.
+
+A job takes about an hour: the nightly run takes about ten minutes a round on
+the 32-core runner, and old versions run the press benchmarks more slowly.
+The default range is 31 jobs, so a full run uses about 30 runner-hours and
+takes five to six hours with six jobs at a time.
 
 ## Running locally
 
@@ -126,7 +219,10 @@ node script/benchmarks/compare.mts --results /tmp/bench/results --dry-run
 ```
 
 `--dry-run` prints the Datadog payload instead of sending it. Leave out
-`--candidate` and `--baseline` to compare the two latest nightlies. The tests
+`--candidate` and `--baseline` to compare the two latest nightlies. For one
+job of a history run, pass the major's release as `--candidate` and the
+anchor as `--baseline`, add `--best-effort` to `run.mts` and `--history` to
+`compare.mts`. The tests
 run with `node --test script/benchmarks/test/*.test.mts`.
 
 ## Caveats

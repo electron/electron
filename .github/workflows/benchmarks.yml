@@ -3,7 +3,9 @@ name: Benchmarks
 # Runs the crossbench-based benchmarks in script/benchmarks/ (see its README):
 # the latest nightly against the previous nightly, interleaved on one runner,
 # with the results sent to Datadog. Only paired results are meaningful; runners change
-# hosts between jobs, so don't compare raw values across runs.
+# hosts between jobs, so don't compare raw values across runs. Runs that send
+# to Datadog also keep their summary files in the benchmarks blob container
+# (https://dev-cdn.electronjs.org/benchmarks/nightly/).
 #
 # Dispatch with explicit versions to compare any two builds, for example to
 # bisect a flagged change through nightlies.
@@ -33,7 +35,7 @@ on:
         required: false
       upload-to-datadog:
         type: boolean
-        description: 'Send the results to Datadog'
+        description: 'Send the results to Datadog and keep their summaries in blob storage'
         default: false
         required: false
   schedule:
@@ -54,7 +56,13 @@ jobs:
       contents: read
     outputs:
       build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
+      run-date: ${{ steps.run-date.outputs.run-date }}
     steps:
+    # Names the run's folder in blob storage, so a run that ends after
+    # midnight UTC is still filed under the day it started.
+    - name: Get Run Date
+      id: run-date
+      run: echo "run-date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         persist-credentials: false
@@ -82,3 +90,80 @@ jobs:
       skip-stale-nightly: ${{ github.event_name == 'schedule' }}
     secrets:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+  # Keeps the summary files of every benchmark job in the benchmarks blob
+  # container, the permanent record of the results (Datadog is the live view),
+  # at nightly/<run date>/<run id>-<attempt>/<platform>-<arch>/. Only this job
+  # gets the Azure credentials, never the jobs that run Electron builds, and its
+  # failure leaves their results alone.
+  upload-results:
+    needs: [setup, benchmark-linux-x64]
+    if: ${{ always() && github.repository == 'electron/electron' && needs.setup.result == 'success' && (github.event_name == 'schedule' || inputs.upload-to-datadog == true) }}
+    runs-on: ubuntu-latest
+    # Holds the Azure OIDC credentials for the benchmarks container.
+    environment: benchmarks-upload
+    permissions:
+      contents: read
+      # For the Azure OIDC login.
+      id-token: write
+    steps:
+    # Each summary artifact holds one folder named after its results artifact,
+    # so merging keeps them apart.
+    - name: Download Result Summaries
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        pattern: benchmark-results-*-summary
+        path: summaries
+        merge-multiple: true
+    - name: Stage Uploads
+      id: stage
+      env:
+        RUN_DATE: ${{ needs.setup.outputs.run-date }}
+      run: |
+        if ! [[ "$RUN_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+          echo "::error::Unexpected run date '$RUN_DATE'"
+          exit 1
+        fi
+        prefix="nightly/$RUN_DATE/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+        count=0
+        shopt -s nullglob
+        for dir in summaries/benchmark-results-*/; do
+          target=$(basename "$dir")
+          target=${target#benchmark-results-}
+          if ! [[ "$target" =~ ^[a-z]+-[a-z0-9]+$ ]]; then
+            echo "::warning::Skipping unexpected summary folder $dir"
+            continue
+          fi
+          for f in metadata.json comparison.json summary.md; do
+            if [ -f "$dir/$f" ]; then
+              mkdir -p "upload/$prefix/$target"
+              cp "$dir/$f" "upload/$prefix/$target/"
+              count=$((count + 1))
+            fi
+          done
+        done
+        echo "count=$count" >> "$GITHUB_OUTPUT"
+        # A scheduled run skips a stale nightly and measures nothing.
+        if [ "$count" = 0 ]; then echo "::notice::No benchmark results to upload"; fi
+    - name: Azure Login
+      if: ${{ steps.stage.outputs.count != '0' }}
+      uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
+      with:
+        client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_OIDC_SUBSCRIPTION_ID }}
+    - name: Upload Results to Azure
+      if: ${{ steps.stage.outputs.count != '0' }}
+      env:
+        AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_BENCHMARKS_STORAGE_ACCOUNT_NAME }}
+      run: |
+        az storage blob upload-batch \
+          --account-name "$AZURE_STORAGE_ACCOUNT" \
+          --destination benchmarks \
+          --source upload \
+          --overwrite false \
+          --auth-mode login
+        echo "## Uploaded Benchmark Results" >> "$GITHUB_STEP_SUMMARY"
+        (cd upload && find . -type f | sort) | while read -r f; do
+          echo "- https://dev-cdn.electronjs.org/benchmarks/${f#./}" >> "$GITHUB_STEP_SUMMARY"
+        done
