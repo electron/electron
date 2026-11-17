@@ -6,10 +6,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 0614cb63acab2ca61f0b4d4ea9a905def866cec9..bcdf1b065057de62c8aae88acc355c7d40280807 100644
+index cf955306b6bd4d469e55164d4535c88c209a51ea..1621d7e05fe9abd3b3271efb5c49cfc5fdf4c7c0 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-@@ -160,6 +160,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
+@@ -163,6 +163,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
  
    MOCK_METHOD(void, UpgradePrerenderUntilScriptToFullPrerender, (), (override));
  
@@ -169,10 +169,10 @@ index 1bb144626a139f365bfb5bd75d84960c6fb8b7cc..f1ad4661546c1e01fcc8e242fc942a4a
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index b2315840f5930f7d4719d987afdd99e198a04382..d1a9defe0a7167d858ea7b1c9f418ba38b9395a2 100644
+index cd43f9e2b1d01092033b0fbcdd96f8f1a823f375..80322cf84ac0c6cac5dd8851302b2b8cb3e63131 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -445,6 +445,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -444,6 +444,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -180,7 +180,7 @@ index b2315840f5930f7d4719d987afdd99e198a04382..d1a9defe0a7167d858ea7b1c9f418ba3
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -952,6 +953,12 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -951,6 +952,12 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  
