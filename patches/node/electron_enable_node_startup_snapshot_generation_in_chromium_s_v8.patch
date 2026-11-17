@@ -62,7 +62,7 @@ eliminating the Node bootstrap recompile.
   config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
-index 6220b9339265051156aaa6ff77a735c8e49c85e1..2266de3a399e4cdafb93cd930ec6128e6634c639 100644
+index 40e4594447de59ba987fa86ba1472811cce353e1..a1308da6a90e4084be1938322c7993c63c98dcd9 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -31,6 +31,13 @@ declare_args() {
