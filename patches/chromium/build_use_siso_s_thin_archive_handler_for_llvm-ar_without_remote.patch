@@ -25,7 +25,10 @@ With this, all 1,843 archives in an Electron Linux build are
 byte-identical to the ones llvm-ar writes; local actions went from 2,735
 to 892 and siso's own CPU time dropped by ~15%.
 
-This should be upstreamed.
+This should be upstreamed. Drop this patch once upstream
+build/config/siso/clang_all.star uses the thin archive handler for
+llvm-ar without the remote-link gate and ar.star writes an empty thin
+archive as only the magic; check both on each Chromium roll.
 
 diff --git a/build/config/siso/ar.star b/build/config/siso/ar.star
 index 49dd4144e0de50ae4f437de2d1eede1b1e3fabdb..3908e027113a2b20563c44e782ed8784678f0587 100644
