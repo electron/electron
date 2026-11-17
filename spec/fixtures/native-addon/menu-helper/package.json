@@ -1,0 +1,10 @@
+{
+  "name": "@electron-ci/menu-helper",
+  "version": "0.0.1",
+  "main": "./build/Release/menu_helper.node",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "install": "node-gyp rebuild"
+  }
+}
