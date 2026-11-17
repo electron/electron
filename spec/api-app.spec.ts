@@ -326,6 +326,27 @@ describe('app module', () => {
     }
   );
 
+  describe('app.quit()', () => {
+    for (const target of ['frame', 'session']) {
+      it(`exits cleanly after a renderer preconnect hint observed on the ${target}`, async () => {
+        const appPath = path.join(fixturesPath, 'api', 'quit-after-preconnect');
+        const args = target === 'session' ? [appPath, '--session-preconnect'] : [appPath];
+        const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, args, { timeout: 20_000 });
+        const message = `code=${code} signal=${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`;
+        expect(stdout, message).toContain('preconnect observed');
+        expect(signal, message).toBeNull();
+        expect(code, message).toBe(0);
+        expect(stderr, message).not.toContain('dangling pointer at exit');
+        const warning = "'preconnect event' is deprecated";
+        if (target === 'session') {
+          expect(stderr, message).toContain(warning);
+        } else {
+          expect(stderr, message).not.toContain(warning);
+        }
+      });
+    }
+  });
+
   describe('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
