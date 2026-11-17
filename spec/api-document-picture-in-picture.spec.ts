@@ -37,6 +37,7 @@ describe('Document Picture-in-Picture hosting', () => {
   let children: WebContents[];
   let hosts: BaseWindow[];
   let dispositions: string[];
+  let hostOptions: Pick<BrowserWindowConstructorOptions, 'width' | 'height' | 'useContentSize'>[];
 
   beforeAll(async () => {
     url = (await listen(server)).url;
@@ -46,6 +47,7 @@ describe('Document Picture-in-Picture hosting', () => {
     children = [];
     hosts = [];
     dispositions = [];
+    hostOptions = [];
     opener = new BrowserWindow({ show: false, webPreferences: { sandbox: true, contextIsolation: true } });
     await opener.loadURL(`${url}/opener`);
   });
@@ -55,11 +57,14 @@ describe('Document Picture-in-Picture hosting', () => {
       if (!child.isDestroyed()) child.close({ waitForBeforeUnload: false });
     }
     await waitUntil(() => children.every((child) => child.isDestroyed()));
+    for (const options of hostOptions) {
+      expect(options).toEqual({ width: 360, height: 240, useContentSize: true });
+    }
   });
 
   function host(options: BrowserWindowConstructorOptions, owner = opener, useView = false): WebContents {
     const child = (options as BrowserWindowConstructorOptions & { webContents: WebContents }).webContents;
-    expect(options).toMatchObject({ width: 360, height: 240, useContentSize: true });
+    hostOptions.push({ width: options.width, height: options.height, useContentSize: options.useContentSize });
     if (!children.includes(child)) children.push(child);
     const presentation = {
       ...options,
@@ -85,6 +90,7 @@ describe('Document Picture-in-Picture hosting', () => {
     child.once('destroyed', () => {
       if (!window.isDestroyed()) window.destroy();
     });
+    window.showInactive();
     return child;
   }
 
@@ -115,6 +121,8 @@ describe('Document Picture-in-Picture hosting', () => {
       documentPictureInPicture.addEventListener('enter', event => resolve(event.window === documentPictureInPicture.window), { once: true });
     }); undefined`);
       const child = await open(useView);
+      expect(hosts[0].isVisible()).toBe(true);
+      await waitUntil(() => child.executeJavaScript('document.visibilityState === "visible"'));
       expect(
         await opener.webContents.executeJavaScript(`(async () => {
       const child = window.pip;
