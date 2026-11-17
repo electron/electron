@@ -3412,6 +3412,7 @@ __metadata:
     protobufjs: "npm:^8.7.2"
     ps-list: "npm:^7.0.0"
     q: "npm:^1.5.1"
+    resedit: "npm:^2.0.3"
     send: "npm:^0.19.0"
     sinon: "npm:^9.0.1"
     uuid: "npm:^14.0.1"

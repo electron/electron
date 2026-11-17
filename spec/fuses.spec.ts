@@ -6,7 +6,7 @@ import * as path from 'node:path';
 
 import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers.ts';
 
-ifdescribe(isTestingBindingAvailable())('fuses', () => {
+ifdescribe(isTestingBindingAvailable())('fuses', { retry: 0 }, () => {
   it('can be enabled by command-line argument during testing', async () => {
     const child0 = spawn(process.execPath, ['-v'], { env: { NODE_OPTIONS: '-e 0' } });
     const [code0] = await once(child0, 'exit');
