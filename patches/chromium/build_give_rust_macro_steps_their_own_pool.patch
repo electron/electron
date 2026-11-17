@@ -15,7 +15,9 @@ longer block those links. In local measurements this took the number of
 links that waited more than 5s for the pool from 22 to 0-1, and the
 longest wait from 58s to 3-7s.
 
-This should be upstreamed.
+This should be upstreamed. Drop this patch once upstream
+build/toolchain/gcc_toolchain.gni no longer puts the rust_macro tool in
+link_pool; check that line on each Chromium roll.
 
 diff --git a/build/toolchain/BUILD.gn b/build/toolchain/BUILD.gn
 index 6f3bc67d1fa38724f7c475a1160c1e9c7814a53a..8fa1b59b0e5ae693028943e83b31b2fd35fca20f 100644
