@@ -353,7 +353,8 @@ void MenuBar::RebuildChildren() {
     button->SetVisible(menu_model_->IsVisibleAt(i));
     if (menu_model_->GetTypeAt(i) == ElectronMenuModel::TYPE_SEPARATOR) {
       button->SetFocusBehavior(FocusBehavior::NEVER);
-      button->GetViewAccessibility().SetRole(ax::mojom::Role::kSeparator);
+      button->GetViewAccessibility().SetRole(
+          ax::mojom::Role::kMenuItemSeparator);
       button->GetViewAccessibility().SetName(
           std::u16string(), ax::mojom::NameFrom::kAttributeExplicitlyEmpty);
     } else if (menu_model_->GetTypeAt(i) != ElectronMenuModel::TYPE_SUBMENU) {
