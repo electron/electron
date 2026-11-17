@@ -7,10 +7,6 @@
 
 #include "extensions/renderer/extensions_renderer_client.h"
 
-namespace content {
-class RenderFrame;
-}
-
 namespace electron {
 
 class ElectronExtensionsRendererClient
@@ -30,10 +26,6 @@ class ElectronExtensionsRendererClient
   int GetLowestIsolatedWorldId() const override;
 
   bool AllowPopup();
-
-  void RunScriptsAtDocumentStart(content::RenderFrame* render_frame);
-  void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame);
-  void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame);
 };
 
 }  // namespace electron
