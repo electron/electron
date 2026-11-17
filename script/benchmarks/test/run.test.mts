@@ -119,6 +119,18 @@ describe('failedStories', () => {
     assert.deepEqual(failedStories(outDir, 'file_loading', STORIES, invocations), ['file_module']);
   });
 
+  it('counts a story crossbench reported errors for as failed', () => {
+    const outDir = path.join(tmp, 'failed-stories-errors');
+    const invocations = [invocation(outDir, 0, 3, STORIES), invocation(outDir, 1, 3, STORIES)];
+    for (const run of invocations) {
+      fs.writeFileSync(
+        path.join(outDir, run.dir, 'chromium_candidate', 'stories', 'file_module', 'cb.errors.json'),
+        JSON.stringify([{ type: 'builtins.TimeoutError', title: 'Waited for 0:01:00.1' }])
+      );
+    }
+    assert.deepEqual(failedStories(outDir, 'file_loading', STORIES, invocations), ['file_module']);
+  });
+
   it('returns every story when no story produced results', () => {
     const outDir = path.join(tmp, 'failed-stories-none');
     const invocations = [invocation(outDir, 0, 3, []), invocation(outDir, 1, 124, [])];

@@ -231,10 +231,10 @@ trigger the nightly monitors.
 Old versions are run with `run.mts --best-effort --timeout-minutes 15`:
 stories whose APIs a version lacks are skipped (see the harness capabilities
 above), the stories of a crossbench run that failed still count when every
-repetition produced results, a story the candidate produced no complete
-results for in either of the first two rounds is not run again (the whole
-suite when that is every story), and a job only fails when nothing could be
-measured. Which suites and stories were dropped is in each job's step summary
+repetition produced results and crossbench reported no errors for them, a
+story the candidate produced no complete results for in either of the first
+two rounds is not run again (the whole suite when that is every story), and a
+job only fails when nothing could be measured. Which suites and stories were dropped is in each job's step summary
 and `metadata.json` (`skippedSuites` and `skippedStories`).
 
 Electron 15 is the oldest major the default range includes: the harness
