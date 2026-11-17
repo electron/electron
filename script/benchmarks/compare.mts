@@ -57,6 +57,8 @@ export interface MetricComparison extends SampleComparison {
 
 export interface Comparison extends ComparisonDefinition {
   metrics: MetricComparison[];
+  // Metrics only one of the two targets has results for, and which one.
+  unmatched?: { metric: string; target: string }[];
 }
 
 // Suites run through crossbench's `loading` benchmark with generated page
@@ -144,6 +146,13 @@ function collectInvocation(
   return { metrics, incomplete };
 }
 
+// Stories of one page-suite invocation with at least one complete measure.
+// run.mts --best-effort stops running the stories that have none.
+export function storiesWithResults(resultDir: string, suite: string, expectedCount: number | undefined): Set<string> {
+  const { metrics } = collectInvocation(resultDir, suite, expectedCount);
+  return new Set(Object.keys(metrics).map((metric) => metric.split('.')[1]));
+}
+
 // The run directories of one story, one per repetition, in order:
 // <story>/<repetition>/<cache temperature>/.
 function runDirs(storyDir: string): string[] {
@@ -180,7 +189,10 @@ function processType(cmdline: string): string | undefined {
 }
 
 // PSS in MiB per process type from one meminfo dump (smaps_rollup values
-// are in kB).
+// are in kB). A type with no PSS is left out, not reported as 0: on some
+// versions (Electron 35 to 41) the GPU and renderer processes keep the
+// zygote's command line, so they can't be attributed, and a 0 would read as
+// a 100% improvement. The missing measure is listed as incomplete.
 export function memoryMeasures(dump: any): Record<string, number> {
   const kb: Record<string, number> = { total: 0, browser: 0, renderer: 0, gpu: 0 };
   for (const process of dump?.processes ?? []) {
@@ -191,7 +203,11 @@ export function memoryMeasures(dump: any): Record<string, number> {
     else if (type === 'renderer') kb.renderer += process.pss_total;
     else if (type === 'gpu-process') kb.gpu += process.pss_total;
   }
-  return Object.fromEntries(Object.entries(kb).map(([type, value]) => [`${type}_pss_mib`, value / 1024]));
+  return Object.fromEntries(
+    Object.entries(kb)
+      .filter(([, value]) => value > 0)
+      .map(([type, value]) => [`${type}_pss_mib`, value / 1024])
+  );
 }
 
 const MEMORY_MEASURES = ['total_pss_mib', 'browser_pss_mib', 'renderer_pss_mib', 'gpu_pss_mib'];
@@ -263,14 +279,16 @@ function expectedCountOf(invocation: Invocation, metadata: RunMetadata): number 
 }
 
 // samples[metric][targetId] = one value per round. Only invocations that
-// exited with 0 contribute, and only measures with every repetition present.
-// rejected lists what was left out and why.
+// exited with 0 contribute (in a --best-effort run, failed ones too, so the
+// stories that did complete are kept), and only measures with every
+// repetition present. rejected lists what was left out and why.
 export function collectSamples(resultsDir: string, metadata: RunMetadata): { samples: Samples; rejected: Rejected[] } {
   const samples: Samples = {};
   const rejected: Rejected[] = [];
   for (const invocation of metadata.invocations) {
     const { round, suite, target } = invocation;
-    if (invocation.exitCode !== 0) {
+    const failed = invocation.exitCode !== 0;
+    if (failed && !metadata.bestEffort) {
       rejected.push({ round, suite, target, reason: `crossbench exited with ${invocation.exitCode}` });
       continue;
     }
@@ -279,7 +297,10 @@ export function collectSamples(resultsDir: string, metadata: RunMetadata): { sam
       suite,
       expectedCountOf(invocation, metadata)
     );
-    if (incomplete.length) rejected.push({ round, suite, target, reason: `incomplete: ${incomplete.join(', ')}` });
+    const reasons: string[] = [];
+    if (failed) reasons.push(`crossbench exited with ${invocation.exitCode}, complete stories kept`);
+    if (incomplete.length) reasons.push(`incomplete: ${incomplete.join(', ')}`);
+    if (reasons.length) rejected.push({ round, suite, target, reason: reasons.join('; ') });
     for (const [metric, value] of Object.entries(metrics)) {
       samples[metric] ??= {};
       (samples[metric][target] ??= []).push(value);
@@ -315,6 +336,13 @@ export function compareTargets(
   const ids = new Set(targets.map((target) => target.id));
   return COMPARISONS.filter((c) => ids.has(c.reference) && ids.has(c.candidate)).map((comparison) => ({
     ...comparison,
+    unmatched: Object.keys(samples)
+      .sort()
+      .flatMap((metric) => {
+        const [reference, candidate] = [samples[metric][comparison.reference], samples[metric][comparison.candidate]];
+        if (!reference === !candidate) return [];
+        return [{ metric, target: reference ? comparison.reference : comparison.candidate }];
+      }),
     metrics: Object.keys(samples)
       .sort()
       .filter((metric) => samples[metric][comparison.reference] && samples[metric][comparison.candidate])
@@ -386,7 +414,13 @@ export function markdownSummary({
   }
   if (metadata.skippedSuites?.length) {
     lines.push(
-      `:warning: Skipped after the candidate failed them in the first two rounds: ${metadata.skippedSuites.join(', ')}`,
+      `:warning: Skipped suites (the candidate failed them in the first two rounds): ${metadata.skippedSuites.join(', ')}`,
+      ''
+    );
+  }
+  if (metadata.skippedStories?.length) {
+    lines.push(
+      `:warning: Skipped stories (no complete results from the candidate in the first two rounds): ${metadata.skippedStories.join(', ')}`,
       ''
     );
   }
@@ -402,7 +436,15 @@ export function markdownSummary({
       `### ${comparison.title}`,
       '',
       `Reference: ${describeTarget(targets[comparison.reference])}<br>Candidate: ${describeTarget(targets[comparison.candidate])}`,
-      '',
+      ''
+    );
+    if (comparison.unmatched?.length) {
+      lines.push(
+        `:warning: Not compared, measured for one target only: ${comparison.unmatched.map((u) => `${u.metric} (${u.target} only)`).join(', ')}`,
+        ''
+      );
+    }
+    lines.push(
       '| Metric | Reference | Candidate | Change | p (Welch) | p (MWU) | n | Verdict |',
       '| --- | --: | --: | --: | --: | --: | --: | --- |'
     );

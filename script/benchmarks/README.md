@@ -174,10 +174,12 @@ trigger the nightly monitors.
 
 Old versions are run with `run.mts --best-effort --timeout-minutes 15`:
 stories whose APIs a version lacks are skipped (see the harness capabilities
-above), a suite that fails for the candidate in both of the first two rounds
-is not run again, and a job only fails when nothing could be measured. Which
-suites were dropped is in each job's step summary and `metadata.json`
-(`skippedSuites`).
+above), the stories of a crossbench run that failed still count when every
+repetition produced results, a story the candidate produced no complete
+results for in either of the first two rounds is not run again (the whole
+suite when that is every story), and a job only fails when nothing could be
+measured. Which suites and stories were dropped is in each job's step summary
+and `metadata.json` (`skippedSuites` and `skippedStories`).
 
 Electron 15 is the oldest major the default range includes: the harness
 uses `node:` imports, which the Node.js in Electron 14 and older lacks. What
@@ -193,9 +195,10 @@ older versions can run, from one round each on Ubuntu 24.04 under Xvfb:
   the events the queries need), and resize latency only from Electron 40
   (36 and older report none; 37 to 39 were not tried). Missing values are
   listed in the summary as incomplete.
-* Memory: on some versions (36 in testing) the GPU and renderer processes
-  keep the zygote's command line, so their PSS can't be told apart and reads
-  as 0. History runs leave out values that are not positive.
+* Memory: on Electron 35 to 41 the GPU and renderer processes keep the
+  zygote's command line, so their PSS can't be told apart. Their measures are
+  listed as incomplete and left out of the comparison, and total PSS is still
+  measured.
 
 A job takes about an hour: the nightly run takes about ten minutes a round on
 the 32-core runner, and old versions run the press benchmarks more slowly.
