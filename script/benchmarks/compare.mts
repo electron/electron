@@ -123,6 +123,13 @@ function collectInvocation(
     for (const story of fs.readdirSync(storiesDir)) {
       const storyDir = path.join(storiesDir, story);
       if (!fs.statSync(storyDir).isDirectory()) continue;
+      // A story crossbench reported errors for is left out even when every
+      // repetition has a value: the values may not mean what they should.
+      const errors = readJsonIfExists(path.join(storyDir, 'cb.errors.json'));
+      if (Array.isArray(errors) && errors.length > 0) {
+        incomplete.push(`${suite}.${story} (crossbench reported errors)`);
+        continue;
+      }
       for (const [measure, values] of Object.entries(storyMeasures(suite, story, storyDir))) {
         const metric = `${suite}.${story}.${measure}`;
         if (values.length === 0) incomplete.push(`${metric} (no values)`);
