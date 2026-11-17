@@ -8,9 +8,10 @@
 
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "v8/include/v8.h"
@@ -18,8 +19,7 @@
 NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
     content::RenderFrameHost* frame_host)
     : network_hints::SimpleNetworkHintsHandlerImpl(frame_host->GetGlobalId()),
-      render_frame_host_id_(frame_host->GetGlobalId()),
-      browser_context_(frame_host->GetProcess()->GetBrowserContext()) {}
+      render_frame_host_id_(frame_host->GetGlobalId()) {}
 
 NetworkHintsHandlerImpl::~NetworkHintsHandlerImpl() = default;
 
@@ -27,15 +27,28 @@ void NetworkHintsHandlerImpl::Preconnect(const url::SchemeHostPort& url,
                                          bool allow_credentials) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  if (!browser_context_) {
+  auto* frame_host = content::RenderFrameHost::FromID(render_frame_host_id_);
+  if (!frame_host) {
     return;
   }
-  gin::WeakCell<electron::api::Session>* session =
-      electron::api::Session::FromBrowserContext(browser_context_);
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  auto* frame = electron::api::WebFrameMain::From(isolate, frame_host);
+  if (!frame)
+    return;
+
+  frame->Emit("preconnect", url.GetURL(), allow_credentials);
+
+  // The frame listener may have destroyed the requesting frame.
+  frame_host = frame->render_frame_host();
+  if (!frame_host)
+    return;
+
+  auto* session = electron::api::Session::FromBrowserContext(
+      frame_host->GetBrowserContext());
   if (session && session->Get()) {
-    session->Get()->Emit(
-        "preconnect", url.GetURL(), allow_credentials,
-        content::RenderFrameHost::FromID(render_frame_host_id_));
+    session->Get()->Emit("-preconnect", url.GetURL(), allow_credentials,
+                         frame_host);
   }
 }
 

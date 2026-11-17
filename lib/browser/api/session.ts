@@ -6,6 +6,8 @@ import { net, type UtilityProcess } from 'electron/main';
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
 
 Session.prototype._init = function () {
+  deprecate.event(this, 'preconnect', '-preconnect');
+
   if (this.extensions) {
     const rerouteExtensionEvent = (eventName: string) => {
       const warn = deprecate.warnOnce(`${eventName} event`, `session.extensions ${eventName} event`);

@@ -1,0 +1,4 @@
+{
+  "name": "electron-test-quit-after-preconnect",
+  "main": "main.js"
+}
