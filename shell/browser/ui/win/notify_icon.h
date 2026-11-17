@@ -95,6 +95,9 @@ class NotifyIcon : public TrayIcon {
   // The currently-displayed icon for the window.
   base::win::ScopedGDIObject<HICON> icon_;
 
+  // The tooltip, kept so it can be restored when the taskbar is re-created.
+  std::wstring tool_tip_;
+
   // The context menu.
   raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
 

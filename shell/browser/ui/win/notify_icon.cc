@@ -110,6 +110,19 @@ void NotifyIcon::HandleMouseExited(int modifiers) {
   NotifyMouseExited(cursor_pos, modifiers);
 }
 
+template <typename CharT, size_t N>
+static void CopyStringToBuf(CharT (&tgt_buf)[N],
+                            const std::basic_string<CharT> src_str) {
+  if constexpr (N < 1U)
+    return;
+
+  const auto src = base::span{src_str};
+  const auto n_chars = std::min(src.size(), N - 1U);
+  auto tgt = base::span{tgt_buf};
+  tgt.first(n_chars).copy_from(src.first(n_chars));
+  tgt[n_chars] = CharT{};  // zero-terminate the string
+}
+
 void NotifyIcon::ResetIcon() {
   // Delete any previously existing icon.
   NOTIFYICONDATA icon_data = InitIconData();
@@ -124,6 +137,10 @@ void NotifyIcon::ResetIcon() {
   // Shell_NotifyIcon() to set the image for the status icon it creates.
   if (icon_data.hIcon)
     icon_data.uFlags |= NIF_ICON;
+  if (!tool_tip_.empty()) {
+    icon_data.uFlags |= NIF_TIP;
+    CopyStringToBuf(icon_data.szTip, tool_tip_);
+  }
   // Re-add our icon.
   BOOL result = Shell_NotifyIcon(NIM_ADD, &icon_data);
   if (!result)
@@ -147,24 +164,12 @@ void NotifyIcon::SetPressedImage(HICON image) {
   // pressed status icons.
 }
 
-template <typename CharT, size_t N>
-static void CopyStringToBuf(CharT (&tgt_buf)[N],
-                            const std::basic_string<CharT> src_str) {
-  if constexpr (N < 1U)
-    return;
-
-  const auto src = base::span{src_str};
-  const auto n_chars = std::min(src.size(), N - 1U);
-  auto tgt = base::span{tgt_buf};
-  tgt.first(n_chars).copy_from(src.first(n_chars));
-  tgt[n_chars] = CharT{};  // zero-terminate the string
-}
-
 void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   // Create the icon.
   NOTIFYICONDATA icon_data = InitIconData();
+  tool_tip_ = base::UTF8ToWide(tool_tip);
   icon_data.uFlags |= NIF_TIP;
-  CopyStringToBuf(icon_data.szTip, base::UTF8ToWide(tool_tip));
+  CopyStringToBuf(icon_data.szTip, tool_tip_);
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
