@@ -184,6 +184,11 @@ runs:
         # Lets siso grow its output download concurrency past the static 200
         # when RBE keeps up. Cache-hit builds are bound by those downloads.
         SISO_EXPERIMENTS: ${{ inputs.target-platform == 'macos' && inputs.is-release != 'true' && 'adaptive-flush' || '' }}
+        # zstd-compress RBE batch reads (and batch uploads, once the server
+        # advertises supported_batch_update_compressors) for blobs over
+        # 1 KiB. macOS first: its builds are bound by downloads from RBE,
+        # and BatchRead compression needs no server change.
+        REAPI_BATCH_FLAGS: ${{ inputs.target-platform == 'macos' && inputs.is-release != 'true' && '-reapi_batch_compress_blob=1024' || '' }}
       run: |
         rm -rf "src/out/Default/Electron Framework.framework"
         rm -rf src/out/Default/Electron*.app
@@ -210,9 +215,9 @@ runs:
         fi
 
         if [ "$IS_RELEASE" = "true" ]; then
-          e build --target electron:release_build $EXTRA_TARGETS $QUIET_FLAG
+          e build --target electron:release_build $EXTRA_TARGETS $QUIET_FLAG $REAPI_BATCH_FLAGS
         else
-          e build --target electron:testing_build $EXTRA_TARGETS $QUIET_FLAG
+          e build --target electron:testing_build $EXTRA_TARGETS $QUIET_FLAG $REAPI_BATCH_FLAGS
         fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
