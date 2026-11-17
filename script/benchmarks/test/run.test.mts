@@ -6,7 +6,9 @@ import * as path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { capLogs, runCrossbench } from '../run.mts';
+import { capLogs, failedStories, runCrossbench } from '../run.mts';
+
+import type { Invocation } from '../lib/types.mts';
 
 const FIXTURE = fileURLToPath(new URL('fixtures/spawn-descendant.mts', import.meta.url));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'benchmarks-run-test-'));
@@ -73,5 +75,59 @@ describe('capLogs', () => {
     assert.ok(!cut.includes('bb'));
     assert.equal(fs.statSync(small).size, 500);
     assert.equal(fs.statSync(data).size, 2000);
+  });
+});
+
+describe('failedStories', () => {
+  const STORIES = ['file_classic', 'file_module', 'register_file_protocol_classic'];
+
+  // One file_loading invocation of the candidate in `round` that exited with
+  // `exitCode`, with three files-loaded values for each story in `complete`
+  // and one value for each story in `partial`.
+  function invocation(
+    outDir: string,
+    round: number,
+    exitCode: number,
+    complete: string[],
+    partial: string[] = []
+  ): Invocation {
+    const dir = path.join('rounds', String(round), 'file_loading', 'candidate');
+    for (const [stories, values] of [
+      [complete, [10, 11, 12]],
+      [partial, [10]]
+    ] as const) {
+      for (const story of stories) {
+        const storyDir = path.join(outDir, dir, 'chromium_candidate', 'stories', story);
+        fs.mkdirSync(storyDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(storyDir, 'performance.entries.json'),
+          JSON.stringify({ 'mark/files-loaded/startTime': { values } })
+        );
+      }
+    }
+    return { round, suite: 'file_loading', target: 'candidate', exitCode, repetitions: 3, dir };
+  }
+
+  it('returns the stories without complete results in either of the first two rounds', () => {
+    const outDir = path.join(tmp, 'failed-stories');
+    const invocations = [
+      invocation(outDir, 0, 3, ['file_classic'], ['file_module']),
+      // A baseline failure does not count.
+      { round: 1, suite: 'file_loading', target: 'baseline', exitCode: 3, repetitions: 3, dir: 'missing' },
+      invocation(outDir, 1, 3, ['register_file_protocol_classic'], ['file_module'])
+    ];
+    assert.deepEqual(failedStories(outDir, 'file_loading', STORIES, invocations), ['file_module']);
+  });
+
+  it('returns every story when no story produced results', () => {
+    const outDir = path.join(tmp, 'failed-stories-none');
+    const invocations = [invocation(outDir, 0, 3, []), invocation(outDir, 1, 124, [])];
+    assert.deepEqual(failedStories(outDir, 'file_loading', STORIES, invocations), STORIES);
+  });
+
+  it('returns nothing unless the candidate failed in both rounds', () => {
+    const outDir = path.join(tmp, 'failed-stories-flake');
+    const invocations = [invocation(outDir, 0, 3, []), invocation(outDir, 1, 0, STORIES)];
+    assert.equal(failedStories(outDir, 'file_loading', STORIES, invocations), undefined);
   });
 });
