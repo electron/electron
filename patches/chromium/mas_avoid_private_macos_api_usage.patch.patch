@@ -58,7 +58,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 08e2d690146e80e4c6c0deeac47c9cc658a5b31d..7b2ef325a15496399533ac22a08f6e77055e2059 100644
+index 081e3081b0ede86d9551e164828c3d79a6a47de7..e1acbf85a2358b9aced23c8b5441382a6ab60b16 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1170,6 +1170,7 @@ component("base") {
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 17e5d40c3da03637a738e18f246bdc435b531f4e..f627bb5cd1601526855d4474c008685c33fa3315 100644
+index cc4f16b8c6ab97b88302244d004714863462af8c..6ec08fafc86c04e3046d4080de1048df7a7ac679 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 17e5d40c3da03637a738e18f246bdc435b531f4e..f627bb5cd1601526855d4474c008685c
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2064,6 +2067,7 @@ test("content_browsertests") {
+@@ -2065,6 +2068,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1256,7 +1256,7 @@ index 17e5d40c3da03637a738e18f246bdc435b531f4e..f627bb5cd1601526855d4474c008685c
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3470,6 +3474,7 @@ test("content_unittests") {
+@@ -3473,6 +3477,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
