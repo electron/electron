@@ -19,7 +19,7 @@ Reviewed-by: Yuxin Hu <yuxinhu@google.com>
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8657342
 
 diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
-index dcbe2abd02f515aa0b71083e50544e0d90832720..da61638f9d5091fe99b609b00af8807ff3302e16 100644
+index 89c05110964872e9f52f98734ba298a0b25a7505..0e806e2dc4ca51e82e3d6e1a498d123422bc57fc 100644
 --- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
 @@ -167,11 +167,25 @@ bool CanCopyWithTransferForCopyTexture(vk::Renderer *renderer,

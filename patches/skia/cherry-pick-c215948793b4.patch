@@ -70,7 +70,7 @@ index 614c21f3852a9210337cb64faf1498cb94979cc3..210ae7afcdb25abb78705e1026178df4
  
      bool fAvoidUpdateBuffers = false;
 diff --git a/src/gpu/ganesh/vk/GrVkCommandBuffer.cpp b/src/gpu/ganesh/vk/GrVkCommandBuffer.cpp
-index 29eead38776e091152e43bf29190c7b76e7a8732..cb588e0f7b0b63b426cee27de1efb2340f7e4795 100644
+index 5da74938a1bd571337573834a7250c3fe0b69814..b6635cc0d0a8bbbb689de7657bf37f4b7aa76f42 100644
 --- a/src/gpu/ganesh/vk/GrVkCommandBuffer.cpp
 +++ b/src/gpu/ganesh/vk/GrVkCommandBuffer.cpp
 @@ -24,7 +24,9 @@
@@ -94,7 +94,7 @@ index 29eead38776e091152e43bf29190c7b76e7a8732..cb588e0f7b0b63b426cee27de1efb234
              SkASSERT(submitResult == VK_ERROR_OUT_OF_HOST_MEMORY ||
                       submitResult == VK_ERROR_OUT_OF_DEVICE_MEMORY);
 diff --git a/src/gpu/ganesh/vk/GrVkGpu.cpp b/src/gpu/ganesh/vk/GrVkGpu.cpp
-index 0c7e4193c79f8486a262e17fe894bee3fbe58922..8f3c0a90112598330c715779e85c4b38321f1786 100644
+index 118a8d9917f7caaeb56911f21dc0ca9e81b0ee61..ee55ad76ad16db3d54b19b7138e988707e0b46ba 100644
 --- a/src/gpu/ganesh/vk/GrVkGpu.cpp
 +++ b/src/gpu/ganesh/vk/GrVkGpu.cpp
 @@ -72,9 +72,11 @@
@@ -109,7 +109,7 @@ index 0c7e4193c79f8486a262e17fe894bee3fbe58922..8f3c0a90112598330c715779e85c4b38
  #include <utility>
  
  class GrAttachment;
-@@ -2234,11 +2236,17 @@ bool GrVkGpu::onSubmitToGpu(const GrSubmitInfo& info) {
+@@ -2235,11 +2237,17 @@ bool GrVkGpu::onSubmitToGpu(const GrSubmitInfo& info) {
  }
  
  void GrVkGpu::finishOutstandingGpuWork() {
