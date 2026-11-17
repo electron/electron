@@ -6327,13 +6327,14 @@ describe('webContents module', { retry: 0 }, () => {
         }
       });
 
-      const draggablePage = path.join(fixturesPath, 'pages', 'draggable-page.html');
-      await mainView.webContents.loadFile(draggablePage);
-
       w.contentView.addChildView(mainView);
 
       const { width, height } = w.getContentBounds();
       mainView.setBounds({ x: 0, y: 0, width, height });
+
+      // Attach and size the view before loading so input isn't sent to a 0x0 widget.
+      const draggablePage = path.join(fixturesPath, 'pages', 'draggable-page.html');
+      await mainView.webContents.loadFile(draggablePage);
 
       const promise = once(mainView.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
 
