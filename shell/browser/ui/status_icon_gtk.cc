@@ -58,6 +58,10 @@ void StatusIconGtk::RefreshPlatformContextMenu() {
 }
 
 void StatusIconGtk::OnSetDelegate() {
+  // The delegate may have been cleared.
+  if (!delegate_)
+    return;
+
   SetImage(delegate_->GetImage());
   SetToolTip(delegate_->GetToolTip());
   UpdatePlatformContextMenu(delegate_->GetMenuModel());
