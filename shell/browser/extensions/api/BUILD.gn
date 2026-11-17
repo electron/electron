@@ -52,4 +52,10 @@ function_registration("api_registration") {
     "//electron/shell/common/extensions/api",
   ]
   deps += [ "//extensions/common/api" ]
+
+  if (enable_pdf_viewer) {
+    # pdf_viewer_private_api.h includes the generated
+    # chrome/common/extensions/api/pdf_viewer_private.h.
+    deps += [ "//chrome/common/extensions/api" ]
+  }
 }
