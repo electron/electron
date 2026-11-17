@@ -833,6 +833,8 @@ class WebContents final : public gin::Wrappable<WebContents>,
   content::FullscreenState GetFullscreenState(
       const content::WebContents* web_contents) const override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
+  blink::mojom::DisplayMode GetDisplayMode(
+      const content::WebContents* source) override;
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* web_contents) override;
   void ExitPictureInPicture() override;
@@ -1002,6 +1004,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   bool destroyed_ = false;
   bool disposing_ = false;
+  bool document_pip_close_pending_ = false;
   gin_helper::SelfKeepAlive<WebContents> keep_alive_{nullptr};
   gin::WeakCellFactory<WebContents> weak_factory_{this};
 };
