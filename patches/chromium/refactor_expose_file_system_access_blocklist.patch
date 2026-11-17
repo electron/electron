@@ -925,10 +925,10 @@ index 0000000000000000000000000000000000000000..e67f6ef0bb4d3a9cba58b1243391ea0f
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index c3b740a30161c47bc839cfd778672f44168846e8..1ba107efd4c53bc07fe464c8b563c8fc40dba0e6 100644
+index 343bfcf7652d7dbf8fc969a65df0fae67b371153..0e05081f217d3a479da94433593307616aa4a164 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -268,503 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
+@@ -268,488 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
  }
  #endif
  
@@ -1414,6 +1414,13 @@ index c3b740a30161c47bc839cfd778672f44168846e8..1ba107efd4c53bc07fe464c8b563c8fc
 -  return block_path_rules;
 -}
 -
+ // Match case aliases conservatively when revoking grants, as for removals.
+ // This may also revoke a distinct case-variant path on a case-sensitive volume.
+ bool IsSamePathIgnoreCase(const base::FilePath& first,
+@@ -758,21 +278,6 @@ bool IsSamePathIgnoreCase(const base::FilePath& first,
+                             base::FilePath::CompareEqualIgnoreCase);
+ }
+ 
 -// Returns true if `child_components` is the same as or a descendant of
 -// `parent_components`, ignoring case differences.
 -bool IsPathOrDescendantIgnoreCase(
@@ -1432,7 +1439,7 @@ index c3b740a30161c47bc839cfd778672f44168846e8..1ba107efd4c53bc07fe464c8b563c8fc
  // Returns true if `child_path` is the same as or a descendant of
  // `parent_path`, ignoring case differences. Unlike
  // `base::FilePath::IsParent()`, this handles case-variant paths returned by
-@@ -777,311 +282,17 @@ bool IsPathOrDescendantIgnoreCase(
+@@ -785,311 +290,17 @@ bool IsPathOrDescendantIgnoreCase(
    if (child_path == parent_path || parent_path.IsParent(child_path)) {
      return true;
    }
