@@ -1,0 +1,893 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aeryn Moss <aerynm@google.com>
+Date: Wed, 21 Oct 2026 07:32:10 -0700
+Subject: [a11y] Defer restoring parents of aria-owned children during removal
+
+When an aria-owns owner is removed while immediate tree updates are
+allowed, AXRelationCache::RemoveAXID() previously called
+MaybeRestoreParentOfOwnedChild() -> RestoreParentOrPruneWithCleanLayout()
+synchronously during removal. Restoring the child's parent inline can
+trigger ChildrenChangedWithCleanLayout() and nested relation updates
+that rebuild or clear an ancestor's children vector while
+RemoveSubtree() is still iterating over it.
+
+Instead, record unparented aria-owns children in
+child_axids_to_restore_parent_ (and queue candidate owners in
+owner_axids_to_update_) during RemoveAXID(), and restore or prune their
+parents later in AXRelationCache::ProcessUpdatesWithCleanLayout() after
+pending owner updates have been processed.
+
+In AXObjectCacheImpl, flush deferred parent restorations as soon as the
+outermost Remove(), RemoveSubtree(), or RemoveIncludedSubtree() call
+completes, and defer radio button peer invalidation during immediate
+tree updates so ancestor subtrees and unparented nodes are not touched
+mid-removal.
+
+Includes web tests and WPT crashtests for aria-owns parent restoration
+from crrev.com/c/8614312.
+
+Co-authored-by: Sky Debreuil <skydebreuil@google.com>
+Fixed: 572237022
+Change-Id: I1a75b0b9fbede0533df92dacf3fdcfb9b2f7eae7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8594503
+Reviewed-by: Lucas Radaelli <lucasradaelli@google.com>
+Commit-Queue: Aeryn Moss <aerynm@google.com>
+Cr-Commit-Position: refs/heads/main@{#1723783}
+
+Electron adaptation notes (43-x-y):
+This branch predates the ARIA radiogroup refactors
+(aria_radiogroups_with_changed_membership_, MarkAriaRadioGroupMembersDirty(),
+queued_children_changed_ancestors_, bool-returning
+UpdateAriaOwnsWithCleanLayout()). The deferred radio-button peer set is drained
+by a new MarkDirtyRadioButtonPeers() helper called from CommitAXUpdates() right
+after ProcessUpdatesWithCleanLayout(). ProcessUpdatesWithCleanLayout() keeps
+this branch's single-batch owner processing and gains RestorePendingParents()
+before the batch and after each owner. RemoveIncludedSubtree() keeps
+GuardedCachedChildrenIncludingIgnored(). MapOwnedChildrenWithCleanLayout() only
+gains the owner->IsDetached() early return (the UpdateChildrenIfNecessary()
+call does not exist here). base/auto_reset.h is included in
+ax_relation_cache.cc. Test changes were not carried.
+
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+index 3095f8828a2a471c58bdb701ca6abcb2f46a5550..334cfdd8275693a56cc6cbda1773126c1fb9ae79 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+@@ -895,6 +895,8 @@ void AXObjectCacheImpl::Dispose() {
+   weak_factory_for_serialization_pipeline_.Invalidate();
+   weak_factory_for_loc_updates_pipeline_.Invalidate();
+ 
++  dirty_radio_button_peers_.clear();
++
+   lifecycle_.AdvanceTo(AXObjectCacheLifecycle::kDisposed);
+ }
+ 
+@@ -1831,7 +1833,7 @@ void AXObjectCacheImpl::RemoveFromRadioButtonGroupCache(AXID ax_id) {
+         if (peer_id != ax_id) {
+           if (AXObject* peer = ObjectFromAXID(peer_id)) {
+             if (lifecycle().StateAllowsImmediateTreeUpdates()) {
+-              MarkAXObjectDirtyWithCleanLayout(peer);
++              dirty_radio_button_peers_.insert(peer_id);
+             } else {
+               MarkAXObjectDirty(peer);
+             }
+@@ -1845,7 +1847,7 @@ void AXObjectCacheImpl::RemoveFromRadioButtonGroupCache(AXID ax_id) {
+         if (AXObject* radio_obj = Get(radio)) {
+           if (radio_obj != obj) {
+             if (lifecycle().StateAllowsImmediateTreeUpdates()) {
+-              MarkAXObjectDirtyWithCleanLayout(radio_obj);
++              dirty_radio_button_peers_.insert(radio_obj->AXObjectID());
+             } else {
+               MarkAXObjectDirty(radio_obj);
+             }
+@@ -1928,6 +1930,10 @@ void AXObjectCacheImpl::Remove(AXID ax_id, bool notify_parent) {
+ #if AX_FAIL_FAST_BUILD()
+   DCHECK(!nodes_requiring_cache_update_.Contains(ax_id));
+ #endif
++  if (!in_remove_subtree_ && relation_cache_ &&
++      lifecycle_.StateAllowsImmediateTreeUpdates() && !IsDisposing()) {
++    relation_cache_->RestorePendingParents();
++  }
+ }
+ 
+ void AXObjectCacheImpl::Remove(LayoutObject* layout_object,
+@@ -2084,12 +2090,21 @@ void AXObjectCacheImpl::RemoveIncludedSubtree(AXObject* object,
+     return;
+   }
+ 
+-  for (const auto& ax_child : object->GuardedCachedChildrenIncludingIgnored()) {
+-    RemoveIncludedSubtree(ax_child, /*remove_root=*/true);
++  {
++    base::AutoReset<bool> in_remove_subtree(&in_remove_subtree_, true);
++    for (const auto& ax_child :
++         object->GuardedCachedChildrenIncludingIgnored()) {
++      RemoveIncludedSubtree(ax_child, /*remove_root=*/true);
++    }
++    // Removing the children can remove |object|.
++    if (remove_root && !object->IsDetached()) {
++      Remove(object, /*notify_parent=*/false);
++    }
+   }
+-  // Removing the children can remove |object|.
+-  if (remove_root && !object->IsDetached()) {
+-    Remove(object, /*notify_parent=*/false);
++
++  if (!in_remove_subtree_ && relation_cache_ &&
++      lifecycle_.StateAllowsImmediateTreeUpdates()) {
++    relation_cache_->RestorePendingParents();
+   }
+ }
+ 
+@@ -2117,9 +2132,17 @@ void AXObjectCacheImpl::RemoveSubtree(const Node* node) {
+ void AXObjectCacheImpl::RemoveSubtree(const Node* node,
+                                       bool remove_root,
+                                       bool notify_parent) {
+-  HashSet<AXID> removing_subtree_axids;
+-  RemoveSubtreeInternal(node, remove_root, notify_parent,
+-                        removing_subtree_axids);
++  {
++    base::AutoReset<bool> in_remove_subtree(&in_remove_subtree_, true);
++    HashSet<AXID> removing_subtree_axids;
++    RemoveSubtreeInternal(node, remove_root, notify_parent,
++                          removing_subtree_axids);
++  }
++
++  if (!in_remove_subtree_ && relation_cache_ &&
++      lifecycle_.StateAllowsImmediateTreeUpdates()) {
++    relation_cache_->RestorePendingParents();
++  }
+ }
+ 
+ void AXObjectCacheImpl::RemoveSubtreeInternal(
+@@ -3660,10 +3683,17 @@ bool AXObjectCacheImpl::CommitAXUpdates(Document& document, bool force) {
+         MarkDocumentDirtyWithCleanLayout();
+         mark_all_dirty_ = false;
+       }
++      relation_cache_->ProcessUpdatesWithCleanLayout();
++
++      // Now that tree updates and aria-owns relations have been processed,
++      // mark the radio button peers that were deferred during removal as
++      // dirty.
++      MarkDirtyRadioButtonPeers();
+ 
+       CHECK(tree_update_callback_queue_main_.empty());
+       CHECK(tree_update_callback_queue_popup_.empty());
+       CHECK(nodes_with_pending_children_changed_.empty());
++      CHECK(dirty_radio_button_peers_.empty());
+ 
+       {
+         lifecycle_.AdvanceTo(AXObjectCacheLifecycle::kFinalizingTree);
+@@ -4074,6 +4104,21 @@ HeapVector<Member<AXObject>> AXObjectCacheImpl::GetRadioButtonGroupMembers(
+   return members;
+ }
+ 
++void AXObjectCacheImpl::MarkDirtyRadioButtonPeers() {
++  CHECK(lifecycle_.StateAllowsAXObjectsToGainFinalizationNeededBit());
++  // Marking a peer dirty can record more peers, so process until none remain.
++  while (!dirty_radio_button_peers_.empty()) {
++    HashSet<AXID> peer_ids;
++    peer_ids.swap(dirty_radio_button_peers_);
++    for (AXID peer_id : peer_ids) {
++      if (AXObject* peer = ObjectFromAXID(peer_id);
++          peer && !peer->IsDetached()) {
++        MarkAXObjectDirtyWithCleanLayout(peer);
++      }
++    }
++  }
++}
++
+ void AXObjectCacheImpl::ProcessCleanLayoutCallbacks(Document& document) {
+   SCOPED_DISALLOW_LIFECYCLE_TRANSITION();
+ 
+@@ -5919,6 +5964,9 @@ void AXObjectCacheImpl::RestoreParentOrPruneWithCleanLayout(Node* child_node) {
+       // Mark the parent dirty so it picks up this child on next update.
+       if (parent) {
+         ChildrenChangedWithCleanLayout(parent);
++        if (!parent->IsDetached() && !parent->IsMissingParent()) {
++          parent->UpdateChildrenIfNecessary();
++        }
+       }
+       return;
+     }
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.h b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.h
+index bac92a2f53b2d6713a22910a2b1da1180a0ac960..087d314b03a0b1c4121d95e9421d73de154e5fb2 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.h
++++ b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.h
+@@ -1304,6 +1304,17 @@ class MODULES_EXPORT AXObjectCacheImpl : public AXObjectCacheBase {
+   HeapHashMap<String, HeapVector<Member<RadioButtonGroup>>>
+       radio_group_name_to_node_ids_;
+ 
++  // HTML radio button peers whose group had a member removed during immediate
++  // tree updates. Deferred to `MarkDirtyRadioButtonPeers()` so peer
++  // invalidation does not mutate ancestor subtrees during `RemoveSubtree()`.
++  HashSet<AXID> dirty_radio_button_peers_;
++
++  bool in_remove_subtree_ = false;
++
++  // Marks all radio button peers in `dirty_radio_button_peers_` dirty, then
++  // clears it.
++  void MarkDirtyRadioButtonPeers();
++
+   // The set of node IDs whose bounds has changed since the last time
+   // SerializeLocationChanges was called.
+   HashSet<AXID> changed_bounds_ids_;
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_relation_cache.cc b/third_party/blink/renderer/modules/accessibility/ax_relation_cache.cc
+index 6d133a648666d66c75a19d27a3ea2ba859f2669e..be7553bbca63654df70c3388a480bbf2375579f9 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_relation_cache.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_relation_cache.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/modules/accessibility/ax_relation_cache.h"
+ 
++#include "base/auto_reset.h"
+ #include "base/notreached.h"
+ #include "third_party/blink/renderer/bindings/core/v8/frozen_array.h"
+ #include "third_party/blink/renderer/core/dom/dom_node_ids.h"
+@@ -251,6 +252,8 @@ void AXRelationCache::CheckElementWasProcessed(Element& element) {
+ #endif  // AX_FAIL_FAST_BUILD()
+ 
+ void AXRelationCache::ProcessUpdatesWithCleanLayout() {
++  RestorePendingParents();
++
+   HashSet<DOMNodeId> old_owner_axids_to_update;
+   old_owner_axids_to_update.swap(owner_axids_to_update_);
+ 
+@@ -259,11 +262,39 @@ void AXRelationCache::ProcessUpdatesWithCleanLayout() {
+     if (obj) {
+       UpdateAriaOwnsWithCleanLayout(obj);
+     }
++
++    RestorePendingParents();
+   }
+ 
+   owner_axids_to_update_.clear();
+ }
+ 
++void AXRelationCache::RestorePendingParents() {
++  // Prevent reentrant calls; the while loop will ensure
++  // `child_axids_to_restore_parent_` is completely drained.
++  if (is_restoring_parents_) {
++    return;
++  }
++  base::AutoReset<bool> restoring(&is_restoring_parents_, true);
++  while (!child_axids_to_restore_parent_.empty()) {
++    // This swap is both to clear `child_axids_to_restore_parent_` and to
++    // prevent iterator invalidation if `MaybeRestoreParentOfOwnedChild()`
++    // recursively calls `RemoveAXID()`.
++    HashSet<DOMNodeId> old_child_axids;
++    old_child_axids.swap(child_axids_to_restore_parent_);
++    for (DOMNodeId child_axid : old_child_axids) {
++      if (aria_owned_child_to_owner_mapping_.Contains(child_axid)) {
++        continue;
++      }
++      AXObject* child = ObjectFromAXID(child_axid);
++      if (child && !child->IsMissingParent()) {
++        continue;
++      }
++      MaybeRestoreParentOfOwnedChild(child_axid);
++    }
++  }
++}
++
+ void AXRelationCache::QueueOwnerToUpdate(AXObject* owner) {
+   DCHECK(owner);
+   DCHECK(!owner->IsDetached());
+@@ -271,7 +302,8 @@ void AXRelationCache::QueueOwnerToUpdate(AXObject* owner) {
+ }
+ 
+ bool AXRelationCache::IsDirty() const {
+-  return !owner_axids_to_update_.empty();
++  return !owner_axids_to_update_.empty() ||
++         !child_axids_to_restore_parent_.empty();
+ }
+ 
+ bool AXRelationCache::IsAriaOwned(const AXObject* child, bool check) const {
+@@ -840,6 +872,9 @@ void AXRelationCache::MapOwnedChildrenWithCleanLayout(
+     if (added_child->ChildrenNeedToUpdateCachedValues()) {
+       object_cache_->RemoveSubtree(added_child->GetNode(),
+                                    /*remove_root*/ false);
++      if (owner->IsDetached()) {
++        return;
++      }
+     }
+   }
+ }
+@@ -1030,13 +1065,15 @@ void AXRelationCache::UpdateAriaOwnerToChildrenMappingWithCleanLayout(
+   MapOwnedChildrenWithCleanLayout(owner, validated_owned_child_axids);
+ 
+ #if DCHECK_IS_ON()
+-  // Owned children must be in tree to avoid serialization issues.
+-  for (AXObject* child : validated_owned_children_result) {
+-    DCHECK(IsAriaOwned(child));
+-    DCHECK(child->ComputeIsIgnoredButIncludedInTree())
+-        << "Owned child not in tree: " << child
+-        << "\nRecompute included in tree: "
+-        << child->ComputeIsIgnoredButIncludedInTree();
++  if (!owner->IsDetached()) {
++    // Owned children must be in tree to avoid serialization issues.
++    for (AXObject* child : validated_owned_children_result) {
++      DCHECK(IsAriaOwned(child));
++      DCHECK(child->ComputeIsIgnoredButIncludedInTree())
++          << "Owned child not in tree: " << child
++          << "\nRecompute included in tree: "
++          << child->ComputeIsIgnoredButIncludedInTree();
++    }
+   }
+ #endif
+ 
+@@ -1079,7 +1116,9 @@ void AXRelationCache::UpdateAriaOwnerToChildrenMappingWithCleanLayout(
+     }
+   }
+ 
+-  ChildrenChangedWithCleanLayout(owner);
++  if (!owner->IsDetached()) {
++    ChildrenChangedWithCleanLayout(owner);
++  }
+ }
+ 
+ bool AXRelationCache::MayHaveHTMLLabelViaForAttribute(
+@@ -1383,10 +1422,11 @@ AXObject* AXRelationCache::GetAnchorForPositionedObject(
+ }
+ 
+ void AXRelationCache::RemoveAXID(AXID obj_id) {
++  owner_axids_to_update_.erase(obj_id);
++
+   // Need to remove from maps.
+   // There are maps from children to their owners, and owners to their children.
+   // In addition, the removed id may be an owner, or be owned, or both.
+-
+   // |obj_id| owned others:
+   if (aria_owner_to_children_mapping_.Contains(obj_id)) {
+     // |obj_id| no longer owns anything.
+@@ -1408,7 +1448,14 @@ void AXRelationCache::RemoveAXID(AXID obj_id) {
+                  "parentless objects at a bad time: "
+               << owned_child;
+         }
+-        MaybeRestoreParentOfOwnedChild(child_axid);
++        if (object_cache_->lifecycle().StateAllowsImmediateTreeUpdates()) {
++          // Defer parent restoration until the current removal completes so
++          // that restoring or pruning a child during `Remove()` does not
++          // synchronously mutate or rebuild ancestor subtrees mid-removal.
++          child_axids_to_restore_parent_.insert(child_axid);
++        } else {
++          MaybeRestoreParentOfOwnedChild(child_axid);
++        }
+       }
+     }
+     registered_id_attributes_.erase(obj_id);
+@@ -1454,11 +1501,12 @@ void AXRelationCache::RemoveOwnedRelation(AXID obj_id) {
+       // will refresh this owner before the tree is frozen.
+       owner_axids_to_update_.insert(owner_id);
+ 
+-      if (object_cache_->lifecycle().StateAllowsImmediateTreeUpdates()) {
+-        // Currently in CommitAXUpdates(). Changing the children of the owner
+-        // here could interfere with the execution of RemoveSubtree().
+-        object_cache_->MarkAXObjectDirtyWithCleanLayout(owner);
+-      } else {
++      // Do not call `MarkAXObjectDirtyWithCleanLayout(owner)` during immediate
++      // tree updates: recomputing the owner's cached values while `Remove()` is
++      // on the stack can fire `ChildrenChangedOnAncestorOf(owner)` and mutate
++      // ancestor subtrees mid-removal. `ProcessUpdatesWithCleanLayout()` will
++      // update the owner and mark its children changed after removal finishes.
++      if (!object_cache_->lifecycle().StateAllowsImmediateTreeUpdates()) {
+         object_cache_->ChildrenChanged(owner);
+       }
+     }
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_relation_cache.h b/third_party/blink/renderer/modules/accessibility/ax_relation_cache.h
+index 2ee0cd3329155d9931e02977577b6af23ee1ab05..aa4ae8429b46626d71df4a272a8d9c141b524550 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_relation_cache.h
++++ b/third_party/blink/renderer/modules/accessibility/ax_relation_cache.h
+@@ -149,6 +149,10 @@ class AXRelationCache {
+   // of them.
+   void ProcessUpdatesWithCleanLayout();
+ 
++  // Restores the natural parent (or prunes the subtree) of any formerly
++  // aria-owned children whose owners were removed during `RemoveSubtree()`.
++  void RestorePendingParents();
++
+   // Determines the set of child nodes that this object owns due to aria-owns
+   // (fully validating that the ownership is legal and free of cycles).
+   // If that differs from the previously cached set of owned children,
+@@ -367,6 +371,13 @@ class AXRelationCache {
+   // will be fired on all affected nodes.
+   HashSet<DOMNodeId> owner_axids_to_update_;
+ 
++  // A set of formerly aria-owned child IDs whose owners were removed and whose
++  // natural parents need to be restored (or their subtrees pruned) once the
++  // removal finishes or in `ProcessUpdatesWithCleanLayout()`.
++  HashSet<DOMNodeId> child_axids_to_restore_parent_;
++
++  bool is_restoring_parents_ = false;
++
+   // For each DOM node, the most recent id attribute value processed.
+   HashMap<DOMNodeId, AtomicString> registered_id_attributes_;
+ 
+diff --git a/third_party/blink/web_tests/accessibility/aria-owns-deferred-parent-restoration.html b/third_party/blink/web_tests/accessibility/aria-owns-deferred-parent-restoration.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..321e1664671a45f005f78e86d99810aebf485292
+--- /dev/null
++++ b/third_party/blink/web_tests/accessibility/aria-owns-deferred-parent-restoration.html
+@@ -0,0 +1,38 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Deferring aria-owns parent restoration during removal must not detach a pending owner</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++
++<div id="outer" role="group" aria-disabled="true"></div>
++<div id="common" aria-owns="owner2_parent">
++  <div id="wrapper">
++    <div id="owner1" aria-owns="owner2"></div>
++  </div>
++</div>
++<div id="owner2_parent">
++  <div id="owner2"></div>
++</div>
++
++<script>
++test(() => {
++  assert_own_property(window, 'accessibilityController',
++                      'This test requires accessibilityController');
++
++  // Builds the initial tree where common owns owner2_parent and contains
++  // owner1, which owns owner2.
++  accessibilityController.rootElement;
++
++  // Include "owner2" so RemoveAXID(owner1) requeues owner2 in
++  // owner_axids_to_update_ regardless of HashSet iteration order.
++  owner2.setAttribute('aria-owns', 'owner2 common');
++
++  // Reparenting wrapper under a disabled group removes wrapper's descendants
++  // during clean-layout relation updates, detaching owner2 from owner1.
++  outer.setAttribute('aria-owns', 'wrapper');
++
++  const axOuter = accessibilityController.accessibleElementById('outer');
++  assert_true(!!axOuter, 'The outer group should remain in the tree');
++  assert_equals(axOuter.childrenCount, 1);
++}, 'Removing an aria-owns owner during relation updates must not leave a pending owner parentless');
++</script>
+diff --git a/third_party/blink/web_tests/accessibility/aria-owns-deferred-restore-cycle-check.html b/third_party/blink/web_tests/accessibility/aria-owns-deferred-restore-cycle-check.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..4650ae28fa0f430f348305f4a8451221f804d935
+--- /dev/null
++++ b/third_party/blink/web_tests/accessibility/aria-owns-deferred-restore-cycle-check.html
+@@ -0,0 +1,55 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Multi-pass aria-owns update with deferred parent restoration preserves cycle check</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++
++<div id="keeper" aria-owns="wrap"></div>
++<div id="group2" role="switch" aria-owns="relay1 panel"></div>
++
++<div id="panel" aria-hidden="true">
++  <div id="group1" role="group" aria-disabled="true"></div>
++  <div id="guard2" aria-owns="relay2"></div>
++  <div id="relay2"></div>
++  <div id="wrap">
++    <div id="guard1" aria-owns="relay1"></div>
++    <div id="relay1"></div>
++    <div id="owner1" aria-owns="item"></div>
++  </div>
++</div>
++
++<div id="box" aria-hidden="true">
++  <div id="item">
++    <div id="mid" aria-owns="leaf"></div>
++  </div>
++</div>
++
++<div id="leaf" aria-owns="relay2 box">
++  <div id="probe"></div>
++</div>
++<div id="extra"></div>
++
++<script>
++function nextFrame() {
++  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
++}
++
++promise_test(async () => {
++  assert_true(!!window.accessibilityController);
++  accessibilityController.rootElement;
++  await nextFrame();
++
++  panel.removeAttribute('aria-hidden');
++  box.removeAttribute('aria-hidden');
++  keeper.removeAttribute('aria-owns');
++  accessibilityController.rootElement;
++  await nextFrame();
++
++  group1.setAttribute('aria-owns', 'wrap');
++  accessibilityController.rootElement;
++  await nextFrame();
++
++  probe.setAttribute('aria-owns', 'extra');
++  accessibilityController.rootElement;
++}, 'Multi-pass aria-owns update with deferred parent restoration rejects ancestor cycle');
++</script>
+diff --git a/third_party/blink/web_tests/accessibility/aria-owns-finalizing-tree-dirty-relation-cache.html b/third_party/blink/web_tests/accessibility/aria-owns-finalizing-tree-dirty-relation-cache.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..6df5da9229a9a40256f066a8baf509d096c60ef7
+--- /dev/null
++++ b/third_party/blink/web_tests/accessibility/aria-owns-finalizing-tree-dirty-relation-cache.html
+@@ -0,0 +1,36 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Role change on aria-owns owner leaves relation cache clean during finalization</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++
++<div id="grand" role="group" aria-owns="holder">
++  <div id="wrapper" role="group">
++    <div id="owner1" role="group" aria-owns="bridge"></div>
++  </div>
++</div>
++<div id="holder">
++  <div id="bridge">
++    <div id="sub_owner" role="group" aria-owns="item"></div>
++  </div>
++</div>
++<div id="item" role="button">Action</div>
++
++<script>
++promise_test(async () => {
++  if (window.accessibilityController) {
++    accessibilityController.rootElement;
++  }
++  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
++
++  owner1.appendChild(document.createElement('span'));
++  owner1.setAttribute('role', 'img');
++
++  if (window.accessibilityController) {
++    const axSub = accessibilityController.accessibleElementById('sub_owner');
++    assert_true(Boolean(axSub), 'sub_owner must exist in accessibility tree');
++    assert_equals(axSub.childrenCount, 1, 'sub_owner must own item');
++  }
++  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
++}, 'Deferred parent restoration during role change must restore nested aria-owns subtree without leaving AXRelationCache dirty during FinalizeTree');
++</script>
+diff --git a/third_party/blink/web_tests/accessibility/aria-owns-focus-inside-aria-hidden.html b/third_party/blink/web_tests/accessibility/aria-owns-focus-inside-aria-hidden.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..d5441a36d64fb3e868940d038bfe8578259922ba
+--- /dev/null
++++ b/third_party/blink/web_tests/accessibility/aria-owns-focus-inside-aria-hidden.html
+@@ -0,0 +1,38 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Focus inside aria-hidden ancestor after former aria-owns owner changes role</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++
++<div id="owner" role="group" aria-owns="action_btn"></div>
++<div id="wrap" aria-hidden="true">
++  <span id="sibling">Label text</span>
++  <button id="action_btn">Continue</button>
++</div>
++
++<script>
++function nextFrames() {
++  return new Promise(resolve => {
++    requestAnimationFrame(() => requestAnimationFrame(resolve));
++  });
++}
++
++promise_test(async t => {
++  await nextFrames();
++  accessibilityController.rootElement;
++
++  owner.setAttribute('role', 'img');
++  action_btn.focus();
++
++  const wrapAx = accessibilityController.accessibleElementById('wrap');
++  const siblingAx = accessibilityController.accessibleElementById('sibling');
++  const btnAx = accessibilityController.accessibleElementById('action_btn');
++
++  assert_true(Boolean(wrapAx), 'Ancestor container should exist in AX tree');
++  assert_false(wrapAx.isIgnored, 'aria-hidden on ancestor of focus should be discarded');
++  assert_true(Boolean(siblingAx), 'Sibling inside unhidden ancestor should exist in AX tree');
++  assert_false(siblingAx.isIgnored, 'Sibling inside unhidden ancestor should not be ignored');
++  assert_true(Boolean(btnAx), 'Focused button should exist in AX tree');
++  assert_false(btnAx.isIgnored, 'Focused button must not remain ignored under aria-hidden');
++}, 'Focused element restored from removed aria-owns owner discards ancestor aria-hidden');
++</script>
+diff --git a/third_party/blink/web_tests/accessibility/aria-owns-modal-dialog-image-map.html b/third_party/blink/web_tests/accessibility/aria-owns-modal-dialog-image-map.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..3086d5533cecd8fe1dc9173dd54a11d7b90d8354
+--- /dev/null
++++ b/third_party/blink/web_tests/accessibility/aria-owns-modal-dialog-image-map.html
+@@ -0,0 +1,54 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Modal dialog role update with image map area owner leaves clean relation cache</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++
++<img id="nav_img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" usemap="#nav_map" alt="map" width="10" height="10">
++<map name="nav_map">
++  <area id="map_group" role="group">
++</map>
++<div id="item_box" style="display:none">
++  <div id="item">Item</div>
++</div>
++<div id="owner" role="group" aria-owns="dialog"></div>
++<div id="dialog_host">
++  <div id="dialog" role="dialog" aria-modal="true" tabindex="-1" aria-label="Details">
++    <button id="confirm_btn">OK</button>
++  </div>
++</div>
++<button id="background_btn">Outside</button>
++
++<script>
++if (window.internals) {
++  internals.settings.setAriaModalPrunesAXTree(true);
++}
++
++function nextFrames() {
++  return new Promise(resolve => {
++    requestAnimationFrame(() => requestAnimationFrame(resolve));
++  });
++}
++
++promise_test(async t => {
++  await nextFrames();
++  accessibilityController.rootElement;
++
++  confirm_btn.focus();
++  accessibilityController.rootElement;
++  await nextFrames();
++
++  dialog.focus();
++  map_group.setAttribute('aria-owns', 'item owner');
++  accessibilityController.rootElement;
++  await nextFrames();
++
++  owner.setAttribute('role', 'img');
++  accessibilityController.rootElement;
++  await nextFrames();
++
++  const bgAx = accessibilityController.accessibleElementById('background_btn');
++  const bgExposed = Boolean(bgAx && !bgAx.isIgnored);
++  assert_false(bgExposed, 'Background controls outside active aria-modal dialog should stay pruned');
++}, 'Modal dialog restoration before MarkDocumentDirty avoids dirtying AXRelationCache via image map');
++</script>
+diff --git a/third_party/blink/web_tests/accessibility/aria-owns-modal-dialog-pruning.html b/third_party/blink/web_tests/accessibility/aria-owns-modal-dialog-pruning.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..827439c57ac3bfe940af11facb916f6addfbb7bb
+--- /dev/null
++++ b/third_party/blink/web_tests/accessibility/aria-owns-modal-dialog-pruning.html
+@@ -0,0 +1,45 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Active aria-modal dialog restored to natural parent preserves background pruning</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++
++<div id="owner" role="group" aria-owns="dialog"></div>
++<div id="dialog_host">
++  <div id="dialog" role="dialog" aria-modal="true" tabindex="-1" aria-label="Settings">
++    <button id="confirm_btn">Save</button>
++  </div>
++</div>
++<button id="background_btn">Outside</button>
++
++<script>
++if (window.internals) {
++  internals.settings.setAriaModalPrunesAXTree(true);
++}
++
++function nextFrames() {
++  return new Promise(resolve => {
++    requestAnimationFrame(() => requestAnimationFrame(resolve));
++  });
++}
++
++promise_test(async t => {
++  await nextFrames();
++  accessibilityController.rootElement;
++
++  confirm_btn.focus();
++  accessibilityController.rootElement;
++  await nextFrames();
++
++  dialog.focus();
++  accessibilityController.rootElement;
++  await nextFrames();
++
++  owner.setAttribute('role', 'img');
++  await nextFrames();
++
++  const bgAx = accessibilityController.accessibleElementById('background_btn');
++  const bgExposed = Boolean(bgAx && !bgAx.isIgnored);
++  assert_false(bgExposed, 'Background controls outside active aria-modal dialog should stay pruned');
++}, 'Active aria-modal dialog remains active when former aria-owns owner changes role');
++</script>
+diff --git a/third_party/blink/web_tests/accessibility/aria-owns-parentless-ancestor-cycle.html b/third_party/blink/web_tests/accessibility/aria-owns-parentless-ancestor-cycle.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..dffb54e1363baf47392551b6d627ff7fa64199db
+--- /dev/null
++++ b/third_party/blink/web_tests/accessibility/aria-owns-parentless-ancestor-cycle.html
+@@ -0,0 +1,28 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Reparenting an ancestor of an aria-owns owner preserves ancestor cycle detection</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++
++<div id="outer" role="group" aria-disabled="true"></div>
++<div id="grand" role="group" aria-owns="holder">
++  <div id="wrapper">
++    <div id="owner1" role="group" aria-owns="bridge"></div>
++  </div>
++</div>
++<div id="holder">
++  <div id="bridge">
++    <div id="sub_owner" role="group" aria-owns="bridge grand"></div>
++  </div>
++</div>
++
++<script>
++test(() => {
++  assert_own_property(window, 'accessibilityController',
++                      'This test requires accessibilityController');
++  accessibilityController.rootElement;
++  outer.setAttribute('aria-owns', 'wrapper');
++  const axOuter = accessibilityController.accessibleElementById('outer');
++  assert_true(Boolean(axOuter));
++}, 'Reparenting an ancestor of an aria-owns owner preserves ancestor cycle detection');
++</script>
+diff --git a/third_party/blink/web_tests/accessibility/aria-owns-radio-button-group-removal.html b/third_party/blink/web_tests/accessibility/aria-owns-radio-button-group-removal.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..c4e11c3324a751b88759659b3253367d3ae8eec5
+--- /dev/null
++++ b/third_party/blink/web_tests/accessibility/aria-owns-radio-button-group-removal.html
+@@ -0,0 +1,45 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<title>Radio button group cache removal during subtree removal must not mark peers dirty while a former aria-owns child is unparented</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++
++<div id="wrapper">
++  <div id="owner1" role="group" aria-owns="bridge"></div>
++  <input id="radio1" type="radio" name="rg">
++</div>
++
++<div id="bridge_parent">
++  <div id="not_bridge" role="group">
++    <input id="radio2" type="radio" name="rg" style="visibility:hidden">
++  </div>
++</div>
++
++<div id="label_el" role="group"></div>
++
++<script>
++test(() => {
++  assert_own_property(window, 'accessibilityController',
++                      'This test requires accessibilityController');
++
++  // Build the initial accessibility tree and populate the radio button group.
++  accessibilityController.rootElement;
++  accessibilityController.accessibleElementById('radio1');
++
++  // 1. Queue kIdChanged on not_bridge -> "bridge" so Callback 1 causes owner1
++  //    to claim bridge via aria-owns (leaving owner1's cached children_ empty).
++  not_bridge.id = 'bridge';
++
++  // 2. Queue a role change on wrapper so Callback 2 runs RemoveSubtree(wrapper)
++  //    removing owner1 and radio1 in sequence.
++  wrapper.setAttribute('role', 'group');
++
++  // 3. Make radio2 dirty with an inclusion change (referenced by aria-labelledby
++  //    so ComputeIsUsedForLabelOrDescription becomes true while visibility:hidden)
++  //    queued after Callback 2, without marking bridge's children dirty first.
++  label_el.setAttribute('aria-labelledby', 'radio2');
++
++  const axBridge = accessibilityController.accessibleElementById('bridge');
++  assert_true(Boolean(axBridge));
++}, 'Removing a radio button during RemoveSubtree must not mark peers dirty while a former aria-owns child is still unparented');
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/accessibility/crashtests/aria-owns-deferred-parent-cycle.html b/third_party/blink/web_tests/external/wpt/accessibility/crashtests/aria-owns-deferred-parent-cycle.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..6dc963a6d812afad6701bdb9ab8a0df5e529b9fd
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/accessibility/crashtests/aria-owns-deferred-parent-cycle.html
+@@ -0,0 +1,53 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<meta charset="utf-8">
++<title>Accessibility crashtest: multi-pass aria-owns cycle check after owner removal</title>
++
++<div id="keeper" aria-owns="wrap"></div>
++<div id="group2" role="switch" aria-owns="relay1 panel"></div>
++
++<div id="panel" aria-hidden="true">
++  <div id="group1" role="group" aria-disabled="true"></div>
++  <div id="guard2" aria-owns="relay2"></div>
++  <div id="relay2"></div>
++  <div id="wrap">
++    <div id="guard1" aria-owns="relay1"></div>
++    <div id="relay1"></div>
++    <div id="owner1" aria-owns="item"></div>
++  </div>
++</div>
++
++<div id="box" aria-hidden="true">
++  <div id="item">
++    <div id="mid" aria-owns="leaf"></div>
++  </div>
++</div>
++
++<div id="leaf" aria-owns="relay2 box">
++  <div id="probe"></div>
++</div>
++<div id="extra"></div>
++
++<script>
++function nextFrame() {
++  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
++}
++
++(async () => {
++  await nextFrame();
++
++  panel.removeAttribute('aria-hidden');
++  box.removeAttribute('aria-hidden');
++  keeper.removeAttribute('aria-owns');
++  await nextFrame();
++
++  group1.setAttribute('aria-owns', 'wrap');
++  await nextFrame();
++
++  probe.setAttribute('aria-owns', 'extra');
++  await nextFrame();
++
++  document.documentElement.classList.remove('test-wait');
++})();
++</script>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/accessibility/crashtests/aria-owns-deferred-parent-restoration.html b/third_party/blink/web_tests/external/wpt/accessibility/crashtests/aria-owns-deferred-parent-restoration.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e3b9fcdb57db638280f8d372ca5655f9c1730f12
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/accessibility/crashtests/aria-owns-deferred-parent-restoration.html
+@@ -0,0 +1,38 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<meta charset="utf-8">
++<title>Removing an aria-owns owner during relation updates keeps pending owners parented</title>
++
++<div id="outer" role="group" aria-disabled="true"></div>
++<div id="common" aria-owns="owner2_parent">
++  <div id="wrapper">
++    <div id="owner1" aria-owns="owner2"></div>
++  </div>
++</div>
++<div id="owner2_parent">
++  <div id="owner2"></div>
++</div>
++
++<script>
++function waitForFrames(count) {
++  return new Promise(resolve => {
++    function step() {
++      if (--count <= 0) {
++        resolve();
++      } else {
++        requestAnimationFrame(step);
++      }
++    }
++    requestAnimationFrame(step);
++  });
++}
++
++window.addEventListener('load', async () => {
++  await waitForFrames(20);
++  owner2.setAttribute('aria-owns', 'owner2 common');
++  outer.setAttribute('aria-owns', 'wrapper');
++  await waitForFrames(6);
++  document.documentElement.classList.remove('test-wait');
++});
++</script>
++</html>

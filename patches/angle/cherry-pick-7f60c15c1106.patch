@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Amirali Abdolrashidi <abdolrashidi@google.com>
+Date: Fri, 16 Oct 2026 18:29:53 -0700
+Subject: Vulkan: Include noncoherent atom size alignment
+
+  When flushing or invalidating non-coherent mapped memory ranges
+in buffer suballocations, the mapped size must be rounded up to
+nonCoherentAtomSize, and the offset must be a multiple of it.
+If nonCoherentAtomSize exceeds the default buffer alignment (e.g.
+the atom size is 512, but alignment is 256), suballocations could
+receive misaligned offsets (VUID-VkMappedMemoryRange-offset-00687).
+Additionally, rounding up the size of a suballocation near the end of a
+block could cause the range (offset + size) to spill past the memory
+block bounds (VUID-VkMappedMemoryRange-size-00685).
+
+In this change, nonCoherentAtomSize is included in determining the
+default buffer alignment in order to avoid these errors.
+
+* Added limitsVk.nonCoherentAtomSize as a max argument for
+  mDefaultBufferAlignment.
+
+* Updated flush() and invalidate() in BufferSuballocation.
+
+  * Added assertions to make sure the offset is a multiple of
+    nonCoherentAtomSize.
+
+  * Fixed the size assertions so the offset is also taken into account
+    to make sure the size range is not exceeded.
+
+* Added test: BufferDataTestES3.MapWriteAndReadManySmallDynamicBuffers
+
+Bug: chromium:536599243
+Change-Id: I9c5b093a27c3e1fc760c28362c9207bb561abc6f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8601666
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/Suballocation.cpp b/src/libANGLE/renderer/vulkan/Suballocation.cpp
+index 637af47e76c3ae4dfa01d9a55f71218b5af00959..4fb459869119f40af53e7eccc3233222206c9712 100644
+--- a/src/libANGLE/renderer/vulkan/Suballocation.cpp
++++ b/src/libANGLE/renderer/vulkan/Suballocation.cpp
+@@ -193,7 +193,8 @@ void BufferSuballocation::flush(Renderer *renderer)
+         mappedRange.offset              = getOffset();
+         mappedRange.size                = roundUp<VkDeviceSize>(mSize, nonCoherentAtomSize);
+ 
+-        ASSERT(mappedRange.size <= mBufferBlock->getAllocatedBufferSize());
++        ASSERT(mappedRange.offset % nonCoherentAtomSize == 0);
++        ASSERT(mappedRange.offset + mappedRange.size <= mBufferBlock->getAllocatedBufferSize());
+         mBufferBlock->getDeviceMemory().flush(renderer->getDevice(), mappedRange);
+     }
+ }
+@@ -211,7 +212,8 @@ void BufferSuballocation::invalidate(Renderer *renderer)
+         mappedRange.offset              = getOffset();
+         mappedRange.size                = roundUp<VkDeviceSize>(mSize, nonCoherentAtomSize);
+ 
+-        ASSERT(mappedRange.size <= mBufferBlock->getAllocatedBufferSize());
++        ASSERT(mappedRange.offset % nonCoherentAtomSize == 0);
++        ASSERT(mappedRange.offset + mappedRange.size <= mBufferBlock->getAllocatedBufferSize());
+         mBufferBlock->getDeviceMemory().invalidate(renderer->getDevice(), mappedRange);
+     }
+ }
+diff --git a/src/libANGLE/renderer/vulkan/vk_renderer.cpp b/src/libANGLE/renderer/vulkan/vk_renderer.cpp
+index 480c1bfd23310d7db1aab8f966f22893ccd31155..2000af739675c2a3d6ddfc80c97062c676d2e689 100644
+--- a/src/libANGLE/renderer/vulkan/vk_renderer.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_renderer.cpp
+@@ -2825,6 +2825,7 @@ angle::Result Renderer::initializeMemoryAllocator(vk::ErrorContext *context)
+                   static_cast<size_t>(limitsVk.minStorageBufferOffsetAlignment),
+                   static_cast<size_t>(limitsVk.minTexelBufferOffsetAlignment),
+                   static_cast<size_t>(limitsVk.minMemoryMapAlignment),
++                  static_cast<size_t>(limitsVk.nonCoherentAtomSize),
+                   static_cast<size_t>(defaultBufferMemoryRequirements.alignment)});
+ 
+     // Initialize staging buffer memory type index and alignment.
+diff --git a/src/tests/gl_tests/BufferDataTest.cpp b/src/tests/gl_tests/BufferDataTest.cpp
+index 62581feccf41240476ba5bc15ea192565cb0bd22..4317af517e03a7fa2e0e8d0122d1dfea231a5657 100644
+--- a/src/tests/gl_tests/BufferDataTest.cpp
++++ b/src/tests/gl_tests/BufferDataTest.cpp
+@@ -582,6 +582,78 @@ TEST_P(BufferDataTestES3, BufferResizing)
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++// Tests that allocating and accessing a large number of small buffers works correctly.
++TEST_P(BufferDataTestES3, MapWriteAndReadManySmallDynamicBuffers)
++{
++    // Allocate a large number of small buffers.
++    constexpr size_t kBufferCount = 5000;
++    constexpr size_t kBufferSize  = 64;
++
++    std::vector<GLBuffer> bufs(kBufferCount);
++    for (size_t i = 0; i < kBufferCount; i++)
++    {
++        glBindBuffer(GL_COPY_READ_BUFFER, bufs[i]);
++        glBufferData(GL_COPY_READ_BUFFER, kBufferSize, nullptr, GL_DYNAMIC_READ);
++        EXPECT_GL_NO_ERROR();
++    }
++
++    // Write to the buffers via mapping. Skip once every few buffers.
++    constexpr size_t kBufferSkipFactor = 17;
++    auto getValueFunc                  = [](size_t bufferIdx, size_t byteIdx) {
++        return static_cast<uint8_t>((bufferIdx + byteIdx) % 200);
++    };
++
++    std::vector<uint8_t> src(kBufferSize);
++    for (size_t i = 0; i < kBufferCount; i++)
++    {
++        if (i % kBufferSkipFactor == 0)
++        {
++            continue;
++        }
++
++        glBindBuffer(GL_COPY_READ_BUFFER, bufs[i]);
++        void *mapPtr = glMapBufferRange(GL_COPY_READ_BUFFER, 0, kBufferSize, GL_MAP_READ_BIT);
++        ASSERT_NE(mapPtr, nullptr);
++
++        for (size_t j = 0; j < kBufferSize; j++)
++        {
++            src[j] = getValueFunc(i, j);
++        }
++
++        memcpy(mapPtr, src.data(), kBufferSize);
++        glUnmapBuffer(GL_COPY_READ_BUFFER);
++        EXPECT_GL_NO_ERROR();
++    }
++
++    // Read back from the filled buffers via mapping and validate.
++    std::vector<uint8_t> dst(kBufferSize);
++    for (size_t i = 0; i < kBufferCount; i++)
++    {
++        if (i % kBufferSkipFactor == 0)
++        {
++            continue;
++        }
++
++        glBindBuffer(GL_COPY_READ_BUFFER, bufs[i]);
++        void *mapPtr = glMapBufferRange(GL_COPY_READ_BUFFER, 0, kBufferSize, GL_MAP_READ_BIT);
++        ASSERT_NE(mapPtr, nullptr);
++
++        memcpy(dst.data(), mapPtr, kBufferSize);
++        glUnmapBuffer(GL_COPY_READ_BUFFER);
++        EXPECT_GL_NO_ERROR();
++
++        for (size_t j = 0; j < kBufferSize; j++)
++        {
++            uint8_t expectedValue = getValueFunc(i, j);
++            if (dst[j] != expectedValue)
++            {
++                EXPECT_EQ(dst[j], expectedValue) << "Buffer " << i << ", Index " << j;
++                return;
++            }
++        }
++    }
++}
++
+ // Test to verify mapping a buffer after copying to it contains flushed/updated data
+ TEST_P(BufferDataTestES3, CopyBufferSubDataMapReadTest)
+ {

@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Nusko <nuskos@chromium.org>
+Date: Wed, 4 Nov 2026 00:24:02 -0800
+Subject: Use std::ranges::fill and base::span in PartitionRoot
+
+Replaces std::fill_n on slot_usage with std::ranges::fill over a
+base::span subspan to improve bounds safety and tracking.
+
+Bug: 581351423
+Change-Id: Ic3a9a35e86c4b913211c759a1e35a82dfa685e70
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8723328
+Reviewed-by: Kalvin Lee <kdlee@chromium.org>
+Commit-Queue: Kalvin Lee <kdlee@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1734865}
+
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/partition_root.cc b/base/allocator/partition_allocator/src/partition_alloc/partition_root.cc
+index 7602e85518d915792b3dc4b98f6781daee90a19f..7a224839e0e431cfc6baca2293c8c3b91a50d42d 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/partition_root.cc
++++ b/base/allocator/partition_allocator/src/partition_alloc/partition_root.cc
+@@ -19,6 +19,7 @@
+ #include "partition_alloc/partition_alloc_base/bits.h"
+ #include "partition_alloc/partition_alloc_base/compiler_specific.h"
+ #include "partition_alloc/partition_alloc_base/component_export.h"
++#include "partition_alloc/partition_alloc_base/containers/span.h"
+ #include "partition_alloc/partition_alloc_base/thread_annotations.h"
+ #include "partition_alloc/partition_alloc_check.h"
+ #include "partition_alloc/partition_alloc_config.h"
+@@ -406,7 +407,7 @@ static size_t PartitionPurgeSlotSpan(PartitionRoot* root,
+   // DiscardVirtualMemory makes the contents of discarded memory undefined.
+   size_t last_slot = static_cast<size_t>(-1);
+ #endif
+-  std::fill_n(slot_usage.begin(), num_provisioned_slots, 1);
++  std::ranges::fill(base::span(slot_usage).first(num_provisioned_slots), 1);
+   SlotSpanStart slot_span_start =
+       internal::SlotSpanMetadata::ToSlotSpanStart(slot_span, root);
+   // First, walk the freelist for this slot span and make a bitmap of which

@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Thu, 29 Oct 2026 09:48:32 -0700
+Subject: Avoid stale-lifecycle state when computing intersections
+
+This addresses two ways in which IntersectionObserver could run against
+a document whose lifecycle update was skipped or invalidated:
+
+1. View transitions: when a transition is skipped during the view
+   transition lifecycle steps, ViewTransitionSupplement would
+   synchronously advance other captured transitions, running their DOM
+   update callbacks (script) in the middle of the rendering lifecycle.
+   Defer advancing captured transitions to a task whenever script is
+   forbidden.
+
+2. Frame throttling: a frame whose owner element has no layout object
+   (e.g. display:none) did not inherit its parent frame's display lock.
+   Such a frame does not get lifecycle updates when its parent is
+   display locked, but was not considered display locked itself. Make
+   DisplayLockedInParentFrame() return true if the parent frame is
+   display locked.
+
+Bug: 576203570
+Change-Id: I6e9915435c7bd4df6020c586fe2791dbacac8bb5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8674818
+Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+Reviewed-by: Kevin Ellis <kevers@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1730429}
+
+Electron adaptation notes (43-x-y):
+Only the FrameView::DisplayLockedInParentFrame() change applies. On this
+branch ViewTransitionSupplement advances captured transitions only from the
+compositor's NotifyCaptureFinished() task (there is no HasActiveCaptures() /
+AdvanceCapturedTransitions() / OnDOMCallbackReadyToRun()), so the deferral in
+view_transition_supplement.{cc,h} has no counterpart and was not carried.
+view_transition_test.cc changes were not carried.
+
+diff --git a/third_party/blink/renderer/core/frame/frame_view.cc b/third_party/blink/renderer/core/frame/frame_view.cc
+index 8f3c91b6e18e4ab866281796ad305fcc229c8499..d7f4cfacfc19af8423b4e7d7a4b08dc8b527e1d0 100644
+--- a/third_party/blink/renderer/core/frame/frame_view.cc
++++ b/third_party/blink/renderer/core/frame/frame_view.cc
+@@ -46,6 +46,15 @@ bool FrameView::CanThrottleRenderingForPropagation() const {
+ 
+ bool FrameView::DisplayLockedInParentFrame() {
+   Frame& frame = GetFrame();
++  // If the parent frame is display locked, then this frame does not get
++  // lifecycle updates either, regardless of whether the owner element has a
++  // layout object (e.g. if it is display:none).
++  if (Frame* parent_frame = frame.Tree().Parent()) {
++    if (FrameView* parent_view = parent_frame->View();
++        parent_view && parent_view->IsDisplayLocked()) {
++      return true;
++    }
++  }
+   LayoutEmbeddedContent* owner = frame.OwnerLayoutObject();
+   if (!owner)
+     return false;
+diff --git a/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc b/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
+index 3f8e018cfb7ef8be8f2be9178e4292bd2b702fe3..a72f90b2da898af32841f69bae1d8615c2dfe730 100644
+--- a/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
++++ b/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
+@@ -3736,6 +3736,97 @@ TEST_F(IntersectionObserverTest,
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+ }
+ 
++// A frame whose ancestor frame is display locked does not get lifecycle
++// updates, even if it is itself not display locked (e.g. because its own owner
++// element is display:none) and requires an intersection update. Computing
++// intersections in it must not force slot assignment recalculation during
++// post-lifecycle steps.
++TEST_F(IntersectionObserverTest,
++       DirtySlotAssignmentInFrameWithDisplayLockedAncestorFrame) {
++  WebView().MainFrameViewWidget()->Resize(gfx::Size(800, 600));
++  SimRequest main_resource("https://example.com/", "text/html");
++  SimRequest middle_resource("https://example.com/middle.html", "text/html");
++  SimRequest inner_resource("https://example.com/inner.html", "text/html");
++  LoadURL("https://example.com/");
++  main_resource.Complete(R"HTML(
++    <div id="lock">
++      <iframe id="middle" src="middle.html"></iframe>
++    </div>
++  )HTML");
++  middle_resource.Complete(R"HTML(
++    <iframe id="inner" src="inner.html"></iframe>
++  )HTML");
++  inner_resource.Complete(R"HTML(
++    <div id="host">
++      <template shadowrootmode="open">
++        <slot></slot>
++      </template>
++      <div id="target">Hello, world!</div>
++      <div id="wrap">
++        <div style="overflow: scroll; width: 50px; height: 50px">
++          <div style="anchor-name: --a; width: 10px; height: 10px"></div>
++          <div style="position: absolute; position-anchor: --a"></div>
++        </div>
++      </div>
++    </div>
++  )HTML");
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++
++  auto* middle_frame = To<WebLocalFrameImpl>(MainFrame().FirstChild());
++  ASSERT_TRUE(middle_frame);
++  auto* inner_frame = To<WebLocalFrameImpl>(middle_frame->FirstChild());
++  ASSERT_TRUE(inner_frame);
++  LocalFrameView* middle_view = middle_frame->GetFrame()->View();
++  Document* inner_document = inner_frame->GetFrame()->GetDocument();
++  LocalFrameView* inner_view = inner_document->View();
++  Element* target = inner_document->getElementById(AtomicString("target"));
++  ASSERT_TRUE(target);
++  EXPECT_TRUE(target->GetLayoutObject());
++
++  // Display lock the middle frame, and remove the inner frame's owner box so
++  // that the display lock is not propagated through the owner's layout object.
++  middle_frame->GetFrame()
++      ->GetDocument()
++      ->getElementById(AtomicString("inner"))
++      ->SetInlineStyleProperty(CSSPropertyID::kDisplay, "none");
++  GetDocument()
++      .getElementById(AtomicString("lock"))
++      ->SetInlineStyleProperty(CSSPropertyID::kContentVisibility, "hidden");
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++  EXPECT_TRUE(middle_view->IsDisplayLocked());
++  EXPECT_TRUE(inner_view->CanThrottleRendering());
++
++  Element* host = inner_document->getElementById(AtomicString("host"));
++  ASSERT_TRUE(host);
++  ShadowRoot* shadow_root = host->OpenShadowRoot();
++  ASSERT_TRUE(shadow_root);
++  EXPECT_FALSE(shadow_root->NeedsSlotAssignmentRecalc());
++
++  // Dirty slot assignment and observe a target, which requires an intersection
++  // update in the inner frame.
++  Element* wrap = inner_document->getElementById(AtomicString("wrap"));
++  ASSERT_TRUE(wrap);
++  wrap->setAttribute(html_names::kSlotAttr, AtomicString("x"));
++  EXPECT_TRUE(shadow_root->NeedsSlotAssignmentRecalc());
++
++  TestIntersectionObserverDelegate* observer_delegate =
++      MakeGarbageCollected<TestIntersectionObserverDelegate>(*inner_document);
++  IntersectionObserver* observer = MakeGarbageCollected<IntersectionObserver>(
++      *observer_delegate, std::nullopt,
++      IntersectionObserver::Params{.root = inner_document, .thresholds = {0}});
++  observer->observe(target);
++
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++  EXPECT_TRUE(middle_view->IsDisplayLocked());
++  EXPECT_TRUE(shadow_root->NeedsSlotAssignmentRecalc());
++  EXPECT_EQ(observer_delegate->CallCount(), 1);
++  EXPECT_EQ(observer_delegate->EntryCount(), 1);
++  EXPECT_FALSE(observer_delegate->LastEntry()->isIntersecting());
++}
++
+ TEST_F(IntersectionObserverTest, RootMarginPercentOverflow) {
+   IntersectionObserverInit* observer_init = IntersectionObserverInit::Create();
+   observer_init->setRootMargin("3e9%");

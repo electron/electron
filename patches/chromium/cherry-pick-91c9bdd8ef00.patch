@@ -1,0 +1,147 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Wed, 2 Sep 2026 13:54:24 -0700
+Subject: [Media] Propagate data origin to MultiBufferDataSource
+
+There are a few ways that a URL can change between request and response,
+including redirects and service worker interceptions.
+GetUrlAfterRedirects only handles cases where the original request is
+redirected server-side by a header & status code. If a worker intercepts
+the request and replaces it with a response from either somewhere else
+or synthetically creates one, that information can also be useful for
+making security decisions. It wasn't being propagated, so this CL adds a
+way for that to happen, and a use case for it in HLS.
+
+Bug: 543082212
+Change-Id: I41b3dd73f23fa2d2211dcd3f37b1e7b83e36b250
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8342168
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1691072}
+
+Electron adaptation notes (43-x-y):
+Picked as a prerequisite of 7628505b506f / fb2af07952f5 / a4a389ea3bf0
+(UrlData::data_origin()). The HLS data source provider on this branch does
+not have the TrackOrigin()/SetPostRedirectUri() block, so the
+hls_data_source_provider_impl.cc hunk and the HLS test helper / unit test
+changes were not carried; url_index.h keeps its security_origin() accessor.
+
+diff --git a/media/base/data_source.cc b/media/base/data_source.cc
+index 053d237b1646c8acb95df6a53f9aa96b28f2c8b5..4e496e59792ecc76f34b90956ad9f1b150efdb66 100644
+--- a/media/base/data_source.cc
++++ b/media/base/data_source.cc
+@@ -30,6 +30,10 @@ GURL DataSource::GetUrlAfterRedirects() const {
+   return GURL();
+ }
+ 
++GURL DataSource::GetUrlDataOrigin() const {
++  return GetUrlAfterRedirects();
++}
++
+ bool DataSource::DidRedirect() const {
+   return false;
+ }
+diff --git a/media/base/data_source.h b/media/base/data_source.h
+index f40f37bfa32bcb77a5f7dcea34fbd9b150e96f72..fe12fae1c6350a870489fed1d45a87eed54923bc 100644
+--- a/media/base/data_source.h
++++ b/media/base/data_source.h
+@@ -135,6 +135,10 @@ class MEDIA_EXPORT DataSource : public DataSourceInfo {
+   // an empty GURL.
+   virtual GURL GetUrlAfterRedirects() const;
+ 
++  // The final URL from which data was loaded. If the request was intercepted
++  // by a service worker, this may differ from GetUrlAfterRedirects.
++  virtual GURL GetUrlDataOrigin() const;
++
+   // Stops any outstanding speculative loading. Active and future Read() calls
+   // will not be stopped. OnMediaIsPlaying() or OnMediaPlaybackRateChanged()
+   // with a rate > 0 will reset this flag.
+diff --git a/media/filters/hls_test_helpers.h b/media/filters/hls_test_helpers.h
+index f29246c9887678eff1c309a38ba6982acf1d1965..c92b36896c07e716ebc42eeccab60216131951a5 100644
+--- a/media/filters/hls_test_helpers.h
++++ b/media/filters/hls_test_helpers.h
+@@ -46,6 +46,7 @@ class MockDataSource : public CrossOriginDataSource {
+   MOCK_METHOD(void, SetPreload, (DataSource::Preload preload), (override));
+   MOCK_METHOD(bool, DidRedirect, (), (const, override));
+   MOCK_METHOD(GURL, GetUrlAfterRedirects, (), (const, override));
++  MOCK_METHOD(GURL, GetUrlDataOrigin, (), (const, override));
+   MOCK_METHOD(void, StopPreloading, (), (override));
+   MOCK_METHOD(void,
+               OnMediaPlaybackRateChanged,
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+index 1aa3d77891f35e03df313114eee44970ffa4da86..6fb30e6f0a3c8ec7d8dcc7bcc97504e27675c79c 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+@@ -410,6 +410,13 @@ GURL MultiBufferDataSource::GetUrlAfterRedirects() const {
+   return GURL(url_data_->url());
+ }
+ 
++GURL MultiBufferDataSource::GetUrlDataOrigin() const {
++  if (url_data_->data_origin().has_value()) {
++    return GURL(*url_data_->data_origin());
++  }
++  return GetUrlAfterRedirects();
++}
++
+ void MultiBufferDataSource::Read(int64_t position,
+                                  base::span<uint8_t> data,
+                                  media::DataSource::ReadCB read_cb) {
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
+index 6b0ca9d2d9a2782c1695cb2072c981f4fd21fa7f..36dcabfa2cbe21fb218156c88d7e8c930c53a959 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
+@@ -147,6 +147,7 @@ class PLATFORM_EXPORT MultiBufferDataSource
+   bool DidRedirect() const override { return did_redirect_; }
+ 
+   GURL GetUrlAfterRedirects() const override;
++  GURL GetUrlDataOrigin() const override;
+ 
+   // media::DataSource implementation.
+   // Called from demuxer thread.
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+index add01c572d2194984fd69297ffd753ac86c4a4bc..ea1227f5e85823fce4c5fa15b104bd0a662fcd0f 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+@@ -663,6 +663,29 @@ TEST_F(MultiBufferDataSourceTest, Range_ServerLied) {
+   Stop();
+ }
+ 
++TEST_F(MultiBufferDataSourceTest, GetUrlDataOrigin_NoDataOrigin) {
++  InitializeWith200Response();
++  // Without a data origin, it should fallback to url() via
++  // GetUrlAfterRedirects().
++  EXPECT_EQ(data_source_->GetUrlDataOrigin(), GURL(kHttpUrl));
++  Stop();
++}
++
++TEST_F(MultiBufferDataSourceTest, GetUrlDataOrigin_WithDataOrigin) {
++  Initialize(kHttpUrl, true);
++
++  EXPECT_CALL(host_, SetTotalBytes(response_generator_->content_length()));
++  WebURLResponse response = response_generator_->Generate200();
++  response.SetCurrentRequestUrl(KURL(kHttpDifferentOriginUrl));
++  Respond(response);
++
++  EXPECT_CALL(host_, AddBufferedByteRange(0, kDataSize));
++  ReceiveData(kDataSize);
++
++  EXPECT_EQ(data_source_->GetUrlDataOrigin(), GURL(kHttpDifferentOriginUrl));
++  Stop();
++}
++
+ TEST_F(MultiBufferDataSourceTest, Http_AbortWhileReading) {
+   InitializeWith206Response();
+ 
+diff --git a/third_party/blink/renderer/platform/media/url_index.h b/third_party/blink/renderer/platform/media/url_index.h
+index b1671e82e5b0abbd17b841c753bf361b1b7e5ff3..d20e46b5cd685c5f214759d71018112ae4cc1381 100644
+--- a/third_party/blink/renderer/platform/media/url_index.h
++++ b/third_party/blink/renderer/platform/media/url_index.h
+@@ -106,6 +106,8 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+     return security_origin_;
+   }
+ 
++  const std::optional<KURL>& data_origin() const { return data_origin_; }
++
+   // Cross-origin access mode
+   CorsMode cors_mode() const { return cors_mode_; }
+ 

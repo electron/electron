@@ -1,0 +1,186 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Erik=20Spr=C3=A5ng?= <sprang@webrtc.org>
+Date: Fri, 16 Oct 2026 13:42:43 +0200
+Subject: Handle failed I420 conversion in VideoFrameSampler::Create
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Return nullptr from VideoFrameSampler::Create when the underlying
+frame buffer accessor or ToI420ForInspection() returns nullptr, and
+check ToI420ForInspection() before allocating the scaled buffer in
+GetSampleValuesForFrame.
+
+Bug: webrtc:574312303
+Change-Id: I1654cba6437269b1627c7a532a6245228d4e6b9b
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509480
+Reviewed-by: Ilya Nikolaevskiy <ilnik@webrtc.org>
+Commit-Queue: Erik Språng <sprang@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#48942}
+
+diff --git a/video/corruption_detection/BUILD.gn b/video/corruption_detection/BUILD.gn
+index a706e8ec6bd524cd9d30947278edcbad617e9966..ffbd75419d488a30c9e4d8370151645a7bc28c46 100644
+--- a/video/corruption_detection/BUILD.gn
++++ b/video/corruption_detection/BUILD.gn
+@@ -200,6 +200,7 @@ if (rtc_include_tests) {
+     deps = [
+       ":halton_frame_sampler",
+       ":video_frame_sampler",
++      "../../api:make_ref_counted",
+       "../../api:scoped_refptr",
+       "../../api/video:video_frame",
+       "../../test:test_support",
+diff --git a/video/corruption_detection/halton_frame_sampler.cc b/video/corruption_detection/halton_frame_sampler.cc
+index f3715b519604a2143487f5dfb3a1b0d64edaa167..731e14498fcb535f3705e2995e3264be8a2023a7 100644
+--- a/video/corruption_detection/halton_frame_sampler.cc
++++ b/video/corruption_detection/halton_frame_sampler.cc
+@@ -213,14 +213,14 @@ std::vector<FilteredSample> GetSampleValuesForFrame(
+           /*crop_height=*/frame.height());
+       scaled_frame.set_video_frame_buffer(scaled_buffer);
+     } else {
+-      scoped_refptr<I420Buffer> scaled_buffer =
+-          I420Buffer::Create(scaled_width, scaled_height);
+       scoped_refptr<I420BufferInterface> buffer =
+           frame.video_frame_buffer()->ToI420ForInspection();
+       if (buffer == nullptr) {
+         RTC_LOG(LS_WARNING) << "Unable to convert frame to I420 format.";
+         return {};
+       }
++      scoped_refptr<I420Buffer> scaled_buffer =
++          I420Buffer::Create(scaled_width, scaled_height);
+       scaled_buffer->ScaleFrom(*buffer);
+       scaled_frame.set_video_frame_buffer(scaled_buffer);
+     }
+diff --git a/video/corruption_detection/halton_frame_sampler_unittest.cc b/video/corruption_detection/halton_frame_sampler_unittest.cc
+index b36a212330e3b55071428daf3810102c4ed7c781..f3822c785c866a7fc037b7cc835c2af3dd73f8b6 100644
+--- a/video/corruption_detection/halton_frame_sampler_unittest.cc
++++ b/video/corruption_detection/halton_frame_sampler_unittest.cc
+@@ -16,9 +16,11 @@
+ #include <span>
+ #include <vector>
+ 
++#include "api/make_ref_counted.h"
+ #include "api/scoped_refptr.h"
+ #include "api/video/i420_buffer.h"
+ #include "api/video/video_frame.h"
++#include "api/video/video_frame_buffer.h"
+ #include "test/gmock.h"
+ #include "test/gtest.h"
+ #include "video/corruption_detection/video_frame_sampler.h"
+@@ -42,6 +44,14 @@ constexpr int kDefaultScaledWidth = 4;
+ constexpr int kDefaultScaledHeight = 4;
+ constexpr double kDefaultStdDevGaussianBlur = 0.02;
+ 
++class NullI420ConversionBuffer : public VideoFrameBuffer {
++ public:
++  Type type() const override { return Type::kNative; }
++  int width() const override { return kDefaultScaledWidth; }
++  int height() const override { return kDefaultScaledHeight; }
++  scoped_refptr<I420BufferInterface> ToI420() override { return nullptr; }
++};
++
+ #if GTEST_HAS_DEATH_TEST
+ // Defaults for blurring tests.
+ constexpr int kDefaultRow = 3;
+@@ -239,6 +249,23 @@ TEST(HaltonFrameSamplerGaussianFilteringTest,
+               IsEmpty());
+ }
+ 
++TEST(HaltonFrameSamplerGaussianFilteringTest,
++     ShouldReturnEmptyListWhenToI420ConversionFails) {
++  VideoFrame frame =
++      VideoFrame::Builder()
++          .set_video_frame_buffer(make_ref_counted<NullI420ConversionBuffer>())
++          .build();
++
++  EXPECT_THAT(GetSampleValuesForFrame(frame, MakeDefaultSampleCoordinates(),
++                                      kDefaultScaledWidth, kDefaultScaledHeight,
++                                      kDefaultStdDevGaussianBlur),
++              IsEmpty());
++  EXPECT_THAT(GetSampleValuesForFrame(frame, MakeDefaultSampleCoordinates(),
++                                      /*scaled_width=*/2, /*scaled_height=*/2,
++                                      kDefaultStdDevGaussianBlur),
++              IsEmpty());
++}
++
+ TEST(HaltonFrameSamplerGaussianFilteringTest,
+      ShouldReturnGivenValueWhenNoScalingOrFilteringIsDefined) {
+   // 4x4 i420 frame data.
+diff --git a/video/corruption_detection/video_frame_sampler.cc b/video/corruption_detection/video_frame_sampler.cc
+index cc7c05b93a4183ee7299f07167ab64bec8cc8e8f..daad840f0c91ea16c52cf652fc29a5e10b426750 100644
+--- a/video/corruption_detection/video_frame_sampler.cc
++++ b/video/corruption_detection/video_frame_sampler.cc
+@@ -123,20 +123,32 @@ std::unique_ptr<VideoFrameSampler> VideoFrameSampler::Create(
+   }
+   switch (frame.video_frame_buffer()->type()) {
+     case VideoFrameBuffer::Type::kNV12: {
+-      return std::make_unique<NV12FrameSampler>(
+-          scoped_refptr<const NV12BufferInterface>(
+-              frame.video_frame_buffer()->GetNV12()));
++      scoped_refptr<const NV12BufferInterface> buffer(
++          frame.video_frame_buffer()->GetNV12());
++      if (buffer == nullptr) {
++        return nullptr;
++      }
++      return std::make_unique<NV12FrameSampler>(std::move(buffer));
+     }
+     case VideoFrameBuffer::Type::kI420:
+-    case VideoFrameBuffer::Type::kI420A:
++    case VideoFrameBuffer::Type::kI420A: {
+       // Native I420 and I420A are used directly (Alpha channel ignored).
+-      return std::make_unique<I420FrameSampler>(
+-          scoped_refptr<const I420BufferInterface>(
+-              frame.video_frame_buffer()->GetI420()));
+-    default:
++      scoped_refptr<const I420BufferInterface> buffer(
++          frame.video_frame_buffer()->GetI420());
++      if (buffer == nullptr) {
++        return nullptr;
++      }
++      return std::make_unique<I420FrameSampler>(std::move(buffer));
++    }
++    default: {
+       // Conversion and copy to I420 from some other format.
+-      return std::make_unique<I420FrameSampler>(
+-          frame.video_frame_buffer()->ToI420ForInspection());
++      scoped_refptr<const I420BufferInterface> buffer =
++          frame.video_frame_buffer()->ToI420ForInspection();
++      if (buffer == nullptr) {
++        return nullptr;
++      }
++      return std::make_unique<I420FrameSampler>(std::move(buffer));
++    }
+   }
+ }
+ 
+diff --git a/video/corruption_detection/video_frame_sampler_unittest.cc b/video/corruption_detection/video_frame_sampler_unittest.cc
+index 0fc1d12f0f33eefc5a1d0abeef4b481214d22c23..11eaf5c9ab2100594a9acc97c641340e1b302c68 100644
+--- a/video/corruption_detection/video_frame_sampler_unittest.cc
++++ b/video/corruption_detection/video_frame_sampler_unittest.cc
+@@ -113,8 +113,8 @@ class CountingNativeBuffer : public VideoFrameBuffer {
+       : buffer_(buffer) {}
+ 
+   Type type() const override { return Type::kNative; }
+-  int width() const override { return buffer_->width(); }
+-  int height() const override { return buffer_->height(); }
++  int width() const override { return buffer_ ? buffer_->width() : 4; }
++  int height() const override { return buffer_ ? buffer_->height() : 4; }
+ 
+   scoped_refptr<I420BufferInterface> ToI420() override {
+     ++to_i420_calls_;
+@@ -423,6 +423,15 @@ TEST(VideoFrameSampler, DoesNotConvertNV12Buffer) {
+             1);
+ }
+ 
++TEST(VideoFrameSampler, ReturnsNullptrWhenToI420ForInspectionFails) {
++  auto buffer = make_ref_counted<CountingNativeBuffer>(nullptr);
++  VideoFrame frame =
++      VideoFrame::Builder().set_video_frame_buffer(buffer).build();
++
++  EXPECT_EQ(VideoFrameSampler::Create(frame), nullptr);
++  EXPECT_EQ(buffer->to_i420_for_inspection_calls(), 1);
++}
++
+ #if GTEST_HAS_DEATH_TEST
+ TEST(VideoFrameSampler, RejectsNegativeColumn) {
+   EXPECT_DEATH(GetDefaultSampler()->GetSampleValue(

@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kateryna Prokopenko <kprokopenko@google.com>
+Date: Tue, 3 Nov 2026 12:27:38 +0000
+Subject: [profiler] Relax AllocationNode name DCHECK for script functions
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+In SamplingHeapProfiler::FindOrAddChildNode, nodes with a valid
+script_id are keyed solely by (script_id, start_position), so the
+debug name is not invariant: an anonymous function's inferred name can
+change after bytecode flushing and SFI reclamation, and default class
+constructors at offset 0 share (script_id, 0) with the top-level script.
+
+Narrow the assertion with DCHECK_IMPLIES so name equality is only
+checked for kNoScriptId nodes (which are keyed by name pointer). This
+is safe because insertion and OnWeakCallback erasure both key script
+nodes solely by (script_id, start_position), and node names remain
+valid in StringsStorage for the lifetime of the profiler.
+
+Bug: 577245772
+Change-Id: I269b8b7858a53b0038f02c6211a3dfba8be8e88b
+Fixed: 577245772
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8714539
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Commit-Queue: Philip Pfaffe <pfaffe@chromium.org>
+Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+Auto-Submit: Kateryna Prokopenko <kprokopenko@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#111568}
+
+diff --git a/src/profiler/sampling-heap-profiler.cc b/src/profiler/sampling-heap-profiler.cc
+index 7ea26d4064f842e9b2b45d71bfe019be106c6d72..108a84ce8afcb0375aeffe88ddf8e6f974c574fa 100644
+--- a/src/profiler/sampling-heap-profiler.cc
++++ b/src/profiler/sampling-heap-profiler.cc
+@@ -144,7 +144,12 @@ SamplingHeapProfiler::AllocationNode* SamplingHeapProfiler::FindOrAddChildNode(
+       AllocationNode::function_id(script_id, start_position, name);
+   AllocationNode* child = parent->FindChildNode(id);
+   if (child) {
+-    DCHECK_EQ(strcmp(child->name_, name), 0);
++    // For script functions, the inferred debug name may change across bytecode
++    // flushing and SFI reclamation, or synthetic functions (e.g. default class
++    // constructors at offset 0) may share (script_id, start_position) with the
++    // top-level script. Only kNoScriptId nodes are keyed by name pointer.
++    DCHECK_IMPLIES(script_id == v8::UnboundScript::kNoScriptId,
++                   strcmp(child->name_, name) == 0);
+     return child;
+   }
+   auto new_child = std::make_unique<AllocationNode>(
+diff --git a/test/cctest/test-heap-profiler.cc b/test/cctest/test-heap-profiler.cc
+index 1046210cd12e689315a5ae9bb960d412369d38e0..50ef258889020d158d8575c9dd47e9efb0c3272d 100644
+--- a/test/cctest/test-heap-profiler.cc
++++ b/test/cctest/test-heap-profiler.cc
+@@ -4532,6 +4532,72 @@ TEST(SamplingHeapProfilerSampleDuringDeopt) {
+   heap_profiler->StopSamplingHeapProfiler();
+ }
+ 
++TEST(SamplingHeapProfilerFunctionNameChange) {
++  i::v8_flags.allow_natives_syntax.Set(true);
++  if (i::v8_flags.flush_bytecode || i::v8_flags.flush_baseline_code) {
++    i::v8_flags.stress_flush_code.Set(true);
++    i::FlagList::EnforceFlagImplications();
++  }
++  i::v8_flags.sampling_heap_profiler_suppress_randomness.Set(true);
++  v8::HandleScope scope(CcTest::isolate());
++  LocalContext env;
++  v8::HeapProfiler* heap_profiler = env.isolate()->GetHeapProfiler();
++
++  if (i::v8_flags.stress_sampling_allocation_profiler > 0) {
++    heap_profiler->StopSamplingHeapProfiler();
++  }
++  CHECK(heap_profiler->StartSamplingHeapProfiler(64));
++
++  CompileRun(
++      "var retained = [];\n"
++      "function Outer() {\n"
++      "  return (function() {\n"
++      "    var a = {};\n"
++      "    a.b = function() {\n"
++      "      for (var i = 0; i < 128; ++i) retained.push(new Array(64));\n"
++      "    };\n"
++      "    a.b();\n"
++      "  });\n"
++      "}\n"
++      "var inner = Outer();\n"
++      "inner();\n"
++      "%CollectGarbage(0);\n"
++      "inner();\n"
++      "function runEvalClass() {\n"
++      "  var C = eval('class C extends Array {};"
++      " for (var i = 0; i < 128; ++i) retained.push(new Array(64)); C');\n"
++      "  for (var i = 0; i < 128; ++i) retained.push(new C(64));\n"
++      "}\n"
++      "runEvalClass();\n");
++
++  std::unique_ptr<v8::AllocationProfile> profile(
++      heap_profiler->GetAllocationProfile());
++  CHECK(profile);
++  CHECK(!profile->GetSamples().empty());
++
++  if (i::v8_flags.lazy) {
++    const char* expected_ab_name = i::v8_flags.max_lazy ? "a.b" : "Outer.a.b";
++    const char* path_to_ab[] = {"", "", expected_ab_name};
++    auto node_ab = FindAllocationProfileNode(env.isolate(), profile.get(),
++                                             v8::base::ArrayVector(path_to_ab));
++    CHECK_NOT_NULL(node_ab);
++    CHECK_GT(NumberOfAllocations(node_ab), 0);
++  } else {
++    const char* path_to_script[] = {""};
++    auto node_script = FindAllocationProfileNode(
++        env.isolate(), profile.get(), v8::base::ArrayVector(path_to_script));
++    CHECK_NOT_NULL(node_script);
++    CHECK_GE(node_script->children.size(), 2u);
++  }
++
++  const char* path_to_eval[] = {"", "runEvalClass", ""};
++  auto node_eval = FindAllocationProfileNode(
++      env.isolate(), profile.get(), v8::base::ArrayVector(path_to_eval));
++  CHECK_NOT_NULL(node_eval);
++
++  heap_profiler->StopSamplingHeapProfiler();
++}
++
+ namespace {
+ class TestQueryObjectPredicate : public v8::QueryObjectPredicate {
+  public:

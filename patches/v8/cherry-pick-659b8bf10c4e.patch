@@ -1,0 +1,142 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Thu, 15 Oct 2026 12:19:16 +0200
+Subject: [regexp] Propagate Trace::Flush errors
+
+ActionNode::Emit and Node::LimitVersions ignored errors from
+Trace::Flush, so compilation continued until the final size check.
+Propagate these errors, mark EmitResult V8_NODISCARD, and CHECK in
+Compiler::Assemble that Emit reported every code generation error.
+
+Fixed: 573263262
+Change-Id: I8c90ca5191f2f39fd5ae11a615e6bd493b6882d8
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8576040
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Auto-Submit: Jakob Linke <jgruber@chromium.org>
+Commit-Queue: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110775}
+
+diff --git a/src/regexp/regexp-compiler.cc b/src/regexp/regexp-compiler.cc
+index c0accc05b316a750591d42fcdeb49921ea4abe7e..c5ba9bce85838980f08a6214659cf7079963a81a 100644
+--- a/src/regexp/regexp-compiler.cc
++++ b/src/regexp/regexp-compiler.cc
+@@ -369,10 +369,8 @@ Compiler::CompilationResult Compiler::Assemble(
+       }
+     }
+   }
+-  if (IsRegExpTooBig()) {
+-    work_list_ = nullptr;
+-    return ReportError();
+-  }
++  // Emit must report every code generation error.
++  CHECK(!IsRegExpTooBig());
+ 
+   DirectHandle<HeapObject> code = macro_assembler_->GetCode(re_data, flags_);
+   work_list_ = nullptr;
+@@ -1535,9 +1533,9 @@ Node::LimitResult Node::LimitVersions(Compiler* compiler, Trace* trace) {
+   TRACE("* Limit Versions: Switch to generic version");
+   bool was_limiting = compiler->limiting_recursion();
+   compiler->set_limiting_recursion(true);
+-  trace->Flush(compiler, this);
++  EmitResult result = trace->Flush(compiler, this);
+   compiler->set_limiting_recursion(was_limiting);
+-  return DONE;
++  return result.IsError() ? FAILED : DONE;
+ }
+ 
+ bool Node::KeepRecursing(Compiler* compiler) {
+@@ -2461,6 +2459,7 @@ EmitResult TextNode::Emit(Compiler* compiler, Trace* trace) {
+   TRACE_EMIT("TextNode");
+   LimitResult limit_result = LimitVersions(compiler, trace);
+   if (limit_result == DONE) return EmitResult::Success();
++  if (limit_result == FAILED) return EmitResult::Error();
+   DCHECK(limit_result == CONTINUE);
+ 
+   const int max_offset = read_backward() ? trace->cp_offset() - Length()
+@@ -3194,6 +3193,7 @@ EmitResult ChoiceNode::Emit(Compiler* compiler, Trace* trace) {
+ 
+   LimitResult limit_result = LimitVersions(compiler, trace);
+   if (limit_result == DONE) return EmitResult::Success();
++  if (limit_result == FAILED) return EmitResult::Error();
+   DCHECK(limit_result == CONTINUE);
+ 
+   // For loop nodes we already flushed (see LoopChoiceNode::Emit), but for
+@@ -3495,6 +3495,7 @@ EmitResult ActionNode::Emit(Compiler* compiler, Trace* trace) {
+   RegExpMacroAssembler* assembler = compiler->macro_assembler();
+   LimitResult limit_result = LimitVersions(compiler, trace);
+   if (limit_result == DONE) return EmitResult::Success();
++  if (limit_result == FAILED) return EmitResult::Error();
+   DCHECK(limit_result == CONTINUE);
+ 
+   RecursionCheck rc(compiler);
+@@ -3523,7 +3524,7 @@ EmitResult ActionNode::Emit(Compiler* compiler, Trace* trace) {
+         // Complex situation: Flush the trace state to the assembler and
+         // generate a generic version of this action.  This call will
+         // recurse back to the else clause here.
+-        trace->Flush(compiler, this);
++        return trace->Flush(compiler, this);
+       } else {
+         assembler->WriteCurrentPositionToRegister(
+             data_.u_submatch.current_position_register, 0);
+@@ -3547,7 +3548,7 @@ EmitResult ActionNode::Emit(Compiler* compiler, Trace* trace) {
+         // immediately.
+         RETURN_IF_ERROR(on_success()->Emit(compiler, trace));
+       } else if (!trace->is_trivial()) {
+-        trace->Flush(compiler, this);
++        return trace->Flush(compiler, this);
+       } else {
+         Label skip_empty_check;
+         // If we have a minimum number of repetitions we check the current
+@@ -3610,6 +3611,7 @@ EmitResult BackReferenceNode::Emit(Compiler* compiler, Trace* trace) {
+ 
+   LimitResult limit_result = LimitVersions(compiler, trace);
+   if (limit_result == DONE) return EmitResult::Success();
++  if (limit_result == FAILED) return EmitResult::Error();
+   DCHECK(limit_result == CONTINUE);
+ 
+   RecursionCheck rc(compiler);
+diff --git a/src/regexp/regexp-nodes.h b/src/regexp/regexp-nodes.h
+index 7e75f9e678dccc9d265c0738307203ce1bd1a440..51a9849296ef75f3bcdb5af1c816d60a2bfedfb8 100644
+--- a/src/regexp/regexp-nodes.h
++++ b/src/regexp/regexp-nodes.h
+@@ -132,7 +132,7 @@ struct EatsAtLeastInfo final {
+   uint8_t from_not_start;
+ };
+ 
+-class EmitResult final {
++class V8_NODISCARD EmitResult final {
+  public:
+   static EmitResult Success() { return EmitResult(kSuccess); }
+   static EmitResult Error() { return EmitResult(kError); }
+@@ -262,7 +262,7 @@ class Node : public ZoneObject {
+   virtual bool IsBacktrack() const { return false; }
+ 
+  protected:
+-  enum LimitResult { DONE, CONTINUE };
++  enum LimitResult { DONE, CONTINUE, FAILED };
+   Node* replacement_;
+ 
+   LimitResult LimitVersions(Compiler* compiler, Trace* trace);
+diff --git a/test/mjsunit/regress/regress-573263262.js b/test/mjsunit/regress/regress-573263262.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1c2d9a1d5f1011f20d2ff7cc32beda8ebffcab82
+--- /dev/null
++++ b/test/mjsunit/regress/regress-573263262.js
+@@ -0,0 +1,17 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Unrolls to six copies of the literal, which exceeds the maximum character
++// offset while keeping the pattern short enough to be optimized.
++const kTooBig = '(?:(?:' + 'a'.repeat(5462) + '){3}){2}';
++const subject = 'b'.repeat(1000);
++
++function assertTooLarge(source) {
++  assertThrows(() => new RegExp(source).exec(subject), SyntaxError,
++               /Regular expression too large/);
++}
++
++// BEGIN_POSITIVE_SUBMATCH / BEGIN_NEGATIVE_SUBMATCH with a non-trivial trace.
++assertTooLarge('x(?=' + kTooBig + ')|y');
++assertTooLarge('x(?!' + kTooBig + ')|y');

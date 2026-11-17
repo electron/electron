@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bienvenu <davidbienvenu@chromium.org>
+Date: Thu, 30 Jul 2026 13:42:22 -0700
+Subject: clamp mouse location for renderer initiated drag drop
+
+touch initiated drag drops already have their location clamped. Do the
+same for mouse initiated drag drops.
+
+Change the test that makes sure a drag from a location outside of the
+web contents is rejected to test instead that the drag location is
+clamped to the last mouse down position.
+
+Bug: 521616899
+Change-Id: I11a85f1f94f9c94dfe71ef13646699e2f674bbf1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7921191
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1671382}
+Electron adaptation notes (43-x-y):
+Prerequisite for 8404057 / 8615348 (introduces the mouse-button check and
+the browser-observed mouse location in StartDragging()). Only the
+content/ and ui/aura hunks are carried; the chrome/ interactive-ui and
+glic browser tests and web_contents_view_aura_unittest.cc are not carried
+(Electron does not build them and their context differs on this branch).
+
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index 814daeef66953bad84980694153cc2f5847482d8..626f4982d461bfb648563d1b9ea5c7d4b7a22a71 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -1260,22 +1260,27 @@ void WebContentsViewAura::StartDragging(
+   DragOperation result_op;
+   {
+     gfx::NativeView content_native_view = GetContentNativeView();
+-    // For a touch-initiated drag the renderer-supplied `event_info.location`
+-    // is untrusted: on Windows it would reach `::SendInput` via
++    // The renderer-supplied `event_info.location` is untrusted. On Windows, a
++    // touch event would reach `::SendInput` via
+     // DesktopWindowTreeHostWin::StartTouchDrag and could redirect the
+     // synthesized click to an overlapping HWND (e.g. a permission bubble).
+-    // Require an in-flight touch and substitute the browser-observed last
+-    // touch point known to aura::Env.
++    // Require an in-flight touch or mouse button, depending on the event
++    // source, and refuse the drag if requirement is not met.
+     gfx::Point trusted_location = event_info.location;
++    aura::Env* env = aura::Env::GetInstance();
++    if ((event_info.source == ui::mojom::DragEventSource::kTouch &&
++         !env->is_touch_down()) ||
++        (event_info.source == ui::mojom::DragEventSource::kMouse &&
++         !env->IsMouseButtonDown())) {
++      web_contents_->SystemDragEnded(source_rwh);
++      return;
++    }
+     if (event_info.source == ui::mojom::DragEventSource::kTouch) {
+-      aura::Env* env = aura::Env::GetInstance();
+-      if (!env->is_touch_down()) {
+-        web_contents_->SystemDragEnded(source_rwh);
+-        return;
+-      }
+       trusted_location =
+           env->GetLastPointerPoint(event_info.source, content_native_view,
+                                    /*fallback=*/event_info.location);
++    } else {
++      trusted_location = env->last_mouse_location();
+     }
+     // Make sure event is within the web contents, and the web contents are
+     // visible.
+diff --git a/content/browser/web_contents/web_contents_view_aura.h b/content/browser/web_contents/web_contents_view_aura.h
+index 6bcab477ce721b5ad7c380e45ed339cbfdafba74..22da5a0802694d9cd0dd40b2b1e26bb6890d09a2 100644
+--- a/content/browser/web_contents/web_contents_view_aura.h
++++ b/content/browser/web_contents/web_contents_view_aura.h
+@@ -167,7 +167,8 @@ class CONTENT_EXPORT WebContentsViewAura
+       EmptyTextWithUrlInDropDataIsEmptyInOSExchangeDataGetString);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            RejectDragFromHiddenWebContents);
+-  FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest, RejectDragFromOutsideView);
++  FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
++                           ClampMouseLocationToBrowserObservedPoint);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            ClampTouchLocationToBrowserObservedPoint);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
+index 33e7d98af0c6b1e96257a935cca5cd6abbc443db..6e7b6f0d7cba9a40d31ac5c672aca4f02a8d05e3 100644
+--- a/content/public/test/browser_test_utils.cc
++++ b/content/public/test/browser_test_utils.cc
+@@ -180,6 +180,8 @@
+ #if defined(USE_AURA)
+ #include "content/browser/renderer_host/delegated_frame_host.h"
+ #include "content/browser/renderer_host/render_widget_host_view_aura.h"
++#include "ui/aura/env.h"
++#include "ui/aura/test/env_test_helper.h"
+ #include "ui/aura/test/window_event_dispatcher_test_api.h"
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_event_dispatcher.h"
+@@ -1168,6 +1170,54 @@ void SimulateMouseEvent(WebContents* web_contents,
+   mouse_event.SetPositionInScreen(point.x() + offset.x(),
+                                   point.y() + offset.y());
+ 
++#if defined(USE_AURA)
++  // Because web contents drag drop requires the mouse button to be down,
++  // the Blink WebInputEvent button needs to be translated to its aura mouse
++  // button equivalent so aura::Env mouse_button_flags can be set correctly.
++  auto get_event_flags_for_button = [](blink::WebMouseEvent::Button button) {
++    switch (button) {
++      case blink::WebMouseEvent::Button::kLeft:
++        return ui::EF_LEFT_MOUSE_BUTTON;
++      case blink::WebMouseEvent::Button::kRight:
++        return ui::EF_RIGHT_MOUSE_BUTTON;
++      case blink::WebMouseEvent::Button::kMiddle:
++        return ui::EF_MIDDLE_MOUSE_BUTTON;
++      default:
++        return 0;
++    }
++  };
++  if (type == blink::WebInputEvent::Type::kMouseDown ||
++      type == blink::WebInputEvent::Type::kMouseMove) {
++    aura::Env::GetInstance()->SetLastMouseLocation(
++        gfx::Point(point.x() + offset.x(), point.y() + offset.y()));
++  }
++  // This function should not be used by unit tests, but if it somehow is, the
++  // global state below could be an issue when tests use the same process, if
++  // a test simulates a mouse down but not a mouse up, and the next test
++  // simulates a mouse up without a mouse down.
++  static base::NoDestructor<std::unique_ptr<aura::InputStateLookup>>
++      g_saved_input_state_lookup;
++
++  if (type == blink::WebInputEvent::Type::kMouseDown) {
++    if (aura::Env::GetInstance()->mouse_button_flags() == 0) {
++      *g_saved_input_state_lookup =
++          aura::test::EnvTestHelper(aura::Env::GetInstance())
++              .TakeInputStateLookup();
++    }
++    aura::Env::GetInstance()->set_mouse_button_flags(
++        aura::Env::GetInstance()->mouse_button_flags() |
++        get_event_flags_for_button(button));
++  } else if (type == blink::WebInputEvent::Type::kMouseUp) {
++    int flags = aura::Env::GetInstance()->mouse_button_flags() &
++                ~get_event_flags_for_button(button);
++    aura::Env::GetInstance()->set_mouse_button_flags(flags);
++    if (flags == 0) {
++      aura::test::EnvTestHelper(aura::Env::GetInstance())
++          .SetInputStateLookup(std::move(*g_saved_input_state_lookup));
++    }
++  }
++#endif
++
+   web_contents_impl->GetInputEventRouter()->RouteMouseEvent(rwhvb, &mouse_event,
+                                                             ui::LatencyInfo());
+ }
+diff --git a/ui/aura/test/env_test_helper.h b/ui/aura/test/env_test_helper.h
+index ca56d98cebf276869f5b545e7d7ec2117f84a3b2..d5625cff14d7b66f08fa75143d5370c193a7ef65 100644
+--- a/ui/aura/test/env_test_helper.h
++++ b/ui/aura/test/env_test_helper.h
+@@ -31,6 +31,10 @@ class EnvTestHelper {
+     env_->input_state_lookup_ = std::move(input_state_lookup);
+   }
+ 
++  std::unique_ptr<InputStateLookup> TakeInputStateLookup() {
++    return std::move(env_->input_state_lookup_);
++  }
++
+   void ResetEventState() {
+     env_->mouse_button_flags_ = 0;
+     env_->is_touch_down_ = false;

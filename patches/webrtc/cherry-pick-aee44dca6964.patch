@@ -1,0 +1,429 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Markus Handell <handellm@webrtc.org>
+Date: Tue, 15 Sep 2026 17:36:25 +0200
+Subject: VideoFrameBuffer: introduce ToI420ForInspection
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Under pure-hardware-encoding conditions, corruption detection
+will receive kUnknown video frame buffers which it inspects using
+ToI420. This triggers a readback signal in Chromium which forces
+the vide pipeline to read back frame information. This leads to
+reconfigurations of hardware encoders in chromium.
+
+Fix this by introducing ToI420ForInspection that will not trigger
+readbacks.
+
+Bug: chromium:555719593
+Change-Id: Ic14e32ebd98578e9e5034b2a0a927e423164b5e6
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/503522
+Reviewed-by: Henrik Boström <hbos@webrtc.org>
+Reviewed-by: Erik Språng <sprang@webrtc.org>
+Commit-Queue: Erik Språng <sprang@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#48608}
+Electron adaptation notes (43-x-y):
+Prerequisite for the VideoFrameSampler fix (webrtc 509480). api/BUILD.gn:
+only the new video_frame_buffer_unittest target is added to the test
+list (this branch's list has different neighbours).
+
+diff --git a/api/BUILD.gn b/api/BUILD.gn
+index c923431cff2703f133c5ac6402e4f1ffa6286e13..44bfb1d265ae97b01e524a94c432ae90b40c6cd4 100644
+--- a/api/BUILD.gn
++++ b/api/BUILD.gn
+@@ -1914,6 +1914,7 @@ if (rtc_include_tests) {
+       "video:frame_buffer_unittest",
+       "video:rtp_video_frame_assembler_unittests",
+       "video:video_frame",
++      "video:video_frame_buffer_unittest",
+       "video:video_frame_metadata_unittest",
+       "video/corruption_detection:corruption_detection_unittests",
+       "video/corruption_detection:frame_instrumentation_data_reader_unittest",
+diff --git a/api/video/BUILD.gn b/api/video/BUILD.gn
+index 83a9e385ee71bb069d67c6eef50c58995a932e11..6614dc0e1531a7148834f28577c0dce63e131c74 100644
+--- a/api/video/BUILD.gn
++++ b/api/video/BUILD.gn
+@@ -402,6 +402,19 @@ rtc_library("frame_buffer_unittest") {
+   ]
+ }
+ 
++rtc_library("video_frame_buffer_unittest") {
++  testonly = true
++  sources = [ "video_frame_buffer_unittest.cc" ]
++
++  deps = [
++    ":video_frame",
++    "..:make_ref_counted",
++    "..:scoped_refptr",
++    "../../test:frame_utils",
++    "../../test:test_support",
++  ]
++}
++
+ rtc_library("video_frame_metadata_unittest") {
+   testonly = true
+   sources = [ "video_frame_metadata_unittest.cc" ]
+diff --git a/api/video/video_frame_buffer.cc b/api/video/video_frame_buffer.cc
+index 131aa3e64744d780d1857b587324fd247c80e8fb..bb405b7b12da3db478ed4340e43099738d8e195d 100644
+--- a/api/video/video_frame_buffer.cc
++++ b/api/video/video_frame_buffer.cc
+@@ -88,6 +88,10 @@ const NV12BufferInterface* VideoFrameBuffer::GetNV12() const {
+   return static_cast<const NV12BufferInterface*>(this);
+ }
+ 
++scoped_refptr<I420BufferInterface> VideoFrameBuffer::ToI420ForInspection() {
++  return ToI420();
++}
++
+ scoped_refptr<VideoFrameBuffer> VideoFrameBuffer::GetMappedFrameBuffer(
+     std::span<Type> /* types */) {
+   RTC_CHECK(type() == Type::kNative);
+diff --git a/api/video/video_frame_buffer.h b/api/video/video_frame_buffer.h
+index 5545239458edff6f4804f85802c790ea373379e7..fd7e0cd3fdb13b57986bce4cbde1e582670d6368 100644
+--- a/api/video/video_frame_buffer.h
++++ b/api/video/video_frame_buffer.h
+@@ -86,6 +86,20 @@ class RTC_EXPORT VideoFrameBuffer : public RefCountInterface {
+   // fails. If the conversion fails, nullptr is returned.
+   virtual scoped_refptr<I420BufferInterface> ToI420() = 0;
+ 
++  // Same as ToI420(), but signals that the conversion is for occasional,
++  // out-of-band inspection of the frame contents (e.g. corruption detection
++  // sampling) rather than for encoding or scaling of the frame.
++  //
++  // kNative implementations backed by GPU memory may use this distinction to
++  // avoid concluding that all subsequent frames should be delivered in CPU
++  // memory. The returned buffer must be identical in content to ToI420().
++  //
++  // The default implementation simply calls ToI420().
++  //
++  // TODO(crbug.com/555719593): figure out a way to avoid this synchronous call
++  // for kNative buffers.
++  virtual scoped_refptr<I420BufferInterface> ToI420ForInspection();
++
+   // GetI420() methods should return I420 buffer if conversion is trivial, i.e
+   // no change for binary data is needed. Otherwise these methods should return
+   // nullptr. One example of buffer with that property is
+diff --git a/api/video/video_frame_buffer_unittest.cc b/api/video/video_frame_buffer_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..ea7078efec6cd4cb82845fde7bacd53e1526bb6b
+--- /dev/null
++++ b/api/video/video_frame_buffer_unittest.cc
+@@ -0,0 +1,100 @@
++/*
++ *  Copyright (c) 2026 The WebRTC project authors. All Rights Reserved.
++ *
++ *  Use of this source code is governed by a BSD-style license
++ *  that can be found in the LICENSE file in the root of the source
++ *  tree. An additional intellectual property rights grant can be found
++ *  in the file PATENTS.  All contributing project authors may
++ *  be found in the AUTHORS file in the root of the source tree.
++ */
++
++#include "api/video/video_frame_buffer.h"
++
++#include <cstdint>
++#include <cstring>
++
++#include "api/make_ref_counted.h"
++#include "api/scoped_refptr.h"
++#include "api/video/i420_buffer.h"
++#include "api/video/nv12_buffer.h"
++#include "test/frame_utils.h"
++#include "test/gtest.h"
++
++namespace webrtc {
++namespace {
++
++constexpr int kWidth = 4;
++constexpr int kHeight = 4;
++
++// Creates a 4x4 I420 buffer where every sample has a unique value. The buffer
++// is tightly packed, so the content can be copied in one go per plane.
++scoped_refptr<I420Buffer> CreateTestI420Buffer() {
++  scoped_refptr<I420Buffer> buffer = I420Buffer::Create(kWidth, kHeight);
++  const uint8_t kYContent[] = {
++      // clang-format off
++      1,  2,  3,  4,
++      5,  6,  7,  8,
++      9,  10, 11, 12,
++      13, 14, 15, 16
++      // clang-format on
++  };
++  const uint8_t kUContent[] = {17, 18, 19, 20};
++  const uint8_t kVContent[] = {21, 22, 23, 24};
++  memcpy(buffer->MutableDataY(), kYContent, sizeof(kYContent));
++  memcpy(buffer->MutableDataU(), kUContent, sizeof(kUContent));
++  memcpy(buffer->MutableDataV(), kVContent, sizeof(kVContent));
++  return buffer;
++}
++
++// A kNative buffer that does not override ToI420ForInspection(), i.e. it relies
++// on the default implementation in VideoFrameBuffer. It counts ToI420() calls
++// so that the test can verify that the default implementation forwards.
++class FakeNativeBuffer : public VideoFrameBuffer {
++ public:
++  explicit FakeNativeBuffer(scoped_refptr<I420Buffer> buffer)
++      : buffer_(buffer) {}
++
++  Type type() const override { return Type::kNative; }
++  int width() const override { return buffer_->width(); }
++  int height() const override { return buffer_->height(); }
++
++  scoped_refptr<I420BufferInterface> ToI420() override {
++    ++to_i420_calls_;
++    return buffer_;
++  }
++
++  int to_i420_calls() const { return to_i420_calls_; }
++
++ private:
++  const scoped_refptr<I420Buffer> buffer_;
++  int to_i420_calls_ = 0;
++};
++
++TEST(VideoFrameBufferTest, ToI420ForInspectionMatchesToI420ForI420Buffer) {
++  scoped_refptr<VideoFrameBuffer> buffer = CreateTestI420Buffer();
++
++  EXPECT_TRUE(
++      test::FrameBufsEqual(buffer->ToI420ForInspection(), buffer->ToI420()));
++}
++
++TEST(VideoFrameBufferTest, ToI420ForInspectionMatchesToI420ForNV12Buffer) {
++  scoped_refptr<VideoFrameBuffer> buffer =
++      NV12Buffer::Copy(*CreateTestI420Buffer());
++
++  EXPECT_TRUE(
++      test::FrameBufsEqual(buffer->ToI420ForInspection(), buffer->ToI420()));
++}
++
++TEST(VideoFrameBufferTest, ToI420ForInspectionDefaultsToToI420) {
++  scoped_refptr<I420Buffer> i420_buffer = CreateTestI420Buffer();
++  auto native_buffer = make_ref_counted<FakeNativeBuffer>(i420_buffer);
++
++  scoped_refptr<I420BufferInterface> inspected =
++      native_buffer->ToI420ForInspection();
++
++  EXPECT_EQ(native_buffer->to_i420_calls(), 1);
++  EXPECT_TRUE(test::FrameBufsEqual(inspected, i420_buffer));
++}
++
++}  // namespace
++}  // namespace webrtc
+diff --git a/video/corruption_detection/BUILD.gn b/video/corruption_detection/BUILD.gn
+index ce9dacfa83339d7aad2e1a5692defe540ee8c988..a706e8ec6bd524cd9d30947278edcbad617e9966 100644
+--- a/video/corruption_detection/BUILD.gn
++++ b/video/corruption_detection/BUILD.gn
+@@ -164,6 +164,7 @@ if (rtc_include_tests) {
+       "../../test:test_support",
+     ]
+   }
++
+   rtc_library("frame_pair_corruption_score_unittest") {
+     testonly = true
+     sources = [ "frame_pair_corruption_score_unittest.cc" ]
+@@ -210,6 +211,7 @@ if (rtc_include_tests) {
+     sources = [ "video_frame_sampler_unittest.cc" ]
+     deps = [
+       ":video_frame_sampler",
++      "../../api:make_ref_counted",
+       "../../api:scoped_refptr",
+       "../../api/video:video_frame",
+       "../../test:test_support",
+diff --git a/video/corruption_detection/halton_frame_sampler.cc b/video/corruption_detection/halton_frame_sampler.cc
+index 4efadcf15cf8789b2ba078664ac4a48395d15610..f3715b519604a2143487f5dfb3a1b0d64edaa167 100644
+--- a/video/corruption_detection/halton_frame_sampler.cc
++++ b/video/corruption_detection/halton_frame_sampler.cc
+@@ -216,7 +216,7 @@ std::vector<FilteredSample> GetSampleValuesForFrame(
+       scoped_refptr<I420Buffer> scaled_buffer =
+           I420Buffer::Create(scaled_width, scaled_height);
+       scoped_refptr<I420BufferInterface> buffer =
+-          frame.video_frame_buffer()->ToI420();
++          frame.video_frame_buffer()->ToI420ForInspection();
+       if (buffer == nullptr) {
+         RTC_LOG(LS_WARNING) << "Unable to convert frame to I420 format.";
+         return {};
+diff --git a/video/corruption_detection/video_frame_sampler.cc b/video/corruption_detection/video_frame_sampler.cc
+index 9fbce93b65edcfc417b8a233a744a932eb098290..cc7c05b93a4183ee7299f07167ab64bec8cc8e8f 100644
+--- a/video/corruption_detection/video_frame_sampler.cc
++++ b/video/corruption_detection/video_frame_sampler.cc
+@@ -136,7 +136,7 @@ std::unique_ptr<VideoFrameSampler> VideoFrameSampler::Create(
+     default:
+       // Conversion and copy to I420 from some other format.
+       return std::make_unique<I420FrameSampler>(
+-          frame.video_frame_buffer()->ToI420());
++          frame.video_frame_buffer()->ToI420ForInspection());
+   }
+ }
+ 
+diff --git a/video/corruption_detection/video_frame_sampler_unittest.cc b/video/corruption_detection/video_frame_sampler_unittest.cc
+index 3a270e18b57de7fa8575c0575271442923d337dc..0fc1d12f0f33eefc5a1d0abeef4b481214d22c23 100644
+--- a/video/corruption_detection/video_frame_sampler_unittest.cc
++++ b/video/corruption_detection/video_frame_sampler_unittest.cc
+@@ -14,11 +14,13 @@
+ #include <cstring>
+ #include <memory>
+ 
++#include "api/make_ref_counted.h"
+ #include "api/scoped_refptr.h"
+ #include "api/video/i420_buffer.h"
+ #include "api/video/i444_buffer.h"
+ #include "api/video/nv12_buffer.h"
+ #include "api/video/video_frame.h"
++#include "api/video/video_frame_buffer.h"
+ #include "test/gmock.h"
+ #include "test/gtest.h"
+ 
+@@ -104,6 +106,100 @@ scoped_refptr<I444Buffer> MakeSimpleI444FrameBuffer() {
+   return buffer;
+ }
+ 
++// A kNative buffer that keeps track of how the pixel data is requested.
++class CountingNativeBuffer : public VideoFrameBuffer {
++ public:
++  explicit CountingNativeBuffer(scoped_refptr<I420BufferInterface> buffer)
++      : buffer_(buffer) {}
++
++  Type type() const override { return Type::kNative; }
++  int width() const override { return buffer_->width(); }
++  int height() const override { return buffer_->height(); }
++
++  scoped_refptr<I420BufferInterface> ToI420() override {
++    ++to_i420_calls_;
++    return buffer_;
++  }
++  scoped_refptr<I420BufferInterface> ToI420ForInspection() override {
++    ++to_i420_for_inspection_calls_;
++    return buffer_;
++  }
++
++  int to_i420_calls() const { return to_i420_calls_; }
++  int to_i420_for_inspection_calls() const {
++    return to_i420_for_inspection_calls_;
++  }
++
++ private:
++  const scoped_refptr<I420BufferInterface> buffer_;
++  int to_i420_calls_ = 0;
++  int to_i420_for_inspection_calls_ = 0;
++};
++
++// An I420 buffer that keeps track of conversion requests. Note that
++// I420BufferInterface::ToI420() is final, so only ToI420ForInspection() can be
++// instrumented here.
++class CountingI420Buffer : public I420BufferInterface {
++ public:
++  explicit CountingI420Buffer(scoped_refptr<I420Buffer> buffer)
++      : buffer_(buffer) {}
++
++  int width() const override { return buffer_->width(); }
++  int height() const override { return buffer_->height(); }
++  const uint8_t* DataY() const override { return buffer_->DataY(); }
++  const uint8_t* DataU() const override { return buffer_->DataU(); }
++  const uint8_t* DataV() const override { return buffer_->DataV(); }
++  int StrideY() const override { return buffer_->StrideY(); }
++  int StrideU() const override { return buffer_->StrideU(); }
++  int StrideV() const override { return buffer_->StrideV(); }
++
++  scoped_refptr<I420BufferInterface> ToI420ForInspection() override {
++    ++to_i420_for_inspection_calls_;
++    return I420BufferInterface::ToI420ForInspection();
++  }
++
++  int to_i420_for_inspection_calls() const {
++    return to_i420_for_inspection_calls_;
++  }
++
++ private:
++  const scoped_refptr<I420Buffer> buffer_;
++  int to_i420_for_inspection_calls_ = 0;
++};
++
++// An NV12 buffer that keeps track of conversion requests.
++class CountingNV12Buffer : public NV12BufferInterface {
++ public:
++  explicit CountingNV12Buffer(scoped_refptr<NV12Buffer> buffer)
++      : buffer_(buffer) {}
++
++  int width() const override { return buffer_->width(); }
++  int height() const override { return buffer_->height(); }
++  const uint8_t* DataY() const override { return buffer_->DataY(); }
++  const uint8_t* DataUV() const override { return buffer_->DataUV(); }
++  int StrideY() const override { return buffer_->StrideY(); }
++  int StrideUV() const override { return buffer_->StrideUV(); }
++
++  scoped_refptr<I420BufferInterface> ToI420() override {
++    ++to_i420_calls_;
++    return buffer_->ToI420();
++  }
++  scoped_refptr<I420BufferInterface> ToI420ForInspection() override {
++    ++to_i420_for_inspection_calls_;
++    return NV12BufferInterface::ToI420ForInspection();
++  }
++
++  int to_i420_calls() const { return to_i420_calls_; }
++  int to_i420_for_inspection_calls() const {
++    return to_i420_for_inspection_calls_;
++  }
++
++ private:
++  const scoped_refptr<NV12Buffer> buffer_;
++  int to_i420_calls_ = 0;
++  int to_i420_for_inspection_calls_ = 0;
++};
++
+ std::unique_ptr<VideoFrameSampler> GetDefaultSampler() {
+   return VideoFrameSampler::Create(
+       VideoFrame::Builder()
+@@ -281,6 +377,52 @@ TEST(VideoFrameSampler, ReportsI444Resolution) {
+   EXPECT_EQ(sampler->height(VideoFrameSampler::ChannelType::V), 2);
+ }
+ 
++TEST(VideoFrameSampler, UsesToI420ForInspectionForNativeBuffer) {
++  auto buffer =
++      make_ref_counted<CountingNativeBuffer>(MakeSimpleI420FrameBuffer());
++
++  std::unique_ptr<VideoFrameSampler> sampler = VideoFrameSampler::Create(
++      VideoFrame::Builder().set_video_frame_buffer(buffer).build());
++
++  ASSERT_NE(sampler, nullptr);
++  EXPECT_EQ(buffer->to_i420_for_inspection_calls(), 1);
++  EXPECT_EQ(buffer->to_i420_calls(), 0);
++  // The sampler reads the pixel data provided by the conversion.
++  EXPECT_EQ(sampler->GetSampleValue(VideoFrameSampler::ChannelType::Y, 0, 0),
++            1);
++  EXPECT_EQ(sampler->GetSampleValue(VideoFrameSampler::ChannelType::U, 0, 0),
++            17);
++  EXPECT_EQ(sampler->GetSampleValue(VideoFrameSampler::ChannelType::V, 0, 0),
++            21);
++}
++
++TEST(VideoFrameSampler, DoesNotConvertI420Buffer) {
++  auto buffer =
++      make_ref_counted<CountingI420Buffer>(MakeSimpleI420FrameBuffer());
++
++  std::unique_ptr<VideoFrameSampler> sampler = VideoFrameSampler::Create(
++      VideoFrame::Builder().set_video_frame_buffer(buffer).build());
++
++  ASSERT_NE(sampler, nullptr);
++  EXPECT_EQ(buffer->to_i420_for_inspection_calls(), 0);
++  EXPECT_EQ(sampler->GetSampleValue(VideoFrameSampler::ChannelType::Y, 0, 0),
++            1);
++}
++
++TEST(VideoFrameSampler, DoesNotConvertNV12Buffer) {
++  auto buffer = make_ref_counted<CountingNV12Buffer>(
++      NV12Buffer::Copy(*MakeSimpleI420FrameBuffer()));
++
++  std::unique_ptr<VideoFrameSampler> sampler = VideoFrameSampler::Create(
++      VideoFrame::Builder().set_video_frame_buffer(buffer).build());
++
++  ASSERT_NE(sampler, nullptr);
++  EXPECT_EQ(buffer->to_i420_for_inspection_calls(), 0);
++  EXPECT_EQ(buffer->to_i420_calls(), 0);
++  EXPECT_EQ(sampler->GetSampleValue(VideoFrameSampler::ChannelType::Y, 0, 0),
++            1);
++}
++
+ #if GTEST_HAS_DEATH_TEST
+ TEST(VideoFrameSampler, RejectsNegativeColumn) {
+   EXPECT_DEATH(GetDefaultSampler()->GetSampleValue(

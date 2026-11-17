@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alan Baker <alanbaker@google.com>
+Date: Fri, 23 Oct 2026 13:06:47 -0700
+Subject: [vulkan] Change render pipeline robustness logic
+
+* Always set uniform, storage and image robustness to device default
+  * Those are controlled by the robustness toggles
+* Storage and uniform should be treated the same
+
+Fix: 576944087
+Change-Id: I962ac49b3bc732283707e81e80fdc0e6a6024d41
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/353495
+Reviewed-by: James Price <jrprice@google.com>
+Commit-Queue: Alan Baker <alanbaker@google.com>
+
+diff --git a/src/dawn/native/vulkan/RenderPipelineVk.cpp b/src/dawn/native/vulkan/RenderPipelineVk.cpp
+index 5fba0ce951f97d5f19931e4e0ba8219a8a8cc3b7..97d0eb306532c41d6d5ea7366b2fd66f64d263bd 100644
+--- a/src/dawn/native/vulkan/RenderPipelineVk.cpp
++++ b/src/dawn/native/vulkan/RenderPipelineVk.cpp
+@@ -867,19 +867,15 @@ ResultOrError<RenderPipeline::SpecializationResult> RenderPipeline::InitializeSp
+         // Without any specific toggle only vertex inputs can be made robust enough for WebGPU.
+         robustnessCreateInfo.vertexInputs =
+             VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS;
+-        robustnessCreateInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED;
+-        robustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED;
+-        robustnessCreateInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED;
+-
+-        if (device->IsToggleEnabled(Toggle::VulkanUseBufferRobustAccess2)) {
+-            // Uniform buffers are checked with WebGPU validation and don't need robustness.
+-            robustnessCreateInfo.storageBuffers =
+-                VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2;
+-        }
+-        if (device->IsToggleEnabled(Toggle::VulkanUseImageRobustAccess2)) {
+-            robustnessCreateInfo.images =
+-                VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2;
+-        }
++
++        // Device default for uniform and storage buffers is based on
++        // Toggle::VulkanUseBufferRobustAccess2.
++        robustnessCreateInfo.uniformBuffers =
++            VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DEVICE_DEFAULT_EXT;
++        robustnessCreateInfo.storageBuffers =
++            VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DEVICE_DEFAULT_EXT;
++        // Device default for images is based on Toggle::VulkanUseImageRobustAccess2.
++        robustnessCreateInfo.images = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DEVICE_DEFAULT_EXT;
+     }
+ 
+     // Record cache key information now since createInfo is not stored. Only store for the noop

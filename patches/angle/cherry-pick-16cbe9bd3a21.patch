@@ -1,0 +1,228 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Wed, 14 Oct 2026 15:17:48 -0400
+Subject: D3D11: Clamp constant buffer range size and offset
+
+Clamp uniform buffer range size to maxUniformBlockSize and bound
+out-of-bounds offsets in Buffer11::getConstantBufferRange so oversized
+bindings are not dropped by D3D11 *SetConstantBuffers1, preventing
+stale constant buffer bindings.
+
+Test:
+    angle_end2end_tests --gtest_filter="*OversizedBindBufferRangeDoesNotExposePreviousBuffer*"
+Bug: b/561073365
+Change-Id: Ief5315099ad01ce1fc99ea67ab99db8cd4379583
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8576380
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Electron adaptation notes (43-x-y):
+angle_end2end_tests_expectations.txt: the new SKIP line is inserted next
+to the neighbouring UniformBufferTest entry this branch has; the code and
+test changes are unchanged.
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp b/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
+index d7c96a5447891d26affc7c4405e6a2e5221e3254..4ff39facc845a2f34c1673c6b00526ec8ad250e1 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
+@@ -43,13 +43,15 @@ enum class CopyResult
+     NOT_RECREATED,
+ };
+ 
++constexpr size_t kConstantBufferOffsetAlignment = 256;
++
+ void CalculateConstantBufferParams(GLintptr offset,
+                                    GLsizeiptr size,
+                                    UINT *outFirstConstant,
+                                    UINT *outNumConstants)
+ {
+     // The offset must be aligned to 256 bytes (should have been enforced by glBindBufferRange).
+-    ASSERT(offset % 256 == 0);
++    ASSERT(offset % kConstantBufferOffsetAlignment == 0);
+ 
+     // firstConstant and numConstants are expressed in constants of 16-bytes. Furthermore they must
+     // be a multiple of 16 constants.
+@@ -57,7 +59,9 @@ void CalculateConstantBufferParams(GLintptr offset,
+ 
+     // The GL size is not required to be aligned to a 256 bytes boundary.
+     // Round the size up to a 256 bytes boundary then express the results in constants of 16-bytes.
+-    *outNumConstants = static_cast<UINT>(rx::roundUpPow2(size, static_cast<GLsizeiptr>(256)) / 16);
++    *outNumConstants = static_cast<UINT>(
++        rx::roundUpPow2(size, static_cast<GLsizeiptr>(kConstantBufferOffsetAlignment)) / 16);
++    ASSERT(*outNumConstants <= D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT);
+ 
+     // Since the size is rounded up, firstConstant + numConstants may be bigger than the actual size
+     // of the buffer. This behaviour is explictly allowed according to the documentation on
+@@ -722,17 +726,25 @@ angle::Result Buffer11::getConstantBufferRange(const gl::Context *context,
+                                                UINT *numConstantsOut,
+                                                BufferFeedback *feedback)
+ {
++    const GLsizeiptr maxUniformBlockSize =
++        static_cast<GLsizeiptr>(mRenderer->getNativeCaps().maxUniformBlockSize);
++    // D3D11 constant buffer bindings are limited to D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT
++    // (maxUniformBlockSize bytes). Passing a larger count to *SetConstantBuffers1 causes the D3D11
++    // runtime to drop the call, leaving the previously bound constant buffer in the slot.
++    const GLsizeiptr clampedSize = std::min(size, maxUniformBlockSize);
++
+     NativeStorage *bufferStorage = nullptr;
+-    if ((offset == 0 &&
+-         size < static_cast<GLsizeiptr>(mRenderer->getNativeCaps().maxUniformBlockSize)) ||
+-        mRenderer->getRenderer11DeviceCaps().supportsConstantBufferOffsets)
++    if ((offset == 0 && size < maxUniformBlockSize) ||
++        (mRenderer->getRenderer11DeviceCaps().supportsConstantBufferOffsets &&
++         static_cast<size_t>(offset) < mSize))
+     {
+         ANGLE_TRY(getBufferStorage(context, BUFFER_USAGE_UNIFORM, &bufferStorage, feedback));
+-        CalculateConstantBufferParams(offset, size, firstConstantOut, numConstantsOut);
++        CalculateConstantBufferParams(offset, clampedSize, firstConstantOut, numConstantsOut);
+     }
+     else
+     {
+-        ANGLE_TRY(getConstantBufferRangeStorage(context, offset, size, &bufferStorage, feedback));
++        ANGLE_TRY(
++            getConstantBufferRangeStorage(context, offset, clampedSize, &bufferStorage, feedback));
+         *firstConstantOut = 0;
+         *numConstantsOut  = 0;
+     }
+@@ -890,7 +902,9 @@ angle::Result Buffer11::getConstantBufferRangeStorage(const gl::Context *context
+     {
+         size_t maximumAllowedAdditionalSize = 2 * getSize();
+ 
+-        size_t sizeDelta = size - newStorage->getSize();
++        const size_t alignedSize =
++            rx::roundUpPow2(static_cast<size_t>(size), static_cast<size_t>(16));
++        size_t sizeDelta = alignedSize - newStorage->getSize();
+ 
+         while (mConstantBufferStorageAdditionalSize + sizeDelta > maximumAllowedAdditionalSize)
+         {
+@@ -919,6 +933,10 @@ angle::Result Buffer11::getConstantBufferRangeStorage(const gl::Context *context
+         ANGLE_TRY(newStorage->resize(context, size, false, feedback));
+         mConstantBufferStorageAdditionalSize += sizeDelta;
+ 
++        // Zero-initialize the newly resized range storage in case mLatestBufferStorage is null or
++        // empty (where updateBufferStorage returns early without calling copyFromStorage).
++        ANGLE_TRY(newStorage->setData(context, nullptr, 0, 0));
++
+         // We don't copy the old data when resizing the constant buffer because the data may be
+         // out-of-date therefore we reset the data revision and let updateBufferStorage() handle the
+         // copy.
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index e3e8923be8990bd166b9d0fb9bba15ca7a0bf666..3f70a49c0a95f4b47c4ab729f6dda7507db39b56 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -224,6 +224,7 @@
+ 352085732 WIN INTEL OPENGL : RobustResourceInitTestES31.Multisample2DTextureArray/* = SKIP
+ 352085732 WIN INTEL OPENGL : SRGBTextureTest.SRGBDecodeTextureParameter/* = SKIP
+ 352085732 WIN INTEL OPENGL : UniformBufferTest.DrawThenUpdateThenDraw/* = SKIP
++352085732 WIN INTEL OPENGL : UniformBufferTest.OversizedBindBufferRangeDoesNotExposePreviousBuffer/* = SKIP
+ 352085732 WIN INTEL D3D9 : TextureBorderClampTest.Redefinition/* = SKIP
+ 352085732 WIN INTEL D3D9 : TextureBorderClampTest.TextureBorderClampUnorm8/* = SKIP
+ 352085732 WIN INTEL D3D11 : SimpleStateChangeTest.DrawWithTextureTexSubImageThenDrawAgain/* = SKIP
+@@ -411,6 +412,8 @@
+ 40096808 LINUX AMD OPENGL : GeometryShaderTest.LayeredFramebufferClear2DArrayColor/* = SKIP
+ 40096808 LINUX AMD OPENGL : GeometryShaderTest.LayeredFramebufferPreRenderClear2DArrayColor/* = SKIP
+ 40096808 LINUX AMD OPENGL : SimpleStateChangeTestES3.DepthInvalidateThenClear/* = SKIP
++42263922 WIN AMD OPENGL : UniformBufferTest.OversizedBindBufferRangeDoesNotExposePreviousBuffer/* = SKIP
++42263922 LINUX AMD OPENGL : UniformBufferTest.OversizedBindBufferRangeDoesNotExposePreviousBuffer/* = SKIP
+ 40096808 LINUX AMD VULKAN : WebGL2ValidationStateChangeTest.MultiAttachmentDrawFramebufferNegativeAPI/* = SKIP
+ 
+ // Mac
+diff --git a/src/tests/gl_tests/UniformBufferTest.cpp b/src/tests/gl_tests/UniformBufferTest.cpp
+index d41828975b0dd185ce2d29e03e5381fb762fb517..8d4ed416c1504fa4aaf09f54e6daec7f9af69c09 100644
+--- a/src/tests/gl_tests/UniformBufferTest.cpp
++++ b/src/tests/gl_tests/UniformBufferTest.cpp
+@@ -5274,6 +5274,94 @@ void main() {
+     ASSERT_GL_ERROR(GL_INVALID_OPERATION);
+ }
+ 
++// Verify that binding a uniform buffer range with a size exceeding the buffer size or
++// GL_MAX_UNIFORM_BLOCK_SIZE (including at a non-zero aligned offset) properly binds the new buffer
++// and never leaves a previously bound uniform buffer active in the backend constant buffer slot.
++TEST_P(UniformBufferTest, OversizedBindBufferRangeDoesNotExposePreviousBuffer)
++{
++    GLint alignment = 256;
++    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
++    constexpr size_t kVec4Size = 4 * sizeof(float);
++    const size_t alignBytes    = std::max<size_t>(static_cast<size_t>(alignment), kVec4Size);
++
++    GLint64 maxUniformBlockSize = 65536;
++    glGetInteger64v(GL_MAX_UNIFORM_BLOCK_SIZE, &maxUniformBlockSize);
++    const size_t maxBlockBytes = static_cast<size_t>(maxUniformBlockSize);
++
++    // Populate a previous uniform buffer with red (1, 0, 0, 1) across its entire range.
++    GLBuffer previousBuffer;
++    std::vector<GLColor32F> previousData(maxBlockBytes / sizeof(GLColor32F), kFloatRed);
++    glBindBuffer(GL_UNIFORM_BUFFER, previousBuffer);
++    glBufferData(GL_UNIFORM_BUFFER, previousData.size() * sizeof(GLColor32F), previousData.data(),
++                 GL_STATIC_DRAW);
++
++    glUniformBlockBinding(mProgram, mUniformBufferIndex, 0);
++
++    auto primePreviousBuffer = [&]() {
++        glBindBufferBase(GL_UNIFORM_BUFFER, 0, previousBuffer);
++        drawQuad(mProgram, essl3_shaders::PositionAttrib(), 0.5f);
++        ASSERT_GL_NO_ERROR();
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    };
++
++    // Small uniform buffer (2 * alignment bytes) filled with green (0, 1, 0, 1).
++    GLBuffer smallGreenBuffer;
++    std::vector<GLColor32F> smallGreenData((2 * alignBytes) / sizeof(GLColor32F), kFloatGreen);
++    glBindBuffer(GL_UNIFORM_BUFFER, smallGreenBuffer);
++    glBufferData(GL_UNIFORM_BUFFER, smallGreenData.size() * sizeof(GLColor32F),
++                 smallGreenData.data(), GL_STATIC_DRAW);
++
++    const GLintptr nonZeroOffset      = static_cast<GLintptr>(alignBytes);
++    const GLsizeiptr oversizedRange   = static_cast<GLsizeiptr>(maxBlockBytes + alignBytes);
++    const GLsizeiptr exactMaxRange    = static_cast<GLsizeiptr>(maxBlockBytes);
++    const GLsizeiptr largerThanBuffer = static_cast<GLsizeiptr>(4 * alignBytes);
++
++    struct RangeCase
++    {
++        GLintptr offset;
++        GLsizeiptr size;
++    };
++    const std::array<RangeCase, 6> kSmallBufferCases = {{
++        {0, largerThanBuffer},
++        {0, exactMaxRange},
++        {0, oversizedRange},
++        {nonZeroOffset, largerThanBuffer},
++        {nonZeroOffset, exactMaxRange},
++        {nonZeroOffset, oversizedRange},
++    }};
++
++    for (const RangeCase &testCase : kSmallBufferCases)
++    {
++        primePreviousBuffer();
++        glBindBufferRange(GL_UNIFORM_BUFFER, 0, smallGreenBuffer, testCase.offset, testCase.size);
++        drawQuad(mProgram, essl3_shaders::PositionAttrib(), 0.5f);
++        ASSERT_GL_NO_ERROR();
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    }
++
++    // Large uniform buffer (2 * maxUniformBlockSize bytes) filled with green (0, 1, 0, 1).
++    GLBuffer largeGreenBuffer;
++    std::vector<GLColor32F> largeGreenData((2 * maxBlockBytes) / sizeof(GLColor32F), kFloatGreen);
++    glBindBuffer(GL_UNIFORM_BUFFER, largeGreenBuffer);
++    glBufferData(GL_UNIFORM_BUFFER, largeGreenData.size() * sizeof(GLColor32F),
++                 largeGreenData.data(), GL_STATIC_DRAW);
++
++    const std::array<RangeCase, 3> kLargeBufferCases = {{
++        {0, oversizedRange},
++        {nonZeroOffset, exactMaxRange},
++        {nonZeroOffset, oversizedRange},
++    }};
++
++    for (const RangeCase &testCase : kLargeBufferCases)
++    {
++        primePreviousBuffer();
++        glBindBufferRange(GL_UNIFORM_BUFFER, 0, largeGreenBuffer, testCase.offset, testCase.size);
++        drawQuad(mProgram, essl3_shaders::PositionAttrib(), 0.5f);
++        ASSERT_GL_NO_ERROR();
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    }
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SimpleUniformBufferTest);
+ ANGLE_INSTANTIATE_TEST_ES3(SimpleUniformBufferTest);
+ 

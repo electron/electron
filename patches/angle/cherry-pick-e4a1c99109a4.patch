@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 22 Oct 2026 10:10:57 -0400
+Subject: Vulkan: Fix enabling ensureLoopForwardProgress
+
+In [1], the feature was accidentally enabled in the GLES backend instead
+of the Vulkan backend.
+
+[1]:chromium-review.googlesource.com/8593361
+
+Bug: chromium:569191970
+Bug: chromium:576126881
+Change-Id: Id7b2bbbf7e2df389584380722e86c0eb852d50d2
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8632213
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+Electron adaptation notes (43-x-y):
+spirv.rs / vk_renderer.cpp context resolved (rewrite_struct_samplers,
+add_driver_uniforms and compressProgramBinaryBlob are not on this branch).
+
+diff --git a/src/compiler/translator/ir/src/output/spirv.rs b/src/compiler/translator/ir/src/output/spirv.rs
+index 9dedc5c0601ba430cb1fc11a4ed7eec3bda3b4f2..0d28d56303cb1468ddd2751b615399f583b09574 100644
+--- a/src/compiler/translator/ir/src/output/spirv.rs
++++ b/src/compiler/translator/ir/src/output/spirv.rs
+@@ -18,6 +18,14 @@ pub fn generate(ir: &mut IR, options: &compile::Options) {
+         transform::run!(monomorphize_unsupported_functions, ir, &transform_options);
+     }
+ 
++    if options.ensure_loop_forward_progress {
++        let transform_options = transform::ensure_loop_forward_progress::Options {
++            // SPIR-V does not support BuiltInOpCode::LoopForwardProgress
++            supports_loop_forward_progress_built_in: false,
++        };
++        transform::run!(ensure_loop_forward_progress, ir, &transform_options);
++    }
++
+     {
+         let transform_options = transform::spirv::pass1::Options {};
+         transform::run!(spirv::pass1, ir, &transform_options);
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 9c3648bcbca78a6e9a9cfc8ffbc11e5a6bbfefc1..1cdfc0d9417f8adba3251898543e9f98afaa4d13 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2957,9 +2957,6 @@ void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFea
+     ANGLE_FEATURE_CONDITION(features, noperspectiveInterpolationBrokenWithPassthroughShaders,
+                             isQualcomm);
+     ANGLE_FEATURE_CONDITION(features, setNeedInitOnInvalidation, true);
+-
+-    // PowerVR compiler may crash when encountering an infinite loop
+-    ANGLE_FEATURE_CONDITION(features, ensureLoopForwardProgress, isPowerVR);
+ }
+ 
+ void ReInitializeFeaturesAtGPUSwitch(const FunctionsGL *functions, angle::FeaturesGL *features)
+diff --git a/src/libANGLE/renderer/vulkan/vk_renderer.cpp b/src/libANGLE/renderer/vulkan/vk_renderer.cpp
+index 5067f3235fe4b432e0a6b8fd60ade5c7fa3efb51..480c1bfd23310d7db1aab8f966f22893ccd31155 100644
+--- a/src/libANGLE/renderer/vulkan/vk_renderer.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_renderer.cpp
+@@ -7128,9 +7128,10 @@ const ShPixelLocalStorageOptions &Renderer::getNativePixelLocalStorageOptions()
+ 
+ void Renderer::initializeFrontendFeatures(angle::FrontendFeatures *features) const
+ {
++    const bool isPowerVR = IsPowerVR(mPhysicalDeviceProperties.vendorID);
++    const bool isSamsung = IsSamsung(mPhysicalDeviceProperties.vendorID);
+     const bool isSwiftShader =
+         IsSwiftshader(mPhysicalDeviceProperties.vendorID, mPhysicalDeviceProperties.deviceID);
+-    const bool isSamsung = IsSamsung(mPhysicalDeviceProperties.vendorID);
+ 
+     // Hopefully-temporary work-around for a crash on SwiftShader.  An Android process is turning
+     // off GL error checking, and then asking ANGLE to write past the end of a buffer.
+@@ -7150,6 +7151,9 @@ void Renderer::initializeFrontendFeatures(angle::FrontendFeatures *features) con
+     // Always run the link's warm up job in a thread.  It's an optimization only, and does not block
+     // the link resolution.
+     ANGLE_FEATURE_CONDITION(features, alwaysRunLinkSubJobsThreaded, true);
++
++    // PowerVR compiler may crash when encountering an infinite loop
++    ANGLE_FEATURE_CONDITION(features, ensureLoopForwardProgress, isPowerVR);
+ }
+ 
+ angle::Result Renderer::getLockedPipelineCacheDataIfNew(vk::ErrorContext *context,

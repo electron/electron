@@ -1,0 +1,172 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tove Petersson <tovep@chromium.org>
+Date: Mon, 19 Oct 2026 05:18:05 -0700
+Subject: [mac] Reject overlapping Open() calls in NativeScreenCapturePickerMac
+
+NativeScreenCapturePickerMac is a browser-wide singleton. When Open()
+is invoked while a system picker interaction is already in progress,
+it previously overwrote the active callbacks and incremented the active
+source ID without notifying the earlier requester. If the user then
+selected a window or screen, the capture stream would be misdelivered
+to the second requester instead of the original tab.
+
+This CL ensures that Open() immediately rejects overlapping requests
+via error_callback if picker_callback_ is already active. In addition,
+closing the active picker session resets any pending callbacks so
+subsequent requests can be served.
+
+Bug: 518239793
+Change-Id: I2eca753d630d1552a9a92a9abb82a8edac445145
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8430557
+Reviewed-by: Johannes Kron <kron@chromium.org>
+Commit-Queue: Tove Petersson <tovep@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1721813}
+Electron adaptation notes (43-x-y):
+This branch predates the picker-deactivation refactor (upstream 8324087):
+OnPickerObserverCancelled()/OnPickerObserverEncounteredError() did not yet
+clear the sibling callbacks and there is no MaybeDeactivatePicker()
+(Close() deactivates the picker itself). The fix relies on picker_callback_
+being cleared once the in-flight request ends, so those two handlers now
+reset the other two callbacks before running their own, exactly as in the
+upstream pre-image; MaybeDeactivatePicker() calls are not carried. The
+Open() rejection, the null-callback guards and the Close() reset are
+unchanged. native_screen_capture_picker_mac_unittest.mm is not carried
+(test helper signatures differ on this branch).
+
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.h b/content/browser/media/capture/native_screen_capture_picker_mac.h
+index 46c25bba0436a1e668ff387dd0136c48c10a7070..b768c44e7c8618eb998707ae3b75a7ac9058289f 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac.h
++++ b/content/browser/media/capture/native_screen_capture_picker_mac.h
+@@ -76,6 +76,8 @@ class API_AVAILABLE(macos(14.0)) CONTENT_EXPORT NativeScreenCapturePickerMac
+       GetWindowOwnerPidCallback callback);
+ 
+  private:
++  friend class NativeScreenCapturePickerMacTest;
++
+   struct CaptureSession {
+     CaptureSession();
+     ~CaptureSession();
+@@ -123,9 +125,9 @@ class API_AVAILABLE(macos(14.0)) CONTENT_EXPORT NativeScreenCapturePickerMac
+ 
+   // On every new getDisplayMedia request, we increment
+   // `active_picker_source_id_` and assign `active_picker_type_` the type of the
+-  // request. Since while making a selection of the capture surface the rest of
+-  // the UI becomes non-interactive, it is ensured that the callbacks are called
+-  // for the right selection.
++  // request. Only one pending request is tracked at a time; Open() rejects new
++  // requests while a selection is in progress so the callbacks above always
++  // belong to the request that opened the system picker.
+   DesktopMediaID::Id active_picker_source_id_ = 0;
+   DesktopMediaID::Type active_picker_type_;
+ 
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
+index 5d95185f0d0d42c2e2216a9509ac22ea80bf0ff1..3d2b2c5aca750955610d65c46a95a40b6de6f522 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
++++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
+@@ -193,6 +193,13 @@ void API_AVAILABLE(macos(14.0))
+   CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
+         type == DesktopMediaID::Type::TYPE_WINDOW);
+   if (@available(macOS 14.0, *)) {
++    if (picker_callback_) {
++      // The system picker is already showing for another request; reject this
++      // one rather than displacing the in-flight selection.
++      std::move(error_callback).Run();
++      return;
++    }
++
+     active_picker_source_id_++;
+     active_picker_type_ = type;
+     LogSessionEvent(SCContentSharingPickerSessionEvent::kPickerOpened);
+@@ -331,6 +338,13 @@ void API_AVAILABLE(macos(14.0))
+     return;
+   }
+ 
++  if (!stream && !picker_callback_) {
++    VLOG(1) << "NSCPM::OnPickerObserverUpdated: "
++               "picker_callback_ is null for source id = "
++            << session_id;
++    return;
++  }
++
+   auto& session = GetOrCreateCaptureSession(session_id);
+   session.filter = filter;
+ 
+@@ -354,13 +368,6 @@ void API_AVAILABLE(macos(14.0))
+     return;
+   }
+ 
+-  if (!picker_callback_) {
+-    VLOG(1) << "NSCPM::OnPickerObserverUpdated: "
+-               "picker_callback_ is null for source id = "
+-            << session_id;
+-    return;
+-  }
+-
+   VLOG(1) << "NSCPM::OnPickerObserverUpdated: for source id = " << session_id;
+ 
+   if (!session.received_first_response) {
+@@ -388,6 +395,13 @@ void API_AVAILABLE(macos(14.0))
+     return;
+   }
+ 
++  if (!cancel_callback_) {
++    VLOG(1) << "NSCPM::OnPickerObserverCancelled: "
++               "cancel_callback_ is null for source id = "
++            << active_picker_source_id_;
++    return;
++  }
++
+   VLOG(1) << "NSCPM::OnPickerObserverCancelled: sourcce id = "
+           << active_picker_source_id_;
+   auto& session = GetOrCreateCaptureSession(active_picker_source_id_);
+@@ -395,15 +409,22 @@ void API_AVAILABLE(macos(14.0))
+     session.received_first_response = true;
+     LogCancelToUma(active_picker_type_);
+   }
+-  if (cancel_callback_) {
+-    std::move(cancel_callback_).Run();
+-  }
++  picker_callback_.Reset();
++  error_callback_.Reset();
++  std::move(cancel_callback_).Run();
+ }
+ 
+ void NativeScreenCapturePickerMac::OnPickerObserverEncounteredError(
+     NSError* error) {
+   DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+ 
++  if (!error_callback_) {
++    VLOG(1) << "NSCPM::OnPickerObserverEncounteredError: "
++               "error_callback_ is null for source id = "
++            << active_picker_source_id_;
++    return;
++  }
++
+   VLOG(1) << "NSCPM::OnPickerObserverEncounteredError: source id = "
+           << active_picker_source_id_ << ", code = " << [error code]
+           << ", domain = " << [error domain]
+@@ -413,9 +434,9 @@ void API_AVAILABLE(macos(14.0))
+     session.received_first_response = true;
+     LogErrorToUma(active_picker_type_);
+   }
+-  if (error_callback_) {
+-    std::move(error_callback_).Run();
+-  }
++  picker_callback_.Reset();
++  cancel_callback_.Reset();
++  std::move(error_callback_).Run();
+ }
+ 
+ void NativeScreenCapturePickerMac::UpdateStreamMap(DesktopMediaID::Id id,
+@@ -436,6 +457,11 @@ void API_AVAILABLE(macos(14.0))
+ void NativeScreenCapturePickerMac::Close(DesktopMediaID device_id) {
+   DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+   if (@available(macOS 14.0, *)) {
++    if (device_id.id == active_picker_source_id_) {
++      picker_callback_.Reset();
++      cancel_callback_.Reset();
++      error_callback_.Reset();
++    }
+     ScheduleCleanup(device_id.id);
+     active_source_ids_.erase(device_id.id);
+     // Don't deactivate the picker if there are any active capture sessions.

@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Fri, 16 Oct 2026 16:16:56 -0700
+Subject: Make ~CFXJSE_FormCalcContext() clear internal binding of value_
+
+This mirrors what ~CFXJSE_Engine() already did for every other bound
+object. Also throw an error in V8FunctionCallback_Wrapper should the
+binding somehow be gone.
+
+Bug: 574302978
+Change-Id: I9778cc265ab2bcb311842ae3c168bb8c842befc0
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/161150
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/fxjs/xfa/cfxjse_class.cpp b/fxjs/xfa/cfxjse_class.cpp
+index e49027e3596fb25c733841a62f44f8ced39245dc..f7a5fc58346db7201f7914df9b6a62e5ef89a51a 100644
+--- a/fxjs/xfa/cfxjse_class.cpp
++++ b/fxjs/xfa/cfxjse_class.cpp
+@@ -49,14 +49,21 @@ FXJSE_CLASS_DESCRIPTOR* AsClassDescriptor(void* ptr) {
+ 
+ void V8FunctionCallback_Wrapper(
+     const v8::FunctionCallbackInfo<v8::Value>& info) {
+-  const FXJSE_FUNCTION_DESCRIPTOR* pFunctionInfo =
++  const FXJSE_FUNCTION_DESCRIPTOR* function_info =
+       AsFunctionDescriptor(info.Data().As<v8::External>()->Value(
+           v8::kExternalPointerTypeTagDefault));
+-  if (!pFunctionInfo) {
++  if (!function_info) {
+     return;
+   }
+ 
+-  pFunctionInfo->callbackProc(CFXJSE_HostObject::FromV8(info.This()), info);
++  // Reject receivers whose binding has been cleared instead of handing a null
++  // host object to the callback.
++  CFXJSE_HostObject* host_object = CFXJSE_HostObject::FromV8(info.This());
++  if (!host_object) {
++    FXJSE_ThrowMessage(info.GetIsolate(), "Invalid receiver.");
++    return;
++  }
++  function_info->callbackProc(host_object, info);
+ }
+ 
+ void V8ConstructorCallback_Wrapper(
+diff --git a/fxjs/xfa/cfxjse_formcalc_context.cpp b/fxjs/xfa/cfxjse_formcalc_context.cpp
+index 277ff3d44f2e4d21383703d3b5a937f88c5bce97..819578aca0dff302da17c508a6b92a6b9543bca3 100644
+--- a/fxjs/xfa/cfxjse_formcalc_context.cpp
++++ b/fxjs/xfa/cfxjse_formcalc_context.cpp
+@@ -35,6 +35,7 @@
+ #include "fxjs/xfa/cfxjse_class.h"
+ #include "fxjs/xfa/cfxjse_context.h"
+ #include "fxjs/xfa/cfxjse_engine.h"
++#include "fxjs/xfa/cfxjse_isolatetracker.h"
+ #include "fxjs/xfa/cjx_object.h"
+ #include "v8/include/v8-container.h"
+ #include "v8/include/v8-function-callback.h"
+@@ -5123,7 +5124,18 @@ CFXJSE_FormCalcContext::CFXJSE_FormCalcContext(v8::Isolate* pIsolate,
+                                  ->GetTemplate(isolate_)));
+ }
+ 
+-CFXJSE_FormCalcContext::~CFXJSE_FormCalcContext() = default;
++CFXJSE_FormCalcContext::~CFXJSE_FormCalcContext() {
++  // Clear the binding the same way CFXJSE_Engine does for every other bound
++  // so later calls on the retained object do not see this binding.
++  if (!value_.IsEmpty()) {
++    CFXJSE_ScopeUtil_IsolateHandle scope(GetIsolate());
++    v8::Local<v8::Value> value =
++        v8::Local<v8::Value>::New(GetIsolate(), value_);
++    if (value->IsObject()) {
++      FXJSE_ClearObjectBinding(value.As<v8::Object>());
++    }
++  }
++}
+ 
+ CFXJSE_FormCalcContext* CFXJSE_FormCalcContext::AsFormCalcContext() {
+   return this;

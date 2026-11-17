@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Fri, 23 Oct 2026 16:59:44 -0400
+Subject: Translator: Move AST rebuild code out of ASSERT
+
+... so it doesn't get compiled out on release.
+
+Bug: chromium:576812570
+Change-Id: I12c68c96be6b7adeac1bd9870fbfc4f4dd79660e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8645358
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.cpp b/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.cpp
+index 99d79228a9ab69e19e5583e821eb284cf4466ef9..7563daa6b9dff6872a803499431732f3d40f4d58 100644
+--- a/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.cpp
++++ b/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.cpp
+@@ -144,7 +144,8 @@ class WrapRebuilder final : public TIntermRebuild
+         {
+             // Choose which strategy to use for this node.
+             mIsGlobalScope = !node->getAsFunctionDefinition();
+-            ASSERT(!rebuild(*node).isFail());
++            const bool failed = rebuild(*node).isFail();
++            ASSERT(!failed);
+             replacement.insert(replacement.end(), mAdditionalVariables.begin(),
+                                mAdditionalVariables.end());
+             mAdditionalVariables.clear();

@@ -1,0 +1,252 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Sun, 25 Oct 2026 20:35:38 -0700
+Subject: [html-in-canvas] Fix filter dirty bit clearing
+
+This patch moves clearing of `filter_on_effect_node_dirty_` and
+`backdrop_filter_on_effect_node_dirty_` out of `PaintLayer`'s filter
+builder methods (which are now `const`) and into
+`PaintLayer::ClearFilterAndBackdropFilterOnEffectNodeDirty()`, called
+from `PaintPropertyTreeBuilder::UpdateForSelf` once the object's last
+fragment updates.
+
+Previously, `UpdateCompositorFilterOperationsForFilter` and
+`UpdateCompositorFilterOperationsForBackdropFilter` cleared the shared
+`PaintLayer` dirty bits immediately. An earlier fragment in a multicol
+container would clear the dirty bit before later fragments updated,
+causing those fragments to early-return and keep stale filter
+operations after moving into a `<canvas content=drawable>` subtree.
+
+Fixed: 574759287
+Change-Id: I9efea4ec9e717e2d087376ab21b925313bc93a71
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8639479
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1726725}
+Electron adaptation notes (43-x-y):
+paint_layer.cc: UpdateCompositorFilterOperationsForBackdropFilter() keeps
+this branch's StyleRef() accessor; the const-qualification and the
+removal of the dirty-bit clears are as upstream.
+
+diff --git a/third_party/blink/renderer/core/paint/paint_layer.cc b/third_party/blink/renderer/core/paint/paint_layer.cc
+index 13caf731ffaafd50cfd04f9ee5002b1ed856870c..a3ff07d6241a08ad488645bab0e1584c122de5e0 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer.cc
++++ b/third_party/blink/renderer/core/paint/paint_layer.cc
+@@ -2551,7 +2551,7 @@ FilterOperations PaintLayer::FilterOperationsIncludingReflection() const {
+ }
+ 
+ void PaintLayer::UpdateCompositorFilterOperationsForFilter(
+-    CompositorFilterOperations& operations) {
++    CompositorFilterOperations& operations) const {
+   auto filter = FilterOperationsIncludingReflection();
+   gfx::RectF reference_box = FilterReferenceBox();
+ 
+@@ -2572,16 +2572,14 @@ void PaintLayer::UpdateCompositorFilterOperationsForFilter(
+                           style.UsedColorScheme(),
+                           GetLayoutObject().IsInCanvasSubtree())
+           .BuildFilterOperations(filter);
+-  filter_on_effect_node_dirty_ = false;
+ }
+ 
+ void PaintLayer::UpdateCompositorFilterOperationsForBackdropFilter(
+     CompositorFilterOperations& operations,
+-    SkPath& backdrop_filter_bounds) {
++    SkPath& backdrop_filter_bounds) const {
+   const auto& style = GetLayoutObject().StyleRef();
+   if (style.BackdropFilter().IsEmpty()) {
+     operations.Clear();
+-    backdrop_filter_on_effect_node_dirty_ = false;
+     return;
+   }
+ 
+@@ -2620,7 +2618,6 @@ void PaintLayer::UpdateCompositorFilterOperationsForBackdropFilter(
+   // Note that |operations| may be empty here, if the |filter_operations| list
+   // contains only invalid filters (e.g. invalid reference filters). See
+   // https://crbug.com/983157 for details.
+-  backdrop_filter_on_effect_node_dirty_ = false;
+ }
+ 
+ PaintLayerResourceInfo& PaintLayer::EnsureResourceInfo() {
+diff --git a/third_party/blink/renderer/core/paint/paint_layer.h b/third_party/blink/renderer/core/paint/paint_layer.h
+index 1101b4c44435331efc72d768394c4cc467f622f8..0d930b3c1dc29ad891706b0154264b28630a76e1 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer.h
++++ b/third_party/blink/renderer/core/paint/paint_layer.h
+@@ -322,10 +322,11 @@ class CORE_EXPORT PaintLayer : public GarbageCollected<PaintLayer>,
+ 
+   // If the input CompositorFilterOperation is not empty, it will be populated
+   // only if |filter_on_effect_node_dirty_| is true or the reference box has
+-  // changed. Otherwise it will be populated unconditionally.
+-  // |filter_on_effect_node_dirty_| will be cleared.
++  // changed. Otherwise it will be populated unconditionally. Does not clear
++  // |filter_on_effect_node_dirty_| so all fragments see it; callers must call
++  // ClearFilterAndBackdropFilterOnEffectNodeDirty() after all fragments update.
+   void UpdateCompositorFilterOperationsForFilter(
+-      CompositorFilterOperations& operations);
++      CompositorFilterOperations& operations) const;
+   void SetFilterOnEffectNodeDirty() { filter_on_effect_node_dirty_ = true; }
+ 
+   // |backdrop_filter_bounds| represents the clipping bounds for the filtered
+@@ -333,14 +334,20 @@ class CORE_EXPORT PaintLayer : public GarbageCollected<PaintLayer>,
+   // containing EffectPaintPropertyNode. If the input CompositorFilterOperation
+   // is not empty, it will be populated only if
+   // |backdrop_filter_on_effect_node_dirty_| is true or the reference box has
+-  // changed. Otherwise it will be populated unconditionally.
+-  // |backdrop_filter_on_effect_node_dirty_| will be cleared.
++  // changed. Otherwise it will be populated unconditionally. Does not clear
++  // |backdrop_filter_on_effect_node_dirty_| so all fragments see it; callers
++  // must call ClearFilterAndBackdropFilterOnEffectNodeDirty() after all
++  // fragments update.
+   void UpdateCompositorFilterOperationsForBackdropFilter(
+       CompositorFilterOperations& operations,
+-      SkPath& backdrop_filter_bounds);
++      SkPath& backdrop_filter_bounds) const;
+   void SetBackdropFilterOnEffectNodeDirty() {
+     backdrop_filter_on_effect_node_dirty_ = true;
+   }
++  void ClearFilterAndBackdropFilterOnEffectNodeDirty() {
++    filter_on_effect_node_dirty_ = false;
++    backdrop_filter_on_effect_node_dirty_ = false;
++  }
+ 
+   void SetIsUnderSVGHiddenContainer(bool value) {
+     is_under_svg_hidden_container_ = value;
+@@ -771,8 +778,8 @@ class CORE_EXPORT PaintLayer : public GarbageCollected<PaintLayer>,
+ 
+   // These are set to true when filter style or filter resource changes,
+   // indicating that we need to update the filter (or backdrop_filter) field of
+-  // the effect paint property node. They are cleared when the effect paint
+-  // property node is updated.
++  // the effect paint property node. They are cleared once all fragments have
++  // updated their paint properties.
+   unsigned filter_on_effect_node_dirty_ : 1;
+   unsigned backdrop_filter_on_effect_node_dirty_ : 1;
+ 
+diff --git a/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc b/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
+index d5e7e83e9af1b2c0044b8fc01e201654ac0068af..44a9d76f365d4aa296da1769ca1f17594f1c0d30 100644
+--- a/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
++++ b/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
+@@ -2409,10 +2409,12 @@ static void UpdateFilterEffect(
+     }
+     PaintLayer* layer = To<LayoutBoxModelObject>(object).Layer();
+ #if DCHECK_IS_ON()
+-    // We should have already updated the reference box.
+-    auto reference_box = layer->FilterReferenceBox();
+-    layer->UpdateFilterReferenceBox();
+-    DCHECK_EQ(reference_box, layer->FilterReferenceBox());
++    if (!PrePaintDisableSideEffectsScope::IsDisabled()) {
++      // We should have already updated the reference box.
++      auto reference_box = layer->FilterReferenceBox();
++      layer->UpdateFilterReferenceBox();
++      DCHECK_EQ(reference_box, layer->FilterReferenceBox());
++    }
+ #endif
+     layer->UpdateCompositorFilterOperationsForFilter(filter_info.operations);
+     filter_info.output_bounds = filter_info.operations.MapRect(
+@@ -4437,6 +4439,12 @@ void PaintPropertyTreeBuilder::UpdateForSelf() {
+   if (!PrePaintDisableSideEffectsScope::IsDisabled()) {
+     object_.GetMutableForPainting()
+         .SetShouldAssumePaintOffsetTranslationForLayoutShiftTracking(false);
++    if ((!pre_paint_info_ || pre_paint_info_->is_last_for_node) &&
++        object_.NeedsPaintPropertyUpdate() && object_.HasLayer()) {
++      To<LayoutBoxModelObject>(object_)
++          .Layer()
++          ->ClearFilterAndBackdropFilterOnEffectNodeDirty();
++    }
+   }
+ }
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/box-reflect-images-in-iframe-multicol-moved-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/box-reflect-images-in-iframe-multicol-moved-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..86e013c86370cfefe79964171786a2dcc540a81e
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/box-reflect-images-in-iframe-multicol-moved-ignored.tentative.https.sub.html
+@@ -0,0 +1,89 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not draw cross-origin box-reflect images in a multicol inside an iframe moved under canvas</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++  #iframe {
++    width: 400px;
++    height: 200px;
++    border: none;
++  }
++  </style>
++</head>
++<body>
++  <iframe drawable id="iframe" srcdoc='
++    <!DOCTYPE html>
++    <style>
++      body {
++        margin: 0;
++        display: flex;
++        width: 400px;
++        height: 200px;
++        background: blue;
++      }
++      .multicol {
++        width: 200px;
++        height: 50px;
++        column-gap: 0;
++      }
++      .reflected {
++        height: 100px;
++        background: green;
++      }
++      #sameOrigin {
++        -webkit-box-reflect: below 0 url("https://{{location[host]}}/html/canvas/element/manual/draw-element-image/resources/left-half-mask-50.svg");
++      }
++      #crossOrigin {
++        -webkit-box-reflect: below 0 url("https://{{hosts[alt][www]}}:{{ports[https][0]}}/html/canvas/element/manual/draw-element-image/resources/left-half-mask-50.svg");
++      }
++    </style>
++    <div class="multicol">
++      <div id="sameOrigin" class="reflected"></div>
++    </div>
++    <div class="multicol">
++      <div id="crossOrigin" class="reflected"></div>
++    </div>
++  '></iframe>
++  <canvas id="canvas" width="400" height="200" content=drawable></canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        for (const el of iframe.contentDocument.querySelectorAll(".multicol")) {
++          el.style.columns = "2";
++        }
++        await waitForCanvasPaint(canvas);
++
++        // Atomically move the iframe into the canvas.
++        canvas.moveBefore(iframe, null);
++
++        await waitForCanvasPaint(canvas);
++        const context = canvas.getContext("2d");
++        context.drawElementImage(iframe, 0, 0);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 150, 25);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Same origin div should draw");
++        pixel = _getPixelFromImageData(imgData, 125, 175);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Same origin box-reflect mask should not mask out left side of reflection");
++        pixel = _getPixelFromImageData(imgData, 175, 175);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Same origin box-reflect mask should mask out right side of reflection");
++
++        pixel = _getPixelFromImageData(imgData, 350, 25);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin div should draw");
++        pixel = _getPixelFromImageData(imgData, 325, 175);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin box-reflect mask should not mask out left side of reflection");
++        pixel = _getPixelFromImageData(imgData, 375, 175);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin box-reflect mask should not mask out right side of reflection");
++      });
++    };
++  </script>
++</body>
++</html>
