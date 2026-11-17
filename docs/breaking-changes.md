@@ -60,6 +60,21 @@ or [`ses.setPermissionCheckHandler(handler)`](api/session.md#sessetpermissionche
 Web content lost the ability to trigger this permission in Electron 46 when
 `document.requestStorageAccessFor` was removed.
 
+### Behavior Changed: extensions handle requests on sessions that use `webRequest`
+
+Previously, adding a listener to a session's [`webRequest`](api/web-request.md)
+stopped extensions loaded in that session from receiving `chrome.webRequest`
+events and from applying `chrome.declarativeNetRequest` rules. Extensions now
+handle requests alongside the session's `webRequest` listeners.
+
+Where the two conflict, extensions take priority. A request that an extension
+blocks or redirects no longer reaches the session's `webRequest` listeners, and
+extensions have the final say on the response headers a page receives. Request
+headers set by the session's `webRequest` listeners are still what is sent.
+
+See [`chrome.webRequest`](api/extensions.md#chromewebrequest) for the full
+ordering.
+
 ## Breaking API Changes (46.0)
 
 ### Removed: `--experimental-transform-types` command-line switch
