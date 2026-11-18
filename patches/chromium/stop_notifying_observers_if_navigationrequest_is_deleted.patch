@@ -28,7 +28,7 @@ Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1730145}
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ed3b0555fd6546c18236ef97bbc90c96fb97d1ea..8f7b0b8537a441cfcab7e566991906366e41692f 100644
+index 2d2853612f67b07a8df2188cfd2d19417b5a9e7c..9497f8b7e0488e5af46b8b80db7637b44eade55c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -1217,6 +1217,28 @@ void WebContentsImpl::WebContentsObserverList::RemoveObserver(
@@ -60,7 +60,7 @@ index ed3b0555fd6546c18236ef97bbc90c96fb97d1ea..8f7b0b8537a441cfcab7e56699190636
  // WebContentsImpl -------------------------------------------------------------
  
  namespace {
-@@ -7762,8 +7784,10 @@ void WebContentsImpl::DidStartNavigation(NavigationHandle* navigation_handle) {
+@@ -7771,8 +7793,10 @@ void WebContentsImpl::DidStartNavigation(NavigationHandle* navigation_handle) {
    const GURL url = navigation_handle->GetURL();
  
    base::ElapsedTimer duration;
@@ -73,7 +73,7 @@ index ed3b0555fd6546c18236ef97bbc90c96fb97d1ea..8f7b0b8537a441cfcab7e56699190636
    // WARNING: DO NOT use |navigation_handle| after this point. An observer may
    // have destroyed the NavigationRequest, rendering the pointer invalid. See
    // crbug.com/504574017. We set `navigation_handle` to nullptr here to prevent
-@@ -7814,8 +7838,10 @@ void WebContentsImpl::DidRedirectNavigation(
+@@ -7823,8 +7847,10 @@ void WebContentsImpl::DidRedirectNavigation(
  
    {
      SCOPED_UMA_HISTOGRAM_TIMER("WebContentsObserver.DidRedirectNavigation");
@@ -86,7 +86,7 @@ index ed3b0555fd6546c18236ef97bbc90c96fb97d1ea..8f7b0b8537a441cfcab7e56699190636
    }
    // WARNING: DO NOT use |navigation_handle| after this point. An observer may
    // have destroyed the NavigationRequest, rendering the pointer invalid. See
-@@ -7860,8 +7886,12 @@ void WebContentsImpl::ReadyToCommitNavigation(
+@@ -7869,8 +7895,12 @@ void WebContentsImpl::ReadyToCommitNavigation(
      }
    }
  
@@ -101,7 +101,7 @@ index ed3b0555fd6546c18236ef97bbc90c96fb97d1ea..8f7b0b8537a441cfcab7e56699190636
    // WARNING: DO NOT use |navigation_handle| after this point. An observer may
    // have destroyed the NavigationRequest, rendering the pointer invalid. See
    // crbug.com/504574017. We set `navigation_handle` to nullptr here to prevent
-@@ -7964,6 +7994,10 @@ void WebContentsImpl::DidFinishNavigation(NavigationHandle* navigation_handle) {
+@@ -7973,6 +8003,10 @@ void WebContentsImpl::DidFinishNavigation(NavigationHandle* navigation_handle) {
  
    {
      SCOPED_UMA_HISTOGRAM_TIMER("WebContentsObserver.DidFinishNavigation");
@@ -113,10 +113,10 @@ index ed3b0555fd6546c18236ef97bbc90c96fb97d1ea..8f7b0b8537a441cfcab7e56699190636
                                 navigation_handle);
    }
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 4ad73d111db79f98176a58a3bcfcde07728307f5..5a6c7dbaf3a83c18bc79e698741fde81034ba9b8 100644
+index b8a235180554c9435fe245ea49002890d3cfd727..ad6b11a23579b263015a76d9d31daf97cf7de4c7 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1884,6 +1884,11 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1885,6 +1885,11 @@ class CONTENT_EXPORT WebContentsImpl
    // observer set.
    class WebContentsObserverList {
     public:
@@ -128,7 +128,7 @@ index 4ad73d111db79f98176a58a3bcfcde07728307f5..5a6c7dbaf3a83c18bc79e698741fde81
      WebContentsObserverList();
      ~WebContentsObserverList();
  
-@@ -1905,6 +1910,22 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1906,6 +1911,22 @@ class CONTENT_EXPORT WebContentsImpl
  
      bool is_notifying_observers() { return is_notifying_observers_; }
  

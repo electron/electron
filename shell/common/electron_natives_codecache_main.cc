@@ -149,6 +149,16 @@ int main(int argc, char* argv[]) {
   v8::V8::InitializeICUDefaultLocation(argv[0]);
   v8::V8::InitializeExternalStartupDataFromFile(snapshot_blob_path.c_str());
 
+  // Make the output reproducible. With --rehash-snapshot the isolate draws a
+  // fresh string hash seed from V8's RNG, which is seeded from OS entropy by
+  // default, so hash table layouts (and with them the serialized cache) vary
+  // from run to run. Seed the RNG like mksnapshot does; --random-seed is left
+  // out of FlagList::Hash, so the cache's flag hash still matches the runtime
+  // processes, and the runtime rehashes with its own seed on deserialization.
+  constexpr std::string_view kDeterministicFlags = "--random-seed=314159265";
+  v8::V8::SetFlagsFromString(kDeterministicFlags.data(),
+                             kDeterministicFlags.size());
+
   // Match the consuming process's non-default flag set (FlagList::Hash is
   // part of V8's code-cache key). Passed in from GN per flavor.
   if (!v8_flags.empty())
