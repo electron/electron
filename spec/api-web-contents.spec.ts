@@ -1843,20 +1843,33 @@ describe('webContents module', { retry: 0 }, () => {
       return { w, devtools };
     }
 
+    // Builds the source of a call to a DevTools frontend function. The
+    // arguments are passed as JSON, followed by any trailing arguments given
+    // as code, such as a callback.
+    const frontendCall = (fn: string, args: unknown[], ...trailingCode: string[]) =>
+      `${fn}(${[...args.map((arg) => JSON.stringify(arg)), ...trailingCode].join(', ')})`;
+
+    // Calls an InspectorFrontendHost method from the frontend.
+    const callHost = (devtools: WebContents, method: string, ...args: unknown[]) =>
+      devtools.executeJavaScript(frontendCall(`InspectorFrontendHost.${method}`, args));
+
     // Calls an InspectorFrontendHost method that takes a trailing callback
     // and resolves with what the embedder sent back.
     const callWithReply = (devtools: WebContents, method: string, ...args: unknown[]) =>
       devtools.executeJavaScript(
-        `new Promise((resolve) => InspectorFrontendHost.${method}(${[...args.map((arg) => JSON.stringify(arg)), 'resolve'].join(', ')}))`
+        `new Promise((resolve) => ${frontendCall(`InspectorFrontendHost.${method}`, args, 'resolve')})`
       );
 
+    // Waits for the embedder to call the recorded frontend function `name`
+    // with `firstArg`, and returns the arguments of that call.
     const waitForEmbedderCall = async (devtools: WebContents, name: string, firstArg: unknown) => {
-      const find = async () =>
-        ((await devtools.executeJavaScript('window.embedderCalls')) as any[][]).find(
-          ([callName, arg]) => callName === name && arg === firstArg
-        );
-      await waitUntil(async () => !!(await find()));
-      return (await find())!.slice(1);
+      let call: unknown[] | undefined;
+      await waitUntil(async () => {
+        const calls: unknown[][] = await devtools.executeJavaScript('window.embedderCalls');
+        call = calls.find(([callName, arg]) => callName === name && arg === firstArg);
+        return call !== undefined;
+      });
+      return call!.slice(1) as any[];
     };
 
     describe('loadNetworkResource', () => {
@@ -1882,20 +1895,25 @@ describe('webContents module', { retry: 0 }, () => {
 
       // Loads a resource the way DevTools loads source maps, collecting the
       // chunks the embedder streams into the frontend for it.
-      const loadNetworkResource = (devtools: WebContents, resourceUrl: string, headers = '') =>
-        devtools.executeJavaScript(`new Promise((resolve) => {
-          const streamId = ${nextId++};
+      const loadNetworkResource = (devtools: WebContents, resourceUrl: string, headers = '') => {
+        const streamId = nextId++;
+        return devtools.executeJavaScript(`new Promise((resolve) => {
           const chunks = [];
           const streamWrite = DevToolsAPI.streamWrite;
           DevToolsAPI.streamWrite = function (id, chunk, encoded) {
-            if (id !== streamId) return streamWrite.apply(this, arguments);
+            if (id !== ${JSON.stringify(streamId)}) return streamWrite.apply(this, arguments);
             chunks.push(encoded ? atob(chunk) : chunk);
           };
-          InspectorFrontendHost.loadNetworkResource(${JSON.stringify(resourceUrl)}, ${JSON.stringify(headers)}, streamId, (response) => {
-            DevToolsAPI.streamWrite = streamWrite;
-            resolve({ response, body: chunks.join('') });
-          });
+          ${frontendCall(
+            'InspectorFrontendHost.loadNetworkResource',
+            [resourceUrl, headers, streamId],
+            `(response) => {
+              DevToolsAPI.streamWrite = streamWrite;
+              resolve({ response, body: chunks.join('') });
+            }`
+          )};
         })`);
+      };
 
       it('streams an http resource with the request headers DevTools passed', async () => {
         const { devtools } = await openDevTools();
@@ -1905,7 +1923,9 @@ describe('webContents module', { retry: 0 }, () => {
           'X-Requested-By: devtools'
         );
         expect(response.statusCode).toBe(200);
-        expect(response.headers['x-devtools-test']).toBe('yes');
+        // Like Chrome, the embedder reports response headers under the names
+        // the server sent rather than lowercasing them.
+        expect(response.headers['X-DevTools-Test']).toBe('yes');
         expect(body).toBe('hello devtools');
       });
 
@@ -1956,7 +1976,7 @@ describe('webContents module', { retry: 0 }, () => {
         const { w, devtools } = await openDevTools();
         const windowCount = BrowserWindow.getAllWindows().length;
         const opened = once(w.webContents, 'devtools-open-url');
-        await devtools.executeJavaScript('InspectorFrontendHost.openInNewTab("https://example.com/from-devtools")');
+        await callHost(devtools, 'openInNewTab', 'https://example.com/from-devtools');
         const [, openedUrl] = await opened;
         expect(openedUrl).toBe('https://example.com/from-devtools');
         expect(BrowserWindow.getAllWindows()).toHaveLength(windowCount);
@@ -1965,7 +1985,7 @@ describe('webContents module', { retry: 0 }, () => {
       it('emits devtools-search-query for openSearchResultsInNewTab', async () => {
         const { w, devtools } = await openDevTools();
         const searched = once(w.webContents, 'devtools-search-query');
-        await devtools.executeJavaScript('InspectorFrontendHost.openSearchResultsInNewTab("electron devtools")');
+        await callHost(devtools, 'openSearchResultsInNewTab', 'electron devtools');
         const [, query] = await searched;
         expect(query).toBe('electron devtools');
       });
@@ -1978,14 +1998,14 @@ describe('webContents module', { retry: 0 }, () => {
       it('sets, reads and removes a preference', async () => {
         const { devtools } = await openDevTools(freshPartition());
 
-        await devtools.executeJavaScript('InspectorFrontendHost.setPreference("embedder-test", "one")');
+        await callHost(devtools, 'setPreference', 'embedder-test', 'one');
         expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBe('one');
         expect(await callWithReply(devtools, 'getPreferences')).toHaveProperty('embedder-test', 'one');
 
-        await devtools.executeJavaScript('InspectorFrontendHost.setPreference("embedder-test", "two")');
+        await callHost(devtools, 'setPreference', 'embedder-test', 'two');
         expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBe('two');
 
-        await devtools.executeJavaScript('InspectorFrontendHost.removePreference("embedder-test")');
+        await callHost(devtools, 'removePreference', 'embedder-test');
         expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBeUndefined();
         expect(await callWithReply(devtools, 'getPreferences')).not.toHaveProperty('embedder-test');
       });
@@ -1993,16 +2013,14 @@ describe('webContents module', { retry: 0 }, () => {
       it('clears every stored preference', async () => {
         const { devtools } = await openDevTools(freshPartition());
 
-        await devtools.executeJavaScript(`
-          InspectorFrontendHost.setPreference("embedder-test-a", "a");
-          InspectorFrontendHost.setPreference("embedder-test-b", "b");
-        `);
+        await callHost(devtools, 'setPreference', 'embedder-test-a', 'a');
+        await callHost(devtools, 'setPreference', 'embedder-test-b', 'b');
         expect(await callWithReply(devtools, 'getPreferences')).toMatchObject({
           'embedder-test-a': 'a',
           'embedder-test-b': 'b'
         });
 
-        await devtools.executeJavaScript('InspectorFrontendHost.clearPreferences()');
+        await callHost(devtools, 'clearPreferences');
         const prefs = await callWithReply(devtools, 'getPreferences');
         expect(prefs).not.toHaveProperty('embedder-test-a');
         expect(prefs).not.toHaveProperty('embedder-test-b');
@@ -2011,7 +2029,7 @@ describe('webContents module', { retry: 0 }, () => {
       it('keeps preferences for later DevTools windows in the same session only', async () => {
         const partition = freshPartition();
         const first = await openDevTools(partition);
-        await first.devtools.executeJavaScript('InspectorFrontendHost.setPreference("embedder-test", "kept")');
+        await callHost(first.devtools, 'setPreference', 'embedder-test', 'kept');
         // Make sure the write has landed before DevTools goes away.
         expect(await callWithReply(first.devtools, 'getPreference', 'embedder-test')).toBe('kept');
         const closed = once(first.w.webContents, 'devtools-closed');
@@ -2037,11 +2055,17 @@ describe('webContents module', { retry: 0 }, () => {
         return dir;
       };
 
+      // Asks the embedder to index `dir` and waits until it reports that
+      // indexing is done.
+      const indexPath = async (devtools: WebContents, dir: string) => {
+        const requestId = nextId++;
+        await callHost(devtools, 'indexPath', requestId, dir, '[]');
+        await waitForEmbedderCall(devtools, 'indexingDone', requestId);
+      };
+
       const searchInPath = async (devtools: WebContents, dir: string, query: string) => {
         const requestId = nextId++;
-        await devtools.executeJavaScript(
-          `InspectorFrontendHost.searchInPath(${requestId}, ${JSON.stringify(dir)}, ${JSON.stringify(query)})`
-        );
+        await callHost(devtools, 'searchInPath', requestId, dir, query);
         const [, searchedPath, files] = await waitForEmbedderCall(devtools, 'searchCompleted', requestId);
         expect(searchedPath).toBe(dir);
         return files;
@@ -2056,11 +2080,7 @@ describe('webContents module', { retry: 0 }, () => {
         expect(error).toBe('');
         expect(fileSystem.fileSystemPath).toBe(dir);
 
-        const indexRequestId = nextId++;
-        await devtools.executeJavaScript(
-          `InspectorFrontendHost.indexPath(${indexRequestId}, ${JSON.stringify(dir)}, '[]')`
-        );
-        await waitForEmbedderCall(devtools, 'indexingDone', indexRequestId);
+        await indexPath(devtools, dir);
 
         expect(await searchInPath(devtools, dir, 'devtoolsEmbedderNeedle')).toEqual([path.join(dir, 'match.js')]);
         expect(await searchInPath(devtools, dir, 'notInAnyFileAtAll')).toEqual([]);
@@ -2076,11 +2096,7 @@ describe('webContents module', { retry: 0 }, () => {
 
         // Indexing a folder that isn't a workspace finishes straight away
         // without reading it.
-        const indexRequestId = nextId++;
-        await devtools.executeJavaScript(
-          `InspectorFrontendHost.indexPath(${indexRequestId}, ${JSON.stringify(dir)}, '[]')`
-        );
-        await waitForEmbedderCall(devtools, 'indexingDone', indexRequestId);
+        await indexPath(devtools, dir);
 
         expect(await searchInPath(devtools, dir, 'devtoolsEmbedderNeedle')).toEqual([]);
       });
@@ -2089,18 +2105,19 @@ describe('webContents module', { retry: 0 }, () => {
     describe('reattach', () => {
       // Sends a protocol message over the frontend's own connection and
       // resolves with the response, keeping it from the frontend.
-      const sendProtocolMessage = (devtools: WebContents, method: string, params: object = {}) =>
-        devtools.executeJavaScript(`new Promise((resolve) => {
-          const message = { id: ${nextId++}, method: ${JSON.stringify(method)}, params: ${JSON.stringify(params)} };
+      const sendProtocolMessage = (devtools: WebContents, method: string, params: object = {}) => {
+        const message = { id: nextId++, method, params };
+        return devtools.executeJavaScript(`new Promise((resolve) => {
           const dispatchMessage = DevToolsAPI.dispatchMessage;
           DevToolsAPI.dispatchMessage = function (raw) {
             const response = JSON.parse(raw);
-            if (response.id !== message.id) return dispatchMessage.apply(this, arguments);
+            if (response.id !== ${JSON.stringify(message.id)}) return dispatchMessage.apply(this, arguments);
             DevToolsAPI.dispatchMessage = dispatchMessage;
             resolve(response);
           };
-          DevToolsAPI.sendMessageToEmbedder('dispatchProtocolMessage', [JSON.stringify(message)], null);
+          ${frontendCall('DevToolsAPI.sendMessageToEmbedder', ['dispatchProtocolMessage', [JSON.stringify(message)], null])};
         })`);
+      };
 
       const isPrintMedia = (w: BrowserWindow) => w.webContents.executeJavaScript('matchMedia("print").matches');
 
