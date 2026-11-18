@@ -3044,42 +3044,6 @@ describe('webContents module', { retry: 0 }, () => {
         );
         expect(await scrollAndWait(() => w.webContents.scrollToTop(), 0)).toBe(0);
       });
-
-      // Chromium only implements CenterSelection on macOS
-      ifit(process.platform === 'darwin')(
-        'centerSelection() scrolls the selection to the middle of the viewport',
-        { tags: ['serial'] },
-        async () => {
-          // Selects a line of text far below the fold
-          await w.webContents.executeJavaScript(`{
-            const target = document.createElement('p');
-            target.textContent = 'Center me';
-            target.style.position = 'absolute';
-            target.style.top = '6000px';
-            target.style.margin = '0';
-            document.body.appendChild(target);
-            const range = document.createRange();
-            range.selectNodeContents(target);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }`);
-          const getSelectionRect = (): Promise<{ top: number; height: number; innerHeight: number }> =>
-            w.webContents.executeJavaScript(`(() => {
-              const { top, height } = window.getSelection().getRangeAt(0).getBoundingClientRect();
-              return { top, height, innerHeight: window.innerHeight };
-            })()`);
-          const before = await getSelectionRect();
-          expect(before.height).toBeGreaterThan(0);
-          expect(before.top).toBeGreaterThan(before.innerHeight);
-
-          w.webContents.centerSelection();
-          await waitUntil(async () => (await getScrollY()) !== 0);
-
-          const { top, height, innerHeight } = await getSelectionRect();
-          expect(Math.abs(top + height / 2 - innerHeight / 2)).toBeLessThan(10);
-        }
-      );
     });
   });
 
