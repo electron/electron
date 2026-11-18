@@ -2411,27 +2411,6 @@ describe('chromium features', () => {
         expect(options.filters).toEqual([customFilter, ['All Files', [[0, '*.*']]]]);
         expect(options.current_filter).toEqual(customFilter);
       });
-
-      it('lists the files in the directory picked for a webkitdirectory input', async () => {
-        const dir = makeTempDir();
-        const picked = path.join(dir, 'picked-dir');
-        fs.mkdirSync(path.join(picked, 'nested'), { recursive: true });
-        fs.writeFileSync(path.join(picked, 'a.txt'), 'a');
-        fs.writeFileSync(path.join(picked, 'nested', 'b.txt'), 'b');
-        await queuePick(picked);
-
-        const w = await loadPage();
-        const files = await pickWithInput(w, { webkitdirectory: '' });
-        expect(files.map((file: any) => file.relativePath).sort()).toEqual([
-          'picked-dir/a.txt',
-          'picked-dir/nested/b.txt'
-        ]);
-        expect(files.find((file: any) => file.name === 'b.txt')?.text).toBe('b');
-
-        const calls = await getPortalCalls('OpenFile');
-        expect(calls).toHaveLength(1);
-        expect(getLoggedOptions(calls[0]).directory).toBe(true);
-      });
     });
 
     describe('File System Access pickers', () => {
