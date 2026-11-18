@@ -30,6 +30,10 @@ handling from upstream context, so only the IsNamespaceIdValid() rejection
 is inserted. session_storage_sqlite.cc: only the new include added (the
 neighbouring histogram-helper include is not on this branch).
 session_storage_impl_unittest.cc: only this CL's regression test kept.
+session_storage_sqlite_unittest.cc: the WriteDefaultMetadataToDisk() test
+helper is not on this branch, so the new test writes the same valid
+metadata inline, as the neighbouring ReadAllMetadataWithInvalidStorageKey
+test does.
 
 diff --git a/components/services/storage/dom_storage/leveldb/session_storage_leveldb.cc b/components/services/storage/dom_storage/leveldb/session_storage_leveldb.cc
 index 49c916a291ecaaa61f9e056937b372b354c37fde..90bcefc2cb57c16d1db026aeb4264fd767420f62 100644
@@ -367,15 +371,26 @@ index e0f4caa9ac80d49a1723c1a22c9de6893eefb999..3cd5e7473b40a4b8cb4c2eb72b4f0921
            /*map_id=*/statement.ColumnInt(2),
        },
 diff --git a/components/services/storage/dom_storage/sqlite/session_storage_sqlite_unittest.cc b/components/services/storage/dom_storage/sqlite/session_storage_sqlite_unittest.cc
-index 3e9663eadb63c776a8addfa3a6048ce4800695ab..742f2a40495981b888e36239ecd74cc385a80a80 100644
+index 3e9663eadb63c776a8addfa3a6048ce4800695ab..ba826e4d92df201e50527ba6434d8f633c20b5c1 100644
 --- a/components/services/storage/dom_storage/sqlite/session_storage_sqlite_unittest.cc
 +++ b/components/services/storage/dom_storage/sqlite/session_storage_sqlite_unittest.cc
-@@ -329,6 +329,36 @@ TEST_F(SessionStorageSqliteTest, MetadataPersistence) {
+@@ -329,6 +329,47 @@ TEST_F(SessionStorageSqliteTest, MetadataPersistence) {
    }
  }
  
 +TEST_F(SessionStorageSqliteTest, ReadAllMetadataWithInvalidSessionId) {
-+  ASSERT_NO_FATAL_FAILURE(WriteDefaultMetadataToDisk());
++  // Write valid metadata to ensure the table exists and works.
++  {
++    std::unique_ptr<SessionStorageSqlite> database;
++    ASSERT_NO_FATAL_FAILURE(OpenOnDisk(&database));
++
++    DomStorageDatabase::Metadata valid_metadata;
++    valid_metadata.map_metadata.push_back({
++        .map_locator{kFirstSessionId, kFirstStorageKey, kFirstMapId},
++    });
++    DbStatus status = database->PutMetadata(std::move(valid_metadata));
++    EXPECT_TRUE(status.ok()) << status.ToString();
++  }
 +
 +  // Insert an invalid session ID directly, keeping the other fields valid.
 +  {
