@@ -2054,6 +2054,64 @@ describe('webContents module', { retry: 0 }, () => {
     });
   });
 
+  describe('toggleDevTools() API', () => {
+    afterEach(closeAllWindows);
+
+    // A fresh partition starts from the default (docked) dock state, so the
+    // DevTools dock into the hidden window rather than opening a window that
+    // could take focus from other spec files running at the same time.
+    it('opens DevTools when they are closed', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-toggle' } });
+      await w.loadURL('about:blank');
+      expect(w.webContents.isDevToolsOpened()).toBe(false);
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.toggleDevTools();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
+    });
+
+    it('closes DevTools when they are open', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-toggle' } });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'right', activate: false });
+      await devtoolsOpened;
+      const devtoolsClosed = once(w.webContents, 'devtools-closed');
+      w.webContents.toggleDevTools();
+      await devtoolsClosed;
+      expect(w.webContents.isDevToolsOpened()).toBe(false);
+    });
+  });
+
+  describe('isDevToolsFocused() API', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    it('returns false when DevTools are closed', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      expect(w.webContents.isDevToolsFocused()).toBe(false);
+    });
+
+    for (const mode of ['detach', 'bottom'] as const) {
+      it(`returns true once ${mode} DevTools take focus and false after they close`, async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+        const shown = once(w, 'show');
+        w.show();
+        await shown;
+        const devtoolsOpened = once(w.webContents, 'devtools-opened');
+        const devtoolsFocused = once(w.webContents, 'devtools-focused');
+        w.webContents.openDevTools({ mode, activate: true });
+        await Promise.all([devtoolsOpened, devtoolsFocused]);
+        expect(w.webContents.isDevToolsFocused()).toBe(true);
+        const devtoolsClosed = once(w.webContents, 'devtools-closed');
+        w.webContents.closeDevTools();
+        await devtoolsClosed;
+        expect(w.webContents.isDevToolsFocused()).toBe(false);
+      });
+    }
+  });
+
   describe('DevTools showItemInFolder embedder message', () => {
     afterEach(closeAllWindows);
 
@@ -2386,6 +2444,67 @@ describe('webContents module', { retry: 0 }, () => {
         expect(roundTripped).toBe(true);
         expect(emittedContextMenu).toBe(false);
       });
+    });
+  });
+
+  describe('inspectSharedWorker() and inspectServiceWorker()', () => {
+    afterEach(closeAllWindows);
+
+    let server: http.Server;
+    let serverUrl: string;
+
+    beforeAll(async () => {
+      server = http.createServer((req, res) => {
+        if (req.url === '/shared-worker.js') {
+          res.writeHead(200, { 'Content-Type': 'text/javascript' });
+          res.end("self.onconnect = (e) => { e.ports[0].postMessage('connected'); };");
+        } else if (req.url === '/service-worker.js') {
+          res.writeHead(200, { 'Content-Type': 'text/javascript' });
+          res.end("self.addEventListener('install', () => self.skipWaiting());");
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end('<!doctype html><title>workers</title>');
+        }
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    afterAll(() => {
+      server.close();
+    });
+
+    async function loadWorkerPage() {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-inspect-workers' } });
+      await w.loadURL(`${serverUrl}/`);
+      return w;
+    }
+
+    it('inspectSharedWorker() opens DevTools for a running shared worker', async () => {
+      const w = await loadWorkerPage();
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const worker = new SharedWorker('/shared-worker.js');
+        worker.port.onmessage = (e) => resolve(e.data);
+        worker.port.start();
+      })`);
+      const workerUrl = `${serverUrl}/shared-worker.js`;
+      await waitUntil(() => w.webContents.getAllSharedWorkers().some((worker) => worker.url === workerUrl));
+
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.inspectSharedWorker();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
+    });
+
+    it('inspectServiceWorker() opens DevTools for a running service worker', async () => {
+      const w = await loadWorkerPage();
+      await w.webContents.executeJavaScript(
+        "navigator.serviceWorker.register('/service-worker.js').then(() => navigator.serviceWorker.ready).then(() => true)"
+      );
+
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.inspectServiceWorker();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
     });
   });
 
