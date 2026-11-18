@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Devlin Cronin <rdevlin.cronin@chromium.org>
+Date: Fri, 16 Oct 2026 05:39:39 -0700
+Subject: [Extensions] Prevent accessor execution during global property lookup
+
+When initializing extension bindings on a context's global object,
+NativeExtensionBindingsSystem looked up window.chrome using a plain
+Get(). If an accessor was defined on the global object, this could
+synchronously execute untrusted JavaScript. When deferred script context
+initialization occurred during navigation commit, running user script
+could synchronously detach the committing frame, leading to use-after-
+free issues.
+
+Update GetOrCreateGlobalObjectProperty to inspect own property
+descriptors via GetOwnPropertyDescriptor rather than invoking property
+getters, ensuring that user script is never executed during bindings
+setup and that accessors are not used for extension namespaces.
+Additionally, guard against synchronous frame destruction in
+ExtensionFrameHelper::ReadyToCommitNavigation using a WeakPtr.
+
+Bug: 560339053
+Change-Id: Iafe8dadb02bbf99b39b34295b8295abf1eb6b95e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8563898
+Reviewed-by: Tim <tjudkins@chromium.org>
+Commit-Queue: Devlin Cronin <rdevlin.cronin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1720622}
+
+diff --git a/extensions/renderer/extension_frame_helper.cc b/extensions/renderer/extension_frame_helper.cc
+index 1e26053159afd86852b10ee11ac76ac5e858fc54..4dc088c5b38a3c3340caa6ff46988ae7282f8d65 100644
+--- a/extensions/renderer/extension_frame_helper.cc
++++ b/extensions/renderer/extension_frame_helper.cc
+@@ -397,6 +397,8 @@ void ExtensionFrameHelper::ReadyToCommitNavigation(
+     return;
+   }
+ 
++  base::WeakPtr<ExtensionFrameHelper> weak_this =
++      weak_ptr_factory_.GetWeakPtr();
+   base::AutoReset<bool> auto_reset(&is_initializing_main_world_script_context_,
+                                    true);
+   delayed_main_world_script_initialization_ = false;
+@@ -415,6 +417,8 @@ void ExtensionFrameHelper::ReadyToCommitNavigation(
+       web_frame, document_loader);
+   extension_dispatcher_->DidCreateScriptContext(web_frame, context,
+                                                 blink::kMainDOMWorldId);
++  // Initializing the script context should never invalidate the frame.
++  CHECK(weak_this);
+   // TODO(devlin): Add constants for main world id, no extension group.
+ }
+ 
+diff --git a/extensions/renderer/native_extension_bindings_system.cc b/extensions/renderer/native_extension_bindings_system.cc
+index 3a8688cfc4e66f399d35c70d4e30c2d1963994e1..8f856ec7009664fd03d5036d9839d676e21bfc52 100644
+--- a/extensions/renderer/native_extension_bindings_system.cc
++++ b/extensions/renderer/native_extension_bindings_system.cc
+@@ -73,6 +73,7 @@
+ #include "v8/include/v8-context.h"
+ #include "v8/include/v8-cppgc.h"
+ #include "v8/include/v8-isolate.h"
++#include "v8/include/v8-microtask-queue.h"
+ #include "v8/include/v8-object.h"
+ #include "v8/include/v8-primitive.h"
+ #include "v8/include/v8-template.h"
+@@ -135,28 +136,55 @@ v8::Local<v8::Object> GetOrCreateGlobalObjectProperty(
+   // Ensure that the creation context for any new chrome object is |context|.
+   v8::Context::Scope context_scope(context);
+ 
+-  // TODO(devlin): This is a little silly. We expect that this may do the wrong
+-  // thing if the window has set some other `object_name` (as in the case of
+-  // script doing 'window.object_name = true'), but we don't really handle it.
+-  // It could also throw exceptions or have unintended side effects.
+-  // On the one hand, anyone writing that code is probably asking for trouble.
+-  // On the other, it'd be nice to avoid. I wonder if we can?
++  // Blink uses `kScoped` microtasks policy; instantiate a scope here so that
++  // V8 operations during context initialization do not trip microtask DCHECKs.
++  v8::MicrotasksScope microtasks_scope(
++      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
++
++  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+   v8::Local<v8::String> object_string =
+-      gin::StringToSymbol(v8::Isolate::GetCurrent(), object_name);
+-  v8::Local<v8::Value> object_value;
+-  if (!context->Global()->Get(context, object_string).ToLocal(&object_value)) {
++      gin::StringToSymbol(isolate, object_name);
++
++  // Retrieve the property descriptor rather than using a direct `Get` to avoid
++  // executing any user-defined getters or accessors on the global object.
++  v8::Local<v8::Value> descriptor_value;
++  if (!context->Global()
++           ->GetOwnPropertyDescriptor(context, object_string)
++           .ToLocal(&descriptor_value)) {
++    return v8::Local<v8::Object>();
++  }
++
++  v8::Local<v8::Value> property_value;
++  if (descriptor_value->IsUndefined()) {
++    property_value = v8::Undefined(isolate);
++  } else if (descriptor_value->IsObject()) {
++    v8::Local<v8::Object> descriptor = descriptor_value.As<v8::Object>();
++    v8::Local<v8::String> value_string = gin::StringToSymbol(isolate, "value");
++    v8::Maybe<bool> has_value =
++        descriptor->HasRealNamedProperty(context, value_string);
++    // Only inspect the property value if this is a data descriptor. Accessor
++    // descriptors (with getter/setter) will not have a "value" property, and we
++    // must not invoke user accessors or use them for extension bindings.
++    if (!has_value.IsJust() || !has_value.FromJust()) {
++      return v8::Local<v8::Object>();
++    }
++    if (!descriptor->Get(context, value_string).ToLocal(&property_value)) {
++      return v8::Local<v8::Object>();
++    }
++  } else {
+     return v8::Local<v8::Object>();
+   }
+ 
+   v8::Local<v8::Object> requested_object;
+-  if (object_value->IsUndefined()) {
+-    requested_object = v8::Object::New(v8::Isolate::GetCurrent());
++  if (property_value->IsUndefined()) {
++    requested_object = v8::Object::New(isolate);
+     v8::Maybe<bool> success = context->Global()->CreateDataProperty(
+         context, object_string, requested_object);
+-    if (!success.IsJust() || !success.FromJust())
++    if (!success.IsJust() || !success.FromJust()) {
+       return v8::Local<v8::Object>();
+-  } else if (object_value->IsObject()) {
+-    v8::Local<v8::Object> obj = object_value.As<v8::Object>();
++    }
++  } else if (property_value->IsObject()) {
++    v8::Local<v8::Object> obj = property_value.As<v8::Object>();
+     // The creation context of the `object_name` property could be different if
+     // a different context (such as the parent of an about:blank iframe)
+     // assigned it. Since in this case we know that the `object_name` object is
+@@ -168,8 +196,9 @@ v8::Local<v8::Object> GetOrCreateGlobalObjectProperty(
+     // object we construct, and check if it's present. Unfortunately, we need to
+     // a) track down each place we create the object (it's not just in
+     // extensions) and also see how much that would break.
+-    if (obj->GetCreationContextChecked() == context)
++    if (obj->GetCreationContextChecked(isolate) == context) {
+       requested_object = obj;
++    }
+   }
+ 
+   return requested_object;
+diff --git a/extensions/renderer/native_extension_bindings_system_unittest.cc b/extensions/renderer/native_extension_bindings_system_unittest.cc
+index c6bfb2f24bf05c3d97ffdd079677283ec042f645..46eed5123311565831142264e4d5e7159f3288c7 100644
+--- a/extensions/renderer/native_extension_bindings_system_unittest.cc
++++ b/extensions/renderer/native_extension_bindings_system_unittest.cc
+@@ -699,7 +699,7 @@ TEST_F(NativeExtensionBindingsSystemUnittest, TestUsingOtherChromeObjects) {
+   {
+     v8::Context::Scope scope(context_a);
+     v8::Local<v8::Object> fake_chrome = v8::Object::New(isolate());
+-    EXPECT_EQ(context_a, fake_chrome->GetCreationContextChecked());
++    EXPECT_EQ(context_a, fake_chrome->GetCreationContextChecked(isolate()));
+     context_b->Global()
+         ->Set(context_b, gin::StringToSymbol(isolate(), "chrome"), fake_chrome)
+         .ToChecked();
+@@ -712,7 +712,7 @@ TEST_F(NativeExtensionBindingsSystemUnittest, TestUsingOtherChromeObjects) {
+   {
+     v8::Context::Scope scope(context_b);
+     v8::Local<v8::Object> fake_chrome = v8::Object::New(isolate());
+-    EXPECT_EQ(context_b, fake_chrome->GetCreationContextChecked());
++    EXPECT_EQ(context_b, fake_chrome->GetCreationContextChecked(isolate()));
+     context_b->Global()
+         ->Set(context_b, gin::StringToSymbol(isolate(), "chrome"), fake_chrome)
+         .ToChecked();
+@@ -730,6 +730,83 @@ TEST_F(NativeExtensionBindingsSystemUnittest, TestUsingOtherChromeObjects) {
+   }
+   // A non-object chrome shouldn't be used.
+   check_runtime(false);
++
++  {
++    v8::Context::Scope scope(context_b);
++    context_b->Global()
++        ->Set(context_b, gin::StringToSymbol(isolate(), "chrome"),
++              v8::Undefined(isolate()))
++        .ToChecked();
++  }
++  // If chrome is undefined, a new object should be created and used.
++  check_runtime(true);
++}
++
++// Regression test for crbug.com/560339053.
++// Tests that setting window.chrome or window.browser to an accessor property
++// does not execute script (e.g. getters) when initializing bindings.
++TEST_F(NativeExtensionBindingsSystemUnittest, ChromeGetterIsNotInvoked) {
++  scoped_refptr<const Extension> extension =
++      ExtensionBuilder("extension").Build();
++  RegisterExtension(extension);
++
++  v8::HandleScope handle_scope(isolate());
++  v8::Local<v8::Context> context = MainContext();
++
++  ScriptContext* script_context = CreateScriptContext(
++      context, extension.get(), mojom::ContextType::kPrivilegedExtension);
++  script_context->set_url(extension->url());
++
++  // First, test setting a getter on `browser` while `chrome` is unmodified.
++  // This verifies that binding initialization reaches and checks `browser`
++  // without invoking its getter.
++  const char kSetBrowserGetterScript[] =
++      R"(var browserGetterCalled = false;
++         Object.defineProperty(globalThis, 'browser', {
++           get() {
++             browserGetterCalled = true;
++             return {};
++           },
++           configurable: true
++         });)";
++  v8::Local<v8::Value> initial_result =
++      V8ValueFromScriptSource(context, kSetBrowserGetterScript);
++  ASSERT_FALSE(initial_result.IsEmpty());
++
++  // Initializing the bindings should not invoke getters on either namespace.
++  // Blink runs with scoped microtasks policy, so ensure binding initialization
++  // succeeds under `kScoped` without triggering microtask scope DCHECKs.
++  isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
++  bindings_system()->UpdateBindingsForContext(script_context);
++  isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
++
++  v8::Local<v8::Value> browser_getter_called =
++      V8ValueFromScriptSource(context, "browserGetterCalled;");
++  ASSERT_FALSE(browser_getter_called.IsEmpty());
++  EXPECT_FALSE(browser_getter_called->BooleanValue(isolate()));
++
++  // Next, set a getter on `chrome` as well and verify its getter is not
++  // invoked.
++  const char kSetChromeGetterScript[] =
++      R"(var chromeGetterCalled = false;
++         Object.defineProperty(globalThis, 'chrome', {
++           get() {
++             chromeGetterCalled = true;
++             return {};
++           },
++           configurable: true
++         });)";
++  initial_result = V8ValueFromScriptSource(context, kSetChromeGetterScript);
++  ASSERT_FALSE(initial_result.IsEmpty());
++
++  isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kScoped);
++  bindings_system()->UpdateBindingsForContext(script_context);
++  isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kAuto);
++
++  v8::Local<v8::Value> chrome_getter_called =
++      V8ValueFromScriptSource(context, "chromeGetterCalled;");
++  ASSERT_FALSE(chrome_getter_called.IsEmpty());
++  EXPECT_FALSE(chrome_getter_called->BooleanValue(isolate()));
+ }
+ 
+ // Tests updating a context's bindings after adding or removing permissions.

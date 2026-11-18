@@ -1,0 +1,519 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Anderson <thomasanderson@chromium.org>
+Date: Fri, 23 Oct 2026 14:00:39 -0700
+Subject: Reland "Require a per-window, single-use touch for renderer touch
+ drags"
+
+This is a reland of commit 049c133a108ec6d213453d53e9c7bdb00aad2ff7
+
+The original change was reverted because webui_toolbar_interactive_uitest
+failed to compile on Mac: it included ui/aura/test/env_test_helper.h
+unconditionally, which transitively included ui/aura/window.h via
+env_input_state_controller.h, and window.h #errors on Mac.
+
+Changes since the original:
+- env_input_state_controller.h forward-declares aura::Window instead
+  of including ui/aura/window.h. The include moves to the .cc file.
+- The ui/aura includes in webui_toolbar_interactive_uitest.cc are now
+  guarded by USE_AURA. This landed separately in crrev.com/1724848, so
+  it is no longer part of this change.
+
+Original change's description:
+> Require a per-window, single-use touch for renderer touch drags
+>
+> WebContentsViewAura::StartDragging validated a renderer-initiated
+> touch drag with aura::Env::is_touch_down(), a process-global flag that
+> reports whether any touch is down anywhere. This allowed a compromised
+> renderer to start a touch drag that latched onto a touch that was not
+> on its web contents, or onto a touch whose release was never observed:
+>
+> - On Ozone/Wayland, a touch held on the window caption to move the
+>   window satisfied the check, and the platform drag started with the
+>   user's touch serial.
+> - On Ozone/X11, X11WholeScreenMoveLoop consumes the touch release that
+>   ends a touch drag, leaving is_touch_down() stuck true. The renderer
+>   could then repeatedly start drags with no touch down, each grabbing
+>   the pointer and turning the user's next tap or click anywhere on the
+>   desktop into a drop of attacker-controlled data.
+>
+> EnvInputStateController now also tracks, for each active touch, the
+> window its press was dispatched to, its most recent screen location, and
+> whether it has already been used to start a drag. Non-client presses
+> (which may become window moves) are not associated with their target. A
+> new Env::ConsumeTouchForDrag(window) returns the location of an unused
+> touch pressed on `window` and marks it as used. StartDragging uses it
+> for touch drags, so the touch must have been pressed on the web contents
+> itself, each press can start at most one drag, and the drag starts at
+> the browser-observed touch location rather than falling back to the
+> renderer-supplied one. The existing is_touch_down() semantics are
+> unchanged.
+>
+> Bug: 574902935, 574901760
+> Change-Id: I013cce059dc3d29b207fd8532d7942386c6e9b1e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8607708
+> Reviewed-by: ccameron chromium <ccameron@chromium.org>
+> Reviewed-by: Bo Liu <boliu@chromium.org>
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1724107}
+
+Bug: 574902935, 574901760
+Change-Id: I3a4f815801e0b338f06cda4a35c513f0098d0f4a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8621975
+Reviewed-by: Bo Liu <boliu@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Bo Liu <boliu@chromium.org>
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1726200}
+Electron adaptation notes (43-x-y):
+web_contents_view_aura.cc: applied on top of the 7921191/8404057
+prerequisites; the refusal path keeps this branch's SystemDragEnded()
+instead of EndDrag(). web_contents_view_aura.h: only the new FRIEND_TEST
+line added. web_contents_view_aura_unittest.cc is not carried (test
+context differs); the aura::Env changes and
+window_event_dispatcher_unittest.cc apply unchanged.
+result_op is initialised to DragOperation::kNone so the EndDrag() refusal
+paths (which upstream introduced in 8410155, not on M150) never pass an
+uninitialised value.
+
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index d8ecece8b7833a636896b8ef16cb2235d6350732..dfa98a32e265d378509210eab5ad2de12c6ede83 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -1257,29 +1257,35 @@ void WebContentsViewAura::StartDragging(
+ 
+   // We need to enable recursive tasks on the message loop so we can get
+   // updates while in the system DoDragDrop loop.
+-  DragOperation result_op;
++  DragOperation result_op = DragOperation::kNone;
+   {
+     gfx::NativeView content_native_view = GetContentNativeView();
+     // The renderer-supplied `event_info.location` is untrusted. On Windows, a
+     // touch event would reach `::SendInput` via
+     // DesktopWindowTreeHostWin::StartTouchDrag and could redirect the
+     // synthesized click to an overlapping HWND (e.g. a permission bubble).
+-    // Require an in-flight touch or a left mouse button, depending on the
+-    // event source, and refuse the drag if the requirement is not met.
+-    gfx::Point trusted_location = event_info.location;
++    // Require a touch pressed on the web contents or a left mouse button,
++    // depending on the event source, and refuse the drag if the requirement is
++    // not met.
++    gfx::Point trusted_location;
+     aura::Env* env = aura::Env::GetInstance();
+-    if ((event_info.source == ui::mojom::DragEventSource::kTouch &&
+-         !env->is_touch_down()) ||
+-        (event_info.source == ui::mojom::DragEventSource::kMouse &&
+-         !env->IsLeftMouseButtonDown())) {
+-      web_contents_->SystemDragEnded(source_rwh);
+-      return;
+-    }
+     if (event_info.source == ui::mojom::DragEventSource::kTouch) {
+-      trusted_location =
+-          env->GetLastPointerPoint(event_info.source, content_native_view,
+-                                   /*fallback=*/event_info.location);
++      // A touch elsewhere (e.g. holding the window caption to move the
++      // window), or a touch that already started a drag and whose release was
++      // consumed by the platform drag loop, must not satisfy this check.
++      std::optional<gfx::Point> touch_location =
++          env->ConsumeTouchForDrag(content_native_view);
++      if (!touch_location) {
++        EndDrag(std::move(source_rwh_weak_ptr), result_op);
++        return;
++      }
++      trusted_location = *touch_location;
+     } else {
++      if (event_info.source == ui::mojom::DragEventSource::kMouse &&
++          !env->IsLeftMouseButtonDown()) {
++        EndDrag(std::move(source_rwh_weak_ptr), result_op);
++        return;
++      }
+       trusted_location = env->last_mouse_location();
+     }
+     // Make sure event is within the web contents, and the web contents are
+diff --git a/content/browser/web_contents/web_contents_view_aura.h b/content/browser/web_contents/web_contents_view_aura.h
+index 5d80dcbb7c3e9b87be045629f91a8f56c9f1136f..c56a14b9dc631dd8d9ec021f094d62f1192b7c6f 100644
+--- a/content/browser/web_contents/web_contents_view_aura.h
++++ b/content/browser/web_contents/web_contents_view_aura.h
+@@ -171,6 +171,8 @@ class CONTENT_EXPORT WebContentsViewAura
+                            ClampMouseLocationToBrowserObservedPoint);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            ClampTouchLocationToBrowserObservedPoint);
++  FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
++                           TouchDragRequiresTouchOnWebContents);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            StartDraggingMouseRequiresLeftButton);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+diff --git a/ui/aura/env.cc b/ui/aura/env.cc
+index 12c682a8c2954ed4f274314cd5d87afdfa97c15d..762afb22e1067a62193e61c3e63d04ffbfb82f63 100644
+--- a/ui/aura/env.cc
++++ b/ui/aura/env.cc
+@@ -157,6 +157,10 @@ void Env::SetTouchDown(bool is_touch_down) {
+   is_touch_down_ = is_touch_down;
+ }
+ 
++std::optional<gfx::Point> Env::ConsumeTouchForDrag(const Window* window) {
++  return env_controller_->ConsumeTouchForDrag(window);
++}
++
+ void Env::SetGestureRecognizer(
+     std::unique_ptr<ui::GestureRecognizer> gesture_recognizer) {
+   gesture_recognizer_ = std::move(gesture_recognizer);
+diff --git a/ui/aura/env.h b/ui/aura/env.h
+index 8ff5f957a8707520cb8140a15e14440c28f2bf5e..6722cc165ce3ba9a30ab049644389ff32afbd62f 100644
+--- a/ui/aura/env.h
++++ b/ui/aura/env.h
+@@ -93,6 +93,18 @@ class AURA_EXPORT Env : public ui::EventTarget {
+   bool is_touch_down() const { return is_touch_down_; }
+   void SetTouchDown(bool value);
+ 
++  // If a touch that was pressed on `window` is still down and has not already
++  // been used to start a drag, marks it as used and returns its most recent
++  // location in screen coordinates. Otherwise returns std::nullopt.
++  //
++  // Unlike is_touch_down(), this only reports touches that were dispatched to
++  // `window` itself, and each touch press can start at most one drag. This
++  // makes it suitable for validating drags requested by untrusted code (e.g. a
++  // renderer), since neither a touch elsewhere in the window (e.g. on the
++  // caption) nor a touch whose release was lost after an earlier drag (e.g.
++  // consumed by a platform drag loop) can be used.
++  std::optional<gfx::Point> ConsumeTouchForDrag(const aura::Window* window);
++
+   void set_context_factory(ui::ContextFactory* context_factory) {
+     context_factory_ = context_factory;
+   }
+diff --git a/ui/aura/env_input_state_controller.cc b/ui/aura/env_input_state_controller.cc
+index 93714887b0b6407d8b45c5a4cdcd9baa0f4796ec..ef8f8d8b439e2610747459725b055ae63c102b1b 100644
+--- a/ui/aura/env_input_state_controller.cc
++++ b/ui/aura/env_input_state_controller.cc
+@@ -7,6 +7,7 @@
+ #include "build/build_config.h"
+ #include "ui/aura/client/screen_position_client.h"
+ #include "ui/aura/env.h"
++#include "ui/aura/window.h"
+ #include "ui/events/event.h"
+ #include "ui/gfx/geometry/point.h"
+ 
+@@ -41,12 +42,31 @@ void EnvInputStateController::UpdateStateForMouseEvent(
+ }
+ 
+ void EnvInputStateController::UpdateStateForTouchEvent(
+-    const aura::Window* window,
++    Window* window,
+     const ui::TouchEvent& event) {
++  const gfx::Point& location_in_root = event.root_location();
++  const auto* root_window = window->GetRootWindow();
++  client::ScreenPositionClient* client =
++      client::GetScreenPositionClient(root_window);
++  gfx::Point location_in_screen = location_in_root;
++  if (client) {
++    client->ConvertPointToScreen(root_window, &location_in_screen);
++  }
++
++  const ui::PointerId id = event.pointer_details().id;
+   switch (event.type()) {
+     case ui::EventType::kTouchPressed:
+-      touch_ids_down_ |= (1 << event.pointer_details().id);
++      touch_ids_down_ |= (1 << id);
+       env_->SetTouchDown(touch_ids_down_ != 0);
++      // A press for an id that is still tracked means the previous sequence's
++      // release was never seen. It is superseded by this press.
++      RemoveActiveTouch(id);
++      // A non-client touch (e.g. on a draggable region of web contents in a
++      // frameless app window) may become a window move, so it is not treated
++      // as a touch on its target window.
++      if (!(event.flags() & ui::EF_IS_NON_CLIENT)) {
++        AddActiveTouch(id, window, location_in_screen);
++      }
+       break;
+ 
+     case ui::EventType::kTouchCancelled:
+@@ -56,33 +76,91 @@ void EnvInputStateController::UpdateStateForTouchEvent(
+       // downs with synthetic events when handing off to the new consumer,
+       // without losing the global env touch down state.
+       if (!event.HasNativeEvent()) {
++        // The touch is no longer owned by the window it was pressed on, so
++        // it must not be used to start a drag from that window.
++        RemoveActiveTouch(id);
+         break;
+       }
+       [[fallthrough]];
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+     case ui::EventType::kTouchReleased:
+-      touch_ids_down_ = (touch_ids_down_ | (1 << event.pointer_details().id)) ^
+-                        (1 << event.pointer_details().id);
++      touch_ids_down_ = (touch_ids_down_ | (1 << id)) ^ (1 << id);
+       env_->SetTouchDown(touch_ids_down_ != 0);
++      RemoveActiveTouch(id);
+       break;
+ 
+     case ui::EventType::kTouchMoved:
++      if (auto it = active_touches_.find(id); it != active_touches_.end()) {
++        it->second.location_in_screen = location_in_screen;
++      }
+       break;
+ 
+     default:
+       NOTREACHED();
+   }
+-  const gfx::Point& location_in_root = event.root_location();
+-  const auto* root_window = window->GetRootWindow();
+-  client::ScreenPositionClient* client =
+-      client::GetScreenPositionClient(root_window);
+-  gfx::Point location_in_screen = location_in_root;
+-  if (client) {
+-    client->ConvertPointToScreen(root_window, &location_in_screen);
+-  }
+   env_->SetLastTouchLocation(window, location_in_screen);
+ }
+ 
++std::optional<gfx::Point> EnvInputStateController::ConsumeTouchForDrag(
++    const Window* window) {
++  if (!window) {
++    return std::nullopt;
++  }
++  for (auto& [id, touch] : active_touches_) {
++    if (touch.target == window && !touch.used_for_drag) {
++      touch.used_for_drag = true;
++      return touch.location_in_screen;
++    }
++  }
++  return std::nullopt;
++}
++
++void EnvInputStateController::ResetActiveTouches() {
++  active_touches_.clear();
++  target_observations_.RemoveAllObservations();
++}
++
++void EnvInputStateController::OnWindowDestroying(Window* window) {
++  // Keep the touches themselves, since they are still physically down, but
++  // forget the destroyed target so that it can never match another window
++  // that is later allocated at the same address.
++  for (auto& [id, touch] : active_touches_) {
++    if (touch.target == window) {
++      touch.target = nullptr;
++    }
++  }
++  target_observations_.RemoveObservation(window);
++}
++
++void EnvInputStateController::AddActiveTouch(
++    ui::PointerId id,
++    Window* window,
++    const gfx::Point& location_in_screen) {
++  active_touches_[id] = {.target = window,
++                         .location_in_screen = location_in_screen};
++  if (!target_observations_.IsObservingSource(window)) {
++    target_observations_.AddObservation(window);
++  }
++}
++
++void EnvInputStateController::RemoveActiveTouch(ui::PointerId id) {
++  auto it = active_touches_.find(id);
++  if (it == active_touches_.end()) {
++    return;
++  }
++  Window* target = it->second.target;
++  active_touches_.erase(it);
++  if (!target) {
++    return;
++  }
++  for (const auto& [other_id, touch] : active_touches_) {
++    if (touch.target == target) {
++      return;
++    }
++  }
++  target_observations_.RemoveObservation(target);
++}
++
+ void EnvInputStateController::SetLastMouseLocation(
+     const Window* root_window,
+     const gfx::Point& location_in_root) const {
+diff --git a/ui/aura/env_input_state_controller.h b/ui/aura/env_input_state_controller.h
+index 9810d514b7bfda1c54892b3f9ed4fc9594659c37..b405d6e789890c4719905eb40fc1c67a13a9ea10 100644
+--- a/ui/aura/env_input_state_controller.h
++++ b/ui/aura/env_input_state_controller.h
+@@ -7,12 +7,15 @@
+ 
+ #include <stdint.h>
+ 
++#include <optional>
++
++#include "base/containers/flat_map.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/scoped_multi_source_observation.h"
+ #include "ui/aura/aura_export.h"
+-
+-namespace gfx {
+-class Point;
+-}
++#include "ui/aura/window_observer.h"
++#include "ui/events/pointer_details.h"
++#include "ui/gfx/geometry/point.h"
+ 
+ namespace ui {
+ class MouseEvent;
+@@ -27,29 +30,55 @@ class EnvTestHelper;
+ class Env;
+ class Window;
+ 
+-class AURA_EXPORT EnvInputStateController {
++class AURA_EXPORT EnvInputStateController : public WindowObserver {
+  public:
+   explicit EnvInputStateController(Env* env);
+ 
+   EnvInputStateController(const EnvInputStateController&) = delete;
+   EnvInputStateController& operator=(const EnvInputStateController&) = delete;
+ 
+-  ~EnvInputStateController();
++  ~EnvInputStateController() override;
+ 
+   void UpdateStateForMouseEvent(const Window* window,
+                                 const ui::MouseEvent& event);
+-  void UpdateStateForTouchEvent(const Window* window,
+-                                const ui::TouchEvent& event);
++  void UpdateStateForTouchEvent(Window* window, const ui::TouchEvent& event);
+   void SetLastMouseLocation(const Window* root_window,
+                             const gfx::Point& location_in_root) const;
+   uint32_t touch_ids_down() const { return touch_ids_down_; }
+ 
++  // See Env::ConsumeTouchForDrag().
++  std::optional<gfx::Point> ConsumeTouchForDrag(const Window* window);
++
+  private:
+   friend class test::EnvTestHelper;
+ 
++  // A touch that has been pressed and not yet released or cancelled.
++  struct ActiveTouch {
++    // The window the touch press was dispatched to, or null if that window
++    // has since been destroyed.
++    raw_ptr<Window> target = nullptr;
++    // The most recent location of the touch, in screen coordinates.
++    gfx::Point location_in_screen;
++    // Whether this touch has already been used to start a drag.
++    bool used_for_drag = false;
++  };
++
++  // WindowObserver:
++  void OnWindowDestroying(Window* window) override;
++
++  void AddActiveTouch(ui::PointerId id,
++                      Window* window,
++                      const gfx::Point& location_in_screen);
++  void RemoveActiveTouch(ui::PointerId id);
++  void ResetActiveTouches();
++
+   raw_ptr<Env> env_;
+   // Touch ids that are currently down.
+   uint32_t touch_ids_down_ = 0;
++
++  base::flat_map<ui::PointerId, ActiveTouch> active_touches_;
++  base::ScopedMultiSourceObservation<Window, WindowObserver>
++      target_observations_{this};
+ };
+ 
+ }  // namespace aura
+diff --git a/ui/aura/test/env_test_helper.h b/ui/aura/test/env_test_helper.h
+index d5625cff14d7b66f08fa75143d5370c193a7ef65..e9c9175000208f53fb28d939dd4ec874d8f74016 100644
+--- a/ui/aura/test/env_test_helper.h
++++ b/ui/aura/test/env_test_helper.h
+@@ -40,6 +40,7 @@ class EnvTestHelper {
+     env_->is_touch_down_ = false;
+     env_->last_mouse_location_ = gfx::Point();
+     env_->env_controller_->touch_ids_down_ = 0;
++    env_->env_controller_->ResetActiveTouches();
+   }
+ 
+   void SetGestureRecognizer(
+diff --git a/ui/aura/window_event_dispatcher_unittest.cc b/ui/aura/window_event_dispatcher_unittest.cc
+index 43a73aefe9f58125853725cde228aa9893d77e83..1c5b8765ec20985c6e02c5a52490ce0f7cc7419d 100644
+--- a/ui/aura/window_event_dispatcher_unittest.cc
++++ b/ui/aura/window_event_dispatcher_unittest.cc
+@@ -3787,4 +3787,87 @@ TEST_F(WindowEventDispatcherTest, LastTouchPoint) {
+   env->RemovePreTargetHandler(&skip_gesture_handler);
+ }
+ 
++// Tests that ConsumeTouchForDrag() only reports a touch that was pressed on the
++// given window, that each touch press can be consumed at most once, and that a
++// new press of the same id (e.g. after a lost release) resets the state.
++TEST_F(WindowEventDispatcherTest, ConsumeTouchForDrag) {
++  class : public ui::EventHandler {
++   public:
++    void OnTouchEvent(ui::TouchEvent* event) override { event->SetHandled(); }
++  } skip_gesture_handler;
++  auto* env = Env::GetInstance();
++  env->AddPreTargetHandler(&skip_gesture_handler);
++
++  base::TimeTicks time = ui::EventTimeForNow();
++  auto dispatch_touch = [&](ui::EventType type, const gfx::Point& location,
++                            int id, int flags = ui::EF_NONE) {
++    // Space the events out to avoid fling generation.
++    time += base::Seconds(1);
++    ui::TouchEvent event(type, location, time,
++                         ui::PointerDetails(ui::EventPointerType::kTouch, id),
++                         flags);
++    DispatchEventUsingWindowDispatcher(&event);
++  };
++
++  test::TestWindowDelegate delegate;
++  std::unique_ptr<aura::Window> window =
++      test::CreateTestWindow({.delegate = &delegate,
++                              .parent = root_window(),
++                              .bounds = {10, 10, 100, 100},
++                              .window_id = 1});
++
++  EXPECT_FALSE(env->ConsumeTouchForDrag(window.get()));
++
++  // A touch outside `window` (on the root window) doesn't count for `window`,
++  // even though a touch is down.
++  constexpr gfx::Point outside(200, 200);
++  dispatch_touch(ui::EventType::kTouchPressed, outside, 1);
++  EXPECT_TRUE(env->is_touch_down());
++  EXPECT_FALSE(env->ConsumeTouchForDrag(window.get()));
++
++  // A touch on `window` can be consumed exactly once, and reports its most
++  // recent location.
++  constexpr gfx::Point location1(20, 20);
++  constexpr gfx::Point location2(30, 30);
++  dispatch_touch(ui::EventType::kTouchPressed, location1, 0);
++  dispatch_touch(ui::EventType::kTouchMoved, location2, 0);
++  EXPECT_EQ(location2, env->ConsumeTouchForDrag(window.get()));
++  EXPECT_FALSE(env->ConsumeTouchForDrag(window.get()));
++  EXPECT_TRUE(env->is_touch_down());
++
++  // A new press of the same id without a release (as happens when a platform
++  // drag loop consumes the release) starts a fresh, unconsumed touch.
++  dispatch_touch(ui::EventType::kTouchPressed, location1, 0);
++  EXPECT_EQ(location1, env->ConsumeTouchForDrag(window.get()));
++
++  // Releasing a touch ends it.
++  dispatch_touch(ui::EventType::kTouchPressed, location1, 0);
++  dispatch_touch(ui::EventType::kTouchReleased, location1, 0);
++  EXPECT_FALSE(env->ConsumeTouchForDrag(window.get()));
++
++  // So does cancelling it.
++  dispatch_touch(ui::EventType::kTouchPressed, location1, 0);
++  dispatch_touch(ui::EventType::kTouchCancelled, location1, 0);
++  EXPECT_FALSE(env->ConsumeTouchForDrag(window.get()));
++
++  // A non-client touch, which may become a window move, doesn't count.
++  dispatch_touch(ui::EventType::kTouchPressed, location1, 0,
++                 ui::EF_IS_NON_CLIENT);
++  EXPECT_TRUE(env->is_touch_down());
++  EXPECT_FALSE(env->ConsumeTouchForDrag(window.get()));
++  dispatch_touch(ui::EventType::kTouchReleased, location1, 0);
++
++  // Destroying the target forgets it.
++  dispatch_touch(ui::EventType::kTouchPressed, location1, 0);
++  const aura::Window* destroyed = window.get();
++  window.reset();
++  EXPECT_FALSE(env->ConsumeTouchForDrag(destroyed));
++
++  dispatch_touch(ui::EventType::kTouchReleased, location1, 0);
++  dispatch_touch(ui::EventType::kTouchReleased, outside, 1);
++  EXPECT_FALSE(env->is_touch_down());
++
++  env->RemovePreTargetHandler(&skip_gesture_handler);
++}
++
+ }  // namespace aura

@@ -1,0 +1,557 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Thu, 22 Oct 2026 16:46:39 -0400
+Subject: D3D11: Clip readPixels area to render target subresource bounds
+
+Clip D3D11 framebuffer readback regions against the source
+RenderTarget11 subresource dimensions in both PBO and non-PBO paths to
+prevent out-of-bounds staging texture copies and uninitialized memory
+reads.
+
+Test:
+    angle_end2end_tests --gtest_filter="*TexStorage2DNPOTClampedBaseLevelPBOReadPixels*"
+Bug: b/574967987
+Change-Id: I727b71f24f77c97bcfc9eea406ff708d89662973
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8632217
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp b/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
+index b559418d09fad0d652db84456bb0641f8e07d2c8..d7c96a5447891d26affc7c4405e6a2e5221e3254 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
+@@ -1703,9 +1703,17 @@ angle::Result Buffer11::PackStorage::packPixels(const gl::Context *context,
+     RenderTarget11 *renderTarget = nullptr;
+     ANGLE_TRY(readAttachment.getRenderTarget(context, 0, &renderTarget));
+ 
++    gl::Rectangle clippedReadArea;
++    bool reverseRowOrder     = false;
++    const bool invertTexture = UsePresentPathFast(mRenderer, &readAttachment);
++    if (!ClipRenderTargetReadArea(*renderTarget, params.area, invertTexture, params.reverseRowOrder,
++                                  &clippedReadArea, &reverseRowOrder))
++    {
++        return angle::Result::Continue;
++    }
++
+     const TextureHelper11 *srcTexture = &renderTarget->getTexture();
+-    ASSERT(srcTexture->valid());
+-    unsigned int srcSubresource = renderTarget->getSubresourceIndex();
++    unsigned int srcSubresource       = renderTarget->getSubresourceIndex();
+ 
+     TextureHelper11 resolvedTexture;
+     if (srcTexture->getSampleCount() > 1)
+@@ -1716,25 +1724,27 @@ angle::Result Buffer11::PackStorage::packPixels(const gl::Context *context,
+         srcSubresource = 0;
+     }
+ 
+-    mQueuedPackCommand.reset(new PackPixelsParams(params));
++    mQueuedPackCommand.reset(new PackPixelsParams(clippedReadArea, *params.destFormat,
++                                                  params.outputPitch, reverseRowOrder,
++                                                  params.packBuffer, params.offset));
+ 
+-    gl::Extents srcTextureSize(params.area.width, params.area.height, 1);
++    const gl::Extents stagingTextureSize(clippedReadArea.width, clippedReadArea.height, 1);
+     if (!mStagingTexture.get() || mStagingTexture.getFormat() != srcTexture->getFormat() ||
+-        mStagingTexture.getExtents() != srcTextureSize ||
++        mStagingTexture.getExtents() != stagingTextureSize ||
+         mStagingTexture.getTextureType() != srcTexture->getTextureType())
+     {
+         mStagingTexture.reset();
+         ANGLE_TRY(mRenderer->createStagingTexture(context, srcTexture->getTextureType(),
+-                                                  srcTexture->getFormatSet(), srcTextureSize,
++                                                  srcTexture->getFormatSet(), stagingTextureSize,
+                                                   StagingAccess::READ, &mStagingTexture));
+     }
+ 
+     ID3D11DeviceContext *immediateContext = mRenderer->getDeviceContext();
+     D3D11_BOX srcBox;
+-    srcBox.left   = params.area.x;
+-    srcBox.right  = params.area.x + params.area.width;
+-    srcBox.top    = params.area.y;
+-    srcBox.bottom = params.area.y + params.area.height;
++    srcBox.left   = static_cast<UINT>(clippedReadArea.x);
++    srcBox.right  = static_cast<UINT>(clippedReadArea.x + clippedReadArea.width);
++    srcBox.top    = static_cast<UINT>(clippedReadArea.y);
++    srcBox.bottom = static_cast<UINT>(clippedReadArea.y + clippedReadArea.height);
+ 
+     // Select the correct layer from a 3D attachment
+     srcBox.front = 0;
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp b/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
+index cf046433e1c8279b4c4beb626337cf725b9fffc0..51ecf938ad9909b04461c916c27f1c48c5c52b11 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
+@@ -3503,8 +3503,6 @@ angle::Result Renderer11::readFromAttachment(const gl::Context *context,
+     ASSERT(sourceArea.width >= 0);
+     ASSERT(sourceArea.height >= 0);
+ 
+-    const bool invertTexture = UsePresentPathFast(this, &srcAttachment);
+-
+     RenderTarget11 *rt11 = nullptr;
+     ANGLE_TRY(srcAttachment.getRenderTarget(context, 0, &rt11));
+     ASSERT(rt11->getTexture().valid());
+@@ -3512,37 +3510,17 @@ angle::Result Renderer11::readFromAttachment(const gl::Context *context,
+     const TextureHelper11 &textureHelper = rt11->getTexture();
+     unsigned int sourceSubResource       = rt11->getSubresourceIndex();
+ 
+-    const gl::Extents &texSize = textureHelper.getExtents();
+-
+-    gl::Rectangle actualArea = sourceArea;
+-    bool reverseRowOrder     = pack.reverseRowOrder;
+-    if (invertTexture)
+-    {
+-        actualArea.y    = texSize.height - actualArea.y - actualArea.height;
+-        reverseRowOrder = !reverseRowOrder;
+-    }
+-
+-    // Clamp read region to the defined texture boundaries, preventing out of bounds reads
+-    // and reads of uninitialized data.
+-    gl::Rectangle safeArea;
+-    safeArea.x = gl::clamp(actualArea.x, 0, texSize.width);
+-    safeArea.y = gl::clamp(actualArea.y, 0, texSize.height);
+-    safeArea.width =
+-        gl::clamp(actualArea.width + std::min(actualArea.x, 0), 0, texSize.width - safeArea.x);
+-    safeArea.height =
+-        gl::clamp(actualArea.height + std::min(actualArea.y, 0), 0, texSize.height - safeArea.y);
+-
+-    ASSERT(safeArea.x >= 0 && safeArea.y >= 0);
+-    ASSERT(safeArea.x + safeArea.width <= texSize.width);
+-    ASSERT(safeArea.y + safeArea.height <= texSize.height);
+-
+-    if (safeArea.width == 0 || safeArea.height == 0)
++    gl::Rectangle clippedReadArea;
++    bool reverseRowOrder     = false;
++    const bool invertTexture = UsePresentPathFast(this, &srcAttachment);
++    if (!ClipRenderTargetReadArea(*rt11, sourceArea, invertTexture, pack.reverseRowOrder,
++                                  &clippedReadArea, &reverseRowOrder))
+     {
+         // no work to do
+         return angle::Result::Continue;
+     }
+ 
+-    gl::Extents safeSize(safeArea.width, safeArea.height, 1);
++    const gl::Extents stagingTextureSize(clippedReadArea.width, clippedReadArea.height, 1);
+ 
+     // Intermediate texture used for copy for multiplanar formats or resolving multisampled
+     // textures.
+@@ -3558,8 +3536,8 @@ angle::Result Renderer11::readFromAttachment(const gl::Context *context,
+         if (d3d11::IsSupportedMultiplanarFormat(textureHelper.getFormat()))
+         {
+             D3D11_TEXTURE2D_DESC planeDesc;
+-            planeDesc.Width              = static_cast<UINT>(safeSize.width);
+-            planeDesc.Height             = static_cast<UINT>(safeSize.height);
++            planeDesc.Width              = static_cast<UINT>(stagingTextureSize.width);
++            planeDesc.Height             = static_cast<UINT>(stagingTextureSize.height);
+             planeDesc.MipLevels          = 1;
+             planeDesc.ArraySize          = 1;
+             planeDesc.Format             = textureHelper.getFormatSet().srvFormat;
+@@ -3597,19 +3575,21 @@ angle::Result Renderer11::readFromAttachment(const gl::Context *context,
+             ANGLE_TRY(allocateResource(context11, srvDesc, textureHelper.get(), &srv));
+             srv.setInternalName("readFromAttachment.SRV");
+ 
+-            gl::Box srcGlBox(safeArea.x, safeArea.y, 0, safeArea.width, safeArea.height, 1);
+-            gl::Box destGlBox(0, 0, 0, safeSize.width, safeSize.height, 1);
++            gl::Box srcGlBox(clippedReadArea.x, clippedReadArea.y, 0, clippedReadArea.width,
++                             clippedReadArea.height, 1);
++            gl::Box destGlBox(0, 0, 0, stagingTextureSize.width, stagingTextureSize.height, 1);
+ 
+             // Perform a copy to planeTexture as we cannot read directly from NV12 d3d11 textures.
+-            ANGLE_TRY(mBlit->copyTexture(
+-                context, srv, srcGlBox, safeSize, internalFormat, rtv, destGlBox, safeSize, nullptr,
+-                gl::GetUnsizedFormat(internalFormat), GL_NONE, GL_NEAREST, false, false, false));
++            ANGLE_TRY(mBlit->copyTexture(context, srv, srcGlBox, stagingTextureSize, internalFormat,
++                                         rtv, destGlBox, stagingTextureSize, nullptr,
++                                         gl::GetUnsizedFormat(internalFormat), GL_NONE, GL_NEAREST,
++                                         false, false, false));
+ 
+-            // Update safeArea based on the destination.
+-            safeArea.x      = destGlBox.x;
+-            safeArea.y      = destGlBox.y;
+-            safeArea.width  = destGlBox.width;
+-            safeArea.height = destGlBox.height;
++            // Update clippedReadArea based on the destination.
++            clippedReadArea.x      = destGlBox.x;
++            clippedReadArea.y      = destGlBox.y;
++            clippedReadArea.width  = destGlBox.width;
++            clippedReadArea.height = destGlBox.height;
+ 
+             sourceSubResource = 0;
+             srcTexture        = &intermediateTextureHelper;
+@@ -3619,8 +3599,8 @@ angle::Result Renderer11::readFromAttachment(const gl::Context *context,
+             if (textureHelper.getSampleCount() > 1)
+             {
+                 D3D11_TEXTURE2D_DESC resolveDesc;
+-                resolveDesc.Width              = static_cast<UINT>(texSize.width);
+-                resolveDesc.Height             = static_cast<UINT>(texSize.height);
++                resolveDesc.Width              = static_cast<UINT>(rt11->getWidth());
++                resolveDesc.Height             = static_cast<UINT>(rt11->getHeight());
+                 resolveDesc.MipLevels          = 1;
+                 resolveDesc.ArraySize          = 1;
+                 resolveDesc.Format             = textureHelper.getFormat();
+@@ -3648,10 +3628,10 @@ angle::Result Renderer11::readFromAttachment(const gl::Context *context,
+     }
+ 
+     D3D11_BOX srcBox;
+-    srcBox.left   = static_cast<UINT>(safeArea.x);
+-    srcBox.right  = static_cast<UINT>(safeArea.x + safeArea.width);
+-    srcBox.top    = static_cast<UINT>(safeArea.y);
+-    srcBox.bottom = static_cast<UINT>(safeArea.y + safeArea.height);
++    srcBox.left   = static_cast<UINT>(clippedReadArea.x);
++    srcBox.right  = static_cast<UINT>(clippedReadArea.x + clippedReadArea.width);
++    srcBox.top    = static_cast<UINT>(clippedReadArea.y);
++    srcBox.bottom = static_cast<UINT>(clippedReadArea.y + clippedReadArea.height);
+ 
+     // Select the correct layer from a 3D attachment
+     srcBox.front = 0;
+@@ -3663,8 +3643,8 @@ angle::Result Renderer11::readFromAttachment(const gl::Context *context,
+ 
+     TextureHelper11 stagingHelper;
+     ANGLE_TRY(createStagingTexture(context, textureHelper.getTextureType(),
+-                                   srcTexture->getFormatSet(), safeSize, StagingAccess::READ,
+-                                   &stagingHelper));
++                                   srcTexture->getFormatSet(), stagingTextureSize,
++                                   StagingAccess::READ, &stagingHelper));
+     stagingHelper.setInternalName("readFromAttachment::stagingHelper");
+ 
+     mDeviceContext->CopySubresourceRegion(stagingHelper.get(), 0, 0, 0, 0, srcTexture->get(),
+@@ -3673,7 +3653,8 @@ angle::Result Renderer11::readFromAttachment(const gl::Context *context,
+     const angle::Format &angleFormat = GetFormatFromFormatType(format, type);
+     gl::Buffer *packBuffer = context->getState().getTargetBuffer(gl::BufferBinding::PixelPack);
+ 
+-    PackPixelsParams packParams(safeArea, angleFormat, outputPitch, reverseRowOrder, packBuffer, 0);
++    PackPixelsParams packParams(clippedReadArea, angleFormat, outputPitch, reverseRowOrder,
++                                packBuffer, 0);
+     return packPixels(context, stagingHelper, packParams, pixelsOut);
+ }
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
+index dfa7adde9d66dfa6149b69db4902ff8ef8eb6698..c3c6cfc35f68044dc3e8779fa257655444aeab60 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
+@@ -2647,6 +2647,64 @@ bool UsePresentPathFast(const Renderer11 *renderer,
+             renderer->presentPathFastEnabled());
+ }
+ 
++bool ClipRenderTargetReadArea(const RenderTarget11 &renderTarget,
++                              const gl::Rectangle &readArea,
++                              bool invertTexture,
++                              bool reverseRowOrderIn,
++                              gl::Rectangle *clippedReadAreaOut,
++                              bool *reverseRowOrderOut)
++{
++    const TextureHelper11 &srcTexture = renderTarget.getTexture();
++    ASSERT(srcTexture.valid());
++
++    // Compute the actual D3D11 subresource bounds for this glReadPixels / CopyTexImage call:
++    // - srcTexture.getExtents() queries ID3D11Texture2D::GetDesc(), which always reports mip 0's
++    //   dimensions across the whole texture resource.
++    // - renderTarget.getWidth() / getHeight() reports the attached subresource's dimensions (e.g.
++    //   when glFramebufferTexture2D attaches a non-zero mip level).
++    const gl::Rectangle srcSubresourceRect(
++        0, 0, std::min(renderTarget.getWidth(), srcTexture.getExtents().width),
++        std::min(renderTarget.getHeight(), srcTexture.getExtents().height));
++
++    gl::Rectangle d3dReadArea = readArea;
++    bool reverseRowOrder      = reverseRowOrderIn;
++    if (invertTexture)
++    {
++        // When EGL_EXPERIMENTAL_PRESENT_PATH_FAST_ANGLE is active, the default framebuffer is
++        // rendered upside-down in srcTexture. Because the staging texture is sized only to the
++        // cropped glReadPixels(x, y, width, height, ...) rectangle (clippedReadAreaOut->width x
++        // clippedReadAreaOut->height) and CopySubresourceRegion copies into (0, 0) of the staging
++        // texture without flipping rows, we must both:
++        // 1. Flip d3dReadArea.y (from GL's bottom-up glReadPixels y to D3D11's top-down row index)
++        //    so CopySubresourceRegion selects the corresponding vertical slice from srcTexture.
++        // 2. Toggle reverseRowOrder (combining with glPixelStorei(GL_PACK_REVERSE_ROW_ORDER_ANGLE))
++        //    so PackPixels reads the rows of the staging texture from bottom to top when packing
++        //    into the output buffer or GL_PIXEL_PACK_BUFFER.
++        d3dReadArea.y   = srcSubresourceRect.height - d3dReadArea.y - d3dReadArea.height;
++        reverseRowOrder = !reverseRowOrder;
++    }
++
++    // Before reaching here, FramebufferD3D::readPixels clips the read area against
++    // readAttachment.getSize(), which returns the GL/EGL frontend's attachment size (e.g.,
++    // ImageDesc size from glTexStorage2D / glTexImage2D, or Surface::getSize() for an
++    // EGL_FIXED_SIZE_ANGLE window surface updated via eglSurfaceAttrib before the swapchain is
++    // resized). When the frontend attachment size exceeds the actual D3D11 subresource size
++    // (or when an NPOT texture has non-zero GL_TEXTURE_BASE_LEVEL where
++    // (height >> baseLevel) << baseLevel < height), d3dReadArea can extend partially or
++    // completely outside srcSubresourceRect (including negative d3dReadArea.y when
++    // UsePresentPathFast flips y = srcSubresourceRect.height - y - height).
++    // Intersect d3dReadArea with srcSubresourceRect so callers early-out when the intersection is
++    // empty, and otherwise do not allocate an oversized staging texture, issue an out-of-bounds
++    // CopySubresourceRegion, and pack uninitialized staging texture rows into the output buffer.
++    if (!gl::ClipRectangle(d3dReadArea, srcSubresourceRect, clippedReadAreaOut))
++    {
++        return false;
++    }
++
++    *reverseRowOrderOut = reverseRowOrder;
++    return true;
++}
++
+ bool UsePrimitiveRestartWorkaround(bool primitiveRestartFixedIndexEnabled,
+                                    gl::DrawElementsType type)
+ {
+diff --git a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h
+index 4e03f19213b9375dcd678c4892e04c190e57a5b9..1e73d745312925c0bc9aff3f6a706bdb1763e177 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h
++++ b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h
+@@ -435,6 +435,29 @@ enum class StagingAccess
+ };
+ 
+ bool UsePresentPathFast(const Renderer11 *renderer, const gl::FramebufferAttachment *colorbuffer);
++
++// Helper for D3D11 framebuffer readback paths (e.g., Renderer11::readFromAttachment for client
++// memory glReadPixels / glCopyTex*Image, and Buffer11::PackStorage::packPixels for PBO
++// glReadPixels).
++//
++// Call this before allocating a staging texture or issuing CopySubresourceRegion from a
++// RenderTarget11:
++// 1. If |invertTexture| is true (i.e., UsePresentPathFast is active on the source attachment),
++//    flips |readArea.y| from GL bottom-up coordinates to D3D11 top-down coordinates and toggles
++//    |reverseRowOrderIn|.
++// 2. Clips the resulting read rectangle against the actual D3D11 subresource dimensions of
++//    |renderTarget| (which may be smaller than the GL frontend's FramebufferAttachment::getSize()).
++//
++// Returns true and populates |clippedReadAreaOut| and |reverseRowOrderOut| if the clipped region
++// is non-empty; callers must size the staging texture, D3D11_BOX, and PackPixelsParams using
++// |clippedReadAreaOut| and |reverseRowOrderOut|. Returns false if the clipped region is empty, in
++// which case the caller should early-out without performing a copy.
++[[nodiscard]] bool ClipRenderTargetReadArea(const RenderTarget11 &renderTarget,
++                                            const gl::Rectangle &readArea,
++                                            bool invertTexture,
++                                            bool reverseRowOrderIn,
++                                            gl::Rectangle *clippedReadAreaOut,
++                                            bool *reverseRowOrderOut);
+ bool UsePrimitiveRestartWorkaround(bool primitiveRestartFixedIndexEnabled,
+                                    gl::DrawElementsType type);
+ 
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index 9706ae9d2590a349427447b6a542c2655e677298..a81fcf27e7fc3bd0fa71de9c1f294b0813a8a02b 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -13,6 +13,7 @@
+ 
+ #include "test_utils/gl_raii.h"
+ #include "util/EGLWindow.h"
++#include "util/OSWindow.h"
+ #include "util/gles_loader_autogen.h"
+ 
+ namespace angle
+@@ -1866,6 +1867,215 @@ void main() {
+     checkFramebufferNonZeroPixels(0, 0, 0, 0, GLColor::black);
+ }
+ 
++// Verify that both non-PBO and PBO readPixels of an immutable NPOT texture with a clamped base
++// level do not read uninitialized staging texture memory.
++TEST_P(RobustResourceInitTestES3, TexStorage2DNPOTClampedBaseLevelPBOReadPixels)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr GLsizei kTexWidth  = 256;
++    constexpr GLsizei kTexHeight = 255;
++    constexpr GLsizei kLevels    = 8;
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexStorage2D(GL_TEXTURE_2D, kLevels, GL_RGBA8, kTexWidth, kTexHeight);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 100);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_READ_FRAMEBUFFER);
++
++    const size_t pixelCount = static_cast<size_t>(kTexWidth * kTexHeight);
++    glPixelStorei(GL_PACK_ALIGNMENT, 1);
++
++    // Leave |tex| uninitialized by the application. With GL_ANGLE_robust_resource_initialization
++    // enabled on this fixture, ANGLE must zero-initialize |tex| to GLColor::transparentBlack
++    // (RGBA = 0, 0, 0, 0) before glReadPixels reads from it.
++    // Pre-fill the destination buffers with GLColor::magenta so that checking for
++    // GLColor::transparentBlack verifies both:
++    // 1. glReadPixels actually overwrote every pixel (did not no-op and leave magenta behind), and
++    // 2. glReadPixels read the zero-initialized texture rather than uninitialized GPU staging
++    //    texture memory.
++
++    // Non-PBO readPixels path (exercises Renderer11::readFromAttachment on D3D11).
++    std::vector<GLColor> clientPixels(pixelCount, GLColor::magenta);
++    glReadPixels(0, 0, kTexWidth, kTexHeight, GL_RGBA, GL_UNSIGNED_BYTE, clientPixels.data());
++    ASSERT_GL_NO_ERROR();
++    for (size_t i = 0; i < pixelCount; ++i)
++    {
++        ASSERT_EQ(GLColor::transparentBlack, clientPixels[i]) << "Non-PBO mismatch at pixel " << i;
++    }
++
++    // PBO readPixels path (exercises Buffer11::PackStorage::packPixels on D3D11).
++    std::vector<GLColor> sentinelData(pixelCount, GLColor::magenta);
++    GLBuffer pbo;
++    glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
++    glBufferData(GL_PIXEL_PACK_BUFFER, pixelCount * sizeof(GLColor), sentinelData.data(),
++                 GL_STREAM_READ);
++
++    glReadPixels(0, 0, kTexWidth, kTexHeight, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    ASSERT_GL_NO_ERROR();
++
++    const GLColor *mappedPixels = static_cast<const GLColor *>(
++        glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, pixelCount * sizeof(GLColor), GL_MAP_READ_BIT));
++    ASSERT_NE(nullptr, mappedPixels);
++
++    for (size_t i = 0; i < pixelCount; ++i)
++    {
++        // SAFETY: mappedPixels points to pixelCount GLColor elements mapped by glMapBufferRange.
++        ASSERT_EQ(GLColor::transparentBlack, ANGLE_UNSAFE_BUFFERS(mappedPixels[i]))
++            << "PBO mismatch at pixel " << i;
++    }
++
++    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Verify that when the frontend attachment size exceeds the D3D11 RenderTarget11 subresource size
++// (via EGL_ANGLE_window_fixed_size updated with eglSurfaceAttrib before the swapchain is resized),
++// both non-PBO and PBO glReadPixels:
++// 1. Early-out without modifying the destination buffer when ClipRenderTargetReadArea returns
++//    false (read area is inside the frontend attachment size, but completely outside the D3D11
++//    subresource bounds).
++// 2. Clip the read area to the D3D11 subresource bounds when ClipRenderTargetReadArea returns
++//    true (read area partially overlaps the D3D11 subresource bounds).
++TEST_P(RobustResourceInitTestES3, FixedSizeSurfaceExpandedBeforeSwapReadPixels)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    EGLWindow *eglWindow = getEGLWindow();
++    EGLDisplay display   = eglWindow->getDisplay();
++    ANGLE_SKIP_TEST_IF(!IsEGLDisplayExtensionEnabled(display, "EGL_ANGLE_window_fixed_size"));
++
++    constexpr EGLint kWidth          = 64;
++    constexpr EGLint kInitialHeight  = 64;
++    constexpr EGLint kExpandedHeight = 128;
++
++    OSWindow *osWindow = OSWindow::New();
++    ASSERT_TRUE(osWindow->initialize("FixedSizeSurfaceExpandedBeforeSwapReadPixels", kWidth,
++                                     kInitialHeight));
++
++    const EGLint surfaceAttributes[] = {
++        EGL_FIXED_SIZE_ANGLE,
++        EGL_TRUE,
++        EGL_WIDTH,
++        kWidth,
++        EGL_HEIGHT,
++        kInitialHeight,
++        EGL_ROBUST_RESOURCE_INITIALIZATION_ANGLE,
++        EGL_TRUE,
++        EGL_NONE,
++    };
++
++    EGLSurface fixedSurface = eglCreateWindowSurface(
++        display, eglWindow->getConfig(), osWindow->getNativeWindow(), surfaceAttributes);
++    ASSERT_EGL_SUCCESS();
++    ASSERT_NE(EGL_NO_SURFACE, fixedSurface);
++
++    EXPECT_EGL_TRUE(eglMakeCurrent(display, fixedSurface, fixedSurface, eglWindow->getContext()));
++    ASSERT_EGL_SUCCESS();
++
++    // Increase the frontend fixed height from 64 to 128 without calling eglSwapBuffers or
++    // eglWaitNative. Surface::getSize() immediately reports 64x128, while SwapChain11's
++    // RenderTarget11 remains 64x64 until the next swap/wait.
++    EXPECT_EGL_TRUE(eglSurfaceAttrib(display, fixedSurface, EGL_HEIGHT, kExpandedHeight));
++    ASSERT_EGL_SUCCESS();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
++    glPixelStorei(GL_PACK_ALIGNMENT, 1);
++
++    // Read (0, 64, 64, 64), which lies inside Surface::getSize() (64x128) so
++    // FramebufferD3D::readPixels does not clip it out, but lies completely outside the 64x64
++    // RenderTarget11 so ClipRenderTargetReadArea returns false and both paths early-out without
++    // modifying the destination buffer.
++    constexpr GLint kOutOfSubresourceY      = kInitialHeight;
++    constexpr GLsizei kOutOfSubresourceRows = kExpandedHeight - kInitialHeight;
++    const size_t emptyClipPixelCount        = static_cast<size_t>(kWidth * kOutOfSubresourceRows);
++
++    std::vector<GLColor> emptyClipClientPixels(emptyClipPixelCount, GLColor::magenta);
++    glReadPixels(0, kOutOfSubresourceY, kWidth, kOutOfSubresourceRows, GL_RGBA, GL_UNSIGNED_BYTE,
++                 emptyClipClientPixels.data());
++    ASSERT_GL_NO_ERROR();
++    for (size_t i = 0; i < emptyClipPixelCount; ++i)
++    {
++        ASSERT_EQ(GLColor::magenta, emptyClipClientPixels[i])
++            << "Non-PBO empty-clip early-out modified pixel " << i;
++    }
++
++    std::vector<GLColor> emptyClipSentinelData(emptyClipPixelCount, GLColor::magenta);
++    GLBuffer emptyClipPbo;
++    glBindBuffer(GL_PIXEL_PACK_BUFFER, emptyClipPbo);
++    glBufferData(GL_PIXEL_PACK_BUFFER, emptyClipPixelCount * sizeof(GLColor),
++                 emptyClipSentinelData.data(), GL_STREAM_READ);
++    glReadPixels(0, kOutOfSubresourceY, kWidth, kOutOfSubresourceRows, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    ASSERT_GL_NO_ERROR();
++
++    const GLColor *emptyClipMappedPixels = static_cast<const GLColor *>(glMapBufferRange(
++        GL_PIXEL_PACK_BUFFER, 0, emptyClipPixelCount * sizeof(GLColor), GL_MAP_READ_BIT));
++    ASSERT_NE(nullptr, emptyClipMappedPixels);
++    for (size_t i = 0; i < emptyClipPixelCount; ++i)
++    {
++        // SAFETY: emptyClipMappedPixels points to emptyClipPixelCount GLColor elements mapped by
++        // glMapBufferRange.
++        ASSERT_EQ(GLColor::magenta, ANGLE_UNSAFE_BUFFERS(emptyClipMappedPixels[i]))
++            << "PBO empty-clip early-out modified pixel " << i;
++    }
++    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
++    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
++    ASSERT_GL_NO_ERROR();
++
++    // Read (0, 0, 64, 128), which partially overlaps the 64x64 RenderTarget11.
++    // ClipRenderTargetReadArea clips it to (0, 0, 64, 64) and returns true, so rows 0..63 are
++    // populated with zero-initialized transparentBlack pixels and rows 64..127 remain magenta.
++    const size_t fullPixelCount  = static_cast<size_t>(kWidth * kExpandedHeight);
++    const size_t validPixelCount = static_cast<size_t>(kWidth * kInitialHeight);
++
++    std::vector<GLColor> partialClipClientPixels(fullPixelCount, GLColor::magenta);
++    glReadPixels(0, 0, kWidth, kExpandedHeight, GL_RGBA, GL_UNSIGNED_BYTE,
++                 partialClipClientPixels.data());
++    ASSERT_GL_NO_ERROR();
++    for (size_t i = 0; i < fullPixelCount; ++i)
++    {
++        const GLColor expected =
++            (i < validPixelCount) ? GLColor::transparentBlack : GLColor::magenta;
++        ASSERT_EQ(expected, partialClipClientPixels[i])
++            << "Non-PBO partial-clip mismatch at pixel " << i;
++    }
++
++    std::vector<GLColor> partialClipSentinelData(fullPixelCount, GLColor::magenta);
++    GLBuffer partialClipPbo;
++    glBindBuffer(GL_PIXEL_PACK_BUFFER, partialClipPbo);
++    glBufferData(GL_PIXEL_PACK_BUFFER, fullPixelCount * sizeof(GLColor),
++                 partialClipSentinelData.data(), GL_STREAM_READ);
++    glReadPixels(0, 0, kWidth, kExpandedHeight, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    ASSERT_GL_NO_ERROR();
++
++    const GLColor *partialClipMappedPixels = static_cast<const GLColor *>(glMapBufferRange(
++        GL_PIXEL_PACK_BUFFER, 0, fullPixelCount * sizeof(GLColor), GL_MAP_READ_BIT));
++    ASSERT_NE(nullptr, partialClipMappedPixels);
++    for (size_t i = 0; i < fullPixelCount; ++i)
++    {
++        const GLColor expected =
++            (i < validPixelCount) ? GLColor::transparentBlack : GLColor::magenta;
++        // SAFETY: partialClipMappedPixels points to fullPixelCount GLColor elements mapped by
++        // glMapBufferRange.
++        ASSERT_EQ(expected, ANGLE_UNSAFE_BUFFERS(partialClipMappedPixels[i]))
++            << "PBO partial-clip mismatch at pixel " << i;
++    }
++    glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
++    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
++    ASSERT_GL_NO_ERROR();
++
++    EXPECT_EGL_TRUE(eglMakeCurrent(display, eglWindow->getSurface(), eglWindow->getSurface(),
++                                   eglWindow->getContext()));
++    EXPECT_EGL_TRUE(eglDestroySurface(display, fixedSurface));
++    osWindow->destroy();
++    OSWindow::Delete(&osWindow);
++}
++
+ // Tests that drawing with an uninitialized mipped texture works as expected.
+ TEST_P(RobustResourceInitTestES3, DrawWithMippedTexture)
+ {

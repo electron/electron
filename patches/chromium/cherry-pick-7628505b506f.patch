@@ -1,0 +1,171 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Tue, 13 Oct 2026 18:33:59 -0700
+Subject: [Media] Disallow mixing opaque and non-opaque responses in
+ MultiBuffer
+
+Fail the load in ResourceMultiBufferDataProvider::DidReceiveResponse()
+if a resource that has already received a response receives a subsequent
+response whose CORS cross-origin taint state differs from the earlier
+response. This is guarded by a new kDisallowMixedOpaqueMediaResponses
+kill switch (enabled by default).
+
+The behavior of mixing multiple range responses via a Service Worker is
+not defined by the HTML or Service Worker specifications
+(https://github.com/w3c/ServiceWorker/issues/703), and both Firefox and
+Safari already reject mixing opaque and non-opaque range responses with
+a load error. Update the existing web test and WPT expectations to match
+this behavior across all browsers.
+
+Fixed: 572307225
+Change-Id: Ie48e2d85b3450d14d40208cf89dd767081a7ffa7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8564157
+Reviewed-by: Tsuyoshi Horo <horo@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Tsuyoshi Horo <horo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718211}
+
+Electron adaptation notes (43-x-y):
+media_switches.{cc,h} and the resource_multi_buffer_data_provider.cc include
+hunks were resolved against this branch's context; the fix hunks are
+unchanged. UrlData::data_origin() comes from the picked prerequisite
+91c9bdd8ef00 (https://chromium-review.googlesource.com/c/chromium/src/+/8342168).
+
+diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
+index 840180d9d5f296f286c2f31299cfe673ea62382b..73a50b614f6ec2e79c935c14da73ee1f1b4f3813 100644
+--- a/media/base/media_switches.cc
++++ b/media/base/media_switches.cc
+@@ -1629,6 +1629,12 @@ BASE_FEATURE(kAudioOffload, base::FEATURE_DISABLED_BY_DEFAULT);
+ const base::FeatureParam<double> kAudioOffloadBufferTimeMs{
+     &kAudioOffload, "buffer_time_ms", 50};
+ #endif
++// Killswitch for disallowing mixing opaque and non-opaque responses in
++// ResourceMultiBufferDataProvider (crbug.com/572363265).
++// TODO(crbug.com/572363265): Remove after M158 reaches stable.
++BASE_FEATURE(kDisallowMixedOpaqueMediaResponses,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ 
+ // Enables sending MediaLog to the log stream, which is useful for easier
+ // development by ensuring logs can be seen without a remote desktop session.
+diff --git a/media/base/media_switches.h b/media/base/media_switches.h
+index 32286bf89fabcfb96a146aa048f7a03584847b30..64c78dae7471b09c89c63c323f098e30fdc4cdf2 100644
+--- a/media/base/media_switches.h
++++ b/media/base/media_switches.h
+@@ -176,6 +176,7 @@ MEDIA_EXPORT BASE_DECLARE_FEATURE(kContextMenu2026);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kContextMenuCopyVideoFrame);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kContextMenuSaveVideoFrameAs);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kContextMenuSearchForVideoFrame);
++MEDIA_EXPORT BASE_DECLARE_FEATURE(kDisallowMixedOpaqueMediaResponses);
+ #if BUILDFLAG(CHROME_WIDE_ECHO_CANCELLATION)
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kChromeWideEchoCancellation);
+ #endif  // BUILDFLAG(CHROME_WIDE_ECHO_CANCELLATION)
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+index ea1227f5e85823fce4c5fa15b104bd0a662fcd0f..e641eea2d7fd5dfc72945fc2b8c9c42a9118c8ee 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+@@ -1911,6 +1911,28 @@ TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaque) {
+   FinishLoading();
+ }
+ 
++TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaqueOnLaterRange) {
++  Initialize(kHttpUrl, true);
++  WebURLResponse response1 =
++      response_generator_->GeneratePartial206(0, kDataSize - 1);
++  response1.SetType(network::mojom::blink::FetchResponseType::kCors);
++  WebURLResponse response2 =
++      response_generator_->GeneratePartial206(kDataSize, kDataSize * 2 - 1);
++  response2.SetType(network::mojom::blink::FetchResponseType::kOpaque);
++  ExecuteMixedResponseFailureTest(response1, response2);
++}
++
++TEST_F(MultiBufferDataSourceTest, ResponseTypeNonOpaqueAfterOpaqueRange) {
++  Initialize(kHttpUrl, true);
++  WebURLResponse response1 =
++      response_generator_->GeneratePartial206(0, kDataSize - 1);
++  response1.SetType(network::mojom::blink::FetchResponseType::kOpaque);
++  WebURLResponse response2 =
++      response_generator_->GeneratePartial206(kDataSize, kDataSize * 2 - 1);
++  response2.SetType(network::mojom::blink::FetchResponseType::kCors);
++  ExecuteMixedResponseFailureTest(response1, response2);
++}
++
+ TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaqueRedirect) {
+   InitializeWithCors(kHttpUrl, true, UrlData::CORS_ANONYMOUS);
+   set_preload(MultiBufferDataSource::NONE);
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index abfe58236b226e4aefdd89190dd59d25c4616e3b..d269a29e43cc3bcaee2c95060b6eba5fd99a5706 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -10,6 +10,7 @@
+ #include <utility>
+ #include <algorithm>
+ 
++#include "base/feature_list.h"
+ #include "base/location.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
+@@ -18,6 +19,8 @@
+ #include "base/strings/string_util.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
++#include "media/base/media_switches.h"
++#include "net/base/net_errors.h"
+ #include "net/http/http_byte_range.h"
+ #include "net/http/http_request_headers.h"
+ #include "services/network/public/cpp/cors/cors.h"
+@@ -293,11 +296,15 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+       network::cors::IsCorsCrossOriginResponseType(response.GetType());
+   bytes_to_discard_ = 0;
+ 
+-  // We make a strong assumption that when we reach here we have either
+-  // received a response from HTTP/HTTPS protocol or the request was
+-  // successful (in particular range request). So we only verify the partial
+-  // response for HTTP and HTTPS protocol.
+-  if (destination_url_data->url().ProtocolIsInHttpFamily()) {
++  // Mixing non-opaque and opaque responses on a resource that has already
++  // received a response is not allowed, as consumers may have already checked
++  // origin tainting based on the earlier response.
++  if (old_url_data->data_origin().has_value() &&
++      old_url_data->is_cors_cross_origin() != is_cors_cross_origin &&
++      base::FeatureList::IsEnabled(media::kDisallowMixedOpaqueMediaResponses)) {
++    active_loader_.reset();
++    do_fail = true;
++  } else if (destination_url_data->url().ProtocolIsInHttpFamily()) {
+     bool partial_response = (response.HttpStatusCode() == kHttpPartialContent);
+     bool ok_response = (response.HttpStatusCode() == kHttpOK);
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html b/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html
+index 0ee41e96f2989fe1dcba4bfb2d449432c175b5da..dc7084e15c8c3f3887dfefb6f8b5d35e54d77dec 100644
+--- a/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html
++++ b/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html
+@@ -85,10 +85,10 @@ range_request_test(
+ // (5) Range responses come from a single origin, with a mix of opaque and
+ //     non-opaque responses. The first request uses 'no-cors' mode to
+ //     receive an opaque response, and subsequent range requests use 'cors'
+-//     to receive non-opaque responses. The canvas should be tainted.
++//     to receive non-opaque responses.
+ range_request_test(
+   'resources/range-request-with-different-cors-modes-worker.js',
+-  'TAINTED',
++  'LOAD_ERROR',
+   'range responses from single origin with both opaque and non-opaque responses');
+ 
+ // (6) Range responses come from a single origin, with a mix of opaque and
+diff --git a/third_party/blink/web_tests/http/tests/serviceworker/service-worker-mixed-response.html b/third_party/blink/web_tests/http/tests/serviceworker/service-worker-mixed-response.html
+index 6198873eda6665034fa7009472260c6a64190fcf..ebdd921c25bb484911c41fa9946b017c8d842c47 100644
+--- a/third_party/blink/web_tests/http/tests/serviceworker/service-worker-mixed-response.html
++++ b/third_party/blink/web_tests/http/tests/serviceworker/service-worker-mixed-response.html
+@@ -124,10 +124,10 @@ promise_test(function(t) {
+               audio_test(f, 'cross', 'same', 'gen', false),
+               audio_test(f, 'cross', 'same', 'same', false),
+               audio_test(f, 'cross', 'same', 'cross', false),
+-              audio_test(f, 'cross', 'cross', '', true),
++              audio_test(f, 'cross', 'cross', '', false),
+               audio_test(f, 'cross', 'cross', 'gen', false),
+               audio_test(f, 'cross', 'cross', 'same', false),
+-              audio_test(f, 'cross', 'cross', 'cross', true)]);
++              audio_test(f, 'cross', 'cross', 'cross', false)]);
+         })
+       .then(function() {
+           frame.remove();

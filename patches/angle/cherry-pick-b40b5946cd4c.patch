@@ -1,0 +1,475 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Fri, 9 Oct 2026 11:08:37 -0700
+Subject: GL: Avoid FBO driver hash collisions
+
+In some circumstances framebuffer objects with different attachment
+layouts or where some draw buffers have been disabled, end up with
+conflicting hashes in the PowerVR driver, causing internal state to not
+update properly.
+
+This change addresses both causes of the hash collisions by rebuilding
+the native framebuffer whenever a potentially collision-producing change
+is made. This prevents a cached hash from being used.
+
+Bug: chromium:551065275
+Change-Id: Ib82f3f3147d85175f6da028bae0858efe804cbce
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8551737
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Electron adaptation notes (43-x-y):
+gl_features.json, FeaturesGL_autogen.h and angle_features_autogen.{h,cpp}:
+the new recreateFboOnAttachmentRespecification feature is added next to
+the entries this branch has (finishBeforeSameTextureCopy /
+RecreateFboUponFlush) instead of upstream's neighbours; generated content
+is otherwise identical to upstream.
+renderergl_utils.cpp: this branch has no isPowerVR local; the feature
+condition uses IsPowerVR(vendor) like its neighbours.
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index a1bd4ee39481b00c3fe35ad2c5d8070f1308a9cc..67fdd65c5a98036fd418352323644f847a554424 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -830,6 +830,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo recreateFboOnAttachmentRespecification = {
++        "recreateFboOnAttachmentRespecification",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index b8f943aad74bfa951b9faa85b79bfdb882a32d3b..f4bec5a98495a26b68ca674a3039a3dd4d2e7a35 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -1096,6 +1096,15 @@
+                 "destination texture to work around driver bugs."
+             ],
+             "issue": "https://crbug.com/552672183"
++        },
++        {
++            "name": "recreate_fbo_on_attachment_respecification",
++            "category": "Workarounds",
++            "description": [
++                "Recreate native FBOs on attachment, draw buffers, or read buffer respecification. ",
++                "Prevents driver hash collisions on PowerVR hardware."
++            ],
++            "issue": "http://crbug.com/551065275"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/FramebufferGL.cpp b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+index eaabb24045800769f151cddd04b4dff2175fd08b..4280e023c00b2bb183e656a5e4c3dd0c7d8ae3b4 100644
+--- a/src/libANGLE/renderer/gl/FramebufferGL.cpp
++++ b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+@@ -454,6 +454,57 @@ bool IsNonTrivialClearColor(const GLuint *color)
+              (color[3] == 0 || color[3] == 1));
+ }
+ 
++// Returns a DirtyBits mask with bits set for any framebuffer state that isn't the default.
++void SetNonDefaultBits(const FramebufferState &state,
++                       const FunctionsGL *functions,
++                       gl::Framebuffer::DirtyBits *dirtyBits)
++{
++    for (size_t index : state.getColorAttachmentsMask())
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_0 + index);
++    }
++    if (state.getDepthAttachment())
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_DEPTH_ATTACHMENT);
++    }
++    if (state.getStencilAttachment())
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_STENCIL_ATTACHMENT);
++    }
++    if (functions->drawBuffers)
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_DRAW_BUFFERS);
++    }
++    if (functions->readBuffer)
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_READ_BUFFER);
++    }
++    if (state.getDefaultWidth() != 0)
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_WIDTH);
++    }
++    if (state.getDefaultHeight() != 0)
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_HEIGHT);
++    }
++    if (state.getDefaultSamples() != 0)
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_SAMPLES);
++    }
++    if (state.getDefaultFixedSampleLocations())
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_FIXED_SAMPLE_LOCATIONS);
++    }
++    if (state.getDefaultLayers() != 0)
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_LAYERS);
++    }
++    if (state.getFlipY())
++    {
++        dirtyBits->set(Framebuffer::DIRTY_BIT_FLIP_Y);
++    }
++}
++
+ }  // namespace
+ 
+ bool IsEmulatedAlphaChannelTextureAttachment(const gl::FramebufferAttachment *attachment)
+@@ -476,6 +527,7 @@ FramebufferGL::FramebufferGL(const gl::FramebufferState &data,
+     : FramebufferImpl(data),
+       mFramebufferID(id),
+       mHasEmulatedAlphaAttachment(emulatedAlpha),
++      mHasSyncedAttachments(false),
+       mAppliedEnabledDrawBuffers(1),
+       mFunctions(functions),
+       mStateManager(stateManager)
+@@ -1511,15 +1563,56 @@ angle::Result FramebufferGL::syncState(const gl::Context *context,
+         return angle::Result::Continue;
+     }
+ 
+-    const FunctionsGL *functions = GetFunctionsGL(context);
+-    StateManagerGL *stateManager = GetStateManagerGL(context);
++    const FunctionsGL *functions              = GetFunctionsGL(context);
++    StateManagerGL *stateManager              = GetStateManagerGL(context);
++    gl::Framebuffer::DirtyBits localDirtyBits = dirtyBits;
++    gl::DrawBufferMask activeColorAttachments;
++
++    // When using the recreateFboOnAttachmentRespecification workaround, recreate the native FBO
++    // when modifying attachments or draw/read buffers on an already-synced FBO.
++    // This prevents collisions with a stale hash in the PowerVR driver.
++    gl::Framebuffer::DirtyBits attachmentDirtyBits =
++        gl::Framebuffer::DirtyBits::Mask(Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_MAX) |
++        gl::Framebuffer::DirtyBits({Framebuffer::DIRTY_BIT_DEPTH_ATTACHMENT,
++                                    Framebuffer::DIRTY_BIT_STENCIL_ATTACHMENT,
++                                    Framebuffer::DIRTY_BIT_READ_BUFFER});
++    if (mState.getEnabledDrawBuffers().any())
++    {
++        attachmentDirtyBits.set(Framebuffer::DIRTY_BIT_DRAW_BUFFERS);
++    }
++
++    const bool attachmentsDirty = (dirtyBits & attachmentDirtyBits).any();
++    if (GetFeaturesGL(context).recreateFboOnAttachmentRespecification.enabled)
++    {
++        // mHasSyncedAttachments is true if the FBO has been synced at least once.
++        if (attachmentsDirty && mHasSyncedAttachments)
++        {
++            stateManager->deleteFramebuffer(mFramebufferID);
++            mFramebufferID = 0;
++            functions->genFramebuffers(1, &mFramebufferID);
++            // Ensure that all previously changed state will be re-synced to the new FBO.
++            SetNonDefaultBits(mState, functions, &localDirtyBits);
++        }
++
++        // Ensure only active attachements are reattached to the FBO on recreation.
++        activeColorAttachments = mState.getEnabledDrawBuffers();
++        if (mState.getReadAttachment() != nullptr)
++        {
++            activeColorAttachments.set(mState.getReadIndex());
++        }
++        if (activeColorAttachments.none() && !mState.getDepthAttachment() &&
++            !mState.getStencilAttachment() && mState.getColorAttachmentsMask().any())
++        {
++            activeColorAttachments.set(*mState.getColorAttachmentsMask().begin());
++        }
++    }
+ 
+     stateManager->bindFramebuffer(GL_FRAMEBUFFER, mFramebufferID);
+ 
+     // A pointer to one of the attachments for which the texture or the render buffer is not zero.
+     const FramebufferAttachment *attachment = nullptr;
+ 
+-    for (auto dirtyBit : dirtyBits)
++    for (auto dirtyBit : localDirtyBits)
+     {
+         switch (dirtyBit)
+         {
+@@ -1598,6 +1691,17 @@ angle::Result FramebufferGL::syncState(const gl::Context *context,
+                     size_t index =
+                         static_cast<size_t>(dirtyBit - Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_0);
+                     const FramebufferAttachment *newAttachment = mState.getColorAttachment(index);
++
++                    // If the recreateFboOnAttachmentRespecification workaround is enabled and the
++                    // attachment is not enabled in drawBuffers, skip it. If drawBuffers is updated
++                    // to include it the FBO will be recreated to include it again in a future sync.
++                    // This avoids a failure case in the PowerVR driver.
++                    if (GetFeaturesGL(context).recreateFboOnAttachmentRespecification.enabled &&
++                        !activeColorAttachments[index])
++                    {
++                        newAttachment = nullptr;
++                    }
++
+                     BindFramebufferAttachment(functions,
+                                               static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + index),
+                                               newAttachment, GetFeaturesGL(context));
+@@ -1621,6 +1725,11 @@ angle::Result FramebufferGL::syncState(const gl::Context *context,
+         }
+     }
+ 
++    if (attachmentsDirty)
++    {
++        mHasSyncedAttachments = true;
++    }
++
+     if (attachment && mState.id() == context->getState().getDrawFramebuffer()->id())
+     {
+         stateManager->updateMultiviewBaseViewLayerIndexUniform(
+diff --git a/src/libANGLE/renderer/gl/FramebufferGL.h b/src/libANGLE/renderer/gl/FramebufferGL.h
+index 1caa6b3e97e22aff895f29ee3f84ee59efcfdcf1..c3042182321578cd7896cf707bfe213ea8e11847 100644
+--- a/src/libANGLE/renderer/gl/FramebufferGL.h
++++ b/src/libANGLE/renderer/gl/FramebufferGL.h
+@@ -159,6 +159,7 @@ class FramebufferGL : public FramebufferImpl
+ 
+     GLuint mFramebufferID;
+     bool mHasEmulatedAlphaAttachment;
++    bool mHasSyncedAttachments;
+     gl::DrawBufferMask mAppliedEnabledDrawBuffers;
+     const FunctionsGL *mFunctions;
+     StateManagerGL *mStateManager;
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 1cdfc0d9417f8adba3251898543e9f98afaa4d13..067c0958a33f205857c47540bf3661811b83fbaf 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2912,6 +2912,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, useTexSubImageForClientDataNpotUploads,
+                             false /* IsPowerVR(vendor) */);
+ 
++    ANGLE_FEATURE_CONDITION(features, recreateFboOnAttachmentRespecification,
++                            IsPowerVR(vendor));
++
+     // Mac Intel drivers are unable to allocate buffers larger than ~1gb
+     ANGLE_FEATURE_CONDITION(features, limitMaxBufferSizeTo1gb, isApple && isIntel);
+ 
+diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
+index d51d88cb31a7b63020bb51961bb3b3eb0f776531..5bf9ac572878ae9a9114540c72a7825c943256a7 100644
+--- a/src/tests/gl_tests/FramebufferTest.cpp
++++ b/src/tests/gl_tests/FramebufferTest.cpp
+@@ -10783,3 +10783,194 @@ ANGLE_INSTANTIATE_TEST_ES31_AND(FramebufferTest_ES31_MSAA,
+                                 ES31_VULKAN().enable(Feature::EmulatedPrerotation90),
+                                 ES31_VULKAN().enable(Feature::EmulatedPrerotation180),
+                                 ES31_VULKAN().enable(Feature::EmulatedPrerotation270));
++
++class FramebufferTest_RecreateFboOnAttachmentRespecification : public ANGLETest<>
++{
++  protected:
++    FramebufferTest_RecreateFboOnAttachmentRespecification()
++    {
++        setWindowWidth(128);
++        setWindowHeight(128);
++        setConfigRedBits(8);
++        setConfigGreenBits(8);
++        setConfigBlueBits(8);
++        setConfigAlphaBits(8);
++    }
++};
++
++// Verify that respecifying attachments on an already-synced FBO recreates the native FBO and
++// renders cleanly with recreateFboOnAttachmentRespecification enabled. Crashes on
++// PowerVR devices without the recreateFboOnAttachmentRespecification workaround enabled.
++TEST_P(FramebufferTest_RecreateFboOnAttachmentRespecification, RespecifyCollidingAttachments)
++{
++    GLint maxColorAttachments = 0;
++    GLint maxDrawBuffers      = 0;
++    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
++    glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
++    ANGLE_SKIP_TEST_IF(maxColorAttachments < 8 || maxDrawBuffers < 8);
++
++    constexpr char kVS[]      = R"(#version 300 es
++void main() {
++    vec2 p[3] = vec2[3](vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0));
++    gl_Position = vec4(p[gl_VertexID], 0.0, 1.0);
++})";
++    constexpr char kFSFloat[] = R"(#version 300 es
++precision highp float;
++uniform vec4 uc;
++layout(location = 0) out vec4 o0;
++void main() {
++    o0 = uc;
++})";
++    constexpr char kFSUint[]  = R"(#version 300 es
++precision highp int;
++uniform uvec4 uc;
++layout(location = 0) out uvec4 o0;
++void main() {
++    o0 = uc;
++})";
++
++    ANGLE_GL_PROGRAM(progFloat, kVS, kFSFloat);
++    ANGLE_GL_PROGRAM(progUint, kVS, kFSUint);
++
++    auto attachStorageTex = [](GLenum internalFormat, GLenum attachmentPoint, GLTexture &tex) {
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glTexStorage2D(GL_TEXTURE_2D, 1, internalFormat, 16, 16);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, GL_TEXTURE_2D, tex, 0);
++    };
++
++    // Same-FBO respecification with colliding layouts CA -> CB (Carrier 1 ch=C).
++    const GLenum layoutCA[6] = {GL_RG32UI, GL_RG32UI, GL_RGBA16UI, GL_R8UI, GL_R32UI, GL_RG8UI};
++    const GLenum layoutCB[7] = {GL_R32UI, GL_RGBA16UI, GL_RG32UI, GL_R16UI,
++                                GL_RGBA8, GL_RGBA32UI, GL_R16UI};
++
++    GLFramebuffer fboRespec;
++    GLTexture texC0Float;
++    std::array<GLTexture, 6> texCADisabled;
++    glBindFramebuffer(GL_FRAMEBUFFER, fboRespec);
++    attachStorageTex(GL_RGBA8, GL_COLOR_ATTACHMENT0, texC0Float);
++    for (size_t i = 0; i < 6; ++i)
++    {
++        attachStorageTex(layoutCA[i], static_cast<GLenum>(GL_COLOR_ATTACHMENT1 + i),
++                         texCADisabled[i]);
++    }
++    const GLenum drawBuf0 = GL_COLOR_ATTACHMENT0;
++    glDrawBuffers(1, &drawBuf0);
++    ASSERT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++    glViewport(0, 0, 16, 16);
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++    glUseProgram(progFloat);
++    glUniform4f(glGetUniformLocation(progFloat, "uc"), 1.0f, 0.0f, 0.0f, 1.0f);
++    glDrawArrays(GL_TRIANGLES, 0, 3);
++    glDisable(GL_BLEND);
++
++    GLTexture texC0Uint;
++    std::array<GLTexture, 7> texCBDisabled;
++    attachStorageTex(GL_RGBA32UI, GL_COLOR_ATTACHMENT0, texC0Uint);
++    for (size_t i = 0; i < 7; ++i)
++    {
++        attachStorageTex(layoutCB[i], static_cast<GLenum>(GL_COLOR_ATTACHMENT1 + i),
++                         texCBDisabled[i]);
++    }
++    glDrawBuffers(1, &drawBuf0);
++    ASSERT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++    const GLuint clearVals[4] = {7u, 7u, 7u, 7u};
++    glClearBufferuiv(GL_COLOR, 0, clearVals);
++    glUseProgram(progUint);
++    glUniform4ui(glGetUniformLocation(progUint, "uc"), 0x11u, 0x22u, 0x33u, 0x44u);
++    glDrawArrays(GL_TRIANGLES, 0, 3);
++
++    glReadBuffer(GL_COLOR_ATTACHMENT0);
++    EXPECT_PIXEL_RECT32UI_EQ(0, 0, 1, 1, GLColor32UI(0x11u, 0x22u, 0x33u, 0x44u));
++    ASSERT_GL_NO_ERROR();
++}
++
++// Verify drawing across FBOs with colliding MRT hashes caused by disabled draw buffers (and reading
++// back disabled attachments via glReadBuffer) renders cleanly with
++// recreateFboOnAttachmentRespecification enabled. Crashes on PowerVR devices without the
++// recreateFboOnAttachmentRespecification workaround enabled.
++TEST_P(FramebufferTest_RecreateFboOnAttachmentRespecification,
++       DisabledDrawBufferCollidingAttachments)
++{
++    GLint maxColorAttachments = 0;
++    GLint maxDrawBuffers      = 0;
++    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
++    glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
++    ANGLE_SKIP_TEST_IF(maxColorAttachments < 8 || maxDrawBuffers < 8);
++
++    constexpr char kVS[]      = R"(#version 300 es
++void main() {
++    vec2 p[3] = vec2[3](vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0));
++    gl_Position = vec4(p[gl_VertexID], 0.0, 1.0);
++})";
++    constexpr char kFSFloat[] = R"(#version 300 es
++precision highp float;
++uniform vec4 uc;
++layout(location = 0) out vec4 o0;
++void main() {
++    o0 = uc;
++})";
++
++    ANGLE_GL_PROGRAM(progFloat1, kVS, kFSFloat);
++    ANGLE_GL_PROGRAM(progFloat2, kVS, kFSFloat);
++
++    auto attachStorageTex = [](GLenum internalFormat, GLenum attachmentPoint, GLTexture &tex) {
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glTexStorage2D(GL_TEXTURE_2D, 1, internalFormat, 16, 16);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, GL_TEXTURE_2D, tex, 0);
++    };
++
++    // Colliding disabled draw-buffer layouts A and B (Carrier 1 ch=A, hash = 0xbcc863eb).
++    const GLenum layoutA[6] = {GL_R32UI, GL_RG32UI, GL_RG32UI, GL_RGBA32UI, GL_RGBA16UI, GL_RG32UI};
++    const GLenum layoutB[7] = {GL_R8,      GL_R32UI, GL_RG8UI,  GL_R32UI,
++                               GL_RGBA8UI, GL_R32UI, GL_RGBA8UI};
++
++    GLFramebuffer fboA;
++    GLTexture texA0;
++    std::array<GLTexture, 6> texADisabled;
++    glBindFramebuffer(GL_FRAMEBUFFER, fboA);
++    attachStorageTex(GL_RGBA8, GL_COLOR_ATTACHMENT0, texA0);
++    for (size_t i = 0; i < 6; ++i)
++    {
++        attachStorageTex(layoutA[i], static_cast<GLenum>(GL_COLOR_ATTACHMENT1 + i),
++                         texADisabled[i]);
++    }
++    const GLenum drawBuf0 = GL_COLOR_ATTACHMENT0;
++    glDrawBuffers(1, &drawBuf0);
++    ASSERT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++    glViewport(0, 0, 16, 16);
++    glUseProgram(progFloat1);
++    glUniform4f(glGetUniformLocation(progFloat1, "uc"), 0.0f, 1.0f, 0.0f, 1.0f);
++    glDrawArrays(GL_TRIANGLES, 0, 3);
++
++    GLFramebuffer fboB;
++    GLTexture texB0;
++    std::array<GLTexture, 7> texBDisabled;
++    glBindFramebuffer(GL_FRAMEBUFFER, fboB);
++    attachStorageTex(GL_RGBA8, GL_COLOR_ATTACHMENT0, texB0);
++    for (size_t i = 0; i < 7; ++i)
++    {
++        attachStorageTex(layoutB[i], static_cast<GLenum>(GL_COLOR_ATTACHMENT1 + i),
++                         texBDisabled[i]);
++    }
++    glDrawBuffers(1, &drawBuf0);
++    ASSERT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++    glUseProgram(progFloat2);
++    glUniform4f(glGetUniformLocation(progFloat2, "uc"), 0.0f, 0.0f, 1.0f, 1.0f);
++    glDrawArrays(GL_TRIANGLES, 0, 3);
++
++    glReadBuffer(GL_COLOR_ATTACHMENT0);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++    ASSERT_GL_NO_ERROR();
++}
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(
++    FramebufferTest_RecreateFboOnAttachmentRespecification);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    FramebufferTest_RecreateFboOnAttachmentRespecification,
++    ES3_OPENGL().enable(Feature::RecreateFboOnAttachmentRespecification),
++    ES3_OPENGLES().enable(Feature::RecreateFboOnAttachmentRespecification));
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 00efedbae6eb4b867ab094e2a00f8c3e9860d13a..b7f179325e6c3a383841e8ee22a0a58d2b5391a2 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -303,6 +303,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::ReapplyUBOBindingsAfterUsingBinaryProgram, "reapplyUBOBindingsAfterUsingBinaryProgram"},
+     {Feature::ReattachFboDepthStencilOnReallocation, "reattachFboDepthStencilOnReallocation"},
+     {Feature::ReattachTextureToFboAfterLayerIncrease, "reattachTextureToFboAfterLayerIncrease"},
++    {Feature::RecreateFboOnAttachmentRespecification, "recreateFboOnAttachmentRespecification"},
+     {Feature::RecreateFboUponFlush, "recreateFboUponFlush"},
+     {Feature::RecreateImmutableTextureOnBaseLevelIncrease, "recreateImmutableTextureOnBaseLevelIncrease"},
+     {Feature::RecreateMipmapLevelsBeforeGenerate, "recreateMipmapLevelsBeforeGenerate"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 759d18387783bd32bd34250072cee875ac37e351..376157c8dfff4b50b6a634905baa863cd5d9bf6e 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -303,6 +303,7 @@ enum class Feature
+     ReapplyUBOBindingsAfterUsingBinaryProgram,
+     ReattachFboDepthStencilOnReallocation,
+     ReattachTextureToFboAfterLayerIncrease,
++    RecreateFboOnAttachmentRespecification,
+     RecreateFboUponFlush,
+     RecreateImmutableTextureOnBaseLevelIncrease,
+     RecreateMipmapLevelsBeforeGenerate,

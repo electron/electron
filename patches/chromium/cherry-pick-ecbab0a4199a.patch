@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ian Kilpatrick <ikilpatrick@chromium.org>
+Date: Thu, 22 Oct 2026 19:19:23 -0700
+Subject: [gc] Defer CalculationValue handle decrements from ~Length()
+
+`~Length()` may execute during GC sweeping is occurring, and touching
+heap objects is disallowed.
+
+Make `CalculationValueHandleMap` queue these decrements into a
+non-Oilpan `Vector` to be flushed on subsequent map insert/Increment
+operations.
+
+Fixed: 574686297
+Change-Id: Ide4aaacc2b58095d6f0b287b20bb3876fae4c172
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8634642
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Commit-Queue: Ian Kilpatrick <ikilpatrick@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725426}
+
+Electron adaptation notes (43-x-y):
+This branch has an inline Length::operator= (no AssignSlow()); only
+DeferredDecrementCalculatedCount() and the handle-map changes are carried.
+
+diff --git a/third_party/blink/renderer/platform/geometry/length.cc b/third_party/blink/renderer/platform/geometry/length.cc
+index 7c0acb0d411ea86164d084dd6c7e7b7d5423cad6..b08d8ce82fa5f98b67b1c44e715d8492a512265d 100644
+--- a/third_party/blink/renderer/platform/geometry/length.cc
++++ b/third_party/blink/renderer/platform/geometry/length.cc
+@@ -30,11 +30,13 @@
+ #include "third_party/blink/renderer/platform/geometry/blend.h"
+ #include "third_party/blink/renderer/platform/geometry/calculation_value.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_hash_map.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_traits.h"
+ #include "third_party/blink/renderer/platform/wtf/size_assertions.h"
+ #include "third_party/blink/renderer/platform/wtf/static_constructors.h"
+ #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
++#include "third_party/blink/renderer/platform/wtf/vector.h"
+ #include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+@@ -60,8 +62,9 @@ void Length::Initialize() {
+       Length(kMinIntrinsic);
+ }
+ 
+-class CalculationValueHandleMap
+-    : public GarbageCollected<CalculationValueHandleMap> {
++class CalculationValueHandleMap {
++  USING_FAST_MALLOC(CalculationValueHandleMap);
++
+  public:
+   CalculationValueHandleMap() = default;
+   CalculationValueHandleMap(const CalculationValueHandleMap&) = delete;
+@@ -79,53 +82,74 @@ class CalculationValueHandleMap
+     unsigned count = 1u;
+   };
+ 
+-  void Trace(Visitor* visitor) const { visitor->Trace(map_); }
+-
+   unsigned insert(const CalculationValue* calc_value) {
++    FlushDecrements();
++
+     // FIXME calc(): https://bugs.webkit.org/show_bug.cgi?id=80489
+     // This monotonically increasing handle generation scheme is potentially
+     // wasteful of the handle space. Consider reusing empty handles.
+     do {
+       index_++;
+     } while (IsHashTraitsEmptyOrDeletedValue<HashTraits<unsigned>>(index_) ||
+-             !map_.insert(index_, calc_value).is_new_entry);
++             !map_->insert(index_, calc_value).is_new_entry);
+     return index_;
+   }
+ 
+   const CalculationValue& Get(unsigned index) const {
+-    return *map_.at(index).value;
++    return *map_->at(index).value;
+   }
+ 
+-  unsigned GetCount(unsigned index) const { return map_.at(index).count; }
++  unsigned GetCount(unsigned index) {
++    FlushDecrements();
++    return map_->at(index).count;
++  }
+ 
+-  wtf_size_t GetMapSize() const { return map_.size(); }
++  wtf_size_t GetMapSize() {
++    FlushDecrements();
++    return map_->size();
++  }
+ 
+   void DecrementCount(unsigned index) {
+-    auto iter = map_.find(index);
+-    CHECK(iter != map_.end());
++    auto iter = map_->find(index);
++    CHECK(iter != map_->end());
+     unsigned count = --iter->value.count;
+     if (count == 0u) {
+-      map_.erase(iter);
++      map_->erase(iter);
+     }
+   }
+ 
++  void DeferredDecrementCount(unsigned index) {
++    // This is called from `~Length()`, which may execute during a GC sweep
++    // when touching `map_` is forbidden.
++    decrements_.push_back(index);
++  }
++
+   void IncrementCount(unsigned index) {
+-    auto iter = map_.find(index);
+-    CHECK(iter != map_.end());
++    FlushDecrements();
++    auto iter = map_->find(index);
++    CHECK(iter != map_->end());
+     unsigned count = ++iter->value.count;
+     CHECK_GT(count, 0u);
+   }
+ 
+  private:
++  void FlushDecrements() {
++    for (unsigned index : decrements_) {
++      DecrementCount(index);
++    }
++    decrements_.clear();
++  }
++
+   unsigned index_ = 0;
+-  HeapHashMap<unsigned, MemberWithCount> map_;
++  Vector<unsigned, 32> decrements_;
++  Persistent<GCedHeapHashMap<unsigned, MemberWithCount>> map_ =
++      MakeGarbageCollected<GCedHeapHashMap<unsigned, MemberWithCount>>();
+ };
+ 
+ static CalculationValueHandleMap& CalcHandles() {
+   CHECK(IsMainThread());
+-  DEFINE_STATIC_LOCAL(Persistent<CalculationValueHandleMap>, handle_map,
+-                      (MakeGarbageCollected<CalculationValueHandleMap>()));
+-  return *handle_map;
++  DEFINE_STATIC_LOCAL(CalculationValueHandleMap, handle_map, ());
++  return handle_map;
+ }
+ 
+ Length::Length(const CalculationValue* calc)
+@@ -236,6 +260,11 @@ void Length::DecrementCalculatedCount() const {
+   CalcHandles().DecrementCount(CalculationHandle());
+ }
+ 
++void Length::DeferredDecrementCalculatedCount() const {
++  DCHECK(IsCalculated());
++  CalcHandles().DeferredDecrementCount(CalculationHandle());
++}
++
+ unsigned Length::GetCalculatedCountForTest() const {
+   DCHECK(IsCalculated());
+   return CalcHandles().GetCount(CalculationHandle());
+diff --git a/third_party/blink/renderer/platform/geometry/length.h b/third_party/blink/renderer/platform/geometry/length.h
+index 2f093904ac0d1236785d03f178892622fca5e2da..41e68674460a82c4f7b6bcf4363615adf8e4c404 100644
+--- a/third_party/blink/renderer/platform/geometry/length.h
++++ b/third_party/blink/renderer/platform/geometry/length.h
+@@ -172,8 +172,9 @@ class PLATFORM_EXPORT Length {
+   }
+ 
+   ~Length() {
+-    if (IsCalculated())
+-      DecrementCalculatedCount();
++    if (IsCalculated()) [[unlikely]] {
++      DeferredDecrementCalculatedCount();
++    }
+   }
+ 
+   bool operator==(const Length& o) const {
+@@ -394,6 +395,7 @@ class PLATFORM_EXPORT Length {
+   }
+   void IncrementCalculatedCount() const;
+   void DecrementCalculatedCount() const;
++  void DeferredDecrementCalculatedCount() const;
+ 
+   union {
+     // If kType == kCalculated.

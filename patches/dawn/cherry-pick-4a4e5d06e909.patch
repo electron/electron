@@ -1,0 +1,1262 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alan Baker <alanbaker@google.com>
+Date: Fri, 16 Oct 2026 09:52:28 -0700
+Subject: [ir] Clamp workgroup runtime-sized arrays
+
+* In the robustness transform when
+  disable_runtime_sized_array_index_clamping is enabled, still clamp
+  indices in the workgroup address space
+
+Fix: 574310133
+Change-Id: Ic9e8d499d5f2689ac4d824d42765c1ce390c0e47
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/351475
+Reviewed-by: James Price <jrprice@google.com>
+Commit-Queue: Alan Baker <alanbaker@google.com>
+Electron adaptation notes (43-x-y):
+robustness.cc: this branch already computed base_ptr inside the "i > 0"
+block; that duplicate declaration is removed since the fix hoists the
+same lookup above the clamping check. robustness_test.cc: the upstream
+file carries many later tests this branch does not have, so the two new
+Workgroup_* tests were inserted at the same anchor by hand; their content
+is unchanged.
+
+diff --git a/src/tint/lang/core/ir/transform/robustness.cc b/src/tint/lang/core/ir/transform/robustness.cc
+index b78612532b3714cc5e88c0d7191ce608a541b82c..c32be07a03e9f9d13997cb41d02d9fcf065744c6 100644
+--- a/src/tint/lang/core/ir/transform/robustness.cc
++++ b/src/tint/lang/core/ir/transform/robustness.cc
+@@ -306,16 +306,21 @@ struct State {
+                     }
+                     TINT_IR_ASSERT(ir, arr->Count()->Is<type::RuntimeArrayCount>());
+ 
+-                    // Skip clamping runtime-sized array indices if requested.
+-                    if (config.disable_runtime_sized_array_index_clamping) {
++                    // Skip clamping runtime-sized array indices if requested, but not for the
++                    // workgroup address space. No platform has bounds checking on workgroup address
++                    // space and buffer_view can introduce runtime array accesses there.
++                    // Note: possible address spaces with runtime arrays: storage, uniform, and
++                    // workgroup.
++                    auto* object = access->Object();
++                    auto* base_ptr = object->Type()->As<core::type::Pointer>();
++                    if (config.disable_runtime_sized_array_index_clamping &&
++                        base_ptr->AddressSpace() != AddressSpace::kWorkgroup) {
+                         return nullptr;
+                     }
+ 
+-                    auto* object = access->Object();
+                     if (i > 0) {
+                         // Generate a pointer to the runtime-sized array if it isn't the base of
+                         // this access instruction.
+-                        auto* base_ptr = object->Type()->As<type::Pointer>();
+                         TINT_IR_ASSERT(ir, base_ptr != nullptr);
+                         TINT_IR_ASSERT(ir, i == 1);
+                         auto* arr_ptr = ty.ptr(base_ptr->AddressSpace(), arr, base_ptr->Access());
+diff --git a/src/tint/lang/core/ir/transform/robustness_test.cc b/src/tint/lang/core/ir/transform/robustness_test.cc
+index 82f05b2ba3df3b65e1fd59dbe0b29e83135250ed..11a3bbba34053b2873fa2318a9d66413e0312e21 100644
+--- a/src/tint/lang/core/ir/transform/robustness_test.cc
++++ b/src/tint/lang/core/ir/transform/robustness_test.cc
+@@ -6144,6 +6144,142 @@ S = struct @align(8) {
+     EXPECT_EQ(GetParam() ? expect : src, str());
+ }
+ 
++TEST_F(IR_RobustnessTest, Workgroup_RuntimeArray_DisableRuntimeSizedArrayIndexClamping) {
++    mod.properties.Add(Property::kAllowBufferTypes);
++    auto* v = b.Var("v", ty.ptr(workgroup, ty.buffer(256)));
++    mod.root_block->Append(v);
++
++    auto* foo = b.Function("foo", ty.void_());
++    auto* idx = b.FunctionParam("idx", ty.u32());
++    foo->SetParams({idx});
++    b.Append(foo->Block(), [&] {
++        auto* view = b.CallExplicit(
++            ty.ptr(workgroup, ty.runtime_array(ty.u32())), BuiltinFn::kBufferArrayView,
++            Vector<TemplateParameter, 1>{ty.runtime_array(ty.u32())}, v, 0_u, 256_u);
++        b.Load(b.Access(ty.ptr(workgroup, ty.u32()), view, idx));
++        b.Return(foo);
++    });
++
++    auto* src = R"(
++$B1: {  # root
++  %v:ptr<workgroup, buffer<256>, read_write> = var
++}
++
++%foo = func(%idx:u32):void {
++  $B2: {
++    %4:ptr<workgroup, array<u32>, read_write> = bufferArrayView<array<u32>> %v, 0u, 256u
++    %5:ptr<workgroup, u32, read_write> = access %4, %idx
++    %6:u32 = load %5
++    ret
++  }
++}
++)";
++
++    ASSERT_EQ(src, str());
++
++    auto* expect = R"(
++$B1: {  # root
++  %v:ptr<workgroup, buffer<256>, read_write> = var
++}
++
++%foo = func(%idx:u32):void {
++  $B2: {
++    %4:u32 = bufferLength %v
++    %5:bool = lt %4, 256u
++    %6:u32 = select 0u, 0u, %5
++    %7:u32 = select 256u, 4u, %5
++    %8:ptr<workgroup, array<u32>, read_write> = bufferArrayView<array<u32>> %v, %6, %7
++    %9:u32 = arrayLength %8
++    %10:u32 = sub %9, 1u
++    %11:u32 = min %idx, %10
++    %12:ptr<workgroup, u32, read_write> = access %8, %11
++    %13:u32 = load %12
++    ret
++  }
++}
++)";
++
++    RobustnessConfig cfg;
++    cfg.disable_runtime_sized_array_index_clamping = !GetParam();
++    Run(Robustness, cfg);
++
++    EXPECT_EQ(GetParam() ? expect : src, str());
++}
++
++TEST_F(IR_RobustnessTest, Workgroup_RuntimeStruct_DisableRuntimeSizedArrayIndexClamping) {
++    mod.properties.Add(Property::kAllowBufferTypes);
++    auto* S =
++        ty.Struct(mod.symbols.New("S"), {
++                                            {mod.symbols.New("a"), ty.runtime_array(ty.u32())},
++                                        });
++    auto* v = b.Var("v", ty.ptr(workgroup, ty.buffer(256)));
++    mod.root_block->Append(v);
++
++    auto* foo = b.Function("foo", ty.void_());
++    auto* idx = b.FunctionParam("idx", ty.u32());
++    foo->SetParams({idx});
++    b.Append(foo->Block(), [&] {
++        auto* view = b.CallExplicit(ty.ptr(workgroup, S), BuiltinFn::kBufferArrayView,
++                                    Vector<TemplateParameter, 1>{S}, v, 0_u, 256_u);
++        b.Load(b.Access(ty.ptr(workgroup, ty.u32()), view, 0_u, idx));
++        b.Return(foo);
++    });
++
++    auto* src = R"(
++S = struct @align(4) {
++  a:array<u32> @offset(0)
++}
++
++$B1: {  # root
++  %v:ptr<workgroup, buffer<256>, read_write> = var
++}
++
++%foo = func(%idx:u32):void {
++  $B2: {
++    %4:ptr<workgroup, S, read_write> = bufferArrayView<S> %v, 0u, 256u
++    %5:ptr<workgroup, u32, read_write> = access %4, 0u, %idx
++    %6:u32 = load %5
++    ret
++  }
++}
++)";
++
++    ASSERT_EQ(src, str());
++
++    auto* expect = R"(
++S = struct @align(4) {
++  a:array<u32> @offset(0)
++}
++
++$B1: {  # root
++  %v:ptr<workgroup, buffer<256>, read_write> = var
++}
++
++%foo = func(%idx:u32):void {
++  $B2: {
++    %4:u32 = bufferLength %v
++    %5:bool = lt %4, 256u
++    %6:u32 = select 0u, 0u, %5
++    %7:u32 = select 256u, 4u, %5
++    %8:ptr<workgroup, S, read_write> = bufferArrayView<S> %v, %6, %7
++    %9:ptr<workgroup, array<u32>, read_write> = access %8, 0u
++    %10:u32 = arrayLength %9
++    %11:u32 = sub %10, 1u
++    %12:u32 = min %idx, %11
++    %13:ptr<workgroup, u32, read_write> = access %8, 0u, %12
++    %14:u32 = load %13
++    ret
++  }
++}
++)";
++
++    RobustnessConfig cfg;
++    cfg.disable_runtime_sized_array_index_clamping = !GetParam();
++    Run(Robustness, cfg);
++
++    EXPECT_EQ(GetParam() ? expect : src, str());
++}
++
+ TEST_F(IR_RobustnessWithIntegerRangeAnalysisTest, AccessArrayWithIndex_MaxBound_Equal_Limit) {
+     auto* func = b.Function("func", ty.void_());
+     b.Append(func->Block(), [&] {
+diff --git a/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..d1331ebb63914471bdcdb0b04b1a070d57616177
+--- /dev/null
++++ b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl
+@@ -0,0 +1,17 @@
++@group(0) @binding(0) var<storage> in : array<u32>;
++@group(0) @binding(1) var<storage, read_write> out : array<u32>;
++const size = 256;
++var<workgroup> b : buffer<size>;
++
++@compute @workgroup_size(1)
++fn main() {
++  let view = bufferArrayView<array<u32>>(&b, 0, size);
++  for (var i = 0; i < size / 4; i++) {
++    view[i] = in[i];
++  }
++  workgroupBarrier();
++  for (var i = 0; i < size / 4; i++) {
++    out[i] = view[i];
++  }
++}
++
+diff --git a/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.dxc.hlsl b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.dxc.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e56d9938a06856949d046ab2f8e0c7cc93af914
+--- /dev/null
++++ b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.dxc.hlsl
+@@ -0,0 +1,66 @@
++struct main_inputs {
++  uint tint_local_index : SV_GroupIndex;
++};
++
++
++ByteAddressBuffer v : register(t0);
++RWByteAddressBuffer v_1 : register(u1);
++groupshared uint b[64];
++void main_inner(uint tint_local_index) {
++  {
++    uint idx = tint_local_index;
++    while(true) {
++      uint v_2 = idx;
++      if ((v_2 >= 64u)) {
++        break;
++      }
++      b[((v_2 * 4u) / 4u)] = 0u;
++      {
++        idx = (idx + 1u);
++      }
++    }
++  }
++  GroupMemoryBarrierWithGroupSync();
++  {
++    int i = int(0);
++    while(true) {
++      if ((i < int(64))) {
++      } else {
++        break;
++      }
++      uint v_3 = (min(uint(i), (64u - 1u)) * 4u);
++      uint v_4 = 0u;
++      v.GetDimensions(v_4);
++      uint v_5 = ((v_4 / 4u) - 1u);
++      b[(v_3 / 4u)] = v.Load((0u + (min(uint(i), v_5) * 4u)));
++      {
++        i = asint((asuint(i) + 1u));
++      }
++    }
++  }
++  GroupMemoryBarrierWithGroupSync();
++  {
++    int i = int(0);
++    while(true) {
++      if ((i < int(64))) {
++      } else {
++        break;
++      }
++      uint v_6 = 0u;
++      v_1.GetDimensions(v_6);
++      uint v_7 = ((v_6 / 4u) - 1u);
++      uint v_8 = (min(uint(i), v_7) * 4u);
++      uint v_9 = ((min(uint(i), (64u - 1u)) * 4u) / 4u);
++      v_1.Store((0u + v_8), b[v_9]);
++      {
++        i = asint((asuint(i) + 1u));
++      }
++    }
++  }
++}
++
++[numthreads(1, 1, 1)]
++void main(main_inputs inputs) {
++  main_inner(inputs.tint_local_index);
++}
++
+diff --git a/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.fxc.hlsl b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.fxc.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..601a163cf6e6331f257cd9fb1e5989635ea1e922
+--- /dev/null
++++ b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.fxc.hlsl
+@@ -0,0 +1,52 @@
++struct main_inputs {
++  uint tint_local_index : SV_GroupIndex;
++};
++
++
++ByteAddressBuffer v : register(t0);
++RWByteAddressBuffer v_1 : register(u1);
++groupshared uint b[64];
++void main_inner(uint tint_local_index) {
++  {
++    uint idx = tint_local_index;
++    while(true) {
++      uint v_2 = idx;
++      if ((v_2 >= 64u)) {
++        break;
++      }
++      b[((v_2 * 4u) / 4u)] = 0u;
++      {
++        idx = (idx + 1u);
++      }
++    }
++  }
++  GroupMemoryBarrierWithGroupSync();
++  {
++    int i = int(0);
++    for( ; (i < int(64)); i = asint((asuint(i) + 1u))) {
++      uint v_3 = (min(uint(i), (64u - 1u)) * 4u);
++      uint v_4 = 0u;
++      v.GetDimensions(v_4);
++      uint v_5 = ((v_4 / 4u) - 1u);
++      b[(v_3 / 4u)] = v.Load((0u + (min(uint(i), v_5) * 4u)));
++    }
++  }
++  GroupMemoryBarrierWithGroupSync();
++  {
++    int i = int(0);
++    for( ; (i < int(64)); i = asint((asuint(i) + 1u))) {
++      uint v_6 = 0u;
++      v_1.GetDimensions(v_6);
++      uint v_7 = ((v_6 / 4u) - 1u);
++      uint v_8 = (min(uint(i), v_7) * 4u);
++      uint v_9 = ((min(uint(i), (64u - 1u)) * 4u) / 4u);
++      v_1.Store((0u + v_8), b[v_9]);
++    }
++  }
++}
++
++[numthreads(1, 1, 1)]
++void main(main_inputs inputs) {
++  main_inner(inputs.tint_local_index);
++}
++
+diff --git a/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.glsl b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..71c46dfb273f9ed33b3c960890c799669533129d
+--- /dev/null
++++ b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.glsl
+@@ -0,0 +1,66 @@
++#version 310 es
++
++layout(binding = 0, std430)
++buffer in_block_1_ssbo {
++  uint inner[];
++} v;
++layout(binding = 1, std430)
++buffer out_block_1_ssbo {
++  uint inner[];
++} v_1;
++shared uint b[64];
++void main_inner(uint tint_local_index) {
++  {
++    uint idx = tint_local_index;
++    while(true) {
++      uint v_2 = idx;
++      if ((v_2 >= 64u)) {
++        break;
++      }
++      b[v_2] = 0u;
++      {
++        idx = (idx + 1u);
++      }
++    }
++  }
++  barrier();
++  {
++    int i = 0;
++    while(true) {
++      if ((i < 64)) {
++      } else {
++        break;
++      }
++      uint v_3 = (min(uint(i), (64u - 1u)) * 4u);
++      int v_4 = i;
++      uint v_5 = (uint(v.inner.length()) - 1u);
++      uint v_6 = min(uint(v_4), v_5);
++      b[(v_3 / 4u)] = v.inner[v_6];
++      {
++        i = int((uint(i) + 1u));
++      }
++    }
++  }
++  barrier();
++  {
++    int i = 0;
++    while(true) {
++      if ((i < 64)) {
++      } else {
++        break;
++      }
++      int v_7 = i;
++      uint v_8 = (uint(v_1.inner.length()) - 1u);
++      uint v_9 = min(uint(v_7), v_8);
++      uint v_10 = ((min(uint(i), (64u - 1u)) * 4u) / 4u);
++      v_1.inner[v_9] = b[v_10];
++      {
++        i = int((uint(i) + 1u));
++      }
++    }
++  }
++}
++layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
++void main() {
++  main_inner(gl_LocalInvocationIndex);
++}
+diff --git a/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.msl b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.msl
+new file mode 100644
+index 0000000000000000000000000000000000000000..c0bbd289a2079d303717517015383097f991bb2b
+--- /dev/null
++++ b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.msl
+@@ -0,0 +1,81 @@
++#include <metal_stdlib>
++using namespace metal;
++
++struct tint_immediate_data_struct {
++  /* 0x0000 */ uint tint_non_constant_zero;
++  /* 0x0004 */ array<int8_t, 2044> tint_pad;
++  /* 0x0800 */ array<uint, 2> tint_storage_buffer_sizes;
++};
++
++struct tint_module_vars_struct {
++  const device array<uint, 1>* in;
++  device array<uint, 1>* out;
++  threadgroup array<uchar, 256>* b;
++  const constant tint_immediate_data_struct* tint_immediate_data;
++};
++
++struct tint_array_lengths_struct {
++  uint tint_array_length_0_0;
++  uint tint_array_length_0_1;
++};
++typedef array<uint, 1> __attribute__((__may_alias__)) tint_aliased_array_u32;
++typedef uint __attribute__((__may_alias__)) tint_aliased_u32;
++
++struct tint_symbol_1 {
++  array<uchar, 256> tint_symbol;
++};
++
++void main_inner(uint tint_local_index, tint_module_vars_struct tint_module_vars) {
++  {
++    uint idx = tint_local_index;
++    while(true) {
++      uint const v = idx;
++      if ((v >= 256u)) {
++        break;
++      }
++      (*tint_module_vars.b)[v] = 0u;
++      {
++        idx = (idx + 1u);
++      }
++    }
++  }
++  (threadgroup_barrier(mem_flags::mem_threadgroup));
++  tint_array_lengths_struct const v_1 = tint_array_lengths_struct{.tint_array_length_0_0=((*tint_module_vars.tint_immediate_data).tint_storage_buffer_sizes[0u] / 4u), .tint_array_length_0_1=((*tint_module_vars.tint_immediate_data).tint_storage_buffer_sizes[1u] / 4u)};
++  threadgroup tint_aliased_array_u32* const v_2 = reinterpret_cast<threadgroup array<uint, 1>*>(reinterpret_cast<threadgroup char*>(tint_module_vars.b) + 0u);
++  threadgroup tint_aliased_array_u32* const view = v_2;
++  {
++    int i = 0;
++    while(true) {
++      if ((i < 64)) {
++      } else {
++        break;
++      }
++      threadgroup tint_aliased_u32* const v_3 = (&(*view)[min(uint(i), (64u - 1u))]);
++      (*v_3) = (*tint_module_vars.in)[min(uint(i), (v_1.tint_array_length_0_0 - 1u))];
++      {
++        i = as_type<int>((as_type<uint>(i) + 1u));
++      }
++    }
++  }
++  (threadgroup_barrier(mem_flags::mem_threadgroup));
++  {
++    int i = 0;
++    while(true) {
++      if ((i < 64)) {
++      } else {
++        break;
++      }
++      device uint* const v_4 = (&(*tint_module_vars.out)[min(uint(i), (v_1.tint_array_length_0_1 - 1u))]);
++      (*v_4) = (*view)[min(uint(i), (64u - 1u))];
++      {
++        i = as_type<int>((as_type<uint>(i) + 1u));
++      }
++    }
++  }
++}
++
++[[max_total_threads_per_threadgroup(1)]]
++kernel void v_5(uint tint_local_index [[thread_index_in_threadgroup]], const device array<uint, 1>* in [[buffer(0)]], device array<uint, 1>* out [[buffer(1)]], threadgroup tint_symbol_1* v_6 [[threadgroup(0)]], const constant tint_immediate_data_struct* tint_immediate_data [[buffer(30)]]) {
++  tint_module_vars_struct const tint_module_vars = tint_module_vars_struct{.in=in, .out=out, .b=(&(*v_6).tint_symbol), .tint_immediate_data=tint_immediate_data};
++  (main_inner(tint_local_index, tint_module_vars));
++}
+diff --git a/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.spvasm b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.spvasm
+new file mode 100644
+index 0000000000000000000000000000000000000000..d24fbd6221983c91bacafd6089ef9c2d342461a6
+--- /dev/null
++++ b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.spvasm
+@@ -0,0 +1,189 @@
++; SPIR-V
++; Version: 1.3
++; Generator: Google Tint Compiler; 1
++; Bound: 117
++; Schema: 0
++               OpCapability Shader
++         %68 = OpExtInstImport "GLSL.std.450"
++               OpMemoryModel Logical GLSL450
++               OpEntryPoint GLCompute %main "main" %main_local_invocation_index_Input
++               OpExecutionMode %main LocalSize 1 1 1
++               OpMemberName %in_block_tint_explicit_layout 0 "inner"
++               OpName %in_block_tint_explicit_layout "in_block_tint_explicit_layout"
++               OpMemberName %out_block_tint_explicit_layout 0 "inner"
++               OpName %out_block_tint_explicit_layout "out_block_tint_explicit_layout"
++               OpName %b "b"
++               OpName %main_local_invocation_index_Input "main_local_invocation_index_Input"
++               OpName %main_inner "main_inner"
++               OpName %tint_local_index "tint_local_index"
++               OpName %idx "idx"
++               OpName %i "i"
++               OpName %i_0 "i"
++               OpName %main "main"
++               OpDecorate %_runtimearr_uint ArrayStride 4
++               OpMemberDecorate %in_block_tint_explicit_layout 0 Offset 0
++               OpDecorate %in_block_tint_explicit_layout Block
++               OpDecorate %1 DescriptorSet 0
++               OpDecorate %1 Binding 0
++               OpDecorate %1 NonWritable
++               OpMemberDecorate %out_block_tint_explicit_layout 0 Offset 0
++               OpDecorate %out_block_tint_explicit_layout Block
++               OpDecorate %6 DescriptorSet 0
++               OpDecorate %6 Binding 1
++               OpDecorate %6 Coherent
++               OpDecorate %main_local_invocation_index_Input BuiltIn LocalInvocationIndex
++       %uint = OpTypeInt 32 0
++%_runtimearr_uint = OpTypeRuntimeArray %uint
++%in_block_tint_explicit_layout = OpTypeStruct %_runtimearr_uint
++%_ptr_StorageBuffer_in_block_tint_explicit_layout = OpTypePointer StorageBuffer %in_block_tint_explicit_layout
++          %1 = OpVariable %_ptr_StorageBuffer_in_block_tint_explicit_layout StorageBuffer
++%out_block_tint_explicit_layout = OpTypeStruct %_runtimearr_uint
++%_ptr_StorageBuffer_out_block_tint_explicit_layout = OpTypePointer StorageBuffer %out_block_tint_explicit_layout
++          %6 = OpVariable %_ptr_StorageBuffer_out_block_tint_explicit_layout StorageBuffer
++    %uint_64 = OpConstant %uint 64
++%_arr_uint_uint_64 = OpTypeArray %uint %uint_64
++%_ptr_Workgroup__arr_uint_uint_64 = OpTypePointer Workgroup %_arr_uint_uint_64
++          %b = OpVariable %_ptr_Workgroup__arr_uint_uint_64 Workgroup
++%_ptr_Input_uint = OpTypePointer Input %uint
++%main_local_invocation_index_Input = OpVariable %_ptr_Input_uint Input
++       %void = OpTypeVoid
++         %18 = OpTypeFunction %void %uint
++     %uint_2 = OpConstant %uint 2
++   %uint_264 = OpConstant %uint 264
++%_ptr_Function_uint = OpTypePointer Function %uint
++       %bool = OpTypeBool
++     %uint_4 = OpConstant %uint 4
++%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
++     %uint_0 = OpConstant %uint 0
++     %uint_1 = OpConstant %uint 1
++        %int = OpTypeInt 32 1
++%_ptr_Function_int = OpTypePointer Function %int
++      %int_0 = OpConstant %int 0
++     %int_64 = OpConstant %int 64
++%_ptr_StorageBuffer__runtimearr_uint = OpTypePointer StorageBuffer %_runtimearr_uint
++%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
++%_ptr_StorageBuffer__runtimearr_uint_0 = OpTypePointer StorageBuffer %_runtimearr_uint
++%_ptr_StorageBuffer_uint_0 = OpTypePointer StorageBuffer %uint
++        %113 = OpTypeFunction %void
++ %main_inner = OpFunction %void None %18
++%tint_local_index = OpFunctionParameter %uint
++         %19 = OpLabel
++        %idx = OpVariable %_ptr_Function_uint Function
++          %i = OpVariable %_ptr_Function_int Function
++        %i_0 = OpVariable %_ptr_Function_int Function
++               OpBranch %20
++         %20 = OpLabel
++               OpStore %idx %tint_local_index
++               OpBranch %23
++         %23 = OpLabel
++               OpLoopMerge %24 %22 None
++               OpBranch %21
++         %21 = OpLabel
++         %41 = OpLoad %uint %idx None
++         %42 = OpUGreaterThanEqual %bool %41 %uint_64
++               OpSelectionMerge %44 None
++               OpBranchConditional %42 %45 %44
++         %45 = OpLabel
++               OpBranch %24
++         %44 = OpLabel
++         %46 = OpIMul %uint %41 %uint_4
++         %48 = OpUDiv %uint %46 %uint_4
++         %49 = OpAccessChain %_ptr_Workgroup_uint %b %48
++               OpStore %49 %uint_0 None
++               OpBranch %22
++         %22 = OpLabel
++         %52 = OpLoad %uint %idx None
++         %53 = OpIAdd %uint %52 %uint_1
++               OpStore %idx %53 None
++               OpBranch %23
++         %24 = OpLabel
++               OpControlBarrier %uint_2 %uint_2 %uint_264
++               OpBranch %28
++         %28 = OpLabel
++               OpStore %i %int_0
++               OpBranch %31
++         %31 = OpLabel
++               OpLoopMerge %32 %30 None
++               OpBranch %29
++         %29 = OpLabel
++         %59 = OpLoad %int %i None
++         %60 = OpSLessThan %bool %59 %int_64
++               OpSelectionMerge %62 None
++               OpBranchConditional %60 %62 %63
++         %63 = OpLabel
++               OpBranch %32
++         %62 = OpLabel
++         %64 = OpLoad %int %i None
++         %65 = OpISub %uint %uint_64 %uint_1
++         %66 = OpBitcast %uint %64
++         %67 = OpExtInst %uint %68 UMin %66 %65
++         %69 = OpIMul %uint %67 %uint_4
++         %70 = OpLoad %int %i None
++         %71 = OpAccessChain %_ptr_StorageBuffer__runtimearr_uint %1 %uint_0
++         %73 = OpArrayLength %uint %1 0
++         %74 = OpISub %uint %73 %uint_1
++         %75 = OpBitcast %uint %70
++         %76 = OpExtInst %uint %68 UMin %75 %74
++         %77 = OpAccessChain %_ptr_StorageBuffer_uint %1 %uint_0 %76
++         %79 = OpLoad %uint %77 None
++         %80 = OpUDiv %uint %69 %uint_4
++         %81 = OpAccessChain %_ptr_Workgroup_uint %b %80
++               OpStore %81 %79 None
++               OpBranch %30
++         %30 = OpLabel
++         %82 = OpLoad %int %i None
++         %83 = OpBitcast %uint %82
++         %84 = OpIAdd %uint %83 %uint_1
++         %85 = OpBitcast %int %84
++               OpStore %i %85 None
++               OpBranch %31
++         %32 = OpLabel
++               OpControlBarrier %uint_2 %uint_2 %uint_264
++               OpBranch %34
++         %34 = OpLabel
++               OpStore %i_0 %int_0
++               OpBranch %37
++         %37 = OpLabel
++               OpLoopMerge %38 %36 None
++               OpBranch %35
++         %35 = OpLabel
++         %87 = OpLoad %int %i_0 None
++         %88 = OpSLessThan %bool %87 %int_64
++               OpSelectionMerge %89 None
++               OpBranchConditional %88 %89 %90
++         %90 = OpLabel
++               OpBranch %38
++         %89 = OpLabel
++         %91 = OpLoad %int %i_0 None
++         %92 = OpAccessChain %_ptr_StorageBuffer__runtimearr_uint_0 %6 %uint_0
++         %94 = OpArrayLength %uint %6 0
++         %95 = OpISub %uint %94 %uint_1
++         %96 = OpBitcast %uint %91
++         %97 = OpExtInst %uint %68 UMin %96 %95
++         %98 = OpAccessChain %_ptr_StorageBuffer_uint_0 %6 %uint_0 %97
++        %100 = OpLoad %int %i_0 None
++        %101 = OpISub %uint %uint_64 %uint_1
++        %102 = OpBitcast %uint %100
++        %103 = OpExtInst %uint %68 UMin %102 %101
++        %104 = OpIMul %uint %103 %uint_4
++        %105 = OpUDiv %uint %104 %uint_4
++        %106 = OpAccessChain %_ptr_Workgroup_uint %b %105
++        %107 = OpLoad %uint %106 None
++               OpStore %98 %107 None
++               OpBranch %36
++         %36 = OpLabel
++        %108 = OpLoad %int %i_0 None
++        %109 = OpBitcast %uint %108
++        %110 = OpIAdd %uint %109 %uint_1
++        %111 = OpBitcast %int %110
++               OpStore %i_0 %111 None
++               OpBranch %37
++         %38 = OpLabel
++               OpReturn
++               OpFunctionEnd
++       %main = OpFunction %void None %113
++        %114 = OpLabel
++        %115 = OpLoad %uint %main_local_invocation_index_Input None
++        %116 = OpFunctionCall %void %main_inner %115
++               OpReturn
++               OpFunctionEnd
+diff --git a/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.wgsl b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.wgsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..9bbe9c5f29d26d354f2785d6b19de1f0945bc32a
+--- /dev/null
++++ b/test/tint/builtins/bufferArrayView/workgroup_runtime_array.wgsl.expected.wgsl
+@@ -0,0 +1,19 @@
++@group(0) @binding(0) var<storage> in : array<u32>;
++
++@group(0) @binding(1) var<storage, read_write> out : array<u32>;
++
++const size = 256;
++
++var<workgroup> b : buffer<size>;
++
++@compute @workgroup_size(1)
++fn main() {
++  let view = bufferArrayView<array<u32>>(&(b), 0, size);
++  for(var i = 0; (i < (size / 4)); i++) {
++    view[i] = in[i];
++  }
++  workgroupBarrier();
++  for(var i = 0; (i < (size / 4)); i++) {
++    out[i] = view[i];
++  }
++}
+diff --git a/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..b3fc54068f0ef5a7a73b9fcb887491598643abf3
+--- /dev/null
++++ b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl
+@@ -0,0 +1,16 @@
++@group(0) @binding(0) var<storage> in : array<u32>;
++@group(0) @binding(1) var<storage, read_write> out : array<u32>;
++const size = 256;
++var<workgroup> b : buffer<size>;
++
++@compute @workgroup_size(1)
++fn main() {
++  let view = bufferView<array<u32>>(&b, 0);
++  for (var i = 0; i < size / 4; i++) {
++    view[i] = in[i];
++  }
++  workgroupBarrier();
++  for (var i = 0; i < size / 4; i++) {
++    out[i] = view[i];
++  }
++}
+diff --git a/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.dxc.hlsl b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.dxc.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e56d9938a06856949d046ab2f8e0c7cc93af914
+--- /dev/null
++++ b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.dxc.hlsl
+@@ -0,0 +1,66 @@
++struct main_inputs {
++  uint tint_local_index : SV_GroupIndex;
++};
++
++
++ByteAddressBuffer v : register(t0);
++RWByteAddressBuffer v_1 : register(u1);
++groupshared uint b[64];
++void main_inner(uint tint_local_index) {
++  {
++    uint idx = tint_local_index;
++    while(true) {
++      uint v_2 = idx;
++      if ((v_2 >= 64u)) {
++        break;
++      }
++      b[((v_2 * 4u) / 4u)] = 0u;
++      {
++        idx = (idx + 1u);
++      }
++    }
++  }
++  GroupMemoryBarrierWithGroupSync();
++  {
++    int i = int(0);
++    while(true) {
++      if ((i < int(64))) {
++      } else {
++        break;
++      }
++      uint v_3 = (min(uint(i), (64u - 1u)) * 4u);
++      uint v_4 = 0u;
++      v.GetDimensions(v_4);
++      uint v_5 = ((v_4 / 4u) - 1u);
++      b[(v_3 / 4u)] = v.Load((0u + (min(uint(i), v_5) * 4u)));
++      {
++        i = asint((asuint(i) + 1u));
++      }
++    }
++  }
++  GroupMemoryBarrierWithGroupSync();
++  {
++    int i = int(0);
++    while(true) {
++      if ((i < int(64))) {
++      } else {
++        break;
++      }
++      uint v_6 = 0u;
++      v_1.GetDimensions(v_6);
++      uint v_7 = ((v_6 / 4u) - 1u);
++      uint v_8 = (min(uint(i), v_7) * 4u);
++      uint v_9 = ((min(uint(i), (64u - 1u)) * 4u) / 4u);
++      v_1.Store((0u + v_8), b[v_9]);
++      {
++        i = asint((asuint(i) + 1u));
++      }
++    }
++  }
++}
++
++[numthreads(1, 1, 1)]
++void main(main_inputs inputs) {
++  main_inner(inputs.tint_local_index);
++}
++
+diff --git a/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.fxc.hlsl b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.fxc.hlsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..601a163cf6e6331f257cd9fb1e5989635ea1e922
+--- /dev/null
++++ b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.fxc.hlsl
+@@ -0,0 +1,52 @@
++struct main_inputs {
++  uint tint_local_index : SV_GroupIndex;
++};
++
++
++ByteAddressBuffer v : register(t0);
++RWByteAddressBuffer v_1 : register(u1);
++groupshared uint b[64];
++void main_inner(uint tint_local_index) {
++  {
++    uint idx = tint_local_index;
++    while(true) {
++      uint v_2 = idx;
++      if ((v_2 >= 64u)) {
++        break;
++      }
++      b[((v_2 * 4u) / 4u)] = 0u;
++      {
++        idx = (idx + 1u);
++      }
++    }
++  }
++  GroupMemoryBarrierWithGroupSync();
++  {
++    int i = int(0);
++    for( ; (i < int(64)); i = asint((asuint(i) + 1u))) {
++      uint v_3 = (min(uint(i), (64u - 1u)) * 4u);
++      uint v_4 = 0u;
++      v.GetDimensions(v_4);
++      uint v_5 = ((v_4 / 4u) - 1u);
++      b[(v_3 / 4u)] = v.Load((0u + (min(uint(i), v_5) * 4u)));
++    }
++  }
++  GroupMemoryBarrierWithGroupSync();
++  {
++    int i = int(0);
++    for( ; (i < int(64)); i = asint((asuint(i) + 1u))) {
++      uint v_6 = 0u;
++      v_1.GetDimensions(v_6);
++      uint v_7 = ((v_6 / 4u) - 1u);
++      uint v_8 = (min(uint(i), v_7) * 4u);
++      uint v_9 = ((min(uint(i), (64u - 1u)) * 4u) / 4u);
++      v_1.Store((0u + v_8), b[v_9]);
++    }
++  }
++}
++
++[numthreads(1, 1, 1)]
++void main(main_inputs inputs) {
++  main_inner(inputs.tint_local_index);
++}
++
+diff --git a/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.glsl b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..71c46dfb273f9ed33b3c960890c799669533129d
+--- /dev/null
++++ b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.glsl
+@@ -0,0 +1,66 @@
++#version 310 es
++
++layout(binding = 0, std430)
++buffer in_block_1_ssbo {
++  uint inner[];
++} v;
++layout(binding = 1, std430)
++buffer out_block_1_ssbo {
++  uint inner[];
++} v_1;
++shared uint b[64];
++void main_inner(uint tint_local_index) {
++  {
++    uint idx = tint_local_index;
++    while(true) {
++      uint v_2 = idx;
++      if ((v_2 >= 64u)) {
++        break;
++      }
++      b[v_2] = 0u;
++      {
++        idx = (idx + 1u);
++      }
++    }
++  }
++  barrier();
++  {
++    int i = 0;
++    while(true) {
++      if ((i < 64)) {
++      } else {
++        break;
++      }
++      uint v_3 = (min(uint(i), (64u - 1u)) * 4u);
++      int v_4 = i;
++      uint v_5 = (uint(v.inner.length()) - 1u);
++      uint v_6 = min(uint(v_4), v_5);
++      b[(v_3 / 4u)] = v.inner[v_6];
++      {
++        i = int((uint(i) + 1u));
++      }
++    }
++  }
++  barrier();
++  {
++    int i = 0;
++    while(true) {
++      if ((i < 64)) {
++      } else {
++        break;
++      }
++      int v_7 = i;
++      uint v_8 = (uint(v_1.inner.length()) - 1u);
++      uint v_9 = min(uint(v_7), v_8);
++      uint v_10 = ((min(uint(i), (64u - 1u)) * 4u) / 4u);
++      v_1.inner[v_9] = b[v_10];
++      {
++        i = int((uint(i) + 1u));
++      }
++    }
++  }
++}
++layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
++void main() {
++  main_inner(gl_LocalInvocationIndex);
++}
+diff --git a/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.msl b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.msl
+new file mode 100644
+index 0000000000000000000000000000000000000000..c0bbd289a2079d303717517015383097f991bb2b
+--- /dev/null
++++ b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.msl
+@@ -0,0 +1,81 @@
++#include <metal_stdlib>
++using namespace metal;
++
++struct tint_immediate_data_struct {
++  /* 0x0000 */ uint tint_non_constant_zero;
++  /* 0x0004 */ array<int8_t, 2044> tint_pad;
++  /* 0x0800 */ array<uint, 2> tint_storage_buffer_sizes;
++};
++
++struct tint_module_vars_struct {
++  const device array<uint, 1>* in;
++  device array<uint, 1>* out;
++  threadgroup array<uchar, 256>* b;
++  const constant tint_immediate_data_struct* tint_immediate_data;
++};
++
++struct tint_array_lengths_struct {
++  uint tint_array_length_0_0;
++  uint tint_array_length_0_1;
++};
++typedef array<uint, 1> __attribute__((__may_alias__)) tint_aliased_array_u32;
++typedef uint __attribute__((__may_alias__)) tint_aliased_u32;
++
++struct tint_symbol_1 {
++  array<uchar, 256> tint_symbol;
++};
++
++void main_inner(uint tint_local_index, tint_module_vars_struct tint_module_vars) {
++  {
++    uint idx = tint_local_index;
++    while(true) {
++      uint const v = idx;
++      if ((v >= 256u)) {
++        break;
++      }
++      (*tint_module_vars.b)[v] = 0u;
++      {
++        idx = (idx + 1u);
++      }
++    }
++  }
++  (threadgroup_barrier(mem_flags::mem_threadgroup));
++  tint_array_lengths_struct const v_1 = tint_array_lengths_struct{.tint_array_length_0_0=((*tint_module_vars.tint_immediate_data).tint_storage_buffer_sizes[0u] / 4u), .tint_array_length_0_1=((*tint_module_vars.tint_immediate_data).tint_storage_buffer_sizes[1u] / 4u)};
++  threadgroup tint_aliased_array_u32* const v_2 = reinterpret_cast<threadgroup array<uint, 1>*>(reinterpret_cast<threadgroup char*>(tint_module_vars.b) + 0u);
++  threadgroup tint_aliased_array_u32* const view = v_2;
++  {
++    int i = 0;
++    while(true) {
++      if ((i < 64)) {
++      } else {
++        break;
++      }
++      threadgroup tint_aliased_u32* const v_3 = (&(*view)[min(uint(i), (64u - 1u))]);
++      (*v_3) = (*tint_module_vars.in)[min(uint(i), (v_1.tint_array_length_0_0 - 1u))];
++      {
++        i = as_type<int>((as_type<uint>(i) + 1u));
++      }
++    }
++  }
++  (threadgroup_barrier(mem_flags::mem_threadgroup));
++  {
++    int i = 0;
++    while(true) {
++      if ((i < 64)) {
++      } else {
++        break;
++      }
++      device uint* const v_4 = (&(*tint_module_vars.out)[min(uint(i), (v_1.tint_array_length_0_1 - 1u))]);
++      (*v_4) = (*view)[min(uint(i), (64u - 1u))];
++      {
++        i = as_type<int>((as_type<uint>(i) + 1u));
++      }
++    }
++  }
++}
++
++[[max_total_threads_per_threadgroup(1)]]
++kernel void v_5(uint tint_local_index [[thread_index_in_threadgroup]], const device array<uint, 1>* in [[buffer(0)]], device array<uint, 1>* out [[buffer(1)]], threadgroup tint_symbol_1* v_6 [[threadgroup(0)]], const constant tint_immediate_data_struct* tint_immediate_data [[buffer(30)]]) {
++  tint_module_vars_struct const tint_module_vars = tint_module_vars_struct{.in=in, .out=out, .b=(&(*v_6).tint_symbol), .tint_immediate_data=tint_immediate_data};
++  (main_inner(tint_local_index, tint_module_vars));
++}
+diff --git a/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.spvasm b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.spvasm
+new file mode 100644
+index 0000000000000000000000000000000000000000..d24fbd6221983c91bacafd6089ef9c2d342461a6
+--- /dev/null
++++ b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.spvasm
+@@ -0,0 +1,189 @@
++; SPIR-V
++; Version: 1.3
++; Generator: Google Tint Compiler; 1
++; Bound: 117
++; Schema: 0
++               OpCapability Shader
++         %68 = OpExtInstImport "GLSL.std.450"
++               OpMemoryModel Logical GLSL450
++               OpEntryPoint GLCompute %main "main" %main_local_invocation_index_Input
++               OpExecutionMode %main LocalSize 1 1 1
++               OpMemberName %in_block_tint_explicit_layout 0 "inner"
++               OpName %in_block_tint_explicit_layout "in_block_tint_explicit_layout"
++               OpMemberName %out_block_tint_explicit_layout 0 "inner"
++               OpName %out_block_tint_explicit_layout "out_block_tint_explicit_layout"
++               OpName %b "b"
++               OpName %main_local_invocation_index_Input "main_local_invocation_index_Input"
++               OpName %main_inner "main_inner"
++               OpName %tint_local_index "tint_local_index"
++               OpName %idx "idx"
++               OpName %i "i"
++               OpName %i_0 "i"
++               OpName %main "main"
++               OpDecorate %_runtimearr_uint ArrayStride 4
++               OpMemberDecorate %in_block_tint_explicit_layout 0 Offset 0
++               OpDecorate %in_block_tint_explicit_layout Block
++               OpDecorate %1 DescriptorSet 0
++               OpDecorate %1 Binding 0
++               OpDecorate %1 NonWritable
++               OpMemberDecorate %out_block_tint_explicit_layout 0 Offset 0
++               OpDecorate %out_block_tint_explicit_layout Block
++               OpDecorate %6 DescriptorSet 0
++               OpDecorate %6 Binding 1
++               OpDecorate %6 Coherent
++               OpDecorate %main_local_invocation_index_Input BuiltIn LocalInvocationIndex
++       %uint = OpTypeInt 32 0
++%_runtimearr_uint = OpTypeRuntimeArray %uint
++%in_block_tint_explicit_layout = OpTypeStruct %_runtimearr_uint
++%_ptr_StorageBuffer_in_block_tint_explicit_layout = OpTypePointer StorageBuffer %in_block_tint_explicit_layout
++          %1 = OpVariable %_ptr_StorageBuffer_in_block_tint_explicit_layout StorageBuffer
++%out_block_tint_explicit_layout = OpTypeStruct %_runtimearr_uint
++%_ptr_StorageBuffer_out_block_tint_explicit_layout = OpTypePointer StorageBuffer %out_block_tint_explicit_layout
++          %6 = OpVariable %_ptr_StorageBuffer_out_block_tint_explicit_layout StorageBuffer
++    %uint_64 = OpConstant %uint 64
++%_arr_uint_uint_64 = OpTypeArray %uint %uint_64
++%_ptr_Workgroup__arr_uint_uint_64 = OpTypePointer Workgroup %_arr_uint_uint_64
++          %b = OpVariable %_ptr_Workgroup__arr_uint_uint_64 Workgroup
++%_ptr_Input_uint = OpTypePointer Input %uint
++%main_local_invocation_index_Input = OpVariable %_ptr_Input_uint Input
++       %void = OpTypeVoid
++         %18 = OpTypeFunction %void %uint
++     %uint_2 = OpConstant %uint 2
++   %uint_264 = OpConstant %uint 264
++%_ptr_Function_uint = OpTypePointer Function %uint
++       %bool = OpTypeBool
++     %uint_4 = OpConstant %uint 4
++%_ptr_Workgroup_uint = OpTypePointer Workgroup %uint
++     %uint_0 = OpConstant %uint 0
++     %uint_1 = OpConstant %uint 1
++        %int = OpTypeInt 32 1
++%_ptr_Function_int = OpTypePointer Function %int
++      %int_0 = OpConstant %int 0
++     %int_64 = OpConstant %int 64
++%_ptr_StorageBuffer__runtimearr_uint = OpTypePointer StorageBuffer %_runtimearr_uint
++%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
++%_ptr_StorageBuffer__runtimearr_uint_0 = OpTypePointer StorageBuffer %_runtimearr_uint
++%_ptr_StorageBuffer_uint_0 = OpTypePointer StorageBuffer %uint
++        %113 = OpTypeFunction %void
++ %main_inner = OpFunction %void None %18
++%tint_local_index = OpFunctionParameter %uint
++         %19 = OpLabel
++        %idx = OpVariable %_ptr_Function_uint Function
++          %i = OpVariable %_ptr_Function_int Function
++        %i_0 = OpVariable %_ptr_Function_int Function
++               OpBranch %20
++         %20 = OpLabel
++               OpStore %idx %tint_local_index
++               OpBranch %23
++         %23 = OpLabel
++               OpLoopMerge %24 %22 None
++               OpBranch %21
++         %21 = OpLabel
++         %41 = OpLoad %uint %idx None
++         %42 = OpUGreaterThanEqual %bool %41 %uint_64
++               OpSelectionMerge %44 None
++               OpBranchConditional %42 %45 %44
++         %45 = OpLabel
++               OpBranch %24
++         %44 = OpLabel
++         %46 = OpIMul %uint %41 %uint_4
++         %48 = OpUDiv %uint %46 %uint_4
++         %49 = OpAccessChain %_ptr_Workgroup_uint %b %48
++               OpStore %49 %uint_0 None
++               OpBranch %22
++         %22 = OpLabel
++         %52 = OpLoad %uint %idx None
++         %53 = OpIAdd %uint %52 %uint_1
++               OpStore %idx %53 None
++               OpBranch %23
++         %24 = OpLabel
++               OpControlBarrier %uint_2 %uint_2 %uint_264
++               OpBranch %28
++         %28 = OpLabel
++               OpStore %i %int_0
++               OpBranch %31
++         %31 = OpLabel
++               OpLoopMerge %32 %30 None
++               OpBranch %29
++         %29 = OpLabel
++         %59 = OpLoad %int %i None
++         %60 = OpSLessThan %bool %59 %int_64
++               OpSelectionMerge %62 None
++               OpBranchConditional %60 %62 %63
++         %63 = OpLabel
++               OpBranch %32
++         %62 = OpLabel
++         %64 = OpLoad %int %i None
++         %65 = OpISub %uint %uint_64 %uint_1
++         %66 = OpBitcast %uint %64
++         %67 = OpExtInst %uint %68 UMin %66 %65
++         %69 = OpIMul %uint %67 %uint_4
++         %70 = OpLoad %int %i None
++         %71 = OpAccessChain %_ptr_StorageBuffer__runtimearr_uint %1 %uint_0
++         %73 = OpArrayLength %uint %1 0
++         %74 = OpISub %uint %73 %uint_1
++         %75 = OpBitcast %uint %70
++         %76 = OpExtInst %uint %68 UMin %75 %74
++         %77 = OpAccessChain %_ptr_StorageBuffer_uint %1 %uint_0 %76
++         %79 = OpLoad %uint %77 None
++         %80 = OpUDiv %uint %69 %uint_4
++         %81 = OpAccessChain %_ptr_Workgroup_uint %b %80
++               OpStore %81 %79 None
++               OpBranch %30
++         %30 = OpLabel
++         %82 = OpLoad %int %i None
++         %83 = OpBitcast %uint %82
++         %84 = OpIAdd %uint %83 %uint_1
++         %85 = OpBitcast %int %84
++               OpStore %i %85 None
++               OpBranch %31
++         %32 = OpLabel
++               OpControlBarrier %uint_2 %uint_2 %uint_264
++               OpBranch %34
++         %34 = OpLabel
++               OpStore %i_0 %int_0
++               OpBranch %37
++         %37 = OpLabel
++               OpLoopMerge %38 %36 None
++               OpBranch %35
++         %35 = OpLabel
++         %87 = OpLoad %int %i_0 None
++         %88 = OpSLessThan %bool %87 %int_64
++               OpSelectionMerge %89 None
++               OpBranchConditional %88 %89 %90
++         %90 = OpLabel
++               OpBranch %38
++         %89 = OpLabel
++         %91 = OpLoad %int %i_0 None
++         %92 = OpAccessChain %_ptr_StorageBuffer__runtimearr_uint_0 %6 %uint_0
++         %94 = OpArrayLength %uint %6 0
++         %95 = OpISub %uint %94 %uint_1
++         %96 = OpBitcast %uint %91
++         %97 = OpExtInst %uint %68 UMin %96 %95
++         %98 = OpAccessChain %_ptr_StorageBuffer_uint_0 %6 %uint_0 %97
++        %100 = OpLoad %int %i_0 None
++        %101 = OpISub %uint %uint_64 %uint_1
++        %102 = OpBitcast %uint %100
++        %103 = OpExtInst %uint %68 UMin %102 %101
++        %104 = OpIMul %uint %103 %uint_4
++        %105 = OpUDiv %uint %104 %uint_4
++        %106 = OpAccessChain %_ptr_Workgroup_uint %b %105
++        %107 = OpLoad %uint %106 None
++               OpStore %98 %107 None
++               OpBranch %36
++         %36 = OpLabel
++        %108 = OpLoad %int %i_0 None
++        %109 = OpBitcast %uint %108
++        %110 = OpIAdd %uint %109 %uint_1
++        %111 = OpBitcast %int %110
++               OpStore %i_0 %111 None
++               OpBranch %37
++         %38 = OpLabel
++               OpReturn
++               OpFunctionEnd
++       %main = OpFunction %void None %113
++        %114 = OpLabel
++        %115 = OpLoad %uint %main_local_invocation_index_Input None
++        %116 = OpFunctionCall %void %main_inner %115
++               OpReturn
++               OpFunctionEnd
+diff --git a/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.wgsl b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.wgsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c31f9987dbfca1ed1e698ffd512bc2a3af5667c
+--- /dev/null
++++ b/test/tint/builtins/bufferView/workgroup_runtime_array.wgsl.expected.wgsl
+@@ -0,0 +1,19 @@
++@group(0) @binding(0) var<storage> in : array<u32>;
++
++@group(0) @binding(1) var<storage, read_write> out : array<u32>;
++
++const size = 256;
++
++var<workgroup> b : buffer<size>;
++
++@compute @workgroup_size(1)
++fn main() {
++  let view = bufferView<array<u32>>(&(b), 0);
++  for(var i = 0; (i < (size / 4)); i++) {
++    view[i] = in[i];
++  }
++  workgroupBarrier();
++  for(var i = 0; (i < (size / 4)); i++) {
++    out[i] = view[i];
++  }
++}

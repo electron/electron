@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Mon, 19 Oct 2026 11:34:06 -0700
+Subject: [Wayland] Fix UAF in
+ WaylandZwpLinuxDmabuf::NotifyRequestCreateBufferDone
+
+NotifyRequestCreateBufferDone() looked up an iterator into
+`pending_params_`, ran the stored callback, and then erased using the
+same iterator. The callback can synchronously re-enter CreateBuffer()
+(via WaylandBufferHandle::OnWlBufferCreated ->
+WaylandFrameManager::MaybeProcessPendingFrame), which emplaces into
+`pending_params_`. Since it is a base::flat_map, that insert may
+reallocate, leaving the iterator dangling.
+
+Move the callback out of the entry and erase the entry before running
+the callback.
+
+Fixed: 574200170
+Change-Id: I492e05574d2a836137521102fba16bc07b542528
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8599238
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Kramer Ge <fangzhoug@chromium.org>
+Commit-Queue: Kramer Ge <fangzhoug@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722152}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_zwp_linux_dmabuf.cc b/ui/ozone/platform/wayland/host/wayland_zwp_linux_dmabuf.cc
+index 61ac95914e0d569198d4e6391b0c23bc51628ff2..fcd49212f63b1621a534d5d5840b8b1f7042e191 100644
+--- a/ui/ozone/platform/wayland/host/wayland_zwp_linux_dmabuf.cc
++++ b/ui/ozone/platform/wayland/host/wayland_zwp_linux_dmabuf.cc
+@@ -183,8 +183,11 @@ void WaylandZwpLinuxDmabuf::NotifyRequestCreateBufferDone(
+     return item.first.get();
+   });
+   CHECK(it != pending_params_.end());
+-  std::move(it->second).Run(wl::Object<wl_buffer>(new_buffer));
++  // Erase the entry before running the callback, as the callback may re-enter
++  // CreateBuffer() and modify `pending_params_`, which would invalidate `it`.
++  wl::OnRequestBufferCallback callback = std::move(it->second);
+   pending_params_.erase(it);
++  std::move(callback).Run(wl::Object<wl_buffer>(new_buffer));
+   connection_->Flush();
+ }
+ 
+diff --git a/ui/ozone/platform/wayland/wayland_buffer_manager_unittest.cc b/ui/ozone/platform/wayland/wayland_buffer_manager_unittest.cc
+index f5d7419a33a513ff16edd46adc7f3f39ea4b8a72..700f00789e57168b05e5558cd6dedef6c688c281 100644
+--- a/ui/ozone/platform/wayland/wayland_buffer_manager_unittest.cc
++++ b/ui/ozone/platform/wayland/wayland_buffer_manager_unittest.cc
+@@ -19,6 +19,7 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/posix/eintr_wrapper.h"
+ #include "base/run_loop.h"
++#include "base/test/bind.h"
+ #include "base/test/mock_callback.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+@@ -718,6 +719,59 @@ TEST_P(WaylandBufferManagerTest, CreateAndDestroyBuffer) {
+   }
+ }
+ 
++// Verifies that requesting a new dmabuf-based wl_buffer from within the
++// callback of a previous request (i.e. re-entrantly) is handled safely. This
++// only applies to the non-immediate creation path.
++TEST_P(WaylandBufferManagerTest, ReentrantDmabufBufferCreation) {
++  auto* buffer_factory = connection_->buffer_factory();
++  ASSERT_FALSE(buffer_factory->CanCreateDmabufImmed());
++
++  PostToServerAndWait([](wl::TestWaylandServerThread* server) {
++    EXPECT_CALL(*server->zwp_linux_dmabuf_v1(), CreateParams(_, _, _)).Times(3);
++  });
++
++  std::vector<wl::Object<wl_buffer>> created_buffers;
++  bool reentered = false;
++  auto create_buffer = [&](wl::OnRequestBufferCallback callback) {
++    buffer_factory->CreateDmabufBuffer(MakeFD(), kDefaultSize, {1}, {2}, {3},
++                                       DRM_FORMAT_ABGR8888, 1,
++                                       std::move(callback));
++  };
++  auto on_created = [&](wl::Object<wl_buffer> buffer) {
++    EXPECT_TRUE(buffer);
++    created_buffers.push_back(std::move(buffer));
++  };
++  auto on_created_reentrant = [&](wl::Object<wl_buffer> buffer) {
++    on_created(std::move(buffer));
++    if (!reentered) {
++      reentered = true;
++      // Issue another request while the pending requests container is at
++      // capacity, so that it would need to reallocate.
++      create_buffer(base::BindLambdaForTesting(on_created));
++    }
++  };
++
++  create_buffer(base::BindLambdaForTesting(on_created_reentrant));
++  create_buffer(base::BindLambdaForTesting(on_created_reentrant));
++  base::RunLoop().RunUntilIdle();
++
++  // Complete the first two requests. One of them re-enters and issues a third.
++  ProcessCreatedBufferResourcesWithExpectation(/*expected_size=*/2u,
++                                               /*fail=*/false);
++  base::RunLoop().RunUntilIdle();
++  EXPECT_TRUE(reentered);
++  EXPECT_EQ(created_buffers.size(), 2u);
++
++  // Complete the re-entrant request.
++  ProcessCreatedBufferResourcesWithExpectation(/*expected_size=*/1u,
++                                               /*fail=*/false);
++  base::RunLoop().RunUntilIdle();
++  EXPECT_EQ(created_buffers.size(), 3u);
++
++  created_buffers.clear();
++  base::RunLoop().RunUntilIdle();
++}
++
+ TEST_P(WaylandBufferManagerTest, CommitBufferNonExistingBufferId) {
+   PostToServerAndWait([](wl::TestWaylandServerThread* server) {
+     EXPECT_CALL(*server->zwp_linux_dmabuf_v1(), CreateParams(_, _, _)).Times(1);

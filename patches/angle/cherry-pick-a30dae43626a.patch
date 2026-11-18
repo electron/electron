@@ -1,0 +1,242 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 15 Oct 2026 00:55:04 -0400
+Subject: Translator: Rename variables that are extracted from switch
+
+When pruning dead code, declarations in switch statements (when in dead
+code) are extracted and declared above the switch.  This is because
+another case may use that variable.
+
+In the MSL generator, every declaration in a switch is extracted.
+
+In either case, the variable that was previously nested in switch may
+shadow an existing variable and moving the declaration out is not always
+correct.  This change replaces these variables with ones that have
+generated names to avoid such name collisions.
+
+This bug does not affect the IR since variables never shadow.
+
+Bug: chromium:568896486
+Bug: chromium:568896063
+Change-Id: I13b600d34d3c6d46c144cb3781b0656cf2c81d5d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8576381
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (43-x-y):
+angle_end2end_tests_expectations.txt: only the
+SwitchWithShadowVariableDeclaration line is added (the surrounding upstream
+entries are not on this branch).
+
+diff --git a/src/compiler/translator/tree_ops/PruneNoOps.cpp b/src/compiler/translator/tree_ops/PruneNoOps.cpp
+index 31e17fed56f3f74f24a7de046f53884512ca5117..10cd77e75a64d784d8c5e7d763fad07e7871acbf 100644
+--- a/src/compiler/translator/tree_ops/PruneNoOps.cpp
++++ b/src/compiler/translator/tree_ops/PruneNoOps.cpp
+@@ -9,6 +9,7 @@
+ 
+ #include "compiler/translator/Symbol.h"
+ #include "compiler/translator/tree_util/IntermTraverse.h"
++#include "compiler/translator/tree_util/ReplaceVariable.h"
+ 
+ namespace sh
+ {
+@@ -51,6 +52,7 @@ class PruneNoOpsTraverser : private TIntermTraverser
+     bool mIsBranchVisited = false;
+ 
+     TVector<TVector<const TVariable *>> mSwitchPrunedDeclarationsStack;
++    TVector<const TVariable *> mSwitchDeclarationsToRename;
+ };
+ 
+ bool PruneNoOpsTraverser::apply(TCompiler *compiler, TIntermBlock *root, TSymbolTable *symbolTable)
+@@ -58,7 +60,19 @@ bool PruneNoOpsTraverser::apply(TCompiler *compiler, TIntermBlock *root, TSymbol
+     PruneNoOpsTraverser prune(symbolTable);
+     root->traverse(&prune);
+     ASSERT(prune.mSwitchPrunedDeclarationsStack.empty());
+-    return prune.updateTree(compiler, root);
++    if (!prune.updateTree(compiler, root))
++    {
++        return false;
++    }
++
++    VariableReplacementMap replaceMap;
++    for (const TVariable *var : prune.mSwitchDeclarationsToRename)
++    {
++        const TVariable *replacementVariable = new TVariable(
++            symbolTable, kEmptyImmutableString, &var->getType(), SymbolType::AngleInternal);
++        replaceMap[var->uniqueId()] = new TIntermSymbol(replacementVariable);
++    }
++    return ReplaceVariables(compiler, root, replaceMap);
+ }
+ 
+ PruneNoOpsTraverser::PruneNoOpsTraverser(TSymbolTable *symbolTable)
+@@ -156,6 +170,11 @@ bool PruneNoOpsTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
+         replacement.push_back(node);
+         mMultiReplacements.emplace_back(getParentNode()->getAsBlock(), node,
+                                         std::move(replacement));
++
++        // The names may shadow variables outside the switch, so rename them at the end.
++        mSwitchDeclarationsToRename.insert(mSwitchDeclarationsToRename.end(),
++                                           mSwitchPrunedDeclarationsStack.back().begin(),
++                                           mSwitchPrunedDeclarationsStack.back().end());
+     }
+ 
+     mSwitchPrunedDeclarationsStack.pop_back();
+diff --git a/src/compiler/translator/tree_ops/msl/RewriteCaseDeclarations.cpp b/src/compiler/translator/tree_ops/msl/RewriteCaseDeclarations.cpp
+index 7450c084df2a02feb92af565b3705a624dafc7db..ba2b66f20a00b99146022409a5aba1695aa85d60 100644
+--- a/src/compiler/translator/tree_ops/msl/RewriteCaseDeclarations.cpp
++++ b/src/compiler/translator/tree_ops/msl/RewriteCaseDeclarations.cpp
+@@ -6,6 +6,7 @@
+ 
+ #include "compiler/translator/tree_ops/msl/RewriteCaseDeclarations.h"
+ #include "compiler/translator/IntermRebuild.h"
++#include "compiler/translator/tree_util/ReplaceVariable.h"
+ #include "compiler/translator/util.h"
+ 
+ using namespace sh;
+@@ -17,13 +18,13 @@ namespace
+ 
+ class Rewriter : public TIntermRebuild
+ {
+-    std::vector<std::vector<const TVariable *>> mDeclaredVarStack;
+-
+   public:
+     Rewriter(TCompiler &compiler) : TIntermRebuild(compiler, true, true) {}
+ 
+     ~Rewriter() override { ASSERT(mDeclaredVarStack.empty()); }
+ 
++    [[nodiscard]] bool renameMovedDeclarations(TCompiler &compiler, TIntermBlock &root);
++
+   private:
+     PreResult visitSwitchPre(TIntermSwitch &node) override
+     {
+@@ -61,6 +62,7 @@ class Rewriter : public TIntermRebuild
+                 {
+                     Declaration decl = ViewDeclaration(node);
+                     mDeclaredVarStack.back().push_back(&decl.symbol.variable());
++                    mSwitchDeclarationsToRename.push_back(&decl.symbol.variable());
+                     if (decl.initExpr)
+                     {
+                         return *new TIntermBinary(TOperator::EOpAssign, &decl.symbol,
+@@ -75,17 +77,33 @@ class Rewriter : public TIntermRebuild
+         }
+         return node;
+     }
++
++    TVector<TVector<const TVariable *>> mDeclaredVarStack;
++    TVector<const TVariable *> mSwitchDeclarationsToRename;
+ };
+ 
++bool Rewriter::renameMovedDeclarations(TCompiler &compiler, TIntermBlock &root)
++{
++    // The names may shadow variables outside the switch, so rename them.
++    VariableReplacementMap replaceMap;
++    for (const TVariable *var : mSwitchDeclarationsToRename)
++    {
++        const TVariable *replacementVariable = new TVariable(
++            &mSymbolTable, kEmptyImmutableString, &var->getType(), SymbolType::AngleInternal);
++        replaceMap[var->uniqueId()] = new TIntermSymbol(replacementVariable);
++    }
++    return ReplaceVariables(&compiler, &root, replaceMap);
++}
+ }  // anonymous namespace
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+ 
+ bool sh::RewriteCaseDeclarations(TCompiler &compiler, TIntermBlock &root)
+ {
+-    if (!Rewriter(compiler).rebuildRoot(root))
++    Rewriter rewriter(compiler);
++    if (!rewriter.rebuildRoot(root))
+     {
+         return false;
+     }
+-    return true;
++    return rewriter.renameMovedDeclarations(compiler, root);
+ }
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index f958738d4827df2bbf1d963162bc6337ef388cde..e3e8923be8990bd166b9d0fb9bba15ca7a0bf666 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -784,6 +784,7 @@
+ 42264513 PIXEL4ORXL GLES : SimpleUniformTestES3.TernarySelectAnArrayThenIndex/* = SKIP
+ 458082809 PIXEL4ORXL GLES : GLSLValidationExtensionDirectiveTest_ES3.Sampler2DShadow/* = SKIP
+ 458082810 PIXEL4ORXL GLES : GLSLValidationExtensionDirectiveTest_ES31.TextureCubeMapArray/* = SKIP
++573893628 PIXEL4ORXL GLES : GLSLTest_ES3.SwitchWithShadowVariableDeclaration/* = SKIP
+ 
+ 42267082 PIXEL4ORXL GLES : BlobCacheTest.FragmentOutputLocationKey/* = SKIP
+ 42267082 PIXEL4ORXL GLES : EGLBlobCacheTest.FragmentOutputLocationKey/* = SKIP
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index efc5fb088322053c401b4ae62afb7707f654f68c..e2c167f7ace55bb860ed750884a66623ec1bdb2f 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -9682,6 +9682,69 @@ void main()
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+ }
+ 
++// Test switch/case where a variable is declared inside one of the cases and is accessed by a
++// subsequent case.  The variable shadows another outside the switch.
++TEST_P(GLSLTest_ES3, SwitchWithShadowVariableDeclaration)
++{
++    constexpr char kFS[] = R"(#version 300 es
++
++precision highp float;
++out vec4 my_FragColor;
++
++uniform int u_zero;
++
++void main()
++{
++    vec4 result = vec4(0, 0, 0, 1);
++    switch (u_zero)
++    {
++        case 0:
++            result.x = 1.0;
++            // Shadow the variable that is outside the switch
++            vec4 result = vec4(0, 1, 0, 0);
++        default:
++            result.w = 1.0;
++    }
++    my_FragColor = result;
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++}
++
++// Test switch/case where a variable is declared inside one of the cases after branch and is
++// accessed by a subsequent case.  The variable shadows another outside the switch.
++TEST_P(GLSLTest_ES3, SwitchWithShadowVariableDeclarationInDeadCode)
++{
++    constexpr char kFS[] = R"(#version 300 es
++
++precision highp float;
++out vec4 my_FragColor;
++
++uniform int u_zero;
++
++void main()
++{
++    vec4 result = vec4(0, 0, 0, 1);
++    switch (u_zero)
++    {
++        case 0:
++            result.x = 1.0;
++            break;
++            // Shadow the variable that is outside the switch
++            vec4 result = vec4(0, 1, 0, 0);
++        default:
++            result.w = 1.0;
++    }
++    my_FragColor = result;
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++}
++
+ // Test that an empty switch/case statement is translated in a way that compiles and executes the
+ // init-statement.
+ TEST_P(GLSLTest_ES3, EmptySwitch)

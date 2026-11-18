@@ -1,0 +1,265 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Sun, 18 Oct 2026 00:13:54 +0200
+Subject: Zero-initialize 10-bit buffers in VideoFrameBufferPool
+
+Add InitializeData() to I010Buffer and I210Buffer, and invoke
+InitializeData() in VideoFrameBufferPool when zero_initialize_ is
+enabled for I010, I210, and I410 buffers.
+
+Fixed: chromium:504552032
+Change-Id: I36ce748c3da44e4f119332de5c180f80eca93cc9
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509582
+Reviewed-by: Danil Chapovalov <danilchap@webrtc.org>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#48948}
+Electron adaptation notes (43-x-y):
+common_video/BUILD.gn: this branch has no standalone
+video_frame_buffer_pool_unittest target (the test is part of
+common_video_unittests), so the one-line deps hunk is not carried. Source
+and test hunks apply unchanged.
+
+diff --git a/api/video/i010_buffer.cc b/api/video/i010_buffer.cc
+index 3be30eebda3c2b809def335e97ac3388a954ce60..c365caaeeead75ad345e7030249c2cf719fff4bb 100644
+--- a/api/video/i010_buffer.cc
++++ b/api/video/i010_buffer.cc
+@@ -9,7 +9,9 @@
+  */
+ #include "api/video/i010_buffer.h"
+ 
++#include <algorithm>
+ #include <cstdint>
++#include <span>
+ #include <utility>
+ 
+ #include "api/make_ref_counted.h"
+@@ -142,6 +144,14 @@ scoped_refptr<I420BufferInterface> I010Buffer::ToI420() {
+   return i420_buffer;
+ }
+ 
++void I010Buffer::InitializeData() {
++  std::ranges::fill(
++      std::span(data_.get(),
++                I010DataSize(width_, height_, stride_y_, stride_u_, stride_v_) /
++                    kBytesPerPixel),
++      0);
++}
++
+ int I010Buffer::width() const {
+   return width_;
+ }
+diff --git a/api/video/i010_buffer.h b/api/video/i010_buffer.h
+index 17191c59e4dfb6bc913f7572272f0cc6a27e5b19..40336f8c7555879557a4a6edb8034afe5afc2eed 100644
+--- a/api/video/i010_buffer.h
++++ b/api/video/i010_buffer.h
+@@ -41,6 +41,12 @@ class I010Buffer : public I010BufferInterface {
+   // VideoFrameBuffer implementation.
+   scoped_refptr<I420BufferInterface> ToI420() override;
+ 
++  // Sets all three planes to all zeros. Used to work around for
++  // quirks in memory checkers
++  // (https://bugs.chromium.org/p/libyuv/issues/detail?id=377) and
++  // ffmpeg (http://crbug.com/390941).
++  void InitializeData();
++
+   // PlanarYuv16BBuffer implementation.
+   int width() const override;
+   int height() const override;
+diff --git a/api/video/i210_buffer.cc b/api/video/i210_buffer.cc
+index cf91fd11b354e56d7aee394e3d7c3a04b078fc7d..814c70b34b5c404f7b6f124102fc577f40b628dd 100644
+--- a/api/video/i210_buffer.cc
++++ b/api/video/i210_buffer.cc
+@@ -9,7 +9,9 @@
+  */
+ #include "api/video/i210_buffer.h"
+ 
++#include <algorithm>
+ #include <cstdint>
++#include <span>
+ #include <utility>
+ 
+ #include "api/make_ref_counted.h"
+@@ -140,6 +142,14 @@ scoped_refptr<I420BufferInterface> I210Buffer::ToI420() {
+   return i420_buffer;
+ }
+ 
++void I210Buffer::InitializeData() {
++  std::ranges::fill(
++      std::span(data_.get(),
++                I210DataSize(width_, height_, stride_y_, stride_u_, stride_v_) /
++                    kBytesPerPixel),
++      0);
++}
++
+ int I210Buffer::width() const {
+   return width_;
+ }
+diff --git a/api/video/i210_buffer.h b/api/video/i210_buffer.h
+index 11f0f4a5487757a16216b79941ebfcf733743f6d..aba789a9e4bfe8af3c5fd8259ba06ef5442df745 100644
+--- a/api/video/i210_buffer.h
++++ b/api/video/i210_buffer.h
+@@ -41,6 +41,12 @@ class I210Buffer : public I210BufferInterface {
+   // VideoFrameBuffer implementation.
+   scoped_refptr<I420BufferInterface> ToI420() override;
+ 
++  // Sets all three planes to all zeros. Used to work around for
++  // quirks in memory checkers
++  // (https://bugs.chromium.org/p/libyuv/issues/detail?id=377) and
++  // ffmpeg (http://crbug.com/390941).
++  void InitializeData();
++
+   // PlanarYuv16BBuffer implementation.
+   int width() const override;
+   int height() const override;
+diff --git a/common_video/video_frame_buffer_pool.cc b/common_video/video_frame_buffer_pool.cc
+index 07d3fd00c8de50de4e58e71e799a9cedf4312f93..7f65f87302c634f3c8daf3049b131086773b144e 100644
+--- a/common_video/video_frame_buffer_pool.cc
++++ b/common_video/video_frame_buffer_pool.cc
+@@ -261,6 +261,10 @@ scoped_refptr<I010Buffer> VideoFrameBufferPool::CreateI010Buffer(int width,
+   // Allocate new buffer.
+   scoped_refptr<I010Buffer> buffer = I010Buffer::Create(width, height);
+ 
++  if (zero_initialize_) {
++    buffer->InitializeData();
++  }
++
+   buffers_.push_back(buffer);
+   return buffer;
+ }
+@@ -287,6 +291,10 @@ scoped_refptr<I210Buffer> VideoFrameBufferPool::CreateI210Buffer(int width,
+   // Allocate new buffer.
+   scoped_refptr<I210Buffer> buffer = I210Buffer::Create(width, height);
+ 
++  if (zero_initialize_) {
++    buffer->InitializeData();
++  }
++
+   buffers_.push_back(buffer);
+   return buffer;
+ }
+@@ -313,6 +321,10 @@ scoped_refptr<I410Buffer> VideoFrameBufferPool::CreateI410Buffer(int width,
+   // Allocate new buffer.
+   scoped_refptr<I410Buffer> buffer = I410Buffer::Create(width, height);
+ 
++  if (zero_initialize_) {
++    buffer->InitializeData();
++  }
++
+   buffers_.push_back(buffer);
+   return buffer;
+ }
+diff --git a/common_video/video_frame_buffer_pool_unittest.cc b/common_video/video_frame_buffer_pool_unittest.cc
+index dbb80af21aacc77f5b78ec1cfe1a15e7c45961d6..71d85ad98f144ae4f85bb0a92ec45d36b0f0ec6d 100644
+--- a/common_video/video_frame_buffer_pool_unittest.cc
++++ b/common_video/video_frame_buffer_pool_unittest.cc
+@@ -10,14 +10,53 @@
+ 
+ #include "common_video/include/video_frame_buffer_pool.h"
+ 
++#include <algorithm>
+ #include <cstdint>
+ #include <cstring>
++#include <span>
+ 
+ #include "api/scoped_refptr.h"
++#include "api/video/i010_buffer.h"
++#include "api/video/i210_buffer.h"
++#include "api/video/i410_buffer.h"
+ #include "api/video/i420_buffer.h"
++#include "api/video/video_frame_buffer.h"
++#include "test/gmock.h"
+ #include "test/gtest.h"
+ 
+ namespace webrtc {
++namespace {
++
++using ::testing::Each;
++using ::testing::IsNull;
++using ::testing::NotNull;
++
++template <typename T>
++void SeedDirtyBuffer(int width, int height) {
++  scoped_refptr<T> buffer = T::Create(width, height);
++  std::ranges::fill(
++      std::span(buffer->MutableDataY(), buffer->StrideY() * buffer->height()),
++      0xA5A5);
++  std::ranges::fill(std::span(buffer->MutableDataU(),
++                              buffer->StrideU() * buffer->ChromaHeight()),
++                    0xA5A5);
++  std::ranges::fill(std::span(buffer->MutableDataV(),
++                              buffer->StrideV() * buffer->ChromaHeight()),
++                    0xA5A5);
++}
++
++void ExpectPlanesZeroInitialized(const PlanarYuv16BBuffer& buffer) {
++  EXPECT_THAT(std::span(buffer.DataY(), buffer.StrideY() * buffer.height()),
++              Each(0));
++  EXPECT_THAT(
++      std::span(buffer.DataU(), buffer.StrideU() * buffer.ChromaHeight()),
++      Each(0));
++  EXPECT_THAT(
++      std::span(buffer.DataV(), buffer.StrideV() * buffer.ChromaHeight()),
++      Each(0));
++}
++
++}  // namespace
+ 
+ TEST(TestVideoFrameBufferPool, SimpleFrameReuse) {
+   VideoFrameBufferPool pool;
+@@ -102,6 +141,45 @@ TEST(TestVideoFrameBufferPool, ProducesI210) {
+   EXPECT_NE(nullptr, buffer.get());
+ }
+ 
++TEST(TestVideoFrameBufferPool, ProducesI410) {
++  VideoFrameBufferPool pool(false, 1);
++  scoped_refptr<I410Buffer> buffer = pool.CreateI410Buffer(16, 16);
++  EXPECT_THAT(buffer, NotNull());
++}
++
++TEST(TestVideoFrameBufferPool, ZeroInitializeI010Buffer) {
++  constexpr int kWidth = 16;
++  constexpr int kHeight = 16;
++
++  SeedDirtyBuffer<I010Buffer>(kWidth, kHeight);
++  VideoFrameBufferPool pool(/*zero_initialize=*/true, 1);
++  scoped_refptr<I010Buffer> buffer = pool.CreateI010Buffer(kWidth, kHeight);
++  ASSERT_THAT(buffer, NotNull());
++  ExpectPlanesZeroInitialized(*buffer);
++}
++
++TEST(TestVideoFrameBufferPool, ZeroInitializeI210Buffer) {
++  constexpr int kWidth = 16;
++  constexpr int kHeight = 16;
++
++  SeedDirtyBuffer<I210Buffer>(kWidth, kHeight);
++  VideoFrameBufferPool pool(/*zero_initialize=*/true, 1);
++  scoped_refptr<I210Buffer> buffer = pool.CreateI210Buffer(kWidth, kHeight);
++  ASSERT_THAT(buffer, NotNull());
++  ExpectPlanesZeroInitialized(*buffer);
++}
++
++TEST(TestVideoFrameBufferPool, ZeroInitializeI410Buffer) {
++  constexpr int kWidth = 16;
++  constexpr int kHeight = 16;
++
++  SeedDirtyBuffer<I410Buffer>(kWidth, kHeight);
++  VideoFrameBufferPool pool(/*zero_initialize=*/true, 1);
++  scoped_refptr<I410Buffer> buffer = pool.CreateI410Buffer(kWidth, kHeight);
++  ASSERT_THAT(buffer, NotNull());
++  ExpectPlanesZeroInitialized(*buffer);
++}
++
+ TEST(TestVideoFrameBufferPool, SwitchingPixelFormat) {
+   VideoFrameBufferPool pool(false, 1);
+   auto buffeNV12 = pool.CreateNV12Buffer(16, 16);
+@@ -126,6 +204,10 @@ TEST(TestVideoFrameBufferPool, SwitchingPixelFormat) {
+   auto bufferI210 = pool.CreateI210Buffer(16, 16);
+   EXPECT_NE(nullptr, bufferI210.get());
+   EXPECT_EQ(nullptr, pool.CreateI210Buffer(16, 16).get());
++
++  scoped_refptr<I410Buffer> buffer_i410 = pool.CreateI410Buffer(16, 16);
++  EXPECT_THAT(buffer_i410, NotNull());
++  EXPECT_THAT(pool.CreateI410Buffer(16, 16), IsNull());
+ }
+ 
+ }  // namespace webrtc

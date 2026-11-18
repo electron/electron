@@ -1,0 +1,323 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 19 Oct 2026 15:49:26 -0700
+Subject: [Media] Require consistent resource length and don't retry SW
+ failures
+
+When a UrlData already has a known length from an earlier response,
+reject subsequent 200 OK or 206 Partial Content responses (or
+UrlData::MergeFrom merges) that report a different or unspecified
+length. This prevents a service worker from splicing responses from two
+different same-origin resources of different sizes onto the same
+UrlData, which previously allowed leaking the second resource's length
+either via DidFinishLoading()'s short-body retry Range header or by
+overwriting UrlData::length() on a mid-resource 200 OK.
+
+Additionally, do not retry failed loads in DidFail() when the response
+was fetched via a service worker.
+
+Fixed: 573265164
+Change-Id: Ie02197b4c3f7c99d6b44e7147cfa67a44b9bf5ed
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8613828
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722390}
+
+Electron adaptation notes (43-x-y):
+Picked as a prerequisite of a4a389ea3bf0 (UrlData::HasCompatibleLength()); it is
+also the fix for crbug.com/573265164. DidFail(): this branch has no
+IsRequestBlockedError / certificate-error early-return block, so only the
+service-worker condition is added as its own block. Unit test changes were
+not carried.
+
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 7d3a7dba5d97d183221ae6199cb7166c1fd67813..ce369f2b12b35dec51a5d6be1ded4da99e52587a 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -275,8 +275,12 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   // constructed responses (new Response()) and native server responses, even if
+   // they have the same response URL.
+   KURL response_url;
+-  if (!response.WasFetchedViaServiceWorker() ||
+-      response.HasUrlListViaServiceWorker()) {
++  if (response.WasFetchedViaServiceWorker()) {
++    was_fetched_via_service_worker_ = true;
++    if (response.HasUrlListViaServiceWorker()) {
++      response_url = response.ResponseUrl();
++    }
++  } else {
+     response_url = response.ResponseUrl();
+   }
+ 
+@@ -340,11 +344,11 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+     if (partial_response &&
+         VerifyPartialResponse(response, destination_url_data)) {
+       destination_url_data->set_range_supported();
+-    } else if (ok_response) {
++    } else if (ok_response &&
++               TrySetLength(destination_url_data, content_length)) {
+       // We accept a 200 response for a Range:0- request, trusting the
+       // Accept-Ranges header, because Apache thinks that's a reasonable thing
+       // to return.
+-      destination_url_data->set_length(content_length);
+       bytes_to_discard_ = byte_pos();
+     } else if (response.HttpStatusCode() == kHttpRangeNotSatisfiable &&
+                !is_cors_cross_origin) {
+@@ -543,6 +547,14 @@ void ResourceMultiBufferDataProvider::DidFail(const WebURLError& error) {
+     return;  // "this" may be deleted now.
+   }
+ 
++  // Service worker responses are not retried on failure, as they are
++  // synthesized or proxied by script and retrying exposes internal buffer
++  // positions via follow-up Range headers.
++  if (was_fetched_via_service_worker_) {
++    url_data_->Fail();
++    return;  // "this" may be deleted now.
++  }
++
+   if (url_data_->url_index() && retries_ < kMaxRetries && pos_ != 0) {
+     retries_++;
+     task_runner_->PostDelayedTask(
+@@ -631,8 +643,8 @@ bool ResourceMultiBufferDataProvider::VerifyPartialResponse(
+     return false;
+   }
+ 
+-  if (url_data->length() == kPositionNotSpecified) {
+-    url_data->set_length(instance_size);
++  if (!TrySetLength(url_data, instance_size)) {
++    return false;
+   }
+ 
+   if (first_byte_position > byte_pos()) {
+@@ -646,4 +658,21 @@ bool ResourceMultiBufferDataProvider::VerifyPartialResponse(
+   return true;
+ }
+ 
++bool ResourceMultiBufferDataProvider::TrySetLength(
++    const scoped_refptr<UrlData>& destination_url_data,
++    int64_t length) {
++  // If a previous response already established the resource length on either
++  // the original or destination UrlData, subsequent responses must report the
++  // same total length. Otherwise a service worker could splice a smaller
++  // cross-origin response onto a UrlData whose length was pinned by a larger
++  // resource, causing DidFinishLoading() to retry at the smaller response's
++  // EOF and disclose its size via the follow-up Range header.
++  if (!url_data_->HasCompatibleLength(length) ||
++      !destination_url_data->HasCompatibleLength(length)) {
++    return false;
++  }
++  destination_url_data->set_length(length);
++  return true;
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h
+index b2e69fbb3247787f7f780740ce734bfde7bf80b1..4ca67af0d02808f24e9aa75cd0f4786b90053ea3 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h
+@@ -89,6 +89,11 @@ class PLATFORM_EXPORT ResourceMultiBufferDataProvider
+   bool VerifyPartialResponse(const WebURLResponse& response,
+                              const scoped_refptr<UrlData>& url_data);
+ 
++  // Validates that |length| is compatible with any existing length on
++  // |url_data_| and |destination_url_data|, and updates |destination_url_data|.
++  bool TrySetLength(const scoped_refptr<UrlData>& destination_url_data,
++                    int64_t length);
++
+   // Current Position.
+   MultiBufferBlockId pos_;
+ 
+@@ -126,6 +131,10 @@ class PLATFORM_EXPORT ResourceMultiBufferDataProvider
+   // Is the client an audio element?
+   bool is_client_audio_element_ = false;
+ 
++  // True if any response handled by this data provider was fetched via a
++  // service worker.
++  bool was_fetched_via_service_worker_ = false;
++
+   size_t total_bytes_received_ = 0;
+ 
+   const scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index 82603e8fb883f7b9910c513aa21e8072e664d2fe..7a447da01a4518d90a8a2f7bbc93b299eb891207 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -742,4 +742,100 @@ TEST_F(ResourceMultiBufferDataProviderTest, DestructedUrlIndexStartViaReader) {
+   EXPECT_FALSE(reader);
+ }
+ 
++TEST_F(ResourceMultiBufferDataProviderTest, ServiceWorkerFailureDoesNotRetry) {
++  Initialize(kHttpUrl, 100);
++  Start();
++
++  WebURLResponse response(url_);
++  response.SetHttpStatusCode(kHttpPartialContent);
++  response.SetHttpHeaderField(WebString::FromUtf8("Content-Range"),
++                              WebString::FromUtf8("bytes 100-1023/1024"));
++  response.SetExpectedContentLength(924);
++  response.SetWasFetchedViaServiceWorker(true);
++  response.SetUrlListViaServiceWorker(std::vector<WebURL>{url_});
++  loader_->DidReceiveResponse(response);
++
++  // Failing after receiving a service worker response at `pos_ != 0` should
++  // fail immediately rather than scheduling a retry.
++  EXPECT_CALL(*this, RedirectCallback(scoped_refptr<UrlData>(nullptr)));
++  EXPECT_CALL(fetch_context_, CreateUrlLoader(_)).Times(0);
++  loader_->DidFail(WebURLError(net::ERR_ABORTED, url_));
++  task_environment_.FastForwardUntilNoTasksRemain();
++}
++
++TEST_F(ResourceMultiBufferDataProviderTest,
++       PartialResponseMismatchedInstanceSizeFails) {
++  Initialize(kHttpUrl, 0);
++  Start();
++
++  // First response pins `url_data_->length()` to 1,000,000.
++  WebURLResponse response1(url_);
++  response1.SetHttpStatusCode(kHttpOK);
++  response1.SetExpectedContentLength(1000000);
++  loader_->DidReceiveResponse(response1);
++  EXPECT_EQ(url_data_->length(), 1000000);
++
++  // Empty body triggers a retry from byte 0.
++  loader_->DidFinishLoading();
++  task_environment_.FastForwardUntilNoTasksRemain();
++
++  // A subsequent 206 response reporting a different instance size (7777) must
++  // be rejected immediately in DidReceiveResponse().
++  EXPECT_CALL(*this, RedirectCallback(scoped_refptr<UrlData>(nullptr)));
++  WebURLResponse response2(url_);
++  response2.SetHttpStatusCode(kHttpPartialContent);
++  response2.SetHttpHeaderField(WebString::FromUtf8("Content-Range"),
++                               WebString::FromUtf8("bytes 0-7776/7777"));
++  response2.SetExpectedContentLength(7777);
++  loader_->DidReceiveResponse(response2);
++  EXPECT_EQ(url_data_->length(), 1000000);
++}
++
++TEST_F(ResourceMultiBufferDataProviderTest,
++       OkResponseMismatchedContentLengthFails) {
++  Initialize(kHttpUrl, 0);
++  Start();
++
++  // First response pins `url_data_->length()` to 1,000,000.
++  WebURLResponse response1(url_);
++  response1.SetHttpStatusCode(kHttpOK);
++  response1.SetExpectedContentLength(1000000);
++  loader_->DidReceiveResponse(response1);
++  EXPECT_EQ(url_data_->length(), 1000000);
++
++  // Empty body triggers a retry from byte 0.
++  loader_->DidFinishLoading();
++  task_environment_.FastForwardUntilNoTasksRemain();
++
++  // A subsequent chunked 200 OK response (kPositionNotSpecified) must be
++  // rejected when `url_data_->length()` is already known.
++  EXPECT_CALL(*this, RedirectCallback(scoped_refptr<UrlData>(nullptr)));
++  WebURLResponse response2(url_);
++  response2.SetHttpStatusCode(kHttpOK);
++  response2.SetExpectedContentLength(kPositionNotSpecified);
++  loader_->DidReceiveResponse(response2);
++  EXPECT_EQ(url_data_->length(), 1000000);
++
++  // Likewise, a mid-resource 200 OK response reporting a different
++  // Content-Length (e.g. b/574206996) must be rejected without overwriting
++  // `url_data_->length()`.
++  url_data_->OnRedirect(
++      blink::BindOnce(&ResourceMultiBufferDataProviderTest::RedirectCallback,
++                      Unretained(this)));
++  auto mid_loader = std::make_unique<ResourceMultiBufferDataProvider>(
++      url_data_.get(), /*pos=*/1, /*is_client_audio_element=*/false,
++      task_environment_.GetMainThreadTaskRunner());
++  ResourceMultiBufferDataProvider* raw_mid_loader = mid_loader.get();
++  url_data_->multibuffer()->AddProvider(std::move(mid_loader));
++  loader_ = raw_mid_loader;
++  Start();
++
++  EXPECT_CALL(*this, RedirectCallback(scoped_refptr<UrlData>(nullptr)));
++  WebURLResponse response3(url_);
++  response3.SetHttpStatusCode(kHttpOK);
++  response3.SetExpectedContentLength(500000);
++  loader_->DidReceiveResponse(response3);
++  EXPECT_EQ(url_data_->length(), 1000000);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/media/url_index.cc b/third_party/blink/renderer/platform/media/url_index.cc
+index 9c6ee146d9be17abc9c8a4846e0172f39fbb27ab..a4f0b8de3d1db44b686f7a7a1c10fe22e12cc32c 100644
+--- a/third_party/blink/renderer/platform/media/url_index.cc
++++ b/third_party/blink/renderer/platform/media/url_index.cc
+@@ -121,6 +121,13 @@ bool UrlData::MergeFrom(const scoped_refptr<UrlData>& other) {
+   if (!CanAcceptDataFrom(other_origin, other->is_cors_cross_origin_)) {
+     return false;
+   }
++  // Do not merge if either UrlData already has a known length and the other
++  // does not report the same length, to prevent splicing responses from
++  // resources of different sizes onto the same UrlData.
++  if (!HasCompatibleLength(other->length_) ||
++      !other->HasCompatibleLength(length_)) {
++    return false;
++  }
+   SetDataOrigin(other_origin, other->is_cors_cross_origin_);
+ 
+   valid_until_ = std::max(valid_until_, other->valid_until_);
+@@ -150,6 +157,10 @@ void UrlData::set_length(int64_t length) {
+   }
+ }
+ 
++bool UrlData::HasCompatibleLength(int64_t length) const {
++  return length_ == kPositionNotSpecified || length_ == length;
++}
++
+ void UrlData::set_is_cors_cross_origin(bool is_cors_cross_origin) {
+   if (is_cors_cross_origin_)
+     return;
+diff --git a/third_party/blink/renderer/platform/media/url_index.h b/third_party/blink/renderer/platform/media/url_index.h
+index c5a5016032017e0f3da50fd7c5b66dffc9710ed2..615c7b1ac46d3c0d1f8603085f7c176135f3bb73 100644
+--- a/third_party/blink/renderer/platform/media/url_index.h
++++ b/third_party/blink/renderer/platform/media/url_index.h
+@@ -151,6 +151,10 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // Length of data associated with url or |kPositionNotSpecified|
+   int64_t length() const { return length_; }
+ 
++  // Returns true if this UrlData has not yet had a length set, or if |length|
++  // matches the existing length.
++  bool HasCompatibleLength(int64_t length) const;
++
+   // Returns the number of blocks cached for this resource.
+   size_t CachedSize();
+ 
+diff --git a/third_party/blink/renderer/platform/media/url_index_unittest.cc b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+index c54c6ff6f6ec7dfb29d5b7d7dfd2c2782de48999..9c6177b6e45a10e7592a4d345ef0cc3b93513805 100644
+--- a/third_party/blink/renderer/platform/media/url_index_unittest.cc
++++ b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+@@ -126,6 +126,8 @@ TEST_F(UrlIndexTest, TryInsert) {
+       GetByUrl(url, UrlData::CORS_UNSPECIFIED);
+   scoped_refptr<UrlData> mismatched_opaque =
+       GetByUrl(url, UrlData::CORS_UNSPECIFIED);
++  scoped_refptr<UrlData> mismatched_length =
++      GetByUrl(url, UrlData::CORS_UNSPECIFIED);
+   EXPECT_NE(a, c);
+   EXPECT_FALSE(a->Valid());
+   base::Time now = base::Time::Now();
+@@ -198,6 +200,19 @@ TEST_F(UrlIndexTest, TryInsert) {
+   EXPECT_TRUE(mismatched_opaque->Valid());
+   EXPECT_EQ(mismatched_opaque, url_index_->TryInsert(mismatched_opaque));
+   EXPECT_FALSE(b->is_cors_cross_origin());
++
++  // If a new valid entry has a mismatched length, MergeFrom fails and
++  // TryInsert should return the new entry rather than overwriting the indexed
++  // entry's length.
++  b->set_length(1000);
++  mismatched_length->set_range_supported();
++  mismatched_length->set_valid_until(valid_until);
++  mismatched_length->set_last_modified(last_modified);
++  mismatched_length->SetDataOrigin(url, /*is_cors_cross_origin=*/false);
++  mismatched_length->set_length(500);
++  EXPECT_TRUE(mismatched_length->Valid());
++  EXPECT_EQ(mismatched_length, url_index_->TryInsert(mismatched_length));
++  EXPECT_EQ(b->length(), 1000);
+ }
+ 
+ TEST_F(UrlIndexTest, GetByUrlCacheDisabled) {

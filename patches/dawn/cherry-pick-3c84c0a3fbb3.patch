@@ -1,0 +1,235 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Tue, 20 Oct 2026 01:04:49 -0700
+Subject: [dawn][vk] Handle noop draw for AddWorkToEmptyPass workaround.
+
+Move the accounting of work being done to avoid counting it when the
+noop draws are skipped.
+
+Adds a test that would fail on Pixel 4 without this fix, except that the
+driver on CQ doesn't seem to need the workaround anymore, so this is now
+only a speculative fix.
+
+Fixed: 574211718
+Change-Id: Ide9d014e1b58cb8d8b70ff064126dc5ea6fd4847
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/351916
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: Brandon Jones <bajones@chromium.org>
+Electron adaptation notes (43-x-y):
+CommandBufferVk.cpp: the Draw/DrawIndexed lambdas are formatted on one
+line on this branch; the conflict was whitespace-only and the upstream
+guarded form is taken verbatim.
+
+diff --git a/src/dawn/native/vulkan/CommandBufferVk.cpp b/src/dawn/native/vulkan/CommandBufferVk.cpp
+index aa6bce5931195e7ac847913520ac6d19e812fa34..abb87ac0416ab8ec18d1b95360e2272e3d9e9e06 100644
+--- a/src/dawn/native/vulkan/CommandBufferVk.cpp
++++ b/src/dawn/native/vulkan/CommandBufferVk.cpp
+@@ -1750,29 +1750,34 @@ MaybeError CommandBuffer::RecordRenderPass(CommandRecordingContext* recordingCon
+     auto EncodeRenderBundleCommand = [&](CommandIterator* iter, Command type) -> MaybeError {
+         switch (type) {
+             case Command::Draw: {
+-                workCommandCount++;
+                 DrawCmd* draw = iter->NextCommand<DrawCmd>();
+ 
+-                DAWN_TRY(state.SyncAndRun([&](const VulkanFunctions& vk, VkCommandBuffer commands) {
+-                    vk.CmdDraw(commands, draw->vertexCount, draw->instanceCount, draw->firstVertex,
+-                               draw->firstInstance);
+-                }));
++                if (draw->vertexCount > 0 && draw->instanceCount > 0) {
++                    DAWN_TRY(
++                        state.SyncAndRun([&](const VulkanFunctions& vk, VkCommandBuffer commands) {
++                            vk.CmdDraw(commands, draw->vertexCount, draw->instanceCount,
++                                       draw->firstVertex, draw->firstInstance);
++                        }));
++                    workCommandCount++;
++                }
+                 break;
+             }
+ 
+             case Command::DrawIndexed: {
+-                workCommandCount++;
+                 DrawIndexedCmd* draw = iter->NextCommand<DrawIndexedCmd>();
+ 
+-                DAWN_TRY(state.SyncAndRun([&](const VulkanFunctions& vk, VkCommandBuffer commands) {
+-                    vk.CmdDrawIndexed(commands, draw->indexCount, draw->instanceCount,
+-                                      draw->firstIndex, draw->baseVertex, draw->firstInstance);
+-                }));
++                if (draw->indexCount > 0 && draw->instanceCount > 0) {
++                    DAWN_TRY(state.SyncAndRun([&](const VulkanFunctions& vk,
++                                                  VkCommandBuffer commands) {
++                        vk.CmdDrawIndexed(commands, draw->indexCount, draw->instanceCount,
++                                          draw->firstIndex, draw->baseVertex, draw->firstInstance);
++                    }));
++                    workCommandCount++;
++                }
+                 break;
+             }
+ 
+             case Command::DrawIndirect: {
+-                workCommandCount++;
+                 DrawIndirectCmd* draw = iter->NextCommand<DrawIndirectCmd>();
+ 
+                 IndirectDrawMetadata::ValidatedIndirectDraw validatedDraw =
+@@ -1785,11 +1790,12 @@ MaybeError CommandBuffer::RecordRenderPass(CommandRecordingContext* recordingCon
+                     vk.CmdDrawIndirect(commands, indirectBuffer->GetHandle(),
+                                        validatedDraw.indirectOffset, 1, 0);
+                 }));
++
++                workCommandCount++;
+                 break;
+             }
+ 
+             case Command::DrawIndexedIndirect: {
+-                workCommandCount++;
+                 DrawIndexedIndirectCmd* draw = iter->NextCommand<DrawIndexedIndirectCmd>();
+ 
+                 IndirectDrawMetadata::ValidatedIndirectDraw validatedDraw =
+@@ -1802,11 +1808,12 @@ MaybeError CommandBuffer::RecordRenderPass(CommandRecordingContext* recordingCon
+                     vk.CmdDrawIndexedIndirect(commands, indirectBuffer->GetHandle(),
+                                               validatedDraw.indirectOffset, 1, 0);
+                 }));
++
++                workCommandCount++;
+                 break;
+             }
+ 
+             case Command::MultiDrawIndirect: {
+-                workCommandCount++;
+                 MultiDrawIndirectCmd* cmd = iter->NextCommand<MultiDrawIndirectCmd>();
+ 
+                 Buffer* indirectBuffer = ToBackend(cmd->indirectBuffer.Get());
+@@ -1827,11 +1834,11 @@ MaybeError CommandBuffer::RecordRenderPass(CommandRecordingContext* recordingCon
+                                                    static_cast<VkDeviceSize>(cmd->drawCountOffset),
+                                                    cmd->maxDrawCount, kDrawIndirectSize);
+                     }
++                    workCommandCount++;
+                 }));
+                 break;
+             }
+             case Command::MultiDrawIndexedIndirect: {
+-                workCommandCount++;
+                 MultiDrawIndexedIndirectCmd* cmd = iter->NextCommand<MultiDrawIndexedIndirectCmd>();
+ 
+                 Buffer* indirectBuffer = ToBackend(cmd->indirectBuffer.Get());
+@@ -1853,6 +1860,7 @@ MaybeError CommandBuffer::RecordRenderPass(CommandRecordingContext* recordingCon
+                             static_cast<VkDeviceSize>(cmd->drawCountOffset), cmd->maxDrawCount,
+                             kDrawIndexedIndirectSize);
+                     }
++                    workCommandCount++;
+                 }));
+ 
+                 break;
+@@ -2072,33 +2080,36 @@ MaybeError CommandBuffer::RecordRenderPass(CommandRecordingContext* recordingCon
+             }
+ 
+             case Command::BeginOcclusionQuery: {
+-                workCommandCount++;
+                 BeginOcclusionQueryCmd* cmd = mCommands.NextCommand<BeginOcclusionQueryCmd>();
+ 
+                 device->fn.CmdBeginQuery(commands, ToBackend(cmd->querySet.Get())->GetHandle(),
+                                          uint32_t{cmd->queryIndex}, 0);
++
++                workCommandCount++;
+                 break;
+             }
+ 
+             case Command::EndOcclusionQuery: {
+-                workCommandCount++;
+                 EndOcclusionQueryCmd* cmd = mCommands.NextCommand<EndOcclusionQueryCmd>();
+ 
+                 device->fn.CmdEndQuery(commands, ToBackend(cmd->querySet.Get())->GetHandle(),
+                                        uint32_t{cmd->queryIndex});
+ 
+                 UpdateQueryAvailability(cmd);
++
++                workCommandCount++;
+                 break;
+             }
+ 
+             case Command::WriteTimestamp: {
+-                workCommandCount++;
+                 WriteTimestampCmd* cmd = mCommands.NextCommand<WriteTimestampCmd>();
+ 
+                 RecordWriteTimestampCmd(recordingContext, device, cmd->querySet.Get(),
+                                         cmd->queryIndex, true, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+ 
+                 UpdateQueryAvailability(cmd);
++
++                workCommandCount++;
+                 break;
+             }
+ 
+diff --git a/src/dawn/tests/end2end/MultisampledRenderingTests.cpp b/src/dawn/tests/end2end/MultisampledRenderingTests.cpp
+index 106996846a137289d7ff5ad7dfa7fe90fe5f3bdd..85e1981c0717b7c6908056e27e4db36e209b0168 100644
+--- a/src/dawn/tests/end2end/MultisampledRenderingTests.cpp
++++ b/src/dawn/tests/end2end/MultisampledRenderingTests.cpp
+@@ -657,6 +657,69 @@ TEST_P(MultisampledRenderingTest, ResolveOneMultisampledTextureTwice) {
+     VerifyResolveTarget(kGreen, resolveTexture2);
+ }
+ 
++// Test doing an MSAA resolve with no work, as that triggered a bug on the Pixel 4 driver.
++TEST_P(MultisampledRenderingTest, ResolveWithPassWithNoWork) {
++    utils::ComboRenderPassDescriptor renderPass({mMultisampledColorView});
++    renderPass.cColorAttachments[0].loadOp = wgpu::LoadOp::Clear;
++    renderPass.cColorAttachments[0].storeOp = wgpu::StoreOp::Discard;
++    renderPass.cColorAttachments[0].resolveTarget = mResolveView;
++
++    wgpu::CommandEncoder commandEncoder = device.CreateCommandEncoder();
++    wgpu::RenderPassEncoder renderPassEncoder = commandEncoder.BeginRenderPass(&renderPass);
++    renderPassEncoder.End();
++    wgpu::CommandBuffer commandBuffer = commandEncoder.Finish();
++
++    queue.Submit(1, &commandBuffer);
++
++    VerifyResolveTarget(kClearColor, mResolveTexture);
++}
++
++// Test doing an MSAA resolve with noop draw and drawIndexed calls, as that triggered a bug on the
++// Pixel 4 driver.
++TEST_P(MultisampledRenderingTest, ResolveWithPassWithNoopDraws) {
++    // Make the pipeline and index buffer required for the noop draws
++    wgpu::BufferDescriptor indexBufferDesc{
++        .usage = wgpu::BufferUsage::Index,
++        .size = 4,
++    };
++    wgpu::Buffer indexBuffer = device.CreateBuffer(&indexBufferDesc);
++
++    wgpu::ShaderModule module = utils::CreateShaderModule(device, R"(
++        @vertex fn vs() -> @builtin(position) vec4f {
++            return vec4f(0, 0, 0, 0);
++        }
++        @fragment fn fs() -> @location(0) vec4f {
++            return vec4f(0, 0, 0, 0);
++        }
++    )");
++
++    utils::ComboRenderPipelineDescriptor pDesc;
++    pDesc.vertex.module = module;
++    pDesc.cFragment.module = module;
++    pDesc.multisample.count = kSampleCount;
++    pDesc.cTargets[0].format = kColorFormat;
++    wgpu::RenderPipeline pipeline = device.CreateRenderPipeline(&pDesc);
++
++    // Run the pass with the noop draw and drawIndexed.
++    utils::ComboRenderPassDescriptor renderPass({mMultisampledColorView});
++    renderPass.cColorAttachments[0].loadOp = wgpu::LoadOp::Clear;
++    renderPass.cColorAttachments[0].storeOp = wgpu::StoreOp::Discard;
++    renderPass.cColorAttachments[0].resolveTarget = mResolveView;
++
++    wgpu::CommandEncoder commandEncoder = device.CreateCommandEncoder();
++    wgpu::RenderPassEncoder pass = commandEncoder.BeginRenderPass(&renderPass);
++    pass.SetIndexBuffer(indexBuffer, wgpu::IndexFormat::Uint32);
++    pass.SetPipeline(pipeline);
++    pass.Draw(0);
++    pass.DrawIndexed(0);
++    pass.End();
++    wgpu::CommandBuffer commandBuffer = commandEncoder.Finish();
++
++    queue.Submit(1, &commandBuffer);
++
++    VerifyResolveTarget(kClearColor, mResolveTexture);
++}
++
+ // Test using a layer of a 2D texture as resolve target works correctly.
+ TEST_P(MultisampledRenderingTest, ResolveIntoOneMipmapLevelOf2DTexture) {
+     constexpr uint32_t kBaseMipLevel = 2;

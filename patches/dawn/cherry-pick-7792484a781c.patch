@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alan Baker <alanbaker@google.com>
+Date: Mon, 19 Oct 2026 13:41:52 -0700
+Subject: [ir] Fix broken robustness tests
+
+* Use TEST_P instead of TEST_F
+* Update expectations accordingly
+
+Bug: 574310133
+Change-Id: I2817bde913c17f3379563f56dfd34c631bd621fa
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/352075
+Reviewed-by: David Neto <dneto@google.com>
+Auto-Submit: Alan Baker <alanbaker@google.com>
+Commit-Queue: David Neto <dneto@google.com>
+Commit-Queue: Alan Baker <alanbaker@google.com>
+
+diff --git a/src/tint/lang/core/ir/transform/robustness_test.cc b/src/tint/lang/core/ir/transform/robustness_test.cc
+index 11a3bbba34053b2873fa2318a9d66413e0312e21..13ccb16177672f6383b29c047c8526acdb86b8b4 100644
+--- a/src/tint/lang/core/ir/transform/robustness_test.cc
++++ b/src/tint/lang/core/ir/transform/robustness_test.cc
+@@ -6144,7 +6144,7 @@ S = struct @align(8) {
+     EXPECT_EQ(GetParam() ? expect : src, str());
+ }
+ 
+-TEST_F(IR_RobustnessTest, Workgroup_RuntimeArray_DisableRuntimeSizedArrayIndexClamping) {
++TEST_P(IR_RobustnessTest, Workgroup_RuntimeArray_DisableRuntimeSizedArrayIndexClamping) {
+     mod.properties.Add(Property::kAllowBufferTypes);
+     auto* v = b.Var("v", ty.ptr(workgroup, ty.buffer(256)));
+     mod.root_block->Append(v);
+@@ -6203,10 +6203,10 @@ $B1: {  # root
+     cfg.disable_runtime_sized_array_index_clamping = !GetParam();
+     Run(Robustness, cfg);
+ 
+-    EXPECT_EQ(GetParam() ? expect : src, str());
++    EXPECT_EQ(expect, str());
+ }
+ 
+-TEST_F(IR_RobustnessTest, Workgroup_RuntimeStruct_DisableRuntimeSizedArrayIndexClamping) {
++TEST_P(IR_RobustnessTest, Workgroup_RuntimeStruct_DisableRuntimeSizedArrayIndexClamping) {
+     mod.properties.Add(Property::kAllowBufferTypes);
+     auto* S =
+         ty.Struct(mod.symbols.New("S"), {
+@@ -6277,7 +6277,7 @@ $B1: {  # root
+     cfg.disable_runtime_sized_array_index_clamping = !GetParam();
+     Run(Robustness, cfg);
+ 
+-    EXPECT_EQ(GetParam() ? expect : src, str());
++    EXPECT_EQ(expect, str());
+ }
+ 
+ TEST_F(IR_RobustnessWithIntegerRangeAnalysisTest, AccessArrayWithIndex_MaxBound_Equal_Limit) {

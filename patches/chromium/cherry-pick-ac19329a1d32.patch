@@ -1,0 +1,424 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Steve Becker <stevebe@microsoft.com>
+Date: Thu, 22 Oct 2026 10:56:22 -0700
+Subject: [DomStorage] Validate namespace IDs from the renderer
+
+A namespace ID must be a 36 character lowercase UUID string. This change
+has 3 parts:
+
+1. Updates `SessionStorageImpl` to report a bad mojo message for invalid
+namespace IDs.
+
+2. Updates `SessionStorageSQLite/LevelDB` to report corruption after
+reading an invalid namespace ID from disk.
+
+3. `SessionStorageImpl::DeleteNamespacesFromMetadataAndDatabase()` now
+skips already deleted namespaces instead of requesting deletion from the
+database.
+
+Bug: 574512015
+Change-Id: I257957688dddd9599f53cdcfbe9e94aeac73b575
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8614996
+Commit-Queue: Steve Becker <stevebe@microsoft.com>
+Reviewed-by: Rahul Singh <rahsin@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1724966}
+
+Electron adaptation notes (43-x-y):
+session_storage_namespace_impl.cc: this branch's Clone() has neither the
+earlier length check that the fix replaces nor the abandoned-clone
+handling from upstream context, so only the IsNamespaceIdValid() rejection
+is inserted. session_storage_sqlite.cc: only the new include added (the
+neighbouring histogram-helper include is not on this branch).
+session_storage_impl_unittest.cc: only this CL's regression test kept.
+session_storage_sqlite_unittest.cc: the WriteDefaultMetadataToDisk() test
+helper is not on this branch, so the new test writes the same valid
+metadata inline, as the neighbouring ReadAllMetadataWithInvalidStorageKey
+test does.
+
+diff --git a/components/services/storage/dom_storage/leveldb/session_storage_leveldb.cc b/components/services/storage/dom_storage/leveldb/session_storage_leveldb.cc
+index 49c916a291ecaaa61f9e056937b372b354c37fde..90bcefc2cb57c16d1db026aeb4264fd767420f62 100644
+--- a/components/services/storage/dom_storage/leveldb/session_storage_leveldb.cc
++++ b/components/services/storage/dom_storage/leveldb/session_storage_leveldb.cc
+@@ -16,6 +16,7 @@
+ #include "base/types/expected_macros.h"
+ #include "components/services/storage/dom_storage/leveldb/dom_storage_batch_operation_leveldb.h"
+ #include "components/services/storage/dom_storage/leveldb/dom_storage_database_leveldb.h"
++#include "components/services/storage/dom_storage/session_storage_metadata.h"
+ #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
+ #include "third_party/blink/public/common/dom_storage/session_storage_namespace_id.h"
+ 
+@@ -42,6 +43,9 @@ StatusOr<DomStorageDatabase::MapMetadata> ParseMapMetadata(
+   }
+   std::string session_id =
+       std::string(key.substr(0, blink::kSessionStorageNamespaceIdLength));
++  if (!IsNamespaceIdValid(session_id)) {
++    return base::unexpected(DbStatus::Corruption(kInvalidNamespaceIdError));
++  }
+ 
+   // '-' must separate the session id and storage key.
+   key = key.substr(blink::kSessionStorageNamespaceIdLength);
+@@ -265,6 +269,10 @@ DbStatus SessionStorageLevelDB::DeleteSessions(
+ 
+   // Delete each session's metadata.
+   for (const std::string& session_id : session_ids) {
++    // To prevent the unintentional deletion of other session prefixes, the
++    // namespace ID must be a valid UUID with a fixed length.
++    CHECK(IsNamespaceIdValid(session_id));
++
+     DB_RETURN_IF_ERROR(batch->DeletePrefixed(GetSessionPrefix(session_id)));
+   }
+ 
+diff --git a/components/services/storage/dom_storage/leveldb/session_storage_leveldb_unittest.cc b/components/services/storage/dom_storage/leveldb/session_storage_leveldb_unittest.cc
+index 4657dd660f47e7f728cb8ab7fbed17ab114a087b..98b79b015ec868703caaa7a22e1029a76e1b6b59 100644
+--- a/components/services/storage/dom_storage/leveldb/session_storage_leveldb_unittest.cc
++++ b/components/services/storage/dom_storage/leveldb/session_storage_leveldb_unittest.cc
+@@ -164,6 +164,24 @@ TEST_F(SessionStorageLevelDBTest, ParseMapMetadataWithSessionIdMissing) {
+   EXPECT_TRUE(map_metadata.error().IsCorruption());
+ }
+ 
++TEST_F(SessionStorageLevelDBTest, ParseMapMetadataWithSessionIdInvalid) {
++  // Valid UUIDs strings must not contain '$' characters.
++  constexpr char kInvalidSessionId[] = "ce8c7dc5$73b4_4320_a506_ce1f4fd3356f";
++
++  std::string invalid_key = base::StrCat({
++      base::as_string_view(kNamespacePrefix),
++      kInvalidSessionId,
++      std::string(/*count=*/1, kNamespaceStorageKeySeparator),
++      kFakeUrlStorageKey.Serialize(),
++  });
++  StatusOr<DomStorageDatabase::MapMetadata> map_metadata = ParseMapMetadata({
++      ToBytes(invalid_key),
++      /*value=*/ToBytes("314"),
++  });
++  ASSERT_FALSE(map_metadata.has_value());
++  EXPECT_TRUE(map_metadata.error().IsCorruption());
++}
++
+ TEST_F(SessionStorageLevelDBTest, ParseMapMetadataWithSeparatorMissing) {
+   std::string invalid_key = base::StrCat({
+       base::as_string_view(kNamespacePrefix),
+diff --git a/components/services/storage/dom_storage/session_storage_impl.cc b/components/services/storage/dom_storage/session_storage_impl.cc
+index e038780c835c167a6b887e4aec4de3cca73efc8f..de320c6748f6405d06ca64ea9e3b270a5fd8a264 100644
+--- a/components/services/storage/dom_storage/session_storage_impl.cc
++++ b/components/services/storage/dom_storage/session_storage_impl.cc
+@@ -77,6 +77,11 @@ SessionStorageImpl::~SessionStorageImpl() {
+ void SessionStorageImpl::BindNamespace(
+     const std::string& namespace_id,
+     mojo::PendingReceiver<blink::mojom::SessionStorageNamespace> receiver) {
++  if (!IsNamespaceIdValid(namespace_id)) {
++    receiver_.ReportBadMessage(kInvalidNamespaceIdError);
++    return;
++  }
++
+   if (connection_state_ != CONNECTION_FINISHED) {
+     RunWhenConnected(base::BindOnce(&SessionStorageImpl::BindNamespace,
+                                     weak_ptr_factory_.GetWeakPtr(),
+@@ -127,6 +132,11 @@ void SessionStorageImpl::BindStorageArea(
+ }
+ 
+ void SessionStorageImpl::CreateNamespace(const std::string& namespace_id) {
++  if (!IsNamespaceIdValid(namespace_id)) {
++    receiver_.ReportBadMessage(kInvalidNamespaceIdError);
++    return;
++  }
++
+   if (namespaces_.find(namespace_id) != namespaces_.end())
+     return;
+ 
+@@ -138,6 +148,12 @@ void SessionStorageImpl::CloneNamespace(
+     const std::string& clone_from_namespace_id,
+     const std::string& clone_to_namespace_id,
+     mojom::SessionStorageCloneType clone_type) {
++  if (!IsNamespaceIdValid(clone_from_namespace_id) ||
++      !IsNamespaceIdValid(clone_to_namespace_id)) {
++    receiver_.ReportBadMessage(kInvalidNamespaceIdError);
++    return;
++  }
++
+   if (namespaces_.find(clone_to_namespace_id) != namespaces_.end()) {
+     // Non-immediate clones expect to be paired with a |Clone| from the mojo
+     // namespace object. If that clone has already happened, then we don't need
+@@ -203,6 +219,11 @@ void SessionStorageImpl::CloneNamespace(
+ 
+ void SessionStorageImpl::DeleteNamespace(const std::string& namespace_id,
+                                          bool should_persist) {
++  if (!IsNamespaceIdValid(namespace_id)) {
++    receiver_.ReportBadMessage(kInvalidNamespaceIdError);
++    return;
++  }
++
+   auto namespace_it = namespaces_.find(namespace_id);
+   // If the namespace has pending clones, do the clone now before destroying it.
+   if (namespace_it != namespaces_.end()) {
+@@ -271,6 +292,11 @@ void SessionStorageImpl::GetUsage(GetUsageCallback callback) {
+ void SessionStorageImpl::DeleteStorage(const blink::StorageKey& storage_key,
+                                        const std::string& namespace_id,
+                                        DeleteStorageCallback callback) {
++  if (!IsNamespaceIdValid(namespace_id)) {
++    receiver_.ReportBadMessage(kInvalidNamespaceIdError);
++    return;
++  }
++
+   if (connection_state_ != CONNECTION_FINISHED) {
+     RunWhenConnected(base::BindOnce(&SessionStorageImpl::DeleteStorage,
+                                     weak_ptr_factory_.GetWeakPtr(), storage_key,
+@@ -649,12 +675,19 @@ void SessionStorageImpl::DeleteNamespacesFromMetadataAndDatabase(
+   CHECK_EQ(connection_state_, CONNECTION_FINISHED);
+ 
+   // Remove each namespace from `metadata_`.
++  std::vector<std::string> namespaces_to_delete;
+   std::vector<DomStorageDatabase::MapLocator> maps_to_delete;
+-  for (const std::string& namespace_id : namespace_ids) {
++  for (std::string& namespace_id : namespace_ids) {
+     std::map<blink::StorageKey,
+              scoped_refptr<DomStorageDatabase::SharedMapLocator>>
+         namespace_to_delete = metadata_.TakeNamespace(namespace_id);
+ 
++    if (namespace_to_delete.empty()) {
++      // An empty namespace is already deleted.
++      continue;
++    }
++    namespaces_to_delete.push_back(std::move(namespace_id));
++
+     // Find unreferenced map key/value pairs to delete from `database_`.
+     for (auto& [storage_key, map_locator] : namespace_to_delete) {
+       if (map_locator->session_ids().empty()) {
+@@ -664,10 +697,11 @@ void SessionStorageImpl::DeleteNamespacesFromMetadataAndDatabase(
+   }
+ 
+   // Delete the namespaces and map key/values from `database_`.
+-  if (!database_) {
++  if (namespaces_to_delete.empty() || !database_) {
+     return;
+   }
+-  database_->DeleteSessions(std::move(namespace_ids), std::move(maps_to_delete),
++  database_->DeleteSessions(std::move(namespaces_to_delete),
++                            std::move(maps_to_delete),
+                             base::BindOnce(&SessionStorageImpl::OnCommitResult,
+                                            weak_ptr_factory_.GetWeakPtr()));
+ }
+diff --git a/components/services/storage/dom_storage/session_storage_impl_unittest.cc b/components/services/storage/dom_storage/session_storage_impl_unittest.cc
+index 781f4eaef1f6a2c9845e8d8d22d738a91231eb78..3ec5c11be4cfb5249aafa36c726dbaeb42dad97c 100644
+--- a/components/services/storage/dom_storage/session_storage_impl_unittest.cc
++++ b/components/services/storage/dom_storage/session_storage_impl_unittest.cc
+@@ -1959,6 +1959,79 @@ TEST_P(SessionStorageImplTest, DeleteAfterCloneWithoutMojoClone) {
+   EXPECT_EQ(1ul, data.size());
+ }
+ 
++// Regression test for https://crbug.com/574512015.
++TEST_P(SessionStorageImplTest,
++       InvalidNamespaceDeletionDoesNotLeakDataAcrossOrigins) {
++  // Create a new session that contains a map with one key/value pair.
++  const std::string namespace_id =
++      base::Uuid::GenerateRandomV4().AsLowercaseString();
++  const blink::StorageKey storage_key =
++      blink::StorageKey::CreateFromStringForTesting(
++          "https://source-origin.test");
++
++  session_storage()->CreateNamespace(namespace_id);
++
++  mojo::Remote<blink::mojom::StorageArea> area;
++  session_storage()->BindStorageArea(storage_key, namespace_id,
++                                     area.BindNewPipeAndPassReceiver());
++
++  ASSERT_TRUE(test::PutSync(area.get(), StringViewToUint8Vector("source_key"),
++                            StringViewToUint8Vector("source_value"),
++                            std::nullopt, test::MakeStorageAreaSource()));
++  session_storage_impl()->FlushAreaForTesting(namespace_id, storage_key);
++  WaitForDatabaseTasks();
++
++  // Deleting an invalid namespace must not corrupt the database.  In LevelDB,
++  // the prefix for the invalid namespace overlaps with the valid namespace
++  // from above.  This incorrectly deletes the metadata for both namespaces
++  // while leaving the key/value pairs intact.
++  const std::string invalid_namespace_id = namespace_id + "-https://source";
++  session_storage()->DeleteNamespace(invalid_namespace_id,
++                                     /*should_persist=*/false);
++  FlushMojo();
++  WaitForDatabaseTasks();
++
++  // `SessionStorageImpl` must report the invalid namespace ID as a bad message.
++  EXPECT_TRUE(bad_message_called_);
++
++  // Reopening recomputes the next map ID from the stored metadata. A new origin
++  // must not inherit data from an orphaned map's key/value pairs because it
++  // reuses the orphaned map's ID.
++  area.reset();
++  ShutDownSessionStorage();
++
++  const std::string new_namespace_id =
++      base::Uuid::GenerateRandomV4().AsLowercaseString();
++
++  const blink::StorageKey new_storage_key =
++      blink::StorageKey::CreateFromStringForTesting(
++          "https://other-origin.test");
++
++  session_storage()->CreateNamespace(new_namespace_id);
++  session_storage()->BindStorageArea(new_storage_key, new_namespace_id,
++                                     area.BindNewPipeAndPassReceiver());
++
++  // Since its brand new, the namespace does not attempt to load any key/value
++  // pairs from the database.
++  EXPECT_TRUE(test::GetAllSync(area.get()).empty());
++
++  // Force the new namespace to read its key/value pairs from the database.
++  const auto new_key = StringViewToUint8Vector("new_key");
++  const auto new_value = StringViewToUint8Vector("new_value");
++  ASSERT_TRUE(test::PutSync(area.get(), new_key, new_value, std::nullopt,
++                            test::MakeStorageAreaSource()));
++  session_storage_impl()->FlushAreaForTesting(new_namespace_id,
++                                              new_storage_key);
++  WaitForDatabaseTasks();
++
++  // The new namespace must not contained any orphaned key/value pairs from
++  // another origin.
++  std::vector<blink::mojom::KeyValuePtr> data = test::GetAllSync(area.get());
++  ASSERT_EQ(1u, data.size());
++  EXPECT_EQ(new_key, data[0]->key);
++  EXPECT_EQ(new_value, data[0]->value);
++}
++
+ // Regression test for https://crbug.com/1128318
+ TEST_P(SessionStorageImplTest, Bug1128318) {
+   std::string namespace_id1 =
+diff --git a/components/services/storage/dom_storage/session_storage_metadata.cc b/components/services/storage/dom_storage/session_storage_metadata.cc
+index e6a3026695db7221b735ee6b6564352a3ad80ec3..ef163e85cfb24b49a1c10a2392f0152f2330ff69 100644
+--- a/components/services/storage/dom_storage/session_storage_metadata.cc
++++ b/components/services/storage/dom_storage/session_storage_metadata.cc
+@@ -10,6 +10,7 @@
+ #include "base/compiler_specific.h"
+ #include "base/logging.h"
+ #include "base/strings/string_number_conversions.h"
++#include "base/uuid.h"
+ #include "components/services/storage/dom_storage/async_dom_storage_database.h"
+ #include "url/gurl.h"
+ 
+@@ -176,4 +177,12 @@ SessionStorageMetadata::GetOrCreateNamespaceEntry(
+       .first;
+ }
+ 
++bool IsNamespaceIdValid(const std::string& namespace_id) {
++  std::string namespace_uuid_string = namespace_id;
++  std::ranges::replace(namespace_uuid_string, '_', '-');
++
++  base::Uuid namespace_uuid = base::Uuid::ParseLowercase(namespace_uuid_string);
++  return namespace_uuid.is_valid();
++}
++
+ }  // namespace storage
+diff --git a/components/services/storage/dom_storage/session_storage_metadata.h b/components/services/storage/dom_storage/session_storage_metadata.h
+index 629edc81bbc62b3c253a4507950baa3de0e2fcc3..f95668fac9b0cd5e508368cecdff928db5c850cc 100644
+--- a/components/services/storage/dom_storage/session_storage_metadata.h
++++ b/components/services/storage/dom_storage/session_storage_metadata.h
+@@ -86,6 +86,14 @@ class SessionStorageMetadata {
+   NamespaceStorageKeyMap namespace_storage_key_map_;
+ };
+ 
++// Session storage namespace IDs must use a lowercase `base::Uuid` string with
++// underscores instead of dashes.  For example:
++// `36356e0b_1627_4492_a474_db76a8996bed`.
++bool IsNamespaceIdValid(const std::string& namespace_id);
++
++inline constexpr char kInvalidNamespaceIdError[] =
++    "Invalid session storage namespace ID.";
++
+ }  // namespace storage
+ 
+ #endif  // COMPONENTS_SERVICES_STORAGE_DOM_STORAGE_SESSION_STORAGE_METADATA_H_
+diff --git a/components/services/storage/dom_storage/session_storage_namespace_impl.cc b/components/services/storage/dom_storage/session_storage_namespace_impl.cc
+index efce349682ec8d6db88e2b6f4c33e0642b9e7595..6420ecc9445c7dd96bbca9103daaa0cabd8b3bb5 100644
+--- a/components/services/storage/dom_storage/session_storage_namespace_impl.cc
++++ b/components/services/storage/dom_storage/session_storage_namespace_impl.cc
+@@ -200,6 +200,12 @@ void SessionStorageNamespaceImpl::OpenArea(
+ 
+ void SessionStorageNamespaceImpl::Clone(const std::string& clone_to_namespace) {
+   DCHECK(IsPopulated());
++
++  if (!IsNamespaceIdValid(clone_to_namespace)) {
++    receivers_.ReportBadMessage(kInvalidNamespaceIdError);
++    return;
++  }
++
+   child_namespaces_waiting_for_clone_call_.erase(clone_to_namespace);
+   delegate_->RegisterShallowClonedNamespace(namespace_id_, clone_to_namespace,
+                                             storage_key_areas_);
+diff --git a/components/services/storage/dom_storage/sqlite/session_storage_sqlite.cc b/components/services/storage/dom_storage/sqlite/session_storage_sqlite.cc
+index e0f4caa9ac80d49a1723c1a22c9de6893eefb999..3cd5e7473b40a4b8cb4c2eb72b4f0921a60ffd5f 100644
+--- a/components/services/storage/dom_storage/sqlite/session_storage_sqlite.cc
++++ b/components/services/storage/dom_storage/sqlite/session_storage_sqlite.cc
+@@ -8,6 +8,7 @@
+ #include "base/task/sequenced_task_runner.h"
+ #include "base/trace_event/memory_dump_manager.h"
+ #include "base/types/expected_macros.h"
++#include "components/services/storage/dom_storage/session_storage_metadata.h"
+ #include "components/services/storage/dom_storage/sqlite/map_entries_table.h"
+ #include "components/services/storage/dom_storage/sqlite/sqlite_database_macros.h"
+ #include "components/services/storage/dom_storage/sqlite/sqlite_database_utils.h"
+@@ -55,9 +56,14 @@ StatusOr<DomStorageDatabase::MapMetadata> ParseMapMetadata(
+       blink::StorageKey::Deserialize(statement.ColumnBlobAsString(1)),
+       []() { return DbStatus::Corruption("invalid storage key"); });
+ 
++  std::string session_id = statement.ColumnString(0);
++  if (!IsNamespaceIdValid(session_id)) {
++    return base::unexpected(DbStatus::Corruption(kInvalidNamespaceIdError));
++  }
++
+   return DomStorageDatabase::MapMetadata{
+       .map_locator{
+-          /*session_id=*/statement.ColumnString(0),
++          std::move(session_id),
+           std::move(storage_key),
+           /*map_id=*/statement.ColumnInt(2),
+       },
+diff --git a/components/services/storage/dom_storage/sqlite/session_storage_sqlite_unittest.cc b/components/services/storage/dom_storage/sqlite/session_storage_sqlite_unittest.cc
+index 3e9663eadb63c776a8addfa3a6048ce4800695ab..ba826e4d92df201e50527ba6434d8f633c20b5c1 100644
+--- a/components/services/storage/dom_storage/sqlite/session_storage_sqlite_unittest.cc
++++ b/components/services/storage/dom_storage/sqlite/session_storage_sqlite_unittest.cc
+@@ -329,6 +329,47 @@ TEST_F(SessionStorageSqliteTest, MetadataPersistence) {
+   }
+ }
+ 
++TEST_F(SessionStorageSqliteTest, ReadAllMetadataWithInvalidSessionId) {
++  // Write valid metadata to ensure the table exists and works.
++  {
++    std::unique_ptr<SessionStorageSqlite> database;
++    ASSERT_NO_FATAL_FAILURE(OpenOnDisk(&database));
++
++    DomStorageDatabase::Metadata valid_metadata;
++    valid_metadata.map_metadata.push_back({
++        .map_locator{kFirstSessionId, kFirstStorageKey, kFirstMapId},
++    });
++    DbStatus status = database->PutMetadata(std::move(valid_metadata));
++    EXPECT_TRUE(status.ok()) << status.ToString();
++  }
++
++  // Insert an invalid session ID directly, keeping the other fields valid.
++  {
++    base::FilePath database_path;
++    ASSERT_NO_FATAL_FAILURE(GetDatabasePath(&database_path));
++
++    sql::Database database(sql::test::kTestTag);
++    ASSERT_TRUE(database.Open(database_path));
++
++    constexpr char kInsertInvalidSessionId[] =
++        "INSERT INTO session_metadata (session_id, storage_key, map_id) "
++        "VALUES (?, ?, ?)";
++    sql::Statement statement(
++        database.GetUniqueStatement(kInsertInvalidSessionId));
++    statement.BindString(0, "ce8c7dc5$73b4_4320_a506_ce1f4fd3356f");
++    statement.BindBlob(1, kSecondStorageKey.Serialize());
++    statement.BindInt64(2, kSecondMapId);
++    ASSERT_TRUE(statement.Run());
++  }
++
++  std::unique_ptr<SessionStorageSqlite> database;
++  ASSERT_NO_FATAL_FAILURE(OpenOnDisk(&database));
++
++  StatusOr<DomStorageDatabase::Metadata> result = database->ReadAllMetadata();
++  ASSERT_FALSE(result.has_value());
++  EXPECT_TRUE(result.error().IsCorruption());
++}
++
+ // Verifies that `ReadAllMetadata()` returns a corruption error when the
+ // database contains a storage key that cannot be deserialized.
+ TEST_F(SessionStorageSqliteTest, ReadAllMetadataWithInvalidStorageKey) {

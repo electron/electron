@@ -1,0 +1,216 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ana Sollano Kim <ansollan@microsoft.com>
+Date: Thu, 15 Oct 2026 13:04:33 -0700
+Subject: [EyeDropper] Respect captured frame row stride
+
+The screen-capture callback sizes its bitmap using the frame dimensions
+but copies height times the source stride. Padded source rows therefore
+corrupt copied pixels and exceed the destination allocation.
+
+Use Skia's stride-aware pixel copy and cover padded and tightly packed
+frames with unit tests.
+
+Bug: 571856431
+Change-Id: I1252c131393c2f520208e965790c94458da13321
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8562038
+Commit-Queue: Ana Sollano Kim <ansollan@microsoft.com>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Reviewed-by: Dan Clark <daniec@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1719954}
+Electron adaptation notes (43-x-y):
+components/BUILD.gn: the eye_dropper unit_tests dependency is added next
+to the ui_devtools entry this branch has (different neighbours upstream).
+Fix hunks unchanged.
+
+diff --git a/components/BUILD.gn b/components/BUILD.gn
+index aa7d37c13421cae9583646f4ae9e1d7ebd778e5c..ff713a4ec42f9e981ed656f253445e3b355ace4c 100644
+--- a/components/BUILD.gn
++++ b/components/BUILD.gn
+@@ -457,6 +457,10 @@ test("components_unittests") {
+     deps += [ "//components/ui_devtools/views:unit_tests" ]
+   }
+ 
++  if (use_aura) {
++    deps += [ "//components/eye_dropper:unit_tests" ]
++  }
++
+   if (is_fuchsia) {
+     deps += [
+       "//components/fuchsia_component_support:unit_tests",
+diff --git a/components/eye_dropper/BUILD.gn b/components/eye_dropper/BUILD.gn
+index 5fa8421d77b659f3f7dc2b889354b84707b53388..529e168251bf3a807687131c41098e6e90d8c17a 100644
+--- a/components/eye_dropper/BUILD.gn
++++ b/components/eye_dropper/BUILD.gn
+@@ -38,3 +38,15 @@ source_set("color_mixer") {
+     "//ui/color",
+   ]
+ }
++
++source_set("unit_tests") {
++  testonly = true
++  sources = [ "eye_dropper_view_unittest.cc" ]
++
++  deps = [
++    ":eye_dropper",
++    "//skia",
++    "//testing/gtest",
++    "//third_party/webrtc_overrides:webrtc_component",
++  ]
++}
+diff --git a/components/eye_dropper/eye_dropper_view.cc b/components/eye_dropper/eye_dropper_view.cc
+index d96981103dd8339ee07093f854c5537089233ec5..f2f6217389f99ae50413a2ea159480c23846728f 100644
+--- a/components/eye_dropper/eye_dropper_view.cc
++++ b/components/eye_dropper/eye_dropper_view.cc
+@@ -6,7 +6,8 @@
+ 
+ #include <utility>
+ 
+-#include "base/compiler_specific.h"
++#include "base/check.h"
++#include "base/check_op.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/time/time.h"
+ #include "base/timer/timer.h"
+@@ -19,6 +20,7 @@
+ #include "content/public/browser/web_contents.h"
+ #include "third_party/skia/include/core/SkBitmap.h"
+ #include "third_party/skia/include/core/SkPath.h"
++#include "third_party/skia/include/core/SkPixmap.h"
+ #include "ui/base/metadata/metadata_header_macros.h"
+ #include "ui/base/metadata/metadata_impl_macros.h"
+ #include "ui/base/mojom/ui_base_types.mojom-shared.h"
+@@ -155,12 +157,7 @@ void EyeDropperView::ScreenCapturer::OnCaptureResult(
+     return;
+   }
+ 
+-  // TODO(crbug.com/352187279): Support other pixel formats.
+-  CHECK_EQ(frame->pixel_format(), webrtc::FOURCC_ARGB);
+-  frame_.allocN32Pixels(frame->size().width(), frame->size().height(), true);
+-  UNSAFE_TODO(memcpy(frame_.getAddr32(0, 0), frame->data(),
+-                     frame->size().height() * frame->stride()));
+-  frame_.setImmutable();
++  frame_ = EyeDropperView::CreateBitmapFromFrame(*frame);
+ 
+   // The captured frame is in full desktop coordinates. E.g. the top left
+   // monitor should start from (0, 0), so we need to compute the correct
+@@ -189,6 +186,19 @@ void EyeDropperView::ScreenCapturer::OnCaptureResult(
+   owner_->OnScreenCaptured();
+ }
+ 
++SkBitmap EyeDropperView::CreateBitmapFromFrame(
++    const webrtc::DesktopFrame& frame) {
++  // TODO(crbug.com/352187279): Support other pixel formats.
++  CHECK_EQ(frame.pixel_format(), webrtc::FOURCC_ARGB);
++  SkBitmap bitmap;
++  bitmap.allocN32Pixels(frame.size().width(), frame.size().height(), true);
++  const bool write_pixels_succeeded =
++      bitmap.writePixels(SkPixmap(bitmap.info(), frame.data(), frame.stride()));
++  CHECK(write_pixels_succeeded);
++  bitmap.setImmutable();
++  return bitmap;
++}
++
+ SkBitmap EyeDropperView::ScreenCapturer::GetBitmap() const {
+   return frame_;
+ }
+diff --git a/components/eye_dropper/eye_dropper_view.h b/components/eye_dropper/eye_dropper_view.h
+index c0fc8762337c14c3f405ce02383c5b194f2a47a9..74ea044ea66f581ea06cedb259d5a6c611ea86b7 100644
+--- a/components/eye_dropper/eye_dropper_view.h
++++ b/components/eye_dropper/eye_dropper_view.h
+@@ -24,6 +24,8 @@
+ #include "ui/aura/window_observer.h"
+ #endif
+ 
++class SkBitmap;
++
+ namespace ui {
+ class EventHandler;
+ }  // namespace ui
+@@ -53,6 +55,9 @@ class EyeDropperView : public content::EyeDropper,
+   EyeDropperView& operator=(const EyeDropperView&) = delete;
+   ~EyeDropperView() override;
+ 
++  // Copies the captured pixels into an immutable bitmap.
++  static SkBitmap CreateBitmapFromFrame(const webrtc::DesktopFrame& frame);
++
+   // Called regularly to notify what the current cursor position is. Cursor
+   // position may not have changed between calls.
+   void OnCursorPositionUpdate(gfx::Point cursor_position);
+diff --git a/components/eye_dropper/eye_dropper_view_unittest.cc b/components/eye_dropper/eye_dropper_view_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..e6f07ec8ef10f0f302288b946788fb975d018925
+--- /dev/null
++++ b/components/eye_dropper/eye_dropper_view_unittest.cc
+@@ -0,0 +1,72 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "components/eye_dropper/eye_dropper_view.h"
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/skia/include/core/SkBitmap.h"
++#include "third_party/skia/include/core/SkColor.h"
++#include "third_party/skia/include/core/SkRect.h"
++#include "third_party/webrtc/modules/desktop_capture/desktop_frame.h"
++
++namespace eye_dropper {
++namespace {
++
++class BitmapDesktopFrame : public webrtc::DesktopFrame {
++ public:
++  BitmapDesktopFrame(const SkBitmap& bitmap, int width)
++      : DesktopFrame(webrtc::DesktopSize(width, bitmap.height()),
++                     bitmap.rowBytes(),
++                     webrtc::FOURCC_ARGB,
++                     static_cast<uint8_t*>(bitmap.getPixels()),
++                     nullptr) {}
++};
++
++TEST(EyeDropperViewTest, CreateBitmapFromTightlyPackedFrame) {
++  SkBitmap source;
++  source.allocN32Pixels(2, 3, true);
++  source.eraseColor(SK_ColorRED);
++  source.erase(SK_ColorBLUE, SkIRect::MakeXYWH(0, 1, 2, 1));
++  source.erase(SK_ColorGREEN, SkIRect::MakeXYWH(0, 2, 2, 1));
++  BitmapDesktopFrame frame(source, source.width());
++
++  SkBitmap bitmap = EyeDropperView::CreateBitmapFromFrame(frame);
++
++  EXPECT_EQ(bitmap.width(), 2);
++  EXPECT_EQ(bitmap.height(), 3);
++  EXPECT_TRUE(bitmap.isImmutable());
++  for (int x = 0; x < bitmap.width(); ++x) {
++    EXPECT_EQ(bitmap.getColor(x, 0), SK_ColorRED);
++    EXPECT_EQ(bitmap.getColor(x, 1), SK_ColorBLUE);
++    EXPECT_EQ(bitmap.getColor(x, 2), SK_ColorGREEN);
++  }
++
++  source.eraseColor(SK_ColorBLACK);
++  EXPECT_EQ(bitmap.getColor(0, 0), SK_ColorRED);
++}
++
++TEST(EyeDropperViewTest, CreateBitmapFromPaddedFrame) {
++  SkBitmap source;
++  source.allocN32Pixels(4, 3, true);
++  source.eraseColor(SK_ColorRED);
++  source.erase(SK_ColorBLUE, SkIRect::MakeXYWH(0, 1, 4, 1));
++  source.erase(SK_ColorGREEN, SkIRect::MakeXYWH(0, 2, 4, 1));
++  BitmapDesktopFrame frame(source, 2);
++  ASSERT_GT(frame.stride(),
++            frame.size().width() * webrtc::DesktopFrame::kBytesPerPixel);
++
++  SkBitmap bitmap = EyeDropperView::CreateBitmapFromFrame(frame);
++
++  EXPECT_EQ(bitmap.width(), 2);
++  EXPECT_EQ(bitmap.height(), 3);
++  EXPECT_TRUE(bitmap.isImmutable());
++  for (int x = 0; x < bitmap.width(); ++x) {
++    EXPECT_EQ(bitmap.getColor(x, 0), SK_ColorRED);
++    EXPECT_EQ(bitmap.getColor(x, 1), SK_ColorBLUE);
++    EXPECT_EQ(bitmap.getColor(x, 2), SK_ColorGREEN);
++  }
++}
++
++}  // namespace
++}  // namespace eye_dropper

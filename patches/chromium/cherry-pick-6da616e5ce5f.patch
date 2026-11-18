@@ -1,0 +1,759 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Sun, 18 Oct 2026 19:27:13 -0700
+Subject: [Workers] Plumb SanitizeScriptErrors state through worker error
+ reporting
+
+Previously, ExecutionContext::DispatchErrorEvent() passed the
+SanitizeScriptErrors parameter to DispatchErrorEventInternal() for local
+event dispatch, but did not forward it to ExceptionThrown() or retain it
+for exceptions queued in pending_exceptions_.
+
+This change threads SanitizeScriptErrors through
+ExecutionContext::ExceptionThrown() and WorkerReportingProxy::ReportException()
+so that worker reporting proxies (DedicatedWorkerMessagingProxy,
+SharedWorkerReportingProxy, and ServiceWorkerGlobalScopeProxy) have
+direct access to the sanitization state when constructing and reporting
+error events across threads.
+
+Additionally:
+- Store SanitizeScriptErrors alongside each ErrorEvent in
+  ExecutionContext::pending_exceptions_ to maintain state across nested
+  error event dispatches.
+- Guard the updated parent-side reporting behavior behind the
+  SanitizeWorkerErrorPropagation runtime enabled feature flag.
+
+TAG=agy
+CONV=374fa867-5861-40a0-be10-1c8d1a60722d
+
+Bug: 501901218
+Change-Id: I3ccce9b1ba81a058dde9843a267631b0fb0399f9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8424262
+Auto-Submit: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Commit-Queue: Hiroki Nakagawa <nhiroki@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1721579}
+Electron adaptation notes (43-x-y):
+execution_context.{h,cc}: this branch keeps its is_draining_pending_exceptions_
+guard; pending_exceptions_ becomes the upstream pair vector and the drain
+loop passes the stored SanitizeScriptErrors to ExceptionThrown().
+shared_worker_global_scope.{h,cc}: the branch's extra classic-script
+fetch methods are kept; only ExceptionThrown() gains the parameter.
+shared_worker_reporting_proxy.cc: worker_ is a raw pointer here
+(CrossThreadUnretained(worker_) instead of worker_.get()).
+runtime_enabled_features.json5: only SanitizeWorkerErrorPropagation added.
+dedicated_worker_test.cc is not carried (the test file has drifted too far
+from this branch; Electron does not build blink unit tests).
+
+diff --git a/third_party/blink/renderer/core/events/error_event.cc b/third_party/blink/renderer/core/events/error_event.cc
+index 2bfe1f7a897a9dd5ef6224f5173fafa8b4d67aa1..8568477ab5d6e5d99857e679a68813421b844784 100644
+--- a/third_party/blink/renderer/core/events/error_event.cc
++++ b/third_party/blink/renderer/core/events/error_event.cc
+@@ -38,16 +38,14 @@
+ 
+ namespace blink {
+ 
+-ErrorEvent* ErrorEvent::CreateSanitizedError(ScriptState* script_state) {
++ErrorEvent* ErrorEvent::CreateSanitizedError(DOMWrapperWorld* world) {
+   // "6. If script's muted errors is true, then set message to "Script error.",
+   // urlString to the empty string, line and col to 0, and errorValue to null."
+   // https://html.spec.whatwg.org/C/#runtime-script-errors:muted-errors
+-  DCHECK(script_state);
+   return MakeGarbageCollected<ErrorEvent>(
+       "Script error.",
+       MakeGarbageCollected<SourceLocation>(String(), String(), 0, 0, nullptr),
+-      ScriptValue::CreateNull(script_state->GetIsolate()),
+-      &script_state->World());
++      ScriptValue(), world);
+ }
+ 
+ ErrorEvent::ErrorEvent(ScriptState* script_state)
+diff --git a/third_party/blink/renderer/core/events/error_event.h b/third_party/blink/renderer/core/events/error_event.h
+index f1f1a1758b3dc3c9beb18025258c953c47728380..4a71d2241b04ec3098d6b50bbceaa60c205754c8 100644
+--- a/third_party/blink/renderer/core/events/error_event.h
++++ b/third_party/blink/renderer/core/events/error_event.h
+@@ -72,7 +72,7 @@ class CORE_EXPORT ErrorEvent final : public Event {
+   }
+ 
+   // Creates an error for a script whose errors are muted.
+-  static ErrorEvent* CreateSanitizedError(ScriptState* script_state);
++  static ErrorEvent* CreateSanitizedError(DOMWrapperWorld* world = nullptr);
+ 
+   explicit ErrorEvent(ScriptState* script_state);
+   ErrorEvent(const String& message,
+diff --git a/third_party/blink/renderer/core/execution_context/execution_context.cc b/third_party/blink/renderer/core/execution_context/execution_context.cc
+index 2b0b6b0c43653075bd7d9c540d4c1af348211385..92e7c8a5b52c82539422314806b390b78e4cf394 100644
+--- a/third_party/blink/renderer/core/execution_context/execution_context.cc
++++ b/third_party/blink/renderer/core/execution_context/execution_context.cc
+@@ -292,20 +292,20 @@ void ExecutionContext::DispatchErrorEvent(
+     return;
+   }
+   if (in_dispatch_error_event_) {
+-    pending_exceptions_.push_back(error_event);
++    pending_exceptions_.emplace_back(error_event, sanitize_script_errors);
+     return;
+   }
+ 
+   // First report the original exception and only then all the nested ones.
+   if (!DispatchErrorEventInternal(error_event, sanitize_script_errors)) {
+     base::AutoReset auto_reset(&is_draining_pending_exceptions_, true);
+-    ExceptionThrown(error_event);
++    ExceptionThrown(error_event, sanitize_script_errors);
+   }
+ 
+   base::AutoReset auto_reset(&is_draining_pending_exceptions_, true);
+   auto pending_exceptions = std::move(pending_exceptions_);
+-  for (ErrorEvent* e : pending_exceptions) {
+-    ExceptionThrown(e);
++  for (const auto& [pending_event, pending_sanitize] : pending_exceptions) {
++    ExceptionThrown(pending_event, pending_sanitize);
+   }
+   // Assure handling pending exceptions doesn't add more pending exceptions.
+   CHECK(pending_exceptions_.empty());
+@@ -319,8 +319,7 @@ bool ExecutionContext::DispatchErrorEventInternal(
+     return false;
+ 
+   if (sanitize_script_errors == SanitizeScriptErrors::kSanitize) {
+-    error_event = ErrorEvent::CreateSanitizedError(
+-        ToScriptState(this, *error_event->World()));
++    error_event = ErrorEvent::CreateSanitizedError(error_event->World());
+   }
+ 
+   DCHECK(!in_dispatch_error_event_);
+diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
+index 1c78a66b85040404deeebb7c0f3c69f120600236..682f12310c13a127039fb17cba6730dfc77efd06 100644
+--- a/third_party/blink/renderer/core/execution_context/execution_context.h
++++ b/third_party/blink/renderer/core/execution_context/execution_context.h
+@@ -29,6 +29,7 @@
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_EXECUTION_CONTEXT_EXECUTION_CONTEXT_H_
+ 
+ #include <memory>
++#include <utility>
+ 
+ #include "base/notreached.h"
+ #include "net/storage_access_api/status.h"
+@@ -239,7 +240,7 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+ 
+   void DispatchErrorEvent(ErrorEvent*, SanitizeScriptErrors);
+ 
+-  virtual void ExceptionThrown(ErrorEvent*) = 0;
++  virtual void ExceptionThrown(ErrorEvent*, SanitizeScriptErrors) = 0;
+ 
+   PublicURLManager& GetPublicURLManager();
+ 
+@@ -528,7 +529,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+ 
+   bool in_dispatch_error_event_;
+   bool is_draining_pending_exceptions_ = false;
+-  HeapVector<Member<ErrorEvent> > pending_exceptions_;
++  HeapVector<std::pair<Member<ErrorEvent>, SanitizeScriptErrors>>
++      pending_exceptions_;
+ 
+   mojom::FrameLifecycleState lifecycle_state_;
+ 
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
+index 2af2b8795d5700a1764aabc5ab3fbf9c6eb5184e..c12ebc1de836f820a8a9a9d5c3349a05f0a2cd69 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -563,7 +563,9 @@ String LocalDOMWindow::CheckAndGetJavascriptUrl(
+   return script_source;
+ }
+ 
+-void LocalDOMWindow::ExceptionThrown(ErrorEvent* event) {
++void LocalDOMWindow::ExceptionThrown(
++    ErrorEvent* event,
++    SanitizeScriptErrors sanitize_script_errors) {
+   MainThreadDebugger::Instance(GetIsolate())->ExceptionThrown(this, event);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.h b/third_party/blink/renderer/core/frame/local_dom_window.h
+index 8d3b6b5a4b3134032426bf187d437698c47f993e..e5d212a1d3a7396f5d2285726084690c2c192a32 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.h
++++ b/third_party/blink/renderer/core/frame/local_dom_window.h
+@@ -189,7 +189,7 @@ class CORE_EXPORT LocalDOMWindow final : public DOMWindow,
+   HttpsState GetHttpsState() const final;
+   ResourceFetcher* Fetcher() final;
+   bool CanExecuteScripts(ReasonForCallingCanExecuteScripts) final;
+-  void ExceptionThrown(ErrorEvent*) final;
++  void ExceptionThrown(ErrorEvent*, SanitizeScriptErrors) final;
+   void AddInspectorIssue(AuditsIssue) final;
+   EventTarget* ErrorEventTarget() final { return this; }
+   String OutgoingReferrer() const final;
+diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
+index c4cc043dc9bac54dd0876198ac54a6b8133c71b6..1cf5f97501d536119679b144af3ba20be74fdba2 100644
+--- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
++++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
+@@ -96,7 +96,9 @@ ResourceFetcher* ShadowRealmGlobalScope::Fetcher() {
+   NOTREACHED();
+ }
+ 
+-void ShadowRealmGlobalScope::ExceptionThrown(ErrorEvent* error_event) {
++void ShadowRealmGlobalScope::ExceptionThrown(
++    ErrorEvent* error_event,
++    SanitizeScriptErrors sanitize_script_errors) {
+   NOTREACHED();
+ }
+ 
+diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
+index 91c698dd0965d0c945d24ccc7512cf07247cd897..956049a3e86cba9bfd1ee15a92a49f13d105ee30 100644
+--- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
++++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
+@@ -53,7 +53,7 @@ class CORE_EXPORT ShadowRealmGlobalScope final : public EventTarget,
+   String UserAgent() const override;
+   HttpsState GetHttpsState() const override;
+   ResourceFetcher* Fetcher() override;
+-  void ExceptionThrown(ErrorEvent* error_event) override;
++  void ExceptionThrown(ErrorEvent* error_event, SanitizeScriptErrors) override;
+   void AddInspectorIssue(AuditsIssue issue) override;
+   EventTarget* ErrorEventTarget() override;
+   FrameOrWorkerScheduler* GetScheduler() override;
+diff --git a/third_party/blink/renderer/core/testing/null_execution_context.h b/third_party/blink/renderer/core/testing/null_execution_context.h
+index e79f456deeb6d98d63ced61d2f92996d95a39e92..3bfa18387acbf99b511795ef93c991e4149d5a0c 100644
+--- a/third_party/blink/renderer/core/testing/null_execution_context.h
++++ b/third_party/blink/renderer/core/testing/null_execution_context.h
+@@ -49,7 +49,7 @@ class NullExecutionContext : public GarbageCollected<NullExecutionContext>,
+   void AddConsoleMessageImpl(ConsoleMessage*,
+                              bool discard_duplicates) override {}
+   void AddInspectorIssue(AuditsIssue) override {}
+-  void ExceptionThrown(ErrorEvent*) override {}
++  void ExceptionThrown(ErrorEvent*, SanitizeScriptErrors) override {}
+ 
+   void SetUpSecurityContextForTesting();
+ 
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc b/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
+index 12819e09971accd8f9badb51841e24a9b2cd06b1..1bbc0ac62aa177d66df659a5cb5b7ba81d6afb92 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
++++ b/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.cc
+@@ -34,6 +34,7 @@
+ #include "third_party/blink/renderer/core/workers/dedicated_worker_thread.h"
+ #include "third_party/blink/renderer/core/workers/global_scope_creation_params.h"
+ #include "third_party/blink/renderer/core/workers/parent_execution_context_task_runners.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/wtf.h"
+@@ -325,7 +326,8 @@ void DedicatedWorkerMessagingProxy::PostMessageToWorkerObject(
+ void DedicatedWorkerMessagingProxy::DispatchErrorEvent(
+     const String& error_message,
+     const CrossThreadSourceLocation& cross_location,
+-    int exception_id) {
++    int exception_id,
++    SanitizeScriptErrors sanitize_script_errors) {
+   DCHECK(IsParentContextThread());
+   if (!worker_object_)
+     return;
+@@ -340,10 +342,20 @@ void DedicatedWorkerMessagingProxy::DispatchErrorEvent(
+   // the original Document, even if some of the workers along this chain have
+   // been terminated and garbage collected."
+   // https://html.spec.whatwg.org/C/#runtime-script-errors-2
++  const SanitizeScriptErrors effective_sanitize =
++      RuntimeEnabledFeatures::SanitizeWorkerErrorPropagationEnabled()
++          ? sanitize_script_errors
++          : SanitizeScriptErrors::kDoNotSanitize;
++
+   ErrorEvent* event = ErrorEvent::Create(error_message, location, nullptr);
+-  if (worker_object_->DispatchEvent(*event) !=
+-      DispatchEventResult::kNotCanceled)
++  ErrorEvent* event_for_worker_object =
++      effective_sanitize == SanitizeScriptErrors::kSanitize
++          ? ErrorEvent::CreateSanitizedError()
++          : event;
++  if (worker_object_->DispatchEvent(*event_for_worker_object) !=
++      DispatchEventResult::kNotCanceled) {
+     return;
++  }
+ 
+   // The worker thread can already be terminated.
+   if (!GetWorkerThread()) {
+@@ -362,8 +374,7 @@ void DedicatedWorkerMessagingProxy::DispatchErrorEvent(
+           CrossThreadUnretained(GetWorkerThread())));
+ 
+   // Propagate an unhandled error to the parent context.
+-  const auto mute_script_errors = SanitizeScriptErrors::kDoNotSanitize;
+-  GetExecutionContext()->DispatchErrorEvent(event, mute_script_errors);
++  GetExecutionContext()->DispatchErrorEvent(event, effective_sanitize);
+ }
+ 
+ void DedicatedWorkerMessagingProxy::Trace(Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.h b/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.h
+index fc0e2cb6c496f53dfa6e4664b74970a5a13dfa35..19b96581ff51567428a9960caa58e32313bacf02 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.h
++++ b/third_party/blink/renderer/core/workers/dedicated_worker_messaging_proxy.h
+@@ -89,8 +89,9 @@ class CORE_EXPORT DedicatedWorkerMessagingProxy
+                          const JavaScriptFrameworkDetectionResult& result);
+   void PostMessageToWorkerObject(BlinkTransferableMessage);
+   void DispatchErrorEvent(const String& error_message,
+-                          const CrossThreadSourceLocation& cross_location,
+-                          int exception_id);
++                          const CrossThreadSourceLocation&,
++                          int exception_id,
++                          SanitizeScriptErrors);
+ 
+   // Freezes the WorkerThread. `is_in_back_forward_cache` is true only when the
+   // page goes to back/forward cache.
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.cc b/third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.cc
+index 1fad9d7d306ad1a5f593c8b1d74e0e0d5f5daca1..a519f94688d80267b64d395fe0aa0d6cdbdca426 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.cc
++++ b/third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.cc
+@@ -98,9 +98,11 @@ void DedicatedWorkerObjectProxy::ProcessUnhandledException(
+   global_scope->ExceptionUnhandled(exception_id);
+ }
+ 
+-void DedicatedWorkerObjectProxy::ReportException(const String& error_message,
+-                                                 const SourceLocation* location,
+-                                                 int exception_id) {
++void DedicatedWorkerObjectProxy::ReportException(
++    const String& error_message,
++    const SourceLocation* location,
++    int exception_id,
++    SanitizeScriptErrors sanitize_script_errors) {
+   CrossThreadSourceLocation cross_thread_location =
+       CrossThreadSourceLocation::From(location);
+   PostCrossThreadTask(
+@@ -108,7 +110,8 @@ void DedicatedWorkerObjectProxy::ReportException(const String& error_message,
+       FROM_HERE,
+       CrossThreadBindOnce(&DedicatedWorkerMessagingProxy::DispatchErrorEvent,
+                           messaging_proxy_weak_ptr_, error_message,
+-                          std::move(cross_thread_location), exception_id));
++                          std::move(cross_thread_location), exception_id,
++                          sanitize_script_errors));
+ }
+ 
+ void DedicatedWorkerObjectProxy::DidFailToFetchClassicScript() {
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.h b/third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.h
+index 93ad67169f0d4efa3372e6dc47f4948b412d4694..970855f2bec69ab3724b9d98b3774e35fd52b6bc 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.h
++++ b/third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.h
+@@ -77,7 +77,8 @@ class CORE_EXPORT DedicatedWorkerObjectProxy : public ThreadedObjectProxyBase {
+   // ThreadedObjectProxyBase overrides.
+   void ReportException(const String& error_message,
+                        const SourceLocation*,
+-                       int exception_id) override;
++                       int exception_id,
++                       SanitizeScriptErrors) override;
+   void DidFailToFetchClassicScript() final;
+   void DidFailToFetchModuleScript() final;
+   void DidEvaluateTopLevelScript(
+diff --git a/third_party/blink/renderer/core/workers/shared_worker_global_scope.cc b/third_party/blink/renderer/core/workers/shared_worker_global_scope.cc
+index 9828f31806a57db6d136b5fde31d4882a804fba5..4f85213a5418254020e0dd0176e6ecd22c40a535 100644
+--- a/third_party/blink/renderer/core/workers/shared_worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/shared_worker_global_scope.cc
+@@ -266,13 +266,15 @@ void SharedWorkerGlobalScope::DidFetchClassicScript(
+       classic_script_loader->GetScriptEncoding());
+ }
+ 
+-void SharedWorkerGlobalScope::ExceptionThrown(ErrorEvent* event) {
+-  WorkerGlobalScope::ExceptionThrown(event);
++void SharedWorkerGlobalScope::ExceptionThrown(
++    ErrorEvent* event,
++    SanitizeScriptErrors sanitize_script_errors) {
++  WorkerGlobalScope::ExceptionThrown(event, sanitize_script_errors);
+   if (WorkerThreadDebugger* debugger =
+-          WorkerThreadDebugger::From(GetThread()->GetIsolate()))
++          WorkerThreadDebugger::From(GetThread()->GetIsolate())) {
+     debugger->ExceptionThrown(GetThread(), event);
++  }
+ }
+-
+ void SharedWorkerGlobalScope::Trace(Visitor* visitor) const {
+   WorkerGlobalScope::Trace(visitor);
+ }
+diff --git a/third_party/blink/renderer/core/workers/shared_worker_global_scope.h b/third_party/blink/renderer/core/workers/shared_worker_global_scope.h
+index 1a52719f7f74554b07a7692ff489f34cb3f5b037..08a825a06205fe11e0139f63460ca78c334160be 100644
+--- a/third_party/blink/renderer/core/workers/shared_worker_global_scope.h
++++ b/third_party/blink/renderer/core/workers/shared_worker_global_scope.h
+@@ -116,7 +116,7 @@ class CORE_EXPORT SharedWorkerGlobalScope final : public WorkerGlobalScope {
+   void DidFetchClassicScript(WorkerClassicScriptLoader* classic_script_loader,
+                              const v8_inspector::V8StackTraceId& stack_id);
+ 
+-  void ExceptionThrown(ErrorEvent*) override;
++  void ExceptionThrown(ErrorEvent*, SanitizeScriptErrors) override;
+ 
+   const SharedWorkerToken token_;
+ 
+diff --git a/third_party/blink/renderer/core/workers/shared_worker_reporting_proxy.cc b/third_party/blink/renderer/core/workers/shared_worker_reporting_proxy.cc
+index 96cf09fa99cbc231557896b59fd8b18786714f00..3bb44c199669835ff6fa68c5973ea013e8fc21c2 100644
+--- a/third_party/blink/renderer/core/workers/shared_worker_reporting_proxy.cc
++++ b/third_party/blink/renderer/core/workers/shared_worker_reporting_proxy.cc
+@@ -8,6 +8,7 @@
+ #include "third_party/blink/public/common/loader/javascript_framework_detection.h"
+ #include "third_party/blink/renderer/core/exported/web_shared_worker_impl.h"
+ #include "third_party/blink/renderer/platform/bindings/source_location.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/main_thread.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/wtf.h"
+@@ -34,9 +35,11 @@ void SharedWorkerReportingProxy::CountFeature(WebFeature feature) {
+                           CrossThreadUnretained(worker_), feature));
+ }
+ 
+-void SharedWorkerReportingProxy::ReportException(const String& error_message,
+-                                                 const SourceLocation* location,
+-                                                 int exception_id) {
++void SharedWorkerReportingProxy::ReportException(
++    const String& error_message,
++    const SourceLocation* location,
++    int exception_id,
++    SanitizeScriptErrors sanitize_script_errors) {
+   DCHECK(!IsMainThread());
+   // Exceptions during the script evaluation phase are reported to the clients,
+   // but runtime errors after evaluation are not.
+@@ -47,20 +50,33 @@ void SharedWorkerReportingProxy::ReportException(const String& error_message,
+     return;
+   }
+ 
++  String message = error_message;
++  String source_url = location->Url();
++  int line_number = location->LineNumber();
++  int column_number = location->ColumnNumber();
++
++  if (sanitize_script_errors == SanitizeScriptErrors::kSanitize &&
++      RuntimeEnabledFeatures::SanitizeWorkerErrorPropagationEnabled()) {
++    message = "Script error.";
++    source_url = "";
++    line_number = 0;
++    column_number = 0;
++  }
++
+   // TODO(https://crbug.com/438606270): This is a heuristic to distinguish parse
+   // errors from runtime errors during evaluation. "SyntaxError" indicates a
+   // script parsing failure, which should dispatch a generic `Event`. Other
+   // errors that occur during script evaluation are considered runtime errors
+   // and should dispatch a detailed `ErrorEvent`. This should be replaced with a
+   // more robust mechanism if one becomes available.
+-  const bool is_eval_error = !error_message.contains("SyntaxError");
++  const bool is_eval_error = !message.contains("SyntaxError");
+ 
+   PostCrossThreadTask(
+       *main_thread_task_runner_, FROM_HERE,
+-      CrossThreadBindOnce(
+-          &WebSharedWorkerImpl::ReportException, CrossThreadUnretained(worker_),
+-          error_message, location->Url(), location->LineNumber(),
+-          location->ColumnNumber(), exception_id, is_eval_error));
++      CrossThreadBindOnce(&WebSharedWorkerImpl::ReportException,
++                          CrossThreadUnretained(worker_), message,
++                          source_url, line_number, column_number, exception_id,
++                          is_eval_error));
+ }
+ 
+ void SharedWorkerReportingProxy::ReportConsoleMessage(
+diff --git a/third_party/blink/renderer/core/workers/shared_worker_reporting_proxy.h b/third_party/blink/renderer/core/workers/shared_worker_reporting_proxy.h
+index 71d7791abf918a2904703dd3d185dc39967c85ff..bb7580a25bbaeae5d18515209694196141a2599d 100644
+--- a/third_party/blink/renderer/core/workers/shared_worker_reporting_proxy.h
++++ b/third_party/blink/renderer/core/workers/shared_worker_reporting_proxy.h
+@@ -31,7 +31,8 @@ class SharedWorkerReportingProxy final
+   void CountFeature(WebFeature) override;
+   void ReportException(const String&,
+                        const SourceLocation*,
+-                       int exception_id) override;
++                       int exception_id,
++                       SanitizeScriptErrors) override;
+   void ReportConsoleMessage(mojom::ConsoleMessageSource,
+                             mojom::ConsoleMessageLevel,
+                             const String& message,
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+index 0c426c64805a2b4817b6884f9e5af6a9377ab078..83668fe5d17295edbc41b20d7429be01aec41c9d 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+@@ -782,11 +782,14 @@ WorkerGlobalScope::WorkerGlobalScope(
+       std::move(creation_params->worker_permissions_policy));
+ }
+ 
+-void WorkerGlobalScope::ExceptionThrown(ErrorEvent* event) {
++void WorkerGlobalScope::ExceptionThrown(
++    ErrorEvent* event,
++    SanitizeScriptErrors sanitize_script_errors) {
+   int next_id = ++last_pending_error_event_id_;
+   pending_error_events_.Set(next_id, event);
+   ReportingProxy().ReportException(event->MessageForConsole(),
+-                                   event->Location(), next_id);
++                                   event->Location(), next_id,
++                                   sanitize_script_errors);
+ }
+ 
+ void WorkerGlobalScope::RemoveURLFromMemoryCache(const KURL& url) {
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
+index 59f46db1fde45d54ba5562b01a1711a724ff5b10..6452dcf554616fe40c2b3c6d05969ff7eeb8da69 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.h
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
+@@ -292,7 +292,7 @@ class CORE_EXPORT WorkerGlobalScope
+                     bool is_service_worker_global_scope);
+ 
+   // ExecutionContext
+-  void ExceptionThrown(ErrorEvent*) override;
++  void ExceptionThrown(ErrorEvent*, SanitizeScriptErrors) override;
+   void RemoveURLFromMemoryCache(const KURL&) final;
+ 
+   // `out_response_encoding` should be used only for V8 code cache as
+diff --git a/third_party/blink/renderer/core/workers/worker_reporting_proxy.h b/third_party/blink/renderer/core/workers/worker_reporting_proxy.h
+index 862ab2fa29ab99d0c504b35c5b06db6f43c589cd..eb19383aec8299b792f6adc1e6db67dd90bdd521 100644
+--- a/third_party/blink/renderer/core/workers/worker_reporting_proxy.h
++++ b/third_party/blink/renderer/core/workers/worker_reporting_proxy.h
+@@ -32,6 +32,7 @@
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_WORKERS_WORKER_REPORTING_PROXY_H_
+ 
+ #include "third_party/blink/public/mojom/devtools/console_message.mojom-blink-forward.h"
++#include "third_party/blink/renderer/bindings/core/v8/sanitize_script_errors.h"
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/core/frame/web_feature_forward.h"
+ #include "third_party/blink/renderer/platform/bindings/source_location.h"
+@@ -56,7 +57,8 @@ class CORE_EXPORT WorkerReportingProxy {
+   // by const reference.
+   virtual void ReportException(const String& error_message,
+                                const SourceLocation*,
+-                               int exception_id) {}
++                               int exception_id,
++                               SanitizeScriptErrors) {}
+   virtual void ReportConsoleMessage(mojom::ConsoleMessageSource,
+                                     mojom::ConsoleMessageLevel,
+                                     const String& message,
+diff --git a/third_party/blink/renderer/core/workers/worker_thread_test_helper.h b/third_party/blink/renderer/core/workers/worker_thread_test_helper.h
+index 124ca6010501c44a638e6de04caed641e187f50e..fad1dd05e7959b0a7eb201ced44e83f59c1989f5 100644
+--- a/third_party/blink/renderer/core/workers/worker_thread_test_helper.h
++++ b/third_party/blink/renderer/core/workers/worker_thread_test_helper.h
+@@ -123,7 +123,7 @@ class FakeWorkerGlobalScope : public WorkerGlobalScope {
+   }
+   bool IsOffMainThreadScriptFetchDisabled() override { return true; }
+ 
+-  void ExceptionThrown(ErrorEvent*) override {}
++  void ExceptionThrown(ErrorEvent*, SanitizeScriptErrors) override {}
+ 
+   // Returns a token uniquely identifying this fake worker.
+   WorkerToken GetWorkerToken() const final { return token_; }
+diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.cc b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
+index d2f53d0e76be70dc2382cfe1bc0b4306f481e639..0f1deb6b21e1802f5687b26457d311d5065d36c9 100644
+--- a/third_party/blink/renderer/core/workers/worklet_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
+@@ -220,7 +220,9 @@ void WorkletGlobalScope::AddInspectorIssue(AuditsIssue issue) {
+   }
+ }
+ 
+-void WorkletGlobalScope::ExceptionThrown(ErrorEvent* error_event) {
++void WorkletGlobalScope::ExceptionThrown(
++    ErrorEvent* error_event,
++    SanitizeScriptErrors sanitize_script_errors) {
+   if (IsMainThreadWorkletGlobalScope()) {
+     MainThreadDebugger::Instance(GetIsolate())
+         ->ExceptionThrown(this, error_event);
+diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.h b/third_party/blink/renderer/core/workers/worklet_global_scope.h
+index dfc393c0893c72f04f5501bb5b2a8982b52ede72..4cddad58a7e46afa814cb4a82be032c833ef772c 100644
+--- a/third_party/blink/renderer/core/workers/worklet_global_scope.h
++++ b/third_party/blink/renderer/core/workers/worklet_global_scope.h
+@@ -61,7 +61,7 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+   bool IsContextThread() const final;
+   void AddConsoleMessageImpl(ConsoleMessage*, bool discard_duplicates) final;
+   void AddInspectorIssue(AuditsIssue) final;
+-  void ExceptionThrown(ErrorEvent*) final;
++  void ExceptionThrown(ErrorEvent*, SanitizeScriptErrors) final;
+   CoreProbeSink* GetProbeSink() final;
+   scoped_refptr<base::SingleThreadTaskRunner> GetTaskRunner(TaskType) final;
+   FrameOrWorkerScheduler* GetScheduler() final;
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+index e324e30a0b59c5db4c767d6488348f56483f2cb5..3bc1c5ad6d1916012f73b6af58f0c6f44b6ade4b 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+@@ -892,13 +892,15 @@ ServiceWorkerGlobalScope::CreateWorkerScriptCachedMetadataHandler(
+       this, script_url, std::move(meta_data), std::move(encoding));
+ }
+ 
+-void ServiceWorkerGlobalScope::ExceptionThrown(ErrorEvent* event) {
+-  WorkerGlobalScope::ExceptionThrown(event);
++void ServiceWorkerGlobalScope::ExceptionThrown(
++    ErrorEvent* event,
++    SanitizeScriptErrors sanitize_script_errors) {
++  WorkerGlobalScope::ExceptionThrown(event, sanitize_script_errors);
+   if (WorkerThreadDebugger* debugger =
+-          WorkerThreadDebugger::From(GetThread()->GetIsolate()))
++          WorkerThreadDebugger::From(GetThread()->GetIsolate())) {
+     debugger->ExceptionThrown(GetThread(), event);
++  }
+ }
+-
+ void ServiceWorkerGlobalScope::CountCacheStorageInstalledScript(
+     uint64_t script_size,
+     uint64_t script_metadata_size) {
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
+index 16dbb1227a3876feda5dfeaf67ddd980c94fb70c..e5d8276ab535efbef43fa7fcd4a1209ffa48ed10 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
+@@ -398,7 +398,7 @@ class MODULES_EXPORT ServiceWorkerGlobalScope final
+       const KURL& script_url,
+       std::unique_ptr<Vector<uint8_t>> meta_data,
+       TextEncoding encoding) override;
+-  void ExceptionThrown(ErrorEvent*) override;
++  void ExceptionThrown(ErrorEvent*, SanitizeScriptErrors) override;
+ 
+   void DidReceiveResponseForClassicScript(
+       WorkerClassicScriptLoader* classic_script_loader);
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
+index d6f1b42b62e9e145329f5b565916652ab292163d..faff2afc18a6aa9128857cb7768711b43955f3b6 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
+@@ -122,7 +122,8 @@ void ServiceWorkerGlobalScopeProxy::CountFeature(WebFeature feature) {
+ void ServiceWorkerGlobalScopeProxy::ReportException(
+     const String& error_message,
+     const SourceLocation* location,
+-    int exception_id) {
++    int exception_id,
++    SanitizeScriptErrors sanitize_script_errors) {
+   DCHECK_CALLED_ON_VALID_THREAD(worker_thread_checker_);
+   Client().ReportException(error_message, location->LineNumber(),
+                            location->ColumnNumber(), location->Url());
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
+index f60bb46ffccc750fa5685983b7c9ebbf97e7150e..75fd42b32621ca70f94ea224fe2404b9d792ca44 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
+@@ -124,7 +124,8 @@ class ServiceWorkerGlobalScopeProxy final : public WebServiceWorkerContextProxy,
+   void CountFeature(WebFeature) override;
+   void ReportException(const String& error_message,
+                        const SourceLocation*,
+-                       int exception_id) override;
++                       int exception_id,
++                       SanitizeScriptErrors) override;
+   void ReportConsoleMessage(mojom::ConsoleMessageSource,
+                             mojom::ConsoleMessageLevel,
+                             const String& message,
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 32f6a5f66e1b4d457c584640ab8bf2db32d81217..7252afaf7038bc211bcae584ab27b0029dd41eef 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -5122,6 +5122,10 @@
+       name: "SanitizerAPI",
+       status: "stable",
+     },
++    {
++      name: "SanitizeWorkerErrorPropagation",
++      status: "stable",
++    },
+     {
+       // https://wicg.github.io/webcomponents/proposals/Scoped-Custom-Element-Registries
+       // https://github.com/whatwg/html/issues/10854
+diff --git a/third_party/blink/web_tests/http/tests/workers/dedicated-worker-import-cross-origin-muted-error.html b/third_party/blink/web_tests/http/tests/workers/dedicated-worker-import-cross-origin-muted-error.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..1720632684a0bf3e7135e4a09ad24d78be37c7af
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/workers/dedicated-worker-import-cross-origin-muted-error.html
+@@ -0,0 +1,100 @@
++<!DOCTYPE html>
++<title>DedicatedWorker: worker.onerror should be muted for cross-origin script errors</title>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++<script>
++setup({ allow_uncaught_exception: true });
++
++function assert_muted_error_event(e) {
++  assert_equals(e.message, "Script error.", "Message should be muted");
++  assert_equals(e.filename, "", "Filename should be muted");
++  assert_equals(e.lineno, 0, "Lineno should be muted");
++  assert_equals(e.colno, 0, "Colno should be muted");
++  assert_equals(e.error, null, "Error should be muted");
++}
++
++promise_test(async t => {
++  const worker = new Worker("resources/worker-import-muted.js");
++  t.add_cleanup(() => worker.terminate());
++
++  const e = await new Promise(resolve => {
++    worker.onerror = event => {
++      event.preventDefault();
++      resolve(event);
++    };
++  });
++
++  assert_muted_error_event(e);
++}, "DedicatedWorker worker.onerror should be muted for cross-origin script errors via importScripts.");
++
++promise_test(async t => {
++  const worker = new Worker("resources/worker-import-muted.js");
++  t.add_cleanup(() => worker.terminate());
++
++  const e = await new Promise(resolve => {
++    window.addEventListener("error", event => {
++      event.preventDefault();
++      resolve(event);
++    }, { once: true });
++  });
++
++  assert_muted_error_event(e);
++}, "DedicatedWorker unhandled cross-origin script error should propagate muted to window.");
++
++promise_test(async t => {
++  const childWorkerUrl = new URL("resources/worker-import-muted.js", location.href).href;
++  const parentScript = `
++    const child = new Worker(${JSON.stringify(childWorkerUrl)});
++    let childError;
++    child.onerror = e => {
++      childError = {
++        message: e.message,
++        filename: e.filename,
++        lineno: e.lineno,
++        colno: e.colno,
++        error: e.error,
++      };
++    };
++    self.addEventListener("error", e => {
++      e.preventDefault();
++      postMessage({
++        childError,
++        parentScopeError: {
++          message: e.message,
++          filename: e.filename,
++          lineno: e.lineno,
++          colno: e.colno,
++          error: e.error,
++        },
++      });
++    });
++  `;
++  const blob = new Blob([parentScript], { type: "text/javascript" });
++  const blobUrl = URL.createObjectURL(blob);
++  const parentWorker = new Worker(blobUrl);
++  t.add_cleanup(() => {
++    parentWorker.terminate();
++    URL.revokeObjectURL(blobUrl);
++  });
++
++  const data = await new Promise(resolve => {
++    parentWorker.onmessage = event => resolve(event.data);
++  });
++
++  assert_muted_error_event(data.childError);
++  assert_muted_error_event(data.parentScopeError);
++}, "Nested DedicatedWorker cross-origin script error should be muted on child.onerror and parent DedicatedWorkerGlobalScope.");
++
++promise_test(async t => {
++  const worker = new SharedWorker("resources/worker-import-muted.js");
++
++  const e = await new Promise(resolve => {
++    worker.onerror = event => {
++      event.preventDefault();
++      resolve(event);
++    };
++  });
++
++  assert_muted_error_event(e);
++}, "SharedWorker worker.onerror should be muted for cross-origin script errors via importScripts.");
++</script>
+diff --git a/third_party/blink/web_tests/http/tests/workers/resources/worker-cross-origin-throw.js b/third_party/blink/web_tests/http/tests/workers/resources/worker-cross-origin-throw.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..181eb7502b1b98df51ea653d6e539d57d6f7322c
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/workers/resources/worker-cross-origin-throw.js
+@@ -0,0 +1,3 @@
++function throwFromImportedScript() {
++  throw new Error('Error from imported script');
++}
+diff --git a/third_party/blink/web_tests/http/tests/workers/resources/worker-import-muted.js b/third_party/blink/web_tests/http/tests/workers/resources/worker-import-muted.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..698c6e396686032f81af8351dea91139271642d5
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/workers/resources/worker-import-muted.js
+@@ -0,0 +1,8 @@
++// This is a same-origin script that will be used as the Worker's main script.
++// It imports a cross-origin script and triggers an error during execution.
++// We use localhost:8000 which is cross-origin to the test's default
++// 127.0.0.1:8000.
++const CROSS_ORIGIN_URL =
++    'http://localhost:8000/workers/resources/worker-cross-origin-throw.js';
++importScripts(CROSS_ORIGIN_URL);
++throwFromImportedScript();

@@ -1,0 +1,235 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bryan Oltman <bryanoltman@google.com>
+Date: Wed, 21 Oct 2026 10:20:53 -0700
+Subject: [mac] Restrict renderer sandbox process-info-pidinfo to self
+
+Gate unrestricted process-info-pidinfo access in the renderer's
+seatbelt profile behind a default-disabled
+MacSandboxAllowRendererPidinfo killswitch feature. Because the
+renderer's seatbelt profile already inherits permission from the
+common seatbelt profile to query its own process information, this
+change prevents the renderer from querying process information of other
+processes while still allowing it to inspect itself.
+
+Fixed: 574858526
+Change-Id: I3ea24d40d9bbbe61a7301ff5f3d177767cca809d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8624487
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+Commit-Queue: Mark Mentovai <mark@chromium.org>
+Auto-Submit: Bryan Oltman <bryanoltman@google.com>
+Cr-Commit-Position: refs/heads/main@{#1723938}
+
+Electron adaptation notes (43-x-y):
+sandbox_parameters_mac.{h,mm}, common.sb, sandbox_mac_unittest.mm,
+sandbox_mac_v2_unittest.mm: the upstream context around the new feature,
+helper and (define ...) line belongs to later GPU/WebNN/proxy-resolver
+sandbox work not on this branch; only this CL's own lines are inserted
+at the equivalent spots. renderer.sb hunk is unchanged.
+sandbox_parameters_mac.h: includes base/feature_list.h for
+BASE_DECLARE_FEATURE, which upstream's header already had.
+sandbox_parameters_mac.mm: upstream calls SetupCommonSandboxParameters()
+before the switch in SetupSandboxParameters(); on this branch each case
+calls it, so kRenderer is split into its own case that calls
+SetupCommonSandboxParameters() and then SetupRendererSandboxParameters(),
+and every other case keeps its existing behaviour.
+sandbox_mac_unittest.mm: the two new multiprocess tests are appended at the
+end of the file (the upstream neighbours do not exist on this branch), and
+base/test/scoped_feature_list.h is included, which upstream already had.
+
+diff --git a/content/browser/sandbox_mac_unittest.mm b/content/browser/sandbox_mac_unittest.mm
+index 14b1f14a133d991cd8fcd8e207cf8cf340fb953b..b8f0bfd1b62d4239ecde47c63345431c2e015503 100644
+--- a/content/browser/sandbox_mac_unittest.mm
++++ b/content/browser/sandbox_mac_unittest.mm
+@@ -7,6 +7,8 @@
+ #import <Cocoa/Cocoa.h>
+ #import <Foundation/Foundation.h>
+ #include <fcntl.h>
++#include <libproc.h>
++#include <unistd.h>
+ 
+ #include "base/apple/foundation_util.h"
+ #include "base/apple/scoped_cftyperef.h"
+@@ -25,6 +27,7 @@
+ #include "base/strings/sys_string_conversions.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/test/multiprocess_test.h"
++#include "base/test/scoped_feature_list.h"
+ #include "base/test/test_timeouts.h"
+ #include "content/browser/sandbox_parameters_mac.h"
+ #include "sandbox/mac/sandbox_serializer.h"
+@@ -246,4 +249,62 @@ void CheckCreateSeatbeltServer() {
+   ExecuteWithParams("NetworkProcessPrefs", sandbox::mojom::Sandbox::kNetwork);
+ }
+ 
++MULTIPROCESS_TEST_MAIN(RendererPidinfoRestrictedProcess) {
++  CheckCreateSeatbeltServer();
++
++  // Ensure the renderer can query `proc_pidinfo` for itself (`(target self)`).
++  proc_bsdinfo bsd_info;
++  CHECK_EQ(
++      proc_pidinfo(getpid(), PROC_PIDTBSDINFO, 0, &bsd_info, sizeof(bsd_info)),
++      static_cast<int>(sizeof(bsd_info)));
++
++  // Ensure the renderer is denied when querying `proc_pidinfo` for another
++  // process (here, the parent process).
++  CHECK_EQ(
++      proc_pidinfo(getppid(), PROC_PIDTBSDINFO, 0, &bsd_info, sizeof(bsd_info)),
++      0);
++  CHECK_EQ(errno, EPERM);
++
++  return 0;
++}
++
++// Verifies that, when `kMacSandboxAllowRendererPidinfo` is disabled, the
++// renderer sandbox allows `proc_pidinfo` on the current process (`getpid()`)
++// while denying `proc_pidinfo` on other processes (`getppid()`) with `EPERM`.
++TEST_F(SandboxMacTest, RendererPidinfoRestricted) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitAndDisableFeature(kMacSandboxAllowRendererPidinfo);
++
++  ExecuteWithParams("RendererPidinfoRestrictedProcess",
++                    sandbox::mojom::Sandbox::kRenderer);
++}
++
++MULTIPROCESS_TEST_MAIN(RendererPidinfoUnrestrictedProcess) {
++  CheckCreateSeatbeltServer();
++
++  // Ensure the renderer can query `proc_pidinfo` for both itself and another
++  // process (the parent process) when unrestricted `process-info-pidinfo` is
++  // enabled.
++  proc_bsdinfo bsd_info;
++  CHECK_EQ(
++      proc_pidinfo(getpid(), PROC_PIDTBSDINFO, 0, &bsd_info, sizeof(bsd_info)),
++      static_cast<int>(sizeof(bsd_info)));
++  CHECK_EQ(
++      proc_pidinfo(getppid(), PROC_PIDTBSDINFO, 0, &bsd_info, sizeof(bsd_info)),
++      static_cast<int>(sizeof(bsd_info)));
++
++  return 0;
++}
++
++// Verifies that, when `kMacSandboxAllowRendererPidinfo` is enabled, the
++// renderer sandbox allows `proc_pidinfo` on both the current process
++// (`getpid()`) and other processes (`getppid()`).
++TEST_F(SandboxMacTest, RendererPidinfoUnrestricted) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitAndEnableFeature(kMacSandboxAllowRendererPidinfo);
++
++  ExecuteWithParams("RendererPidinfoUnrestrictedProcess",
++                    sandbox::mojom::Sandbox::kRenderer);
++}
++
+ }  // namespace content
+diff --git a/content/browser/sandbox_parameters_mac.h b/content/browser/sandbox_parameters_mac.h
+index 89e9c6b4702af74a94ced25cd90cca7e19b1d69d..190e0bab2d415e13b07dfa424a63ef4029d31200 100644
+--- a/content/browser/sandbox_parameters_mac.h
++++ b/content/browser/sandbox_parameters_mac.h
+@@ -5,6 +5,7 @@
+ #ifndef CONTENT_BROWSER_SANDBOX_PARAMETERS_MAC_H_
+ #define CONTENT_BROWSER_SANDBOX_PARAMETERS_MAC_H_
+ 
++#include "base/feature_list.h"
+ #include "content/common/content_export.h"
+ 
+ namespace base {
+@@ -21,6 +22,8 @@ enum class Sandbox;
+ 
+ namespace content {
+ 
++CONTENT_EXPORT BASE_DECLARE_FEATURE(kMacSandboxAllowRendererPidinfo);
++
+ // This populates the sandbox parameters in the client for the given
+ // |sandbox_type|. Some parameters may be extracted from the |command_line|.
+ CONTENT_EXPORT bool SetupSandboxParameters(
+diff --git a/content/browser/sandbox_parameters_mac.mm b/content/browser/sandbox_parameters_mac.mm
+index 312394f973486523c71a6e5b811ccffe3e5c2ecf..5c195a391d72b25cce01fabd966517a797ea7816 100644
+--- a/content/browser/sandbox_parameters_mac.mm
++++ b/content/browser/sandbox_parameters_mac.mm
+@@ -35,6 +35,11 @@
+ 
+ namespace content {
+ 
++// If enabled, allows the renderer process to query `process-info-pidinfo` for
++// any process rather than only itself.
++BASE_FEATURE(kMacSandboxAllowRendererPidinfo,
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ namespace {
+ 
+ // If disabled, the macOS sandbox for child processes will deny access to
+@@ -208,6 +213,12 @@ bool SetupGpuSandboxParameters(sandbox::SandboxSerializer* serializer,
+   return true;
+ }
+ 
++void SetupRendererSandboxParameters(sandbox::SandboxSerializer* serializer) {
++  CHECK(serializer->SetBooleanParameter(
++      sandbox::policy::kParamAllowRendererPidinfo,
++      base::FeatureList::IsEnabled(kMacSandboxAllowRendererPidinfo)));
++}
++
+ }  // namespace
+ 
+ bool SetupSandboxParameters(sandbox::mojom::Sandbox sandbox_type,
+@@ -219,13 +230,16 @@ bool SetupSandboxParameters(sandbox::mojom::Sandbox sandbox_type,
+     case sandbox::mojom::Sandbox::kMirroring:
+     case sandbox::mojom::Sandbox::kPrintBackend:
+     case sandbox::mojom::Sandbox::kPrintCompositor:
+-    case sandbox::mojom::Sandbox::kRenderer:
+     case sandbox::mojom::Sandbox::kService:
+     case sandbox::mojom::Sandbox::kServiceWithJit:
+     case sandbox::mojom::Sandbox::kProxyResolver:
+     case sandbox::mojom::Sandbox::kUtility:
+       SetupCommonSandboxParameters(serializer, command_line);
+       break;
++    case sandbox::mojom::Sandbox::kRenderer:
++      SetupCommonSandboxParameters(serializer, command_line);
++      SetupRendererSandboxParameters(serializer);
++      break;
+     case sandbox::mojom::Sandbox::kOnDeviceModelExecution:
+     case sandbox::mojom::Sandbox::kGpu:
+       return SetupGpuSandboxParameters(serializer, command_line);
+diff --git a/content/renderer/sandbox_mac_v2_unittest.mm b/content/renderer/sandbox_mac_v2_unittest.mm
+index 4a255cc12b37c197eeacdf91ac9dc959019d26c8..b1cc443292e9b05f2a6294b7dcd988b98ecd7799 100644
+--- a/content/renderer/sandbox_mac_v2_unittest.mm
++++ b/content/renderer/sandbox_mac_v2_unittest.mm
+@@ -78,6 +78,8 @@ void SetParametersForTest(SandboxSerializer* serializer,
+ 
+   CHECK(serializer->SetBooleanParameter(
+       sandbox::policy::kParamEnableDistributedNotifications, false));
++  CHECK(serializer->SetParameter(sandbox::policy::kParamAllowRendererPidinfo,
++                                 "false"));
+ }
+ 
+ }  // namespace
+diff --git a/sandbox/policy/mac/common.sb b/sandbox/policy/mac/common.sb
+index a3c02fad566b9871677ef90ab002e9bbaf3e83d1..12c4327a4e4afda87fb841dcdc1fc24b48252781 100644
+--- a/sandbox/policy/mac/common.sb
++++ b/sandbox/policy/mac/common.sb
+@@ -32,6 +32,9 @@
+ ; Sandboxed processes which use Metal may need to disable the shader cache.
+ (define disable-metal-shader-cache "DISABLE_METAL_SHADER_CACHE")
+ 
++; Allows the renderer process to query process-info-pidinfo for other processes.
++(define allow-renderer-pidinfo "ALLOW_RENDERER_PIDINFO")
++
+ ; --enable-sandbox-logging causes the sandbox to log failures to the syslog.
+ (if (param-true? disable-sandbox-denial-logging)
+   (deny default (with no-log))
+diff --git a/sandbox/policy/mac/renderer.sb b/sandbox/policy/mac/renderer.sb
+index 687bca71bdff74c14ed837907f8d44922ebce5ea..77b5d1947add4c5aa86110331fdbcdfa6620b399 100644
+--- a/sandbox/policy/mac/renderer.sb
++++ b/sandbox/policy/mac/renderer.sb
+@@ -20,7 +20,12 @@
+ (allow user-preference-read)
+ 
+ ; process-info
+-(allow process-info-pidinfo)
++; Only allow arbitrary process-info-pidinfo access if the
++; MacSandboxAllowRendererPidinfo feature is enabled. This feature functions as a
++; killswitch and will be removed (along with the grant below) once we have
++; determined that it is safe to do so (https://crbug.com/574858526).
++(if (param-true? allow-renderer-pidinfo)
++  (allow process-info-pidinfo))
+ (allow process-info-setcontrol (target self))
+ 
+ ; File reads.

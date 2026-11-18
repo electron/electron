@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Tue, 3 Nov 2026 19:27:32 -0800
+Subject: [Media] Re-enable kDisallowMixedOpaqueMediaResponses by default
+
+Re-enable kDisallowMixedOpaqueMediaResponses by default on trunk now
+that UrlData::CanAcceptDataFrom() CHECK crashes (crbug.com/579225207)
+and MultiBuffer cross-origin redirect handling (crbug.com/573441094) are
+fixed (also enabling post-redirect Service Worker skipping gated on the
+same killswitch). Restore the web-test expectations that were
+temporarily suppressed in crrev.com/c/8677461.
+
+Bug: 572307225, 572363265, 573441094, 579225207
+Change-Id: I87bef363a1dd1882b8ec77bfb08242d5445a5692
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8685646
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1734709}
+
+Electron adaptation notes (43-x-y):
+media_switches.cc context resolved against this branch.
+
+diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
+index ed73832e5ac236a2dd2f359e3b6ba69fcfc9a68e..d766a2768b6431f7d264967c9cd7369ccb9a8b6c 100644
+--- a/media/base/media_switches.cc
++++ b/media/base/media_switches.cc
+@@ -1631,9 +1631,11 @@ const base::FeatureParam<double> kAudioOffloadBufferTimeMs{
+ #endif
+ // Killswitch for disallowing mixing opaque and non-opaque responses in
+ // ResourceMultiBufferDataProvider (crbug.com/572363265).
+-// TODO(crbug.com/572363265): Remove after M158 reaches stable.
++// TODO(crbug.com/572363265): Remove killswitch (keeping mixed-opacity responses
++// disallowed and post-redirect Service Worker skipping enabled) after M159
++// reaches stable.
+ BASE_FEATURE(kDisallowMixedOpaqueMediaResponses,
+-             base::FEATURE_DISABLED_BY_DEFAULT);
++             base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ 
+ // Enables sending MediaLog to the log stream, which is useful for easier
+diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
+index 18d1f35927fc4ec492e488b5a778d2e1bcb3cb64..91523722b9b77935eb5f668617f795ce5fa6e626 100644
+--- a/third_party/blink/web_tests/TestExpectations
++++ b/third_party/blink/web_tests/TestExpectations
+@@ -8535,10 +8535,6 @@ crbug.com/40336192 virtual/disable-css-line-clamp/external/wpt/css/css-text/whit
+ crbug.com/40336192 virtual/disable-css-line-clamp/external/wpt/css/css-text/white-space/text-wrap-balance-line-clamp-007.html [ Failure ]
+ crbug.com/40336192 virtual/disable-css-line-clamp/fast/overflow/line-clamp-floats-dont-grow-container.html [ Failure ]
+ 
+-# DisallowMixedOpaqueMediaResponses killswitch disabled.
+-crbug.com/572363265 external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html [ Failure ]
+-crbug.com/572363265 http/tests/serviceworker/service-worker-mixed-response.html [ Failure ]
+-
+ # Dark Mode Failures
+ crbug.com/513290098 [ Mac15 ] virtual/dark-mode-default/dark-mode/images/country-flags.html [ Failure Pass ]
+ crbug.com/513290098 [ Win11-arm64 ] virtual/dark-mode-default/dark-mode/images/country-flags.html [ Failure Pass ]
+diff --git a/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https-expected.txt b/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https-expected.txt
+index fd78aeee7eee1e3856dd1b99dc9ff52bd13a5028..fd4eb1b7f039721785ea0a4736ae49aec8fddecd 100644
+--- a/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https-expected.txt
+@@ -1,6 +1,4 @@
+ This is a testharness.js-based test.
+-[FAIL] range responses from single origin with both opaque and non-opaque responses
+-  assert_equals: expected "LOAD_ERROR" but got "TAINTED"
+ [FAIL] synth and same-origin fallback range responses
+   assert_equals: expected "NOT_TAINTED" but got "LOAD_ERROR"
+ Harness: the test ran to completion.

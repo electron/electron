@@ -1,0 +1,185 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@google.com>
+Date: Fri, 16 Oct 2026 01:17:57 -0700
+Subject: Stop all matching clients in `VideoCaptureController::StopSession`.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Previously, `VideoCaptureController::StopSession` used
+`FindClient(session_id)`, which returned only the first
+`ControllerClient` matching the session ID. If multiple clients were
+registered under the same session ID with distinct controller IDs,
+closing the session left the remaining clients open. While this is not
+known to be a real problem under normal circumstances, this adds
+additional security in the event that a Renderer process is compromised.
+
+Update `StopSession` to iterate over all clients in
+`controller_clients_` matching the given `session_id`, mark each as
+`session_closed,` and notify its event handler via `OnEnded`.
+
+Bug: chromium:561412049, chromium:514409956
+Change-Id: Ic6545480236140796d5d5c1e73966dbbd194ba7a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8579997
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Henrik Boström <hbos@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1720496}
+
+diff --git a/content/browser/renderer_host/media/video_capture_controller.cc b/content/browser/renderer_host/media/video_capture_controller.cc
+index 03d3f86df5437fd86ca05a02a1adfc56ac3eed53..821cee55739ee20ec1992bfb038d2ac0fa50dc04 100644
+--- a/content/browser/renderer_host/media/video_capture_controller.cc
++++ b/content/browser/renderer_host/media/video_capture_controller.cc
+@@ -393,11 +393,11 @@ void VideoCaptureController::StopSession(
+                 << session_id;
+   EmitLogMessage(string_stream.str(), 1);
+ 
+-  ControllerClient* client = FindClient(session_id);
+-
+-  if (client) {
+-    client->session_closed = true;
+-    client->event_handler->OnEnded(client->controller_id);
++  for (const auto& client : controller_clients_) {
++    if (client->session_id == session_id && !client->session_closed) {
++      client->session_closed = true;
++      client->event_handler->OnEnded(client->controller_id);
++    }
+   }
+ }
+ 
+@@ -822,15 +822,6 @@ VideoCaptureController::ControllerClient* VideoCaptureController::FindClient(
+   return nullptr;
+ }
+ 
+-VideoCaptureController::ControllerClient* VideoCaptureController::FindClient(
+-    const base::UnguessableToken& session_id) {
+-  for (const auto& client : controller_clients_) {
+-    if (client->session_id == session_id)
+-      return client.get();
+-  }
+-  return nullptr;
+-}
+-
+ std::vector<VideoCaptureController::BufferContext>::iterator
+ VideoCaptureController::FindBufferContextFromBufferContextId(
+     int buffer_context_id) {
+diff --git a/content/browser/renderer_host/media/video_capture_controller.h b/content/browser/renderer_host/media/video_capture_controller.h
+index 6f6dfe297ce9c070c556e737b1c1e15bd00b5d23..b56d721673bbc5340d40f884fc2b25ab38d07ba8 100644
+--- a/content/browser/renderer_host/media/video_capture_controller.h
++++ b/content/browser/renderer_host/media/video_capture_controller.h
+@@ -227,9 +227,6 @@ class CONTENT_EXPORT VideoCaptureController
+   ControllerClient* FindClient(const VideoCaptureControllerID& id,
+                                VideoCaptureControllerEventHandler* handler);
+ 
+-  // Find a client of |session_id| in |controller_clients_|.
+-  ControllerClient* FindClient(const base::UnguessableToken& session_id);
+-
+   std::vector<BufferContext>::iterator FindBufferContextFromBufferContextId(
+       int buffer_context_id);
+   std::vector<BufferContext>::iterator FindUnretiredBufferContextFromBufferId(
+diff --git a/content/browser/renderer_host/media/video_capture_controller_unittest.cc b/content/browser/renderer_host/media/video_capture_controller_unittest.cc
+index a8faf13ce0173b44295d5cf5def1ea8413cdaca6..88d41aecb64b1068bb073f2a4dab9c6482e394a0 100644
+--- a/content/browser/renderer_host/media/video_capture_controller_unittest.cc
++++ b/content/browser/renderer_host/media/video_capture_controller_unittest.cc
+@@ -1110,5 +1110,54 @@ TEST_F(VideoCaptureControllerTest, ReturnBufferTwiceFails) {
+                                          media::VideoCaptureFeedback()));
+ }
+ 
++TEST_F(VideoCaptureControllerTest, StopSessionStopsAllClientsForSession) {
++  media::VideoCaptureParams session_params;
++  session_params.requested_format = arbitrary_format_;
++
++  const VideoCaptureControllerID client_a_route_1 =
++      base::UnguessableToken::Create();
++  const VideoCaptureControllerID client_a_route_2 =
++      base::UnguessableToken::Create();
++  const VideoCaptureControllerID client_b_route_1 =
++      base::UnguessableToken::Create();
++
++  const media::VideoCaptureSessionId session_id_1 =
++      base::UnguessableToken::Create();
++  const media::VideoCaptureSessionId session_id_2 =
++      base::UnguessableToken::Create();
++
++  controller_->AddClient(client_a_route_1, {}, client_a_.get(), session_id_1,
++                         session_params);
++  controller_->AddClient(client_a_route_2, {}, client_a_.get(), session_id_1,
++                         session_params);
++  controller_->AddClient(client_b_route_1, {}, client_b_.get(), session_id_2,
++                         session_params);
++  ASSERT_EQ(3u, controller_->GetClientCount());
++
++  // Stopping session_id_1 must notify all clients sharing that session.
++  EXPECT_CALL(*client_a_, DoEnded(client_a_route_1)).Times(1);
++  EXPECT_CALL(*client_a_, DoEnded(client_a_route_2)).Times(1);
++  EXPECT_CALL(*client_b_, DoEnded(_)).Times(0);
++  controller_->StopSession(session_id_1);
++  Mock::VerifyAndClearExpectations(client_a_.get());
++  Mock::VerifyAndClearExpectations(client_b_.get());
++
++  // Closed-session clients must not receive frames before their pending
++  // RemoveClient tasks execute.
++  base::RunLoop run_loop;
++  EXPECT_CALL(*client_a_, DoBufferCreated(_, _)).Times(0);
++  EXPECT_CALL(*client_a_, DoBufferReady(_)).Times(0);
++  EXPECT_CALL(*client_b_, DoBufferCreated(client_b_route_1, _)).Times(1);
++  EXPECT_CALL(*client_b_, DoBufferReady(ControllerIDAndSize(
++                              client_b_route_1, arbitrary_format_.frame_size)))
++      .WillOnce([&run_loop](const ControllerIDAndSize&) { run_loop.Quit(); });
++  SendStubFrameToDeviceClient(arbitrary_format_, arbitrary_color_space_);
++
++  run_loop.Run();
++  Mock::VerifyAndClearExpectations(client_a_.get());
++  Mock::VerifyAndClearExpectations(client_b_.get());
++  EXPECT_EQ(1u, controller_->GetClientCount());
++}
++
+ }  // namespace
+ }  // namespace content
+diff --git a/content/browser/renderer_host/media/video_capture_unittest.cc b/content/browser/renderer_host/media/video_capture_unittest.cc
+index 5d907811baf62b780980e66ad1aea50f9d71430d..3ff39fa6f1fef16294c92ad8d804bf14cfc9f6c6 100644
+--- a/content/browser/renderer_host/media/video_capture_unittest.cc
++++ b/content/browser/renderer_host/media/video_capture_unittest.cc
+@@ -8,6 +8,7 @@
+ #include <memory>
+ #include <string>
+ 
++#include "base/barrier_closure.h"
+ #include "base/command_line.h"
+ #include "base/functional/bind.h"
+ #include "base/location.h"
+@@ -418,6 +419,35 @@ TEST_F(VideoCaptureTest, CloseSessionWithoutStopping) {
+   base::RunLoop().RunUntilIdle();
+ }
+ 
++TEST_F(VideoCaptureTest, CloseSessionStopsAllClientsOnSameSession) {
++  StartCapture();
++
++  base::RunLoop start_run_loop;
++  mojo::Receiver<media::mojom::VideoCaptureObserver> second_receiver(this);
++  EXPECT_CALL(*this, DoOnStateChanged(media::mojom::VideoCaptureState::STARTED))
++      .WillOnce(ExitMessageLoop(task_runner(), start_run_loop.QuitClosure()));
++
++  media::VideoCaptureParams params;
++  params.requested_format = media::VideoCaptureFormat(gfx::Size(352, 288), 30,
++                                                      media::PIXEL_FORMAT_I420);
++  const base::UnguessableToken second_device_id =
++      base::UnguessableToken::Create();
++  host_remote()->Start(second_device_id, opened_session_id(), params,
++                       second_receiver.BindNewPipeAndPassRemote());
++  start_run_loop.Run();
++
++  // Closing the session must send ENDED to both clients on that session and
++  // clean up both controllers.
++  base::RunLoop end_run_loop;
++  base::RepeatingClosure barrier =
++      base::BarrierClosure(2, end_run_loop.QuitClosure());
++  EXPECT_CALL(*this, DoOnStateChanged(media::mojom::VideoCaptureState::ENDED))
++      .Times(2)
++      .WillRepeatedly(ExitMessageLoop(task_runner(), barrier));
++  CloseSession();
++  end_run_loop.Run();
++}
++
+ // Tests if RenderProcessHostDelegate methods are called as often as as
+ // expected.
+ TEST_F(VideoCaptureTest, IncrementMatchesDecrementCalls) {

@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Tue, 20 Oct 2026 15:11:20 -0700
+Subject: GL: Force finish on IMG when copying within a texture
+
+Forces a finish before performing a copy between different regions
+of the same texture to work around a driver bug on IMG hardware.
+Unfortunately a flush (or even forcefullyFlush) is not sufficient
+to avoid the driver issue.
+
+Fixed: chromium:552672183
+Change-Id: Id3f95f6d68291c43d528ec6913f9d0f40f16a593
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8620883
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+
+Electron adaptation notes (43-x-y):
+FeaturesGL_autogen.h, gl_features.json and renderergl_utils.cpp context
+resolved (recreateFboOnAttachmentRespecification / validateState are not on
+this branch); TextureGL::copySubImage keeps this branch's
+bindTexture(getType(), mTextureID) (no virtual mipchain here).
+CopyTexImageTest.cpp changes were not carried.
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 3fdfdcbad8dc3f3462338e8dc2d89a9dd797f1ca..a1bd4ee39481b00c3fe35ad2c5d8070f1308a9cc 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -824,6 +824,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo finishBeforeSameTextureCopy = {
++        "finishBeforeSameTextureCopy",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 9be87535403f1e23a51b00111cbaf22752178d8c..b8f943aad74bfa951b9faa85b79bfdb882a32d3b 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -1087,6 +1087,15 @@
+                 "Defer glDeleteBuffers calls until previous GPU work has completed."
+             ],
+             "issue": "http://crbug.com/558870371"
++        },
++        {
++            "name": "finish_before_same_texture_copy",
++            "category": "Workarounds",
++            "description": [
++                "Force a finish before copying from a framebuffer whose read attachment is the ",
++                "destination texture to work around driver bugs."
++            ],
++            "issue": "https://crbug.com/552672183"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index 22586406bd65e01add60013f1648fb1f5edf1b0a..cc55586002d3a078d72aef893f058f2e9e30cae3 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -1099,6 +1099,12 @@ angle::Result TextureGL::copyImage(const gl::Context *context,
+         TextureGL *sourceTexture = GetImplAs<TextureGL>(readBuffer->getTexture());
+         if (sourceTexture && sourceTexture->mTextureID == mTextureID)
+         {
++            if (features.finishBeforeSameTextureCopy.enabled)
++            {
++                // Force a finish before copying from a framebuffer that has the destination texture
++                // attached. Avoids an IMG driver bug if the source still has pending rendering.
++                ANGLE_GL_TRY(context, functions->finish());
++            }
+             GLuint attachedTextureLevel = readBuffer->mipLevel();
+             if (attachedTextureLevel != mState.getEffectiveBaseLevel())
+             {
+@@ -1274,6 +1280,21 @@ angle::Result TextureGL::copySubImage(const gl::Context *context,
+     gl::Offset clippedOffset(destOffset.x + clippedArea.x - sourceArea.x,
+                              destOffset.y + clippedArea.y - sourceArea.y, destOffset.z);
+ 
++    if (features.finishBeforeSameTextureCopy.enabled)
++    {
++        const gl::FramebufferAttachment *readBuffer = source->getReadColorAttachment();
++        if (readBuffer && readBuffer->type() == GL_TEXTURE)
++        {
++            const TextureGL *sourceTexture = GetImplAs<TextureGL>(readBuffer->getTexture());
++            if (sourceTexture && sourceTexture->mTextureID == mTextureID)
++            {
++                // Force a finish before copying from a framebuffer that has the destination texture
++                // attached. Avoids an IMG driver bug if the source still has pending rendering.
++                ANGLE_GL_TRY(context, functions->finish());
++            }
++        }
++    }
++
+     stateManager->bindTexture(getType(), mTextureID);
+     GLenum framebufferTarget =
+         stateManager->getHasSeparateFramebufferBindings() ? GL_READ_FRAMEBUFFER : GL_FRAMEBUFFER;
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index bdd69fda41de595e72b1fe9942ed7d5d492b3287..9c3648bcbca78a6e9a9cfc8ffbc11e5a6bbfefc1 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2914,6 +2914,11 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+ 
+     // Mac Intel drivers are unable to allocate buffers larger than ~1gb
+     ANGLE_FEATURE_CONDITION(features, limitMaxBufferSizeTo1gb, isApple && isIntel);
++
++    // Force a finish before copying from a framebuffer that has the destination texture attached.
++    // Avoids an IMG driver bug if the source still has pending rendering.
++    // https://crbug.com/552672183
++    ANGLE_FEATURE_CONDITION(features, finishBeforeSameTextureCopy, IsPowerVR(vendor));
+ }
+ 
+ void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFeatures *features)
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 0259d9641cf1b4d353ca129fc1880ae00694fb39..00efedbae6eb4b867ab094e2a00f8c3e9860d13a 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -186,6 +186,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::ExposeNonConformantExtensionsAndVersions, "exposeNonConformantExtensionsAndVersions"},
+     {Feature::ExternallySynchronizePipelineCacheAccess, "externallySynchronizePipelineCacheAccess"},
+     {Feature::FinishBeforeBlitFramebufferMultiAttachment, "finishBeforeBlitFramebufferMultiAttachment"},
++    {Feature::FinishBeforeSameTextureCopy, "finishBeforeSameTextureCopy"},
+     {Feature::FinishDoesNotCauseQueriesToBeAvailable, "finishDoesNotCauseQueriesToBeAvailable"},
+     {Feature::FlushAfterEndingTransformFeedback, "flushAfterEndingTransformFeedback"},
+     {Feature::FlushAfterStreamVertexData, "flushAfterStreamVertexData"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 438addf81cf4f1ad54267e4ca1accad38edb55d0..759d18387783bd32bd34250072cee875ac37e351 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -186,6 +186,7 @@ enum class Feature
+     ExposeNonConformantExtensionsAndVersions,
+     ExternallySynchronizePipelineCacheAccess,
+     FinishBeforeBlitFramebufferMultiAttachment,
++    FinishBeforeSameTextureCopy,
+     FinishDoesNotCauseQueriesToBeAvailable,
+     FlushAfterEndingTransformFeedback,
+     FlushAfterStreamVertexData,

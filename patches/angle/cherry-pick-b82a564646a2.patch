@@ -1,0 +1,917 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 15 Oct 2026 23:03:20 -0400
+Subject: Translator: Apply loop-forward-progress transform to PowerVR
+
+The transformation already existed for MSL.  For PowerVR (ESSL),
+`volatile` cannot be used, so a different forward progress guarantee is
+implemented; a variable that is incremented and the loop is broken out
+of on overflow which practically never happens.
+
+Bug: chromium:569191970
+Change-Id: Ide392418a752127dde69375e553fd32c5f0455cf
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8593361
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (43-x-y):
+compiler.gni / Compiler.cpp / ir/BUILD.gn / transform.rs context resolved
+(ExpandFragmentOutputsToVec4 is not on this branch).
+
+diff --git a/include/platform/autogen/FeaturesMtl_autogen.h b/include/platform/autogen/FeaturesMtl_autogen.h
+index 202f71c61a206841cfd02999b595937af049eda0..2f044616b1a43a69a87997e86c30c78485298e55 100644
+--- a/include/platform/autogen/FeaturesMtl_autogen.h
++++ b/include/platform/autogen/FeaturesMtl_autogen.h
+@@ -332,12 +332,6 @@ struct FeaturesMtl : FeatureSetBase
+         &members,
+     };
+ 
+-    FeatureInfo ensureLoopForwardProgress = {
+-        "ensureLoopForwardProgress",
+-        FeatureCategory::MetalFeatures,
+-        &members,
+-    };
+-
+     FeatureInfo allocateNonZeroTextures = {
+         "allocateNonZeroTextures",
+         FeatureCategory::MetalFeatures,
+diff --git a/include/platform/autogen/FrontendFeatures_autogen.h b/include/platform/autogen/FrontendFeatures_autogen.h
+index 9faa0a767ad783d500e151ee75187881fe1281c8..d900f0443351f3085b3445cca33c2154edc36de0 100644
+--- a/include/platform/autogen/FrontendFeatures_autogen.h
++++ b/include/platform/autogen/FrontendFeatures_autogen.h
+@@ -81,6 +81,12 @@ struct FrontendFeatures : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo ensureLoopForwardProgress = {
++        "ensureLoopForwardProgress",
++        FeatureCategory::FrontendFeatures,
++        &members,
++    };
++
+     FeatureInfo enableProgramBinaryForCapture = {
+         "enableProgramBinaryForCapture",
+         FeatureCategory::FrontendFeatures,
+diff --git a/include/platform/frontend_features.json b/include/platform/frontend_features.json
+index 4b99462cf37b008c5bd9f8076312e70936919e96..1f2915b7eb27b0addb4cd77bb8b48fa0450a85fd 100644
+--- a/include/platform/frontend_features.json
++++ b/include/platform/frontend_features.json
+@@ -82,6 +82,14 @@
+                 "Force-enable shader variable initialization"
+             ]
+         },
++        {
++            "name": "ensure_loop_forward_progress",
++            "category": "Features",
++            "description": [
++                "Inject statements into loop bodies when needed to ensure infinite loops are not optimized out."
++            ],
++            "issue": "http://crbug.com/41486305"
++        },
+         {
+             "name": "enable_program_binary_for_capture",
+             "category": "Features",
+diff --git a/include/platform/mtl_features.json b/include/platform/mtl_features.json
+index 78f0cbc10a3ce09a2d2d8d2d48d8a9d5766f1203..552171a345dcd4b678ab1f6a6fb7096360555746 100644
+--- a/include/platform/mtl_features.json
++++ b/include/platform/mtl_features.json
+@@ -404,14 +404,6 @@
+             ],
+             "issue": "http://crbug.com/1513738"
+         },
+-        {
+-            "name": "ensure_loop_forward_progress",
+-            "category": "Features",
+-            "description": [
+-                "Inject statements into loop bodies when needed to ensure infinite loops are optimized out."
+-            ],
+-            "issue": "http://crbug.com/1513738"
+-        },
+         {
+             "name": "allocate_non_zero_textures",
+             "category": "Features",
+diff --git a/src/compiler.gni b/src/compiler.gni
+index 8a17994d19f8294e8065bf39b28a5fb498b371f1..1d0f42c84c9bce44694b14b12638ddabeced52e5 100644
+--- a/src/compiler.gni
++++ b/src/compiler.gni
+@@ -139,6 +139,8 @@ angle_translator_sources = [
+   "src/compiler/translator/tree_ops/EmulateGLFragColorBroadcast.h",
+   "src/compiler/translator/tree_ops/EmulateMultiDrawShaderBuiltins.cpp",
+   "src/compiler/translator/tree_ops/EmulateMultiDrawShaderBuiltins.h",
++  "src/compiler/translator/tree_ops/EnsureLoopForwardProgress.cpp",
++  "src/compiler/translator/tree_ops/EnsureLoopForwardProgress.h",
+   "src/compiler/translator/tree_ops/FoldConstantSwitch.cpp",
+   "src/compiler/translator/tree_ops/FoldConstantSwitch.h",
+   "src/compiler/translator/tree_ops/FoldExpressions.cpp",
+@@ -203,7 +205,6 @@ angle_translator_sources = [
+   "src/compiler/translator/tree_ops/glsl/apple/AddAndTrueToLoopCondition.h",
+   "src/compiler/translator/tree_ops/glsl/apple/RewriteRowMajorMatrices.h",
+   "src/compiler/translator/tree_ops/glsl/apple/UnfoldShortCircuitAST.h",
+-  "src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.h",
+   "src/compiler/translator/tree_util/BuiltIn.h",
+   "src/compiler/translator/tree_util/BuiltIn_autogen.h",
+   "src/compiler/translator/tree_util/DriverUniform.cpp",
+@@ -394,7 +395,6 @@ angle_translator_lib_msl_sources = [
+   "src/compiler/translator/tree_ops/msl/AddExplicitTypeCasts.h",
+   "src/compiler/translator/tree_ops/msl/ConvertUnsupportedConstructorsToFunctionCalls.cpp",
+   "src/compiler/translator/tree_ops/msl/ConvertUnsupportedConstructorsToFunctionCalls.h",
+-  "src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp",
+   "src/compiler/translator/tree_ops/msl/FixTypeConstructors.cpp",
+   "src/compiler/translator/tree_ops/msl/FixTypeConstructors.h",
+   "src/compiler/translator/tree_ops/msl/GuardFragDepthWrite.cpp",
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index ef9eed5ba94716fb228c60cca7e126356ad4c8dd..85afcb51420eb64e226e85a6c06883ab92963bee 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -34,6 +34,7 @@
+ #include "compiler/translator/tree_ops/DeferGlobalInitializers.h"
+ #include "compiler/translator/tree_ops/EmulateGLFragColorBroadcast.h"
+ #include "compiler/translator/tree_ops/EmulateMultiDrawShaderBuiltins.h"
++#include "compiler/translator/tree_ops/EnsureLoopForwardProgress.h"
+ #include "compiler/translator/tree_ops/FoldConstantSwitch.h"
+ #include "compiler/translator/tree_ops/FoldExpressions.h"
+ #include "compiler/translator/tree_ops/InitializeVariables.h"
+@@ -54,7 +55,6 @@
+ #include "compiler/translator/tree_ops/glsl/WrapStructConstructors.h"
+ #include "compiler/translator/tree_ops/glsl/apple/AddAndTrueToLoopCondition.h"
+ #include "compiler/translator/tree_ops/glsl/apple/UnfoldShortCircuitAST.h"
+-#include "compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.h"
+ #include "compiler/translator/tree_util/FindSymbolNode.h"
+ #include "compiler/translator/tree_util/IntermNodePatternMatcher.h"
+ #include "compiler/translator/tree_util/IntermNode_util.h"
+@@ -969,7 +969,10 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+     // Needs to run before SimplifyLoopConditions to be able to detect |for| loops correctly.
+     if (compileOptions.ensureLoopForwardProgress)
+     {
+-        if (!EnsureLoopForwardProgress(this, root))
++        EnsureLoopForwardProgressMode mode = mOutputType == SH_MSL_METAL_OUTPUT
++                                                 ? EnsureLoopForwardProgressMode::Volatile
++                                                 : EnsureLoopForwardProgressMode::Counter;
++        if (!EnsureLoopForwardProgress(this, root, mode))
+         {
+             return false;
+         }
+diff --git a/src/compiler/translator/ir/BUILD.gn b/src/compiler/translator/ir/BUILD.gn
+index aad12214593f94f2d2a08ae61e80369638b7eb13..a257352d10c56a99e6fa5eb9f4f47a0eb49d5efc 100644
+--- a/src/compiler/translator/ir/BUILD.gn
++++ b/src/compiler/translator/ir/BUILD.gn
+@@ -29,6 +29,7 @@ angle_translator_ir_sources = [
+   "src/transform/dealias.rs",
+   "src/transform/emulate_instanced_multiview.rs",
+   "src/transform/emulate_multi_draw.rs",
++  "src/transform/ensure_loop_forward_progress.rs",
+   "src/transform/initialize_uninitialized_variables.rs",
+   "src/transform/localized_workarounds.rs",
+   "src/transform/monomorphize_unsupported_functions.rs",
+@@ -55,10 +56,7 @@ if (angle_enable_hlsl) {
+   angle_translator_ir_sources += [ "src/output/hlsl.rs" ]
+ }
+ if (angle_enable_msl) {
+-  angle_translator_ir_sources += [
+-    "src/output/msl.rs",
+-    "src/transform/msl/ensure_loop_forward_progress.rs",
+-  ]
++  angle_translator_ir_sources += [ "src/output/msl.rs" ]
+ }
+ if (angle_enable_vulkan) {
+   angle_translator_ir_sources += [
+diff --git a/src/compiler/translator/ir/src/output/essl.rs b/src/compiler/translator/ir/src/output/essl.rs
+index ad844296206b055d5433d335e8ec547ea55aa235..c7ea71a72de0f4fc01d162de5ff1348482e56216 100644
+--- a/src/compiler/translator/ir/src/output/essl.rs
++++ b/src/compiler/translator/ir/src/output/essl.rs
+@@ -6,6 +6,14 @@ use crate::ir::*;
+ use crate::*;
+ 
+ pub fn generate(ir: &mut IR, options: &compile::Options) {
++    if options.ensure_loop_forward_progress {
++        let transform_options = transform::ensure_loop_forward_progress::Options {
++            // ESSL does not support BuiltInOpCode::LoopForwardProgress
++            supports_loop_forward_progress_built_in: false,
++        };
++        transform::run!(ensure_loop_forward_progress, ir, &transform_options);
++    }
++
+     {
+         let transform_options = transform::monomorphize_unsupported_functions::Options {
+             struct_containing_samplers: false,
+diff --git a/src/compiler/translator/ir/src/output/msl.rs b/src/compiler/translator/ir/src/output/msl.rs
+index 66dd1d2caa187781b9bdafab6396b0578e2ff4c9..c1545ab4bf480a817ee5590b54792bffc7e74024 100644
+--- a/src/compiler/translator/ir/src/output/msl.rs
++++ b/src/compiler/translator/ir/src/output/msl.rs
+@@ -7,7 +7,11 @@ use crate::*;
+ 
+ pub fn generate(ir: &mut IR, options: &compile::Options) {
+     if options.ensure_loop_forward_progress {
+-        transform::msl::ensure_loop_forward_progress::run(ir);
++        let transform_options = transform::ensure_loop_forward_progress::Options {
++            // MSL supports BuiltInOpCode::LoopForwardProgress
++            supports_loop_forward_progress_built_in: true,
++        };
++        transform::run!(ensure_loop_forward_progress, ir, &transform_options);
+     }
+ 
+     {
+diff --git a/src/compiler/translator/ir/src/transform.rs b/src/compiler/translator/ir/src/transform.rs
+index 6ea5b7a0a04fc72a6ab88c6c744df6d09770ae90..3e7ac32122a4c92fce5c148f11da4bf749d08c6b 100644
+--- a/src/compiler/translator/ir/src/transform.rs
++++ b/src/compiler/translator/ir/src/transform.rs
+@@ -9,6 +9,7 @@ pub mod dead_code_eliminate;
+ pub mod dealias;
+ pub mod emulate_instanced_multiview;
+ pub mod emulate_multi_draw;
++pub mod ensure_loop_forward_progress;
+ pub mod initialize_uninitialized_variables;
+ pub mod localized_workarounds;
+ pub mod monomorphize_unsupported_functions;
+@@ -28,9 +29,7 @@ pub mod glsl_common {}
+ #[cfg(angle_enable_hlsl)]
+ pub mod hlsl {}
+ #[cfg(angle_enable_msl)]
+-pub mod msl {
+-    pub mod ensure_loop_forward_progress;
+-}
++pub mod msl {}
+ #[cfg(angle_enable_spirv)]
+ pub mod spirv {
+     pub mod pass1;
+diff --git a/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs b/src/compiler/translator/ir/src/transform/ensure_loop_forward_progress.rs
+similarity index 82%
+rename from src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs
+rename to src/compiler/translator/ir/src/transform/ensure_loop_forward_progress.rs
+index cd60838b1bd3c43a1c996630991e13c88d95a35a..25fa5f92fe1330ce710254ac2d3bc215be258347 100644
+--- a/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs
++++ b/src/compiler/translator/ir/src/transform/ensure_loop_forward_progress.rs
+@@ -2,19 +2,25 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ //
+-// This pass adds a function call to every loop that cannot be proven to be finite.  The function
+-// call is a pretend built-in that the MSL generator implements (with a volatile access) to
+-// work around a metal compiler crash in the presence of infinite loops.
++// This pass adds instructions to every loop that cannot be proven to be finite, working around
++// compiler crashes in the presence of infinite loops.  The instruction can either be a function
++// call to a pretend built-in that the MSL generator implements (with a volatile access), or a
++// counter that practically never wraps around, but the loop breaks on wrap-around.
+ use crate::ir::*;
+ use crate::*;
+ 
++pub struct Options {
++    // If true, use BuiltInOpCode::LoopForwardProgress, otherwise use a counter and `break`.
++    pub supports_loop_forward_progress_built_in: bool,
++}
++
+ struct State<'a> {
+     ir_meta: &'a mut IRMeta,
+     // For each variable, records how many times it's used in a Store or some output operation.
+     variable_store_count: Vec<u32>,
+ }
+ 
+-pub fn run(ir: &mut IR) {
++pub fn run(ir: &mut IR, options: &Options) {
+     let variable_store_count = vec![0; ir.meta.all_variables().len()];
+     let mut state = State { ir_meta: &mut ir.meta, variable_store_count };
+ 
+@@ -38,7 +44,7 @@ pub fn run(ir: &mut IR) {
+                 state,
+                 entry,
+                 &|state, block| {
+-                    add_forward_progress(state, block);
++                    add_forward_progress(state, options, block);
+                     block
+                 },
+                 &|_, block| block,
+@@ -323,6 +329,13 @@ fn matches_finite_loop_continue(
+ }
+ 
+ fn is_possibly_infinite_loop(state: &State, block: &Block) -> bool {
++    // Always consider `DoLoop`s infinite for simplicity.  The goal of this check is to avoid adding
++    // overhead to the very common `for (var = 0; var < N; ++var)` and similar loops, and do-while
++    // loops are not that common.
++    if matches!(block.get_terminating_op(), OpCode::DoLoop) {
++        return true;
++    }
++
+     // The block must end in a `Loop`.
+     if !matches!(block.get_terminating_op(), OpCode::Loop) {
+         return false;
+@@ -355,15 +368,49 @@ fn is_possibly_infinite_loop(state: &State, block: &Block) -> bool {
+     true
+ }
+ 
+-fn add_forward_progress(state: &mut State, block: &mut Block) {
++fn add_forward_progress(state: &mut State, options: &Options, block: &mut Block) {
+     if is_possibly_infinite_loop(state, block) {
+-        // Prepend the following to the body of the loop:
+-        //
+-        //     LoopForwardProgress
+-        block.get_loop_body_block_mut().prepend_instruction(instruction::built_in(
+-            state.ir_meta,
+-            BuiltInOpCode::LoopForwardProgress,
+-            vec![],
+-        ));
++        if options.supports_loop_forward_progress_built_in {
++            // Prepend the following to the body of the loop:
++            //
++            //     LoopForwardProgress
++            block.get_loop_body_block_mut().prepend_instruction(instruction::built_in(
++                state.ir_meta,
++                BuiltInOpCode::LoopForwardProgress,
++                vec![],
++            ));
++        } else {
++            // Declare a counter variable in the loop init block, initialized with INT_MIN
++            let int_min = state.ir_meta.get_constant_int(i32::MIN);
++            let int_max = state.ir_meta.get_constant_int_typed(i32::MAX, Precision::High);
++            let (counter_id, counter) = state.ir_meta.declare_private_variable(
++                Name::new_temp("progressCounter"),
++                TYPE_ID_INT,
++                Precision::High,
++                Some(int_min),
++                VariableScope::Local,
++            );
++            block.variables.push(counter_id);
++
++            // Prepend the following to the body of the loop:
++            //
++            //              PrefixIncrement counter
++            //     value  = Load counter
++            //     is_max = Equal value INT_MAX
++            //              If is_max
++            //
++            //              True block:
++            //                Break
++            let mut progress_block = Block::new();
++            let mut builder = instruction::Builder::<&mut Block>::new(&mut progress_block);
++            builder.prefix_increment(state.ir_meta, counter);
++            let counter_value = builder.load(state.ir_meta, counter);
++            let is_zero = builder.equal(state.ir_meta, counter_value, int_max);
++            builder.if_then(state.ir_meta, is_zero, |then_builder, _| {
++                then_builder.branch_break();
++            });
++
++            block.get_loop_body_block_mut().prepend_code(progress_block);
++        }
+     }
+ }
+diff --git a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp b/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.cpp
+similarity index 68%
+rename from src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+rename to src/compiler/translator/tree_ops/EnsureLoopForwardProgress.cpp
+index fc99527cc20fbb7dd9dcb9e07342aeb8668d660d..27ceeb2ffe48500f0ce9f144b1095f351ff4c1ee 100644
+--- a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
++++ b/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.cpp
+@@ -3,11 +3,11 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ //
+-// EnsureLoopForwardProgress is an AST traverser that inserts volatile variable
+-// access inside loops which it cannot prove to be finite.
++// EnsureLoopForwardProgress is an AST traverser that ensures that loops are either finite or
++// invoke side-effects.
+ //
+ 
+-#include "compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.h"
++#include "compiler/translator/tree_ops/EnsureLoopForwardProgress.h"
+ 
+ #include "compiler/translator/Compiler.h"
+ #include "compiler/translator/StaticType.h"
+@@ -205,16 +205,23 @@ LoopInfoStack *LoopInfoStack::findLoopForVariable(const TVariable *variable)
+ class EnsureLoopForwardProgressTraverser final : public TLValueTrackingTraverser
+ {
+   public:
+-    EnsureLoopForwardProgressTraverser(TSymbolTable *symbolTable);
++    EnsureLoopForwardProgressTraverser(TSymbolTable *symbolTable,
++                                       EnsureLoopForwardProgressMode mode);
+     void visitSymbol(TIntermSymbol *node) override;
+     void traverseLoop(TIntermLoop *node) override;
+ 
+   private:
++    void ensureProgressWithVolatile(TIntermLoop *node);
++    void ensureProgressWithCounter(TIntermLoop *node);
++
+     LoopInfoStack *mLoopInfoStack = nullptr;
++    EnsureLoopForwardProgressMode mMode;
+ };
+ 
+-EnsureLoopForwardProgressTraverser::EnsureLoopForwardProgressTraverser(TSymbolTable *symbolTable)
+-    : TLValueTrackingTraverser(true, false, false, symbolTable)
++EnsureLoopForwardProgressTraverser::EnsureLoopForwardProgressTraverser(
++    TSymbolTable *symbolTable,
++    EnsureLoopForwardProgressMode mode)
++    : TLValueTrackingTraverser(true, false, false, symbolTable), mMode(mode)
+ {}
+ 
+ void EnsureLoopForwardProgressTraverser::traverseLoop(TIntermLoop *node)
+@@ -240,16 +247,75 @@ void EnsureLoopForwardProgressTraverser::traverseLoop(TIntermLoop *node)
+ 
+     if (!loopInfo.isFinite())
+     {
+-        TIntermBlock *newBody     = new TIntermBlock();
+-        TIntermSequence *sequence = newBody->getSequence();
+-        sequence->push_back(CreateBuiltInFunctionCallNode("loopForwardProgress", {}, *mSymbolTable,
+-                                                          kESSLInternalBackendBuiltIns));
+-        sequence->push_back(node->getBody());
+-        node->setBody(newBody);
++        switch (mMode)
++        {
++            case EnsureLoopForwardProgressMode::Volatile:
++                ensureProgressWithVolatile(node);
++                break;
++            case EnsureLoopForwardProgressMode::Counter:
++                ensureProgressWithCounter(node);
++                break;
++        }
+     }
+     mLoopInfoStack = mLoopInfoStack->getParent();
+ }
+ 
++void EnsureLoopForwardProgressTraverser::ensureProgressWithVolatile(TIntermLoop *node)
++{
++    // Turn the loop into the following:
++    //
++    //     <loop> {
++    //         loopForwardProgress();
++    //         {
++    //             <original body>
++    //         }
++    //     }
++    TIntermBlock *newBody = new TIntermBlock();
++    newBody->appendStatement(CreateBuiltInFunctionCallNode("loopForwardProgress", {}, *mSymbolTable,
++                                                           kESSLInternalBackendBuiltIns));
++    newBody->appendStatement(node->getBody());
++    node->setBody(newBody);
++}
++
++void EnsureLoopForwardProgressTraverser::ensureProgressWithCounter(TIntermLoop *node)
++{
++    // Turn the loop into the following:
++    //
++    //     highp int progressCounter = INT_MIN;
++    //     <loop> {
++    //         ++progressCounter;
++    //         if (progressCounter == INT_MAX)
++    //         {
++    //             break;
++    //         }
++    //         {
++    //             <original body>
++    //         }
++    //     }
++    //
++    // A 32-bit counter is sufficient, as 4 billions iterations would most likely times out on the
++    // GPU before it's reached.
++    TIntermDeclaration *declaration = nullptr;
++    const TVariable *progressCounter =
++        DeclareTempVariable(mSymbolTable, CreateIndexNode(std::numeric_limits<int32_t>::min()),
++                            EvqTemporary, &declaration);
++    TIntermSymbol *progressCounterSymbol = new TIntermSymbol(progressCounter);
++
++    insertStatementInParentBlock(declaration);
++
++    TIntermBlock *ifBody = new TIntermBlock();
++    ifBody->appendStatement(new TIntermBranch(EOpBreak, nullptr));
++    TIntermBinary *ifCondition =
++        new TIntermBinary(EOpEqual, progressCounterSymbol->deepCopy(),
++                          CreateIndexNode(std::numeric_limits<int32_t>::max()));
++
++    TIntermBlock *newBody = new TIntermBlock();
++    newBody->appendStatement(new TIntermUnary(EOpPreIncrement, progressCounterSymbol, nullptr));
++    newBody->appendStatement(new TIntermIfElse(ifCondition, ifBody, nullptr));
++    newBody->appendStatement(node->getBody());
++    node->setBody(newBody);
++}
++
+ void EnsureLoopForwardProgressTraverser::visitSymbol(TIntermSymbol *node)
+ {
+     if (!mLoopInfoStack)
+@@ -265,9 +331,11 @@ void EnsureLoopForwardProgressTraverser::visitSymbol(TIntermSymbol *node)
+ 
+ }  // namespace
+ 
+-bool EnsureLoopForwardProgress(TCompiler *compiler, TIntermNode *root)
++bool EnsureLoopForwardProgress(TCompiler *compiler,
++                               TIntermNode *root,
++                               EnsureLoopForwardProgressMode mode)
+ {
+-    EnsureLoopForwardProgressTraverser traverser(&compiler->getSymbolTable());
++    EnsureLoopForwardProgressTraverser traverser(&compiler->getSymbolTable(), mode);
+     root->traverse(&traverser);
+     return traverser.updateTree(compiler, root);
+ }
+diff --git a/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.h b/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..88aeaedf64050e4966dca69af4c67572c4409284
+--- /dev/null
++++ b/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.h
+@@ -0,0 +1,34 @@
++//
++// Copyright 2025 The ANGLE Project Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// EnsureLoopForwardProgress is an AST traverser that ensures that loops are either finite or
++// invoke side-effects.
++//
++
++#ifndef COMPILER_TRANSLATOR_TREEOPS_ENSURELOOPFORWARDPROGRESS_H_
++#define COMPILER_TRANSLATOR_TREEOPS_ENSURELOOPFORWARDPROGRESS_H_
++
++#include "common/angleutils.h"
++#include "common/debug.h"
++
++namespace sh
++{
++class TCompiler;
++class TIntermNode;
++
++enum class EnsureLoopForwardProgressMode
++{
++    // Call a function with a volatile variable in the loop
++    Volatile,
++    // Use a counter that is practically infinite and break in the loop
++    Counter,
++};
++
++[[nodiscard]] bool EnsureLoopForwardProgress(TCompiler *compiler,
++                                             TIntermNode *root,
++                                             EnsureLoopForwardProgressMode mode);
++}  // namespace sh
++
++#endif  // COMPILER_TRANSLATOR_TREEOPS_ENSURELOOPFORWARDPROGRESS_H_
+diff --git a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.h b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.h
+deleted file mode 100644
+index 7f789569ef5c2bc2a6c91392c341fdc142d33d21..0000000000000000000000000000000000000000
+--- a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-//
+-// Copyright 2025 The ANGLE Project Authors. All rights reserved.
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-//
+-// EnsureLoopForwardProgress is an AST traverser that ensures that loops are either finite or
+-// invoke side-effects.
+-//
+-
+-#ifndef COMPILER_TRANSLATOR_TREEOPS_MSL_ENSURELOOPFORWARDPROGRESS_H_
+-#define COMPILER_TRANSLATOR_TREEOPS_MSL_ENSURELOOPFORWARDPROGRESS_H_
+-
+-#include "common/angleutils.h"
+-#include "common/debug.h"
+-
+-namespace sh
+-{
+-class TCompiler;
+-class TIntermNode;
+-
+-#ifdef ANGLE_ENABLE_METAL
+-[[nodiscard]] bool EnsureLoopForwardProgress(TCompiler *compiler, TIntermNode *root);
+-#else
+-[[nodiscard]] ANGLE_INLINE bool EnsureLoopForwardProgress(TCompiler *compiler, TIntermNode *root)
+-{
+-    UNREACHABLE();
+-    return false;
+-}
+-#endif
+-}  // namespace sh
+-
+-#endif  // COMPILER_TRANSLATOR_TREEOPS_MSL_ENSURELOOPFORWARDPROGRESS_H_
+diff --git a/src/libANGLE/Shader.cpp b/src/libANGLE/Shader.cpp
+index 48009b84ec806c673bed02b2b58bb50984004136..89f45458325dff98008b5f03b00963f89717a107 100644
+--- a/src/libANGLE/Shader.cpp
++++ b/src/libANGLE/Shader.cpp
+@@ -666,6 +666,11 @@ void Shader::compile(const Context *context, angle::JobResultExpectancy resultEx
+         options.initializeUninitializedLocals = true;
+     }
+ 
++    if (context->getFrontendFeatures().ensureLoopForwardProgress.enabled)
++    {
++        options.ensureLoopForwardProgress = true;
++    }
++
+ #if defined(ANGLE_ENABLE_ASSERTS)
+     options.validateAST = true;
+ #endif
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 7c4400e10998409653c66c3ce87d4b77221a28da..bdd69fda41de595e72b1fe9942ed7d5d492b3287 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2952,6 +2952,9 @@ void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFea
+     ANGLE_FEATURE_CONDITION(features, noperspectiveInterpolationBrokenWithPassthroughShaders,
+                             isQualcomm);
+     ANGLE_FEATURE_CONDITION(features, setNeedInitOnInvalidation, true);
++
++    // PowerVR compiler may crash when encountering an infinite loop
++    ANGLE_FEATURE_CONDITION(features, ensureLoopForwardProgress, isPowerVR);
+ }
+ 
+ void ReInitializeFeaturesAtGPUSwitch(const FunctionsGL *functions, angle::FeaturesGL *features)
+diff --git a/src/libANGLE/renderer/metal/DisplayMtl.mm b/src/libANGLE/renderer/metal/DisplayMtl.mm
+index da5beda935300a2a1da8cf36435377b46aae42a8..422f6cb575a8f704739274c133d179b0125ebaf1 100644
+--- a/src/libANGLE/renderer/metal/DisplayMtl.mm
++++ b/src/libANGLE/renderer/metal/DisplayMtl.mm
+@@ -515,6 +515,10 @@ bool IsMetalDisplayAvailable()
+     ANGLE_FEATURE_CONDITION(features, linkJobIsThreadSafe, true);
+ 
+     ANGLE_FEATURE_CONDITION(features, setNeedInitOnInvalidation, true);
++
++    // Metal compiler optimizations may remove infinite loops causing crashes later in shader
++    // execution. http://crbug.com/41486305
++    ANGLE_FEATURE_CONDITION(features, ensureLoopForwardProgress, true);
+ }
+ 
+ void DisplayMtl::populateFeatureList(angle::FeatureList *features)
+@@ -1317,10 +1321,6 @@ bool IsMetalDisplayAvailable()
+     // the textureGrad shadow sampler emulation. The latter is used only on AMD.
+     ASSERT(!mFeatures.preTransformTextureCubeGradDerivatives.enabled ||
+            mFeatures.allowSamplerCompareGradient.enabled);
+-
+-    // Metal compiler optimizations may remove infinite loops causing crashes later in shader
+-    // execution. http://crbug.com/41486305
+-    ANGLE_FEATURE_CONDITION((&mFeatures), ensureLoopForwardProgress, true);
+ }
+ 
+ angle::Result DisplayMtl::initializeShaderLibrary()
+diff --git a/src/libANGLE/renderer/metal/ShaderMtl.mm b/src/libANGLE/renderer/metal/ShaderMtl.mm
+index fd75a48d5a7ceb6aaf00eb5c2557653c211b61fd..8c9614a4442872d7890fefbcaf670c6c321f168d 100644
+--- a/src/libANGLE/renderer/metal/ShaderMtl.mm
++++ b/src/libANGLE/renderer/metal/ShaderMtl.mm
+@@ -112,10 +112,6 @@ void postTranslate(ShHandle compiler, const gl::CompiledShaderState &compiledSta
+     {
+         options->metal.injectAsmStatementIntoLoopBodies = true;
+     }
+-    if (displayMtl->getFeatures().ensureLoopForwardProgress.enabled)
+-    {
+-        options->ensureLoopForwardProgress = true;
+-    }
+ 
+     return std::shared_ptr<ShaderTranslateTask>(new ShaderTranslateTaskMtl(mCompiledState));
+ }
+diff --git a/src/tests/gl_tests/GLSLOutputTest.cpp b/src/tests/gl_tests/GLSLOutputTest.cpp
+index 229374df91c4f9df69062b452f28cd7c3e717775..5c35848879ee2cb75f0d5bd1284c27a42d99a604 100644
+--- a/src/tests/gl_tests/GLSLOutputTest.cpp
++++ b/src/tests/gl_tests/GLSLOutputTest.cpp
+@@ -385,24 +385,64 @@ TEST_P(GLSLOutputGLSLVerifyIRUseTest, Basic)
+     }
+ }
+ 
+-class GLSLOutputMSLTest_EnsureLoopForwardProgress : public GLSLOutputTest
+-{};
++class GLSLOutputTest_EnsureLoopForwardProgress : public GLSLOutputTest
++{
++  protected:
++    // The implementation of EnsureLoopForwardProgress is different for Metal.  It uses a helper
++    // named loopForwardProgress.  Elsewhere, it's implemented with a counter and a break.  The
++    // counter counts up to 2147483647.
++    void verifyNoLoopForwardProgress()
++    {
++        if (IsMetal())
++        {
++            verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++        }
++        else
++        {
++            verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "2147483647");
++        }
++    }
++    void verifyLoopForwardProgress()
++    {
++        if (IsMetal())
++        {
++            verifyIsInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++        }
++        else
++        {
++            verifyIsInTranslation(GL_FRAGMENT_SHADER, "2147483647");
++        }
++    }
++    void verifyLoopForwardProgressCount(uint32_t expect)
++    {
++        if (IsMetal())
++        {
++            // One occurrence for defining |loopForwardProgress()|, and a number of calls in the
++            // loop.
++            verifyCountInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress", expect + 1);
++        }
++        else
++        {
++            verifyCountInTranslation(GL_FRAGMENT_SHADER, "2147483647", expect);
++        }
++    }
++};
+ 
+ // Test that loopForwardProgress() is not inserted when the for loop is obviously not an infinite
+ // loop.
+-TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, FiniteBasicFor)
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, FiniteBasicFor)
+ {
+     constexpr char kFS[] = R"(#version 300 es
+ void main() {
+     for (highp int i = 0; i < 100; ++i) { }
+ })";
+     compileShader(GL_FRAGMENT_SHADER, kFS);
+-    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++    verifyNoLoopForwardProgress();
+ }
+ 
+ // Test that loopForwardProgress() is not inserted when the for loop is obviously not an infinite
+ // loop, where the condition involves read-only variables.
+-TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, FiniteForWithReadOnlyComparator)
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, FiniteForWithReadOnlyComparator)
+ {
+     // Uniform comparator is read-only and like a constant.
+     {
+@@ -412,7 +452,7 @@ void main() {
+     for (highp int i = 0; i < c; ++i) { }
+ })";
+         compileShader(GL_FRAGMENT_SHADER, kFS);
+-        verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++        verifyNoLoopForwardProgress();
+     }
+ 
+     // Uniform from a UBO is read-only and like a constant.
+@@ -425,7 +465,7 @@ void main() {
+     for (highp int i = 0; i < c; ++i) { }
+ })";
+         compileShader(GL_FRAGMENT_SHADER, kFS);
+-        verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++        verifyNoLoopForwardProgress();
+     }
+ 
+     // Uniform from a UBO, even if indexed and nested, is read-only and like a constant.
+@@ -444,7 +484,7 @@ void main() {
+         // The AST transformation does not detect this as finite loop.
+         if (getEGLWindow()->isFeatureEnabled(Feature::UseIr))
+         {
+-            verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++            verifyNoLoopForwardProgress();
+         }
+     }
+ 
+@@ -456,12 +496,12 @@ void main() {
+     for (highp int i = 0; i < v; ++i) { }
+ })";
+         compileShader(GL_FRAGMENT_SHADER, kFS);
+-        verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++        verifyNoLoopForwardProgress();
+     }
+ }
+ 
+ // Test that loopForwardProgress() is inserted when the for loop is an infinite loop.
+-TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, InfiniteFor)
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, InfiniteFor)
+ {
+     // Loop counter resets in the loop body
+     {
+@@ -470,8 +510,7 @@ void main() {
+     for (highp int i = 0; i < 100; i++) { i = 0; }
+ })";
+         compileShader(GL_FRAGMENT_SHADER, kFS);
+-        // One occurrence for defining |loopForwardProgress()|, and one call in the loop.
+-        verifyCountInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress", 1 + 1);
++        verifyLoopForwardProgressCount(1);
+     }
+ 
+     // Loop condition is always false
+@@ -482,8 +521,7 @@ void main() {
+     gl_FragColor = vec4(1);
+ })";
+         compileShader(GL_FRAGMENT_SHADER, kFS);
+-        // One occurrence for defining |loopForwardProgress()|, and one call in the loop.
+-        verifyCountInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress", 1 + 1);
++        verifyLoopForwardProgressCount(1);
+     }
+ 
+     // Loop variable is modified inside the index of a read-only variable.
+@@ -509,14 +547,13 @@ void main(void) {
+         // doesn't realize it modifies |i|.
+         if (getEGLWindow()->isFeatureEnabled(Feature::UseIr))
+         {
+-            // One occurrence for defining |loopForwardProgress()|, and one call in the loop.
+-            verifyCountInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress", 1 + 1);
++            verifyLoopForwardProgressCount(1);
+         }
+     }
+ }
+ 
+ // Test that loopForwardProgress() is inserted when nested for loops are infinite loops.
+-TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, InfiniteNestedFor)
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, InfiniteNestedFor)
+ {
+     constexpr char kFS[] = R"(#version 300 es
+ void main() {
+@@ -530,12 +567,11 @@ void main() {
+     }
+ })";
+     compileShader(GL_FRAGMENT_SHADER, kFS);
+-    // One occurrence for defining |loopForwardProgress()|, and one call in each loop.
+-    verifyCountInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress", 2 + 1);
++    verifyLoopForwardProgressCount(2);
+ }
+ 
+ // Test that loopForwardProgress() is inserted when the loop variable is global.
+-TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, InfiniteForWithGlobal)
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, InfiniteForWithGlobal)
+ {
+     constexpr char kFS[] = R"(#version 300 es
+ highp int i;
+@@ -554,13 +590,12 @@ void main() {
+     }
+ })";
+     compileShader(GL_FRAGMENT_SHADER, kFS);
+-    // One occurrence for defining |loopForwardProgress()|, and one call in each loop.
+-    verifyCountInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress", 2 + 1);
++    verifyLoopForwardProgressCount(2);
+ }
+ 
+ // Test that loopForwardProgress() is not inserted when the for loop is not an infinite loop,
+ // testing various tricky loops.
+-TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, FiniteFors)
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, FiniteFors)
+ {
+     const char kShaderPrefix[] = R"(#version 300 es
+ precision highp int;
+@@ -599,13 +634,13 @@ void main() {
+     {
+         std::string shader = (std::stringstream() << kShaderPrefix << test << kShaderSuffix).str();
+         compileShader(GL_FRAGMENT_SHADER, shader.c_str());
+-        verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++        verifyNoLoopForwardProgress();
+     }
+ }
+ 
+ // Test that loopForwardProgress() is inserted when the for loop is an infinite loop,
+ // testing various tricky loops.
+-TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, InfiniteFors)
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, InfiniteFors)
+ {
+     const char kShaderPrefix[] = R"(#version 300 es
+ precision highp int;
+@@ -649,7 +684,55 @@ void main() {
+     {
+         std::string shader = (std::stringstream() << kShaderPrefix << test << kShaderSuffix).str();
+         compileShader(GL_FRAGMENT_SHADER, shader.c_str());
+-        verifyIsInTranslation(GL_FRAGMENT_SHADER, "loopForwardProgress");
++        verifyLoopForwardProgress();
++    }
++}
++
++// Test that loopForwardProgress() is inserted in while loops, the translator currently doesn't
++// bother trying to figure out if they can be proven finite.
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, While)
++{
++    const char kShaderPrefix[] = R"(#version 300 es
++precision highp int;
++void main() {
++
++)";
++    const char kShaderSuffix[] = "}\n";
++    const char *kTests[]{
++        "while (true) { }",
++        "while (true) { break; }",
++        "uint i = 0u; while (i < 10u) { ++i; }",
++    };
++
++    for (const char *test : kTests)
++    {
++        std::string shader = (std::stringstream() << kShaderPrefix << test << kShaderSuffix).str();
++        compileShader(GL_FRAGMENT_SHADER, shader.c_str());
++        verifyLoopForwardProgress();
++    }
++}
++
++// Test that loopForwardProgress() is inserted in do-while loops, the translator currently doesn't
++// bother trying to figure out if they can be proven finite.
++TEST_P(GLSLOutputTest_EnsureLoopForwardProgress, DoWhile)
++{
++    const char kShaderPrefix[] = R"(#version 300 es
++precision highp int;
++void main() {
++
++)";
++    const char kShaderSuffix[] = "}\n";
++    const char *kTests[]{
++        "do { } while(true);",
++        "do { } while(false);",
++        "do { break; } while(true);",
++    };
++
++    for (const char *test : kTests)
++    {
++        std::string shader = (std::stringstream() << kShaderPrefix << test << kShaderSuffix).str();
++        compileShader(GL_FRAGMENT_SHADER, shader.c_str());
++        verifyLoopForwardProgress();
+     }
+ }
+ 
+@@ -943,6 +1026,7 @@ ANGLE_INSTANTIATE_TEST(GLSLOutputGLSLVerifyIRUseTest,
+                        ES2_OPENGL().disable(Feature::UseIr),
+                        ES2_OPENGLES().disable(Feature::UseIr));
+ 
+-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLOutputMSLTest_EnsureLoopForwardProgress);
+-ANGLE_INSTANTIATE_TEST(GLSLOutputMSLTest_EnsureLoopForwardProgress,
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLOutputTest_EnsureLoopForwardProgress);
++ANGLE_INSTANTIATE_TEST(GLSLOutputTest_EnsureLoopForwardProgress,
++                       ES3_OPENGLES().enable(Feature::EnsureLoopForwardProgress),
+                        ES3_METAL().enable(Feature::EnsureLoopForwardProgress));

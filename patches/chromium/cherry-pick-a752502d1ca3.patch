@@ -1,0 +1,469 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bienvenu <davidbienvenu@chromium.org>
+Date: Fri, 23 Oct 2026 17:42:26 -0700
+Subject: [a11y] Guard against re-entrancy during Windows accessibility updates
+
+Synchronous accessibility event dispatch on Windows can re-enter
+browser and accessibility code before returning. Hold references to
+platform COM objects and check manager, node, and frame host liveness
+across synchronous event notifications and parent tree updates.
+
+AX-Relnotes: n/a.
+Bug: 574378401
+Change-Id: Iab79194341253361eae47066413e25049e777227
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8595191
+Reviewed-by: Greg Thompson <grt@chromium.org>
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1726393}
+Electron adaptation notes (43-x-y):
+browser_accessibility_manager.cc: this branch still runs the initial
+language-detection block after FireFocusEventsIfNeeded(); the new
+"if (!alive) return true;" guard is placed right after it. The
+base/auto_reset.h include is kept because this file still uses it here.
+browser_accessibility_win.cc: UpdatePlatformAttributes() had no null-COM
+early return on this branch; the upstream guarded form is taken as is.
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 2b59fc2936343f09d9db3892de4df0695efda68e..89fb9f29d6a8fb80156b39bd4bdd9c436f82189f 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -9026,8 +9026,14 @@ void RenderFrameHostImpl::SendAccessibilityEventsToManager(
+   }
+ 
+   CHECK(delegate_->GetAccessibilityMode().has_mode(ui::AXMode::kNativeAPIs));
++  // `OnAccessibilityEvents()` can synchronously dispatch platform notifications
++  // that may re-enter and destroy `this` or `browser_accessibility_manager_`.
++  base::WeakPtr<RenderFrameHostImpl> weak_this = GetWeakPtr();
+   bool accessibility_error =
+       !browser_accessibility_manager_->OnAccessibilityEvents(details);
++  if (!weak_this || !browser_accessibility_manager_) {
++    return;
++  }
+   if (accessibility_error) {
+     // OnAccessibilityEvents returns false in IPC error conditions.
+     UnrecoverableAccessibilityError();
+@@ -11810,7 +11816,11 @@ void RenderFrameHostImpl::HandleAXEvents(
+   delegate_->ProcessAccessibilityUpdatesAndEvents(updates_and_events);
+ 
+   // This call steals the contents of the data to avoid copying.
++  base::WeakPtr<RenderFrameHostImpl> weak_this = GetWeakPtr();
+   SendAccessibilityEventsToManager(updates_and_events);
++  if (!weak_this) {
++    return;
++  }
+ 
+   // For testing only.
+   if (!accessibility_testing_callback_.is_null()) {
+@@ -13812,7 +13822,11 @@ void RenderFrameHostImpl::UpdateAXTreeData() {
+   detail.updates[0].has_tree_data = true;
+   detail.updates[0].tree_data = GetAXTreeData();
+ 
++  base::WeakPtr<RenderFrameHostImpl> weak_this = GetWeakPtr();
+   SendAccessibilityEventsToManager(detail);
++  if (!weak_this) {
++    return;
++  }
+   delegate_->ProcessAccessibilityUpdatesAndEvents(detail);
+ }
+ 
+diff --git a/ui/accessibility/ax_tree_manager.cc b/ui/accessibility/ax_tree_manager.cc
+index cde94af00fae12dc3382366ae79c01135adc33a7..2bd6d21d0bf6e62ae51b46aeca8eba7b96387569 100644
+--- a/ui/accessibility/ax_tree_manager.cc
++++ b/ui/accessibility/ax_tree_manager.cc
+@@ -237,6 +237,8 @@ AXNode* AXTreeManager::GetLastFocusedNode() {
+ }
+ 
+ AXTreeManager::~AXTreeManager() {
++  weak_ptr_factory_.InvalidateWeakPtrs();
++
+   AXNode* parent = nullptr;
+   if (connected_to_parent_tree_node_) {
+     parent = GetParentNodeFromParentTree();
+@@ -403,9 +405,19 @@ void AXTreeManager::ParentConnectionChanged(AXNode* parent) {
+   }
+   connected_to_parent_tree_node_ = true;
+ 
++  const AXTreeID parent_tree_id = parent->tree()->GetAXTreeID();
++  const AXNodeID parent_node_id = parent->id();
+   parent->tree()->NotifyChildTreeConnectionChanged(parent, ax_tree_.get());
+   UpdateAttributesOnParent(parent);
+-  AXTreeManager* parent_manager = parent->GetManager();
++
++  AXTreeManager* parent_manager = FromID(parent_tree_id);
++  if (!parent_manager) {
++    return;
++  }
++  parent = parent_manager->GetNode(parent_node_id);
++  if (!parent) {
++    return;
++  }
+   parent = parent_manager->RetargetForEvents(
+       parent, RetargetEventType::RetargetEventTypeGenerated);
+   DCHECK(parent) << "RetargetForEvents shouldn't return a "
+@@ -417,8 +429,13 @@ void AXTreeManager::ParentConnectionChanged(AXNode* parent) {
+ void AXTreeManager::EnsureParentConnectionIfNotRootManager() {
+   AXNode* parent = GetParentNodeFromParentTree();
+   if (parent) {
+-    if (!connected_to_parent_tree_node_)
++    if (!connected_to_parent_tree_node_) {
++      base::WeakPtr<AXTreeManager> alive = GetWeakPtr();
+       ParentConnectionChanged(parent);
++      if (!alive) {
++        return;
++      }
++    }
+     SANITIZER_CHECK(!IsRoot());
+     return;
+   }
+@@ -438,4 +455,8 @@ void AXTreeManager::EnsureParentConnectionIfNotRootManager() {
+   }
+ }
+ 
++base::WeakPtr<AXTreeManager> AXTreeManager::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/ax_tree_manager.h b/ui/accessibility/ax_tree_manager.h
+index 9dca8d0344a78079923623f3fc72a63583e5ff0e..2bd81f2eb4826e7778226fe8c4548965ec159122 100644
+--- a/ui/accessibility/ax_tree_manager.h
++++ b/ui/accessibility/ax_tree_manager.h
+@@ -5,6 +5,7 @@
+ #ifndef UI_ACCESSIBILITY_AX_TREE_MANAGER_H_
+ #define UI_ACCESSIBILITY_AX_TREE_MANAGER_H_
+ 
++#include "base/memory/weak_ptr.h"
+ #include "base/scoped_observation.h"
+ #include "ui/accessibility/ax_event_generator.h"
+ #include "ui/accessibility/ax_export.h"
+@@ -177,6 +178,8 @@ class AX_EXPORT AXTreeManager : public AXTreeObserver {
+   // attributes accordingly when the parent connection changes.
+   virtual void UpdateAttributesOnParent(AXNode* parent) {}
+ 
++  base::WeakPtr<AXTreeManager> GetWeakPtr();
++
+  private:
+   // True if this platform can access platform nodes.
+   const bool is_platform_tree_manager_ = false;
+@@ -213,6 +216,8 @@ class AX_EXPORT AXTreeManager : public AXTreeObserver {
+   // destructors for non-static member fields are called in the reverse order of
+   // declaration, do not move this member above other members.
+   base::ScopedObservation<AXTree, AXTreeObserver> tree_observation_{this};
++
++  base::WeakPtrFactory<AXTreeManager> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace ui
+diff --git a/ui/accessibility/platform/browser_accessibility_com_win.cc b/ui/accessibility/platform/browser_accessibility_com_win.cc
+index d5ae4f876f5d7b21ceddc1ea431a21b10f26a935..81d090d464762b87efabed9be67faf170cf3c372 100644
+--- a/ui/accessibility/platform/browser_accessibility_com_win.cc
++++ b/ui/accessibility/platform/browser_accessibility_com_win.cc
+@@ -27,6 +27,7 @@
+ #include "base/win/shlwapi.h"
+ #include "base/win/win_util.h"
+ #include "base/win/windows_version.h"
++#include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
+ #include "ui/accessibility/ax_common.h"
+ #include "ui/accessibility/ax_enum_localization_util.h"
+ #include "ui/accessibility/ax_enum_util.h"
+@@ -1742,6 +1743,12 @@ void BrowserAccessibilityComWin::UpdateStep3FireEvents() {
+   DCHECK(update_state_);
+   DCHECK(update_state_->old_win_attributes);
+ 
++  Microsoft::WRL::ComPtr<BrowserAccessibilityComWin> this_ref(this);
++  absl::Cleanup clear_update_state = [this] { update_state_ = nullptr; };
++
++  if (IsDestroyed()) {
++    return;
++  }
+   BrowserAccessibilityWin* const owner = GetOwner();
+   const bool ignored = owner->IsIgnored();
+ 
+@@ -1752,7 +1759,6 @@ void BrowserAccessibilityComWin::UpdateStep3FireEvents() {
+   if (ignored || (old_win_attributes.ignored != ignored &&
+                   !owner->GetData().IsContainedInActiveLiveRegion() &&
+                   !owner->GetData().IsActiveLiveRegionRoot())) {
+-    update_state_ = nullptr;
+     return;
+   }
+ 
+@@ -1762,6 +1768,9 @@ void BrowserAccessibilityComWin::UpdateStep3FireEvents() {
+     // Fire an event if the description, help, or value changes.
+     if (description() != old_win_attributes.description) {
+       FireNativeEvent(EVENT_OBJECT_DESCRIPTIONCHANGE);
++      if (IsDestroyed()) {
++        return;
++      }
+     }
+ 
+     // Fire an event if this container object has scrolled.
+@@ -1769,8 +1778,12 @@ void BrowserAccessibilityComWin::UpdateStep3FireEvents() {
+     int sy = 0;
+     if (owner->GetIntAttribute(ax::mojom::IntAttribute::kScrollX, &sx) &&
+         owner->GetIntAttribute(ax::mojom::IntAttribute::kScrollY, &sy)) {
+-      if (sx != previous_scroll_x_ || sy != previous_scroll_y_)
++      if (sx != previous_scroll_x_ || sy != previous_scroll_y_) {
+         FireNativeEvent(EVENT_SYSTEM_SCROLLINGEND);
++        if (IsDestroyed()) {
++          return;
++        }
++      }
+       previous_scroll_x_ = sx;
+       previous_scroll_y_ = sy;
+     }
+@@ -1788,16 +1801,20 @@ void BrowserAccessibilityComWin::UpdateStep3FireEvents() {
+         // In-process screen readers may call IAccessibleText::get_oldText
+         // in reaction to this event to retrieve the text that was removed.
+         FireNativeEvent(IA2_EVENT_TEXT_REMOVED);
++        if (IsDestroyed()) {
++          return;
++        }
+       }
+       if (new_len > 0) {
+         // In-process screen readers may call IAccessibleText::get_newText
+         // in reaction to this event to retrieve the text that was inserted.
+         FireNativeEvent(IA2_EVENT_TEXT_INSERTED);
++        if (IsDestroyed()) {
++          return;
++        }
+       }
+     }
+   }
+-
+-  update_state_ = nullptr;
+ }
+ 
+ BrowserAccessibilityWin* BrowserAccessibilityComWin::GetOwner() const {
+diff --git a/ui/accessibility/platform/browser_accessibility_manager.cc b/ui/accessibility/platform/browser_accessibility_manager.cc
+index f1bd5d7bf820f8eb5aa668230290e5725a8dbf43..7fb0f720d7c5dc14b93705518c8d1ce1481f7fa5 100644
+--- a/ui/accessibility/platform/browser_accessibility_manager.cc
++++ b/ui/accessibility/platform/browser_accessibility_manager.cc
+@@ -11,7 +11,6 @@
+ #include <memory>
+ #include <utility>
+ 
+-#include "base/auto_reset.h"
+ #include "base/check_deref.h"
+ #include "base/containers/adapters.h"
+ #include "base/logging.h"
+@@ -23,6 +22,7 @@
+ #include "base/notreached.h"
+ #include "base/trace_event/trace_event.h"
+ #include "build/build_config.h"
++#include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
+ #include "ui/accessibility/accessibility_features.h"
+ #include "ui/accessibility/ax_common.h"
+ #include "ui/accessibility/ax_language_detection.h"
+@@ -498,12 +498,19 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+   // remove this exclusion.
+   base::ScopedSafetyChecksExclusion scoped_unsafe;
+ 
++  base::WeakPtr<AXTreeManager> alive = GetWeakPtr();
++
+ #if BUILDFLAG(IS_WIN)
+   CHECK(!in_on_accessibility_events_)
+       << "Should not re-enter OnAccessiblityEvents()";
+ #endif  // BUILDFLAG(IS_WIN)
+ #if BUILDFLAG(IS_WIN) || DCHECK_IS_ON()
+-  base::AutoReset<bool> auto_reset(&in_on_accessibility_events_, true);
++  in_on_accessibility_events_ = true;
++  absl::Cleanup reset_in_on_accessibility_events = [this, &alive] {
++    if (alive) {
++      in_on_accessibility_events_ = false;
++    }
++  };
+ #endif  // BUILDFLAG(IS_WIN) || DCHECK_IS_ON()
+ 
+   // Update the cached device scale factor.
+@@ -529,6 +536,9 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+       CHECK(delegate_) << ax_tree()->error();
+       return false;
+     }
++    if (!alive) {
++      return true;
++    }
+ 
+     // It's a bug if we got an update containing more nodes than
+     // the size of the resulting tree. If Unserialize succeeded that
+@@ -544,6 +554,9 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+   DCHECK(ax_tree()->root());
+ 
+   EnsureParentConnectionIfNotRootManager();
++  if (!alive) {
++    return true;
++  }
+ 
+   if (!CanFireEvents()) {
+     // TODO(accessibility) Change AXEventGenerator() to avoid doing any work
+@@ -607,6 +620,9 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+     defer_load_complete_event_ = false;
+     FireSourceEvent(ax::mojom::Event::kLoadComplete,
+                     GetBrowserAccessibilityRoot(), -1);
++    if (!alive) {
++      return true;
++    }
+   }
+ 
+   // Fire any events related to changes to the tree that come from ancestors of
+@@ -637,6 +653,9 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+     if (focus && focus != event_target && focus->IsDescendantOf(event_target)) {
+       FireGeneratedEvent(targeted_event.event_params->event,
+                          event_target->node());
++      if (!alive) {
++        return true;
++      }
+     } else {
+       deferred_events.push_back(targeted_event);
+     }
+@@ -656,6 +675,9 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+   }
+   if (focus_manager) {
+     focus_manager->FireFocusEventsIfNeeded();
++    if (!alive) {
++      return true;
++    }
+   }
+ 
+   // Now fire all of the rest of the generated events we previously deferred.
+@@ -678,6 +700,9 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+ 
+     FireGeneratedEvent(targeted_event.event_params->event,
+                        event_target->node());
++    if (!alive) {
++      return true;
++    }
+   }
+   event_generator().ClearEvents();
+ 
+@@ -731,6 +756,9 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+     }
+ 
+     FireSourceEvent(event.event_type, retargeted, event.action_request_id);
++    if (!alive) {
++      return true;
++    }
+   }
+ 
+   if (received_load_complete_event) {
+@@ -749,12 +777,18 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+     // If the LanguageDetectionDynamic feature flag is not enabled then this
+     // is a no-op.
+     ax_tree()->language_detection_manager->RegisterLanguageDetectionObserver();
++    if (!alive) {
++      return true;
++    }
+   }
+ 
+   // Allow derived classes to do event post-processing. This must run after
+   // all generated and source events so that finalized UIA events (e.g.
+   // Text_TextChanged, TestComplete) are raised in the correct order.
+   FinalizeAccessibilityEvents();
++  if (!alive) {
++    return true;
++  }
+ 
+   if (!is_post_load_) {
+     for (const AXEvent& event : details.events) {
+@@ -2042,14 +2076,14 @@ BrowserAccessibility* BrowserAccessibilityManager::ApproximateHitTest(
+ }
+ 
+ void BrowserAccessibilityManager::DetachFromParentManager() {
++  if (!std::exchange(connected_to_parent_tree_node_, false)) {
++    return;
++  }
+   // Notify the parent to invalidate its hypertext cache before disconnecting,
+   // otherwise stale hyperlink IDs can cause type confusion after reassignment.
+-  if (connected_to_parent_tree_node_) {
+-    if (AXNode* parent = GetParentNodeFromParentTree()) {
+-      UpdateAttributesOnParent(parent);
+-    }
++  if (AXNode* parent = GetParentNodeFromParentTree()) {
++    UpdateAttributesOnParent(parent);
+   }
+-  connected_to_parent_tree_node_ = false;
+ }
+ 
+ void BrowserAccessibilityManager::BuildAXTreeHitTestCache() {
+diff --git a/ui/accessibility/platform/browser_accessibility_manager_win.cc b/ui/accessibility/platform/browser_accessibility_manager_win.cc
+index 9edb575a025bc564dfb0ec4a5b7b1ccbeb8d2765..3011de9826a7faa7f57cfa19600524e352953173 100644
+--- a/ui/accessibility/platform/browser_accessibility_manager_win.cc
++++ b/ui/accessibility/platform/browser_accessibility_manager_win.cc
+@@ -1052,28 +1052,33 @@ void BrowserAccessibilityManagerWin::OnAtomicUpdateFinished(
+   absl::flat_hash_set<AXPlatformNode*> objs_to_update;
+   CollectChangedNodesAndParentsForAtomicUpdate(tree, changes, &objs_to_update);
+ 
++  std::vector<Microsoft::WRL::ComPtr<BrowserAccessibilityComWin>>
++      com_objs_to_update;
++  com_objs_to_update.reserve(objs_to_update.size());
++  for (auto* node : objs_to_update) {
++    if (auto* com_win = ToBrowserAccessibilityComWin(node)) {
++      com_objs_to_update.emplace_back(com_win);
++    }
++  }
++
+   // Allocate space to hold intermediate state for all nodes.
+   auto update_states =
+       base::HeapArray<BrowserAccessibilityComWin::UpdateState>::WithSize(
+-          objs_to_update.size());
++          com_objs_to_update.size());
+ 
+   // The first step moves win_attributes_ to old_win_attributes_ and then
+   // recomputes all of win_attributes_ other than IAccessibleText.
+   auto state_scan = update_states.begin();
+-  for (auto* node : objs_to_update) {
+-    if (auto* com_win = ToBrowserAccessibilityComWin(node)) {
+-      com_win->UpdateStep1ComputeWinAttributes(&*state_scan);
+-    }
++  for (const auto& com_win : com_objs_to_update) {
++    com_win->UpdateStep1ComputeWinAttributes(&*state_scan);
+     ++state_scan;
+   }
+ 
+   // The next step updates the hypertext of each node, which is a
+   // concatenation of all of its child text nodes, so it can't run until
+   // the text of all of the nodes was computed in the previous step.
+-  for (auto* node : objs_to_update) {
+-    if (auto* com_win = ToBrowserAccessibilityComWin(node)) {
+-      com_win->UpdateStep2ComputeHypertext();
+-    }
++  for (const auto& com_win : com_objs_to_update) {
++    com_win->UpdateStep2ComputeHypertext();
+   }
+ 
+   // The third step fires events on nodes based on what's changed - like
+@@ -1084,10 +1089,8 @@ void BrowserAccessibilityManagerWin::OnAtomicUpdateFinished(
+   // client may walk the tree when it receives any of these events.
+   // At the end, it deletes old_win_attributes_ since they're not needed
+   // anymore.
+-  for (auto* node : objs_to_update) {
+-    if (auto* com_win = ToBrowserAccessibilityComWin(node)) {
+-      com_win->UpdateStep3FireEvents();
+-    }
++  for (const auto& com_win : com_objs_to_update) {
++    com_win->UpdateStep3FireEvents();
+   }
+ }
+ 
+diff --git a/ui/accessibility/platform/browser_accessibility_win.cc b/ui/accessibility/platform/browser_accessibility_win.cc
+index f9e2b9d1ed34faf5177b86e07833a23d3c821a88..19dd4823382981e79e783b525700d773055dc62c 100644
+--- a/ui/accessibility/platform/browser_accessibility_win.cc
++++ b/ui/accessibility/platform/browser_accessibility_win.cc
+@@ -29,10 +29,14 @@ BrowserAccessibilityWin::BrowserAccessibilityWin(
+ BrowserAccessibilityWin::~BrowserAccessibilityWin() = default;
+ 
+ void BrowserAccessibilityWin::UpdatePlatformAttributes() {
++  Microsoft::WRL::ComPtr<BrowserAccessibilityComWin> com_win = GetCOM();
++  if (!com_win || com_win->update_state_) {
++    return;
++  }
+   BrowserAccessibilityComWin::UpdateState update_state;
+-  GetCOM()->UpdateStep1ComputeWinAttributes(&update_state);
+-  GetCOM()->UpdateStep2ComputeHypertext();
+-  GetCOM()->UpdateStep3FireEvents();
++  com_win->UpdateStep1ComputeWinAttributes(&update_state);
++  com_win->UpdateStep2ComputeHypertext();
++  com_win->UpdateStep3FireEvents();
+ }
+ 
+ std::wstring BrowserAccessibilityWin::ComputeListItemNameFromContent() const {

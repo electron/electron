@@ -1,0 +1,1513 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: S Ganesh <ganesh@chromium.org>
+Date: Thu, 22 Oct 2026 13:54:30 -0700
+Subject: Revoke Directory capability after unzip and harden extension unpack
+
+Previously, Unzip() bound a self-owned storage::FilesystemImpl to serve
+the storage::mojom::Directory capability passed to the unzipper utility
+process. If the utility process retained that remote, it could continue
+creating or overwriting files in the output directory after Unzip()
+completed.
+
+To prevent post-unzip tampering:
+- UnzipOperation now owns a restricted Directory wrapper
+  (UnzipFilesystemImpl) that enforces the path filter, create-only
+  file opens, and single-delete of newly created files, and revokes the
+  Directory receiver before running the completion callback (or on
+  cancellation).
+- SandboxedUnpacker::RewriteManifestFile and
+  ComputedHashes::WriteToFile unlink existing files before writing so a
+  retained file handle from the unzipper cannot modify them in place
+  (matching sanitized images/message catalogs and indexed rulesets;
+  verified_contents.json is signature-checked at use).
+- CrxInstaller::ReloadExtensionAfterInstall verifies that the reloaded
+  manifest matches the unpacked manifest (gated by
+  kCrxInstallerVerifyReloadedManifest).
+
+Bug: 574299586
+Change-Id: Ibe2b286b85e1fba8a40320c19c93574b6ec01f25
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8594906
+Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Commit-Queue: S Ganesh <ganesh@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725153}
+Electron adaptation notes (43-x-y):
+extension_features.{h,cc}, enums.xml, crx_installer.h: the new feature,
+histogram enum and ReloadManifestVerificationResult enum are inserted next
+to the entries this branch has (the upstream neighbours do not exist
+here). All functional hunks (crx_installer.cc, sandboxed_unpacker.cc,
+computed_hashes.cc, unzip service) apply unchanged.
+unzip.cc: the new UnzipFilesystemImpl does not override
+Directory::GetDiskSpaceInfo()/ComputeDirectorySize(), which do not exist
+in this branch's directory.mojom.
+
+diff --git a/chrome/browser/extensions/crx_installer_browsertest.cc b/chrome/browser/extensions/crx_installer_browsertest.cc
+index b8ce95595dd33a7f3e4fa5f083360381e021017a..0f92f3e7333feb6f5f99b3d6a11934a55fab8328 100644
+--- a/chrome/browser/extensions/crx_installer_browsertest.cc
++++ b/chrome/browser/extensions/crx_installer_browsertest.cc
+@@ -17,6 +17,7 @@
+ #include "base/files/file_util.h"
+ #include "base/files/scoped_temp_dir.h"
+ #include "base/functional/bind.h"
++#include "base/json/json_writer.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/ref_counted.h"
+@@ -76,6 +77,7 @@
+ #include "extensions/browser/renderer_startup_helper.h"
+ #include "extensions/browser/scoped_database_manager_for_test.h"
+ #include "extensions/browser/test_extension_registry_observer.h"
++#include "extensions/common/constants.h"
+ #include "extensions/common/extension.h"
+ #include "extensions/common/extension_builder.h"
+ #include "extensions/common/extension_features.h"
+@@ -1189,6 +1191,53 @@ IN_PROC_BROWSER_TEST_F(ExtensionCrxInstallerTest, InstallToSharedLocation) {
+ 
+   EXPECT_FALSE(base::PathExists(extension_path));
+ }
++
++IN_PROC_BROWSER_TEST_F(ExtensionCrxInstallerTest,
++                       SharedLocationManifestMismatchFallsBackToLocalInstall) {
++  base::ScopedAllowBlockingForTesting allow_io;
++  base::CommandLine::ForCurrentProcess()->AppendSwitch(
++      ash::switches::kEnableExtensionAssetsSharing);
++  base::ScopedTempDir cache_dir;
++  ASSERT_TRUE(cache_dir.CreateUniqueTempDir());
++  ExtensionAssetsManagerChromeOS::SetSharedInstallDirForTesting(
++      cache_dir.GetPath());
++
++  base::FilePath crx_path = test_data_dir_.AppendASCII("crx_installer/v1.crx");
++  const Extension* shared_extension =
++      InstallExtension(crx_path, 1, mojom::ManifestLocation::kExternalPref);
++  ASSERT_TRUE(shared_extension);
++  const base::FilePath shared_version_dir = shared_extension->path();
++  ASSERT_TRUE(cache_dir.GetPath().IsParent(shared_version_dir));
++
++  // Modify the shared copy's manifest on disk (e.g. simulating a shared copy
++  // written with a different differential_fingerprint).
++  base::DictValue modified_manifest =
++      shared_extension->manifest()->value()->Clone();
++  modified_manifest.Set("description", "modified shared manifest");
++  std::optional<std::string> json = base::WriteJson(modified_manifest);
++  ASSERT_TRUE(json.has_value());
++  ASSERT_TRUE(
++      base::WriteFile(shared_version_dir.Append(kManifestFilename), *json));
++
++  // Re-installing the same CRX resolves to `shared_version_dir` first, detects
++  // the mismatch, and falls back to installing `unpacked_extension_root_` into
++  // the profile's local `install_directory()`.
++  base::HistogramTester histogram_tester;
++  const Extension* local_extension =
++      InstallExtension(crx_path, 0, mojom::ManifestLocation::kExternalPref);
++  ASSERT_TRUE(local_extension);
++  EXPECT_TRUE(ExtensionRegistrar::Get(profile())->install_directory().IsParent(
++      local_extension->path()));
++  EXPECT_TRUE(base::PathExists(shared_version_dir));
++  histogram_tester.ExpectBucketCount(
++      "Extensions.CrxInstaller.ReloadManifestMismatch",
++      CrxInstaller::ReloadManifestVerificationResult::
++          kSharedCopyMismatchFallback,
++      1);
++  histogram_tester.ExpectBucketCount(
++      "Extensions.CrxInstaller.ReloadManifestMismatch",
++      CrxInstaller::ReloadManifestVerificationResult::kMatch, 1);
++}
+ #endif
+ 
+ IN_PROC_BROWSER_TEST_F(ExtensionCrxInstallerTest, DoNotSync) {
+@@ -1400,6 +1449,10 @@ IN_PROC_BROWSER_TEST_F(ExtensionCrxInstallerTest, NewInstallFromWebStore) {
+   histogram_tester.ExpectBucketCount(
+       "Extensions.ExtensionInstalled.NewFromWebstore", true,
+       /*expected_count=*/1);
++  histogram_tester.ExpectUniqueSample(
++      "Extensions.CrxInstaller.ReloadManifestMismatch",
++      CrxInstaller::ReloadManifestVerificationResult::kMatch,
++      /*expected_bucket_count=*/1);
+ 
+   // Install another webstore extension and confirm the histogram is not emitted
+   // again.
+@@ -1413,6 +1466,179 @@ IN_PROC_BROWSER_TEST_F(ExtensionCrxInstallerTest, NewInstallFromWebStore) {
+   histogram_tester.ExpectBucketCount(
+       "Extensions.ExtensionInstalled.NewFromWebstore", true,
+       /*expected_count=*/1);
++  histogram_tester.ExpectUniqueSample(
++      "Extensions.CrxInstaller.ReloadManifestMismatch",
++      CrxInstaller::ReloadManifestVerificationResult::kMatch,
++      /*expected_bucket_count=*/2);
++}
++
++namespace {
++
++class TamperingInstallPrompt : public ExtensionInstallPrompt {
++ public:
++  TamperingInstallPrompt(
++      content::WebContents* web_contents,
++      ExtensionId* out_extension_id,
++      std::string* out_version,
++      std::optional<std::string> raw_manifest_override = std::nullopt)
++      : ExtensionInstallPrompt(web_contents,
++                               std::make_unique<InstallPromptData>(
++                                   InstallPromptData::UNSET_PROMPT_TYPE)),
++        out_extension_id_(out_extension_id),
++        out_version_(out_version),
++        raw_manifest_override_(std::move(raw_manifest_override)) {}
++
++  void ConfirmInstall(DoneCallback install_callback,
++                      const Extension* extension) override {
++    *out_extension_id_ = extension->id();
++    *out_version_ = extension->version().GetString();
++    base::ScopedAllowBlockingForTesting allow_io;
++    std::optional<std::string> json = raw_manifest_override_;
++    if (!json.has_value()) {
++      base::DictValue tampered = extension->manifest()->value()->Clone();
++      tampered.Set("description", "tampered after unpack");
++      json = base::WriteJson(tampered);
++    }
++    EXPECT_TRUE(json.has_value());
++    if (!json.has_value()) {
++      std::move(install_callback).Run(DoneCallbackPayload(Result::ABORTED));
++      return;
++    }
++    const bool wrote_file =
++        base::WriteFile(extension->path().Append(kManifestFilename), *json);
++    EXPECT_TRUE(wrote_file);
++    std::move(install_callback)
++        .Run(DoneCallbackPayload(wrote_file ? Result::ACCEPTED
++                                            : Result::ABORTED));
++  }
++
++ private:
++  raw_ptr<ExtensionId> out_extension_id_;
++  raw_ptr<std::string> out_version_;
++  std::optional<std::string> raw_manifest_override_;
++};
++
++}  // namespace
++
++// Verifies that if `manifest.json` on disk is modified between unpacking and
++// the post-install reload in `CrxInstaller::ReloadExtensionAfterInstall`, the
++// installation fails with `MANIFEST_MISMATCH_AFTER_INSTALL` and cleans up the
++// installed version directory.
++IN_PROC_BROWSER_TEST_F(ExtensionCrxInstallerTest,
++                       ManifestModifiedBeforeReloadFailsInstall) {
++  base::HistogramTester histogram_tester;
++  ExtensionId extension_id;
++  std::string version;
++  auto prompt = std::make_unique<TamperingInstallPrompt>(
++      browser()->GetTabStripModel()->GetActiveWebContents(), &extension_id,
++      &version);
++
++  scoped_refptr<CrxInstaller> installer(
++      CrxInstaller::Create(profile(), std::move(prompt)));
++
++  base::test::TestFuture<std::optional<CrxInstallError>> install_result_future;
++  installer->AddInstallerCallback(
++      install_result_future
++          .GetCallback<const std::optional<CrxInstallError>&>());
++  installer->InstallCrx(test_data_dir_.AppendASCII("good.crx"));
++
++  std::optional<CrxInstallError> error = install_result_future.Get();
++  ASSERT_TRUE(error.has_value());
++  EXPECT_EQ(CrxInstallErrorType::OTHER, error->type());
++  EXPECT_EQ(CrxInstallErrorDetail::MANIFEST_MISMATCH_AFTER_INSTALL,
++            error->detail());
++  histogram_tester.ExpectUniqueSample(
++      "Extensions.CrxInstaller.ReloadManifestMismatch",
++      CrxInstaller::ReloadManifestVerificationResult::kMismatch,
++      /*expected_bucket_count=*/1);
++  ASSERT_FALSE(extension_id.empty());
++  EXPECT_FALSE(GetInstalledExtension(extension_id));
++
++  base::ScopedAllowBlockingForTesting allow_io;
++  base::FilePath version_dir = ExtensionRegistrar::Get(profile())
++                                   ->install_directory()
++                                   .AppendASCII(extension_id)
++                                   .AppendASCII(version + "_0");
++  EXPECT_FALSE(base::PathExists(version_dir));
++}
++
++// Verifies that if `file_util::LoadExtension` fails in
++// `CrxInstaller::ReloadExtensionAfterInstall` (`CANT_LOAD_EXTENSION`), the
++// installed `version_dir` under `install_directory_` is cleaned up.
++IN_PROC_BROWSER_TEST_F(ExtensionCrxInstallerTest,
++                       CantLoadExtensionAfterInstallCleansUpVersionDir) {
++  ExtensionId extension_id;
++  std::string version;
++  auto prompt = std::make_unique<TamperingInstallPrompt>(
++      browser()->GetTabStripModel()->GetActiveWebContents(), &extension_id,
++      &version, /*raw_manifest_override=*/"not valid json");
++
++  scoped_refptr<CrxInstaller> installer(
++      CrxInstaller::Create(profile(), std::move(prompt)));
++
++  base::test::TestFuture<std::optional<CrxInstallError>> install_result_future;
++  installer->AddInstallerCallback(
++      install_result_future
++          .GetCallback<const std::optional<CrxInstallError>&>());
++  installer->InstallCrx(test_data_dir_.AppendASCII("good.crx"));
++
++  std::optional<CrxInstallError> error = install_result_future.Get();
++  ASSERT_TRUE(error.has_value());
++  EXPECT_EQ(CrxInstallErrorType::OTHER, error->type());
++  EXPECT_EQ(CrxInstallErrorDetail::CANT_LOAD_EXTENSION, error->detail());
++  ASSERT_FALSE(extension_id.empty());
++  EXPECT_FALSE(GetInstalledExtension(extension_id));
++
++  base::ScopedAllowBlockingForTesting allow_io;
++  base::FilePath version_dir = ExtensionRegistrar::Get(profile())
++                                   ->install_directory()
++                                   .AppendASCII(extension_id)
++                                   .AppendASCII(version + "_0");
++  EXPECT_FALSE(base::PathExists(version_dir));
++}
++
++class ExtensionCrxInstallerTestWithoutVerifyReloadedManifest
++    : public ExtensionCrxInstallerTest {
++ public:
++  ExtensionCrxInstallerTestWithoutVerifyReloadedManifest() {
++    feature_list_.InitAndDisableFeature(
++        extensions_features::kCrxInstallerVerifyReloadedManifest);
++  }
++
++ private:
++  base::test::ScopedFeatureList feature_list_;
++};
++
++// Verifies that disabling `kCrxInstallerVerifyReloadedManifest` acts as a kill
++// switch and allows installation to succeed even if `manifest.json` is modified
++// before the post-install reload, while still recording the mismatch in UMA.
++IN_PROC_BROWSER_TEST_F(
++    ExtensionCrxInstallerTestWithoutVerifyReloadedManifest,
++    ManifestModifiedBeforeReloadAllowedWhenKillSwitchDisabled) {
++  base::HistogramTester histogram_tester;
++  ExtensionId extension_id;
++  std::string version;
++  auto prompt = std::make_unique<TamperingInstallPrompt>(
++      browser()->GetTabStripModel()->GetActiveWebContents(), &extension_id,
++      &version);
++
++  scoped_refptr<CrxInstaller> installer(
++      CrxInstaller::Create(profile(), std::move(prompt)));
++
++  base::test::TestFuture<std::optional<CrxInstallError>> install_result_future;
++  installer->AddInstallerCallback(
++      install_result_future
++          .GetCallback<const std::optional<CrxInstallError>&>());
++  installer->InstallCrx(test_data_dir_.AppendASCII("good.crx"));
++
++  std::optional<CrxInstallError> error = install_result_future.Get();
++  EXPECT_FALSE(error.has_value());
++  histogram_tester.ExpectUniqueSample(
++      "Extensions.CrxInstaller.ReloadManifestMismatch",
++      CrxInstaller::ReloadManifestVerificationResult::kMismatch,
++      /*expected_bucket_count=*/1);
++  ASSERT_FALSE(extension_id.empty());
++  EXPECT_TRUE(GetInstalledExtension(extension_id));
+ }
+ 
+ class ExtensionCrxInstallerTestWithWithholdingUI
+diff --git a/components/policy/proto/device_management_backend.proto b/components/policy/proto/device_management_backend.proto
+index 2f26596046b0b569a9a61b15a1ec9eea2cb4c429..87fb6124db95a7dc8e5da825167ce6725c68b93f 100644
+--- a/components/policy/proto/device_management_backend.proto
++++ b/components/policy/proto/device_management_backend.proto
+@@ -4021,6 +4021,7 @@ message ExtensionInstallReportLogEvent {
+   // error. See extensions::CrxInstallErrorDetail for more details.
+   // extensions::CrxInstallErrorDetail is the main enum and this is a
+   // copy used for reporting purposes.
++  // LINT.IfChange(CrxInstallErrorDetail)
+   enum CrxInstallErrorDetail {
+     CRX_INSTALL_ERROR_DETAIL_UNKNOWN = 0;
+     CONVERT_USER_SCRIPT_TO_EXTENSION_FAILED = 1;
+@@ -4048,7 +4049,9 @@ message ExtensionInstallReportLogEvent {
+     USER_ABORTED = 23;
+     UPDATE_NON_EXISTING_EXTENSION = 24;
+     PROFILE_SHUTTING_DOWN = 25;
++    MANIFEST_MISMATCH_AFTER_INSTALL = 26;
+   }
++  // LINT.ThenChange(//extensions/browser/install/crx_install_error.h:CrxInstallErrorDetail,//tools/metrics/histograms/metadata/extensions/enums.xml:ExtensionInstallationCrxInstallError)
+ 
+   // Timestamp, in microseconds since epoch. Set for all log
+   // events.
+diff --git a/components/services/unzip/BUILD.gn b/components/services/unzip/BUILD.gn
+index aa161ae8fba7ce5858b0dbc6942f9f31de6f1dc2..9bdba61e2fbbb5ad09f4a65651e9072c11f4ea9d 100644
+--- a/components/services/unzip/BUILD.gn
++++ b/components/services/unzip/BUILD.gn
+@@ -97,6 +97,9 @@ source_set("unit_tests") {
+     "//base",
+     "//base/test:test_support",
+     "//components/services/unzip/public/cpp",
++    "//mojo/public/cpp/bindings",
++    "//mojo/public/cpp/test_support:test_utils",
+     "//testing/gtest",
++    "//third_party/zlib/google:zip",
+   ]
+ }
+diff --git a/components/services/unzip/public/cpp/BUILD.gn b/components/services/unzip/public/cpp/BUILD.gn
+index 4524e914eac7cf57f63403fc3c122dddba8016e6..b36bdd6a50c8062638d4c468b49073c993ba7014 100644
+--- a/components/services/unzip/public/cpp/BUILD.gn
++++ b/components/services/unzip/public/cpp/BUILD.gn
+@@ -14,4 +14,6 @@ source_set("cpp") {
+     "//components/services/storage/public/cpp/filesystem",
+     "//components/services/unzip/public/mojom",
+   ]
++
++  deps = [ "//third_party/abseil-cpp:absl" ]
+ }
+diff --git a/components/services/unzip/public/cpp/unzip.cc b/components/services/unzip/public/cpp/unzip.cc
+index 9ca489254ceb0ddb3c3b91e076f6db0c83b6db9e..394ef38d0a7cc854605bbfa9f1fd7f4e416b5d3c 100644
+--- a/components/services/unzip/public/cpp/unzip.cc
++++ b/components/services/unzip/public/cpp/unzip.cc
+@@ -4,8 +4,11 @@
+ 
+ #include "components/services/unzip/public/cpp/unzip.h"
+ 
++#include <memory>
++#include <optional>
+ #include <string>
+ #include <utility>
++#include <vector>
+ 
+ #include "base/check.h"
+ #include "base/files/file.h"
+@@ -20,15 +23,20 @@
+ #include "base/metrics/histogram_functions.h"
+ #include "base/sequence_checker.h"
+ #include "base/strings/strcat.h"
++#include "base/strings/string_util.h"
+ #include "base/task/bind_post_task.h"
+ #include "base/task/sequenced_task_runner.h"
+ #include "base/task/thread_pool.h"
+ #include "base/time/time.h"
++#include "build/build_config.h"
+ #include "components/services/storage/public/cpp/filesystem/filesystem_impl.h"
++#include "components/services/storage/public/mojom/filesystem/directory.mojom.h"
+ #include "components/services/unzip/public/mojom/unzipper.mojom.h"
++#include "mojo/public/cpp/bindings/pending_receiver.h"
++#include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ #include "mojo/public/cpp/bindings/remote.h"
+-#include "mojo/public/cpp/bindings/self_owned_receiver.h"
++#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+ 
+ namespace unzip {
+ 
+@@ -49,6 +57,202 @@ bool CheckZipFileValid(const base::FilePath& zip_path,
+   return true;
+ }
+ 
++// Normalizes and validates a relative path supplied by the unzipper utility
++// process before passing it to `filter_callback_` or the underlying filesystem:
++// - rejects empty, absolute, parent-referencing (`..`), and current-directory
++//   (`.`) paths;
++// - rejects paths with a trailing separator unless `allow_trailing_separator`
++//   is set, and otherwise strips the trailing separator;
++// - on Windows, trims trailing dots and spaces from each component and rejects
++//   any component containing `:` (e.g. drive-relative paths or NTFS alternate
++//   data streams) or path separators.
++std::optional<base::FilePath> NormalizeUnzipRelativePath(
++    const base::FilePath& path,
++    bool allow_trailing_separator = false) {
++  if (path.empty() || path.IsAbsolute() || path.ReferencesParent()) {
++    return std::nullopt;
++  }
++  if (!allow_trailing_separator && path.EndsWithSeparator()) {
++    return std::nullopt;
++  }
++  std::vector<base::FilePath::StringType> components = path.GetComponents();
++  if (components.empty()) {
++    return std::nullopt;
++  }
++  base::FilePath normalized;
++  for (const auto& comp : components) {
++#if BUILDFLAG(IS_WIN)
++    // On Windows, Win32 path normalization strips trailing dots and spaces from
++    // the final path component when creating, opening, or deleting files and
++    // directories (so "foo.", "foo ", and "foo" all refer to "foo" on disk).
++    // Canonicalize each component on Windows so `filter_callback_` and
++    // `created_files_` see the exact path that the OS will access, and so
++    // intermediate directory components match the directories created by
++    // `CreateDirectory`. Also reject components containing `:` (such as
++    // drive-relative paths or NTFS alternate data streams like `::$DATA`) or
++    // path separators (such as root-relative `\foo`).
++    base::FilePath::StringViewType canonical =
++        base::TrimString(comp, FILE_PATH_LITERAL(". "), base::TRIM_TRAILING);
++    if (canonical.find_first_of(FILE_PATH_LITERAL(":\\/")) !=
++        base::FilePath::StringViewType::npos) {
++      return std::nullopt;
++    }
++#else
++    base::FilePath::StringViewType canonical = comp;
++#endif
++    if (canonical.empty() || canonical == base::FilePath::kCurrentDirectory ||
++        canonical == base::FilePath::kParentDirectory) {
++      return std::nullopt;
++    }
++    normalized = normalized.empty() ? base::FilePath(canonical)
++                                    : normalized.Append(canonical);
++  }
++  return normalized;
++}
++
++// A `storage::mojom::Directory` implementation that restricts file operations
++// to those required for unzipping (`OpenFile`, `CreateDirectory`, and
++// `DeleteFile`) by delegating only those operations to a private
++// `storage::FilesystemImpl`, and binds a single Directory receiver owned by
++// `UnzipOperation` so that directory access is revoked as soon as the unzip
++// operation finishes.
++class UnzipFilesystemImpl : public storage::mojom::Directory {
++ public:
++  // `ClientType::kTrusted` is set to allow the unzipping process to handle all
++  // types of files.
++  UnzipFilesystemImpl(const base::FilePath& root,
++                      mojo::PendingReceiver<storage::mojom::Directory> receiver,
++                      UnzipFilterCallback filter_callback)
++      : filesystem_(root, storage::FilesystemImpl::ClientType::kTrusted),
++        filter_callback_(std::move(filter_callback)),
++        receiver_(this, std::move(receiver)) {}
++
++  UnzipFilesystemImpl(const UnzipFilesystemImpl&) = delete;
++  UnzipFilesystemImpl& operator=(const UnzipFilesystemImpl&) = delete;
++  ~UnzipFilesystemImpl() override {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  }
++
++  // storage::mojom::Directory:
++  void Clone(
++      mojo::PendingReceiver<storage::mojom::Directory> receiver) override {
++    receiver_.ReportBadMessage("Unexpected Directory::Clone from unzipper");
++  }
++
++  void PathExists(const base::FilePath& path,
++                  PathExistsCallback callback) override {
++    receiver_.ReportBadMessage(
++        "Unexpected Directory::PathExists from unzipper");
++  }
++
++  void GetEntries(const base::FilePath& path,
++                  storage::mojom::GetEntriesMode mode,
++                  GetEntriesCallback callback) override {
++    receiver_.ReportBadMessage(
++        "Unexpected Directory::GetEntries from unzipper");
++  }
++
++  void OpenFile(const base::FilePath& path,
++                storage::mojom::FileOpenMode mode,
++                storage::mojom::FileReadAccess read_access,
++                storage::mojom::FileWriteAccess write_access,
++                OpenFileCallback callback) override {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    std::optional<base::FilePath> normalized = NormalizeUnzipRelativePath(path);
++    if (!normalized ||
++        mode != storage::mojom::FileOpenMode::kCreateAndOpenOnlyIfNotExists ||
++        read_access != storage::mojom::FileReadAccess::kReadAllowed ||
++        write_access != storage::mojom::FileWriteAccess::kWriteAllowed ||
++        created_files_.contains(*normalized) ||
++        !filter_callback_.Run(*normalized)) {
++      std::move(callback).Run(base::File::FILE_ERROR_ACCESS_DENIED,
++                              base::File());
++      return;
++    }
++    filesystem_.OpenFile(
++        *normalized, mode, read_access, write_access,
++        base::BindOnce(
++            [](UnzipFilesystemImpl* self, base::FilePath created_path,
++               OpenFileCallback cb, base::File::Error error, base::File file) {
++              DCHECK_CALLED_ON_VALID_SEQUENCE(self->sequence_checker_);
++              if (error == base::File::FILE_OK) {
++                self->created_files_.insert(std::move(created_path));
++              }
++              std::move(cb).Run(error, std::move(file));
++            },
++            base::Unretained(this), *normalized, std::move(callback)));
++  }
++
++  void CreateDirectory(const base::FilePath& path,
++                       CreateDirectoryCallback callback) override {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    // `CreateDirectory` is intentionally not passed through `filter_callback_`
++    // because a filter may reject directory entries (e.g. theme filters that
++    // only match file extensions) while still allowing nested files inside
++    // them.
++    std::optional<base::FilePath> normalized =
++        NormalizeUnzipRelativePath(path, /*allow_trailing_separator=*/true);
++    if (!normalized) {
++      std::move(callback).Run(base::File::FILE_ERROR_ACCESS_DENIED);
++      return;
++    }
++    filesystem_.CreateDirectory(*normalized, std::move(callback));
++  }
++
++  void DeleteFile(const base::FilePath& path,
++                  DeleteFileCallback callback) override {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    std::optional<base::FilePath> normalized = NormalizeUnzipRelativePath(path);
++    if (!normalized || !created_files_.contains(*normalized)) {
++      std::move(callback).Run(false);
++      return;
++    }
++    filesystem_.DeleteFile(
++        *normalized,
++        base::BindOnce(
++            [](UnzipFilesystemImpl* self, base::FilePath deleted_path,
++               DeleteFileCallback cb, bool success) {
++              DCHECK_CALLED_ON_VALID_SEQUENCE(self->sequence_checker_);
++              if (success) {
++                self->created_files_.erase(deleted_path);
++              }
++              std::move(cb).Run(success);
++            },
++            base::Unretained(this), *normalized, std::move(callback)));
++  }
++
++  void GetFileInfo(const base::FilePath& path,
++                   GetFileInfoCallback callback) override {
++    receiver_.ReportBadMessage(
++        "Unexpected Directory::GetFileInfo from unzipper");
++  }
++
++  void GetPathAccess(const base::FilePath& path,
++                     GetPathAccessCallback callback) override {
++    receiver_.ReportBadMessage(
++        "Unexpected Directory::GetPathAccess from unzipper");
++  }
++
++  void RenameFile(const base::FilePath& old_path,
++                  const base::FilePath& new_path,
++                  RenameFileCallback callback) override {
++    receiver_.ReportBadMessage(
++        "Unexpected Directory::RenameFile from unzipper");
++  }
++
++  void LockFile(const base::FilePath& path,
++                LockFileCallback callback) override {
++    receiver_.ReportBadMessage("Unexpected Directory::LockFile from unzipper");
++  }
++
++ private:
++  SEQUENCE_CHECKER(sequence_checker_);
++  storage::FilesystemImpl filesystem_;
++  UnzipFilterCallback filter_callback_;
++  absl::flat_hash_set<base::FilePath> created_files_;
++  mojo::Receiver<storage::mojom::Directory> receiver_;
++};
++
+ // An UnzipOperation is a cancellable invocation of Unzip. To support
+ // cancellation, it maintains the completion callback as a class member.
+ // UnzipOperations represent only a single operation and must not be reused.
+@@ -87,12 +291,9 @@ class UnzipOperation : public base::RefCountedThreadSafe<UnzipOperation>,
+     unzipper_.set_disconnect_handler(
+         base::BindOnce(&UnzipOperation::Done, this, false));
+     mojo::PendingRemote<storage::mojom::Directory> directory_remote;
+-    mojo::MakeSelfOwnedReceiver(
+-        std::make_unique<storage::FilesystemImpl>(
+-            // kTrusted is set to allow the unzipping process to handle all
+-            // types of files.
+-            output_dir, storage::FilesystemImpl::ClientType::kTrusted),
+-        directory_remote.InitWithNewPipeAndPassReceiver());
++    directory_ = std::make_unique<UnzipFilesystemImpl>(
++        output_dir, directory_remote.InitWithNewPipeAndPassReceiver(),
++        filter_callback_);
+     mojo::PendingRemote<unzip::mojom::UnzipFilter> filter_remote;
+     filter_receiver_.Bind(filter_remote.InitWithNewPipeAndPassReceiver());
+ 
+@@ -110,26 +311,36 @@ class UnzipOperation : public base::RefCountedThreadSafe<UnzipOperation>,
+   }
+ 
+  private:
++  friend class base::RefCountedThreadSafe<UnzipOperation>;
++
+   // Done may be called multiple times, for example if cancellation is posted
+   // to a task runner, but concurrently, the job completes or the remote
+   // disconnects.
+   void Done(bool result) {
+     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-    std::move(callback_).Run(result);
+-    callback_ = base::DoNothing();
++    // Revoke all capabilities granted to the utility process before signalling
++    // completion so no file operation can occur after the caller observes
++    // completion.
++    directory_.reset();
++    filter_receiver_.reset();
++    listener_receiver_.reset();
+     unzipper_.reset();
++    std::exchange(callback_, base::DoNothing()).Run(result);
+   }
+ 
+- private:
+-  friend class base::RefCountedThreadSafe<UnzipOperation>;
+-
+   ~UnzipOperation() override = default;
+ 
+   // unzip::mojom::UnzipFilter implementation:
+   void ShouldUnzipFile(const base::FilePath& path,
+                        ShouldUnzipFileCallback callback) override {
+     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-    std::move(callback).Run(filter_callback_.Run(path));
++    std::optional<base::FilePath> normalized =
++        NormalizeUnzipRelativePath(path, /*allow_trailing_separator=*/true);
++    if (!normalized) {
++      std::move(callback).Run(false);
++      return;
++    }
++    std::move(callback).Run(filter_callback_.Run(*normalized));
+   }
+ 
+   // unzip::mojom::UnzipListener implementation:
+@@ -140,6 +351,7 @@ class UnzipOperation : public base::RefCountedThreadSafe<UnzipOperation>,
+ 
+   SEQUENCE_CHECKER(sequence_checker_);
+   mojo::Remote<mojom::Unzipper> unzipper_;
++  std::unique_ptr<UnzipFilesystemImpl> directory_;
+   mojo::Receiver<unzip::mojom::UnzipFilter> filter_receiver_{this};
+   UnzipFilterCallback filter_callback_;
+   mojo::Receiver<unzip::mojom::UnzipListener> listener_receiver_{this};
+@@ -337,6 +549,7 @@ base::OnceClosure Unzip(mojo::PendingRemote<mojom::Unzipper> unzipper,
+                         UnzipListenerCallback listener_callback,
+                         UnzipCallback result_callback) {
+   CHECK(result_callback);
++  CHECK(filter_callback);
+ 
+   auto unzip_operation = base::MakeRefCounted<UnzipOperation>(
+       filter_callback,
+diff --git a/components/services/unzip/public/cpp/unzip.h b/components/services/unzip/public/cpp/unzip.h
+index 34518f8a1f6be8f51e6c55015d3af6d7daa730ba..e5ddf6f316c807a07cb58a64292d8f683a786698 100644
+--- a/components/services/unzip/public/cpp/unzip.h
++++ b/components/services/unzip/public/cpp/unzip.h
+@@ -28,9 +28,15 @@ using UnzipperFactory =
+ // Unzip must be called on a sequenced task runner. The cancellation closure may
+ // be called on any sequence (or none at all). Unzip does not block.
+ // `result_callback` and `listener_callback` will run on the same sequence Unzip
+-// is called on. `filter_callback` may run on any sequence. If no filtration is
+-// needed, pass `unzip::AllContents` as `filter_callback`. If no progress
+-// tracking is needed, pass `base::DoNothing()` as `listener_callback`.
++// is called on.
++// `filter_callback` is required and may run on any sequence. It is enforced
++// both when filtering archive entries and when the utility process creates or
++// deletes files in `output_dir`, so it may run more than once per entry. It
++// receives normalized relative paths (directory entries do not have a trailing
++// separator, and on Windows trailing dots and spaces are trimmed from each path
++// component). If no filtration is needed, pass `unzip::AllContents` as
++// `filter_callback`. If no progress tracking is needed, pass
++// `base::DoNothing()` as `listener_callback`.
+ using UnzipCallback = base::OnceCallback<void(bool result)>;
+ using UnzipFilterCallback =
+     base::RepeatingCallback<bool(const base::FilePath& path)>;
+diff --git a/components/services/unzip/public/cpp/unzip_unittest.cc b/components/services/unzip/public/cpp/unzip_unittest.cc
+index 5ef99b5c6aaf1ba9db5d574326d88e97c84d8573..a648ccb1e477e7bf9f7c60d63adecccec5bbe48a 100644
+--- a/components/services/unzip/public/cpp/unzip_unittest.cc
++++ b/components/services/unzip/public/cpp/unzip_unittest.cc
+@@ -5,22 +5,30 @@
+ #include "components/services/unzip/public/cpp/unzip.h"
+ 
+ #include <cstdint>
++#include <string>
+ #include <string_view>
+ #include <utility>
++#include <vector>
+ 
+ #include "base/base_paths.h"
++#include "base/files/file.h"
+ #include "base/files/file_enumerator.h"
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
+ #include "base/files/scoped_temp_dir.h"
++#include "base/functional/callback.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/path_service.h"
+ #include "base/run_loop.h"
+ #include "base/test/bind.h"
+ #include "base/test/task_environment.h"
++#include "build/build_config.h"
+ #include "components/services/unzip/unzipper_impl.h"
+ #include "mojo/public/cpp/bindings/receiver_set.h"
++#include "mojo/public/cpp/bindings/remote.h"
++#include "mojo/public/cpp/test_support/test_utils.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/zlib/google/zip.h"
+ 
+ namespace unzip {
+ namespace {
+@@ -520,5 +528,403 @@ TEST_F(UnzipTest, UnzipZipWithInterestingZip64s) {
+   EXPECT_EQ(2, CountFiles(unzip_dir_));
+ }
+ 
++class FakeUnzipper : public mojom::Unzipper {
++ public:
++  using UnzipHandler = base::RepeatingCallback<void(
++      mojo::PendingRemote<storage::mojom::Directory>,
++      mojo::PendingRemote<mojom::UnzipFilter>,
++      UnzipCallback)>;
++
++  explicit FakeUnzipper(UnzipHandler handler) : handler_(std::move(handler)) {}
++  ~FakeUnzipper() override = default;
++
++  void Bind(mojo::PendingReceiver<mojom::Unzipper> receiver) {
++    receivers_.Add(this, std::move(receiver));
++  }
++
++  // mojom::Unzipper:
++  void Unzip(base::File zip_file,
++             mojo::PendingRemote<storage::mojom::Directory> output_dir,
++             mojom::UnzipOptionsPtr options,
++             mojo::PendingRemote<mojom::UnzipFilter> filter,
++             mojo::PendingRemote<mojom::UnzipListener> listener,
++             UnzipCallback callback) override {
++    handler_.Run(std::move(output_dir), std::move(filter), std::move(callback));
++  }
++
++  void DetectEncoding(base::File zip_file,
++                      DetectEncodingCallback callback) override {
++    std::move(callback).Run(UNKNOWN_ENCODING);
++  }
++
++  void GetExtractedInfo(base::File zip_file,
++                        GetExtractedInfoCallback callback) override {
++    std::move(callback).Run(mojom::Info::New());
++  }
++
++  void DecodeXz(base::File in_file,
++                base::File out_file,
++                DecodeXzCallback callback) override {
++    std::move(callback).Run(false);
++  }
++
++ private:
++  UnzipHandler handler_;
++  mojo::ReceiverSet<mojom::Unzipper> receivers_;
++};
++
++bool DoFakeUnzip(const base::FilePath& output_dir,
++                 FakeUnzipper::UnzipHandler handler,
++                 UnzipFilterCallback filter_callback = AllContents()) {
++  FakeUnzipper fake_unzipper(std::move(handler));
++  mojo::PendingRemote<mojom::Unzipper> unzipper_remote;
++  fake_unzipper.Bind(unzipper_remote.InitWithNewPipeAndPassReceiver());
++
++  base::RunLoop run_loop;
++  bool result = false;
++  Unzip(std::move(unzipper_remote), GetArchivePath("good_archive.zip"),
++        output_dir, mojom::UnzipOptions::New(), std::move(filter_callback),
++        base::DoNothing(), base::BindLambdaForTesting([&](bool success) {
++          result = success;
++          run_loop.Quit();
++        }));
++  run_loop.Run();
++  return result;
++}
++
++// Verifies that the Directory capability is revoked before the Unzip
++// completion callback runs (both on normal completion and on cancellation),
++// preventing a compromised utility process from modifying the output directory
++// after Unzip completes.
++TEST_F(UnzipTest, DirectoryRevokedBeforeCompletionCallback) {
++  for (bool cancel : {false, true}) {
++    SCOPED_TRACE(cancel);
++    mojo::Remote<storage::mojom::Directory> retained_dir;
++    mojom::Unzipper::UnzipCallback held_callback;
++    base::RunLoop unzip_started_loop;
++
++    FakeUnzipper fake_unzipper(base::BindLambdaForTesting(
++        [&](mojo::PendingRemote<storage::mojom::Directory> output_dir,
++            mojo::PendingRemote<mojom::UnzipFilter> filter,
++            mojom::Unzipper::UnzipCallback callback) {
++          retained_dir.Bind(std::move(output_dir));
++          retained_dir.FlushForTesting();
++          if (cancel) {
++            held_callback = std::move(callback);
++            unzip_started_loop.Quit();
++          } else {
++            std::move(callback).Run(true);
++          }
++        }));
++
++    mojo::PendingRemote<mojom::Unzipper> unzipper_remote;
++    fake_unzipper.Bind(unzipper_remote.InitWithNewPipeAndPassReceiver());
++
++    base::RunLoop completion_loop;
++    base::OnceClosure cancel_closure =
++        Unzip(std::move(unzipper_remote), GetArchivePath("good_archive.zip"),
++              unzip_dir_, mojom::UnzipOptions::New(), AllContents(),
++              base::DoNothing(), base::BindLambdaForTesting([&](bool success) {
++                EXPECT_EQ(!cancel, success);
++                retained_dir.FlushForTesting();
++                EXPECT_FALSE(retained_dir.is_connected());
++                completion_loop.Quit();
++              }));
++
++    if (cancel) {
++      unzip_started_loop.Run();
++      EXPECT_TRUE(retained_dir.is_connected());
++      std::move(cancel_closure).Run();
++    }
++    completion_loop.Run();
++
++    base::File::Error error = base::File::FILE_ERROR_FAILED;
++    base::File created_file;
++    EXPECT_FALSE(retained_dir->OpenFile(
++        base::FilePath(FILE_PATH_LITERAL("post_unzip.txt")),
++        storage::mojom::FileOpenMode::kCreateAndOpenOnlyIfNotExists,
++        storage::mojom::FileReadAccess::kReadAllowed,
++        storage::mojom::FileWriteAccess::kWriteAllowed, &error, &created_file));
++    EXPECT_EQ(0, CountFiles(unzip_dir_));
++  }
++}
++
++// Verifies that `UnzipFilter::ShouldUnzipFile` rejects unsafe or non-normalized
++// paths without passing them to `filter_callback`.
++TEST_F(UnzipTest, FilterNormalizesPaths) {
++  EXPECT_TRUE(DoFakeUnzip(
++      unzip_dir_,
++      base::BindLambdaForTesting(
++          [&](mojo::PendingRemote<storage::mojom::Directory> output_dir_pending,
++              mojo::PendingRemote<mojom::UnzipFilter> filter_pending,
++              mojom::Unzipper::UnzipCallback callback) {
++            mojo::Remote<mojom::UnzipFilter> filter(std::move(filter_pending));
++
++            bool should_unzip = true;
++            filter->ShouldUnzipFile(
++                base::FilePath(FILE_PATH_LITERAL("../evil.txt")),
++                &should_unzip);
++            EXPECT_FALSE(should_unzip);
++
++            should_unzip = true;
++            filter->ShouldUnzipFile(unzip_dir_.AppendASCII("absolute.txt"),
++                                    &should_unzip);
++            EXPECT_FALSE(should_unzip);
++
++            should_unzip = true;
++            filter->ShouldUnzipFile(
++                base::FilePath(FILE_PATH_LITERAL("./manifest.json")),
++                &should_unzip);
++            EXPECT_FALSE(should_unzip);
++
++            should_unzip = false;
++            filter->ShouldUnzipFile(
++                base::FilePath(FILE_PATH_LITERAL("allowed.txt")),
++                &should_unzip);
++            EXPECT_TRUE(should_unzip);
++
++            std::move(callback).Run(true);
++          }),
++      base::BindRepeating([](const base::FilePath& path) {
++        EXPECT_FALSE(path.IsAbsolute());
++        EXPECT_FALSE(path.ReferencesParent());
++        return path != base::FilePath(FILE_PATH_LITERAL("manifest.json"));
++      })));
++}
++
++// Verifies that the Directory capability enforces the filter callback and
++// create-only open mode, and denies renaming or locking files.
++TEST_F(UnzipTest, DirectoryEnforcesFilterAndOpenMode) {
++  const base::FilePath existing_file = unzip_dir_.AppendASCII("manifest.json");
++  ASSERT_TRUE(base::WriteFile(existing_file, "original"));
++
++  EXPECT_TRUE(DoFakeUnzip(
++      unzip_dir_,
++      base::BindLambdaForTesting(
++          [&](mojo::PendingRemote<storage::mojom::Directory> output_dir_pending,
++              mojo::PendingRemote<mojom::UnzipFilter> filter_pending,
++              mojom::Unzipper::UnzipCallback callback) {
++            mojo::Remote<storage::mojom::Directory> output_dir(
++                std::move(output_dir_pending));
++            auto open_file = [&](const base::FilePath::CharType* name,
++                                 storage::mojom::FileOpenMode mode =
++                                     storage::mojom::FileOpenMode::
++                                         kCreateAndOpenOnlyIfNotExists) {
++              base::File::Error error = base::File::FILE_ERROR_FAILED;
++              base::File file;
++              output_dir->OpenFile(
++                  base::FilePath(name), mode,
++                  storage::mojom::FileReadAccess::kReadAllowed,
++                  storage::mojom::FileWriteAccess::kWriteAllowed, &error,
++                  &file);
++              return error;
++            };
++
++            // Attempting to open a file excluded by the filter (directly or via
++            // a "." path component) must be denied even if ShouldUnzipFile() is
++            // never called.
++            EXPECT_EQ(base::File::FILE_ERROR_ACCESS_DENIED,
++                      open_file(FILE_PATH_LITERAL("manifest.json")));
++            EXPECT_EQ(base::File::FILE_ERROR_ACCESS_DENIED,
++                      open_file(FILE_PATH_LITERAL("./manifest.json")));
++
++#if BUILDFLAG(IS_WIN)
++            // On Windows, trailing dots/spaces, NTFS alternate data streams,
++            // root-relative paths, and drive-relative paths must not bypass the
++            // filter.
++            for (const auto* candidate : {
++                     FILE_PATH_LITERAL("manifest.json."),
++                     FILE_PATH_LITERAL("manifest.json "),
++                     FILE_PATH_LITERAL("x.exe::$DATA"),
++                     FILE_PATH_LITERAL("\\manifest.json"),
++                     FILE_PATH_LITERAL("C:manifest.json"),
++                 }) {
++              EXPECT_EQ(base::File::FILE_ERROR_ACCESS_DENIED,
++                        open_file(candidate))
++                  << candidate;
++            }
++#endif
++
++            // Creating an allowed file with kCreateAndOpenOnlyIfNotExists
++            // succeeds, but overwriting it with kAlwaysCreate is denied.
++            EXPECT_EQ(base::File::FILE_OK,
++                      open_file(FILE_PATH_LITERAL("allowed.txt")));
++            EXPECT_EQ(base::File::FILE_ERROR_ACCESS_DENIED,
++                      open_file(FILE_PATH_LITERAL("allowed.txt"),
++                                storage::mojom::FileOpenMode::kAlwaysCreate));
++
++            // Attempting to call an unsupported Directory method (such as
++            // RenameFile) must report a bad Mojo message and disconnect the
++            // Directory pipe.
++            mojo::test::BadMessageObserver bad_message_observer;
++            base::File::Error error = base::File::FILE_OK;
++            EXPECT_FALSE(output_dir->RenameFile(
++                base::FilePath(FILE_PATH_LITERAL("allowed.txt")),
++                base::FilePath(FILE_PATH_LITERAL("manifest.json")), &error));
++            EXPECT_EQ("Unexpected Directory::RenameFile from unzipper",
++                      bad_message_observer.WaitForBadMessage());
++            output_dir.FlushForTesting();
++            EXPECT_FALSE(output_dir.is_connected());
++
++            std::move(callback).Run(true);
++          }),
++      base::BindRepeating([](const base::FilePath& path) {
++        return path != base::FilePath(FILE_PATH_LITERAL("manifest.json")) &&
++               !path.MatchesExtension(FILE_PATH_LITERAL(".exe"));
++      })));
++
++  std::string content;
++  ASSERT_TRUE(base::ReadFileToString(existing_file, &content));
++  EXPECT_EQ("original", content);
++}
++
++// Verifies that `DeleteFile` is restricted to files created during the current
++// operation, erases the path from `created_files_` on deletion, and allows
++// re-creating and deleting a previously deleted path.
++TEST_F(UnzipTest, DirectoryAllowsSingleDeleteOfCreatedFilesOnly) {
++  const base::FilePath existing_file = unzip_dir_.AppendASCII("manifest.json");
++  ASSERT_TRUE(base::WriteFile(existing_file, "original"));
++  const base::FilePath existing_allowed =
++      unzip_dir_.AppendASCII("preexisting.txt");
++  ASSERT_TRUE(base::WriteFile(existing_allowed, "keep"));
++
++  EXPECT_TRUE(DoFakeUnzip(
++      unzip_dir_,
++      base::BindLambdaForTesting(
++          [&](mojo::PendingRemote<storage::mojom::Directory> output_dir_pending,
++              mojo::PendingRemote<mojom::UnzipFilter> filter_pending,
++              mojom::Unzipper::UnzipCallback callback) {
++            mojo::Remote<storage::mojom::Directory> output_dir(
++                std::move(output_dir_pending));
++            auto create_allowed = [&]() {
++              base::File::Error error = base::File::FILE_ERROR_FAILED;
++              base::File file;
++              output_dir->OpenFile(
++                  base::FilePath(FILE_PATH_LITERAL("allowed.txt")),
++                  storage::mojom::FileOpenMode::kCreateAndOpenOnlyIfNotExists,
++                  storage::mojom::FileReadAccess::kReadAllowed,
++                  storage::mojom::FileWriteAccess::kWriteAllowed, &error,
++                  &file);
++              EXPECT_EQ(base::File::FILE_OK, error);
++              EXPECT_TRUE(file.IsValid());
++            };
++            auto delete_file = [&](const base::FilePath::CharType* name) {
++              bool deleted = false;
++              output_dir->DeleteFile(base::FilePath(name), &deleted);
++              return deleted;
++            };
++
++            // Attempting to delete a file excluded by the filter (directly or
++            // via "./") or a pre-existing file that was not created by this
++            // Unzip operation must fail.
++            EXPECT_FALSE(delete_file(FILE_PATH_LITERAL("manifest.json")));
++            EXPECT_FALSE(delete_file(FILE_PATH_LITERAL("./manifest.json")));
++            EXPECT_FALSE(delete_file(FILE_PATH_LITERAL("preexisting.txt")));
++
++            // Create an allowed file, delete it once, and verify a second
++            // delete without re-creating it fails.
++            create_allowed();
++            EXPECT_TRUE(delete_file(FILE_PATH_LITERAL("allowed.txt")));
++            EXPECT_FALSE(delete_file(FILE_PATH_LITERAL("allowed.txt")));
++
++            // Re-creating a deleted file via OpenFile and deleting it again
++            // (e.g. if a duplicate zip entry also fails) is allowed.
++            create_allowed();
++            EXPECT_TRUE(delete_file(FILE_PATH_LITERAL("allowed.txt")));
++
++            std::move(callback).Run(true);
++          }),
++      base::BindRepeating([](const base::FilePath& path) {
++        return path != base::FilePath(FILE_PATH_LITERAL("manifest.json"));
++      })));
++
++  std::string content;
++  ASSERT_TRUE(base::ReadFileToString(existing_file, &content));
++  EXPECT_EQ("original", content);
++  ASSERT_TRUE(base::ReadFileToString(existing_allowed, &content));
++  EXPECT_EQ("keep", content);
++  EXPECT_FALSE(base::PathExists(unzip_dir_.AppendASCII("allowed.txt")));
++}
++
++// Verifies that archive entries whose names end in a dot or a space are
++// extracted rather than silently skipped by path normalization.
++TEST_F(UnzipTest, UnzipArchiveWithTrailingDotsAndSpaces) {
++  base::ScopedTempDir archive_dir;
++  ASSERT_TRUE(archive_dir.CreateUniqueTempDir());
++  const base::FilePath backing_file = archive_dir.GetPath().AppendASCII("src");
++  ASSERT_TRUE(base::WriteFile(backing_file, "payload"));
++
++  class TestFileAccessor : public zip::FileAccessor {
++   public:
++    explicit TestFileAccessor(const base::FilePath& backing_file)
++        : backing_file_(backing_file) {}
++
++    bool Open(zip::Paths paths, std::vector<base::File>* files) override {
++      for (const auto& path : paths) {
++        if (path == base::FilePath(FILE_PATH_LITERAL("dir.")) ||
++            path == base::FilePath(FILE_PATH_LITERAL("dir "))) {
++          files->emplace_back();
++        } else {
++          files->emplace_back(backing_file_,
++                              base::File::FLAG_OPEN | base::File::FLAG_READ);
++        }
++      }
++      return true;
++    }
++
++    bool List(const base::FilePath& path,
++              std::vector<base::FilePath>* files,
++              std::vector<base::FilePath>* subdirs) override {
++      return true;
++    }
++
++    bool GetInfo(const base::FilePath& path, Info* info) override {
++      info->is_directory = (path == base::FilePath(FILE_PATH_LITERAL("dir.")) ||
++                            path == base::FilePath(FILE_PATH_LITERAL("dir ")));
++      return true;
++    }
++
++   private:
++    const base::FilePath backing_file_;
++  };
++
++  TestFileAccessor file_accessor(backing_file);
++  const base::FilePath zip_path = archive_dir.GetPath().AppendASCII("test.zip");
++  const base::FilePath src_files[] = {
++      base::FilePath(FILE_PATH_LITERAL("trailing_dot.")),
++      base::FilePath(FILE_PATH_LITERAL("trailing_space ")),
++      base::FilePath(FILE_PATH_LITERAL("dir.")),
++      base::FilePath(FILE_PATH_LITERAL("dir ")),
++      base::FilePath(FILE_PATH_LITERAL("dir./nested_dot.")),
++      base::FilePath(FILE_PATH_LITERAL("dir /nested_space ")),
++  };
++  zip::ZipParams params{
++      .file_accessor = &file_accessor,
++      .dest_file = zip_path,
++      .src_files = src_files,
++  };
++  ASSERT_TRUE(zip::Zip(params));
++
++  EXPECT_TRUE(DoUnzip(zip_path, unzip_dir_));
++  bool some_files_empty = false;
++  EXPECT_EQ(4, CountFiles(unzip_dir_, &some_files_empty));
++  EXPECT_FALSE(some_files_empty);
++#if BUILDFLAG(IS_WIN)
++  EXPECT_TRUE(base::PathExists(unzip_dir_.AppendASCII("trailing_dot")));
++  EXPECT_TRUE(base::PathExists(unzip_dir_.AppendASCII("trailing_space")));
++  EXPECT_TRUE(base::PathExists(
++      unzip_dir_.AppendASCII("dir").AppendASCII("nested_dot")));
++  EXPECT_TRUE(base::PathExists(
++      unzip_dir_.AppendASCII("dir").AppendASCII("nested_space")));
++#else
++  EXPECT_TRUE(base::PathExists(unzip_dir_.AppendASCII("trailing_dot.")));
++  EXPECT_TRUE(base::PathExists(unzip_dir_.AppendASCII("trailing_space ")));
++  EXPECT_TRUE(base::PathExists(
++      unzip_dir_.AppendASCII("dir.").AppendASCII("nested_dot.")));
++  EXPECT_TRUE(base::PathExists(
++      unzip_dir_.AppendASCII("dir ").AppendASCII("nested_space ")));
++#endif
++}
++
+ }  // namespace
+ }  // namespace unzip
+diff --git a/components/services/unzip/public/mojom/unzipper.mojom b/components/services/unzip/public/mojom/unzipper.mojom
+index 0304e0ce549070d05c4d3172739129eab151b4b1..d05b6f0bd50f5fbd01663913870163504b0ef334 100644
+--- a/components/services/unzip/public/mojom/unzipper.mojom
++++ b/components/services/unzip/public/mojom/unzipper.mojom
+@@ -48,6 +48,10 @@ interface UnzipListener {
+ interface Unzipper {
+   // Unzips |zip_file| into |output_dir|.
+   // Returns true on success, false otherwise.
++  // |output_dir| is a restricted directory capability scoped to this operation
++  // that permits only create-only read+write |OpenFile| (for paths allowed by
++  // |filter|), |CreateDirectory|, and single |DeleteFile| of files created
++  // during this operation.
+   // |options| contains unpacking information such as filename encoding.
+   // If provided, |filter| is called for each entry of the archive (which incurs
+   // one IPC for each entry) and only the entries for which it returns true are
+diff --git a/extensions/browser/computed_hashes.cc b/extensions/browser/computed_hashes.cc
+index 52a2ffd5bbce0c98defdee53c4a20eb007ada7fa..608ac680cb8dc6b02a9089e29e796daec7a35878 100644
+--- a/extensions/browser/computed_hashes.cc
++++ b/extensions/browser/computed_hashes.cc
+@@ -282,7 +282,11 @@ bool ComputedHashes::WriteToFile(const base::FilePath& path) const {
+   if (!base::JSONWriter::Write(top_dictionary, &json)) {
+     return false;
+   }
+-  if (!base::WriteFile(path, json)) {
++  // Unlink any existing file (e.g. if the archive already contained
++  // `_metadata/computed_hashes.json`) before writing so that a new inode is
++  // created and any process still holding an open file descriptor to the
++  // original file cannot modify the newly written hashes in place.
++  if (!base::DeleteFile(path) || !base::WriteFile(path, json)) {
+     LOG(ERROR) << "Error writing " << path.AsUTF8Unsafe();
+     return false;
+   }
+diff --git a/extensions/browser/crx_installer.cc b/extensions/browser/crx_installer.cc
+index fc5a1f4a8bee568038ff1beee93dff08cbf0641a..9be1b37f8a5cd190ca742631f77d386128086327 100644
+--- a/extensions/browser/crx_installer.cc
++++ b/extensions/browser/crx_installer.cc
+@@ -9,6 +9,7 @@
+ #include <utility>
+ 
+ #include "base/command_line.h"
++#include "base/feature_list.h"
+ #include "base/files/file_util.h"
+ #include "base/files/scoped_temp_dir.h"
+ #include "base/functional/bind.h"
+@@ -994,21 +995,84 @@ void CrxInstaller::ReloadExtensionAfterInstall(
+   // just moved the extension.
+   // TODO(aa): All paths to resources inside extensions should be created
+   // lazily and based on the Extension's root path at that moment.
+-  ExtensionId extension_id = extension()->id();
++  scoped_refptr<const Extension> unpacked_extension = std::move(extension_);
+   std::u16string error;
+   extension_ = file_util::LoadExtension(
+       version_dir, install_source_,
+       // Note: modified by UpdateCreationFlagsAndCompleteInstall.
+       creation_flags_, &error);
+ 
+-  if (extension()) {
+-    ReportSuccessFromSharedFileThread();
+-  } else {
+-    LOG(ERROR) << error << " " << extension_id << " " << download_url_;
++  if (!extension()) {
++    LOG(ERROR) << error << " " << unpacked_extension->id() << " "
++               << download_url_;
++    if (install_directory_.IsParent(version_dir) &&
++        base::FeatureList::IsEnabled(
++            extensions_features::kCrxInstallerVerifyReloadedManifest)) {
++      base::DeletePathRecursively(version_dir);
++    }
+     ReportFailureFromSharedFileThread(
+         CrxInstallError(CrxInstallErrorType::OTHER,
+                         CrxInstallErrorDetail::CANT_LOAD_EXTENSION, error));
++    return;
+   }
++
++  // `SandboxedUnpacker` writes the parsed manifest to disk and
++  // `file_util::LoadExtension` re-localizes it, so the reloaded manifest must
++  // equal the one validated in `OnUnpackSuccess`. The `id()` and `version()`
++  // checks are implied by manifest equality and kept as belt-and-braces.
++  const bool manifest_mismatch =
++      extension()->id() != unpacked_extension->id() ||
++      extension()->version() != unpacked_extension->version() ||
++      *extension()->manifest()->value() !=
++          *unpacked_extension->manifest()->value();
++  if (manifest_mismatch &&
++      base::FeatureList::IsEnabled(
++          extensions_features::kCrxInstallerVerifyReloadedManifest)) {
++    if (!install_directory_.IsParent(version_dir) &&
++        base::PathExists(unpacked_extension_root_)) {
++      // On ChromeOS with shared extension assets enabled, `version_dir` may
++      // resolve to a pre-existing shared copy written by an earlier install
++      // (e.g. with a different `differential_fingerprint` or Chrome version)
++      // while this install's `unpacked_extension_root_` is still on disk. Fall
++      // back to installing `unpacked_extension_root_` into this profile's
++      // `install_directory_`.
++      // TODO(crbug.com/574299586): Unregister this user from
++      // `ExtensionAssetsManagerChromeOS` (`MarkSharedExtensionUnused`) so
++      // unused or mismatched shared copies can be garbage-collected.
++      base::UmaHistogramEnumeration(
++          "Extensions.CrxInstaller.ReloadManifestMismatch",
++          ReloadManifestVerificationResult::kSharedCopyMismatchFallback);
++      extension_ = std::move(unpacked_extension);
++      ReloadExtensionAfterInstall(file_util::InstallExtension(
++          unpacked_extension_root_, extension_->id(),
++          extension_->VersionString(), install_directory_));
++      return;
++    }
++    base::UmaHistogramEnumeration(
++        "Extensions.CrxInstaller.ReloadManifestMismatch",
++        ReloadManifestVerificationResult::kMismatch);
++    LOG(ERROR) << "Manifest mismatch after install " << unpacked_extension->id()
++               << " " << download_url_;
++    extension_.reset();
++    // Only delete `version_dir` if it was installed under this profile's
++    // `install_directory_`. On ChromeOS with shared extension assets enabled,
++    // `version_dir` may refer to an existing shared cache directory used by
++    // other users.
++    if (install_directory_.IsParent(version_dir)) {
++      base::DeletePathRecursively(version_dir);
++    }
++    ReportFailureFromSharedFileThread(CrxInstallError(
++        CrxInstallErrorType::OTHER,
++        CrxInstallErrorDetail::MANIFEST_MISMATCH_AFTER_INSTALL,
++        l10n_util::GetStringUTF16(IDS_EXTENSION_MANIFEST_INVALID)));
++    return;
++  }
++  base::UmaHistogramEnumeration(
++      "Extensions.CrxInstaller.ReloadManifestMismatch",
++      manifest_mismatch ? ReloadManifestVerificationResult::kMismatch
++                        : ReloadManifestVerificationResult::kMatch);
++
++  ReportSuccessFromSharedFileThread();
+ }
+ 
+ void CrxInstaller::ReportFailureFromSharedFileThread(
+diff --git a/extensions/browser/crx_installer.h b/extensions/browser/crx_installer.h
+index b12d3bdac536ee86554c72ca6d9e3def25848616..560ce35bae3b45c98c73b9331c143395a1d8773f 100644
+--- a/extensions/browser/crx_installer.h
++++ b/extensions/browser/crx_installer.h
+@@ -103,6 +103,20 @@ class CrxInstaller : public SandboxedUnpackerClient {
+   CrxInstaller(const CrxInstaller&) = delete;
+   CrxInstaller& operator=(const CrxInstaller&) = delete;
+ 
++  // LINT.IfChange(CrxInstallerReloadManifestVerificationResult)
++  // Recorded in `CrxInstaller::ReloadExtensionAfterInstall` to track whether
++  // the manifest reloaded from the final install directory matched the
++  // unpacked manifest validated in `OnUnpackSuccess`.
++  // These values are persisted to logs. Entries should not be renumbered and
++  // numeric values should never be reused.
++  enum class ReloadManifestVerificationResult {
++    kMatch = 0,
++    kMismatch = 1,
++    kSharedCopyMismatchFallback = 2,
++    kMaxValue = kSharedCopyMismatchFallback,
++  };
++  // LINT.ThenChange(//tools/metrics/histograms/metadata/extensions/enums.xml:ExtensionCrxInstallerReloadManifestVerificationResult)
++
+   static void EnsureShutdownNotifierFactoryBuilt();
+ 
+   // Extensions will be installed into the default install directory, then
+diff --git a/extensions/browser/install/crx_install_error.h b/extensions/browser/install/crx_install_error.h
+index a58646c47113f89b69c20616de9f52cc25e08b1e..be7240a5d24a625526ee814711ef270900e616e8 100644
+--- a/extensions/browser/install/crx_install_error.h
++++ b/extensions/browser/install/crx_install_error.h
+@@ -27,13 +27,9 @@ enum class CrxInstallErrorType {
+ };
+ 
+ // Extended error code that may help explain the error type.
+-// Do not change the order of the entries or remove entries in this list.
+-// 1) Don't forget to update enums.xml when adding new entries.
+-// 2) Don't forget to update device_management_backend.proto (name:
+-// ExtensionInstallReportLogEvent::CrxInstallErrorDetail) when adding new
+-// entries.
+-// 3) Don't forget to update ConvertCrxInstallErrorDetailToProto method in
+-// ExtensionInstallEventLogCollector.
++// These values are persisted to logs. Entries should not be renumbered and
++// numeric values should never be reused.
++// LINT.IfChange(CrxInstallErrorDetail)
+ enum class CrxInstallErrorDetail {
+   NONE,                                     // 0
+   CONVERT_USER_SCRIPT_TO_EXTENSION_FAILED,  // 1
+@@ -61,11 +57,13 @@ enum class CrxInstallErrorDetail {
+   USER_ABORTED,                             // 23
+   UPDATE_NON_EXISTING_EXTENSION,            // 24
+   PROFILE_SHUTTING_DOWN,                    // 25
++  MANIFEST_MISMATCH_AFTER_INSTALL,          // 26
+ 
+   // Magic constant used by the histogram macros.
+   // Always update it to the max value.
+-  kMaxValue = PROFILE_SHUTTING_DOWN,
++  kMaxValue = MANIFEST_MISMATCH_AFTER_INSTALL,
+ };
++// LINT.ThenChange(//tools/metrics/histograms/metadata/extensions/enums.xml:ExtensionInstallationCrxInstallError,//components/policy/proto/device_management_backend.proto:CrxInstallErrorDetail)
+ 
+ // Simple error class for CrxInstaller.
+ class CrxInstallError {
+diff --git a/extensions/browser/sandboxed_unpacker.cc b/extensions/browser/sandboxed_unpacker.cc
+index e820e611beb664615978c2b4f3af15c8966e4ef9..8beecd1b8a4d373b8cc85059315b7f21c180b4cd 100644
+--- a/extensions/browser/sandboxed_unpacker.cc
++++ b/extensions/browser/sandboxed_unpacker.cc
+@@ -1022,7 +1022,12 @@ std::optional<base::DictValue> SandboxedUnpacker::RewriteManifestFile(
+   }
+ 
+   base::FilePath manifest_path = extension_root_.Append(kManifestFilename);
+-  if (!base::WriteFile(manifest_path, *manifest_json)) {
++  // Unlink the existing manifest before writing the sanitized version so that a
++  // new inode is created, preventing any process that still holds an open file
++  // descriptor to the original unpacked file from modifying the rewritten
++  // manifest in place.
++  if (!base::DeleteFile(manifest_path) ||
++      !base::WriteFile(manifest_path, *manifest_json)) {
+     // Error saving manifest.json.
+     ReportFailure(
+         SandboxedUnpackerFailureReason::ERROR_SAVING_MANIFEST_JSON,
+diff --git a/extensions/browser/sandboxed_unpacker_unittest.cc b/extensions/browser/sandboxed_unpacker_unittest.cc
+index d7d320987549872f1579dd09415e2a96eb4c619d..7c2a9c4ed45178d603a6079ba8b4cb10fc4375a7 100644
+--- a/extensions/browser/sandboxed_unpacker_unittest.cc
++++ b/extensions/browser/sandboxed_unpacker_unittest.cc
+@@ -9,7 +9,9 @@
+ 
+ #include "base/base64.h"
+ #include "base/command_line.h"
++#include "base/containers/span.h"
+ #include "base/features.h"
++#include "base/files/file.h"
+ #include "base/files/file_util.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+@@ -503,6 +505,43 @@ TEST_F(SandboxedUnpackerTest, TestRewriteManifestInjections) {
+   EXPECT_EQ(fingerprint, *differential_fingerprint);
+ }
+ 
++// POSIX-only: on Windows, deleting an open file without `FILE_SHARE_DELETE`
++// fails, or the subsequent create fails while deletion is pending, so the
++// rewrite fails safely rather than unlinking an open inode.
++#if BUILDFLAG(IS_POSIX)
++TEST_F(SandboxedUnpackerTest, TestRewriteManifestUnlinksExistingFile) {
++  SetPublicKey("test_key");
++  SetExtensionRoot(extensions_dir_.GetPath());
++
++  const base::FilePath manifest_path =
++      extensions_dir_.GetPath().Append(kManifestFilename);
++  base::File retained_file(manifest_path, base::File::FLAG_CREATE |
++                                              base::File::FLAG_READ |
++                                              base::File::FLAG_WRITE);
++  ASSERT_TRUE(retained_file.IsValid());
++  ASSERT_TRUE(retained_file.WriteAtCurrentPosAndCheck(
++      base::byte_span_from_cstring("{\"v\":1}")));
++
++  std::optional<base::DictValue> manifest =
++      RewriteManifestFile(base::DictValue().Set("version", "1.2.3"));
++  ASSERT_TRUE(manifest.has_value());
++
++  std::string expected_contents;
++  ASSERT_TRUE(base::ReadFileToString(manifest_path, &expected_contents));
++
++  // Writing through a retained file descriptor opened before
++  // RewriteManifestFile() must not affect the rewritten manifest on disk.
++  ASSERT_EQ(0, retained_file.Seek(base::File::FROM_BEGIN, 0));
++  ASSERT_TRUE(retained_file.WriteAtCurrentPosAndCheck(
++      base::byte_span_from_cstring("{\"tampered\":true}")));
++  retained_file.Close();
++
++  std::string actual_contents;
++  ASSERT_TRUE(base::ReadFileToString(manifest_path, &actual_contents));
++  EXPECT_EQ(expected_contents, actual_contents);
++}
++#endif  // BUILDFLAG(IS_POSIX)
++
+ TEST_F(SandboxedUnpackerTest, InvalidMessagesFile) {
+   SetupUnpackerWithDirectory("invalid_messages_file.crx");
+   // Check that there is no _locales folder.
+diff --git a/extensions/common/extension_features.cc b/extensions/common/extension_features.cc
+index 1056869c2ff53b8780ef77b80c0e83c324aff918..07ce5768788157b3a8eedf60fa4223a6ba32036c 100644
+--- a/extensions/common/extension_features.cc
++++ b/extensions/common/extension_features.cc
+@@ -102,6 +102,9 @@ BASE_FEATURE(kCheckingNoExtensionIdInExtensionIpcs,
+ BASE_FEATURE(kComponentExtensionAllowWorkerChromeResources,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++BASE_FEATURE(kCrxInstallerVerifyReloadedManifest,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ BASE_FEATURE(kEnableWebHidInWebView, base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ #if BUILDFLAG(ENABLE_DESKTOP_ANDROID_EXTENSIONS)
+diff --git a/extensions/common/extension_features.h b/extensions/common/extension_features.h
+index 12fe6ef71fbc45f3e93f53924487f160f83ada2c..e802395e511e733f4b3e22b0cf25f16665d08d77 100644
+--- a/extensions/common/extension_features.h
++++ b/extensions/common/extension_features.h
+@@ -133,6 +133,15 @@ BASE_DECLARE_FEATURE(kCheckingNoExtensionIdInExtensionIpcs);
+ // URLs in worker scripts and subresources.
+ BASE_DECLARE_FEATURE(kComponentExtensionAllowWorkerChromeResources);
+ 
++// When enabled (the default), `CrxInstaller::ReloadExtensionAfterInstall`
++// verifies that the manifest reloaded from the final install directory matches
++// the unpacked manifest validated in `OnUnpackSuccess`, failing the install
++// on mismatch (or falling back to a local install on ChromeOS if a shared copy
++// mismatched), and cleans up `version_dir` under `install_directory_` on
++// post-install reload failures (`CANT_LOAD_EXTENSION` and
++// `MANIFEST_MISMATCH_AFTER_INSTALL`).
++BASE_DECLARE_FEATURE(kCrxInstallerVerifyReloadedManifest);
++
+ // If enabled, <webview>s will be allowed to request permission from an
+ // embedding Chrome App to request access to Human Interface Devices.
+ BASE_DECLARE_FEATURE(kEnableWebHidInWebView);
+diff --git a/tools/metrics/histograms/metadata/extensions/enums.xml b/tools/metrics/histograms/metadata/extensions/enums.xml
+index 0ba7dcc0dd40d74c035a95fe595b858b97efa0a7..590fd024f04c20a39dd9c5d9938f9054b5d0f2e9 100644
+--- a/tools/metrics/histograms/metadata/extensions/enums.xml
++++ b/tools/metrics/histograms/metadata/extensions/enums.xml
+@@ -155,6 +155,20 @@ chromium-metrics-reviews@google.com.
+   <int value="15" label="kToggleSidePanelVisibility"/>
+ </enum>
+ 
++
++</enum>
++
++
++<!-- LINT.IfChange(ExtensionCrxInstallerReloadManifestVerificationResult) -->
++
++<enum name="ExtensionCrxInstallerReloadManifestVerificationResult">
++  <int value="0" label="kMatch"/>
++  <int value="1" label="kMismatch"/>
++  <int value="2" label="kSharedCopyMismatchFallback"/>
++</enum>
++
++<!-- LINT.ThenChange(//extensions/browser/crx_installer.h:CrxInstallerReloadManifestVerificationResult) -->
++
+ <enum name="ExtensionDisableReason">
+   <int value="0" label="UNKNOWN"/>
+   <int value="1" label="USER_ACTION"/>
+@@ -2916,6 +2930,8 @@ Called by update_extension_histograms.py.-->
+ 
+ <!-- LINT.ThenChange(//extensions/browser/extension_function_histogram_value.h:HistogramValue) -->
+ 
++<!-- LINT.IfChange(ExtensionInstallationCrxInstallError) -->
++
+ <enum name="ExtensionInstallationCrxInstallError">
+   <int value="0" label="NONE"/>
+   <int value="1" label="CONVERT_USER_SCRIPT_TO_EXTENSION_FAILED"/>
+@@ -2943,8 +2959,11 @@ Called by update_extension_histograms.py.-->
+   <int value="23" label="USER_ABORTED"/>
+   <int value="24" label="UPDATE_NON_EXISTING_EXTENSION"/>
+   <int value="25" label="PROFILE_SHUTTING_DOWN"/>
++  <int value="26" label="MANIFEST_MISMATCH_AFTER_INSTALL"/>
+ </enum>
+ 
++<!-- LINT.ThenChange(//extensions/browser/install/crx_install_error.h:CrxInstallErrorDetail,//components/policy/proto/device_management_backend.proto:CrxInstallErrorDetail) -->
++
+ <enum name="ExtensionInstallationDownloadingCacheStatus">
+   <int value="0" label="UNKNOWN"/>
+   <int value="1" label="DISABLED"/>
+diff --git a/tools/metrics/histograms/metadata/extensions/histograms.xml b/tools/metrics/histograms/metadata/extensions/histograms.xml
+index 8c1906c8c1796f4526d5a437c28c8fc514d42896..db1e42dee3616dde1fb96e0adf8d0b6a1d0fdf81 100644
+--- a/tools/metrics/histograms/metadata/extensions/histograms.xml
++++ b/tools/metrics/histograms/metadata/extensions/histograms.xml
+@@ -911,6 +911,24 @@ This is emitted for two scenarios when a worker may be unregistered:
+   </summary>
+ </histogram>
+ 
++<histogram name="Extensions.CrxInstaller.ReloadManifestMismatch"
++    enum="ExtensionCrxInstallerReloadManifestVerificationResult"
++    expires_after="2027-04-30">
++  <owner>ganesh@chromium.org</owner>
++  <owner>rdevlin.cronin@chromium.org</owner>
++  <owner>extensions-core@chromium.org</owner>
++  <summary>
++    Records the result of verifying the extension manifest reloaded from the
++    final installation directory in CrxInstaller::ReloadExtensionAfterInstall
++    against the in-memory manifest validated during
++    SandboxedUnpacker::OnUnpackSuccess: whether the manifest matched (kMatch),
++    mismatched (kMismatch), or mismatched against a pre-existing ChromeOS shared
++    extension copy and triggered a fallback install into the profile's local
++    install directory (kSharedCopyMismatchFallback). Recorded on each reload
++    attempt in CrxInstaller::ReloadExtensionAfterInstall.
++  </summary>
++</histogram>
++
+ <histogram name="Extensions.CWSInfoService.FetchSuccess" enum="BooleanSuccess"
+     expires_after="never">
+ <!-- expires-never: used to monitor the health of CWS metadata fetch service -->

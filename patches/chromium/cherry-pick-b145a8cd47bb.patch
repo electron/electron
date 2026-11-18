@@ -1,0 +1,552 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Fri, 23 Oct 2026 20:14:43 -0700
+Subject: [html-in-canvas] Disallow canvas-external SVG filters
+
+This patch prevents elements in a canvas subtree from referencing SVG
+`<filter>` elements outside the canvas subtree, similar to
+https://crrev.com/c/8455562. Previously,
+`FilterEffectBuilder::BuildReferenceFilter` did not check
+`IsInCanvasSubtree()` on the target `SVGFilterElement`, allowing CSS
+`filter`, CSS `backdrop-filter`, and SVG `filter` references to leak
+external state such as `:visited` styles.
+
+`FilterEffectBuilder` now accepts `is_in_canvas_subtree` from
+`PaintLayer` and `SVGElementResourceClient`, ignoring external
+`<filter>` elements when set. `SVGElement` and `SVGFilterElement` also
+invalidate cached filter state in `DidChangeIsInCanvasSubtree`.
+Existing `drawElementImage` filter tests that placed allowed `<filter>`
+elements outside `<canvas>` are updated to define them inside
+`<canvas>`.
+
+Fixed: 576312229
+Change-Id: I5174e5ac783667d18535cee8fd30ca8dbc596849
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8615847
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1726439}
+Electron adaptation notes (43-x-y):
+This branch predates the IsInCanvasSubtree()/DidChangeIsInCanvasSubtree()
+split: Element keeps IsCanvasOrInCanvasSubtree() + IsInCanvasSubtree() and
+the virtual DidChangeIsCanvasOrInCanvasSubtree(). Adaptations:
+- SVGElement / SVGFilterElement override DidChangeIsCanvasOrInCanvasSubtree()
+  instead of DidChangeIsInCanvasSubtree(CanvasSubtreePropagation), with the
+  same bodies (InvalidateFilterData() / InvalidateFilterChain()).
+- LayoutObject had no IsCanvasOrInCanvasSubtree()/IsInCanvasSubtree();
+  both are added to layout_object.{h,cc} with upstream's bodies so the
+  svg_resources.cc and paint_layer.cc call sites stay verbatim.
+- element.cc: DidChangeIsCanvasOrInCanvasSubtree() keeps this branch's
+  SetNeedsRepaint() and gains SetBackdropFilterOnEffectNodeDirty().
+- filter_effect_builder.cc: ResourceContainerNoCycleCheck() takes no
+  Usage argument on this branch.
+- Web tests: only the new filtered-outside-subtree-ignored test is added;
+  the modified draw-element-image tests do not exist here / differ and
+  are not carried.
+
+diff --git a/third_party/blink/renderer/core/animation/compositor_animations.cc b/third_party/blink/renderer/core/animation/compositor_animations.cc
+index 86ac27c626069a178ae6b06b1824b437f3640ffd..80f0e6faf01de5dfdb5b4175e3cf7f7100d7100d 100644
+--- a/third_party/blink/renderer/core/animation/compositor_animations.cc
++++ b/third_party/blink/renderer/core/animation/compositor_animations.cc
+@@ -859,8 +859,12 @@ void AddKeyframeToCurve(cc::KeyframedFilterAnimationCurve& curve,
+                         const CompositorKeyframeValue* value,
+                         const TimingFunction& keyframe_timing_function,
+                         bool is_backdrop_filter) {
++  // Composited animations are not supported for html-in-canvas, and
++  // drawElementImage() uses main-thread paint records rather than compositor
++  // animation curves, so `is_in_canvas_subtree` can be false here.
+   FilterEffectBuilder builder(gfx::RectF(), std::nullopt, 1, Color::kBlack,
+-                              mojom::blink::ColorScheme::kLight);
++                              mojom::blink::ColorScheme::kLight,
++                              /*is_in_canvas_subtree=*/false);
+   CompositorFilterOperations operations = builder.BuildFilterOperations(
+       To<CompositorKeyframeFilterOperations>(value)->Operations(),
+       is_backdrop_filter);
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index c8a369fff2aa8921de9e448be343219c37785299..553da7a4b8e837bc9e14b232ceeb5071882f70f8 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4408,10 +4408,10 @@ void Element::DidChangeIsCanvasOrInCanvasSubtree() {
+   if (auto* layout_object = GetLayoutObject()) {
+     layout_object->SetNeedsPaintPropertyUpdate();
+     if (layout_object->HasLayer()) {
+-      To<LayoutBoxModelObject>(layout_object)->Layer()->SetNeedsRepaint();
+-      To<LayoutBoxModelObject>(layout_object)
+-          ->Layer()
+-          ->SetFilterOnEffectNodeDirty();
++      PaintLayer* layer = To<LayoutBoxModelObject>(layout_object)->Layer();
++      layer->SetNeedsRepaint();
++      layer->SetFilterOnEffectNodeDirty();
++      layer->SetBackdropFilterOnEffectNodeDirty();
+     }
+     ObjectPaintInvalidator(*layout_object)
+         .InvalidateDisplayItemClient(*layout_object,
+diff --git a/third_party/blink/renderer/core/layout/layout_object.cc b/third_party/blink/renderer/core/layout/layout_object.cc
+index 571d6963b0e6bf914e58c77d64f81515dd15cfb7..57a11d129e289e83a0b055468a22a24d61d472d2 100644
+--- a/third_party/blink/renderer/core/layout/layout_object.cc
++++ b/third_party/blink/renderer/core/layout/layout_object.cc
+@@ -5411,6 +5411,26 @@ void LayoutObject::InvalidateSubtreePositionTry(bool mark_style_dirty) {
+   }
+ }
+ 
++bool LayoutObject::IsCanvasOrInCanvasSubtree() const {
++  if (auto* element = DynamicTo<Element>(GetNode())) {
++    return element->IsCanvasOrInCanvasSubtree();
++  }
++  return IsInCanvasSubtree();
++}
++
++bool LayoutObject::IsInCanvasSubtree() const {
++  if (auto* node = GetNode()) {
++    if (auto* element = DynamicTo<Element>(node)) {
++      return element->IsInCanvasSubtree();
++    }
++    if (auto* document = DynamicTo<Document>(node)) {
++      auto* owner = document->LocalOwner();
++      return owner && owner->IsInCanvasSubtree();
++    }
++  }
++  return Parent() && Parent()->IsCanvasOrInCanvasSubtree();
++}
++
+ }  // namespace blink
+ 
+ #if DCHECK_IS_ON()
+diff --git a/third_party/blink/renderer/core/layout/layout_object.h b/third_party/blink/renderer/core/layout/layout_object.h
+index 984b605903d718a81d0ac53e818763b4d66c2a82..479025f87038e4631ee13178d3004dc13031c498 100644
+--- a/third_party/blink/renderer/core/layout/layout_object.h
++++ b/third_party/blink/renderer/core/layout/layout_object.h
+@@ -1932,6 +1932,12 @@ class CORE_EXPORT LayoutObject : public GarbageCollected<LayoutObject>,
+   // which is already marked for subtree recalc.
+   void InvalidateSubtreePositionTry(bool mark_style_dirty);
+ 
++  // Delegates to `Element::IsCanvasOrInCanvasSubtree()` / `IsInCanvasSubtree()`
++  // for the nearest `Element` (walking up the layout tree and across local
++  // frames if needed).
++  bool IsCanvasOrInCanvasSubtree() const;
++  bool IsInCanvasSubtree() const;
++
+  protected:
+   enum PositionedState {
+     kIsStaticallyPositioned = 0,
+diff --git a/third_party/blink/renderer/core/layout/svg/svg_resources.cc b/third_party/blink/renderer/core/layout/svg/svg_resources.cc
+index 567a4659b9f974bfe010cbcca28c5a0980dbef0d..c71b59f97a63453c9db5aae3671f9b48c1463ba2 100644
+--- a/third_party/blink/renderer/core/layout/svg/svg_resources.cc
++++ b/third_party/blink/renderer/core/layout/svg/svg_resources.cc
+@@ -380,7 +380,7 @@ void SVGElementResourceClient::UpdateFilterData(
+   FilterEffectBuilder builder(
+       reference_box, SVGViewportResolver(object).ResolveViewport(), 1,
+       style.VisitedDependentColor(GetCSSPropertyColor()),
+-      style.UsedColorScheme());
++      style.UsedColorScheme(), object.IsInCanvasSubtree());
+   builder.SetShorthandScale(1 / style.EffectiveZoom());
+   const FilterOperations& filter = style.Filter();
+   // If the filter is a single 'url(...)' reference we can optimize some
+@@ -394,9 +394,10 @@ void SVGElementResourceClient::UpdateFilterData(
+           builder, To<ReferenceFilterOperation>(*filter.at(0)));
+     }
+     operations.Clear();
++    FilterOperation* op = filter.Operations()[0].Get();
++    To<ReferenceFilterOperation>(*op).SetFilter(
++        filter_data_ ? filter_data_->GetFilter() : nullptr);
+     if (filter_data_) {
+-      FilterOperation* op = filter.Operations()[0].Get();
+-      To<ReferenceFilterOperation>(*op).SetFilter(filter_data_->GetFilter());
+       // If the referenced filter exists but does not contain any primitives,
+       // then the rendering of the element should be disabled.
+       if (filter_data_->HasEffects()) {
+diff --git a/third_party/blink/renderer/core/paint/filter_effect_builder.cc b/third_party/blink/renderer/core/paint/filter_effect_builder.cc
+index 51c344b7f2175266ba0709c3c268454efc4a8a15..028c1a2581b09bb0f39635cce0954342ef41e1c4 100644
+--- a/third_party/blink/renderer/core/paint/filter_effect_builder.cc
++++ b/third_party/blink/renderer/core/paint/filter_effect_builder.cc
+@@ -130,6 +130,7 @@ FilterEffectBuilder::FilterEffectBuilder(const gfx::RectF& reference_box,
+                                          float zoom,
+                                          Color current_color,
+                                          mojom::blink::ColorScheme color_scheme,
++                                         bool is_in_canvas_subtree,
+                                          const cc::PaintFlags* fill_flags,
+                                          const cc::PaintFlags* stroke_flags)
+     : reference_box_(reference_box),
+@@ -138,6 +139,7 @@ FilterEffectBuilder::FilterEffectBuilder(const gfx::RectF& reference_box,
+       shorthand_scale_(1),
+       current_color_(current_color),
+       color_scheme_(color_scheme),
++      is_in_canvas_subtree_(is_in_canvas_subtree),
+       fill_flags_(fill_flags),
+       stroke_flags_(stroke_flags) {}
+ 
+@@ -530,6 +532,9 @@ Filter* FilterEffectBuilder::BuildReferenceFilter(
+       DynamicTo<SVGFilterElement>(resource ? resource->Target() : nullptr);
+   if (!filter_element)
+     return nullptr;
++  if (is_in_canvas_subtree_ && !filter_element->IsInCanvasSubtree()) {
++    return nullptr;
++  }
+   if (auto* resource_container = resource->ResourceContainerNoCycleCheck())
+     resource_container->ClearInvalidationMask();
+ 
+diff --git a/third_party/blink/renderer/core/paint/filter_effect_builder.h b/third_party/blink/renderer/core/paint/filter_effect_builder.h
+index 4fdc6df06bf0a16646a647759d32d3232a766cdb..d32a2a5ea012702a0abe106ebe57d4d013eba1d1 100644
+--- a/third_party/blink/renderer/core/paint/filter_effect_builder.h
++++ b/third_party/blink/renderer/core/paint/filter_effect_builder.h
+@@ -51,6 +51,7 @@ class CORE_EXPORT FilterEffectBuilder final {
+                       float zoom,
+                       Color current_color,
+                       mojom::blink::ColorScheme color_scheme,
++                      bool is_in_canvas_subtree,
+                       const cc::PaintFlags* fill_flags = nullptr,
+                       const cc::PaintFlags* stroke_flags = nullptr);
+ 
+@@ -77,6 +78,7 @@ class CORE_EXPORT FilterEffectBuilder final {
+   float shorthand_scale_;  // Scale factor for shorthand filter functions.
+   const Color current_color_;
+   const mojom::blink::ColorScheme color_scheme_;
++  const bool is_in_canvas_subtree_;
+   const cc::PaintFlags* fill_flags_;
+   const cc::PaintFlags* stroke_flags_;
+ };
+diff --git a/third_party/blink/renderer/core/paint/paint_layer.cc b/third_party/blink/renderer/core/paint/paint_layer.cc
+index 5e8692db2f0a52b92a4350c21284eb09902a361b..13caf731ffaafd50cfd04f9ee5002b1ed856870c 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer.cc
++++ b/third_party/blink/renderer/core/paint/paint_layer.cc
+@@ -2569,7 +2569,8 @@ void PaintLayer::UpdateCompositorFilterOperationsForFilter(
+   operations =
+       FilterEffectBuilder(reference_box, FilterViewport(), zoom,
+                           style.VisitedDependentColor(GetCSSPropertyColor()),
+-                          style.UsedColorScheme())
++                          style.UsedColorScheme(),
++                          GetLayoutObject().IsInCanvasSubtree())
+           .BuildFilterOperations(filter);
+   filter_on_effect_node_dirty_ = false;
+ }
+@@ -2613,7 +2614,8 @@ void PaintLayer::UpdateCompositorFilterOperationsForBackdropFilter(
+   operations =
+       FilterEffectBuilder(reference_box, FilterViewport(), zoom,
+                           style.VisitedDependentColor(GetCSSPropertyColor()),
+-                          style.UsedColorScheme(), nullptr, nullptr)
++                          style.UsedColorScheme(),
++                          GetLayoutObject().IsInCanvasSubtree())
+           .BuildFilterOperations(filter_operations, /*contains_backdrop=*/true);
+   // Note that |operations| may be empty here, if the |filter_operations| list
+   // contains only invalid filters (e.g. invalid reference filters). See
+diff --git a/third_party/blink/renderer/core/svg/svg_element.cc b/third_party/blink/renderer/core/svg/svg_element.cc
+index 0f2f6b353a5307b0d3bbb3a79dc5da49fe235ebf..da3e30d23c097896f7d354726c5858dbef3007b5 100644
+--- a/third_party/blink/renderer/core/svg/svg_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_element.cc
+@@ -48,6 +48,7 @@
+ #include "third_party/blink/renderer/core/inspector/console_message.h"
+ #include "third_party/blink/renderer/core/layout/layout_object.h"
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_resource_container.h"
++#include "third_party/blink/renderer/core/layout/svg/svg_resources.h"
+ #include "third_party/blink/renderer/core/layout/svg/transform_helper.h"
+ #include "third_party/blink/renderer/core/svg/animation/element_smil_animations.h"
+ #include "third_party/blink/renderer/core/svg/properties/svg_animated_property.h"
+@@ -314,6 +315,13 @@ void SVGElement::ChildrenChanged(const ChildrenChange& change) {
+   InvalidateInstances();
+ }
+ 
++void SVGElement::DidChangeIsCanvasOrInCanvasSubtree() {
++  Element::DidChangeIsCanvasOrInCanvasSubtree();
++  if (SVGElementResourceClient* client = GetSVGResourceClient()) {
++    client->InvalidateFilterData();
++  }
++}
++
+ CSSPropertyID SVGElement::CssPropertyIdForSVGAttributeName(
+     const ExecutionContext* execution_context,
+     const QualifiedName& attr_name) {
+diff --git a/third_party/blink/renderer/core/svg/svg_element.h b/third_party/blink/renderer/core/svg/svg_element.h
+index 4753c25aae97f49d6bdf2435f1252a8ce50d665a..3e23b2eb40572cf6566bb7f10c5aacf3fed56a7e 100644
+--- a/third_party/blink/renderer/core/svg/svg_element.h
++++ b/third_party/blink/renderer/core/svg/svg_element.h
+@@ -233,6 +233,7 @@ class CORE_EXPORT SVGElement : public Element {
+   InsertionNotificationRequest InsertedInto(ContainerNode&) override;
+   void RemovedFrom(ContainerNode&) override;
+   void ChildrenChanged(const ChildrenChange&) override;
++  void DidChangeIsCanvasOrInCanvasSubtree() override;
+ 
+   void DetachLayoutTree(bool performing_reattach) override;
+ 
+diff --git a/third_party/blink/renderer/core/svg/svg_filter_element.cc b/third_party/blink/renderer/core/svg/svg_filter_element.cc
+index d28deb3ea35dd9e5daa737c41e0c8e4848efba5b..56398dcc31ee0a810c7d7f1531411a63aa602b6e 100644
+--- a/third_party/blink/renderer/core/svg/svg_filter_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_filter_element.cc
+@@ -123,6 +123,11 @@ void SVGFilterElement::ChildrenChanged(const ChildrenChange& change) {
+   InvalidateFilterChain();
+ }
+ 
++void SVGFilterElement::DidChangeIsCanvasOrInCanvasSubtree() {
++  SVGElement::DidChangeIsCanvasOrInCanvasSubtree();
++  InvalidateFilterChain();
++}
++
+ LayoutObject* SVGFilterElement::CreateLayoutObject(const ComputedStyle&) {
+   return MakeGarbageCollected<LayoutSVGResourceFilter>(this);
+ }
+diff --git a/third_party/blink/renderer/core/svg/svg_filter_element.h b/third_party/blink/renderer/core/svg/svg_filter_element.h
+index 8e400dbe8a3bfa68f7f6f2c43126bf0c0b4ff8c5..56f5b52385540b7596ec4308d11c541720487bdd 100644
+--- a/third_party/blink/renderer/core/svg/svg_filter_element.h
++++ b/third_party/blink/renderer/core/svg/svg_filter_element.h
+@@ -74,6 +74,7 @@ class CORE_EXPORT SVGFilterElement final : public SVGElement,
+  private:
+   void SvgAttributeChanged(const SvgAttributeChangedParams&) override;
+   void ChildrenChanged(const ChildrenChange&) override;
++  void DidChangeIsCanvasOrInCanvasSubtree() final;
+ 
+   LayoutObject* CreateLayoutObject(const ComputedStyle&) override;
+ 
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
+index 8428a650efd67feda749956510cf8051837e5205..b22da24ea54ae00d193e79ff3dd0928839c73b7a 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
+@@ -471,7 +471,9 @@ void Canvas2DRecorderContext::beginLayerImpl(ScriptState* script_state,
+       FilterEffectBuilder filter_effect_builder(
+           gfx::RectF(canvas_viewport), canvas_viewport,
+           1.0f,  // Deliberately ignore zoom on the canvas element.
+-          Color::kBlack, mojom::blink::ColorScheme::kLight);
++          Color::kBlack, mojom::blink::ColorScheme::kLight,
++          // 2D context filters rely on origin tainting, not subtree scoping.
++          /*is_in_canvas_subtree=*/false);
+ 
+       filter = paint_filter_builder::Build(
+           filter_effect_builder.BuildFilterEffect(std::move(filter_operations),
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.cc b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.cc
+index b61f3d6bbd32f345bda7ee867a87087fb5d18140..e465ed44fea964a3d08e84e2a172668f289582f6 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.cc
+@@ -539,8 +539,9 @@ sk_sp<PaintFilter> CanvasRenderingContext2DState::GetFilterForOffscreenCanvas(
+   FilterEffectBuilder filter_effect_builder(
+       gfx::RectF(canvas_viewport), canvas_viewport,
+       1.0f,  // Deliberately ignore zoom on the canvas element.
+-      Color::kBlack, mojom::blink::ColorScheme::kLight, &fill_flags_for_filter,
+-      &stroke_flags_for_filter);
++      Color::kBlack, mojom::blink::ColorScheme::kLight,
++      /*is_in_canvas_subtree=*/false,  // OffscreenCanvas has no DOM subtree.
++      &fill_flags_for_filter, &stroke_flags_for_filter);
+ 
+   FilterEffect* last_effect = filter_effect_builder.BuildFilterEffect(
+       operations, !context->OriginClean());
+@@ -611,7 +612,9 @@ sk_sp<PaintFilter> CanvasRenderingContext2DState::GetFilter(
+   FilterEffectBuilder filter_effect_builder(
+       gfx::RectF(canvas_viewport), canvas_viewport,
+       1.0f,  // Deliberately ignore zoom on the canvas element.
+-      Color::kBlack, mojom::blink::ColorScheme::kLight, &fill_flags_for_filter,
++      Color::kBlack, mojom::blink::ColorScheme::kLight,
++      // 2D context filters rely on origin tainting, not subtree scoping.
++      /*is_in_canvas_subtree=*/false, &fill_flags_for_filter,
+       &stroke_flags_for_filter);
+ 
+   FilterEffect* last_effect = filter_effect_builder.BuildFilterEffect(
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html
+index 3165c124719dd48d13828eda3e50fd93959f145a..fe7aa86d93df8427169e02b81207cffb766d367f 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html
+@@ -35,15 +35,15 @@
+       <div id="child-image" class="child"></div>
+       <div id="child-image-offset" class="child"></div>
+     </div>
++    <svg width="0" height="0">
++      <filter id="filter-image">
++        <feimage href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
++      </filter>
++      <filter id="filter-image-offset">
++        <feimage x="10" y="10" width="80" height="80" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
++      </filter>
++    </svg>
+   </canvas>
+-  <svg width="0" height="0">
+-    <filter id="filter-image">
+-      <feimage href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
+-    </filter>
+-    <filter id="filter-image-offset">
+-      <feimage x="10" y="10" width="80" height="80" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
+-    </filter>
+-  </svg>
+   <script>
+     onload = async () => {
+       await waitForCanvasPaint(canvas);
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html
+index 10ee3c22eb9fa51077849525e3b280f8ac945e74..c331ce654480c747a7891268d7c828d11be44ff0 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html
+@@ -35,15 +35,15 @@
+       <div id="child-image" class="child"></div>
+       <div id="child-image-offset" class="child"></div>
+     </div>
++    <svg width="0" height="0">
++      <filter id="filter-image">
++        <feimage x="0" y="0" width="100" height="100" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
++      </filter>
++      <filter id="filter-image-offset">
++        <feimage x="10" y="10" width="80" height="80" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
++      </filter>
++    </svg>
+   </canvas>
+-  <svg width="0" height="0">
+-    <filter id="filter-image">
+-      <feimage x="0" y="0" width="100" height="100" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
+-    </filter>
+-    <filter id="filter-image-offset">
+-      <feimage x="10" y="10" width="80" height="80" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
+-    </filter>
+-  </svg>
+   <script>
+     onload = async () => {
+       await waitForCanvasPaint(canvas);
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-outside-subtree-ignored.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-outside-subtree-ignored.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..403923bbbb27c3038b2b83e135f7d5595a0116d5
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-outside-subtree-ignored.tentative.html
+@@ -0,0 +1,152 @@
++<!DOCTYPE html>
++<html>
++<head>
++  <title>drawElementImage does not use SVG filters outside the canvas subtree</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    a:link feFlood {
++      flood-color: rgb(0, 255, 0);
++    }
++    a:visited feFlood {
++      flood-color: rgb(255, 0, 0);
++    }
++    .box {
++      width: 100px;
++      height: 50px;
++      background: green;
++    }
++    #div-internal {
++      filter: url('#filter-internal');
++    }
++    #div-external, #div-moved-in {
++      filter: url('#filter-external');
++    }
++    #backdrop-wrapper {
++      width: 100px;
++      height: 100px;
++      background: blue;
++    }
++    .backdrop-child {
++      width: 100px;
++      height: 50px;
++      background: transparent;
++    }
++    #backdrop-internal {
++      backdrop-filter: url('#filter-internal');
++    }
++    #backdrop-external {
++      backdrop-filter: url('#filter-external');
++    }
++  </style>
++</head>
++<body>
++  <a href="">
++    <svg width="0" height="0">
++      <defs>
++        <filter id="filter-external" x="0" y="0" width="1" height="1" filterUnits="objectBoundingBox">
++          <feFlood/>
++        </filter>
++      </defs>
++    </svg>
++  </a>
++
++  <div drawable id="div-moved-in" class="box"></div>
++  <svg drawable id="svg-moved-in" width="100" height="50">
++    <rect x="0" y="0" width="100" height="50" fill="green" filter="url(#filter-external)"/>
++  </svg>
++
++  <canvas id="canvas" width="100" height="400" content="drawable">
++    <a id="link-internal" href="">
++      <svg width="0" height="0">
++        <defs>
++          <filter id="filter-internal" x="0" y="0" width="1" height="1" filterUnits="objectBoundingBox">
++            <feFlood/>
++          </filter>
++        </defs>
++      </svg>
++    </a>
++
++    <div drawable id="div-internal" class="box"></div>
++    <div drawable id="div-external" class="box"></div>
++
++    <div drawable id="backdrop-wrapper">
++      <div id="backdrop-internal" class="backdrop-child"></div>
++      <div id="backdrop-external" class="backdrop-child"></div>
++    </div>
++
++    <svg drawable id="svg-child" width="100" height="100">
++      <rect x="0" y="0" width="100" height="50" fill="green" filter="url(#filter-internal)"/>
++      <rect x="0" y="50" width="100" height="50" fill="green" filter="url(#filter-external)"/>
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++        const ctx = canvas.getContext("2d");
++        ctx.drawElementImage(document.getElementById("div-internal"), 0, 0);
++        ctx.drawElementImage(document.getElementById("div-external"), 0, 50);
++        ctx.drawElementImage(document.getElementById("backdrop-wrapper"), 0, 100);
++        ctx.drawElementImage(document.getElementById("svg-child"), 0, 200);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 50, 25);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal filter on HTML element should draw unvisited color");
++
++        pixel = _getPixelFromImageData(imgData, 50, 75);
++        assert_array_equals(pixel, [0, 128, 0, 255], "External filter on HTML element should be ignored");
++
++        pixel = _getPixelFromImageData(imgData, 50, 125);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal backdrop-filter on HTML element should draw unvisited color");
++
++        pixel = _getPixelFromImageData(imgData, 50, 175);
++        assert_array_equals(pixel, [0, 0, 255, 255], "External backdrop-filter on HTML element should be ignored");
++
++        pixel = _getPixelFromImageData(imgData, 50, 225);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal filter on SVG element should draw unvisited color");
++
++        pixel = _getPixelFromImageData(imgData, 50, 275);
++        assert_array_equals(pixel, [0, 128, 0, 255], "External filter on SVG element should be ignored");
++
++        // Atomically move elements referencing #filter-external into the canvas
++        // subtree and move #filter-internal out of the canvas subtree.
++        canvas.moveBefore(document.getElementById("div-moved-in"), null);
++        canvas.moveBefore(document.getElementById("svg-moved-in"), null);
++        document.body.moveBefore(document.getElementById("link-internal"), canvas);
++        await waitForCanvasPaint(canvas);
++
++        ctx.clearRect(0, 0, canvas.width, canvas.height);
++        ctx.drawElementImage(document.getElementById("div-internal"), 0, 0);
++        ctx.drawElementImage(document.getElementById("backdrop-wrapper"), 0, 100);
++        ctx.drawElementImage(document.getElementById("svg-child"), 0, 200);
++        ctx.drawElementImage(document.getElementById("div-moved-in"), 0, 300);
++        ctx.drawElementImage(document.getElementById("svg-moved-in"), 0, 350);
++
++        const imgDataAfterMove = ctx.getImageData(0, 0, canvas.width, canvas.height);
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 25);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Filter moved outside canvas subtree on HTML element should be ignored");
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 125);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Backdrop-filter moved outside canvas subtree on HTML element should be ignored");
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 225);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Filter moved outside canvas subtree on SVG element should be ignored");
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 325);
++        assert_array_equals(pixel, [0, 128, 0, 255], "External filter on HTML element moved into canvas subtree should be ignored");
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 375);
++        assert_array_equals(pixel, [0, 128, 0, 255], "External filter on SVG element moved into canvas subtree should be ignored");
++      });
++    };
++  </script>
++</body>
++</html>
