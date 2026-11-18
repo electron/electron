@@ -1,0 +1,237 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dana Fried <dfried@chromium.org>
+Date: Mon, 26 Oct 2026 10:40:29 -0700
+Subject: [Views] Create ViewGuard to ensure a view's existence in a scope
+
+Sometimes locking down every possible corner case callback that could be
+used by a confused or malicious listener to trigger a UAF during some
+otherwise innocuous operation isn't worth it if none of the resulting
+states would be valid.
+
+ViewGuard provides another option: kill the process if something
+unexpected and extremely bad happens. Follows the same principle as
+raw_ptr/raw_ref except that the kill still happens immediately if the
+destruction occurs in some nested call, and it's therefore often
+better-suited for on-the-stack use in Views code.
+
+Migrates the "don't let MenuItemView be destroyed while adding it to a
+menu" code added in an upstream CL to the new one-line guard.
+
+Change-Id: Idf3c5505f96472e1252e0c529bf8c19e61095153
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8652648
+Reviewed-by: David Yeung <dayeung@chromium.org>
+Commit-Queue: Dana Fried <dfried@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1727170}
+
+Electron adaptation notes (45-x-y): Picked as a prerequisite of https://chromium-review.googlesource.com/c/chromium/src/+/8670519 and https://chromium-review.googlesource.com/c/chromium/src/+/8772989, which use ViewGuard. ui/views/BUILD.gn hunks add only view_guard.{h,cc} and view_guard_unittest.cc (the upstream context lists view_decoration.* and view_hierarchy_changed_details.h, which this branch does not have); MenuItemView::AddMenuItemAt() on this branch takes (item, index), so the ViewGuard is placed before the branch's existing submenu_->AddChildViewAt(item, index) call.
+
+diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
+index 9698af5d4b665e207592d87e7451a537560e9c2d..3a02aa1ea0d7f8a1295dcd342f4a09a9ba4920f0 100644
+--- a/ui/views/BUILD.gn
++++ b/ui/views/BUILD.gn
+@@ -324,6 +324,7 @@ component("views") {
+     "view.h",
+     "view_class_properties.h",
+     "view_constants.h",
++    "view_guard.h",
+     "view_model.h",
+     "view_model_utils.h",
+     "view_observer.h",
+@@ -563,6 +564,7 @@ component("views") {
+     "style/typography_provider.cc",
+     "view.cc",
+     "view_class_properties.cc",
++    "view_guard.cc",
+     "view_model.cc",
+     "view_model_utils.cc",
+     "view_shadow.cc",
+@@ -1396,6 +1398,7 @@ test("views_unittests") {
+     "scoped_paint_lock_unittest.cc",
+     "selection_controller_unittest.cc",
+     "test/widget_test_unittest.cc",
++    "view_guard_unittest.cc",
+     "view_model_unittest.cc",
+     "view_model_utils_unittest.cc",
+     "view_shadow_unittest.cc",
+diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
+index fcb6f08e43f505f0c4e5188cd2a8a3220a0d472e..4d69fa61a0e42bc7a4d151ba256fb813300e4c31 100644
+--- a/ui/views/controls/menu/menu_item_view.cc
++++ b/ui/views/controls/menu/menu_item_view.cc
+@@ -64,6 +64,7 @@
+ #include "ui/views/style/typography_provider.h"
+ #include "ui/views/vector_icons.h"
+ #include "ui/views/view_class_properties.h"
++#include "ui/views/view_guard.h"
+ #include "ui/views/view_tracker.h"
+ #include "ui/views/view_utils.h"
+ #include "ui/views/widget/widget.h"
+@@ -131,10 +132,6 @@ MenuItemView::MenuItemView(MenuDelegate* delegate)
+                    delegate) {}
+ 
+ MenuItemView::~MenuItemView() {
+-  CHECK(!inserting_into_menu_)
+-      << "A menu item was synchronously destroyed while being inserted into a "
+-         "menu, possibly by some consumer of the accessibility API. This "
+-         "should never happen.";
+   SetAnchorView(nullptr);
+   // Only the root item holds `controller_`, so walk up to the root to also
+   // cover destruction of a non-root subtree (e.g. via RemoveMenuItem()). This
+@@ -458,7 +455,12 @@ MenuItemView* MenuItemView::AddMenuItemAt(
+     item->SetVisible(false);
+   }
+ 
+-  base::AutoReset inserting_auto_reset(&item->inserting_into_menu_, true);
++  // There are cases where menu insertions can lead to synchronous accessibility
++  // events, which can in turn lead to a miscalibrated or malicious
++  // accessibility tool attempting to close the menu mid-insertion. Guard
++  // against the item being destroyed while it is being added.
++  ViewGuard item_guard(*item);
++
+   auto* added_item = submenu_->AddChildViewAt(item, index);
+ 
+   added_item->UpdateTooltipText();
+diff --git a/ui/views/controls/menu/menu_item_view.h b/ui/views/controls/menu/menu_item_view.h
+index 9b6343c7ab6f333d2f4e269b92d1f6189367ff55..5d05df9b8ec5c873e28a99156b7955620ff57802 100644
+--- a/ui/views/controls/menu/menu_item_view.h
++++ b/ui/views/controls/menu/menu_item_view.h
+@@ -810,12 +810,6 @@ class VIEWS_EXPORT MenuItemView : public View, public LayoutDelegate {
+   // and SetIconView() explicitly calls UpdateSelectionBasedStateIfChanged().
+   bool update_selection_based_state_in_view_herarchy_changed_ = true;
+ 
+-  // There are cases where menu insertions can lead to synchronous accessibility
+-  // events, which can in turn lead to a miscalibrated or malicious
+-  // accessibility tool attempting to close the menu mid-insertion. Guard
+-  // against the item being destroyed while it is being added.
+-  bool inserting_into_menu_ = false;
+-
+   std::optional<ui::ColorId> foreground_color_id_;
+   std::optional<MenuItemBackground> menu_item_background_;
+   std::optional<ui::ColorId> selected_color_id_;
+diff --git a/ui/views/view_guard.cc b/ui/views/view_guard.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..b21da11a72786c78bf8d41fbc9777d30146bb32c
+--- /dev/null
++++ b/ui/views/view_guard.cc
+@@ -0,0 +1,23 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/view_guard.h"
++
++#include "base/notreached.h"
++#include "ui/views/view.h"
++
++namespace views {
++
++ViewGuard::ViewGuard(View& view) : view_(view) {
++  observation_.Observe(&*view_);
++}
++ViewGuard::ViewGuard(const ViewGuard& other) : ViewGuard(*other.view_) {}
++ViewGuard::~ViewGuard() = default;
++
++void ViewGuard::OnViewIsDeleting(View* view) {
++  NOTREACHED() << "View " << view->GetClassName()
++               << " is being deleted during the scope of a guard.";
++}
++
++}  // namespace views
+diff --git a/ui/views/view_guard.h b/ui/views/view_guard.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..7800217522923948cb9af768250146c8f58a904b
+--- /dev/null
++++ b/ui/views/view_guard.h
+@@ -0,0 +1,58 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef UI_VIEWS_VIEW_GUARD_H_
++#define UI_VIEWS_VIEW_GUARD_H_
++
++#include "base/memory/raw_ref.h"
++#include "base/scoped_observation.h"
++#include "ui/views/view_observer.h"
++#include "ui/views/views_export.h"
++
++namespace views {
++
++// Ensures that the given view does not cease to exist during the lifetime of
++// the guard object. Used to enforce invariants in the codebase where it is
++// better to crash than to risk memory corruption - i.e. when conceivably some
++// callback *could* result in the view's destruction but no *reasonable*
++// circumstance should actually allow it.
++//
++// Similar to `ViewTracker` except that instead of setting the internal
++// reference to null on destruction, this class CHECK()s.
++//
++// Similar to raw_ref and raw_ptr in that they guard against UAFs with process
++// death, but ViewGuard provides immediate protection against unexpected
++// destruction even in deeply-nested calls - there's literally no time to
++// dereference an invalid pointer since the protected object is valid all the
++// way up until the CHECK().
++//
++// Example:
++// ```
++//  // There are synchronous callbacks that can occur during setup that could
++//  // potentially occur during this operation, but they should realistically
++//  // never result in the destruction of the new View.
++//  auto v = std::make_unique<MyView>();
++//  ViewGuard guard(*v);
++//  v->SetProperty(...);
++//  v_ = AddChildView(std::move(v));
++//  v_ -> ...;
++// ```
++class VIEWS_EXPORT ViewGuard : public ViewObserver {
++ public:
++  explicit ViewGuard(View& View);
++  ViewGuard(const ViewGuard& other);
++  ViewGuard& operator=(const ViewGuard& other) = delete;
++  ~ViewGuard() override;
++
++ private:
++  // ViewObserver:
++  void OnViewIsDeleting(View* view) override;
++
++  const raw_ref<View> view_;
++  base::ScopedObservation<View, ViewObserver> observation_{this};
++};
++
++}  // namespace views
++
++#endif  // UI_VIEWS_VIEW_GUARD_H_
+diff --git a/ui/views/view_guard_unittest.cc b/ui/views/view_guard_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..39802cdfe7722413aecca5ec20f91e7c91262ea9
+--- /dev/null
++++ b/ui/views/view_guard_unittest.cc
+@@ -0,0 +1,29 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/view_guard.h"
++
++#include <memory>
++
++#include "base/test/gtest_util.h"
++#include "testing/gtest/include//gtest/gtest.h"
++#include "ui/views/test/views_test_base.h"
++#include "ui/views/view.h"
++
++namespace views {
++
++using ViewGuardTest = ViewsTestBase;
++
++TEST_F(ViewGuardTest, NoCrashIfGuardDeletedFirst) {
++  View view;
++  ViewGuard guard(view);
++}
++
++TEST_F(ViewGuardTest, CrashIfViewDeletedFirst) {
++  std::unique_ptr<View> view = std::make_unique<View>();
++  ViewGuard guard(*view);
++  EXPECT_NOTREACHED_DEATH(view.reset());
++}
++
++}  // namespace views

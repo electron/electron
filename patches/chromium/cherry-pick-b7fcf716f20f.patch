@@ -1,0 +1,233 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mjackson <mjackson@microsoft.com>
+Date: Wed, 11 Nov 2026 10:53:19 -0800
+Subject: [M156] Prevent out-of-bounds marker reads during highlight painting
+
+Original change's description:
+> Prevent out-of-bounds marker reads during highlight painting
+>
+> Undo/redo and deleting text can leave an empty find-in-page marker. When
+> uppercasing expands a character into several letters that wrap across
+> lines, painting can read past the marker list while checking that empty
+> boundary. Nothing matches at that boundary, so returning no matches
+> prevents the invalid read while keeping the text and markers intact;
+> that piece still appears, but without a search highlight.
+>
+> The tests recreate the editing and line wrapping that caused the crash
+> and check that valid search matches are still returned at different
+> points in the text. They also confirm that the text can be drawn without
+> crashing, but do not check the exact appearance of the highlight.
+>
+> Bug: 581064654
+> Change-Id: I2f060de8ee9190dba6750136229130f9eeeb467b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8759212
+> Reviewed-by: Dan Clark <daniec@microsoft.com>
+> Commit-Queue: Mike Jackson <mjackson@microsoft.com>
+> Cr-Commit-Position: refs/heads/main@{#1739155}
+
+(cherry picked from commit b7fcf716f20fe0c5d81fc56664a39a4121d73377)
+
+Bug: 584119183,581064654
+Change-Id: I2f060de8ee9190dba6750136229130f9eeeb467b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8795190
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Pure-Cherry-Pick: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#2167}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/editing/markers/sorted_document_marker_list_editor.cc b/third_party/blink/renderer/core/editing/markers/sorted_document_marker_list_editor.cc
+index 157846852017e843b5848acbbf83a645661f1544..1d202e50c2c5128fd401c989a4c339d16878d081 100644
+--- a/third_party/blink/renderer/core/editing/markers/sorted_document_marker_list_editor.cc
++++ b/third_party/blink/renderer/core/editing/markers/sorted_document_marker_list_editor.cc
+@@ -214,7 +214,10 @@ SortedDocumentMarkerListEditor::MarkersIntersectingRange(
+                        });
+ 
+   HeapVector<Member<DocumentMarker>> results;
+-  std::copy(start_it, end_it, std::back_inserter(results));
++  // Collapsed markers can reverse the iterators for a collapsed query.
++  if (start_it < end_it) {
++    std::copy(start_it, end_it, std::back_inserter(results));
++  }
+   return results;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/editing/markers/text_match_marker_list_impl_test.cc b/third_party/blink/renderer/core/editing/markers/text_match_marker_list_impl_test.cc
+index 895b807ad0888c37de10aeda95c7a3906d14799d..828ee091a388542a6b21339df254527e66058934 100644
+--- a/third_party/blink/renderer/core/editing/markers/text_match_marker_list_impl_test.cc
++++ b/third_party/blink/renderer/core/editing/markers/text_match_marker_list_impl_test.cc
+@@ -41,4 +41,68 @@ TEST_F(TextMatchMarkerListImplTest, Add) {
+   EXPECT_EQ(2u, marker_list_->GetMarkers()[1]->EndOffset());
+ }
+ 
++TEST_F(TextMatchMarkerListImplTest,
++       MarkersIntersectingRangeAfterMovingCollapsedMarker) {
++  marker_list_->Add(CreateMarker(0, 1));
++
++  auto* dst_list = MakeGarbageCollected<TextMatchMarkerListImpl>();
++  ASSERT_TRUE(marker_list_->MoveMarkers(1, dst_list));
++  EXPECT_TRUE(marker_list_->IsEmpty());
++  dst_list->Add(CreateMarker(0, 2));
++
++  const auto& markers = dst_list->GetMarkers();
++  ASSERT_EQ(2u, markers.size());
++  EXPECT_EQ(0u, markers[0]->StartOffset());
++  EXPECT_EQ(0u, markers[0]->EndOffset());
++  EXPECT_EQ(0u, markers[1]->StartOffset());
++  EXPECT_EQ(2u, markers[1]->EndOffset());
++
++  EXPECT_TRUE(dst_list->MarkersIntersectingRange(0, 0).empty());
++  EXPECT_TRUE(dst_list->MarkersIntersectingRange(2, 2).empty());
++
++  const auto interior_matches = dst_list->MarkersIntersectingRange(1, 1);
++  ASSERT_EQ(1u, interior_matches.size());
++  EXPECT_EQ(markers[1].Get(), interior_matches[0].Get());
++
++  const auto range_matches = dst_list->MarkersIntersectingRange(0, 2);
++  ASSERT_EQ(1u, range_matches.size());
++  EXPECT_EQ(markers[1].Get(), range_matches[0].Get());
++}
++
++TEST_F(TextMatchMarkerListImplTest,
++       MarkersIntersectingRangeAfterMovingCollapsedMarkerAtNonzeroOffset) {
++  marker_list_->Add(CreateMarker(0, 1));
++  marker_list_->Add(CreateMarker(2, 3));
++
++  auto* dst_list = MakeGarbageCollected<TextMatchMarkerListImpl>();
++  ASSERT_TRUE(marker_list_->MoveMarkers(3, dst_list));
++  EXPECT_TRUE(marker_list_->IsEmpty());
++  dst_list->Add(CreateMarker(2, 4));
++
++  const auto& markers = dst_list->GetMarkers();
++  ASSERT_EQ(3u, markers.size());
++  EXPECT_EQ(2u, markers[1]->StartOffset());
++  EXPECT_EQ(2u, markers[1]->EndOffset());
++  EXPECT_EQ(2u, markers[2]->StartOffset());
++  EXPECT_EQ(4u, markers[2]->EndOffset());
++
++  EXPECT_TRUE(dst_list->MarkersIntersectingRange(2, 2).empty());
++  EXPECT_TRUE(dst_list->MarkersIntersectingRange(1, 2).empty());
++  EXPECT_TRUE(dst_list->MarkersIntersectingRange(4, 4).empty());
++
++  const auto interior_matches = dst_list->MarkersIntersectingRange(3, 3);
++  ASSERT_EQ(1u, interior_matches.size());
++  EXPECT_EQ(markers[2].Get(), interior_matches[0].Get());
++
++  const auto range_matches = dst_list->MarkersIntersectingRange(2, 4);
++  ASSERT_EQ(1u, range_matches.size());
++  EXPECT_EQ(markers[2].Get(), range_matches[0].Get());
++
++  const auto all_matches = dst_list->MarkersIntersectingRange(0, 4);
++  ASSERT_EQ(3u, all_matches.size());
++  for (wtf_size_t i = 0; i < markers.size(); ++i) {
++    EXPECT_EQ(markers[i].Get(), all_matches[i].Get());
++  }
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/paint/highlight_painter_test.cc b/third_party/blink/renderer/core/paint/highlight_painter_test.cc
+index 81b0c03ae21041b75b948964d75512d956d26218..efe6ed17c00fce7f61bfcdf4d5938c32e4db2616 100644
+--- a/third_party/blink/renderer/core/paint/highlight_painter_test.cc
++++ b/third_party/blink/renderer/core/paint/highlight_painter_test.cc
+@@ -5,7 +5,12 @@
+ #include "third_party/blink/renderer/core/paint/highlight_painter.h"
+ 
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/core/dom/text.h"
++#include "third_party/blink/renderer/core/editing/commands/editing_state.h"
++#include "third_party/blink/renderer/core/editing/commands/split_text_node_command.h"
++#include "third_party/blink/renderer/core/editing/ephemeral_range.h"
+ #include "third_party/blink/renderer/core/editing/markers/document_marker_controller.h"
++#include "third_party/blink/renderer/core/editing/markers/text_match_marker.h"
+ #include "third_party/blink/renderer/core/layout/inline/inline_cursor.h"
+ #include "third_party/blink/renderer/core/layout/layout_block_flow.h"
+ #include "third_party/blink/renderer/core/paint/inline_paint_context.h"
+@@ -17,6 +22,7 @@
+ #include "third_party/blink/renderer/core/paint/text_painter.h"
+ #include "third_party/blink/renderer/core/testing/page_test_base.h"
+ #include "third_party/blink/renderer/platform/fonts/text_fragment_paint_info.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ 
+ namespace blink {
+ 
+@@ -28,6 +34,80 @@ class HighlightPainterTest : public PaintControllerPaintTest {
+ 
+ INSTANTIATE_PAINT_TEST_SUITE_P(HighlightPainterTest);
+ 
++TEST_P(HighlightPainterTest, TextMatchMarkersAfterRedoAndShrink) {
++  ScopedSearchTextHighlightPseudoForTest search_text_highlight(true);
++  LoadAhem();
++  SetBodyInnerHTML(R"HTML(
++    <style>
++      #editor {
++        font: 24px Ahem;
++        text-transform: uppercase;
++        inline-size: 9px;
++        word-break: break-all;
++        overflow-wrap: anywhere;
++      }
++    </style>
++    <div id="editor" contenteditable spellcheck="false">&#xdf;x &#xdf;x</div>
++    <div id="seed"></div>
++  )HTML");
++
++  auto* editor = GetElementById("editor");
++  auto* source = To<Text>(editor->firstChild());
++  const String match(u"\u00DFx");
++  SimpleEditCommand* command =
++      MakeGarbageCollected<SplitTextNodeCommand>(source, 4);
++  EditingState editing_state;
++  command->DoApply(&editing_state);
++  ASSERT_FALSE(editing_state.IsAborted());
++  auto* prefix = To<Text>(editor->firstChild());
++  ASSERT_NE(source, prefix);
++  command->DoUnapply();
++  ASSERT_EQ(source, editor->firstChild());
++
++  // Redo reuses the prefix and the find markers it acquired in seed.
++  prefix->setData("aaa" + match);
++  GetElementById("seed")->AppendChild(prefix);
++  GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kTest);
++  auto& controller = GetDocument().Markers();
++  for (unsigned start : {0u, 3u}) {
++    controller.AddTextMatchMarker(
++        EphemeralRange(Position(source, start), Position(source, start + 2)),
++        TextMatchMarker::MatchStatus::kInactive);
++  }
++  controller.AddTextMatchMarker(
++      EphemeralRange(Position(prefix, 3), Position(prefix, 5)),
++      TextMatchMarker::MatchStatus::kInactive);
++
++  command->DoReapply();
++  ASSERT_EQ(prefix, editor->firstChild());
++  prefix->deleteData(0, 3, ASSERT_NO_EXCEPTION);
++  ASSERT_EQ(match, prefix->data());
++
++  const auto markers =
++      controller.MarkersFor(*prefix, DocumentMarker::MarkerTypes::TextMatch());
++  ASSERT_EQ(2u, markers.size());
++  EXPECT_EQ(0u, markers[0]->StartOffset());
++  EXPECT_EQ(0u, markers[0]->EndOffset());
++  EXPECT_EQ(0u, markers[1]->StartOffset());
++  EXPECT_EQ(2u, markers[1]->EndOffset());
++
++  UpdateAllLifecyclePhasesExceptPaint();
++  InlineCursor cursor;
++  cursor.MoveTo(*prefix->GetLayoutObject());
++  ASSERT_TRUE(cursor);
++  ASSERT_TRUE(cursor.Current().IsText());
++  ASSERT_EQ(1u, cursor.Current().TextEndOffset() -
++                    cursor.Current().TextStartOffset());
++  // The first S of uppercased sharp s paints a collapsed DOM range.
++  const auto offsets = HighlightPainter::GetFragmentDOMOffsets(
++      *prefix, cursor.Current().TextStartOffset(),
++      cursor.Current().TextEndOffset());
++  EXPECT_EQ(0u, offsets.start);
++  EXPECT_EQ(0u, offsets.end);
++
++  UpdateAllLifecyclePhasesForTest();
++}
++
+ TEST_P(HighlightPainterTest, FastSpellingGrammarPaintCase) {
+   auto test = [&](String stylesheet) {
+     SetBodyInnerHTML("x<style>" + stylesheet + "</style>");

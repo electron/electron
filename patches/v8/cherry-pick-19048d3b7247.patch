@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ryan Diaz <ryandiaz@chromium.org>
+Date: Mon, 12 Oct 2026 18:19:40 +0000
+Subject: [wasm][turboshaft] Fix AssertNotNullTypecheck and WasmTypeCheckOp
+ effects
+
+AssertNotNullTypecheck discarded the AssertNotNullOp result and
+forwarded the original nullable OpIndex, while WasmTypeCheckOp lacked
+.CanDependOnChecks(). With --wasm-random-rescheduling, a downstream
+WasmTypeCheckOp (expecting a non-nullable input) could be hoisted above
+the AssertNotNullOp, causing WasmGCTypedOptimizationReducer to
+DCHECK-fail when seeing the unrefined nullable type.
+
+Fix: Set result->op = __ AssertNotNull(...) in AssertNotNullTypecheck and add .CanDependOnChecks() to WasmTypeCheckOp::effects so type checks cannot be scheduled before their guarding null checks.
+Bug: 571348848
+Change-Id: I10c9cc767fbc1a8a855dfa717c86967148c16690
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8545881
+Commit-Queue: Ryan Diaz <ryandiaz@chromium.org>
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110597}
+
+diff --git a/src/compiler/turboshaft/operations.h b/src/compiler/turboshaft/operations.h
+index 6e87f793f6a09003160c73a2c405a6199e39f277..c39f612643704726df238f0318d5a755a2b6f6ed 100644
+--- a/src/compiler/turboshaft/operations.h
++++ b/src/compiler/turboshaft/operations.h
+@@ -7814,7 +7814,8 @@ struct RttCanonOp : FixedArityOperationT<1, RttCanonOp> {
+ struct WasmTypeCheckOp : OperationT<WasmTypeCheckOp> {
+   WasmTypeCheckConfig config;
+ 
+-  static constexpr OpEffects effects = OpEffects().AssumesConsistentHeap();
++  static constexpr OpEffects effects =
++      OpEffects().AssumesConsistentHeap().CanDependOnChecks();
+ 
+   WasmTypeCheckOp(V<Object> object, OptionalV<Map> rtt,
+                   WasmTypeCheckConfig config)
+diff --git a/src/wasm/turboshaft-graph-interface.cc b/src/wasm/turboshaft-graph-interface.cc
+index 1fef1399ee8de556aa2d1027795c90e9282604a4..5f86da2aaac04172fb1178cc5fa889f52587cf93 100644
+--- a/src/wasm/turboshaft-graph-interface.cc
++++ b/src/wasm/turboshaft-graph-interface.cc
+@@ -1089,8 +1089,8 @@ class TurboshaftGraphBuildingInterface
+ 
+   void AssertNotNullTypecheck(FullDecoder* decoder, const Value& obj,
+                               Value* result) {
+-    __ AssertNotNull(obj.get<Object>(), obj.type, TrapId::kTrapIllegalCast);
+-    Forward(decoder, obj, result);
++    result->op =
++        __ AssertNotNull(obj.get<Object>(), obj.type, TrapId::kTrapIllegalCast);
+   }
+ 
+   void NopForTestingUnsupportedInLiftoff(FullDecoder* decoder) {
+diff --git a/test/mjsunit/regress/wasm/regress-571348848.js b/test/mjsunit/regress/wasm/regress-571348848.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0d91111994dd7d1df117fee2cb58e0f14298b6a6
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-571348848.js
+@@ -0,0 +1,46 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --wasm-random-rescheduling --no-liftoff
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++let $sig0 = builder.addType(kSig_v_v);
++
++builder.addFunction('test_abstract', makeSig([kWasmNullRef], [kWasmI32]))
++  .addLocals(wasmRefType(kWasmAnyRef), 1)
++  .addBody([
++    kExprLocalGet, 0,
++    kGCPrefix, kExprRefCast, kAnyRefCode,
++    kExprLocalTee, 1,
++    kGCPrefix, kExprRefTest, kEqRefCode,
++    kExprLocalGet, 1,
++    kGCPrefix, kExprRefTest, kStructRefCode,
++    kExprLocalGet, 1,
++    kGCPrefix, kExprRefTest, kArrayRefCode,
++    kExprLocalGet, 1,
++    kGCPrefix, kExprRefTest, kI31RefCode,
++    kExprI32Add,
++    kExprI32Add,
++    kExprI32Add,
++  ])
++  .exportFunc();
++
++builder.addFunction('test_indexed', makeSig([kWasmNullFuncRef], [kWasmI32]))
++  .addLocals(wasmRefType(kWasmFuncRef), 1)
++  .addBody([
++    kExprLocalGet, 0,
++    kGCPrefix, kExprRefCast, kFuncRefCode,
++    kExprLocalTee, 1,
++    kGCPrefix, kExprRefTest, $sig0,
++    kExprLocalGet, 1,
++    kGCPrefix, kExprRefTest, $sig0,
++    kExprI32Add,
++  ])
++  .exportFunc();
++
++const instance = builder.instantiate();
++assertTraps(kTrapIllegalCast, () => instance.exports.test_abstract(null));
++assertTraps(kTrapIllegalCast, () => instance.exports.test_indexed(null));

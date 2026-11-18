@@ -139,22 +139,27 @@ void FileSelectHelper::OnListDone(int error) {
     return;
   }
 
-  // This entry needs to be cleaned up when this function is done.
-  std::unique_ptr<ActiveDirectoryEnumeration> entry =
-      std::move(directory_enumeration_);
+  // Destroy the enumeration, whose DirectoryLister points back at us, before
+  // anything below can Release() and delete |this|. The lister does not touch
+  // itself after this callback returns.
+  const base::FilePath path = directory_enumeration_->path_;
+  const std::vector<base::FilePath> results =
+      std::move(directory_enumeration_->results_);
+  directory_enumeration_.reset();
+
   if (error) {
     FileSelectionCanceled();
     return;
   }
 
   std::vector<ui::SelectedFileInfo> selected_files =
-      ui::FilePathListToSelectedFileInfoList(entry->results_);
+      ui::FilePathListToSelectedFileInfoList(results);
 
   if (dialog_type_ == ui::SelectFileDialog::SELECT_UPLOAD_FOLDER) {
-    LaunchConfirmationDialog(entry->path_, std::move(selected_files));
+    LaunchConfirmationDialog(path, std::move(selected_files));
   } else {
     std::vector<FileChooserFileInfoPtr> chooser_files;
-    for (const auto& file_path : entry->results_) {
+    for (const auto& file_path : results) {
       chooser_files.push_back(
           FileChooserFileInfo::NewNativeFile(blink::mojom::NativeFileInfo::New(
               file_path, std::u16string(), std::vector<std::u16string>())));

@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Tue, 13 Oct 2026 18:33:59 -0700
+Subject: [Media] Disallow mixing opaque and non-opaque responses in
+ MultiBuffer
+
+Fail the load in ResourceMultiBufferDataProvider::DidReceiveResponse()
+if a resource that has already received a response receives a subsequent
+response whose CORS cross-origin taint state differs from the earlier
+response. This is guarded by a new kDisallowMixedOpaqueMediaResponses
+kill switch (enabled by default).
+
+The behavior of mixing multiple range responses via a Service Worker is
+not defined by the HTML or Service Worker specifications
+(https://github.com/w3c/ServiceWorker/issues/703), and both Firefox and
+Safari already reject mixing opaque and non-opaque range responses with
+a load error. Update the existing web test and WPT expectations to match
+this behavior across all browsers.
+
+Fixed: 572307225
+Change-Id: Ie48e2d85b3450d14d40208cf89dd767081a7ffa7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8564157
+Reviewed-by: Tsuyoshi Horo <horo@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Tsuyoshi Horo <horo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718211}
+
+diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
+index 9e219d53cad365d76ab098937d1570dd040c0365..efd5996258f5b16bad3e1461f658fcf414b2a8d3 100644
+--- a/media/base/media_switches.cc
++++ b/media/base/media_switches.cc
+@@ -523,6 +523,12 @@ BASE_FEATURE(kDeferAudioFocusUntilAudible,
+ // (instead of the FFmpegAudioDecoder).
+ BASE_FEATURE(kDirectOpusAudioDecoding, base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// Killswitch for disallowing mixing opaque and non-opaque responses in
++// ResourceMultiBufferDataProvider (crbug.com/572363265).
++// TODO(crbug.com/572363265): Remove after M158 reaches stable.
++BASE_FEATURE(kDisallowMixedOpaqueMediaResponses,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // Adds an animation to document picture-in-picture resizes.
+ BASE_FEATURE(kDocumentPictureInPictureAnimateResize,
+              base::FEATURE_DISABLED_BY_DEFAULT);
+diff --git a/media/base/media_switches.h b/media/base/media_switches.h
+index 5f3c3bdb4725cebc6c44326c5b2a18e6735b0a88..f23d793e07c9a384bffe5d1db4dc969f1550e98d 100644
+--- a/media/base/media_switches.h
++++ b/media/base/media_switches.h
+@@ -180,6 +180,7 @@ MEDIA_EXPORT BASE_DECLARE_FEATURE(kD3D11VideoDecoderUseSharedHandle);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kDedicatedMediaServiceThread);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kDeferAudioFocusUntilAudible);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kDirectOpusAudioDecoding);
++MEDIA_EXPORT BASE_DECLARE_FEATURE(kDisallowMixedOpaqueMediaResponses);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kDocumentPictureInPictureAnimateResize);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kDocumentPictureInPictureCapture);
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kDocumentPictureInPictureNavigation);
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+index 15c5f96292b17836918cf012267690a2cc674d9b..d68abd1bbfc916434306627e5e7c09fe1f748bf2 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+@@ -1913,6 +1913,28 @@ TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaque) {
+   FinishLoading();
+ }
+ 
++TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaqueOnLaterRange) {
++  Initialize(kHttpUrl, true);
++  WebURLResponse response1 =
++      response_generator_->GeneratePartial206(0, kDataSize - 1);
++  response1.SetType(network::mojom::blink::FetchResponseType::kCors);
++  WebURLResponse response2 =
++      response_generator_->GeneratePartial206(kDataSize, kDataSize * 2 - 1);
++  response2.SetType(network::mojom::blink::FetchResponseType::kOpaque);
++  ExecuteMixedResponseFailureTest(response1, response2);
++}
++
++TEST_F(MultiBufferDataSourceTest, ResponseTypeNonOpaqueAfterOpaqueRange) {
++  Initialize(kHttpUrl, true);
++  WebURLResponse response1 =
++      response_generator_->GeneratePartial206(0, kDataSize - 1);
++  response1.SetType(network::mojom::blink::FetchResponseType::kOpaque);
++  WebURLResponse response2 =
++      response_generator_->GeneratePartial206(kDataSize, kDataSize * 2 - 1);
++  response2.SetType(network::mojom::blink::FetchResponseType::kCors);
++  ExecuteMixedResponseFailureTest(response1, response2);
++}
++
+ TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaqueRedirect) {
+   InitializeWithCors(kHttpUrl, true, UrlData::CORS_ANONYMOUS);
+   set_preload(MultiBufferDataSource::NONE);
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 4f59a1be32e0c07776d206f0f04b2b6e38fc775f..9309ac177b83980a1baa223596b7caee6c909ff5 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -10,6 +10,7 @@
+ #include <utility>
+ #include <algorithm>
+ 
++#include "base/feature_list.h"
+ #include "base/location.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
+@@ -19,6 +20,7 @@
+ #include "base/strings/string_util.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
++#include "media/base/media_switches.h"
+ #include "net/base/net_errors.h"
+ #include "net/http/http_byte_range.h"
+ #include "net/http/http_request_headers.h"
+@@ -304,11 +306,15 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+       network::cors::IsCorsCrossOriginResponseType(response.GetType());
+   bytes_to_discard_ = 0;
+ 
+-  // We make a strong assumption that when we reach here we have either
+-  // received a response from HTTP/HTTPS protocol or the request was
+-  // successful (in particular range request). So we only verify the partial
+-  // response for HTTP and HTTPS protocol.
+-  if (destination_url_data->url().ProtocolIsInHttpFamily()) {
++  // Mixing non-opaque and opaque responses on a resource that has already
++  // received a response is not allowed, as consumers may have already checked
++  // origin tainting based on the earlier response.
++  if (old_url_data->data_origin().has_value() &&
++      old_url_data->is_cors_cross_origin() != is_cors_cross_origin &&
++      base::FeatureList::IsEnabled(media::kDisallowMixedOpaqueMediaResponses)) {
++    active_loader_.reset();
++    do_fail = true;
++  } else if (destination_url_data->url().ProtocolIsInHttpFamily()) {
+     bool partial_response = (response.HttpStatusCode() == kHttpPartialContent);
+     bool ok_response = (response.HttpStatusCode() == kHttpOK);
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html b/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html
+index 0ee41e96f2989fe1dcba4bfb2d449432c175b5da..dc7084e15c8c3f3887dfefb6f8b5d35e54d77dec 100644
+--- a/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html
++++ b/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html
+@@ -85,10 +85,10 @@ range_request_test(
+ // (5) Range responses come from a single origin, with a mix of opaque and
+ //     non-opaque responses. The first request uses 'no-cors' mode to
+ //     receive an opaque response, and subsequent range requests use 'cors'
+-//     to receive non-opaque responses. The canvas should be tainted.
++//     to receive non-opaque responses.
+ range_request_test(
+   'resources/range-request-with-different-cors-modes-worker.js',
+-  'TAINTED',
++  'LOAD_ERROR',
+   'range responses from single origin with both opaque and non-opaque responses');
+ 
+ // (6) Range responses come from a single origin, with a mix of opaque and
+diff --git a/third_party/blink/web_tests/http/tests/serviceworker/service-worker-mixed-response.html b/third_party/blink/web_tests/http/tests/serviceworker/service-worker-mixed-response.html
+index 6198873eda6665034fa7009472260c6a64190fcf..ebdd921c25bb484911c41fa9946b017c8d842c47 100644
+--- a/third_party/blink/web_tests/http/tests/serviceworker/service-worker-mixed-response.html
++++ b/third_party/blink/web_tests/http/tests/serviceworker/service-worker-mixed-response.html
+@@ -124,10 +124,10 @@ promise_test(function(t) {
+               audio_test(f, 'cross', 'same', 'gen', false),
+               audio_test(f, 'cross', 'same', 'same', false),
+               audio_test(f, 'cross', 'same', 'cross', false),
+-              audio_test(f, 'cross', 'cross', '', true),
++              audio_test(f, 'cross', 'cross', '', false),
+               audio_test(f, 'cross', 'cross', 'gen', false),
+               audio_test(f, 'cross', 'cross', 'same', false),
+-              audio_test(f, 'cross', 'cross', 'cross', true)]);
++              audio_test(f, 'cross', 'cross', 'cross', false)]);
+         })
+       .then(function() {
+           frame.remove();

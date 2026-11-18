@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 20 Oct 2026 11:14:37 -0400
+Subject: Translator: Even more finite loop detection bugfixes
+
+Bug: chromium:575712513
+Change-Id: If3ce95d6b975cdbed194d459146830cfd8dcdceb
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8613493
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/ir/src/transform/ensure_loop_forward_progress.rs b/src/compiler/translator/ir/src/transform/ensure_loop_forward_progress.rs
+index b84303ffa490831a7b6048327d791127db232a8f..b0813146cf49acc6588fc5e6520b4276911a1fe2 100644
+--- a/src/compiler/translator/ir/src/transform/ensure_loop_forward_progress.rs
++++ b/src/compiler/translator/ir/src/transform/ensure_loop_forward_progress.rs
+@@ -172,14 +172,30 @@ fn matches_finite_loop_condition(ir_meta: &IRMeta, block: &Block) -> Option<Vari
+             return None;
+         }
+ 
+-        // If the type is uint and the condition is >=, it might be |>= 0| which is always true;
+-        // don't consider that a finite loop.  Only |>= 0| and |>= variable_that_could_be_zero| may
++        // If the type is uint and the condition is >=, it might be `>= 0` which is always true;
++        // don't consider that a finite loop.  Only `>= 0` and `>= variable_that_could_be_zero` may
+         // lead to infinite loop, but all uint with >= is considered infinite loop for simplicity.
+-        if matches!(type_info, Type::Scalar(BasicType::Uint))
+-            && matches!(
+-                ir_meta.get_instruction(op_result).op,
+-                OpCode::Binary(BinaryOpCode::GreaterThanEqual, ..)
+-            )
++        //
++        // While signed int overflow is undefined behavior, `>= INT_MIN` would also be
++        // unconditionally true even if the compiler makes signed int overflow well-defined.
++        // Using >= in loops is uncommon, so any >= use is considered a potential infinite loop
++        // for simplicity.
++        if matches!(
++            ir_meta.get_instruction(op_result).op,
++            OpCode::Binary(BinaryOpCode::GreaterThanEqual, ..)
++        ) {
++            return None;
++        }
++
++        // If the condition is <=, it might be `<= UINT_MAX` or `<= INT_MAX` for signed ints.
++        // However, `for` loops with <= are likely common, so we try to avoid considering them as
++        // infinite loop unnecessarily.  For simplicity, if a variable is used or any
++        // unrealistically large constant, consider it a potential infinite loop.
++        if matches!(
++            ir_meta.get_instruction(op_result).op,
++            OpCode::Binary(BinaryOpCode::LessThanEqual, ..)
++        ) && let Id::Constant(comparator_constant) = comparator
++            && ir_meta.get_constant(comparator_constant).value.get_index() > 1_000_000
+         {
+             return None;
+         }
+diff --git a/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.cpp b/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.cpp
+index 1382016a87e8cec757aed3f8c9398a47918ad1bc..ed3ee0c54e0b2e29e2d4fae645d4bddaca0b69ad 100644
+--- a/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.cpp
++++ b/src/compiler/translator/tree_ops/EnsureLoopForwardProgress.cpp
+@@ -86,32 +86,63 @@ const TVariable *computeFiniteLoopVariable(TIntermLoop *loop)
+     {
+         return nullptr;
+     }
++    // Loop index must be compared with a constant or uniform or similar read-only variable.
++    if (!IsReadOnlyExpr(*binCond->getRight()))
++    {
++        return nullptr;
++    }
+     switch (binCond->getOp())
+     {
+         case EOpEqual:
+         case EOpNotEqual:
+         case EOpLessThan:
+         case EOpGreaterThan:
++            break;
+         case EOpLessThanEqual:
++        {
++            // If the condition is <=, it might be |<= UINT_MAX| or |<= INT_MAX| for signed ints.
++            // However, |for| loops with <= are likely common, so we try to avoid considering them
++            // as infinite loop unnecessarily.  For simplicity, if a variable is used or any
++            // unrealistically large constant, consider it a potential infinite loop.
++            constexpr int32_t kLoopLimit     = 1'000'000;
++            const TConstantUnion *comparator = binCond->getRight()->getConstantValue();
++            if (comparator == nullptr)
++            {
++                return nullptr;
++            }
++            switch (comparator->getType())
++            {
++                case EbtInt:
++                    if (comparator->getIConst() < 0 || comparator->getIConst() >= kLoopLimit)
++                    {
++                        return nullptr;
++                    }
++                    break;
++                case EbtUInt:
++                    if (comparator->getUConst() >= kLoopLimit)
++                    {
++                        return nullptr;
++                    }
++                    break;
++                default:
++                    return nullptr;
++            }
+             break;
++        }
+         case EOpGreaterThanEqual:
+             // If the type is uint and the condition is >=, it might be |>= 0| which is always true;
+             // don't consider that a finite loop.  Only |>= 0| and |>= variable_that_could_be_zero|
+             // may lead to infinite loop, but all uint with >= is considered infinite loop for
+             // simplicity.
+-            if (variable->getType().getBasicType() == EbtUInt)
+-            {
+-                return nullptr;
+-            }
+-            break;
++            //
++            // While signed int overflow is undefined behavior, |>= INT_MIN| would also be
++            // unconditionally true even if the compiler makes signed int overflow well-defined.
++            // Using >= in loops is uncommon, so any >= use is considered a potential infinite loop
++            // for simplicity.
++            return nullptr;
+         default:
+             return nullptr;
+     }
+-    // Loop index must be compared with a constant or uniform or similar read-only variable.
+-    if (!IsReadOnlyExpr(*binCond->getRight()))
+-    {
+-        return nullptr;
+-    }
+     if (TIntermUnary *unary = expr->getAsUnaryNode())
+     {
+         switch (unary->getOp())
+diff --git a/src/tests/gl_tests/GLSLOutputTest.cpp b/src/tests/gl_tests/GLSLOutputTest.cpp
+index d8ff3cb9a270acd3d24927213ff81227a7194fc2..fc725cae28052a693d83aedbd6e37e58a2a0cdb9 100644
+--- a/src/tests/gl_tests/GLSLOutputTest.cpp
++++ b/src/tests/gl_tests/GLSLOutputTest.cpp
+@@ -618,8 +618,6 @@ void main() {
+         // Finite because |int| is implemented with |uint| such that wraparound has
+         // well-defined behavior, and eventually the values wrap around to make the
+         // condition false.
+-        "for (int i = 0; i >= 0; ++i) { }",
+-        "for (int i = 1; i >= 0; ++i) { }",
+         "for (int i = 1; i > 0; ++i) { }",
+         "for (int i = 0; i < 10; i -= 1) { }",
+         // Finite because of eventual wrap around to zero.
+@@ -675,6 +673,13 @@ void main() {
+         "for (uint i = 10u; i >= b; ++i) { }",
+         // Infinite loop because the condition is always true as |i| never changes.
+         "for (uint i = 0u; i == 0u; i += 0u) { }",
++        // Infinite loop because signed integer overflow is undefined behavior
++        "for (int i = 0; i >= 0; ++i) { }",
++        "for (int i = 1; i >= 0; ++i) { }",
++        // Infinite loop because the condition is always true
++        "for (int i = 0; i <= 2147483647; ++i) { }",
++        "for (int i = 0; i >= -2147483648; ++i) { }",
++        "for (uint i = 0u; i <= 4294967295u; ++i) { }",
+     };
+ 
+     for (const char *test : kTests)

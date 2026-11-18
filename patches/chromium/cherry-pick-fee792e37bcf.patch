@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rob Pitkin <robpitkin@google.com>
+Date: Mon, 19 Oct 2026 15:43:51 -0700
+Subject: hid: Prevent UAF in OnPermissionRevoked
+
+WebViewChooserContext::OnPermissionRevoked iterated over
+origins_per_device while synchronously notifying observers via
+chooser_context_->PermissionForWebViewRevoked(guest_origin).
+
+When a <webview> guest shares its embedder's origin, the re-entrant
+OnPermissionRevoked notification erases the device entry that the outer
+iterator was pointing to. When the outer call resumes, it operates on
+the deallocated std::map node, causing a heap use-after-free and
+double-free in the browser process.
+
+Fix this by collecting the revoked guest origins and erasing the device
+map entries prior to notifying observers, ensuring no live iterators to
+device_access_ are held across re-entrant notifications. This matches
+the erase-first ordering in RevokeDevicePermission and
+RevokeEphemeralPermissions.
+
+Additionally, revoke WebView device grants when GetDeviceInfo() returns
+nullptr (for example, during HidChooserContext::DeviceRemoved where
+devices_ is updated before notifying observers) instead of skipping
+them.
+
+Bug: 574199198
+Change-Id: I64b9102188d7099a8093516173dc80684a99ae69
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8592406
+Reviewed-by: Alvin Ji <alvinji@chromium.org>
+Commit-Queue: Rob Pitkin <robpitkin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1722384}
+
+diff --git a/chrome/browser/hid/hid_chooser_context_unittest.cc b/chrome/browser/hid/hid_chooser_context_unittest.cc
+index cf9aa09af46f40d2f37c2023cc7a83bfb8912f58..eb1b425fb4d39a996ee74935382ccd75aeb25867 100644
+--- a/chrome/browser/hid/hid_chooser_context_unittest.cc
++++ b/chrome/browser/hid/hid_chooser_context_unittest.cc
+@@ -1542,6 +1542,67 @@ TEST_F(HidChooserContextWebViewTest, RevokeDevicePermissionFromEmbedder) {
+                                               kEmbeddingOrigin));
+ }
+ 
++// Tests that revoking HID device permission from an embedder when the guest
++// shares the embedder's origin (e.g. platform app loading accessible_resources)
++// cleanly revokes both without re-entrant UAF or double-free.
++TEST_F(HidChooserContextWebViewTest,
++       RevokeDevicePermissionFromSameOriginEmbedderAndWebView) {
++  const auto kOrigin = url::Origin::Create(
++      GURL("chrome-extension://" + std::string(kTestExtensionId)));
++
++  // Connect two ephemeral devices and grant permission to the embedder and
++  // same-origin WebView.
++  auto device1 = ConnectDeviceBlocking(CreateDevice(
++      /*serial_number=*/"", /*physical_device_id=*/kTestPhysicalDeviceIds[0]));
++  auto device2 = ConnectDeviceBlocking(CreateDevice(
++      /*serial_number=*/"", /*physical_device_id=*/kTestPhysicalDeviceIds[1]));
++  GrantDevicePermissionBlocking(kOrigin, *device1);
++  GrantDevicePermissionBlocking(kOrigin, *device1, kOrigin);
++  GrantDevicePermissionBlocking(kOrigin, *device2);
++  GrantDevicePermissionBlocking(kOrigin, *device2, kOrigin);
++  EXPECT_TRUE(context()->HasDevicePermission(kOrigin, *device1));
++  EXPECT_TRUE(context()->HasDevicePermission(kOrigin, *device1, kOrigin));
++  EXPECT_TRUE(context()->HasDevicePermission(kOrigin, *device2));
++  EXPECT_TRUE(context()->HasDevicePermission(kOrigin, *device2, kOrigin));
++
++  // Revoke permission for `device1` from the embedder. The same-origin guest
++  // permission for `device1` should be revoked cleanly without crashing or
++  // affecting `device2`.
++  EXPECT_CALL(permission_observer(),
++              OnObjectPermissionChanged(
++                  std::make_optional(ContentSettingsType::HID_GUARD),
++                  ContentSettingsType::HID_CHOOSER_DATA))
++      .Times(2);
++  EXPECT_CALL(permission_observer(), OnPermissionRevoked(kOrigin)).Times(2);
++  context()->RevokeDevicePermission(kOrigin, *device1);
++  EXPECT_TRUE(
++      testing::Mock::VerifyAndClearExpectations(&permission_observer()));
++  EXPECT_FALSE(context()->HasDevicePermission(kOrigin, *device1));
++  EXPECT_FALSE(context()->HasDevicePermission(kOrigin, *device1, kOrigin));
++  EXPECT_TRUE(context()->HasDevicePermission(kOrigin, *device2));
++  EXPECT_TRUE(context()->HasDevicePermission(kOrigin, *device2, kOrigin));
++
++  // Re-grant `device1` to the embedder and verify the WebView entry in
++  // `device_access_` was actually removed rather than only short-circuiting on
++  // the embedder permission check.
++  GrantDevicePermissionBlocking(kOrigin, *device1);
++  EXPECT_TRUE(context()->HasDevicePermission(kOrigin, *device1));
++  EXPECT_FALSE(context()->HasDevicePermission(kOrigin, *device1, kOrigin));
++
++  // Disconnecting `device2` removes it from `devices_` before notifying
++  // observers (`GetDeviceInfo` returns nullptr), which should still revoke the
++  // same-origin guest permission and notify observers twice.
++  EXPECT_CALL(permission_observer(),
++              OnObjectPermissionChanged(
++                  std::make_optional(ContentSettingsType::HID_GUARD),
++                  ContentSettingsType::HID_CHOOSER_DATA))
++      .Times(2);
++  EXPECT_CALL(permission_observer(), OnPermissionRevoked(kOrigin)).Times(2);
++  DisconnectDeviceBlocking(device2->guid);
++  EXPECT_FALSE(context()->HasDevicePermission(kOrigin, *device2));
++  EXPECT_FALSE(context()->HasDevicePermission(kOrigin, *device2, kOrigin));
++}
++
+ // Ensures that the revocation of HID device permission from a WebView does not
+ // interfere with the permissions held by the embedding application.
+ TEST_F(HidChooserContextWebViewTest, RevokeDevicePermissionFromWebView) {
+diff --git a/chrome/browser/hid/web_view_chooser_context.cc b/chrome/browser/hid/web_view_chooser_context.cc
+index f456c4ccc6661ea203bae63d297582a6dbd4b890..e7c358c5bdc402d63cb66a89974313c89bee5e17 100644
+--- a/chrome/browser/hid/web_view_chooser_context.cc
++++ b/chrome/browser/hid/web_view_chooser_context.cc
+@@ -71,27 +71,32 @@ void WebViewChooserContext::RevokeDevicePermission(
+ }
+ 
+ void WebViewChooserContext::OnPermissionRevoked(const url::Origin& origin) {
+-  auto* origins_per_device = base::FindOrNull(device_access_, origin);
+-  if (!origins_per_device) {
++  auto it = device_access_.find(origin);
++  if (it == device_access_.end()) {
+     return;
+   }
+ 
+   // If permission was revoked for the embedding origin, permission for web view
+-  // must be revoked as well.
+-  for (auto it = origins_per_device->begin();
+-       it != origins_per_device->end();) {
+-    auto* device = chooser_context_->GetDeviceInfo(it->first);
+-    if (!device || chooser_context_->HasDevicePermission(origin, *device)) {
+-      ++it;
+-      continue;
++  // must be revoked as well. Erase revoked entries from `device_access_` before
++  // notifying observers, as `PermissionForWebViewRevoked()` can synchronously
++  // re-enter `OnPermissionRevoked()`.
++  std::set<url::Origin> revoked_guest_origins;
++  std::erase_if(it->second, [&](const auto& device_entry) {
++    const auto& [device_guid, guest_origins] = device_entry;
++    auto* device = chooser_context_->GetDeviceInfo(device_guid);
++    if (device && chooser_context_->HasDevicePermission(origin, *device)) {
++      return false;
+     }
++    revoked_guest_origins.insert(guest_origins.begin(), guest_origins.end());
++    return true;
++  });
+ 
+-    std::set<url::Origin> revoked_guest_origins;
+-    revoked_guest_origins.swap(it->second);
+-    for (const auto& guest_origin : revoked_guest_origins) {
+-      chooser_context_->PermissionForWebViewRevoked(guest_origin);
+-    }
+-    it = origins_per_device->erase(it);
++  if (it->second.empty()) {
++    device_access_.erase(it);
++  }
++
++  for (const auto& guest_origin : revoked_guest_origins) {
++    chooser_context_->PermissionForWebViewRevoked(guest_origin);
+   }
+ }
+ 

@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Evan Liu <evliu@google.com>
+Date: Mon, 26 Oct 2026 00:51:33 -0700
+Subject: Skip loading system libspeechd.so.2 under MemorySanitizer
+
+Speech Dispatcher is not built in //third_party/instrumented_libs, so
+dlopen()ing the default system libspeechd.so.2 in MSan builds loads the
+uninstrumented host library, which triggers false-positive MSan errors
+when it calls into instrumented GLib.
+
+Skip loading the default Speech Dispatcher library under MSan while
+still allowing tests to override the path with an instrumented fake
+library.
+
+Fixed: 576859257
+Change-Id: I89fd26f90b2e3c1066c281fa6aca690ff143e054
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8646789
+Reviewed-by: Matthew Denton <mpdenton@chromium.org>
+Commit-Queue: Evan Liu <evliu@google.com>
+Cr-Commit-Position: refs/heads/main@{#1726794}
+
+Electron adaptation notes (45-x-y): the branch's tts_linux.cc has no SpeechDispatcherLibraryPath()/library_path_ test override (TtsPlatformImplBackgroundWorker loads "libspeechd.so.2" directly) and no tts_linux_browsertest.cc. The fix's guard is applied to that shape: kDefaultSpeechDispatcherLibrary is introduced, InitializeSpeechd() returns false under MEMORY_SANITIZER (on the branch the library path is always the default, so the fix's library_path_ == default check is unconditionally true) and otherwise loads kDefaultSpeechDispatcherLibrary. The MSan browser test is not carried (file absent on the branch).
+
+diff --git a/content/browser/speech/tts_linux.cc b/content/browser/speech/tts_linux.cc
+index f613b03e89176f6124f84f6e1c885e2cb4119be9..5b34f20b15615d666b045584f3285ddbb12fd2b7 100644
+--- a/content/browser/speech/tts_linux.cc
++++ b/content/browser/speech/tts_linux.cc
+@@ -42,6 +42,7 @@ using PlatformVoices = std::map<std::string, SPDChromeVoice>;
+ 
+ constexpr int kInvalidUtteranceId = -1;
+ constexpr int kInvalidMessageUid = -1;
++constexpr char kDefaultSpeechDispatcherLibrary[] = "libspeechd.so.2";
+ 
+ }  // namespace
+ 
+@@ -250,7 +251,16 @@ void TtsPlatformImplBackgroundWorker::Shutdown() {
+ }
+ 
+ bool TtsPlatformImplBackgroundWorker::InitializeSpeechd() {
+-  return libspeechd_loader_.Load("libspeechd.so.2");
++#if defined(MEMORY_SANITIZER)
++  // Speech Dispatcher is not built in //third_party/instrumented_libs, so
++  // loading the default system library under MSan dlopens the uninstrumented
++  // host libspeechd.so.2, which triggers false-positive MSan errors when it
++  // calls into instrumented GLib. Allow loading only when tests override the
++  // library path with an instrumented fake library.
++  return false;
++#else
++  return libspeechd_loader_.Load(kDefaultSpeechDispatcherLibrary);
++#endif
+ }
+ 
+ void TtsPlatformImplBackgroundWorker::InitializeVoices(PlatformVoices* voices) {

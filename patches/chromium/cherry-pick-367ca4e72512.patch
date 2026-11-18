@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Nusko <nuskos@chromium.org>
+Date: Thu, 5 Nov 2026 22:15:57 -0800
+Subject: [M158] Use std::ranges::fill and base::span in PartitionRoot
+
+Original change's description:
+> Use std::ranges::fill and base::span in PartitionRoot
+>
+> Replaces std::fill_n on slot_usage with std::ranges::fill over a
+> base::span subspan to improve bounds safety and tracking.
+>
+> Bug: 581351423
+> Change-Id: Ic3a9a35e86c4b913211c759a1e35a82dfa685e70
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8723328
+> Reviewed-by: Kalvin Lee <kdlee@chromium.org>
+> Commit-Queue: Kalvin Lee <kdlee@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1734865}
+
+(cherry picked from commit 367ca4e72512032a6d3e2705c6d28a82909863e2)
+
+Bug: 582494665,581351423
+Change-Id: Ic3a9a35e86c4b913211c759a1e35a82dfa685e70
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8751781
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Pure-Cherry-Pick: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8127@{#1132}
+Cr-Branched-From: df5c5abe6527926adf7ebf8540a8e6a0f9df7945-refs/heads/main@{#1727472}
+
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/partition_root.cc b/base/allocator/partition_allocator/src/partition_alloc/partition_root.cc
+index 0ff5072ca90a649132006857c5ec942fc1f9a572..178583afc53619325c50f1f167fdc8335ddab835 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/partition_root.cc
++++ b/base/allocator/partition_allocator/src/partition_alloc/partition_root.cc
+@@ -23,6 +23,7 @@
+ #include "partition_alloc/partition_alloc_base/bits.h"
+ #include "partition_alloc/partition_alloc_base/compiler_specific.h"
+ #include "partition_alloc/partition_alloc_base/component_export.h"
++#include "partition_alloc/partition_alloc_base/containers/span.h"
+ #include "partition_alloc/partition_alloc_base/thread_annotations.h"
+ #include "partition_alloc/partition_alloc_check.h"
+ #include "partition_alloc/partition_alloc_config.h"
+@@ -418,7 +419,7 @@ static size_t PartitionPurgeSlotSpan(PartitionRoot* root,
+   // DiscardVirtualMemory makes the contents of discarded memory undefined.
+   size_t last_slot = static_cast<size_t>(-1);
+ #endif
+-  std::fill_n(slot_usage.begin(), num_provisioned_slots, 1);
++  std::ranges::fill(base::span(slot_usage).first(num_provisioned_slots), 1);
+   SlotSpanStart slot_span_start =
+       internal::SlotSpanMetadata::ToSlotSpanStart(slot_span, root);
+   // First, walk the freelist for this slot span and make a bitmap of which
