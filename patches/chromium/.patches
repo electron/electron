@@ -239,3 +239,4 @@ cherry-pick-861cb7cc1d51.patch
 cherry-pick-6e7047bfc51a.patch
 cherry-pick-03493d4864ad.patch
 feat_add_preloadrealmglobalscope.patch
+fix_allow_webcontentsimpl_centerselection_on_all_platforms.patch
