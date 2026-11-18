@@ -91,6 +91,10 @@ void WebContentsView::ApplyBorderRadius() {
   }
 }
 
+views::View* WebContentsView::GetDraggableRegionView() {
+  return view();
+}
+
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
   if (!view() || !view()->GetVisible())
     return HTNOWHERE;
