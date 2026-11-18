@@ -29,6 +29,7 @@ import { containsText, readPDF } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
+  focusWebContents,
   waitUntil,
   listen,
   ifit,
@@ -2554,6 +2555,50 @@ describe('webContents module', { retry: 0 }, () => {
       const w = new BrowserWindow({ show: true, webPreferences: { disableWakeLocks: true } });
       await w.loadFile(blankPage);
       assert(!(await w.webContents.executeJavaScript(wakeLockCode)));
+    });
+  });
+
+  describe('centerSelection()', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    it('scrolls the selection to the middle of the viewport', async () => {
+      // Document scrolls are animated, and animations only advance in a visible window
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await focusWebContents(w.webContents);
+      const getScrollY = (): Promise<number> => w.webContents.executeJavaScript('window.scrollY');
+
+      // Selects a line of text far below the fold
+      await w.webContents.executeJavaScript(`{
+        document.body.style.margin = '0';
+        document.body.style.height = '10000px';
+        const target = document.createElement('p');
+        target.textContent = 'Center me';
+        target.style.position = 'absolute';
+        target.style.top = '6000px';
+        target.style.margin = '0';
+        document.body.appendChild(target);
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }`);
+      expect(await getScrollY()).toBe(0);
+      const getSelectionRect = (): Promise<{ top: number; height: number; innerHeight: number }> =>
+        w.webContents.executeJavaScript(`(() => {
+          const { top, height } = window.getSelection().getRangeAt(0).getBoundingClientRect();
+          return { top, height, innerHeight: window.innerHeight };
+        })()`);
+      const before = await getSelectionRect();
+      expect(before.height).toBeGreaterThan(0);
+      expect(before.top).toBeGreaterThan(before.innerHeight);
+
+      w.webContents.centerSelection();
+      await waitUntil(async () => (await getScrollY()) !== 0);
+
+      const { top, height, innerHeight } = await getSelectionRect();
+      expect(Math.abs(top + height / 2 - innerHeight / 2)).toBeLessThan(10);
     });
   });
 
