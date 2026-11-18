@@ -26,10 +26,6 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffm
 Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
 Reviewed-by: Syed AbuTalib <lowkey@google.com>
 
-Electron adaptation notes (43-x-y):
-libavformat/mov.c context resolved (the zero default-size check above the
-first hunk is not on this branch).
-
 diff --git a/libavformat/mov.c b/libavformat/mov.c
 index 988f67c81bac94ad71b35bd82b7d17a7e37e52c1..322165814f6cea929fc2301e71d47b12f16f5c7b 100644
 --- a/libavformat/mov.c
