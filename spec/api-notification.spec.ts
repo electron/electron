@@ -446,6 +446,14 @@ describe('Notification module', () => {
       expect(() => (Notification.remove as any)(123)).toThrow(/Expected a string or array of strings/);
     });
 
+    it('remove throws a TypeError for invalid arguments on every platform', () => {
+      for (const args of [[], [123], [{}]]) {
+        const remove = () => (Notification.remove as any)(...args);
+        expect(remove).toThrow(TypeError);
+        expect(remove).toThrow(/Expected a string or array of strings/);
+      }
+    });
+
     ifit(process.platform === 'darwin')('remove does not throw with an empty array', () => {
       expect(() => Notification.remove([])).not.toThrow();
     });

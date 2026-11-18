@@ -550,34 +550,34 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
 
 // static
 void Notification::Remove(gin::Arguments* args) {
-  auto* presenter =
-      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
-          ->GetNotificationPresenter();
-  if (!presenter)
-    return;
-
   // Accept either a single string or an array of strings.
   // Peek at the value type first to avoid gin::Arguments cursor issues.
+  // Validate before checking for a presenter so that invalid arguments throw
+  // consistently, even when no presenter is available.
   v8::Local<v8::Value> val;
   if (!args->GetNext(&val)) {
     args->ThrowTypeError("Expected a string or array of strings");
     return;
   }
 
+  std::vector<std::string> ids;
   if (val->IsString()) {
     std::string id;
     gin::ConvertFromV8(args->isolate(), val, &id);
-    presenter->RemoveDeliveredNotifications({id});
-  } else if (val->IsArray()) {
-    std::vector<std::string> ids;
-    if (!gin::ConvertFromV8(args->isolate(), val, &ids)) {
-      args->ThrowTypeError("Expected a string or array of strings");
-      return;
-    }
-    presenter->RemoveDeliveredNotifications(ids);
-  } else {
+    ids.push_back(std::move(id));
+  } else if (!val->IsArray() ||
+             !gin::ConvertFromV8(args->isolate(), val, &ids)) {
     args->ThrowTypeError("Expected a string or array of strings");
+    return;
   }
+
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter)
+    return;
+
+  presenter->RemoveDeliveredNotifications(ids);
 }
 
 // static
