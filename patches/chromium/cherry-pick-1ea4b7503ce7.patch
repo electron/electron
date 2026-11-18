@@ -61,7 +61,7 @@ index 64fd6d75b33fe87ccdea33eee0324e1532d13c15..457ad54c7cb044688559ac017e04d889
    std::unique_ptr<NavigationRequest> request = NavigationRequest::Create(
        frame_tree_node, std::move(common_params), std::move(commit_params),
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 6e5303fa6c17f30c923b6a11e5fb57f4cf3cc6c6..0d61be4748e94a70d509f66d318f4ba3353c6be0 100644
+index 9e796ce6719976aad281adef3282b1b0f363d9c6..f203c93b90a304247587cf30453b48f9a3858f0a 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -1921,6 +1921,10 @@ NavigationRequest::NavigationRequest(

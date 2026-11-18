@@ -20,9 +20,10 @@ Auto-Submit: Bryan Oltman <bryanoltman@google.com>
 Cr-Commit-Position: refs/heads/main@{#1723938}
 
 Electron adaptation notes (44-x-y): this branch's sandbox_parameters_mac.{h,mm} and common.sb predate the GPU Darwin-user-dir restriction and WebNN compiler-process features that surround the upstream hunks, so only the kMacSandboxAllowRendererPidinfo feature, SetupRendererSandboxParameters() and the allow-renderer-pidinfo define are added. On this branch the kRenderer case previously went through SetupCommonSandboxParameters(); the new kRenderer case keeps that call and adds SetupRendererSandboxParameters(). sandbox_mac_unittest.mm gains only the two RendererPidinfo tests; sandbox_mac_v2_unittest.mm sets the new parameter next to this branch's existing kParamEnableDistributedNotifications. renderer.sb applies as upstream.
+sandbox_parameters_mac.h also includes base/feature_list.h for BASE_DECLARE_FEATURE, and sandbox_mac_unittest.mm includes base/test/scoped_feature_list.h; upstream's versions of those files already had these includes.
 
 diff --git a/content/browser/sandbox_mac_unittest.mm b/content/browser/sandbox_mac_unittest.mm
-index 4743e220a7f2aa959b57893d9814527b492ccf2b..d3d564202828229078d8b7aa6a68bf9d5c6ff7fb 100644
+index 4743e220a7f2aa959b57893d9814527b492ccf2b..4523ed6d35a36bd7c5acf08b240787f28593f9a9 100644
 --- a/content/browser/sandbox_mac_unittest.mm
 +++ b/content/browser/sandbox_mac_unittest.mm
 @@ -7,6 +7,8 @@
@@ -34,7 +35,15 @@ index 4743e220a7f2aa959b57893d9814527b492ccf2b..d3d564202828229078d8b7aa6a68bf9d
  
  #include "base/apple/foundation_util.h"
  #include "base/apple/scoped_cftyperef.h"
-@@ -256,4 +258,62 @@ void CheckCreateSeatbeltServer() {
+@@ -25,6 +27,7 @@
+ #include "base/strings/sys_string_conversions.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/test/multiprocess_test.h"
++#include "base/test/scoped_feature_list.h"
+ #include "base/test/test_timeouts.h"
+ #include "content/browser/sandbox_parameters_mac.h"
+ #include "sandbox/mac/sandbox_serializer.h"
+@@ -256,4 +259,62 @@ void CheckCreateSeatbeltServer() {
                      sandbox::mojom::Sandbox::kProxyResolver);
  }
  
@@ -98,10 +107,18 @@ index 4743e220a7f2aa959b57893d9814527b492ccf2b..d3d564202828229078d8b7aa6a68bf9d
 +
  }  // namespace content
 diff --git a/content/browser/sandbox_parameters_mac.h b/content/browser/sandbox_parameters_mac.h
-index 89e9c6b4702af74a94ced25cd90cca7e19b1d69d..f1f64d1f2c35e1349ece4f99b9fbc7937b4da00d 100644
+index 89e9c6b4702af74a94ced25cd90cca7e19b1d69d..190e0bab2d415e13b07dfa424a63ef4029d31200 100644
 --- a/content/browser/sandbox_parameters_mac.h
 +++ b/content/browser/sandbox_parameters_mac.h
-@@ -21,6 +21,8 @@ enum class Sandbox;
+@@ -5,6 +5,7 @@
+ #ifndef CONTENT_BROWSER_SANDBOX_PARAMETERS_MAC_H_
+ #define CONTENT_BROWSER_SANDBOX_PARAMETERS_MAC_H_
+ 
++#include "base/feature_list.h"
+ #include "content/common/content_export.h"
+ 
+ namespace base {
+@@ -21,6 +22,8 @@ enum class Sandbox;
  
  namespace content {
  
