@@ -1,5 +1,7 @@
 import {
   BrowserWindow,
+  ClipboardItem,
+  clipboard,
   ipcMain,
   webContents,
   session,
@@ -2757,6 +2759,269 @@ describe('webContents module', { retry: 0 }, () => {
       await select({ start: 6, end: 11 });
       w.webContents.adjustSelection({ start: -6, end: -6 });
       await expectSelection({ start: 0, end: 5 });
+    });
+  });
+
+  describe('editing commands', { tags: ['serial'] }, () => {
+    type EditorState = { value: string; start: number; end: number };
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      w.webContents.focus();
+    });
+
+    afterEach(closeAllWindows);
+
+    const getState = (): Promise<EditorState> =>
+      w.webContents.executeJavaScript(
+        '({ value: document.activeElement.value, start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd })'
+      );
+
+    // Focuses a textarea holding `value` and selects [start, end)
+    const setUp = async (value: string, start: number, end: number) => {
+      await w.webContents.executeJavaScript(`{
+        const textarea = document.createElement('textarea');
+        textarea.value = ${JSON.stringify(value)};
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.setSelectionRange(${start}, ${end});
+      }`);
+      expect(await getState()).toEqual({ value, start, end });
+    };
+
+    // Editing commands reach the renderer asynchronously, so poll for them
+    const expectState = async (expected: Partial<EditorState>) => {
+      let actual = await getState();
+      const matches = () =>
+        Object.entries(expected).every(([key, value]) => actual[key as keyof EditorState] === value);
+      await waitUntil(
+        async () => {
+          actual = await getState();
+          return matches();
+        },
+        { rate: 50, timeout: 2000 }
+      ).catch(() => {
+        // Fall through so the assertion below reports the state we got
+      });
+      expect(actual).toMatchObject(expected);
+    };
+
+    it('selectAll() selects the whole value', async () => {
+      await setUp('Hello World', 3, 3);
+      w.webContents.selectAll();
+      await expectState({ start: 0, end: 11 });
+    });
+
+    it('unselect() collapses the selection', async () => {
+      await setUp('Hello World', 0, 5);
+      w.webContents.unselect();
+      await expectState({ value: 'Hello World', start: 5, end: 5 });
+    });
+
+    it('delete() removes the selection', async () => {
+      await setUp('Hello World', 5, 11);
+      w.webContents.delete();
+      await expectState({ value: 'Hello', start: 5, end: 5 });
+    });
+
+    it('undo() and redo() revert and reapply an edit', async () => {
+      await setUp('Hello World', 0, 6);
+      w.webContents.delete();
+      await expectState({ value: 'World' });
+      w.webContents.undo();
+      await expectState({ value: 'Hello World' });
+      w.webContents.redo();
+      await expectState({ value: 'World' });
+    });
+
+    it('cut() removes the selection and paste() puts it back', async () => {
+      await setUp('Hello World', 0, 6);
+      w.webContents.cut();
+      await expectState({ value: 'World', start: 0, end: 0 });
+      w.webContents.paste();
+      await expectState({ value: 'Hello World', start: 6, end: 6 });
+    });
+
+    it('copy() keeps the selection and paste() inserts a copy of it', async () => {
+      await clipboard.clear();
+      await setUp('Hello World', 0, 5);
+      w.webContents.copy();
+      await waitUntil(async () => (await clipboard.readText()) === 'Hello');
+      await expectState({ value: 'Hello World', start: 0, end: 5 });
+      await w.webContents.executeJavaScript('document.activeElement.setSelectionRange(11, 11)');
+      w.webContents.paste();
+      await expectState({ value: 'Hello WorldHello' });
+    });
+
+    it('pasteAndMatchStyle() drops the formatting that paste() keeps', async () => {
+      await clipboard.write([new ClipboardItem({ 'text/plain': 'bold', 'text/html': '<b>bold</b>' })]);
+      // Pastes into an empty, focused contenteditable and returns its markup
+      const pasteInto = async (paste: () => void) => {
+        await w.webContents.executeJavaScript(`{
+          document.body.textContent = '';
+          const editor = document.createElement('div');
+          editor.contentEditable = 'true';
+          document.body.appendChild(editor);
+          editor.focus();
+        }`);
+        const getHTML = (): Promise<string> => w.webContents.executeJavaScript('document.activeElement.innerHTML');
+        paste();
+        await waitUntil(async () => (await getHTML()) !== '').catch(() => {});
+        return getHTML();
+      };
+
+      expect(await pasteInto(() => w.webContents.paste())).toBe('<b>bold</b>');
+      expect(await pasteInto(() => w.webContents.pasteAndMatchStyle())).toBe('bold');
+    });
+
+    it('replace() replaces the selection', async () => {
+      await setUp('Hello World', 6, 11);
+      w.webContents.replace('There');
+      await expectState({ value: 'Hello There' });
+    });
+
+    it('replace() replaces the word around the caret when nothing is selected', async () => {
+      await setUp('Hello World', 8, 8);
+      w.webContents.replace('There');
+      await expectState({ value: 'Hello There' });
+    });
+
+    describe('scrolling', () => {
+      const getScrollY = (): Promise<number> => w.webContents.executeJavaScript('window.scrollY');
+
+      beforeEach(async () => {
+        // Document scrolls are animated, and animations only advance in a visible window
+        w.destroy();
+        w = new BrowserWindow({ show: true });
+        await w.loadURL('about:blank');
+        w.webContents.focus();
+        await w.webContents.executeJavaScript(`{
+          document.body.style.margin = '0';
+          document.body.style.height = '10000px';
+          window.focus();
+        }`);
+        expect(await getScrollY()).toBe(0);
+      });
+
+      it('scrollToBottom() and scrollToTop() scroll the document', async () => {
+        const maxScrollY = await w.webContents.executeJavaScript(
+          'document.scrollingElement.scrollHeight - window.innerHeight'
+        );
+        expect(maxScrollY).toBeGreaterThan(0);
+
+        // The scroll is animated, so wait for it to land
+        const scrollAndWait = async (scroll: () => void, expected: number) => {
+          scroll();
+          await waitUntil(async () => (await getScrollY()) === expected).catch(() => {});
+          return getScrollY();
+        };
+
+        expect(await scrollAndWait(() => w.webContents.scrollToBottom(), maxScrollY)).toBe(maxScrollY);
+        // A scroll issued in the frame the previous animation lands in can be dropped
+        await w.webContents.executeJavaScript(
+          'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
+        );
+        expect(await scrollAndWait(() => w.webContents.scrollToTop(), 0)).toBe(0);
+      });
+    });
+  });
+
+  describe('device emulation', () => {
+    afterEach(closeAllWindows);
+
+    it('enableDeviceEmulation() and disableDeviceEmulation() change what the page sees', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      const getMetrics = () =>
+        w.webContents.executeJavaScript(
+          '({ screenWidth: screen.width, screenHeight: screen.height, innerWidth: window.innerWidth, innerHeight: window.innerHeight, devicePixelRatio: window.devicePixelRatio })'
+        );
+      const original = await getMetrics();
+      expect(original.screenWidth).not.toBe(400);
+      expect(original.devicePixelRatio).not.toBe(3);
+
+      w.webContents.enableDeviceEmulation({
+        screenPosition: 'mobile',
+        screenSize: { width: 400, height: 700 },
+        viewPosition: { x: 0, y: 0 },
+        viewSize: { width: 320, height: 480 },
+        deviceScaleFactor: 3,
+        scale: 1
+      });
+      let metrics = await getMetrics();
+      await waitUntil(async () => {
+        metrics = await getMetrics();
+        return metrics.screenWidth === 400 && metrics.devicePixelRatio === 3;
+      }).catch(() => {});
+      expect(metrics).toMatchObject({ screenWidth: 400, screenHeight: 700, devicePixelRatio: 3 });
+      // A mobile page lays out at its own width, keeping the emulated view's aspect ratio
+      expect(metrics.innerWidth).not.toBe(original.innerWidth);
+      expect(metrics.innerWidth / metrics.innerHeight).toBeCloseTo(320 / 480);
+
+      w.webContents.disableDeviceEmulation();
+      await waitUntil(async () => {
+        metrics = await getMetrics();
+        return metrics.screenWidth === original.screenWidth;
+      }).catch(() => {});
+      expect(metrics).toEqual(original);
+    });
+  });
+
+  describe('setImageAnimationPolicy()', () => {
+    afterEach(closeAllWindows);
+
+    // A 1x1 GIF that loops forever between a red and a green frame every 100ms
+    const gif = Buffer.from(
+      // Header and a 1x1 screen with a two entry color table: red, green
+      `${Buffer.from('GIF89a').toString('hex')}01000100800000ff000000ff00` +
+        // Loop forever
+        `21ff0b${Buffer.from('NETSCAPE2.0').toString('hex')}0301000000` +
+        // Each frame: a 100ms delay, a 1x1 image descriptor and the LZW data for
+        // a single pixel of color 0 (red), then of color 1 (green)
+        '21f904000a0000002c0000000001000100000202440100' +
+        '21f904000a0000002c00000000010001000002024c0100' +
+        '3b',
+      'hex'
+    );
+    const html = `<body style="margin: 0"><img src="data:image/gif;base64,${gif.toString('base64')}" style="width: 100px; height: 100px; image-rendering: pixelated"></body>`;
+
+    // Returns the color currently painted in the middle of the image
+    const sampleColor = async (w: BrowserWindow) => {
+      const image = await w.webContents.capturePage({ x: 50, y: 50, width: 1, height: 1 });
+      const [first, green, third] = image.toBitmap();
+      if (green > 128) return 'green';
+      if (first > 128 || third > 128) return 'red';
+      return 'other';
+    };
+
+    const loadAnimation = async (w: BrowserWindow) => {
+      await w.loadURL(`data:text/html,${encodeURIComponent(html)}`);
+      await w.webContents.executeJavaScript('document.querySelector("img").decode()');
+    };
+
+    it('animates images by default', async () => {
+      const w = new BrowserWindow({ show: true, width: 200, height: 200 });
+      await loadAnimation(w);
+      const seen = new Set<string>();
+      await waitUntil(async () => {
+        seen.add(await sampleColor(w));
+        return seen.has('red') && seen.has('green');
+      }).catch(() => {});
+      expect([...seen]).toEqual(expect.arrayContaining(['red', 'green']));
+    });
+
+    it('stops images from animating when set to "noAnimation"', async () => {
+      const w = new BrowserWindow({ show: true, width: 200, height: 200 });
+      w.webContents.setImageAnimationPolicy('noAnimation');
+      await loadAnimation(w);
+      const seen = new Set<string>();
+      for (let i = 0; i < 10; i++) {
+        seen.add(await sampleColor(w));
+        await setTimeout(100);
+      }
+      expect([...seen]).toEqual(['red']);
     });
   });
 
