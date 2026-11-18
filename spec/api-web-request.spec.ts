@@ -670,14 +670,15 @@ describe('webRequest module', () => {
 
       async function headersOnRedirect(
         initialHeaders: Record<string, string>,
-        onRedirect: (details: Electron.OnBeforeSendHeadersListenerDetails) => Electron.BeforeSendResponse
+        onRedirect: (details: Electron.OnBeforeSendHeadersListenerDetails) => Electron.BeforeSendResponse,
+        onInitial?: (details: Electron.OnBeforeSendHeadersListenerDetails) => Electron.BeforeSendResponse
       ): Promise<Record<string, string>> {
         ses.webRequest.onBeforeSendHeaders((details, callback) => {
-          callback(
-            details.url === 'cors-blob://fake-host/target'
-              ? onRedirect(details)
-              : { requestHeaders: details.requestHeaders }
-          );
+          if (details.url === 'cors-blob://fake-host/target') {
+            callback(onRedirect(details));
+          } else {
+            callback(onInitial?.(details) ?? { requestHeaders: details.requestHeaders });
+          }
         });
         const { data } = await ajax('cors-blob://fake-host/redirect', { headers: initialHeaders });
         return JSON.parse(data);
@@ -712,6 +713,25 @@ describe('webRequest module', () => {
         });
         expect(sawRedirect).toBe(true);
         expect(headers).toHaveProperty('Accept', 'text/plain');
+      });
+
+      it('preserves headers changed before redirect when requestHeaders is omitted', async () => {
+        const modifiedAccept = '*/*;test/header';
+        let redirectHeaders: Record<string, string> | undefined;
+        const headers = await headersOnRedirect(
+          { Accept: 'text/plain' },
+          (details) => {
+            redirectHeaders = details.requestHeaders;
+            return {};
+          },
+          (details) => {
+            const { requestHeaders } = details;
+            requestHeaders.Accept = modifiedAccept;
+            return { requestHeaders };
+          }
+        );
+        expect(redirectHeaders).toHaveProperty('Accept', modifiedAccept);
+        expect(headers).toHaveProperty('Accept', modifiedAccept);
       });
 
       it('removes request headers on redirect when requestHeaders is empty', async () => {
