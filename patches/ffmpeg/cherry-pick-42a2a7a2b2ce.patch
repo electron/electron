@@ -26,8 +26,6 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffm
 Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
 Reviewed-by: Syed AbuTalib <lowkey@google.com>
 
-Electron adaptation notes (45-x-y): libavformat/mov.c: the upstream context above the new tts_count clamp includes a zero default-size check this branch does not have; only this change's own lines are applied.
-
 diff --git a/libavformat/mov.c b/libavformat/mov.c
 index a2b16b9d3821d0a67ab618887a7cf704837ed86a..d2824a385a03b08b9a44d3bb6508e3e4c35bd69d 100644
 --- a/libavformat/mov.c
