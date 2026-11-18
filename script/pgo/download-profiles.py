@@ -34,6 +34,7 @@ Run by gclient hooks (see electron's DEPS) and safe to run manually:
 
 import argparse
 import hashlib
+import http.client
 import os
 import re
 import sys
@@ -119,40 +120,71 @@ def remove_stale_profiles(target, keep_name):
             print(f'{target}: removed stale {name}')
 
 
+class BadTransfer(Exception):
+    """A download that ended cleanly but did not deliver the expected bytes."""
+
+    def __init__(self, message, actual_sha256=None):
+        super().__init__(message)
+        self.actual_sha256 = actual_sha256
+
+
 def fetch(url, dest, expected_sha256=None):
+    tmp_dest = dest + '.tmp'
     for attempt in range(1, DOWNLOAD_RETRIES + 1):
         try:
-            tmp_dest = dest + '.tmp'
+            received = 0
             with urllib.request.urlopen(url, timeout=300) as response, open(
                 tmp_dest, 'wb'
             ) as out:
+                content_length = response.headers.get('Content-Length', '')
+                expected_size = (
+                    int(content_length) if content_length.isdigit() else None
+                )
                 while True:
                     chunk = response.read(1024 * 1024)
                     if not chunk:
                         break
                     out.write(chunk)
+                    received += len(chunk)
+            # read() returns b'' when the connection closes early instead of
+            # raising IncompleteRead, so a truncated transfer looks like a
+            # clean EOF. Catch it here rather than as a sha256 mismatch.
+            if expected_size is not None and received != expected_size:
+                raise BadTransfer(
+                    f'short read: received {received} of {expected_size} bytes'
+                )
             # Verify before the file can land at its final path. A mismatch is
-            # not retried: the bytes arrived intact but are not the bytes the
-            # state file pinned, so retrying would download the same wrong
-            # blob again.
+            # retried in case the transfer was corrupted in flight, but if
+            # every attempt mismatches the CDN blob itself is wrong.
             if expected_sha256 is not None:
                 actual_sha256 = file_sha256(tmp_dest)
                 if actual_sha256 != expected_sha256:
-                    os.remove(tmp_dest)
-                    raise SystemExit(
-                        f'error: sha256 mismatch for {url}\n'
-                        f'  expected: {expected_sha256}\n'
-                        f'  actual:   {actual_sha256}\n'
-                        'The downloaded file was deleted. The CDN blob does '
-                        'not match the checked-in state file; do not build '
-                        'with this profile.'
+                    raise BadTransfer(
+                        f'sha256 mismatch: got {actual_sha256} '
+                        f'({received} bytes, Content-Length {content_length})',
+                        actual_sha256,
                     )
             os.replace(tmp_dest, dest)
             return
-        except (urllib.error.URLError, OSError) as e:
-            if os.path.isfile(dest + '.tmp'):
-                os.remove(dest + '.tmp')
+        except (
+            urllib.error.URLError,
+            http.client.IncompleteRead,
+            OSError,
+            BadTransfer,
+        ) as e:
+            if os.path.isfile(tmp_dest):
+                os.remove(tmp_dest)
             if attempt == DOWNLOAD_RETRIES:
+                if isinstance(e, BadTransfer) and e.actual_sha256:
+                    raise SystemExit(
+                        f'error: sha256 mismatch for {url}\n'
+                        f'  expected: {expected_sha256}\n'
+                        f'  actual:   {e.actual_sha256}\n'
+                        f'The downloaded file was deleted after '
+                        f'{DOWNLOAD_RETRIES} attempts. The CDN blob does '
+                        'not match the checked-in state file; do not build '
+                        'with this profile.'
+                    ) from e
                 raise SystemExit(f'error: failed to download {url}: {e}') from e
             print(f'attempt {attempt} failed ({e}), retrying')
             time.sleep(DOWNLOAD_RETRY_DELAY_S * attempt)

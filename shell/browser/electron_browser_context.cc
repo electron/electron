@@ -13,7 +13,6 @@
 #include "base/command_line.h"
 #include "base/containers/to_vector.h"
 #include "base/files/file_path.h"
-#include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
@@ -21,7 +20,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
-#include "base/task/bind_post_task.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -37,7 +35,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/desktop_capture.h"
-#include "content/public/browser/document_user_data.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/page.h"
 #include "content/public/browser/preconnect_manager.h"
@@ -46,7 +43,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_media_capture_id.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "gin/arguments.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
@@ -114,6 +110,10 @@
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
+#include "base/memory/ref_counted_delete_on_sequence.h"
+#include "base/task/bind_post_task.h"
+#include "content/public/browser/document_user_data.h"
+#include "content/public/browser/web_contents_observer.h"
 #endif
 
 using content::BrowserThread;
@@ -754,6 +754,7 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
   use_system_picker_ = use_system_picker;
 }
 
+#if BUILDFLAG(IS_MAC)
 namespace {
 
 // TYPE_NONE opens a picker that offers windows, applications and screens.
@@ -768,12 +769,10 @@ content::DesktopMediaID::Type PickerTypeForRequest(
       return content::DesktopMediaID::TYPE_SCREEN;
     case blink::mojom::PreferredDisplaySurface::BROWSER:
     case blink::mojom::PreferredDisplaySurface::NO_PREFERENCE:
-#if BUILDFLAG(IS_MAC)
       // A screen pick is only told apart from a window pick by its display
       // id, which the picker reports from macOS 15.2.
       if (base::mac::MacOSVersion() >= 15'02'00)
         return content::DesktopMediaID::TYPE_NONE;
-#endif
       return content::DesktopMediaID::TYPE_SCREEN;
   }
 }
@@ -974,6 +973,7 @@ class SystemPickerRequestOwner
 DOCUMENT_USER_DATA_KEY_IMPL(SystemPickerRequestOwner);
 
 }  // namespace
+#endif  // BUILDFLAG(IS_MAC)
 
 void ElectronBrowserContext::DisplayMediaDeviceChosen(
     const content::MediaStreamRequest& request,
@@ -1163,6 +1163,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
 bool ElectronBrowserContext::ChooseDisplayMediaDevice(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback) {
+#if BUILDFLAG(IS_MAC)
   if (use_system_picker_ &&
       api::DesktopCapturer::IsDisplayMediaSystemPickerAvailable()) {
     // Route useSystemPicker: true through upstream's
@@ -1208,6 +1209,7 @@ bool ElectronBrowserContext::ChooseDisplayMediaDevice(
                                    FAILED_DUE_TO_SHUTDOWN_OTHER))));
     return true;
   }
+#endif  // BUILDFLAG(IS_MAC)
   if (!display_media_request_handler_)
     return false;
   DisplayMediaResponseCallbackJs callbackJs =
