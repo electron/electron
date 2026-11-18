@@ -15,12 +15,14 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { WebSocketServer } from 'ws';
 
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
 import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
@@ -633,6 +635,58 @@ describe('chrome extensions', { retry: 0 }, () => {
         await w.loadURL(url);
         await fetch(w.webContents, url);
       });
+
+      it('loads a file worker when only an extension uses webRequest', async () => {
+        await w.loadURL(url);
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-webRequest')
+        );
+
+        const workerDataUrl = pathToFileURL(path.join(fixtures, 'pages', 'worker-data.txt')).toString();
+        const seenProtocolUrls: string[] = [];
+        customSession.protocol.handle('file', (req) => {
+          seenProtocolUrls.push(req.url);
+          if (req.url === workerDataUrl) {
+            return new Response('pong');
+          }
+          return customSession.fetch(req, { bypassCustomProtocolHandlers: true });
+        });
+
+        try {
+          await waitUntil(haveRejectedFetch);
+          await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+          const reply = await w.webContents.executeJavaScript(`
+            new Promise((resolve, reject) => {
+              const worker = new Worker(
+                new URL('../workers/worker.js', location.href).href
+              );
+              worker.onmessage = async (event) => {
+                try {
+                  const res = await fetch(${JSON.stringify(workerDataUrl)});
+                  const text = await res.text();
+                  worker.terminate();
+                  resolve(\`\${event.data}:\${text}\`);
+                } catch (err) {
+                  worker.terminate();
+                  reject(err);
+                }
+              };
+              worker.onerror = (event) => {
+                worker.terminate();
+                reject(new Error(event.message || 'worker error'));
+              };
+              worker.postMessage('ping');
+            })
+          `);
+
+          expect(reply).toBe('ping:pong');
+          expect(seenProtocolUrls).toContain(workerDataUrl);
+        } finally {
+          customSession.protocol.unhandle('file');
+          customSession.extensions.removeExtension(extension.id);
+        }
+      });
     });
 
     it('does not take precedence over Electron webRequest - http', async () => {
@@ -837,6 +891,22 @@ describe('chrome extensions', { retry: 0 }, () => {
       await w.loadURL(`chrome-extension://${id}/page-runtime-get-background.html`);
       const receivedMessage = await w.webContents.executeJavaScript('window.completionPromise');
       expect(receivedMessage).toEqual({ some: 'message' });
+    });
+
+    it('exposes the extension dynamicId as chrome.runtime.dynamicId in the background page', async () => {
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'lazy-background-page')
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`chrome-extension://${extension.id}/page-runtime-get-background.html`);
+      await w.webContents.executeJavaScript('window.completionPromise');
+      const backgroundDynamicId = await w.webContents.executeJavaScript(
+        'new Promise((resolve) => chrome.runtime.getBackgroundPage((bg) => resolve(bg.chrome.runtime.dynamicId)))'
+      );
+      expect(extension.dynamicId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(extension.dynamicId).not.toBe(extension.id);
+      expect(backgroundDynamicId).toBe(extension.dynamicId);
     });
 
     it('has session in background page', async () => {

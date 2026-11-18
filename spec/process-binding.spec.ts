@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { closeAllWindows } from './lib/window-helpers.ts';
 
-describe('process._linkedBinding', () => {
+describe('process._linkedBinding', { retry: 0 }, () => {
   describe('in the main process', () => {
     it('can access electron_browser bindings', () => {
       process._linkedBinding('electron_browser_app');

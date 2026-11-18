@@ -29,6 +29,7 @@ import { containsText, readPDF } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
+  focusWebContents,
   waitUntil,
   listen,
   ifit,
@@ -2557,6 +2558,61 @@ describe('webContents module', { retry: 0 }, () => {
     });
   });
 
+  describe('centerSelection()', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    it('scrolls the selection to the middle of the viewport', async () => {
+      // Shown so the page can take focus and its selection is the active one
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await focusWebContents(w.webContents);
+      const getScrollY = (): Promise<number> => w.webContents.executeJavaScript('window.scrollY');
+
+      // Selects a line of text far below the fold
+      await w.webContents.executeJavaScript(`{
+        document.body.style.margin = '0';
+        document.body.style.height = '10000px';
+        const target = document.createElement('p');
+        target.textContent = 'Center me';
+        target.style.position = 'absolute';
+        target.style.top = '6000px';
+        target.style.margin = '0';
+        document.body.appendChild(target);
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }`);
+      expect(await getScrollY()).toBe(0);
+      const getSelectionRect = (): Promise<{ top: number; height: number; innerHeight: number }> =>
+        w.webContents.executeJavaScript(`(() => {
+          const { top, height } = window.getSelection().getRangeAt(0).getBoundingClientRect();
+          return { top, height, innerHeight: window.innerHeight };
+        })()`);
+      const before = await getSelectionRect();
+      expect(before.height).toBeGreaterThan(0);
+      expect(before.top).toBeGreaterThan(before.innerHeight);
+
+      // How far the middle of the selection is from the middle of the viewport
+      const getOffCenter = async () => {
+        const { top, height, innerHeight } = await getSelectionRect();
+        return Math.abs(top + height / 2 - innerHeight / 2);
+      };
+
+      // centerSelection() reaches the renderer asynchronously. The scroll it
+      // makes (RevealSelection -> ScrollRectToVisible) is instant, since the
+      // page does not use CSS smooth scrolling, so wait for the centered
+      // position itself rather than for the first change in scroll offset.
+      w.webContents.centerSelection();
+      await waitUntil(async () => (await getOffCenter()) < 10).catch(async () => {
+        expect(await getOffCenter(), 'distance of the selection from the middle of the viewport').toBeLessThan(10);
+      });
+
+      expect(await getOffCenter()).toBeLessThan(10);
+    });
+  });
+
   describe('getOSProcessId()', () => {
     afterEach(closeAllWindows);
     it('returns a valid process id', async () => {
@@ -2936,9 +2992,6 @@ describe('webContents module', { retry: 0 }, () => {
   describe('caretBrowsingEnabled', () => {
     afterEach(closeAllWindows);
 
-    const platformCaretBrowsing = () =>
-      process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
-
     it('defaults to false', () => {
       const w = new BrowserWindow({ show: false });
       expect(w.webContents.caretBrowsingEnabled).toBe(false);
@@ -3031,6 +3084,9 @@ describe('webContents module', { retry: 0 }, () => {
 
     // These depend on a binding that is only available when DCHECK_IS_ON.
     ifdescribe(isTestingBindingAvailable())('process-wide accessibility notification', () => {
+      const platformCaretBrowsing = () =>
+        process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
+
       it('stays on while another WebContents still has caret browsing enabled', () => {
         const w1 = new BrowserWindow({ show: false });
         const w2 = new BrowserWindow({ show: false });
@@ -3046,6 +3102,47 @@ describe('webContents module', { retry: 0 }, () => {
 
         w2.webContents.caretBrowsingEnabled = false;
         expect(platformCaretBrowsing()).toBe(false);
+      });
+
+      describe('guest preference inheritance', () => {
+        it('releases exactly one reference when an inherited preference is disabled', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).toBe(true);
+
+          // An inherited preference has to come with its own reference, otherwise
+          // the guest keeps caret browsing on with nothing holding the count up.
+          w.webContents.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).toBe(true);
+
+          guest.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).toBe(false);
+        });
+
+        it('releases an inherited reference when the guest is destroyed', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).toBe(true);
+          expect(platformCaretBrowsing()).toBe(true);
+
+          // An attached guest's WebContents is owned by its embedder frame, so the
+          // wrapper holding the reference is only deleted at garbage collection.
+          const destroyed = once(guest, 'destroyed');
+          w.close();
+          await destroyed;
+
+          expect(platformCaretBrowsing()).toBe(false);
+        });
       });
 
       it('takes at most one reference per WebContents however often it is set', () => {
@@ -3154,48 +3251,6 @@ describe('webContents module', { retry: 0 }, () => {
 
         expect(guest.getType()).toBe('webview');
         expect(guest.caretBrowsingEnabled).toBe(true);
-      });
-
-      ifit(isTestingBindingAvailable())(
-        'releases exactly one reference when an inherited preference is disabled',
-        async () => {
-          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-          w.webContents.caretBrowsingEnabled = true;
-
-          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
-          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
-          const [, guest] = await created;
-
-          expect(guest.caretBrowsingEnabled).toBe(true);
-
-          // An inherited preference has to come with its own reference, otherwise
-          // the guest keeps caret browsing on with nothing holding the count up.
-          w.webContents.caretBrowsingEnabled = false;
-          expect(platformCaretBrowsing()).toBe(true);
-
-          guest.caretBrowsingEnabled = false;
-          expect(platformCaretBrowsing()).toBe(false);
-        }
-      );
-
-      ifit(isTestingBindingAvailable())('releases an inherited reference when the guest is destroyed', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-        w.webContents.caretBrowsingEnabled = true;
-
-        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
-        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
-        const [, guest] = await created;
-
-        expect(guest.caretBrowsingEnabled).toBe(true);
-        expect(platformCaretBrowsing()).toBe(true);
-
-        // An attached guest's WebContents is owned by its embedder frame, so the
-        // wrapper holding the reference is only deleted at garbage collection.
-        const destroyed = once(guest, 'destroyed');
-        w.close();
-        await destroyed;
-
-        expect(platformCaretBrowsing()).toBe(false);
       });
     });
   });
@@ -5822,6 +5877,38 @@ describe('webContents module', { retry: 0 }, () => {
       expect(params.frame).toBeTypeOf('object');
       expect(params.x).toBeTypeOf('number');
       expect(params.y).toBeTypeOf('number');
+    });
+
+    it('releases the right-clicked node once the page removes it', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.webContents.executeJavaScript(`{
+        const target = document.createElement('div');
+        target.id = 'target';
+        target.style.cssText = 'position: fixed; inset: 0;';
+        target.payload = {};
+        document.body.append(target);
+        window.payloadRef = new WeakRef(target.payload);
+      }
+      undefined;`);
+
+      const contextMenu = once(w.webContents, 'context-menu');
+      const opts = { x: 10, y: 10, button: 'right' as const };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+      await contextMenu;
+
+      await w.webContents.executeJavaScript("document.getElementById('target').remove()");
+      // Move off the removed node so hover state doesn't keep it.
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 20, y: 20 });
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 30, y: 30 });
+      await setTimeout(100);
+
+      const collected = await w.webContents.executeJavaScript(`(async () => {
+        await gc({ type: 'major', execution: 'async' });
+        return window.payloadRef.deref() === undefined;
+      })()`);
+      expect(collected).toBe(true);
     });
 
     // Skipping due to lack of native click support.

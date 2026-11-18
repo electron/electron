@@ -42,6 +42,10 @@ class NetworkContextService : public KeyedService {
       cert_verifier::mojom::CertVerifierCreationParams*
           cert_verifier_creation_params);
 
+  void FlushProxyConfigMonitorForTesting() {
+    proxy_config_monitor_.FlushForTesting();
+  }
+
  private:
   // Creates parameters for the NetworkContext.
   network::mojom::NetworkContextParamsPtr CreateNetworkContextParams(
