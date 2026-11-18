@@ -165,6 +165,15 @@ jobs:
             "'kTCCServiceCamera','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceScreenCapture','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
+            # The specs run under script/actions/check-macos-tcc.sh's disclaim
+            # wrapper, which makes /bin/bash their responsible process, so it
+            # needs every service they use. The hosted-compute-agent rows cover
+            # jobs that still run without the wrapper.
+            "'kTCCServicePostEvent','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServiceAccessibility','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServiceScreenCapture','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServicePostEvent','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,$epochdate"
+            "'kTCCServiceAccessibility','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,$epochdate"
         )
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
@@ -393,13 +402,13 @@ jobs:
           -f src/out/Default/Electron.app
 
     # Some hosted macOS VMs deny screen capture and synthetic input to the job
-    # even though the image and the TCC step above grant them. Print what TCC
-    # needs to explain why (process chain, TCC.db rows, tccd attribution) and
-    # warn; this step never changes TCC state or fails the job.
+    # even though the image and the TCC step above grant them. Check access
+    # with and without the disclaim wrapper the specs run under, print the TCC
+    # diagnostics, and fail here, before the specs, when the host denies it
+    # either way. Exports MACOS_TCC_DISCLAIM when the wrapper should be used.
     - name: Check TCC access on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       timeout-minutes: 5
-      continue-on-error: true
       run: src/electron/script/actions/check-macos-tcc.sh
 
     # On GitHub-hosted Windows runners the agent's terminal window sits in the
@@ -503,7 +512,13 @@ jobs:
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export ELECTRON_SPEC_TIMEOUT=180000
           fi
-          node script/yarn.js test --runners=main --trace-uncaught $LOGGING_ARGS --files $tests_files
+          # On macOS, run the specs as their own TCC responsible process (via
+          # /bin/bash) rather than the runner agent's; see check-macos-tcc.sh.
+          SPEC_LAUNCHER=()
+          if [ -n "${MACOS_TCC_DISCLAIM:-}" ]; then
+            SPEC_LAUNCHER=("$MACOS_TCC_DISCLAIM" /bin/bash -c '"$@"; exit $?' bash)
+          fi
+          "${SPEC_LAUNCHER[@]}" node script/yarn.js test --runners=main --trace-uncaught $LOGGING_ARGS --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
