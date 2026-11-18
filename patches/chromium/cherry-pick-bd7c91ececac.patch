@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kurt Catti-Schmidt <kschmi@microsoft.com>
+Date: Mon, 19 Oct 2026 16:07:27 -0700
+Subject: [svg] Fall back to masking when SVG clip path union fails
+
+LayoutSVGResourceClipper::AsPath() combines multiple <clipPath> children
+using SkOpBuilder. If the union failed, Blink ignored the failure and
+cached the first child as a valid analytic clip. Painting then used only
+that child, while hit testing and clip bounds continued to account for
+every child, producing inconsistent rendering and interaction geometry.
+
+Handle union failure by leaving the analytic-path cache invalid and
+returning std::nullopt. This invokes the existing mask-based fallback,
+which paints every contributing child and keeps painting consistent with
+hit testing and intersection geometry. Use the modern
+std::optional<SkPath> -returning SkOpBuilder::resolve() API rather than
+its deprecated output-parameter overload.
+
+Add a WPT reftest covering HTML and SVG clip-path consumers. It uses a
+valid path ending in a trailing moveto, which causes Skia path-union
+resolution to fail, and verifies that all clip-path children still
+contribute to the rendered clip. Verified that the new WPT passes in
+Firefox as well.
+
+Bug: 574376000
+Change-Id: Ia07a8bbcde4e776b7ff576622fef57a7232fab2e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8608391
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Kurt Catti-Schmidt <kschmi@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1722404}
+
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.cc
+index ac7cb61fdee80a8889cc23989749fdfa73b638d5..7e556952e66b3aaf5475943e9291fe66e0c90653 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.cc
+@@ -168,8 +168,13 @@ std::optional<Path> LayoutSVGResourceClipper::AsPath() {
+     }
+   }
+ 
+-  if (clip_path_builder)
+-    clip_path_builder->resolve(&resolved_path);
++  if (clip_path_builder) {
++    std::optional<SkPath> path = clip_path_builder->resolve();
++    if (!path) {
++      return std::nullopt;
++    }
++    resolved_path = std::move(*path);
++  }
+   clip_content_path_ = std::move(resolved_path);
+   clip_content_path_validity_ = kClipContentPathValid;
+   return std::optional<Path>(clip_content_path_);
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-masking/clip-path/clip-path-union-trailing-moveto-ref.html b/third_party/blink/web_tests/external/wpt/css/css-masking/clip-path/clip-path-union-trailing-moveto-ref.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..07499a1fd6d4a9bf447a58a670bd4b7646e957b7
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-masking/clip-path/clip-path-union-trailing-moveto-ref.html
+@@ -0,0 +1,30 @@
++<!DOCTYPE html>
++<html>
++  <head>
++    <meta charset="utf-8">
++    <title>Clip paths union all children when a path has a trailing moveto</title>
++    <link rel="author" title="Kurt Catti-Schmidt" href="mailto:kschmi@microsoft.com">
++    <style>
++      .case {
++        width: 150px;
++        height: 150px;
++      }
++      .square {
++        width: 100px;
++        height: 100px;
++        background: green;
++      }
++    </style>
++  </head>
++  <body>
++    <p>
++      Test passes if there are two green squares and no red.
++    </p>
++    <div class="case">
++      <div class="square"></div>
++    </div>
++    <div class="case">
++      <div class="square"></div>
++    </div>
++  </body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-masking/clip-path/clip-path-union-trailing-moveto.html b/third_party/blink/web_tests/external/wpt/css/css-masking/clip-path/clip-path-union-trailing-moveto.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..f99898f070c5a0d9e58eb4e095c97a1d0bb8c273
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-masking/clip-path/clip-path-union-trailing-moveto.html
+@@ -0,0 +1,46 @@
++<!doctype html>
++<meta charset="utf-8">
++<title>Clip paths union all children when a path has a trailing moveto</title>
++<link rel="author" title="Kurt Catti-Schmidt" href="mailto:kschmi@microsoft.com">
++<link rel="help" href="https://www.w3.org/TR/css-masking-1/#propdef-clip-path">
++<link rel="match" href="clip-path-union-trailing-moveto-ref.html">
++<meta name="assert" content="A trailing moveto in a clipPath child must not cause other children to be omitted from the clip, for either HTML or SVG consumers.">
++<style>
++  .case {
++    position: relative;
++    width: 150px;
++    height: 150px;
++  }
++  .backdrop {
++    position: absolute;
++    width: 100px;
++    height: 100px;
++    background: red;
++  }
++  .target {
++    width: 150px;
++    height: 150px;
++    background: green;
++    clip-path: url(#clip);
++  }
++  svg {
++    display: block;
++  }
++</style>
++<p>Test passes if there are two green squares and no red.</p>
++<div class="case">
++  <div class="backdrop"></div>
++  <div class="target"></div>
++</div>
++<svg width="150" height="150">
++  <defs>
++    <clipPath id="clip">
++      <path d="M70 70h20v20h-20zM0 0"/>
++      <rect width="100" height="100"/>
++    </clipPath>
++  </defs>
++  <rect width="100" height="100" fill="red"/>
++  <g clip-path="url(#clip)">
++    <rect width="150" height="150" fill="green"/>
++  </g>
++</svg>

@@ -1,0 +1,578 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Thu, 29 Oct 2026 07:12:49 -0700
+Subject: Harden XMLDocumentParserRs FFI borrows and re-entrancy handling
+
+https://crrev.com/c/8602619 guarded XMLDocumentParserRs::ProcessEvents()
+with in_process_events_ and pending_src_, but left several re-entrancy
+and FFI borrowing issues:
+
+1. xml_ffi::process_next_event() took &mut XmlReadState and held borrows
+   into read_state.event_reader across C++ parser callbacks. Synchronous
+   re-entry into xml_ffi from callbacks (such as DocType() calling
+   add_xhtml_entities() or StartElementNs() and
+   UpdateScriptStartPositionIfNeeded() calling GetTextPosition() ->
+   try_get_last_event_position()) created aliasing &mut XmlReadState /
+   &XmlReadState references across FFI (Rust undefined behavior) and
+   mutated read_state.event_reader in add_xhtml_entities() while
+   doctype_ids() still borrowed it.
+2. Draining pending_src_ after the ProcessEvents() loop via a recursive
+   Append() call caused the loop to hit a premature EOF on the prior
+   chunk before feeding queued bytes and could duplicate pending_src_ in
+   original_source_for_transform_.
+3. The re-entrancy tests in xml_document_parser_sim_test.cc were not
+   parameterized to run against both the libxml2 and Rust XML parsers,
+   and did not cover re-entrant Append() calls when StartElementNs()
+   flushes pending text via UpdateLeafTextNode().
+
+Fix these issues by:
+1. Using interior mutability (RefCell/Cell) in XmlReadState, passing
+   &XmlReadState across FFI, and cloning the top declared Namespace
+   entry and doctype strings in xml_ffi::process_next_event() before
+   invoking parser_callbacks so read_state.event_reader is not borrowed
+   across FFI callbacks.
+2. Extracting XMLDocumentParserRs::AppendToSource() and draining
+   pending_src_ inside the XMLDocumentParserRs::ProcessEvents() loop.
+3. Parameterizing the re-entrancy tests in
+   xml_document_parser_sim_test.cc to run against both the libxml2 and
+   Rust XML parsers, and adding a test for re-entrant Append() during
+   StartElementNs().
+
+Bug: 569659189
+Change-Id: I9dfcd124ca446c7c8f90191287056665a922a1a1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8521957
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1730274}
+
+Electron adaptation notes (45-x-y): Append() on this branch has no saw_xsl_transform_/original_source_for_transform_ handling (see the notes on https://chromium-review.googlesource.com/c/chromium/src/+/8602619), so the Append() conflict was resolved by keeping only this change's reordering (clear carry_unbalanced_root_error_, buffer into pending_src_ when paused or inside ProcessEvents(), then AppendToSource() + ProcessEvents()); the !saw_xsl_transform_ term this change adds to the ProcessEvents() loop condition is omitted for the same reason. xml_document_parser_sim_test.cc keeps the branch's version (the upstream test rewrite depends on test helpers not present on this branch).
+
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc b/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
+index ffe3a598d82eb63968bf9457419b7f3b7ffb0d78..7f3a870cf69903c24337b5c9bfc219bef2d30d51 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
+@@ -521,10 +521,6 @@ void XMLDocumentParser::end() {
+ }
+ 
+ void XMLDocumentParser::Finish() {
+-  // FIXME: We should DCHECK(!m_parserStopped) here, since it does not
+-  // makes sense to call any methods on DocumentParser once it's been stopped.
+-  // However, FrameLoader::stop calls DocumentParser::finish unconditionally.
+-
+   Flush();
+   if (IsDetached())
+     return;
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
+index 0a6372b336859055b5370117443ed0ed81184071..c46f0b09dc24cb1e925431691d513331ef1fe33f 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
+@@ -252,16 +252,22 @@ void XMLDocumentParserRs::HandleError(XMLErrors::ErrorType type,
+ }
+ 
+ void XMLDocumentParserRs::Append(const String& xml_string) {
+-  if (parser_paused_ || in_process_events_) {
+-    pending_src_.Append(xml_string);
+-    return;
+-  }
+-
+   if (!xml_string.empty()) {
+     // Resume parsing, recover from unbalanced root error at previous chunk
+     // boundary.
+     carry_unbalanced_root_error_ = std::nullopt;
+   }
++
++  if (parser_paused_ || in_process_events_) {
++    pending_src_.Append(xml_string);
++    return;
++  }
++
++  AppendToSource(xml_string);
++  ProcessEvents();
++}
++
++void XMLDocumentParserRs::AppendToSource(const String& xml_string) {
+   if (RuntimeEnabledFeatures::XMLParserReplaceLoneSurrogatesEnabled()) {
+     // Replace lone surrogates with U+FFFD so the parser does a best-effort
+     // parse instead of rejecting the whole input (crbug.com/40814739).
+@@ -272,15 +278,20 @@ void XMLDocumentParserRs::Append(const String& xml_string) {
+     xml_ffi::append_to_source(*read_state_,
+                               base::StringViewToRustSlice(xml_string.Utf8()));
+   }
+-  ProcessEvents();
+ }
+ 
+ void XMLDocumentParserRs::ProcessEvents() {
++  CHECK(!IsDetached());
++  CHECK(!parser_paused_);
++  CHECK(!in_process_events_);
++
+   {
+-    CHECK(!in_process_events_);
+     base::AutoReset<bool> reentrancy_guard(&in_process_events_, true);
+     while (!parser_paused_ && !IsStopped() && !saw_end_document_ &&
+            !xml_ffi::saw_error(*read_state_)) {
++      if (!pending_src_.empty()) {
++        AppendToSource(pending_src_.ReleaseString());
++      }
+       xml_ffi::process_next_event(*read_state_);
+     }
+     if (xml_ffi::saw_error(*read_state_)) {
+@@ -308,14 +319,6 @@ void XMLDocumentParserRs::ProcessEvents() {
+     return;
+   }
+ 
+-  if (!pending_src_.empty()) {
+-    String rest = pending_src_.ReleaseString();
+-    Append(rest);
+-    if (IsDetached() || parser_paused_) {
+-      return;
+-    }
+-  }
+-
+   if (finish_called_) {
+     EndInternal();
+   }
+@@ -818,11 +821,6 @@ void XMLDocumentParserRs::EndInternal() {
+ }
+ 
+ void XMLDocumentParserRs::Finish() {
+-  // FIXME: We should DCHECK(!m_parserStopped) here, since it does not
+-  // makes sense to call any methods on DocumentParser once it's been stopped.
+-  // However, FrameLoader::stop calls DocumentParser::finish unconditionally.
+-  // FIXME carried over from XmlDocumentParser.
+-
+   Flush();
+   if (IsDetached()) {
+     return;
+@@ -996,14 +994,10 @@ void XMLDocumentParserRs::PauseParsing() {
+ }
+ 
+ void XMLDocumentParserRs::ResumeParsing() {
+-  DCHECK(!IsDetached());
+-  DCHECK(parser_paused_);
++  CHECK(!IsDetached());
++  CHECK(parser_paused_);
+   parser_paused_ = false;
+   ProcessEvents();
+-
+-  if (finish_called_) {
+-    EndInternal();
+-  }
+ }
+ 
+ HashMap<String, String> ParseAttributesRust(const String& attrs_string,
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h
+index cee85674ad9dcaada68a16a5e7b7e6aadde8c3b8..9e149b6d0d9871bc03f69b4911b9039c5788d9bd 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h
+@@ -75,6 +75,13 @@ class CORE_EXPORT XMLDocumentParserRs final : public ScriptableDocumentParser,
+   void EndDocument() override;
+ 
+  private:
++  // Converts `xml_string` to UTF-8 and appends it directly to `read_state_`'s
++  // Rust input buffer via `xml_ffi::append_to_source()`, without running
++  // ProcessEvents(). By contrast, Append() is the DocumentParser entry point
++  // that buffers into `pending_src_` if the parser is paused or already inside
++  // ProcessEvents(), and otherwise calls AppendToSource() followed by
++  // ProcessEvents().
++  void AppendToSource(const String& xml_string);
+   void ProcessEvents();
+ 
+   // From DocumentParser
+@@ -98,7 +105,6 @@ class CORE_EXPORT XMLDocumentParserRs final : public ScriptableDocumentParser,
+   void PauseParsing();
+   void ResumeParsing();
+ 
+- private:
+   void PushCurrentNode(ContainerNode*);
+   void PopCurrentNode();
+   void ClearCurrentNodeStack();
+@@ -122,8 +128,16 @@ class CORE_EXPORT XMLDocumentParserRs final : public ScriptableDocumentParser,
+   XMLErrors xml_errors_;
+   Member<Document> document_;
+ 
++  // Accumulates character data from Characters() callbacks for the current
++  // DOM Text node (`leaf_text_node_`) until UpdateLeafTextNode() flushes it.
+   StringBuilder buffered_text_;
+ 
++  // Queues raw, unparsed XML source chunks passed to Append() while the parser
++  // is paused (`parser_paused_`) or already inside ProcessEvents()
++  // (`in_process_events_`), to be fed to the Rust XML reader via
++  // AppendToSource() in ProcessEvents().
++  StringBuilder pending_src_;
++
+   Member<ContainerNode> current_node_;
+   // In fragment parsing, track a parent element that has reset the default
+   // namespace, in order not to apply the surrounding element's default
+@@ -139,8 +153,13 @@ class CORE_EXPORT XMLDocumentParserRs final : public ScriptableDocumentParser,
+   bool saw_end_document_ = false;
+ 
+   bool parser_paused_ = false;
++  // Re-entrancy guard for ProcessEvents(). Callbacks invoked from
++  // xml_ffi::process_next_event() can run script (e.g. inline <script> or
++  // synchronous blur events when flushing leaf text nodes) that feeds more
++  // data to Append() or calls Finish(). Re-entering ProcessEvents() while a
++  // callback is on the stack would process inner events before the outer
++  // callback finishes updating parser state (such as current_node_stack_).
+   bool in_process_events_ = false;
+-  StringBuilder pending_src_;
+   bool requesting_script_ = false;
+   bool waiting_for_stylesheets_ = false;
+   bool added_pending_parser_blocking_stylesheet_ = false;
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_ffi.rs b/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
+index a9b61123d068e54e8d80eff409668fcee59cd8cb..7021d84e99fc59ac33fc0032853300e0ee498b6d 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
++++ b/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
+@@ -20,13 +20,23 @@ use xml::{
+ 
+ use crate::ffi::{AttributeNameValue, AttributeView, StandaloneInfo, XmlCallbacks};
+ use entities::{HTML5_MAP, LAT1_MAP, SPECIAL_MAP, SYMBOL_MAP};
++use std::cell::{Cell, RefCell};
+ use std::pin::Pin;
+ 
++// `XmlReadState` is held by `XMLDocumentParserRs` and passed across FFI as a
++// shared `&XmlReadState` reference. While `process_next_event()` is on the
++// stack, synchronous C++ parser callbacks can re-enter `xml_ffi` with the same
++// `read_state_` (for example, `DocType()` calls `add_xhtml_entities()`, and
++// `StartElementNs()` calls `try_get_last_event_position()`). Using interior
++// mutability (`RefCell` / `Cell`) and dropping the `event_reader` borrow before
++// invoking `parser_callbacks` avoids creating aliasing `&mut` references across
++// FFI while allowing callbacks to safely access `event_reader` or
++// `last_event_position`.
+ struct XmlReadState<'a> {
+-    event_reader: XmlEventReader<Cursor<Vec<u8>>>,
+-    error_details: Option<xml::reader::Error>,
+-    last_event_position: Option<TextPosition>,
+-    parser_callbacks: Pin<&'a mut XmlCallbacks>,
++    event_reader: RefCell<XmlEventReader<Cursor<Vec<u8>>>>,
++    error_details: RefCell<Option<xml::reader::Error>>,
++    last_event_position: Cell<Option<TextPosition>>,
++    parser_callbacks: RefCell<Pin<&'a mut XmlCallbacks>>,
+ }
+ 
+ fn create_reader() -> XmlEventReader<Cursor<Vec<u8>>> {
+@@ -47,15 +57,16 @@ fn create_reader() -> XmlEventReader<Cursor<Vec<u8>>> {
+ fn create_read_state(callbacks: Pin<&mut XmlCallbacks>) -> Box<XmlReadState<'_>> {
+     let event_reader = create_reader();
+     Box::new(XmlReadState {
+-        event_reader,
+-        error_details: None,
+-        last_event_position: None,
+-        parser_callbacks: callbacks,
++        event_reader: RefCell::new(event_reader),
++        error_details: RefCell::new(None),
++        last_event_position: Cell::new(None),
++        parser_callbacks: RefCell::new(callbacks),
+     })
+ }
+ 
+-fn append_to_source(read_state: &mut XmlReadState, content: &[u8]) {
+-    let buffer = read_state.event_reader.source_mut().get_mut();
++fn append_to_source(read_state: &XmlReadState, content: &[u8]) {
++    let mut reader = read_state.event_reader.borrow_mut();
++    let buffer = reader.source_mut().get_mut();
+     // When the encoding is set fixed on the xml Rust crate, it does not do its
+     // own BOM sniffing, hence removing a possible BOM here.
+     // The byte sequence [0xEF, 0xBB, 0xBF] is the UTF-8 representation of the
+@@ -79,26 +90,34 @@ struct NamespacesIterator<'a> {
+     namespaces: Box<dyn Iterator<Item = (&'a str, &'a str)> + 'a>,
+ }
+ 
+-fn process_next_event(read_state: &mut XmlReadState) {
+-    let event_result = read_state.event_reader.next();
++fn process_next_event(read_state: &XmlReadState) {
++    let event_result = {
++        let mut reader = read_state.event_reader.borrow_mut();
++        let result = reader.next();
++        if result.is_ok() {
++            read_state.last_event_position.set(Some(reader.position()));
++        }
++        result
++    };
+     match event_result {
+-        Ok(event) => {
+-            read_state.last_event_position = Some(read_state.event_reader.position());
+-            match event {
+-                StartDocument { version, encoding, standalone } => {
+-                    let version: &str = version.as_str();
+-
+-                    let buffer = read_state.event_reader.source().get_ref();
+-                    let xml_declaration_view = read_state.last_event_position.and_then(|pos| {
+-                        let start_index = pos.column as usize;
+-                        if buffer[start_index..].starts_with(b"<?xml ") {
+-                            buffer[start_index..].iter().position(|&c| c == b'>').map(
+-                                |end_offset| &buffer[start_index..start_index + end_offset + 1],
+-                            )
+-                        } else {
+-                            None
+-                        }
+-                    });
++        Ok(event) => match event {
++            StartDocument { version, encoding, standalone } => {
++                let version: &str = version.as_str();
++
++                let (standalone, encoding) = {
++                    let reader = read_state.event_reader.borrow();
++                    let buffer = reader.source().get_ref();
++                    let xml_declaration_view =
++                        read_state.last_event_position.get().and_then(|pos| {
++                            let start_index = pos.column as usize;
++                            if buffer[start_index..].starts_with(b"<?xml ") {
++                                buffer[start_index..].iter().position(|&c| c == b'>').map(
++                                    |end_offset| &buffer[start_index..start_index + end_offset + 1],
++                                )
++                            } else {
++                                None
++                            }
++                        });
+ 
+                     let standalone = standalone
+                         .map(|is_standalone| {
+@@ -125,81 +144,109 @@ fn process_next_event(read_state: &mut XmlReadState) {
+                             }
+                         })
+                         .unwrap_or_default();
+-                    read_state
+-                        .parser_callbacks
+-                        .as_mut()
+-                        .StartDocument(version, &encoding, standalone);
+-                }
+-                ProcessingInstruction { name, data } => {
+-                    let data = data.unwrap_or_default();
+-                    let data = data.trim_start();
+-                    read_state.parser_callbacks.as_mut().ProcessingInstruction(&name, data);
+-                }
+-                StartElement { name, attributes, .. } => {
+-                    let local_name: &str = &name.local_name;
+-                    let has_prefix = name.prefix.is_some();
+-                    let prefix: &str = &name.prefix.unwrap_or_default();
+-                    let has_ns = name.namespace.is_some();
+-                    let ns: &str = &name.namespace.unwrap_or_default();
+-
+-                    let declared = read_state.event_reader.declared_namespaces();
+-                    let mut attributes = AttributesIterator { attributes: attributes.iter() };
+-                    let mut new_namespaces =
+-                        NamespacesIterator { namespaces: Box::new(declared.into_iter().flatten()) };
+-                    read_state.parser_callbacks.as_mut().StartElementNs(
+-                        local_name,
+-                        has_prefix,
+-                        prefix,
+-                        has_ns,
+-                        ns,
+-                        &mut attributes,
+-                        &mut new_namespaces,
+-                    );
+-                }
+-                EndElement { name } => {
+-                    let local_name: &str = &name.local_name;
+-                    let prefix: &str = &name.prefix.unwrap_or_default();
+-                    let ns: &str = &name.namespace.unwrap_or_default();
+-                    read_state.parser_callbacks.as_mut().EndElementNs(local_name, prefix, ns);
+-                }
+-                Characters(characters) => {
+-                    read_state.parser_callbacks.as_mut().Characters(&characters);
+-                }
+-                Whitespace(whitespace_characters) => {
+-                    read_state.parser_callbacks.as_mut().Characters(&whitespace_characters);
+-                }
+-                Comment(comment) => {
+-                    read_state.parser_callbacks.as_mut().Comment(&comment);
+-                }
+-                CData(data) => {
+-                    read_state.parser_callbacks.as_mut().CData(&data);
+-                }
+-                EndDocument => {
+-                    read_state.parser_callbacks.as_mut().EndDocument();
+-                }
+-                Doctype { .. } => {
++                    (standalone, encoding)
++                };
++                read_state
++                    .parser_callbacks
++                    .borrow_mut()
++                    .as_mut()
++                    .StartDocument(version, &encoding, standalone);
++            }
++            ProcessingInstruction { name, data } => {
++                let data = data.unwrap_or_default();
++                let data = data.trim_start();
++                read_state
++                    .parser_callbacks
++                    .borrow_mut()
++                    .as_mut()
++                    .ProcessingInstruction(&name, data);
++            }
++            StartElement { name, attributes, .. } => {
++                let local_name: &str = &name.local_name;
++                let has_prefix = name.prefix.is_some();
++                let prefix: &str = &name.prefix.unwrap_or_default();
++                let has_ns = name.namespace.is_some();
++                let ns: &str = &name.namespace.unwrap_or_default();
++
++                // Clone `declared_namespaces()` so the `event_reader` borrow is
++                // released before invoking the C++ `StartElementNs` callback.
++                let declared = read_state.event_reader.borrow().declared_namespaces().cloned();
++                let mut attributes = AttributesIterator { attributes: attributes.iter() };
++                let mut new_namespaces =
++                    NamespacesIterator { namespaces: Box::new(declared.iter().flatten()) };
++                read_state.parser_callbacks.borrow_mut().as_mut().StartElementNs(
++                    local_name,
++                    has_prefix,
++                    prefix,
++                    has_ns,
++                    ns,
++                    &mut attributes,
++                    &mut new_namespaces,
++                );
++            }
++            EndElement { name } => {
++                let local_name: &str = &name.local_name;
++                let prefix: &str = &name.prefix.unwrap_or_default();
++                let ns: &str = &name.namespace.unwrap_or_default();
++                read_state
++                    .parser_callbacks
++                    .borrow_mut()
++                    .as_mut()
++                    .EndElementNs(local_name, prefix, ns);
++            }
++            Characters(characters) => {
++                read_state.parser_callbacks.borrow_mut().as_mut().Characters(&characters);
++            }
++            Whitespace(whitespace_characters) => {
++                read_state
++                    .parser_callbacks
++                    .borrow_mut()
++                    .as_mut()
++                    .Characters(&whitespace_characters);
++            }
++            Comment(comment) => {
++                read_state.parser_callbacks.borrow_mut().as_mut().Comment(&comment);
++            }
++            CData(data) => {
++                read_state.parser_callbacks.borrow_mut().as_mut().CData(&data);
++            }
++            EndDocument => {
++                read_state.parser_callbacks.borrow_mut().as_mut().EndDocument();
++            }
++            Doctype { .. } => {
++                // Clone the doctype IDs so the `event_reader` borrow is
++                // released before invoking the C++ `DocType` callback, which
++                // may call `add_xhtml_entities()` and mutably borrow
++                // `event_reader`.
++                let (name, public_id, system_id) = {
++                    let reader = read_state.event_reader.borrow();
+                     // It's safe to unwrap here. `doctype_ids()` after a
+                     // `Doctype` event only fails if there's
+                     // no doctype name, which would have
+                     // resulted in a parser error earlier.
+                     // See: https://github.com/kornelski/xml-rs/blob/main/src/reader/parser.rs#L162
+-                    let ids = read_state.event_reader.doctype_ids().unwrap();
+-                    read_state.parser_callbacks.as_mut().DocType(
+-                        ids.name(),
+-                        ids.public_id().unwrap_or(""),
+-                        ids.system_id().unwrap_or(""),
+-                    );
+-                }
++                    let ids = reader.doctype_ids().unwrap();
++                    (
++                        ids.name().to_owned(),
++                        ids.public_id().unwrap_or("").to_owned(),
++                        ids.system_id().unwrap_or("").to_owned(),
++                    )
++                };
++                read_state
++                    .parser_callbacks
++                    .borrow_mut()
++                    .as_mut()
++                    .DocType(&name, &public_id, &system_id);
+             }
+-        }
++        },
+         Err(failure) => {
+-            read_state.error_details = Some(failure.clone());
++            *read_state.error_details.borrow_mut() = Some(failure.clone());
+         }
+     }
+ }
+ 
+ fn try_get_last_event_position(read_state: &XmlReadState, row: &mut u64, col: &mut u64) -> bool {
+-    if let Some(position) = read_state.last_event_position {
++    if let Some(position) = read_state.last_event_position.get() {
+         *row = position.row;
+         *col = position.column;
+         return true;
+@@ -207,9 +254,10 @@ fn try_get_last_event_position(read_state: &XmlReadState, row: &mut u64, col: &m
+     false
+ }
+ 
+-fn add_xhtml_entities(read_state: &mut XmlReadState) {
++fn add_xhtml_entities(read_state: &XmlReadState) {
++    let mut reader = read_state.event_reader.borrow_mut();
+     for map in [LAT1_MAP, SYMBOL_MAP, SPECIAL_MAP, HTML5_MAP].iter() {
+-        match read_state.event_reader.add_entities(map.iter().copied()) {
++        match reader.add_entities(map.iter().copied()) {
+             Ok(()) | Err(ImmutableEntitiesError::StandaloneDocument) => {}
+             Err(e) => panic!("Adding built-in entities should not cause an error: {e}"),
+         }
+@@ -222,7 +270,7 @@ fn try_get_error_details(
+     row: &mut u64,
+     col: &mut u64,
+ ) -> bool {
+-    if let Some(error_details) = &read_state.error_details {
++    if let Some(error_details) = read_state.error_details.borrow().as_ref() {
+         let error_string = error_details.to_string();
+         // Remove the "row:col " prefix from the error message.
+         // The row and col are passed separately.
+@@ -238,20 +286,20 @@ fn try_get_error_details(
+ }
+ 
+ fn saw_error(read_state: &XmlReadState) -> bool {
+-    read_state.error_details.is_some()
++    read_state.error_details.borrow().is_some()
+ }
+ 
+ fn is_error_resumable(read_state: &XmlReadState) -> bool {
+     // See XML crate's parser.rs handle_eof() handling.
+     // which returns SyntaxError::UnbalancedRootElement on
+     // temporary end of read stream situations.
+-    matches!(read_state.error_details.as_ref().map(|error| error.kind()),
++    matches!(read_state.error_details.borrow().as_ref().map(|error| error.kind()),
+              Some(ErrorKind::Syntax(msg)) if
+              msg.starts_with("Unexpected end of stream"))
+ }
+ 
+-fn reset_error(read_state: &mut XmlReadState) {
+-    read_state.error_details = None;
++fn reset_error(read_state: &XmlReadState) {
++    *read_state.error_details.borrow_mut() = None;
+ }
+ 
+ fn attributes_next<'a>(
+@@ -400,14 +448,14 @@ mod ffi {
+         unsafe fn create_read_state<'a>(
+             callbacks: Pin<&'a mut XmlCallbacks>,
+         ) -> Box<XmlReadState<'a>>;
+-        fn append_to_source(read_state: &mut XmlReadState, content: &[u8]);
+-        fn process_next_event(read_state: &mut XmlReadState);
++        fn append_to_source(read_state: &XmlReadState, content: &[u8]);
++        fn process_next_event(read_state: &XmlReadState);
+         fn try_get_last_event_position(
+             read_state: &XmlReadState,
+             row: &mut u64,
+             col: &mut u64,
+         ) -> bool;
+-        fn add_xhtml_entities(read_state: &mut XmlReadState);
++        fn add_xhtml_entities(read_state: &XmlReadState);
+         fn try_get_error_details(
+             read_state: &XmlReadState,
+             msg: &mut String,
+@@ -416,7 +464,7 @@ mod ffi {
+         ) -> bool;
+         fn saw_error(read_state: &XmlReadState) -> bool;
+         fn is_error_resumable(read_state: &XmlReadState) -> bool;
+-        fn reset_error(read_state: &mut XmlReadState);
++        fn reset_error(read_state: &XmlReadState);
+ 
+         fn parse_attributes(
+             attributes_string: &[u8],

@@ -1,0 +1,665 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Thu, 15 Oct 2026 18:03:43 -0700
+Subject: [Media] Validate data origin before mutating UrlData or redirecting
+
+Previously, `ResourceMultiBufferDataProvider::DidReceiveResponse()`
+called `ValidateDataOrigin()` only after mutating metadata (such as
+`set_length()`) on `destination_url_data`, migrating to
+`destination_url_data`, and merging cached blocks via
+`UrlData::RedirectTo()`. Because the newly created
+`destination_url_data` had no `data_origin_` set yet, a same-origin
+redirect on a subsequent range request could adopt a different data
+origin when answered by a Service Worker, and even without a redirect a
+rejected cross-origin response could overwrite `length_` on the shared
+`UrlData` in `UrlIndex`.
+
+Split `UrlData::ValidateDataOrigin()` into a read-only
+`UrlData::CanAcceptDataFrom(origin, is_cors_cross_origin)` check and a
+`UrlData::SetDataOrigin(origin, is_cors_cross_origin)` mutator so that
+data origin and CORS cross-origin state are always validated and updated
+together:
+- Validate `(response_url, is_cors_cross_origin)` against both
+  `old_url_data` and `destination_url_data` at the start of
+  `DidReceiveResponse()` before mutating metadata, inserting into
+  `UrlIndex`, or redirecting, and only set the data origin on
+  `destination_url_data` once both checks pass.
+- Add `UrlData::CrossOriginFail()` for pre-response security failures in
+  `DidFail()` and make `UrlData::set_is_cors_cross_origin()` private.
+- Update `UrlIndex::TryInsert()` so that it returns `url_data` rather
+  than an incompatible or unmerged `iter->value` when
+  `!url_data->Valid()` or `MergeFrom()` fails compatibility validation,
+  and `CHECK` that `destination_url_data->CanAcceptDataFrom(...)` holds
+  after both `TryInsert()` and `RedirectTo()`.
+
+Fixed: 572308124, 573262234
+Change-Id: Iabc15822c41843d8d6c7781ef05a42b93302ef09
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8577600
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1720217}
+
+Electron adaptation notes (45-x-y): resource_multi_buffer_data_provider.cc DidFail(): this branch's cross-origin failure block only matches net::ERR_BLOCKED_BY_ORB (the upstream base also matched ERR_BLOCKED_BY_RESPONSE / web security violations from a change not on 45-x-y); the fix's replacement of set_is_cors_cross_origin(true)+Fail() with CrossOriginFail() is applied inside the branch's block unchanged.
+
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 9309ac177b83980a1baa223596b7caee6c909ff5..b43b069826c29af680232dea536f2ffa7f8d54de 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -20,7 +20,6 @@
+ #include "base/strings/string_util.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
+-#include "media/base/media_switches.h"
+ #include "net/base/net_errors.h"
+ #include "net/http/http_byte_range.h"
+ #include "net/http/http_request_headers.h"
+@@ -280,6 +279,33 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+     redirects_to_ = KURL();
+   }
+ 
++  // Get the response URL since it can differ from the request URL when a
++  // service worker provided the response. Normally we would just use
++  // ResponseUrl(), but ResourceMultiBufferDataProvider disallows mixing
++  // constructed responses (new Response()) and native server responses, even if
++  // they have the same response URL.
++  KURL response_url;
++  if (!response.WasFetchedViaServiceWorker() ||
++      response.HasUrlListViaServiceWorker()) {
++    response_url = response.ResponseUrl();
++  }
++
++  // This test is vital for security! Ensure that both the original UrlData and
++  // any redirect destination UrlData are compatible with the response's origin
++  // and opacity before mutating metadata on `destination_url_data`, inserting
++  // into `UrlIndex`, or merging data across a redirect. We get the response
++  // type here because aborting the loader may change it.
++  const bool is_cors_cross_origin =
++      network::cors::IsCorsCrossOriginResponseType(response.GetType());
++  if (!old_url_data->CanAcceptDataFrom(response_url, is_cors_cross_origin) ||
++      !destination_url_data->CanAcceptDataFrom(response_url,
++                                               is_cors_cross_origin)) {
++    active_loader_.reset();
++    url_data_->Fail();
++    return;  // "this" may be deleted now.
++  }
++  destination_url_data->SetDataOrigin(response_url, is_cors_cross_origin);
++
+   base::Time last_modified;
+   if (base::Time::FromString(
+           response.HttpHeaderField("Last-Modified").Utf8().data(),
+@@ -301,20 +327,13 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   int64_t content_length = response.ExpectedContentLength();
+   bool end_of_file = false;
+   bool do_fail = false;
+-  // We get the response type here because aborting the loader may change it.
+-  const bool is_cors_cross_origin =
+-      network::cors::IsCorsCrossOriginResponseType(response.GetType());
+   bytes_to_discard_ = 0;
+ 
+-  // Mixing non-opaque and opaque responses on a resource that has already
+-  // received a response is not allowed, as consumers may have already checked
+-  // origin tainting based on the earlier response.
+-  if (old_url_data->data_origin().has_value() &&
+-      old_url_data->is_cors_cross_origin() != is_cors_cross_origin &&
+-      base::FeatureList::IsEnabled(media::kDisallowMixedOpaqueMediaResponses)) {
+-    active_loader_.reset();
+-    do_fail = true;
+-  } else if (destination_url_data->url().ProtocolIsInHttpFamily()) {
++  // We make a strong assumption that when we reach here we have either
++  // received a response from HTTP/HTTPS protocol or the request was
++  // successful (in particular range request). So we only verify the partial
++  // response for HTTP and HTTPS protocol.
++  if (destination_url_data->url().ProtocolIsInHttpFamily()) {
+     bool partial_response = (response.HttpStatusCode() == kHttpPartialContent);
+     bool ok_response = (response.HttpStatusCode() == kHttpOK);
+ 
+@@ -372,11 +391,10 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   if (!do_fail) {
+     destination_url_data =
+         url_data_->url_index()->TryInsert(destination_url_data);
++    CHECK(destination_url_data->CanAcceptDataFrom(response_url,
++                                                  is_cors_cross_origin));
+   }
+ 
+-  // This is vital for security!
+-  destination_url_data->set_is_cors_cross_origin(is_cors_cross_origin);
+-
+   // Only used for metrics.
+   {
+     WebString access_control =
+@@ -414,6 +432,8 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+     if (!weak_this) {
+       return;  // "this" may be deleted now.
+     }
++    CHECK(destination_url_data->CanAcceptDataFrom(response_url,
++                                                  is_cors_cross_origin));
+   }
+ 
+   if (do_fail) {
+@@ -421,24 +441,6 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+     return;  // "this" may be deleted now.
+   }
+ 
+-  // Get the response URL since it can differ from the request URL when a
+-  // service worker provided the response. Normally we would just use
+-  // ResponseUrl(), but ResourceMultiBufferDataProvider disallows mixing
+-  // constructed responses (new Response()) and native server responses, even if
+-  // they have the same response URL.
+-  KURL response_url;
+-  if (!response.WasFetchedViaServiceWorker() ||
+-      response.HasUrlListViaServiceWorker()) {
+-    response_url = response.ResponseUrl();
+-  }
+-
+-  // This test is vital for security!
+-  if (!url_data_->ValidateDataOrigin(response_url)) {
+-    active_loader_.reset();
+-    url_data_->Fail();
+-    return;  // "this" may be deleted now.
+-  }
+-
+   if (end_of_file) {
+     fifo_.push_back(media::DataBuffer::CreateEOSBuffer());
+     url_data_->multibuffer()->OnDataProviderEvent(this);
+@@ -547,8 +549,7 @@ void ResourceMultiBufferDataProvider::DidFail(const WebURLError& error) {
+   // failures (e.g. via error messages exposed by the media element). An ORB
+   // block is also deterministic, so fail immediately rather than retrying.
+   if (error.reason() == net::ERR_BLOCKED_BY_ORB) {
+-    url_data_->set_is_cors_cross_origin(true);
+-    url_data_->Fail();
++    url_data_->CrossOriginFail();
+     return;  // "this" may be deleted now.
+   }
+ 
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index 8172e84131f34bbd2d9f2bb11aa0650740162f47..745b9003a98a040bab2c53f66cd0512e48077b57 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -531,6 +531,176 @@ TEST_F(ResourceMultiBufferDataProviderTest, NoCrossOriginMediaLeaks) {
+   StopWhenLoad();
+ }
+ 
++// Verifies that a same-origin redirect cannot be used to mix responses with
++// different data origins (e.g., via a Service Worker responding to the
++// redirected URL with a cross-origin response).
++TEST_F(ResourceMultiBufferDataProviderTest,
++       SameOriginRedirectRejectsMismatchedDataOrigin) {
++  url_index_ = std::make_unique<UrlIndex>(
++      &fetch_context_, task_environment_.GetMainThreadTaskRunner());
++
++  constexpr char kOriginA1[] = "http://localhost:18080/v1";
++  constexpr char kOriginA2[] = "http://localhost:18080/v2";
++  constexpr char kOriginB[] = "http://127.0.0.1:18081/secret";
++  constexpr int kBlockSize = 1 << 15;
++
++  Initialize(kOriginA1, 0);
++  auto reader = CreateReader(kBlockSize);
++  task_environment_.FastForwardUntilNoTasksRemain();
++  ASSERT_TRUE(loader_);
++  loader_->Start();
++
++  // 1. Receive initial partial response from Origin A.
++  WebURL url_a1{KURL(kOriginA1)};
++  WebURLResponse response_a1{url_a1};
++  response_a1.SetHttpStatusCode(kHttpPartialContent);
++  response_a1.SetHttpHeaderField(WebString::FromUtf8("Content-Range"),
++                                 WebString::FromUtf8("bytes 0-32767/100000"));
++  response_a1.SetExpectedContentLength(kBlockSize);
++  response_a1.SetType(network::mojom::FetchResponseType::kBasic);
++  loader_->DidReceiveResponse(response_a1);
++  ASSERT_TRUE(loader_);
++
++  std::string data_str(kBlockSize, 'a');
++  loader_->DidReceiveData(data_str);
++
++  // 2. Simulate retry/next range on the same loader redirecting same-origin to
++  // kOriginA2, which WillFollowRedirect allows because A1 and A2 are
++  // same-origin.
++  loader_->DidFail(WebURLError(net::ERR_ABORTED, url_a1));
++  task_environment_.FastForwardUntilNoTasksRemain();
++  ASSERT_TRUE(loader_);
++
++  WebURL url_a2{KURL(kOriginA2)};
++  WebURLResponse redirect_response{url_a1};
++  ASSERT_TRUE(loader_->WillFollowRedirect(url_a2, redirect_response));
++
++  EXPECT_CALL(*this, RedirectCallback(testing::IsNull()));
++
++  // 3. Service Worker responds to A2 with a response from Origin B.
++  WebURL url_b{KURL(kOriginB)};
++  WebURLResponse response_b{url_b};
++  response_b.SetHttpStatusCode(kHttpPartialContent);
++  response_b.SetHttpHeaderField(
++      WebString::FromUtf8("Content-Range"),
++      WebString::FromUtf8("bytes 32768-65535/100000"));
++  response_b.SetExpectedContentLength(kBlockSize);
++  response_b.SetType(network::mojom::FetchResponseType::kBasic);
++  response_b.SetWasFetchedViaServiceWorker(true);
++  response_b.SetUrlListViaServiceWorker(std::vector<WebURL>{url_b});
++
++  loader_->DidReceiveResponse(response_b);
++  StopWhenLoad();
++}
++
++// Verifies that a response rejected by CanAcceptDataFrom() does not overwrite
++// metadata (such as `length()`) on the shared `UrlData` in `UrlIndex`.
++TEST_F(ResourceMultiBufferDataProviderTest,
++       MismatchedDataOriginDoesNotMutateUrlData) {
++  url_index_ = std::make_unique<UrlIndex>(
++      &fetch_context_, task_environment_.GetMainThreadTaskRunner());
++
++  constexpr char kOriginA[] = "http://localhost:18080/v1";
++  constexpr char kOriginB[] = "http://127.0.0.1:18081/secret";
++  constexpr int kBlockSize = 1 << 15;
++  constexpr int64_t kInitialLength = 100000;
++  constexpr int64_t kSecretLength = 424242;
++
++  Initialize(kOriginA, 0);
++  auto reader = CreateReader(kBlockSize);
++  task_environment_.FastForwardUntilNoTasksRemain();
++  ASSERT_TRUE(loader_);
++  loader_->Start();
++
++  // 1. Receive initial partial response from Origin A, pinning `data_origin_`
++  // and `length()` on `url_data_` in `url_index_`.
++  WebURL url_a{KURL(kOriginA)};
++  WebURLResponse response_a{url_a};
++  response_a.SetHttpStatusCode(kHttpPartialContent);
++  response_a.SetHttpHeaderField(WebString::FromUtf8("Content-Range"),
++                                WebString::FromUtf8("bytes 0-32767/100000"));
++  response_a.SetExpectedContentLength(kBlockSize);
++  response_a.SetType(network::mojom::FetchResponseType::kBasic);
++  loader_->DidReceiveResponse(response_a);
++  ASSERT_TRUE(loader_);
++  EXPECT_EQ(url_data_->length(), kInitialLength);
++
++  std::string data_str(kBlockSize, 'a');
++  loader_->DidReceiveData(data_str);
++
++  // 2. Simulate retry/next range on the same `url_data_` where a Service Worker
++  // responds with a 200 OK response from Origin B carrying a different
++  // Content-Length.
++  loader_->DidFail(WebURLError(net::ERR_ABORTED, url_a));
++  task_environment_.FastForwardUntilNoTasksRemain();
++  ASSERT_TRUE(loader_);
++
++  EXPECT_CALL(*this, RedirectCallback(testing::IsNull()));
++
++  WebURL url_b{KURL(kOriginB)};
++  WebURLResponse response_b{url_b};
++  response_b.SetHttpStatusCode(kHttpOK);
++  response_b.SetExpectedContentLength(kSecretLength);
++  response_b.SetType(network::mojom::FetchResponseType::kOpaque);
++  response_b.SetWasFetchedViaServiceWorker(true);
++  response_b.SetUrlListViaServiceWorker(std::vector<WebURL>{url_b});
++
++  loader_->DidReceiveResponse(response_b);
++  EXPECT_EQ(url_data_->length(), kInitialLength);
++  EXPECT_FALSE(url_data_->is_cors_cross_origin());
++  StopWhenLoad();
++}
++
++// Verifies that a subsequent opaque response on a non-opaque resource (even
++// from the same data origin) is rejected before mutating metadata on the shared
++// `UrlData`.
++TEST_F(ResourceMultiBufferDataProviderTest,
++       MixedOpaqueResponseDoesNotMutateUrlData) {
++  url_index_ = std::make_unique<UrlIndex>(
++      &fetch_context_, task_environment_.GetMainThreadTaskRunner());
++
++  constexpr char kOriginA[] = "http://localhost:18080/v1";
++  constexpr int kBlockSize = 1 << 15;
++  constexpr int64_t kInitialLength = 100000;
++  constexpr int64_t kNewLength = 424242;
++
++  Initialize(kOriginA, 0);
++  auto reader = CreateReader(kBlockSize);
++  task_environment_.FastForwardUntilNoTasksRemain();
++  ASSERT_TRUE(loader_);
++  loader_->Start();
++
++  WebURL url_a{KURL(kOriginA)};
++  WebURLResponse response1{url_a};
++  response1.SetHttpStatusCode(kHttpPartialContent);
++  response1.SetHttpHeaderField(WebString::FromUtf8("Content-Range"),
++                               WebString::FromUtf8("bytes 0-32767/100000"));
++  response1.SetExpectedContentLength(kBlockSize);
++  response1.SetType(network::mojom::FetchResponseType::kBasic);
++  loader_->DidReceiveResponse(response1);
++  ASSERT_TRUE(loader_);
++  EXPECT_EQ(url_data_->length(), kInitialLength);
++  EXPECT_FALSE(url_data_->is_cors_cross_origin());
++
++  std::string data_str(kBlockSize, 'a');
++  loader_->DidReceiveData(data_str);
++
++  loader_->DidFail(WebURLError(net::ERR_ABORTED, url_a));
++  task_environment_.FastForwardUntilNoTasksRemain();
++  ASSERT_TRUE(loader_);
++
++  EXPECT_CALL(*this, RedirectCallback(testing::IsNull()));
++
++  WebURLResponse response2{url_a};
++  response2.SetHttpStatusCode(kHttpOK);
++  response2.SetExpectedContentLength(kNewLength);
++  response2.SetType(network::mojom::FetchResponseType::kOpaque);
++  loader_->DidReceiveResponse(response2);
++  EXPECT_EQ(url_data_->length(), kInitialLength);
++  EXPECT_FALSE(url_data_->is_cors_cross_origin());
++  StopWhenLoad();
++}
++
+ TEST_F(ResourceMultiBufferDataProviderTest, AllowGzip) {
+   Initialize(kHttpUrl, 0, media::DataSource::EncodingMode::kAllowGzip);
+ 
+diff --git a/third_party/blink/renderer/platform/media/url_index.cc b/third_party/blink/renderer/platform/media/url_index.cc
+index 1559034678f0936d78fa8dd94fd934a6fea6f664..9c6ee146d9be17abc9c8a4846e0172f39fbb27ab 100644
+--- a/third_party/blink/renderer/platform/media/url_index.cc
++++ b/third_party/blink/renderer/platform/media/url_index.cc
+@@ -111,28 +111,31 @@ void UrlData::set_valid_until(base::Time valid_until) {
+   valid_until_ = valid_until;
+ }
+ 
+-void UrlData::MergeFrom(const scoped_refptr<UrlData>& other) {
++bool UrlData::MergeFrom(const scoped_refptr<UrlData>& other) {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   // We're merging from another UrlData that refers to the *same*
+   // resource, so when we merge the metadata, we can use the most
+   // optimistic values.
+   CHECK(security_origin_->IsSameOriginWith(other->security_origin_.get()));
+-  if (ValidateDataOrigin(other->data_origin_.value_or(KURL()))) {
+-    DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+-    valid_until_ = std::max(valid_until_, other->valid_until_);
+-    // set_length() will not override the length if already known.
+-    set_length(other->length_);
+-    cacheable_ |= other->cacheable_;
+-    cache_lookup_mode_ = other->cache_lookup_mode_;
+-    range_supported_ |= other->range_supported_;
+-    if (last_modified_.is_null()) {
+-      last_modified_ = other->last_modified_;
+-    }
+-    bytes_read_from_cache_ += other->bytes_read_from_cache_;
+-    // is_cors_corss_origin_ will not relax from true to false.
+-    set_is_cors_cross_origin(other->is_cors_cross_origin_);
+-    has_access_control_ |= other->has_access_control_;
+-    multibuffer()->MergeFrom(other->multibuffer());
++  const KURL other_origin = other->data_origin_.value_or(KURL());
++  if (!CanAcceptDataFrom(other_origin, other->is_cors_cross_origin_)) {
++    return false;
++  }
++  SetDataOrigin(other_origin, other->is_cors_cross_origin_);
++
++  valid_until_ = std::max(valid_until_, other->valid_until_);
++  // set_length() will not override the length if already known.
++  set_length(other->length_);
++  cacheable_ |= other->cacheable_;
++  cache_lookup_mode_ = other->cache_lookup_mode_;
++  range_supported_ |= other->range_supported_;
++  if (last_modified_.is_null()) {
++    last_modified_ = other->last_modified_;
+   }
++  bytes_read_from_cache_ += other->bytes_read_from_cache_;
++  has_access_control_ |= other->has_access_control_;
++  multibuffer()->MergeFrom(other->multibuffer());
++  return true;
+ }
+ 
+ void UrlData::set_cacheable(bool cacheable) {
+@@ -189,6 +192,12 @@ void UrlData::Fail() {
+   }
+ }
+ 
++void UrlData::CrossOriginFail() {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  set_is_cors_cross_origin(true);
++  Fail();
++}
++
+ void UrlData::OnRedirect(RedirectCB cb) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   redirect_callbacks_.push_back(std::move(cb));
+@@ -199,26 +208,43 @@ void UrlData::Use() {
+   last_used_ = base::Time::Now();
+ }
+ 
+-bool UrlData::ValidateDataOrigin(const KURL& origin) {
++bool UrlData::CanAcceptDataFrom(const KURL& origin,
++                                bool is_cors_cross_origin) const {
+   if (!data_origin_) {
+-    data_origin_ = origin;
+     return true;
+   }
+ 
++  // Mixing non-opaque and opaque responses on a resource that has already
++  // received a response is not allowed, as consumers may have already checked
++  // origin tainting based on the earlier response.
++  if (is_cors_cross_origin_ != is_cors_cross_origin &&
++      base::FeatureList::IsEnabled(media::kDisallowMixedOpaqueMediaResponses)) {
++    return false;
++  }
++
+   if (cors_mode_ == UrlData::CORS_UNSPECIFIED) {
+     // If both origins are null return true, otherwise
+     // SecurityOrigin::AreSameOrigin will create a unique nonce for each.
+-    if (data_origin_->IsNull() && origin.IsNull()) {
+-      return true;
++    if (!data_origin_->IsNull() || !origin.IsNull()) {
++      if (!SecurityOrigin::AreSameOrigin(data_origin_.value(), origin)) {
++        return false;
++      }
+     }
+-    return SecurityOrigin::SecurityOrigin::AreSameOrigin(data_origin_.value(),
+-                                                         origin);
+   }
+ 
+-  // The actual cors checks is done in the net layer.
+   return true;
+ }
+ 
++void UrlData::SetDataOrigin(const KURL& origin, bool is_cors_cross_origin) {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  CHECK(CanAcceptDataFrom(origin, is_cors_cross_origin));
++  if (!data_origin_) {
++    data_origin_ = origin;
++  }
++  // The actual cors checks are done in the net layer.
++  set_is_cors_cross_origin(is_cors_cross_origin);
++}
++
+ void UrlData::OnEmpty() {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   if (url_index_) {
+@@ -378,13 +404,15 @@ scoped_refptr<UrlData> UrlIndex::TryInsert(
+     return url_data;
+   }
+ 
+-  if (url_data->Valid()) {
+-    if ((!iter->value->Valid() ||
+-         url_data->CachedSize() > iter->value->CachedSize())) {
+-      iter->value = url_data;
+-    } else {
+-      iter->value->MergeFrom(url_data);
+-    }
++  if (!url_data->Valid()) {
++    return url_data;
++  }
++
++  if (!iter->value->Valid() ||
++      url_data->CachedSize() > iter->value->CachedSize()) {
++    iter->value = url_data;
++  } else if (!iter->value->MergeFrom(url_data)) {
++    return url_data;
+   }
+   return iter->value;
+ }
+diff --git a/third_party/blink/renderer/platform/media/url_index.h b/third_party/blink/renderer/platform/media/url_index.h
+index d20e46b5cd685c5f214759d71018112ae4cc1381..c5a5016032017e0f3da50fd7c5b66dffc9710ed2 100644
+--- a/third_party/blink/renderer/platform/media/url_index.h
++++ b/third_party/blink/renderer/platform/media/url_index.h
+@@ -168,11 +168,14 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // this is not called regularly.
+   void Use();
+ 
+-  // Call this before we add some data to the multibuffer().
+-  // If the multibuffer is empty, the data origin is set from
+-  // |origin| and returns true. If not, it compares |origin|
+-  // to the previous origin and returns whether they match or not.
+-  bool ValidateDataOrigin(const KURL& origin);
++  // Returns true if this UrlData has not yet had a data origin set, or if
++  // |origin| and |is_cors_cross_origin| are compatible with the existing data
++  // origin and CORS cross-origin state.
++  bool CanAcceptDataFrom(const KURL& origin, bool is_cors_cross_origin) const;
++
++  // Sets the data origin and CORS cross-origin state. Must only be called when
++  // CanAcceptDataFrom(origin, is_cors_cross_origin) is true.
++  void SetDataOrigin(const KURL& origin, bool is_cors_cross_origin);
+ 
+   // Setters.
+   void set_length(int64_t length);
+@@ -181,7 +184,6 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   void set_range_supported();
+   void set_last_modified(base::Time last_modified);
+   void set_etag(const std::string& etag);
+-  void set_is_cors_cross_origin(bool is_cors_cross_origin);
+   void set_has_access_control();
+   void set_passed_timing_allow_origin_check(bool);
+   void set_mime_type(std::string mime_type);
+@@ -193,6 +195,11 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // Fail, tell all clients that a failure has occurred.
+   void Fail();
+ 
++  // Marks this data as CORS cross-origin before calling Fail(). Used when a
++  // request fails due to cross-origin security restrictions (e.g., ORB, CORP,
++  // or CORS violations) before a response is received.
++  void CrossOriginFail();
++
+   // Callback for receiving notifications when a redirect occurs.
+   using RedirectCB = base::OnceCallback<void(const scoped_refptr<UrlData>&)>;
+ 
+@@ -228,7 +235,8 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   friend class UrlIndex;
+ 
+   void OnEmpty();
+-  void MergeFrom(const scoped_refptr<UrlData>& other);
++  bool MergeFrom(const scoped_refptr<UrlData>& other);
++  void set_is_cors_cross_origin(bool is_cors_cross_origin);
+ 
+   // Url we represent, note that there may be multiple UrlData for
+   // the same url.
+diff --git a/third_party/blink/renderer/platform/media/url_index_unittest.cc b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+index a5b0b6a7a6221e3b6a6827f24c375ec5ba90ab9d..c54c6ff6f6ec7dfb29d5b7d7dfd2c2782de48999 100644
+--- a/third_party/blink/renderer/platform/media/url_index_unittest.cc
++++ b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+@@ -120,6 +120,12 @@ TEST_F(UrlIndexTest, TryInsert) {
+   KURL url("http://foo.bar.com");
+   scoped_refptr<UrlData> a = GetByUrl(url, UrlData::CORS_UNSPECIFIED);
+   scoped_refptr<UrlData> c = GetByUrl(url, UrlData::CORS_UNSPECIFIED);
++  scoped_refptr<UrlData> invalid_entry =
++      GetByUrl(url, UrlData::CORS_UNSPECIFIED);
++  scoped_refptr<UrlData> mismatched_origin =
++      GetByUrl(url, UrlData::CORS_UNSPECIFIED);
++  scoped_refptr<UrlData> mismatched_opaque =
++      GetByUrl(url, UrlData::CORS_UNSPECIFIED);
+   EXPECT_NE(a, c);
+   EXPECT_FALSE(a->Valid());
+   base::Time now = base::Time::Now();
+@@ -151,6 +157,7 @@ TEST_F(UrlIndexTest, TryInsert) {
+   b->set_range_supported();
+   b->set_valid_until(valid_until);
+   b->set_last_modified(last_modified);
++  b->SetDataOrigin(url, /*is_cors_cross_origin=*/false);
+   EXPECT_TRUE(b->Valid());
+ 
+   EXPECT_EQ(b, url_index_->TryInsert(b));
+@@ -159,11 +166,38 @@ TEST_F(UrlIndexTest, TryInsert) {
+   c->set_range_supported();
+   c->set_valid_until(valid_until);
+   c->set_last_modified(last_modified);
++  c->SetDataOrigin(url, /*is_cors_cross_origin=*/false);
+   EXPECT_TRUE(c->Valid());
+ 
+   // B is still valid, so it should be preferred over C.
+   EXPECT_EQ(b, url_index_->TryInsert(c));
+   EXPECT_EQ(b, GetByUrl(url, UrlData::CORS_UNSPECIFIED));
++
++  // If a new entry is not valid, TryInsert should return it rather than the
++  // existing indexed entry.
++  EXPECT_FALSE(invalid_entry->Valid());
++  EXPECT_EQ(invalid_entry, url_index_->TryInsert(invalid_entry));
++
++  // If a new valid entry has a mismatched data origin, MergeFrom fails and
++  // TryInsert should return the new entry rather than the incompatible indexed
++  // entry.
++  mismatched_origin->set_range_supported();
++  mismatched_origin->set_valid_until(valid_until);
++  mismatched_origin->set_last_modified(last_modified);
++  mismatched_origin->SetDataOrigin(KURL(), /*is_cors_cross_origin=*/false);
++  EXPECT_TRUE(mismatched_origin->Valid());
++  EXPECT_EQ(mismatched_origin, url_index_->TryInsert(mismatched_origin));
++
++  // If a new valid entry has a mismatched CORS cross-origin taint state,
++  // MergeFrom fails and TryInsert should return the new entry rather than
++  // tainting the indexed non-opaque entry.
++  mismatched_opaque->set_range_supported();
++  mismatched_opaque->set_valid_until(valid_until);
++  mismatched_opaque->set_last_modified(last_modified);
++  mismatched_opaque->SetDataOrigin(url, /*is_cors_cross_origin=*/true);
++  EXPECT_TRUE(mismatched_opaque->Valid());
++  EXPECT_EQ(mismatched_opaque, url_index_->TryInsert(mismatched_opaque));
++  EXPECT_FALSE(b->is_cors_cross_origin());
+ }
+ 
+ TEST_F(UrlIndexTest, GetByUrlCacheDisabled) {
+@@ -183,15 +217,18 @@ TEST_F(UrlIndexTest, GetByUrlCacheDisabled) {
+                                            security_origin_));
+ }
+ 
+-TEST_F(UrlIndexTest, ValidateDataOrigin) {
++TEST_F(UrlIndexTest, CanAcceptDataFrom) {
+   KURL url("http://foo.bar.com");
+   KURL data_url;
+   scoped_refptr<UrlData> a = GetByUrl(url, UrlData::CORS_UNSPECIFIED);
+-  EXPECT_TRUE(a->ValidateDataOrigin(data_url));
+-
+-  // First call assigns the data origin, second call will assert them are the
+-  // same.
+-  EXPECT_TRUE(a->ValidateDataOrigin(data_url));
++  EXPECT_TRUE(a->CanAcceptDataFrom(data_url, /*is_cors_cross_origin=*/false));
++  EXPECT_TRUE(a->CanAcceptDataFrom(url, /*is_cors_cross_origin=*/true));
++
++  // Setting the data origin pins both the origin and opacity.
++  a->SetDataOrigin(data_url, /*is_cors_cross_origin=*/false);
++  EXPECT_TRUE(a->CanAcceptDataFrom(data_url, /*is_cors_cross_origin=*/false));
++  EXPECT_FALSE(a->CanAcceptDataFrom(url, /*is_cors_cross_origin=*/false));
++  EXPECT_FALSE(a->CanAcceptDataFrom(data_url, /*is_cors_cross_origin=*/true));
+ }
+ 
+ TEST_F(UrlIndexTest, DestructionWithOrphanedUrlData) {
+@@ -221,7 +258,7 @@ TEST_F(UrlIndexTest, RedirectToPreservesCrossOrigin) {
+   EXPECT_FALSE(a->is_cors_cross_origin());
+   EXPECT_FALSE(b->is_cors_cross_origin());
+ 
+-  a->set_is_cors_cross_origin(true);
++  a->SetDataOrigin(url1, /*is_cors_cross_origin=*/true);
+   a->RedirectTo(b);
+ 
+   EXPECT_TRUE(a->is_cors_cross_origin());
+@@ -276,7 +313,7 @@ TEST_F(UrlIndexTest, SecurityOriginIsolation) {
+                                                   UrlData::kNormal, origin1);
+   a->Use();
+   a->set_range_supported();
+-  a->set_is_cors_cross_origin(false);
++  a->SetDataOrigin(url, /*is_cors_cross_origin=*/false);
+   EXPECT_TRUE(a->Valid());
+   EXPECT_EQ(a, url_index_->TryInsert(a));
+ 
+@@ -293,7 +330,7 @@ TEST_F(UrlIndexTest, SecurityOriginIsolation) {
+   // Inserting `b` does not merge into or overwrite `a`.
+   b->Use();
+   b->set_range_supported();
+-  b->set_is_cors_cross_origin(true);
++  b->SetDataOrigin(url, /*is_cors_cross_origin=*/true);
+   EXPECT_TRUE(b->Valid());
+   EXPECT_EQ(b, url_index_->TryInsert(b));
+   EXPECT_EQ(a, url_index_->GetByUrl(url, UrlData::CORS_ANONYMOUS,

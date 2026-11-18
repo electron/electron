@@ -1,0 +1,664 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Fri, 16 Oct 2026 11:32:00 -0700
+Subject: [IntersectionObserver] Skip geometry computation for a throttled
+ frame
+
+Previously, we would check `NeedsLayout()` to determine whether it
+would be safe to compute geometry. That condition is not sufficient:
+a throttled frame could have dirty style or dirty slot assignments
+without invalidating layout. Ultimately, we cannot make any
+assumptions about a frame that skipped a lifecycle update due to
+being throttled, so the only sane thing to do is to issue "not
+intersecting" notifications for targets inside a throttled frame.
+
+The new behavior is behind a flag, in case of breakage.
+
+Fixed: 570703733
+Change-Id: I8331a274b50df46ac4bd98356537c38551f8f798
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8578239
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1720918}
+
+Electron adaptation notes (45-x-y): intersection_observer_test.cc: the test hunks were taken from the author's M157 rebase of this change (https://chromium-review.googlesource.com/c/chromium/src/+/8606106), which uses this branch's GetElementById() test helper; all non-test hunks are the main change's.
+
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index 457db56da6c175c3f39b746780832b4063599b55..eb38d2296e3a64b0ccac55dce769be7424931cbb 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -4943,6 +4943,7 @@ void LocalFrameView::RenderThrottlingStatusChanged() {
+     }
+   }
+ 
++  SetIntersectionObservationState(kDesired);
+   if (!CanThrottleRendering()) {
+     // Start ticking animation frames again if necessary.
+     if (GetPage())
+@@ -5030,8 +5031,19 @@ LocalFrameView::GetIntersectionObservationFlags(
+     flags.Put(IntersectionObservation::kReportImplicitRootBounds);
+   }
+ 
+-  if (!target_frame.IsLocalRoot() && !target_frame.OwnerLayoutObject())
++  if (!target_frame.IsLocalRoot() && !target_frame.OwnerLayoutObject()) {
+     flags.Put(IntersectionObservation::kAncestorFrameIsDetachedFromLayout);
++  }
++
++  // If this is true, then we skipped lifecycle update work and we should not
++  // try to do any geometry computation, but should still queue degenerate
++  // "not intersecting" notifications for any observations that were previously
++  // intersecting.
++  if (RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled() &&
++      intersection_observation_state_ != kRequired && CanThrottleRendering()) {
++    flags.Put(IntersectionObservation::kStaleGeometry);
++  }
+ 
+   // Observers with explicit roots only need to be checked on the same frame,
+   // since in this case target and root must be in the same document.
+diff --git a/third_party/blink/renderer/core/intersection_observer/intersection_geometry.cc b/third_party/blink/renderer/core/intersection_observer/intersection_geometry.cc
+index c0a10f6e2a50a86eb024d7ad095301c79b6ccccb..68d1b314b013262f37ec9208b6ccc49beffeb9cd 100644
+--- a/third_party/blink/renderer/core/intersection_observer/intersection_geometry.cc
++++ b/third_party/blink/renderer/core/intersection_observer/intersection_geometry.cc
+@@ -269,6 +269,9 @@ IntersectionGeometry::IntersectionGeometry(
+     CachedRects* cached_rects,
+     std::optional<HitNodeCb> hit_node_cb)
+     : flags_(flags), hit_node_cb_(std::move(hit_node_cb)) {
++  if (flags_.Has(kStaleGeometry)) {
++    return;
++  }
+   flags_.RetainAll(
+       Flags::FromRange(kConstructorFlagFirst, kConstructorFlagLast));
+   // Only one of root_margin or target_margin can be specified.
+diff --git a/third_party/blink/renderer/core/intersection_observer/intersection_geometry.h b/third_party/blink/renderer/core/intersection_observer/intersection_geometry.h
+index 2252155d56c41fbb6d9e1f7339bf195f4e71e268..b228ec246a5758135986d3a8d17f164e7376b274 100644
+--- a/third_party/blink/renderer/core/intersection_observer/intersection_geometry.h
++++ b/third_party/blink/renderer/core/intersection_observer/intersection_geometry.h
+@@ -73,7 +73,8 @@ class CORE_EXPORT IntersectionGeometry {
+     kScrollAndVisibilityOnly,
+     // This flag is to expose extra information of occluded state.
+     kShouldExposeOccluderNodeId,
+-    kConstructorFlagLast = kShouldExposeOccluderNodeId,
++    kStaleGeometry,
++    kConstructorFlagLast = kStaleGeometry,
+ 
+     // These flags will be computed
+     kShouldUseCachedRects,
+diff --git a/third_party/blink/renderer/core/intersection_observer/intersection_observation.cc b/third_party/blink/renderer/core/intersection_observer/intersection_observation.cc
+index 86d28faed224686f3e55579212e2f4dceda2c7c1..ae8401c67415f2c8e6760304cefc2e2be33a6444 100644
+--- a/third_party/blink/renderer/core/intersection_observer/intersection_observation.cc
++++ b/third_party/blink/renderer/core/intersection_observer/intersection_observation.cc
+@@ -197,6 +197,9 @@ IntersectionObservation::GetIntersectionGeometryFlags(
+   if (compute_flags.Has(kScrollAndVisibilityOnly)) {
+     geometry_flags.Put(IntersectionGeometry::kScrollAndVisibilityOnly);
+   }
++  if (compute_flags.Has(kStaleGeometry)) {
++    geometry_flags.Put(IntersectionGeometry::kStaleGeometry);
++  }
+   return geometry_flags;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/intersection_observer/intersection_observation.h b/third_party/blink/renderer/core/intersection_observer/intersection_observation.h
+index fb9d1c3a868d7f28c49806af07fd99a89856d9ed..3c1733b951f79851e4484150da4be5901d529b3f 100644
+--- a/third_party/blink/renderer/core/intersection_observer/intersection_observation.h
++++ b/third_party/blink/renderer/core/intersection_observer/intersection_observation.h
+@@ -63,7 +63,10 @@ class CORE_EXPORT IntersectionObservation final
+     kScrollAndVisibilityOnly,
+     // Remove outdated entries from IntersectionObserverController.
+     kUpdateTracking,
+-    kMaxValue = kUpdateTracking,
++    // Document geometry is stale due to throttling and we should issue a "not
++    // intersecting" notification if we were previously intersecting.
++    kStaleGeometry,
++    kMaxValue = kStaleGeometry
+   };
+   // Allow using the enum values under IntersectionObservation::.
+   using enum ComputeFlag;
+diff --git a/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc b/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
+index a2ea9bd36e25a28d7fe0b28f593ee4c829ea0a5c..c45f45f78f6093f8fa5e6cbde817202dba3921e6 100644
+--- a/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
++++ b/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
+@@ -12,6 +12,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_union_document_element.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_union_double_doublesequence.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
++#include "third_party/blink/renderer/core/dom/shadow_root.h"
+ #include "third_party/blink/renderer/core/exported/web_view_impl.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+@@ -28,6 +29,7 @@
+ #include "third_party/blink/renderer/core/testing/sim/sim_request.h"
+ #include "third_party/blink/renderer/core/testing/sim/sim_test.h"
+ #include "third_party/blink/renderer/platform/heap/thread_state.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ #include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ #include "ui/gfx/geometry/test/geometry_util.h"
+ 
+@@ -2781,6 +2783,7 @@ TEST_F(IntersectionObserverTest, DelayedAndNonDelayedIntersections) {
+ }
+ 
+ TEST_F(IntersectionObserverTest, IntersectionWithMarginInThrottledFrame) {
++  ScopedStaleIntersectionGeometryForThrottledFramesForTest scoped_feature(true);
+   WebView().MainFrameViewWidget()->Resize(gfx::Size(800, 600));
+   SimRequest main_resource("https://example.com/", "text/html");
+   SimRequest iframe_resource("https://example.com/iframe.html", "text/html");
+@@ -2792,6 +2795,9 @@ TEST_F(IntersectionObserverTest, IntersectionWithMarginInThrottledFrame) {
+   iframe_resource.Complete("<div id='target'>Hello, world!</div>");
+   Compositor().BeginFrame();
+ 
++  uint32_t expected_call_count = 0;
++  uint32_t expected_entry_count = 0;
++
+   Document* iframe_document = To<WebLocalFrameImpl>(MainFrame().FirstChild())
+                                   ->GetFrame()
+                                   ->GetDocument();
+@@ -2809,8 +2815,8 @@ TEST_F(IntersectionObserverTest, IntersectionWithMarginInThrottledFrame) {
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+   EXPECT_FALSE(iframe_document->View()->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 1);
+-  EXPECT_EQ(observer_delegate->EntryCount(), 1);
++  EXPECT_EQ(observer_delegate->CallCount(), ++expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), ++expected_entry_count);
+   EXPECT_TRUE(observer_delegate->LastEntry()->isIntersecting());
+ 
+   // Move the iframe out of view, but the target is still in the margin.
+@@ -2819,32 +2825,90 @@ TEST_F(IntersectionObserverTest, IntersectionWithMarginInThrottledFrame) {
+       ->SetInlineStyleProperty(CSSPropertyID::kTop, "600px");
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
++  // The iframe was not throttled during BeginFrame so the iframe updated its
++  // rendering and we did not send a "not intersecting" notification due to
++  // throttling.
+   EXPECT_TRUE(iframe_document->View()->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 1);
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
+ 
++<<<<<<< HEAD   (235072ebe70d6fa7f8265ec0197bb55a383ccc4b Roll Chrome Mac Arm PGO Profile)
+   // Move the iframe further down, to move the target out of the margin.
+   GetDocument()
+       .getElementById(AtomicString("iframe"))
+       ->SetInlineStyleProperty(CSSPropertyID::kTop, "1000px");
++||||||| BASE   (586da45eb6a3258114017078d46e1b0fe1b19144 Disable flaky ContextualSearchManagerTest tests on automotiv)
++  // Move the iframe further down, to move the target out of the margin.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "1000px");
++=======
++  // The iframe is now throttled and will not update its rendering on the next
++  // BeginFrame. It should queue a "not intersecting" notification if
++  // StaleIntersectionGeometryForThrottledFrames is enabled.
++  if (RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled()) {
++    expected_call_count++;
++    expected_entry_count++;
++  }
++  iframe_document->View()->ScheduleAnimation();
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+   EXPECT_TRUE(iframe_document->View()->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 2);
+-  EXPECT_EQ(observer_delegate->EntryCount(), 2);
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
++  EXPECT_EQ(!RuntimeEnabledFeatures::
++                StaleIntersectionGeometryForThrottledFramesEnabled(),
++            observer_delegate->LastEntry()->isIntersecting());
++
++  // Move the iframe outside the margin. If we have not already, we should
++  // generate a "not intersecting" notification now.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "1000px");
++>>>>>>> CHANGE (bc7f159f95480aae1179914066db9451d4f14599 [IntersectionObserver] Skip geometry computation for a throt)
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++  if (!RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled()) {
++    expected_call_count++;
++    expected_entry_count++;
++  }
++  EXPECT_TRUE(iframe_document->View()->IsHiddenForThrottling());
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
+   EXPECT_FALSE(observer_delegate->LastEntry()->isIntersecting());
+ 
++<<<<<<< HEAD   (235072ebe70d6fa7f8265ec0197bb55a383ccc4b Roll Chrome Mac Arm PGO Profile)
+   // Move the iframe up, still out of view, but the target will be in the
+   // margin.
+   GetDocument()
+       .getElementById(AtomicString("iframe"))
+       ->SetInlineStyleProperty(CSSPropertyID::kTop, "600px");
+-  Compositor().BeginFrame();
+-  test::RunPendingTasks();
++||||||| BASE   (586da45eb6a3258114017078d46e1b0fe1b19144 Disable flaky ContextualSearchManagerTest tests on automotiv)
++  // Move the iframe up, still out of view, but the target will be in the
++  // margin.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "600px");
++=======
++  // Move the iframe into the margin but still outside the viewport. We should
++  // report it as intersecting if StaleIntersectionGeometryForThrottledFrames
++  // is disabled.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "600px");
++>>>>>>> CHANGE (bc7f159f95480aae1179914066db9451d4f14599 [IntersectionObserver] Skip geometry computation for a throt)
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++  if (!RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled()) {
++    expected_call_count++;
++    expected_entry_count++;
++  }
+   EXPECT_TRUE(iframe_document->View()->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 3);
+-  EXPECT_EQ(observer_delegate->EntryCount(), 3);
+-  EXPECT_TRUE(observer_delegate->LastEntry()->isIntersecting());
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
++  EXPECT_EQ(!RuntimeEnabledFeatures::
++                StaleIntersectionGeometryForThrottledFramesEnabled(),
++            observer_delegate->LastEntry()->isIntersecting());
+ 
++<<<<<<< HEAD   (235072ebe70d6fa7f8265ec0197bb55a383ccc4b Roll Chrome Mac Arm PGO Profile)
+   // Move the iframe down a bit. Though the target may still in the margin,
+   // the iframe's view is marked needing layout somehow, and we will create a
+   // degenerate "not intersecting" notification.
+@@ -2852,12 +2916,45 @@ TEST_F(IntersectionObserverTest, IntersectionWithMarginInThrottledFrame) {
+       .getElementById(AtomicString("iframe"))
+       ->SetInlineStyleProperty(CSSPropertyID::kTop, "610px");
+   iframe_document->View()->SetNeedsLayout();
++||||||| BASE   (586da45eb6a3258114017078d46e1b0fe1b19144 Disable flaky ContextualSearchManagerTest tests on automotiv)
++  // Move the iframe down a bit. Though the target may still in the margin,
++  // the iframe's view is marked needing layout somehow, and we will create a
++  // degenerate "not intersecting" notification.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "610px");
++  iframe_document->View()->SetNeedsLayout();
++=======
++  // Move the iframe into the viewport.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "500px");
++>>>>>>> CHANGE (bc7f159f95480aae1179914066db9451d4f14599 [IntersectionObserver] Skip geometry computation for a throt)
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+-  EXPECT_TRUE(iframe_document->View()->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 4);
+-  EXPECT_EQ(observer_delegate->EntryCount(), 4);
+-  EXPECT_FALSE(observer_delegate->LastEntry()->isIntersecting());
++  // Despite being in the viewport, the iframe was throttled during BeginFrame
++  // so it will not queue an "intersecting" notification on this pass if
++  // StaleIntersectionGeometryForThrottledFrames is enabled.
++  EXPECT_FALSE(iframe_document->View()->IsHiddenForThrottling());
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
++  EXPECT_EQ(!RuntimeEnabledFeatures::
++                StaleIntersectionGeometryForThrottledFramesEnabled(),
++            observer_delegate->LastEntry()->isIntersecting());
++
++  // On the next update the iframe will not be throttled and we should issue an
++  // "intersecting" notification if StaleIntersectionGeometryForThrottledFrames
++  // is enabled.
++  iframe_document->View()->ScheduleAnimation();
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++  if (RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled()) {
++    expected_call_count++;
++    expected_entry_count++;
++  }
++  EXPECT_FALSE(iframe_document->View()->IsHiddenForThrottling());
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
++  EXPECT_TRUE(observer_delegate->LastEntry()->isIntersecting());
+ }
+ 
+ TEST_F(IntersectionObserverTest,
+@@ -2873,6 +2970,9 @@ TEST_F(IntersectionObserverTest,
+   iframe_resource.Complete("<div id='target'>Hello, world!</div>");
+   Compositor().BeginFrame();
+ 
++  uint32_t expected_call_count = 0;
++  uint32_t expected_entry_count = 0;
++
+   Document* iframe_document = To<WebLocalFrameImpl>(MainFrame().FirstChild())
+                                   ->GetFrame()
+                                   ->GetDocument();
+@@ -2894,8 +2994,8 @@ TEST_F(IntersectionObserverTest,
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+   EXPECT_FALSE(iframe_view->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 1);
+-  EXPECT_EQ(observer_delegate->EntryCount(), 1);
++  EXPECT_EQ(observer_delegate->CallCount(), ++expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), ++expected_entry_count);
+   EXPECT_TRUE(observer_delegate->LastEntry()->isIntersecting());
+   EXPECT_FALSE(observation->HasPendingUpdateForTesting());
+ 
+@@ -2905,12 +3005,23 @@ TEST_F(IntersectionObserverTest,
+       ->SetInlineStyleProperty(CSSPropertyID::kTop, "600px");
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
++  // Because the notification delay has not elapsed, the observation is
++  // scheduled for a delayed update and the iframe becomes throttled at the end
++  // of BeginFrame.
+   EXPECT_TRUE(iframe_view->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 1);
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
+   EXPECT_TRUE(observation->HasPendingUpdateForTesting());
+   EXPECT_TRUE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+ 
++  // When the delay expires, the iframe is throttled and will not update its
++  // rendering on the next BeginFrame. It should queue a "not intersecting"
++  // notification if StaleIntersectionGeometryForThrottledFrames is enabled.
++  if (RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled()) {
++    expected_call_count++;
++    expected_entry_count++;
++  }
+   task_environment().FastForwardBy(base::Seconds(1));
+   EXPECT_TRUE(observation->HasPendingUpdateForTesting());
+   EXPECT_FALSE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+@@ -2918,20 +3029,34 @@ TEST_F(IntersectionObserverTest,
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+   EXPECT_TRUE(iframe_view->IsHiddenForThrottling());
+-  // `target` is still in the intersection margin.
+-  EXPECT_EQ(observer_delegate->CallCount(), 1);
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
++  EXPECT_EQ(!RuntimeEnabledFeatures::
++                StaleIntersectionGeometryForThrottledFramesEnabled(),
++            observer_delegate->LastEntry()->isIntersecting());
+   EXPECT_FALSE(observation->HasPendingUpdateForTesting());
+   EXPECT_FALSE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+ 
++<<<<<<< HEAD   (235072ebe70d6fa7f8265ec0197bb55a383ccc4b Roll Chrome Mac Arm PGO Profile)
+   // Move the iframe further down, to move the target out of the margin.
+   GetDocument()
+       .getElementById(AtomicString("iframe"))
+       ->SetInlineStyleProperty(CSSPropertyID::kTop, "1000px");
++||||||| BASE   (586da45eb6a3258114017078d46e1b0fe1b19144 Disable flaky ContextualSearchManagerTest tests on automotiv)
++  // Move the iframe further down, to move the target out of the margin.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "1000px");
++=======
++  // Move the iframe outside the margin. If we have not already, we should
++  // generate a "not intersecting" notification after the delay.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "1000px");
++>>>>>>> CHANGE (bc7f159f95480aae1179914066db9451d4f14599 [IntersectionObserver] Skip geometry computation for a throt)
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+   EXPECT_TRUE(iframe_view->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 1);
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
+   EXPECT_TRUE(observation->HasPendingUpdateForTesting());
+   EXPECT_TRUE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+@@ -2942,23 +3067,41 @@ TEST_F(IntersectionObserverTest,
+   EXPECT_TRUE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
++  if (!RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled()) {
++    expected_call_count++;
++    expected_entry_count++;
++  }
+   EXPECT_TRUE(iframe_view->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 2);
+-  EXPECT_EQ(observer_delegate->EntryCount(), 2);
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
+   EXPECT_FALSE(observer_delegate->LastEntry()->isIntersecting());
+   EXPECT_FALSE(observation->HasPendingUpdateForTesting());
+   EXPECT_FALSE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+ 
++<<<<<<< HEAD   (235072ebe70d6fa7f8265ec0197bb55a383ccc4b Roll Chrome Mac Arm PGO Profile)
+   // Move the iframe up, still out of view, but the target will be in the
+   // margin.
+   GetDocument()
+       .getElementById(AtomicString("iframe"))
+       ->SetInlineStyleProperty(CSSPropertyID::kTop, "600px");
++||||||| BASE   (586da45eb6a3258114017078d46e1b0fe1b19144 Disable flaky ContextualSearchManagerTest tests on automotiv)
++  // Move the iframe up, still out of view, but the target will be in the
++  // margin.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "600px");
++=======
++  // Move the iframe into the margin but still outside the viewport. We should
++  // report it as intersecting after the delay if
++  // StaleIntersectionGeometryForThrottledFrames is disabled.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "600px");
++>>>>>>> CHANGE (bc7f159f95480aae1179914066db9451d4f14599 [IntersectionObserver] Skip geometry computation for a throt)
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+   EXPECT_TRUE(iframe_view->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 2);
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
+   EXPECT_TRUE(observation->HasPendingUpdateForTesting());
+   EXPECT_TRUE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+@@ -2969,42 +3112,157 @@ TEST_F(IntersectionObserverTest,
+   EXPECT_TRUE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
++  if (!RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled()) {
++    expected_call_count++;
++    expected_entry_count++;
++  }
+   EXPECT_TRUE(iframe_view->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 3);
+-  EXPECT_EQ(observer_delegate->EntryCount(), 3);
+-  EXPECT_TRUE(observer_delegate->LastEntry()->isIntersecting());
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
++  EXPECT_EQ(!RuntimeEnabledFeatures::
++                StaleIntersectionGeometryForThrottledFramesEnabled(),
++            observer_delegate->LastEntry()->isIntersecting());
+   EXPECT_FALSE(observation->HasPendingUpdateForTesting());
+   EXPECT_FALSE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+ 
+-  // Move the iframe down again and mark the iframe's view needs layout.
+-  GetDocument()
+-      .getElementById(AtomicString("iframe"))
+-      ->SetInlineStyleProperty(CSSPropertyID::kTop, "1000px");
+-  iframe_view->SetNeedsLayout();
++  // Move the iframe into the viewport.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "500px");
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+-  EXPECT_TRUE(iframe_view->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 3);
++  // Despite being in the viewport, the delayed observation is rescheduled and
++  // the iframe was throttled during BeginFrame, so no notification is queued on
++  // this pass.
++  EXPECT_FALSE(iframe_view->IsHiddenForThrottling());
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
++  EXPECT_EQ(!RuntimeEnabledFeatures::
++                StaleIntersectionGeometryForThrottledFramesEnabled(),
++            observer_delegate->LastEntry()->isIntersecting());
+   EXPECT_TRUE(observation->HasPendingUpdateForTesting());
+   EXPECT_TRUE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+ 
++  // When the delay expires, the iframe is no longer throttled and we should
++  // issue an "intersecting" notification if
++  // StaleIntersectionGeometryForThrottledFrames is enabled.
+   task_environment().FastForwardBy(base::Seconds(1));
+   EXPECT_TRUE(observation->HasPendingUpdateForTesting());
+   EXPECT_FALSE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_TRUE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+   Compositor().BeginFrame();
+   test::RunPendingTasks();
+-  EXPECT_TRUE(iframe_view->IsHiddenForThrottling());
+-  EXPECT_EQ(observer_delegate->CallCount(), 4);
+-  EXPECT_EQ(observer_delegate->EntryCount(), 4);
+-  EXPECT_FALSE(observer_delegate->LastEntry()->isIntersecting());
++  if (RuntimeEnabledFeatures::
++          StaleIntersectionGeometryForThrottledFramesEnabled()) {
++    expected_call_count++;
++    expected_entry_count++;
++  }
++  EXPECT_FALSE(iframe_view->IsHiddenForThrottling());
++  EXPECT_EQ(observer_delegate->CallCount(), expected_call_count);
++  EXPECT_EQ(observer_delegate->EntryCount(), expected_entry_count);
++  EXPECT_TRUE(observer_delegate->LastEntry()->isIntersecting());
+   EXPECT_FALSE(observation->HasPendingUpdateForTesting());
+   EXPECT_FALSE(root_frame_view->HasScheduledDelayedIntersectionForTesting());
+   EXPECT_FALSE(root_frame_view->NeedsUpdateDelayedIntersectionForTesting());
+ }
+ 
++<<<<<<< HEAD   (235072ebe70d6fa7f8265ec0197bb55a383ccc4b Roll Chrome Mac Arm PGO Profile)
++  // Move the iframe down again and mark the iframe's view needs layout.
++  GetDocument()
++      .getElementById(AtomicString("iframe"))
++      ->SetInlineStyleProperty(CSSPropertyID::kTop, "1000px");
++  iframe_view->SetNeedsLayout();
++||||||| BASE   (586da45eb6a3258114017078d46e1b0fe1b19144 Disable flaky ContextualSearchManagerTest tests on automotiv)
++  // Move the iframe down again and mark the iframe's view needs layout.
++  GetElementById("iframe")->SetInlineStyleProperty(CSSPropertyID::kTop,
++                                                   "1000px");
++  iframe_view->SetNeedsLayout();
++=======
++// Regression test for https://crbug.com/570703733.
++TEST_F(IntersectionObserverTest, DirtySlotAssignmentInThrottledFrame) {
++  WebView().MainFrameViewWidget()->Resize(gfx::Size(800, 600));
++  SimRequest main_resource("https://example.com/", "text/html");
++  SimRequest iframe_resource("https://example.com/iframe.html", "text/html");
++  LoadURL("https://example.com/");
++  main_resource.Complete(R"HTML(
++    <iframe id="iframe" src="iframe.html" sandbox style="position: absolute">
++    </iframe>
++  )HTML");
++  iframe_resource.Complete(R"HTML(
++    <div id="kick">Kick</div>
++    <div id="host">
++      <template shadowrootmode="open">
++        <slot></slot>
++      </template>
++      <div id="target">Hello, world!</div>
++      <div id="wrap">
++        <div style="overflow: scroll; width: 50px; height: 50px">
++          <div style="anchor-name: --a; width: 10px; height: 10px"></div>
++          <div style="position: absolute; position-anchor: --a"></div>
++        </div>
++      </div>
++    </div>
++  )HTML");
++  Compositor().BeginFrame();
++
++  Document* iframe_document = To<WebLocalFrameImpl>(MainFrame().FirstChild())
++                                  ->GetFrame()
++                                  ->GetDocument();
++  TestIntersectionObserverDelegate* observer_delegate =
++      MakeGarbageCollected<TestIntersectionObserverDelegate>(*iframe_document);
++  IntersectionObserver* observer = MakeGarbageCollected<IntersectionObserver>(
++      *observer_delegate, std::nullopt,
++      IntersectionObserver::Params{.root = iframe_document, .thresholds = {0}});
++  Element* target = iframe_document->getElementById(AtomicString("target"));
++  ASSERT_TRUE(target);
++  observer->observe(target);
++
++>>>>>>> CHANGE (bc7f159f95480aae1179914066db9451d4f14599 [IntersectionObserver] Skip geometry computation for a throt)
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++  EXPECT_FALSE(iframe_document->View()->IsHiddenForThrottling());
++  EXPECT_EQ(observer_delegate->CallCount(), 1);
++  EXPECT_EQ(observer_delegate->EntryCount(), 1);
++  EXPECT_TRUE(observer_delegate->LastEntry()->isIntersecting());
++
++  // Move the iframe out of view so that it becomes render-throttled.
++  GetDocument()
++      .getElementById(AtomicString("iframe"))
++      ->SetInlineStyleProperty(CSSPropertyID::kTop, "1000px");
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++  EXPECT_TRUE(iframe_document->View()->IsHiddenForThrottling());
++
++  Element* host = iframe_document->getElementById(AtomicString("host"));
++  ASSERT_TRUE(host);
++  ShadowRoot* shadow_root = host->OpenShadowRoot();
++  ASSERT_TRUE(shadow_root);
++  EXPECT_FALSE(shadow_root->NeedsSlotAssignmentRecalc());
++
++  // Remove `#kick` to set IntersectionObservationState::kDesired on the
++  // throttled frame, and change `#wrap`'s slot attribute so that slot
++  // assignment is dirty when ComputeIntersections runs.
++  Element* kick = iframe_document->getElementById(AtomicString("kick"));
++  ASSERT_TRUE(kick);
++  kick->remove();
++  Element* wrap = iframe_document->getElementById(AtomicString("wrap"));
++  ASSERT_TRUE(wrap);
++  wrap->setAttribute(html_names::kSlotAttr, AtomicString("x"));
++  EXPECT_TRUE(shadow_root->NeedsSlotAssignmentRecalc());
++
++  Compositor().BeginFrame();
++  test::RunPendingTasks();
++  EXPECT_TRUE(iframe_document->View()->IsHiddenForThrottling());
++  // Computing intersections in a throttled frame must not force slot
++  // assignment recalculation during post-lifecycle steps.
++  EXPECT_TRUE(shadow_root->NeedsSlotAssignmentRecalc());
++  EXPECT_EQ(observer_delegate->CallCount(), 2);
++  EXPECT_EQ(observer_delegate->EntryCount(), 2);
++  EXPECT_FALSE(observer_delegate->LastEntry()->isIntersecting());
++}
++
+ TEST_F(IntersectionObserverTest, RootMarginPercentOverflow) {
+   IntersectionObserverInit* observer_init = IntersectionObserverInit::Create();
+   observer_init->setRootMargin("3e9%");
+diff --git a/third_party/blink/renderer/core/scheduler_integration_tests/frame_throttling_test.cc b/third_party/blink/renderer/core/scheduler_integration_tests/frame_throttling_test.cc
+index bbdb6abf7b0ab4a66e097dd431fa140abb574ef2..835183192a385d210a4d9f20106f49f25b273a4e 100644
+--- a/third_party/blink/renderer/core/scheduler_integration_tests/frame_throttling_test.cc
++++ b/third_party/blink/renderer/core/scheduler_integration_tests/frame_throttling_test.cc
+@@ -324,12 +324,16 @@ TEST_P(FrameThrottlingTest,
+   // Force |child_frame_view| to do an intersection observation.
+   child_frame_view->SetIntersectionObservationState(LocalFrameView::kRequired);
+ 
+-  // Though |root_frame_view| is throttled, the descendant (|child_frame_view|)
+-  // should still be updated which resets the intersection observation state.
++  // The child frame will process intersection observations at the end of
++  // CompositeFrame(), which will reset its state to kNotNeeded. The child
++  // frame will then inherit the parent frame's throttled state, and when a
++  // frame first becomes throttled its state is advanced to kDesired, so
++  // that it has a chance to generate "not intersecting" notifications for
++  // its content.
+   CompositeFrame();
+   EXPECT_EQ(LocalFrameView::kNotNeeded,
+             root_frame_view->GetIntersectionObservationStateForTesting());
+-  EXPECT_EQ(LocalFrameView::kNotNeeded,
++  EXPECT_EQ(LocalFrameView::kDesired,
+             child_frame_view->GetIntersectionObservationStateForTesting());
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index d420997c217ccf3b478dbc42b556210f0b846589..30563f7ddbc672fe65e50a09c4050c83261a9a48 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -6117,6 +6117,20 @@
+       name: "StaleImageNaturalSizeDuringRevalidation",
+       status: "stable",
+     },
++    {
++      // Without this flag, an IntersectionObserver target inside a
++      // render-throttled iframe will continue to compute its intersection state
++      // as long as `NeedsLayout()` is `false` for its containing document. This
++      // is a faulty mechanism, as `NeedsLayout()` does not reliably indicate
++      // whether a document's rendering is out of date. When the flag is enabled
++      // all IntersectionObserver targets inside an iframe that becomes
++      // throttled will promptly generate a "not intersecting" notification.
++      // This is a web-visible change in behavior (though it does not reveal any
++      // new information), so it's hidden behind a flag to provide a kill switch
++      // in the event of breakage.
++      name: "StaleIntersectionGeometryForThrottledFrames",
++      status: "stable",
++    },
+     {
+       // See https://github.com/w3c/csswg-drafts/issues/9398
+       name: "StandardizedBrowserZoom",

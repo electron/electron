@@ -1,0 +1,498 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Thu, 22 Oct 2026 00:26:33 -0700
+Subject: Make singleton Persistents in css/ thread local
+
+CSS parsing can happen on multiple threads. One example is canvas
+context parsing, which is limited to a certain set of values for which
+we have previously avoided general property parsing by not allowing
+unparsed values. However, for the typed OM API CSSUnparsedValue, we can
+parse arbitrary property values in if(supports()) like this:
+
+CSSUnparsedValue(['if(supports(animation: a): 1px)']).toString();
+
+In some cases we rely on static singletons which are sometimes allocated
+on the oilpan heap, which can not be safely constructed or accessed
+cross thread.
+
+Introduce ThreadSpecific singletons for these.
+
+Bug: 575201475, 575201060
+Change-Id: I7a9e53999afd4b093f3ff0fcea88d0f9766536ca
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8608808
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1724494}
+
+diff --git a/third_party/blink/renderer/core/css/css_default_style_sheets.cc b/third_party/blink/renderer/core/css/css_default_style_sheets.cc
+index f428c9610bfc97f2bfa20a7495fcdaaf7c679ccc..0577d7af10c1aebafdbfa072ddcdb9971cd93e9d 100644
+--- a/third_party/blink/renderer/core/css/css_default_style_sheets.cc
++++ b/third_party/blink/renderer/core/css/css_default_style_sheets.cc
+@@ -77,6 +77,7 @@ CSSDefaultStyleSheets& CSSDefaultStyleSheets::Instance() {
+   DEFINE_STATIC_LOCAL(Persistent<CSSDefaultStyleSheets>,
+                       css_default_style_sheets,
+                       (MakeGarbageCollected<CSSDefaultStyleSheets>()));
++  CHECK(IsMainThread());
+   return *css_default_style_sheets;
+ }
+ 
+@@ -86,6 +87,7 @@ static const MediaQueryEvaluator& ForcedColorsEval() {
+   DEFINE_STATIC_LOCAL(
+       Persistent<MediaQueryEvaluator>, forced_colors_eval,
+       (MakeGarbageCollected<MediaQueryEvaluator>("ua-forced-colors")));
++  CHECK(IsMainThread());
+   return *forced_colors_eval;
+ }
+ 
+@@ -111,6 +113,7 @@ StyleSheetContents* CSSDefaultStyleSheets::ParseUASheet(const String& str) {
+ const MediaQueryEvaluator& CSSDefaultStyleSheets::ScreenEval() {
+   DEFINE_STATIC_LOCAL(const Persistent<MediaQueryEvaluator>, static_screen_eval,
+                       (MakeGarbageCollected<MediaQueryEvaluator>("screen")));
++  CHECK(IsMainThread());
+   return *static_screen_eval;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/css_length_resolver.cc b/third_party/blink/renderer/core/css/css_length_resolver.cc
+index 566442ae05e215b0059324c28e9d4922fdd383d0..5d6418a9f49bc647d1503b18b2a522254ad1d599 100644
+--- a/third_party/blink/renderer/core/css/css_length_resolver.cc
++++ b/third_party/blink/renderer/core/css/css_length_resolver.cc
+@@ -5,6 +5,7 @@
+ #include "third_party/blink/renderer/core/css/css_length_resolver.h"
+ 
+ #include "third_party/blink/renderer/core/css/css_resolution_units.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ 
+@@ -147,6 +148,7 @@ DefaultAnchorData CSSLengthResolver::GetDefaultAnchorData() const {
+   DEFINE_STATIC_LOCAL(Persistent<Holder>, empty,
+                       (MakeGarbageCollected<Holder>(StylePositionAnchor(
+                           StylePositionAnchor::Initial()))));
++  CHECK(IsMainThread());
+   return DefaultAnchorData(empty->Value(), PositionArea());
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/css_path_value.cc b/third_party/blink/renderer/core/css/css_path_value.cc
+index 4d4b8f5631e12f71819678da1ef0aaebb5f8d337..e7dca7b186db785032ea007cafc95d87f1747c50 100644
+--- a/third_party/blink/renderer/core/css/css_path_value.cc
++++ b/third_party/blink/renderer/core/css/css_path_value.cc
+@@ -11,6 +11,7 @@
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_functions.h"
+ #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ namespace cssvalue {
+@@ -40,6 +41,7 @@ CSSPathValue* CreatePathValue() {
+ 
+ const CSSPathValue& CSSPathValue::EmptyPathValue() {
+   DEFINE_STATIC_LOCAL(Persistent<CSSPathValue>, empty, (CreatePathValue()));
++  CHECK(IsMainThread());
+   return *empty;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/css_style_rule.cc b/third_party/blink/renderer/core/css/css_style_rule.cc
+index 1ad7c0a47fedd2680aa49f8a1e419660abf2fdb6..5e693002857ac1e669ce01c958a864e0c7cb9a86 100644
+--- a/third_party/blink/renderer/core/css/css_style_rule.cc
++++ b/third_party/blink/renderer/core/css/css_style_rule.cc
+@@ -48,6 +48,7 @@ static SelectorTextCache& GetSelectorTextCache() {
+   using SelectorTextCacheHolder = DisallowNewWrapper<SelectorTextCache>;
+   DEFINE_STATIC_LOCAL(Persistent<SelectorTextCacheHolder>, cache,
+                       (MakeGarbageCollected<SelectorTextCacheHolder>()));
++  CHECK(IsMainThread());
+   return cache->Value();
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/element_rule_collector.cc b/third_party/blink/renderer/core/css/element_rule_collector.cc
+index 33ff2c0604840d80e16868afab4964b74e4202c1..a8864ce1b87a5e6018220cd6a759a0b87e3a0990 100644
+--- a/third_party/blink/renderer/core/css/element_rule_collector.cc
++++ b/third_party/blink/renderer/core/css/element_rule_collector.cc
+@@ -384,6 +384,7 @@ using SelectorStatisticsRuleMap =
+     HashMap<CumulativeRulePerfKey, CumulativeRulePerfData>;
+ SelectorStatisticsRuleMap& GetSelectorStatisticsRuleMap() {
+   DEFINE_STATIC_LOCAL(SelectorStatisticsRuleMap, rule_map, {});
++  CHECK(IsMainThread());
+   return rule_map;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
+index 946d4795ef794dfca6d8b75e66ef3be37b050a8c..9eca6d5ecd6b73e4897967f5f49f258fb73c1441 100644
+--- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
++++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
+@@ -94,11 +94,15 @@
+ #include "third_party/blink/renderer/platform/geometry/length.h"
+ #include "third_party/blink/renderer/platform/graphics/color.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/text/platform_locale.h"
+ #include "third_party/blink/renderer/platform/text/quotes_data.h"
++#include "third_party/blink/renderer/platform/wtf/leak_annotations.h"
++#include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
+ #include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
++#include "third_party/blink/renderer/platform/wtf/thread_specific.h"
+ 
+ // Implementations of methods in Longhand subclasses that aren't generated.
+ 
+@@ -454,9 +458,14 @@ const CSSValue* AnimationDelay::CSSValueFromComputedStyleInternal(
+ }
+ 
+ const CSSValue* AnimationDelay::InitialValue() const {
+-  DEFINE_STATIC_LOCAL(const Persistent<CSSValue>, value,
+-                      (ComputedStyleUtils::ValueForAnimationDelay(
+-                          CSSTimingData::InitialDelayStart())));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(ThreadSpecific<Persistent<const CSSValue>>,
++                                  thread_specific_value, ());
++  Persistent<const CSSValue>& value = *thread_specific_value;
++  if (!value) [[unlikely]] {
++    value = ComputedStyleUtils::ValueForAnimationDelay(
++        CSSTimingData::InitialDelayStart());
++    LEAK_SANITIZER_IGNORE_OBJECT(&value);
++  }
+   return value;
+ }
+ 
+@@ -550,10 +559,15 @@ const CSSValue* AnimationIterationCount::CSSValueFromComputedStyleInternal(
+ }
+ 
+ const CSSValue* AnimationIterationCount::InitialValue() const {
+-  DEFINE_STATIC_LOCAL(
+-      const Persistent<CSSValue>, value,
+-      (CSSNumericLiteralValue::Create(CSSAnimationData::InitialIterationCount(),
+-                                      CSSPrimitiveValue::UnitType::kNumber)));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(ThreadSpecific<Persistent<const CSSValue>>,
++                                  thread_specific_value, ());
++  Persistent<const CSSValue>& value = *thread_specific_value;
++  if (!value) [[unlikely]] {
++    value = CSSNumericLiteralValue::Create(
++        CSSAnimationData::InitialIterationCount(),
++        CSSPrimitiveValue::UnitType::kNumber);
++    LEAK_SANITIZER_IGNORE_OBJECT(&value);
++  }
+   return value;
+ }
+ 
+@@ -1519,11 +1533,17 @@ const CSSValue* BorderImageOutset::CSSValueFromComputedStyleInternal(
+ }
+ 
+ const CSSValue* BorderImageOutset::InitialValue() const {
+-  DEFINE_STATIC_LOCAL(const Persistent<CSSQuadValue>, value,
+-                      (MakeGarbageCollected<CSSQuadValue>(
+-                          CSSNumericLiteralValue::Create(
+-                              0, CSSPrimitiveValue::UnitType::kInteger),
+-                          CSSQuadValue::kSerializeAsQuad)));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(
++      ThreadSpecific<Persistent<const CSSQuadValue>>, thread_specific_value,
++      ());
++  Persistent<const CSSQuadValue>& value = *thread_specific_value;
++  if (!value) [[unlikely]] {
++    value = MakeGarbageCollected<CSSQuadValue>(
++        CSSNumericLiteralValue::Create(0,
++                                       CSSPrimitiveValue::UnitType::kInteger),
++        CSSQuadValue::kSerializeAsQuad);
++    LEAK_SANITIZER_IGNORE_OBJECT(&value);
++  }
+   return value;
+ }
+ 
+@@ -1543,11 +1563,17 @@ const CSSValue* BorderImageRepeat::CSSValueFromComputedStyleInternal(
+ }
+ 
+ const CSSValue* BorderImageRepeat::InitialValue() const {
+-  DEFINE_STATIC_LOCAL(const Persistent<CSSValuePair>, value,
+-                      (MakeGarbageCollected<CSSValuePair>(
+-                          CSSIdentifierValue::Create(CSSValueID::kStretch),
+-                          CSSIdentifierValue::Create(CSSValueID::kStretch),
+-                          CSSValuePair::kDropIdenticalValues)));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(
++      ThreadSpecific<Persistent<const CSSValuePair>>, thread_specific_value,
++      ());
++  Persistent<const CSSValuePair>& value = *thread_specific_value;
++  if (!value) [[unlikely]] {
++    value = MakeGarbageCollected<CSSValuePair>(
++        CSSIdentifierValue::Create(CSSValueID::kStretch),
++        CSSIdentifierValue::Create(CSSValueID::kStretch),
++        CSSValuePair::kDropIdenticalValues);
++    LEAK_SANITIZER_IGNORE_OBJECT(&value);
++  }
+   return value;
+ }
+ 
+@@ -1569,14 +1595,20 @@ const CSSValue* BorderImageSlice::CSSValueFromComputedStyleInternal(
+ }
+ 
+ const CSSValue* BorderImageSlice::InitialValue() const {
+-  DEFINE_STATIC_LOCAL(
+-      const Persistent<cssvalue::CSSBorderImageSliceValue>, value,
+-      (MakeGarbageCollected<cssvalue::CSSBorderImageSliceValue>(
+-          MakeGarbageCollected<CSSQuadValue>(
+-              CSSNumericLiteralValue::Create(
+-                  100, CSSPrimitiveValue::UnitType::kPercentage),
+-              CSSQuadValue::kSerializeAsQuad),
+-          /* fill */ false)));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(
++      ThreadSpecific<Persistent<const cssvalue::CSSBorderImageSliceValue>>,
++      thread_specific_value, ());
++  Persistent<const cssvalue::CSSBorderImageSliceValue>& value =
++      *thread_specific_value;
++  if (!value) [[unlikely]] {
++    value = MakeGarbageCollected<cssvalue::CSSBorderImageSliceValue>(
++        MakeGarbageCollected<CSSQuadValue>(
++            CSSNumericLiteralValue::Create(
++                100, CSSPrimitiveValue::UnitType::kPercentage),
++            CSSQuadValue::kSerializeAsQuad),
++        /* fill */ false);
++    LEAK_SANITIZER_IGNORE_OBJECT(&value);
++  }
+   return value;
+ }
+ 
+@@ -1619,11 +1651,17 @@ const CSSValue* BorderImageWidth::CSSValueFromComputedStyleInternal(
+ }
+ 
+ const CSSValue* BorderImageWidth::InitialValue() const {
+-  DEFINE_STATIC_LOCAL(const Persistent<CSSQuadValue>, value,
+-                      (MakeGarbageCollected<CSSQuadValue>(
+-                          CSSNumericLiteralValue::Create(
+-                              1, CSSPrimitiveValue::UnitType::kInteger),
+-                          CSSQuadValue::kSerializeAsQuad)));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(
++      ThreadSpecific<Persistent<const CSSQuadValue>>, thread_specific_value,
++      ());
++  Persistent<const CSSQuadValue>& value = *thread_specific_value;
++  if (!value) [[unlikely]] {
++    value = MakeGarbageCollected<CSSQuadValue>(
++        CSSNumericLiteralValue::Create(1,
++                                       CSSPrimitiveValue::UnitType::kInteger),
++        CSSQuadValue::kSerializeAsQuad);
++    LEAK_SANITIZER_IGNORE_OBJECT(&value);
++  }
+   return value;
+ }
+ 
+@@ -10711,9 +10749,14 @@ const CSSValue* TransitionDelay::CSSValueFromComputedStyleInternal(
+ }
+ 
+ const CSSValue* TransitionDelay::InitialValue() const {
+-  DEFINE_STATIC_LOCAL(const Persistent<CSSValue>, value,
+-                      (ComputedStyleUtils::ValueForAnimationDelay(
+-                          CSSTimingData::InitialDelayStart())));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(ThreadSpecific<Persistent<const CSSValue>>,
++                                  thread_specific_value, ());
++  Persistent<const CSSValue>& value = *thread_specific_value;
++  if (!value) [[unlikely]] {
++    value = ComputedStyleUtils::ValueForAnimationDelay(
++        CSSTimingData::InitialDelayStart());
++    LEAK_SANITIZER_IGNORE_OBJECT(&value);
++  }
+   return value;
+ }
+ 
+@@ -10740,10 +10783,15 @@ const CSSValue* TransitionDuration::CSSValueFromComputedStyleInternal(
+ }
+ 
+ const CSSValue* TransitionDuration::InitialValue() const {
+-  DEFINE_STATIC_LOCAL(const Persistent<CSSValue>, value,
+-                      (CSSNumericLiteralValue::Create(
+-                          CSSTransitionData::InitialDuration().value(),
+-                          CSSPrimitiveValue::UnitType::kSeconds)));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(ThreadSpecific<Persistent<const CSSValue>>,
++                                  thread_specific_value, ());
++  Persistent<const CSSValue>& value = *thread_specific_value;
++  if (!value) [[unlikely]] {
++    value = CSSNumericLiteralValue::Create(
++        CSSTransitionData::InitialDuration().value(),
++        CSSPrimitiveValue::UnitType::kSeconds);
++    LEAK_SANITIZER_IGNORE_OBJECT(&value);
++  }
+   return value;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/resolver/style_resolver.cc b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
+index 630f5c962aa550bc6dcc00ce1ca958b409d01e1d..78889d582d20ad2190800104bd6d3a6a9f847ac2 100644
+--- a/third_party/blink/renderer/core/css/resolver/style_resolver.cc
++++ b/third_party/blink/renderer/core/css/resolver/style_resolver.cc
+@@ -586,6 +586,7 @@ static CSSPropertyValueSet* LeftToRightDeclaration() {
+   DEFINE_STATIC_LOCAL(
+       Persistent<MutableCSSPropertyValueSet>, left_to_right_decl,
+       (MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLQuirksMode)));
++  CHECK(IsMainThread());
+   if (left_to_right_decl->IsEmpty()) {
+     left_to_right_decl->SetLonghandProperty(CSSPropertyID::kDirection,
+                                             CSSValueID::kLtr);
+@@ -597,6 +598,7 @@ static CSSPropertyValueSet* RightToLeftDeclaration() {
+   DEFINE_STATIC_LOCAL(
+       Persistent<MutableCSSPropertyValueSet>, right_to_left_decl,
+       (MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLQuirksMode)));
++  CHECK(IsMainThread());
+   if (right_to_left_decl->IsEmpty()) {
+     right_to_left_decl->SetLonghandProperty(CSSPropertyID::kDirection,
+                                             CSSValueID::kRtl);
+@@ -608,6 +610,7 @@ static CSSPropertyValueSet* DocumentElementUserAgentDeclarations() {
+   DEFINE_STATIC_LOCAL(
+       Persistent<MutableCSSPropertyValueSet>, document_element_ua_decl,
+       (MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLStandardMode)));
++  CHECK(IsMainThread());
+   if (document_element_ua_decl->IsEmpty()) {
+     document_element_ua_decl->SetProperty(CSSPropertyID::kColor,
+                                           *CSSInitialColorValue::Create());
+@@ -622,6 +625,7 @@ static CSSPropertyValueSet* ForcedColorsUserAgentDeclarations() {
+   DEFINE_STATIC_LOCAL(
+       Persistent<MutableCSSPropertyValueSet>, decl,
+       (MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLStandardMode)));
++  CHECK(IsMainThread());
+   if (decl->IsEmpty()) {
+     decl->SetProperty(CSSPropertyID::kColor, *CSSInheritedValue::Create());
+   }
+@@ -633,6 +637,7 @@ static CSSPropertyValueSet* UniversalOverlayUserAgentDeclaration() {
+   DEFINE_STATIC_LOCAL(
+       Persistent<MutableCSSPropertyValueSet>, decl,
+       (MakeGarbageCollected<MutableCSSPropertyValueSet>(kHTMLStandardMode)));
++  CHECK(IsMainThread());
+ 
+   if (decl->IsEmpty()) {
+     decl->SetProperty(CSSPropertyID::kOverlay,
+diff --git a/third_party/blink/renderer/core/css/resolver/style_resolver_state.cc b/third_party/blink/renderer/core/css/resolver/style_resolver_state.cc
+index e235367e6ec83d6017371769f9c7274b5c628889..9490451826543ba7f846d8eda734a77b0db69ae6 100644
+--- a/third_party/blink/renderer/core/css/resolver/style_resolver_state.cc
++++ b/third_party/blink/renderer/core/css/resolver/style_resolver_state.cc
+@@ -85,6 +85,7 @@ cssvalue::CSSColorImageValue& TransparentImage() {
+       Persistent<cssvalue::CSSColorImageValue>, image,
+       (MakeGarbageCollected<cssvalue::CSSColorImageValue>(
+           CSSIdentifierValue::Create(CSSValueID::kTransparent))));
++  CHECK(IsMainThread());
+   return *image;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/selector_query.cc b/third_party/blink/renderer/core/css/selector_query.cc
+index b2583e8a54a50766ffb4ad950fb4f3fb84155bf4..963af0f3801b67943dd73fdbe2912400d961fc3a 100644
+--- a/third_party/blink/renderer/core/css/selector_query.cc
++++ b/third_party/blink/renderer/core/css/selector_query.cc
+@@ -57,6 +57,7 @@ namespace blink {
+ #if DCHECK_IS_ON() || defined(RELEASE_QUERY_STATS)
+ static SelectorQuery::QueryStats& CurrentQueryStats() {
+   DEFINE_STATIC_LOCAL(SelectorQuery::QueryStats, stats, ());
++  CHECK(IsMainThread());
+   return stats;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/style_environment_variables.cc b/third_party/blink/renderer/core/css/style_environment_variables.cc
+index fac008246a1c0411d1d5d258626a66300d2dcec5..f1b9f96449515fd0c89301ad13a877f4e2e46e4a 100644
+--- a/third_party/blink/renderer/core/css/style_environment_variables.cc
++++ b/third_party/blink/renderer/core/css/style_environment_variables.cc
+@@ -7,6 +7,7 @@
+ #include "third_party/blink/renderer/core/css/parser/css_tokenizer.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/wtf/text/format.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ 
+@@ -63,6 +64,7 @@ StyleEnvironmentVariables::StyleEnvironmentVariables() : parent_(nullptr) {
+ StyleEnvironmentVariables& StyleEnvironmentVariables::GetRootInstance() {
+   DEFINE_STATIC_LOCAL(Persistent<StyleEnvironmentVariables>, instance,
+                       (MakeGarbageCollected<StyleEnvironmentVariables>()));
++  CHECK(IsMainThread());
+   return *instance;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/ua_counter_style_map.cc b/third_party/blink/renderer/core/css/ua_counter_style_map.cc
+index 174b86593ae043d1c755ff28d7264aebccffa751..e0b2e8aabdba199c0f080f76a618b675301a498b 100644
+--- a/third_party/blink/renderer/core/css/ua_counter_style_map.cc
++++ b/third_party/blink/renderer/core/css/ua_counter_style_map.cc
+@@ -7,7 +7,11 @@
+ #include "third_party/blink/renderer/core/css/css_default_style_sheets.h"
+ #include "third_party/blink/renderer/core/css/style_sheet_contents.h"
+ #include "third_party/blink/renderer/core/keywords.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
++#include "third_party/blink/renderer/platform/wtf/leak_annotations.h"
++#include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
+ #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
++#include "third_party/blink/renderer/platform/wtf/thread_specific.h"
+ 
+ namespace blink {
+ 
+@@ -469,7 +473,8 @@ HashMap<AtomicString, String> CollectUACounterStyleRules() {
+ 
+ const HashMap<AtomicString, String>& GetUACounterStyleRules() {
+   using RuleMap = HashMap<AtomicString, String>;
+-  DEFINE_STATIC_LOCAL(RuleMap, ua_rules, (CollectUACounterStyleRules()));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(RuleMap, ua_rules,
++                                  (CollectUACounterStyleRules()));
+   return ua_rules;
+ }
+ 
+@@ -500,8 +505,13 @@ CounterStyleMap* CounterStyleMap::CreateUACounterStyleMap() {
+ 
+ // static
+ CounterStyleMap* CounterStyleMap::GetUACounterStyleMap() {
+-  DEFINE_STATIC_LOCAL(Persistent<CounterStyleMap>, ua_counter_style_map,
+-                      (CreateUACounterStyleMap()));
++  DEFINE_THREAD_SAFE_STATIC_LOCAL(ThreadSpecific<Persistent<CounterStyleMap>>,
++                                  thread_specific_map, ());
++  Persistent<CounterStyleMap>& ua_counter_style_map = *thread_specific_map;
++  if (!ua_counter_style_map) [[unlikely]] {
++    ua_counter_style_map = CreateUACounterStyleMap();
++    LEAK_SANITIZER_IGNORE_OBJECT(&ua_counter_style_map);
++  }
+   return ua_counter_style_map;
+ }
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201060.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201060.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..54cdadbf79a26ea51fafdfc1dc7e4db637ae42c0
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201060.html
+@@ -0,0 +1,13 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<title>Chrome issue 575201060</title>
++<link rel="help" href="https://crbug.com/575201060">
++<div id="target"></div>
++<script>
++  const worker = new Worker('chrome-575201060.js');
++  worker.onmessage = e => {
++    target.style.listStyleType = 'disc';
++    worker.terminate();
++    document.documentElement.className = '';
++  };
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201060.js b/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201060.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0057992d72bdb9e7e8ab6ba97dde39ee547e7996
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201060.js
+@@ -0,0 +1,4 @@
++const s = new CSSUnparsedValue([
++            'if(supports(list-style-type: disc): 13px)'
++          ]).toString();
++postMessage('CSSUnparsedValue.toString() returned ' + JSON.stringify(s));
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201475.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201475.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..4993bc741a4d9d97f0b497e068c91f638994fd19
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201475.html
+@@ -0,0 +1,13 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<title>Chrome issue 575201475</title>
++<link rel="help" href="https://crbug.com/575201475">
++<div id="target"></div>
++<script>
++  const worker = new Worker('chrome-575201475.js');
++  worker.onmessage = e => {
++    target.style.animation = 'a';
++    worker.terminate();
++    document.documentElement.className = "";
++  };
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201475.js b/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201475.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..539f133428466505be4d4a0da602f81d459d5f0a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/crashtests/chrome-575201475.js
+@@ -0,0 +1,2 @@
++const s = new CSSUnparsedValue(['if(supports(animation: a): 1px)']).toString();
++postMessage('CSSUnparsedValue.toString() returned ' + JSON.stringify(s));

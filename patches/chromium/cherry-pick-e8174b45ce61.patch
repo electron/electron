@@ -1,0 +1,488 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Fri, 23 Oct 2026 14:19:38 -0700
+Subject: Set XMLParsingRust to experimental and fix XMLDocumentParserRs bugs
+
+This CL enables XMLParsingRust as an experimental runtime feature and
+fixes several bugs in XMLDocumentParserRs uncovered by the test suite:
+
+- In XMLDocumentParserRs::StartElementNs, check IsStopped() after
+CreateElement and set attributes individually when a custom element
+constructor has run, matching XMLDocumentParser::StartElementNs. This
+copies https://crrev.com/c/8501725 for the non-rust parser.
+
+- Guard XMLDocumentParserRs::ProcessEvents against re-entrant Append()
+and Finish() calls during synchronous inline script execution by
+buffering incoming chunks in pending_src_ and deferring Finish(). This
+copies https://crrev.com/c/8419603 for the non-rust parser.
+
+- Ignore ImmutableEntitiesError::StandaloneDocument in
+add_xhtml_entities instead of panicking when an XHTML doctype is used
+with standalone="yes".
+
+- Use XMLDocumentParserRs in DOMPatchSupport::PatchDocument when Rust
+XML parsing is enabled, and include saw_error_ in
+XMLDocumentParserRs::WellFormed().
+
+- Avoid setting saw_xsl_transform_ or entering XML viewer mode on
+documents that have already been transformed by XSLT.
+
+- Record script_start_position_ at the token following the opening
+
+Bug: 435623334
+Fixed: 569659189
+Change-Id: Id8fcad269a4b0e0a3fa91930570ca1c9eacbe311
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8602619
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Reviewed-by: David Baron <dbaron@chromium.org>
+Commit-Queue: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1726224}
+
+Electron adaptation notes (45-x-y): The branch's XMLDocumentParserRs predates the XSLT bridging code (saw_xsl_transform_, original_source_for_transform_, IsXSLTAllowed(), DocumentXSLT usage) this change was written against, so the hunks that only touch that code are not carried: the HasNoStyleInformation() DocumentXSLT::HasTransformSourceDocument() check, the saw_xsl_transform_ reordering in ProcessingInstruction() and in the CAP-alert branch of StartElementNs(), and the saw_xsl_transform_ early return in Finish(). The pending_src_ buffering in Append() sits at the top of the function because the branch has no IsStopped()/saw_xsl_transform_ early return there. The XMLParsingRust runtime flag keeps the branch's status (not set to "experimental") because the branch's Rust parser lacks the XSLT support that exposure relies on; the parser fixes apply regardless because XMLRustForNonXslt is already stable here. The 18 binary PNG test expectations are not carried (text-only patch format). All other hunks (ProcessEvents() re-entrancy guard, carry_unbalanced_root_error_ handling moved into EndInternal(), finish_called_ handling, IsStopped() check after CreateElement(), per-attribute setAttribute() when a custom element constructor ran, script_start_position_ tracking, WellFormed() including saw_error_, DOMPatchSupport using XMLDocumentParserRs, add_xhtml_entities() StandaloneDocument handling) are applied as upstream.
+
+diff --git a/third_party/blink/renderer/core/inspector/dom_patch_support.cc b/third_party/blink/renderer/core/inspector/dom_patch_support.cc
+index e9a7a94f9dec4b246b5d522c1252210ee9a66b26..d5d852084f53f0e731b525ed0561f42dda33fe01 100644
+--- a/third_party/blink/renderer/core/inspector/dom_patch_support.cc
++++ b/third_party/blink/renderer/core/inspector/dom_patch_support.cc
+@@ -46,10 +46,12 @@
+ #include "third_party/blink/renderer/core/inspector/dom_editor.h"
+ #include "third_party/blink/renderer/core/inspector/inspector_history.h"
+ #include "third_party/blink/renderer/core/xml/parser/xml_document_parser.h"
++#include "third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/crypto.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_deque.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/wtf/deque.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_traits.h"
+ #include "third_party/blink/renderer/platform/wtf/text/base64.h"
+@@ -76,15 +78,22 @@ void DOMPatchSupport::PatchDocument(const String& markup) {
+ 
+   DCHECK(new_document);
+   if (!IsA<HTMLDocument>(GetDocument())) {
+-    DocumentParser* parser =
+-        MakeGarbageCollected<XMLDocumentParser>(*new_document, nullptr);
++    ScriptableDocumentParser* parser;
++    if (RuntimeEnabledFeatures::XMLParsingRustEnabled() ||
++        RuntimeEnabledFeatures::XMLRustForNonXsltEnabled()) {
++      parser =
++          MakeGarbageCollected<XMLDocumentParserRs>(*new_document, nullptr);
++    } else {
++      parser = MakeGarbageCollected<XMLDocumentParser>(*new_document, nullptr);
++    }
+     parser->Append(markup);
+     parser->Finish();
+     parser->Detach();
+ 
+     // Avoid breakage on non-well-formed documents.
+-    if (!static_cast<XMLDocumentParser*>(parser)->WellFormed())
++    if (!parser->WellFormed()) {
+       return;
++    }
+   }
+   new_document->SetContent(markup);
+   Digest* old_info = CreateDigest(GetDocument().documentElement(), nullptr);
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
+index 4908682486fc4276b038fef099e47e0e78124d13..0a6372b336859055b5370117443ed0ed81184071 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
+@@ -27,6 +27,7 @@
+ 
+ #include "third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h"
+ 
++#include "base/auto_reset.h"
+ #include "base/notimplemented.h"
+ #include "base/strings/string_view_rust.h"
+ #include "third_party/blink/renderer/core/dom/cdata_section.h"
+@@ -251,6 +252,11 @@ void XMLDocumentParserRs::HandleError(XMLErrors::ErrorType type,
+ }
+ 
+ void XMLDocumentParserRs::Append(const String& xml_string) {
++  if (parser_paused_ || in_process_events_) {
++    pending_src_.Append(xml_string);
++    return;
++  }
++
+   if (!xml_string.empty()) {
+     // Resume parsing, recover from unbalanced root error at previous chunk
+     // boundary.
+@@ -270,28 +276,49 @@ void XMLDocumentParserRs::Append(const String& xml_string) {
+ }
+ 
+ void XMLDocumentParserRs::ProcessEvents() {
+-  while (!parser_paused_ && !IsStopped() && !saw_end_document_ &&
+-         !xml_ffi::saw_error(*read_state_)) {
+-    xml_ffi::process_next_event(*read_state_);
+-  }
+-  if (xml_ffi::saw_error(*read_state_)) {
+-    rust::String error_message = "";
+-    TextPosition position = TextPosition::BelowRangePosition();
+-    uint64_t row = 0, column = 0;
+-    if (xml_ffi::try_get_error_details(*read_state_, error_message, row,
+-                                       column)) {
+-      position = TextPosition(
+-          OrdinalNumber::FromZeroBasedInt(static_cast<int>(row)),
+-          OrdinalNumber::FromZeroBasedInt(static_cast<int>(column)));
++  {
++    CHECK(!in_process_events_);
++    base::AutoReset<bool> reentrancy_guard(&in_process_events_, true);
++    while (!parser_paused_ && !IsStopped() && !saw_end_document_ &&
++           !xml_ffi::saw_error(*read_state_)) {
++      xml_ffi::process_next_event(*read_state_);
+     }
+-    if (xml_ffi::is_error_resumable(*read_state_) && !finish_called_) {
+-      carry_unbalanced_root_error_ = {String::FromUtf8(error_message.c_str()),
+-                                      position};
+-      xml_ffi::reset_error(*read_state_);
+-    } else {
+-      HandleError(XMLErrors::kErrorTypeFatal, error_message.c_str(), position);
++    if (xml_ffi::saw_error(*read_state_)) {
++      rust::String error_message = "";
++      TextPosition position = TextPosition::BelowRangePosition();
++      uint64_t row = 0, column = 0;
++      if (xml_ffi::try_get_error_details(*read_state_, error_message, row,
++                                         column)) {
++        position = TextPosition(
++            OrdinalNumber::FromZeroBasedInt(static_cast<int>(row)),
++            OrdinalNumber::FromZeroBasedInt(static_cast<int>(column)));
++      }
++      if (xml_ffi::is_error_resumable(*read_state_)) {
++        carry_unbalanced_root_error_ = {String::FromUtf8(error_message.c_str()),
++                                        position};
++        xml_ffi::reset_error(*read_state_);
++      } else {
++        HandleError(XMLErrors::kErrorTypeFatal, error_message.c_str(),
++                    position);
++      }
++    }
++  }
++
++  if (IsDetached() || parser_paused_) {
++    return;
++  }
++
++  if (!pending_src_.empty()) {
++    String rest = pending_src_.ReleaseString();
++    Append(rest);
++    if (IsDetached() || parser_paused_) {
++      return;
+     }
+   }
++
++  if (finish_called_) {
++    EndInternal();
++  }
+ }
+ 
+ void XMLDocumentParserRs::ClearCurrentNodeStack() {
+@@ -353,8 +380,16 @@ void XMLDocumentParserRs::StartDocument(
+   GetDocument()->SetHasXMLDeclaration(true);
+ }
+ 
++void XMLDocumentParserRs::UpdateScriptStartPositionIfNeeded() {
++  if (set_script_start_position_on_next_event_) {
++    script_start_position_ = GetTextPosition();
++    set_script_start_position_on_next_event_ = false;
++  }
++}
++
+ void XMLDocumentParserRs::ProcessingInstruction(rust::Str target,
+                                                 rust::Str data) {
++  UpdateScriptStartPositionIfNeeded();
+   if (!UpdateLeafTextNode()) {
+     return;
+   }
+@@ -394,6 +429,7 @@ void XMLDocumentParserRs::StartElementNs(
+     rust::Str ns,
+     xml_ffi::AttributesIterator& attributes,
+     xml_ffi::NamespacesIterator& namespaces) {
++  UpdateScriptStartPositionIfNeeded();
+   if (IsStopped()) {
+     return;
+   }
+@@ -512,13 +548,30 @@ void XMLDocumentParserRs::StartElementNs(
+ 
+   Element* new_element =
+       current_node_->GetDocument().CreateElement(q_name, flags, is, registry);
+-
++  // Check IsStopped() because custom element constructors may synchronously
++  // trigger removal of the document and cancellation of this parser.
++  if (IsStopped()) {
++    return;
++  }
+   if (!new_element) {
+     StopParsing();
+     return;
+   }
+ 
+-  SetAttributes(new_element, prefixed_attributes, GetParserContentPolicy());
++  if (reactions.has_value()) {
++    // A synchronous custom element constructor ran and may have manipulated
++    // the element (set attributes, appended children, or inserted it into the
++    // tree), so the batched ParserSetAttributes() path is no longer safe. Set
++    // the attributes one by one, as HTMLConstructionSite::CreateElement does.
++    if (!ScriptingContentIsAllowed(GetParserContentPolicy())) {
++      new_element->StripScriptingAttributes(prefixed_attributes);
++    }
++    for (const auto& attribute : prefixed_attributes) {
++      new_element->setAttribute(attribute.GetName(), attribute.Value());
++    }
++  } else {
++    SetAttributes(new_element, prefixed_attributes, GetParserContentPolicy());
++  }
+ 
+   if (parsing_fragment_ && encountered_namespace_reset &&
+       !ancestor_resetting_namespace_) {
+@@ -529,6 +582,7 @@ void XMLDocumentParserRs::StartElementNs(
+ 
+   if (new_element->IsScriptElement()) {
+     script_start_position_ = GetTextPosition();
++    set_script_start_position_on_next_event_ = true;
+   }
+ 
+   current_node_->ParserAppendChild(new_element);
+@@ -561,6 +615,7 @@ void XMLDocumentParserRs::StartElementNs(
+ void XMLDocumentParserRs::EndElementNs(rust::Str local_name,
+                                        rust::Str prefix,
+                                        rust::Str ns) {
++  UpdateScriptStartPositionIfNeeded();
+   if (!UpdateLeafTextNode()) {
+     return;
+   }
+@@ -629,11 +684,13 @@ void XMLDocumentParserRs::EndElementNs(rust::Str local_name,
+ }
+ 
+ void XMLDocumentParserRs::Characters(rust::Str characters) {
++  UpdateScriptStartPositionIfNeeded();
+   CreateLeafTextNodeIfNeeded();
+   buffered_text_.Append(RustStrToWtfString(characters));
+ }
+ 
+ void XMLDocumentParserRs::CData(rust::Str data) {
++  UpdateScriptStartPositionIfNeeded();
+   if (!UpdateLeafTextNode()) {
+     return;
+   }
+@@ -643,6 +700,7 @@ void XMLDocumentParserRs::CData(rust::Str data) {
+ }
+ 
+ void XMLDocumentParserRs::Comment(rust::Str comment) {
++  UpdateScriptStartPositionIfNeeded();
+   if (!UpdateLeafTextNode()) {
+     return;
+   }
+@@ -716,12 +774,21 @@ void XMLDocumentParserRs::PopCurrentNode() {
+ void XMLDocumentParserRs::EndInternal() {
+   DCHECK(!parsing_fragment_);
+ 
+-  if (IsDetached()) {
++  if (IsDetached() || parser_paused_) {
+     return;
+   }
+ 
+-  if (parser_paused_) {
+-    return;
++  finish_called_ = false;
++
++  if (carry_unbalanced_root_error_) {
++    CarryUnbalancedRootElementError error =
++        std::move(*carry_unbalanced_root_error_);
++    carry_unbalanced_root_error_ = std::nullopt;
++    HandleError(XMLErrors::kErrorTypeFatal, error.error_message.Utf8().c_str(),
++                error.position);
++    if (IsDetached()) {
++      return;
++    }
+   }
+ 
+   // StopParsing() calls InsertErrorMessageBlock() if there was a parsing
+@@ -761,13 +828,7 @@ void XMLDocumentParserRs::Finish() {
+     return;
+   }
+ 
+-  if (carry_unbalanced_root_error_) {
+-    HandleError(XMLErrors::kErrorTypeFatal,
+-                carry_unbalanced_root_error_->error_message.Utf8().c_str(),
+-                carry_unbalanced_root_error_->position);
+-  }
+-
+-  if (parser_paused_) {
++  if (parser_paused_ || in_process_events_) {
+     finish_called_ = true;
+   } else {
+     EndInternal();
+@@ -816,7 +877,8 @@ void XMLDocumentParserRs::Detach() {
+ }
+ 
+ bool XMLDocumentParserRs::WellFormed() const {
+-  return !xml_ffi::saw_error(*read_state_) && !carry_unbalanced_root_error_;
++  return !saw_error_ && !xml_ffi::saw_error(*read_state_) &&
++         !carry_unbalanced_root_error_;
+ }
+ 
+ void XMLDocumentParserRs::InsertErrorMessageBlock() {
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h
+index b57e355d5701908cacdf9daefe107ab8c133910b..cee85674ad9dcaada68a16a5e7b7e6aadde8c3b8 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.h
+@@ -111,9 +111,11 @@ class CORE_EXPORT XMLDocumentParserRs final : public ScriptableDocumentParser,
+   void CheckIfBlockingStyleSheetAdded();
+ 
+   bool ShouldMarkScriptAlreadyStarted() const;
++  void UpdateScriptStartPositionIfNeeded();
+ 
+   Member<XMLParserScriptRunner> script_runner_;
+   TextPosition script_start_position_;
++  bool set_script_start_position_on_next_event_ = false;
+   bool saw_error_ = false;
+   bool saw_css_ = false;
+ 
+@@ -137,6 +139,8 @@ class CORE_EXPORT XMLDocumentParserRs final : public ScriptableDocumentParser,
+   bool saw_end_document_ = false;
+ 
+   bool parser_paused_ = false;
++  bool in_process_events_ = false;
++  StringBuilder pending_src_;
+   bool requesting_script_ = false;
+   bool waiting_for_stylesheets_ = false;
+   bool added_pending_parser_blocking_stylesheet_ = false;
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_ffi.rs b/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
+index 775743b8871d994798d8812cc1b4d3a584e12e56..a9b61123d068e54e8d80eff409668fcee59cd8cb 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
++++ b/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
+@@ -9,7 +9,7 @@ use xml::{
+     attribute::OwnedAttribute,
+     common::{Position, TextPosition},
+     reader::{
+-        ErrorKind, EventReader as XmlEventReader,
++        ErrorKind, EventReader as XmlEventReader, ImmutableEntitiesError,
+         XmlEvent::{
+             CData, Characters, Comment, Doctype, EndDocument, EndElement, ProcessingInstruction,
+             StartDocument, StartElement, Whitespace,
+@@ -209,10 +209,10 @@ fn try_get_last_event_position(read_state: &XmlReadState, row: &mut u64, col: &m
+ 
+ fn add_xhtml_entities(read_state: &mut XmlReadState) {
+     for map in [LAT1_MAP, SYMBOL_MAP, SPECIAL_MAP, HTML5_MAP].iter() {
+-        read_state
+-            .event_reader
+-            .add_entities(map.iter().copied())
+-            .expect("Adding built-in entities should not cause an error.");
++        match read_state.event_reader.add_entities(map.iter().copied()) {
++            Ok(()) | Err(ImmutableEntitiesError::StandaloneDocument) => {}
++            Err(e) => panic!("Adding built-in entities should not cause an error: {e}"),
++        }
+     }
+ }
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/css/cssom/xml-stylesheet-pi-in-doctype-expected.txt b/third_party/blink/web_tests/external/wpt/css/cssom/xml-stylesheet-pi-in-doctype-expected.txt
+deleted file mode 100644
+index 263629907d9124b991484f93c1aec3cfdb44a7a6..0000000000000000000000000000000000000000
+--- a/third_party/blink/web_tests/external/wpt/css/cssom/xml-stylesheet-pi-in-doctype-expected.txt
++++ /dev/null
+@@ -1,5 +0,0 @@
+-This is a testharness.js-based test.
+-[FAIL] xml-stylesheet processing instruction in doctype internal subset
+-  assert_equals: expected "auto" but got "1"
+-Harness: the test ran to completion.
+-
+diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/Comment-in-doctype-expected.txt b/third_party/blink/web_tests/external/wpt/dom/nodes/Comment-in-doctype-expected.txt
+deleted file mode 100644
+index cb89704f1f7e3b4ec008e3fabba4a8a2dce51c6b..0000000000000000000000000000000000000000
+--- a/third_party/blink/web_tests/external/wpt/dom/nodes/Comment-in-doctype-expected.txt
++++ /dev/null
+@@ -1,5 +0,0 @@
+-This is a testharness.js-based test.
+-[FAIL] XML: Comment in doctype internal subset
+-  assert_equals: expected DocumentType node but got Comment node <!--x-->
+-Harness: the test ran to completion.
+-
+diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/ProcessingInstruction-in-doctype-expected.txt b/third_party/blink/web_tests/external/wpt/dom/nodes/ProcessingInstruction-in-doctype-expected.txt
+deleted file mode 100644
+index 9a841e2aaf876b13ec1ba2e16d8f90ebc6c96ec5..0000000000000000000000000000000000000000
+--- a/third_party/blink/web_tests/external/wpt/dom/nodes/ProcessingInstruction-in-doctype-expected.txt
++++ /dev/null
+@@ -1,5 +0,0 @@
+-This is a testharness.js-based test.
+-[FAIL] XML: Processing instruction in doctype internal subset
+-  assert_equals: expected DocumentType node but got ProcessingInstruction node with target "x" and data "y"
+-Harness: the test ran to completion.
+-
+diff --git a/third_party/blink/web_tests/fast/parser/external-entities-expected.txt b/third_party/blink/web_tests/fast/parser/external-entities-expected.txt
+index 29f6a217851358cfde21fdcebf4182f5303c42fc..c3c3a1ab6c9620c5c503414c490cae3b75fdc8f4 100644
+--- a/third_party/blink/web_tests/fast/parser/external-entities-expected.txt
++++ b/third_party/blink/web_tests/fast/parser/external-entities-expected.txt
+@@ -1 +1,3 @@
+-This should be the only line on this page. You should see a parse error above.
++This page contains the following errors:
++error on line 9 at column 12: Unexpected entity: message
++Below is a rendering of the page up to the first error.
+diff --git a/third_party/blink/web_tests/fast/parser/external-entities.xml b/third_party/blink/web_tests/fast/parser/external-entities.xml
+index 1790819384abbddc9df0e749670968257621b679..b86e70de769f8a646af3f6191391cb5ff3622c16 100644
+--- a/third_party/blink/web_tests/fast/parser/external-entities.xml
++++ b/third_party/blink/web_tests/fast/parser/external-entities.xml
+@@ -7,6 +7,6 @@ if (window.testRunner)
+     testRunner.dumpAsText();
+ </script>
+ <p>&message;</p>
+-<p class="test"><font color="red"> This should be the only line on this page.  You should see a parse error above.</font></p>
++<p class="test"><font color="red">FAIL: This line should not be rendered. You should see a parse error instead.</font></p>
+ </body>
+ </html>
+diff --git a/third_party/blink/web_tests/fast/parser/xhtml-alternate-entities.xml b/third_party/blink/web_tests/fast/parser/xhtml-alternate-entities.xml
+index ff3edef38a7549f80f012ea02b15e3182d265dff..3f5919bbe19bf27614caf5e64f3b67dd000e2a97 100644
+--- a/third_party/blink/web_tests/fast/parser/xhtml-alternate-entities.xml
++++ b/third_party/blink/web_tests/fast/parser/xhtml-alternate-entities.xml
+@@ -2,5 +2,5 @@
+ <!DOCTYPE html PUBLIC "-//WHATWG//DTD XHTML 1.0 AlternateEntities//EN" "010.dtd">
+ <html>
+  <h1> &fnof;&auml;&iuml;&Iuml; </h1> <!-- If you get a parse error, this test has PASSED. -->
+- <p class="test"><font color="red"> This should be the only line on this page.  You should see a parse error above.</font></p>
++ <p class="test"><font color="red">FAIL: This line should not be rendered. You should see a parse error instead.</font></p>
+ </html>
+diff --git a/third_party/blink/web_tests/fast/parser/xml-colon-entity-expected.txt b/third_party/blink/web_tests/fast/parser/xml-colon-entity-expected.txt
+index 5e64bb5ff544781dbdf28d2c87060cc84a1fee38..35e560a86665c910e6156d666d481e1b9e81d5fa 100644
+--- a/third_party/blink/web_tests/fast/parser/xml-colon-entity-expected.txt
++++ b/third_party/blink/web_tests/fast/parser/xml-colon-entity-expected.txt
+@@ -6,7 +6,5 @@ If you don't crash, you pass. A parsing error in the "xml-parser" subframe is ex
+ Frame: 'xml-parser'
+ --------
+ This page contains the following errors:
+-warning on line 2 at column 14: Entity ':' not defined
+-error on line 5 at column 1: AttValue: ' expected
+-
++error on line 2 at column 13: Unexpected entity: :
+ Below is a rendering of the page up to the first error.
+diff --git a/third_party/blink/web_tests/fast/parser/xml-declaration-missing-ending-mark-expected.txt b/third_party/blink/web_tests/fast/parser/xml-declaration-missing-ending-mark-expected.txt
+index 3c643ed4e1b0b2bff197982ef8449fb90f5aadcc..616a238e646fff0950c471fa238751c8bd48b0ce 100644
+--- a/third_party/blink/web_tests/fast/parser/xml-declaration-missing-ending-mark-expected.txt
++++ b/third_party/blink/web_tests/fast/parser/xml-declaration-missing-ending-mark-expected.txt
+@@ -9,6 +9,5 @@ If you don't crash, you pass. A parsing error in the "xml-parser" subframe is ex
+ Frame: 'xml-parser'
+ --------
+ This page contains the following errors:
+-error on line 1 at column 20: Blank needed here
+-
++error on line 1 at column 20: Unexpected token: >
+ Below is a rendering of the page up to the first error.
+diff --git a/third_party/blink/web_tests/http/tests/devtools/console/console-log-in-xhtml-expected.txt b/third_party/blink/web_tests/http/tests/devtools/console/console-log-in-xhtml-expected.txt
+index 894c669bb3d7e38d27804e96a29337b1b13c8b3a..6473696f152f59fb738e2ff51d81ad77d3668a13 100644
+--- a/third_party/blink/web_tests/http/tests/devtools/console/console-log-in-xhtml-expected.txt
++++ b/third_party/blink/web_tests/http/tests/devtools/console/console-log-in-xhtml-expected.txt
+@@ -1,4 +1,4 @@
+ Tests that console message from inline script in xhtml document contains correct script position information.
+ 
+-239:2:15
++239:2:16
+ 
+diff --git a/third_party/blink/web_tests/svg/custom/use-invalid-html-expected.txt b/third_party/blink/web_tests/svg/custom/use-invalid-html-expected.txt
+index 8b7db3157aa41d0d28de27b5c7cd317ce8a1db28..2504de236119a96063904c06a01d46650358e978 100644
+--- a/third_party/blink/web_tests/svg/custom/use-invalid-html-expected.txt
++++ b/third_party/blink/web_tests/svg/custom/use-invalid-html-expected.txt
+@@ -1,5 +1,4 @@
+ This page contains the following errors:
+-error on line 19 at column 1: Premature end of data in tag html line 1
+-
++error on line 19 at column 1: Unexpected end of stream: still inside the root element
+ Below is a rendering of the page up to the first error.
+ This test passes if a malformed html document triggers an error, not crash. 

@@ -1,0 +1,422 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Mon, 19 Oct 2026 17:53:17 -0700
+Subject: [opengl] Check for unchecked GL errors before data is app-visible
+
+App-visible data must not contain incorrect data caused by GL
+errors. Errors returned by GL work lose the device, but when asserts
+are disabled DAWN_GL_TRY doesn't call glGetError, so failed GL calls
+go undetected and frontend state assuming their success (e.g. a
+texture or buffer marked initialized after an upload or a lazy
+clear) can expose uninitialized memory.
+
+Rather than checking every GL call, check for pending GL errors
+(CheckPendingErrorBeforeUserVisibleData) where data becomes visible
+to the application: after Queue::Submit
+and when exporting a shared fence (EndAccess). The
+check after Submit also covers present.
+
+DAWN_GL_TRY_ALWAYS_CHECK no longer
+clears errors left by earlier unchecked calls, so they are reported
+instead of silently dropped before reaching these checks.
+This also covers buffer mapping.
+
+Expected errors from requesting unsupported extensions (with
+gl_force_es_31_and_no_extensions) are discarded where they are
+generated.
+
+With gl_force_es_31_and_no_extensions, only extensions listed in
+GL_REQUESTABLE_EXTENSIONS_ANGLE are requested, so that requesting
+unsupported extensions doesn't leave GL errors pending.
+
+No measurable perf impact in dawn_perf_tests on Mesa radeonsi GLES
+(UniformBufferUpdatePerf/UsageTrackingPerf, median -0.4%).
+
+Bug: 536539561
+Change-Id: I5e90c26662cbffa4a79d97e19627e7feed202388
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/351016
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+
+Electron adaptation notes (45-x-y): Picked as a prerequisite of https://dawn-review.googlesource.com/c/dawn/+/354617 (introduces CheckPendingErrorBeforeUserVisibleData() and the DAWN_GL_TRY_ALWAYS_CHECK change that fix extends); applied cleanly.
+
+diff --git a/src/dawn/native/opengl/ContextEGL.cpp b/src/dawn/native/opengl/ContextEGL.cpp
+index dc6d97d93ebbadc619274da9f3fc99f56167ef67..a8c65e8c14276690fd2a17d2a994e768a640033f 100644
+--- a/src/dawn/native/opengl/ContextEGL.cpp
++++ b/src/dawn/native/opengl/ContextEGL.cpp
+@@ -27,11 +27,15 @@
+ 
+ #include "src/dawn/native/opengl/ContextEGL.h"
+ 
++#include <array>
+ #include <memory>
+ #include <string>
++#include <string_view>
+ #include <utility>
+ #include <vector>
+ 
++#include "absl/container/flat_hash_set.h"
++#include "absl/strings/str_split.h"
+ #include "src/dawn/native/opengl/DisplayEGL.h"
+ #include "src/dawn/native/opengl/UtilsEGL.h"
+ 
+@@ -59,6 +63,11 @@
+ #define EGL_CONTEXT_HARDENED_ANGLE 0x34F8
+ #endif
+ 
++// https://chromium.googlesource.com/angle/angle/+/main/extensions/ANGLE_request_extension.txt
++#ifndef GL_REQUESTABLE_EXTENSIONS_ANGLE
++#define GL_REQUESTABLE_EXTENSIONS_ANGLE 0x93A8
++#endif
++
+ namespace dawn::native::opengl {
+ 
+ namespace {
+@@ -253,16 +262,39 @@ void ContextEGL::RequestRequiredExtensionsExplicitly() {
+ 
+     auto glRequestExtension = reinterpret_cast<PFNGLREQUESTEXTENSIONANGLEPROC>(proc);
+ 
++    // Requesting an extension that isn't requestable generates a GL error, so only request the
++    // extensions listed in GL_REQUESTABLE_EXTENSIONS_ANGLE.
++    typedef const GLubyte*(KHRONOS_APIENTRY * PFNGLGETSTRINGPROC)(GLenum name);
++    auto getStringProc = egl.GetProcAddress("glGetString");
++    if (!getStringProc) {
++        return;
++    }
++    auto glGetString = reinterpret_cast<PFNGLGETSTRINGPROC>(getStringProc);
++    const char* rawRequestableExtensions =
++        reinterpret_cast<const char*>(glGetString(GL_REQUESTABLE_EXTENSIONS_ANGLE));
++    if (rawRequestableExtensions == nullptr) {
++        return;
++    }
++    absl::flat_hash_set<std::string_view> requestableExtensions =
++        absl::StrSplit(rawRequestableExtensions, " ");
++
+     // src/dawn/native/opengl/supported_extensions.json
+-    glRequestExtension("GL_OES_texture_stencil8");
+-    glRequestExtension("GL_EXT_texture_compression_s3tc");
+-    glRequestExtension("GL_EXT_texture_compression_s3tc_srgb");
+-    glRequestExtension("GL_OES_EGL_image");
+-    glRequestExtension("GL_EXT_texture_format_BGRA8888");
+-    glRequestExtension("GL_APPLE_texture_format_BGRA8888");
+-    glRequestExtension("GL_EXT_color_buffer_float");
+-    glRequestExtension("GL_EXT_color_buffer_half_float");
+-    glRequestExtension("GL_EXT_multisampled_render_to_texture");
++    constexpr std::array kExtensions = {
++        "GL_OES_texture_stencil8",
++        "GL_EXT_texture_compression_s3tc",
++        "GL_EXT_texture_compression_s3tc_srgb",
++        "GL_OES_EGL_image",
++        "GL_EXT_texture_format_BGRA8888",
++        "GL_APPLE_texture_format_BGRA8888",
++        "GL_EXT_color_buffer_float",
++        "GL_EXT_color_buffer_half_float",
++        "GL_EXT_multisampled_render_to_texture",
++    };
++    for (const char* extension : kExtensions) {
++        if (requestableExtensions.contains(extension)) {
++            glRequestExtension(extension);
++        }
++    }
+ }
+ 
+ bool ContextEGL::IsInScopedMakeCurrent() const {
+diff --git a/src/dawn/native/opengl/QueueGL.cpp b/src/dawn/native/opengl/QueueGL.cpp
+index 2bcde1e305e376b581e5dcbfafdd0679c899c71c..09ccf42b03d56d2a2a8cf430c34dcff6e778fefc 100644
+--- a/src/dawn/native/opengl/QueueGL.cpp
++++ b/src/dawn/native/opengl/QueueGL.cpp
+@@ -88,6 +88,9 @@ MaybeError Queue::SubmitImpl(Span<CommandBufferBase* const> commands) {
+                 DAWN_TRY(ToBackend(commandBuffer)->Execute(gl));
+             }
+         }
++        // Results of the submitted work can become visible to the application (e.g. on present).
++        DAWN_TRY(
++            CheckPendingErrorBeforeUserVisibleData(gl, "Unchecked OpenGL calls in Queue::Submit"));
+         return {};
+     });
+ }
+@@ -279,6 +282,11 @@ ResultOrError<Ref<SharedFence>> Queue::GetOrCreateSharedFence(ExecutionSerial la
+ 
+     return device->ExecuteGL(
+         SubmitMode::Passive, [&](const OpenGLFunctions& gl) -> ResultOrError<Ref<SharedFence>> {
++            // The shared fence lets another API read the resources written so far, so check for
++            // unchecked GL errors first.
++            DAWN_TRY(CheckPendingErrorBeforeUserVisibleData(
++                gl, "Unchecked OpenGL calls before exporting a shared fence"));
++
+             if (sync == nullptr) {
+                 DisplayEGL* display = ToBackend(device->GetPhysicalDevice())->GetDisplay();
+                 DAWN_TRY_ASSIGN(sync, WrappedEGLSync::Create(display, gl, requestedSyncType, {}));
+diff --git a/src/dawn/native/opengl/UtilsGL.cpp b/src/dawn/native/opengl/UtilsGL.cpp
+index cbef91de7342c5c13d0ecbfc041368234fce1c49..b191502a5b01a48e365eba0617d3d426cbbb40af 100644
+--- a/src/dawn/native/opengl/UtilsGL.cpp
++++ b/src/dawn/native/opengl/UtilsGL.cpp
+@@ -262,19 +262,23 @@ MaybeError CheckError(const OpenGLFunctions& gl,
+                       const char* file,
+                       const char* function,
+                       unsigned int line) {
+-    GLenum error = gl.GetError();
++    GLenum error = INJECT_ERROR_OR_RUN(gl.GetError(), static_cast<GLenum>(GL_OUT_OF_MEMORY));
+     if (error == GL_NO_ERROR) [[likely]] {
+         return {};
+     }
+ 
++    // The error may also have been left pending by an earlier unchecked call.
+     std::string message = std::string(call) + " failed with " + GLErrorAsString(error);
+ 
+-    // Check that only one GL error was generated, ClearErrors should have been called first.
++    // Drain and report all the pending errors. Keep track of whether a context loss was reported
++    // by any of them, so that it isn't hidden by an earlier error.
++    bool contextLost = error == GL_CONTEXT_LOST;
+     GLenum nextError = gl.GetError();
+     while (nextError != GL_NO_ERROR) {
+         // Skip GL_CONTEXT_LOST errors, they will be generated continuously and result in an
+         // infinite loop.
+         if (nextError == GL_CONTEXT_LOST) {
++            contextLost = true;
+             break;
+         }
+ 
+@@ -284,14 +288,20 @@ MaybeError CheckError(const OpenGLFunctions& gl,
+ 
+     DebugLog(file, function, line) << message;
+ 
++    if (contextLost) {
++        return DAWN_BACKEND_DEVICE_LOST_ERROR(message);
++    }
+     switch (error) {
+         case GL_OUT_OF_MEMORY:
+             return DAWN_OUT_OF_MEMORY_ERROR(message);
+-        case GL_CONTEXT_LOST:
+-            return DAWN_BACKEND_DEVICE_LOST_ERROR(message);
+         default:
+             return DAWN_INTERNAL_ERROR(message);
+     }
+ }
+ 
++MaybeError CheckPendingErrorBeforeUserVisibleData(const OpenGLFunctions& gl,
++                                                  const char* description) {
++    return CheckError(gl, description, __FILE__, __func__, __LINE__);
++}
++
+ }  // namespace dawn::native::opengl
+diff --git a/src/dawn/native/opengl/UtilsGL.h b/src/dawn/native/opengl/UtilsGL.h
+index 7cab0ba81c958210ef85d8ce2af0b12041cca3d4..9556d22323534f0555bc978cac19b55a39d5e432 100644
+--- a/src/dawn/native/opengl/UtilsGL.h
++++ b/src/dawn/native/opengl/UtilsGL.h
+@@ -64,15 +64,24 @@ void ClearErrors(const OpenGLFunctions& gl,
+                  const char* function,
+                  unsigned int line);
+ 
+-// Check for a single GL error.
++// Check for a GL error, also reporting the errors left pending by earlier unchecked calls. Returns
++// a device lost error if any of them is a context loss.
+ MaybeError CheckError(const OpenGLFunctions& gl,
+                       const char* call,
+                       const char* file,
+                       const char* function,
+                       unsigned int line);
+ 
+-#define DAWN_GL_TRY_ALWAYS_CHECK(gl, call)                      \
+-    (ClearErrors(gl, __FILE__, __func__, __LINE__), (gl.call)); \
++// Checks for any GL error pending on the context. Call it explicitly before data becomes visible to
++// the application, so that errors from unchecked GL calls lose the device before the data becomes
++// visible to app.
++MaybeError CheckPendingErrorBeforeUserVisibleData(const OpenGLFunctions& gl,
++                                                  const char* description);
++
++// Errors left pending by earlier unchecked calls are not cleared, so that they are reported by
++// CheckError instead of being silently dropped.
++#define DAWN_GL_TRY_ALWAYS_CHECK(gl, call) \
++    (gl.call);                             \
+     DAWN_TRY(CheckError(gl, "gl" #call, __FILE__, __func__, __LINE__))
+ #define DAWN_GL_TRY_ALWAYS_CHECK_IGNORE_ERRORS(gl, call)        \
+     (ClearErrors(gl, __FILE__, __func__, __LINE__), (gl.call)); \
+diff --git a/src/dawn/tests/BUILD.gn b/src/dawn/tests/BUILD.gn
+index cae4b3c4db63fe31c875943fb837d7cd23fd321e..24e4ea1e7f3fcf4634910e0aeba817452f9825ac 100644
+--- a/src/dawn/tests/BUILD.gn
++++ b/src/dawn/tests/BUILD.gn
+@@ -922,6 +922,7 @@ source_set("white_box_tests_sources") {
+       "white_box/GLBufferTests.cpp",
+       "white_box/GLFramebufferCompletenessTests.cpp",
+       "white_box/GLTextureWrappingTests.cpp",
++      "white_box/GLUncheckedErrorTests.cpp",
+     ]
+     include_dirs = [ "${dawn_root}/third_party/EGL-Registry" ]
+   }
+diff --git a/src/dawn/tests/CMakeLists.txt b/src/dawn/tests/CMakeLists.txt
+index f43d9fd73bbf03e58f54245c5ff684723331180d..9ece2ecd9f524d0b6092ea0bdef8c78a0452e933 100644
+--- a/src/dawn/tests/CMakeLists.txt
++++ b/src/dawn/tests/CMakeLists.txt
+@@ -405,6 +405,7 @@ if (DAWN_ENABLE_OPENGLES)
+         "white_box/GLBufferTests.cpp"
+         "white_box/GLFramebufferCompletenessTests.cpp"
+         "white_box/GLTextureWrappingTests.cpp"
++        "white_box/GLUncheckedErrorTests.cpp"
+     )
+ endif()
+ 
+diff --git a/src/dawn/tests/white_box/GLUncheckedErrorTests.cpp b/src/dawn/tests/white_box/GLUncheckedErrorTests.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..edc3cc424a1c9f8a5f7a2c3298a635113c8fc9a3
+--- /dev/null
++++ b/src/dawn/tests/white_box/GLUncheckedErrorTests.cpp
+@@ -0,0 +1,158 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/dawn/native/ErrorData.h"
++#include "src/dawn/native/opengl/DeviceGL.h"
++#include "src/dawn/native/opengl/UtilsGL.h"
++#include "src/dawn/tests/DawnTest.h"
++
++namespace dawn::native::opengl {
++namespace {
++
++using testing::_;
++
++// An invalid capability, used to generate a GL_INVALID_ENUM error with glEnable.
++constexpr GLenum kInvalidCapability = 0;
++
++// When asserts are disabled, DAWN_GL_TRY does not check for GL errors. These tests simulate such
++// unchecked errors by making raw GL calls that fail, and check that they are caught before data
++// becomes visible to the app.
++class GLUncheckedErrorTests : public DawnTest {
++  protected:
++    void SetUp() override {
++        DawnTest::SetUp();
++        DAWN_TEST_UNSUPPORTED_IF(UsesWire());
++        // GL errors abort in the debug output callback when backend validation is enabled.
++        DAWN_TEST_UNSUPPORTED_IF(IsBackendValidationEnabled());
++    }
++};
++
++// CheckPendingErrorBeforeUserVisibleData succeeds when there are no errors, fails when there is a
++// pending error and drains the pending errors.
++TEST_P(GLUncheckedErrorTests, CheckPendingErrorBeforeUserVisibleData) {
++    Device* deviceGL = ToBackend(FromAPI(device.Get()));
++    // Runs the check on the GL context, after optionally generating an unchecked GL error.
++    auto Check = [deviceGL](bool generateError) -> MaybeError {
++        return deviceGL->ExecuteGL(ExecutionQueueBase::SubmitMode::Passive,
++                                   [generateError](const OpenGLFunctions& gl) -> MaybeError {
++                                       if (generateError) {
++                                           gl.Enable(kInvalidCapability);
++                                       }
++                                       return CheckPendingErrorBeforeUserVisibleData(
++                                           gl, "Unchecked OpenGL calls in test");
++                                   });
++    };
++
++    EXPECT_TRUE(Check(false).IsSuccess());
++
++    {
++        MaybeError result = Check(true);
++        ASSERT_TRUE(result.IsError());
++        auto error = result.AcquireError();
++        EXPECT_EQ(error->GetType(), InternalErrorType::Unrecoverable);
++    }
++
++    // The error was drained by the previous check.
++    EXPECT_TRUE(Check(false).IsSuccess());
++}
++
++// An unchecked GL error before a submit, loses the device on the submit.
++TEST_P(GLUncheckedErrorTests, ErrorBeforeSubmitLosesDevice) {
++    Device* deviceGL = ToBackend(FromAPI(device.Get()));
++    EXPECT_TRUE(deviceGL
++                    ->EnqueueGL([](const OpenGLFunctions& gl) -> MaybeError {
++                        gl.Enable(kInvalidCapability);
++                        return {};
++                    })
++                    .IsSuccess());
++
++    EXPECT_CALL(mDeviceLostCallback,
++                Call(CHandleIs(device.Get()), wgpu::DeviceLostReason::Unknown, _))
++        .Times(1);
++    queue.Submit(0, nullptr);
++}
++
++// An unchecked GL error loses the device on MapAsync before the mapped data is exposed.
++TEST_P(GLUncheckedErrorTests, ErrorBeforeMapAsyncLosesDevice) {
++    wgpu::BufferDescriptor descriptor;
++    descriptor.size = 4;
++    descriptor.usage = wgpu::BufferUsage::MapRead | wgpu::BufferUsage::CopyDst;
++    wgpu::Buffer buffer = device.CreateBuffer(&descriptor);
++    // Flush the (possibly deferred) buffer creation.
++    queue.Submit(0, nullptr);
++
++    Device* deviceGL = ToBackend(FromAPI(device.Get()));
++    EXPECT_TRUE(deviceGL
++                    ->EnqueueGL([](const OpenGLFunctions& gl) -> MaybeError {
++                        gl.Enable(kInvalidCapability);
++                        return {};
++                    })
++                    .IsSuccess());
++
++    EXPECT_CALL(mDeviceLostCallback,
++                Call(CHandleIs(device.Get()), wgpu::DeviceLostReason::Unknown, _))
++        .Times(1);
++    bool done = false;
++    buffer.MapAsync(wgpu::MapMode::Read, 0, 4, wgpu::CallbackMode::AllowProcessEvents,
++                    [&done](wgpu::MapAsyncStatus status, wgpu::StringView) {
++                        EXPECT_NE(status, wgpu::MapAsyncStatus::Success);
++                        done = true;
++                    });
++    while (!done) {
++        WaitABit();
++    }
++}
++
++// An unchecked GL error is not dropped by a later checked GL call (here the allocation of a buffer)
++// and still loses the device.
++TEST_P(GLUncheckedErrorTests, ErrorNotDroppedByLaterCheckedCall) {
++    Device* deviceGL = ToBackend(FromAPI(device.Get()));
++    EXPECT_TRUE(deviceGL
++                    ->EnqueueGL([](const OpenGLFunctions& gl) -> MaybeError {
++                        gl.Enable(kInvalidCapability);
++                        return {};
++                    })
++                    .IsSuccess());
++
++    EXPECT_CALL(mDeviceLostCallback,
++                Call(CHandleIs(device.Get()), wgpu::DeviceLostReason::Unknown, _))
++        .Times(1);
++
++    wgpu::BufferDescriptor descriptor;
++    descriptor.size = 4;
++    descriptor.usage = wgpu::BufferUsage::CopyDst;
++    wgpu::Buffer buffer = device.CreateBuffer(&descriptor);
++    queue.Submit(0, nullptr);
++}
++
++DAWN_INSTANTIATE_TEST(GLUncheckedErrorTests,
++                      OpenGLBackend(),
++                      OpenGLESBackend(),
++                      OpenGLESBackend({"gl_defer"}));
++
++}  // anonymous namespace
++}  // namespace dawn::native::opengl

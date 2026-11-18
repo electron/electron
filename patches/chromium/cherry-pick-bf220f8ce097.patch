@@ -1,0 +1,562 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keishi Hattori <keishi@google.com>
+Date: Fri, 23 Oct 2026 00:36:56 -0700
+Subject: PagePopup: Fix dangling WebPagePopupImpl::opener_web_view_
+
+HTMLInputElement::showPicker() can open a popup for a disconnected or
+display:none <input> element, including during pagehide or change events
+inside WebViewImpl::Close(). Because Document::DetachLayoutTree() does
+not visit disconnected or display:none elements, it does not close their
+popups on document shutdown, and WebPagePopupImpl::opener_web_view_ can
+dangle after WebViewImpl is destroyed.
+
+This CL fixes the issue by:
+* Closing any open popup owned by a detaching document in
+  ChromeClientImpl::DocumentDetached(), and closing <input> pickers
+  before cross-document adoption in Node::WillMoveToNewDocument().
+* Clearing opener_web_view_ in WebViewImpl::CleanupPagePopup(),
+  WebPagePopupImpl::ClosePopup(), and WebPagePopupImpl::Close() because
+  WebPagePopupImpl stays alive until its Mojo channel disconnects.
+
+Bug: 566377256
+Change-Id: I89d02b41df709e65b815f224ce62d4df13ab2cbc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8619575
+Commit-Queue: Keishi Hattori <keishi@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725566}
+
+Electron adaptation notes (45-x-y): internal_popup_menu_test.cc: the new includes and the two OpenPopupDuring*OnWebViewClose tests plus helper listener were added by hand after a test an earlier Electron backport inserted at the same spot; all non-test hunks merged cleanly.
+
+diff --git a/third_party/blink/renderer/core/dom/node.cc b/third_party/blink/renderer/core/dom/node.cc
+index a1c22612f2b05b850d18f4ed84d1f2b35db608a5..ff3a71fd1e913aa02e2ce3d7769b5216d63f286b 100644
+--- a/third_party/blink/renderer/core/dom/node.cc
++++ b/third_party/blink/renderer/core/dom/node.cc
+@@ -104,6 +104,7 @@
+ #include "third_party/blink/renderer/core/html/custom/custom_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_form_control_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_form_element.h"
++#include "third_party/blink/renderer/core/html/forms/html_input_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_select_element.h"
+ #include "third_party/blink/renderer/core/html/html_body_element.h"
+ #include "third_party/blink/renderer/core/html/html_dialog_element.h"
+@@ -3003,6 +3004,14 @@ void Node::WillMoveToNewDocument(Document& new_document) {
+   Document& old_document = GetDocument();
+   DCHECK_NE(&old_document, &new_document);
+ 
++  // A disconnected <input> can have an open popup via showPicker() that is not
++  // closed by RemovedFrom() or DetachLayoutTree(). Close it here rather than in
++  // HTMLInputElement::DidMoveToNewDocument() so popup teardown (such as
++  // AXObjectCache cleanup) runs while GetDocument() is still `old_document`.
++  if (auto* input = DynamicTo<HTMLInputElement>(this)) {
++    input->ClosePopupView();
++  }
++
+   // In rare situations, this node may be the focused element of the old
+   // document. In this case, we need to clear the focused element of the old
+   // document, and since we are currently in an event forbidden scope, we can't
+diff --git a/third_party/blink/renderer/core/exported/web_page_popup_impl.cc b/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
+index 6d9edd6ef15e4a918c5f9c9a56a404623efb53d5..9a4b93f84f9cc8b1669d4011eabeb4eae63a8aed 100644
+--- a/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
+@@ -1049,11 +1049,11 @@ gfx::Rect WebPagePopupImpl::ViewportVisibleRect() {
+ }
+ 
+ KURL WebPagePopupImpl::GetURLForDebugTrace() {
+-  if (!page_) {
++  if (!page_ || !opener_web_view_) {
+     return {};
+   }
+   WebFrame* main_frame = opener_web_view_->MainFrame();
+-  if (main_frame->IsWebLocalFrame()) {
++  if (main_frame && main_frame->IsWebLocalFrame()) {
+     return main_frame->ToWebLocalFrame()->GetDocument().Url();
+   }
+   return {};
+@@ -1087,6 +1087,10 @@ void WebPagePopupImpl::Close() {
+         controller->ClearPagePopupClient();
+       }
+       DestroyPage();
++      if (opener_web_view_) {
++        opener_web_view_->CleanupPagePopup();
++        opener_web_view_ = nullptr;
++      }
+     }
+   }
+ 
+@@ -1146,7 +1150,10 @@ void WebPagePopupImpl::ClosePopup() {
+   // owner of itself. Note however that WebViewImpl may briefly extend the
+   // lifetime of this object since it owns a reference, but it should only be
+   // to call HasSamePopupClient().
+-  opener_web_view_->CleanupPagePopup();
++  if (opener_web_view_) {
++    opener_web_view_->CleanupPagePopup();
++    opener_web_view_ = nullptr;
++  }
+ }
+ 
+ LocalDOMWindow* WebPagePopupImpl::Window() {
+diff --git a/third_party/blink/renderer/core/exported/web_page_popup_impl.h b/third_party/blink/renderer/core/exported/web_page_popup_impl.h
+index c57d9eb96c928fc4c65cba740d3cb54f43dbbd90..9aa8de49c71f8c5dce5fa5d69b836d4467594131 100644
+--- a/third_party/blink/renderer/core/exported/web_page_popup_impl.h
++++ b/third_party/blink/renderer/core/exported/web_page_popup_impl.h
+@@ -98,6 +98,10 @@ class CORE_EXPORT WebPagePopupImpl final : public WebPagePopup,
+   // Only HasSamePopupClient() may still be called after ClosePopup() runs.
+   void ClosePopup();
+ 
++  // Clears the back-pointer to the opener WebViewImpl when the popup is
++  // disowned or the opener WebViewImpl is being destroyed.
++  void ClearOpenerWebView() { opener_web_view_ = nullptr; }
++
+   // Returns whether another WebPagePopupImpl has the same PopupClient as this
+   // instance. May be called after ClosePopup() has run still, in order to
+   // determine if a popup sharing the same client was created immediately after
+@@ -262,7 +266,6 @@ class CORE_EXPORT WebPagePopupImpl final : public WebPagePopup,
+   void DestroyPage();
+   void MainFrameDetached();
+   void SetRootLayer(scoped_refptr<cc::Layer>);
+-  void SetWebView(WebViewImpl* web_view);
+ 
+   gfx::Rect WindowRectInScreen() const;
+ 
+@@ -275,8 +278,7 @@ class CORE_EXPORT WebPagePopupImpl final : public WebPagePopup,
+   void DidSetBounds();
+ 
+   // This is the WebView that opened the popup.
+-  raw_ptr<WebViewImpl, UnprotectedInRelease | DanglingUntriaged>
+-      opener_web_view_ = nullptr;
++  raw_ptr<WebViewImpl, UnprotectedInRelease> opener_web_view_ = nullptr;
+   Persistent<PagePopupChromeClient> chrome_client_;
+   Persistent<EmptyLocalFrameClient> local_frame_client_;
+   // WebPagePopupImpl wraps its own Page that renders the content in the popup.
+diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
+index ecb2deab23578181025b0282f02960d4a71a3c1f..7b412adba3fff4a7150b23c627ac37135819c64b 100644
+--- a/third_party/blink/renderer/core/exported/web_view_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
+@@ -661,6 +661,7 @@ WebViewImpl::WebViewImpl(
+ 
+ WebViewImpl::~WebViewImpl() {
+   DCHECK(!page_);
++  DCHECK(!page_popup_);
+ }
+ 
+ void WebViewImpl::SetTabKeyCyclesThroughElements(bool value) {
+@@ -1153,8 +1154,11 @@ void WebViewImpl::ClosePagePopup(PagePopup* popup) {
+ }
+ 
+ void WebViewImpl::CleanupPagePopup() {
+-  page_popup_ = nullptr;
+-  DisablePopupMouseWheelEventListener();
++  if (page_popup_) {
++    page_popup_->ClearOpenerWebView();
++    page_popup_ = nullptr;
++    DisablePopupMouseWheelEventListener();
++  }
+ }
+ 
+ void WebViewImpl::UpdatePagePopup() {
+@@ -1185,13 +1189,13 @@ void WebViewImpl::DisablePopupMouseWheelEventListener() {
+   // TODO(kenrb): Concerns the same as in enablePopupMouseWheelEventListener.
+   // See https://crbug.com/566130
+   DCHECK(popup_mouse_wheel_event_listener_);
++  EventListener* listener = popup_mouse_wheel_event_listener_.Release();
+   Document* document =
+       local_root_with_empty_mouse_wheel_listener_->GetDocument();
+   if (document) {
+     // Document may have already removed the event listener, for instance, due
+     // to a navigation, but remove it anyway.
+-    document->removeEventListener(event_type_names::kMousewheel,
+-                                  popup_mouse_wheel_event_listener_.Release(),
++    document->removeEventListener(event_type_names::kMousewheel, listener,
+                                   false);
+   }
+   local_root_with_empty_mouse_wheel_listener_ = nullptr;
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element.cc b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+index e574134e695e44407012bd41af2b7ed72f34f6aa..e202137e693a8b0f1b870ee38456f17f59cdddac 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+@@ -2438,6 +2438,12 @@ OpaqueRange* HTMLInputElement::createValueRange(
+                                               exception_state);
+ }
+ 
++void HTMLInputElement::ClosePopupView() {
++  if (input_type_view_) {
++    input_type_view_->ClosePopupView();
++  }
++}
++
+ bool HTMLInputElement::SetupDateTimeChooserParameters(
+     DateTimeChooserParameters& parameters) {
+   if (!GetDocument().View())
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element.h b/third_party/blink/renderer/core/html/forms/html_input_element.h
+index 80db46912863c549c479ae79e336b4aadd560ade..9a80638775ff24783c7d564473aa22f53dd63f72 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element.h
++++ b/third_party/blink/renderer/core/html/forms/html_input_element.h
+@@ -355,6 +355,7 @@ class CORE_EXPORT HTMLInputElement
+   HTMLImageLoader& EnsureImageLoader();
+ 
+   bool SetupDateTimeChooserParameters(DateTimeChooserParameters&);
++  void ClosePopupView();
+ 
+   bool SupportsInputModeAttribute() const;
+ 
+diff --git a/third_party/blink/renderer/core/html/forms/internal_popup_menu_test.cc b/third_party/blink/renderer/core/html/forms/internal_popup_menu_test.cc
+index b7520555c79c58f379388c9352305f142cd35e9a..34160937da699c38b949fb4a6a71056ea9ae7dc0 100644
+--- a/third_party/blink/renderer/core/html/forms/internal_popup_menu_test.cc
++++ b/third_party/blink/renderer/core/html/forms/internal_popup_menu_test.cc
+@@ -1,12 +1,18 @@
+ // Copyright 2019 The Chromium Authors
++#include "base/functional/callback_helpers.h"
++#include "base/memory/raw_ptr.h"
++#include "base/memory/scoped_refptr.h"
++#include "base/time/time.h"
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+ #include "third_party/blink/renderer/core/html/forms/internal_popup_menu.h"
+ 
+ #include "build/build_config.h"
++#include "cc/trees/layer_tree_host.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/web/web_document.h"
++#include "third_party/blink/renderer/core/accessibility/ax_context.h"
+ #include "third_party/blink/renderer/core/css/media_feature_names.h"
+ #include "third_party/blink/renderer/core/css/media_feature_overrides.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+@@ -16,7 +22,10 @@
+ #include "third_party/blink/renderer/core/exported/web_page_popup_impl.h"
+ #include "third_party/blink/renderer/core/exported/web_view_impl.h"
+ #include "third_party/blink/renderer/core/frame/frame_test_helpers.h"
++#include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
++#include "third_party/blink/renderer/core/html/forms/html_input_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_select_element.h"
+ #include "third_party/blink/renderer/core/loader/empty_clients.h"
+ #include "third_party/blink/renderer/core/page/page.h"
+@@ -24,11 +33,16 @@
+ #include "third_party/blink/renderer/core/paint/paint_layer_scrollable_area.h"
+ #include "third_party/blink/renderer/core/testing/dummy_page_holder.h"
+ #include "third_party/blink/renderer/core/testing/page_test_base.h"
++#include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/thread_state.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ #include "third_party/blink/renderer/platform/testing/url_test_helpers.h"
++#include "third_party/blink/renderer/platform/web_test_support.h"
+ #include "third_party/blink/renderer/platform/wtf/shared_buffer.h"
++#include "ui/accessibility/ax_mode.h"
+ 
+ namespace blink {
+ 
+@@ -323,4 +337,282 @@ TEST_F(InternalPopupMenuTest, NarrowedPopupIsNotScrolled) {
+ 
+ #endif  // !BUILDFLAG(IS_ANDROID)
+ 
++namespace {
++class ShowPickerOnEventListener final : public NativeEventListener {
++ public:
++  ShowPickerOnEventListener(WebViewImpl* web_view, HTMLInputElement* input)
++      : web_view_(web_view), input_(input) {}
++  void Invoke(ExecutionContext*, Event*) override {
++    if (!input_) {
++      return;
++    }
++    LocalFrame::NotifyUserActivation(
++        input_->GetDocument().GetFrame(),
++        mojom::blink::UserActivationNotificationType::kTest);
++    DummyExceptionStateForTesting exception_state;
++    input_->showPicker(exception_state);
++    if (web_view_) {
++      opened_popup_ = web_view_->GetPagePopup();
++      web_view_ = nullptr;
++    }
++  }
++  WebPagePopupImpl* OpenedPopup() const { return opened_popup_.get(); }
++  void Trace(Visitor* visitor) const override {
++    visitor->Trace(input_);
++    NativeEventListener::Trace(visitor);
++  }
++
++ private:
++  raw_ptr<WebViewImpl> web_view_;
++  Member<HTMLInputElement> input_;
++  scoped_refptr<WebPagePopupImpl> opened_popup_;
++};
++}  // namespace
++
++// See crbug.com/566377256.
++TEST_F(InternalPopupMenuTest, OpenPopupDuringPagehideOnWebViewClose) {
++  if (!RuntimeEnabledFeatures::PagePopupEnabled()) {
++    return;
++  }
++
++  frame_test_helpers::WebViewHelper web_view_helper;
++  WebViewImpl* web_view = web_view_helper.Initialize();
++  WebURL base_url = url_test_helpers::ToKURL("http://example.com/");
++  frame_test_helpers::LoadHTMLString(web_view->MainFrameImpl(), R"HTML(
++    <!DOCTYPE html>
++    <div style="display: none">
++      <input id="color" type="color">
++      <input id="date" type="date">
++    </div>
++  )HTML",
++                                     base_url);
++
++  Document& document =
++      *web_view->MainFrameImpl()->GetDocument().Unwrap<Document>();
++  document.View()->UpdateAllLifecyclePhasesForTest();
++
++  Persistent<HTMLInputElement> color =
++      To<HTMLInputElement>(document.getElementById(AtomicString("color")));
++  ASSERT_TRUE(color);
++  Persistent<HTMLInputElement> date =
++      To<HTMLInputElement>(document.getElementById(AtomicString("date")));
++  ASSERT_TRUE(date);
++
++  auto* color_listener =
++      MakeGarbageCollected<ShowPickerOnEventListener>(web_view, color);
++  auto* date_listener =
++      MakeGarbageCollected<ShowPickerOnEventListener>(web_view, date);
++  document.domWindow()->addEventListener(event_type_names::kPagehide,
++                                         color_listener);
++  document.domWindow()->addEventListener(event_type_names::kPagehide,
++                                         date_listener);
++
++  web_view_helper.Reset();
++  EXPECT_FALSE(color->IsPickerVisible());
++  EXPECT_FALSE(date->IsPickerVisible());
++  {
++    ScopedWebTestMode web_test_mode(false);
++    if (WebPagePopupImpl* popup = color_listener->OpenedPopup()) {
++      popup->LayerTreeHostForTesting()->CompositeForTest(
++          base::TimeTicks::Now(), false, base::DoNothing());
++    }
++    if (WebPagePopupImpl* popup = date_listener->OpenedPopup()) {
++      popup->LayerTreeHostForTesting()->CompositeForTest(
++          base::TimeTicks::Now(), false, base::DoNothing());
++    }
++  }
++  test::RunPendingTasks();
++  color.Clear();
++  date.Clear();
++  ThreadState::Current()->CollectAllGarbageForTesting();
++}
++
++// See crbug.com/566377256.
++TEST_F(InternalPopupMenuTest, OpenPopupDuringChangeOnWebViewClose) {
++  if (!RuntimeEnabledFeatures::PagePopupEnabled()) {
++    return;
++  }
++
++  frame_test_helpers::WebViewHelper web_view_helper;
++  WebViewImpl* web_view = web_view_helper.Initialize();
++  if (web_view->GetChromeClient().UseExternalPopupMenus()) {
++    return;
++  }
++  web_view->MainFrameViewWidget()->Resize(gfx::Size(800, 600));
++
++  WebURL base_url = url_test_helpers::ToKURL("http://example.com/");
++  frame_test_helpers::LoadHTMLString(web_view->MainFrameImpl(), R"HTML(
++    <!DOCTYPE html>
++    <select id="select">
++      <option>1</option>
++      <option>2</option>
++    </select>
++    <div style="display: none">
++      <input id="color" type="color">
++    </div>
++  )HTML",
++                                     base_url);
++
++  Document& document =
++      *web_view->MainFrameImpl()->GetDocument().Unwrap<Document>();
++  document.View()->UpdateAllLifecyclePhasesForTest();
++
++  auto* select =
++      To<HTMLSelectElement>(document.getElementById(AtomicString("select")));
++  ASSERT_TRUE(select);
++  Persistent<HTMLInputElement> color =
++      To<HTMLInputElement>(document.getElementById(AtomicString("color")));
++  ASSERT_TRUE(color);
++
++  select->ShowPopup();
++  EXPECT_TRUE(select->PopupIsVisible());
++
++  WebPagePopupImpl* popup = web_view->GetPagePopup();
++  ASSERT_TRUE(popup);
++  popup->DidShowPopup();
++
++  select->ProvisionalSelectionChanged(1);
++  auto* listener =
++      MakeGarbageCollected<ShowPickerOnEventListener>(web_view, color);
++  select->addEventListener(event_type_names::kChange, listener);
++
++  web_view_helper.Reset();
++  EXPECT_FALSE(color->IsPickerVisible());
++  if (WebPagePopupImpl* opened_popup = listener->OpenedPopup()) {
++    ScopedWebTestMode web_test_mode(false);
++    opened_popup->LayerTreeHostForTesting()->CompositeForTest(
++        base::TimeTicks::Now(), false, base::DoNothing());
++  }
++  test::RunPendingTasks();
++}
++
++// See crbug.com/566377256.
++TEST_F(InternalPopupMenuTest, CompositePopupAfterWebViewClosed) {
++  if (!RuntimeEnabledFeatures::PagePopupEnabled()) {
++    return;
++  }
++
++  frame_test_helpers::WebViewHelper web_view_helper;
++  WebViewImpl* web_view = web_view_helper.Initialize();
++  WebURL base_url = url_test_helpers::ToKURL("http://example.com/");
++  frame_test_helpers::LoadHTMLString(web_view->MainFrameImpl(), R"HTML(
++    <select id="sel">
++      <option>1</option>
++      <option>2</option>
++    </select>
++  )HTML",
++                                     base_url);
++  Document& document =
++      *web_view->MainFrameImpl()->GetDocument().Unwrap<Document>();
++  document.View()->UpdateAllLifecyclePhasesForTest();
++
++  auto* sel =
++      To<HTMLSelectElement>(document.getElementById(AtomicString("sel")));
++  ASSERT_TRUE(sel);
++  auto* menu = MakeGarbageCollected<InternalPopupMenu>(
++      MakeGarbageCollected<EmptyChromeClient>(), *sel);
++
++  scoped_refptr<WebPagePopupImpl> popup = web_view->OpenPagePopup(menu);
++  ASSERT_TRUE(popup);
++  popup->DidShowPopup();
++
++  web_view->CleanupPagePopup();
++  web_view_helper.Reset();
++
++  {
++    ScopedWebTestMode web_test_mode(false);
++    popup->LayerTreeHostForTesting()->CompositeForTest(
++        base::TimeTicks::Now(), false, base::DoNothing());
++  }
++  popup->ClosePopup();
++}
++
++// See crbug.com/566377256.
++TEST_F(InternalPopupMenuTest, DetachedInputPopupClosedOnDocumentDetach) {
++  if (!RuntimeEnabledFeatures::PagePopupEnabled()) {
++    return;
++  }
++
++  frame_test_helpers::WebViewHelper web_view_helper;
++  WebViewImpl* web_view = web_view_helper.Initialize();
++  WebURL base_url = url_test_helpers::ToKURL("http://example.com/");
++  frame_test_helpers::LoadHTMLString(web_view->MainFrameImpl(), R"HTML(
++    <!DOCTYPE html>
++    <div style="display: none">
++      <input id="color" type="color">
++    </div>
++  )HTML",
++                                     base_url);
++
++  Document& document =
++      *web_view->MainFrameImpl()->GetDocument().Unwrap<Document>();
++  document.View()->UpdateAllLifecyclePhasesForTest();
++
++  Persistent<HTMLInputElement> color =
++      To<HTMLInputElement>(document.getElementById(AtomicString("color")));
++  ASSERT_TRUE(color);
++  color->remove();
++
++  LocalFrame::NotifyUserActivation(
++      document.GetFrame(), mojom::blink::UserActivationNotificationType::kTest);
++  color->showPicker(ASSERT_NO_EXCEPTION);
++  EXPECT_TRUE(color->IsPickerVisible());
++  EXPECT_TRUE(web_view->GetPagePopup());
++
++  frame_test_helpers::LoadHTMLString(
++      web_view->MainFrameImpl(), "<!DOCTYPE html><p>Next page</p>", base_url);
++  EXPECT_FALSE(color->IsPickerVisible());
++  EXPECT_FALSE(web_view->GetPagePopup());
++}
++
++// See crbug.com/566377256.
++TEST_F(InternalPopupMenuTest, DetachedInputPopupClosedOnAdoptNode) {
++  if (!RuntimeEnabledFeatures::PagePopupEnabled()) {
++    return;
++  }
++
++  frame_test_helpers::WebViewHelper web_view_helper;
++  WebViewImpl* web_view = web_view_helper.Initialize();
++  WebURL base_url = url_test_helpers::ToKURL("http://example.com/");
++  frame_test_helpers::LoadHTMLString(web_view->MainFrameImpl(), R"HTML(
++    <!DOCTYPE html>
++    <div style="display: none">
++      <input id="color" type="color">
++      <input id="color2" type="color">
++    </div>
++  )HTML",
++                                     base_url);
++
++  Document& document =
++      *web_view->MainFrameImpl()->GetDocument().Unwrap<Document>();
++  AXContext ax_context(document, ui::kAXModeComplete);
++  document.View()->UpdateAllLifecyclePhasesForTest();
++
++  Persistent<HTMLInputElement> color =
++      To<HTMLInputElement>(document.getElementById(AtomicString("color")));
++  ASSERT_TRUE(color);
++  Persistent<HTMLInputElement> color2 =
++      To<HTMLInputElement>(document.getElementById(AtomicString("color2")));
++  ASSERT_TRUE(color2);
++  color->remove();
++
++  LocalFrame::NotifyUserActivation(
++      document.GetFrame(), mojom::blink::UserActivationNotificationType::kTest);
++  color->showPicker(ASSERT_NO_EXCEPTION);
++  EXPECT_TRUE(color->IsPickerVisible());
++  EXPECT_TRUE(web_view->GetPagePopup());
++
++  Document* other_document =
++      Document::CreateForTest(*document.GetExecutionContext());
++  other_document->adoptNode(color, ASSERT_NO_EXCEPTION);
++  EXPECT_FALSE(color->IsPickerVisible());
++  EXPECT_FALSE(web_view->GetPagePopup());
++
++  LocalFrame::NotifyUserActivation(
++      document.GetFrame(), mojom::blink::UserActivationNotificationType::kTest);
++  color2->showPicker(ASSERT_NO_EXCEPTION);
++  EXPECT_TRUE(color2->IsPickerVisible());
++  EXPECT_TRUE(web_view->GetPagePopup());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/page/chrome_client_impl.cc b/third_party/blink/renderer/core/page/chrome_client_impl.cc
+index 8a9acc6dc7e9330243cd976d8ba128121b327b9a..eff013e3cddbedfd91a47b686691702e1ef9a6a8 100644
+--- a/third_party/blink/renderer/core/page/chrome_client_impl.cc
++++ b/third_party/blink/renderer/core/page/chrome_client_impl.cc
+@@ -70,6 +70,7 @@
+ #include "third_party/blink/renderer/core/dom/node.h"
+ #include "third_party/blink/renderer/core/events/web_input_event_conversion.h"
+ #include "third_party/blink/renderer/core/exported/web_dev_tools_agent_impl.h"
++#include "third_party/blink/renderer/core/exported/web_page_popup_impl.h"
+ #include "third_party/blink/renderer/core/exported/web_plugin_container_impl.h"
+ #include "third_party/blink/renderer/core/exported/web_settings_impl.h"
+ #include "third_party/blink/renderer/core/exported/web_view_impl.h"
+@@ -1513,6 +1514,13 @@ void ChromeClientImpl::DocumentDetached(Document& document) {
+     if (it->FrameOrNull() == document.GetFrame())
+       it->DisconnectClient();
+   }
++  // Close any open popup owned by `document`, including popups opened via
++  // HTMLInputElement::showPicker() on disconnected elements that are not
++  // visited by Document::DetachLayoutTree().
++  if (web_view_ && web_view_->GetPagePopup() &&
++      web_view_->GetPagePopup()->OwnerElement().GetDocument() == document) {
++    web_view_->ClosePagePopup(web_view_->GetPagePopup());
++  }
+ }
+ 
+ double ChromeClientImpl::UserZoomFactor(LocalFrame* frame) const {

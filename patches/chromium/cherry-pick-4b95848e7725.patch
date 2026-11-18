@@ -1,0 +1,165 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Wed, 28 Oct 2026 08:52:24 -0700
+Subject: Avoid dangling AtomicString refs across WillModifyAttribute
+
+When Element::DidMoveToNewDocument moves an element between documents
+with different quirks modes, GetIdAttribute() and GetClassAttribute()
+return const AtomicString& references into the element's
+AttributeVector backing buffer. If a DevTools attribute-modified DOM
+breakpoint pauses execution inside WillModifyAttribute and script
+mutates the element's attributes, AttributeVector can reallocate and
+leave new_value dangling in SetAttributeInternal and
+DidModifyAttribute.
+
+Copy the attribute values in DidMoveToNewDocument and
+SetAttributeInternal before calling WillModifyAttribute, and
+re-validate the attribute index after WillModifyAttribute in the
+modified-value branch.
+
+Fixed: 574789298
+Bug: 574789298
+Change-Id: I8ca5944e9ea420fb33625909f6f39acafd3f92e2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8633078
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Commit-Queue: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729189}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index c015f4aa5b0ac57047d701a2fd4c0d80b5610d34..509ad5092fc24ebbbb8db229d4ea6ea457d38c4a 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -13915,18 +13915,26 @@ ALWAYS_INLINE void Element::SetAttributeInternal(
+       GetElementData()->Attributes().at(index);
+   QualifiedName existing_attribute_name = existing_attribute.GetName();
+ 
++  // `new_value` may be a reference into `ElementData::Attributes()`, which can
++  // be reallocated if `WillModifyAttribute()` pauses in the debugger and script
++  // mutates attributes. Copy it here (rather than taking `new_value` by value
++  // in `SetAttributeInternal`, which would add refcount churn to the
++  // `AppendAttributeInternal` fast path).
+   if (new_value == existing_attribute.Value()) {
+     if (reason !=
+         AttributeModificationReason::kBySynchronizationOfLazyAttribute) {
+-      WillModifyAttribute(existing_attribute_name, new_value, new_value);
+-      DidModifyAttribute(existing_attribute_name, new_value, new_value, reason);
++      AtomicString value_copy = new_value;
++      WillModifyAttribute(existing_attribute_name, value_copy, value_copy);
++      DidModifyAttribute(existing_attribute_name, value_copy, value_copy,
++                         reason);
+     }
+   } else {
+     AtomicString existing_attribute_value = existing_attribute.Value();
++    AtomicString value_copy = new_value;
+     if (reason !=
+         AttributeModificationReason::kBySynchronizationOfLazyAttribute) {
+       WillModifyAttribute(existing_attribute_name, existing_attribute_value,
+-                          new_value);
++                          value_copy);
+     }
+     MutableAttributeCollection mutable_attributes =
+         EnsureUniqueElementData().Attributes();
+@@ -13938,14 +13946,14 @@ ALWAYS_INLINE void Element::SetAttributeInternal(
+       index = mutable_attributes.FindIndex(existing_attribute_name);
+     }
+     if (index != kNotFound) {
+-      mutable_attributes[index].SetValue(new_value);
++      mutable_attributes[index].SetValue(value_copy);
+     } else {
+-      mutable_attributes.Append(existing_attribute_name, new_value);
++      mutable_attributes.Append(existing_attribute_name, value_copy);
+     }
+     if (reason !=
+         AttributeModificationReason::kBySynchronizationOfLazyAttribute) {
+       DidModifyAttribute(existing_attribute_name, existing_attribute_value,
+-                         new_value, reason);
++                         value_copy, reason);
+     }
+   }
+ }
+diff --git a/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-adopt-node-attr-modified-crash-expected.txt b/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-adopt-node-attr-modified-crash-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6e003aedaf806f9bd48c1c357055bd1dfd13a54b
+--- /dev/null
++++ b/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-adopt-node-attr-modified-crash-expected.txt
+@@ -0,0 +1,6 @@
++Tests attribute-modified DOM breakpoint during cross-quirks-mode adoptNode.
++Testing id="Foo"
++Result: Foo
++Testing class="Bar"
++Result: Bar
++
+diff --git a/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-adopt-node-attr-modified-crash.js b/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-adopt-node-attr-modified-crash.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..96b3b08eecef6a75454ebf6e9be6958d00788b93
+--- /dev/null
++++ b/third_party/blink/web_tests/inspector-protocol/debugger/domdebugger-adopt-node-attr-modified-crash.js
+@@ -0,0 +1,67 @@
++(async function(/** @type {import('test_runner').TestRunner} */ testRunner) {
++  const {dp} = await testRunner.startHTML(
++      `<!DOCTYPE html><iframe></iframe>`,
++      `Tests attribute-modified DOM breakpoint during cross-quirks-mode adoptNode.`);
++
++  await dp.Debugger.enable();
++  await dp.DOM.enable();
++  await dp.DOM.getDocument({depth: -1, pierce: true});
++
++  async function runCase(attrName, attrValue, sprayValue) {
++    testRunner.log(`Testing ${attrName}="${attrValue}"`);
++    const evalRes = await dp.Runtime.evaluate({
++      expression: `(() => {
++        const frame = document.querySelector('iframe');
++        const qdoc = frame.contentDocument;
++        qdoc.open();
++        qdoc.write('<div></div>');
++        qdoc.close();
++        const el = qdoc.createElement('div');
++        el.setAttribute('a0', '0');
++        el.setAttribute('${attrName}', '${attrValue}');
++        for (let i = 1; i <= 6; i++) {
++          el.setAttribute('a' + i, String(i));
++        }
++        window.el = el;
++        return el;
++      })()`
++    });
++    await dp.DOM.getDetachedDomNodes();
++    const objectId = evalRes.result.result.objectId;
++    const {result: {nodeId}} = await dp.DOM.requestNode({objectId});
++    await dp.DOMDebugger.setDOMBreakpoint({nodeId, type: 'attribute-modified'});
++
++    const pausedPromise = dp.Debugger.oncePaused();
++    const adoptPromise = dp.Runtime.evaluate({
++      expression: `(() => {
++        document.adoptNode(window.el);
++        return window.el.getAttribute('${attrName}');
++      })()`
++    });
++
++    await pausedPromise;
++    await dp.Runtime.evaluate({
++      expression: `(() => {
++        for (let i = 0; i < 64; i++) {
++          window.el.setAttribute('g' + i, 'v');
++        }
++        const spray = '${sprayValue}';
++        for (let i = 0; i < 32; i++) {
++          window.el.setAttribute('s' + i, spray + String(i).padStart(2, '0'));
++        }
++      })()`
++    });
++    await dp.Debugger.resume();
++
++    const adoptRes = await adoptPromise;
++    testRunner.log(`Result: ${adoptRes.result.result.value}`);
++  }
++
++  // 114 chars + 2 chars pad = 116 chars (128-byte StringImpl allocation).
++  // Characters 12..19 (offset 24..31 in 128-byte slot) hold 0x41 ('A').
++  const spray = 'A'.repeat(114);
++  await runCase('id', 'Foo', spray);
++  await runCase('class', 'Bar', spray);
++
++  testRunner.completeTest();
++})

@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andres Ricardo Perez <andresrperez@chromium.org>
+Date: Wed, 11 Nov 2026 20:27:11 -0800
+Subject: [M156] [Canvas2d] Inline Canvas2DRecorderContext::DrawInternal into
+ Draw
+
+Original change's description:
+> [Canvas2d] Inline Canvas2DRecorderContext::DrawInternal into Draw
+>
+> DrawInternal() was originally split out of Draw() in crrev.com/c/2842150
+> so unresolved filter draws could be deferred via PostDeferrableAction
+> during [NoAllocDirectCall] V8 Fast API calls. PostDeferrableAction was
+> removed in crrev.com/c/5471803, and crrev.com/c/8551394 moved filter
+> resolution to the beginning of Draw() before acquiring the paint canvas.
+>
+> Since Draw() is the sole caller of DrawInternal() and paint_canvas is
+> now always non-null at that point, fold DrawInternal() directly into
+> Draw().
+>
+> Bug: 568831763
+> Change-Id: I0ab6a45daf2fab2f45ccf2b6fb3c519282a96a1c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8546974
+> Commit-Queue: Andres Ricardo Perez Rojas <andresrperez@chromium.org>
+> Reviewed-by: Justin Novosad <junov@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1720098}
+
+(cherry picked from commit eecf28dc06d80bcd01c076943685af1f29cba3ec)
+
+Bug: 584579626,568831763
+Change-Id: I0ab6a45daf2fab2f45ccf2b6fb3c519282a96a1c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8796351
+Commit-Queue: Justin Novosad <junov@chromium.org>
+Reviewed-by: Andres Ricardo Perez Rojas <andresrperez@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Justin Novosad <junov@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#2173}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
+index 1124f10a0ef8ee4453bbc9590d4d9ad2e01e017c..cd21f8834c8eca0cecd4679df85fbe93da972e74 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
+@@ -577,18 +577,6 @@ class MODULES_EXPORT Canvas2DRecorderContext : public CanvasPath {
+                           SkBlendMode blend_mode,
+                           const gfx::RectF* bounds = nullptr);
+ 
+-  template <OverdrawOp CurrentOverdrawOp,
+-            typename DrawFunc,
+-            typename DrawCoversClipBoundsFunc>
+-  void DrawInternal(MemoryManagedPaintCanvas* paint_canvas,
+-                    const DrawFunc&,
+-                    const DrawCoversClipBoundsFunc&,
+-                    const gfx::RectF& bounds,
+-                    CanvasRenderingContext2DState::PaintType,
+-                    CanvasRenderingContext2DState::ImageType,
+-                    const SkIRect& clip_bounds,
+-                    CanvasPerformanceMonitor::DrawType);
+-
+   void DrawPathInternal(const CanvasPath&,
+                         CanvasRenderingContext2DState::PaintType,
+                         SkPathFillType,
+@@ -686,7 +674,7 @@ ALWAYS_INLINE bool Canvas2DRecorderContext::BlendModeRequiresCompositedDraw(
+     const CanvasRenderingContext2DState& state) const {
+   SkBlendMode blend_mode = state.GlobalComposite();
+   // The "copy" composite operation (a.k.a. `SkBlendMode::kSrc`) is handled as a
+-  // special case in `DrawInternal` and thus doesn't require `CompositedDraw`.
++  // special case in `Draw` and thus doesn't require `CompositedDraw`.
+   if (blend_mode == SkBlendMode::kSrc) {
+     return false;
+   }
+@@ -785,16 +773,33 @@ ALWAYS_INLINE void Canvas2DRecorderContext::CheckOverdraw(
+ template <Canvas2DRecorderContext::OverdrawOp CurrentOverdrawOp,
+           typename DrawFunc,
+           typename DrawCoversClipBoundsFunc>
+-void Canvas2DRecorderContext::DrawInternal(
+-    MemoryManagedPaintCanvas* paint_canvas,
++void Canvas2DRecorderContext::Draw(
+     const DrawFunc& draw_func,
+     const DrawCoversClipBoundsFunc& draw_covers_clip_bounds,
+     const gfx::RectF& bounds,
+     CanvasRenderingContext2DState::PaintType paint_type,
+     CanvasRenderingContext2DState::ImageType image_type,
+-    const SkIRect& clip_bounds,
+     CanvasPerformanceMonitor::DrawType draw_type) {
+-  CHECK(paint_canvas);
++  if (!IsTransformInvertible()) [[unlikely]] {
++    return;
++  }
++
++  if (GetState().IsFilterUnresolved()) [[unlikely]] {
++    // Resolving a filter can synchronously execute script (via style and
++    // layout updates), which may reset the canvas recorder or state stack.
++    // Resolve the filter before acquiring `paint_canvas` and `state`.
++    StateGetFilter();
++    if (!IsTransformInvertible()) [[unlikely]] {
++      return;
++    }
++  }
++
++  SkIRect clip_bounds;
++  MemoryManagedPaintCanvas* paint_canvas = GetOrCreatePaintCanvas();
++  if (!paint_canvas || !paint_canvas->getDeviceClipBounds(&clip_bounds)) {
++    return;
++  }
++
+   const CanvasRenderingContext2DState& state = GetState();
+   SkBlendMode global_composite = state.GlobalComposite();
+   if (ShouldUseCompositedDraw(paint_type, image_type)) {
+@@ -835,41 +840,6 @@ void Canvas2DRecorderContext::DrawInternal(
+   }
+ }
+ 
+-template <Canvas2DRecorderContext::OverdrawOp CurrentOverdrawOp,
+-          typename DrawFunc,
+-          typename DrawCoversClipBoundsFunc>
+-void Canvas2DRecorderContext::Draw(
+-    const DrawFunc& draw_func,
+-    const DrawCoversClipBoundsFunc& draw_covers_clip_bounds,
+-    const gfx::RectF& bounds,
+-    CanvasRenderingContext2DState::PaintType paint_type,
+-    CanvasRenderingContext2DState::ImageType image_type,
+-    CanvasPerformanceMonitor::DrawType draw_type) {
+-  if (!IsTransformInvertible()) [[unlikely]] {
+-    return;
+-  }
+-
+-  if (GetState().IsFilterUnresolved()) [[unlikely]] {
+-    // Resolving a filter can synchronously execute script (via style and
+-    // layout updates), which may reset the canvas recorder or state stack.
+-    // Resolve the filter before acquiring `paint_canvas` and `clip_bounds`.
+-    StateGetFilter();
+-    if (!IsTransformInvertible()) [[unlikely]] {
+-      return;
+-    }
+-  }
+-
+-  SkIRect clip_bounds;
+-  MemoryManagedPaintCanvas* paint_canvas = GetOrCreatePaintCanvas();
+-  if (!paint_canvas || !paint_canvas->getDeviceClipBounds(&clip_bounds)) {
+-    return;
+-  }
+-
+-  DrawInternal<CurrentOverdrawOp, DrawFunc, DrawCoversClipBoundsFunc>(
+-      paint_canvas, draw_func, draw_covers_clip_bounds, bounds, paint_type,
+-      image_type, clip_bounds, draw_type);
+-}
+-
+ template <typename DrawFunc>
+ void Canvas2DRecorderContext::CompositedDraw(
+     const DrawFunc& draw_func,
+@@ -879,7 +849,7 @@ void Canvas2DRecorderContext::CompositedDraw(
+   // Due to the complexity of composited draw operations, we need to grant an
+   // exception to allow multi-pass rendering, and state finalization
+   // operations to proceed between the time when a flush is requested by
+-  // draw_func and when the flush request is fulfilled in DrawInternal. We
++  // draw_func and when the flush request is fulfilled in Draw. We
+   // cannot fulfill flush request in the middle of a composited draw because
+   // it would break the rendering behavior.
+   // It is safe to cast 'c' to RecordPaintCanvas below because we know that

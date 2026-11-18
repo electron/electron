@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Tue, 13 Oct 2026 21:52:34 -0700
+Subject: [HiC] Invalidate visited link colors when IsInCanvasSubtree changes
+
+Fixed: 573257409
+Change-Id: Ib968b83a51449ac62011a3ae67661e10ad2b0d94
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8573959
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718306}
+
+Electron adaptation notes (45-x-y): element.cc conflicted only on the signature line, since the branch's Element::DidChangeIsInCanvasSubtree() takes no CanvasSubtreePropagation argument (added upstream later); the fix's IsLink() style-recalc block is inserted at the top of the branch's function unchanged. html_canvas_element_test.cc conflicted because the earlier Electron backport of 8564744 appended RemoveAndReinsertSlottedElementToSameHost at the same spot; both tests are kept, the new SlotReassignmentInvalidatesVisitedLinkStyle test after it.
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 509ad5092fc24ebbbb8db229d4ea6ea457d38c4a..bc6671cabbba1becfb2915f7865ea181da712ab4 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4540,6 +4540,11 @@ bool Element::IsCanvasOrInCanvasSubtree() const {
+ }
+ 
+ void Element::DidChangeIsInCanvasSubtree() {
++  if (IsLink() && GetComputedStyle()) {
++    SetNeedsStyleRecalc(kLocalStyleChange,
++                        StyleChangeReasonForTracing::Create(
++                            style_change_reason::kFlatTreeChange));
++  }
+   if (auto* layout_object = GetLayoutObject()) {
+     layout_object->SetNeedsPaintPropertyUpdate();
+     layout_object->SetSubtreeShouldDoFullPaintInvalidation();
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+index 2d59933984d4b9f69d9b39e26b4c794bcfed1ed8..5f4bb09085a23091710bda104f6054fa2eef8e2c 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+@@ -1270,4 +1270,62 @@ TEST_P(HTMLCanvasElementTest, RemoveAndReinsertSlottedElementToSameHost) {
+   EXPECT_TRUE(child2->IsInCanvasSubtree());
+ }
+ 
++TEST_P(HTMLCanvasElementTest, SlotReassignmentInvalidatesVisitedLinkStyle) {
++  ScopedCanvasDrawElementForTest forced_canvas_draw_element_feature(true);
++  GetDocument().body()->SetHTMLUnsafeWithoutTrustedTypes(R"HTML(
++    <div id="host">
++      <template shadowrootmode="open">
++        <div>
++          <slot name="outside"></slot>
++        </div>
++        <canvas content="drawable">
++          <div drawable>
++            <slot name="inside"></slot>
++          </div>
++        </canvas>
++      </template>
++      <div id="payload" slot="outside">
++        <a id="link" href=""><span id="child">Link</span></a>
++        <svg><a id="svg_link" href=""><rect width="10" height="10"/></a></svg>
++      </div>
++    </div>
++  )HTML");
++  UpdateAllLifecyclePhasesForTest();
++
++  auto* payload = GetDocument().getElementById(AtomicString("payload"));
++  auto* link = GetDocument().getElementById(AtomicString("link"));
++  auto* child = GetDocument().getElementById(AtomicString("child"));
++  auto* svg_link = GetDocument().getElementById(AtomicString("svg_link"));
++
++  EXPECT_FALSE(link->IsInCanvasSubtree());
++  EXPECT_EQ(link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++  EXPECT_EQ(child->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++  EXPECT_EQ(svg_link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++
++  payload->setAttribute(html_names::kSlotAttr, AtomicString("inside"));
++  UpdateAllLifecyclePhasesForTest();
++
++  EXPECT_TRUE(link->IsInCanvasSubtree());
++  EXPECT_EQ(link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideUnvisitedLink);
++  EXPECT_EQ(child->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideUnvisitedLink);
++  EXPECT_EQ(svg_link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideUnvisitedLink);
++
++  payload->setAttribute(html_names::kSlotAttr, AtomicString("outside"));
++  UpdateAllLifecyclePhasesForTest();
++
++  EXPECT_FALSE(link->IsInCanvasSubtree());
++  EXPECT_EQ(link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++  EXPECT_EQ(child->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++  EXPECT_EQ(svg_link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++}
++
+ }  // namespace blink

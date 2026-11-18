@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thibaud Michaud <thibaudm@chromium.org>
+Date: Thu, 15 Oct 2026 14:26:16 +0200
+Subject: Lower default stack size on Android
+
+On 64-bit Android, Bionic's default pthread stack size
+(PTHREAD_STACK_SIZE_DEFAULT) is 992 KB (1 MB minus 32 KB for
+SIGNAL_STACK_SIZE_WITHOUT_GUARD) rather than 1 MB.
+
+Lower V8_DEFAULT_STACK_SIZE_KB on 64-bit Android to 952 KB (and 928 KB
+under ASan) to preserve the 40 KB (resp. 64 KB) stack limit safety
+margin.
+
+Bug: 568908052
+Change-Id: Id403fdd5f266d2574acead1b29aa7e7026d5e76c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8579382
+Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110794}
+
+diff --git a/src/common/globals.h b/src/common/globals.h
+index 16b4c069f5ef45d4439dd045418907b348da1771..f2a91b023f307f683ecf27f914798f1c96921175 100644
+--- a/src/common/globals.h
++++ b/src/common/globals.h
+@@ -198,8 +198,19 @@ namespace internal {
+ // even just 1 KB less than the default stack size would be enough (see
+ // crbug.com/1486275); to be more robust towards future CF reports we'll
+ // use an even lower limit.
++#if V8_OS_ANDROID
++#define V8_DEFAULT_STACK_SIZE_KB 928
++#else
+ #define V8_DEFAULT_STACK_SIZE_KB 960
++#endif
+ #define V8_STACK_LIMIT_MARGIN_KB 64
++#elif V8_OS_ANDROID
++// On 64-bit Android, Bionic's default pthread stack size
++// (PTHREAD_STACK_SIZE_DEFAULT) is 992 KB (1 MB minus 32 KB for
++// SIGNAL_STACK_SIZE_WITHOUT_GUARD). Leave the same 40 KB margin as on
++// 1 MB stack systems.
++#define V8_DEFAULT_STACK_SIZE_KB 952
++#define V8_STACK_LIMIT_MARGIN_KB 40
+ #else
+ // Slightly less than 1MB, since Windows' default stack size for
+ // the main execution thread is 1MB.

@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Liberato <liberato@chromium.org>
+Date: Tue, 13 Oct 2026 20:53:22 +0000
+Subject: avformat/mov: clamp tts_count to index entry count in mov_read_trun
+
+When an MP4 track header declares more time-to-sample (stts) entries
+than actual index entries constructed for the stream, sc->tts_count
+exceeds sti->nb_index_entries.
+
+In mov_read_trun(), requested_size for sc->tts_data is computed using
+sti->nb_index_entries + entries, but memmove() was shifting
+sc->tts_count - index_entry_pos entries to index_entry_pos + entries.
+When sc->tts_count > sti->nb_index_entries, this shifted phantom
+entries past the newly allocated buffer size, causing a heap buffer
+overflow write.
+
+Fix this by:
+1. Clamping sc->tts_count to sti->nb_index_entries before checking
+   size limits and allocating for fragment entries in mov_read_trun().
+2. Bounding the memmove count to at most
+   FFMIN(sc->tts_count, sti->nb_index_entries) - index_entry_pos.
+
+Bug: 573128234
+Change-Id: Ie0bf5f806a3fab55ac3d898cb8dd551ffe29c500
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/8568103
+Reviewed-by: Eugene Zemtsov <ezemtsov@google.com>
+Reviewed-by: Syed AbuTalib <lowkey@google.com>
+
+Electron adaptation notes (45-x-y): libavformat/mov.c: the upstream context above the new tts_count clamp includes a zero default-size check this branch does not have; only this change's own lines are applied.
+
+diff --git a/libavformat/mov.c b/libavformat/mov.c
+index a2b16b9d3821d0a67ab618887a7cf704837ed86a..d2824a385a03b08b9a44d3bb6508e3e4c35bd69d 100644
+--- a/libavformat/mov.c
++++ b/libavformat/mov.c
+@@ -6284,6 +6284,11 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+     entries = avio_rb32(pb);
+     av_log(c->fc, AV_LOG_TRACE, "flags 0x%x entries %u\n", flags, entries);
+ 
++    // A malformed file can declare more tts entries in the track header than
++    // sample index entries were built. Clamp tts_count so we don't move past
++    // the allocated tts_data buffer when making room for fragment entries.
++    sc->tts_count = FFMIN(sc->tts_count, sti->nb_index_entries);
++
+     if ((uint64_t)entries+sc->tts_count >= UINT_MAX/sizeof(*sc->tts_data))
+         return AVERROR_INVALIDDATA;
+     if (flags & MOV_TRUN_DATA_OFFSET)        data_offset        = avio_rb32(pb);
+@@ -6405,9 +6410,10 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+                 sizeof(*sti->index_entries) *
+                 (sti->nb_index_entries - index_entry_pos));
+         if (sc->tts_count >= index_entry_pos) {
++            unsigned int tts_to_move = FFMIN(sc->tts_count, sti->nb_index_entries) - index_entry_pos;
+             memmove(sc->tts_data + index_entry_pos + entries,
+                     sc->tts_data + index_entry_pos,
+-                    sizeof(*sc->tts_data) * (sc->tts_count - index_entry_pos));
++                    sizeof(*sc->tts_data) * tts_to_move);
+         }
+         if (index_entry_pos < sc->current_sample) {
+             sc->current_sample += entries;
