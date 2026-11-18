@@ -12,7 +12,7 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index bb65cc3f214867d8f3b43d24d66bcf7f105aa814..6271429ad847ce2117676deb2f75b5247d6bc7c5 100644
+index e17ff5deb888d1aedc377bfad054a4026e4a5e65..8b8bfd50229be11a0ef0ba47e7a83f91d6accd1c 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -10998,6 +10998,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -79,7 +79,7 @@ index 7bfd4f60aec0e6749eda3313f3324dfca2252a98..75142fc60f2df7aeebd66528563056b7
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 81ff2040138060a97b8bcf08c2ccc799f641a8b7..b0148cb2f9db0ec2fda2e8ce5640f49e2b7b7cd1 100644
+index 4028e9df3568db097f06d220ff58f7a3a807c62e..75a5bd27dbb19e00db7b40d5ce68f13a2cbd0636 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -618,6 +618,10 @@ struct CreateNewWindowParams {
@@ -188,10 +188,10 @@ index 43fdc63c11285e2bdeccf3841b9bca1cb690bfa1..8f802f396ce0448eebfff6b7cc56f825
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 5a8553172fc21854a56ccd56e30b8ce1a946af26..517a3e83b6810d15e98e2c8582feacdb4b8a5f4e 100644
+index 82772b10ca5c39144158782eb713959cfbabef19..b8a5c3b24fe3b59009b7cc7b8fdaf4279202f817 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7131,6 +7131,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6990,6 +6990,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_with_transient_activation = request.HasUserGesture();
    params->started_by_ad = is_ad_frame || is_ad_script_in_stack;
  

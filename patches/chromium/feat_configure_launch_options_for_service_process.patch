@@ -61,7 +61,7 @@ index 494a001c589bde1b57b004a53a1753dba03e5831..8bbdebe9c89cf7db2ca92fe3bce2f742
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 7e89870ddaab9a71e863fabff8069888a4ce7ba8..8d2e9bcc4a0a4026c1201e293af3282eecebdb1e 100644
+index 40d3a4385fa9460a43b029228a75d5c731151247..ab173e9168eb54db5dca7ff183124547ca85d25e 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -66,6 +66,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
