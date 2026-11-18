@@ -298,3 +298,4 @@ cherry-pick-e24ae5afd7b2.patch
 cherry-pick-cb30ba132b2a.patch
 cherry-pick-0de584d4aff0.patch
 cherry-pick-367ca4e72512.patch
+fix_allow_webcontentsimpl_centerselection_on_all_platforms.patch
