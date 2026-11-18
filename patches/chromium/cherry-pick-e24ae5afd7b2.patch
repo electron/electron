@@ -18,18 +18,26 @@ Reviewed-by: Mark Mentovai <mark@chromium.org>
 Commit-Queue: Mark Mentovai <mark@chromium.org>
 Auto-Submit: Bryan Oltman <bryanoltman@google.com>
 Cr-Commit-Position: refs/heads/main@{#1723938}
+
 Electron adaptation notes (43-x-y):
 sandbox_parameters_mac.{h,mm}, common.sb, sandbox_mac_unittest.mm,
 sandbox_mac_v2_unittest.mm: the upstream context around the new feature,
 helper and (define ...) line belongs to later GPU/WebNN/proxy-resolver
 sandbox work not on this branch; only this CL's own lines are inserted
-at the equivalent spots. renderer.sb hunk and the kRenderer switch case
-are unchanged.
+at the equivalent spots. renderer.sb hunk is unchanged.
+sandbox_parameters_mac.h: includes base/feature_list.h for
+BASE_DECLARE_FEATURE, which upstream's header already had.
+sandbox_parameters_mac.mm: upstream calls SetupCommonSandboxParameters()
+before the switch in SetupSandboxParameters(); on this branch each case
+calls it, so kRenderer is split into its own case that calls
+SetupCommonSandboxParameters() and then SetupRendererSandboxParameters(),
+and every other case keeps its existing behaviour.
 sandbox_mac_unittest.mm: the two new multiprocess tests are appended at the
-end of the file (the upstream neighbours do not exist on this branch).
+end of the file (the upstream neighbours do not exist on this branch), and
+base/test/scoped_feature_list.h is included, which upstream already had.
 
 diff --git a/content/browser/sandbox_mac_unittest.mm b/content/browser/sandbox_mac_unittest.mm
-index 14b1f14a133d991cd8fcd8e207cf8cf340fb953b..d8b6e1a332c140b0e481dfb9b046f254a11143d4 100644
+index 14b1f14a133d991cd8fcd8e207cf8cf340fb953b..b8f0bfd1b62d4239ecde47c63345431c2e015503 100644
 --- a/content/browser/sandbox_mac_unittest.mm
 +++ b/content/browser/sandbox_mac_unittest.mm
 @@ -7,6 +7,8 @@
@@ -41,7 +49,15 @@ index 14b1f14a133d991cd8fcd8e207cf8cf340fb953b..d8b6e1a332c140b0e481dfb9b046f254
  
  #include "base/apple/foundation_util.h"
  #include "base/apple/scoped_cftyperef.h"
-@@ -246,4 +248,62 @@ void CheckCreateSeatbeltServer() {
+@@ -25,6 +27,7 @@
+ #include "base/strings/sys_string_conversions.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/test/multiprocess_test.h"
++#include "base/test/scoped_feature_list.h"
+ #include "base/test/test_timeouts.h"
+ #include "content/browser/sandbox_parameters_mac.h"
+ #include "sandbox/mac/sandbox_serializer.h"
+@@ -246,4 +249,62 @@ void CheckCreateSeatbeltServer() {
    ExecuteWithParams("NetworkProcessPrefs", sandbox::mojom::Sandbox::kNetwork);
  }
  
@@ -105,26 +121,34 @@ index 14b1f14a133d991cd8fcd8e207cf8cf340fb953b..d8b6e1a332c140b0e481dfb9b046f254
 +
  }  // namespace content
 diff --git a/content/browser/sandbox_parameters_mac.h b/content/browser/sandbox_parameters_mac.h
-index 89e9c6b4702af74a94ced25cd90cca7e19b1d69d..e8ad574c7f70a74b713fa6282a04aaccd44e2502 100644
+index 89e9c6b4702af74a94ced25cd90cca7e19b1d69d..190e0bab2d415e13b07dfa424a63ef4029d31200 100644
 --- a/content/browser/sandbox_parameters_mac.h
 +++ b/content/browser/sandbox_parameters_mac.h
-@@ -21,6 +21,7 @@ enum class Sandbox;
+@@ -5,6 +5,7 @@
+ #ifndef CONTENT_BROWSER_SANDBOX_PARAMETERS_MAC_H_
+ #define CONTENT_BROWSER_SANDBOX_PARAMETERS_MAC_H_
+ 
++#include "base/feature_list.h"
+ #include "content/common/content_export.h"
+ 
+ namespace base {
+@@ -21,6 +22,8 @@ enum class Sandbox;
  
  namespace content {
  
 +CONTENT_EXPORT BASE_DECLARE_FEATURE(kMacSandboxAllowRendererPidinfo);
++
  // This populates the sandbox parameters in the client for the given
  // |sandbox_type|. Some parameters may be extracted from the |command_line|.
  CONTENT_EXPORT bool SetupSandboxParameters(
 diff --git a/content/browser/sandbox_parameters_mac.mm b/content/browser/sandbox_parameters_mac.mm
-index 312394f973486523c71a6e5b811ccffe3e5c2ecf..b46ae37978e3c5b6dc957bae731fb79455684197 100644
+index 312394f973486523c71a6e5b811ccffe3e5c2ecf..5c195a391d72b25cce01fabd966517a797ea7816 100644
 --- a/content/browser/sandbox_parameters_mac.mm
 +++ b/content/browser/sandbox_parameters_mac.mm
-@@ -35,6 +35,12 @@
+@@ -35,6 +35,11 @@
  
  namespace content {
  
-+
 +// If enabled, allows the renderer process to query `process-info-pidinfo` for
 +// any process rather than only itself.
 +BASE_FEATURE(kMacSandboxAllowRendererPidinfo,
@@ -133,34 +157,37 @@ index 312394f973486523c71a6e5b811ccffe3e5c2ecf..b46ae37978e3c5b6dc957bae731fb794
  namespace {
  
  // If disabled, the macOS sandbox for child processes will deny access to
-@@ -206,6 +212,13 @@ bool SetupGpuSandboxParameters(sandbox::SandboxSerializer* serializer,
-   }
- 
+@@ -208,6 +213,12 @@ bool SetupGpuSandboxParameters(sandbox::SandboxSerializer* serializer,
    return true;
-+
+ }
+ 
 +void SetupRendererSandboxParameters(sandbox::SandboxSerializer* serializer) {
 +  CHECK(serializer->SetBooleanParameter(
 +      sandbox::policy::kParamAllowRendererPidinfo,
 +      base::FeatureList::IsEnabled(kMacSandboxAllowRendererPidinfo)));
 +}
 +
- }
- 
  }  // namespace
-@@ -219,9 +232,12 @@ bool SetupSandboxParameters(sandbox::mojom::Sandbox sandbox_type,
+ 
+ bool SetupSandboxParameters(sandbox::mojom::Sandbox sandbox_type,
+@@ -219,13 +230,16 @@ bool SetupSandboxParameters(sandbox::mojom::Sandbox sandbox_type,
      case sandbox::mojom::Sandbox::kMirroring:
      case sandbox::mojom::Sandbox::kPrintBackend:
      case sandbox::mojom::Sandbox::kPrintCompositor:
 -    case sandbox::mojom::Sandbox::kRenderer:
      case sandbox::mojom::Sandbox::kService:
      case sandbox::mojom::Sandbox::kServiceWithJit:
-+      break;
-+    case sandbox::mojom::Sandbox::kRenderer:
-+      SetupRendererSandboxParameters(serializer);
-+      break;
      case sandbox::mojom::Sandbox::kProxyResolver:
      case sandbox::mojom::Sandbox::kUtility:
        SetupCommonSandboxParameters(serializer, command_line);
+       break;
++    case sandbox::mojom::Sandbox::kRenderer:
++      SetupCommonSandboxParameters(serializer, command_line);
++      SetupRendererSandboxParameters(serializer);
++      break;
+     case sandbox::mojom::Sandbox::kOnDeviceModelExecution:
+     case sandbox::mojom::Sandbox::kGpu:
+       return SetupGpuSandboxParameters(serializer, command_line);
 diff --git a/content/renderer/sandbox_mac_v2_unittest.mm b/content/renderer/sandbox_mac_v2_unittest.mm
 index 4a255cc12b37c197eeacdf91ac9dc959019d26c8..b1cc443292e9b05f2a6294b7dcd988b98ecd7799 100644
 --- a/content/renderer/sandbox_mac_v2_unittest.mm
@@ -175,17 +202,15 @@ index 4a255cc12b37c197eeacdf91ac9dc959019d26c8..b1cc443292e9b05f2a6294b7dcd988b9
  
  }  // namespace
 diff --git a/sandbox/policy/mac/common.sb b/sandbox/policy/mac/common.sb
-index a3c02fad566b9871677ef90ab002e9bbaf3e83d1..f87351c7aee87eb4796cdfc73864083bb9b1fb87 100644
+index a3c02fad566b9871677ef90ab002e9bbaf3e83d1..12c4327a4e4afda87fb841dcdc1fc24b48252781 100644
 --- a/sandbox/policy/mac/common.sb
 +++ b/sandbox/policy/mac/common.sb
-@@ -32,6 +32,11 @@
+@@ -32,6 +32,9 @@
  ; Sandboxed processes which use Metal may need to disable the shader cache.
  (define disable-metal-shader-cache "DISABLE_METAL_SHADER_CACHE")
  
-+
 +; Allows the renderer process to query process-info-pidinfo for other processes.
 +(define allow-renderer-pidinfo "ALLOW_RENDERER_PIDINFO")
-+
 +
  ; --enable-sandbox-logging causes the sandbox to log failures to the syslog.
  (if (param-true? disable-sandbox-denial-logging)

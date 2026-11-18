@@ -22,6 +22,7 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8614996
 Commit-Queue: Steve Becker <stevebe@microsoft.com>
 Reviewed-by: Rahul Singh <rahsin@microsoft.com>
 Cr-Commit-Position: refs/heads/main@{#1724966}
+
 Electron adaptation notes (43-x-y):
 session_storage_namespace_impl.cc: this branch's Clone() has neither the
 earlier length check that the fix replaces nor the abandoned-clone
@@ -193,10 +194,10 @@ index e038780c835c167a6b887e4aec4de3cca73efc8f..de320c6748f6405d06ca64ea9e3b270a
                                             weak_ptr_factory_.GetWeakPtr()));
  }
 diff --git a/components/services/storage/dom_storage/session_storage_impl_unittest.cc b/components/services/storage/dom_storage/session_storage_impl_unittest.cc
-index 781f4eaef1f6a2c9845e8d8d22d738a91231eb78..9db71dbf7b113c900ac443b5d4c26fa6ebb7fe2d 100644
+index 781f4eaef1f6a2c9845e8d8d22d738a91231eb78..3ec5c11be4cfb5249aafa36c726dbaeb42dad97c 100644
 --- a/components/services/storage/dom_storage/session_storage_impl_unittest.cc
 +++ b/components/services/storage/dom_storage/session_storage_impl_unittest.cc
-@@ -1959,6 +1959,98 @@ TEST_P(SessionStorageImplTest, DeleteAfterCloneWithoutMojoClone) {
+@@ -1959,6 +1959,79 @@ TEST_P(SessionStorageImplTest, DeleteAfterCloneWithoutMojoClone) {
    EXPECT_EQ(1ul, data.size());
  }
  
@@ -271,25 +272,6 @@ index 781f4eaef1f6a2c9845e8d8d22d738a91231eb78..9db71dbf7b113c900ac443b5d4c26fa6
 +  ASSERT_EQ(1u, data.size());
 +  EXPECT_EQ(new_key, data[0]->key);
 +  EXPECT_EQ(new_value, data[0]->value);
-+}
-+
-+      base::Uuid::GenerateRandomV4().AsLowercaseString();
-+      base::Uuid::GenerateRandomV4().AsLowercaseString();
-+
-+
-+  FlushMojo();
-+
-+
-+}
-+
-+      base::Uuid::GenerateRandomV4().AsLowercaseString();
-+      base::Uuid::GenerateRandomV4().AsLowercaseString();
-+
-+
-+  FlushMojo();
-+
-+
-+
 +}
 +
  // Regression test for https://crbug.com/1128318

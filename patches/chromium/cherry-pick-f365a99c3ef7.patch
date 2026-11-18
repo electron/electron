@@ -30,6 +30,13 @@ Reviewed-by: Alex Gough <ajgo@chromium.org>
 Commit-Queue: Andrea Orru <andreaorru@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1738545}
 
+Electron adaptation notes (43-x-y):
+transport.cc: upstream's Transport::Deserialize() already computes
+is_source_at_least_as_privileged (is_source_trusted() && !is_elevated())
+from a prerequisite CL that is not on this branch, where Deserialize() only
+has is_source_trusted. The same value is computed locally for the new
+Windows exclusive-pipe check, leaving the existing trust checks unchanged.
+
 diff --git a/base/win/security_util.cc b/base/win/security_util.cc
 index dc95d3a3474f1c8a27298175f683d801a38a3a03..cbb773c5b1e24349912ea55f6a2eb7a4f493321c 100644
 --- a/base/win/security_util.cc
@@ -407,7 +414,7 @@ index f4f3e832715bb96f864949dc1ba1f70215fee835..cfb7d0d8e3732a8de8ef4a34ab77ae44
    bool leak_handle_ = false;
  };
 diff --git a/mojo/core/ipcz_driver/transport.cc b/mojo/core/ipcz_driver/transport.cc
-index 0a22ccc139d5e2d06731c524f7c419cb56c150ba..cd984ab76b876497cb930ac924ce838656e28f9c 100644
+index 0a22ccc139d5e2d06731c524f7c419cb56c150ba..cca3b23d6cead1f63533e443c97e8c7782e6bd0c 100644
 --- a/mojo/core/ipcz_driver/transport.cc
 +++ b/mojo/core/ipcz_driver/transport.cc
 @@ -32,6 +32,9 @@
@@ -442,11 +449,17 @@ index 0a22ccc139d5e2d06731c524f7c419cb56c150ba..cd984ab76b876497cb930ac924ce8386
  #endif  // BUILDFLAG(IS_WIN)
  
  scoped_refptr<base::SingleThreadTaskRunner>& GetIOTaskRunnerStorage() {
-@@ -703,6 +721,17 @@ scoped_refptr<Transport> Transport::Deserialize(
+@@ -703,6 +721,23 @@ scoped_refptr<Transport> Transport::Deserialize(
      return nullptr;
    }
  
 +#if BUILDFLAG(IS_WIN)
++  // An elevated endpoint does not consider a less-privileged peer (e.g. the
++  // broker which invited it) to be at least as privileged as itself, even if
++  // that peer is otherwise trusted.
++  const bool is_source_at_least_as_privileged =
++      is_source_trusted && !from_transport.is_elevated();
++
 +  // A less privileged peer must hand over its pipe end outright. If it kept
 +  // another handle to the same pipe end, it could keep generating completion
 +  // packets for the Channel which adopts it. Transferring a handle closes the
