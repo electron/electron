@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ryan Qin <ryqin@google.com>
+Date: Mon, 9 Nov 2026 09:26:43 -0800
+Subject: [FedCM] Return early in RedirectTo() if the navigation destroys it
+
+RequestHandler::RedirectTo() navigates the RP's frame and then completes
+the request. The navigation can synchronously destroy the RP frame, and
+with it this RequestHandler, which was then used afterwards. Return
+early if that happens.
+
+Fixed: 576991116
+Change-Id: I556734e3d564cf4feafeba7f859727041992d5f4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8753440
+Reviewed-by: Yi Gu <yigu@chromium.org>
+Commit-Queue: Ryan Qin <ryqin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1739256}
+
+Electron adaptation notes (44-x-y): on this branch the FedCM request logic
+still lives in content/browser/webid/request.cc (class Request) rather than
+request_handler.cc, so the fix is applied to Request::RedirectTo(): a
+base::WeakPtr<Request> from the existing weak_ptr_factory_ is taken before
+LoadURLWithParams() and the method returns early if the navigation destroyed
+the request, exactly as upstream does for RequestHandler. The
+request_handler_unittest.cc regression test has no counterpart here and is
+not carried.
+
+diff --git a/content/browser/webid/request.cc b/content/browser/webid/request.cc
+index e2ee18bbb632d59405e2b3f7b5028566e7a2f969..c41f4bc34585a44ef3ca70abea66c0b5f0c0e39d 100644
+--- a/content/browser/webid/request.cc
++++ b/content/browser/webid/request.cc
+@@ -17,6 +17,7 @@
+ #include "base/json/json_reader.h"
+ #include "base/json/json_writer.h"
+ #include "base/memory/scoped_refptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/metrics/histogram_macros.h"
+ #include "base/rand_util.h"
+ #include "base/strings/escape.h"
+@@ -1655,7 +1656,12 @@ void Request::RedirectTo(const GURL& idp_config_url,
+         "Content-Type: application/x-www-form-urlencoded\r\n";
+   }
+   in_redirect_to_ = true;
++  // The navigation can synchronously destroy `this`.
++  base::WeakPtr<Request> weak_this = weak_ptr_factory_.GetWeakPtr();
+   web_contents->GetController().LoadURLWithParams(params);
++  if (!weak_this) {
++    return;
++  }
+ 
+   CompleteRequest(FederatedRequestResult::kSuccess,
+                   TokenStatus::kSuccessUsingRedirectTo,

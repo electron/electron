@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Thu, 5 Nov 2026 17:36:34 -0800
+Subject: Snapshot srcdoc value during NavigationRequest creation
+
+The frame policy of an about:srcdoc navigation is snapshotted when the
+NavigationRequest is created, but the srcdoc content was read from the
+FrameTreeNode at CommitNavigation() time. If the commit is deferred
+(e.g. a subframe history traversal) and the parent changes both the
+sandbox and srcdoc attributes in the meantime, the new content commits
+with the old, unsandboxed policy.
+
+The commit-time read dates back to when the renderer read srcdoc from
+the owner element at commit, and was kept when the value moved to the
+browser (crrev.com/c/3300866), with a TODO to set it in the
+NavigationRequest constructor instead. It only became a problem once
+sandboxed srcdoc iframes started getting process-isolated.
+
+Snapshot the srcdoc value together with the frame policy in the
+NavigationRequest constructor, and remove the later reads. Both values
+come from the parent's renderer over the same channel, so they are
+always consistent. If a pending navigation commits while the parent's
+new srcdoc navigation was ignored, it now commits the old content with
+the old policy, which also matches the spec's use of the session
+history entry's srcdoc content.
+
+Also use the snapshotted frame policy for service worker eligibility,
+so it matches the sandbox flags that are committed.
+
+Based on a CodeMender patch.
+
+Change-Id: I830d59826ca3dac8ae1897feceb99e6ca07c71fc
+Fixed: 579867878
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8689755
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1737103}
+
+Electron adaptation notes (44-x-y): the three navigation_request.cc hunks
+conflicted only on context (this branch has the shared-storage block next to
+the constructor insertion point and no IsPdf() term in the two service-worker
+sandbox checks); the srcdoc snapshot and the switch from
+pending_frame_policy() to commit_params_->frame_policy are applied as
+upstream. navigation_policy_container_builder_browsertest.cc diverged too far
+to merge and keeps the branch version (test-only).
+
+diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
+index 64fd6d75b33fe87ccdea33eee0324e1532d13c15..457ad54c7cb044688559ac017e04d8897393346f 100644
+--- a/content/browser/renderer_host/navigation_controller_impl.cc
++++ b/content/browser/renderer_host/navigation_controller_impl.cc
+@@ -4981,11 +4981,6 @@ NavigationControllerImpl::CreateNavigationRequestFromEntry(
+           soft_navigation_heuristics_task_id);
+   commit_params->post_content_type = post_content_type;
+ 
+-  if (common_params->url.IsAboutSrcdoc()) {
+-    // TODO(wjmaclean): initialize this in NavigationRequest's constructor
+-    // instead.
+-    commit_params->srcdoc_value = frame_tree_node->srcdoc_value();
+-  }
+   const bool is_browser_initiated = !initiator_frame_token;
+   std::unique_ptr<NavigationRequest> request = NavigationRequest::Create(
+       frame_tree_node, std::move(common_params), std::move(commit_params),
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 9e796ce6719976aad281adef3282b1b0f363d9c6..f203c93b90a304247587cf30453b48f9a3858f0a 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -1921,6 +1921,10 @@ NavigationRequest::NavigationRequest(
+             frame_tree_node_, common_params_->url);
+   }
+ 
++  if (common_params_->url.IsAboutSrcdoc()) {
++    commit_params_->srcdoc_value = frame_tree_node_->srcdoc_value();
++  }
++
+   if (from_begin_navigation_) {
+     // This is needed to commit data: and about: URLs in the same SiteInstance
+     // as the initiator frame. Note that this may not necessarily match the
+@@ -5931,7 +5935,7 @@ void NavigationRequest::OnStartChecksComplete(
+   // Only initialize the ServiceWorkerMainResourceHandle if it can be created
+   // for this frame.
+   bool can_create_service_worker =
+-      (frame_tree_node_->pending_frame_policy().sandbox_flags &
++      (commit_params_->frame_policy.sandbox_flags &
+        network::mojom::WebSandboxFlags::kOrigin) !=
+       network::mojom::WebSandboxFlags::kOrigin;
+   if (can_create_service_worker) {
+@@ -6689,7 +6693,7 @@ void NavigationRequest::InheritServiceWorkerControllerFromParentIfNeeded() {
+     return;
+   }
+ 
+-  if ((frame_tree_node_->pending_frame_policy().sandbox_flags &
++  if ((commit_params_->frame_policy.sandbox_flags &
+        network::mojom::WebSandboxFlags::kOrigin) ==
+       network::mojom::WebSandboxFlags::kOrigin) {
+     return;
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 5d5932266838de2266174bb20d24c89df5726a46..e9b18a7c948e97b374c71e9f540b1c20d8aad3e5 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -12935,10 +12935,6 @@ void RenderFrameHostImpl::CommitNavigation(
+ 
+   bool is_srcdoc = common_params->url.IsAboutSrcdoc();
+   if (is_srcdoc) {
+-    // TODO(wjmaclean): initialize this in NavigationRequest's constructor
+-    // instead.
+-    commit_params->srcdoc_value =
+-        navigation_request->frame_tree_node()->srcdoc_value();
+     // Main frame srcdoc navigation are meaningless. They are blocked whenever a
+     // navigation attempt is made. It shouldn't reach CommitNavigation.
+     CHECK(!is_main_frame());

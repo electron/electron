@@ -1,0 +1,548 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bienvenu <davidbienvenu@chromium.org>
+Date: Thu, 30 Jul 2026 13:42:22 -0700
+Subject: clamp mouse location for renderer initiated drag drop
+
+touch initiated drag drops already have their location clamped. Do the
+same for mouse initiated drag drops.
+
+Change the test that makes sure a drag from a location outside of the
+web contents is rejected to test instead that the drag location is
+clamped to the last mouse down position.
+
+Bug: 521616899
+Change-Id: I11a85f1f94f9c94dfe71ef13646699e2f674bbf1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7921191
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1671382}
+
+diff --git a/chrome/browser/glic/host/glic_drag_and_drop_browsertest.cc b/chrome/browser/glic/host/glic_drag_and_drop_browsertest.cc
+index 61b769bce77494b47a35462e6b3a8b0b89e2c785..b08859b9ebb8a7ca638fc8b8617b6d6fa7ad49de 100644
+--- a/chrome/browser/glic/host/glic_drag_and_drop_browsertest.cc
++++ b/chrome/browser/glic/host/glic_drag_and_drop_browsertest.cc
+@@ -264,9 +264,6 @@ class GlicDragAndDropPolicyTest : public GlicApiBrowserTest {
+     content::SimulateMouseEvent(
+         source_wc, blink::WebInputEvent::Type::kMouseMove,
+         blink::WebMouseEvent::Button::kLeft, drag_end_point);
+-    content::SimulateMouseEvent(source_wc, blink::WebInputEvent::Type::kMouseUp,
+-                                blink::WebMouseEvent::Button::kLeft,
+-                                drag_end_point);
+   }
+ 
+  private:
+diff --git a/chrome/browser/ui/views/toolbar/BUILD.gn b/chrome/browser/ui/views/toolbar/BUILD.gn
+index 1514298328f544b4517850940564fce3d3a569eb..1a2c9b489380dab5c07fd34a5e89cea8fd1ab18d 100644
+--- a/chrome/browser/ui/views/toolbar/BUILD.gn
++++ b/chrome/browser/ui/views/toolbar/BUILD.gn
+@@ -461,6 +461,9 @@ if (!is_android && !is_chromeos_device) {
+     if (toolkit_views) {
+       deps += [ "//chrome/browser/ui:toolbar_controller_util" ]
+     }
++    if (use_aura) {
++      deps += [ "//ui/aura:test_support" ]
++    }
+   }
+ }
+ 
+diff --git a/chrome/browser/ui/views/toolbar/webui_toolbar_interactive_uitest.cc b/chrome/browser/ui/views/toolbar/webui_toolbar_interactive_uitest.cc
+index 39fdc10181bc867330afa36a9bc9afe11b33efe6..7678c4ef85de9a3ffc00bd3fb4422553ebb4d6eb 100644
+--- a/chrome/browser/ui/views/toolbar/webui_toolbar_interactive_uitest.cc
++++ b/chrome/browser/ui/views/toolbar/webui_toolbar_interactive_uitest.cc
+@@ -61,10 +61,14 @@
+ #include "content/public/test/test_navigation_observer.h"
+ #include "ui/aura/client/drag_drop_client.h"
+ #include "ui/aura/client/drag_drop_client_observer.h"
+-#include "ui/base/clipboard//clipboard_monitor.h"
+-#include "ui/base/clipboard//clipboard_observer.h"
++#include "ui/aura/env.h"
++#include "ui/aura/input_state_lookup.h"
++#include "ui/aura/test/env_test_helper.h"
++#include "ui/aura/window_observer.h"
+ #include "ui/base/clipboard/clipboard.h"
+ #include "ui/base/clipboard/clipboard_buffer.h"
++#include "ui/base/clipboard/clipboard_monitor.h"
++#include "ui/base/clipboard/clipboard_observer.h"
+ #include "ui/base/dragdrop/mojom/drag_drop_types.mojom.h"
+ #include "ui/base/dragdrop/os_exchange_data.h"
+ #include "ui/base/interaction/element_identifier.h"
+@@ -1091,18 +1095,32 @@ IN_PROC_BROWSER_TEST_P(WebUIToolbarGlassFrameInteractiveUiTest, ReloadButton) {
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+ #if defined(USE_AURA)
+-class TestDragDropClient : public aura::client::DragDropClient {
++class TestDragDropClient : public aura::client::DragDropClient,
++                           public aura::WindowObserver {
+  public:
+   explicit TestDragDropClient(aura::Window* root_window)
+       : root_window_(root_window) {
+-    client_ = aura::client::GetDragDropClient(root_window_);
+-    aura::client::SetDragDropClient(root_window_, this);
++    if (root_window_) {
++      root_window_->AddObserver(this);
++      client_ = aura::client::GetDragDropClient(root_window_);
++      aura::client::SetDragDropClient(root_window_, this);
++    }
+   }
+   ~TestDragDropClient() override {
+-    for (auto& observer : observers_) {
+-      observer.OnDragDropClientDestroying();
++    if (root_window_) {
++      root_window_->RemoveObserver(this);
++      for (auto& observer : observers_) {
++        observer.OnDragDropClientDestroying();
++      }
++      aura::client::SetDragDropClient(root_window_, client_);
++    }
++  }
++
++  void OnWindowDestroying(aura::Window* window) override {
++    if (window == root_window_) {
++      root_window_->RemoveObserver(this);
++      root_window_ = nullptr;
+     }
+-    aura::client::SetDragDropClient(root_window_, client_);
+   }
+ 
+   // aura::client::DragDropClient:
+@@ -1236,12 +1254,17 @@ class WebUIToolbarViewsLocationBarInteractiveUiTest
+                               ->GetNativeWindow()
+                               ->GetRootWindow();
+       drag_drop_client_ = std::make_unique<TestDragDropClient>(root_window);
++      aura::test::EnvTestHelper(aura::Env::GetInstance())
++          .SetInputStateLookup(nullptr);
+     })));
+   }
+ 
+   MultiStep ResetDragDropClient() {
+-    return Steps(Do(
+-        base::BindLambdaForTesting([this]() { drag_drop_client_.reset(); })));
++    return Steps(Do(base::BindLambdaForTesting([this]() {
++      aura::test::EnvTestHelper(aura::Env::GetInstance())
++          .SetInputStateLookup(aura::InputStateLookup::Create());
++      drag_drop_client_.reset();
++    })));
+   }
+ 
+   std::unique_ptr<TestDragDropClient> drag_drop_client_;
+@@ -1278,14 +1301,17 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+                                 ->GetNativeWindow()
+                                 ->GetRootWindow();
+         drag_drop_client = std::make_unique<TestDragDropClient>(root_window);
++        aura::test::EnvTestHelper(aura::Env::GetInstance())
++            .SetInputStateLookup(nullptr);
+       })),
+ 
+       // Move to icon and perform drag gesture.
+       MoveMouseTo(WebUIToolbarId(), kLocationIconDeepQuery),
+       DragMouseTo(base::BindOnce([]() -> gfx::Point {
+-        return display::Screen::Get()->GetCursorScreenPoint() +
+-               gfx::Vector2d(0, 20);
+-      })),
++                    return display::Screen::Get()->GetCursorScreenPoint() +
++                           gfx::Vector2d(0, 20);
++                  }),
++                  /*release=*/false),
+ 
+       // Verify that drag was triggered with correct data.
+       PollUntil(base::BindLambdaForTesting([&]() {
+@@ -1294,8 +1320,14 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+                 }),
+                 "Drag was triggered with correct URL"),
+ 
++      ReleaseMouse(),
++
+       // Cleanup.
+-      Do(base::BindLambdaForTesting([&]() { drag_drop_client.reset(); })));
++      Do(base::BindLambdaForTesting([&]() {
++        aura::test::EnvTestHelper(aura::Env::GetInstance())
++            .SetInputStateLookup(aura::InputStateLookup::Create());
++        drag_drop_client.reset();
++      })));
+ #endif  // defined(USE_AURA) && !BUILDFLAG(IS_CHROMEOS)
+ }
+ 
+@@ -1352,7 +1384,7 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+       MoveMouseTo(WebUIToolbarId(), kTextSpanDeepQuery),
+ 
+       // Drag to a sibling Views-level element to trigger the move.
+-      DragMouseTo(kReloadButtonElementId),
++      DragMouseTo(kReloadButtonElementId, CenterPoint(), /*release=*/false),
+ 
+       PollUntil(base::BindLambdaForTesting([&]() {
+                   return drag_drop_client_->drag_triggered() &&
+@@ -1361,6 +1393,8 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+                 }),
+                 "Drag was triggered with correct plain text"),
+ 
++      ReleaseMouse(),
++
+       ResetDragDropClient());
+ #endif
+ }
+@@ -1405,7 +1439,7 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+       MoveMouseTo(WebUIToolbarId(), kTextSpanDeepQuery),
+ 
+       // Drag to a sibling Views-level element to trigger the move.
+-      DragMouseTo(kReloadButtonElementId),
++      DragMouseTo(kReloadButtonElementId, CenterPoint(), /*release=*/false),
+ 
+       PollUntil(base::BindLambdaForTesting([&]() {
+                   return drag_drop_client_->drag_triggered() &&
+@@ -1415,6 +1449,8 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+                 }),
+                 "Drag was triggered with correct URL and plain text"),
+ 
++      ReleaseMouse(),
++
+       ResetDragDropClient());
+ #endif
+ }
+@@ -1453,7 +1489,7 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+       MoveMouseTo(WebUIToolbarId(), kTextSpanDeepQuery),
+ 
+       // Drag to a sibling Views-level element to trigger the move.
+-      DragMouseTo(kReloadButtonElementId),
++      DragMouseTo(kReloadButtonElementId, CenterPoint(), /*release=*/false),
+ 
+       PollUntil(base::BindLambdaForTesting([&]() {
+                   return drag_drop_client_->drag_triggered() &&
+@@ -1463,6 +1499,8 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+                 }),
+                 "Drag was triggered with javascript as plain text only"),
+ 
++      ReleaseMouse(),
++
+       ResetDragDropClient());
+ #endif
+ }
+@@ -1501,7 +1539,7 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+       MoveMouseTo(WebUIToolbarId(), kTextSpanDeepQuery),
+ 
+       // Drag to a sibling Views-level element to trigger the move.
+-      DragMouseTo(kReloadButtonElementId),
++      DragMouseTo(kReloadButtonElementId, CenterPoint(), /*release=*/false),
+ 
+       // Verify that chrome:// URL is dragged as a URL.
+       PollUntil(base::BindLambdaForTesting([&]() {
+@@ -1513,6 +1551,8 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+                 }),
+                 "Drag was triggered with chrome URL"),
+ 
++      ReleaseMouse(),
++
+       ResetDragDropClient());
+ #endif
+ }
+@@ -1551,7 +1591,7 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+       MoveMouseTo(WebUIToolbarId(), kTextSpanDeepQuery),
+ 
+       // Drag to a sibling Views-level element to trigger the move.
+-      DragMouseTo(kReloadButtonElementId),
++      DragMouseTo(kReloadButtonElementId, CenterPoint(), /*release=*/false),
+ 
+       // Verify that the adjusted URL is dragged.
+       PollUntil(
+@@ -1570,6 +1610,8 @@ IN_PROC_BROWSER_TEST_F(WebUIToolbarViewsLocationBarInteractiveUiTest,
+           "Drag was triggered with partial selection adjusted to full GURL and "
+           "plain text"),
+ 
++      ReleaseMouse(),
++
+       ResetDragDropClient());
+ #endif
+ }
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index 5e2ace60dfe2d7c56b00df3d9c580d4a67fac150..e4b67bcb466c210a8123459960dd650a20c6caab 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -1260,22 +1260,27 @@ void WebContentsViewAura::StartDragging(
+   DragOperation result_op;
+   {
+     gfx::NativeView content_native_view = GetContentNativeView();
+-    // For a touch-initiated drag the renderer-supplied `event_info.location`
+-    // is untrusted: on Windows it would reach `::SendInput` via
++    // The renderer-supplied `event_info.location` is untrusted. On Windows, a
++    // touch event would reach `::SendInput` via
+     // DesktopWindowTreeHostWin::StartTouchDrag and could redirect the
+     // synthesized click to an overlapping HWND (e.g. a permission bubble).
+-    // Require an in-flight touch and substitute the browser-observed last
+-    // touch point known to aura::Env.
++    // Require an in-flight touch or mouse button, depending on the event
++    // source, and refuse the drag if requirement is not met.
+     gfx::Point trusted_location = event_info.location;
++    aura::Env* env = aura::Env::GetInstance();
++    if ((event_info.source == ui::mojom::DragEventSource::kTouch &&
++         !env->is_touch_down()) ||
++        (event_info.source == ui::mojom::DragEventSource::kMouse &&
++         !env->IsMouseButtonDown())) {
++      web_contents_->SystemDragEnded(source_rwh);
++      return;
++    }
+     if (event_info.source == ui::mojom::DragEventSource::kTouch) {
+-      aura::Env* env = aura::Env::GetInstance();
+-      if (!env->is_touch_down()) {
+-        web_contents_->SystemDragEnded(source_rwh);
+-        return;
+-      }
+       trusted_location =
+           env->GetLastPointerPoint(event_info.source, content_native_view,
+                                    /*fallback=*/event_info.location);
++    } else {
++      trusted_location = env->last_mouse_location();
+     }
+     // Make sure event is within the web contents, and the web contents are
+     // visible.
+diff --git a/content/browser/web_contents/web_contents_view_aura.h b/content/browser/web_contents/web_contents_view_aura.h
+index 8ff15a51e704124f50f9582bbdac1f2fdd825bd9..5e296e04ce6dfba34a2499332ac4a49d6bdc15bf 100644
+--- a/content/browser/web_contents/web_contents_view_aura.h
++++ b/content/browser/web_contents/web_contents_view_aura.h
+@@ -185,7 +185,8 @@ class CONTENT_EXPORT WebContentsViewAura
+       EmptyTextWithUrlInDropDataIsEmptyInOSExchangeDataGetString);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            RejectDragFromHiddenWebContents);
+-  FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest, RejectDragFromOutsideView);
++  FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
++                           ClampMouseLocationToBrowserObservedPoint);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            ClampTouchLocationToBrowserObservedPoint);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+diff --git a/content/browser/web_contents/web_contents_view_aura_unittest.cc b/content/browser/web_contents/web_contents_view_aura_unittest.cc
+index bd419962a2025d6bd62c225ab7a85fbeaa25573c..20e644296549f64b2e89732147ebce67db9fa215 100644
+--- a/content/browser/web_contents/web_contents_view_aura_unittest.cc
++++ b/content/browser/web_contents/web_contents_view_aura_unittest.cc
+@@ -28,6 +28,7 @@
+ #include "ui/aura/client/aura_constants.h"
+ #include "ui/aura/client/drag_drop_client.h"
+ #include "ui/aura/env.h"
++#include "ui/aura/test/env_test_helper.h"
+ #include "ui/aura/test/test_windows.h"
+ #include "ui/aura/test/window_test_api.h"
+ #include "ui/aura/window.h"
+@@ -198,10 +199,20 @@ class WebContentsViewAuraTest : public RenderViewHostTestHarness {
+          .window_type = aura::client::WINDOW_TYPE_NORMAL,
+          .window_id = 0,
+          .show = false});
++    // Force Env's IsMouseButtonDown to rely on mouse_button_flags_ instead of
++    // querying the native OS system (which would return false in headless/unit
++    // tests).
++    aura::test::EnvTestHelper(aura::Env::GetInstance())
++        .SetInputStateLookup(nullptr);
++    aura::Env::GetInstance()->set_mouse_button_flags(ui::EF_LEFT_MOUSE_BUTTON);
+   }
+ 
+   void TearDown() override {
+     occluding_window_.reset();
++    aura::Env::GetInstance()->SetLastMouseLocation(gfx::Point());
++    aura::test::EnvTestHelper(aura::Env::GetInstance())
++        .SetInputStateLookup(aura::InputStateLookup::Create());
++    aura::Env::GetInstance()->set_mouse_button_flags(0);
+     RenderViewHostTestHarness::TearDown();
+   }
+ 
+@@ -220,7 +231,8 @@ class WebContentsViewAuraTest : public RenderViewHostTestHarness {
+               drop_complete_data_->target_rwh.get());
+     EXPECT_EQ(kClientPt, drop_complete_data_->client_pt);
+     // Screen point of event is ignored, instead cursor position used.
+-    EXPECT_EQ(gfx::PointF(), drop_complete_data_->screen_pt);
++    EXPECT_EQ(gfx::PointF(aura::Env::GetInstance()->last_mouse_location()),
++              drop_complete_data_->screen_pt);
+     EXPECT_EQ(0, drop_complete_data_->key_modifiers);
+   }
+ 
+@@ -1075,6 +1087,8 @@ TEST_F(WebContentsViewAuraTest, StartDragFromPrivilegedWebContents) {
+   view->drag_in_progress_ = true;
+ 
+   DropData drop_data;
++  aura::Env::GetInstance()->SetLastMouseLocation(
++      view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1111,9 +1125,10 @@ TEST_F(WebContentsViewAuraTest, RejectDragFromHiddenWebContents) {
+   EXPECT_FALSE(exchange_data);
+ }
+ 
+-// If the event location is not in the WebContentsViewAura, the drag will not be
+-// started.
+-TEST_F(WebContentsViewAuraTest, RejectDragFromOutsideView) {
++// For a mouse-initiated drag, the renderer-supplied screen location must
++// not flow through to DragDropClient::StartDragAndDrop. Instead the trusted
++// browser-observed last mouse location (aura::Env) must be used.
++TEST_F(WebContentsViewAuraTest, ClampMouseLocationToBrowserObservedPoint) {
+   const char kGoogleUrl[] = "https://google.com/";
+ 
+   std::u16string url_string = u"https://google.com/";
+@@ -1132,6 +1147,15 @@ TEST_F(WebContentsViewAuraTest, RejectDragFromOutsideView) {
+   DropData drop_data;
+   drop_data.url_infos = {ui::ClipboardUrlInfo{GURL(kGoogleUrl), u""}};
+ 
++  // This condition is needed to avoid calling WebContentsViewAura::EndDrag
++  // which will result NOTREACHED being called in
++  // `RenderWidgetHostViewBase::TransformPointToCoordSpaceForView`.
++  view->drag_in_progress_ = true;
++
++  const gfx::Point trusted_location(view_bounds_on_screen.x() + 3,
++                                    view_bounds_on_screen.y() + 4);
++  aura::Env::GetInstance()->SetLastMouseLocation(trusted_location);
++
+   view->StartDragging(
+       *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
+       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1141,7 +1165,11 @@ TEST_F(WebContentsViewAuraTest, RejectDragFromOutsideView) {
+           ui::mojom::DragEventSource::kMouse));
+ 
+   ui::OSExchangeData* exchange_data = drag_drop_client.GetDragDropData();
+-  EXPECT_FALSE(exchange_data);
++  EXPECT_TRUE(exchange_data);
++  EXPECT_EQ(ui::mojom::DragEventSource::kMouse, drag_drop_client.last_source());
++  EXPECT_EQ(trusted_location, drag_drop_client.last_screen_location())
++      << "Renderer-supplied screen location must be clamped to the "
++         "browser-observed last mouse point.";
+ }
+ 
+ // For a touch-initiated drag, the renderer-supplied screen location must
+@@ -1205,6 +1233,8 @@ TEST_F(WebContentsViewAuraTest, EmptyTextInDropDataIsNonNullInOSExchangeData) {
+   DropData drop_data;
+   drop_data.text = empty_string;
+ 
++  aura::Env::GetInstance()->SetLastMouseLocation(
++      view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1238,6 +1268,8 @@ TEST_F(WebContentsViewAuraTest,
+   drop_data.text = empty_string;
+   drop_data.url_infos = {ui::ClipboardUrlInfo{GURL(kGoogleUrl), u""}};
+ 
++  aura::Env::GetInstance()->SetLastMouseLocation(
++      view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1270,6 +1302,8 @@ TEST_F(WebContentsViewAuraTest,
+   DropData drop_data;
+   drop_data.url_infos = {ui::ClipboardUrlInfo{GURL(kGoogleUrl), u""}};
+ 
++  aura::Env::GetInstance()->SetLastMouseLocation(
++      view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1305,6 +1339,8 @@ TEST_F(WebContentsViewAuraTest, EndDragIsCalledAfterAsyncDrop) {
+   ui::DropTargetEvent event(*data.get(), kClientPt, kScreenPt,
+                             ui::DragDropTypes::DRAG_COPY);
+ 
++  aura::Env::GetInstance()->SetLastMouseLocation(
++      view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1369,6 +1405,7 @@ TEST_F(WebContentsViewAuraTest, StartDragBlockedByPolicy) {
+ 
+   WebContentsView* view_interface = &mock_view;
+   view_interface->CreateView(nullptr);
++  view_interface->GetNativeView()->SetBounds(kBounds);
+   root_window()->AddChild(view_interface->GetNativeView());
+   mock_view.set_allowed(false);
+ 
+@@ -1396,12 +1433,15 @@ TEST_F(WebContentsViewAuraTest, StartDragAllowedByPolicy) {
+ 
+   WebContentsView* view_interface = &mock_view;
+   view_interface->CreateView(nullptr);
++  view_interface->GetNativeView()->SetBounds(kBounds);
+   root_window()->AddChild(view_interface->GetNativeView());
+   mock_view.set_allowed(true);
+ 
+   DropData drop_data;
+   drop_data.text = u"Allowed Data";
+ 
++  aura::Env::GetInstance()->SetLastMouseLocation(
++      view_interface->GetNativeView()->GetBoundsInScreen().CenterPoint());
+   static_cast<RenderViewHostDelegateView*>(&mock_view)
+       ->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationCopy,
+diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
+index a3491494db86ae13614bb391f1e288f0ddf1e6a7..7f44cc0831f9652048a468fd3816be24d300f7f8 100644
+--- a/content/public/test/browser_test_utils.cc
++++ b/content/public/test/browser_test_utils.cc
+@@ -183,6 +183,8 @@
+ #if defined(USE_AURA)
+ #include "content/browser/renderer_host/delegated_frame_host.h"
+ #include "content/browser/renderer_host/render_widget_host_view_aura.h"
++#include "ui/aura/env.h"
++#include "ui/aura/test/env_test_helper.h"
+ #include "ui/aura/test/window_event_dispatcher_test_api.h"
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_event_dispatcher.h"
+@@ -1171,6 +1173,54 @@ void SimulateMouseEvent(WebContents* web_contents,
+   mouse_event.SetPositionInScreen(point.x() + offset.x(),
+                                   point.y() + offset.y());
+ 
++#if defined(USE_AURA)
++  // Because web contents drag drop requires the mouse button to be down,
++  // the Blink WebInputEvent button needs to be translated to its aura mouse
++  // button equivalent so aura::Env mouse_button_flags can be set correctly.
++  auto get_event_flags_for_button = [](blink::WebMouseEvent::Button button) {
++    switch (button) {
++      case blink::WebMouseEvent::Button::kLeft:
++        return ui::EF_LEFT_MOUSE_BUTTON;
++      case blink::WebMouseEvent::Button::kRight:
++        return ui::EF_RIGHT_MOUSE_BUTTON;
++      case blink::WebMouseEvent::Button::kMiddle:
++        return ui::EF_MIDDLE_MOUSE_BUTTON;
++      default:
++        return 0;
++    }
++  };
++  if (type == blink::WebInputEvent::Type::kMouseDown ||
++      type == blink::WebInputEvent::Type::kMouseMove) {
++    aura::Env::GetInstance()->SetLastMouseLocation(
++        gfx::Point(point.x() + offset.x(), point.y() + offset.y()));
++  }
++  // This function should not be used by unit tests, but if it somehow is, the
++  // global state below could be an issue when tests use the same process, if
++  // a test simulates a mouse down but not a mouse up, and the next test
++  // simulates a mouse up without a mouse down.
++  static base::NoDestructor<std::unique_ptr<aura::InputStateLookup>>
++      g_saved_input_state_lookup;
++
++  if (type == blink::WebInputEvent::Type::kMouseDown) {
++    if (aura::Env::GetInstance()->mouse_button_flags() == 0) {
++      *g_saved_input_state_lookup =
++          aura::test::EnvTestHelper(aura::Env::GetInstance())
++              .TakeInputStateLookup();
++    }
++    aura::Env::GetInstance()->set_mouse_button_flags(
++        aura::Env::GetInstance()->mouse_button_flags() |
++        get_event_flags_for_button(button));
++  } else if (type == blink::WebInputEvent::Type::kMouseUp) {
++    int flags = aura::Env::GetInstance()->mouse_button_flags() &
++                ~get_event_flags_for_button(button);
++    aura::Env::GetInstance()->set_mouse_button_flags(flags);
++    if (flags == 0) {
++      aura::test::EnvTestHelper(aura::Env::GetInstance())
++          .SetInputStateLookup(std::move(*g_saved_input_state_lookup));
++    }
++  }
++#endif
++
+   web_contents_impl->GetInputEventRouter()->RouteMouseEvent(rwhvb, &mouse_event,
+                                                             ui::LatencyInfo());
+ }
+diff --git a/ui/aura/test/env_test_helper.h b/ui/aura/test/env_test_helper.h
+index ca56d98cebf276869f5b545e7d7ec2117f84a3b2..d5625cff14d7b66f08fa75143d5370c193a7ef65 100644
+--- a/ui/aura/test/env_test_helper.h
++++ b/ui/aura/test/env_test_helper.h
+@@ -31,6 +31,10 @@ class EnvTestHelper {
+     env_->input_state_lookup_ = std::move(input_state_lookup);
+   }
+ 
++  std::unique_ptr<InputStateLookup> TakeInputStateLookup() {
++    return std::move(env_->input_state_lookup_);
++  }
++
+   void ResetEventState() {
+     env_->mouse_button_flags_ = 0;
+     env_->is_touch_down_ = false;

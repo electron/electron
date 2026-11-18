@@ -1,0 +1,507 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Erik=20Spr=C3=A5ng?= <sprang@webrtc.org>
+Date: Fri, 16 Oct 2026 15:09:17 +0200
+Subject: Check libyuv return values in VideoFrameBuffer conversions
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Return nullptr from ToI420() and CropAndScale() when the underlying
+libyuv conversion fails, as documented on VideoFrameBuffer::ToI420(),
+and use RTC_CHECK_EQ on libyuv copy, rotation, and scaling helpers.
+
+Bug: webrtc:574312303
+Change-Id: Ie236328267f1cd1a2e526f0f2d51b0770f0bf9fe
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509461
+Reviewed-by: Ilya Nikolaevskiy <ilnik@webrtc.org>
+Commit-Queue: Erik Språng <sprang@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#48944}
+
+diff --git a/api/video/i010_buffer.cc b/api/video/i010_buffer.cc
+index 59da7fb1147206cafa1cffb333771a16d881a66c..3be30eebda3c2b809def335e97ac3388a954ce60 100644
+--- a/api/video/i010_buffer.cc
++++ b/api/video/i010_buffer.cc
+@@ -80,7 +80,7 @@ scoped_refptr<I010Buffer> I010Buffer::Copy(const I010BufferInterface& source) {
+       source.DataV(), source.StrideV(), buffer->MutableDataY(),
+       buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),
+       buffer->MutableDataV(), buffer->StrideV(), width, height);
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ 
+   return buffer;
+ }
+@@ -95,7 +95,7 @@ scoped_refptr<I010Buffer> I010Buffer::Copy(const I420BufferInterface& source) {
+       source.DataV(), source.StrideV(), buffer->MutableDataY(),
+       buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),
+       buffer->MutableDataV(), buffer->StrideV(), width, height);
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ 
+   return buffer;
+ }
+@@ -123,7 +123,7 @@ scoped_refptr<I010Buffer> I010Buffer::Rotate(const I010BufferInterface& src,
+       buffer->MutableDataU(), buffer->StrideU(), buffer->MutableDataV(),
+       buffer->StrideV(), src.width(), src.height(),
+       static_cast<libyuv::RotationMode>(rotation));
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ 
+   return buffer;
+ }
+@@ -135,7 +135,9 @@ scoped_refptr<I420BufferInterface> I010Buffer::ToI420() {
+       i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+       i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+       i420_buffer->MutableDataV(), i420_buffer->StrideV(), width(), height());
+-  RTC_DCHECK_EQ(res, 0);
++  if (res != 0) {
++    return nullptr;
++  }
+ 
+   return i420_buffer;
+ }
+@@ -207,7 +209,7 @@ void I010Buffer::CropAndScaleFrom(const I010BufferInterface& src,
+       StrideU(), MutableDataV(), StrideV(), width(), height(),
+       libyuv::kFilterBox);
+ 
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ }
+ 
+ void I010Buffer::ScaleFrom(const I010BufferInterface& src) {
+diff --git a/api/video/i210_buffer.cc b/api/video/i210_buffer.cc
+index 1f7919e3b40e86a82cf820b8f19a11dbe280d483..cf91fd11b354e56d7aee394e3d7c3a04b078fc7d 100644
+--- a/api/video/i210_buffer.cc
++++ b/api/video/i210_buffer.cc
+@@ -130,11 +130,13 @@ scoped_refptr<I210Buffer> I210Buffer::Rotate(const I210BufferInterface& src,
+ 
+ scoped_refptr<I420BufferInterface> I210Buffer::ToI420() {
+   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
+-  libyuv::I210ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+-                     width(), height());
++  if (libyuv::I210ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
++                         StrideV(), i420_buffer->MutableDataY(),
++                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
++                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
++                         i420_buffer->StrideV(), width(), height()) != 0) {
++    return nullptr;
++  }
+   return i420_buffer;
+ }
+ 
+@@ -206,7 +208,7 @@ void I210Buffer::CropAndScaleFrom(const I210BufferInterface& src,
+       StrideU(), MutableDataV(), StrideV(), width(), height(),
+       libyuv::kFilterBox);
+ 
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ }
+ 
+ void I210Buffer::ScaleFrom(const I210BufferInterface& src) {
+diff --git a/api/video/i410_buffer.cc b/api/video/i410_buffer.cc
+index a09a5a54badd849b05f47782d0cdd40c2cb34b65..54c5d3e2eacc0ed45f2b2165df52d256824f8844 100644
+--- a/api/video/i410_buffer.cc
++++ b/api/video/i410_buffer.cc
+@@ -107,7 +107,7 @@ scoped_refptr<I410Buffer> I410Buffer::Copy(int width,
+                              buffer->StrideY(), buffer->MutableDataU(),
+                              buffer->StrideU(), buffer->MutableDataV(),
+                              buffer->StrideV(), width, height);
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ 
+   return buffer;
+ }
+@@ -134,7 +134,7 @@ scoped_refptr<I410Buffer> I410Buffer::Rotate(const I410BufferInterface& src,
+       buffer->MutableDataU(), buffer->StrideU(), buffer->MutableDataV(),
+       buffer->StrideV(), src.width(), src.height(),
+       static_cast<libyuv::RotationMode>(rotation));
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ 
+   return buffer;
+ }
+@@ -146,7 +146,9 @@ scoped_refptr<I420BufferInterface> I410Buffer::ToI420() {
+       i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+       i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+       i420_buffer->MutableDataV(), i420_buffer->StrideV(), width(), height());
+-  RTC_DCHECK_EQ(res, 0);
++  if (res != 0) {
++    return nullptr;
++  }
+ 
+   return i420_buffer;
+ }
+@@ -215,7 +217,7 @@ void I410Buffer::CropAndScaleFrom(const I410BufferInterface& src,
+       StrideU(), MutableDataV(), StrideV(), width(), height(),
+       libyuv::kFilterBox);
+ 
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ }
+ 
+ void I410Buffer::ScaleFrom(const I410BufferInterface& src) {
+diff --git a/api/video/i420_buffer.cc b/api/video/i420_buffer.cc
+index e9320ced2a3de8623b432fba16aed3affc0fdeae..bea6e07cdec49f83b5db823dc169a568570c149a 100644
+--- a/api/video/i420_buffer.cc
++++ b/api/video/i420_buffer.cc
+@@ -218,7 +218,7 @@ void I420Buffer::CropAndScaleFrom(const I420BufferInterface& src,
+                         StrideY(), MutableDataU(), StrideU(), MutableDataV(),
+                         StrideV(), width(), height(), libyuv::kFilterBox);
+ 
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ }
+ 
+ void I420Buffer::CropAndScaleFrom(const I420BufferInterface& src) {
+diff --git a/api/video/i422_buffer.cc b/api/video/i422_buffer.cc
+index fb6dd34246f9c9daaacbbd7fdaf58bbac0a8f657..3cdeb3d82642a4eaa7ed3219c0264c9cf8a12aea 100644
+--- a/api/video/i422_buffer.cc
++++ b/api/video/i422_buffer.cc
+@@ -100,7 +100,7 @@ scoped_refptr<I422Buffer> I422Buffer::Copy(const I420BufferInterface& source) {
+       source.DataV(), source.StrideV(), buffer->MutableDataY(),
+       buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),
+       buffer->MutableDataV(), buffer->StrideV(), width, height);
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ 
+   return buffer;
+ }
+@@ -121,7 +121,7 @@ scoped_refptr<I422Buffer> I422Buffer::Copy(int width,
+                              buffer->StrideY(), buffer->MutableDataU(),
+                              buffer->StrideU(), buffer->MutableDataV(),
+                              buffer->StrideV(), width, height);
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ 
+   return buffer;
+ }
+@@ -148,7 +148,7 @@ scoped_refptr<I422Buffer> I422Buffer::Rotate(const I422BufferInterface& src,
+       buffer->MutableDataU(), buffer->StrideU(), buffer->MutableDataV(),
+       buffer->StrideV(), src.width(), src.height(),
+       static_cast<libyuv::RotationMode>(rotation));
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ 
+   return buffer;
+ }
+@@ -160,7 +160,9 @@ scoped_refptr<I420BufferInterface> I422Buffer::ToI420() {
+       i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+       i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+       i420_buffer->MutableDataV(), i420_buffer->StrideV(), width(), height());
+-  RTC_DCHECK_EQ(res, 0);
++  if (res != 0) {
++    return nullptr;
++  }
+ 
+   return i420_buffer;
+ }
+@@ -236,7 +238,7 @@ void I422Buffer::CropAndScaleFrom(const I422BufferInterface& src,
+                         src.StrideV(), crop_width, crop_height, MutableDataY(),
+                         StrideY(), MutableDataU(), StrideU(), MutableDataV(),
+                         StrideV(), width(), height(), libyuv::kFilterBox);
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ }
+ 
+ }  // namespace webrtc
+diff --git a/api/video/i444_buffer.cc b/api/video/i444_buffer.cc
+index 452777edf9fc9481a3afbcd631552949d53354e4..4d3f20b3d85c2c7ac3390c66b64a7f5e6e9648ad 100644
+--- a/api/video/i444_buffer.cc
++++ b/api/video/i444_buffer.cc
+@@ -138,11 +138,13 @@ scoped_refptr<I444Buffer> I444Buffer::Rotate(const I444BufferInterface& src,
+ 
+ scoped_refptr<I420BufferInterface> I444Buffer::ToI420() {
+   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
+-  libyuv::I444ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+-                     width(), height());
++  if (libyuv::I444ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
++                         StrideV(), i420_buffer->MutableDataY(),
++                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
++                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
++                         i420_buffer->StrideV(), width(), height()) != 0) {
++    return nullptr;
++  }
+   return i420_buffer;
+ }
+ 
+@@ -210,7 +212,7 @@ void I444Buffer::CropAndScaleFrom(const I444BufferInterface& src,
+                         StrideY(), MutableDataU(), StrideU(), MutableDataV(),
+                         StrideV(), width(), height(), libyuv::kFilterBox);
+ 
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ }
+ 
+ }  // namespace webrtc
+diff --git a/api/video/nv12_buffer.cc b/api/video/nv12_buffer.cc
+index 270dbde00c890397aaf92ab72eb1f801c0792b07..e0cb1d0224a0606a9ce0be4f1ddc65b9e245e316 100644
+--- a/api/video/nv12_buffer.cc
++++ b/api/video/nv12_buffer.cc
+@@ -73,21 +73,24 @@ scoped_refptr<NV12Buffer> NV12Buffer::Copy(
+     const I420BufferInterface& i420_buffer) {
+   scoped_refptr<NV12Buffer> buffer =
+       NV12Buffer::Create(i420_buffer.width(), i420_buffer.height());
+-  libyuv::I420ToNV12(
++  int res = libyuv::I420ToNV12(
+       i420_buffer.DataY(), i420_buffer.StrideY(), i420_buffer.DataU(),
+       i420_buffer.StrideU(), i420_buffer.DataV(), i420_buffer.StrideV(),
+       buffer->MutableDataY(), buffer->StrideY(), buffer->MutableDataUV(),
+       buffer->StrideUV(), buffer->width(), buffer->height());
++  RTC_CHECK_EQ(res, 0);
+   return buffer;
+ }
+ 
+ scoped_refptr<I420BufferInterface> NV12Buffer::ToI420() {
+   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
+-  libyuv::NV12ToI420(DataY(), StrideY(), DataUV(), StrideUV(),
+-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+-                     width(), height());
++  if (libyuv::NV12ToI420(DataY(), StrideY(), DataUV(), StrideUV(),
++                         i420_buffer->MutableDataY(), i420_buffer->StrideY(),
++                         i420_buffer->MutableDataU(), i420_buffer->StrideU(),
++                         i420_buffer->MutableDataV(), i420_buffer->StrideV(),
++                         width(), height()) != 0) {
++    return nullptr;
++  }
+   return i420_buffer;
+ }
+ 
+@@ -156,7 +159,7 @@ void NV12Buffer::CropAndScaleFrom(const NV12BufferInterface& src,
+                               StrideY(), MutableDataUV(), StrideUV(), width(),
+                               height(), libyuv::kFilterBox);
+ 
+-  RTC_DCHECK_EQ(res, 0);
++  RTC_CHECK_EQ(res, 0);
+ }
+ 
+ }  // namespace webrtc
+diff --git a/api/video/test/i422_buffer_unittest.cc b/api/video/test/i422_buffer_unittest.cc
+index 71fbf464dcacbe83bd1cc6c14f23a061292a1b48..6dc42807e7ec91c449ba5306b5aa22158fb696e5 100644
+--- a/api/video/test/i422_buffer_unittest.cc
++++ b/api/video/test/i422_buffer_unittest.cc
+@@ -129,4 +129,18 @@ TEST(I422BufferTest, ToI420) {
+   EXPECT_TRUE(test::FrameBufsEqual(reference, i420_buffer));
+ }
+ 
++TEST(I422BufferTest, ToI420FailsForOversizedDimensions) {
++  // libyuv::ScalePlane rejects source dimensions > 32768. For I422, chroma
++  // width is (width + 1) / 2 and chroma height is height.
++  scoped_refptr<I422Buffer> wide_buffer =
++      I422Buffer::Create(/*width=*/65537, /*height=*/2);
++  FillI422Buffer(wide_buffer);
++  EXPECT_EQ(wide_buffer->ToI420(), nullptr);
++
++  scoped_refptr<I422Buffer> tall_buffer =
++      I422Buffer::Create(/*width=*/2, /*height=*/32769);
++  FillI422Buffer(tall_buffer);
++  EXPECT_EQ(tall_buffer->ToI420(), nullptr);
++}
++
+ }  // namespace webrtc
+diff --git a/api/video/test/i444_buffer_unittest.cc b/api/video/test/i444_buffer_unittest.cc
+index e9d6832abbfcf22e16ec4b2af06ef1990889eb68..3ebd7a8da2804d378d7312a04fd2b8cff06e5e63 100644
+--- a/api/video/test/i444_buffer_unittest.cc
++++ b/api/video/test/i444_buffer_unittest.cc
+@@ -113,4 +113,18 @@ TEST(I444BufferTest, ToI420) {
+   EXPECT_TRUE(test::FrameBufsEqual(reference, i420_buffer));
+ }
+ 
++TEST(I444BufferTest, ToI420FailsForOversizedDimensions) {
++  // libyuv::ScalePlane rejects source dimensions > 32768. For I444, chroma
++  // dimensions equal luma dimensions.
++  scoped_refptr<I444Buffer> wide_buffer =
++      I444Buffer::Create(/*width=*/32769, /*height=*/2);
++  FillI444Buffer(wide_buffer);
++  EXPECT_EQ(wide_buffer->ToI420(), nullptr);
++
++  scoped_refptr<I444Buffer> tall_buffer =
++      I444Buffer::Create(/*width=*/2, /*height=*/32769);
++  FillI444Buffer(tall_buffer);
++  EXPECT_EQ(tall_buffer->ToI420(), nullptr);
++}
++
+ }  // namespace webrtc
+diff --git a/api/video/video_frame_buffer.cc b/api/video/video_frame_buffer.cc
+index bb405b7b12da3db478ed4340e43099738d8e195d..929ff38e23e9cf13990b2afbf8a8e317e6ca710b 100644
+--- a/api/video/video_frame_buffer.cc
++++ b/api/video/video_frame_buffer.cc
+@@ -30,9 +30,13 @@ scoped_refptr<VideoFrameBuffer> VideoFrameBuffer::CropAndScale(
+     int crop_height,
+     int scaled_width,
+     int scaled_height) {
++  scoped_refptr<I420BufferInterface> i420_buffer = this->ToI420();
++  if (!i420_buffer) {
++    return nullptr;
++  }
+   scoped_refptr<I420Buffer> result =
+       I420Buffer::Create(scaled_width, scaled_height);
+-  result->CropAndScaleFrom(*this->ToI420(), offset_x, offset_y, crop_width,
++  result->CropAndScaleFrom(*i420_buffer, offset_x, offset_y, crop_width,
+                            crop_height);
+   return result;
+ }
+diff --git a/common_video/video_frame_buffer.cc b/common_video/video_frame_buffer.cc
+index 0b043b6e03e91336dbcf9e996a66d1754bb51540..24f531d5042802d6fedb3705b51ad7d0a209b87b 100644
+--- a/common_video/video_frame_buffer.cc
++++ b/common_video/video_frame_buffer.cc
+@@ -121,11 +121,13 @@ class I444BufferBase : public I444BufferInterface {
+ 
+ scoped_refptr<I420BufferInterface> I444BufferBase::ToI420() {
+   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
+-  libyuv::I444ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+-                     width(), height());
++  if (libyuv::I444ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
++                         StrideV(), i420_buffer->MutableDataY(),
++                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
++                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
++                         i420_buffer->StrideV(), width(), height()) != 0) {
++    return nullptr;
++  }
+   return i420_buffer;
+ }
+ 
+@@ -136,11 +138,13 @@ class I422BufferBase : public I422BufferInterface {
+ 
+ scoped_refptr<I420BufferInterface> I422BufferBase::ToI420() {
+   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
+-  libyuv::I422ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+-                     width(), height());
++  if (libyuv::I422ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
++                         StrideV(), i420_buffer->MutableDataY(),
++                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
++                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
++                         i420_buffer->StrideV(), width(), height()) != 0) {
++    return nullptr;
++  }
+   return i420_buffer;
+ }
+ 
+@@ -206,11 +210,13 @@ class I010BufferBase : public I010BufferInterface {
+ 
+ scoped_refptr<I420BufferInterface> I010BufferBase::ToI420() {
+   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
+-  libyuv::I010ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+-                     width(), height());
++  if (libyuv::I010ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
++                         StrideV(), i420_buffer->MutableDataY(),
++                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
++                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
++                         i420_buffer->StrideV(), width(), height()) != 0) {
++    return nullptr;
++  }
+   return i420_buffer;
+ }
+ 
+@@ -221,11 +227,13 @@ class I210BufferBase : public I210BufferInterface {
+ 
+ scoped_refptr<I420BufferInterface> I210BufferBase::ToI420() {
+   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
+-  libyuv::I210ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+-                     width(), height());
++  if (libyuv::I210ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
++                         StrideV(), i420_buffer->MutableDataY(),
++                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
++                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
++                         i420_buffer->StrideV(), width(), height()) != 0) {
++    return nullptr;
++  }
+   return i420_buffer;
+ }
+ 
+@@ -236,11 +244,13 @@ class I410BufferBase : public I410BufferInterface {
+ 
+ scoped_refptr<I420BufferInterface> I410BufferBase::ToI420() {
+   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
+-  libyuv::I410ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
+-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+-                     width(), height());
++  if (libyuv::I410ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
++                         StrideV(), i420_buffer->MutableDataY(),
++                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
++                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
++                         i420_buffer->StrideV(), width(), height()) != 0) {
++    return nullptr;
++  }
+   return i420_buffer;
+ }
+ 
+diff --git a/common_video/video_frame_unittest.cc b/common_video/video_frame_unittest.cc
+index de96e6d61511963c109a5e368af2f90a172222a9..b342079da58663681516c733bc694658b7c20e7f 100644
+--- a/common_video/video_frame_unittest.cc
++++ b/common_video/video_frame_unittest.cc
+@@ -26,6 +26,7 @@
+ #include "api/video/nv12_buffer.h"
+ #include "api/video/video_frame_buffer.h"
+ #include "api/video/video_rotation.h"
++#include "common_video/include/video_frame_buffer.h"
+ #include "test/fake_texture_frame.h"
+ #include "test/frame_utils.h"
+ #include "test/gtest.h"
+@@ -671,4 +672,46 @@ TEST(TestVideoFrame, IsRepeatFrame) {
+   EXPECT_FALSE(frame3.is_repeat_frame());
+ }
+ 
++TEST(TestVideoFrame, WrapI444BufferToI420FailsForOversizedDimensions) {
++  constexpr int kWidth = 32769;
++  constexpr int kHeight = 2;
++  std::vector<uint8_t> y(kWidth * kHeight, 10);
++  std::vector<uint8_t> u(kWidth * kHeight, 20);
++  std::vector<uint8_t> v(kWidth * kHeight, 30);
++
++  scoped_refptr<I444BufferInterface> wrapped_wide =
++      WrapI444Buffer(kWidth, kHeight, y.data(), kWidth, u.data(), kWidth,
++                     v.data(), kWidth, [] {});
++  EXPECT_EQ(wrapped_wide->ToI420(), nullptr);
++
++  scoped_refptr<I444BufferInterface> wrapped_tall =
++      WrapI444Buffer(kHeight, kWidth, y.data(), kHeight, u.data(), kHeight,
++                     v.data(), kHeight, [] {});
++  EXPECT_EQ(wrapped_tall->ToI420(), nullptr);
++}
++
++TEST(TestVideoFrame, WrapI422BufferToI420FailsForOversizedDimensions) {
++  constexpr int kWidth = 65537;
++  constexpr int kChromaWidth = (kWidth + 1) / 2;
++  constexpr int kHeight = 2;
++  std::vector<uint8_t> y(kWidth * kHeight, 10);
++  std::vector<uint8_t> u(kChromaWidth * kHeight, 20);
++  std::vector<uint8_t> v(kChromaWidth * kHeight, 30);
++
++  scoped_refptr<I422BufferInterface> wrapped_wide =
++      WrapI422Buffer(kWidth, kHeight, y.data(), kWidth, u.data(), kChromaWidth,
++                     v.data(), kChromaWidth, [] {});
++  EXPECT_EQ(wrapped_wide->ToI420(), nullptr);
++
++  constexpr int kTallHeight = 32769;
++  constexpr int kNarrowWidth = 2;
++  std::vector<uint8_t> tall_y(kNarrowWidth * kTallHeight, 10);
++  std::vector<uint8_t> tall_u(kTallHeight, 20);
++  std::vector<uint8_t> tall_v(kTallHeight, 30);
++  scoped_refptr<I422BufferInterface> wrapped_tall =
++      WrapI422Buffer(kNarrowWidth, kTallHeight, tall_y.data(), kNarrowWidth,
++                     tall_u.data(), 1, tall_v.data(), 1, [] {});
++  EXPECT_EQ(wrapped_tall->ToI420(), nullptr);
++}
++
+ }  // namespace webrtc

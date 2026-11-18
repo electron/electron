@@ -1,0 +1,650 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Thu, 22 Oct 2026 18:25:14 -0700
+Subject: [FSA] Validate StorageKey and origin when serializing handles
+
+Previously, `FileSystemAccessContext::SerializeHandle()` did not take
+the caller's `blink::StorageKey`, and `LocalFileData` in
+`file_system_access.proto` did not record the owning `url::Origin` for
+local (`kLocal`) or external (`kExternal`) handles. As a result, a
+compromised renderer holding a foreign transfer token could serialize it
+into its own IndexedDB bucket and deserialize it to obtain a token and
+permission grants bound to the deserializing origin.
+
+Fix this by:
+1. Passing the bucket's `blink::StorageKey` to
+   `FileSystemAccessContext::SerializeHandle()` and verifying
+   `IsValidTransferToken()` in
+   `FileSystemAccessManagerImpl::DidResolveForSerializeHandle()` before
+   serializing.
+2. Recording the non-opaque `url::Origin` in `LocalFileData` during
+   serialization and verifying in
+   `FileSystemAccessManagerImpl::DeserializeHandle()` that the
+   serialized origin is present and matches `storage_key.origin()`.
+
+Bug: 574757499
+Change-Id: I04a04a5c0bf1f65ef2d4b05f178d00555560c299
+
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8627329
+Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1725401}
+
+Electron adaptation notes (44-x-y): IsValidTransferToken() on this branch takes the expected url::Origin (the OPFS StorageKey-partition check is a later upstream change), so DidResolveForSerializeHandle() passes storage_key.origin(), matching the other call sites on this branch. Because that check is origin-only here, the mojom comment on SerializeHandle() promises only a same-origin check, and the SerializeHandle_SandboxedFile_OtherStorageKey_Rejected test uses a cross-origin StorageKey instead of upstream's same-origin cross-site partitioned one (which this branch would accept). The new tests use FileSystemAccessPermissionContext::UserAction, this branch's name for upstream's AccessTrigger. Everything else applies as upstream.
+
+diff --git a/components/services/storage/public/mojom/file_system_access_context.mojom b/components/services/storage/public/mojom/file_system_access_context.mojom
+index fcba3a550b00d0252c945df174e8c82808e697f9..3ed69c75466bbc1607cf5646839126a4b53f0ce4 100644
+--- a/components/services/storage/public/mojom/file_system_access_context.mojom
++++ b/components/services/storage/public/mojom/file_system_access_context.mojom
+@@ -16,11 +16,15 @@ import "third_party/blink/public/mojom/storage_key/storage_key.mojom";
+ // This interface has capabilities that should NOT be accessible to a renderer.
+ // For example, DeserializeHandle can give access to arbitrary paths on disk.
+ interface FileSystemAccessContext {
+-  // Serializes a handle represented by `token`. If token is not valid this
+-  // returns an empty array, otherwise this returns a serialization that can
+-  // be stored to disk by for example IndexedDB, and then later read back and
+-  // passed to DeserializeHandle to turn it back into a token.
++  // Serializes a handle represented by `token` on behalf of the storage bucket
++  // owned by `storage_key`. If `token` is not valid, or if it was not created
++  // for the same origin as `storage_key` (the same rule a renderer must satisfy
++  // to redeem the token), this returns an empty array. Otherwise this returns
++  // a serialization that can be stored to disk by for example IndexedDB, and
++  // then later read back and passed to `DeserializeHandle` to turn it back
++  // into a token.
+   SerializeHandle(
++      blink.mojom.StorageKey storage_key,
+       pending_remote<blink.mojom.FileSystemAccessTransferToken> token)
+       => (array<uint8> bits);
+ 
+diff --git a/content/browser/file_system_access/file_system_access.proto b/content/browser/file_system_access/file_system_access.proto
+index 441cb1d3e6418a164f02e4f232337007dacb09d7..79316101501a54af39b23460c83f7ef654226e50 100644
+--- a/content/browser/file_system_access/file_system_access.proto
++++ b/content/browser/file_system_access/file_system_access.proto
+@@ -37,6 +37,9 @@ message LocalFileData {
+   // The display name of the file. If `display_name` is empty, the basename
+   // of the file path is used.
+   optional bytes display_name = 3;
++
++  // The serialized `url::Origin` associated with the handle.
++  optional string origin = 4;
+ }
+ 
+ // Used to serialize a File System Access handle representing a file or
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
+index c79ce442356c991e42dbdffbe68c4a8b938f15cb..5b738506091a9780215c66f4984c6bf8258b1f59 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
+@@ -1088,13 +1088,15 @@ void FileSystemAccessManagerImpl::BindObserverHost(
+ }
+ 
+ void FileSystemAccessManagerImpl::SerializeHandle(
++    const blink::StorageKey& storage_key,
+     mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token,
+     SerializeHandleCallback callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   ResolveTransferToken(
+       std::move(token),
+       base::BindOnce(&FileSystemAccessManagerImpl::DidResolveForSerializeHandle,
+-                     weak_factory_.GetWeakPtr(), std::move(callback)));
++                     weak_factory_.GetWeakPtr(), storage_key,
++                     std::move(callback)));
+ }
+ 
+ namespace {
+@@ -1155,6 +1157,7 @@ bool IsPlainRelativePath(const base::FilePath& path) {
+ }
+ 
+ std::string SerializeURLImpl(const storage::FileSystemURL& url,
++                             const url::Origin& origin,
+                              FileSystemAccessPermissionContext::HandleType type,
+                              base::FilePath root_permission_path,
+                              const std::string& display_name) {
+@@ -1195,6 +1198,9 @@ std::string SerializeURLImpl(const storage::FileSystemURL& url,
+ 
+     file_data->set_relative_path(SerializePath(relative_path));
+     file_data->set_display_name(display_name);
++    if (!origin.opaque()) {
++      file_data->set_origin(origin.Serialize());
++    }
+   } else if (url.type() == storage::kFileSystemTypeTemporary) {
+     base::FilePath virtual_path = url.virtual_path();
+     data.mutable_sandboxed()->set_virtual_path(SerializePath(virtual_path));
+@@ -1219,32 +1225,37 @@ std::string FileSystemAccessManagerImpl::SerializeURL(
+     const storage::FileSystemURL& url,
+     HandleType type) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  return SerializeURLImpl(url, type,
++  return SerializeURLImpl(url, /*origin=*/url::Origin(), type,
+                           /*root_permission_path=*/base::FilePath(),
+                           /*display_name=*/std::string());
+ }
+ 
+ std::string FileSystemAccessManagerImpl::SerializeURLWithPermissionRoot(
+     const storage::FileSystemURL& url,
++    const url::Origin& origin,
+     HandleType type,
+     const base::FilePath& root_permission_path,
+     const std::string& display_name) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  return SerializeURLImpl(url, type, root_permission_path, display_name);
++  return SerializeURLImpl(url, origin, type, root_permission_path,
++                          display_name);
+ }
+ 
+ void FileSystemAccessManagerImpl::DidResolveForSerializeHandle(
++    const blink::StorageKey& storage_key,
+     SerializeHandleCallback callback,
+     FileSystemAccessTransferTokenImpl* resolved_token) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+-  if (!resolved_token) {
++  if (!resolved_token || resolved_token->origin().opaque() ||
++      !IsValidTransferToken(resolved_token, storage_key.origin(),
++                            resolved_token->type())) {
+     std::move(callback).Run({});
+     return;
+   }
+ 
+   auto value = SerializeURLWithPermissionRoot(
+-      resolved_token->url(), resolved_token->type(),
++      resolved_token->url(), resolved_token->origin(), resolved_token->type(),
+       resolved_token->GetWriteGrant()->GetPath(),
+       resolved_token->GetWriteGrant()->GetDisplayName());
+   std::vector<uint8_t> result(value.begin(), value.end());
+@@ -1337,6 +1348,12 @@ void FileSystemAccessManagerImpl::DeserializeHandle(
+               ? data.local()
+               : data.external();
+ 
++      if (storage_key.origin().opaque() || !file_data.has_origin() ||
++          file_data.origin() != storage_key.origin().Serialize()) {
++        // Drop `token`, and directly return.
++        return;
++      }
++
+       base::FilePath root_path = DeserializePath(file_data.root_path());
+       base::FilePath relative_path = DeserializePath(file_data.relative_path());
+       if (!IsValidRootPath(data.data_case(), root_path) ||
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.h b/content/browser/file_system_access/file_system_access_manager_impl.h
+index 6ddb7a23ba07475c1a7958fd762676b9648fb48f..1d54878b1216776e1d15836739c054dcf85595ba 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.h
++++ b/content/browser/file_system_access/file_system_access_manager_impl.h
+@@ -155,6 +155,7 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
+ 
+   // storage::mojom::FileSystemAccessContext:
+   void SerializeHandle(
++      const blink::StorageKey& storage_key,
+       mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token,
+       SerializeHandleCallback callback) override;
+   void DeserializeHandle(
+@@ -587,6 +588,7 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
+           directory_handle_receiver,
+       FileSystemAccessTransferTokenImpl* resolved_token);
+   void DidResolveForSerializeHandle(
++      const blink::StorageKey& storage_key,
+       SerializeHandleCallback callback,
+       FileSystemAccessTransferTokenImpl* resolved_token);
+   void DidGetSandboxedBucketForDeserializeHandle(
+@@ -655,6 +657,7 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
+   // permissions related to the URL are based on this path.
+   std::string SerializeURLWithPermissionRoot(
+       const storage::FileSystemURL& url,
++      const url::Origin& origin,
+       FileSystemAccessPermissionContext::HandleType type,
+       const base::FilePath& root_permission_path,
+       const std::string& display_name);
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc b/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
+index 995e8d03e240b4f36d6d3d72cec8466de1378797..f35fded596742c255123e5335153afb6b2e8941e 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
+@@ -385,7 +385,7 @@ class FileSystemAccessManagerImplTest : public testing::Test {
+           token_remote) {
+     base::test::TestFuture<std::vector<uint8_t>> serialize_future;
+     manager_->SerializeHandle(
+-        std::move(token_remote),
++        kTestStorageKey, std::move(token_remote),
+         serialize_future.GetCallback<const std::vector<uint8_t>&>());
+     std::vector<uint8_t> serialized = serialize_future.Take();
+     EXPECT_FALSE(serialized.empty());
+@@ -1180,7 +1180,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+ 
+   base::test::TestFuture<std::vector<uint8_t>> serialize_future;
+   manager_->SerializeHandle(
+-      std::move(token_remote),
++      kOtherStorageKey, std::move(token_remote),
+       serialize_future.GetCallback<const std::vector<uint8_t>&>());
+   std::vector<uint8_t> serialized = serialize_future.Take();
+   EXPECT_FALSE(serialized.empty());
+@@ -1195,6 +1195,81 @@ TEST_F(FileSystemAccessManagerImplTest,
+   EXPECT_FALSE(resolve_future.Get());
+ }
+ 
++TEST_F(FileSystemAccessManagerImplTest,
++       SerializeHandle_LocalFile_OtherStorageKey_Rejected) {
++  const PathInfo kTestPathInfo(dir_.GetPath().AppendASCII("foo"));
++  auto grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++      FixedFileSystemAccessPermissionGrant::PermissionStatus::GRANTED,
++      kTestPathInfo);
++  EXPECT_CALL(permission_context_,
++              GetReadPermissionGrant(kTestStorageKey.origin(), kTestPathInfo,
++                                     HandleType::kFile, testing::_))
++      .WillRepeatedly(testing::Return(grant));
++  EXPECT_CALL(permission_context_,
++              GetWritePermissionGrant(kTestStorageKey.origin(), kTestPathInfo,
++                                      HandleType::kFile, testing::_))
++      .WillRepeatedly(testing::Return(grant));
++
++  blink::mojom::FileSystemAccessEntryPtr entry =
++      manager_->CreateFileEntryFromPath(
++          binding_context_, kTestPathInfo,
++          FileSystemAccessPermissionContext::UserAction::kOpen);
++  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> handle(
++      std::move(entry->entry_handle->get_file()));
++
++  // Serializing on behalf of the owning storage key succeeds.
++  {
++    mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken>
++        token_remote;
++    handle->Transfer(token_remote.InitWithNewPipeAndPassReceiver());
++    base::test::TestFuture<std::vector<uint8_t>> serialize_future;
++    manager_->SerializeHandle(
++        kTestStorageKey, std::move(token_remote),
++        serialize_future.GetCallback<const std::vector<uint8_t>&>());
++    EXPECT_THAT(serialize_future.Take(), testing::Not(testing::IsEmpty()));
++  }
++
++  // Serializing on behalf of a different origin's bucket is refused.
++  {
++    const blink::StorageKey kOtherStorageKey =
++        blink::StorageKey::CreateFromStringForTesting("https://other.example/");
++    mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken>
++        token_remote;
++    handle->Transfer(token_remote.InitWithNewPipeAndPassReceiver());
++    base::test::TestFuture<std::vector<uint8_t>> serialize_future;
++    manager_->SerializeHandle(
++        kOtherStorageKey, std::move(token_remote),
++        serialize_future.GetCallback<const std::vector<uint8_t>&>());
++    EXPECT_THAT(serialize_future.Take(), testing::IsEmpty());
++  }
++}
++
++TEST_F(FileSystemAccessManagerImplTest,
++       SerializeHandle_SandboxedFile_OtherStorageKey_Rejected) {
++  ASSERT_OK_AND_ASSIGN(auto default_bucket,
++                       CreateSandboxFileSystemAndGetDefaultBucket());
++  auto test_file_url = file_system_context_->CreateCrackedFileSystemURL(
++      kTestStorageKey, storage::kFileSystemTypeTemporary,
++      base::FilePath::FromUTF8Unsafe("test/foo/bar"));
++  test_file_url.SetBucket(default_bucket);
++  FileSystemAccessFileHandleImpl file(manager_.get(), binding_context_,
++                                      test_file_url, "bar",
++                                      {ask_grant_, ask_grant_});
++
++  // Serializing an OPFS handle on behalf of a different origin's bucket must
++  // fail.
++  const blink::StorageKey kOtherOriginStorageKey =
++      blink::StorageKey::CreateFromStringForTesting("https://other.example/");
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token_remote;
++  manager_->CreateTransferToken(file,
++                                token_remote.InitWithNewPipeAndPassReceiver());
++  base::test::TestFuture<std::vector<uint8_t>> serialize_future;
++  manager_->SerializeHandle(
++      kOtherOriginStorageKey, std::move(token_remote),
++      serialize_future.GetCallback<const std::vector<uint8_t>&>());
++  EXPECT_THAT(serialize_future.Take(), testing::IsEmpty());
++}
++
+ TEST_F(FileSystemAccessManagerImplTest,
+        SerializeHandle_SandboxedDirectory_CustomBucket) {
+   auto test_file_url = file_system_context_->CreateCrackedFileSystemURL(
+@@ -1492,6 +1567,230 @@ TEST_F(FileSystemAccessManagerImplTest, SerializeHandle_ExternalFile) {
+   EXPECT_EQ(ask_grant2_, token->GetWriteGrant());
+ }
+ 
++TEST_F(FileSystemAccessManagerImplTest,
++       DeserializeHandle_NativeFile_OtherOrigin) {
++  const PathInfo kTestPathInfo(dir_.GetPath().AppendASCII("foo"));
++  const blink::StorageKey kOtherStorageKey =
++      blink::StorageKey::CreateFromStringForTesting("https://other.example/");
++  const FileSystemAccessManagerImpl::BindingContext other_binding_context = {
++      kOtherStorageKey, GURL("https://other.example/"),
++      GlobalRenderFrameHostId()};
++
++  auto grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++      FixedFileSystemAccessPermissionGrant::PermissionStatus::GRANTED,
++      kTestPathInfo);
++
++  EXPECT_CALL(permission_context_,
++              GetReadPermissionGrant(
++                  kOtherStorageKey.origin(), kTestPathInfo, HandleType::kFile,
++                  FileSystemAccessPermissionContext::UserAction::kOpen))
++      .WillOnce(testing::Return(grant));
++  EXPECT_CALL(permission_context_,
++              GetWritePermissionGrant(
++                  kOtherStorageKey.origin(), kTestPathInfo, HandleType::kFile,
++                  FileSystemAccessPermissionContext::UserAction::kOpen))
++      .WillOnce(testing::Return(grant));
++
++  blink::mojom::FileSystemAccessEntryPtr entry =
++      manager_->CreateFileEntryFromPath(
++          other_binding_context, kTestPathInfo,
++          FileSystemAccessPermissionContext::UserAction::kOpen);
++  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> handle(
++      std::move(entry->entry_handle->get_file()));
++
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token_remote;
++  handle->Transfer(token_remote.InitWithNewPipeAndPassReceiver());
++
++  base::test::TestFuture<std::vector<uint8_t>> serialize_future;
++  manager_->SerializeHandle(
++      kOtherStorageKey, std::move(token_remote),
++      serialize_future.GetCallback<const std::vector<uint8_t>&>());
++  std::vector<uint8_t> serialized = serialize_future.Take();
++  ASSERT_THAT(serialized, testing::Not(testing::IsEmpty()));
++
++  // Deserializing under `kTestStorageKey`, which has a different origin, must
++  // drop the transfer token without requesting permission grants.
++  EXPECT_CALL(permission_context_, GetReadPermissionGrant).Times(0);
++  EXPECT_CALL(permission_context_, GetWritePermissionGrant).Times(0);
++
++  manager_->DeserializeHandle(kTestStorageKey, serialized,
++                              token_remote.InitWithNewPipeAndPassReceiver());
++  base::test::TestFuture<FileSystemAccessTransferTokenImpl*> resolve_future;
++  manager_->ResolveTransferToken(std::move(token_remote),
++                                 resolve_future.GetCallback());
++  EXPECT_EQ(resolve_future.Get(), nullptr);
++}
++
++TEST_F(FileSystemAccessManagerImplTest,
++       DeserializeHandle_NativeDirectory_OtherOrigin) {
++  const PathInfo kTestPathInfo(dir_.GetPath().AppendASCII("foobar"));
++  const blink::StorageKey kOtherStorageKey =
++      blink::StorageKey::CreateFromStringForTesting("https://other.example/");
++  const FileSystemAccessManagerImpl::BindingContext other_binding_context = {
++      kOtherStorageKey, GURL("https://other.example/"),
++      GlobalRenderFrameHostId()};
++
++  auto grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++      FixedFileSystemAccessPermissionGrant::PermissionStatus::GRANTED,
++      kTestPathInfo);
++
++  EXPECT_CALL(
++      permission_context_,
++      GetReadPermissionGrant(
++          kOtherStorageKey.origin(), kTestPathInfo, HandleType::kDirectory,
++          FileSystemAccessPermissionContext::UserAction::kOpen))
++      .WillOnce(testing::Return(grant));
++  EXPECT_CALL(
++      permission_context_,
++      GetWritePermissionGrant(
++          kOtherStorageKey.origin(), kTestPathInfo, HandleType::kDirectory,
++          FileSystemAccessPermissionContext::UserAction::kOpen))
++      .WillOnce(testing::Return(grant));
++
++  blink::mojom::FileSystemAccessEntryPtr entry =
++      manager_->CreateDirectoryEntryFromPath(
++          other_binding_context, kTestPathInfo,
++          FileSystemAccessPermissionContext::UserAction::kOpen);
++  mojo::Remote<blink::mojom::FileSystemAccessDirectoryHandle> handle(
++      std::move(entry->entry_handle->get_directory()));
++
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token_remote;
++  handle->Transfer(token_remote.InitWithNewPipeAndPassReceiver());
++
++  base::test::TestFuture<std::vector<uint8_t>> serialize_future;
++  manager_->SerializeHandle(
++      kOtherStorageKey, std::move(token_remote),
++      serialize_future.GetCallback<const std::vector<uint8_t>&>());
++  std::vector<uint8_t> serialized = serialize_future.Take();
++  ASSERT_THAT(serialized, testing::Not(testing::IsEmpty()));
++
++  EXPECT_CALL(permission_context_, GetReadPermissionGrant).Times(0);
++  EXPECT_CALL(permission_context_, GetWritePermissionGrant).Times(0);
++
++  manager_->DeserializeHandle(kTestStorageKey, serialized,
++                              token_remote.InitWithNewPipeAndPassReceiver());
++  base::test::TestFuture<FileSystemAccessTransferTokenImpl*> resolve_future;
++  manager_->ResolveTransferToken(std::move(token_remote),
++                                 resolve_future.GetCallback());
++  EXPECT_EQ(resolve_future.Get(), nullptr);
++}
++
++TEST_F(FileSystemAccessManagerImplTest,
++       DeserializeHandle_ExternalFile_OtherOrigin) {
++  const PathInfo kTestPathInfo(
++      PathType::kExternal,
++      base::FilePath::FromUTF8Unsafe(kTestMountPoint).AppendASCII("foo"));
++  const blink::StorageKey kOtherStorageKey =
++      blink::StorageKey::CreateFromStringForTesting("https://other.example/");
++  const FileSystemAccessManagerImpl::BindingContext other_binding_context = {
++      kOtherStorageKey, GURL("https://other.example/"),
++      GlobalRenderFrameHostId()};
++
++  auto grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++      FixedFileSystemAccessPermissionGrant::PermissionStatus::GRANTED,
++      kTestPathInfo);
++
++  EXPECT_CALL(permission_context_,
++              GetReadPermissionGrant(
++                  kOtherStorageKey.origin(), kTestPathInfo, HandleType::kFile,
++                  FileSystemAccessPermissionContext::UserAction::kOpen))
++      .WillOnce(testing::Return(grant));
++  EXPECT_CALL(permission_context_,
++              GetWritePermissionGrant(
++                  kOtherStorageKey.origin(), kTestPathInfo, HandleType::kFile,
++                  FileSystemAccessPermissionContext::UserAction::kOpen))
++      .WillOnce(testing::Return(grant));
++
++  blink::mojom::FileSystemAccessEntryPtr entry =
++      manager_->CreateFileEntryFromPath(
++          other_binding_context, kTestPathInfo,
++          FileSystemAccessPermissionContext::UserAction::kOpen);
++  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> handle(
++      std::move(entry->entry_handle->get_file()));
++
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token_remote;
++  handle->Transfer(token_remote.InitWithNewPipeAndPassReceiver());
++
++  base::test::TestFuture<std::vector<uint8_t>> serialize_future;
++  manager_->SerializeHandle(
++      kOtherStorageKey, std::move(token_remote),
++      serialize_future.GetCallback<const std::vector<uint8_t>&>());
++  std::vector<uint8_t> serialized = serialize_future.Take();
++  ASSERT_THAT(serialized, testing::Not(testing::IsEmpty()));
++
++  EXPECT_CALL(permission_context_, GetReadPermissionGrant).Times(0);
++  EXPECT_CALL(permission_context_, GetWritePermissionGrant).Times(0);
++
++  manager_->DeserializeHandle(kTestStorageKey, serialized,
++                              token_remote.InitWithNewPipeAndPassReceiver());
++  base::test::TestFuture<FileSystemAccessTransferTokenImpl*> resolve_future;
++  manager_->ResolveTransferToken(std::move(token_remote),
++                                 resolve_future.GetCallback());
++  EXPECT_EQ(resolve_future.Get(), nullptr);
++}
++
++TEST_F(FileSystemAccessManagerImplTest,
++       DeserializeHandle_Native_InvalidOrigin) {
++  const base::FilePath root_path = dir_.GetPath().AppendASCII("foo");
++  const std::string invalid_origins[] = {
++      "",
++      "null",
++      "about:blank",
++      "https://example.com/",
++      "https://other.example",
++  };
++
++  EXPECT_CALL(permission_context_, GetReadPermissionGrant).Times(0);
++  EXPECT_CALL(permission_context_, GetWritePermissionGrant).Times(0);
++
++  for (auto handle_type : {FileSystemAccessHandleData::kFile,
++                           FileSystemAccessHandleData::kDirectory}) {
++    // Missing `origin` field.
++    {
++      FileSystemAccessHandleData data;
++      data.set_handle_type(handle_type);
++      data.mutable_local()->set_root_path(SerializePathForTesting(root_path));
++      data.mutable_local()->set_relative_path(
++          SerializePathForTesting(base::FilePath()));
++      EXPECT_EQ(DeserializeAndResolveToken(data), nullptr);
++    }
++
++    for (const auto& invalid_origin : invalid_origins) {
++      FileSystemAccessHandleData data;
++      data.set_handle_type(handle_type);
++      data.mutable_local()->set_root_path(SerializePathForTesting(root_path));
++      data.mutable_local()->set_relative_path(
++          SerializePathForTesting(base::FilePath()));
++      data.mutable_local()->set_origin(invalid_origin);
++      EXPECT_EQ(DeserializeAndResolveToken(data), nullptr) << invalid_origin;
++    }
++  }
++
++  // Deserializing with an opaque `StorageKey` even if `origin` is "null".
++  {
++    FileSystemAccessHandleData data;
++    data.set_handle_type(FileSystemAccessHandleData::kFile);
++    data.mutable_local()->set_root_path(SerializePathForTesting(root_path));
++    data.mutable_local()->set_relative_path(
++        SerializePathForTesting(base::FilePath()));
++    data.mutable_local()->set_origin(url::Origin().Serialize());
++
++    std::string serialized_string;
++    ASSERT_TRUE(data.SerializeToString(&serialized_string));
++    std::vector<uint8_t> serialized(serialized_string.begin(),
++                                    serialized_string.end());
++
++    mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken>
++        token_remote;
++    manager_->DeserializeHandle(blink::StorageKey(), serialized,
++                                token_remote.InitWithNewPipeAndPassReceiver());
++    base::test::TestFuture<FileSystemAccessTransferTokenImpl*> resolve_future;
++    manager_->ResolveTransferToken(std::move(token_remote),
++                                   resolve_future.GetCallback());
++    EXPECT_EQ(resolve_future.Get(), nullptr);
++  }
++}
++
+ TEST_F(FileSystemAccessManagerImplTest,
+        DeserializeHandle_Native_InvalidRelativePath) {
+   const base::FilePath root_path = dir_.GetPath().AppendASCII("foo");
+@@ -1520,6 +1819,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+       data.mutable_local()->set_root_path(SerializePathForTesting(root_path));
+       data.mutable_local()->set_relative_path(
+           SerializePathForTesting(relative_path));
++      data.mutable_local()->set_origin(kTestStorageKey.origin().Serialize());
+       EXPECT_FALSE(DeserializeAndResolveToken(data)) << relative_path;
+     }
+   }
+@@ -1542,6 +1842,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+     data.mutable_local()->set_root_path(SerializePathForTesting(root_path));
+     data.mutable_local()->set_relative_path(
+         SerializePathForTesting(base::FilePath()));
++    data.mutable_local()->set_origin(kTestStorageKey.origin().Serialize());
+     EXPECT_FALSE(DeserializeAndResolveToken(data)) << root_path;
+   }
+ }
+@@ -1558,6 +1859,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+         base::FilePath::FromUTF8Unsafe(kTestMountPoint).AppendASCII("foo")));
+     data.mutable_external()->set_relative_path(
+         SerializePathForTesting(base::FilePath(FILE_PATH_LITERAL("../bar"))));
++    data.mutable_external()->set_origin(kTestStorageKey.origin().Serialize());
+     EXPECT_FALSE(DeserializeAndResolveToken(data));
+   }
+ 
+@@ -1569,6 +1871,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+                                     .Append(FILE_PATH_LITERAL("../foo"))));
+     data.mutable_external()->set_relative_path(
+         SerializePathForTesting(base::FilePath()));
++    data.mutable_external()->set_origin(kTestStorageKey.origin().Serialize());
+     EXPECT_FALSE(DeserializeAndResolveToken(data));
+   }
+ 
+@@ -1583,6 +1886,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+             .AppendASCII("foo")));
+     data.mutable_external()->set_relative_path(
+         SerializePathForTesting(base::FilePath()));
++    data.mutable_external()->set_origin(kTestStorageKey.origin().Serialize());
+     EXPECT_FALSE(DeserializeAndResolveToken(data));
+   }
+ 
+@@ -1596,6 +1900,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+         SerializePathForTesting(base::FilePath(FILE_PATH_LITERAL("C:"))));
+     data.mutable_external()->set_relative_path(
+         SerializePathForTesting(base::FilePath()));
++    data.mutable_external()->set_origin(kTestStorageKey.origin().Serialize());
+     EXPECT_FALSE(DeserializeAndResolveToken(data));
+   }
+ #endif
+@@ -2957,7 +3262,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+   // Serialize, then deserialize with the first-party storage key.
+   base::test::TestFuture<std::vector<uint8_t>> serialize_future;
+   manager_->SerializeHandle(
+-      std::move(token_remote),
++      kTestStorageKey, std::move(token_remote),
+       serialize_future.GetCallback<const std::vector<uint8_t>&>());
+   std::vector<uint8_t> serialized = serialize_future.Take();
+   ASSERT_FALSE(serialized.empty());
+diff --git a/content/browser/indexed_db/instance/backing_store_test_base.cc b/content/browser/indexed_db/instance/backing_store_test_base.cc
+index bfd9bfab641d236d1673afbb27a9925f60594cc9..90c7fb2d88f86873cd491869b87b099eb07bda20 100644
+--- a/content/browser/indexed_db/instance/backing_store_test_base.cc
++++ b/content/browser/indexed_db/instance/backing_store_test_base.cc
+@@ -151,6 +151,7 @@ bool BackingStoreTestBase::CommitTransactionPhaseOneAndVerify(
+                 token_clone;
+             token_remote.Clone(token_clone.InitWithNewPipeAndPassReceiver());
+             file_system_access_context_->SerializeHandle(
++                bucket_context_->bucket_info().storage_key,
+                 std::move(token_clone), std::move(deliver_serialized_token));
+           }));
+   if (!async_work_to_be_done.has_value()) {
+diff --git a/content/browser/indexed_db/instance/leveldb/backing_store.cc b/content/browser/indexed_db/instance/leveldb/backing_store.cc
+index 2482e66e2435526e80d0799e70b9f3e9c334b0fb..0db30ed5a707582873c7a24eebe3a19e06a0fcd7 100644
+--- a/content/browser/indexed_db/instance/leveldb/backing_store.cc
++++ b/content/browser/indexed_db/instance/leveldb/backing_store.cc
+@@ -4589,6 +4589,7 @@ bool BackingStore::Transaction::WriteNewBlobs(BlobWriteCallback callback) {
+ 
+           backing_store_->bucket_context_->file_system_access_context()
+               ->SerializeHandle(
++                  backing_store_->bucket_context_->bucket_info().storage_key,
+                   std::move(token_clone),
+                   base::BindOnce(
+                       [](base::WeakPtr<Transaction> transaction,
+diff --git a/content/browser/indexed_db/instance/mock_file_system_access_context.cc b/content/browser/indexed_db/instance/mock_file_system_access_context.cc
+index 1245ed4dadbf34c42649a155a3cbb1e187e3b842..005993a6d3bd85d7b30652646846fced1d449954 100644
+--- a/content/browser/indexed_db/instance/mock_file_system_access_context.cc
++++ b/content/browser/indexed_db/instance/mock_file_system_access_context.cc
+@@ -14,6 +14,7 @@ MockFileSystemAccessContext::MockFileSystemAccessContext() = default;
+ MockFileSystemAccessContext::~MockFileSystemAccessContext() = default;
+ 
+ void MockFileSystemAccessContext::SerializeHandle(
++    const blink::StorageKey& storage_key,
+     mojo::PendingRemote<::blink::mojom::FileSystemAccessTransferToken>
+         pending_token,
+     SerializeHandleCallback callback) {
+diff --git a/content/browser/indexed_db/instance/mock_file_system_access_context.h b/content/browser/indexed_db/instance/mock_file_system_access_context.h
+index c14067d554484333346c7e08313d702ed1a4505a..61b1864159b94f36367d91c248caaa872308977c 100644
+--- a/content/browser/indexed_db/instance/mock_file_system_access_context.h
++++ b/content/browser/indexed_db/instance/mock_file_system_access_context.h
+@@ -19,6 +19,7 @@ class MockFileSystemAccessContext
+   ~MockFileSystemAccessContext() override;
+ 
+   void SerializeHandle(
++      const blink::StorageKey& storage_key,
+       mojo::PendingRemote<::blink::mojom::FileSystemAccessTransferToken>
+           pending_token,
+       SerializeHandleCallback callback) override;
+diff --git a/content/browser/indexed_db/instance/transaction.cc b/content/browser/indexed_db/instance/transaction.cc
+index 7aa83e6955643c980c8bdfb38640ffbaaed8ce4e..e696ea518d5bd9449bb0eb50601a2648c63673e3 100644
+--- a/content/browser/indexed_db/instance/transaction.cc
++++ b/content/browser/indexed_db/instance/transaction.cc
+@@ -893,7 +893,10 @@ Status Transaction::DoPendingCommit() {
+                         token_clone.InitWithNewPipeAndPassReceiver());
+                     transaction->bucket_context()
+                         .file_system_access_context()
+-                        ->SerializeHandle(std::move(token_clone),
++                        ->SerializeHandle(transaction->bucket_context()
++                                              .bucket_info()
++                                              .storage_key,
++                                          std::move(token_clone),
+                                           std::move(deliver_serialized_token));
+                   },
+                   ptr_factory_.GetWeakPtr())),

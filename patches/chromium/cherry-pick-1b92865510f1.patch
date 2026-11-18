@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dana Fried <dfried@chromium.org>
+Date: Mon, 9 Nov 2026 10:27:18 -0800
+Subject: [Views] Spot-protect button updates in dialogs.
+
+This prevents a case where badly-configured or malicious accessibility
+handlers modify a dialog in the middle of the dialog buttons being
+modified.
+
+Fixed: 583617538
+Change-Id: I97caee769d7cdf09ddaa031b8c409b9a3f414ed6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8772989
+Reviewed-by: Caroline Rising <corising@chromium.org>
+Auto-Submit: Dana Fried <dfried@chromium.org>
+Commit-Queue: Dana Fried <dfried@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1739349}
+
+diff --git a/ui/views/window/dialog_client_view.cc b/ui/views/window/dialog_client_view.cc
+index 9252a91ce3c1510ea36e6cebd3d2fadf74a5ed56..9c6b4e9f23011ce974959c811548967a83ce1100 100644
+--- a/ui/views/window/dialog_client_view.cc
++++ b/ui/views/window/dialog_client_view.cc
+@@ -35,6 +35,7 @@
+ #include "ui/views/metadata/view_factory.h"
+ #include "ui/views/style/platform_style.h"
+ #include "ui/views/view_class_properties.h"
++#include "ui/views/view_guard.h"
+ #include "ui/views/view_observer.h"
+ #include "ui/views/view_tracker.h"
+ #include "ui/views/view_utils.h"
+@@ -376,6 +377,15 @@ void DialogClientView::UpdateDialogButton(raw_ptr<MdTextButton>* member,
+   const ui::ButtonStyle style = delegate->GetDialogButtonStyle(type);
+ 
+   if (*member) {
++    // Accessibility events sent while updating buttons could theoretically
++    // result in synchronous destruction of the dialog or re-entrancy into this
++    // method via malicious or badly-configured software that hooks
++    // accessibility callbacks.
++    //
++    // Since these errors are difficult to fully protect against, guard the
++    // dialog during these updates instead.
++    ViewGuard guard(*member->get());
++
+     MdTextButton* button = *member;
+     button->SetEnabled(delegate->IsDialogButtonEnabled(type));
+     button->SetIsDefault(is_default);

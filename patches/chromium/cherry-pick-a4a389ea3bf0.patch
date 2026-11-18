@@ -1,0 +1,1096 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Tue, 3 Nov 2026 18:54:27 -0800
+Subject: [Media] Align MultiBuffer redirect handling with Blink loading stack
+
+Align ResourceMultiBufferDataProvider and UrlIndex redirect handling
+with Blink's ResourceLoader, ResourceFetcher, and network-service
+redirect rules:
+
+1. Retarget normal forward HTTP redirects onto UrlIndex (via a named
+   UrlData::Key struct) while latching UrlData::ServiceWorkerMode::kSkip
+   (gated on media::kDisallowMixedOpaqueMediaResponses) whenever a
+   redirect hop was not fetched via a Service Worker
+   (!WasFetchedViaServiceWorker()), matching
+   ResourceLoader::WillFollowRedirectInternal and
+   ResourceFetcher::GetCacheIdentifier. Pass SetSkipServiceWorker(true)
+   on retargeted follow-up range requests so embedding Service Workers
+   cannot observe post-redirect URLs, while preserving offline Service
+   Worker caching for direct loads and synthetic Response.redirect()
+   hops under separate UrlIndex keys.
+2. Track hop-by-hop cross-origin redirects (via previous_url) and
+   worst-case chain relation (via net::GetOriginRelation()) in a
+   per-request RedirectState reset on Start(), enforcing consistent
+   has_cross_origin_redirect state in UrlData::CanAcceptDataFrom(). When
+   direct follow-up range requests to the post-redirect URL would lose
+   redirect-chain relation or tainting (bounce-back chains where
+   final_relation < max_origin_relation, or no-cors cross-origin
+   redirects under universal/extension access), allocate an unindexed
+   UrlData via NewUnindexedUrlData() that reports the post-redirect URL
+   via url() while continuing to use original_request_url_ via
+   request_url() on follow-up range requests.
+3. Rely directly on UrlData::is_cors_cross_origin() for
+   MultiBufferDataSource::WouldTaintOrigin() (removing the redundant
+   single_origin_ flag and unused MediaLogProperty::kIsSingleOrigin),
+   and monotonically latch Timing-Allow-Origin failures across redirect
+   hops, accepted range responses, RedirectTo(), and MergeFrom().
+
+Bug: 562990591, 574903436, 573441094, 573262234, 572308124
+Change-Id: Ied50d094ab917e2173d48aeede2c020a58dfea05
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8665152
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1734690}
+
+Electron adaptation notes (44-x-y): this branch's UrlData::MergeFrom and
+CanAcceptDataFrom predate the HasCompatibleLength() and
+cross-origin-fail-latching restructuring that the upstream hunks were written
+against, so the has_cross_origin_redirect handling is added onto this branch's
+versions: MergeFrom forwards other->has_cross_origin_redirect_ to
+SetDataOrigin(), and CanAcceptDataFrom() gains the upstream redirect-state
+checks ahead of this branch's existing data-origin / mixed-opaque checks.
+resource_multi_buffer_data_provider.cc only gains the GetInitialRedirectState()
+helper from the conflicting hunk (the kDeferMediaAcceptEncodingInjection
+feature in its context is not on this branch) and the duplicate <algorithm>
+include is dropped; multi_buffer_data_source.cc drops the now-unused
+security_origin.h include as upstream while keeping this branch's
+cross_thread_copier_base.h. All other hunks (RedirectState, UrlData::Key,
+ServiceWorkerMode, unindexed UrlData, TAO latching, media_log_properties, DEPS)
+apply as upstream. The UrlData::data_origin() accessor that
+WillFollowRedirect() reads (removed on this branch by the 8577600 pick, present
+upstream) is re-added to url_index.h. The three unit-test files diverged too
+far to merge and keep the branch versions (test-only).
+
+diff --git a/media/base/media_log_properties.cc b/media/base/media_log_properties.cc
+index 104027884e7ef752b2b0ffb28747f1824ff1b41d..64cdbeca57e4c85d2a30df3d4c4bb2d2076cd1bf 100644
+--- a/media/base/media_log_properties.cc
++++ b/media/base/media_log_properties.cc
+@@ -23,7 +23,6 @@ std::string MediaLogPropertyKeyToString(MediaLogProperty property) {
+     STRINGIFY(kIsStreaming);
+     STRINGIFY(kFrameUrl);
+     STRINGIFY(kFrameTitle);
+-    STRINGIFY(kIsSingleOrigin);
+     STRINGIFY(kRendererName);
+     STRINGIFY(kVideoDecoderName);
+     STRINGIFY(kIsPlatformVideoDecoder);
+diff --git a/media/base/media_log_properties.h b/media/base/media_log_properties.h
+index 51c01e9462754a589fda0c234f47ed2a2d88d676..42850ca364a5c9608a88f9ad1453c48779a4f053 100644
+--- a/media/base/media_log_properties.h
++++ b/media/base/media_log_properties.h
+@@ -58,10 +58,6 @@ enum class MediaLogProperty {
+   kFrameUrl,
+   kFrameTitle,
+ 
+-  // Whether the media content coming from the same origin as the frame in which
+-  // the player is loaded.
+-  kIsSingleOrigin,
+-
+   // Can the url loading the data support the range http header, allowing chunks
+   // to be sent rather than entire file.
+   kIsRangeHeaderSupported,
+@@ -117,7 +113,6 @@ MEDIA_LOG_PROPERTY_SUPPORTS_TYPE(kIsCdmAttached, bool);
+ MEDIA_LOG_PROPERTY_SUPPORTS_TYPE(kIsStreaming, bool);
+ MEDIA_LOG_PROPERTY_SUPPORTS_TYPE(kFrameUrl, std::string);
+ MEDIA_LOG_PROPERTY_SUPPORTS_TYPE(kFrameTitle, std::string);
+-MEDIA_LOG_PROPERTY_SUPPORTS_TYPE(kIsSingleOrigin, bool);
+ MEDIA_LOG_PROPERTY_SUPPORTS_TYPE(kRendererName, RendererType);
+ MEDIA_LOG_PROPERTY_SUPPORTS_TYPE(kVideoDecoderName, VideoDecoderType);
+ MEDIA_LOG_PROPERTY_SUPPORTS_TYPE(kIsPlatformVideoDecoder, bool);
+diff --git a/third_party/blink/renderer/platform/media/DEPS b/third_party/blink/renderer/platform/media/DEPS
+index 325b06c5086ff4ec82771abc29f925a953d18126..020fe1daa330019b5d7858826445706e5d70dd39 100644
+--- a/third_party/blink/renderer/platform/media/DEPS
++++ b/third_party/blink/renderer/platform/media/DEPS
+@@ -28,6 +28,7 @@ include_rules = [
+   "+media/renderers/paint_canvas_video_renderer.h",
+   "+net/base/data_url.h",
+   "+net/base/net_errors.h",
++  "+net/base/url_util.h",
+   "+net/http/http_byte_range.h",
+   "+net/http/http_version.h",
+   "+net/url_request/url_request_job.h",
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+index 1066b774840f571d14504c034fc56a18a6eaa631..7f978fee097f44bcf32dc2fde2c0b78d1763a72f 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+@@ -21,7 +21,6 @@
+ #include "third_party/blink/renderer/platform/media/buffered_data_source_host_impl.h"
+ #include "third_party/blink/renderer/platform/media/multi_buffer_reader.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+-#include "third_party/blink/renderer/platform/weborigin/security_origin.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
+@@ -133,7 +132,7 @@ MultiBufferDataSource::MultiBufferDataSource(
+   DCHECK(host_);
+   DCHECK(downloading_cb_);
+   DCHECK(render_task_runner_->BelongsToCurrentThread());
+-  DCHECK(url_data_);
++  CHECK(url_data_);
+   url_data_->Use();
+   url_data_->OnRedirect(
+       blink::BindOnce(&MultiBufferDataSource::OnRedirected, weak_ptr_));
+@@ -234,7 +233,7 @@ void MultiBufferDataSource::OnRedirected(
+     const scoped_refptr<UrlData>& new_destination) {
+   did_redirect_ = true;
+ 
+-  if (!new_destination || !url_data_) {
++  if (!new_destination) {
+     // A failure occurred.
+     failed_ = true;
+     if (init_cb_) {
+@@ -249,10 +248,6 @@ void MultiBufferDataSource::OnRedirected(
+     StopLoader();
+     return;
+   }
+-  if (!SecurityOrigin::AreSameOrigin(url_data_->url(),
+-                                     new_destination->url())) {
+-    single_origin_ = false;
+-  }
+   SetReader(nullptr);
+   url_data_ = std::move(new_destination);
+ 
+@@ -309,12 +304,6 @@ bool MultiBufferDataSource::PassedTimingAllowOriginCheck() {
+ }
+ 
+ bool MultiBufferDataSource::WouldTaintOrigin() const {
+-  // When the resource is redirected to another origin we think of it as
+-  // tainted. This is actually not specified, and is under discussion.
+-  // See https://github.com/whatwg/fetch/issues/737.
+-  if (!single_origin_ && cors_mode() == UrlData::CORS_UNSPECIFIED) {
+-    return true;
+-  }
+   return url_data_->is_cors_cross_origin();
+ }
+ 
+@@ -649,10 +638,6 @@ void MultiBufferDataSource::StartCallback() {
+         host_->AddBufferedByteRange(0, total_bytes_);
+     }
+ 
+-    // Progress callback might be called after the start callback,
+-    // make sure that we update single_origin_ now.
+-    media_log_->SetProperty<media::MediaLogProperty::kIsSingleOrigin>(
+-        single_origin_);
+     media_log_->SetProperty<media::MediaLogProperty::kIsRangeHeaderSupported>(
+         url_data_->range_supported());
+ 
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
+index 2a76496e85e90a55b06ab19ebed3764234384ec3..201734638fe27477b3c007f8339c2682d6be561a 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
+@@ -285,10 +285,6 @@ class PLATFORM_EXPORT MultiBufferDataSource
+   // least once.
+   bool media_has_played_ = false;
+ 
+-  // As we follow redirects, we set this variable to false if redirects
+-  // go between different origins.
+-  bool single_origin_ = true;
+-
+   // Callback used when a data source becomes tainted.
+   media::DataSource::EventCb notify_tainted_cb_;
+ 
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 4e478439ab13d14d3123cbb44f71a392674efbc7..3cd064066fceb9790822bbff6ca00aa6f0a0ea22 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -2,13 +2,12 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-
+ #include "third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h"
+ 
+ #include <stddef.h>
+ 
+-#include <utility>
+ #include <algorithm>
++#include <utility>
+ 
+ #include "base/feature_list.h"
+ #include "base/location.h"
+@@ -20,6 +19,7 @@
+ #include "base/strings/string_util.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
++#include "media/base/media_switches.h"
+ #include "net/base/net_errors.h"
+ #include "net/http/http_byte_range.h"
+ #include "net/http/http_request_headers.h"
+@@ -41,6 +41,20 @@
+ 
+ namespace blink {
+ 
++namespace {
++
++ResourceMultiBufferDataProvider::RedirectState GetInitialRedirectState(
++    const UrlData& url_data) {
++  return {
++      .max_origin_relation =
++          net::GetOriginRelation(GURL(url_data.request_url()),
++                                 url_data.security_origin()->ToUrlOrigin()),
++      .service_worker_mode = url_data.service_worker_mode(),
++  };
++}
++
++}  // namespace
++
+ // The number of milliseconds to wait before retrying a failed load.
+ const int kLoaderFailedRetryDelayMs = 250;
+ 
+@@ -67,7 +81,7 @@ ResourceMultiBufferDataProvider::ResourceMultiBufferDataProvider(
+       url_data_(url_data),
+       retries_(0),
+       cors_mode_(url_data->cors_mode()),
+-      original_url_(url_data->url()),
++      redirect_state_(GetInitialRedirectState(*url_data)),
+       is_client_audio_element_(is_client_audio_element),
+       task_runner_(std::move(task_runner)) {
+   DCHECK(url_data_) << " pos = " << pos;
+@@ -82,6 +96,7 @@ ResourceMultiBufferDataProvider::~ResourceMultiBufferDataProvider() {
+ 
+ void ResourceMultiBufferDataProvider::Start() {
+   DVLOG(1) << __func__ << " @ " << byte_pos();
++  redirect_state_ = GetInitialRedirectState(*url_data_);
+ 
+   if (url_data_->length() > 0 && byte_pos() >= url_data_->length()) {
+     task_runner_->PostTask(
+@@ -91,7 +106,10 @@ void ResourceMultiBufferDataProvider::Start() {
+   }
+ 
+   // Prepare the request.
+-  WebURLRequest request(url_data_->url());
++  WebURLRequest request(url_data_->request_url());
++  if (url_data_->service_worker_mode() == UrlData::ServiceWorkerMode::kSkip) {
++    request.SetSkipServiceWorker(true);
++  }
+   request.SetRequestContext(is_client_audio_element_
+                                 ? mojom::blink::RequestContextType::AUDIO
+                                 : mojom::blink::RequestContextType::VIDEO);
+@@ -197,25 +215,45 @@ bool ResourceMultiBufferDataProvider::WillFollowRedirect(
+     const WebURL& new_url,
+     const WebURLResponse& redirect_response) {
+   DVLOG(1) << "willFollowRedirect";
+-  redirects_to_ = new_url;
+-  url_data_->set_valid_until(base::Time::Now() +
+-                             GetCacheValidUntil(redirect_response));
+-
+-  // This test is vital for security!
+-  if (cors_mode_ == UrlData::CORS_UNSPECIFIED) {
+-    // We allow the redirect if the origin is the same.
+-    if (!SecurityOrigin::AreSameOrigin(original_url_, redirects_to_) ||
+-        !SecurityOrigin::AreSameOrigin(url_data_->url(), redirects_to_)) {
+-      // We also allow the redirect if we don't have any data in the
+-      // cache, as that means that no dangerous data mixing can occur.
+-      if (url_data_->multibuffer()->map().empty() && fifo_.empty())
+-        return true;
+-
++  const KURL& previous_url = redirect_state_.redirects_to.IsEmpty()
++                                 ? url_data_->request_url()
++                                 : redirect_state_.redirects_to;
++  if (!SecurityOrigin::AreSameOrigin(previous_url, new_url)) {
++    // This test is vital for security! In no-cors mode, if `url_data_` did not
++    // follow a cross-origin redirect on its initial response and already has a
++    // pinned `data_origin()` or buffered data, reject any subsequent
++    // cross-origin redirect immediately before following it or updating
++    // `valid_until_`.
++    const bool has_buffered_data =
++        !url_data_->multibuffer()->map().empty() || !fifo_.empty();
++    if (cors_mode_ == UrlData::CORS_UNSPECIFIED &&
++        !url_data_->has_cross_origin_redirect() &&
++        (url_data_->data_origin().has_value() || has_buffered_data)) {
+       active_loader_.reset();
+       url_data_->Fail();
+       return false;  // "this" may be deleted now.
+     }
++    redirect_state_.has_cross_origin_redirect = true;
+   }
++
++  redirect_state_.redirects_to = new_url;
++  redirect_state_.max_origin_relation = std::max(
++      redirect_state_.max_origin_relation,
++      net::GetOriginRelation(GURL(redirect_state_.redirects_to),
++                             url_data_->security_origin()->ToUrlOrigin()));
++  // Matching `ResourceLoader::WillFollowRedirect`, bypass Service Workers on
++  // retargeted follow-up range requests once any redirect hop was not
++  // generated by a Service Worker, while still allowing Service Workers to
++  // intercept synthetic offline redirects (`Response.redirect(...)`). Gated on
++  // `kDisallowMixedOpaqueMediaResponses` so Finch can roll back Service Worker
++  // range-request changes together if needed.
++  if (!redirect_response.WasFetchedViaServiceWorker() &&
++      base::FeatureList::IsEnabled(media::kDisallowMixedOpaqueMediaResponses)) {
++    redirect_state_.service_worker_mode = UrlData::ServiceWorkerMode::kSkip;
++  }
++
++  url_data_->set_valid_until(base::Time::Now() +
++                             GetCacheValidUntil(redirect_response));
+   return true;
+ }
+ 
+@@ -264,11 +302,45 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   scoped_refptr<UrlData> old_url_data(url_data_.get());
+   scoped_refptr<UrlData> destination_url_data(url_data_.get());
+ 
+-  if (!redirects_to_.IsEmpty()) {
+-    destination_url_data = url_data_->url_index()->GetByUrl(
+-        redirects_to_, cors_mode_, url_data_->cache_lookup_mode(),
+-        url_data_->security_origin(), url_data_->encoding_mode());
+-    redirects_to_ = KURL();
++  if (!redirect_state_.redirects_to.IsEmpty()) {
++    const KURL redirects_to = std::move(redirect_state_.redirects_to);
++    redirect_state_.redirects_to = KURL();
++    const net::OriginRelation final_relation = net::GetOriginRelation(
++        GURL(redirects_to), url_data_->security_origin()->ToUrlOrigin());
++    // Matching `services/network/sec_header_helpers.cc`,
++    // `net/cookies/cookie_util.cc`, and
++    // `CorsURLLoader::CalculateResponseTainting`, a redirect chain that bounces
++    // back closer to `security_origin()`
++    // (`final_relation < max_origin_relation`, e.g. `cross-site ->
++    // same-origin`, `cross-site -> same-site`, or `same-site -> same-origin`),
++    // or a no-cors cross-origin redirect to a target where `security_origin()`
++    // has direct read access (e.g. `GrantUniversalAccess()` or extension host
++    // permissions, where `CorsURLLoader` marks the redirected response
++    // `kOpaque` via `tainted_origin` while a direct follow-up request would be
++    // `kBasic`), would lose its chain relation or tainting on direct follow-up
++    // range requests. Keep such loads unindexed and replay
++    // `old_url_data->request_url()` on follow-up range requests, while
++    // retargeting all normal forward redirects onto `UrlIndex`.
++    const bool must_use_original_url =
++        final_relation < redirect_state_.max_origin_relation ||
++        old_url_data->has_original_request_url() ||
++        (cors_mode_ == UrlData::CORS_UNSPECIFIED &&
++         redirect_state_.has_cross_origin_redirect &&
++         url_data_->security_origin()->CanReadContent(redirects_to));
++    if (must_use_original_url) {
++      if (!old_url_data->has_original_request_url() ||
++          redirects_to != old_url_data->url()) {
++        destination_url_data = url_data_->url_index()->NewUnindexedUrlData(
++            redirects_to, cors_mode_, url_data_->cache_lookup_mode(),
++            url_data_->security_origin(), url_data_->encoding_mode(),
++            old_url_data->service_worker_mode(), old_url_data->request_url());
++      }
++    } else {
++      destination_url_data = url_data_->url_index()->GetByUrl(
++          redirects_to, cors_mode_, url_data_->cache_lookup_mode(),
++          url_data_->security_origin(), url_data_->encoding_mode(),
++          redirect_state_.service_worker_mode);
++    }
+   }
+ 
+   // Get the response URL since it can differ from the request URL when a
+@@ -283,20 +355,32 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   }
+ 
+   // This test is vital for security! Ensure that both the original UrlData and
+-  // any redirect destination UrlData are compatible with the response's origin
+-  // and opacity before mutating metadata on `destination_url_data`, inserting
+-  // into `UrlIndex`, or merging data across a redirect. We get the response
+-  // type here because aborting the loader may change it.
++  // any redirect destination UrlData are compatible with the response's origin,
++  // opacity, and redirect state before mutating metadata on
++  // `destination_url_data`, inserting into `UrlIndex`, or merging data across
++  // a redirect. Mid-stream cross-origin redirects on `old_url_data` are
++  // rejected earlier in `WillFollowRedirect()`. We get the response type here
++  // because aborting the loader may change it.
++  const bool destination_has_cross_origin_redirect =
++      destination_url_data->has_original_request_url()
++          ? redirect_state_.has_cross_origin_redirect
++          : false;
+   const bool is_cors_cross_origin =
+-      network::cors::IsCorsCrossOriginResponseType(response.GetType());
+-  if (!old_url_data->CanAcceptDataFrom(response_url, is_cors_cross_origin) ||
+-      !destination_url_data->CanAcceptDataFrom(response_url,
+-                                               is_cors_cross_origin)) {
++      network::cors::IsCorsCrossOriginResponseType(response.GetType()) ||
++      (cors_mode_ == UrlData::CORS_UNSPECIFIED &&
++       destination_has_cross_origin_redirect);
++  if (!old_url_data->CanAcceptDataFrom(
++          response_url, is_cors_cross_origin,
++          redirect_state_.has_cross_origin_redirect) ||
++      !destination_url_data->CanAcceptDataFrom(
++          response_url, is_cors_cross_origin,
++          destination_has_cross_origin_redirect)) {
+     active_loader_.reset();
+     url_data_->Fail();
+     return;  // "this" may be deleted now.
+   }
+-  destination_url_data->SetDataOrigin(response_url, is_cors_cross_origin);
++  destination_url_data->SetDataOrigin(response_url, is_cors_cross_origin,
++                                      destination_has_cross_origin_redirect);
+ 
+   base::Time last_modified;
+   if (base::Time::FromString(
+@@ -381,10 +465,13 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   }
+ 
+   if (!do_fail) {
++    destination_url_data->set_passed_timing_allow_origin_check(
++        response.TimingAllowPassed());
+     destination_url_data =
+         url_data_->url_index()->TryInsert(destination_url_data);
+-    CHECK(destination_url_data->CanAcceptDataFrom(response_url,
+-                                                  is_cors_cross_origin));
++    CHECK(destination_url_data->CanAcceptDataFrom(
++        response_url, is_cors_cross_origin,
++        destination_has_cross_origin_redirect));
+   }
+ 
+   // Only used for metrics.
+@@ -401,9 +488,6 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+     destination_url_data->set_mime_type(response.MimeType().Utf8());
+   }
+ 
+-  destination_url_data->set_passed_timing_allow_origin_check(
+-      response.TimingAllowPassed());
+-
+   if (destination_url_data != url_data_.get()) {
+     // At this point, we've encountered a redirect, or found a better url data
+     // instance for the data that we're about to download.
+@@ -424,8 +508,9 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+     if (!weak_this) {
+       return;  // "this" may be deleted now.
+     }
+-    CHECK(destination_url_data->CanAcceptDataFrom(response_url,
+-                                                  is_cors_cross_origin));
++    CHECK(destination_url_data->CanAcceptDataFrom(
++        response_url, is_cors_cross_origin,
++        destination_has_cross_origin_redirect));
+   }
+ 
+   if (do_fail) {
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h
+index b2e69fbb3247787f7f780740ce734bfde7bf80b1..e72ee577d992b5740a937b1eb159855984ed3266 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.h
+@@ -13,6 +13,7 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
++#include "net/base/url_util.h"
+ #include "third_party/blink/public/platform/web_url_request.h"
+ #include "third_party/blink/public/web/web_associated_url_loader_client.h"
+ #include "third_party/blink/public/web/web_frame.h"
+@@ -36,6 +37,29 @@ class PLATFORM_EXPORT ResourceMultiBufferDataProvider
+   // NUmber of times we'll retry if the connection fails.
+   enum { kMaxRetries = 30 };
+ 
++  // Per-request redirect tracking state, reset at the start of each network
++  // request in `Start()`.
++  struct RedirectState {
++    // Post-redirect URL if the current request followed at least one HTTP
++    // redirect; empty otherwise.
++    KURL redirects_to;
++
++    // Worst-case relation (`kSameOrigin < kSameSite < kCrossSite`) of any URL
++    // in the current request's redirect chain relative to
++    // `url_data_->security_origin()`.
++    net::OriginRelation max_origin_relation = net::OriginRelation::kSameOrigin;
++
++    // True if any redirect hop in the current request crossed origins.
++    bool has_cross_origin_redirect = false;
++
++    // Service worker bypass mode for retargeted follow-up range requests.
++    // Matching `blink::ResourceLoader::WillFollowRedirect`, any redirect hop
++    // not synthesized by a Service Worker latches `kSkip` when
++    // `media::kDisallowMixedOpaqueMediaResponses` is enabled.
++    UrlData::ServiceWorkerMode service_worker_mode =
++        UrlData::ServiceWorkerMode::kAllow;
++  };
++
+   ResourceMultiBufferDataProvider(
+       UrlData* url_data,
+       MultiBufferBlockId pos,
+@@ -108,16 +132,12 @@ class PLATFORM_EXPORT ResourceMultiBufferDataProvider
+   // const to make it obvious that redirects cannot change it.
+   const UrlData::CorsMode cors_mode_;
+ 
+-  // The origin for the initial request.
+-  // const to make it obvious that redirects cannot change it.
+-  const KURL original_url_;
+-
+   // Keeps track of an active WebAssociatedURLLoader.
+   // Only valid while loading resource.
+   std::unique_ptr<WebAssociatedURLLoader> active_loader_;
+ 
+-  // When we encounter a redirect, this is the source of the redirect.
+-  KURL redirects_to_;
++  // Tracks redirects followed by the current request. Reset on `Start()`.
++  RedirectState redirect_state_;
+ 
+   // If the server tries to gives us more bytes than we want, this how
+   // many bytes we need to discard before we get to the right place.
+diff --git a/third_party/blink/renderer/platform/media/url_index.cc b/third_party/blink/renderer/platform/media/url_index.cc
+index 9c6ee146d9be17abc9c8a4846e0172f39fbb27ab..acee9df1e39cc67882f9f86ae5d586ee281f4912 100644
+--- a/third_party/blink/renderer/platform/media/url_index.cc
++++ b/third_party/blink/renderer/platform/media/url_index.cc
+@@ -51,16 +51,26 @@ void ResourceMultiBuffer::OnEmpty() {
+   url_data_->OnEmpty();
+ }
+ 
+-// static
+-UrlData::KeyType UrlData::MakeKey(
+-    const KURL& url,
+-    scoped_refptr<const SecurityOrigin> security_origin,
+-    CorsMode cors_mode,
+-    media::DataSource::EncodingMode encoding_mode) {
+-  return std::make_pair(
+-      url, std::make_pair(std::move(security_origin),
+-                          std::make_pair(cors_mode, encoding_mode)));
+-}
++UrlData::Key::Key() = default;
++
++UrlData::Key::Key(const KURL& url,
++                  scoped_refptr<const SecurityOrigin> security_origin,
++                  CorsMode cors_mode,
++                  media::DataSource::EncodingMode encoding_mode,
++                  ServiceWorkerMode service_worker_mode)
++    : url(url),
++      security_origin(std::move(security_origin)),
++      cors_mode(cors_mode),
++      encoding_mode(encoding_mode),
++      service_worker_mode(service_worker_mode) {
++  CHECK(this->security_origin);
++}
++
++UrlData::Key::Key(const Key&) = default;
++UrlData::Key::Key(Key&&) = default;
++UrlData::Key& UrlData::Key::operator=(const Key&) = default;
++UrlData::Key& UrlData::Key::operator=(Key&&) = default;
++UrlData::Key::~Key() = default;
+ 
+ UrlData::UrlData(base::PassKey<UrlIndex>,
+                  const KURL& url,
+@@ -68,6 +78,8 @@ UrlData::UrlData(base::PassKey<UrlIndex>,
+                  CacheMode cache_lookup_mode,
+                  scoped_refptr<const SecurityOrigin> security_origin,
+                  media::DataSource::EncodingMode encoding_mode,
++                 ServiceWorkerMode service_worker_mode,
++                 const KURL& original_request_url,
+                  base::WeakPtr<UrlIndex> url_index,
+                  scoped_refptr<base::SingleThreadTaskRunner> task_runner)
+     : UrlData(url,
+@@ -75,6 +87,8 @@ UrlData::UrlData(base::PassKey<UrlIndex>,
+               cache_lookup_mode,
+               std::move(security_origin),
+               encoding_mode,
++              service_worker_mode,
++              original_request_url,
+               url_index,
+               std::move(task_runner)) {}
+ 
+@@ -83,9 +97,12 @@ UrlData::UrlData(const KURL& url,
+                  CacheMode cache_lookup_mode,
+                  scoped_refptr<const SecurityOrigin> security_origin,
+                  media::DataSource::EncodingMode encoding_mode,
++                 ServiceWorkerMode service_worker_mode,
++                 const KURL& original_request_url,
+                  base::WeakPtr<UrlIndex> url_index,
+                  scoped_refptr<base::SingleThreadTaskRunner> task_runner)
+     : url_(url),
++      original_request_url_(original_request_url),
+       security_origin_(std::move(security_origin)),
+       cors_mode_(cors_mode),
+       has_access_control_(false),
+@@ -95,15 +112,17 @@ UrlData::UrlData(const KURL& url,
+       cacheable_(false),
+       cache_lookup_mode_(cache_lookup_mode),
+       encoding_mode_(encoding_mode),
++      service_worker_mode_(service_worker_mode),
+       multibuffer_(this, url_index_->block_shift(), std::move(task_runner)) {
+   CHECK(security_origin_);
+ }
+ 
+ UrlData::~UrlData() = default;
+ 
+-UrlData::KeyType UrlData::key() const {
++UrlData::Key UrlData::key() const {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+-  return MakeKey(url(), security_origin(), cors_mode(), encoding_mode());
++  return Key(url(), security_origin(), cors_mode(), encoding_mode(),
++             service_worker_mode());
+ }
+ 
+ void UrlData::set_valid_until(base::Time valid_until) {
+@@ -113,15 +132,27 @@ void UrlData::set_valid_until(base::Time valid_until) {
+ 
+ bool UrlData::MergeFrom(const scoped_refptr<UrlData>& other) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  // Unindexed UrlData instances replay `original_request_url_` on follow-up
++  // range requests to preserve redirect-chain provenance and response tainting
++  // (e.g., cross-origin bounce-backs or no-cors cross-origin redirects under
++  // universal/extension access). Merging them with an indexed entry (which
++  // requests `url()` directly) or another unindexed load would lose or mix
++  // that redirect chain.
++  if (has_original_request_url() || other->has_original_request_url()) {
++    return false;
++  }
++
+   // We're merging from another UrlData that refers to the *same*
+   // resource, so when we merge the metadata, we can use the most
+   // optimistic values.
+   CHECK(security_origin_->IsSameOriginWith(other->security_origin_.get()));
+   const KURL other_origin = other->data_origin_.value_or(KURL());
+-  if (!CanAcceptDataFrom(other_origin, other->is_cors_cross_origin_)) {
++  if (!CanAcceptDataFrom(other_origin, other->is_cors_cross_origin_,
++                         other->has_cross_origin_redirect_)) {
+     return false;
+   }
+-  SetDataOrigin(other_origin, other->is_cors_cross_origin_);
++  SetDataOrigin(other_origin, other->is_cors_cross_origin_,
++                other->has_cross_origin_redirect_);
+ 
+   valid_until_ = std::max(valid_until_, other->valid_until_);
+   // set_length() will not override the length if already known.
+@@ -134,6 +165,10 @@ bool UrlData::MergeFrom(const scoped_refptr<UrlData>& other) {
+   }
+   bytes_read_from_cache_ += other->bytes_read_from_cache_;
+   has_access_control_ |= other->has_access_control_;
++  if (other->passed_timing_allow_origin_check_.has_value()) {
++    set_passed_timing_allow_origin_check(
++        *other->passed_timing_allow_origin_check_);
++  }
+   multibuffer()->MergeFrom(other->multibuffer());
+   return true;
+ }
+@@ -166,7 +201,14 @@ void UrlData::set_mime_type(std::string mime_type) {
+ 
+ void UrlData::set_passed_timing_allow_origin_check(
+     bool passed_timing_allow_origin_check) {
+-  passed_timing_allow_origin_check_ = passed_timing_allow_origin_check;
++  // Latch Timing-Allow-Origin failure across redirect hops and subsequent
++  // range requests: once any response fails the TAO check (e.g. an initial
++  // redirect hop that lacked TAO before retargeting onto a CDN URL that sends
++  // `Timing-Allow-Origin: *`), subsequent range responses must not upgrade the
++  // resource back to TAO-passing.
++  passed_timing_allow_origin_check_ =
++      passed_timing_allow_origin_check_.value_or(true) &&
++      passed_timing_allow_origin_check;
+ }
+ 
+ void UrlData::RedirectTo(const scoped_refptr<UrlData>& url_data) {
+@@ -174,6 +216,13 @@ void UrlData::RedirectTo(const scoped_refptr<UrlData>& url_data) {
+   // Copy any cached data over to the new location.
+   url_data->multibuffer()->MergeFrom(multibuffer());
+   url_data->set_is_cors_cross_origin(is_cors_cross_origin());
++  if (has_cross_origin_redirect()) {
++    url_data->has_cross_origin_redirect_ = true;
++  }
++  if (passed_timing_allow_origin_check_.has_value()) {
++    url_data->set_passed_timing_allow_origin_check(
++        *passed_timing_allow_origin_check_);
++  }
+ 
+   Vector<RedirectCB> redirect_callbacks;
+   redirect_callbacks.swap(redirect_callbacks_);
+@@ -209,7 +258,18 @@ void UrlData::Use() {
+ }
+ 
+ bool UrlData::CanAcceptDataFrom(const KURL& origin,
+-                                bool is_cors_cross_origin) const {
++                                bool is_cors_cross_origin,
++                                bool has_cross_origin_redirect) const {
++  if (cors_mode_ == UrlData::CORS_UNSPECIFIED) {
++    if (has_cross_origin_redirect_ && !has_cross_origin_redirect) {
++      return false;
++    }
++    if (data_origin_.has_value() && !has_cross_origin_redirect_ &&
++        has_cross_origin_redirect) {
++      return false;
++    }
++  }
++
+   if (!data_origin_) {
+     return true;
+   }
+@@ -235,14 +295,23 @@ bool UrlData::CanAcceptDataFrom(const KURL& origin,
+   return true;
+ }
+ 
+-void UrlData::SetDataOrigin(const KURL& origin, bool is_cors_cross_origin) {
++void UrlData::SetDataOrigin(const KURL& origin,
++                            bool is_cors_cross_origin,
++                            bool has_cross_origin_redirect) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+-  CHECK(CanAcceptDataFrom(origin, is_cors_cross_origin));
++  CHECK(CanAcceptDataFrom(origin, is_cors_cross_origin,
++                          has_cross_origin_redirect));
+   if (!data_origin_) {
+     data_origin_ = origin;
+   }
+   // The actual cors checks are done in the net layer.
++  // `SetDataOrigin()` is called on each range response as well as during
++  // `MergeFrom()`. Latch both flags monotonically so that once any range
++  // response is opaque or crossed origins (e.g. in CORS mode where
++  // `CanAcceptDataFrom()` permits mixing direct and redirected range
++  // responses), a subsequent response cannot clear the latched state.
+   set_is_cors_cross_origin(is_cors_cross_origin);
++  has_cross_origin_redirect_ |= has_cross_origin_redirect;
+ }
+ 
+ void UrlData::OnEmpty() {
+@@ -315,6 +384,9 @@ UrlIndex::~UrlIndex() = default;
+ 
+ void UrlIndex::RemoveUrlData(const scoped_refptr<UrlData>& url_data) {
+   DCHECK(url_data->multibuffer()->map().empty());
++  if (url_data->has_original_request_url()) {
++    return;
++  }
+ 
+   auto i = indexed_data_.find(url_data->key());
+   if (i != indexed_data_.end() && i->value == url_data) {
+@@ -327,17 +399,32 @@ scoped_refptr<UrlData> UrlIndex::GetByUrl(
+     UrlData::CorsMode cors_mode,
+     UrlData::CacheMode cache_mode,
+     scoped_refptr<const SecurityOrigin> security_origin,
+-    media::DataSource::EncodingMode encoding_mode) {
++    media::DataSource::EncodingMode encoding_mode,
++    UrlData::ServiceWorkerMode service_worker_mode) {
+   if (cache_mode == UrlData::kNormal) {
+-    auto i = indexed_data_.find(
+-        UrlData::MakeKey(url, security_origin, cors_mode, encoding_mode));
++    auto i = indexed_data_.find(UrlData::Key(
++        url, security_origin, cors_mode, encoding_mode, service_worker_mode));
+     if (i != indexed_data_.end() && i->value->Valid()) {
+       return i->value;
+     }
+   }
+ 
+   return NewUrlData(url, cors_mode, cache_mode, std::move(security_origin),
+-                    encoding_mode);
++                    encoding_mode, service_worker_mode,
++                    /*original_request_url=*/KURL());
++}
++
++scoped_refptr<UrlData> UrlIndex::NewUnindexedUrlData(
++    const KURL& url,
++    UrlData::CorsMode cors_mode,
++    UrlData::CacheMode cache_mode,
++    scoped_refptr<const SecurityOrigin> security_origin,
++    media::DataSource::EncodingMode encoding_mode,
++    UrlData::ServiceWorkerMode service_worker_mode,
++    const KURL& original_request_url) {
++  CHECK(!original_request_url.IsEmpty());
++  return NewUrlData(url, cors_mode, cache_mode, std::move(security_origin),
++                    encoding_mode, service_worker_mode, original_request_url);
+ }
+ 
+ scoped_refptr<UrlData> UrlIndex::NewUrlData(
+@@ -345,11 +432,13 @@ scoped_refptr<UrlData> UrlIndex::NewUrlData(
+     UrlData::CorsMode cors_mode,
+     UrlData::CacheMode cache_lookup_mode,
+     scoped_refptr<const SecurityOrigin> security_origin,
+-    media::DataSource::EncodingMode encoding_mode) {
++    media::DataSource::EncodingMode encoding_mode,
++    UrlData::ServiceWorkerMode service_worker_mode,
++    const KURL& original_request_url) {
+   return base::MakeRefCounted<UrlData>(
+       base::PassKey<UrlIndex>(), url, cors_mode, cache_lookup_mode,
+-      std::move(security_origin), encoding_mode, weak_factory_.GetWeakPtr(),
+-      task_runner_);
++      std::move(security_origin), encoding_mode, service_worker_mode,
++      original_request_url, weak_factory_.GetWeakPtr(), task_runner_);
+ }
+ 
+ namespace {
+@@ -373,6 +462,10 @@ bool IsNewDataForSameResource(const scoped_refptr<UrlData>& new_entry,
+ 
+ scoped_refptr<UrlData> UrlIndex::TryInsert(
+     const scoped_refptr<UrlData>& url_data) {
++  if (url_data->has_original_request_url()) {
++    return url_data;
++  }
++
+   auto iter = indexed_data_.find(url_data->key());
+   if (iter == indexed_data_.end()) {
+     // If valid and not already indexed, index it.
+diff --git a/third_party/blink/renderer/platform/media/url_index.h b/third_party/blink/renderer/platform/media/url_index.h
+index b9253632d8c721275bb66591e82cc3bd5c6e739e..a081f01680ecd4cfa7e86b7417db84ac456a8395 100644
+--- a/third_party/blink/renderer/platform/media/url_index.h
++++ b/third_party/blink/renderer/platform/media/url_index.h
+@@ -10,7 +10,6 @@
+ 
+ #include <optional>
+ #include <string>
+-#include <utility>
+ 
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/scoped_refptr.h"
+@@ -24,6 +23,7 @@
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl_hash.h"
+ #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
++#include "third_party/blink/renderer/platform/wtf/hash_functions.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_map.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_traits.h"
+ #include "third_party/blink/renderer/platform/wtf/ref_counted.h"
+@@ -39,7 +39,6 @@ const int64_t kPositionNotSpecified = -1;
+ 
+ class ResourceFetchContext;
+ class UrlData;
+-class UrlIndexTest;
+ 
+ // A multibuffer for loading media resources which knows
+ // how to create MultiBufferDataProviders to load data
+@@ -74,15 +73,31 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // Keep in sync with WebMediaPlayer::CorsMode.
+   enum CorsMode { CORS_UNSPECIFIED, CORS_ANONYMOUS, CORS_USE_CREDENTIALS };
+   enum CacheMode { kNormal, kCacheDisabled };
+-  using KeyType = std::pair<
+-      KURL,
+-      std::pair<scoped_refptr<const SecurityOrigin>,
+-                std::pair<CorsMode, media::DataSource::EncodingMode>>>;
+-
+-  static KeyType MakeKey(const KURL& url,
+-                         scoped_refptr<const SecurityOrigin> security_origin,
+-                         CorsMode cors_mode,
+-                         media::DataSource::EncodingMode encoding_mode);
++  enum class ServiceWorkerMode {
++    kAllow,
++    kSkip,
++  };
++
++  struct Key {
++    Key();
++    Key(const KURL& url,
++        scoped_refptr<const SecurityOrigin> security_origin,
++        CorsMode cors_mode,
++        media::DataSource::EncodingMode encoding_mode,
++        ServiceWorkerMode service_worker_mode = ServiceWorkerMode::kAllow);
++    Key(const Key&);
++    Key(Key&&);
++    Key& operator=(const Key&);
++    Key& operator=(Key&&);
++    ~Key();
++
++    KURL url;
++    scoped_refptr<const SecurityOrigin> security_origin;
++    CorsMode cors_mode = CORS_UNSPECIFIED;
++    media::DataSource::EncodingMode encoding_mode =
++        media::DataSource::EncodingMode::kIdentity;
++    ServiceWorkerMode service_worker_mode = ServiceWorkerMode::kAllow;
++  };
+ 
+   // `url_index` is a WeakPtr since while UrlData objects are created by the
+   // UrlIndex they are not owned by the UrlIndex until after the network load
+@@ -94,6 +109,8 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+           CacheMode cache_lookup_mode,
+           scoped_refptr<const SecurityOrigin> security_origin,
+           media::DataSource::EncodingMode encoding_mode,
++          ServiceWorkerMode service_worker_mode,
++          const KURL& original_request_url,
+           base::WeakPtr<UrlIndex> url_index,
+           scoped_refptr<base::SingleThreadTaskRunner> task_runner);
+   UrlData(const UrlData&) = delete;
+@@ -102,17 +119,31 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // Accessors
+   const KURL& url() const { return url_; }
+ 
++  // The URL to issue network range requests against. Equal to `url()` except
++  // for unindexed bounce-back redirects, where follow-up range requests replay
++  // from `original_request_url_` to preserve `net::URLRequest::url_chain()`.
++  const KURL& request_url() const {
++    return original_request_url_.IsEmpty() ? url_ : original_request_url_;
++  }
++  bool has_original_request_url() const {
++    return !original_request_url_.IsEmpty();
++  }
++
++  ServiceWorkerMode service_worker_mode() const { return service_worker_mode_; }
++
+   const scoped_refptr<const SecurityOrigin>& security_origin() const {
+     return security_origin_;
+   }
+ 
++  const std::optional<KURL>& data_origin() const { return data_origin_; }
++
+   // Cross-origin access mode
+   CorsMode cors_mode() const { return cors_mode_; }
+ 
+   bool has_access_control() const { return has_access_control_; }
+ 
+   bool passed_timing_allow_origin_check() const {
+-    return passed_timing_allow_origin_check_;
++    return passed_timing_allow_origin_check_.value_or(false);
+   }
+ 
+   const std::string& mime_type() const { return mime_type_; }
+@@ -144,7 +175,7 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   base::Time valid_until() const { return valid_until_; }
+ 
+   // The key used by UrlIndex to find this UrlData.
+-  KeyType key() const;
++  Key key() const;
+ 
+   // Length of data associated with url or |kPositionNotSpecified|
+   int64_t length() const { return length_; }
+@@ -161,19 +192,29 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // This must be called after the response arrives.
+   bool is_cors_cross_origin() const { return is_cors_cross_origin_; }
+ 
++  // True if loading this UrlData traversed a cross-origin redirect that must be
++  // replayed on follow-up range requests (e.g. a cross-origin bounce-back).
++  bool has_cross_origin_redirect() const { return has_cross_origin_redirect_; }
++
+   // Notifies the url index that this is currently used.
+   // The url <-> URLData mapping will be eventually be invalidated if
+   // this is not called regularly.
+   void Use();
+ 
+   // Returns true if this UrlData has not yet had a data origin set, or if
+-  // |origin| and |is_cors_cross_origin| are compatible with the existing data
+-  // origin and CORS cross-origin state.
+-  bool CanAcceptDataFrom(const KURL& origin, bool is_cors_cross_origin) const;
+-
+-  // Sets the data origin and CORS cross-origin state. Must only be called when
+-  // CanAcceptDataFrom(origin, is_cors_cross_origin) is true.
+-  void SetDataOrigin(const KURL& origin, bool is_cors_cross_origin);
++  // |origin|, |is_cors_cross_origin|, and |has_cross_origin_redirect| are
++  // compatible with the existing data origin, CORS cross-origin state, and
++  // redirect state.
++  bool CanAcceptDataFrom(const KURL& origin,
++                         bool is_cors_cross_origin,
++                         bool has_cross_origin_redirect = false) const;
++
++  // Sets the data origin, CORS cross-origin state, and cross-origin redirect
++  // state. Must only be called when CanAcceptDataFrom(origin,
++  // is_cors_cross_origin, has_cross_origin_redirect) is true.
++  void SetDataOrigin(const KURL& origin,
++                     bool is_cors_cross_origin,
++                     bool has_cross_origin_redirect = false);
+ 
+   // Setters.
+   void set_length(int64_t length);
+@@ -223,6 +264,8 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+           CacheMode cache_lookup_mode,
+           scoped_refptr<const SecurityOrigin> security_origin,
+           media::DataSource::EncodingMode encoding_mode,
++          ServiceWorkerMode service_worker_mode,
++          const KURL& original_request_url,
+           base::WeakPtr<UrlIndex> url_index,
+           scoped_refptr<base::SingleThreadTaskRunner> task_runner);
+   virtual ~UrlData();
+@@ -240,6 +283,11 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   // the same url.
+   const KURL url_;
+ 
++  // Non-empty only for unindexed bounce-back redirects, where `url_` holds the
++  // post-redirect URL while follow-up range requests replay from
++  // `original_request_url_`.
++  const KURL original_request_url_;
++
+   // Requesting document's security origin.
+   const scoped_refptr<const SecurityOrigin> security_origin_;
+ 
+@@ -251,8 +299,9 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   const CorsMode cors_mode_;
+   bool has_access_control_;
+ 
+-  // Timing-allow-origin
+-  bool passed_timing_allow_origin_check_;
++  // Timing-allow-origin (unset until the first response is received; once any
++  // response fails TAO, latched to false).
++  std::optional<bool> passed_timing_allow_origin_check_;
+ 
+   // Mime type category (stashed for UMA / metrics).
+   std::string mime_type_;
+@@ -279,9 +328,20 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+ 
+   media::DataSource::EncodingMode encoding_mode_;
+ 
++  // Controls whether range requests for this UrlData may be intercepted by a
++  // Service Worker (`kAllow`) or must bypass Service Workers (`kSkip`, latched
++  // once a redirect hop not synthesized by a Service Worker is followed).
++  // Included in `UrlData::Key` so post-redirect loads do not share `UrlIndex`
++  // entries with normal Service-Worker-eligible loads.
++  ServiceWorkerMode service_worker_mode_;
++
+   // https://html.spec.whatwg.org/#cors-cross-origin
+   bool is_cors_cross_origin_ = false;
+ 
++  // True if loading this UrlData traversed a cross-origin redirect that must be
++  // replayed on follow-up range requests.
++  bool has_cross_origin_redirect_ = false;
++
+   // Last time some media time used this resource.
+   // Note that we use base::Time rather than base::TimeTicks because
+   // TimeTicks will stop advancing when a machine goes to sleep.
+@@ -305,6 +365,29 @@ class PLATFORM_EXPORT UrlData : public RefCounted<UrlData> {
+   THREAD_CHECKER(thread_checker_);
+ };
+ 
++template <>
++struct HashTraits<UrlData::Key>
++    : OneFieldHashTraits<UrlData::Key, &UrlData::Key::security_origin> {
++  static constexpr bool kEmptyValueIsZero = false;
++  static UrlData::Key EmptyValue() { return UrlData::Key(); }
++
++  static uint32_t GetHash(const UrlData::Key& key) {
++    uint32_t hash = key.url.IsNull() ? 0 : blink::GetHash(key.url);
++    hash = HashInts(hash, blink::GetHash(key.security_origin));
++    hash = HashInts(hash, blink::GetHash(key.cors_mode));
++    hash = HashInts(hash, blink::GetHash(key.encoding_mode));
++    return HashInts(hash, blink::GetHash(key.service_worker_mode));
++  }
++
++  static bool Equal(const UrlData::Key& a, const UrlData::Key& b) {
++    return a.url == b.url &&
++           HashTraits<scoped_refptr<const SecurityOrigin>>::Equal(
++               a.security_origin, b.security_origin) &&
++           a.cors_mode == b.cors_mode && a.encoding_mode == b.encoding_mode &&
++           a.service_worker_mode == b.service_worker_mode;
++  }
++};
++
+ // The UrlIndex lets you look up UrlData instances by url.
+ class PLATFORM_EXPORT UrlIndex {
+  public:
+@@ -328,7 +411,27 @@ class PLATFORM_EXPORT UrlIndex {
+       UrlData::CacheMode cache_mode,
+       scoped_refptr<const SecurityOrigin> security_origin,
+       media::DataSource::EncodingMode encoding_mode =
+-          media::DataSource::EncodingMode::kIdentity);
++          media::DataSource::EncodingMode::kIdentity,
++      UrlData::ServiceWorkerMode service_worker_mode =
++          UrlData::ServiceWorkerMode::kAllow);
++
++  // Creates an unindexed `UrlData` -- one that is never stored in or returned
++  // by `UrlIndex` (`TryInsert()`, `MergeFrom()`, and `RemoveUrlData()` ignore
++  // it), keeping its cached blocks and tainting private to its caller. Its
++  // post-redirect URL is `url` (`url()`), while follow-up range requests replay
++  // from `original_request_url` (`request_url()`). Used when direct follow-up
++  // range requests to `url` would lose redirect-chain state (such as
++  // bounce-back redirects or cross-origin redirects under universal/extension
++  // access), preserving `net::URLRequest::url_chain()` without colliding with
++  // or tainting direct `UrlIndex` entries for `url`.
++  scoped_refptr<UrlData> NewUnindexedUrlData(
++      const KURL& url,
++      UrlData::CorsMode cors_mode,
++      UrlData::CacheMode cache_mode,
++      scoped_refptr<const SecurityOrigin> security_origin,
++      media::DataSource::EncodingMode encoding_mode,
++      UrlData::ServiceWorkerMode service_worker_mode,
++      const KURL& original_request_url);
+ 
+   // Add the given UrlData to the index if possible. If a better UrlData
+   // is already present in the index, return it instead. (If not, we just
+@@ -357,7 +460,6 @@ class PLATFORM_EXPORT UrlIndex {
+  protected:
+   friend class UrlData;
+   friend class ResourceMultiBuffer;
+-  friend class UrlIndexTest;
+   void RemoveUrlData(const scoped_refptr<UrlData>& url_data);
+ 
+   // Virtual so we can override it in tests.
+@@ -366,10 +468,12 @@ class PLATFORM_EXPORT UrlIndex {
+       UrlData::CorsMode cors_mode,
+       UrlData::CacheMode cache_lookup_mode,
+       scoped_refptr<const SecurityOrigin> security_origin,
+-      media::DataSource::EncodingMode encoding_mode);
++      media::DataSource::EncodingMode encoding_mode,
++      UrlData::ServiceWorkerMode service_worker_mode,
++      const KURL& original_request_url);
+ 
+   raw_ptr<ResourceFetchContext> fetch_context_;
+-  using UrlDataMap = HashMap<UrlData::KeyType, scoped_refptr<UrlData>>;
++  using UrlDataMap = HashMap<UrlData::Key, scoped_refptr<UrlData>>;
+   UrlDataMap indexed_data_;
+   scoped_refptr<MultiBuffer::GlobalLRU> lru_;
+ 

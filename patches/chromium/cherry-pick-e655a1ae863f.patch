@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Mon, 26 Oct 2026 14:25:06 -0700
+Subject: [gpu] Fail insertRecording on context loss
+
+Check IsContextLost() in GraphiteSharedContext::InsertRecordingImpl() so
+that insertRecording() returns false when the context is lost, even if
+Skia returns InsertStatus::kSuccess, and skips shader cache eviction and
+crashing on InsertStatus::kAsyncShaderCompilesFailed.
+
+Test: GraphiteSharedContextTest.*ContextLost
+Fixed: 577985051, 576954321, 577369844, 577369904, 577371168, 577403973, 577452826
+Change-Id: I28a8a12d36e34f8e5d1dca48a5d7f2fa3dd45ce2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8653825
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Tzarial <zork@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1727381}
+
+diff --git a/gpu/command_buffer/service/graphite_shared_context.cc b/gpu/command_buffer/service/graphite_shared_context.cc
+index 2306883224c49ab12e101581b878e8b394eda651..89ac0a592683f1f77026abbe36c396fb6f3dc4ed 100644
+--- a/gpu/command_buffer/service/graphite_shared_context.cc
++++ b/gpu/command_buffer/service/graphite_shared_context.cc
+@@ -361,14 +361,16 @@ bool GraphiteSharedContext::InsertRecordingImpl(
+   // TODO(433845560): Check the kAddCommandsFailed failures.
+   if (insert_status ==
+       skgpu::graphite::InsertStatus::kAsyncShaderCompilesFailed) {
+-    // For kAsyncShaderCompilesFailed, we should also clear the disk shader
+-    // cache in case the error was due to a corrupted cached shader blob.
+-    GpuProcessShmCount::ScopedIncrement use_shader_cache(
+-        use_shader_cache_shm_count_);
+-    static crash_reporter::CrashKeyString<4096> insert_error_key(
+-        "graphite-insert-error");
+-    insert_error_key.Set(insert_status.message());
+-    CHECK(simulating_insert_failure);
++    if (!IsContextLost()) {
++      // For kAsyncShaderCompilesFailed, we should also clear the disk shader
++      // cache in case the error was due to a corrupted cached shader blob.
++      GpuProcessShmCount::ScopedIncrement use_shader_cache(
++          use_shader_cache_shm_count_);
++      static crash_reporter::CrashKeyString<4096> insert_error_key(
++          "graphite-insert-error");
++      insert_error_key.Set(insert_status.message());
++      CHECK(simulating_insert_failure);
++    }
+   } else if (insert_status ==
+              skgpu::graphite::InsertStatus::kOutOfOrderRecording) {
+     if (delegate_) {
+@@ -381,7 +383,8 @@ bool GraphiteSharedContext::InsertRecordingImpl(
+   // All other failure modes are recoverable in the sense that future recordings
+   // will be rendered correctly, so merely return a boolean here so that callers
+   // can log the error.
+-  return insert_status == skgpu::graphite::InsertStatus::kSuccess;
++  return insert_status == skgpu::graphite::InsertStatus::kSuccess &&
++         !IsContextLost();
+ }
+ 
+ void GraphiteSharedContext::submit(skgpu::graphite::SubmitInfo submit_info) {
+diff --git a/gpu/command_buffer/service/graphite_shared_context_unittest.cc b/gpu/command_buffer/service/graphite_shared_context_unittest.cc
+index 0e843f9137ec0446280bd97f87842fd492683462..20443dc84e9ddf47e84cf306ed81ce8db8f04b3d 100644
+--- a/gpu/command_buffer/service/graphite_shared_context_unittest.cc
++++ b/gpu/command_buffer/service/graphite_shared_context_unittest.cc
+@@ -197,12 +197,57 @@ TEST_P(GraphiteSharedContextTest, AsyncShaderCompilesFailed) {
+   info.fSimulatedStatus =
+       skgpu::graphite::InsertStatus::kAsyncShaderCompilesFailed;
+ 
++  EXPECT_CALL(delegate_, IsContextLost()).WillOnce(testing::Return(false));
+   EXPECT_CALL(use_shader_cache_shm_count_, Increment()).Times(1);
+   EXPECT_CALL(use_shader_cache_shm_count_, Decrement()).Times(1);
+ 
+   EXPECT_FALSE(graphite_shared_context_->insertRecording(info));
+ }
+ 
++TEST_P(GraphiteSharedContextTest, AsyncShaderCompilesFailedContextLost) {
++  auto recorder = graphite_shared_context_->makeRecorder();
++  EXPECT_TRUE(recorder);
++
++  auto ii = SkImageInfo::Make(64, 64, kN32_SkColorType, kPremul_SkAlphaType);
++  auto surface1 = SkSurfaces::RenderTarget(recorder.get(), ii);
++  surface1->getCanvas()->clear(SK_ColorRED);
++
++  auto surface2 = SkSurfaces::RenderTarget(recorder.get(), ii);
++  surface2->getCanvas()->drawImage(surface1->makeTemporaryImage(), 0, 0);
++
++  auto recording = recorder->snap();
++  EXPECT_TRUE(recording);
++
++  skgpu::graphite::InsertRecordingInfo info = {};
++  info.fRecording = recording.get();
++
++  EXPECT_CALL(delegate_, IsContextLost()).WillOnce(testing::Return(true));
++  EXPECT_CALL(use_shader_cache_shm_count_, Increment()).Times(0);
++  EXPECT_CALL(use_shader_cache_shm_count_, Decrement()).Times(0);
++
++  graphite_shared_context_->set_simulated_insert_status(
++      skgpu::graphite::InsertStatus::kAsyncShaderCompilesFailed);
++  EXPECT_FALSE(graphite_shared_context_->insertRecording(info));
++}
++
++TEST_P(GraphiteSharedContextTest, InsertRecordingContextLost) {
++  auto recorder = graphite_shared_context_->makeRecorder();
++  EXPECT_TRUE(recorder);
++
++  auto ii = SkImageInfo::Make(64, 64, kN32_SkColorType, kPremul_SkAlphaType);
++  auto surface = SkSurfaces::RenderTarget(recorder.get(), ii);
++  surface->getCanvas()->clear(SK_ColorRED);
++
++  auto recording = recorder->snap();
++  EXPECT_TRUE(recording);
++
++  skgpu::graphite::InsertRecordingInfo info = {};
++  info.fRecording = recording.get();
++
++  EXPECT_CALL(delegate_, IsContextLost()).WillOnce(testing::Return(true));
++  EXPECT_FALSE(graphite_shared_context_->insertRecording(info));
++}
++
+ TEST_P(GraphiteSharedContextTest, OutOfOrderRecording) {
+   auto recorder = graphite_shared_context_->makeRecorder();
+   EXPECT_TRUE(recorder);

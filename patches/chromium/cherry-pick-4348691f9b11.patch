@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joel Hockey <joelhockey@chromium.org>
+Date: Thu, 3 Sep 2026 21:18:45 -0700
+Subject: Clear drag-drop state on initialization failures
+
+Call SystemDragEnded() and reset DragSecurityInfo when drag fails to
+start.  Drag can fail under various race conditions where mouse
+button is no longer considered down when the drag starts, or if the
+starting drag point is outside the web contents.
+
+Previous crrev.com/c/7792498 to disallow reentrant drags can cause the
+browser to become stuck if we do not clean up correctly.
+
+Similar fix for android in crrev.com/c/7901319.
+
+Bug: 522564418
+Change-Id: Idb6c6cd497fab0645b10da3723a466a6f207e0a5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8356989
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Commit-Queue: Joel Hockey <joelhockey@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1692173}
+
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index e4b67bcb466c210a8123459960dd650a20c6caab..db036e762687f9b46bb55d06cabb6b52d0eceb05 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -803,6 +803,12 @@ void WebContentsViewAura::PrepareDropData(
+   }
+ }
+ 
++void WebContentsViewAura::ClearDragStateOnStartFailure(
++    RenderWidgetHostImpl* source_rwh) {
++  drag_security_info_.OnDragEnded();
++  web_contents_->SystemDragEnded(source_rwh);
++}
++
+ void WebContentsViewAura::EndDrag(
+     base::WeakPtr<RenderWidgetHostImpl> source_rwh_weak_ptr,
+     DragOperation op) {
+@@ -1206,7 +1212,7 @@ void WebContentsViewAura::StartDragging(
+     return;
+   }
+   if (!aura::client::GetDragDropClient(root_window)) {
+-    web_contents_->SystemDragEnded(source_rwh);
++    ClearDragStateOnStartFailure(source_rwh);
+     return;
+   }
+ 
+@@ -1224,7 +1230,7 @@ void WebContentsViewAura::StartDragging(
+   // Synchronous policy check.
+   // If drag is not allowed, it means the policy blocked the action.
+   if (!IsDragAllowedByDataControlPolicy(source_endpoint, drop_data)) {
+-    web_contents_->SystemDragEnded(source_rwh);
++    ClearDragStateOnStartFailure(source_rwh);
+     return;
+   }
+ 
+@@ -1272,7 +1278,7 @@ void WebContentsViewAura::StartDragging(
+          !env->is_touch_down()) ||
+         (event_info.source == ui::mojom::DragEventSource::kMouse &&
+          !env->IsMouseButtonDown())) {
+-      web_contents_->SystemDragEnded(source_rwh);
++      ClearDragStateOnStartFailure(source_rwh);
+       return;
+     }
+     if (event_info.source == ui::mojom::DragEventSource::kTouch) {
+@@ -1286,7 +1292,7 @@ void WebContentsViewAura::StartDragging(
+     // visible.
+     if (!content_native_view->GetBoundsInScreen().Contains(trusted_location) ||
+         !content_native_view->IsVisible()) {
+-      web_contents_->SystemDragEnded(source_rwh);
++      ClearDragStateOnStartFailure(source_rwh);
+       return;
+     }
+     base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
+diff --git a/content/browser/web_contents/web_contents_view_aura.h b/content/browser/web_contents/web_contents_view_aura.h
+index 5e296e04ce6dfba34a2499332ac4a49d6bdc15bf..bd885c858351f3794e21ae222e37510778b13ffa 100644
+--- a/content/browser/web_contents/web_contents_view_aura.h
++++ b/content/browser/web_contents/web_contents_view_aura.h
+@@ -209,6 +209,10 @@ class CONTENT_EXPORT WebContentsViewAura
+   virtual void EndDrag(base::WeakPtr<RenderWidgetHostImpl> source_rwh_weak_ptr,
+                        ui::mojom::DragOperation op);
+ 
++  // Clears drag-and-drop state when a drag attempt fails to start (e.g. due to
++  // drag failures from system/OS errors during initiation).
++  void ClearDragStateOnStartFailure(RenderWidgetHostImpl* source_rwh);
++
+   void InstallOverscrollControllerDelegate(RenderWidgetHostViewAura* view);
+ 
+   ui::TouchSelectionController* GetSelectionController() const;

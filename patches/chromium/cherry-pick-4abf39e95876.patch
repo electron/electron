@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Wed, 28 Oct 2026 18:14:59 -0700
+Subject: [Media] Disable kDisallowMixedOpaqueMediaResponses by default
+
+Disable the kDisallowMixedOpaqueMediaResponses kill switch introduced in
+crrev.com/c/8564157 by default. Suppress failing web tests in
+TestExpectations and disable the corresponding MultiBufferDataSourceTest
+unit tests while the feature is disabled.
+
+Bug: 572307225
+Change-Id: Iaba10e5e6a28d14b7cff8e48142f77ee49d4e052
+Fixed: 573441094
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8677461
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729808}
+
+Electron adaptation notes (44-x-y): media_switches.cc is ordered differently
+on this branch; the kDisallowMixedOpaqueMediaResponses default is flipped at
+this branch's location of the feature. Test changes apply as upstream.
+
+diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
+index 80d1ac63b6304cd7b5b8782bdb3ff2f143d9f6e3..e619297e1e999e59aaf6691aee5ac410bc105113 100644
+--- a/media/base/media_switches.cc
++++ b/media/base/media_switches.cc
+@@ -708,7 +708,7 @@ BASE_FEATURE(kDeferAudioFocusUntilAudible,
+ // ResourceMultiBufferDataProvider (crbug.com/572363265).
+ // TODO(crbug.com/572363265): Remove after M158 reaches stable.
+ BASE_FEATURE(kDisallowMixedOpaqueMediaResponses,
+-             base::FEATURE_ENABLED_BY_DEFAULT);
++             base::FEATURE_DISABLED_BY_DEFAULT);
+ 
+ // Allow document picture-in-picture to navigate.  This should be disabled
+ // except for testing.
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+index 19bbc10260a4f4f0a200c7ba94dcb413023d9193..9ac1d25160844718d0fb44d418725ccc7c0e2443 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+@@ -17,6 +17,7 @@
+ #include "base/run_loop.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/scoped_feature_list.h"
+ #include "base/test/task_environment.h"
+ #include "media/base/media_switches.h"
+ #include "media/base/media_util.h"
+@@ -1891,6 +1892,8 @@ TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaque) {
+ }
+ 
+ TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaqueOnLaterRange) {
++  base::test::ScopedFeatureList feature_list(
++      media::kDisallowMixedOpaqueMediaResponses);
+   Initialize(kHttpUrl, true);
+   WebURLResponse response1 =
+       response_generator_->GeneratePartial206(0, kDataSize - 1);
+@@ -1902,6 +1905,8 @@ TEST_F(MultiBufferDataSourceTest, ResponseTypeOpaqueOnLaterRange) {
+ }
+ 
+ TEST_F(MultiBufferDataSourceTest, ResponseTypeNonOpaqueAfterOpaqueRange) {
++  base::test::ScopedFeatureList feature_list(
++      media::kDisallowMixedOpaqueMediaResponses);
+   Initialize(kHttpUrl, true);
+   WebURLResponse response1 =
+       response_generator_->GeneratePartial206(0, kDataSize - 1);
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index 82603e8fb883f7b9910c513aa21e8072e664d2fe..c12d6adcfc7ae5f0a2120e2b1eb0aa0fd75b5c0d 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -584,6 +584,8 @@ TEST_F(ResourceMultiBufferDataProviderTest,
+ // `UrlData`.
+ TEST_F(ResourceMultiBufferDataProviderTest,
+        MixedOpaqueResponseDoesNotMutateUrlData) {
++  base::test::ScopedFeatureList feature_list(
++      media::kDisallowMixedOpaqueMediaResponses);
+   url_index_ = std::make_unique<UrlIndex>(
+       &fetch_context_, task_environment_.GetMainThreadTaskRunner());
+ 
+diff --git a/third_party/blink/renderer/platform/media/url_index_unittest.cc b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+index c54c6ff6f6ec7dfb29d5b7d7dfd2c2782de48999..6a9b543f940abebb2e1cfaaefe9868d1dd45dc95 100644
+--- a/third_party/blink/renderer/platform/media/url_index_unittest.cc
++++ b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+@@ -13,6 +13,7 @@
+ #include "base/run_loop.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/scoped_feature_list.h"
+ #include "base/test/task_environment.h"
+ #include "media/base/media_switches.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+@@ -22,7 +23,8 @@ namespace blink {
+ class UrlIndexTest : public testing::Test {
+  public:
+   UrlIndexTest()
+-      : url_index_(std::make_unique<UrlIndex>(
++      : feature_list_(media::kDisallowMixedOpaqueMediaResponses),
++        url_index_(std::make_unique<UrlIndex>(
+             nullptr,
+             task_environment_.GetMainThreadTaskRunner())) {}
+ 
+@@ -37,6 +39,7 @@ class UrlIndexTest : public testing::Test {
+ 
+  protected:
+   base::test::SingleThreadTaskEnvironment task_environment_;
++  base::test::ScopedFeatureList feature_list_;
+   scoped_refptr<const SecurityOrigin> security_origin_ =
+       SecurityOrigin::CreateUniqueOpaque();
+   std::unique_ptr<UrlIndex> url_index_;
+diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
+index a55ed78eab13a27120c75845ec2fd54602e158fd..1869e2a17ada9e4a12636a1bf90cc12e364c984f 100644
+--- a/third_party/blink/web_tests/TestExpectations
++++ b/third_party/blink/web_tests/TestExpectations
+@@ -8377,6 +8377,10 @@ crbug.com/40336192 virtual/disable-css-line-clamp/external/wpt/css/css-text/whit
+ crbug.com/40336192 virtual/disable-css-line-clamp/external/wpt/css/css-text/white-space/text-wrap-balance-line-clamp-007.html [ Failure ]
+ crbug.com/40336192 virtual/disable-css-line-clamp/fast/overflow/line-clamp-floats-dont-grow-container.html [ Failure ]
+ 
++# DisallowMixedOpaqueMediaResponses killswitch disabled.
++crbug.com/572363265 external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https.html [ Failure ]
++crbug.com/572363265 http/tests/serviceworker/service-worker-mixed-response.html [ Failure ]
++
+ # Dark Mode Failures
+ crbug.com/513290098 [ Mac15 ] virtual/dark-mode-default/dark-mode/images/country-flags.html [ Failure Pass ]
+ crbug.com/513290098 [ Win11-arm64 ] virtual/dark-mode-default/dark-mode/images/country-flags.html [ Failure Pass ]
+diff --git a/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https-expected.txt b/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https-expected.txt
+index fd4eb1b7f039721785ea0a4736ae49aec8fddecd..fd78aeee7eee1e3856dd1b99dc9ff52bd13a5028 100644
+--- a/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/service-workers/service-worker/fetch-canvas-tainting-video-with-range-request.https-expected.txt
+@@ -1,4 +1,6 @@
+ This is a testharness.js-based test.
++[FAIL] range responses from single origin with both opaque and non-opaque responses
++  assert_equals: expected "LOAD_ERROR" but got "TAINTED"
+ [FAIL] synth and same-origin fallback range responses
+   assert_equals: expected "NOT_TAINTED" but got "LOAD_ERROR"
+ Harness: the test ran to completion.

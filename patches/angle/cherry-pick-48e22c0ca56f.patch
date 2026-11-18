@@ -1,0 +1,200 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Fri, 23 Oct 2026 16:52:52 -0400
+Subject: Translator: Fix constant switch folding vs length()
+
+The AST path evaluates length() late, so the constant switch folding
+pass needs to be done after it.
+
+The IR path was correct.
+
+Bug: chromium:576579698
+Bug: chromium:548066294
+Change-Id: I1cd753a72ce915f7e12b540222f03c6448b5edc0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8640684
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index 47a03aca43efadef5b7cb7fe4e75cd5b11b0e28d..d8792d53a4cbf18d8cb041e445054126dc5181db 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -787,13 +787,6 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+     // Folding should only be able to generate warnings.
+     ASSERT(mDiagnostics.numErrors() == 0);
+ 
+-    // Fold switch statements with constant expression.  Run after FoldExpressions because the
+-    // switch selector may need folding.
+-    if (!FoldConstantSwitch(this, root, &mSymbolTable))
+-    {
+-        return false;
+-    }
+-
+     const bool hasAnyClipCullDistance =
+         parseContext.isExtensionEnabled(TExtension::ANGLE_clip_cull_distance) ||
+         parseContext.isExtensionEnabled(TExtension::EXT_clip_cull_distance) ||
+@@ -1011,6 +1004,20 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+         return false;
+     }
+ 
++    // Fold switch statements with constant expression.  Run after FoldExpressions because the
++    // switch selector may need folding.  This pass may leave dead code, so prune it again
++    // afterwards.
++    mValidateASTOptions.validateNoStatementsAfterBranch = false;
++    if (!FoldConstantSwitch(this, root, &mSymbolTable))
++    {
++        return false;
++    }
++    if (!PruneNoOps(this, root, &mSymbolTable))
++    {
++        return false;
++    }
++    mValidateASTOptions.validateNoStatementsAfterBranch = true;
++
+     if (!RemoveUnreferencedVariables(this, root, &mSymbolTable))
+     {
+         return false;
+diff --git a/src/tests/gl_tests/GLSLOutputTest.cpp b/src/tests/gl_tests/GLSLOutputTest.cpp
+index b2c7771b9261a9c0026de00c4a3355cc1faee282..c08addf8922796769dcf5dce8df85fc0200aa872 100644
+--- a/src/tests/gl_tests/GLSLOutputTest.cpp
++++ b/src/tests/gl_tests/GLSLOutputTest.cpp
+@@ -783,6 +783,65 @@ void main()
+     verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
+ }
+ 
++// Test that nested constant switch statements (https://crbug.com/548066294) are folded away.
++// The selector is length() in this test.
++TEST_P(GLSLOutputGLSLTest_ES3, NestedConstantSwitchWithLength)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++int sideEffects = 0;
++int[1] one()
++{
++    sideEffects += 1;
++    return int[1](1);
++}
++int[2] two()
++{
++    sideEffects += 1;
++    return int[2](2, 2);
++}
++void main()
++{
++    int result = 0;
++    switch (one().length() - 1)
++    {
++        case 0:
++            result += 1;
++            switch (one().length())
++            {
++                case 0:
++                    result += 10;
++                    break;
++                case 1:
++                    result += 20;
++                    switch (two().length())
++                    {
++                        case 2:
++                            result += 300;
++                            break;
++                        default:
++                            result += 400;
++                            break;
++                    }
++                    break;
++                default:
++                    result += 50;
++                    break;
++            }
++            break;
++        case 1:
++            result += 1000;
++            break;
++        default:
++            result += 2000;
++            break;
++    }
++    color = result == 321 && sideEffects == 3 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
+ // Test that fall-through across cases in a constant switch is folded away.
+ TEST_P(GLSLOutputGLSLTest_ES3, FallThrough)
+ {
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 0c979c2ff8331f80459a5ece20f30d3eb0a57abb..9b7c12ecca225a62a81ce06a30af04f3b9b7eafb 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -22617,6 +22617,69 @@ void main()
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Test nested constant switch statements (the pattern from https://crbug.com/548066294).
++// The selector is length() in this test.
++TEST_P(GLSLTest_ES3, NestedConstantSwitchWithLength)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++int sideEffects = 0;
++int[1] one()
++{
++    sideEffects += 1;
++    return int[1](1);
++}
++int[2] two()
++{
++    sideEffects += 1;
++    return int[2](2, 2);
++}
++void main()
++{
++    int result = 0;
++    switch (one().length() - 1)
++    {
++        case 0:
++            result += 1;
++            switch (one().length())
++            {
++                case 0:
++                    result += 10;
++                    break;
++                case 1:
++                    result += 20;
++                    switch (two().length())
++                    {
++                        case 2:
++                            result += 300;
++                            break;
++                        default:
++                            result += 400;
++                            break;
++                    }
++                    break;
++                default:
++                    result += 50;
++                    break;
++            }
++            break;
++        case 1:
++            result += 1000;
++            break;
++        default:
++            result += 2000;
++            break;
++    }
++    color = result == 321 && sideEffects == 3 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test fall-through across cases in a constant switch.
+ TEST_P(GLSLTest_ES3, FallThrough)
+ {

@@ -1,0 +1,238 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Saifuddin Hitawala <hitawala@chromium.org>
+Date: Mon, 9 Nov 2026 10:34:47 -0800
+Subject: [gpu] Check GrContext flush success instead of semaphores
+
+GrDirectContext flush returns a FlushResult that separates success
+from GrSemaphoresSubmitted now, which was not happening earlier.
+This change updates callsites to check for fSuccess properly instead
+of implicitly checking the semaphore result.
+
+Bug: 568937157
+Cq-Exclude-Trybots: luci.chromium.try:dawn-win10-x86-deps-rel
+Change-Id: I4179ac2e83f190e865caa781a66e91889d57e740
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8738496
+Commit-Queue: Saifuddin Hitawala <hitawala@chromium.org>
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1739361}
+
+Electron adaptation notes (44-x-y): the conflicting hunks only differed in
+context: this branch spells the parameter type VulkanContextProvider* (not
+gpu::VulkanContextProvider*) in the SkiaOutputDevice Flush() signatures, and
+SharedContextState::SubmitIfNecessary keeps its base::debug::DumpWithoutCrashing()
+call inside the now fSuccess-based failure branch. The return-type change to
+bool and all .fSuccess checks apply as upstream.
+
+diff --git a/components/viz/service/display_embedder/skia_output_device.cc b/components/viz/service/display_embedder/skia_output_device.cc
+index 2b1581624d60cf413016bff2c7200eaa3a622952..118a7268114acd3991ab6f72725297e6898d85b7 100644
+--- a/components/viz/service/display_embedder/skia_output_device.cc
++++ b/components/viz/service/display_embedder/skia_output_device.cc
+@@ -60,7 +60,7 @@ SkCanvas* SkiaOutputDevice::ScopedPaint::GetCanvas() {
+   return device_->GetCanvas(sk_surface_);
+ }
+ 
+-GrSemaphoresSubmitted SkiaOutputDevice::ScopedPaint::Flush(
++bool SkiaOutputDevice::ScopedPaint::Flush(
+     VulkanContextProvider* vulkan_context_provider,
+     std::vector<GrBackendSemaphore> end_semaphores,
+     base::OnceClosure on_finished) {
+@@ -310,7 +310,7 @@ SkCanvas* SkiaOutputDevice::GetCanvas(SkSurface* sk_surface) {
+   return sk_surface->getCanvas();
+ }
+ 
+-GrSemaphoresSubmitted SkiaOutputDevice::Flush(
++bool SkiaOutputDevice::Flush(
+     SkSurface* sk_surface,
+     VulkanContextProvider* vulkan_context_provider,
+     std::vector<GrBackendSemaphore> end_semaphores,
+@@ -325,9 +325,9 @@ GrSemaphoresSubmitted SkiaOutputDevice::Flush(
+     gpu::AddCleanupTaskForSkiaFlush(std::move(on_finished), &flush_info);
+   if (GrDirectContext* direct_context =
+           GrAsDirectContext(sk_surface->recordingContext())) {
+-    return direct_context->flush(sk_surface, flush_info);
++    return direct_context->flush(sk_surface, flush_info).fSuccess;
+   }
+-  return {};
++  return false;
+ }
+ 
+ bool SkiaOutputDevice::Wait(SkSurface* sk_surface,
+diff --git a/components/viz/service/display_embedder/skia_output_device.h b/components/viz/service/display_embedder/skia_output_device.h
+index b8ebdc77bfebdb5c4003d09d03263a65392f992a..bb1e4a8c910edc55f430348989722993fe7a7ee8 100644
+--- a/components/viz/service/display_embedder/skia_output_device.h
++++ b/components/viz/service/display_embedder/skia_output_device.h
+@@ -67,9 +67,9 @@ class VIZ_SERVICE_EXPORT SkiaOutputDevice {
+     SkCanvas* GetCanvas();
+ 
+     // Ganesh
+-    GrSemaphoresSubmitted Flush(VulkanContextProvider* vulkan_context_provider,
+-                                std::vector<GrBackendSemaphore> end_semaphores,
+-                                base::OnceClosure on_finished);
++    bool Flush(VulkanContextProvider* vulkan_context_provider,
++               std::vector<GrBackendSemaphore> end_semaphores,
++               base::OnceClosure on_finished);
+     bool Wait(int num_semaphores,
+               const GrBackendSemaphore wait_semaphores[],
+               bool delete_semaphores_after_wait);
+@@ -220,11 +220,10 @@ class VIZ_SERVICE_EXPORT SkiaOutputDevice {
+ 
+   // Overridden by SkiaOutputDeviceVulkanSecondaryCB.
+   virtual SkCanvas* GetCanvas(SkSurface* sk_surface);
+-  virtual GrSemaphoresSubmitted Flush(
+-      SkSurface* sk_surface,
+-      VulkanContextProvider* vulkan_context_provider,
+-      std::vector<GrBackendSemaphore> end_semaphores,
+-      base::OnceClosure on_finished);
++  virtual bool Flush(SkSurface* sk_surface,
++                     VulkanContextProvider* vulkan_context_provider,
++                     std::vector<GrBackendSemaphore> end_semaphores,
++                     base::OnceClosure on_finished);
+   virtual bool Wait(SkSurface* sk_surface,
+                     int num_semaphores,
+                     const GrBackendSemaphore wait_semaphores[],
+diff --git a/components/viz/service/display_embedder/skia_output_device_vulkan_secondary_cb.cc b/components/viz/service/display_embedder/skia_output_device_vulkan_secondary_cb.cc
+index 4308bfff3bcee93818dfbe7841baddc7ca04afcf..11d72a374fa8ddef3895a5be763a6740b7102072 100644
+--- a/components/viz/service/display_embedder/skia_output_device_vulkan_secondary_cb.cc
++++ b/components/viz/service/display_embedder/skia_output_device_vulkan_secondary_cb.cc
+@@ -98,27 +98,27 @@ SkCanvas* SkiaOutputDeviceVulkanSecondaryCB::GetCanvas(SkSurface* sk_surface) {
+   return context_provider_->GetGrSecondaryCBDrawContext()->getCanvas();
+ }
+ 
+-GrSemaphoresSubmitted SkiaOutputDeviceVulkanSecondaryCB::Flush(
++bool SkiaOutputDeviceVulkanSecondaryCB::Flush(
+     SkSurface* sk_surface,
+-    VulkanContextProvider* vulkan_context_provider,
++    VulkanContextProvider* vk_context_provider,
+     std::vector<GrBackendSemaphore> end_semaphores,
+     base::OnceClosure on_finished) {
+   DCHECK(!sk_surface);
+-  DCHECK_EQ(context_provider_, vulkan_context_provider);
++  DCHECK_EQ(context_provider_, vk_context_provider);
+ 
+   std::vector<VkSemaphore> vk_end_semaphores;
+   for (const GrBackendSemaphore& gr_semaphore : end_semaphores) {
+     vk_end_semaphores.push_back(
+         GrBackendSemaphores::GetVkSemaphore(gr_semaphore));
+   }
+-  vulkan_context_provider->EnqueueSecondaryCBSemaphores(
++  vk_context_provider->EnqueueSecondaryCBSemaphores(
+       std::move(vk_end_semaphores));
+   if (on_finished) {
+-    vulkan_context_provider->EnqueueSecondaryCBPostSubmitTask(
++    vk_context_provider->EnqueueSecondaryCBPostSubmitTask(
+         std::move(on_finished));
+   }
+-  vulkan_context_provider->GetGrSecondaryCBDrawContext()->flush();
+-  return GrSemaphoresSubmitted::kYes;
++
++  return vk_context_provider->GetGrSecondaryCBDrawContext()->flush().fSuccess;
+ }
+ 
+ bool SkiaOutputDeviceVulkanSecondaryCB::Wait(
+diff --git a/components/viz/service/display_embedder/skia_output_device_vulkan_secondary_cb.h b/components/viz/service/display_embedder/skia_output_device_vulkan_secondary_cb.h
+index d3587af829b9ab9a9d4faabc0da3309d5314e391..2c6e32aed3a4bd3990f8d723650981807249b259 100644
+--- a/components/viz/service/display_embedder/skia_output_device_vulkan_secondary_cb.h
++++ b/components/viz/service/display_embedder/skia_output_device_vulkan_secondary_cb.h
+@@ -35,10 +35,10 @@ class SkiaOutputDeviceVulkanSecondaryCB final : public SkiaOutputDevice {
+   void EndPaint() override;
+ 
+   SkCanvas* GetCanvas(SkSurface* sk_surface) override;
+-  GrSemaphoresSubmitted Flush(SkSurface* sk_surface,
+-                              VulkanContextProvider* vulkan_context_provider,
+-                              std::vector<GrBackendSemaphore> end_semaphores,
+-                              base::OnceClosure on_finished) override;
++  bool Flush(SkSurface* sk_surface,
++             VulkanContextProvider* vulkan_context_provider,
++             std::vector<GrBackendSemaphore> end_semaphores,
++             base::OnceClosure on_finished) override;
+   bool Wait(SkSurface* sk_surface,
+             int num_semaphores,
+             const GrBackendSemaphore wait_semaphores[],
+diff --git a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+index d8485e68ef15f944a4d45facf2b6447a53412944..9107bd7bdba4dcbc002e90240d52b0a083a68231 100644
+--- a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
++++ b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+@@ -557,12 +557,11 @@ void SkiaOutputSurfaceImplOnGpu::FinishPaintCurrentFrame(
+ #endif
+ 
+     const bool end_semaphores_empty = end_semaphores.empty();
+-    auto result = scoped_output_device_paint_->Flush(vulkan_context_provider_,
++    bool result = scoped_output_device_paint_->Flush(vulkan_context_provider_,
+                                                      std::move(end_semaphores),
+                                                      std::move(on_finished));
+ 
+-    if (result != GrSemaphoresSubmitted::kYes &&
+-        !(begin_semaphores.empty() && end_semaphores_empty)) {
++    if (!result && !(begin_semaphores.empty() && end_semaphores_empty)) {
+       if (!return_release_fence_cb.is_null()) {
+         std::move(return_release_fence_cb).Run(gfx::GpuFenceHandle());
+         return_release_fence_cb.Reset();
+@@ -775,7 +774,7 @@ void SkiaOutputSurfaceImplOnGpu::FinishPaintRenderPass(
+   scoped_access->ApplyBackendSurfaceEndState();
+   auto result = gr_context()->flush(surface, flush_info, nullptr);
+ 
+-  if (result != GrSemaphoresSubmitted::kYes &&
++  if (!result.fSuccess &&
+       !(begin_semaphores.empty() && end_semaphores.empty())) {
+     if (!return_release_fence_cb.is_null()) {
+       std::move(return_release_fence_cb).Run(gfx::GpuFenceHandle());
+@@ -1210,14 +1209,13 @@ bool SkiaOutputSurfaceImplOnGpu::FlushSurface(
+     flush_info.fFinishedContext = finished_context;
+     gpu::AddVulkanCleanupTaskForSkiaFlush(vulkan_context_provider_,
+                                           &flush_info);
+-    GrSemaphoresSubmitted flush_result =
++    GrDirectContext::FlushResult flush_result =
+         surface ? gr_context()->flush(surface, flush_info)
+                 : gr_context()->flush(flush_info);
+     if (scoped_write_access) {
+       scoped_write_access->ApplyBackendSurfaceEndState();
+     }
+-    return flush_result == GrSemaphoresSubmitted::kYes ||
+-           end_semaphores.empty();
++    return flush_result.fSuccess || end_semaphores.empty();
+   }
+ 
+   CHECK(graphite_recorder());
+diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
+index 0547ca4ea1a9a151ea91eaef046fa22a52dece54..8aa9e53458474ef787a8518d386115284cdda68b 100644
+--- a/gpu/command_buffer/service/shared_context_state.cc
++++ b/gpu/command_buffer/service/shared_context_state.cc
+@@ -920,7 +920,7 @@ bool SharedContextState::SubmitIfNecessary(
+     };
+     gpu::AddVulkanCleanupTaskForSkiaFlush(vk_context_provider(), &flush_info);
+ 
+-    if (gr_context()->flush(flush_info) != GrSemaphoresSubmitted::kYes) {
++    if (!gr_context()->flush(flush_info).fSuccess) {
+       base::debug::DumpWithoutCrashing();
+       return false;
+     }
+diff --git a/gpu/command_buffer/service/shared_image/dcomp_image_backing_factory_unittest.cc b/gpu/command_buffer/service/shared_image/dcomp_image_backing_factory_unittest.cc
+index b74659ead914de5eb99b7b0b63fadbc2f313d10e..844a99675c88a3bf1b75c6a824e59eeeeb017d41 100644
+--- a/gpu/command_buffer/service/shared_image/dcomp_image_backing_factory_unittest.cc
++++ b/gpu/command_buffer/service/shared_image/dcomp_image_backing_factory_unittest.cc
+@@ -236,9 +236,9 @@ TEST_F(DCompImageBackingFactoryTest, CanReadDXGISwapChain) {
+   EXPECT_EQ(0u, end_semaphores.size());
+   GrFlushInfo flush_info;
+   GrDirectContext* direct_context = context_state_->gr_context();
+-  EXPECT_EQ(
+-      GrSemaphoresSubmitted::kYes,
+-      direct_context->flush(write_access->surface(), flush_info, nullptr));
++  EXPECT_TRUE(
++      direct_context->flush(write_access->surface(), flush_info, nullptr)
++          .fSuccess);
+   skia_representation->SetCleared();
+ 
+   std::unique_ptr<const SkImage::AsyncReadResult> readback_result;
+@@ -507,9 +507,9 @@ class DCompImageBackingFactoryVisualTreeTest
+     EXPECT_EQ(0u, end_semaphores.size());
+     GrFlushInfo flush_info;
+     GrDirectContext* direct_context = context_state_->gr_context();
+-    EXPECT_EQ(
+-        GrSemaphoresSubmitted::kYes,
+-        direct_context->flush(write_access->surface(), flush_info, nullptr));
++    EXPECT_TRUE(
++        direct_context->flush(write_access->surface(), flush_info, nullptr)
++            .fSuccess);
+ 
+     write_access->ApplyBackendSurfaceEndState();
+     direct_context->submit(GrSyncCpu::kYes);

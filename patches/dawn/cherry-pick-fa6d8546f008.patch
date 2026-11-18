@@ -1,0 +1,377 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Mon, 2 Nov 2026 12:50:23 -0800
+Subject: [opengl] Check for GPU resets before data is app-visible
+
+A GPU reset can discard queued GPU work while no GL error is generated
+on certain device.
+
+Request EGL_LOSE_CONTEXT_ON_RESET together with robust access so that
+glGetGraphicsResetStatus reports resets, and load it (core in ES 3.2 /
+GL 4.5, otherwise from GL_KHR(27%)/EXT(91%)/ARB_robustness).
+
+Check the reset status, losing the device on a reset:
+- in CheckPendingErrorBeforeUserVisibleData, which MapAsync now also
+  uses after glMapBufferRange instead of DAWN_GL_TRY_ALWAYS_CHECK.
+- when a fence signals, before advancing the completed serial.
+
+Bug: 576131851
+Change-Id: Ie38bceb5608d9483a833aaef2bcf79d24d6e6d2e
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/354617
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+
+Electron adaptation notes (44-x-y): this branch's Dawn predates
+https://dawn-review.googlesource.com/c/dawn/+/351016 ("Check for unchecked
+GL errors before data is app-visible"), so CheckPendingErrorBeforeUserVisibleData
+and DAWN_BACKEND_DEVICE_LOST_ERROR do not exist here. CheckGraphicsResetStatus is
+added on its own and returns DAWN_DEVICE_LOST_ERROR; Buffer::MapAsyncImpl keeps
+the branch's DAWN_GL_TRY_ALWAYS_CHECK for glMapBufferRange (which already
+checks GL errors) and calls CheckGraphicsResetStatus directly before the mapped
+data becomes visible. The queue-serial, EGL reset-notification and loader hunks
+apply as upstream.
+
+diff --git a/src/dawn/native/opengl/BufferGL.cpp b/src/dawn/native/opengl/BufferGL.cpp
+index 0f5c65065f0f1d3ddc0fdb01727a18c75b4584ce..ac55b7c266e6c15ece7a1e58cc25c84320ac3794 100644
+--- a/src/dawn/native/opengl/BufferGL.cpp
++++ b/src/dawn/native/opengl/BufferGL.cpp
+@@ -262,6 +262,8 @@ MaybeError Buffer::MapAsyncImpl(wgpu::MapMode mode, size_t offset, size_t size)
+                     gl, MapBufferRange(GL_ARRAY_BUFFER, offset, size,
+                                        GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT));
+             }
++            // The mapped data becomes visible to the application.
++            DAWN_TRY(CheckGraphicsResetStatus(gl, "Mapping a buffer"));
+ 
+             // The frontend asks that the pointer returned by GetMappedPointer is from the start of
+             // the resource but OpenGL gives us the pointer at offset. Remove the offset.
+diff --git a/src/dawn/native/opengl/ContextEGL.cpp b/src/dawn/native/opengl/ContextEGL.cpp
+index 5e94123499d54ac75c090d4467c7a03836ade7ec..699dc06de4ee489736be85615fa8919a405d2a66 100644
+--- a/src/dawn/native/opengl/ContextEGL.cpp
++++ b/src/dawn/native/opengl/ContextEGL.cpp
+@@ -170,10 +170,14 @@ MaybeError ContextEGL::Initialize(wgpu::BackendType backend,
+         DAWN_ASSERT(egl.HasExt(EGLExt::CreateContextRobustness));
+         // EGL_EXT_create_context_robustness is promoted to 1.5 but with a different enum value.
+         // PowerVR advertises EGL 1.5, but only supports the old enum value.
++        // Request reset notification so that glGetGraphicsResetStatus reports GPU resets.
+         if (egl.GetMinorVersion() >= 5 && !disableEGL15Robustness) {
+             AddAttrib(EGL_CONTEXT_OPENGL_ROBUST_ACCESS, EGL_TRUE);
++            AddAttrib(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY, EGL_LOSE_CONTEXT_ON_RESET);
+         } else {
+             AddAttrib(EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE);
++            AddAttrib(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_EXT,
++                      EGL_LOSE_CONTEXT_ON_RESET_EXT);
+         }
+     }
+ 
+diff --git a/src/dawn/native/opengl/OpenGLFunctions.cpp b/src/dawn/native/opengl/OpenGLFunctions.cpp
+index f8f1bd8d580d60c062a454074ce9fdcec41e1737..29aad422400bdd054e615bdab6af4e3220c6a855 100644
+--- a/src/dawn/native/opengl/OpenGLFunctions.cpp
++++ b/src/dawn/native/opengl/OpenGLFunctions.cpp
+@@ -47,6 +47,25 @@ MaybeError OpenGLFunctions::Initialize(GLGetProcProc getProc) {
+ #endif
+     }
+ 
++    // glGetGraphicsResetStatus is core in OpenGL ES 3.2 and OpenGL 4.5. Otherwise load it from the
++    // robustness extensions, which all have the same signature and return values.
++    // TODO(crbug.com/580950772): Support gl.xml aliases in the OpenGL loader generator and load
++    // these with it instead of manually.
++    auto LoadResetStatusFromExtension = [&](const char* extension, const char* procName) {
++        if (GetGraphicsResetStatus == nullptr && IsGLExtensionSupported(extension)) {
++            GetGraphicsResetStatus =
++                reinterpret_cast<PFNGLGETGRAPHICSRESETSTATUSPROC>(getProc(procName));
++        }
++    };
++    if (mVersion.IsES()) {
++        LoadResetStatusFromExtension("GL_KHR_robustness", "glGetGraphicsResetStatusKHR");
++        LoadResetStatusFromExtension("GL_EXT_robustness", "glGetGraphicsResetStatusEXT");
++    } else {
++        // In desktop GL, the GL_KHR_robustness entry points have no suffix.
++        LoadResetStatusFromExtension("GL_KHR_robustness", "glGetGraphicsResetStatus");
++        LoadResetStatusFromExtension("GL_ARB_robustness", "glGetGraphicsResetStatusARB");
++    }
++
+     return {};
+ }
+ 
+diff --git a/src/dawn/native/opengl/PhysicalDeviceGL.cpp b/src/dawn/native/opengl/PhysicalDeviceGL.cpp
+index 95339526c27503fd613beaad8c37078888ff424c..d87bf21fffea8e807310a45cce6c3b33d8b3e32d 100644
+--- a/src/dawn/native/opengl/PhysicalDeviceGL.cpp
++++ b/src/dawn/native/opengl/PhysicalDeviceGL.cpp
+@@ -168,6 +168,10 @@ MaybeError PhysicalDevice::InitializeImpl() {
+         default:
+             DAWN_UNREACHABLE();
+     }
++    // Needed to detect GPU resets, which can discard GPU work without generating GL errors.
++    DAWN_INVALID_IF(mFunctions.GetGraphicsResetStatus == nullptr,
++                    "glGetGraphicsResetStatus (OpenGL ES 3.2, OpenGL 4.5, GL_KHR_robustness, "
++                    "GL_EXT_robustness or GL_ARB_robustness) is required.");
+ 
+     if (mFunctions.GetVersion().IsES()) {
+         DAWN_ASSERT(GetBackendType() == wgpu::BackendType::OpenGLES);
+diff --git a/src/dawn/native/opengl/QueueGL.cpp b/src/dawn/native/opengl/QueueGL.cpp
+index c44670eb07bd59f375f38be4306e6895b53f6027..be3c436c051fa823bf55fb7fb3c72d20f108be3d 100644
+--- a/src/dawn/native/opengl/QueueGL.cpp
++++ b/src/dawn/native/opengl/QueueGL.cpp
+@@ -216,6 +216,7 @@ ResultOrError<ExecutionSerial> Queue::WaitForQueueSerialImpl(ExecutionSerial wai
+                 case EGL_TIMEOUT_EXPIRED:
+                     return kWaitSerialTimeout;
+                 case EGL_CONDITION_SATISFIED:
++                    DAWN_TRY(CheckGraphicsResetStatus(gl, "Waiting for a queue serial"));
+                     return completedSerial;
+                 default:
+                     DAWN_UNREACHABLE();
+@@ -327,13 +328,19 @@ ResultOrError<ExecutionSerial> Queue::CheckAndUpdateCompletedSerials() {
+                 DAWN_TRY_ASSIGN(result,
+                                 sync->ClientWait(gl, EGL_SYNC_FLUSH_COMMANDS_BIT, Nanoseconds(0u)));
+                 if (result == EGL_TIMEOUT_EXPIRED) {
+-                    return fenceSerial;
++                    break;
+                 }
+                 // Update fenceSerial since fence is ready.
+                 fenceSerial = tentativeSerial;
+ 
+                 fencesInFlight->pop_front();
+             }
++            if (fenceSerial != ExecutionSerial(0u)) {
++                // A fence also signals when the GPU work before it was discarded by a GPU reset, so
++                // check for a reset before results of that work (e.g. mapped buffers) become
++                // visible to the application.
++                DAWN_TRY(CheckGraphicsResetStatus(gl, "Completing a queue serial"));
++            }
+             return fenceSerial;
+         });
+     });
+diff --git a/src/dawn/native/opengl/UtilsGL.cpp b/src/dawn/native/opengl/UtilsGL.cpp
+index df219b6f767de4540728bd7091ee3affd9771c72..1fc4c9626325bbdab12a3f3ff8b82cdc70fc2c12 100644
+--- a/src/dawn/native/opengl/UtilsGL.cpp
++++ b/src/dawn/native/opengl/UtilsGL.cpp
+@@ -196,6 +196,22 @@ const char* GLErrorAsString(GLenum error) {
+ #undef ERROR_CASE_STRING
+ }
+ 
++const char* GLResetStatusAsString(GLenum status) {
++#define STATUS_CASE_STRING(statusEnum) \
++    case statusEnum:                   \
++        return #statusEnum
++
++    switch (status) {
++        STATUS_CASE_STRING(GL_GUILTY_CONTEXT_RESET);
++        STATUS_CASE_STRING(GL_INNOCENT_CONTEXT_RESET);
++        STATUS_CASE_STRING(GL_UNKNOWN_CONTEXT_RESET);
++        default:
++            return "<Unknown OpenGL reset status>";
++    }
++
++#undef STATUS_CASE_STRING
++}
++
+ const char* GLFramebufferStatusAsString(GLenum status) {
+ #define STATUS_CASE_STRING(statusEnum) \
+     case statusEnum:                   \
+@@ -292,4 +308,14 @@ MaybeError CheckError(const OpenGLFunctions& gl,
+     }
+ }
+ 
++MaybeError CheckGraphicsResetStatus(const OpenGLFunctions& gl, const char* description) {
++    GLenum status = gl.GetGraphicsResetStatus();
++    if (status == GL_NO_ERROR) [[likely]] {
++        return {};
++    }
++    return DAWN_DEVICE_LOST_ERROR(std::string(description) +
++                                  ": the OpenGL context was reset with status " +
++                                  GLResetStatusAsString(status));
++}
++
+ }  // namespace dawn::native::opengl
+diff --git a/src/dawn/native/opengl/UtilsGL.h b/src/dawn/native/opengl/UtilsGL.h
+index 7cab0ba81c958210ef85d8ce2af0b12041cca3d4..1ea89333cbfd2fbd458ae4e1a652f65bef72c8e1 100644
+--- a/src/dawn/native/opengl/UtilsGL.h
++++ b/src/dawn/native/opengl/UtilsGL.h
+@@ -52,6 +52,7 @@ bool HasAnisotropicFiltering(const OpenGLFunctions& gl);
+ 
+ const char* GLErrorAsString(GLenum error);
+ const char* GLFramebufferStatusAsString(GLenum status);
++const char* GLResetStatusAsString(GLenum status);
+ 
+ // Checks that the framebuffer bound to `target` is complete, returning an internal error
+ // otherwise. The check is unconditional so that callers relying on subsequent framebuffer
+@@ -71,6 +72,12 @@ MaybeError CheckError(const OpenGLFunctions& gl,
+                       const char* function,
+                       unsigned int line);
+ 
++// Checks whether the GL context was reset (e.g. by a GPU hang). A reset can discard GPU work while
++// fences still signal and no GL error is generated, for example leaving the destination of a
++// readback unwritten. Call it before results of GPU work become visible to the application. Returns
++// a device lost error if a reset happened.
++MaybeError CheckGraphicsResetStatus(const OpenGLFunctions& gl, const char* description);
++
+ #define DAWN_GL_TRY_ALWAYS_CHECK(gl, call)                      \
+     (ClearErrors(gl, __FILE__, __func__, __LINE__), (gl.call)); \
+     DAWN_TRY(CheckError(gl, "gl" #call, __FILE__, __func__, __LINE__))
+diff --git a/src/dawn/tests/BUILD.gn b/src/dawn/tests/BUILD.gn
+index 5aeec988fdbe24d911ae6a290417600f32ca830e..ca8f551e10098613000d481b570b27b0ad9337f5 100644
+--- a/src/dawn/tests/BUILD.gn
++++ b/src/dawn/tests/BUILD.gn
+@@ -890,6 +890,7 @@ source_set("white_box_tests_sources") {
+     sources += [
+       "white_box/EGLImageWrappingTests.cpp",
+       "white_box/GLFramebufferCompletenessTests.cpp",
++      "white_box/GLGraphicsResetTests.cpp",
+       "white_box/GLTextureWrappingTests.cpp",
+     ]
+     include_dirs = [ "${dawn_root}/third_party/EGL-Registry" ]
+diff --git a/src/dawn/tests/CMakeLists.txt b/src/dawn/tests/CMakeLists.txt
+index f3b99ca97af2d86e7e2d866ce1c215ddec4946c1..990838d7c933e2bea5eb222e31085f756ead66eb 100644
+--- a/src/dawn/tests/CMakeLists.txt
++++ b/src/dawn/tests/CMakeLists.txt
+@@ -372,6 +372,7 @@ if (DAWN_ENABLE_OPENGLES)
+     list(APPEND whitebox_sources
+         "white_box/EGLImageWrappingTests.cpp"
+         "white_box/GLFramebufferCompletenessTests.cpp"
++        "white_box/GLGraphicsResetTests.cpp"
+         "white_box/GLTextureWrappingTests.cpp"
+     )
+ endif()
+diff --git a/src/dawn/tests/white_box/GLGraphicsResetTests.cpp b/src/dawn/tests/white_box/GLGraphicsResetTests.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..86178dc1ff71110c7e4cd3c2354a62b50aa28b5e
+--- /dev/null
++++ b/src/dawn/tests/white_box/GLGraphicsResetTests.cpp
+@@ -0,0 +1,118 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/dawn/native/ErrorData.h"
++#include "src/dawn/native/opengl/DeviceGL.h"
++#include "src/dawn/native/opengl/DisplayEGL.h"
++#include "src/dawn/native/opengl/EGLFunctions.h"
++#include "src/dawn/native/opengl/PhysicalDeviceGL.h"
++#include "src/dawn/native/opengl/UtilsGL.h"
++#include "src/dawn/tests/DawnTest.h"
++
++namespace dawn::native::opengl {
++namespace {
++
++using ::testing::_;
++
++// A GPU reset can discard GPU work while fences still signal and no GL error is generated (for
++// example leaving the destination of a readback unwritten). These tests check that the GL context
++// can report resets and that a reset loses the device before data becomes visible to the app.
++class GLGraphicsResetTests : public DawnTest {
++  protected:
++    void SetUp() override {
++        DawnTest::SetUp();
++        DAWN_TEST_UNSUPPORTED_IF(UsesWire());
++        DAWN_TEST_UNSUPPORTED_IF(HasToggleEnabled("disable_robustness"));
++        // GL errors abort in the debug output callback when backend validation is enabled.
++        DAWN_TEST_UNSUPPORTED_IF(IsBackendValidationEnabled());
++    }
++};
++
++// The context is created with the EGL_LOSE_CONTEXT_ON_RESET notification strategy, without which
++// glGetGraphicsResetStatus never reports resets.
++TEST_P(GLGraphicsResetTests, ContextUsesLoseContextOnReset) {
++    Device* deviceGL = ToBackend(FromAPI(device.Get()));
++
++    GLint strategy = 0;
++    GLenum status = GL_NO_ERROR;
++    EXPECT_TRUE(deviceGL
++                    ->ExecuteGL(ExecutionQueueBase::SubmitMode::Passive,
++                                [&](const OpenGLFunctions& gl) -> MaybeError {
++                                    DAWN_GL_TRY_ALWAYS_CHECK(
++                                        gl, GetIntegerv(GL_RESET_NOTIFICATION_STRATEGY, &strategy));
++                                    status = gl.GetGraphicsResetStatus();
++                                    return {};
++                                })
++                    .IsSuccess());
++    EXPECT_EQ(strategy, GL_LOSE_CONTEXT_ON_RESET);
++    EXPECT_EQ(status, static_cast<GLenum>(GL_NO_ERROR));
++}
++
++// A context reset (simulated with GL_CHROMIUM_lose_context) is reported by
++// CheckGraphicsResetStatus and loses the device on the next submit.
++TEST_P(GLGraphicsResetTests, ResetIsDetected) {
++    Device* deviceGL = ToBackend(FromAPI(device.Get()));
++    bool supportsLoseContext = false;
++    EXPECT_TRUE(deviceGL
++                    ->ExecuteGL(ExecutionQueueBase::SubmitMode::Passive,
++                                [&](const OpenGLFunctions& gl) -> MaybeError {
++                                    supportsLoseContext =
++                                        gl.IsGLExtensionSupported("GL_CHROMIUM_lose_context");
++                                    return {};
++                                })
++                    .IsSuccess());
++    DAWN_TEST_UNSUPPORTED_IF(!supportsLoseContext);
++
++    using PFNGLLOSECONTEXTCHROMIUMPROC = void(KHRONOS_APIENTRY*)(GLenum current, GLenum other);
++    const EGLFunctions& egl = ToBackend(deviceGL->GetPhysicalDevice())->GetDisplay()->egl.get();
++    auto loseContext =
++        reinterpret_cast<PFNGLLOSECONTEXTCHROMIUMPROC>(egl.GetProcAddress("glLoseContextCHROMIUM"));
++    ASSERT_NE(loseContext, nullptr);
++
++    MaybeError result = deviceGL->ExecuteGL(
++        ExecutionQueueBase::SubmitMode::Passive, [&](const OpenGLFunctions& gl) -> MaybeError {
++            DAWN_TRY(CheckGraphicsResetStatus(gl, "Before the reset"));
++            loseContext(GL_GUILTY_CONTEXT_RESET, GL_INNOCENT_CONTEXT_RESET);
++            return CheckGraphicsResetStatus(gl, "After the reset");
++        });
++    ASSERT_TRUE(result.IsError());
++    EXPECT_EQ(result.AcquireError()->GetType(), InternalErrorType::BackendDeviceLost);
++
++    EXPECT_CALL(mDeviceLostCallback,
++                Call(CHandleIs(device.Get()), wgpu::DeviceLostReason::Unknown, _))
++        .Times(1);
++    queue.Submit(0, nullptr);
++}
++
++DAWN_INSTANTIATE_TEST(GLGraphicsResetTests,
++                      OpenGLBackend(),
++                      OpenGLESBackend(),
++                      OpenGLESBackend({"gl_defer"}),
++                      OpenGLESBackend({"gl_force_es_31_and_no_extensions"}));
++
++}  // anonymous namespace
++}  // namespace dawn::native::opengl
+diff --git a/src/utils/warning_suppression_mappings.txt b/src/utils/warning_suppression_mappings.txt
+index a6ee74c173a8feeafb2cdd106e893ddef539279b..ca203dbea5bbfd7d9549ac6ef75aa89599e76aac 100644
+--- a/src/utils/warning_suppression_mappings.txt
++++ b/src/utils/warning_suppression_mappings.txt
+@@ -43,12 +43,14 @@ src:*third_party{/,\\}partition_alloc{/,\\}src{/,\\}*
+ src:*gen{/,\\}src{/,\\}dawn{/,\\}native{/,\\}opengl{/,\\}OpenGLFunctionsBase_autogen.cpp
+ src:*src{/,\\}dawn{/,\\}native{/,\\}opengl{/,\\}ContextEGL.cpp
+ src:*src{/,\\}dawn{/,\\}native{/,\\}opengl{/,\\}EGLFunctions.cpp
++src:*src{/,\\}dawn{/,\\}native{/,\\}opengl{/,\\}OpenGLFunctions.cpp
+ src:*src{/,\\}dawn{/,\\}native{/,\\}opengl{/,\\}OpenGLVersion.cpp
+ # Needed to cast procs in Vulkan.
+ src:*src{/,\\}dawn{/,\\}native{/,\\}vulkan{/,\\}VulkanFunctions.cpp
+ # Needed to cast procs in webgpu.h.
+ src:*gen{/,\\}src{/,\\}dawn{/,\\}native{/,\\}ProcTable.cpp
+ src:*src{/,\\}dawn{/,\\}tests{/,\\}end2end{/,\\}EventTests.cpp
++src:*src{/,\\}dawn{/,\\}tests{/,\\}white_box{/,\\}GLGraphicsResetTests.cpp
+ src:*src{/,\\}dawn{/,\\}tests{/,\\}unittests{/,\\}GetProcAddressTests.cpp
+ # For some unknown reason this one filepath can get a backslash on Windows.
+ src:*gen{/,\\}src{/,\\}dawn{/,\\}wire{/,\\}client{/,\\}ApiProcs_autogen.cpp.inc

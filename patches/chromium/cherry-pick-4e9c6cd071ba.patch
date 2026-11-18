@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: behery <behery@chromium.org>
+Date: Tue, 1 Sep 2026 10:07:55 -0700
+Subject: [MediaCapture] Deactivate SCContentSharingPicker after screenshot
+ capture and clean up callbacks
+
+When taking a screenshot on macOS via NativeScreenCapturePickerMac
+(SCContentSharingPicker), such as when taking an entire-screen or window
+screenshot in OmniboxEverywhere, the picker was set to active in Open(),
+but never deactivated after the one-shot frame capture completed because
+Close() is only called for long-running video streams. This left the
+green/purple screen recording menu bar indicators active in macOS.
+
+Clicking this lingering indicator re-invoked the system picker UI on
+nothing. If the user then clicked "Cancel", Chrome crashed because stale
+cancel callbacks were not cleared upon the original successful selection, causing a duplicate invocation of the one-shot Mojo response
+callback.
+
+This CL:
+1. Adds MaybeDeactivatePicker helper to deactivate
+   SCContentSharingPicker when no active streams exist, invoked on
+   screenshot completion, cancellation, error, and stream close.
+2. Cleans up the session content filter upon screenshot completion.
+3. Resets remaining mutual-exclusion callbacks in
+   OnPickerObserverUpdated, OnPickerObserverCancelled, and
+   OnPickerObserverEncounteredError.
+4. Updates unit tests to verify picker deactivation on screenshot
+   capture and cancellation.
+
+Bug: 555215271
+Change-Id: I566c4bafe39a46a7ee17bb37819a219b5604b542
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8324087
+Reviewed-by: Tove Petersson <tovep@chromium.org>
+Commit-Queue: Hamzah Behery <behery@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1689919}
+
+Electron adaptation notes (44-x-y): picked as the prerequisite of https://chromium-review.googlesource.com/c/chromium/src/+/8430557, which relies on the MaybeDeactivatePicker() helper and the mutual-exclusion callback resets introduced here. This branch has no screenshot capture in NativeScreenCapturePickerMac (CaptureScreenshot/CaptureScreenshotInternal/EphemeralFrameGrabber do not exist), so the screenshot-related parts (OnScreenshotCaptured, the CaptureScreenshotInternal changes, CaptureScreenshotFromMacNativePicker and the three CaptureScreenshot* unit tests) are not carried; MaybeDeactivatePicker(), the callback resets in OnPickerObserverUpdated/Cancelled/EncounteredError, the Close() change and the CancelPickerDeactivatesSystemPicker test apply as upstream.
+
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.h b/content/browser/media/capture/native_screen_capture_picker_mac.h
+index 46c25bba0436a1e668ff387dd0136c48c10a7070..9c07a35b4d65a49ae1c235497319eadcbd800ff2 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac.h
++++ b/content/browser/media/capture/native_screen_capture_picker_mac.h
+@@ -111,6 +111,8 @@ class API_AVAILABLE(macos(14.0)) CONTENT_EXPORT NativeScreenCapturePickerMac
+   // Callback called by `ScreenCaptureKitDeviceMac` on creating a new stream.
+   void UpdateStreamMap(DesktopMediaID::Id id, SCStream* stream);
+ 
++  void MaybeDeactivatePicker();
++
+   // Get the capture session or create it if it doesn't exist.
+   CaptureSession& GetOrCreateCaptureSession(DesktopMediaID::Id id);
+ 
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
+index 5d95185f0d0d42c2e2216a9509ac22ea80bf0ff1..e64aaed44b8132d3a8f50b98ce8bd2931f0c8616 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
++++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
+@@ -368,6 +368,9 @@ void API_AVAILABLE(macos(14.0))
+     LogUpdateToUma(active_picker_type_);
+   }
+ 
++  cancel_callback_.Reset();
++  error_callback_.Reset();
++
+   Source source;
+   source.id = session_id;
+   std::move(picker_callback_).Run(source);
+@@ -395,9 +398,12 @@ void API_AVAILABLE(macos(14.0))
+     session.received_first_response = true;
+     LogCancelToUma(active_picker_type_);
+   }
++  picker_callback_.Reset();
++  error_callback_.Reset();
+   if (cancel_callback_) {
+     std::move(cancel_callback_).Run();
+   }
++  MaybeDeactivatePicker();
+ }
+ 
+ void NativeScreenCapturePickerMac::OnPickerObserverEncounteredError(
+@@ -413,9 +419,12 @@ void API_AVAILABLE(macos(14.0))
+     session.received_first_response = true;
+     LogErrorToUma(active_picker_type_);
+   }
++  picker_callback_.Reset();
++  cancel_callback_.Reset();
+   if (error_callback_) {
+     std::move(error_callback_).Run();
+   }
++  MaybeDeactivatePicker();
+ }
+ 
+ void NativeScreenCapturePickerMac::UpdateStreamMap(DesktopMediaID::Id id,
+@@ -438,11 +447,7 @@ void API_AVAILABLE(macos(14.0))
+   if (@available(macOS 14.0, *)) {
+     ScheduleCleanup(device_id.id);
+     active_source_ids_.erase(device_id.id);
+-    // Don't deactivate the picker if there are any active capture sessions.
+-    if (active_source_ids_.empty()) {
+-      SCContentSharingPicker* picker = [SCContentSharingPicker sharedPicker];
+-      picker.active = false;
+-    }
++    MaybeDeactivatePicker();
+     VLOG(1) << "NSCPM::Close: for source id = " << device_id.id;
+   } else {
+     NOTREACHED();
+@@ -528,6 +533,15 @@ void API_AVAILABLE(macos(14.0))
+   return weak_ptr_factory_.GetWeakPtr();
+ }
+ 
++void NativeScreenCapturePickerMac::MaybeDeactivatePicker() {
++  DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
++  // Don't deactivate the picker if there are any active capture sessions.
++  if (active_source_ids_.empty()) {
++    SCContentSharingPicker* picker = [SCContentSharingPicker sharedPicker];
++    picker.active = false;
++  }
++}
++
+ std::unique_ptr<NativeScreenCapturePicker>
+ CreateNativeScreenCapturePickerMac() {
+   if (@available(macOS 14.0, *)) {
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac_unittest.mm b/content/browser/media/capture/native_screen_capture_picker_mac_unittest.mm
+index c688b6deda50b12717a88873ebff897c133e7a69..ea0f0ee38675a0cca7e4f30485f4e6e5c9375b7d 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac_unittest.mm
++++ b/content/browser/media/capture/native_screen_capture_picker_mac_unittest.mm
+@@ -424,4 +424,23 @@ void VerifyApplicationAudioCaptureId(
+   }
+ }
+ 
++TEST_F(NativeScreenCapturePickerMacTest, CancelPickerDeactivatesSystemPicker) {
++  if (@available(macOS 14.0, *)) {
++    base::RunLoop cancel_run_loop;
++    picker_->Open(DesktopMediaID::TYPE_SCREEN, base::DoNothing(),
++                  base::DoNothing(),
++                  base::BindLambdaForTesting([&]() { cancel_run_loop.Quit(); }),
++                  base::DoNothing(), base::DoNothing());
++
++    EXPECT_TRUE(g_fake_picker.active);
++
++    [g_fake_picker.observer
++        contentSharingPicker:(SCContentSharingPicker*)g_fake_picker
++          didCancelForStream:nil];
++
++    cancel_run_loop.Run();
++    EXPECT_FALSE(g_fake_picker.active);
++  }
++}
++
+ }  // namespace content

@@ -1,0 +1,344 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Tue, 20 Oct 2026 15:11:20 -0700
+Subject: [M156] GL: Force finish on IMG when copying within a texture
+
+Original change's description:
+> GL: Force finish on IMG when copying within a texture
+>
+> Forces a finish before performing a copy between different regions
+> of the same texture to work around a driver bug on IMG hardware.
+> Unfortunately a flush (or even forcefullyFlush) is not sufficient
+> to avoid the driver issue.
+>
+> Fixed: chromium:552672183
+> Change-Id: Id3f95f6d68291c43d528ec6913f9d0f40f16a593
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8620883
+> Reviewed-by: Kenneth Russell <kbr@chromium.org>
+> Commit-Queue: Brandon Jones <bajones@chromium.org>
+
+(cherry picked from commit d9294ad1c0514a0cb889fa32eb5c39db3c1c38f0)
+
+Bug: chromium:576948931,chromium:552672183
+Change-Id: Id3f95f6d68291c43d528ec6913f9d0f40f16a593
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8685721
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (44-x-y): the M156 merge is used because the main
+CL also conflicts here. Only adjacency conflicts were resolved: the new
+finishBeforeSameTextureCopy entries are appended after this branch's
+doubleClearForRobustInit/deferGlDeleteBuffers in FeaturesGL_autogen.h and
+gl_features.json, and the ANGLE_FEATURE_CONDITION is inserted after
+limitMaxBufferSizeTo1gb in InitializeFeatures. No logic changes.
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index ea9e1705680c0f111e319ae2e67e3e0503d8fa6e..6f35f0df732672ecbd31053908595e91a9cf83b3 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -812,6 +812,11 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo finishBeforeSameTextureCopy = {
++        "finishBeforeSameTextureCopy",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index ba18aafd513c052f3b6f6a8ebac0e3fc0619b6cc..6716f381b43787af87e6749c25ec95b368eff72f 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -1070,6 +1070,15 @@
+                 "Defer glDeleteBuffers calls until previous GPU work has completed."
+             ],
+             "issue": "http://crbug.com/558870371"
++        },
++        {
++            "name": "finish_before_same_texture_copy",
++            "category": "Workarounds",
++            "description": [
++                "Force a finish before copying from a framebuffer whose read attachment is the ",
++                "destination texture to work around driver bugs."
++            ],
++            "issue": "https://crbug.com/552672183"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index 21ab912d49185ad3386e2245705a17efb87e5228..e8e1fbae152d7e4185452d5a4f5b83c667aad42b 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -1107,6 +1107,12 @@ angle::Result TextureGL::copyImage(const gl::Context *context,
+         TextureGL *sourceTexture = GetImplAs<TextureGL>(readBuffer->getTexture());
+         if (sourceTexture && sourceTexture->mTextureID == mTextureID)
+         {
++            if (features.finishBeforeSameTextureCopy.enabled)
++            {
++                // Force a finish before copying from a framebuffer that has the destination texture
++                // attached. Avoids an IMG driver bug if the source still has pending rendering.
++                ANGLE_GL_TRY(context, functions->finish());
++            }
+             GLuint attachedTextureLevel = readBuffer->mipLevel();
+             if (attachedTextureLevel != mState.getEffectiveBaseLevel())
+             {
+@@ -1285,6 +1291,21 @@ angle::Result TextureGL::copySubImage(const gl::Context *context,
+                              destOffset.y + clippedArea.y - sourceArea.y, destOffset.z);
+ 
+     stateManager->bindTexture(getType(), mTextureID);
++    if (features.finishBeforeSameTextureCopy.enabled)
++    {
++        const gl::FramebufferAttachment *readBuffer = source->getReadColorAttachment();
++        if (readBuffer && readBuffer->type() == GL_TEXTURE)
++        {
++            const TextureGL *sourceTexture = GetImplAs<TextureGL>(readBuffer->getTexture());
++            if (sourceTexture && sourceTexture->mTextureID == mTextureID)
++            {
++                // Force a finish before copying from a framebuffer that has the destination texture
++                // attached. Avoids an IMG driver bug if the source still has pending rendering.
++                ANGLE_GL_TRY(context, functions->finish());
++            }
++        }
++    }
++
+     GLenum framebufferTarget =
+         stateManager->getHasSeparateFramebufferBindings() ? GL_READ_FRAMEBUFFER : GL_FRAMEBUFFER;
+     stateManager->bindFramebuffer(framebufferTarget, sourceFramebufferGL->getFramebufferID());
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index f89d780fb8fdc0ffe14c01eb0df903e27d0b224f..d4874451c1af7e286dae8bfe6f01c9601174b017 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2837,6 +2837,11 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+ 
+     // Mac Intel drivers are unable to allocate buffers larger than ~1gb
+     ANGLE_FEATURE_CONDITION(features, limitMaxBufferSizeTo1gb, isApple && isIntel);
++
++    // Force a finish before copying from a framebuffer that has the destination texture attached.
++    // Avoids an IMG driver bug if the source still has pending rendering.
++    // https://crbug.com/552672183
++    ANGLE_FEATURE_CONDITION(features, finishBeforeSameTextureCopy, IsPowerVR(vendor));
+ }
+ 
+ void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFeatures *features)
+diff --git a/src/tests/gl_tests/CopyTexImageTest.cpp b/src/tests/gl_tests/CopyTexImageTest.cpp
+index b5aea99e81478a1a1aa452c0e1d149fd123944b4..b9572089f0c1c8d3b500a4f933972f9035d8744d 100644
+--- a/src/tests/gl_tests/CopyTexImageTest.cpp
++++ b/src/tests/gl_tests/CopyTexImageTest.cpp
+@@ -2350,6 +2350,190 @@ TEST_P(CopyTexImageTestES3, CopySubTexturePreservesStorageDataSRGB)
+     EXPECT_PIXEL_RECT_EQ(0, 1, kSize, kSize - 1, GLColor::green);
+ }
+ 
++// Verify that copying from level 0 of a texture to level 1 of the same texture while level 0 has
++// pending rendering copies the entire level without corruption on IMG GPUs.
++// Regression test for http://crbug.com/552672183.
++TEST_P(CopyTexImageTestES3, SameTextureCrossLevelFeedbackCopy)
++{
++    constexpr GLsizei kL0Size = 4096;
++    constexpr GLsizei kL1Size = 2048;
++
++    std::vector<GLColor> greenData(kL1Size * kL1Size, GLColor::green);
++    ANGLE_GL_PROGRAM(redProgram, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++
++    for (int iter = 0; iter < 5; ++iter)
++    {
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kL0Size, kL0Size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     nullptr);
++        glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, kL1Size, kL1Size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     greenData.data());
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++        ASSERT_GL_NO_ERROR();
++
++        // Make the mip chain resident with one mipmap-filtered draw to the default framebuffer.
++        glBindFramebuffer(GL_FRAMEBUFFER, 0);
++        glViewport(0, 0, getWindowWidth(), getWindowHeight());
++        draw2DTexturedQuad(0.5f, 1.0f, true);
++        ASSERT_GL_NO_ERROR();
++
++        // Attach L0 to a framebuffer and draw full-screen red.
++        GLFramebuffer fbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        glViewport(0, 0, kL0Size, kL0Size);
++        drawQuad(redProgram, essl1_shaders::PositionAttrib(), 0.5f);
++        ASSERT_GL_NO_ERROR();
++
++        // Perform a same-texture cross-level feedback copy from L0 (attached to fbo) into L1.
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glCopyTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 0, 0, kL1Size, kL1Size, 0);
++        ASSERT_GL_NO_ERROR();
++
++        // Read back L1 and verify all pixels are red (no residual green from aborted transfer).
++        GLFramebuffer readFbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, readFbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++        EXPECT_PIXEL_RECT_EQ(0, 0, kL1Size, kL1Size, GLColor::red);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Verify that glCopyTexSubImage2D from level 0 of a texture to level 1 of the same texture while
++// level 0 has pending rendering copies the entire level without corruption on IMG GPUs.
++// Regression test for http://crbug.com/552672183.
++TEST_P(CopyTexImageTestES3, SameTextureCrossLevelFeedbackCopySubImage)
++{
++    constexpr GLsizei kL0Size = 4096;
++    constexpr GLsizei kL1Size = 2048;
++
++    std::vector<GLColor> greenData(kL1Size * kL1Size, GLColor::green);
++    ANGLE_GL_PROGRAM(redProgram, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++
++    for (int iter = 0; iter < 5; ++iter)
++    {
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kL0Size, kL0Size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     nullptr);
++        glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, kL1Size, kL1Size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     greenData.data());
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++        ASSERT_GL_NO_ERROR();
++
++        // Make the mip chain resident with one mipmap-filtered draw to the default framebuffer.
++        glBindFramebuffer(GL_FRAMEBUFFER, 0);
++        glViewport(0, 0, getWindowWidth(), getWindowHeight());
++        draw2DTexturedQuad(0.5f, 1.0f, true);
++        ASSERT_GL_NO_ERROR();
++
++        // Attach L0 to a framebuffer and draw full-screen red.
++        GLFramebuffer fbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        glViewport(0, 0, kL0Size, kL0Size);
++        drawQuad(redProgram, essl1_shaders::PositionAttrib(), 0.5f);
++        ASSERT_GL_NO_ERROR();
++
++        // Perform a same-texture cross-level feedback copy via glCopyTexSubImage2D from L0 into L1.
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glCopyTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 0, 0, kL1Size, kL1Size);
++        ASSERT_GL_NO_ERROR();
++
++        // Read back L1 and verify all pixels are red.
++        GLFramebuffer readFbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, readFbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++        EXPECT_PIXEL_RECT_EQ(0, 0, kL1Size, kL1Size, GLColor::red);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Verify that copying from one cube map face to another face of the same texture while the source
++// face has pending rendering copies the entire face without corruption on IMG GPUs.
++// Regression test for http://crbug.com/552672183.
++TEST_P(CopyTexImageTestES3, SameTextureCrossCubeFaceFeedbackCopy)
++{
++    constexpr GLsizei kSize = 2048;
++
++    std::vector<GLColor> greenData(kSize * kSize, GLColor::green);
++
++    constexpr char kCubeSampleFS[] = R"(#version 300 es
++precision mediump float;
++uniform mediump samplerCube texCube;
++out vec4 fragColor;
++void main() {
++    fragColor = texture(texCube, vec3(-1.0, 0.0, 0.0));
++})";
++    ANGLE_GL_PROGRAM(cubeProgram, essl3_shaders::vs::Simple(), kCubeSampleFS);
++    ANGLE_GL_PROGRAM(redProgram, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++
++    for (int iter = 0; iter < 5; ++iter)
++    {
++        GLTexture cubemap;
++        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
++        for (GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X; face <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
++             ++face)
++        {
++            const void *initData =
++                (face == GL_TEXTURE_CUBE_MAP_NEGATIVE_X) ? greenData.data() : nullptr;
++            glTexImage2D(face, 0, GL_RGBA, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, initData);
++        }
++        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
++        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 0);
++        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++        ASSERT_GL_NO_ERROR();
++
++        // Make the cubemap resident with one draw to the default framebuffer.
++        glBindFramebuffer(GL_FRAMEBUFFER, 0);
++        glViewport(0, 0, getWindowWidth(), getWindowHeight());
++        glUseProgram(cubeProgram);
++        glUniform1i(glGetUniformLocation(cubeProgram, "texCube"), 0);
++        drawQuad(cubeProgram, essl3_shaders::PositionAttrib(), 0.0f);
++        ASSERT_GL_NO_ERROR();
++
++        // Attach +X face to a framebuffer and draw full-screen red.
++        GLFramebuffer fbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
++                               cubemap, 0);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        glViewport(0, 0, kSize, kSize);
++        drawQuad(redProgram, essl1_shaders::PositionAttrib(), 0.5f);
++        ASSERT_GL_NO_ERROR();
++
++        // Perform a same-texture cross-face feedback copy from +X (attached to fbo) into -X.
++        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
++        glCopyTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, 0, 0, kSize, kSize, 0);
++        ASSERT_GL_NO_ERROR();
++
++        // Read back -X face and verify all pixels are red (no residual green from aborted
++        // transfer).
++        GLFramebuffer readFbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, readFbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
++                               cubemap, 0);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++        EXPECT_PIXEL_RECT_EQ(0, 0, kSize, kSize, GLColor::red);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(
+     CopyTexImageTest,
+     ES2_D3D11_PRESENT_PATH_FAST(),
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 434fcd46dfa2ac87a0ef6e3fb6a258c24febccfe..39b2bf7e760e307c217c8bb5b124bd3bffd5732c 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -187,6 +187,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::ExposeNonConformantExtensionsAndVersions, "exposeNonConformantExtensionsAndVersions"},
+     {Feature::ExternallySynchronizePipelineCacheAccess, "externallySynchronizePipelineCacheAccess"},
+     {Feature::FinishBeforeBlitFramebufferMultiAttachment, "finishBeforeBlitFramebufferMultiAttachment"},
++    {Feature::FinishBeforeSameTextureCopy, "finishBeforeSameTextureCopy"},
+     {Feature::FinishDoesNotCauseQueriesToBeAvailable, "finishDoesNotCauseQueriesToBeAvailable"},
+     {Feature::FlushAfterEndingTransformFeedback, "flushAfterEndingTransformFeedback"},
+     {Feature::FlushAfterStreamVertexData, "flushAfterStreamVertexData"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index a3cb0f5659f1b4ab49bb53ee40a99576cf7da016..2c17d77c3b3c89073c060de6678357e6df01af24 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -187,6 +187,7 @@ enum class Feature
+     ExposeNonConformantExtensionsAndVersions,
+     ExternallySynchronizePipelineCacheAccess,
+     FinishBeforeBlitFramebufferMultiAttachment,
++    FinishBeforeSameTextureCopy,
+     FinishDoesNotCauseQueriesToBeAvailable,
+     FlushAfterEndingTransformFeedback,
+     FlushAfterStreamVertexData,

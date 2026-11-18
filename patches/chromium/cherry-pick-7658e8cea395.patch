@@ -1,0 +1,189 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Sun, 18 Oct 2026 17:26:29 -0700
+Subject: [HiC] Fix IsInCanvasSubtree bookkeeping for slotted reinsertion
+
+When a slotted element is removed from the tree the IsInCanvasSubtree
+bit is cleared. If the element is then reinserted into the tree in a way
+that preserves its previous slotting, prior to this CL we would not flip
+the flag back to true.
+
+Fixed: 574640593
+Change-Id: Icfb7cc58955a392b22d1a3cac43bf6828cba4a0c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8603615
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1721557}
+
+Electron adaptation notes (44-x-y): the element.cc change applies as upstream;
+only the end-of-file placement of the two new unit tests in
+html_canvas_element_test.cc conflicted and was resolved by appending them.
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 22c09636f15f6fe4943206d6f0803637b01745ea..a3a7d037426dcad8387b9cf4740acebcf9f737c1 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4148,12 +4148,17 @@ Node::InsertionNotificationRequest Element::InsertedInto(
+   // slot assignment it will cause DCHECK failures. If an element is slotted
+   // the checks will be re-run when slot assignment completes.
+   auto* parent = ParentOrShadowHostElement();
+-  if (parent && parent->IsCanvasOrInCanvasSubtree()) {
++  if (!IsPseudoElement() && IsChildOfShadowHost()) {
++    if (auto* slot = AssignedSlotWithoutRecalc();
++        slot && slot->OwnerShadowHost() == parent &&
++        slot->IsInCanvasSubtree()) {
++      SetIsInCanvasSubtree(true);
++    }
++  } else if (parent && parent->IsCanvasOrInCanvasSubtree()) {
+     const auto* slot = ToHTMLSlotElementIfSupportsAssignmentOrNull(*parent);
+     const bool is_inactive_fallback_content =
+         slot && !slot->AssignedNodesNoRecalc().empty();
+-    if (IsPseudoElement() ||
+-        (!IsChildOfShadowHost() && !is_inactive_fallback_content)) {
++    if (IsPseudoElement() || !is_inactive_fallback_content) {
+       SetIsInCanvasSubtree(true);
+     }
+   } else if (!parent && insertion_point.IsDocumentNode()) {
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+index a0d9a7e186ffedadd37ea5f1a45ead8fe7dcad57..2f1d52a4a5087ed0b5b45e071c6eaef90ac33034 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+@@ -813,4 +813,138 @@ TEST_P(HTMLCanvasElementTest, SlotAssignmentDuringSetIsInCanvasSubtree) {
+   EXPECT_FALSE(y->IsInCanvasSubtree());
+ }
+ 
++TEST_P(HTMLCanvasElementTest, SlotReassignmentInvalidatesVisitedLinkStyle) {
++  ScopedCanvasDrawElementForTest forced_canvas_draw_element_feature(true);
++  GetDocument().body()->SetHTMLUnsafeWithoutTrustedTypes(R"HTML(
++    <div id="host">
++      <template shadowrootmode="open">
++        <div>
++          <slot name="outside"></slot>
++        </div>
++        <canvas content="drawable">
++          <div drawable>
++            <slot name="inside"></slot>
++          </div>
++        </canvas>
++      </template>
++      <div id="payload" slot="outside">
++        <a id="link" href=""><span id="child">Link</span></a>
++        <svg><a id="svg_link" href=""><rect width="10" height="10"/></a></svg>
++      </div>
++    </div>
++  )HTML");
++  UpdateAllLifecyclePhasesForTest();
++
++  auto* payload = GetDocument().getElementById(AtomicString("payload"));
++  auto* link = GetDocument().getElementById(AtomicString("link"));
++  auto* child = GetDocument().getElementById(AtomicString("child"));
++  auto* svg_link = GetDocument().getElementById(AtomicString("svg_link"));
++
++  EXPECT_FALSE(link->IsInCanvasSubtree());
++  EXPECT_EQ(link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++  EXPECT_EQ(child->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++  EXPECT_EQ(svg_link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++
++  payload->setAttribute(html_names::kSlotAttr, AtomicString("inside"));
++  UpdateAllLifecyclePhasesForTest();
++
++  EXPECT_TRUE(link->IsInCanvasSubtree());
++  EXPECT_EQ(link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideUnvisitedLink);
++  EXPECT_EQ(child->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideUnvisitedLink);
++  EXPECT_EQ(svg_link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideUnvisitedLink);
++
++  payload->setAttribute(html_names::kSlotAttr, AtomicString("outside"));
++  UpdateAllLifecyclePhasesForTest();
++
++  EXPECT_FALSE(link->IsInCanvasSubtree());
++  EXPECT_EQ(link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++  EXPECT_EQ(child->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++  EXPECT_EQ(svg_link->GetComputedStyle()->InsideLink(),
++            EInsideLink::kInsideVisitedLink);
++}
++
++TEST_P(HTMLCanvasElementTest, RemoveAndReinsertSlottedElementToSameHost) {
++  GetDocument().body()->SetHTMLUnsafeWithoutTrustedTypes(R"HTML(
++    <div id="host1">
++      <template shadowrootmode="open">
++        <canvas content="drawable">
++          <slot></slot>
++        </canvas>
++      </template>
++      <div id="slotted1">
++        <div id="child1"></div>
++      </div>
++    </div>
++    <canvas content="drawable">
++      <div id="host2">
++        <template shadowrootmode="open">
++          <slot></slot>
++        </template>
++        <div id="slotted2">
++          <div id="child2"></div>
++        </div>
++      </div>
++    </canvas>
++  )HTML");
++  UpdateAllLifecyclePhasesForTest();
++
++  auto* host1 = GetDocument().getElementById(AtomicString("host1"));
++  auto* slotted1 = GetDocument().getElementById(AtomicString("slotted1"));
++  auto* child1 = GetDocument().getElementById(AtomicString("child1"));
++  auto* host2 = GetDocument().getElementById(AtomicString("host2"));
++  auto* slotted2 = GetDocument().getElementById(AtomicString("slotted2"));
++  auto* child2 = GetDocument().getElementById(AtomicString("child2"));
++
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++
++  // Remove and reinsert into the same shadow host without an intermediate
++  // slot assignment recalc, so both elements retain their previous slotting.
++  slotted1->remove();
++  EXPECT_FALSE(slotted1->IsInCanvasSubtree());
++  EXPECT_FALSE(child1->IsInCanvasSubtree());
++  host1->appendChild(slotted1);
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++
++  slotted2->remove();
++  EXPECT_FALSE(slotted2->IsInCanvasSubtree());
++  EXPECT_FALSE(child2->IsInCanvasSubtree());
++  host2->appendChild(slotted2);
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++
++  // Also test single-call re-insertion of an already-attached slotted child
++  // (`host->appendChild(slotted)`), which internally removes and re-inserts
++  // in the same task.
++  host1->appendChild(slotted1);
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++  host2->appendChild(slotted2);
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++}
++
+ }  // namespace blink
