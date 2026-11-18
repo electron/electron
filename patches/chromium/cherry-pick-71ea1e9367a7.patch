@@ -30,7 +30,7 @@ Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
 Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1725401}
 
-Electron adaptation notes (44-x-y): IsValidTransferToken() on this branch takes the expected url::Origin (the OPFS StorageKey-partition check is a later upstream change), so DidResolveForSerializeHandle() passes storage_key.origin(), matching the other call sites on this branch. Because that check is origin-only here, the mojom comment on SerializeHandle() promises only a same-origin check, and the SerializeHandle_SandboxedFile_OtherStorageKey_Rejected test uses a cross-origin StorageKey instead of upstream's same-origin cross-site partitioned one (which this branch would accept). Everything else applies as upstream.
+Electron adaptation notes (44-x-y): IsValidTransferToken() on this branch takes the expected url::Origin (the OPFS StorageKey-partition check is a later upstream change), so DidResolveForSerializeHandle() passes storage_key.origin(), matching the other call sites on this branch. Because that check is origin-only here, the mojom comment on SerializeHandle() promises only a same-origin check, and the SerializeHandle_SandboxedFile_OtherStorageKey_Rejected test uses a cross-origin StorageKey instead of upstream's same-origin cross-site partitioned one (which this branch would accept). The new tests use FileSystemAccessPermissionContext::UserAction, this branch's name for upstream's AccessTrigger. Everything else applies as upstream.
 
 diff --git a/components/services/storage/public/mojom/file_system_access_context.mojom b/components/services/storage/public/mojom/file_system_access_context.mojom
 index fcba3a550b00d0252c945df174e8c82808e697f9..3ed69c75466bbc1607cf5646839126a4b53f0ce4 100644
@@ -193,7 +193,7 @@ index 6ddb7a23ba07475c1a7958fd762676b9648fb48f..1d54878b1216776e1d15836739c054dc
        const base::FilePath& root_permission_path,
        const std::string& display_name);
 diff --git a/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc b/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
-index 995e8d03e240b4f36d6d3d72cec8466de1378797..55d2d194aa11656895a078d06ee5c91f029737e1 100644
+index 995e8d03e240b4f36d6d3d72cec8466de1378797..f35fded596742c255123e5335153afb6b2e8941e 100644
 --- a/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
 +++ b/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
 @@ -385,7 +385,7 @@ class FileSystemAccessManagerImplTest : public testing::Test {
@@ -236,7 +236,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..55d2d194aa11656895a078d06ee5c91f
 +  blink::mojom::FileSystemAccessEntryPtr entry =
 +      manager_->CreateFileEntryFromPath(
 +          binding_context_, kTestPathInfo,
-+          FileSystemAccessPermissionContext::AccessTrigger::kOpen);
++          FileSystemAccessPermissionContext::UserAction::kOpen);
 +  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> handle(
 +      std::move(entry->entry_handle->get_file()));
 +
@@ -316,18 +316,18 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..55d2d194aa11656895a078d06ee5c91f
 +  EXPECT_CALL(permission_context_,
 +              GetReadPermissionGrant(
 +                  kOtherStorageKey.origin(), kTestPathInfo, HandleType::kFile,
-+                  FileSystemAccessPermissionContext::AccessTrigger::kOpen))
++                  FileSystemAccessPermissionContext::UserAction::kOpen))
 +      .WillOnce(testing::Return(grant));
 +  EXPECT_CALL(permission_context_,
 +              GetWritePermissionGrant(
 +                  kOtherStorageKey.origin(), kTestPathInfo, HandleType::kFile,
-+                  FileSystemAccessPermissionContext::AccessTrigger::kOpen))
++                  FileSystemAccessPermissionContext::UserAction::kOpen))
 +      .WillOnce(testing::Return(grant));
 +
 +  blink::mojom::FileSystemAccessEntryPtr entry =
 +      manager_->CreateFileEntryFromPath(
 +          other_binding_context, kTestPathInfo,
-+          FileSystemAccessPermissionContext::AccessTrigger::kOpen);
++          FileSystemAccessPermissionContext::UserAction::kOpen);
 +  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> handle(
 +      std::move(entry->entry_handle->get_file()));
 +
@@ -371,19 +371,19 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..55d2d194aa11656895a078d06ee5c91f
 +      permission_context_,
 +      GetReadPermissionGrant(
 +          kOtherStorageKey.origin(), kTestPathInfo, HandleType::kDirectory,
-+          FileSystemAccessPermissionContext::AccessTrigger::kOpen))
++          FileSystemAccessPermissionContext::UserAction::kOpen))
 +      .WillOnce(testing::Return(grant));
 +  EXPECT_CALL(
 +      permission_context_,
 +      GetWritePermissionGrant(
 +          kOtherStorageKey.origin(), kTestPathInfo, HandleType::kDirectory,
-+          FileSystemAccessPermissionContext::AccessTrigger::kOpen))
++          FileSystemAccessPermissionContext::UserAction::kOpen))
 +      .WillOnce(testing::Return(grant));
 +
 +  blink::mojom::FileSystemAccessEntryPtr entry =
 +      manager_->CreateDirectoryEntryFromPath(
 +          other_binding_context, kTestPathInfo,
-+          FileSystemAccessPermissionContext::AccessTrigger::kOpen);
++          FileSystemAccessPermissionContext::UserAction::kOpen);
 +  mojo::Remote<blink::mojom::FileSystemAccessDirectoryHandle> handle(
 +      std::move(entry->entry_handle->get_directory()));
 +
@@ -426,18 +426,18 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..55d2d194aa11656895a078d06ee5c91f
 +  EXPECT_CALL(permission_context_,
 +              GetReadPermissionGrant(
 +                  kOtherStorageKey.origin(), kTestPathInfo, HandleType::kFile,
-+                  FileSystemAccessPermissionContext::AccessTrigger::kOpen))
++                  FileSystemAccessPermissionContext::UserAction::kOpen))
 +      .WillOnce(testing::Return(grant));
 +  EXPECT_CALL(permission_context_,
 +              GetWritePermissionGrant(
 +                  kOtherStorageKey.origin(), kTestPathInfo, HandleType::kFile,
-+                  FileSystemAccessPermissionContext::AccessTrigger::kOpen))
++                  FileSystemAccessPermissionContext::UserAction::kOpen))
 +      .WillOnce(testing::Return(grant));
 +
 +  blink::mojom::FileSystemAccessEntryPtr entry =
 +      manager_->CreateFileEntryFromPath(
 +          other_binding_context, kTestPathInfo,
-+          FileSystemAccessPermissionContext::AccessTrigger::kOpen);
++          FileSystemAccessPermissionContext::UserAction::kOpen);
 +  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> handle(
 +      std::move(entry->entry_handle->get_file()));
 +
