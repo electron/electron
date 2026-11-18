@@ -14,6 +14,7 @@ import {
   type MessageBoxOptions
 } from 'electron/main';
 
+import * as dbus from 'dbus-native';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket, WebSocketServer } from 'ws';
 
@@ -26,6 +27,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import { promisify } from 'node:util';
 
 import { emittedUntil } from './lib/events-helpers.ts';
 import {
@@ -2223,6 +2225,278 @@ describe('chromium features', () => {
       otherTop.close();
       await setTimeout(6000);
       expect(await query()).toBe('prompt');
+    });
+  });
+
+  // Drives <input type=file> and the File System Access pickers against the
+  // mock xdg-desktop-portal FileChooser that script/dbus_mock.py hosts on the
+  // fake session bus. A pick succeeds with the URIs queued through
+  // QueueResponse; with nothing queued the mock cancels it.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('file pickers (Linux portal)', { tags: ['serial'] }, () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+    let queueResponse: (uris: string[]) => Promise<void>;
+    let clearQueuedResponses: () => Promise<void>;
+
+    beforeAll(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+      queueResponse = promisify(mock.QueueResponse.bind(mock));
+      clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
+    });
+
+    afterAll(() => {
+      bus?.connection.end();
+    });
+
+    beforeEach(async () => {
+      await clearCalls();
+    });
+
+    afterEach(closeAllWindows);
+
+    // Makes the next portal request succeed with these paths. Whatever a
+    // test leaves unanswered is dropped so it cannot answer the next test.
+    const queuePick = async (...paths: string[]) => {
+      defer(() => clearQueuedResponses());
+      await queueResponse(paths.map((p) => url.pathToFileURL(p).href));
+    };
+
+    const makeTempDir = () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-picker-'));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      return dir;
+    };
+
+    // A call is [timestamp, methodName, [parent_window, title, options]];
+    // args and dict values are [signature, [value]] variant pairs.
+    const getLoggedOptions = (call: any) => {
+      const options: Record<string, any> = {};
+      for (const entry of call[2][2][1][0]) {
+        options[entry[0]] = entry[1][1][0];
+      }
+      return options;
+    };
+
+    // current_folder is an 'ay' (null-terminated byte array).
+    const getCurrentFolder = (options: Record<string, any>) => {
+      const bytes = Buffer.from(options.current_folder);
+      const nul = bytes.indexOf(0);
+      return path.resolve(bytes.toString('utf8', 0, nul === -1 ? bytes.length : nul));
+    };
+
+    const getPortalCalls = async (method: string) => (await getCalls()).filter((call) => call[1] === method);
+
+    const loadPage = async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { session: session.fromPartition(`portal-picker-${Math.random()}`) }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      return w;
+    };
+
+    describe('<input type=file>', () => {
+      // Clicks a new file input with a user gesture and resolves with the
+      // name, relative path and text of each file it was given, or null if
+      // the pick was cancelled.
+      const pickWithInput = (w: BrowserWindow, attributes: Record<string, string> = {}) =>
+        w.webContents.executeJavaScript(
+          `new Promise((resolve) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            for (const [name, value] of Object.entries(${JSON.stringify(attributes)})) {
+              input.setAttribute(name, value);
+            }
+            input.onchange = async () => {
+              resolve(await Promise.all(Array.from(input.files, async (file) => ({
+                name: file.name,
+                relativePath: file.webkitRelativePath,
+                text: await file.text()
+              }))));
+            };
+            input.oncancel = () => resolve(null);
+            document.body.appendChild(input);
+            input.click();
+          })`,
+          true
+        );
+
+      it('reads the file picked through the portal', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'picked.txt');
+        fs.writeFileSync(file, 'picked through the portal');
+        await queuePick(file);
+
+        const w = await loadPage();
+        expect(await pickWithInput(w)).toEqual([
+          { name: 'picked.txt', relativePath: '', text: 'picked through the portal' }
+        ]);
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        const options = getLoggedOptions(calls[0]);
+        expect(options.multiple).toBeFalsy();
+        expect(options.directory).toBeFalsy();
+      });
+
+      it('resolves to no files when the pick is cancelled', async () => {
+        const w = await loadPage();
+        expect(await pickWithInput(w)).toBeNull();
+        expect(await getPortalCalls('OpenFile')).toHaveLength(1);
+      });
+
+      it('reads every file picked for a multiple input', async () => {
+        const dir = makeTempDir();
+        const first = path.join(dir, 'first.txt');
+        const second = path.join(dir, 'second.txt');
+        fs.writeFileSync(first, 'one');
+        fs.writeFileSync(second, 'two');
+        await queuePick(first, second);
+
+        const w = await loadPage();
+        const files = await pickWithInput(w, { multiple: '' });
+        expect(files).toHaveLength(2);
+        expect(files).toEqual(
+          expect.arrayContaining([
+            { name: 'first.txt', relativePath: '', text: 'one' },
+            { name: 'second.txt', relativePath: '', text: 'two' }
+          ])
+        );
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        expect(getLoggedOptions(calls[0]).multiple).toBe(true);
+      });
+
+      it('sends the accept types as portal filters', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'notes.txt');
+        fs.writeFileSync(file, 'filtered');
+        await queuePick(file);
+
+        const w = await loadPage();
+        expect(await pickWithInput(w, { accept: '.txt,image/png' })).toEqual([
+          { name: 'notes.txt', relativePath: '', text: 'filtered' }
+        ]);
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        // Filters are a(sa(us)): a name and its (type, glob) patterns, where
+        // type 0 is a glob. Chromium adds an "All Files" filter after them.
+        const options = getLoggedOptions(calls[0]);
+        const customFilter = [
+          'Custom Files',
+          [
+            [0, '*.[pP][nN][gG]'],
+            [0, '*.[tT][xX][tT]']
+          ]
+        ];
+        expect(options.filters).toEqual([customFilter, ['All Files', [[0, '*.*']]]]);
+        expect(options.current_filter).toEqual(customFilter);
+      });
+    });
+
+    describe('File System Access pickers', () => {
+      it('showOpenFilePicker() returns a handle to the picked file', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'open.txt');
+        fs.writeFileSync(file, 'opened through the portal');
+        await queuePick(file);
+
+        const w = await loadPage();
+        const result = await w.webContents.executeJavaScript(
+          `showOpenFilePicker({ id: 'notes', startIn: 'documents' }).then(async ([handle]) => {
+            const file = await handle.getFile();
+            return { kind: handle.kind, name: handle.name, text: await file.text() };
+          })`,
+          true
+        );
+        expect(result).toEqual({ kind: 'file', name: 'open.txt', text: 'opened through the portal' });
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        // startIn falls back to the home directory when the well-known
+        // directory does not exist.
+        expect([app.getPath('documents'), app.getPath('home')]).toContain(getCurrentFolder(getLoggedOptions(calls[0])));
+      });
+
+      it('showOpenFilePicker() starts in the directory last picked for the same id', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'first.txt');
+        fs.writeFileSync(file, 'first');
+
+        const w = await loadPage();
+        const pick = () =>
+          w.webContents.executeJavaScript(
+            `showOpenFilePicker({ id: 'notes' }).then(([handle]) => handle.name, (error) => error.name)`,
+            true
+          );
+        await queuePick(file);
+        expect(await pick()).toBe('first.txt');
+        expect(await pick()).toBe('AbortError');
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(2);
+        expect(getCurrentFolder(getLoggedOptions(calls[1]))).toBe(dir);
+      });
+
+      it('showSaveFilePicker() returns a handle that writes to the picked file', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'saved.txt');
+        await queuePick(file);
+
+        const w = await loadPage();
+        const name = await w.webContents.executeJavaScript(
+          `showSaveFilePicker({ suggestedName: 'suggested.txt' }).then(async (handle) => {
+            const writable = await handle.createWritable();
+            await writable.write('written through the portal');
+            await writable.close();
+            return handle.name;
+          })`,
+          true
+        );
+        expect(name).toBe('saved.txt');
+        expect(fs.readFileSync(file, 'utf8')).toBe('written through the portal');
+
+        const calls = await getPortalCalls('SaveFile');
+        expect(calls).toHaveLength(1);
+        expect(getLoggedOptions(calls[0]).current_name).toBe('suggested.txt');
+      });
+
+      it('showDirectoryPicker() returns a handle to the picked directory', async () => {
+        const dir = makeTempDir();
+        const picked = path.join(dir, 'picked-dir');
+        fs.mkdirSync(picked);
+        fs.writeFileSync(path.join(picked, 'a.txt'), 'a');
+        fs.writeFileSync(path.join(picked, 'b.txt'), 'b');
+        await queuePick(picked);
+
+        const w = await loadPage();
+        const result = await w.webContents.executeJavaScript(
+          `showDirectoryPicker().then(async (handle) => {
+            const names = [];
+            for await (const name of handle.keys()) names.push(name);
+            return { kind: handle.kind, name: handle.name, entries: names.sort() };
+          })`,
+          true
+        );
+        expect(result).toEqual({ kind: 'directory', name: 'picked-dir', entries: ['a.txt', 'b.txt'] });
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        expect(getLoggedOptions(calls[0]).directory).toBe(true);
+      });
     });
   });
 
