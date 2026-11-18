@@ -277,6 +277,20 @@ describe('ipc module', () => {
     });
 
     ifit(process.arch === 'x64' || process.arch === 'arm64')(
+      'throws a size-limit error when sending an oversized IPC message',
+      async () => {
+        await expect(
+          w.webContents.executeJavaScript(`(async () => {
+            const { ipcRenderer } = require('electron');
+            const size = 2 ** 31;
+            const buffer = new ArrayBuffer(size, { maxByteLength: size });
+            ipcRenderer.send('oversized-ipc', buffer);
+          })()`)
+        ).to.eventually.be.rejectedWith(/^IPC message exceeds the maximum serialized size\.$/);
+      }
+    );
+
+    ifit(process.arch === 'x64' || process.arch === 'arm64')(
       'sends a maximum-length string followed by another value without crashing',
       async () => {
         defer(() => ipcMain.removeAllListeners('x'));

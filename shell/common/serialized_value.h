@@ -14,8 +14,9 @@
 
 namespace electron {
 
+// Leave room for PartitionAlloc metadata
 inline constexpr size_t kMaxIpcSerializationBufferSize =
-    partition_alloc::MaxAllocationSize();
+    partition_alloc::MaxAllocationSize() - 1024 * 1024;
 
 // A V8-serialized value held in the buffer it crosses the process boundary in:
 // inline bytes for small values, a shared memory region above

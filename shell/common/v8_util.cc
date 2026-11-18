@@ -144,6 +144,8 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
                            base::ClampMul(capacity_, size_t{4}).RawValue()));
       }
       auto bigger = CreateSharedMemoryBuffer(grown_capacity);
+      if (!bigger && grown_capacity > size)
+        bigger = CreateSharedMemoryBuffer(size);
       if (!bigger)
         return nullptr;
       base::span(*bigger).first(capacity_).copy_from(written.first(capacity_));
