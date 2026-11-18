@@ -10,7 +10,7 @@ import * as path from 'node:path';
 import { startRemoteControlApp, ifdescribe, ifit, isTestingBindingAvailable } from './lib/spec-helpers.ts';
 
 // This test depends on functions that are only available when DCHECK_IS_ON.
-ifdescribe(isTestingBindingAvailable())('logging', () => {
+ifdescribe(isTestingBindingAvailable())('logging', { retry: 0 }, () => {
   it('does not log by default', async () => {
     // ELECTRON_ENABLE_LOGGING might be set in the environment, so remove it
     const { ELECTRON_ENABLE_LOGGING: _, ...envWithoutEnableLogging } = process.env;
