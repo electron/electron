@@ -2980,7 +2980,7 @@ describe('webContents module', { retry: 0 }, () => {
     afterEach(closeAllWindows);
 
     it('scrolls the selection to the middle of the viewport', async () => {
-      // Document scrolls are animated, and animations only advance in a visible window
+      // Shown so the page can take focus and its selection is the active one
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       await focusWebContents(w.webContents);
@@ -3012,11 +3012,22 @@ describe('webContents module', { retry: 0 }, () => {
       expect(before.height).toBeGreaterThan(0);
       expect(before.top).toBeGreaterThan(before.innerHeight);
 
-      w.webContents.centerSelection();
-      await waitUntil(async () => (await getScrollY()) !== 0);
+      // How far the middle of the selection is from the middle of the viewport
+      const getOffCenter = async () => {
+        const { top, height, innerHeight } = await getSelectionRect();
+        return Math.abs(top + height / 2 - innerHeight / 2);
+      };
 
-      const { top, height, innerHeight } = await getSelectionRect();
-      expect(Math.abs(top + height / 2 - innerHeight / 2)).toBeLessThan(10);
+      // centerSelection() reaches the renderer asynchronously. The scroll it
+      // makes (RevealSelection -> ScrollRectToVisible) is instant, since the
+      // page does not use CSS smooth scrolling, so wait for the centered
+      // position itself rather than for the first change in scroll offset.
+      w.webContents.centerSelection();
+      await waitUntil(async () => (await getOffCenter()) < 10).catch(async () => {
+        expect(await getOffCenter(), 'distance of the selection from the middle of the viewport').toBeLessThan(10);
+      });
+
+      expect(await getOffCenter()).toBeLessThan(10);
     });
   });
 
