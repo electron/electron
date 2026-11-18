@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 18 Nov 2026 05:53:04 +0000
+Subject: fix: allow WebContentsImpl::CenterSelection on all platforms
+
+WebContentsImpl::CenterSelection() wraps its whole body in
+BUILDFLAG(IS_MAC), so it does nothing on Windows and Linux. The guard
+was copied from the neighbouring CopyToFindPboard() when
+CenterSelection was added in https://crrev.com/c/4258445, but only
+CopyToFindPboard needs it, because only macOS has a find pasteboard.
+The rest of the path is platform-neutral: the
+FrameWidgetInputHandler.CenterSelection mojom message,
+FrameWidgetInputHandlerImpl, WebFrameWidgetImpl and
+WebLocalFrameImpl::CenterSelection(), which calls RevealSelection()
+with ScrollAlignment::CenterAlways().
+
+Removing the guard makes Electron's webContents.centerSelection() and
+<webview>.centerSelection() work on Windows and Linux.
+
+This should be upstreamed. Drop this patch once upstream
+WebContentsImpl::CenterSelection() is no longer guarded by
+BUILDFLAG(IS_MAC).
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index c5cb7939d67bf9189643773d3e24f937aaec8b14..5270bcbdda400512086941758ba7554b683967b6 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -7272,7 +7272,6 @@ void WebContentsImpl::CopyToFindPboard() {
+ 
+ void WebContentsImpl::CenterSelection() {
+   OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::CenterSelection");
+-#if BUILDFLAG(IS_MAC)
+   auto* input_handler = GetFocusedFrameWidgetInputHandler();
+   if (!input_handler) {
+     return;
+@@ -7280,7 +7279,6 @@ void WebContentsImpl::CenterSelection() {
+ 
+   last_interaction_time_ = ui::EventTimeForNow();
+   input_handler->CenterSelection();
+-#endif
+ }
+ 
+ void WebContentsImpl::Paste() {
