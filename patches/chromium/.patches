@@ -238,6 +238,7 @@ fix_guard_devtools_fetch_resume_and_body_collection.patch
 cherry-pick-861cb7cc1d51.patch
 cherry-pick-6e7047bfc51a.patch
 cherry-pick-03493d4864ad.patch
+feat_add_preloadrealmglobalscope.patch
 cherry-pick-aa1365a4a2d1.patch
 cherry-pick-0960c42b6cfe.patch
 cherry-pick-7628505b506f.patch
