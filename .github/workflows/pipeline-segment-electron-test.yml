@@ -247,6 +247,13 @@ jobs:
         # abnormal exits and sandboxed processes the suite produces.
         echo "LLVM_PROFILE_FILE=$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw" >> $GITHUB_ENV
         echo "IS_COVERAGE=true" >> $GITHUB_ENV
+    # Apps launched through LaunchServices (e.g. ShipIt's post-update relaunch
+    # in the autoUpdater specs) get launchd's environment, not the job's.
+    - name: Set coverage profile path for LaunchServices launches on macOS
+      if: ${{ inputs.is-coverage == true && inputs.target-platform == 'macos' }}
+      run: |
+        launchctl setenv LLVM_PROFILE_FILE "$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw"
+        launchctl getenv LLVM_PROFILE_FILE
     # Safe to parallelize: each step writes a disjoint location (src/electron
     # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*,
     # system CUPS state) and none reads another's output; the env/PATH changes
@@ -612,6 +619,31 @@ jobs:
         name: coverage_profraw_${{ env.ARTIFACT_KEY }}
         path: ${{ env.COVERAGE_PROFILE_DIR }}
         if-no-files-found: error
+        retention-days: 7
+    # TODO: Temporary debugging for the autoUpdater relaunch failures on macOS
+    # coverage runs; remove once they are understood.
+    - name: Collect relaunch diagnostics on macOS
+      if: ${{ always() && !cancelled() && inputs.is-coverage && inputs.target-platform == 'macos' }}
+      run: |
+        out="$RUNNER_TEMP/relaunch-diagnostics"
+        mkdir -p "$out/user-DiagnosticReports" "$out/system-DiagnosticReports" "$out/ShipIt"
+        cp -R "$HOME/Library/Logs/DiagnosticReports/." "$out/user-DiagnosticReports/" 2>/dev/null || true
+        cp -R /Library/Logs/DiagnosticReports/. "$out/system-DiagnosticReports/" 2>/dev/null || true
+        for dir in "$HOME"/Library/Caches/*ShipIt*; do
+          [ -d "$dir" ] && cp -R "$dir" "$out/ShipIt/" 2>/dev/null || true
+        done
+        launchctl getenv LLVM_PROFILE_FILE > "$out/launchctl-LLVM_PROFILE_FILE.txt" 2>&1 || true
+        log show --style compact --last 90m \
+          --predicate '(process == "Electron" OR process == "ShipIt" OR process CONTAINS "Electron Helper" OR senderImagePath CONTAINS "Electron")' \
+          2>&1 | tail -n 200000 > "$out/log-show.txt" || true
+        ls -laR "$out" | head -n 200 || true
+    - name: Upload relaunch diagnostics on macOS
+      if: ${{ always() && !cancelled() && inputs.is-coverage && inputs.target-platform == 'macos' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
+      with:
+        name: coverage_relaunch_diagnostics_${{ env.ARTIFACT_KEY }}
+        path: ${{ runner.temp }}/relaunch-diagnostics
+        if-no-files-found: warn
         retention-days: 7
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
