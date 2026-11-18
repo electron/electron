@@ -4838,6 +4838,67 @@ describe('canvas font parsing', () => {
   });
 });
 
+// Ahem (spec/fixtures/fonts/Ahem.ttf, from web-platform-tests) draws nearly
+// every glyph as a 1em square with a 1em advance, an 0.8em ascent and an 0.2em
+// descent, so these metrics are exact on every platform whatever fonts the
+// system has installed.
+describe('web font metrics (Ahem)', () => {
+  let w: BrowserWindow;
+  beforeAll(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadFile(path.join(fixturesPath, 'fonts', 'ahem.html'));
+    await w.webContents.executeJavaScript("document.fonts.load('20px AhemTest')");
+  });
+  afterAll(closeAllWindows);
+
+  it('loads the @font-face', async () => {
+    const result = await w.webContents.executeJavaScript(`({
+      faces: [...document.fonts].map((f) => [f.family, f.status]),
+      check: document.fonts.check('20px AhemTest')
+    })`);
+    expect(result.faces).toEqual([['AhemTest', 'loaded']]);
+    expect(result.check).toBe(true);
+  });
+
+  it('lays out DOM text with exact Ahem metrics', async () => {
+    const rects = await w.webContents.executeJavaScript(`
+      Object.fromEntries(['s20', 's37', 'fallback'].map((id) => {
+        const { width, height } = document.getElementById(id).getBoundingClientRect();
+        return [id, { width, height }];
+      }))
+    `);
+    expect(rects.s20).toEqual({ width: 80, height: 20 });
+    expect(rects.s37).toEqual({ width: 185, height: 37 });
+    // Same text and size in the system monospace font must not match, or the
+    // assertions above would not prove the web font was used.
+    expect(rects.fallback.width).not.toBe(80);
+  });
+
+  it('measures canvas text with exact Ahem metrics', async () => {
+    const metrics = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      const measure = (font, text) => {
+        ctx.font = font;
+        const m = ctx.measureText(text);
+        return { width: m.width, ascent: m.fontBoundingBoxAscent, descent: m.fontBoundingBoxDescent };
+      };
+      ({
+        s20: measure('20px AhemTest', 'XXXX'),
+        s37: measure('37px AhemTest', 'XpX X'),
+        spaced: measure(' 20px AhemTest', 'XXXX'),
+        fallback: measure('20px monospace', 'XXXX')
+      });
+    }`);
+    // Canvas widths are summed in single precision (e.g. 79.99993896484375).
+    expect(metrics.s20.width).toBeCloseTo(80, 2);
+    expect(metrics.s20.ascent).toBe(16);
+    expect(metrics.s20.descent).toBe(4);
+    expect(metrics.s37.width).toBeCloseTo(185, 2);
+    expect(metrics.spaced).toEqual(metrics.s20);
+    expect(metrics.fallback.width).not.toBe(80);
+  });
+});
+
 describe('iframe using HTML fullscreen API while window is OS-fullscreened', { tags: ['serial'] }, () => {
   const fullscreenChildHtml = fs.promises.readFile(path.join(fixturesPath, 'pages', 'fullscreen-oopif.html'));
   let w: BrowserWindow;
