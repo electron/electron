@@ -61,9 +61,10 @@ void TrayIconLinux::SetToolTip(const std::string& tool_tip) {
 }
 
 void TrayIconLinux::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
-  menu_model_ = menu_model;
+  menu_model_ =
+      menu_model ? menu_model->AsWeakPtr() : base::WeakPtr<ui::MenuModel>();
   if (auto* status_icon = GetStatusIcon())
-    status_icon->UpdatePlatformContextMenu(menu_model_);
+    status_icon->UpdatePlatformContextMenu(menu_model_.get());
 }
 
 const gfx::ImageSkia& TrayIconLinux::GetImage() const {
@@ -79,7 +80,9 @@ const std::u16string& TrayIconLinux::GetToolTip() const {
 }
 
 ui::MenuModel* TrayIconLinux::GetMenuModel() const {
-  return menu_model_;
+  // Returns nullptr once the api::Menu that owns the model has been
+  // finalized, instead of a dangling pointer.
+  return menu_model_.get();
 }
 
 void TrayIconLinux::OnImplInitializationFailed() {
@@ -125,7 +128,7 @@ void TrayIconLinux::OnImplInitialized() {
   // changes made since it read its initial state.
   status_icon_gtk_.reset();
   status_icon_type_ = StatusIconType::kDbus;
-  status_icon_dbus_->UpdatePlatformContextMenu(menu_model_);
+  status_icon_dbus_->UpdatePlatformContextMenu(menu_model_.get());
   status_icon_dbus_->SetToolTip(tool_tip_);
   status_icon_dbus_->SetImage(image_);
 }

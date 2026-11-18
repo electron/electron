@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "base/memory/weak_ptr.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/linux/status_icon_linux.h"
@@ -60,7 +61,13 @@ class TrayIconLinux : public TrayIcon, public ui::StatusIconLinux::Delegate {
 
   gfx::ImageSkia image_;
   std::u16string tool_tip_;
-  raw_ptr<ui::MenuModel> menu_model_ = nullptr;
+  // Weak pointer to the menu model owned by the cppgc-managed api::Menu.
+  // The Menu and the Tray can be finalized in either order at isolate
+  // teardown, so holding a raw_ptr here would dangle (and trip dangling
+  // pointer detection in testing builds) when the Menu is finalized first.
+  // A WeakPtr is invalidated when the model is destroyed, so GetMenuModel()
+  // safely returns nullptr from then on.
+  base::WeakPtr<ui::MenuModel> menu_model_ = nullptr;
 };
 
 }  // namespace electron
