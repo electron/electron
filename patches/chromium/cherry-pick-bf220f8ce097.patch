@@ -125,7 +125,7 @@ index d58c847483b261321595e40890021ffa6d94bfad..42b0cfd256a98da73e62034979588ecc
    gfx::Rect WindowRectInScreen() const;
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 0e6d2b1e178f569f57af165d2d53850f8e3c58ee..6a8b4d8c3342acb1153fa4407c9f4dfcd35e5771 100644
+index 299ee122d9c1350b2881527983bd44e41d1b8d40..d21b24a2620d383600759c87a92a3c7dc4f50e8c 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -658,6 +658,7 @@ WebViewImpl::WebViewImpl(

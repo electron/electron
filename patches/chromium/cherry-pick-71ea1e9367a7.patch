@@ -30,10 +30,10 @@ Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
 Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1725401}
 
-Electron adaptation notes (44-x-y): IsValidTransferToken() on this branch takes the expected url::Origin (the OPFS StorageKey-partition check is a later upstream change), so DidResolveForSerializeHandle() passes storage_key.origin(), matching the other call sites on this branch. Everything else applies as upstream.
+Electron adaptation notes (44-x-y): IsValidTransferToken() on this branch takes the expected url::Origin (the OPFS StorageKey-partition check is a later upstream change), so DidResolveForSerializeHandle() passes storage_key.origin(), matching the other call sites on this branch. Because that check is origin-only here, the mojom comment on SerializeHandle() promises only a same-origin check, and the SerializeHandle_SandboxedFile_OtherStorageKey_Rejected test uses a cross-origin StorageKey instead of upstream's same-origin cross-site partitioned one (which this branch would accept). Everything else applies as upstream.
 
 diff --git a/components/services/storage/public/mojom/file_system_access_context.mojom b/components/services/storage/public/mojom/file_system_access_context.mojom
-index fcba3a550b00d0252c945df174e8c82808e697f9..00ee81c2f8e7e846978b5a5af1bdb998cf0a938b 100644
+index fcba3a550b00d0252c945df174e8c82808e697f9..3ed69c75466bbc1607cf5646839126a4b53f0ce4 100644
 --- a/components/services/storage/public/mojom/file_system_access_context.mojom
 +++ b/components/services/storage/public/mojom/file_system_access_context.mojom
 @@ -16,11 +16,15 @@ import "third_party/blink/public/mojom/storage_key/storage_key.mojom";
@@ -45,12 +45,12 @@ index fcba3a550b00d0252c945df174e8c82808e697f9..00ee81c2f8e7e846978b5a5af1bdb998
 -  // be stored to disk by for example IndexedDB, and then later read back and
 -  // passed to DeserializeHandle to turn it back into a token.
 +  // Serializes a handle represented by `token` on behalf of the storage bucket
-+  // owned by `storage_key`. If `token` is not valid, or if it does not belong
-+  // to `storage_key` (same origin, and for sandboxed handles the same storage
-+  // key -- the same rule a renderer must satisfy to redeem the token), this
-+  // returns an empty array. Otherwise this returns a serialization that can be
-+  // stored to disk by for example IndexedDB, and then later read back and
-+  // passed to `DeserializeHandle` to turn it back into a token.
++  // owned by `storage_key`. If `token` is not valid, or if it was not created
++  // for the same origin as `storage_key` (the same rule a renderer must satisfy
++  // to redeem the token), this returns an empty array. Otherwise this returns
++  // a serialization that can be stored to disk by for example IndexedDB, and
++  // then later read back and passed to `DeserializeHandle` to turn it back
++  // into a token.
    SerializeHandle(
 +      blink.mojom.StorageKey storage_key,
        pending_remote<blink.mojom.FileSystemAccessTransferToken> token)
@@ -193,7 +193,7 @@ index 6ddb7a23ba07475c1a7958fd762676b9648fb48f..1d54878b1216776e1d15836739c054dc
        const base::FilePath& root_permission_path,
        const std::string& display_name);
 diff --git a/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc b/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
-index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a3bed9ca1 100644
+index 995e8d03e240b4f36d6d3d72cec8466de1378797..55d2d194aa11656895a078d06ee5c91f029737e1 100644
 --- a/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
 +++ b/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
 @@ -385,7 +385,7 @@ class FileSystemAccessManagerImplTest : public testing::Test {
@@ -214,7 +214,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
        serialize_future.GetCallback<const std::vector<uint8_t>&>());
    std::vector<uint8_t> serialized = serialize_future.Take();
    EXPECT_FALSE(serialized.empty());
-@@ -1195,6 +1195,82 @@ TEST_F(FileSystemAccessManagerImplTest,
+@@ -1195,6 +1195,81 @@ TEST_F(FileSystemAccessManagerImplTest,
    EXPECT_FALSE(resolve_future.Get());
  }
  
@@ -279,17 +279,16 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
 +                                      test_file_url, "bar",
 +                                      {ask_grant_, ask_grant_});
 +
-+  // Serializing a first-party default-bucket OPFS handle on behalf of a
-+  // cross-site partitioned StorageKey with the same origin must fail.
-+  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
-+      kTestStorageKey.origin(), net::SchemefulSite(GURL("https://other.com")),
-+      blink::mojom::AncestorChainBit::kCrossSite);
++  // Serializing an OPFS handle on behalf of a different origin's bucket must
++  // fail.
++  const blink::StorageKey kOtherOriginStorageKey =
++      blink::StorageKey::CreateFromStringForTesting("https://other.example/");
 +  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token_remote;
 +  manager_->CreateTransferToken(file,
 +                                token_remote.InitWithNewPipeAndPassReceiver());
 +  base::test::TestFuture<std::vector<uint8_t>> serialize_future;
 +  manager_->SerializeHandle(
-+      kThirdPartyStorageKey, std::move(token_remote),
++      kOtherOriginStorageKey, std::move(token_remote),
 +      serialize_future.GetCallback<const std::vector<uint8_t>&>());
 +  EXPECT_THAT(serialize_future.Take(), testing::IsEmpty());
 +}
@@ -297,7 +296,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
  TEST_F(FileSystemAccessManagerImplTest,
         SerializeHandle_SandboxedDirectory_CustomBucket) {
    auto test_file_url = file_system_context_->CreateCrackedFileSystemURL(
-@@ -1492,6 +1568,230 @@ TEST_F(FileSystemAccessManagerImplTest, SerializeHandle_ExternalFile) {
+@@ -1492,6 +1567,230 @@ TEST_F(FileSystemAccessManagerImplTest, SerializeHandle_ExternalFile) {
    EXPECT_EQ(ask_grant2_, token->GetWriteGrant());
  }
  
@@ -528,7 +527,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
  TEST_F(FileSystemAccessManagerImplTest,
         DeserializeHandle_Native_InvalidRelativePath) {
    const base::FilePath root_path = dir_.GetPath().AppendASCII("foo");
-@@ -1520,6 +1820,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+@@ -1520,6 +1819,7 @@ TEST_F(FileSystemAccessManagerImplTest,
        data.mutable_local()->set_root_path(SerializePathForTesting(root_path));
        data.mutable_local()->set_relative_path(
            SerializePathForTesting(relative_path));
@@ -536,7 +535,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
        EXPECT_FALSE(DeserializeAndResolveToken(data)) << relative_path;
      }
    }
-@@ -1542,6 +1843,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+@@ -1542,6 +1842,7 @@ TEST_F(FileSystemAccessManagerImplTest,
      data.mutable_local()->set_root_path(SerializePathForTesting(root_path));
      data.mutable_local()->set_relative_path(
          SerializePathForTesting(base::FilePath()));
@@ -544,7 +543,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
      EXPECT_FALSE(DeserializeAndResolveToken(data)) << root_path;
    }
  }
-@@ -1558,6 +1860,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+@@ -1558,6 +1859,7 @@ TEST_F(FileSystemAccessManagerImplTest,
          base::FilePath::FromUTF8Unsafe(kTestMountPoint).AppendASCII("foo")));
      data.mutable_external()->set_relative_path(
          SerializePathForTesting(base::FilePath(FILE_PATH_LITERAL("../bar"))));
@@ -552,7 +551,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
      EXPECT_FALSE(DeserializeAndResolveToken(data));
    }
  
-@@ -1569,6 +1872,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+@@ -1569,6 +1871,7 @@ TEST_F(FileSystemAccessManagerImplTest,
                                      .Append(FILE_PATH_LITERAL("../foo"))));
      data.mutable_external()->set_relative_path(
          SerializePathForTesting(base::FilePath()));
@@ -560,7 +559,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
      EXPECT_FALSE(DeserializeAndResolveToken(data));
    }
  
-@@ -1583,6 +1887,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+@@ -1583,6 +1886,7 @@ TEST_F(FileSystemAccessManagerImplTest,
              .AppendASCII("foo")));
      data.mutable_external()->set_relative_path(
          SerializePathForTesting(base::FilePath()));
@@ -568,7 +567,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
      EXPECT_FALSE(DeserializeAndResolveToken(data));
    }
  
-@@ -1596,6 +1901,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+@@ -1596,6 +1900,7 @@ TEST_F(FileSystemAccessManagerImplTest,
          SerializePathForTesting(base::FilePath(FILE_PATH_LITERAL("C:"))));
      data.mutable_external()->set_relative_path(
          SerializePathForTesting(base::FilePath()));
@@ -576,7 +575,7 @@ index 995e8d03e240b4f36d6d3d72cec8466de1378797..663ac311a693e01a0d7a0ffbf0e6205a
      EXPECT_FALSE(DeserializeAndResolveToken(data));
    }
  #endif
-@@ -2957,7 +3263,7 @@ TEST_F(FileSystemAccessManagerImplTest,
+@@ -2957,7 +3262,7 @@ TEST_F(FileSystemAccessManagerImplTest,
    // Serialize, then deserialize with the first-party storage key.
    base::test::TestFuture<std::vector<uint8_t>> serialize_future;
    manager_->SerializeHandle(
