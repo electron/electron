@@ -17,8 +17,7 @@ on:
       platform:
         type: choice
         description: 'Platform to measure coverage on'
-        # macOS is off by default until its coverage build is fixed.
-        default: linux
+        default: all
         required: false
         options:
           - all
@@ -39,9 +38,9 @@ jobs:
       contents: read
     outputs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
-      # The inputs context is empty for scheduled runs; fall back to 'linux'.
+      # The inputs context is empty for scheduled runs; fall back to 'all'.
       linux: ${{ inputs.platform == '' || inputs.platform == 'linux' || inputs.platform == 'all' }}
-      macos: ${{ inputs.platform == 'macos' || inputs.platform == 'all' }}
+      macos: ${{ inputs.platform == '' || inputs.platform == 'macos' || inputs.platform == 'all' }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:

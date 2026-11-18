@@ -225,6 +225,53 @@ jobs:
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools      
+    # With coverage_instrumentation_input_file set, Chromium's apple toolchain
+    # wraps every compile in clang_code_coverage_wrapper.py, so siso matches the
+    # clang-coverage/* rules instead of clang/*. build-tools' main.star only
+    # routes clang/* and clang-cl/* through the cross-clang wrapper, so remote
+    # coverage compiles fail with "fork/exec .../clang_remote_wrapper: no such
+    # file or directory".
+    # TODO: Remove once electron/build-tools includes this fix.
+    - name: Patch Build Tools for macOS Coverage
+      if: ${{ inputs.target-platform == 'macos' && inputs.is-coverage }}
+      run: |
+        git -C "$HOME/.electron_build_tools" apply --verbose <<'EOF'
+        --- a/tools/main.star
+        +++ b/tools/main.star
+        @@ -10,6 +10,13 @@ load("@config//gn_logs.star", "gn_logs")
+         cross_clang_wrapper = "buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper"
+         linux_clang = "third_party/llvm-build/Release+Asserts_linux/bin/clang"
+
+        +# Chromium's clang compile rules. clang-coverage/* match the same compiles when
+        +# coverage_instrumentation_input_file wraps them in clang_code_coverage_wrapper.py
+        +# (its handler strips the wrapper so they run clang directly, like clang/*).
+        +def is_clang_rule(rule):
+        +  name = rule["name"]
+        +  return name.startswith("clang/") or name.startswith("clang-coverage/") or name.startswith("clang-cl/")
+        +
+         def init(ctx):
+             mod = upstream_init(ctx)
+             step_config = json.decode(mod.step_config)
+        @@ -24,7 +31,7 @@ def init(ctx):
+             # steps through a wrapper that swaps in a Linux clang on the worker.
+             if runtime.os != "linux":
+               for rule in step_config["rules"]:
+        -        if rule["name"].startswith("clang/") or rule["name"].startswith("clang-cl/"):
+        +        if is_clang_rule(rule):
+                   rule["remote_wrapper"] = "../../" + cross_clang_wrapper
+                   rule.setdefault("inputs", []).extend([cross_clang_wrapper, linux_clang])
+               step_config.setdefault("executables", []).extend([cross_clang_wrapper, linux_clang])
+        @@ -47,7 +54,7 @@ def init(ctx):
+             # queueing; local fallback stays as the safety net.
+             if runtime.os != "linux":
+               for rule in step_config["rules"]:
+        -        if (rule["name"].startswith("clang/") or rule["name"].startswith("clang-cl/")) and rule.get("remote"):
+        +        if is_clang_rule(rule) and rule.get("remote"):
+                   rule["timeout"] = "10m"
+
+             # Add additional Windows SDK headers needed by Electron. Use
+        EOF
+        git -C "$HOME/.electron_build_tools" diff --stat
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
