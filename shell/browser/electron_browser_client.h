@@ -382,6 +382,13 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
+  void ProxyNonNetworkURLLoaderFactories(
+      content::BrowserContext* browser_context,
+      int render_process_id,
+      URLLoaderFactoryType type,
+      const std::optional<url::Origin>& request_initiator,
+      NonNetworkURLLoaderFactoryMap* factories);
+
   content::SiteInstance* GetSiteInstanceFromAffinity(
       content::BrowserContext* browser_context,
       const GURL& url,
