@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from 'electron/main';
+import { BrowserWindow, screen, View, WebContentsView } from 'electron/main';
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -189,6 +189,71 @@ describe.runIf(canDrag)('draggable regions', { tags: ['serial'] }, () => {
       await childWindow.loadURL(draggablePageURL.href);
 
       const { start, end } = await performDrag(childWindow);
+
+      expect(start).not.toEqual(end);
+    });
+  });
+
+  describe('child WebContentsView', () => {
+    let w: BrowserWindow;
+    let child: WebContentsView;
+
+    beforeEach(async () => {
+      w = new BrowserWindow(testWindowOpts);
+      await w.loadURL(draggablePageURL.href);
+      child = new WebContentsView();
+      w.contentView.addChildView(child);
+      const { width, height } = w.getContentBounds();
+      child.setBounds({ x: 0, y: 0, width, height });
+    });
+
+    afterEach(() => {
+      child.webContents.close();
+    });
+
+    it('does not drag where the view covers a draggable region of the window', async () => {
+      await child.webContents.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
+
+      const { start, end } = await performDrag(w);
+
+      expect(start).toEqual(end);
+    });
+
+    it('drags with app-region: drag in the view', async () => {
+      await child.webContents.loadURL(draggablePageURL.href);
+
+      const { start, end } = await performDrag(w);
+
+      expect(start).not.toEqual(end);
+    });
+
+    it('drags where the view does not cover the window', async () => {
+      await child.webContents.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
+      const { width, height } = w.getContentBounds();
+      child.setBounds({ x: 0, y: 0, width: Math.round(width / 4), height: Math.round(height / 4) });
+
+      const { start, end } = await performDrag(w);
+
+      expect(start).not.toEqual(end);
+    });
+
+    it('drags where a hidden view covers a draggable region of the window', async () => {
+      await child.webContents.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
+      child.setVisible(false);
+
+      const { start, end } = await performDrag(w);
+
+      expect(start).not.toEqual(end);
+    });
+
+    it('drags where a View covers a draggable region of the window', async () => {
+      child.setVisible(false);
+      const view = new View();
+      w.contentView.addChildView(view);
+      const { width, height } = w.getContentBounds();
+      view.setBounds({ x: 0, y: 0, width, height });
+
+      const { start, end } = await performDrag(w);
 
       expect(start).not.toEqual(end);
     });
