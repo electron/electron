@@ -33,10 +33,10 @@ Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1690285}
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 90730fea85f30ae79d5b9170866688862f62db58..a2a29c3f207587f044a7c36c524a0579224e5bf7 100644
+index 35f2fc8930d5e2ca20fc89344dc03d78bf6febef..91eb4208d1454d17cfd54784416086f0079506de 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -9403,9 +9403,10 @@ void WebContentsImpl::RunJavaScriptDialog(
+@@ -9397,9 +9397,10 @@ void WebContentsImpl::RunJavaScriptDialog(
  
    // Running a dialog causes an exit to webpage-initiated fullscreen.
    // http://crbug.com/728276
@@ -48,7 +48,7 @@ index 90730fea85f30ae79d5b9170866688862f62db58..a2a29c3f207587f044a7c36c524a0579
      return;
    }
  
-@@ -9539,9 +9540,10 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
+@@ -9533,9 +9534,10 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
  
    // Running a dialog causes an exit to webpage-initiated fullscreen.
    // http://crbug.com/728276
@@ -60,7 +60,7 @@ index 90730fea85f30ae79d5b9170866688862f62db58..a2a29c3f207587f044a7c36c524a0579
      return;
    }
  
-@@ -9622,7 +9624,7 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
+@@ -9616,7 +9618,7 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
  
  void WebContentsImpl::RunFileChooser(
      base::WeakPtr<FileChooserImpl> file_chooser,
@@ -69,7 +69,7 @@ index 90730fea85f30ae79d5b9170866688862f62db58..a2a29c3f207587f044a7c36c524a0579
      scoped_refptr<FileChooserImpl::FileSelectListenerImpl> listener,
      const blink::mojom::FileChooserParams& params) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RunFileChooser",
-@@ -9646,16 +9648,18 @@ void WebContentsImpl::RunFileChooser(
+@@ -9640,16 +9642,18 @@ void WebContentsImpl::RunFileChooser(
  
    // Any explicit focusing of another window while this WebContents is in
    // fullscreen can be used to confuse the user, so drop fullscreen.
@@ -91,10 +91,10 @@ index 90730fea85f30ae79d5b9170866688862f62db58..a2a29c3f207587f044a7c36c524a0579
    }
  }
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 5f7fc02696a55cd93ee47bc880bce0f26406ddfc..7e04b0fb290a691a3f09fd6cf057b2e0faac73da 100644
+index 0a545e3d54b07cfee57de1e893733958c5a8ab6e..eb067a3dd508d4073ddc5fc65a85db751260d89a 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1512,7 +1512,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1511,7 +1511,7 @@ class CONTENT_EXPORT WebContentsImpl
    // Called when a file selection is to be done.
    void RunFileChooser(
        base::WeakPtr<FileChooserImpl> file_chooser,
