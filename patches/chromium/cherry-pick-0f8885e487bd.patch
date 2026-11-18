@@ -33,10 +33,10 @@ Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1690285}
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 23142987245f9243763e5e794ee26a0f9c363da2..7e53d7edd76ce77403761eb65b6c8153f96cf105 100644
+index 90730fea85f30ae79d5b9170866688862f62db58..a2a29c3f207587f044a7c36c524a0579224e5bf7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -9400,9 +9400,10 @@ void WebContentsImpl::RunJavaScriptDialog(
+@@ -9403,9 +9403,10 @@ void WebContentsImpl::RunJavaScriptDialog(
  
    // Running a dialog causes an exit to webpage-initiated fullscreen.
    // http://crbug.com/728276
@@ -48,7 +48,7 @@ index 23142987245f9243763e5e794ee26a0f9c363da2..7e53d7edd76ce77403761eb65b6c8153
      return;
    }
  
-@@ -9536,9 +9537,10 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
+@@ -9539,9 +9540,10 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
  
    // Running a dialog causes an exit to webpage-initiated fullscreen.
    // http://crbug.com/728276
@@ -60,7 +60,7 @@ index 23142987245f9243763e5e794ee26a0f9c363da2..7e53d7edd76ce77403761eb65b6c8153
      return;
    }
  
-@@ -9619,7 +9621,7 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
+@@ -9622,7 +9624,7 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
  
  void WebContentsImpl::RunFileChooser(
      base::WeakPtr<FileChooserImpl> file_chooser,
@@ -69,7 +69,7 @@ index 23142987245f9243763e5e794ee26a0f9c363da2..7e53d7edd76ce77403761eb65b6c8153
      scoped_refptr<FileChooserImpl::FileSelectListenerImpl> listener,
      const blink::mojom::FileChooserParams& params) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RunFileChooser",
-@@ -9643,16 +9645,18 @@ void WebContentsImpl::RunFileChooser(
+@@ -9646,16 +9648,18 @@ void WebContentsImpl::RunFileChooser(
  
    // Any explicit focusing of another window while this WebContents is in
    // fullscreen can be used to confuse the user, so drop fullscreen.
