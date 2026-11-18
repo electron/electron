@@ -5,8 +5,18 @@
 #ifndef ELECTRON_SHELL_BROWSER_DRAGGABLE_REGION_PROVIDER_H_
 #define ELECTRON_SHELL_BROWSER_DRAGGABLE_REGION_PROVIDER_H_
 
+namespace gfx {
+class Point;
+}
+
+namespace views {
+class View;
+}
+
 class DraggableRegionProvider {
  public:
+  // The view that the provider's draggable regions lie in, if it has one.
+  virtual views::View* GetDraggableRegionView() = 0;
   virtual int NonClientHitTest(const gfx::Point& point) = 0;
 };
 
