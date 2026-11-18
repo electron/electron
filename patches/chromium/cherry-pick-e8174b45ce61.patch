@@ -47,12 +47,16 @@ CreateElement() call and gains the IsStopped() check after it, EndInternal()/
 Finish() take the upstream parser_paused_/in_process_events_ conditions with
 the carry-over error handling moved into EndInternal() as upstream, and the
 header only gains UpdateScriptStartPositionIfNeeded(). document_xslt.h is
-included for the HasNoStyleInformation() hunk. The runtime feature status
-change, the ProcessEvents re-entrancy guard, the attribute-setting change
-after custom element constructors, the script-start-position tracking, the
-Rust add_xhtml_entities fix, DOMPatchSupport and WellFormed() apply as
-upstream. The web-test expectation PNGs (test-only binary files) are not
-carried; the text web tests are.
+included for the HasNoStyleInformation() hunk. The ProcessEvents re-entrancy
+guard, the attribute-setting change after custom element constructors, the
+script-start-position tracking, the Rust add_xhtml_entities fix,
+DOMPatchSupport and WellFormed() apply as upstream. The runtime_enabled_features
+change that sets XMLParsingRust to status "experimental" is not carried:
+without XSLT support in this branch's XMLDocumentParserRs it would break XSLT
+(and switch DOMPatchSupport to the Rust parser) for apps that set
+webPreferences.experimentalFeatures, and it is feature enablement rather than
+part of the fix. The web-test expectation and test changes that only exist
+because of that status change (text and PNG) are not carried either.
 
 diff --git a/third_party/blink/renderer/core/inspector/dom_patch_support.cc b/third_party/blink/renderer/core/inspector/dom_patch_support.cc
 index e9a7a94f9dec4b246b5d522c1252210ee9a66b26..d5d852084f53f0e731b525ed0561f42dda33fe01 100644
@@ -404,128 +408,3 @@ index e2ac2d500c5fcd582036af18b6ca495d9807ac31..1e8403c408c8f0a214971dd54af3f06e
      }
  }
  
-diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index ab1191c7ac76c7765313307e75f62fc76388989b..3b56bc4d5dcaec5d14039a19c9a390755247e9d8 100644
---- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
-+++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -7565,7 +7565,8 @@
-       // Rust xml crate. This makes parsing memory safe but breaks XSLT
-       // as the Rust XML parsing code paths is incompatible with libxslt.
-       // https://crbug.com/441911594
--      name: "XMLParsingRust"
-+      name: "XMLParsingRust",
-+      status: "experimental",
-     },
-     {
-       // Enables the Rust XML parser for situations where we know
-diff --git a/third_party/blink/web_tests/external/wpt/css/cssom/xml-stylesheet-pi-in-doctype-expected.txt b/third_party/blink/web_tests/external/wpt/css/cssom/xml-stylesheet-pi-in-doctype-expected.txt
-deleted file mode 100644
-index 263629907d9124b991484f93c1aec3cfdb44a7a6..0000000000000000000000000000000000000000
---- a/third_party/blink/web_tests/external/wpt/css/cssom/xml-stylesheet-pi-in-doctype-expected.txt
-+++ /dev/null
-@@ -1,5 +0,0 @@
--This is a testharness.js-based test.
--[FAIL] xml-stylesheet processing instruction in doctype internal subset
--  assert_equals: expected "auto" but got "1"
--Harness: the test ran to completion.
--
-diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/Comment-in-doctype-expected.txt b/third_party/blink/web_tests/external/wpt/dom/nodes/Comment-in-doctype-expected.txt
-deleted file mode 100644
-index cb89704f1f7e3b4ec008e3fabba4a8a2dce51c6b..0000000000000000000000000000000000000000
---- a/third_party/blink/web_tests/external/wpt/dom/nodes/Comment-in-doctype-expected.txt
-+++ /dev/null
-@@ -1,5 +0,0 @@
--This is a testharness.js-based test.
--[FAIL] XML: Comment in doctype internal subset
--  assert_equals: expected DocumentType node but got Comment node <!--x-->
--Harness: the test ran to completion.
--
-diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/ProcessingInstruction-in-doctype-expected.txt b/third_party/blink/web_tests/external/wpt/dom/nodes/ProcessingInstruction-in-doctype-expected.txt
-deleted file mode 100644
-index 9a841e2aaf876b13ec1ba2e16d8f90ebc6c96ec5..0000000000000000000000000000000000000000
---- a/third_party/blink/web_tests/external/wpt/dom/nodes/ProcessingInstruction-in-doctype-expected.txt
-+++ /dev/null
-@@ -1,5 +0,0 @@
--This is a testharness.js-based test.
--[FAIL] XML: Processing instruction in doctype internal subset
--  assert_equals: expected DocumentType node but got ProcessingInstruction node with target "x" and data "y"
--Harness: the test ran to completion.
--
-diff --git a/third_party/blink/web_tests/fast/parser/external-entities-expected.txt b/third_party/blink/web_tests/fast/parser/external-entities-expected.txt
-index 29f6a217851358cfde21fdcebf4182f5303c42fc..c3c3a1ab6c9620c5c503414c490cae3b75fdc8f4 100644
---- a/third_party/blink/web_tests/fast/parser/external-entities-expected.txt
-+++ b/third_party/blink/web_tests/fast/parser/external-entities-expected.txt
-@@ -1 +1,3 @@
--This should be the only line on this page. You should see a parse error above.
-+This page contains the following errors:
-+error on line 9 at column 12: Unexpected entity: message
-+Below is a rendering of the page up to the first error.
-diff --git a/third_party/blink/web_tests/fast/parser/external-entities.xml b/third_party/blink/web_tests/fast/parser/external-entities.xml
-index 1790819384abbddc9df0e749670968257621b679..b86e70de769f8a646af3f6191391cb5ff3622c16 100644
---- a/third_party/blink/web_tests/fast/parser/external-entities.xml
-+++ b/third_party/blink/web_tests/fast/parser/external-entities.xml
-@@ -7,6 +7,6 @@ if (window.testRunner)
-     testRunner.dumpAsText();
- </script>
- <p>&message;</p>
--<p class="test"><font color="red"> This should be the only line on this page.  You should see a parse error above.</font></p>
-+<p class="test"><font color="red">FAIL: This line should not be rendered. You should see a parse error instead.</font></p>
- </body>
- </html>
-diff --git a/third_party/blink/web_tests/fast/parser/xhtml-alternate-entities.xml b/third_party/blink/web_tests/fast/parser/xhtml-alternate-entities.xml
-index ff3edef38a7549f80f012ea02b15e3182d265dff..3f5919bbe19bf27614caf5e64f3b67dd000e2a97 100644
---- a/third_party/blink/web_tests/fast/parser/xhtml-alternate-entities.xml
-+++ b/third_party/blink/web_tests/fast/parser/xhtml-alternate-entities.xml
-@@ -2,5 +2,5 @@
- <!DOCTYPE html PUBLIC "-//WHATWG//DTD XHTML 1.0 AlternateEntities//EN" "010.dtd">
- <html>
-  <h1> &fnof;&auml;&iuml;&Iuml; </h1> <!-- If you get a parse error, this test has PASSED. -->
-- <p class="test"><font color="red"> This should be the only line on this page.  You should see a parse error above.</font></p>
-+ <p class="test"><font color="red">FAIL: This line should not be rendered. You should see a parse error instead.</font></p>
- </html>
-diff --git a/third_party/blink/web_tests/fast/parser/xml-colon-entity-expected.txt b/third_party/blink/web_tests/fast/parser/xml-colon-entity-expected.txt
-index 5e64bb5ff544781dbdf28d2c87060cc84a1fee38..35e560a86665c910e6156d666d481e1b9e81d5fa 100644
---- a/third_party/blink/web_tests/fast/parser/xml-colon-entity-expected.txt
-+++ b/third_party/blink/web_tests/fast/parser/xml-colon-entity-expected.txt
-@@ -6,7 +6,5 @@ If you don't crash, you pass. A parsing error in the "xml-parser" subframe is ex
- Frame: 'xml-parser'
- --------
- This page contains the following errors:
--warning on line 2 at column 14: Entity ':' not defined
--error on line 5 at column 1: AttValue: ' expected
--
-+error on line 2 at column 13: Unexpected entity: :
- Below is a rendering of the page up to the first error.
-diff --git a/third_party/blink/web_tests/fast/parser/xml-declaration-missing-ending-mark-expected.txt b/third_party/blink/web_tests/fast/parser/xml-declaration-missing-ending-mark-expected.txt
-index 3c643ed4e1b0b2bff197982ef8449fb90f5aadcc..616a238e646fff0950c471fa238751c8bd48b0ce 100644
---- a/third_party/blink/web_tests/fast/parser/xml-declaration-missing-ending-mark-expected.txt
-+++ b/third_party/blink/web_tests/fast/parser/xml-declaration-missing-ending-mark-expected.txt
-@@ -9,6 +9,5 @@ If you don't crash, you pass. A parsing error in the "xml-parser" subframe is ex
- Frame: 'xml-parser'
- --------
- This page contains the following errors:
--error on line 1 at column 20: Blank needed here
--
-+error on line 1 at column 20: Unexpected token: >
- Below is a rendering of the page up to the first error.
-diff --git a/third_party/blink/web_tests/http/tests/devtools/console/console-log-in-xhtml-expected.txt b/third_party/blink/web_tests/http/tests/devtools/console/console-log-in-xhtml-expected.txt
-index 894c669bb3d7e38d27804e96a29337b1b13c8b3a..6473696f152f59fb738e2ff51d81ad77d3668a13 100644
---- a/third_party/blink/web_tests/http/tests/devtools/console/console-log-in-xhtml-expected.txt
-+++ b/third_party/blink/web_tests/http/tests/devtools/console/console-log-in-xhtml-expected.txt
-@@ -1,4 +1,4 @@
- Tests that console message from inline script in xhtml document contains correct script position information.
- 
--239:2:15
-+239:2:16
- 
-diff --git a/third_party/blink/web_tests/svg/custom/use-invalid-html-expected.txt b/third_party/blink/web_tests/svg/custom/use-invalid-html-expected.txt
-index 8b7db3157aa41d0d28de27b5c7cd317ce8a1db28..2504de236119a96063904c06a01d46650358e978 100644
---- a/third_party/blink/web_tests/svg/custom/use-invalid-html-expected.txt
-+++ b/third_party/blink/web_tests/svg/custom/use-invalid-html-expected.txt
-@@ -1,5 +1,4 @@
- This page contains the following errors:
--error on line 19 at column 1: Premature end of data in tag html line 1
--
-+error on line 19 at column 1: Unexpected end of stream: still inside the root element
- Below is a rendering of the page up to the first error.
- This test passes if a malformed html document triggers an error, not crash. 

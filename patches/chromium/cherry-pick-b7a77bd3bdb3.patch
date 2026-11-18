@@ -386,7 +386,7 @@ index a310c3e502a0284909f6dd0a31207888c2489952..40b4506cc511ccd3ff7392afef778b66
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 3b56bc4d5dcaec5d14039a19c9a390755247e9d8..8f7a6b6ac5fe38e1c738c75e2aa286e7cbbfd282 100644
+index ab1191c7ac76c7765313307e75f62fc76388989b..3ad7a73feadd14387d66465e2d3374ac30c82666 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -6900,6 +6900,13 @@
