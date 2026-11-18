@@ -16,6 +16,7 @@ import {
 import * as dbus from 'dbus-native';
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -2054,14 +2055,23 @@ describe('webContents module', { retry: 0 }, () => {
     });
   });
 
+  // toggleDevTools() opens DevTools in the last saved dock state. DevTools
+  // preferences, including that state, live in the session's Preferences file,
+  // and an in-memory partition reads the default session's file, so it can
+  // inherit an "undocked" state saved by an earlier test. A new persisted
+  // partition gets a Preferences file of its own, so the DevTools always start
+  // docked into the hidden window instead of opening a window that could take
+  // focus from other spec files running at the same time.
+  const freshDevToolsPartition = (name: string) => `persist:${name}-${randomUUID()}`;
+
   describe('toggleDevTools() API', () => {
     afterEach(closeAllWindows);
 
-    // A fresh partition starts from the default (docked) dock state, so the
-    // DevTools dock into the hidden window rather than opening a window that
-    // could take focus from other spec files running at the same time.
     it('opens DevTools when they are closed', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-toggle' } });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-toggle') }
+      });
       await w.loadURL('about:blank');
       expect(w.webContents.isDevToolsOpened()).toBe(false);
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
@@ -2071,7 +2081,10 @@ describe('webContents module', { retry: 0 }, () => {
     });
 
     it('closes DevTools when they are open', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-toggle' } });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-toggle') }
+      });
       await w.loadURL('about:blank');
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'right', activate: false });
@@ -2473,8 +2486,13 @@ describe('webContents module', { retry: 0 }, () => {
       server.close();
     });
 
+    // Worker DevTools open in the last saved dock state too, so give each test
+    // a fresh persisted partition for the same reason as toggleDevTools() above.
     async function loadWorkerPage() {
-      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-inspect-workers' } });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-inspect-workers') }
+      });
       await w.loadURL(`${serverUrl}/`);
       return w;
     }
@@ -3087,7 +3105,7 @@ describe('webContents module', { retry: 0 }, () => {
     });
   });
 
-  describe('setImageAnimationPolicy()', () => {
+  describe('setImageAnimationPolicy()', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
     // A 1x1 GIF that loops forever between a red and a green frame every 100ms
@@ -3105,12 +3123,19 @@ describe('webContents module', { retry: 0 }, () => {
     );
     const html = `<body style="margin: 0"><img src="data:image/gif;base64,${gif.toString('base64')}" style="width: 100px; height: 100px; image-rendering: pixelated"></body>`;
 
-    // Returns the color currently painted in the middle of the image
+    // Returns the color currently painted in the middle of the image: 'red' or
+    // 'green' only for a pixel that is clearly that color, and 'other' for
+    // anything else, such as the white of a page with nothing painted yet.
+    // toBitmap() is BGRA on most platforms but RGBA on some, so the red check
+    // accepts either the first or the third channel and requires the other to
+    // be low; green is the second channel either way.
     const sampleColor = async (w: BrowserWindow) => {
       const image = await w.webContents.capturePage({ x: 50, y: 50, width: 1, height: 1 });
       const [first, green, third] = image.toBitmap();
-      if (green > 128) return 'green';
-      if (first > 128 || third > 128) return 'red';
+      const high = (channel: number) => channel > 192;
+      const low = (channel: number) => channel < 64;
+      if (high(green) && low(first) && low(third)) return 'green';
+      if (low(green) && ((high(first) && low(third)) || (low(first) && high(third)))) return 'red';
       return 'other';
     };
 
@@ -3134,12 +3159,15 @@ describe('webContents module', { retry: 0 }, () => {
       const w = new BrowserWindow({ show: true, width: 200, height: 200 });
       w.webContents.setImageAnimationPolicy('noAnimation');
       await loadAnimation(w);
+      // Wait for the first (red) frame to be painted so the samples below are
+      // of the image, then fail only if it ever moves on to the green frame.
+      await waitUntil(async () => (await sampleColor(w)) === 'red');
       const seen = new Set<string>();
       for (let i = 0; i < 10; i++) {
         seen.add(await sampleColor(w));
         await setTimeout(100);
       }
-      expect([...seen]).toEqual(['red']);
+      expect([...seen]).not.toContain('green');
     });
   });
 
