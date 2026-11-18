@@ -2028,7 +2028,7 @@ describe('chromium features', () => {
       expect(restricted).toHaveLength(2);
     });
 
-    it('blocks writes to .git/hooks but still allows reading it', async () => {
+    it('blocks writes to .git except safe repository paths but still allows reading it', async () => {
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
       ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
       const restricted: string[] = [];
@@ -2056,18 +2056,31 @@ describe('chromium features', () => {
         'granted'
       );
 
-      // Matches Chrome: */.git/hooks is a case-insensitive kBlockWrite suffix
-      // rule, so reads are allowed and only operations that write are rejected.
+      // Matches Chrome: */.git is a case-insensitive kBlockWrite suffix rule, so
+      // reads are allowed and only operations that write are rejected, except
+      // for the repository data, ref and index paths that
+      // ShouldBlockAccessToGitPath() allows.
       const result = await frame.executeJavaScript(`(async () => {
         const attempt = (p) => p.then(() => 'ok', (e) => e.name);
         const git = await window.handle.getDirectoryHandle('.git');
         const hooks = await git.getDirectoryHandle('hooks');
         const sample = await hooks.getFileHandle('pre-commit.sample');
+        const objects = await git.getDirectoryHandle('objects', { create: true });
+        const objectDir = await objects.getDirectoryHandle('ab', { create: true });
+        const refs = await git.getDirectoryHandle('refs', { create: true });
+        const heads = await refs.getDirectoryHandle('heads', { create: true });
         return {
           readHook: await (await sample.getFile()).text(),
           createHook: await attempt(hooks.getFileHandle('post-checkout', { create: true })),
           writeHook: await attempt(sample.createWritable()),
           createHooksUpperCase: await attempt(git.getDirectoryHandle('HOOKS', { create: true })),
+          createConfig: await attempt(git.getFileHandle('config', { create: true })),
+          createModules: await attempt(git.getDirectoryHandle('modules', { create: true })),
+          createObjectsInfo: await attempt(objects.getDirectoryHandle('info', { create: true })),
+          createObject: await attempt(objectDir.getFileHandle('cdef', { create: true })),
+          createRef: await attempt(heads.getFileHandle('main', { create: true })),
+          createIndex: await attempt(git.getFileHandle('index', { create: true })),
+          createHead: await attempt(git.getFileHandle('HEAD', { create: true })),
           createAllowed: await attempt(window.handle.getFileHandle('allowed.txt', { create: true }))
         };
       })()`);
@@ -2076,8 +2089,19 @@ describe('chromium features', () => {
         createHook: 'SecurityError',
         writeHook: 'SecurityError',
         createHooksUpperCase: 'SecurityError',
+        createConfig: 'SecurityError',
+        createModules: 'SecurityError',
+        createObjectsInfo: 'SecurityError',
+        createObject: 'ok',
+        createRef: 'ok',
+        createIndex: 'ok',
+        createHead: 'ok',
         createAllowed: 'ok'
       });
+      expect(fs.existsSync(path.join(dir, '.git', 'config'))).toBe(false);
+      expect(fs.existsSync(path.join(dir, '.git', 'objects', 'ab', 'cdef'))).toBe(true);
+      expect(fs.existsSync(path.join(dir, '.git', 'refs', 'heads', 'main'))).toBe(true);
+      expect(fs.existsSync(path.join(dir, '.git', 'index'))).toBe(true);
       expect(fs.existsSync(path.join(hooks, 'post-checkout'))).toBe(false);
       expect(fs.readFileSync(path.join(hooks, 'pre-commit.sample'), 'utf8')).toBe('sample');
       expect(fs.existsSync(path.join(dir, 'allowed.txt'))).toBe(true);
