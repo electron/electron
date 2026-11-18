@@ -201,6 +201,81 @@ describe('trace suite', () => {
   });
 });
 
+describe('app shell stories', () => {
+  // One loading invocation with the synthetic page's first_load and the app
+  // shell's first load and reload, each with two repetitions.
+  function writeAppShellResults(name: string, marks: Record<string, number[]>) {
+    const dir = path.join(tmp, name);
+    const relativeDir = path.join('rounds', '0', 'loading', 'candidate');
+    const storiesDir = path.join(dir, relativeDir, 'chromium_candidate', 'stories');
+    for (const story of ['first_load', 'app_shell_first_load', 'app_shell_reload']) {
+      const storyDir = path.join(storiesDir, story);
+      fs.mkdirSync(storyDir, { recursive: true });
+      const entries: Record<string, { values: number[] }> = {
+        'paint/first-contentful-paint/startTime': { values: [80, 90] },
+        'navigation/loadEventEnd': { values: [100, 110] }
+      };
+      if (story.startsWith('app_shell_')) {
+        for (const [mark, values] of Object.entries(marks)) entries[`mark/${mark}/startTime`] = { values };
+      }
+      fs.writeFileSync(path.join(storyDir, 'performance.entries.json'), JSON.stringify(entries));
+      if (!story.endsWith('first_load')) continue;
+      for (const repetition of [0, 1]) {
+        const meminfoDir = path.join(storyDir, String(repetition), '0_default', 'meminfo');
+        fs.mkdirSync(meminfoDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(meminfoDir, 'loaded.json'),
+          JSON.stringify({ processes: [{ pid: 1, name: '/opt/electron/electron', pss_total: 1024 }] })
+        );
+      }
+    }
+    const metadata: RunMetadata = {
+      startedAt: '2026-10-29T00:00:00.000Z',
+      platform: 'linux',
+      arch: 'x64',
+      cpuModel: 'test cpu',
+      cpuCount: 4,
+      runnerName: 'test',
+      crossbenchRevision: '0123456789abcdef',
+      rounds: 1,
+      repeat: 2,
+      targets: TARGETS,
+      invocations: [{ round: 0, suite: 'loading', target: 'candidate', exitCode: 0, repetitions: 2, dir: relativeDir }]
+    };
+    return { dir, metadata };
+  }
+
+  it('reads app-ready and LCP marks for the app shell stories only', () => {
+    const { dir, metadata } = writeAppShellResults('app-shell', {
+      'app-shell-rendered': [40, 50],
+      'app-ready': [200, 220],
+      'app-lcp': [300, 340]
+    });
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.deepEqual(rejected, []);
+    const measures = (story: string) =>
+      Object.keys(samples)
+        .filter((metric) => metric.startsWith(`loading.${story}.`))
+        .map((metric) => metric.slice(`loading.${story}.`.length))
+        .sort();
+    const memory = ['browser_pss_mib', 'gpu_pss_mib', 'renderer_pss_mib', 'total_pss_mib'];
+    assert.deepEqual(measures('first_load'), ['fcp', 'load_event_end', ...memory].sort());
+    assert.deepEqual(measures('app_shell_first_load'), ['app_ready', 'fcp', 'lcp', 'load_event_end', ...memory].sort());
+    assert.deepEqual(measures('app_shell_reload'), ['app_ready', 'fcp', 'lcp', 'load_event_end']);
+    assert.deepEqual(samples['loading.app_shell_first_load.app_ready'].candidate, [210]);
+    assert.deepEqual(samples['loading.app_shell_first_load.lcp'].candidate, [320]);
+    assert.deepEqual(samples['loading.app_shell_reload.lcp'].candidate, [320]);
+  });
+
+  it('reports an app shell story that never marked app-ready', () => {
+    const { dir, metadata } = writeAppShellResults('app-shell-missing', { 'app-lcp': [300, 340] });
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.equal(samples['loading.app_shell_first_load.app_ready'], undefined);
+    assert.deepEqual(samples['loading.app_shell_first_load.lcp'].candidate, [320]);
+    assert.match(rejected[0].reason, /loading\.app_shell_first_load\.app_ready \(no values\)/);
+  });
+});
+
 describe('memoryMeasures', () => {
   it('sums PSS per process type and ignores the meminfo shell', () => {
     const app = '/opt/electron/electron';

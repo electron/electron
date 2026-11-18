@@ -70,6 +70,18 @@ const PERFORMANCE_ENTRIES: Record<string, Record<string, string>> = {
   file_loading: { files_loaded_ms: 'mark/files-loaded/startTime' }
 };
 
+// The app shell page (lib/app-shell.mts) also marks when its first full view
+// is in the DOM, and keeps its LCP as a mark.
+const APP_SHELL_ENTRIES: Record<string, string> = {
+  app_ready: 'mark/app-ready/startTime',
+  lcp: 'mark/app-lcp/startTime'
+};
+
+function performanceEntries(suite: string, story: string): Record<string, string> | undefined {
+  const entries = PERFORMANCE_ENTRIES[suite];
+  return entries && story.startsWith('app_shell_') ? { ...entries, ...APP_SHELL_ENTRIES } : entries;
+}
+
 const PRESS_RESULTS: Record<string, { file: string; keys: string[] }> = {
   speedometer: { file: 'speedometer_3.1.json', keys: ['Score'] },
   jetstream: { file: 'jetstream_2.2.json', keys: ['Total/Score'] }
@@ -201,8 +213,8 @@ const MEMORY_MEASURES = ['total_pss_mib', 'browser_pss_mib', 'renderer_pss_mib',
 // incomplete instead of disappearing from the results.
 function expectedMeasures(suite: string, story: string): string[] {
   if (suite === 'trace') return story === 'resize' ? ['resize_median_ms', 'resize_p90_ms'] : ['fcp', 'lcp'];
-  const measures = Object.keys(PERFORMANCE_ENTRIES[suite] ?? {});
-  return suite === 'loading' && story === 'first_load' ? [...measures, ...MEMORY_MEASURES] : measures;
+  const measures = Object.keys(performanceEntries(suite, story) ?? {});
+  return suite === 'loading' && story.endsWith('first_load') ? [...measures, ...MEMORY_MEASURES] : measures;
 }
 
 // Values per measure (one per repetition) for one story of a page suite.
@@ -214,7 +226,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
     if (isNumber(value) && measures[measure]) measures[measure].push(value);
   };
 
-  const entries = PERFORMANCE_ENTRIES[suite];
+  const entries = performanceEntries(suite, story);
   if (entries) {
     const data = readJsonIfExists(path.join(storyDir, 'performance.entries.json'));
     for (const [measure, key] of Object.entries(entries)) {

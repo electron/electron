@@ -21,8 +21,8 @@ dispatched by hand. This catches regressions between Electron versions.
 
 | Suite | Stories | Metrics |
 | --- | --- | --- |
-| `loading` | `first_load`, `reload` (warm process, same page) | FCP and `loadEventEnd` in ms; PSS in MiB after `first_load` (total, browser, renderer and GPU processes) |
-| `trace` | `first_load`, `resize`, traced | FCP and LCP in ms; resize latency median and p90 in ms |
+| `loading` | `first_load`, `reload` (warm process, same page) on the synthetic page; `app_shell_first_load`, `app_shell_reload` on the app shell (see [Test pages](#test-pages)) | FCP and `loadEventEnd` in ms; for the app shell also `app_ready` and LCP in ms; PSS in MiB after both first loads (total, browser, renderer and GPU processes) |
+| `trace` | `first_load`, `app_shell_first_load`, `resize`, traced | FCP and LCP in ms; resize latency median and p90 in ms |
 | `file_loading` | 1,500 small classic scripts and ES modules, loaded through `file://`, `protocol.registerFileProtocol`, `protocol.handle` + `fs`, and `protocol.handle` + `net.fetch` | Navigation start to "all files evaluated" in ms, and the ratio of each custom protocol to `file://` |
 | `speedometer` | Speedometer 3.1 | Score |
 | `jetstream` | JetStream 2.2 | Score |
@@ -32,9 +32,12 @@ Every measure comes from one of crossbench's probes:
 * `performance.entries` reads paint timing (FCP), navigation timing and
   `performance.mark()` entries from the page after each story. The
   file-loading pages mark `files-loaded` themselves once every file has run,
-  because only the page knows when that is.
+  because only the page knows when that is. The app shell marks `app-ready`
+  and keeps its LCP as the `app-lcp` mark, since the probe reads no LCP
+  entries.
 * `meminfo` reads `/proc/<pid>/smaps_rollup` for every browser process, through
-  a `meminfo` action at the end of `first_load`, after the timing.
+  a `meminfo` action at the end of `first_load` and `app_shell_first_load`,
+  after the timing.
 * `tracing` records a Chrome-style startup trace (`--trace-startup`) with only
   the categories the metrics need (`TRACE_CATEGORIES` in
   [`lib/configs.mts`](lib/configs.mts)), and `trace_processor` runs
@@ -52,8 +55,59 @@ Every measure comes from one of crossbench's probes:
 
 Tracing slows the browser down, so the traced stories run in their own `trace`
 invocation and the `loading` and `file_loading` numbers are never traced. The
-`trace` suite's FCP is a cross-check of the untraced one and the only source of
-LCP, which `performance.entries` does not read.
+`trace` suite's FCP is a cross-check of the untraced one. Its LCP is the only
+LCP for the synthetic page and a cross-check of the app shell's `app-lcp` mark.
+From Electron 35 on, Chromium coarsens paint timing exposed to pages to 4 ms,
+so the `loading` suite's FCP and LCP move in 4 ms steps there (marks such as
+`app-ready` don't); the traced values are not coarsened.
+
+### Test pages
+
+The `loading` and `trace` suites load two pages:
+
+* The **synthetic page**, [`pages/index.html`](pages/index.html) (`first_load`
+  and `reload`), served over HTTP by the local benchmark server. It runs a
+  synchronous 3,000,000-iteration `Math.sqrt` loop before its first paint, so
+  its FCP and `loadEventEnd` mostly measure renderer setup plus that loop.
+  It is kept unchanged so the existing nightly and history series stay
+  continuous.
+* The **app shell** (`app_shell_first_load` and `app_shell_reload`), shaped
+  like a typical Electron app's first window and loaded from `file://` like a
+  packaged app. [`lib/app-shell.mts`](lib/app-shell.mts) generates it into
+  the work directory at the start of each run from a fixed seed, so every run
+  loads the same bytes, and nothing comes from the network or third parties.
+  It has an HTML shell with an empty root, three stylesheets (about 90 KiB,
+  1,100 rules), three deferred classic scripts (about 420 KiB: a small module
+  loader, virtual DOM with a keyed diff, store and event delegation, then
+  about 200 generated helper, schema, reducer, service and component modules
+  and a message catalog) and a 270 KiB JSON file of 1,200 work items. It
+  starts fetching the JSON, evaluates its modules (most at startup, some
+  never, like code a first window doesn't need), renders the window chrome
+  (title bar, sidebar with inline SVG icons, toolbar), waits for it to paint,
+  then renders a summary, four feature panels and a 1,200-row list (about
+  25,000 elements) through the diff. It avoids anything newer than Chromium
+  94 (Electron 15).
+
+What the app shell's measures cover, all from navigation start:
+
+| Measure | Covers |
+| --- | --- |
+| `fcp` | Stylesheets and scripts loaded and evaluated, and the window chrome rendered and painted |
+| `load_event_end` | The `load` event, after the deferred scripts ran; the item data has not rendered yet |
+| `app_ready` | The `app-ready` mark: the JSON fetched and parsed, items validated, reducers run, and the full first view built in the DOM, but not yet styled, laid out or painted |
+| `lcp` | The last largest-contentful-paint candidate, the summary paragraph: `app_ready` plus style, layout and paint of the full view |
+
+They are reported as `loading.app_shell_first_load.<measure>` (plus the PSS
+measures), `loading.app_shell_reload.<measure>` and
+`trace.app_shell_first_load.fcp` and `.lcp`, and reach Datadog the same way as
+every other metric: `electron.perf.<metric>` and `electron.perf.delta.<metric>`
+from nightly runs, `electron.perf.history.<metric>` and
+`electron.perf.history.ratio.<metric>` from history runs. The stories wait
+until the `app-lcp` mark is later than `app-ready`, so the mark holds the
+final LCP however slowly a version paints. The app renders its content only
+once the chrome's FCP has been reported: when the two renders were closer,
+Electron 15 and 38 (in testing) sometimes credited the content's LCP to the
+chrome's earlier frame.
 
 The press benchmarks are served locally from the WebKit revisions pinned in
 [`script/pgo/serve-benchmarks.js`](../pgo/serve-benchmarks.js), so they match

@@ -120,7 +120,8 @@ ORDER BY r.ts`
 //                        since only the page knows when all N files ran.
 //   meminfo              per-process PSS/RSS from /proc/<pid>/smaps_rollup,
 //                        taken by the `meminfo` action at the end of
-//                        loading/first_load (one shell call, after the timing).
+//                        loading/first_load and loading/app_shell_first_load
+//                        (one shell call, after the timing).
 //   tracing              Chrome-style startup tracing (--trace-startup) for
 //                        the `trace` suite, and trace_processor to run
 //                        TRACE_QUERIES on each trace. A perfetto system trace
@@ -187,14 +188,33 @@ interface PageConfigOptions {
   capabilities?: Capabilities;
   baseUrl: string;
   fileRoot: string;
+  // Where writeAppShellSite (lib/app-shell.mts) wrote the app shell page.
+  appRoot: string;
   resizeCount?: number;
 }
 
-export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, resizeCount = 20 }: PageConfigOptions) {
+// The app shell page marks app-ready once its full first view is in the DOM,
+// and keeps its latest LCP candidate as the app-lcp mark. The content's LCP
+// always comes after app-ready (the window chrome before it is smaller), so
+// waiting for both means the mark holds the final LCP, however slowly the
+// version under test paints.
+const appShellDone = `
+if (location.protocol !== 'file:' || document.readyState !== 'complete') return false;
+const ready = performance.getEntriesByName('app-ready')[0];
+const lcp = performance.getEntriesByName('app-lcp')[0];
+return !!ready && !!lcp && lcp.startTime > ready.startTime;`;
+
+export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, appRoot, resizeCount = 20 }: PageConfigOptions) {
   const firstLoad: Action[] = [
     { action: 'get', url: `${baseUrl}/pages/index.html`, ready_state: 'complete' },
     { action: 'wait_for_condition', timeout: '20s', condition: hasPainted },
     { action: 'wait', duration: '1s' }
+  ];
+  // Like a packaged app, the app shell is loaded from file://.
+  const appShellLoad: Action[] = [
+    { action: 'get', url: `file://${appRoot}/index.html`, ready_state: 'any' },
+    { action: 'wait_for_condition', timeout: '30s', condition: appShellDone.trim() },
+    { action: 'wait', duration: '500ms' }
   ];
   const loading: Pages = {
     // Memory is sampled once the page has painted and settled.
@@ -210,11 +230,22 @@ export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, resizeCount 
           "return performance.getEntriesByType('navigation')[0].type === 'reload' && document.readyState === 'complete' && performance.getEntriesByName('first-contentful-paint').length > 0"
       },
       { action: 'wait', duration: '500ms' }
+    ],
+    app_shell_first_load: [...appShellLoad, { action: 'meminfo', title: 'loaded' }],
+    app_shell_reload: [
+      ...appShellLoad,
+      { action: 'js', script: 'location.reload();' },
+      {
+        action: 'wait_for_condition',
+        timeout: '30s',
+        condition: `if (performance.getEntriesByType('navigation')[0].type !== 'reload') return false;${appShellDone}`
+      },
+      { action: 'wait', duration: '500ms' }
     ]
   };
 
   // Stories measured from a trace (TRACE_QUERIES), in their own invocation.
-  const trace: Pages = { first_load: firstLoad };
+  const trace: Pages = { first_load: firstLoad, app_shell_first_load: appShellLoad };
   if (capabilities.setSize) {
     trace.resize = [
       { action: 'get', url: `${baseUrl}/pages/resize.html`, ready_state: 'complete' },

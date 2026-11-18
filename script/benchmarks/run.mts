@@ -21,6 +21,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
+import { writeAppShellSite } from './lib/app-shell.mts';
 import { pageConfigs, probeConfigs, writeFileLoadingSite } from './lib/configs.mts';
 
 import type { Capabilities, Invocation, RunMetadata, Target, TargetsFile } from './lib/types.mts';
@@ -355,6 +356,9 @@ async function main() {
   fs.cpSync(path.join(import.meta.dirname, 'pages'), path.join(wwwDir, 'pages'), { recursive: true });
   const fileRoot = path.join(workDir, 'file-loading');
   writeFileLoadingSite(fileRoot, fileCount);
+  const appRoot = path.join(workDir, 'app-shell');
+  const appBytes = Object.values(writeAppShellSite(appRoot)).reduce((sum, size) => sum + size, 0);
+  console.log(`[run] app shell: ${Math.round(appBytes / 1024)} KiB`);
   const server = await startServer(wwwDir, port);
   const baseUrl = `http://127.0.0.1:${port}`;
 
@@ -370,7 +374,7 @@ async function main() {
   for (const target of targets) {
     const targetCapabilities = probeCapabilities(target, harnessApp, workDir);
     capabilities.set(target.id, targetCapabilities);
-    const configs = pageConfigs({ capabilities: targetCapabilities, baseUrl, fileRoot });
+    const configs = pageConfigs({ capabilities: targetCapabilities, baseUrl, fileRoot, appRoot });
     const paths: Record<string, string> = {};
     for (const [suite, config] of Object.entries(configs)) {
       if (Object.keys(config.pages).length === 0) continue;
