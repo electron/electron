@@ -23,8 +23,13 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/common/content_switches.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/net/network_context_service.h"
+#include "shell/browser/net/network_context_service_factory.h"
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
@@ -181,6 +186,17 @@ v8::Local<v8::Promise> SimulateNetworkServiceCrash(v8::Isolate* isolate) {
                          std::move(promise))));
   content::RestartNetworkService();
   return handle;
+}
+
+// Blocks until |session|'s NetworkContext has received every proxy config sent
+// to it so far. Flushing the NetworkContext first makes sure it has been
+// recreated if the network service restarted.
+void FlushSessionProxyConfigForTesting(electron::api::Session* session) {
+  auto* browser_context = session->browser_context();
+  browser_context->GetDefaultStoragePartition()
+      ->FlushNetworkInterfaceForTesting();
+  electron::NetworkContextServiceFactory::GetForContext(browser_context)
+      ->FlushProxyConfigMonitorForTesting();
 }
 
 void HoldRepeatingCallbackForTesting(const base::RepeatingClosure& callback) {
@@ -372,6 +388,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPlatformCaretBrowsingEnabled",
                  &IsPlatformCaretBrowsingEnabled);
   dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
+  dict.SetMethod("flushSessionProxyConfigForTesting",
+                 &FlushSessionProxyConfigForTesting);
   dict.SetMethod("addNodeBlockedSPKI", &AddNodeBlockedSPKIForTesting);
   dict.SetMethod("clearNodeBlockedSPKIs", &ClearNodeBlockedSPKIsForTesting);
   dict.SetMethod("simulatePowerEvent", &SimulatePowerEvent);
