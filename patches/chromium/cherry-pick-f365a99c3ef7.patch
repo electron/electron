@@ -1,0 +1,552 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrea Orru <andreaorru@chromium.org>
+Date: Sat, 7 Nov 2026 14:55:21 -0800
+Subject: mojo: Harden Windows pipe adoption and IO completions
+
+On Windows, I/O completion port association belongs to a pipe end's
+kernel file object rather than to any one handle. A transport received
+from a less privileged peer could be backed by a pipe end which that
+peer still holds another handle to, and ChannelWin::OnIOCompleted()
+acted on any packet delivered for its handle as if it were the
+completion of one of its own operations.
+
+With this change, Transport::Deserialize() rejects a transport from a
+less privileged peer unless the received handle is the only open handle
+to a named pipe end.
+
+In addition, ChannelWin now only acts on a packet for an outstanding
+read or write of its own which the kernel has completed, and takes the
+result from its own OVERLAPPED rather than from the packet. Each
+outstanding operation now holds a scoped_refptr to the ChannelWin, in
+place of a pending flag and a manual AddRef(), which only that
+operation's completion releases. A failed operation now also clears its
+pending state, and a zero-byte write completion is treated like any
+other short write.
+
+Bug: 577410943, 576812539, 576812420
+Change-Id: Ic1b988a5312f2e7e1216d027fbfd37a4586e94c9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8684723
+Reviewed-by: Alex Gough <ajgo@chromium.org>
+Commit-Queue: Andrea Orru <andreaorru@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1738545}
+
+Electron adaptation notes (44-x-y): all code hunks apply as upstream; only
+the placement of the new tests in mojo/core/channel_unittest.cc conflicted
+(test-only), see the resolution in the patch.
+
+diff --git a/base/win/security_util.cc b/base/win/security_util.cc
+index dc95d3a3474f1c8a27298175f683d801a38a3a03..cbb773c5b1e24349912ea55f6a2eb7a4f493321c 100644
+--- a/base/win/security_util.cc
++++ b/base/win/security_util.cc
+@@ -67,6 +67,16 @@ bool AddACEToPath(const FilePath& path,
+                            DACL_SECURITY_INFORMATION);
+ }
+ 
++std::optional<PUBLIC_OBJECT_BASIC_INFORMATION> QueryObjectBasicInformation(
++    HANDLE handle) {
++  PUBLIC_OBJECT_BASIC_INFORMATION basic_info = {};
++  if (!NT_SUCCESS(::NtQueryObject(handle, ObjectBasicInformation, &basic_info,
++                                  sizeof(basic_info), nullptr))) {
++    return std::nullopt;
++  }
++  return basic_info;
++}
++
+ }  // namespace
+ 
+ bool GrantAccessToPath(const FilePath& path,
+@@ -145,12 +155,21 @@ void AppendSidVector(std::vector<Sid>& base_sids,
+ }
+ 
+ std::optional<ACCESS_MASK> GetGrantedAccess(HANDLE handle) {
+-  PUBLIC_OBJECT_BASIC_INFORMATION basic_info = {};
+-  if (!NT_SUCCESS(::NtQueryObject(handle, ObjectBasicInformation, &basic_info,
+-                                  sizeof(basic_info), nullptr))) {
++  const std::optional<PUBLIC_OBJECT_BASIC_INFORMATION> basic_info =
++      QueryObjectBasicInformation(handle);
++  if (!basic_info) {
++    return std::nullopt;
++  }
++  return basic_info->GrantedAccess;
++}
++
++std::optional<ULONG> GetObjectHandleCount(HANDLE handle) {
++  const std::optional<PUBLIC_OBJECT_BASIC_INFORMATION> basic_info =
++      QueryObjectBasicInformation(handle);
++  if (!basic_info) {
+     return std::nullopt;
+   }
+-  return basic_info.GrantedAccess;
++  return basic_info->HandleCount;
+ }
+ 
+ }  // namespace win
+diff --git a/base/win/security_util.h b/base/win/security_util.h
+index 15d5fcd6e11e92272735a0c4910f31997bda1403..0ec44d5d1e4f1593a86241a173260f64d2c1b0af 100644
+--- a/base/win/security_util.h
++++ b/base/win/security_util.h
+@@ -56,6 +56,10 @@ BASE_EXPORT void AppendSidVector(std::vector<Sid>& base_sids,
+ // |handle| specifies any kernel object handle to query.
+ BASE_EXPORT std::optional<ACCESS_MASK> GetGrantedAccess(HANDLE handle);
+ 
++// Gets the number of open handles, in all processes, to the kernel object that
++// |handle| refers to.
++BASE_EXPORT std::optional<ULONG> GetObjectHandleCount(HANDLE handle);
++
+ }  // namespace win
+ }  // namespace base
+ 
+diff --git a/base/win/security_util_unittest.cc b/base/win/security_util_unittest.cc
+index 49e6a0b3a738e3084da1a05622421f36132a7cf6..2dc0e627a31386eed32ff3a4981ff02f5a2e95b4 100644
+--- a/base/win/security_util_unittest.cc
++++ b/base/win/security_util_unittest.cc
+@@ -323,5 +323,23 @@ TEST(SecurityUtilTest, GetGrantedAccess) {
+   EXPECT_EQ(GetGrantedAccess(handle.get()), DWORD{MUTEX_ALL_ACCESS});
+ }
+ 
++TEST(SecurityUtilTest, GetObjectHandleCount) {
++  EXPECT_FALSE(GetObjectHandleCount(nullptr));
++  ScopedHandle event(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
++  ASSERT_TRUE(event.is_valid());
++  EXPECT_EQ(GetObjectHandleCount(event.get()), ULONG{1});
++
++  HANDLE duplicate = nullptr;
++  ASSERT_TRUE(::DuplicateHandle(::GetCurrentProcess(), event.get(),
++                                ::GetCurrentProcess(), &duplicate, 0, FALSE,
++                                DUPLICATE_SAME_ACCESS));
++  ScopedHandle scoped_duplicate(duplicate);
++  EXPECT_EQ(GetObjectHandleCount(event.get()), ULONG{2});
++  EXPECT_EQ(GetObjectHandleCount(scoped_duplicate.get()), ULONG{2});
++
++  scoped_duplicate.Close();
++  EXPECT_EQ(GetObjectHandleCount(event.get()), ULONG{1});
++}
++
+ }  // namespace win
+ }  // namespace base
+diff --git a/mojo/core/channel_unittest.cc b/mojo/core/channel_unittest.cc
+index 79def52c1a6261372fdb99a05623602300d366fb..f0df57283506507a5d97232e5250d4461eb12aa2 100644
+--- a/mojo/core/channel_unittest.cc
++++ b/mojo/core/channel_unittest.cc
+@@ -30,6 +30,23 @@
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
++#if BUILDFLAG(IS_WIN)
++#include <windows.h>
++
++#include "base/process/current_process.h"
++#include "base/process/current_process_test.h"
++#include "base/test/metrics/histogram_tester.h"
++#include "base/test/run_until.h"
++#include "base/test/test_future.h"
++#include "base/time/time.h"
++#include "base/timer/timer.h"
++#include "base/win/scoped_handle.h"
++#endif
++
++#if BUILDFLAG(IS_MAC)
++#include "base/mac/process_requirement.h"
++#endif
++
+ namespace mojo::core {
+ 
+ class TestChannel : public Channel {
+@@ -624,6 +641,85 @@ TEST(ChannelTest, MessageSizeTest) {
+   }
+ }
+ 
++#if BUILDFLAG(IS_WIN)
++namespace {
++
++// Starts an overlapped read through `handle` with `overlapped`, and cancels it.
++// I/O completion port association belongs to a pipe end's file object rather
++// than to any one handle, so if `handle` shares its pipe end with a Channel,
++// the read's completion is queued on that Channel's completion key.
++void StartAndCancelRead(HANDLE handle, OVERLAPPED& overlapped) {
++  base::win::ScopedHandle event(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
++  ASSERT_TRUE(event.is_valid());
++  overlapped.hEvent = event.get();
++  char buffer = 0;
++  ASSERT_FALSE(
++      ::ReadFile(handle, &buffer, sizeof(buffer), nullptr, &overlapped));
++  ASSERT_EQ(static_cast<DWORD>(ERROR_IO_PENDING), ::GetLastError());
++  ASSERT_TRUE(::CancelIoEx(handle, &overlapped));
++  DWORD bytes_read = 0;
++  EXPECT_FALSE(::GetOverlappedResult(handle, &overlapped, &bytes_read,
++                                     /*bWait=*/TRUE));
++  EXPECT_EQ(static_cast<DWORD>(ERROR_OPERATION_ABORTED), ::GetLastError());
++}
++
++}  // namespace
++
++// Tests that ChannelWin ignores completions of I/O it did not start, such as a
++// read issued and cancelled through another handle to its pipe end.
++TEST(ChannelWinTest, IgnoresIOCompletionsItDidNotStart) {
++  base::test::SingleThreadTaskEnvironment task_environment(
++      base::test::TaskEnvironment::MainThreadType::IO);
++  PlatformChannel platform_channel;
++  PlatformChannelEndpoint receiver_endpoint =
++      platform_channel.TakeLocalEndpoint();
++  PlatformChannelEndpoint other_endpoint = receiver_endpoint.Clone();
++  ASSERT_TRUE(other_endpoint.is_valid());
++
++  CallbackChannelDelegate receiver_delegate;
++  scoped_refptr<Channel> receiver = Channel::Create(
++      &receiver_delegate, ConnectionParams(std::move(receiver_endpoint)),
++      Channel::HandlePolicy::kAcceptHandles,
++      base::SingleThreadTaskRunner::GetCurrentDefault());
++  receiver->Start();
++
++  MockChannelDelegate sender_delegate;
++  scoped_refptr<Channel> sender = Channel::Create(
++      &sender_delegate, ConnectionParams(platform_channel.TakeRemoteEndpoint()),
++      Channel::HandlePolicy::kAcceptHandles,
++      base::SingleThreadTaskRunner::GetCurrentDefault());
++  sender->Start();
++
++  // Let the receiver register its handle and start reading.
++  base::RunLoop start_loop;
++  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE, start_loop.QuitClosure());
++  start_loop.Run();
++
++  OVERLAPPED overlapped = {};
++  ASSERT_NO_FATAL_FAILURE(StartAndCancelRead(
++      other_endpoint.platform_handle().GetHandle().get(), overlapped));
++
++  // The receiver must neither fail nor stop reading.
++  bool got_error = false;
++  base::RunLoop loop;
++  receiver_delegate.set_on_message(loop.QuitClosure());
++  receiver_delegate.set_on_error(base::BindLambdaForTesting([&] {
++    got_error = true;
++    loop.Quit();
++  }));
++  sender->Write(Channel::Message::CreateMessage(0, 0));
++  loop.Run();
++  EXPECT_FALSE(got_error);
++
++  // Once shut down, only our references to the Channels remain.
++  receiver->ShutDown();
++  sender->ShutDown();
++  EXPECT_TRUE(base::test::RunUntil(
++      [&] { return receiver->HasOneRef() && sender->HasOneRef(); }));
++}
++#endif  // BUILDFLAG(IS_WIN)
++
+ #if BUILDFLAG(IS_MAC)
+ TEST(ChannelTest, SendToDeadMachPortName) {
+   base::test::SingleThreadTaskEnvironment task_environment(
+diff --git a/mojo/core/channel_win.cc b/mojo/core/channel_win.cc
+index f4f3e832715bb96f864949dc1ba1f70215fee835..cfb7d0d8e3732a8de8ef4a34ab77ae44ec44b787 100644
+--- a/mojo/core/channel_win.cc
++++ b/mojo/core/channel_win.cc
+@@ -11,6 +11,7 @@
+ #include <algorithm>
+ #include <limits>
+ #include <memory>
++#include <optional>
+ #include <tuple>
+ 
+ #include "base/compiler_specific.h"
+@@ -237,31 +238,47 @@ class ChannelWin : public Channel,
+ 
+   // base::MessageLoop::IOHandler:
+   void OnIOCompleted(base::MessagePumpForIO::IOContext* context,
+-                     DWORD bytes_transfered,
+-                     DWORD error) override {
+-    if (error != ERROR_SUCCESS) {
+-      if (context == &write_context_) {
+-        {
+-          base::AutoLock lock(write_lock_);
+-          reject_writes_ = true;
+-        }
+-        OnWriteError(Error::kDisconnected);
+-      } else {
+-        OnError(Error::kDisconnected);
+-      }
+-    } else if (context == &read_context_) {
+-      OnReadDone(static_cast<size_t>(bytes_transfered));
+-    } else {
+-      CHECK(context == &write_context_);
+-      OnWriteDone(static_cast<size_t>(bytes_transfered));
++                     DWORD /*bytes_transfered*/,
++                     DWORD /*error*/) override {
++    // I/O completion port association belongs to the underlying file object
++    // rather than to `handle_`, so a packet delivered here does not necessarily
++    // correspond to an operation started by this Channel. OnReadDone() and
++    // OnWriteDone() act only on an outstanding operation of ours which the
++    // kernel has completed, and take its result from our own OVERLAPPED rather
++    // than from the packet.
++    if (context == &read_context_) {
++      OnReadDone();
++    } else if (context == &write_context_) {
++      OnWriteDone();
++    }
++  }
++
++  // Returns the number of bytes transferred by the operation most recently
++  // started with `context`, which the kernel must have completed, or nullopt if
++  // that operation failed.
++  std::optional<size_t> GetCompletedBytes(
++      base::MessagePumpForIO::IOContext& context) {
++    if (!handle_.is_valid()) {
++      // ShutDownOnIOThread() has cancelled every outstanding operation.
++      return std::nullopt;
++    }
++    DWORD bytes_transferred = 0;
++    if (!::GetOverlappedResult(handle_.get(), context.GetOverlapped(),
++                               &bytes_transferred, /*bWait=*/FALSE)) {
++      return std::nullopt;
+     }
+-    Release();
++    return bytes_transferred;
+   }
+ 
+-  void OnReadDone(size_t bytes_read) {
+-    DCHECK(is_read_pending_);
+-    is_read_pending_ = false;
++  void OnReadDone() {
++    if (!pending_read_ ||
++        !HasOverlappedIoCompleted(read_context_.GetOverlapped())) {
++      return;
++    }
++    scoped_refptr<ChannelWin> keep_alive = std::move(pending_read_);
+ 
++    // A failed read is handled like the end of the stream.
++    const size_t bytes_read = GetCompletedBytes(read_context_).value_or(0);
+     if (bytes_read > 0) {
+       size_t next_read_size = 0;
+       if (OnReadComplete(bytes_read, &next_read_size)) {
+@@ -274,23 +291,23 @@ class ChannelWin : public Channel,
+     }
+   }
+ 
+-  void OnWriteDone(size_t bytes_written) {
+-    if (bytes_written == 0) {
+-      return;
+-    }
+-
++  void OnWriteDone() {
++    scoped_refptr<ChannelWin> keep_alive;
+     bool write_error = false;
+     {
+       base::AutoLock lock(write_lock_);
+-
+-      DCHECK(is_write_pending_);
+-      is_write_pending_ = false;
++      if (!pending_write_ ||
++          !HasOverlappedIoCompleted(write_context_.GetOverlapped())) {
++        return;
++      }
++      keep_alive = std::move(pending_write_);
+       DCHECK(!outgoing_messages_.IsEmpty());
+ 
+       Channel::MessagePtr message = outgoing_messages_.TakeFirst();
+ 
+       // Overlapped WriteFile() to a pipe should always fully complete.
+-      if (message->data_num_bytes() != bytes_written) {
++      std::optional<size_t> bytes_written = GetCompletedBytes(write_context_);
++      if (!bytes_written || message->data_num_bytes() != *bytes_written) {
+         reject_writes_ = write_error = true;
+       } else if (!WriteNextNoLock()) {
+         reject_writes_ = write_error = true;
+@@ -302,7 +319,7 @@ class ChannelWin : public Channel,
+   }
+ 
+   void ReadMore(size_t next_read_size_hint) {
+-    DCHECK(!is_read_pending_);
++    DCHECK(!pending_read_);
+ 
+     size_t buffer_capacity = next_read_size_hint;
+     char* buffer = GetReadBuffer(&buffer_capacity);
+@@ -318,8 +335,7 @@ class ChannelWin : public Channel,
+         ::ReadFile(handle_.get(), buffer, static_cast<DWORD>(buffer_capacity),
+                    NULL, read_context_.GetOverlapped());
+     if (ok || GetLastError() == ERROR_IO_PENDING) {
+-      is_read_pending_ = true;
+-      AddRef();
++      pending_read_ = this;
+     } else {
+       OnError(Error::kDisconnected);
+     }
+@@ -349,8 +365,7 @@ class ChannelWin : public Channel,
+                         static_cast<DWORD>(message->data_num_bytes()), NULL,
+                         write_context_.GetOverlapped());
+     if (ok || GetLastError() == ERROR_IO_PENDING) {
+-      is_write_pending_ = true;
+-      AddRef();
++      pending_write_ = this;
+       return true;
+     }
+     return false;
+@@ -374,7 +389,7 @@ class ChannelWin : public Channel,
+       // If we can't write because the pipe is disconnected then continue
+       // reading to fetch any in-flight messages, relying on end-of-stream to
+       // signal the actual disconnection.
+-      if (is_read_pending_) {
++      if (pending_read_) {
+         return;
+       }
+     }
+@@ -393,7 +408,8 @@ class ChannelWin : public Channel,
+   const scoped_refptr<base::SingleThreadTaskRunner> io_task_runner_;
+ 
+   base::MessagePumpForIO::IOContext read_context_;
+-  bool is_read_pending_ = false;
++  // A reference to this Channel, held while a read is outstanding.
++  scoped_refptr<ChannelWin> pending_read_;
+ 
+   // Protects all fields potentially accessed on multiple threads via Write().
+   base::Lock write_lock_;
+@@ -401,7 +417,8 @@ class ChannelWin : public Channel,
+   ChannelWinMessageQueue outgoing_messages_;
+   bool delay_writes_ = true;
+   bool reject_writes_ = false;
+-  bool is_write_pending_ = false;
++  // A reference to this Channel, held while a write is outstanding.
++  scoped_refptr<ChannelWin> pending_write_;
+ 
+   bool leak_handle_ = false;
+ };
+diff --git a/mojo/core/ipcz_driver/transport.cc b/mojo/core/ipcz_driver/transport.cc
+index 0a22ccc139d5e2d06731c524f7c419cb56c150ba..cd984ab76b876497cb930ac924ce838656e28f9c 100644
+--- a/mojo/core/ipcz_driver/transport.cc
++++ b/mojo/core/ipcz_driver/transport.cc
+@@ -32,6 +32,9 @@
+ #include "third_party/ipcz/include/ipcz/ipcz.h"
+ 
+ #if BUILDFLAG(IS_WIN)
++#include <windows.h>
++
++#include "base/win/security_util.h"
+ #include "base/win/win_util.h"
+ #include "mojo/public/cpp/platform/platform_handle_security_util_win.h"
+ #endif
+@@ -231,6 +234,21 @@ std::optional<PlatformHandle> DecodeHandle(HandleData data,
+   }
+   return PlatformHandle(base::win::ScopedHandle(local_dupe));
+ }
++
++// Returns true if `handle` is a named pipe end and is the only open handle to
++// its underlying kernel file object, in any process.
++//
++// On Windows, I/O completion port association is a property of the file
++// object rather than of any one handle to it. A Channel registers its handle
++// with this process's I/O completion port, so it must only adopt pipe ends on
++// which nothing outside this process can start I/O. Once ours is the only
++// handle, no less privileged process can obtain another: opening a pipe by
++// name creates a new file object, and duplicating a handle out of this process
++// requires PROCESS_DUP_HANDLE access to it.
++bool IsExclusivelyOwnedPipe(HANDLE handle) {
++  return base::win::GetObjectHandleCount(handle) == 1u &&
++         ::GetNamedPipeInfo(handle, nullptr, nullptr, nullptr, nullptr);
++}
+ #endif  // BUILDFLAG(IS_WIN)
+ 
+ scoped_refptr<base::SingleThreadTaskRunner>& GetIOTaskRunnerStorage() {
+@@ -703,6 +721,17 @@ scoped_refptr<Transport> Transport::Deserialize(
+     return nullptr;
+   }
+ 
++#if BUILDFLAG(IS_WIN)
++  // A less privileged peer must hand over its pipe end outright. If it kept
++  // another handle to the same pipe end, it could keep generating completion
++  // packets for the Channel which adopts it. Transferring a handle closes the
++  // sender's copy, so the handle we now hold must be the only one.
++  if (!is_source_at_least_as_privileged &&
++      !IsExclusivelyOwnedPipe(handles[0].GetHandle().get())) {
++    return nullptr;
++  }
++#endif
++
+   // A peer may choose the new transport's remote process, by attaching a
+   // process handle or by claiming the process is its own. Honor either only if
+   // allowed; otherwise an attached handle is closed along with `handles`.
+diff --git a/mojo/core/ipcz_driver/transport_test.cc b/mojo/core/ipcz_driver/transport_test.cc
+index 836f0605d4370ec23f8799f7a258bf17335545f6..face9689e3d9217e4608a83b9de59b652d6fc372 100644
+--- a/mojo/core/ipcz_driver/transport_test.cc
++++ b/mojo/core/ipcz_driver/transport_test.cc
+@@ -44,6 +44,8 @@
+ #include "mojo/public/cpp/system/platform_handle.h"
+ 
+ #if BUILDFLAG(IS_WIN)
++#include <windows.h>
++
+ #include "base/win/scoped_handle.h"
+ #endif
+ 
+@@ -1427,6 +1429,72 @@ TEST_F(MojoIpczTransportTest, TransportWithSameRemoteProcess) {
+       });
+ }
+ 
++#if BUILDFLAG(IS_WIN)
++DEFINE_TEST_CLIENT_TEST_WITH_PIPE(
++    TransportFromNonBrokerMustBeExclusivePipeClient,
++    MojoIpczTransportTest,
++    h) {
++  scoped_refptr<Transport> transport = ReceiveTransport(h);
++  TransportListener listener(*transport);
++  EXPECT_EQ("ready", listener.WaitForNextMessage().as_string());
++
++  {
++    // Send the broker a pipe end while retaining another handle to it.
++    PlatformChannel channel;
++    PlatformChannelEndpoint endpoint = channel.TakeLocalEndpoint();
++    PlatformChannelEndpoint retained_endpoint = endpoint.Clone();
++    ASSERT_TRUE(retained_endpoint.is_valid());
++    auto shared_transport = Transport::Create(
++        {.source = Transport::kBroker, .destination = Transport::kNonBroker},
++        std::move(endpoint));
++    SerializeObjectFor(*transport, std::move(shared_transport))
++        .Transmit(*transport);
++    EXPECT_EQ("got null", listener.WaitForNextMessage().as_string());
++  }
++
++  {
++    // Send the broker the only handle to an object which is not a pipe.
++    base::win::ScopedHandle event(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
++    ASSERT_TRUE(event.is_valid());
++    auto event_transport = Transport::Create(
++        {.source = Transport::kBroker, .destination = Transport::kNonBroker},
++        PlatformChannelEndpoint(PlatformHandle(std::move(event))));
++    SerializeObjectFor(*transport, std::move(event_transport))
++        .Transmit(*transport);
++    EXPECT_EQ("got null", listener.WaitForNextMessage().as_string());
++  }
++
++  EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
++}
++
++// Tests that a broker rejects a transport from a less privileged peer unless it
++// is a pipe end to which the peer retains no other handle, since I/O completion
++// port association belongs to the pipe end's file object rather than to any one
++// handle. TransportWithSameRemoteProcess covers accepting such a pipe end.
++TEST_F(MojoIpczTransportTest, TransportFromNonBrokerMustBeExclusivePipe) {
++  RunTestClientWithController(
++      "TransportFromNonBrokerMustBeExclusivePipeClient",
++      [&](ClientController& c) {
++        scoped_refptr<Transport> transport =
++            CreateAndSendTransport(c.pipe(), c.process());
++        TransportListener listener(*transport);
++        TestMessage("ready").Transmit(*transport);
++
++        for (int i = 0; i < 2; i++) {
++          TestMessage message = listener.WaitForNextMessage();
++          scoped_refptr<ObjectBase> object;
++          const IpczResult result = transport->DeserializeObject(
++              base::span(message.bytes), base::span(message.handles), object);
++          EXPECT_EQ(result, IPCZ_RESULT_INVALID_ARGUMENT);
++          EXPECT_FALSE(object);
++          TestMessage("got null").Transmit(*transport);
++        }
++
++        listener.WaitForDisconnect();
++      });
++}
++#endif  // BUILDFLAG(IS_WIN)
++
+ // The counterpart of the case rejected by TransportFromUntrustedBroker, and of
+ // RecipientHandleBetweenIsolatedBrokers for the other predicate. Both ends of a
+ // mojo::IsolatedConnection are brokers and neither is source-trusted, but

@@ -1,0 +1,303 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Wed, 4 Nov 2026 10:13:11 -0800
+Subject: Use owned iterators in XML parser xml_ffi
+
+`AttributesIterator` and `NamespacesIterator` wrap Rust iterators for
+C++ code to consume. They stored borrowed iterators internally, so the
+Rust structs required an explicit lifetime annotation. In turn, this
+meant that the FFI helpers on the Rust side of the cxx bridge needed to
+be marked unsafe, since the C++ compiler cannot enforce Rust's lifetime
+annotations.
+
+As of https://crrev.com/c/8521957, the Rust side makes a clone of the
+declared namespaces to avoid holding a borrow on shared state when
+calling into C++, so `NamespacesIterator` can just consume the clone and
+completely avoid lifetime annotations. This CL takes it one step further
+by preprocessing the strings on the Rust side to avoid intermediate
+string constructions in C++ and updates the FFI plumbing to pass Rust
+`str`s in the same style as the pre-existing `AttributeView`.
+
+`AttributesIterator` can also consume its input, so similarly update it
+to hold a consuming iterator and drop the lifetime annotations.
+
+Bug: 569659189
+Change-Id: I9a9077939ac45fe40d1cff0b8f7e07b26a40cb1e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8667670
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1735370}
+
+Electron adaptation notes (44-x-y): this branch's xml_ffi.rs computes the
+newly declared namespaces itself (new_namespaces()/namespace_stack) and used to
+filter the synthesized xml/xmlns entries in namespaces_next(). The owned
+NamespacesIterator is therefore built from that computed Namespace instead of
+declared_namespaces(): the same xml/xmlns filter is applied while collecting,
+and the (q_name, uri) pairs are preprocessed exactly as upstream (empty prefix
+-> empty q_name, else "xmlns:" + prefix) so the C++ NamespaceView side applies
+verbatim. AttributesIterator, attributes_next, namespaces_next, the cxx bridge
+declarations and the C++ changes apply as upstream.
+
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
+index ae7dd5523f93b30056f09aef43ffb2dd5f9908ea..35cf06b0a71e21b0370dc2e01912e5ef241d0a7a 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser_rs.cc
+@@ -110,26 +110,19 @@ bool HandleNamespaceAttributes(
+     xml_ffi::NamespacesIterator& namespaces,
+     bool& encountered_namespace_reset,
+     ExceptionState& exception_state) {
+-  rust::String prefix;
+-  rust::String uri;
+-
+-  while (namespaces_next(namespaces, prefix, uri)) {
+-    AtomicString namespace_q_name = g_xmlns_atom;
+-    if (prefix.length()) {
+-      namespace_q_name = AtomicString(
+-          StrCat({g_xmlns_with_colon, RustStrToWtfString(prefix)}));
+-    }
++  xml_ffi::NamespaceView namespace_view;
++  while (namespaces_next(namespaces, namespace_view)) {
+     std::optional<QualifiedName> parsed_name = Element::ParseAttributeName(
+-        xmlns_names::kNamespaceURI, namespace_q_name, exception_state);
++        xmlns_names::kNamespaceURI, namespace_view.q_name, exception_state);
+     if (!parsed_name) {
+       DCHECK(exception_state.HadException());
+       return false;
+     }
+     if (parsed_name->LocalName() == g_xmlns_atom) {
+-      encountered_namespace_reset = uri.empty();
++      encountered_namespace_reset = namespace_view.uri.empty();
+     }
+     prefixed_attributes.push_back(
+-        Attribute(std::move(*parsed_name), RustStrToAtomicString(uri)));
++        Attribute(std::move(*parsed_name), namespace_view.uri));
+   }
+   return true;
+ }
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_ffi.rs b/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
+index 20caad92ba0838c65ae36d44a2829be08734d118..2a7d497b8a273a061fbea0a0ccf0619fdf132b3a 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
++++ b/third_party/blink/renderer/core/xml/parser/xml_ffi.rs
+@@ -19,7 +19,7 @@ use xml::{
+     Encoding, ParserConfig,
+ };
+ 
+-use crate::ffi::{AttributeNameValue, AttributeView, StandaloneInfo, XmlCallbacks};
++use crate::ffi::{AttributeNameValue, AttributeView, NamespaceView, StandaloneInfo, XmlCallbacks};
+ use entities::{HTML5_MAP, LAT1_MAP, SPECIAL_MAP, SYMBOL_MAP};
+ use std::cell::{Cell, RefCell};
+ use std::pin::Pin;
+@@ -76,12 +76,12 @@ fn append_to_source(read_state: &XmlReadState, content: &[u8]) {
+     buffer.extend_from_slice(content);
+ }
+ 
+-struct AttributesIterator<'a> {
+-    attributes: std::slice::Iter<'a, OwnedAttribute>,
++struct AttributesIterator {
++    attributes: std::vec::IntoIter<OwnedAttribute>,
+ }
+ 
+-struct NamespacesIterator<'a> {
+-    namespaces: Box<dyn Iterator<Item = (&'a str, &'a str)> + 'a>,
++struct NamespacesIterator {
++    namespaces: std::vec::IntoIter<(String, String)>,
+ }
+ 
+ fn new_namespaces(existing: &Namespace, new: &Namespace, seen_first_event: bool) -> Namespace {
+@@ -181,9 +181,39 @@ fn process_next_event(read_state: &XmlReadState) {
+                     read_state.seen_first_event.set(true);
+ 
+                     read_state.namespace_stack.borrow_mut().push(namespace);
+-                    let mut attributes = AttributesIterator { attributes: attributes.iter() };
+-                    let mut new_namespaces =
+-                        NamespacesIterator { namespaces: Box::new(new_namespaces.iter()) };
++                    // Preprocess the new namespaces on the Rust side so that the
++                    // iterator owns its data and no borrow of `read_state` is held
++                    // when calling back into C++ below.
++                    let mut namespaces = NamespacesIterator {
++                        namespaces: new_namespaces
++                            .iter()
++                            .filter(|(prefix, uri)| {
++                                // TODO(drott): Why does the library generate these default ones?
++                                // TODO(drott): Why do we see an empty namespace here for
++                                // fast/dom/attribute-namespaces-get-set.html and XML like:
++                                // <root xmlns:foo=\"http://www.example.com\" attr=\"test2\" foo:attr=\"test\" />
++                                // and virtual/rust-xml/fast/xmlhttprequest/xmlhttprequest-get.xhtml
++                                // Filed as: https://github.com/kornelski/xml-rs/issues/50
++
++                                // Letting the empty namespace and empty URL pass through here
++                                // is important to reset the default namespace to none.
++                                !((*prefix == "xml" && *uri == NS_XML_URI)
++                                    || (*prefix == "xmlns" && *uri == NS_XMLNS_URI))
++                            })
++                            .map(|(prefix, uri)| {
++                                let prefix: &str = prefix;
++                                let uri: &str = uri;
++                                let q_name = if prefix.is_empty() {
++                                    String::new()
++                                } else {
++                                    ["xmlns:", prefix].concat()
++                                };
++                                (q_name, uri.to_owned())
++                            })
++                            .collect::<Vec<_>>()
++                            .into_iter(),
++                    };
++                    let mut attributes = AttributesIterator { attributes: attributes.into_iter() };
+                     read_state.parser_callbacks.borrow_mut().as_mut().StartElementNs(
+                         local_name,
+                         has_prefix,
+@@ -191,7 +221,7 @@ fn process_next_event(read_state: &XmlReadState) {
+                         has_ns,
+                         ns,
+                         &mut attributes,
+-                        &mut new_namespaces,
++                        &mut namespaces,
+                     );
+                 }
+                 EndElement { name } => {
+@@ -306,8 +336,8 @@ fn reset_error(read_state: &XmlReadState) {
+     *read_state.error_details.borrow_mut() = None;
+ }
+ 
+-fn attributes_next<'a>(
+-    attributes: &mut AttributesIterator<'a>,
++fn attributes_next(
++    attributes: &mut AttributesIterator,
+     mut attribute_view: Pin<&mut AttributeView>,
+ ) -> bool {
+     if let Some(attribute) = attributes.attributes.next() {
+@@ -316,18 +346,15 @@ fn attributes_next<'a>(
+         // parser, concatenate here to avoid extra string conversions and
+         // allocations on the Blink C++ side.
+         match &name.prefix {
+-            Some(pref) => {
+-                let mut q_name = String::with_capacity(pref.len() + 1 + name.local_name.len());
+-                q_name.push_str(pref);
+-                q_name.push(':');
+-                q_name.push_str(&name.local_name);
++            Some(prefix) => {
++                let q_name = [prefix, ":", &name.local_name].concat();
+                 attribute_view.as_mut().Populate(
+                     &q_name,
+                     name.namespace.as_deref().unwrap_or_default(),
+                     &attribute.value,
+                 );
+             }
+-            _ => {
++            None => {
+                 attribute_view.as_mut().Populate(
+                     &name.local_name,
+                     name.namespace.as_deref().unwrap_or_default(),
+@@ -342,27 +369,10 @@ fn attributes_next<'a>(
+ 
+ fn namespaces_next(
+     namespaces_iterator: &mut NamespacesIterator,
+-    prefix: &mut String,
+-    uri: &mut String,
++    mut namespace_view: Pin<&mut NamespaceView>,
+ ) -> bool {
+-    for namespace in namespaces_iterator.namespaces.by_ref() {
+-        // TODO(drott): Why does the library generate these default ones?
+-        // TODO(drott): Why do we see an empty namespace here for
+-        // fast/dom/attribute-namespaces-get-set.html and XML like:
+-        // <root xmlns:foo=\"http://www.example.com\" attr=\"test2\" foo:attr=\"test\" />
+-        // and virtual/rust-xml/fast/xmlhttprequest/xmlhttprequest-get.xhtml
+-        // Filed as: https://github.com/kornelski/xml-rs/issues/50
+-
+-        // Letting the empty namespace and empty URL pass through here
+-        // is important to reset the default namespace to none.
+-        if (namespace.0 == "xml" && namespace.1 == NS_XML_URI)
+-            || (namespace.0 == "xmlns" && namespace.1 == NS_XMLNS_URI)
+-        {
+-            continue;
+-        }
+-
+-        *prefix = namespace.0.to_string();
+-        *uri = namespace.1.to_string();
++    if let Some((q_name, uri)) = namespaces_iterator.namespaces.next() {
++        namespace_view.as_mut().Populate(&q_name, &uri);
+         return true;
+     }
+     false
+@@ -453,12 +463,15 @@ mod ffi {
+ 
+         type AttributeView;
+         fn Populate(self: Pin<&mut AttributeView>, q_name: &str, attr_ns: &str, value: &str);
++
++        type NamespaceView;
++        fn Populate(self: Pin<&mut NamespaceView>, q_name: &str, uri: &str);
+     }
+ 
+     extern "Rust" {
+         type XmlReadState<'a>;
+-        type AttributesIterator<'a>;
+-        type NamespacesIterator<'a>;
++        type AttributesIterator;
++        type NamespacesIterator;
+ 
+         /// # Safety
+         ///
+@@ -490,23 +503,14 @@ mod ffi {
+             success: &mut bool,
+         ) -> Vec<AttributeNameValue>;
+ 
+-        /// # Safety
+-        ///
+-        /// Marked unsafe because functions with explicit lifetimes in a cxx
+-        /// bridge require unsafe qualification.
+-        unsafe fn attributes_next<'a>(
+-            attributes: &mut AttributesIterator<'a>,
+-            mut attribute_view: Pin<&mut AttributeView>,
++        fn attributes_next(
++            attributes: &mut AttributesIterator,
++            attribute_view: Pin<&mut AttributeView>,
+         ) -> bool;
+ 
+-        /// # Safety
+-        ///
+-        /// Marked unsafe because functions with explicit lifetimes in a cxx
+-        /// bridge require unsafe qualification.
+-        unsafe fn namespaces_next<'a>(
+-            namespaces_iterator: &mut NamespacesIterator<'a>,
+-            prefix: &mut String,
+-            uri: &mut String,
++        fn namespaces_next(
++            namespaces_iterator: &mut NamespacesIterator,
++            namespace_view: Pin<&mut NamespaceView>,
+         ) -> bool;
+     }
+ }
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_ffi_callbacks.cc b/third_party/blink/renderer/core/xml/parser/xml_ffi_callbacks.cc
+index 8400fd89c2f0887eca19ebbeb21167f953011cbf..48e0fe7fb2bbdb5e3ca4b99a284f7faec70ba7a3 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_ffi_callbacks.cc
++++ b/third_party/blink/renderer/core/xml/parser/xml_ffi_callbacks.cc
+@@ -22,4 +22,10 @@ void xml_ffi::AttributeView::Populate(rust::Str q_name_a,
+   this->value = RustStrToAtomicString(value_a);
+ }
+ 
++void NamespaceView::Populate(rust::Str q_name_a, rust::Str uri_a) {
++  this->q_name =
++      q_name_a.empty() ? blink::g_xmlns_atom : RustStrToAtomicString(q_name_a);
++  this->uri = RustStrToAtomicString(uri_a);
++}
++
+ }  // namespace xml_ffi
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_ffi_callbacks.h b/third_party/blink/renderer/core/xml/parser/xml_ffi_callbacks.h
+index d60dd4d4dabad9e39c4cb43d9d31b21af5155b58..aec8f02acd1338d9fe1c2deb1df7efd780f928bb 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_ffi_callbacks.h
++++ b/third_party/blink/renderer/core/xml/parser/xml_ffi_callbacks.h
+@@ -47,6 +47,13 @@ struct AttributeView {
+   void Populate(rust::Str q_name_a, rust::Str attr_ns_a, rust::Str value_a);
+ };
+ 
++struct NamespaceView {
++  blink::AtomicString q_name;
++  blink::AtomicString uri;
++
++  void Populate(rust::Str q_name_a, rust::Str uri_a);
++};
++
+ }  // namespace xml_ffi
+ 
+ #endif  // THIRD_PARTY_BLINK_RENDERER_CORE_XML_PARSER_XML_FFI_CALLBACKS_H_

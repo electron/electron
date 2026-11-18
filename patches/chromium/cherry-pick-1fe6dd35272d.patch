@@ -1,0 +1,510 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Tue, 20 Oct 2026 15:38:57 -0700
+Subject: [Ozone] End touch sequences handed off to a drag or move
+
+When a touch sequence is taken over by a drag or window move, the
+platform never delivers its release to aura, so aura::Env keeps
+reporting a touch as held and the platform's own touch tracking stays
+live. WebContentsViewAura::StartDragging uses aura::Env::is_touch_down()
+as its liveness check for renderer-initiated touch drags.
+
+X11: X11WholeScreenMoveLoop consumes touch releases while a data drag or
+tab-drag window move runs. Record the consumed touch sequences and have
+X11Window dispatch a touch cancel for each to its window once the loop
+returns. Only sequences that were actually consumed are cancelled, so a
+tab drag that re-attaches to a tab strip with the finger still down is
+unaffected.
+
+Wayland: the compositor owns touch sequences during a touch-driven data
+drag or xdg_toplevel.move and need not send wl_touch.up for them
+afterwards (e.g. Weston). Add WaylandEventSource::CancelActiveTouches(),
+the touch analogue of ReleasePressedPointerButtons(), and call it when a
+data drag session closes and after handing off an interactive move. This
+also clears touch_points_, which otherwise kept the touch press serial
+valid for drags and caused the next touch with the same id to be
+dropped.
+
+Fixed: 574901760
+Change-Id: Id5eaaabee30150ccd0bd37316036bf3c6f8ba562
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8612575
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Kramer Ge <fangzhoug@chromium.org>
+Reviewed-by: Kramer Ge <fangzhoug@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1723297}
+
+Electron adaptation notes (44-x-y): WaylandEventSource::OnTouchCancelEvent on this branch still iterates touch_points_ directly (it predates the upstream id-snapshot/weak-window loop), so CancelActiveTouches() is extracted from that loop body, with the timestamp parameter replacing the local base::TimeTicks::Now(). wayland_data_drag_controller_unittest.cc gains only the TouchDragEndsTouchSequence test (the adjacent upstream RejectReentrantStartSessionDuringWindowDrag test belongs to another change). The X11 and remaining Wayland hunks apply as upstream.
+
+diff --git a/ui/base/x/BUILD.gn b/ui/base/x/BUILD.gn
+index eefb196a7e6b7f66f9b682176d3d94f40ef30b9d..83cbcc826f9500c8db376a5711f96a39d6dd5fc6 100644
+--- a/ui/base/x/BUILD.gn
++++ b/ui/base/x/BUILD.gn
+@@ -176,6 +176,7 @@ source_set("unittests") {
+     "//testing/gtest",
+     "//ui/base/cursor",
+     "//ui/base/cursor/mojom:cursor_type_shared",
++    "//ui/events",
+     "//ui/events/platform",
+     "//ui/gfx/geometry",
+     "//ui/gfx/x",
+diff --git a/ui/base/x/x11_desktop_window_move_client.h b/ui/base/x/x11_desktop_window_move_client.h
+index f95cf2c2980b90ecf86198c6669f20f5902a2892..9f31936da55585105c5f67a18b74d2868ada2d9d 100644
+--- a/ui/base/x/x11_desktop_window_move_client.h
++++ b/ui/base/x/x11_desktop_window_move_client.h
+@@ -48,6 +48,11 @@ class COMPONENT_EXPORT(UI_BASE_X) X11DesktopWindowMoveClient
+   bool RunMoveLoop(bool can_grab_pointer, const gfx::Vector2d& drag_offset);
+   void EndMoveLoop();
+ 
++  // See X11WholeScreenMoveLoop::TakeConsumedTouches().
++  std::vector<X11WholeScreenMoveLoop::ConsumedTouch> TakeConsumedTouches() {
++    return move_loop_.TakeConsumedTouches();
++  }
++
+  private:
+   X11WholeScreenMoveLoop move_loop_{this};
+ 
+diff --git a/ui/base/x/x11_whole_screen_move_loop.cc b/ui/base/x/x11_whole_screen_move_loop.cc
+index e200895c6b082021ed61d8a317d62576fd30cbfd..7523f7a835653c03ad02a1f954a5de5199b5d67c 100644
+--- a/ui/base/x/x11_whole_screen_move_loop.cc
++++ b/ui/base/x/x11_whole_screen_move_loop.cc
+@@ -135,6 +135,15 @@ uint32_t X11WholeScreenMoveLoop::DispatchEvent(const ui::PlatformEvent& event) {
+     }
+     case ui::EventType::kTouchReleased:
+     case ui::EventType::kTouchCancelled: {
++      // The touch sequence ends here without reaching its window. Remember it
++      // so the owner can end it once the loop returns.
++      const auto* touch_event = event->AsTouchEvent();
++      const auto* xev = x11::Connection::Get()->dispatching_event();
++      const auto* device_event =
++          xev ? xev->As<x11::Input::DeviceEvent>() : nullptr;
++      consumed_touches_.push_back(
++          {device_event ? device_event->event : x11::Window::None,
++           touch_event->pointer_details().id, touch_event->location_f()});
+       delegate_->OnMouseReleased();
+       return ui::POST_DISPATCH_NONE;
+     }
+@@ -195,6 +204,7 @@ bool X11WholeScreenMoveLoop::RunMoveLoop(
+ 
+   in_move_loop_ = true;
+   canceled_ = false;
++  consumed_touches_.clear();
+   base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+   quit_closure_ = run_loop.QuitClosure();
+   run_loop.Run();
+@@ -213,6 +223,11 @@ void X11WholeScreenMoveLoop::UpdateCursor(scoped_refptr<ui::X11Cursor> cursor) {
+   }
+ }
+ 
++std::vector<X11WholeScreenMoveLoop::ConsumedTouch>
++X11WholeScreenMoveLoop::TakeConsumedTouches() {
++  return std::exchange(consumed_touches_, {});
++}
++
+ void X11WholeScreenMoveLoop::EndMoveLoop() {
+   if (!in_move_loop_) {
+     return;
+diff --git a/ui/base/x/x11_whole_screen_move_loop.h b/ui/base/x/x11_whole_screen_move_loop.h
+index 38a5983f6c2cf1a233a07e8d41d20c8e95be84a4..870360cb5274118a3474d25175ce33c2d36ffe89 100644
+--- a/ui/base/x/x11_whole_screen_move_loop.h
++++ b/ui/base/x/x11_whole_screen_move_loop.h
+@@ -8,6 +8,7 @@
+ #include <stdint.h>
+ 
+ #include <memory>
++#include <vector>
+ 
+ #include "base/component_export.h"
+ #include "base/functional/callback.h"
+@@ -16,6 +17,8 @@
+ #include "ui/base/x/x11_move_loop.h"
+ #include "ui/base/x/x11_move_loop_delegate.h"
+ #include "ui/events/platform/platform_event_dispatcher.h"
++#include "ui/events/pointer_details.h"
++#include "ui/gfx/geometry/point_f.h"
+ #include "ui/gfx/geometry/vector2d_f.h"
+ #include "ui/gfx/image/image_skia.h"
+ #include "ui/gfx/native_ui_types.h"
+@@ -54,6 +57,19 @@ class COMPONENT_EXPORT(UI_BASE_X) X11WholeScreenMoveLoop
+   void UpdateCursor(scoped_refptr<ui::X11Cursor> cursor) override;
+   void EndMoveLoop() override;
+ 
++  // A touch sequence whose release or cancel was consumed by the loop, so it
++  // never reached the window the touch was targeted at.
++  struct ConsumedTouch {
++    x11::Window window;
++    PointerId id;
++    gfx::PointF location;
++  };
++
++  // Returns and clears the touch sequences consumed by the last loop. The
++  // caller is expected to end them (e.g. by dispatching a touch cancel) once
++  // the loop has returned; otherwise they remain active indefinitely.
++  std::vector<ConsumedTouch> TakeConsumedTouches();
++
+  private:
+   // Grabs the pointer, setting the mouse cursor to |cursor|. Returns true if
+   // successful.
+@@ -92,6 +108,9 @@ class COMPONENT_EXPORT(UI_BASE_X) X11WholeScreenMoveLoop
+   // pressing escape).
+   bool canceled_;
+ 
++  // Touch sequences whose release or cancel was consumed by the loop.
++  std::vector<ConsumedTouch> consumed_touches_;
++
+   base::WeakPtrFactory<X11WholeScreenMoveLoop> weak_factory_{this};
+ };
+ 
+diff --git a/ui/base/x/x11_whole_screen_move_loop_unittest.cc b/ui/base/x/x11_whole_screen_move_loop_unittest.cc
+index 99d649d4747785fb658f64bb2f84def4ac9aa251..46c13712a709bd38b5a551f218783622e531b2cf 100644
+--- a/ui/base/x/x11_whole_screen_move_loop_unittest.cc
++++ b/ui/base/x/x11_whole_screen_move_loop_unittest.cc
+@@ -9,14 +9,19 @@
+ #include "base/functional/bind.h"
+ #include "base/functional/callback.h"
+ #include "base/functional/callback_helpers.h"
++#include "base/memory/raw_ptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/run_loop.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/bind.h"
+ #include "base/test/task_environment.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/base/x/x11_cursor.h"
++#include "ui/events/event.h"
++#include "ui/events/platform/platform_event_dispatcher.h"
+ #include "ui/events/platform/platform_event_source.h"
+ #include "ui/gfx/geometry/point.h"
++#include "ui/gfx/geometry/point_f.h"
+ 
+ namespace ui {
+ 
+@@ -79,4 +84,61 @@ TEST(X11WholeScreenMoveLoopTest, EndMoveLoopSurvivesSelfDeletion) {
+   EXPECT_FALSE(run_result);
+ }
+ 
++namespace {
++
++// Ends the move loop when it reports a release, like the real delegates do.
++class EndOnReleaseDelegate : public X11MoveLoopDelegate {
++ public:
++  // X11MoveLoopDelegate:
++  void OnMouseMovement(const gfx::Point& screen_point,
++                       int flags,
++                       base::TimeTicks event_time) override {}
++  void OnMouseReleased() override { loop_->EndMoveLoop(); }
++  void OnMoveLoopEnded() override {}
++
++  void set_loop(X11WholeScreenMoveLoop* loop) { loop_ = loop; }
++
++ private:
++  raw_ptr<X11WholeScreenMoveLoop> loop_ = nullptr;
++};
++
++}  // namespace
++
++// The loop consumes the touch release that ends a touch drag, so it must report
++// the touch sequence to its owner, which ends it once the loop returns.
++TEST(X11WholeScreenMoveLoopTest, ReportsConsumedTouchRelease) {
++  base::test::SingleThreadTaskEnvironment task_environment(
++      base::test::SingleThreadTaskEnvironment::MainThreadType::UI);
++  TestPlatformEventSource event_source;
++
++  EndOnReleaseDelegate delegate;
++  X11WholeScreenMoveLoop move_loop(&delegate);
++  delegate.set_loop(&move_loop);
++
++  // Events dispatched outside the loop are not consumed.
++  TouchEvent early_release(EventType::kTouchReleased, gfx::PointF(1, 1),
++                           gfx::PointF(1, 1), base::TimeTicks::Now(),
++                           PointerDetails(EventPointerType::kTouch, 3));
++  EXPECT_EQ(static_cast<uint32_t>(POST_DISPATCH_PERFORM_DEFAULT),
++            move_loop.DispatchEvent(&early_release));
++
++  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE, base::BindLambdaForTesting([&move_loop]() {
++        TouchEvent release(EventType::kTouchReleased, gfx::PointF(10, 20),
++                           gfx::PointF(10, 20), base::TimeTicks::Now(),
++                           PointerDetails(EventPointerType::kTouch, 5));
++        EXPECT_EQ(static_cast<uint32_t>(POST_DISPATCH_NONE),
++                  move_loop.DispatchEvent(&release));
++      }));
++
++  move_loop.RunMoveLoop(/*can_grab_pointer=*/false, nullptr, nullptr,
++                        base::DoNothing());
++
++  auto consumed = move_loop.TakeConsumedTouches();
++  ASSERT_EQ(1u, consumed.size());
++  EXPECT_EQ(5, consumed[0].id);
++  EXPECT_EQ(gfx::PointF(10, 20), consumed[0].location);
++  EXPECT_TRUE(move_loop.TakeConsumedTouches().empty());
++}
++
+ }  // namespace ui
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller_unittest.cc b/ui/ozone/platform/wayland/host/wayland_data_drag_controller_unittest.cc
+index d9a89a6741891fda0175a04f2e7acc95e44e43b0..6553f0422ad456beb713bf30fe9e2a9213fdaf8c 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller_unittest.cc
++++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller_unittest.cc
+@@ -42,6 +42,7 @@
+ #include "ui/ozone/platform/wayland/host/wayland_data_device_manager.h"
+ #include "ui/ozone/platform/wayland/host/wayland_data_offer.h"
+ #include "ui/ozone/platform/wayland/host/wayland_data_source.h"
++#include "ui/ozone/platform/wayland/host/wayland_event_source.h"
+ #include "ui/ozone/platform/wayland/host/wayland_serial_tracker.h"
+ #include "ui/ozone/platform/wayland/host/wayland_window.h"
+ #include "ui/ozone/platform/wayland/test/mock_pointer.h"
+@@ -1592,6 +1593,32 @@ TEST_P(WaylandDataDragControllerTest, ScaleEnterAndMotionEventsLocation) {
+   SendDndLeave();
+ }
+ 
++// The compositor owns the touch sequence once a touch-sourced drag starts and
++// typically ends it without sending wl_touch.up to the client. Verify that the
++// touch point does not stay live, and that the platform window delegate is
++// told the touch sequence is over.
++TEST_P(WaylandDataDragControllerTest, TouchDragEndsTouchSequence) {
++  SendTouchDown(window_.get(), &delegate_, 1, {10, 10});
++  ASSERT_EQ(1u, connection_->event_source()->GetActiveTouchPointIds().size());
++
++  std::vector<EventType> touch_events;
++  EXPECT_CALL(delegate_, DispatchEvent(_))
++      .WillRepeatedly([&touch_events](Event* event) {
++        if (event->IsTouchEvent()) {
++          touch_events.push_back(event->type());
++        }
++      });
++
++  ScheduleTestTask(base::BindLambdaForTesting([&]() {
++    SendDndDropPerformed();
++    SendDndFinished();
++  }));
++  RunTouchDragWithSampleData(window_.get(), DragDropTypes::DRAG_COPY);
++
++  EXPECT_TRUE(connection_->event_source()->GetActiveTouchPointIds().empty());
++  EXPECT_THAT(touch_events, ::testing::ElementsAre(EventType::kTouchCancelled));
++}
++
+ INSTANTIATE_TEST_SUITE_P(XdgVersionStableTest,
+                          WaylandDataDragControllerTest,
+                          Values(wl::ServerConfig{}));
+diff --git a/ui/ozone/platform/wayland/host/wayland_event_source.cc b/ui/ozone/platform/wayland/host/wayland_event_source.cc
+index abb225a048cf0010e5882e075f61122c3392884f..a9cdd4609eb3a4b1da8c1be4af438e64b1ca0e58 100644
+--- a/ui/ozone/platform/wayland/host/wayland_event_source.cc
++++ b/ui/ozone/platform/wayland/host/wayland_event_source.cc
+@@ -818,9 +818,11 @@ void WaylandEventSource::OnTouchCancelEvent() {
+   if (connection_->IsDragInProgress()) {
+     return;
+   }
++  CancelActiveTouches(base::TimeTicks::Now());
++}
+ 
++void WaylandEventSource::CancelActiveTouches(base::TimeTicks timestamp) {
+   gfx::PointF location;
+-  base::TimeTicks timestamp = base::TimeTicks::Now();
+   for (auto& touch_point : touch_points_) {
+     PointerId id = touch_point.first;
+     TouchEvent event(EventType::kTouchCancelled, location, location, timestamp,
+diff --git a/ui/ozone/platform/wayland/host/wayland_event_source.h b/ui/ozone/platform/wayland/host/wayland_event_source.h
+index 610771d04440fb7aed260e507fcfe5066a7d14ce..0c35af60305ce6cd7c41fcc2f8a724ca272765cf 100644
+--- a/ui/ozone/platform/wayland/host/wayland_event_source.h
++++ b/ui/ozone/platform/wayland/host/wayland_event_source.h
+@@ -171,6 +171,13 @@ class WaylandEventSource : public PlatformEventSource,
+   std::vector<PointerId> GetActiveTouchPointIds() override;
+   const WaylandWindow* GetTouchTarget(PointerId id) const override;
+ 
++  // Dispatches a synthetic touch cancel for every active touch point and stops
++  // tracking them. Used when the compositor takes over the touch sequences
++  // (e.g. a touch-driven drag-and-drop or interactive move) and may never send
++  // the matching wl_touch.up. This is the touch analogue of
++  // ReleasePressedPointerButtons().
++  void CancelActiveTouches(base::TimeTicks timestamp);
++
+   // WaylandZwpPointerGesture::Delegate:
+   void OnPinchEvent(EventType event_type,
+                     const gfx::Vector2dF& delta,
+diff --git a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+index 816a9a3d2a452ed7ab34e5a6d9e281efb1ca4ceb..0983d63662235a11c80907dd55000f42554d5251 100644
+--- a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+@@ -136,8 +136,13 @@ void WaylandToplevelWindow::DispatchHostWindowDragMovement(
+ 
+   connection()->Flush();
+   // TODO(crbug.com/40917147): Revisit to resolve the correct impl.
+-  connection()->event_source()->ReleasePressedPointerButtons(this,
+-                                                             EventTimeForNow());
++  // `event_source` is owned by the connection, so it outlives this window even
++  // if dispatching the events below destroys it.
++  auto* event_source = connection()->event_source();
++  event_source->ReleasePressedPointerButtons(this, EventTimeForNow());
++  // The compositor now owns any touch sequence that started the move, and need
++  // not send wl_touch.up or wl_touch.cancel for it, so end it here.
++  event_source->CancelActiveTouches(EventTimeForNow());
+ }
+ 
+ void WaylandToplevelWindow::Show(bool inactive) {
+diff --git a/ui/ozone/platform/wayland/host/wayland_window.cc b/ui/ozone/platform/wayland/host/wayland_window.cc
+index 81a046be49664b627a5ae73b6022febb0cafa051..69366453b10e2bf022417d5cac5536d165436acf 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window.cc
+@@ -954,15 +954,20 @@ void WaylandWindow::OnDragSessionClose(DragOperation operation) {
+   // quit in that case.
+   base::OnceClosure quit_closure = std::move(drag_loop_quit_closure_);
+   auto alive = AsWeakPtr();
++  WaylandConnection* const connection = this->connection();
+   std::move(drag_finished_callback_).Run(operation);
+   // Skip releasing any pointer buttons for the case of a window drag driven by
+   // the data drag controller.
+   // TODO: crbug.com/40238145 - Refactor this per discussion at
+   // crrev.com/c/5570335/comment/0b8811fc_818028c9/.
+   if (alive &&
+-      !connection()->data_drag_controller()->IsWindowDragSessionRunning()) {
+-    connection()->event_source()->ReleasePressedPointerButtons(
+-        this, EventTimeForNow());
++      !connection->data_drag_controller()->IsWindowDragSessionRunning()) {
++    connection->event_source()->ReleasePressedPointerButtons(this,
++                                                             EventTimeForNow());
++    // The compositor owns the touch sequences for the duration of the drag and
++    // need not send wl_touch.up for them afterwards, so end any that are still
++    // tracked. Otherwise they would remain active indefinitely.
++    connection->event_source()->CancelActiveTouches(EventTimeForNow());
+   }
+   std::move(quit_closure).Run();
+ }
+diff --git a/ui/ozone/platform/wayland/host/wayland_window_unittest.cc b/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
+index 389846e35aca8413298f8e8860c40419cbab2279..e15b77e1244ce89de56147cfd6b36db46b9997c7 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
+@@ -2890,6 +2890,41 @@ TEST_P(WaylandWindowTest, DispatchWindowMove) {
+       HTCAPTION, gfx::Point());
+ }
+ 
++// The compositor takes over the touch sequence that starts an interactive move
++// and need not send wl_touch.up for it, so it must be ended at the handoff.
++TEST_P(WaylandWindowTest, DispatchWindowMoveCancelsTouches) {
++  PostToServerAndWait([](wl::TestWaylandServerThread* server) {
++    wl_seat_send_capabilities(server->seat()->resource(),
++                              WL_SEAT_CAPABILITY_TOUCH);
++  });
++  ASSERT_TRUE(connection_->seat()->touch());
++
++  std::vector<EventType> touch_events;
++  EXPECT_CALL(delegate_, DispatchEvent(_))
++      .WillRepeatedly([&touch_events](Event* event) {
++        if (event->IsTouchEvent()) {
++          touch_events.push_back(event->type());
++        }
++      });
++
++  PostToServerAndWait([id = surface_id_](wl::TestWaylandServerThread* server) {
++    wl::MockSurface* surface = server->GetObject<wl::MockSurface>(id);
++    auto* touch_resource = server->seat()->touch()->resource();
++    wl_touch_send_down(touch_resource, server->GetNextSerial(),
++                       server->GetNextTime(), surface->resource(), /*id=*/0,
++                       wl_fixed_from_int(10), wl_fixed_from_int(10));
++    wl_touch_send_frame(touch_resource);
++  });
++  ASSERT_EQ(1u, connection_->event_source()->GetActiveTouchPointIds().size());
++
++  ui::GetWmMoveResizeHandler(*window_)->DispatchHostWindowDragMovement(
++      HTCAPTION, gfx::Point());
++
++  EXPECT_TRUE(connection_->event_source()->GetActiveTouchPointIds().empty());
++  EXPECT_THAT(touch_events, ::testing::ElementsAre(EventType::kTouchPressed,
++                                                   EventType::kTouchCancelled));
++}
++
+ // Makes sure hit tests are converted into right edges.
+ TEST_P(WaylandWindowTest, DispatchWindowResize) {
+   std::vector<int> hit_test_values;
+diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
+index 3605885b576cadf63b5db90cf46bb335c886d57a..0f667838e94302d1ed7faf32a222fa2b7c9817f2 100644
+--- a/ui/ozone/platform/x11/x11_window.cc
++++ b/ui/ozone/platform/x11/x11_window.cc
+@@ -1620,7 +1620,14 @@ void X11Window::DispatchHostWindowDragMovement(
+ }
+ 
+ bool X11Window::RunMoveLoop(const gfx::Vector2d& drag_offset) {
+-  return x11_window_move_client_->RunMoveLoop(!HasCapture(), drag_offset);
++  auto alive = weak_ptr_factory_.GetWeakPtr();
++  const bool moved =
++      x11_window_move_client_->RunMoveLoop(!HasCapture(), drag_offset);
++  if (alive) {
++    CancelConsumedTouches(alive,
++                          x11_window_move_client_->TakeConsumedTouches());
++  }
++  return moved;
+ }
+ 
+ void X11Window::EndMoveLoop() {
+@@ -1645,7 +1652,9 @@ bool X11Window::StartDrag(
+   allowed_drag_operations_ = 0;
+   notified_enter_ = false;
+ 
+-  drag_loop_ = std::make_unique<X11WholeScreenMoveLoop>(this);
++  auto drag_loop = std::make_unique<X11WholeScreenMoveLoop>(this);
++  X11WholeScreenMoveLoop* const whole_screen_drag_loop = drag_loop.get();
++  drag_loop_ = std::move(drag_loop);
+ 
+   auto alive = weak_ptr_factory_.GetWeakPtr();
+   const bool dropped =
+@@ -1655,12 +1664,35 @@ bool X11Window::StartDrag(
+     return false;
+   }
+ 
++  auto consumed_touches = whole_screen_drag_loop->TakeConsumedTouches();
+   drag_loop_.reset();
+   drag_location_delegate_ = nullptr;
+   drag_drop_client_->CleanupDrag();
++  CancelConsumedTouches(alive, std::move(consumed_touches));
+   return dropped;
+ }
+ 
++// static
++void X11Window::CancelConsumedTouches(
++    base::WeakPtr<X11Window> fallback,
++    std::vector<X11WholeScreenMoveLoop::ConsumedTouch> touches) {
++  auto* window_manager = X11WindowManager::GetInstance();
++  for (const auto& touch : touches) {
++    X11Window* target =
++        touch.window == x11::Window::None
++            ? fallback.get()
++            : window_manager->GetWindow(
++                  static_cast<gfx::AcceleratedWidget>(touch.window));
++    if (!target) {
++      continue;
++    }
++    TouchEvent cancel(EventType::kTouchCancelled, touch.location,
++                      touch.location, EventTimeForNow(),
++                      PointerDetails(EventPointerType::kTouch, touch.id));
++    target->platform_window_delegate()->DispatchEvent(&cancel);
++  }
++}
++
+ void X11Window::CancelDrag() {
+   QuitDragLoop();
+ }
+diff --git a/ui/ozone/platform/x11/x11_window.h b/ui/ozone/platform/x11/x11_window.h
+index 4ca19107e2adc1520602bdc6a2c761f403387517..3ce94b73e53989543e3ef73f80306f0f9754a5d7 100644
+--- a/ui/ozone/platform/x11/x11_window.h
++++ b/ui/ozone/platform/x11/x11_window.h
+@@ -20,6 +20,7 @@
+ #include "ui/base/x/x11_desktop_window_move_client.h"
+ #include "ui/base/x/x11_drag_drop_client.h"
+ #include "ui/base/x/x11_move_loop_delegate.h"
++#include "ui/base/x/x11_whole_screen_move_loop.h"
+ #include "ui/events/platform/platform_event_dispatcher.h"
+ #include "ui/gfx/geometry/insets.h"
+ #include "ui/gfx/x/connection.h"
+@@ -186,6 +187,14 @@ class X11Window : public PlatformWindow,
+ 
+   void DispatchUiEvent(ui::Event* event, const x11::Event& xev);
+ 
++  // Dispatches a touch cancel for each touch sequence whose release or cancel
++  // was consumed by an X11WholeScreenMoveLoop, to the window the touch was
++  // targeted at (or `fallback` if that is unknown). Without this, aura would
++  // consider those touches active indefinitely. May destroy any window.
++  static void CancelConsumedTouches(
++      base::WeakPtr<X11Window> fallback,
++      std::vector<X11WholeScreenMoveLoop::ConsumedTouch> touches);
++
+   // WmMoveResizeHandler
+   void DispatchHostWindowDragMovement(
+       int hittest,

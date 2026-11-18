@@ -1,0 +1,685 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Anderson <thomasanderson@chromium.org>
+Date: Mon, 26 Oct 2026 18:27:22 -0700
+Subject: Require a left mouse press on the web contents for renderer mouse
+ drags
+
+WebContentsViewAura::StartDragging validated a renderer-initiated mouse
+drag with aura::Env::IsLeftMouseButtonDown(), a process-global flag that
+reports whether the left button is held anywhere. Several features
+armed ad hoc suppressions (e.g.
+DesktopDragDropClientOzone::ScopedSuppressForWindowMove) to keep a
+compromised renderer from latching a data drag onto a held button that
+was not pressed on its web contents, but each suppression had to be
+kept exactly in sync with the gesture it protected. For example, on
+Linux/X11, WindowEventFilterLinux released its caption click-hold
+suppression on any non-drag located event, including a kMouseExited
+that a compromised renderer in a Window Controls Overlay app could
+manufacture with a popup widget and window.moveTo(). The renderer could
+then turn the user's window-move gesture into a drag of attacker data.
+
+EnvInputStateController now also tracks the window the current left
+button press was dispatched to, and whether that press has already been
+used to start a drag. Non-client presses (which may become window moves)
+are not associated with their target. A new
+Env::ConsumeLeftMousePressForDrag(window) returns true, and marks the
+press as used, only if the left button is down and its press was
+dispatched to `window` and is unused. StartDragging uses it for mouse
+drags, so the press must have been dispatched to the web contents
+itself, and each press can start at most one drag. A press on the window
+caption or an app's draggable region, on a menu holding capture, or on
+another WebContents no longer satisfies the check, regardless of the
+state of any suppression. This mirrors the existing requirement for
+touch drags.
+
+Bug: 553151406, 569004756, 569008693
+Change-Id: I0597adbeb40ba47da9e3402ea083f03c1d002999
+Fixed: 576129254
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8615348
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1727580}
+
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index 73338a92fac7dbb005d36b68df333c2f67c908d6..85511788acae127964cac72053113bca81bba5f8 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -1265,9 +1265,8 @@ void WebContentsViewAura::StartDragging(
+     // touch event would reach `::SendInput` via
+     // DesktopWindowTreeHostWin::StartTouchDrag and could redirect the
+     // synthesized click to an overlapping HWND (e.g. a permission bubble).
+-    // Require a touch pressed on the web contents or a left mouse button,
+-    // depending on the event source, and refuse the drag if the requirement is
+-    // not met.
++    // Require a touch or a left mouse press on the web contents, depending on
++    // the event source, and refuse the drag if the requirement is not met.
+     gfx::Point trusted_location;
+     aura::Env* env = aura::Env::GetInstance();
+     if (event_info.source == ui::mojom::DragEventSource::kTouch) {
+@@ -1282,8 +1281,13 @@ void WebContentsViewAura::StartDragging(
+       }
+       trusted_location = *touch_location;
+     } else {
++      // Likewise, a left button held elsewhere (e.g. on the window caption or
++      // a draggable region of a frameless app window to move the window), or
++      // a press that already started a drag and whose release was consumed by
++      // the platform drag loop or the window manager, must not satisfy this
++      // check.
+       if (event_info.source == ui::mojom::DragEventSource::kMouse &&
+-          !env->IsLeftMouseButtonDown()) {
++          !env->ConsumeLeftMousePressForDrag(content_native_view)) {
+         EndDrag(std::move(source_rwh_weak_ptr), result_op);
+         return;
+       }
+diff --git a/content/browser/web_contents/web_contents_view_aura.h b/content/browser/web_contents/web_contents_view_aura.h
+index 0917053b297574769bf1e22eb491d1f99a2f35ce..ef75731b8e6753b30d45fb01fe39f6caf21d59e5 100644
+--- a/content/browser/web_contents/web_contents_view_aura.h
++++ b/content/browser/web_contents/web_contents_view_aura.h
+@@ -191,6 +191,8 @@ class CONTENT_EXPORT WebContentsViewAura
+                            ClampTouchLocationToBrowserObservedPoint);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            TouchDragRequiresTouchOnWebContents);
++  FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
++                           MouseDragRequiresPressOnWebContents);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            StartDraggingMouseRequiresLeftButton);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+diff --git a/content/browser/web_contents/web_contents_view_aura_unittest.cc b/content/browser/web_contents/web_contents_view_aura_unittest.cc
+index e26ce1ce3fb5d2db045175dbe32411c323fc81ab..c986d6a41dac967ab1d0d1ff2a109f27bf63ca69 100644
+--- a/content/browser/web_contents/web_contents_view_aura_unittest.cc
++++ b/content/browser/web_contents/web_contents_view_aura_unittest.cc
+@@ -112,6 +112,19 @@ void UpdateTouchState(aura::Window* target,
+                                                                        event);
+ }
+ 
++// Updates aura's input state as if a left mouse button event of `type` with
++// `flags` had been dispatched to `target`. The last mouse location is not
++// updated.
++void UpdateLeftMouseState(aura::Window* target,
++                          ui::EventType type,
++                          int flags = ui::EF_NONE) {
++  ui::MouseEvent event(type, gfx::Point(), gfx::Point(), ui::EventTimeForNow(),
++                       ui::EF_LEFT_MOUSE_BUTTON | flags,
++                       ui::EF_LEFT_MOUSE_BUTTON);
++  aura::Env::GetInstance()->env_controller()->UpdateStateForMouseEvent(
++      /*window=*/nullptr, target, event);
++}
++
+ class TestDragDropClient : public aura::client::DragDropClient {
+  public:
+   // aura::client::DragDropClient:
+@@ -233,6 +246,8 @@ class WebContentsViewAuraTest : public RenderViewHostTestHarness {
+     aura::Env::GetInstance()->SetLastMouseLocation(gfx::Point());
+     aura::test::EnvTestHelper(aura::Env::GetInstance())
+         .SetInputStateLookup(aura::InputStateLookup::Create());
++    aura::test::EnvTestHelper(aura::Env::GetInstance())
++        .SetLeftMousePressTarget(nullptr);
+     aura::Env::GetInstance()->set_mouse_button_flags(0);
+     RenderViewHostTestHarness::TearDown();
+   }
+@@ -985,6 +1000,8 @@ TEST_F(WebContentsViewAuraTest, StartDragging) {
+ 
+   DropData drop_data;
+   drop_data.text.emplace(u"Hello World!");
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1110,6 +1127,8 @@ TEST_F(WebContentsViewAuraTest, StartDragFromPrivilegedWebContents) {
+   DropData drop_data;
+   aura::Env::GetInstance()->SetLastMouseLocation(
+       view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1137,6 +1156,8 @@ TEST_F(WebContentsViewAuraTest, RejectDragFromHiddenWebContents) {
+   drop_data.url_infos = {ui::ClipboardUrlInfo{GURL(kGoogleUrl), u""}};
+ 
+   view->GetContentNativeView()->Hide();
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1177,6 +1198,8 @@ TEST_F(WebContentsViewAuraTest, ClampMouseLocationToBrowserObservedPoint) {
+                                     view_bounds_on_screen.y() + 4);
+   aura::Env::GetInstance()->SetLastMouseLocation(trusted_location);
+ 
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(
+       *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
+       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1299,6 +1322,10 @@ TEST_F(WebContentsViewAuraTest, StartDraggingMouseRequiresLeftButton) {
+   // `RenderWidgetHostViewBase::TransformPointToCoordSpaceForView`.
+   view->drag_in_progress_ = true;
+ 
++  // The left button was pressed on the web contents, but only other buttons
++  // are held now.
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   env->set_mouse_button_flags(ui::EF_MIDDLE_MOUSE_BUTTON |
+                               ui::EF_RIGHT_MOUSE_BUTTON |
+                               ui::EF_BACK_MOUSE_BUTTON);
+@@ -1319,6 +1346,61 @@ TEST_F(WebContentsViewAuraTest, StartDraggingMouseRequiresLeftButton) {
+   EXPECT_TRUE(drag_drop_client.GetDragDropData());
+ }
+ 
++// A renderer-initiated mouse drag must be backed by a left button press that
++// was dispatched to the web contents itself. A press on another window, e.g. on
++// the window caption to move the window, or a non-client press, e.g. on a
++// draggable region of a frameless app window, must not satisfy the check, even
++// though the left button is held.
++TEST_F(WebContentsViewAuraTest, MouseDragRequiresPressOnWebContents) {
++  NavigateAndCommit(GURL("https://example.com/"));
++
++  TestDragDropClient drag_drop_client;
++  aura::client::SetDragDropClient(root_window(), &drag_drop_client);
++
++  WebContentsViewAura* view = GetView();
++  // Needed to avoid calling WebContentsViewAura::EndDrag, which results in
++  // NOTREACHED being called in
++  // `RenderWidgetHostViewBase::TransformPointToCoordSpaceForView`.
++  view->drag_in_progress_ = true;
++
++  aura::Window* const content = view->GetContentNativeView();
++  const gfx::Point location = content->GetBoundsInScreen().CenterPoint();
++  aura::Env* const env = aura::Env::GetInstance();
++  env->SetLastMouseLocation(location);
++  const blink::mojom::DragEventSourceInfo event_info(
++      location, ui::mojom::DragEventSource::kMouse);
++  DropData drop_data;
++
++  UpdateLeftMouseState(root_window(), ui::EventType::kMousePressed);
++  ASSERT_TRUE(env->IsLeftMouseButtonDown());
++  view->StartDragging(
++      *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
++      gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
++  EXPECT_FALSE(drag_drop_client.GetDragDropData())
++      << "A press on another window must not allow a web contents drag.";
++  EXPECT_FALSE(view->drag_security_info_.did_initiate());
++  UpdateLeftMouseState(root_window(), ui::EventType::kMouseReleased);
++
++  UpdateLeftMouseState(content, ui::EventType::kMousePressed,
++                       ui::EF_IS_NON_CLIENT);
++  ASSERT_TRUE(env->IsLeftMouseButtonDown());
++  view->StartDragging(
++      *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
++      gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
++  EXPECT_FALSE(drag_drop_client.GetDragDropData())
++      << "A non-client press must not allow a web contents drag.";
++  EXPECT_FALSE(view->drag_security_info_.did_initiate());
++  UpdateLeftMouseState(content, ui::EventType::kMouseReleased);
++
++  // The same drag is allowed with a press on the web contents.
++  UpdateLeftMouseState(content, ui::EventType::kMousePressed);
++  view->StartDragging(
++      *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
++      gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
++  EXPECT_TRUE(drag_drop_client.GetDragDropData());
++  UpdateLeftMouseState(content, ui::EventType::kMouseReleased);
++}
++
+ // A drag that is refused before it starts must not leave `drag_security_info_`
+ // initiated, or every later drag from this WebContents would be dropped by the
+ // reentrancy check. Covers both refusal paths in StartDragging: a mismatched
+@@ -1357,7 +1439,8 @@ TEST_F(WebContentsViewAuraTest, RefusedDragDoesNotBlockSubsequentDrags) {
+ 
+   // A hidden source view is refused by the second check, which must not latch
+   // the state either.
+-  env->set_mouse_button_flags(ui::EF_LEFT_MOUSE_BUTTON);
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->GetContentNativeView()->Hide();
+   view->StartDragging(
+       *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
+@@ -1366,8 +1449,13 @@ TEST_F(WebContentsViewAuraTest, RefusedDragDoesNotBlockSubsequentDrags) {
+   ASSERT_FALSE(drag_drop_client.GetDragDropData());
+   EXPECT_FALSE(view->drag_security_info_.did_initiate());
+ 
+-  // A subsequent genuine drag gesture must still be able to start.
++  // A subsequent genuine drag gesture, which starts with a new press, must
++  // still be able to start.
+   view->GetContentNativeView()->Show();
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMouseReleased);
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(
+       *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
+       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
+@@ -1398,6 +1486,8 @@ TEST_F(WebContentsViewAuraTest, EmptyTextInDropDataIsNonNullInOSExchangeData) {
+ 
+   aura::Env::GetInstance()->SetLastMouseLocation(
+       view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1433,6 +1523,8 @@ TEST_F(WebContentsViewAuraTest,
+ 
+   aura::Env::GetInstance()->SetLastMouseLocation(
+       view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1467,6 +1559,8 @@ TEST_F(WebContentsViewAuraTest,
+ 
+   aura::Env::GetInstance()->SetLastMouseLocation(
+       view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1504,6 +1598,8 @@ TEST_F(WebContentsViewAuraTest, EndDragIsCalledAfterAsyncDrop) {
+ 
+   aura::Env::GetInstance()->SetLastMouseLocation(
+       view->GetContentNativeView()->GetBoundsInScreen().CenterPoint());
++  UpdateLeftMouseState(view->GetContentNativeView(),
++                       ui::EventType::kMousePressed);
+   view->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationNone,
+                       gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(),
+@@ -1605,6 +1701,9 @@ TEST_F(WebContentsViewAuraTest, StartDragAllowedByPolicy) {
+ 
+   aura::Env::GetInstance()->SetLastMouseLocation(
+       view_interface->GetNativeView()->GetBoundsInScreen().CenterPoint());
++  UpdateLeftMouseState(
++      web_contents()->GetRenderWidgetHostView()->GetNativeView(),
++      ui::EventType::kMousePressed);
+   static_cast<RenderViewHostDelegateView*>(&mock_view)
+       ->StartDragging(*main_rfh(), drop_data,
+                       blink::DragOperationsMask::kDragOperationCopy,
+diff --git a/content/public/test/browser_test_utils.cc b/content/public/test/browser_test_utils.cc
+index 7f44cc0831f9652048a468fd3816be24d300f7f8..d8b4bd0b2c4315620b382fdb9e92c74f3000c895 100644
+--- a/content/public/test/browser_test_utils.cc
++++ b/content/public/test/browser_test_utils.cc
+@@ -1210,10 +1210,20 @@ void SimulateMouseEvent(WebContents* web_contents,
+     aura::Env::GetInstance()->set_mouse_button_flags(
+         aura::Env::GetInstance()->mouse_button_flags() |
+         get_event_flags_for_button(button));
++    // Renderer-initiated mouse drags also require the left button press to
++    // have been dispatched to the web contents.
++    if (button == blink::WebMouseEvent::Button::kLeft) {
++      aura::test::EnvTestHelper(aura::Env::GetInstance())
++          .SetLeftMousePressTarget(rwhvb->GetNativeView());
++    }
+   } else if (type == blink::WebInputEvent::Type::kMouseUp) {
+     int flags = aura::Env::GetInstance()->mouse_button_flags() &
+                 ~get_event_flags_for_button(button);
+     aura::Env::GetInstance()->set_mouse_button_flags(flags);
++    if (button == blink::WebMouseEvent::Button::kLeft) {
++      aura::test::EnvTestHelper(aura::Env::GetInstance())
++          .SetLeftMousePressTarget(nullptr);
++    }
+     if (flags == 0) {
+       aura::test::EnvTestHelper(aura::Env::GetInstance())
+           .SetInputStateLookup(std::move(*g_saved_input_state_lookup));
+diff --git a/ui/aura/env.cc b/ui/aura/env.cc
+index 762afb22e1067a62193e61c3e63d04ffbfb82f63..6c109d4c8ede8531df9d4cad991a5388d1a6ac6c 100644
+--- a/ui/aura/env.cc
++++ b/ui/aura/env.cc
+@@ -161,6 +161,11 @@ std::optional<gfx::Point> Env::ConsumeTouchForDrag(const Window* window) {
+   return env_controller_->ConsumeTouchForDrag(window);
+ }
+ 
++bool Env::ConsumeLeftMousePressForDrag(const Window* window) {
++  return IsLeftMouseButtonDown() &&
++         env_controller_->ConsumeLeftMousePressForDrag(window);
++}
++
+ void Env::SetGestureRecognizer(
+     std::unique_ptr<ui::GestureRecognizer> gesture_recognizer) {
+   gesture_recognizer_ = std::move(gesture_recognizer);
+diff --git a/ui/aura/env.h b/ui/aura/env.h
+index 6722cc165ce3ba9a30ab049644389ff32afbd62f..8a184d4b9ca2c70be7f0c555bd290107540dcbf0 100644
+--- a/ui/aura/env.h
++++ b/ui/aura/env.h
+@@ -105,6 +105,18 @@ class AURA_EXPORT Env : public ui::EventTarget {
+   // consumed by a platform drag loop) can be used.
+   std::optional<gfx::Point> ConsumeTouchForDrag(const aura::Window* window);
+ 
++  // If the left mouse button is down, the press was dispatched to `window`, and
++  // the press has not already been used to start a drag, marks it as used and
++  // returns true. Otherwise returns false.
++  //
++  // Unlike IsLeftMouseButtonDown(), this only reports a press that was
++  // dispatched to `window` itself (and was not a non-client press), and each
++  // press can start at most one drag. This makes it suitable for validating
++  // drags requested by untrusted code (e.g. a renderer), since neither a press
++  // elsewhere (e.g. holding the window caption to move the window) nor a press
++  // whose release was lost after an earlier drag can be used.
++  bool ConsumeLeftMousePressForDrag(const aura::Window* window);
++
+   void set_context_factory(ui::ContextFactory* context_factory) {
+     context_factory_ = context_factory;
+   }
+diff --git a/ui/aura/env_input_state_controller.cc b/ui/aura/env_input_state_controller.cc
+index ef8f8d8b439e2610747459725b055ae63c102b1b..6628d0e81b3db9e0a38a319bf49d95df5450ec3d 100644
+--- a/ui/aura/env_input_state_controller.cc
++++ b/ui/aura/env_input_state_controller.cc
+@@ -19,14 +19,25 @@ EnvInputStateController::~EnvInputStateController() = default;
+ 
+ void EnvInputStateController::UpdateStateForMouseEvent(
+     const Window* window,
++    Window* target,
+     const ui::MouseEvent& event) {
+   switch (event.type()) {
+     case ui::EventType::kMousePressed:
+       env_->set_mouse_button_flags(event.button_flags());
++      if (event.changed_button_flags() & ui::EF_LEFT_MOUSE_BUTTON) {
++        // A non-client press (e.g. on the window caption) may become a window
++        // move, so it is not treated as a press on its target window. A press
++        // supersedes any earlier press whose release was never seen.
++        SetLeftMousePress((event.flags() & ui::EF_IS_NON_CLIENT) ? nullptr
++                                                                 : target);
++      }
+       break;
+     case ui::EventType::kMouseReleased:
+       env_->set_mouse_button_flags(event.button_flags() &
+                                    ~event.changed_button_flags());
++      if (event.changed_button_flags() & ui::EF_LEFT_MOUSE_BUTTON) {
++        ResetLeftMousePress();
++      }
+       break;
+     default:
+       break;
+@@ -115,9 +126,23 @@ std::optional<gfx::Point> EnvInputStateController::ConsumeTouchForDrag(
+   return std::nullopt;
+ }
+ 
++bool EnvInputStateController::ConsumeLeftMousePressForDrag(
++    const Window* window) {
++  if (!window || left_mouse_press_target_ != window ||
++      left_mouse_press_used_for_drag_) {
++    return false;
++  }
++  left_mouse_press_used_for_drag_ = true;
++  return true;
++}
++
+ void EnvInputStateController::ResetActiveTouches() {
+   active_touches_.clear();
+   target_observations_.RemoveAllObservations();
++  // `left_mouse_press_target_` may still be observed.
++  if (left_mouse_press_target_) {
++    ObserveTarget(left_mouse_press_target_);
++  }
+ }
+ 
+ void EnvInputStateController::OnWindowDestroying(Window* window) {
+@@ -129,6 +154,9 @@ void EnvInputStateController::OnWindowDestroying(Window* window) {
+       touch.target = nullptr;
+     }
+   }
++  if (left_mouse_press_target_ == window) {
++    left_mouse_press_target_ = nullptr;
++  }
+   target_observations_.RemoveObservation(window);
+ }
+ 
+@@ -138,9 +166,7 @@ void EnvInputStateController::AddActiveTouch(
+     const gfx::Point& location_in_screen) {
+   active_touches_[id] = {.target = window,
+                          .location_in_screen = location_in_screen};
+-  if (!target_observations_.IsObservingSource(window)) {
+-    target_observations_.AddObservation(window);
+-  }
++  ObserveTarget(window);
+ }
+ 
+ void EnvInputStateController::RemoveActiveTouch(ui::PointerId id) {
+@@ -150,15 +176,38 @@ void EnvInputStateController::RemoveActiveTouch(ui::PointerId id) {
+   }
+   Window* target = it->second.target;
+   active_touches_.erase(it);
+-  if (!target) {
++  MaybeStopObservingTarget(target);
++}
++
++void EnvInputStateController::SetLeftMousePress(Window* window) {
++  ResetLeftMousePress();
++  left_mouse_press_target_ = window;
++  ObserveTarget(window);
++}
++
++void EnvInputStateController::ResetLeftMousePress() {
++  Window* target = left_mouse_press_target_;
++  left_mouse_press_target_ = nullptr;
++  left_mouse_press_used_for_drag_ = false;
++  MaybeStopObservingTarget(target);
++}
++
++void EnvInputStateController::ObserveTarget(Window* window) {
++  if (window && !target_observations_.IsObservingSource(window)) {
++    target_observations_.AddObservation(window);
++  }
++}
++
++void EnvInputStateController::MaybeStopObservingTarget(Window* window) {
++  if (!window || left_mouse_press_target_ == window) {
+     return;
+   }
+-  for (const auto& [other_id, touch] : active_touches_) {
+-    if (touch.target == target) {
++  for (const auto& [id, touch] : active_touches_) {
++    if (touch.target == window) {
+       return;
+     }
+   }
+-  target_observations_.RemoveObservation(target);
++  target_observations_.RemoveObservation(window);
+ }
+ 
+ void EnvInputStateController::SetLastMouseLocation(
+diff --git a/ui/aura/env_input_state_controller.h b/ui/aura/env_input_state_controller.h
+index b405d6e789890c4719905eb40fc1c67a13a9ea10..11a3621ddaf6e7a3f01b9b2248e93675390f73e6 100644
+--- a/ui/aura/env_input_state_controller.h
++++ b/ui/aura/env_input_state_controller.h
+@@ -39,7 +39,10 @@ class AURA_EXPORT EnvInputStateController : public WindowObserver {
+ 
+   ~EnvInputStateController() override;
+ 
++  // `window` is the root window the event was dispatched through, and `target`
++  // is the window the event was dispatched to (which may be null).
+   void UpdateStateForMouseEvent(const Window* window,
++                                Window* target,
+                                 const ui::MouseEvent& event);
+   void UpdateStateForTouchEvent(Window* window, const ui::TouchEvent& event);
+   void SetLastMouseLocation(const Window* root_window,
+@@ -49,6 +52,10 @@ class AURA_EXPORT EnvInputStateController : public WindowObserver {
+   // See Env::ConsumeTouchForDrag().
+   std::optional<gfx::Point> ConsumeTouchForDrag(const Window* window);
+ 
++  // See Env::ConsumeLeftMousePressForDrag(). Unlike the Env method, this does
++  // not check whether the left mouse button is still down.
++  bool ConsumeLeftMousePressForDrag(const Window* window);
++
+  private:
+   friend class test::EnvTestHelper;
+ 
+@@ -72,11 +79,30 @@ class AURA_EXPORT EnvInputStateController : public WindowObserver {
+   void RemoveActiveTouch(ui::PointerId id);
+   void ResetActiveTouches();
+ 
++  // Records that the left mouse button was pressed on `window`, which may be
++  // null if the press should not be associated with any window.
++  void SetLeftMousePress(Window* window);
++  void ResetLeftMousePress();
++
++  // Starts observing `window` if it is not already observed.
++  void ObserveTarget(Window* window);
++  // Stops observing `window` if no active touch or mouse press targets it.
++  void MaybeStopObservingTarget(Window* window);
++
+   raw_ptr<Env> env_;
+   // Touch ids that are currently down.
+   uint32_t touch_ids_down_ = 0;
+ 
+   base::flat_map<ui::PointerId, ActiveTouch> active_touches_;
++
++  // The window the most recent left mouse press was dispatched to, or null if
++  // there is no such press, the press was non-client, the left button has
++  // since been released, or the window has since been destroyed.
++  raw_ptr<Window> left_mouse_press_target_ = nullptr;
++  // Whether the left mouse press on `left_mouse_press_target_` has already been
++  // used to start a drag.
++  bool left_mouse_press_used_for_drag_ = false;
++
+   base::ScopedMultiSourceObservation<Window, WindowObserver>
+       target_observations_{this};
+ };
+diff --git a/ui/aura/test/env_test_helper.h b/ui/aura/test/env_test_helper.h
+index e9c9175000208f53fb28d939dd4ec874d8f74016..52a718197d447d0c921db4d7699b0567650b6f56 100644
+--- a/ui/aura/test/env_test_helper.h
++++ b/ui/aura/test/env_test_helper.h
+@@ -41,6 +41,19 @@ class EnvTestHelper {
+     env_->last_mouse_location_ = gfx::Point();
+     env_->env_controller_->touch_ids_down_ = 0;
+     env_->env_controller_->ResetActiveTouches();
++    env_->env_controller_->ResetLeftMousePress();
++  }
++
++  // Records a left mouse press as if it had been dispatched to `window`, for
++  // tests that update Env's mouse button state directly instead of dispatching
++  // events. Passing null clears the press. Does not change
++  // `mouse_button_flags_`.
++  void SetLeftMousePressTarget(Window* window) {
++    if (window) {
++      env_->env_controller_->SetLeftMousePress(window);
++    } else {
++      env_->env_controller_->ResetLeftMousePress();
++    }
+   }
+ 
+   void SetGestureRecognizer(
+diff --git a/ui/aura/window_event_dispatcher.cc b/ui/aura/window_event_dispatcher.cc
+index 67698da0fb42c180555e6357d4487291fa4a7b86..d6ea7f0c60b0b44769ca31cffe4c5a71d2dff59d 100644
+--- a/ui/aura/window_event_dispatcher.cc
++++ b/ui/aura/window_event_dispatcher.cc
+@@ -323,7 +323,7 @@ ui::EventDispatchDetails WindowEventDispatcher::DispatchMouseEnterOrExit(
+     const ui::MouseEvent& event,
+     ui::EventType type) {
+   Env::GetInstance()->env_controller()->UpdateStateForMouseEvent(window(),
+-                                                                 event);
++                                                                 target, event);
+   if (!mouse_moved_handler_ || !mouse_moved_handler_->HasTargetHandler() ||
+       !window()->Contains(mouse_moved_handler_))
+     return DispatchDetails();
+@@ -951,8 +951,8 @@ DispatchDetails WindowEventDispatcher::PreDispatchMouseEvent(
+     return DispatchDetails();
+   }
+ 
+-  Env::GetInstance()->env_controller()->UpdateStateForMouseEvent(window(),
+-                                                                 *event);
++  Env::GetInstance()->env_controller()->UpdateStateForMouseEvent(
++      window(), target, *event);
+ 
+   if (IsEventCandidateForHold(*event) && !dispatching_held_event_) {
+     if (move_hold_count_) {
+diff --git a/ui/aura/window_event_dispatcher_unittest.cc b/ui/aura/window_event_dispatcher_unittest.cc
+index 1c5b8765ec20985c6e02c5a52490ce0f7cc7419d..3b05ca48414d6c90213146f19a203fdd56175531 100644
+--- a/ui/aura/window_event_dispatcher_unittest.cc
++++ b/ui/aura/window_event_dispatcher_unittest.cc
+@@ -3870,4 +3870,94 @@ TEST_F(WindowEventDispatcherTest, ConsumeTouchForDrag) {
+   env->RemovePreTargetHandler(&skip_gesture_handler);
+ }
+ 
++// Tests that ConsumeLeftMousePressForDrag() only reports a left button press
++// that was dispatched to the given window, that each press can be consumed at
++// most once, and that the press is forgotten once the button is released.
++TEST_F(WindowEventDispatcherTest, ConsumeLeftMousePressForDrag) {
++  auto* env = Env::GetInstance();
++  // Use the tracked button state rather than querying the OS.
++  test::EnvTestHelper(env).SetInputStateLookup(nullptr);
++
++  auto dispatch_mouse = [&](ui::EventType type, const gfx::Point& location,
++                            int flags, int changed_flags) {
++    ui::MouseEvent event(type, location, location, ui::EventTimeForNow(), flags,
++                         changed_flags);
++    DispatchEventUsingWindowDispatcher(&event);
++  };
++  auto press_left = [&](const gfx::Point& location, int flags = ui::EF_NONE) {
++    dispatch_mouse(ui::EventType::kMousePressed, location,
++                   ui::EF_LEFT_MOUSE_BUTTON | flags, ui::EF_LEFT_MOUSE_BUTTON);
++  };
++  auto release_left = [&](const gfx::Point& location) {
++    dispatch_mouse(ui::EventType::kMouseReleased, location,
++                   ui::EF_LEFT_MOUSE_BUTTON, ui::EF_LEFT_MOUSE_BUTTON);
++  };
++
++  test::TestWindowDelegate delegate;
++  std::unique_ptr<aura::Window> window =
++      test::CreateTestWindow({.delegate = &delegate,
++                              .parent = root_window(),
++                              .bounds = {10, 10, 100, 100},
++                              .window_id = 1});
++
++  EXPECT_FALSE(env->ConsumeLeftMousePressForDrag(window.get()));
++
++  // A press outside `window` (on the root window, e.g. on a window caption)
++  // doesn't count for `window`, even though the left button is down.
++  constexpr gfx::Point outside(200, 200);
++  press_left(outside);
++  EXPECT_TRUE(env->IsLeftMouseButtonDown());
++  EXPECT_FALSE(env->ConsumeLeftMousePressForDrag(window.get()));
++  release_left(outside);
++
++  // A press on `window` can be consumed exactly once.
++  constexpr gfx::Point inside(20, 20);
++  press_left(inside);
++  EXPECT_TRUE(env->ConsumeLeftMousePressForDrag(window.get()));
++  EXPECT_FALSE(env->ConsumeLeftMousePressForDrag(window.get()));
++
++  // Pressing and releasing another button while the left button is held
++  // doesn't start a new left press.
++  dispatch_mouse(ui::EventType::kMousePressed, inside,
++                 ui::EF_LEFT_MOUSE_BUTTON | ui::EF_RIGHT_MOUSE_BUTTON,
++                 ui::EF_RIGHT_MOUSE_BUTTON);
++  dispatch_mouse(ui::EventType::kMouseReleased, inside,
++                 ui::EF_LEFT_MOUSE_BUTTON | ui::EF_RIGHT_MOUSE_BUTTON,
++                 ui::EF_RIGHT_MOUSE_BUTTON);
++  EXPECT_FALSE(env->ConsumeLeftMousePressForDrag(window.get()));
++
++  // A new left press without a release (e.g. because a platform drag loop or
++  // the window manager consumed it) starts a fresh, unconsumed press.
++  press_left(inside);
++  EXPECT_TRUE(env->ConsumeLeftMousePressForDrag(window.get()));
++
++  // Releasing the left button ends the press.
++  press_left(inside);
++  release_left(inside);
++  EXPECT_FALSE(env->ConsumeLeftMousePressForDrag(window.get()));
++
++  // So does clearing the button state directly, as is done when a window move
++  // is handed off to the window manager.
++  press_left(inside);
++  env->set_mouse_button_flags(ui::EF_NONE);
++  EXPECT_FALSE(env->ConsumeLeftMousePressForDrag(window.get()));
++  release_left(inside);
++
++  // A non-client press, which may become a window move, doesn't count.
++  press_left(inside, ui::EF_IS_NON_CLIENT);
++  EXPECT_TRUE(env->IsLeftMouseButtonDown());
++  EXPECT_FALSE(env->ConsumeLeftMousePressForDrag(window.get()));
++  release_left(inside);
++
++  // Destroying the target forgets it.
++  press_left(inside);
++  const aura::Window* destroyed = window.get();
++  window.reset();
++  EXPECT_FALSE(env->ConsumeLeftMousePressForDrag(destroyed));
++  release_left(inside);
++  EXPECT_FALSE(env->IsLeftMouseButtonDown());
++
++  test::EnvTestHelper(env).SetInputStateLookup(InputStateLookup::Create());
++}
++
+ }  // namespace aura

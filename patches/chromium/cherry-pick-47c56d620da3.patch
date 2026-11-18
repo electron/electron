@@ -1,0 +1,268 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Clark <daniec@microsoft.com>
+Date: Fri, 25 Sep 2026 17:25:21 -0700
+Subject: Require left mouse button for renderer drags
+
+In MouseEventManager::HandleMouseDraggedEvent the render process only
+initiates drags when the left mouse button is held down. The
+corresponding browser-process check in
+WebContentsViewAura::StartDragging allows the drag to proceed if any
+mouse button is held down. This could allow a compromised renderer to
+cause drags to be triggered from mouse interactions that would not
+normally initiate a drag.
+
+Fix this mismatch by tightening the browser-process check to require the
+left mouse button.
+
+Fixed: 553150372
+Change-Id: I01da0d2e5d7dff53f5b6cd6bf92b0c7217c868db
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8404057
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Dan Clark <daniec@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1705348}
+
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index 5e0fa708643b113449dd6b75975fb6147d944022..29d06081f76d35645ef93d4bd8bcfc28eae912ff 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -1265,14 +1265,14 @@ void WebContentsViewAura::StartDragging(
+     // touch event would reach `::SendInput` via
+     // DesktopWindowTreeHostWin::StartTouchDrag and could redirect the
+     // synthesized click to an overlapping HWND (e.g. a permission bubble).
+-    // Require an in-flight touch or mouse button, depending on the event
+-    // source, and refuse the drag if requirement is not met.
++    // Require an in-flight touch or a left mouse button, depending on the
++    // event source, and refuse the drag if the requirement is not met.
+     gfx::Point trusted_location = event_info.location;
+     aura::Env* env = aura::Env::GetInstance();
+     if ((event_info.source == ui::mojom::DragEventSource::kTouch &&
+          !env->is_touch_down()) ||
+         (event_info.source == ui::mojom::DragEventSource::kMouse &&
+-         !env->IsMouseButtonDown())) {
++         !env->IsLeftMouseButtonDown())) {
+       EndDrag(std::move(source_rwh_weak_ptr), result_op);
+       return;
+     }
+diff --git a/content/browser/web_contents/web_contents_view_aura.h b/content/browser/web_contents/web_contents_view_aura.h
+index 4d6ca871642c1928ff966ba845b3ff7d3c2680f9..d5c2f612d6f32319f4c8ed8eada69a2435e4297b 100644
+--- a/content/browser/web_contents/web_contents_view_aura.h
++++ b/content/browser/web_contents/web_contents_view_aura.h
+@@ -189,6 +189,10 @@ class CONTENT_EXPORT WebContentsViewAura
+                            ClampMouseLocationToBrowserObservedPoint);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            ClampTouchLocationToBrowserObservedPoint);
++  FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
++                           StartDraggingMouseRequiresLeftButton);
++  FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
++                           RefusedDragDoesNotBlockSubsequentDrags);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+                            UrlInDropDataReturnsUrlInOSExchangeDataGetString);
+   FRIEND_TEST_ALL_PREFIXES(WebContentsViewAuraTest,
+diff --git a/content/browser/web_contents/web_contents_view_aura_unittest.cc b/content/browser/web_contents/web_contents_view_aura_unittest.cc
+index 444a0b589458331693f267d5ec986b5153f1c5a2..8d8d763360e5adedcca0eb2c866706a46ce0f767 100644
+--- a/content/browser/web_contents/web_contents_view_aura_unittest.cc
++++ b/content/browser/web_contents/web_contents_view_aura_unittest.cc
+@@ -1214,6 +1214,109 @@ TEST_F(WebContentsViewAuraTest, ClampTouchLocationToBrowserObservedPoint) {
+   env->SetTouchDown(false);
+ }
+ 
++// Blink only ever starts a mouse drag from a left-button gesture, so a
++// renderer-initiated mouse drag while a different button is held must be
++// refused. This matters most on Windows, where the OLE drag loop would turn
++// such a gesture into an unprompted drop (see
++// DragSourceWin::QueryContinueDrag).
++TEST_F(WebContentsViewAuraTest, StartDraggingMouseRequiresLeftButton) {
++  NavigateAndCommit(GURL("https://google.com/"));
++
++  TestDragDropClient drag_drop_client;
++  aura::client::SetDragDropClient(root_window(), &drag_drop_client);
++
++  WebContentsViewAura* view = GetView();
++  aura::Env* const env = aura::Env::GetInstance();
++  const gfx::Point location =
++      view->GetContentNativeView()->GetBoundsInScreen().CenterPoint();
++  env->SetLastMouseLocation(location);
++
++  DropData drop_data;
++  drop_data.text.emplace(u"Hello World!");
++  const blink::mojom::DragEventSourceInfo event_info(
++      location, ui::mojom::DragEventSource::kMouse);
++
++  // Needed to avoid calling WebContentsViewAura::EndDrag, which results in
++  // NOTREACHED being called in
++  // `RenderWidgetHostViewBase::TransformPointToCoordSpaceForView`.
++  view->drag_in_progress_ = true;
++
++  env->set_mouse_button_flags(ui::EF_MIDDLE_MOUSE_BUTTON |
++                              ui::EF_RIGHT_MOUSE_BUTTON |
++                              ui::EF_BACK_MOUSE_BUTTON);
++  view->StartDragging(
++      *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
++      gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
++
++  EXPECT_FALSE(drag_drop_client.GetDragDropData())
++      << "A mouse drag started without the left button held must not reach "
++         "the platform drag and drop client.";
++
++  // The same drag is allowed once the left button is held.
++  env->set_mouse_button_flags(ui::EF_LEFT_MOUSE_BUTTON);
++  view->StartDragging(
++      *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
++      gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
++
++  EXPECT_TRUE(drag_drop_client.GetDragDropData());
++}
++
++// A drag that is refused before it starts must not leave `drag_security_info_`
++// initiated, or every later drag from this WebContents would be dropped by the
++// reentrancy check. Covers both refusal paths in StartDragging: a mismatched
++// input state, and a hidden source view.
++TEST_F(WebContentsViewAuraTest, RefusedDragDoesNotBlockSubsequentDrags) {
++  NavigateAndCommit(GURL("https://google.com/"));
++
++  TestDragDropClient drag_drop_client;
++  aura::client::SetDragDropClient(root_window(), &drag_drop_client);
++
++  WebContentsViewAura* view = GetView();
++  aura::Env* const env = aura::Env::GetInstance();
++  const gfx::Point location =
++      view->GetContentNativeView()->GetBoundsInScreen().CenterPoint();
++  env->SetLastMouseLocation(location);
++
++  DropData drop_data;
++  drop_data.text.emplace(u"Hello World!");
++  const blink::mojom::DragEventSourceInfo event_info(
++      location, ui::mojom::DragEventSource::kMouse);
++
++  // Needed to avoid calling WebContentsViewAura::EndDrag, which results in
++  // NOTREACHED being called in
++  // `RenderWidgetHostViewBase::TransformPointToCoordSpaceForView`.
++  view->drag_in_progress_ = true;
++
++  // No button is held, e.g. because the user released it before the renderer's
++  // StartDragging message arrived, so the drag is refused.
++  env->set_mouse_button_flags(ui::EF_NONE);
++  view->StartDragging(
++      *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
++      gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
++
++  ASSERT_FALSE(drag_drop_client.GetDragDropData());
++  EXPECT_FALSE(view->drag_security_info_.did_initiate());
++
++  // A hidden source view is refused by the second check, which must not latch
++  // the state either.
++  env->set_mouse_button_flags(ui::EF_LEFT_MOUSE_BUTTON);
++  view->GetContentNativeView()->Hide();
++  view->StartDragging(
++      *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
++      gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
++
++  ASSERT_FALSE(drag_drop_client.GetDragDropData());
++  EXPECT_FALSE(view->drag_security_info_.did_initiate());
++
++  // A subsequent genuine drag gesture must still be able to start.
++  view->GetContentNativeView()->Show();
++  view->StartDragging(
++      *main_rfh(), drop_data, blink::DragOperationsMask::kDragOperationNone,
++      gfx::ImageSkia(), gfx::Vector2d(), gfx::Rect(), event_info);
++
++  EXPECT_TRUE(drag_drop_client.GetDragDropData());
++}
++
+ // Test that a drag from an event located outside the source view doesn't start.
+ TEST_F(WebContentsViewAuraTest, EmptyTextInDropDataIsNonNullInOSExchangeData) {
+   const char kGoogleUrl[] = "https://google.com/";
+diff --git a/ui/aura/env.cc b/ui/aura/env.cc
+index 52500727842656044ac2126131253763da55ba6f..12c682a8c2954ed4f274314cd5d87afdfa97c15d 100644
+--- a/ui/aura/env.cc
++++ b/ui/aura/env.cc
+@@ -22,6 +22,7 @@
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_occlusion_tracker.h"
+ #include "ui/display/screen.h"
++#include "ui/events/event_constants.h"
+ #include "ui/events/event_observer.h"
+ #include "ui/events/event_target_iterator.h"
+ #include "ui/events/gestures/gesture_recognizer_impl.h"
+@@ -134,6 +135,12 @@ bool Env::IsMouseButtonDown() const {
+       mouse_button_flags_ != 0;
+ }
+ 
++bool Env::IsLeftMouseButtonDown() const {
++  return input_state_lookup_.get()
++             ? input_state_lookup_->IsLeftMouseButtonDown()
++             : (mouse_button_flags_ & ui::EF_LEFT_MOUSE_BUTTON) != 0;
++}
++
+ void Env::SetLastMouseLocation(const gfx::Point& last_mouse_location) {
+   last_mouse_location_ = last_mouse_location;
+ }
+diff --git a/ui/aura/env.h b/ui/aura/env.h
+index dd950c601674a9aa9fb783ce8f8a3a5ceed405e3..8ff5f957a8707520cb8140a15e14440c28f2bf5e 100644
+--- a/ui/aura/env.h
++++ b/ui/aura/env.h
+@@ -76,6 +76,12 @@ class AURA_EXPORT Env : public ui::EventTarget {
+   // otherwise it uses |mouse_button_flags_|.
+   bool IsMouseButtonDown() const;
+ 
++  // Returns true if the left mouse button specifically is down. This may query
++  // the native OS, otherwise it uses |mouse_button_flags_|. Prefer this over
++  // IsMouseButtonDown() when validating that a drag gesture is in progress:
++  // drags are only ever initiated with the left button.
++  bool IsLeftMouseButtonDown() const;
++
+   // Gets/sets the last mouse location seen in a mouse event in the screen
+   // coordinates.
+   const gfx::Point& last_mouse_location() const { return last_mouse_location_; }
+diff --git a/ui/aura/input_state_lookup.h b/ui/aura/input_state_lookup.h
+index 641930965ac455ad9207d72e99ad89cc44e364c5..8039d793f6378d8a16d1009811a558dc6cafb7bc 100644
+--- a/ui/aura/input_state_lookup.h
++++ b/ui/aura/input_state_lookup.h
+@@ -21,6 +21,9 @@ class AURA_EXPORT InputStateLookup {
+ 
+   // Returns true if any mouse button is down.
+   virtual bool IsMouseButtonDown() const = 0;
++
++  // Returns true if the left mouse button is down.
++  virtual bool IsLeftMouseButtonDown() const = 0;
+ };
+ 
+ }  // namespace aura
+diff --git a/ui/aura/input_state_lookup_win.cc b/ui/aura/input_state_lookup_win.cc
+index adb5847e44722d65b1e3b02664f3f84e3dd46341..d46eae2aa726fb5fe42016adfcde49024a08fa28 100644
+--- a/ui/aura/input_state_lookup_win.cc
++++ b/ui/aura/input_state_lookup_win.cc
+@@ -31,4 +31,8 @@ bool InputStateLookupWin::IsMouseButtonDown() const {
+          (::GetKeyState(VK_XBUTTON2) & 0x80);
+ }
+ 
++bool InputStateLookupWin::IsLeftMouseButtonDown() const {
++  return (::GetKeyState(VK_LBUTTON) & 0x80) != 0;
++}
++
+ }  // namespace aura
+diff --git a/ui/aura/input_state_lookup_win.h b/ui/aura/input_state_lookup_win.h
+index 22219b4b5887948d4bd2f98931a756e3f04ccc1d..5a0914de6a2fa1b786f873f8e3c92c54daf86b90 100644
+--- a/ui/aura/input_state_lookup_win.h
++++ b/ui/aura/input_state_lookup_win.h
+@@ -21,6 +21,7 @@ class AURA_EXPORT InputStateLookupWin : public InputStateLookup {
+ 
+   // InputStateLookup overrides:
+   bool IsMouseButtonDown() const override;
++  bool IsLeftMouseButtonDown() const override;
+ };
+ 
+ }  // namespace aura
+diff --git a/ui/aura/window_event_dispatcher_unittest.cc b/ui/aura/window_event_dispatcher_unittest.cc
+index 6f88f910e50c425df66aa66af003f2ee3fc33b47..43a73aefe9f58125853725cde228aa9893d77e83 100644
+--- a/ui/aura/window_event_dispatcher_unittest.cc
++++ b/ui/aura/window_event_dispatcher_unittest.cc
+@@ -3280,6 +3280,7 @@ class AlwaysMouseDownInputStateLookup : public InputStateLookup {
+  private:
+   // InputStateLookup:
+   bool IsMouseButtonDown() const override { return true; }
++  bool IsLeftMouseButtonDown() const override { return true; }
+ };
+ 
+ TEST_F(WindowEventDispatcherTest,

@@ -1,0 +1,965 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Fri, 23 Oct 2026 20:14:43 -0700
+Subject: [html-in-canvas] Disallow canvas-external SVG filters
+
+This patch prevents elements in a canvas subtree from referencing SVG
+`<filter>` elements outside the canvas subtree, similar to
+https://crrev.com/c/8455562. Previously,
+`FilterEffectBuilder::BuildReferenceFilter` did not check
+`IsInCanvasSubtree()` on the target `SVGFilterElement`, allowing CSS
+`filter`, CSS `backdrop-filter`, and SVG `filter` references to leak
+external state such as `:visited` styles.
+
+`FilterEffectBuilder` now accepts `is_in_canvas_subtree` from
+`PaintLayer` and `SVGElementResourceClient`, ignoring external
+`<filter>` elements when set. `SVGElement` and `SVGFilterElement` also
+invalidate cached filter state in `DidChangeIsInCanvasSubtree`.
+Existing `drawElementImage` filter tests that placed allowed `<filter>`
+elements outside `<canvas>` are updated to define them inside
+`<canvas>`.
+
+Fixed: 576312229
+Change-Id: I5174e5ac783667d18535cee8fd30ca8dbc596849
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8615847
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1726439}
+
+diff --git a/third_party/blink/renderer/core/animation/compositor_animations.cc b/third_party/blink/renderer/core/animation/compositor_animations.cc
+index 3cdc27d5afaebfe76d4e4372ef92b8d2e73a654c..137c3584dbdce4bccfb5f28121e172b6f84ad1e3 100644
+--- a/third_party/blink/renderer/core/animation/compositor_animations.cc
++++ b/third_party/blink/renderer/core/animation/compositor_animations.cc
+@@ -877,8 +877,12 @@ void AddKeyframeToCurve(cc::KeyframedFilterAnimationCurve& curve,
+                         const CompositorKeyframeValue* value,
+                         const TimingFunction& keyframe_timing_function,
+                         bool is_backdrop_filter) {
++  // Composited animations are not supported for html-in-canvas, and
++  // drawElementImage() uses main-thread paint records rather than compositor
++  // animation curves, so `is_in_canvas_subtree` can be false here.
+   FilterEffectBuilder builder(gfx::RectF(), std::nullopt, 1, Color::kBlack,
+-                              mojom::blink::ColorScheme::kLight);
++                              mojom::blink::ColorScheme::kLight,
++                              /*is_in_canvas_subtree=*/false);
+   CompositorFilterOperations operations = builder.BuildFilterOperations(
+       To<CompositorKeyframeFilterOperations>(value)->Operations(),
+       is_backdrop_filter);
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 07f5df11a38ad9477acc0b828686ad7283ee6bbf..d1cbf289107f01fad46230dd16c1fae81c5cd19d 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4453,9 +4453,9 @@ void Element::DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) {
+         .SlowSetPaintingLayerNeedsRepaintAndInvalidateDisplayItemClient(
+             *layout_object, PaintInvalidationReason::kUncacheable);
+     if (layout_object->HasLayer()) {
+-      To<LayoutBoxModelObject>(layout_object)
+-          ->Layer()
+-          ->SetFilterOnEffectNodeDirty();
++      PaintLayer* layer = To<LayoutBoxModelObject>(layout_object)->Layer();
++      layer->SetFilterOnEffectNodeDirty();
++      layer->SetBackdropFilterOnEffectNodeDirty();
+     }
+   }
+ }
+diff --git a/third_party/blink/renderer/core/layout/svg/svg_resources.cc b/third_party/blink/renderer/core/layout/svg/svg_resources.cc
+index 567a4659b9f974bfe010cbcca28c5a0980dbef0d..c71b59f97a63453c9db5aae3671f9b48c1463ba2 100644
+--- a/third_party/blink/renderer/core/layout/svg/svg_resources.cc
++++ b/third_party/blink/renderer/core/layout/svg/svg_resources.cc
+@@ -380,7 +380,7 @@ void SVGElementResourceClient::UpdateFilterData(
+   FilterEffectBuilder builder(
+       reference_box, SVGViewportResolver(object).ResolveViewport(), 1,
+       style.VisitedDependentColor(GetCSSPropertyColor()),
+-      style.UsedColorScheme());
++      style.UsedColorScheme(), object.IsInCanvasSubtree());
+   builder.SetShorthandScale(1 / style.EffectiveZoom());
+   const FilterOperations& filter = style.Filter();
+   // If the filter is a single 'url(...)' reference we can optimize some
+@@ -394,9 +394,10 @@ void SVGElementResourceClient::UpdateFilterData(
+           builder, To<ReferenceFilterOperation>(*filter.at(0)));
+     }
+     operations.Clear();
++    FilterOperation* op = filter.Operations()[0].Get();
++    To<ReferenceFilterOperation>(*op).SetFilter(
++        filter_data_ ? filter_data_->GetFilter() : nullptr);
+     if (filter_data_) {
+-      FilterOperation* op = filter.Operations()[0].Get();
+-      To<ReferenceFilterOperation>(*op).SetFilter(filter_data_->GetFilter());
+       // If the referenced filter exists but does not contain any primitives,
+       // then the rendering of the element should be disabled.
+       if (filter_data_->HasEffects()) {
+diff --git a/third_party/blink/renderer/core/paint/filter_effect_builder.cc b/third_party/blink/renderer/core/paint/filter_effect_builder.cc
+index 51c344b7f2175266ba0709c3c268454efc4a8a15..028c1a2581b09bb0f39635cce0954342ef41e1c4 100644
+--- a/third_party/blink/renderer/core/paint/filter_effect_builder.cc
++++ b/third_party/blink/renderer/core/paint/filter_effect_builder.cc
+@@ -130,6 +130,7 @@ FilterEffectBuilder::FilterEffectBuilder(const gfx::RectF& reference_box,
+                                          float zoom,
+                                          Color current_color,
+                                          mojom::blink::ColorScheme color_scheme,
++                                         bool is_in_canvas_subtree,
+                                          const cc::PaintFlags* fill_flags,
+                                          const cc::PaintFlags* stroke_flags)
+     : reference_box_(reference_box),
+@@ -138,6 +139,7 @@ FilterEffectBuilder::FilterEffectBuilder(const gfx::RectF& reference_box,
+       shorthand_scale_(1),
+       current_color_(current_color),
+       color_scheme_(color_scheme),
++      is_in_canvas_subtree_(is_in_canvas_subtree),
+       fill_flags_(fill_flags),
+       stroke_flags_(stroke_flags) {}
+ 
+@@ -530,6 +532,9 @@ Filter* FilterEffectBuilder::BuildReferenceFilter(
+       DynamicTo<SVGFilterElement>(resource ? resource->Target() : nullptr);
+   if (!filter_element)
+     return nullptr;
++  if (is_in_canvas_subtree_ && !filter_element->IsInCanvasSubtree()) {
++    return nullptr;
++  }
+   if (auto* resource_container = resource->ResourceContainerNoCycleCheck())
+     resource_container->ClearInvalidationMask();
+ 
+diff --git a/third_party/blink/renderer/core/paint/filter_effect_builder.h b/third_party/blink/renderer/core/paint/filter_effect_builder.h
+index 4fdc6df06bf0a16646a647759d32d3232a766cdb..d32a2a5ea012702a0abe106ebe57d4d013eba1d1 100644
+--- a/third_party/blink/renderer/core/paint/filter_effect_builder.h
++++ b/third_party/blink/renderer/core/paint/filter_effect_builder.h
+@@ -51,6 +51,7 @@ class CORE_EXPORT FilterEffectBuilder final {
+                       float zoom,
+                       Color current_color,
+                       mojom::blink::ColorScheme color_scheme,
++                      bool is_in_canvas_subtree,
+                       const cc::PaintFlags* fill_flags = nullptr,
+                       const cc::PaintFlags* stroke_flags = nullptr);
+ 
+@@ -77,6 +78,7 @@ class CORE_EXPORT FilterEffectBuilder final {
+   float shorthand_scale_;  // Scale factor for shorthand filter functions.
+   const Color current_color_;
+   const mojom::blink::ColorScheme color_scheme_;
++  const bool is_in_canvas_subtree_;
+   const cc::PaintFlags* fill_flags_;
+   const cc::PaintFlags* stroke_flags_;
+ };
+diff --git a/third_party/blink/renderer/core/paint/paint_layer.cc b/third_party/blink/renderer/core/paint/paint_layer.cc
+index 1cd773eb673fe25113195e61b79c8bd44700bb03..08ff4ae06c763f1edff80c531623770133b73647 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer.cc
++++ b/third_party/blink/renderer/core/paint/paint_layer.cc
+@@ -2562,7 +2562,8 @@ void PaintLayer::UpdateCompositorFilterOperationsForFilter(
+   operations =
+       FilterEffectBuilder(reference_box, FilterViewport(), zoom,
+                           style.VisitedDependentColor(GetCSSPropertyColor()),
+-                          style.UsedColorScheme())
++                          style.UsedColorScheme(),
++                          GetLayoutObject().IsInCanvasSubtree())
+           .BuildFilterOperations(filter);
+   filter_on_effect_node_dirty_ = false;
+ }
+@@ -2606,7 +2607,8 @@ void PaintLayer::UpdateCompositorFilterOperationsForBackdropFilter(
+   operations =
+       FilterEffectBuilder(reference_box, FilterViewport(), zoom,
+                           style.VisitedDependentColor(GetCSSPropertyColor()),
+-                          style.UsedColorScheme(), nullptr, nullptr)
++                          style.UsedColorScheme(),
++                          GetLayoutObject().IsInCanvasSubtree())
+           .BuildFilterOperations(filter_operations, /*contains_backdrop=*/true);
+   // Note that |operations| may be empty here, if the |filter_operations| list
+   // contains only invalid filters (e.g. invalid reference filters). See
+diff --git a/third_party/blink/renderer/core/svg/svg_element.cc b/third_party/blink/renderer/core/svg/svg_element.cc
+index 0f2f6b353a5307b0d3bbb3a79dc5da49fe235ebf..11c23fdfc77198e7c6b52e3d1cdfc844b898a252 100644
+--- a/third_party/blink/renderer/core/svg/svg_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_element.cc
+@@ -48,6 +48,7 @@
+ #include "third_party/blink/renderer/core/inspector/console_message.h"
+ #include "third_party/blink/renderer/core/layout/layout_object.h"
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_resource_container.h"
++#include "third_party/blink/renderer/core/layout/svg/svg_resources.h"
+ #include "third_party/blink/renderer/core/layout/svg/transform_helper.h"
+ #include "third_party/blink/renderer/core/svg/animation/element_smil_animations.h"
+ #include "third_party/blink/renderer/core/svg/properties/svg_animated_property.h"
+@@ -314,6 +315,14 @@ void SVGElement::ChildrenChanged(const ChildrenChange& change) {
+   InvalidateInstances();
+ }
+ 
++void SVGElement::DidChangeIsInCanvasSubtree(
++    CanvasSubtreePropagation propagation_behavior) {
++  Element::DidChangeIsInCanvasSubtree(propagation_behavior);
++  if (SVGElementResourceClient* client = GetSVGResourceClient()) {
++    client->InvalidateFilterData();
++  }
++}
++
+ CSSPropertyID SVGElement::CssPropertyIdForSVGAttributeName(
+     const ExecutionContext* execution_context,
+     const QualifiedName& attr_name) {
+diff --git a/third_party/blink/renderer/core/svg/svg_element.h b/third_party/blink/renderer/core/svg/svg_element.h
+index 4753c25aae97f49d6bdf2435f1252a8ce50d665a..ddf10789ad4f2f7cc8c532b73e2dc94fe249de3e 100644
+--- a/third_party/blink/renderer/core/svg/svg_element.h
++++ b/third_party/blink/renderer/core/svg/svg_element.h
+@@ -233,6 +233,7 @@ class CORE_EXPORT SVGElement : public Element {
+   InsertionNotificationRequest InsertedInto(ContainerNode&) override;
+   void RemovedFrom(ContainerNode&) override;
+   void ChildrenChanged(const ChildrenChange&) override;
++  void DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) override;
+ 
+   void DetachLayoutTree(bool performing_reattach) override;
+ 
+diff --git a/third_party/blink/renderer/core/svg/svg_filter_element.cc b/third_party/blink/renderer/core/svg/svg_filter_element.cc
+index d28deb3ea35dd9e5daa737c41e0c8e4848efba5b..dd2f0571f79a9c5a8cbe5ea8cc98190909835686 100644
+--- a/third_party/blink/renderer/core/svg/svg_filter_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_filter_element.cc
+@@ -123,6 +123,12 @@ void SVGFilterElement::ChildrenChanged(const ChildrenChange& change) {
+   InvalidateFilterChain();
+ }
+ 
++void SVGFilterElement::DidChangeIsInCanvasSubtree(
++    CanvasSubtreePropagation propagation_behavior) {
++  SVGElement::DidChangeIsInCanvasSubtree(propagation_behavior);
++  InvalidateFilterChain();
++}
++
+ LayoutObject* SVGFilterElement::CreateLayoutObject(const ComputedStyle&) {
+   return MakeGarbageCollected<LayoutSVGResourceFilter>(this);
+ }
+diff --git a/third_party/blink/renderer/core/svg/svg_filter_element.h b/third_party/blink/renderer/core/svg/svg_filter_element.h
+index 8e400dbe8a3bfa68f7f6f2c43126bf0c0b4ff8c5..67854d08fa5850e7756dd672e3f400993d2696d4 100644
+--- a/third_party/blink/renderer/core/svg/svg_filter_element.h
++++ b/third_party/blink/renderer/core/svg/svg_filter_element.h
+@@ -74,6 +74,7 @@ class CORE_EXPORT SVGFilterElement final : public SVGElement,
+  private:
+   void SvgAttributeChanged(const SvgAttributeChangedParams&) override;
+   void ChildrenChanged(const ChildrenChange&) override;
++  void DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) final;
+ 
+   LayoutObject* CreateLayoutObject(const ComputedStyle&) override;
+ 
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
+index daeb317549fb35999fb077dbcf2dc85c6a1e1020..ee44cd863d9380d3f4cbc47eb66d02e6cb985ead 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
+@@ -471,7 +471,9 @@ void Canvas2DRecorderContext::beginLayerImpl(ScriptState* script_state,
+       FilterEffectBuilder filter_effect_builder(
+           gfx::RectF(canvas_viewport), canvas_viewport,
+           1.0f,  // Deliberately ignore zoom on the canvas element.
+-          Color::kBlack, mojom::blink::ColorScheme::kLight);
++          Color::kBlack, mojom::blink::ColorScheme::kLight,
++          // 2D context filters rely on origin tainting, not subtree scoping.
++          /*is_in_canvas_subtree=*/false);
+ 
+       FilterEffect* filter_effect = filter_effect_builder.BuildFilterEffect(
+           std::move(filter_operations), !OriginClean());
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.cc b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.cc
+index b61f3d6bbd32f345bda7ee867a87087fb5d18140..e465ed44fea964a3d08e84e2a172668f289582f6 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.cc
+@@ -539,8 +539,9 @@ sk_sp<PaintFilter> CanvasRenderingContext2DState::GetFilterForOffscreenCanvas(
+   FilterEffectBuilder filter_effect_builder(
+       gfx::RectF(canvas_viewport), canvas_viewport,
+       1.0f,  // Deliberately ignore zoom on the canvas element.
+-      Color::kBlack, mojom::blink::ColorScheme::kLight, &fill_flags_for_filter,
+-      &stroke_flags_for_filter);
++      Color::kBlack, mojom::blink::ColorScheme::kLight,
++      /*is_in_canvas_subtree=*/false,  // OffscreenCanvas has no DOM subtree.
++      &fill_flags_for_filter, &stroke_flags_for_filter);
+ 
+   FilterEffect* last_effect = filter_effect_builder.BuildFilterEffect(
+       operations, !context->OriginClean());
+@@ -611,7 +612,9 @@ sk_sp<PaintFilter> CanvasRenderingContext2DState::GetFilter(
+   FilterEffectBuilder filter_effect_builder(
+       gfx::RectF(canvas_viewport), canvas_viewport,
+       1.0f,  // Deliberately ignore zoom on the canvas element.
+-      Color::kBlack, mojom::blink::ColorScheme::kLight, &fill_flags_for_filter,
++      Color::kBlack, mojom::blink::ColorScheme::kLight,
++      // 2D context filters rely on origin tainting, not subtree scoping.
++      /*is_in_canvas_subtree=*/false, &fill_flags_for_filter,
+       &stroke_flags_for_filter);
+ 
+   FilterEffect* last_effect = filter_effect_builder.BuildFilterEffect(
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html
+index 3165c124719dd48d13828eda3e50fd93959f145a..fe7aa86d93df8427169e02b81207cffb766d367f 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html
+@@ -35,15 +35,15 @@
+       <div id="child-image" class="child"></div>
+       <div id="child-image-offset" class="child"></div>
+     </div>
++    <svg width="0" height="0">
++      <filter id="filter-image">
++        <feimage href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
++      </filter>
++      <filter id="filter-image-offset">
++        <feimage x="10" y="10" width="80" height="80" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
++      </filter>
++    </svg>
+   </canvas>
+-  <svg width="0" height="0">
+-    <filter id="filter-image">
+-      <feimage href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
+-    </filter>
+-    <filter id="filter-image-offset">
+-      <feimage x="10" y="10" width="80" height="80" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
+-    </filter>
+-  </svg>
+   <script>
+     onload = async () => {
+       await waitForCanvasPaint(canvas);
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html
+index 10ee3c22eb9fa51077849525e3b280f8ac945e74..c331ce654480c747a7891268d7c828d11be44ff0 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html
+@@ -35,15 +35,15 @@
+       <div id="child-image" class="child"></div>
+       <div id="child-image-offset" class="child"></div>
+     </div>
++    <svg width="0" height="0">
++      <filter id="filter-image">
++        <feimage x="0" y="0" width="100" height="100" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
++      </filter>
++      <filter id="filter-image-offset">
++        <feimage x="10" y="10" width="80" height="80" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
++      </filter>
++    </svg>
+   </canvas>
+-  <svg width="0" height="0">
+-    <filter id="filter-image">
+-      <feimage x="0" y="0" width="100" height="100" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
+-    </filter>
+-    <filter id="filter-image-offset">
+-      <feimage x="10" y="10" width="80" height="80" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='green'/></svg>" />
+-    </filter>
+-  </svg>
+   <script>
+     onload = async () => {
+       await waitForCanvasPaint(canvas);
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-reference-on-div.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-reference-on-div.tentative.html
+index 073ddb956639812cc3ca809c378eb7d96b6f34a6..f3ec52b935196af674d0973f99d5efc65b35333e 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-reference-on-div.tentative.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/css-filter-reference-on-div.tentative.html
+@@ -21,16 +21,15 @@
+   </style>
+ </head>
+ <body>
+-  <canvas id=canvas width="100" height="100" layoutsubtree>
+-    <div id="child"></div>
++  <canvas id=canvas width="100" height="100" content=drawable>
++    <div drawable id="child"></div>
++    <svg width="1px" height="1px">
++      <filter id="filter-green">
++        <feFlood flood-color="green" />
++      </filter>
++    </svg>
+   </canvas>
+ 
+-  <svg width="1px" height="1px">
+-    <filter id="filter-green">
+-      <feFlood flood-color="green" />
+-    </filter>
+-  </svg>
+-
+   <script>
+     onload = async () => {
+       await waitForCanvasPaint(canvas);
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/backdrop-filter-png-images-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/backdrop-filter-png-images-ignored.tentative.https.sub.html
+index 57f43475eb2f5afb9a4ef04e0929357cc62ba289..11e14c568a633c4f1d42ebe52186a095caf36f9e 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/backdrop-filter-png-images-ignored.tentative.https.sub.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/backdrop-filter-png-images-ignored.tentative.https.sub.html
+@@ -23,17 +23,16 @@
+   </style>
+ </head>
+ <body>
+-  <svg width="0" height="0">
+-    <filter id="filter-same">
+-      <feimage href="https://{{location[host]}}/images/green-100x100.png" />
+-    </filter>
+-    <filter id="filter-cross">
+-      <feimage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png" />
+-    </filter>
+-  </svg>
+-
+-  <canvas id=canvas width="10" height="20" layoutsubtree>
+-    <div id="wrapper">
++  <canvas id=canvas width="10" height="20" content=drawable>
++    <svg width="0" height="0">
++      <filter id="filter-same">
++        <feimage href="https://{{location[host]}}/images/green-100x100.png" />
++      </filter>
++      <filter id="filter-cross">
++        <feimage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png" />
++      </filter>
++    </svg>
++    <div drawable id="wrapper">
+       <div id="child-same" class="child"></div>
+       <div id="child-cross" class="child"></div>
+     </div>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-drawable-added-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-drawable-added-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..2d5aa7a88e698d2ec8e92839fa09d4745dbfbe4c
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-drawable-added-ignored.tentative.https.sub.html
+@@ -0,0 +1,88 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use cross-origin feImage content when drawable is added to a contain:paint ancestor</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    .wrapper {
++      width: 100px;
++      height: 100px;
++      contain: paint;
++    }
++    .filtered {
++      width: 100px;
++      height: 100px;
++    }
++    #filtered-same {
++      filter: url('#filter-same');
++    }
++    #filtered-cross {
++      filter: url('#filter-cross');
++    }
++    .child {
++      width: 100px;
++      height: 100px;
++      background: green;
++      backdrop-filter: invert(0);
++      overflow: hidden;
++      border-radius: 1px;
++    }
++  </style>
++</head>
++<body>
++  <canvas id="canvas" width="100" height="200" content="drawable">
++    <svg width="0" height="0">
++      <filter id="filter-same" x="0" y="0" width="100" height="100" filterUnits="userSpaceOnUse">
++        <feImage href="https://{{location[host]}}/images/green-100x100.png" />
++      </filter>
++      <filter id="filter-cross" x="0" y="0" width="100" height="100" filterUnits="userSpaceOnUse">
++        <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png"/>
++      </filter>
++    </svg>
++    <div id="wrapper-same" class="wrapper">
++      <div id="filtered-same" class="filtered">
++        <div id="child-same" class="child"></div>
++      </div>
++    </div>
++    <div id="wrapper-cross" class="wrapper">
++      <div id="filtered-cross" class="filtered">
++        <div id="child-cross" class="child"></div>
++      </div>
++    </div>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++
++        const wrapperSame = document.getElementById("wrapper-same");
++        const wrapperCross = document.getElementById("wrapper-cross");
++        wrapperSame.setAttribute("drawable", "");
++        wrapperCross.setAttribute("drawable", "");
++        document.getElementById("child-same").style.borderRadius = "2px";
++        document.getElementById("child-cross").style.borderRadius = "2px";
++
++        await waitForCanvasPaint(canvas);
++        const context = canvas.getContext("2d");
++        context.drawElementImage(wrapperSame, 0, 0);
++        context.drawElementImage(wrapperCross, 0, 100);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 50, 50);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Same origin should draw");
++
++        // Ignored filter is not applied at all
++        pixel = _getPixelFromImageData(imgData, 50, 150);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin should not draw");
++      });
++    };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-multi-filters-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-multi-filters-ignored.tentative.https.sub.html
+index e1c61de74d2f5eef1399699eba212bf6e679398d..d586f725f4509550c792960d2e44159425ed93c9 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-multi-filters-ignored.tentative.https.sub.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-multi-filters-ignored.tentative.https.sub.html
+@@ -24,18 +24,17 @@
+   </style>
+ </head>
+ <body>
+-  <svg width="0" height="0">
+-    <filter id="filter-same">
+-      <feimage href="https://{{location[host]}}/images/green-100x100.png" />
+-    </filter>
+-    <filter id="filter-cross">
+-      <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png"/>
+-    </filter>
+-  </svg>
+-
+-  <canvas id=canvas width="100" height="200" layoutsubtree>
+-    <div id="child-same"></div>
+-    <div id="child-cross"></div>
++  <canvas id=canvas width="100" height="200" content=drawable>
++    <svg width="0" height="0">
++      <filter id="filter-same">
++        <feimage href="https://{{location[host]}}/images/green-100x100.png" />
++      </filter>
++      <filter id="filter-cross">
++        <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png"/>
++      </filter>
++    </svg>
++    <div drawable id="child-same"></div>
++    <div drawable id="child-cross"></div>
+   </canvas>
+ 
+   <script>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-feimage-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-feimage-ignored.tentative.https.sub.html
+index a23b5e070ed97e52e702016e19cd7189ca1f09a4..a393830396e1a63f318ab198d4a3efd4d73d3545 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-feimage-ignored.tentative.https.sub.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-feimage-ignored.tentative.https.sub.html
+@@ -23,18 +23,17 @@
+   </style>
+ </head>
+ <body>
+-  <svg width="0" height="0">
+-    <filter id="filter-same">
+-      <feimage href="https://{{location[host]}}/images/green-100x100.png" />
+-    </filter>
+-    <filter id="filter-cross">
+-      <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png"/>
+-    </filter>
+-  </svg>
+-
+-  <canvas id=canvas width="100" height="200" layoutsubtree>
+-    <div id="child-same"></div>
+-    <div id="child-cross"></div>
++  <canvas id=canvas width="100" height="200" content=drawable>
++    <svg width="0" height="0">
++      <filter id="filter-same">
++        <feimage href="https://{{location[host]}}/images/green-100x100.png" />
++      </filter>
++      <filter id="filter-cross">
++        <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png"/>
++      </filter>
++    </svg>
++    <div drawable id="child-same"></div>
++    <div drawable id="child-cross"></div>
+   </canvas>
+ 
+   <script>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-feimage-svg-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-feimage-svg-ignored.tentative.https.sub.html
+index 9dfde110eac0f0ce80d916b2d3e81b42a7e26cdc..82d4dfc03ecc8ba14c150ec1bbcd764490c63c0c 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-feimage-svg-ignored.tentative.https.sub.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-feimage-svg-ignored.tentative.https.sub.html
+@@ -23,18 +23,17 @@
+   </style>
+ </head>
+ <body>
+-  <svg width="0" height="0">
+-    <filter id="filter-same">
+-      <feImage href="https://{{location[host]}}/images/green-100x100.svg"/>
+-    </filter>
+-    <filter id="filter-cross">
+-      <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.svg"/>
+-    </filter>
+-  </svg>
+-
+-  <canvas id=canvas width="100" height="200" layoutsubtree>
+-    <div id="child-same"></div>
+-    <div id="child-cross"></div>
++  <canvas id=canvas width="100" height="200" content=drawable>
++    <svg width="0" height="0">
++      <filter id="filter-same">
++        <feImage href="https://{{location[host]}}/images/green-100x100.svg"/>
++      </filter>
++      <filter id="filter-cross">
++        <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.svg"/>
++      </filter>
++    </svg>
++    <div drawable id="child-same"></div>
++    <div drawable id="child-cross"></div>
+   </canvas>
+ 
+   <script>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-mixed-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-mixed-ignored.tentative.https.sub.html
+index e37eada9adde2ba5d47a630b68a1f4b043edb917..c5832d47e8cb7946fed2be4bdb3b6435c374549d 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-mixed-ignored.tentative.https.sub.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-div-ref-svg-mixed-ignored.tentative.https.sub.html
+@@ -24,20 +24,19 @@
+   </style>
+ </head>
+ <body>
+-  <svg width="0" height="0">
+-    <filter id="filter-same">
+-      <feimage href="https://{{location[host]}}/images/green-100x100.png" result="sameImageOut"/>
+-      <feGaussianBlur in="sameImageOut" stdDeviation="2" />
+-    </filter>
+-    <filter id="filter-cross">
+-      <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}images/red-100x100.png" result="crossImageOut"/>
+-      <feGaussianBlur in="crossImageOut" stdDeviation="2" />
+-    </filter>
+-  </svg>
+-
+-  <canvas id=canvas width="100" height="200" layoutsubtree>
+-    <div id="child-same"></div>
+-    <div id="child-cross"></div>
++  <canvas id=canvas width="100" height="200" content=drawable>
++    <svg width="0" height="0">
++      <filter id="filter-same">
++        <feimage href="https://{{location[host]}}/images/green-100x100.png" result="sameImageOut"/>
++        <feGaussianBlur in="sameImageOut" stdDeviation="2" />
++      </filter>
++      <filter id="filter-cross">
++        <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}images/red-100x100.png" result="crossImageOut"/>
++        <feGaussianBlur in="crossImageOut" stdDeviation="2" />
++      </filter>
++    </svg>
++    <div drawable id="child-same"></div>
++    <div drawable id="child-cross"></div>
+   </canvas>
+ 
+   <script>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-outside-subtree-ignored.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-outside-subtree-ignored.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..403923bbbb27c3038b2b83e135f7d5595a0116d5
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/filtered-outside-subtree-ignored.tentative.html
+@@ -0,0 +1,152 @@
++<!DOCTYPE html>
++<html>
++<head>
++  <title>drawElementImage does not use SVG filters outside the canvas subtree</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    a:link feFlood {
++      flood-color: rgb(0, 255, 0);
++    }
++    a:visited feFlood {
++      flood-color: rgb(255, 0, 0);
++    }
++    .box {
++      width: 100px;
++      height: 50px;
++      background: green;
++    }
++    #div-internal {
++      filter: url('#filter-internal');
++    }
++    #div-external, #div-moved-in {
++      filter: url('#filter-external');
++    }
++    #backdrop-wrapper {
++      width: 100px;
++      height: 100px;
++      background: blue;
++    }
++    .backdrop-child {
++      width: 100px;
++      height: 50px;
++      background: transparent;
++    }
++    #backdrop-internal {
++      backdrop-filter: url('#filter-internal');
++    }
++    #backdrop-external {
++      backdrop-filter: url('#filter-external');
++    }
++  </style>
++</head>
++<body>
++  <a href="">
++    <svg width="0" height="0">
++      <defs>
++        <filter id="filter-external" x="0" y="0" width="1" height="1" filterUnits="objectBoundingBox">
++          <feFlood/>
++        </filter>
++      </defs>
++    </svg>
++  </a>
++
++  <div drawable id="div-moved-in" class="box"></div>
++  <svg drawable id="svg-moved-in" width="100" height="50">
++    <rect x="0" y="0" width="100" height="50" fill="green" filter="url(#filter-external)"/>
++  </svg>
++
++  <canvas id="canvas" width="100" height="400" content="drawable">
++    <a id="link-internal" href="">
++      <svg width="0" height="0">
++        <defs>
++          <filter id="filter-internal" x="0" y="0" width="1" height="1" filterUnits="objectBoundingBox">
++            <feFlood/>
++          </filter>
++        </defs>
++      </svg>
++    </a>
++
++    <div drawable id="div-internal" class="box"></div>
++    <div drawable id="div-external" class="box"></div>
++
++    <div drawable id="backdrop-wrapper">
++      <div id="backdrop-internal" class="backdrop-child"></div>
++      <div id="backdrop-external" class="backdrop-child"></div>
++    </div>
++
++    <svg drawable id="svg-child" width="100" height="100">
++      <rect x="0" y="0" width="100" height="50" fill="green" filter="url(#filter-internal)"/>
++      <rect x="0" y="50" width="100" height="50" fill="green" filter="url(#filter-external)"/>
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++        const ctx = canvas.getContext("2d");
++        ctx.drawElementImage(document.getElementById("div-internal"), 0, 0);
++        ctx.drawElementImage(document.getElementById("div-external"), 0, 50);
++        ctx.drawElementImage(document.getElementById("backdrop-wrapper"), 0, 100);
++        ctx.drawElementImage(document.getElementById("svg-child"), 0, 200);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 50, 25);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal filter on HTML element should draw unvisited color");
++
++        pixel = _getPixelFromImageData(imgData, 50, 75);
++        assert_array_equals(pixel, [0, 128, 0, 255], "External filter on HTML element should be ignored");
++
++        pixel = _getPixelFromImageData(imgData, 50, 125);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal backdrop-filter on HTML element should draw unvisited color");
++
++        pixel = _getPixelFromImageData(imgData, 50, 175);
++        assert_array_equals(pixel, [0, 0, 255, 255], "External backdrop-filter on HTML element should be ignored");
++
++        pixel = _getPixelFromImageData(imgData, 50, 225);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal filter on SVG element should draw unvisited color");
++
++        pixel = _getPixelFromImageData(imgData, 50, 275);
++        assert_array_equals(pixel, [0, 128, 0, 255], "External filter on SVG element should be ignored");
++
++        // Atomically move elements referencing #filter-external into the canvas
++        // subtree and move #filter-internal out of the canvas subtree.
++        canvas.moveBefore(document.getElementById("div-moved-in"), null);
++        canvas.moveBefore(document.getElementById("svg-moved-in"), null);
++        document.body.moveBefore(document.getElementById("link-internal"), canvas);
++        await waitForCanvasPaint(canvas);
++
++        ctx.clearRect(0, 0, canvas.width, canvas.height);
++        ctx.drawElementImage(document.getElementById("div-internal"), 0, 0);
++        ctx.drawElementImage(document.getElementById("backdrop-wrapper"), 0, 100);
++        ctx.drawElementImage(document.getElementById("svg-child"), 0, 200);
++        ctx.drawElementImage(document.getElementById("div-moved-in"), 0, 300);
++        ctx.drawElementImage(document.getElementById("svg-moved-in"), 0, 350);
++
++        const imgDataAfterMove = ctx.getImageData(0, 0, canvas.width, canvas.height);
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 25);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Filter moved outside canvas subtree on HTML element should be ignored");
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 125);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Backdrop-filter moved outside canvas subtree on HTML element should be ignored");
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 225);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Filter moved outside canvas subtree on SVG element should be ignored");
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 325);
++        assert_array_equals(pixel, [0, 128, 0, 255], "External filter on HTML element moved into canvas subtree should be ignored");
++
++        pixel = _getPixelFromImageData(imgDataAfterMove, 50, 375);
++        assert_array_equals(pixel, [0, 128, 0, 255], "External filter on SVG element moved into canvas subtree should be ignored");
++      });
++    };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg-mask-filter.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg-mask-filter.tentative.https.sub.html
+index 5ae47f12eb83612cf0fd5e0d8d415662fb2899de..4eb2ce978d58aa5bc4fc46655eb2b22431d495b2 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg-mask-filter.tentative.https.sub.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg-mask-filter.tentative.https.sub.html
+@@ -10,35 +10,34 @@
+ </head>
+ 
+ <body>
+-  <svg width="0" height="0">
+-    <defs>
+-      <filter id="filter-same" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+-        <feImage href="https://{{location[host]}}/images/green-100x100.png"/>
+-        <feComponentTransfer>
+-          <feFuncR type="linear" slope="0" intercept="1"/>
+-          <feFuncG type="linear" slope="0" intercept="1"/>
+-          <feFuncB type="linear" slope="0" intercept="1"/>
+-        </feComponentTransfer>
+-      </filter>
+-      <filter id="filter-cross" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+-        <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png"/>
+-        <feComponentTransfer>
+-          <feFuncR type="linear" slope="0" intercept="1"/>
+-          <feFuncG type="linear" slope="0" intercept="1"/>
+-          <feFuncB type="linear" slope="0" intercept="1"/>
+-        </feComponentTransfer>
+-      </filter>
+-      <mask id="mask-same" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+-        <text x="0" y="50" filter="url(#filter-same)">x</text>
+-      </mask>
+-      <mask id="mask-cross" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+-        <text x="0" y="50" filter="url(#filter-cross)">x</text>
+-      </mask>
+-    </defs>
+-  </svg>
+-
+-  <canvas id="canvas" width="100" height="200" layoutsubtree>
+-    <svg id="child" width="100" height="200">
++  <canvas id="canvas" width="100" height="200" content=drawable>
++    <svg width="0" height="0">
++      <defs>
++        <filter id="filter-same" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <feImage href="https://{{location[host]}}/images/green-100x100.png"/>
++          <feComponentTransfer>
++            <feFuncR type="linear" slope="0" intercept="1"/>
++            <feFuncG type="linear" slope="0" intercept="1"/>
++            <feFuncB type="linear" slope="0" intercept="1"/>
++          </feComponentTransfer>
++        </filter>
++        <filter id="filter-cross" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png"/>
++          <feComponentTransfer>
++            <feFuncR type="linear" slope="0" intercept="1"/>
++            <feFuncG type="linear" slope="0" intercept="1"/>
++            <feFuncB type="linear" slope="0" intercept="1"/>
++          </feComponentTransfer>
++        </filter>
++        <mask id="mask-same" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <text x="0" y="50" filter="url(#filter-same)">x</text>
++        </mask>
++        <mask id="mask-cross" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <text x="0" y="50" filter="url(#filter-cross)">x</text>
++        </mask>
++      </defs>
++    </svg>
++    <svg drawable id="child" width="100" height="200">
+       <svg x="0" y="0" width="100" height="100">
+         <rect width="100" height="100" fill="rgb(30, 130, 230)" mask="url(#mask-same)"/>
+       </svg>
+@@ -61,10 +60,10 @@
+         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+ 
+         let pixel = _getPixelFromImageData(imgData, 50, 50);
+-        assert_array_equals(pixel, [30, 130, 230, 255], "Same origin filter image in external mask should be drawn");
++        assert_array_equals(pixel, [30, 130, 230, 255], "Same origin filter image in internal mask should be drawn");
+ 
+         pixel = _getPixelFromImageData(imgData, 50, 150);
+-        assert_array_equals(pixel, [0, 0, 255, 255], "Cross origin filter image in external mask should not be drawn");
++        assert_array_equals(pixel, [0, 0, 255, 255], "Cross origin filter image in internal mask should not be drawn");
+       });
+     }
+   </script>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-mask-nested-filter.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-mask-nested-filter.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..12ad5c5a52fe906b462d235cedf4028eb0136d6c
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-mask-nested-filter.tentative.https.sub.html
+@@ -0,0 +1,97 @@
++<!DOCTYPE html>
++<html>
++<head>
++  <title>drawElementImage does not use cross-origin feImages on nested filtered SVG content inside masks</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src="/resources/testharness.js"></script>
++  <script src="/resources/testharnessreport.js"></script>
++  <script src="/html/canvas/resources/canvas-tests.js"></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++
++<body>
++  <canvas id="canvas" width="100" height="400" content=drawable>
++    <svg width="0" height="0">
++      <defs>
++        <filter id="filter-same" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <feImage href="https://{{location[host]}}/images/green-100x100.png"/>
++          <feComponentTransfer>
++            <feFuncR type="linear" slope="0" intercept="1"/>
++            <feFuncG type="linear" slope="0" intercept="1"/>
++            <feFuncB type="linear" slope="0" intercept="1"/>
++          </feComponentTransfer>
++        </filter>
++        <filter id="filter-cross" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <feImage href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png"/>
++          <feComponentTransfer>
++            <feFuncR type="linear" slope="0" intercept="1"/>
++            <feFuncG type="linear" slope="0" intercept="1"/>
++            <feFuncB type="linear" slope="0" intercept="1"/>
++          </feComponentTransfer>
++        </filter>
++        <mask id="mask-same" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <g filter="url(#filter-same)">
++            <rect width="100" height="100" fill="black" filter="url(#filter-same)"/>
++          </g>
++        </mask>
++        <mask id="mask-cross" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <g filter="url(#filter-cross)">
++            <rect width="100" height="100" fill="black" filter="url(#filter-cross)"/>
++          </g>
++        </mask>
++        <mask id="mask-cross-outer" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <g filter="url(#filter-cross)">
++            <rect width="100" height="100" fill="black" filter="url(#filter-same)"/>
++          </g>
++        </mask>
++        <mask id="mask-cross-opacity" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
++          <g filter="url(#filter-cross)">
++            <rect width="100" height="100" fill="black" opacity="0.5"/>
++          </g>
++        </mask>
++      </defs>
++    </svg>
++    <svg drawable id="child" width="100" height="400">
++      <svg x="0" y="0" width="100" height="100">
++        <rect width="100" height="100" fill="rgb(20, 120, 220)" mask="url(#mask-same)"/>
++      </svg>
++      <svg x="0" y="100" width="100" height="100">
++        <rect width="100" height="100" fill="rgb(30, 130, 230)" mask="url(#mask-cross)"/>
++      </svg>
++      <svg x="0" y="200" width="100" height="100">
++        <rect width="100" height="100" fill="rgb(40, 140, 240)" mask="url(#mask-cross-outer)"/>
++      </svg>
++      <svg x="0" y="300" width="100" height="100">
++        <rect width="100" height="100" fill="rgb(50, 150, 250)" mask="url(#mask-cross-opacity)"/>
++      </svg>
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++        var ctx = canvas.getContext("2d");
++        ctx.fillStyle = "blue";
++        ctx.fillRect(0, 0, 100, 400);
++        ctx.drawElementImage(document.getElementById("child"), 0, 0);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 50, 50);
++        assert_array_equals(pixel, [20, 120, 220, 255], "Nested same origin filter images in internal mask should be drawn");
++
++        pixel = _getPixelFromImageData(imgData, 50, 150);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Nested cross origin filter images in internal mask should not be drawn");
++
++        pixel = _getPixelFromImageData(imgData, 50, 250);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Cross origin filter image on ancestor of filtered element in internal mask should not be drawn");
++
++        pixel = _getPixelFromImageData(imgData, 50, 350);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Cross origin filter image on ancestor of non-filtered element with opacity in internal mask should not be drawn");
++      });
++    }
++  </script>
++</body>
++</html>

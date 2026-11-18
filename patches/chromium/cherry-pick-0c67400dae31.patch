@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mjackson <mjackson@microsoft.com>
+Date: Wed, 21 Oct 2026 09:49:10 -0700
+Subject: Exclude <select> autofill preview text from copy and drag
+
+While an Autofill suggestion is previewed, each <select> shows the
+would-be value in a UA shadow popover. That text was selectable, so
+copy, cut and selection drags serialized it into text/plain, letting a
+page read stored address data from dragstart before the user accepted
+the suggestion. Make the preview popover unselectable and read-only in
+the UA stylesheet matching the <input> suggested-value placeholder.
+
+Bug: 574643395
+Change-Id: I64b8b356d478b04aae25e97f521e9107e8662c15
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8615493
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Commit-Queue: Mike Jackson <mjackson@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1723903}
+
+diff --git a/third_party/blink/renderer/core/editing/frame_selection_test.cc b/third_party/blink/renderer/core/editing/frame_selection_test.cc
+index a9085447eb33b040b9d46c897847e17cdff42627..5203693975119a7160e4d05c549c8060f3787dfc 100644
+--- a/third_party/blink/renderer/core/editing/frame_selection_test.cc
++++ b/third_party/blink/renderer/core/editing/frame_selection_test.cc
+@@ -11,6 +11,8 @@
+ #include "testing/gmock/include/gmock/gmock-matchers.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/web/web_range.h"
++#include "third_party/blink/renderer/core/clipboard/data_transfer.h"
++#include "third_party/blink/renderer/core/clipboard/data_transfer_access_policy.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/dom/text.h"
+@@ -23,6 +25,8 @@
+ #include "third_party/blink/renderer/core/editing/testing/editing_test_base.h"
+ #include "third_party/blink/renderer/core/editing/visible_position.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
++#include "third_party/blink/renderer/core/html/forms/html_input_element.h"
++#include "third_party/blink/renderer/core/html/forms/html_select_element.h"
+ #include "third_party/blink/renderer/core/html/html_body_element.h"
+ #include "third_party/blink/renderer/core/input/event_handler.h"
+ #include "third_party/blink/renderer/core/layout/layout_block.h"
+@@ -36,6 +40,7 @@
+ #include "third_party/blink/renderer/platform/graphics/paint/drawing_recorder.h"
+ #include "third_party/blink/renderer/platform/testing/fake_display_item_client.h"
+ #include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
++#include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ #include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
+ #include "ui/gfx/geometry/rect.h"
+ #include "ui/gfx/geometry/vector2d.h"
+@@ -1460,6 +1465,57 @@ TEST_F(FrameSelectionTest, SelectedTextForClipboardEntersTextControls) {
+   EXPECT_EQ("foo\nbar\nbaz", Selection().SelectedTextForClipboard());
+ }
+ 
++class FrameSelectionAutofillPreviewTest
++    : public FrameSelectionTest,
++      public testing::WithParamInterface<bool> {};
++
++INSTANTIATE_TEST_SUITE_P(All,
++                         FrameSelectionAutofillPreviewTest,
++                         testing::Bool());
++
++TEST_P(FrameSelectionAutofillPreviewTest,
++       ClipboardAndDragExcludeSelectAutofillPreview) {
++  Selection().SetSelection(
++      SetSelectionTextToBody(
++          "<div contenteditable style='user-select: text !important; "
++          "-webkit-user-modify: read-write !important'>"
++          "<div>^before</div><input id='input' value='accepted'>"
++          "<select id='select'><option value='1'>One</option>"
++          "<option value='2'>Two</option></select><div>after|</div></div>"),
++      SetSelectionOptions());
++  auto* select = To<HTMLSelectElement>(GetElementById("select"));
++  if (GetParam()) {
++    select->setAttribute(html_names::kSizeAttr, AtomicString("2"));
++  }
++  auto* input = To<HTMLInputElement>(GetElementById("input"));
++  input->SetAutofillState(WebAutofillState::kAutofilled);
++  UpdateAllLifecyclePhasesForTest();
++  const String clipboard_text = Selection().SelectedTextForClipboard();
++  ASSERT_TRUE(clipboard_text.contains("before"));
++  ASSERT_TRUE(clipboard_text.contains("accepted"));
++  ASSERT_TRUE(clipboard_text.contains("One"));
++  ASSERT_TRUE(clipboard_text.contains("after"));
++  DataTransfer* data_transfer = DataTransfer::Create(
++      DataTransfer::kDragAndDrop, DataTransferAccessPolicy::kWritable,
++      DataObject::Create());
++  data_transfer->WriteSelection(Selection());
++  const String drag_text = data_transfer->getData("text/plain");
++
++  select->SetSuggestedValue("2");
++  ASSERT_TRUE(select->IsPreviewed());
++  ASSERT_EQ("1", select->Value());
++  test::RunPendingTasks();
++  UpdateAllLifecyclePhasesForTest();
++  Element* popover = select->GetAutofillPreviewElement();
++  ASSERT_TRUE(popover);
++  ASSERT_TRUE(popover->GetLayoutObject());
++  ASSERT_EQ("Two", popover->textContent());
++
++  EXPECT_EQ(clipboard_text, Selection().SelectedTextForClipboard());
++  data_transfer->WriteSelection(Selection());
++  EXPECT_EQ(drag_text, data_transfer->getData("text/plain"));
++}
++
+ TEST_F(FrameSelectionTest, HasVisibleText) {
+   Selection().SetSelection(
+       SetSelectionTextToBody("<div contenteditable>^foo|</div>"),
+diff --git a/third_party/blink/renderer/core/html/resources/html.css b/third_party/blink/renderer/core/html/resources/html.css
+index a92d22e6cee832223871d7d490da66a7b59e97e8..2ef1929913cfe458d4a82c2a962259a9d26403b4 100644
+--- a/third_party/blink/renderer/core/html/resources/html.css
++++ b/third_party/blink/renderer/core/html/resources/html.css
+@@ -2349,6 +2349,11 @@ select::-internal-select-autofill-preview[popover]:popover-open {
+   padding: 0;
+   border: 1px solid black;
+ }
++select::-internal-select-autofill-preview,
++select::-internal-select-autofill-preview-text {
++  user-select: none !important;
++  -webkit-user-modify: read-only !important;
++}
+ select::-internal-select-autofill-preview-text {
+   overflow: hidden;
+   text-overflow: ellipsis;

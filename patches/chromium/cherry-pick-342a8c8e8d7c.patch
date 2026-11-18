@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Tue, 13 Oct 2026 21:52:34 -0700
+Subject: [HiC] Invalidate visited link colors when IsInCanvasSubtree changes
+
+Fixed: 573257409
+Change-Id: Ib968b83a51449ac62011a3ae67661e10ad2b0d94
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8573959
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718306}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 087377ca76ef776db5e4d917c48e36c365535ef7..07f5df11a38ad9477acc0b828686ad7283ee6bbf 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4442,6 +4442,11 @@ bool Element::IsCanvasOrInCanvasSubtree() const {
+ }
+ 
+ void Element::DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) {
++  if (IsLink() && GetComputedStyle()) {
++    SetNeedsStyleRecalc(kLocalStyleChange,
++                        StyleChangeReasonForTracing::Create(
++                            style_change_reason::kFlatTreeChange));
++  }
+   if (auto* layout_object = GetLayoutObject()) {
+     layout_object->SetNeedsPaintPropertyUpdate();
+     ObjectPaintInvalidator(*layout_object)

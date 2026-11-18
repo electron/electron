@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Saifuddin Hitawala <hitawala@chromium.org>
+Date: Wed, 28 Oct 2026 09:38:58 -0700
+Subject: [gl] CHECK glGenTextures does not return 0
+
+If glGenTextures fails, it can be due to exhaustion of resources.
+CHECK such failures as GPU process is in stalemate regardless as
+texture creation does not work anymore.
+
+Bug: 568891853
+Change-Id: Ibb9e0f61064beca6f203a32a8f4e7e30114539d5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8664215
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Saifuddin Hitawala <hitawala@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1729233}
+
+diff --git a/ui/gl/gl_gl_api_implementation.cc b/ui/gl/gl_gl_api_implementation.cc
+index 6e785fafa2c382cfd93dd74647d6a9dbc823c4d5..d5eeeafba9ff5f36b6cf3e27ff7c6bf5128900fe 100644
+--- a/ui/gl/gl_gl_api_implementation.cc
++++ b/ui/gl/gl_gl_api_implementation.cc
+@@ -261,6 +261,13 @@ const GLubyte* RealGLApi::glGetStringiFn(GLenum name, GLuint index) {
+   return GLApiBase::glGetStringiFn(name, index);
+ }
+ 
++void RealGLApi::glGenTexturesFn(GLsizei n, GLuint* textures) {
++  GLApiBase::glGenTexturesFn(n, textures);
++  if (GetGLImplementation() != kGLImplementationMockGL && n > 0) {
++    CHECK_NE(UNSAFE_TODO(textures[0]), 0u);
++  }
++}
++
+ void RealGLApi::glTexImage2DFn(GLenum target,
+                                GLint level,
+                                GLint internalformat,
+diff --git a/ui/gl/gl_gl_api_implementation.h b/ui/gl/gl_gl_api_implementation.h
+index 1df38a4f8727bd8b600f7b0eb0a36f25fff5ad0e..a7d84ed71933a961ab4d8fc3d7fc3d85faaf29be 100644
+--- a/ui/gl/gl_gl_api_implementation.h
++++ b/ui/gl/gl_gl_api_implementation.h
+@@ -58,6 +58,8 @@ class GL_EXPORT RealGLApi : public GLApiBase {
+   const GLubyte* glGetStringFn(GLenum name) override;
+   const GLubyte* glGetStringiFn(GLenum name, GLuint index) override;
+ 
++  void glGenTexturesFn(GLsizei n, GLuint* textures) override;
++
+   void glTexImage2DFn(GLenum target,
+                       GLint level,
+                       GLint internalformat,

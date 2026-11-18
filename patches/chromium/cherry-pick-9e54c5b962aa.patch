@@ -1,0 +1,687 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michal Mocny <mmocny@chromium.org>
+Date: Wed, 14 Oct 2026 21:24:00 -0700
+Subject: [event-timing] Fix target frame attribution and verify source window
+ in CanExposeNode
+
+PointerEventManager lives on the local-root frame and dispatches pointer
+and compatibility mouse events to targets that may belong to same-process
+child frames. Previously, PointerEventManager::DispatchPointerEvent and
+MouseEventManager::DispatchMouseEvent constructed UIEventTiming scoped to
+`frame_` (the local-root frame) rather than the target node's frame. When
+an event targeted a subframe node, EventDispatcher::Dispatch subsequently
+set `event.target()` to that subframe node, causing the outer
+UIEventTiming scope on the local-root frame to record an entry on the
+parent frame's WindowPerformance whose `target_` referenced the child
+frame's DOM Node.
+
+This CL provides a surgical fix in two layers (with a follow-up CL
+removing the outer UIEventTiming wrappers entirely):
+
+1. Attribute UIEventTiming to `target_node->GetDocument().GetFrame()` in
+   `PointerEventManager::DispatchPointerEvent` and
+   `MouseEventManager::DispatchMouseEvent` (via a 3-argument
+   `UIEventTiming(handling_frame, target_frame, event)` constructor,
+   guarded by a default-enabled Finch kill-switch feature flag
+   `kEventTimingUseTargetFrame`) so that events dispatched to subframe
+   targets are recorded only against the target's frame.
+2. Update `Performance::CanExposeNode(Node*, const DOMWindow* source)`
+   and all of its callers (`PerformanceEventTiming`,
+   `PerformanceElementTiming`, `PerformanceContainerTiming`,
+   `PerformanceScrollTiming`, `LargestContentfulPaint`,
+   `LayoutShiftAttribution`, and `WindowPerformance::AddScrollTiming`) to
+   require `node->GetDocument().domWindow() == source`.
+
+In addition to providing defense-in-depth against cross-frame node
+exposure, checking `document.domWindow() == source` in
+`Performance::CanExposeNode` brings Blink into closer compliance with the
+Web Performance "get an element" algorithm
+(https://wicg.github.io/element-timing/#sec-get-an-element, referenced by
+`PerformanceEventTiming.target`, `LargestContentfulPaint.element`,
+`PerformanceElementTiming.element`, etc.). The spec passes `this`'s
+relevant global object's associated `Document` (`source->document()`) and
+requires that the element's shadow-including root is that exact
+`Document`, returning `null` if the node belongs to or was adopted into
+another document.
+
+Finally, to help evaluate field impact on main-frame-only RUM observers
+that previously received cross-frame subframe interactions, this CL
+records `is_main_frame` and `is_cross_frame_target` on
+`EventTimingReportingInfo` and logs three new variants of
+`Blink.Responsiveness.UserInteraction.MaxEventDuration`:
+- `.MainFrame` (interactions targeting the main frame directly)
+- `.CrossFrameTarget` (interactions where `handling_frame != target_frame`)
+- `.MainFrameIncludingCrossFrameTarget` (combined baseline matching what
+  was previously reported to the main frame)
+
+Bug: 557320974, 572682755, 572882344
+Change-Id: I7ef2af41565c228c8c57b2b795ff37046a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8575497
+Reviewed-by: Yi Gu <yigu@chromium.org>
+Reviewed-by: Scott Haseley <shaseley@chromium.org>
+Commit-Queue: Michal Mocny <mmocny@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1719324}
+
+Electron adaptation notes (44-x-y): only brace-style context conflicts were
+resolved (this branch's CanExposeNode and LargestContentfulPaint::element()
+lack braces around single-statement ifs); the upstream logic is taken verbatim
+and the new unit tests are appended. No logic changes.
+
+diff --git a/third_party/blink/renderer/core/input/mouse_event_manager.cc b/third_party/blink/renderer/core/input/mouse_event_manager.cc
+index 09de09bc424dee3b6c8baf6616459a629a747cce..57b3457692fbc0d1267990842f5540d502e2d178 100644
+--- a/third_party/blink/renderer/core/input/mouse_event_manager.cc
++++ b/third_party/blink/renderer/core/input/mouse_event_manager.cc
+@@ -264,7 +264,8 @@ MouseEventManager::DispatchMouseEvent(
+         HTMLDialogElement::HandleDialogLightDismissForClick(
+             *pointer_down_target, *pointer_up_target);
+       }
+-      UIEventTiming event_timing(frame_, *event);
++      UIEventTiming event_timing(frame_.Get(),
++                                 target_node->GetDocument().GetFrame(), *event);
+ 
+       if (should_dispatch) {
+         input_event_result = event_handling_util::ToWebInputEventResult(
+@@ -281,7 +282,8 @@ MouseEventManager::DispatchMouseEvent(
+           mouse_event.FromTouch() ? MouseEvent::kFromTouch
+                                   : MouseEvent::kRealOrIndistinguishable,
+           mouse_event.menu_source_type);
+-      UIEventTiming event_timing(frame_, *event);
++      UIEventTiming event_timing(frame_.Get(),
++                                 target_node->GetDocument().GetFrame(), *event);
+ 
+       if (should_dispatch) {
+         input_event_result = event_handling_util::ToWebInputEventResult(
+diff --git a/third_party/blink/renderer/core/input/pointer_event_manager.cc b/third_party/blink/renderer/core/input/pointer_event_manager.cc
+index a7fa0844245bf06b1344f4fde848dcd84acbead8..c97e6a10a930a1cb3acfa4b9cceeda4ec44a3d48 100644
+--- a/third_party/blink/renderer/core/input/pointer_event_manager.cc
++++ b/third_party/blink/renderer/core/input/pointer_event_manager.cc
+@@ -159,7 +159,10 @@ WebInputEventResult PointerEventManager::DispatchPointerEvent(
+   bool should_filter = ShouldFilterEvent(pointer_event);
+   // We are about to dispatch this event. It has to be trusted at this point.
+   pointer_event->SetTrusted(true);
+-  UIEventTiming event_timing(frame_, *pointer_event);
++  Node* target_node = target->ToNode();
++  LocalFrame* target_frame =
++      target_node ? target_node->GetDocument().GetFrame() : nullptr;
++  UIEventTiming event_timing(frame_.Get(), target_frame, *pointer_event);
+ 
+   if (event_type == event_type_names::kPointerdown ||
+       event_type == event_type_names::kPointerover ||
+@@ -171,7 +174,7 @@ WebInputEventResult PointerEventManager::DispatchPointerEvent(
+     }
+   }
+ 
+-  if (Node* target_node = target->ToNode()) {
++  if (target_node) {
+     if (RuntimeEnabledFeatures::LightDismissFromClickEnabled()) {
+       if (event_type == event_type_names::kPointerdown) {
+         pointer_event_factory_->SetPointerDownTarget(
+diff --git a/third_party/blink/renderer/core/input/pointer_event_manager_test.cc b/third_party/blink/renderer/core/input/pointer_event_manager_test.cc
+index d700a1868600dd700cf298bdfbc4ed00a2992ed1..eff48438e9f87143b2e7ae641e05a1ff26105653 100644
+--- a/third_party/blink/renderer/core/input/pointer_event_manager_test.cc
++++ b/third_party/blink/renderer/core/input/pointer_event_manager_test.cc
+@@ -13,10 +13,13 @@
+ #include "third_party/blink/renderer/core/dom/events/native_event_listener.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/html/html_element.h"
++#include "third_party/blink/renderer/core/html/html_iframe_element.h"
+ #include "third_party/blink/renderer/core/input/event_handler.h"
+ #include "third_party/blink/renderer/core/pointer_type_names.h"
+ #include "third_party/blink/renderer/core/testing/sim/sim_request.h"
+ #include "third_party/blink/renderer/core/testing/sim/sim_test.h"
++#include "third_party/blink/renderer/core/timing/dom_window_performance.h"
++#include "third_party/blink/renderer/core/timing/window_performance.h"
+ #include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ #include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ #include "third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h"
+@@ -1004,4 +1007,59 @@ TEST_F(PanActionPointerEventTest, PanActionSentAcrossFrames) {
+   ASSERT_EQ(widget->LastPanAction(), PanAction::kStylusWritable);
+ }
+ 
++TEST_F(PointerEventManagerTest,
++       TouchPointerEventTimingAttributedToTargetFrame) {
++  WebView().MainFrameViewWidget()->Resize(gfx::Size(400, 400));
++  SimRequest main_resource("https://example.com/test.html", "text/html");
++  SimRequest child_resource("https://sub.example.com/child.html", "text/html");
++  LoadURL("https://example.com/test.html");
++  main_resource.Complete(R"HTML(
++    <body style='margin: 0; padding: 0;'>
++      <iframe id='child' src='https://sub.example.com/child.html'
++              style='width: 300px; height: 300px; border: none;'></iframe>
++    </body>
++  )HTML");
++  child_resource.Complete(R"HTML(
++    <body style='margin: 0; padding: 0;'>
++      <div id='target' style='width: 200px; height: 200px;'>Tap here</div>
++    </body>
++  )HTML");
++
++  Compositor().BeginFrame();
++
++  auto* callback = MakeGarbageCollected<CheckPointerEventListenerCallback>();
++  GetDocument().addEventListener(event_type_names::kPointerdown, callback);
++
++  auto* iframe = To<HTMLIFrameElement>(
++      GetDocument().getElementById(AtomicString("child")));
++  ASSERT_TRUE(iframe);
++  Document* child_document = iframe->contentDocument();
++  ASSERT_TRUE(child_document);
++
++  WebView().MainFrameWidget()->HandleInputEvent(WebCoalescedInputEvent(
++      CreateTestPointerEvent(WebInputEvent::Type::kPointerDown,
++                             WebPointerProperties::PointerType::kTouch),
++      {}, {}, ui::LatencyInfo()));
++  WebView().MainFrameWidget()->HandleInputEvent(WebCoalescedInputEvent(
++      CreateTestPointerEvent(WebInputEvent::Type::kPointerUp,
++                             WebPointerProperties::PointerType::kTouch),
++      {}, {}, ui::LatencyInfo()));
++
++  WindowPerformance* main_perf =
++      DOMWindowPerformance::performance(*GetDocument().domWindow());
++  WindowPerformance* child_perf =
++      DOMWindowPerformance::performance(*child_document->domWindow());
++  ASSERT_TRUE(main_perf);
++  ASSERT_TRUE(child_perf);
++
++  EXPECT_EQ(0u,
++            main_perf->eventCounts()->Map().at(event_type_names::kPointerdown));
++  EXPECT_EQ(0u,
++            main_perf->eventCounts()->Map().at(event_type_names::kPointerup));
++  EXPECT_EQ(
++      1u, child_perf->eventCounts()->Map().at(event_type_names::kPointerdown));
++  EXPECT_EQ(1u,
++            child_perf->eventCounts()->Map().at(event_type_names::kPointerup));
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/layout/layout_shift_tracker.cc b/third_party/blink/renderer/core/layout/layout_shift_tracker.cc
+index 94db491672eb24d9c2e09b5c5c250e60c9e1ae8b..490c1daa8856fc78735b7bea9e35132c4e5627be 100644
+--- a/third_party/blink/renderer/core/layout/layout_shift_tracker.cc
++++ b/third_party/blink/renderer/core/layout/layout_shift_tracker.cc
+@@ -623,10 +623,11 @@ LayoutShift::AttributionList LayoutShiftTracker::CreateAttributionList() const {
+             << "Attribution rects will be in physical pixels.";
+       }
+     }
+-    list.push_back(LayoutShiftAttribution::Create(
+-        DOMNodeIds::NodeForId(att.node_id),
+-        DOMRectReadOnly::FromRectF(old_css_rect),
+-        DOMRectReadOnly::FromRectF(new_css_rect)));
++    list.push_back(
++        LayoutShiftAttribution::Create(DOMNodeIds::NodeForId(att.node_id),
++                                       DOMRectReadOnly::FromRectF(old_css_rect),
++                                       DOMRectReadOnly::FromRectF(new_css_rect),
++                                       frame_view_->GetFrame().DomWindow()));
+   }
+   return list;
+ }
+diff --git a/third_party/blink/renderer/core/timing/event_timing.cc b/third_party/blink/renderer/core/timing/event_timing.cc
+index 8b58c25e9d6d1f1dfc70cb160d0b4ce17109903d..967db7b81b252ac2a222aa4829ae6ffeb573c439 100644
+--- a/third_party/blink/renderer/core/timing/event_timing.cc
++++ b/third_party/blink/renderer/core/timing/event_timing.cc
+@@ -22,6 +22,9 @@
+ #include "third_party/blink/renderer/core/timing/soft_navigation_heuristics.h"
+ 
+ namespace blink {
++
++BASE_FEATURE(kEventTimingUseTargetFrame, base::FEATURE_ENABLED_BY_DEFAULT);
++
+ namespace {
+ 
+ // Returns true when the type of the event is one of the standard input events
+@@ -92,6 +95,19 @@ UIEventTiming::UIEventTiming(LocalFrame* frame, const Event& event) {
+   }
+ }
+ 
++UIEventTiming::UIEventTiming(LocalFrame* handling_frame,
++                             LocalFrame* target_frame,
++                             const Event& event)
++    : UIEventTiming(base::FeatureList::IsEnabled(kEventTimingUseTargetFrame)
++                        ? target_frame
++                        : handling_frame,
++                    event) {
++  if (PerformanceEventTiming* entry = GetEntry()) {
++    entry->GetEventTimingReportingInfo()->is_cross_frame_target =
++        handling_frame != target_frame;
++  }
++}
++
+ NavigationEventTiming::NavigationEventTiming(LocalFrame* frame,
+                                              const Event& event) {
+   if (IsNavigationEventType(event)) {
+diff --git a/third_party/blink/renderer/core/timing/event_timing.h b/third_party/blink/renderer/core/timing/event_timing.h
+index 1c1ed9e2dc47389d17d889b5bb06c170215d5e57..8042ed217d93ccbf0af6eb11e54a696e55c08c0c 100644
+--- a/third_party/blink/renderer/core/timing/event_timing.h
++++ b/third_party/blink/renderer/core/timing/event_timing.h
+@@ -7,6 +7,7 @@
+ 
+ #include <optional>
+ 
++#include "base/feature_list.h"
+ #include "base/time/time.h"
+ #include "base/types/pass_key.h"
+ #include "third_party/blink/renderer/core/core_export.h"
+@@ -16,6 +17,8 @@
+ 
+ namespace blink {
+ 
++CORE_EXPORT BASE_DECLARE_FEATURE(kEventTimingUseTargetFrame);
++
+ class Event;
+ class LocalFrame;
+ class PerformanceEventTiming;
+@@ -62,6 +65,9 @@ class CORE_EXPORT UIEventTiming final {
+ 
+  public:
+   UIEventTiming(LocalFrame* frame, const Event& event);
++  UIEventTiming(LocalFrame* handling_frame,
++                LocalFrame* target_frame,
++                const Event& event);
+ 
+   std::optional<PerformanceTimelineEntryIdInfo> GetInteractionIdInfo() const {
+     return timing_ ? timing_->GetInteractionIdInfo() : std::nullopt;
+diff --git a/third_party/blink/renderer/core/timing/largest_contentful_paint.cc b/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
+index 0e91d2fc220ce754a48cf51a76177f2516a575b5..1b83c9b2bff5481fa14e6125b3bdfc0d794877f9 100644
+--- a/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
++++ b/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
+@@ -5,7 +5,7 @@
+ #include "third_party/blink/renderer/core/timing/largest_contentful_paint.h"
+ 
+ #include "third_party/blink/renderer/bindings/core/v8/v8_object_builder.h"
+-#include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/performance_entry_names.h"
+ #include "third_party/blink/renderer/core/timing/performance.h"
+ #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+@@ -44,16 +44,8 @@ PerformanceEntryType LargestContentfulPaint::EntryTypeEnum() const {
+ }
+ 
+ Element* LargestContentfulPaint::element() const {
+-  if (!Performance::CanExposeNode(element_)) {
+-    return nullptr;
+-  }
+-
+-  // Do not expose |element_| when the document is not 'fully active'.
+-  const Document& document = element_->GetDocument();
+-  if (!document.IsActive() || !document.GetFrame())
+-    return nullptr;
+-
+-  return element_.Get();
++  return Performance::CanExposeNode(element_, source()) ? element_.Get()
++                                                        : nullptr;
+ }
+ 
+ void LargestContentfulPaint::BuildJSONValue(V8ObjectBuilder& builder) const {
+diff --git a/third_party/blink/renderer/core/timing/layout_shift_attribution.cc b/third_party/blink/renderer/core/timing/layout_shift_attribution.cc
+index cc040f4056f3cebb6a31c2b205dd3e8c0aba6fa0..19f606bad4fe03d30863c3f8b5ccd6c11881fbf2 100644
+--- a/third_party/blink/renderer/core/timing/layout_shift_attribution.cc
++++ b/third_party/blink/renderer/core/timing/layout_shift_attribution.cc
+@@ -7,6 +7,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/script_value.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_object_builder.h"
+ #include "third_party/blink/renderer/core/dom/node.h"
++#include "third_party/blink/renderer/core/frame/dom_window.h"
+ #include "third_party/blink/renderer/core/geometry/dom_rect_read_only.h"
+ #include "third_party/blink/renderer/core/timing/performance.h"
+ 
+@@ -16,19 +17,25 @@ namespace blink {
+ LayoutShiftAttribution* LayoutShiftAttribution::Create(
+     Node* node,
+     DOMRectReadOnly* previous,
+-    DOMRectReadOnly* current) {
+-  return MakeGarbageCollected<LayoutShiftAttribution>(node, previous, current);
++    DOMRectReadOnly* current,
++    DOMWindow* source) {
++  return MakeGarbageCollected<LayoutShiftAttribution>(node, previous, current,
++                                                      source);
+ }
+ 
+ LayoutShiftAttribution::LayoutShiftAttribution(Node* node,
+                                                DOMRectReadOnly* previous,
+-                                               DOMRectReadOnly* current)
+-    : node_(node), previous_rect_(previous), current_rect_(current) {}
++                                               DOMRectReadOnly* current,
++                                               DOMWindow* source)
++    : node_(node),
++      previous_rect_(previous),
++      current_rect_(current),
++      source_(source) {}
+ 
+ LayoutShiftAttribution::~LayoutShiftAttribution() = default;
+ 
+ Node* LayoutShiftAttribution::node() const {
+-  return Performance::CanExposeNode(node_) ? node_ : nullptr;
++  return Performance::CanExposeNode(node_, source_) ? node_ : nullptr;
+ }
+ 
+ Node* LayoutShiftAttribution::rawNodeForInspector() const {
+@@ -55,6 +62,7 @@ void LayoutShiftAttribution::Trace(Visitor* visitor) const {
+   visitor->Trace(node_);
+   visitor->Trace(previous_rect_);
+   visitor->Trace(current_rect_);
++  visitor->Trace(source_);
+   ScriptWrappable::Trace(visitor);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/timing/layout_shift_attribution.h b/third_party/blink/renderer/core/timing/layout_shift_attribution.h
+index 210a251a72efd661b7f5e3c433ece61ff448ea8a..712677374a7f30c02f0b14d9643a66cf8d5dcf0a 100644
+--- a/third_party/blink/renderer/core/timing/layout_shift_attribution.h
++++ b/third_party/blink/renderer/core/timing/layout_shift_attribution.h
+@@ -12,6 +12,7 @@
+ namespace blink {
+ 
+ class DOMRectReadOnly;
++class DOMWindow;
+ class Node;
+ class ScriptObject;
+ class ScriptState;
+@@ -22,10 +23,12 @@ class CORE_EXPORT LayoutShiftAttribution : public ScriptWrappable {
+  public:
+   static LayoutShiftAttribution* Create(Node*,
+                                         DOMRectReadOnly* previous,
+-                                        DOMRectReadOnly* current);
++                                        DOMRectReadOnly* current,
++                                        DOMWindow* source);
+   LayoutShiftAttribution(Node*,
+                          DOMRectReadOnly* previous,
+-                         DOMRectReadOnly* current);
++                         DOMRectReadOnly* current,
++                         DOMWindow* source);
+   ~LayoutShiftAttribution() override;
+ 
+   Node* node() const;
+@@ -41,6 +44,7 @@ class CORE_EXPORT LayoutShiftAttribution : public ScriptWrappable {
+   WeakMember<Node> node_;
+   Member<DOMRectReadOnly> previous_rect_;
+   Member<DOMRectReadOnly> current_rect_;
++  WeakMember<DOMWindow> source_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/timing/performance.cc b/third_party/blink/renderer/core/timing/performance.cc
+index e1f590ee16b5dcf3939e8289d0196369dcf1f627..f7d3131e5a79332e3a516f2fb61370580df2be67 100644
+--- a/third_party/blink/renderer/core/timing/performance.cc
++++ b/third_party/blink/renderer/core/timing/performance.cc
+@@ -1347,16 +1347,19 @@ DOMHighResTimeStamp Performance::now() const {
+ }
+ 
+ // static
+-bool Performance::CanExposeNode(Node* node) {
++bool Performance::CanExposeNode(Node* node, const DOMWindow* source) {
+   if (!node || !node->isConnected() || node->IsInShadowTree() ||
+       node->IsPseudoElement()) {
+     return false;
+   }
+ 
+-  // Do not expose |node| when the document is not 'fully active'.
++  // Do not expose |node| when the document is not 'fully active', or when
++  // |node| does not belong to the source window's active document.
+   const Document& document = node->GetDocument();
+-  if (!document.IsActive() || !document.GetFrame())
++  if (!document.IsActive() || !document.GetFrame() ||
++      document.domWindow() != source) {
+     return false;
++  }
+ 
+   return true;
+ }
+diff --git a/third_party/blink/renderer/core/timing/performance.h b/third_party/blink/renderer/core/timing/performance.h
+index 4a34e032533f5cfd584208236fdc7c5ec6d85f75..67b4fcf265aff283c7a0cb02a9fb8639d6a43f22 100644
+--- a/third_party/blink/renderer/core/timing/performance.h
++++ b/third_party/blink/renderer/core/timing/performance.h
+@@ -317,7 +317,7 @@ class CORE_EXPORT Performance : public EventTarget {
+ 
+   bool HasObserverFor(PerformanceEntry::EntryType) const;
+   // Determine whether a given Node can be exposed via a Web Perf API.
+-  static bool CanExposeNode(Node*);
++  static bool CanExposeNode(Node*, const DOMWindow* source);
+ 
+   ScriptObject toJSONForBinding(ScriptState*) const;
+ 
+diff --git a/third_party/blink/renderer/core/timing/performance_container_timing.cc b/third_party/blink/renderer/core/timing/performance_container_timing.cc
+index 3852a4ee21f37d5612e2782447f60e6d000e0cdf..6b6ea8e461f6d8bf7886c068a6a94da6e571481e 100644
+--- a/third_party/blink/renderer/core/timing/performance_container_timing.cc
++++ b/third_party/blink/renderer/core/timing/performance_container_timing.cc
+@@ -62,11 +62,12 @@ PerformanceEntryType PerformanceContainerTiming::EntryTypeEnum() const {
+ }
+ 
+ Element* PerformanceContainerTiming::rootElement() const {
+-  return Performance::CanExposeNode(root_element_) ? root_element_ : nullptr;
++  return Performance::CanExposeNode(root_element_, source()) ? root_element_
++                                                             : nullptr;
+ }
+ 
+ Element* PerformanceContainerTiming::lastPaintedElement() const {
+-  return Performance::CanExposeNode(last_painted_element_)
++  return Performance::CanExposeNode(last_painted_element_, source())
+              ? last_painted_element_
+              : nullptr;
+ }
+diff --git a/third_party/blink/renderer/core/timing/performance_element_timing.cc b/third_party/blink/renderer/core/timing/performance_element_timing.cc
+index 9a43e3e32adca9e70af7c07ebf62dda84c784c7c..151e75c5c7caff019d2c91affb21eaa3b2ad937f 100644
+--- a/third_party/blink/renderer/core/timing/performance_element_timing.cc
++++ b/third_party/blink/renderer/core/timing/performance_element_timing.cc
+@@ -78,7 +78,7 @@ PerformanceEntryType PerformanceElementTiming::EntryTypeEnum() const {
+ }
+ 
+ Element* PerformanceElementTiming::element() const {
+-  return Performance::CanExposeNode(element_) ? element_ : nullptr;
++  return Performance::CanExposeNode(element_, source()) ? element_ : nullptr;
+ }
+ 
+ std::unique_ptr<TracedValue> PerformanceElementTiming::ToTracedValue() const {
+diff --git a/third_party/blink/renderer/core/timing/performance_event_timing.cc b/third_party/blink/renderer/core/timing/performance_event_timing.cc
+index 5de7057373feb57ef8d88516bedf0e2ad45df63f..1869a7c1236e30cbcc17f2b5e7fc46f3d765b68a 100644
+--- a/third_party/blink/renderer/core/timing/performance_event_timing.cc
++++ b/third_party/blink/renderer/core/timing/performance_event_timing.cc
+@@ -126,7 +126,7 @@ DOMHighResTimeStamp PerformanceEventTiming::processingEnd() const {
+ }
+ 
+ Node* PerformanceEventTiming::target() const {
+-  return Performance::CanExposeNode(target_) ? target_ : nullptr;
++  return Performance::CanExposeNode(target_, source()) ? target_ : nullptr;
+ }
+ 
+ void PerformanceEventTiming::SetTarget(EventTarget* target) {
+diff --git a/third_party/blink/renderer/core/timing/performance_event_timing.h b/third_party/blink/renderer/core/timing/performance_event_timing.h
+index fbcdd9da56747f9247ea3023e369f298d42e59b0..fbfa83f869edf1a5ab17b7061b80d10f2bc1fdc9 100644
+--- a/third_party/blink/renderer/core/timing/performance_event_timing.h
++++ b/third_party/blink/renderer/core/timing/performance_event_timing.h
+@@ -94,6 +94,14 @@ class CORE_EXPORT PerformanceEventTiming final : public PerformanceEntry {
+     // dispatched with the input events, beforeinput event's processing time is
+     // nested under keypress event.
+     bool is_processing_fully_nested_in_another_event = false;
++
++    // True when the EventTiming was recorded in a main frame.
++    bool is_main_frame = false;
++
++    // True when the input handling frame (e.g. local root in
++    // MouseEventManager/PointerEventManager) differed from the hit-test target
++    // node's frame (i.e. a same-process subframe target).
++    bool is_cross_frame_target = false;
+   };
+ 
+   static PerformanceEventTiming* Create(
+diff --git a/third_party/blink/renderer/core/timing/performance_scroll_timing.cc b/third_party/blink/renderer/core/timing/performance_scroll_timing.cc
+index 1b70cd3c46986b0d7ce9dda9bbbfa1486e723125..e6039bb15af4205bf4773f35d272e2ae844dcf58 100644
+--- a/third_party/blink/renderer/core/timing/performance_scroll_timing.cc
++++ b/third_party/blink/renderer/core/timing/performance_scroll_timing.cc
+@@ -49,7 +49,7 @@ PerformanceEntryType PerformanceScrollTiming::EntryTypeEnum() const {
+ }
+ 
+ Node* PerformanceScrollTiming::target() const {
+-  return Performance::CanExposeNode(target_) ? target_ : nullptr;
++  return Performance::CanExposeNode(target_, source()) ? target_ : nullptr;
+ }
+ 
+ void PerformanceScrollTiming::BuildJSONValue(V8ObjectBuilder& builder) const {
+diff --git a/third_party/blink/renderer/core/timing/performance_test.cc b/third_party/blink/renderer/core/timing/performance_test.cc
+index 62c2a8fd08d860f23590372dab7d249d8e773ccc..a35c02a444023d2ec2f5d85db8d7ca75a6d97ed7 100644
+--- a/third_party/blink/renderer/core/timing/performance_test.cc
++++ b/third_party/blink/renderer/core/timing/performance_test.cc
+@@ -460,4 +460,73 @@ TEST_F(PerformanceTest, DeclarativePerformanceObserverOptimization) {
+       mojom::blink::DeclarativePerformanceObserverHost::Name_, {});
+ }
+ 
++TEST_F(PerformanceTest, GetEntriesByTypeUseCounters) {
++  struct TestCase {
++    const char* entry_type;
++    std::vector<WebFeature> expected_features;
++  };
++
++  const TestCase kTestCases[] = {
++      {"resource", {WebFeature::kResourceTiming}},
++      {"navigation", {WebFeature::kNavigationTimingL2}},
++      {"paint", {WebFeature::kPaintTimingRequested}},
++      {"long-animation-frame", {WebFeature::kLongAnimationFrameRequested}},
++      {"first-input",
++       {WebFeature::kEventTimingExplicitlyRequested,
++        WebFeature::kEventTimingFirstInputExplicitlyRequested}},
++      {"soft-navigation",
++       {WebFeature::kSoftNavigationHeuristics,
++        WebFeature::kSoftNavigationExplicitlyRequested}},
++  };
++
++  for (const auto& test_case : kTestCases) {
++    SCOPED_TRACE(test_case.entry_type);
++    V8TestingScope scope;
++    auto* window = LocalDOMWindow::From(scope.GetScriptState());
++    auto* performance = DOMWindowPerformance::performance(*window);
++
++    for (WebFeature feature : test_case.expected_features) {
++      EXPECT_FALSE(scope.GetDocument().IsUseCounted(feature));
++    }
++
++    performance->getEntriesByType(AtomicString(test_case.entry_type));
++
++    for (WebFeature feature : test_case.expected_features) {
++      EXPECT_TRUE(scope.GetDocument().IsUseCounted(feature));
++    }
++  }
++}
++
++TEST_F(PerformanceTest, CanExposeNodeRequiresMatchingSourceWindow) {
++  V8TestingScope main_scope;
++  V8TestingScope other_scope;
++
++  LocalDOMWindow* main_window = main_scope.GetFrame().DomWindow();
++  LocalDOMWindow* other_window = other_scope.GetFrame().DomWindow();
++  ASSERT_TRUE(main_window);
++  ASSERT_TRUE(other_window);
++
++  Node* main_node = main_scope.GetDocument().documentElement();
++  Node* other_node = other_scope.GetDocument().documentElement();
++  ASSERT_TRUE(main_node);
++  ASSERT_TRUE(other_node);
++
++  EXPECT_TRUE(Performance::CanExposeNode(main_node, main_window));
++  EXPECT_TRUE(Performance::CanExposeNode(other_node, other_window));
++  EXPECT_FALSE(Performance::CanExposeNode(other_node, main_window));
++  EXPECT_FALSE(Performance::CanExposeNode(main_node, other_window));
++  EXPECT_FALSE(Performance::CanExposeNode(main_node, nullptr));
++
++  auto* main_performance = DOMWindowPerformance::performance(*main_window);
++  PerformanceEventTiming* entry = PerformanceEventTiming::Create(
++      AtomicString("pointerdown"),
++      PerformanceEventTiming::EventTimingReportingInfo{}, false, main_window,
++      main_performance->NavigationId().web_exposed_id);
++  entry->SetTarget(other_node);
++  EXPECT_EQ(nullptr, entry->target());
++
++  entry->SetTarget(main_node);
++  EXPECT_EQ(main_node, entry->target());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/timing/responsiveness_metrics.cc b/third_party/blink/renderer/core/timing/responsiveness_metrics.cc
+index b5ad3f8352577a519c76755e69fbc492c94b2ed3..4d598ffbe6595d05cda2647cfd139c6df917ced8 100644
+--- a/third_party/blink/renderer/core/timing/responsiveness_metrics.cc
++++ b/third_party/blink/renderer/core/timing/responsiveness_metrics.cc
+@@ -50,6 +50,10 @@ const char kHistogramMaxEventDuration[] =
+ const char kHistogramAllTypes[] = ".AllTypes";
+ const char kHistogramKeyboard[] = ".Keyboard";
+ const char kHistogramTapOrClick[] = ".TapOrClick";
++const char kHistogramMainFrame[] = ".MainFrame";
++const char kHistogramCrossFrameTarget[] = ".CrossFrameTarget";
++const char kHistogramMainFrameIncludingCrossFrameTarget[] =
++    ".MainFrameIncludingCrossFrameTarget";
+ 
+ constexpr char kUserInteractionTraceEventCategory[] = "latency";
+ 
+@@ -624,6 +628,18 @@ void ResponsivenessMetrics::RecordUserInteractionHistograms(
+   } else {
+     LogResponsivenessHistogram(duration, kHistogramKeyboard);
+   }
++
++  const auto* reporting_info = entry.GetEventTimingReportingInfo();
++  if (reporting_info->is_main_frame && !reporting_info->is_cross_frame_target) {
++    LogResponsivenessHistogram(duration, kHistogramMainFrame);
++  }
++  if (reporting_info->is_cross_frame_target) {
++    LogResponsivenessHistogram(duration, kHistogramCrossFrameTarget);
++  }
++  if (reporting_info->is_main_frame || reporting_info->is_cross_frame_target) {
++    LogResponsivenessHistogram(duration,
++                               kHistogramMainFrameIncludingCrossFrameTarget);
++  }
+ }
+ 
+ void ResponsivenessMetrics::RecordUserInteractionTracing(
+diff --git a/third_party/blink/renderer/core/timing/window_performance.cc b/third_party/blink/renderer/core/timing/window_performance.cc
+index 2ce82a6443066d094b409c7f5210d996d115503d..4dd4141d0d2242e2be13b8a4fe4c5cf87621d829 100644
+--- a/third_party/blink/renderer/core/timing/window_performance.cc
++++ b/third_party/blink/renderer/core/timing/window_performance.cc
+@@ -646,6 +646,7 @@ PerformanceEventTiming* WindowPerformance::EventTimingProcessingStart(
+       .processing_start_time = processing_start,
+       .is_processing_fully_nested_in_another_event =
+           !active_event_timing_entries_.empty(),
++      .is_main_frame = DomWindow()->GetFrame()->IsMainFrame(),
+   };
+ 
+   if (pointer_event) {
+@@ -1527,7 +1528,7 @@ void WindowPerformance::AddScrollTiming(base::TimeTicks start_time,
+   // also defends in its `target()` getter, but filtering here keeps the stored
+   // entry consistent with the intended design.
+   Node* exposable_target =
+-      Performance::CanExposeNode(target) ? target : nullptr;
++      Performance::CanExposeNode(target, DomWindow()) ? target : nullptr;
+ 
+   PerformanceScrollTiming* entry =
+       MakeGarbageCollected<PerformanceScrollTiming>(
+diff --git a/tools/metrics/histograms/metadata/blink/histograms.xml b/tools/metrics/histograms/metadata/blink/histograms.xml
+index 76cb6a53d68cd8466107d6d70d9fe3429eee610e..6c95ae887478cdb6342f9e1ec178ff2ffb592569 100644
+--- a/tools/metrics/histograms/metadata/blink/histograms.xml
++++ b/tools/metrics/histograms/metadata/blink/histograms.xml
+@@ -5241,8 +5241,8 @@ chromium-metrics-reviews@google.com.
+     The duration of a single user interaction:
+     https://web.dev/better-responsiveness-metric/#group-events-into-interactions
+ 
+-    This metric is emitted once for every interaction in the web contents
+-    {InteractionType}
++    This metric has several variants, each of which is a subset of the AllTypes
++    superset.
+   </summary>
+   <token key="InteractionType">
+     <variant name="AllTypes"
+@@ -5250,6 +5250,9 @@ chromium-metrics-reviews@google.com.
+                  maximum event duration for the keydown, keypress, keyup,
+                  pointerdown, pointerup, mousedown, mouseup, and click event
+                  is reported."/>
++    <variant name="CrossFrameTarget"
++        summary="of interactions where the input handling frame differed from
++                 the hit-test target frame (e.g. a same-process subframe)."/>
+     <variant name="Drag"
+         summary="of type drag. The maximum event duration for the
+                  pointerdown, pointerup, mousedown, mouseup, and click event
+@@ -5257,6 +5260,12 @@ chromium-metrics-reviews@google.com.
+     <variant name="Keyboard"
+         summary="of type keyboard. The maximum event duration for the
+                  keydown, keypress, and keyup event is reported."/>
++    <variant name="MainFrame"
++        summary="of interactions targeting the main frame directly (excluding
++                 cross-frame targets)."/>
++    <variant name="MainFrameIncludingCrossFrameTarget"
++        summary="of interactions targeting the main frame or a cross-frame
++                 target handled by the main frame."/>
+     <variant name="TapOrClick"
+         summary="of type click or tap. The maximum event duration for the
+                  pointerdown, pointerup, mousedown, mouseup, and click event

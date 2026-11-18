@@ -1,0 +1,979 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Tue, 13 Oct 2026 18:32:25 -0700
+Subject: Make Skia's shared context current before pruning transfer cache.
+
+Several entry points into the ServiceTransferCache could cause old
+entries to be iterated and pruned, which - through a long series of
+virtual calls going into Skia's Ganesh backend - could cause GL
+objects like buffers to be deleted with the wrong context current (in
+this case, a user's WebGL context).
+
+Address this problem inside the ServiceTransferCache by providing it
+the SharedContextState, which is guaranteed to outlive the transfer
+cache due to object ownership, instead of passing in the Ganesh or
+Graphite context while adding specific entries. Make the context
+current in PruneOldEntries. Assert the context is current in other key
+entry points.
+
+Deeper context verification was considered and rejected because of the
+possibility of performance regressions on critical platforms.
+
+Add unit tests ensuring that objects are deleted with the correct
+context current, and a GPU integration test which reliably reproduces
+a GPU process crash without the fix.
+
+Co-authored with Gemini.
+
+Fixed: 571153713
+Change-Id: I19ce8f5a962aca04cd3bdd40c3432d7191e68ce7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8564058
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Reviewed-by: Bo Liu <boliu@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718209}
+
+Electron adaptation notes (44-x-y): this branch's ServiceTransferCache predates
+the memory-coordinator rework (no OnUpdateMemoryLimit/OnReleaseMemory,
+max_cache_size_limit_ or base/memory_coordinator/memory_limit.h). The
+AssertContextCurrentOrLost() call that upstream adds to OnReleaseMemory is
+placed at the top of the branch's PurgeMemory(); SetCacheSizeLimitForTesting
+only gains the EnsureContextCurrent() call; the include conflicts keep only
+headers that exist here (shared_context_state.h, raw_ptr.h; the unit test drops
+base/memory_coordinator/memory_limit.h). The new test-data file is listed in
+content_test_bundle_data.filelist next to this branch's entries. All other
+hunks (EnsureContextCurrent, context-lost checks, CreateLockedEntry signature,
+PruneOldEntries guard, call sites) apply as upstream.
+
+diff --git a/cc/paint/transfer_cache_unittest.cc b/cc/paint/transfer_cache_unittest.cc
+index f5c6cda4b23ee061dce6c9a67332e3502acbb947..d286925f2c5e2f9cc30ea2845c2a926242767f77 100644
+--- a/cc/paint/transfer_cache_unittest.cc
++++ b/cc/paint/transfer_cache_unittest.cc
+@@ -7,6 +7,8 @@
+ #include "base/command_line.h"
+ #include "base/compiler_specific.h"
+ #include "base/containers/span.h"
++#include "base/synchronization/waitable_event.h"
++#include "base/test/bind.h"
+ #include "build/build_config.h"
+ #include "cc/paint/image_transfer_cache_entry.h"
+ #include "cc/paint/raw_memory_transfer_cache_entry.h"
+@@ -69,6 +71,28 @@ class TransferCacheTest : public testing::Test {
+                                                       entry.Id());
+   }
+ 
++  template <typename Fn>
++  void RunOnGpuThread(Fn&& fn) {
++    base::WaitableEvent event;
++    viz::TestGpuServiceHolder::GetInstance()
++        ->gpu_main_thread_task_runner()
++        ->PostTask(FROM_HERE, base::BindLambdaForTesting([&]() {
++                     fn();
++                     event.Signal();
++                   }));
++    event.Wait();
++  }
++
++  ServiceTransferCacheEntry* GetEntryOnGpuThread(TransferCacheEntryType type,
++                                                 uint32_t id) {
++    ServiceTransferCacheEntry* entry = nullptr;
++    RunOnGpuThread([&]() {
++      entry = ServiceTransferCache()->GetEntry(
++          gpu::ServiceTransferCache::EntryKey(decoder_id(), type, id));
++    });
++    return entry;
++  }
++
+  private:
+   std::unique_ptr<gpu::RasterInProcessContext> context_;
+   gl::DisableNullDrawGLBindings enable_pixel_output_;
+@@ -76,7 +100,6 @@ class TransferCacheTest : public testing::Test {
+ };
+ 
+ TEST_F(TransferCacheTest, Basic) {
+-  auto* service_cache = ServiceTransferCache();
+   auto* context_support = ContextSupport();
+ 
+   // Create an entry.
+@@ -85,9 +108,7 @@ TEST_F(TransferCacheTest, Basic) {
+   ri()->Finish();
+ 
+   // Validate service-side state.
+-  EXPECT_NE(nullptr,
+-            service_cache->GetEntry(gpu::ServiceTransferCache::EntryKey(
+-                decoder_id(), entry.Type(), entry.Id())));
++  EXPECT_NE(nullptr, GetEntryOnGpuThread(entry.Type(), entry.Id()));
+ 
+   // Unlock on client side and flush to service.
+   context_support->UnlockTransferCacheEntries(
+@@ -102,9 +123,7 @@ TEST_F(TransferCacheTest, Basic) {
+   // Delete on client side, flush, and validate that deletion reaches service.
+   context_support->DeleteTransferCacheEntry(entry.UnsafeType(), entry.Id());
+   ri()->Finish();
+-  EXPECT_EQ(nullptr,
+-            service_cache->GetEntry(gpu::ServiceTransferCache::EntryKey(
+-                decoder_id(), entry.Type(), entry.Id())));
++  EXPECT_EQ(nullptr, GetEntryOnGpuThread(entry.Type(), entry.Id()));
+ }
+ 
+ TEST_F(TransferCacheTest, MemoryEviction) {
+@@ -117,9 +136,7 @@ TEST_F(TransferCacheTest, MemoryEviction) {
+   ri()->Finish();
+ 
+   // Validate service-side state.
+-  EXPECT_NE(nullptr,
+-            service_cache->GetEntry(gpu::ServiceTransferCache::EntryKey(
+-                decoder_id(), entry.Type(), entry.Id())));
++  EXPECT_NE(nullptr, GetEntryOnGpuThread(entry.Type(), entry.Id()));
+ 
+   // Unlock on client side and flush to service.
+   context_support->UnlockTransferCacheEntries(
+@@ -127,10 +144,8 @@ TEST_F(TransferCacheTest, MemoryEviction) {
+   ri()->Finish();
+ 
+   // Evict on the service side.
+-  service_cache->SetCacheSizeLimitForTesting(0);
+-  EXPECT_EQ(nullptr,
+-            service_cache->GetEntry(gpu::ServiceTransferCache::EntryKey(
+-                decoder_id(), entry.Type(), entry.Id())));
++  RunOnGpuThread([&]() { service_cache->SetCacheSizeLimitForTesting(0); });
++  EXPECT_EQ(nullptr, GetEntryOnGpuThread(entry.Type(), entry.Id()));
+ 
+   // Try to re-lock on the client side. This should fail.
+   EXPECT_FALSE(context_support->ThreadsafeLockTransferCacheEntry(
+@@ -156,7 +171,7 @@ TEST_F(TransferCacheTest, CountEviction) {
+   EXPECT_EQ(service_cache->cache_size_for_testing(), 40u);
+ 
+   // Evict on the service side.
+-  service_cache->SetMaxCacheEntriesForTesting(5);
++  RunOnGpuThread([&]() { service_cache->SetMaxCacheEntriesForTesting(5); });
+ 
+   // Half the entries should be evicted.
+   EXPECT_EQ(service_cache->cache_size_for_testing(), 20u);
+@@ -165,8 +180,6 @@ TEST_F(TransferCacheTest, CountEviction) {
+ // This tests a size that is small enough that the transfer buffer is used
+ // inside of RasterImplementation::MapTransferCacheEntry.
+ TEST_F(TransferCacheTest, RawMemoryTransferSmall) {
+-  auto* service_cache = ServiceTransferCache();
+-
+   // Create an entry with some initialized data.
+   std::vector<uint8_t> data;
+   data.resize(100);
+@@ -181,8 +194,7 @@ TEST_F(TransferCacheTest, RawMemoryTransferSmall) {
+ 
+   // Validate service-side data matches.
+   ServiceTransferCacheEntry* service_entry =
+-      service_cache->GetEntry(gpu::ServiceTransferCache::EntryKey(
+-          decoder_id(), client_entry.Type(), client_entry.Id()));
++      GetEntryOnGpuThread(client_entry.Type(), client_entry.Id());
+   EXPECT_EQ(service_entry->Type(), client_entry.Type());
+   const std::vector<uint8_t> service_data =
+       static_cast<ServiceRawMemoryTransferCacheEntry*>(service_entry)->data();
+@@ -192,8 +204,6 @@ TEST_F(TransferCacheTest, RawMemoryTransferSmall) {
+ // This tests a size that is large enough that mapped memory is used inside
+ // of RasterImplementation::MapTransferCacheEntry.
+ TEST_F(TransferCacheTest, RawMemoryTransferLarge) {
+-  auto* service_cache = ServiceTransferCache();
+-
+   // Create an entry with some initialized data.
+   std::vector<uint8_t> data;
+   data.resize(1500);
+@@ -208,8 +218,7 @@ TEST_F(TransferCacheTest, RawMemoryTransferLarge) {
+ 
+   // Validate service-side data matches.
+   ServiceTransferCacheEntry* service_entry =
+-      service_cache->GetEntry(gpu::ServiceTransferCache::EntryKey(
+-          decoder_id(), client_entry.Type(), client_entry.Id()));
++      GetEntryOnGpuThread(client_entry.Type(), client_entry.Id());
+   EXPECT_EQ(service_entry->Type(), client_entry.Type());
+   const std::vector<uint8_t> service_data =
+       static_cast<ServiceRawMemoryTransferCacheEntry*>(service_entry)->data();
+diff --git a/content/test/content_test_bundle_data.filelist b/content/test/content_test_bundle_data.filelist
+index 8ba83f329327e77bffd89f59662f27d4ed0ae1c2..58924286225209a8e62b51b60e5c5d8a23b72f66 100644
+--- a/content/test/content_test_bundle_data.filelist
++++ b/content/test/content_test_bundle_data.filelist
+@@ -7823,6 +7823,7 @@ data/gpu/webgl2-copytexsubimage2d-high-power-switch-does-not-crash.html
+ data/gpu/webgl2-multisampling-high-power-switch-does-not-crash.html
+ data/gpu/webgl2-multisampling-high-power-switch-loses-context.html
+ data/gpu/webgl2-preserve-db-high-power-switch-loses-context.html
++data/gpu/webgl2-transfer-cache-prune.html
+ data/gpu/webgl2-unpack-image-height.html
+ data/gpu/webgl2_conformance_android_runtimes.json
+ data/gpu/webgl2_conformance_linux_runtimes.json
+diff --git a/content/test/data/gpu/webgl2-transfer-cache-prune.html b/content/test/data/gpu/webgl2-transfer-cache-prune.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e5575500d95ee691e0da5c4397cd97c5063f0ce8
+--- /dev/null
++++ b/content/test/data/gpu/webgl2-transfer-cache-prune.html
+@@ -0,0 +1,179 @@
++<!doctype html>
++<meta charset="utf-8">
++<title>WebGL2 ServiceTransferCache Prune Test</title>
++<body style="margin:0;background:#fff">
++<div id="b" style="position:absolute;left:0;top:calc(100vh + 4px);width:128px;height:128px;overflow:hidden;will-change:transform"></div>
++<script>
++// Regression test for ServiceTransferCache::PruneOldEntries() deleting Skia
++// GPU resources without first making SharedContextState current.
++function send(result, message) {
++  if (message) {
++    console.log(message);
++  }
++  if (window.domAutomationController) {
++    window.domAutomationController.send(result);
++  } else {
++    console.log(result);
++  }
++}
++
++(async () => {
++  const OFFSET = 0x41414140;
++  const ZEROS = 2270;
++  const PATHS = Math.ceil(4 * 2 ** 20 / (9 * ZEROS + 62)) + 4;
++  const NAMES = 640;
++  const sleep = ms => new Promise(r => setTimeout(r, ms));
++  const frame = () => new Promise(r => requestAnimationFrame(r));
++
++  // 1. Create a WebGL2 context on an unattached canvas with a pool of small
++  //    buffers. ANGLE numbers a context's buffers 1, 2, 3, ...; Skia's vertex
++  //    buffers in the GPU process's shared context also carry low IDs.
++  const canvas = document.createElement('canvas');
++  canvas.addEventListener('webglcontextlost', () => {
++    send('FAILURE', 'WebGL2 context lost');
++  });
++  const gl = canvas.getContext('webgl2', {antialias: false});
++  if (!gl) {
++    send('LOADED');
++    send('FAILURE', 'Failed to create WebGL2 context');
++    return;
++  }
++  send('LOADED');
++
++  const pool = [];
++  for (let i = 0; i < NAMES; i++) {
++    const b = gl.createBuffer();
++    gl.bindBuffer(gl.ARRAY_BUFFER, b);
++    gl.bufferData(gl.ARRAY_BUFFER, 16, gl.STATIC_DRAW);
++    pool.push(b);
++  }
++  gl.bindBuffer(gl.ARRAY_BUFFER, null);
++
++  // 2. Concave polygons of 8 x 8 px without antialiasing. Skia keeps a static
++  //    vertex buffer for each such path. 2270 zero-length lines in its path
++  //    data make each path ~20 KB in the raster client's paint cache. That
++  //    cache holds 4 MiB, and PATHS slightly exceeds that capacity. At the end
++  //    of every raster pass the client evicts some paths, the GPU process
++  //    deletes them from ServicePaintCache, and each deleted path leaves an
++  //    invalidation message in Skia's inbox to release its vertex buffer on
++  //    Skia's next resource cache maintenance. Box b is a compositor layer of
++  //    its own, 4 px below the viewport: rastered, not shown.
++  const below = document.getElementById('b');
++  const pad = 'l0 0'.repeat(ZEROS);
++  let svg = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 1600 1600" style="position:absolute;left:0;top:0">';
++  for (let j = 0; j < PATHS; j++) {
++    svg += '<path shape-rendering="crispEdges" fill="#149" d="M0 0' + pad + 'L100 0L100 100L50 ' + (1 + j * .4) + 'L0 100Z"/>';
++  }
++
++  // 3. Small images, placed into box b briefly and hidden again, become
++  //    entries in the GPU process's ServiceTransferCache. Its 30 s timer
++  //    prunes entries that have not been used for 25 s. Erasing an image entry
++  //    triggers Skia resource cache maintenance, which drains the inbox from
++  //    step 2.
++  const keep = [];
++  let images = 0;
++  async function feed() {
++    for (let n = 0; n < 2; n++) {
++      const c = new OffscreenCanvas(128, 128);
++      const x = c.getContext('2d');
++      const i = images++;
++      x.fillStyle = 'rgb(' + i * 13 % 256 + ',' + (255 - i * 7 % 256) + ',40)';
++      x.fillRect(0, 0, 128, 128);
++      x.fillStyle = '#123';
++      x.fillRect(i % 90, i * 5 % 90, 30, 20);
++      const im = new Image();
++      im.decoding = 'sync';
++      im.src = URL.createObjectURL(await c.convertToBlob({type: 'image/png'}));
++      await im.decode();
++      im.style.cssText = 'position:absolute;left:0;top:0';
++      keep.push(im);
++      below.appendChild(im);
++      await frame();
++      await frame();
++      await sleep(20);
++      im.style.visibility = 'hidden';
++    }
++  }
++  await feed();
++
++  // 4. Wait 1.5 seconds without page raster work. While the shared context is
++  //    in use, GrCacheController's 1-second delayed cleanup task drains Skia's
++  //    inbox on the shared context. Waiting >1 s allows it to go idle before
++  //    starting the SVG raster loop.
++  await sleep(1500);
++  below.insertAdjacentHTML('afterbegin', svg + '</svg>');
++  const last = below.querySelector('path:last-child');
++
++  // 5. In every animation frame the last path gets a new color, so the layer's
++  //    tile is re-rastered. look() queries the GPU process whether buffers in
++  //    the pool still exist (64 right after the frame's commit, and 16 every
++  //    4 ms), which also makes the WebGL2 context current in the GPU process.
++  let turns = 0;
++  let at = 0;
++  let done = false;
++  function look(n) {
++    for (; n-- && !done; at = (at + 1) % NAMES) {
++      if (!gl.isBuffer(pool[at])) {
++        go();
++      }
++    }
++  }
++  function turn() {
++    if (done) return;
++    last.setAttribute('fill', 'rgb(20,' + (++turns % 200) + ',91)');
++    setTimeout(look, 0, 64);
++    requestAnimationFrame(turn);
++  }
++  turn();
++  const lookInterval = setInterval(look, 4, 16);
++
++  // 6. If a buffer in the pool was deleted while this WebGL2 context was
++  //    current because ServiceTransferCache::PruneOldEntries() did not make
++  //    SharedContextState current first, ANGLE reuses the freed GL buffer ID
++  //    for the next new buffer (twin), while the command decoder still maps a
++  //    pool object to that ID. Deleting the pool therefore deletes twin in
++  //    ANGLE and unbinds it from PIXEL_PACK_BUFFER, while the decoder retains
++  //    its record of the binding.
++  function go() {
++    done = true;
++    clearInterval(lookInterval);
++    const twin = gl.createBuffer();
++    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, twin);
++    pool.forEach(b => gl.deleteBuffer(b));
++    if (gl.isBuffer(twin)) {
++      send('FAILURE', 'WebGL2 buffer was unexpectedly deleted');
++      return;
++    }
++    gl.clearColor(0x41 / 255, 0x42 / 255, 0x43 / 255, 0x44 / 255);
++    gl.clear(gl.COLOR_BUFFER_BIT);
++    // bufferData allocates nothing (ANGLE refuses the call), but raises the
++    // buffer size recorded by the command decoder against which OFFSET is
++    // validated. readPixels then passes OFFSET to ANGLE, which (having no
++    // PIXEL_PACK_BUFFER bound) treats OFFSET as a client memory pointer and
++    // crashes the GPU process.
++    gl.bufferData(gl.PIXEL_PACK_BUFFER, 0x7fe00000, gl.STATIC_DRAW);
++    gl.readPixels(0, 0, 8, 8, gl.RGBA, gl.UNSIGNED_BYTE, OFFSET);
++    gl.finish();
++    send('FAILURE', 'WebGL2 buffer was unexpectedly deleted');
++  }
++
++  // Wait past the 30-second ServiceTransferCache prune interval. If no buffers
++  // were corrupted and the GPU process did not crash, conclude with success.
++  await sleep(30000);
++  if (!done) {
++    done = true;
++    clearInterval(lookInterval);
++    for (let i = 0; i < NAMES; i++) {
++      if (!gl.isBuffer(pool[i])) {
++        send('FAILURE', 'WebGL2 buffer was unexpectedly deleted');
++        return;
++      }
++    }
++    if (gl.isContextLost()) {
++      send('FAILURE', 'WebGL2 context lost');
++      return;
++    }
++    send('SUCCESS');
++  }
++})();
++</script>
+diff --git a/content/test/gpu/gpu_tests/context_lost_integration_test.py b/content/test/gpu/gpu_tests/context_lost_integration_test.py
+index 99fae21dcf763e6917887763bbaafab2ad7b4509..21115e15b4b22d2b6babc43ef84ff213e49d8542 100644
+--- a/content/test/gpu/gpu_tests/context_lost_integration_test.py
++++ b/content/test/gpu/gpu_tests/context_lost_integration_test.py
+@@ -160,6 +160,8 @@ class ContextLostIntegrationTest(gpu_integration_test.GpuIntegrationTest):
+               'worker-webgl-raf-after-gpu-crash.html'),
+              ('ContextLost_OffscreenCanvasRecoveryAfterGPUCrash',
+               'offscreencanvas_recovery_after_gpu_crash.html'),
++             ('ContextLost_WebGL2TransferCachePrune',
++              'webgl2-transfer-cache-prune.html'),
+              ('ContextLost_WebGL2UnpackImageHeight',
+               'webgl2-unpack-image-height.html'),
+              ('ContextLost_MacWebGLMultisamplingHighPowerSwitchLosesContext',
+@@ -586,6 +588,15 @@ class ContextLostIntegrationTest(gpu_integration_test.GpuIntegrationTest):
+     self._WaitForTabAndCheckCompletion()
+     self._RestartBrowser('must restart after tests that kill the GPU process')
+ 
++  def _ContextLost_WebGL2TransferCachePrune(self, test_path: str) -> None:
++    self.RestartBrowserIfNecessaryWithArgs(
++      [cba.DISABLE_DOMAIN_BLOCKING_FOR_3D_APIS]
++    )
++    self._NavigateAndWaitForLoad(test_path)
++    # Test runs for ~32 seconds (past the 30s ServiceTransferCache prune
++    # interval); wait up to 60 seconds.
++    self._WaitForTabAndCheckCompletion(timeout=60)
++
+   def _ContextLost_WebGL2UnpackImageHeight(self, test_path: str) -> None:
+     self.RestartBrowserIfNecessaryWithArgs([
+         cba.DISABLE_DOMAIN_BLOCKING_FOR_3D_APIS,
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index d965c2df7cdec0bfabcc80ca98ef2795bff08c04..17c82204684c041ed162ae6e03a98dc331f2c3e6 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -3273,15 +3273,10 @@ void RasterDecoderImpl::DoCreateTransferCacheEntryINTERNAL(
+   ServiceDiscardableHandle handle(std::move(handle_buffer), handle_shm_offset,
+                                   handle_shm_id);
+ 
+-  // If the entry is going to use skia during deserialization, make sure we
+-  // mark the context state dirty.
+-  bool use_gpu = cc::ServiceTransferCacheEntry::UsesGpuContext(entry_type);
+   if (!transfer_cache()->CreateLockedEntry(
+           ServiceTransferCache::EntryKey(raster_decoder_id_, entry_type,
+                                          entry_id),
+-          handle, use_gpu ? gr_context() : nullptr,
+-          use_gpu ? graphite_recorder() : nullptr,
+-          UNSAFE_TODO(base::span(data_memory, data_size)))) {
++          handle, UNSAFE_TODO(base::span(data_memory, data_size)))) {
+     LOCAL_SET_GL_ERROR(GL_INVALID_VALUE, "glCreateTransferCacheEntryINTERNAL",
+                        "Failure to deserialize transfer cache entry.");
+     return;
+@@ -3290,7 +3285,7 @@ void RasterDecoderImpl::DoCreateTransferCacheEntryINTERNAL(
+   // The only entry using the GrContext are image transfer cache entries for
+   // image uploads. Since this tends to a slow operation, yield to allow the
+   // decoder to be pre-empted.
+-  if (use_gpu) {
++  if (cc::ServiceTransferCacheEntry::UsesGpuContext(entry_type)) {
+     ExitCommandProcessingEarly();
+   }
+ }
+diff --git a/gpu/command_buffer/service/service_transfer_cache.cc b/gpu/command_buffer/service/service_transfer_cache.cc
+index 35e9a79f0fdb2c9fa8c8cd84007a324f522c59ff..0d59ec6e774e1d1d1e0033b615053f65582b6bce 100644
+--- a/gpu/command_buffer/service/service_transfer_cache.cc
++++ b/gpu/command_buffer/service/service_transfer_cache.cc
+@@ -18,6 +18,7 @@
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/trace_event/memory_dump_manager.h"
+ #include "cc/paint/image_transfer_cache_entry.h"
++#include "gpu/command_buffer/service/shared_context_state.h"
+ #include "gpu/config/gpu_finch_features.h"
+ #include "third_party/skia/include/core/SkImage.h"
+ #include "third_party/skia/include/gpu/ganesh/GrBackendSurface.h"
+@@ -201,8 +202,10 @@ ServiceTransferCache::CacheEntryInternal::operator=(
+ 
+ ServiceTransferCache::ServiceTransferCache(
+     const GpuPreferences& preferences,
+-    base::RepeatingClosure flush_callback)
++    base::RepeatingClosure flush_callback,
++    SharedContextState* shared_context_state)
+     : flush_callback_(std::move(flush_callback)),
++      shared_context_state_(shared_context_state),
+       entries_(EntryCache::NO_AUTO_EVICT),
+       cache_size_limit_(preferences.force_gpu_mem_discardable_limit_bytes
+                             ? preferences.force_gpu_mem_discardable_limit_bytes
+@@ -222,12 +225,39 @@ ServiceTransferCache::~ServiceTransferCache() {
+       this);
+ }
+ 
++bool ServiceTransferCache::EnsureContextCurrent() {
++  if (!shared_context_state_) {
++    return true;
++  }
++  if (shared_context_state_->context_lost()) {
++    return false;
++  }
++  if (!shared_context_state_->IsCurrent(nullptr)) {
++    if (!shared_context_state_->MakeCurrent(nullptr)) {
++      return false;
++    }
++  }
++  shared_context_state_->set_need_context_state_reset(true);
++  return true;
++}
++
++void ServiceTransferCache::AssertContextCurrentOrLost() const {
++  if (!shared_context_state_) {
++    return;
++  }
++  DCHECK(shared_context_state_->IsCurrent(nullptr) ||
++         shared_context_state_->context_lost());
++}
++
+ bool ServiceTransferCache::CreateLockedEntry(
+     const EntryKey& key,
+     ServiceDiscardableHandle handle,
+-    GrDirectContext* context,
+-    skgpu::graphite::Recorder* graphite_recorder,
+     base::span<uint8_t> data) {
++  AssertContextCurrentOrLost();
++  if (shared_context_state_ && shared_context_state_->context_lost()) {
++    return false;
++  }
++
+   auto found = entries_.Peek(key);
+   if (found != entries_.end()) {
+     return false;
+@@ -239,6 +269,17 @@ bool ServiceTransferCache::CreateLockedEntry(
+     return false;
+   }
+ 
++  GrDirectContext* context = nullptr;
++  skgpu::graphite::Recorder* graphite_recorder = nullptr;
++  if (cc::ServiceTransferCacheEntry::UsesGpuContext(key.entry_type)) {
++    if (!shared_context_state_) {
++      return false;
++    }
++    shared_context_state_->set_need_context_state_reset(true);
++    context = shared_context_state_->gr_context();
++    graphite_recorder = shared_context_state_->gpu_main_graphite_recorder();
++  }
++
+   if (!entry->Deserialize(context, graphite_recorder, data)) {
+     return false;
+   }
+@@ -260,6 +301,8 @@ void ServiceTransferCache::CreateLocalEntry(
+   if (!entry)
+     return;
+ 
++  AssertContextCurrentOrLost();
++
+   DCHECK_EQ(entry->Type(), key.entry_type);
+   DeleteEntry(key);
+ 
+@@ -288,6 +331,7 @@ bool ServiceTransferCache::UnlockEntry(const EntryKey& key) {
+ 
+ template <typename Iterator>
+ Iterator ServiceTransferCache::ForceDeleteEntry(Iterator it) {
++  AssertContextCurrentOrLost();
+   if (it->second.handle)
+     it->second.handle->ForceDelete();
+ 
+@@ -297,6 +341,9 @@ Iterator ServiceTransferCache::ForceDeleteEntry(Iterator it) {
+     total_image_count_--;
+     total_image_size_ -= it->second.entry->CachedSize();
+   }
++  if (shared_context_state_) {
++    shared_context_state_->set_need_context_state_reset(true);
++  }
+   return entries_.Erase(it);
+ }
+ 
+@@ -311,6 +358,7 @@ bool ServiceTransferCache::DeleteEntry(const EntryKey& key) {
+ 
+ cc::ServiceTransferCacheEntry* ServiceTransferCache::GetEntry(
+     const EntryKey& key) {
++  AssertContextCurrentOrLost();
+   auto entry = entries_.Get(key);
+   bool found = entry != entries_.end();
+   UMA_HISTOGRAM_BOOLEAN("GPU.TransferCache.EntryFound", found);
+@@ -356,14 +404,16 @@ void ServiceTransferCache::MaybePostPruneOldEntries() {
+ }
+ 
+ void ServiceTransferCache::PruneOldEntries() {
+-  base::TimeTicks now = base::TimeTicks::Now();
+-
+-  int removed_count =
+-      RemoveOldEntriesUntil([&](EntryCache::reverse_iterator it) {
+-        return now - it->second.last_use < kOldEntryCutoffTimeDelta;
+-      });
+-  if (removed_count && flush_callback_) {
+-    flush_callback_.Run();
++  if (EnsureContextCurrent()) {
++    base::TimeTicks now = base::TimeTicks::Now();
++
++    int removed_count =
++        RemoveOldEntriesUntil([&](EntryCache::reverse_iterator it) {
++          return now - it->second.last_use < kOldEntryCutoffTimeDelta;
++        });
++    if (removed_count && flush_callback_) {
++      flush_callback_.Run();
++    }
+   }
+ 
+   if (request_post_prune_old_entries_while_pending_) {
+@@ -374,6 +424,7 @@ void ServiceTransferCache::PruneOldEntries() {
+ 
+ int ServiceTransferCache::RemoveOldEntriesUntil(
+     base::FunctionRef<bool(EntryCache::reverse_iterator)> should_stop) {
++  AssertContextCurrentOrLost();
+   int removed_count = 0;
+   for (auto it = entries_.rbegin(); it != entries_.rend();) {
+     if (should_stop(it)) {
+@@ -388,6 +439,9 @@ int ServiceTransferCache::RemoveOldEntriesUntil(
+       total_image_count_--;
+       total_image_size_ -= it->second.entry->CachedSize();
+     }
++    if (shared_context_state_) {
++      shared_context_state_->set_need_context_state_reset(true);
++    }
+     it = entries_.Erase(it);
+     removed_count++;
+   }
+@@ -396,6 +450,7 @@ int ServiceTransferCache::RemoveOldEntriesUntil(
+ 
+ void ServiceTransferCache::PurgeMemory(
+     base::MemoryPressureLevel memory_pressure_level) {
++  AssertContextCurrentOrLost();
+   base::AutoReset<size_t> reset_limit(
+       &cache_size_limit_, DiscardableCacheSizeLimitForPressure(
+                               cache_size_limit_, memory_pressure_level));
+@@ -403,6 +458,7 @@ void ServiceTransferCache::PurgeMemory(
+ }
+ 
+ void ServiceTransferCache::DeleteAllEntriesForDecoder(int decoder_id) {
++  AssertContextCurrentOrLost();
+   for (auto it = entries_.rbegin(); it != entries_.rend();) {
+     if (it->first.decoder_id != decoder_id) {
+       ++it;
+diff --git a/gpu/command_buffer/service/service_transfer_cache.h b/gpu/command_buffer/service/service_transfer_cache.h
+index dc7d8fd6821af820ef2c0b6fae7279b25076e635..e37d3e29233c3680be9ad175710ce5f6878dac69 100644
+--- a/gpu/command_buffer/service/service_transfer_cache.h
++++ b/gpu/command_buffer/service/service_transfer_cache.h
+@@ -17,6 +17,7 @@
+ #include "base/functional/function_ref.h"
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/memory_pressure_listener.h"
++#include "base/memory/raw_ptr.h"
+ #include "base/time/time.h"
+ #include "base/timer/timer.h"
+ #include "base/trace_event/memory_dump_provider.h"
+@@ -29,10 +30,10 @@
+ #include "third_party/skia/include/core/SkRefCnt.h"
+ #include "third_party/skia/include/core/SkYUVAInfo.h"
+ 
+-class GrDirectContext;
+-
+ namespace gpu {
+ 
++class SharedContextState;
++
+ // ServiceTransferCache is a GPU process interface for retrieving cached entries
+ // from the transfer cache. These entries are populated by client calls to the
+ // ClientTransferCache or by an image decode accelerator task in the GPU
+@@ -55,7 +56,8 @@ class GPU_GLES2_EXPORT ServiceTransferCache
+   };
+ 
+   ServiceTransferCache(const GpuPreferences& preferences,
+-                       base::RepeatingClosure flush_callback);
++                       base::RepeatingClosure flush_callback,
++                       SharedContextState* shared_context_state = nullptr);
+ 
+   ServiceTransferCache(const ServiceTransferCache&) = delete;
+   ServiceTransferCache& operator=(const ServiceTransferCache&) = delete;
+@@ -64,8 +66,6 @@ class GPU_GLES2_EXPORT ServiceTransferCache
+ 
+   bool CreateLockedEntry(const EntryKey& key,
+                          ServiceDiscardableHandle handle,
+-                         GrDirectContext* context,
+-                         skgpu::graphite::Recorder* graphite_recorder,
+                          base::span<uint8_t> data);
+   void CreateLocalEntry(const EntryKey& key,
+                         std::unique_ptr<cc::ServiceTransferCacheEntry> entry);
+@@ -82,10 +82,12 @@ class GPU_GLES2_EXPORT ServiceTransferCache
+ 
+   // Test-only functions:
+   void SetCacheSizeLimitForTesting(size_t cache_size_limit) {
++    EnsureContextCurrent();
+     cache_size_limit_ = cache_size_limit;
+     EnforceLimits();
+   }
+   void SetMaxCacheEntriesForTesting(size_t max_cache_entries) {
++    EnsureContextCurrent();
+     max_cache_entries_ = max_cache_entries;
+     EnforceLimits();
+   }
+@@ -94,6 +96,8 @@ class GPU_GLES2_EXPORT ServiceTransferCache
+ 
+  private:
+   FRIEND_TEST_ALL_PREFIXES(ServiceTransferCacheTest, PurgeEntryOnTimer);
++  FRIEND_TEST_ALL_PREFIXES(ServiceTransferCacheContextTest,
++                           PruneOldEntriesMakesContextCurrent);
+ 
+   struct CacheEntryInternal {
+     CacheEntryInternal(std::optional<ServiceDiscardableHandle> handle,
+@@ -122,6 +126,8 @@ class GPU_GLES2_EXPORT ServiceTransferCache
+ 
+   using EntryCache = base::LRUCache<EntryKey, CacheEntryInternal, EntryKeyComp>;
+ 
++  bool EnsureContextCurrent();
++  void AssertContextCurrentOrLost() const;
+   void EnforceLimits();
+   void MaybePostPruneOldEntries();
+   void PruneOldEntries();
+@@ -135,6 +141,7 @@ class GPU_GLES2_EXPORT ServiceTransferCache
+   Iterator ForceDeleteEntry(Iterator it);
+ 
+   const base::RepeatingClosure flush_callback_;
++  const raw_ptr<SharedContextState> shared_context_state_;
+ 
+   EntryCache entries_;
+ 
+diff --git a/gpu/command_buffer/service/service_transfer_cache_unittest.cc b/gpu/command_buffer/service/service_transfer_cache_unittest.cc
+index 08209097b53d3a1dc9a25ebae6155a628518b38c..ad33b6d0883d0328150e22b016d6080cbdf3205d 100644
+--- a/gpu/command_buffer/service/service_transfer_cache_unittest.cc
++++ b/gpu/command_buffer/service/service_transfer_cache_unittest.cc
+@@ -4,11 +4,30 @@
+ 
+ #include "gpu/command_buffer/service/service_transfer_cache.h"
+ 
++#include "base/functional/callback_helpers.h"
++#include "base/memory/raw_ptr.h"
++#include "base/memory_coordinator/memory_coordinator_features.h"
++#include "base/memory_coordinator/utils.h"
+ #include "base/test/bind.h"
++#include "base/test/scoped_feature_list.h"
++#include "base/test/task_environment.h"
+ #include "base/time/time_override.h"
+ #include "cc/paint/raw_memory_transfer_cache_entry.h"
++#include "gpu/command_buffer/service/feature_info.h"
++#include "gpu/command_buffer/service/shared_context_state.h"
++#include "gpu/config/gpu_driver_bug_workarounds.h"
++#include "gpu/config/gpu_feature_info.h"
++#include "gpu/config/gpu_finch_features.h"
+ #include "gpu/config/gpu_preferences.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/skia/include/core/SkBitmap.h"
++#include "third_party/skia/include/core/SkImage.h"
++#include "third_party/skia/include/gpu/ganesh/SkImageGanesh.h"
++#include "ui/gl/gl_context.h"
++#include "ui/gl/gl_share_group.h"
++#include "ui/gl/gl_surface.h"
++#include "ui/gl/init/gl_factory.h"
++#include "ui/gl/test/gl_surface_test_support.h"
+ 
+ namespace gpu {
+ 
+@@ -163,4 +182,202 @@ TEST(ServiceTransferCacheTest, PurgeEntryOnTimer) {
+   EXPECT_TRUE(flush_called);
+ }
+ 
++namespace {
++
++// A transfer cache entry that holds an unbudgeted Skia GPU texture (matching
++// ServiceImageTransferCacheEntry) and verifies in its destructor that the
++// expected SharedContextState and GLContext are current when the entry is
++// destroyed.
++class ContextCheckingTransferCacheEntry
++    : public cc::ServiceTransferCacheEntryBase<
++          cc::TransferCacheEntryType::kImage> {
++ public:
++  ContextCheckingTransferCacheEntry(SharedContextState* context_state,
++                                    gl::GLContext* expected_gl_context,
++                                    bool* destroyed_with_expected_context)
++      : context_state_(context_state),
++        expected_gl_context_(expected_gl_context),
++        destroyed_with_expected_context_(destroyed_with_expected_context) {
++    SkBitmap bm;
++    SkImageInfo info = SkImageInfo::MakeN32Premul(10, 10);
++    CHECK(bm.tryAllocPixels(info));
++    image_ = SkImages::TextureFromImage(
++        context_state_->gr_context(), SkImages::RasterFromBitmap(bm),
++        skgpu::Mipmapped::kNo, skgpu::Budgeted::kNo);
++    CHECK(image_);
++  }
++
++  ~ContextCheckingTransferCacheEntry() override {
++    EXPECT_TRUE(context_state_->IsCurrent(nullptr));
++    EXPECT_EQ(gl::GLContext::GetCurrent(), expected_gl_context_);
++    *destroyed_with_expected_context_ =
++        context_state_->IsCurrent(nullptr) &&
++        (gl::GLContext::GetCurrent() == expected_gl_context_);
++    image_.reset();
++  }
++
++  size_t CachedSize() const override { return 400u; }
++
++  bool Deserialize(GrDirectContext* context,
++                   skgpu::graphite::Recorder* graphite_recorder,
++                   base::span<const uint8_t> data) override {
++    return true;
++  }
++
++ private:
++  raw_ptr<SharedContextState> context_state_;
++  raw_ptr<gl::GLContext> expected_gl_context_;
++  raw_ptr<bool> destroyed_with_expected_context_;
++  sk_sp<SkImage> image_;
++};
++
++}  // namespace
++
++class ServiceTransferCacheContextTest : public testing::Test {
++ public:
++  void SetUp() override {
++    scoped_feature_list_.InitAndEnableFeature(
++        features::kPruneOldTransferCacheEntries);
++    display_ = gl::GLSurfaceTestSupport::InitializeOneOffWithStubBindings();
++    ASSERT_TRUE(display_);
++
++    scoped_refptr<gl::GLShareGroup> share_group_a = new gl::GLShareGroup();
++    surface_a_ = gl::init::CreateOffscreenGLSurface(display_, gfx::Size());
++    context_a_ = gl::init::CreateGLContext(
++        share_group_a.get(), surface_a_.get(), gl::GLContextAttribs());
++    ASSERT_TRUE(context_a_->MakeCurrent(surface_a_.get()));
++
++    GpuDriverBugWorkarounds workarounds;
++    context_state_ = base::MakeRefCounted<SharedContextState>(
++        std::move(share_group_a), surface_a_, context_a_,
++        /*use_virtualized_gl_contexts=*/false, base::DoNothing(),
++        GrContextType::kGL);
++    ASSERT_TRUE(context_state_->InitializeSkia(GpuPreferences(), workarounds));
++    ASSERT_TRUE(context_state_->InitializeGL(GpuPreferences(), workarounds,
++                                             GpuFeatureInfo()));
++
++    // Create a second independent GL context (simulating e.g. a WebGL context
++    // on the same thread).
++    scoped_refptr<gl::GLShareGroup> share_group_b = new gl::GLShareGroup();
++    surface_b_ = gl::init::CreateOffscreenGLSurface(display_, gfx::Size());
++    context_b_ = gl::init::CreateGLContext(
++        share_group_b.get(), surface_b_.get(), gl::GLContextAttribs());
++    ASSERT_TRUE(context_b_);
++  }
++
++  void TearDown() override {
++    if (context_state_) {
++      ASSERT_TRUE(context_state_->MakeCurrent(nullptr));
++      context_state_.reset();
++    }
++    context_b_.reset();
++    surface_b_.reset();
++    context_a_.reset();
++    surface_a_.reset();
++    gl::GLSurfaceTestSupport::ShutdownGL(display_);
++  }
++
++  ServiceTransferCache* transfer_cache() {
++    return context_state_->transfer_cache();
++  }
++
++ protected:
++  base::test::ScopedFeatureList scoped_feature_list_;
++  base::test::SingleThreadTaskEnvironment task_environment_{
++      base::test::TaskEnvironment::TimeSource::MOCK_TIME};
++  raw_ptr<gl::GLDisplay> display_ = nullptr;
++  scoped_refptr<gl::GLSurface> surface_a_;
++  scoped_refptr<gl::GLContext> context_a_;
++  scoped_refptr<gl::GLSurface> surface_b_;
++  scoped_refptr<gl::GLContext> context_b_;
++  scoped_refptr<SharedContextState> context_state_;
++};
++
++TEST_F(ServiceTransferCacheContextTest, PruneOldEntriesMakesContextCurrent) {
++  ASSERT_TRUE(context_state_->MakeCurrent(nullptr));
++
++  bool destroyed_with_expected_context = false;
++  transfer_cache()->CreateLocalEntry(
++      ServiceTransferCache::EntryKey(
++          kDecoderId, cc::TransferCacheEntryType::kImage, /*entry_id=*/1u),
++      std::make_unique<ContextCheckingTransferCacheEntry>(
++          context_state_.get(), context_a_.get(),
++          &destroyed_with_expected_context));
++  EXPECT_EQ(transfer_cache()->entries_count_for_testing(), 1u);
++
++  // Switch the thread's current GL context to `context_b_` before the prune
++  // timer fires.
++  ASSERT_TRUE(context_b_->MakeCurrent(surface_b_.get()));
++  context_state_->set_need_context_state_reset(false);
++  EXPECT_FALSE(context_state_->IsCurrent(nullptr));
++  EXPECT_EQ(gl::GLContext::GetCurrent(), context_b_.get());
++
++  // Advance mock time so `prune_old_entries_timer_` fires `PruneOldEntries()`.
++  task_environment_.FastForwardBy(base::Seconds(30));
++
++  EXPECT_EQ(transfer_cache()->entries_count_for_testing(), 0u);
++  EXPECT_TRUE(destroyed_with_expected_context);
++  EXPECT_TRUE(context_state_->IsCurrent(nullptr));
++  EXPECT_TRUE(context_state_->need_context_state_reset());
++}
++
++TEST_F(ServiceTransferCacheContextTest, PurgeMemoryMakesContextCurrent) {
++  ASSERT_TRUE(context_state_->MakeCurrent(nullptr));
++
++  bool destroyed_with_expected_context = false;
++  transfer_cache()->CreateLocalEntry(
++      ServiceTransferCache::EntryKey(
++          kDecoderId, cc::TransferCacheEntryType::kImage, /*entry_id=*/1u),
++      std::make_unique<ContextCheckingTransferCacheEntry>(
++          context_state_.get(), context_a_.get(),
++          &destroyed_with_expected_context));
++  EXPECT_EQ(transfer_cache()->entries_count_for_testing(), 1u);
++
++  // Switch the thread's current GL context to `context_b_` before
++  // `SharedContextState::PurgeMemory()` is invoked.
++  ASSERT_TRUE(context_b_->MakeCurrent(surface_b_.get()));
++  context_state_->set_need_context_state_reset(false);
++  EXPECT_FALSE(context_state_->IsCurrent(nullptr));
++
++  context_state_->PurgeMemory(base::kCriticalMemoryPressureThreshold);
++
++  EXPECT_EQ(transfer_cache()->entries_count_for_testing(), 0u);
++  EXPECT_TRUE(destroyed_with_expected_context);
++  EXPECT_TRUE(context_state_->IsCurrent(nullptr));
++  EXPECT_TRUE(context_state_->need_context_state_reset());
++}
++
++TEST_F(ServiceTransferCacheContextTest,
++       DeleteEntryAndDeleteAllEntriesMarkNeedContextStateReset) {
++  ASSERT_TRUE(context_state_->MakeCurrent(nullptr));
++
++  bool destroyed_1 = false;
++  bool destroyed_2 = false;
++  const ServiceTransferCache::EntryKey key_1(
++      kDecoderId, cc::TransferCacheEntryType::kImage, /*entry_id=*/1u);
++  const ServiceTransferCache::EntryKey key_2(
++      kDecoderId, cc::TransferCacheEntryType::kImage, /*entry_id=*/2u);
++
++  transfer_cache()->CreateLocalEntry(
++      key_1, std::make_unique<ContextCheckingTransferCacheEntry>(
++                 context_state_.get(), context_a_.get(), &destroyed_1));
++  transfer_cache()->CreateLocalEntry(
++      key_2, std::make_unique<ContextCheckingTransferCacheEntry>(
++                 context_state_.get(), context_a_.get(), &destroyed_2));
++  EXPECT_EQ(transfer_cache()->entries_count_for_testing(), 2u);
++
++  context_state_->set_need_context_state_reset(false);
++  EXPECT_TRUE(transfer_cache()->DeleteEntry(key_1));
++  EXPECT_TRUE(destroyed_1);
++  EXPECT_TRUE(context_state_->IsCurrent(nullptr));
++  EXPECT_TRUE(context_state_->need_context_state_reset());
++
++  context_state_->set_need_context_state_reset(false);
++  transfer_cache()->DeleteAllEntriesForDecoder(kDecoderId);
++  EXPECT_TRUE(destroyed_2);
++  EXPECT_EQ(transfer_cache()->entries_count_for_testing(), 0u);
++  EXPECT_TRUE(context_state_->IsCurrent(nullptr));
++  EXPECT_TRUE(context_state_->need_context_state_reset());
++}
++
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
+index 11edb79c32b45b216089d86bc2907dd2eb5ebc93..0547ca4ea1a9a151ea91eaef046fa22a52dece54 100644
+--- a/gpu/command_buffer/service/shared_context_state.cc
++++ b/gpu/command_buffer/service/shared_context_state.cc
+@@ -336,7 +336,7 @@ SharedContextState::~SharedContextState() {
+   // The context should be current so that texture deletes that result from
+   // destroying the cache happen in the right context (unless the context is
+   // lost in which case we don't delete the textures).
+-  DCHECK(IsCurrent(nullptr) || context_lost());
++  CHECK(IsCurrent(nullptr) || context_lost());
+   transfer_cache_.reset();
+ 
+   if (IsCurrent(nullptr, true) && feature_info_) {
+@@ -579,7 +579,8 @@ bool SharedContextState::InitializeGanesh(
+   transfer_cache_ = std::make_unique<ServiceTransferCache>(
+       gpu_preferences,
+       base::BindRepeating(&SharedContextState::ScheduleSkiaCleanup,
+-                          base::Unretained(this)));
++                          base::Unretained(this)),
++      this);
+   gr_cache_controller_ = std::make_unique<raster::GrCacheController>(this);
+   return true;
+ }
+@@ -663,7 +664,8 @@ bool SharedContextState::InitializeGraphite(
+   transfer_cache_ = std::make_unique<ServiceTransferCache>(
+       gpu_preferences,
+       base::BindRepeating(&SharedContextState::ScheduleSkiaCleanup,
+-                          base::Unretained(this)));
++                          base::Unretained(this)),
++      this);
+   return true;
+ }
+ 

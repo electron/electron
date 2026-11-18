@@ -1,0 +1,407 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mjackson <mjackson@microsoft.com>
+Date: Thu, 22 Oct 2026 16:11:34 -0700
+Subject: Prevent tainted canvas image exports through the clipboard
+
+Require an origin-clean canvas before exporting a clipboard snapshot or
+image data URL. ImageFromNode() returns null for a non-OriginClean()
+canvas (no bitmap snapshot) and HTMLCanvasElement::ImageSourceURL()
+returns empty for a tainted canvas (blocks the data-URL markup and
+Save-image). ContextMenuController sets has_image_contents from
+OriginClean() so "Copy image / Save image to" are greyed out.
+
+Adds tests to assert a cross-origin-tainted canvas writes nothing, and
+preserves existing clipboard contents while a clean canvas still writes
+its full snapshot.
+
+Also completed manual testing of changes.
+
+Bug: 574640036
+Change-Id: I56e33048f20ec5d4d2fe2fb302f1d7b6d6e365e7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8614470
+Commit-Queue: Mike Jackson <mjackson@microsoft.com>
+Reviewed-by: Dan Clark <daniec@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1725289}
+
+diff --git a/third_party/blink/renderer/core/editing/editing_utilities.cc b/third_party/blink/renderer/core/editing/editing_utilities.cc
+index ad53d77c69d5d742f838c4756bd1eab6bc5482d3..936743da44162c8be95bb537c74336e87f5cc4c5 100644
+--- a/third_party/blink/renderer/core/editing/editing_utilities.cc
++++ b/third_party/blink/renderer/core/editing/editing_utilities.cc
+@@ -1910,8 +1910,11 @@ static scoped_refptr<Image> ImageFromNode(const Node& node) {
+     return nullptr;
+ 
+   if (layout_object->IsCanvas()) {
+-    return To<HTMLCanvasElement>(const_cast<Node&>(node))
+-        .Snapshot(kFrontBuffer);
++    const auto& canvas = To<HTMLCanvasElement>(node);
++    if (!canvas.OriginClean()) {
++      return nullptr;
++    }
++    return canvas.Snapshot(kFrontBuffer);
+   }
+ 
+   if (!layout_object->IsImage())
+diff --git a/third_party/blink/renderer/core/editing/editing_utilities_test.cc b/third_party/blink/renderer/core/editing/editing_utilities_test.cc
+index 06b30b842836cd709a66f06ba59c65b7f481b1d3..92296bedf8e5b8769509f44e1850da16539b3bf3 100644
+--- a/third_party/blink/renderer/core/editing/editing_utilities_test.cc
++++ b/third_party/blink/renderer/core/editing/editing_utilities_test.cc
+@@ -5,17 +5,33 @@
+ #include "third_party/blink/renderer/core/editing/editing_utilities.h"
+ 
+ #include "skia/ext/codec_utils.h"
++#include "third_party/blink/renderer/core/clipboard/system_clipboard.h"
+ #include "third_party/blink/renderer/core/dom/static_node_list.h"
+ #include "third_party/blink/renderer/core/dom/text.h"
++#include "third_party/blink/renderer/core/editing/editor.h"
+ #include "third_party/blink/renderer/core/editing/position_with_affinity.h"
+ #include "third_party/blink/renderer/core/editing/testing/editing_test_base.h"
+ #include "third_party/blink/renderer/core/editing/visible_position.h"
++#include "third_party/blink/renderer/core/frame/local_frame.h"
++#include "third_party/blink/renderer/core/frame/settings.h"
++#include "third_party/blink/renderer/core/html/canvas/canvas_rendering_context.h"
++#include "third_party/blink/renderer/core/html/canvas/html_canvas_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_input_element.h"
++#include "third_party/blink/renderer/core/html/html_image_element.h"
++#include "third_party/blink/renderer/core/html_names.h"
+ #include "third_party/blink/renderer/core/layout/hit_test_location.h"
+ #include "third_party/blink/renderer/core/layout/hit_test_result.h"
+ #include "third_party/blink/renderer/core/layout/layout_view.h"
++#include "third_party/blink/renderer/core/loader/resource/image_resource_content.h"
++#include "third_party/blink/renderer/core/script/classic_script.h"
+ #include "third_party/blink/renderer/core/testing/core_unit_test_helper.h"
++#include "third_party/blink/renderer/core/testing/page_test_base.h"
++#include "third_party/blink/renderer/core/testing/sim/sim_request.h"
++#include "third_party/blink/renderer/core/testing/sim/sim_test.h"
+ #include "third_party/blink/renderer/platform/geometry/physical_offset.h"
++#include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
++#include "third_party/blink/renderer/platform/testing/url_test_helpers.h"
++#include "ui/gfx/codec/png_codec.h"
+ 
+ namespace blink {
+ 
+@@ -27,6 +43,141 @@ class EditingUtilitiesTest : public EditingTestBase {
+   }
+ };
+ 
++class CanvasClipboardTest : public SimTest {
++ protected:
++  void TearDown() override {
++    CanvasRenderingContext::GetCanvasPerformanceMonitor().ResetForTesting();
++    SimTest::TearDown();
++  }
++
++  void LoadCanvas(bool cors_enabled) {
++    SimRequest page("https://example.com/", "text/html");
++    SimSubresourceRequest image("https://other.test/image.png", "image/png");
++    // SimNetwork does not apply the network service's CORS response filtering.
++    WebURLResponse response(image.GetURL());
++    response.SetMimeType("image/png");
++    response.SetHttpStatusCode(200);
++    response.SetType(cors_enabled ? network::mojom::FetchResponseType::kCors
++                                  : network::mojom::FetchResponseType::kOpaque);
++    if (cors_enabled) {
++      response.AddHttpHeaderField("Access-Control-Allow-Origin", "*");
++    }
++    url_test_helpers::RegisterMockedURLUnregister(image.GetURL());
++    url_test_helpers::RegisterMockedURLLoadWithCustomResponse(image.GetURL(),
++                                                              "", response);
++
++    LoadURL("https://example.com/");
++    page.Complete(
++        "<body style='margin:0'><div style='width:300px;height:300px;"
++        "overflow:hidden'><canvas id=canvas width=600 "
++        "height=600></canvas></div>"
++        "<img id=source>");
++    auto* source = To<HTMLImageElement>(GetElementById("source"));
++    if (cors_enabled) {
++      source->setAttribute(html_names::kCrossoriginAttr,
++                           AtomicString("anonymous"));
++    }
++    source->setAttribute(html_names::kSrcAttr, image.GetURL().GetString());
++    test::RunPendingTasks();
++    const auto image_data =
++        test::ReadFromFile(test::CoreTestDataPath("white-1x1.png"));
++    ASSERT_TRUE(image_data);
++    image.Complete(*image_data);
++    test::RunPendingTasks();
++    ASSERT_TRUE(source->CachedImage());
++    ASSERT_TRUE(source->CachedImage()->HasImage());
++    ASSERT_EQ(cors_enabled, source->CachedImage()->IsCorsSameOrigin());
++    ClassicScript::CreateUnspecifiedScript(R"JS(
++      const canvas = document.getElementById('canvas');
++      const context = canvas.getContext('2d');
++      context.fillStyle = 'red';
++      context.fillRect(0, 0, 300, 300);
++      context.drawImage(document.getElementById('source'), 300, 300, 20, 20);
++    )JS")
++        ->RunScript(&Window());
++    CanvasRenderingContext::GetCanvasPerformanceMonitor().ResetForTesting();
++    GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kTest);
++    ASSERT_EQ(cors_enabled, Canvas().OriginClean());
++  }
++
++  HTMLCanvasElement& Canvas() {
++    return *To<HTMLCanvasElement>(GetElementById("canvas"));
++  }
++
++  void ExpectCopy(bool should_copy, const HitTestResult* hit_result = nullptr) {
++    LocalFrame& frame = *GetDocument().GetFrame();
++    PageTestBase::MockClipboardHostProvider clipboard_provider(
++        frame.GetBrowserInterfaceBroker());
++    SystemClipboard& clipboard = *frame.GetSystemClipboard();
++    clipboard.WritePlainText("original");
++    clipboard.WriteHTML("original markup", NullUrl());
++    clipboard.CommitWrite();
++    test::RunPendingTasks();
++    const auto sequence_number = clipboard.SequenceNumber();
++
++    if (hit_result) {
++      frame.GetEditor().CopyImage(*hit_result);
++    } else {
++      frame.CopyImageAtViewportPoint(gfx::Point(10, 10));
++    }
++    test::RunPendingTasks();
++
++    const auto png =
++        clipboard.ReadPng(mojom::blink::ClipboardBuffer::kStandard);
++    KURL url;
++    unsigned fragment_start = 0;
++    unsigned fragment_end = 0;
++    const String html = clipboard.ReadHTML(url, fragment_start, fragment_end);
++    if (should_copy) {
++      SkBitmap bitmap = gfx::PNGCodec::Decode(png);
++      ASSERT_FALSE(bitmap.isNull());
++      EXPECT_EQ(600, bitmap.width());
++      EXPECT_EQ(600, bitmap.height());
++      EXPECT_EQ(SK_ColorWHITE, bitmap.getColor(300, 300));
++      EXPECT_TRUE(html.contains("data:image/png;base64,"));
++      EXPECT_NE(sequence_number, clipboard.SequenceNumber());
++    } else {
++      EXPECT_EQ(0u, png.size());
++      EXPECT_EQ("original", clipboard.ReadPlainText());
++      EXPECT_EQ("original markup", html);
++      EXPECT_EQ(sequence_number, clipboard.SequenceNumber());
++    }
++  }
++};
++
++TEST_F(CanvasClipboardTest, TaintedCanvasDoesNotCopyPixelsOrMarkup) {
++  LoadCanvas(false);
++  ExpectCopy(false);
++}
++
++TEST_F(CanvasClipboardTest, CorsApprovedCanvasCopiesPixelsAndMarkup) {
++  LoadCanvas(true);
++  ExpectCopy(true);
++}
++
++TEST_F(CanvasClipboardTest, TaintedCanvasHasNoImageUrl) {
++  LoadCanvas(false);
++  EXPECT_TRUE(Canvas().ImageSourceURL().empty());
++}
++
++TEST_F(CanvasClipboardTest, DisabledCanvasReadingDoesNotExportPixelsOrMarkup) {
++  LoadCanvas(true);
++  GetDocument().GetSettings()->SetDisableReadingFromCanvas(true);
++  ASSERT_FALSE(Canvas().OriginClean());
++  EXPECT_TRUE(Canvas().ImageSourceURL().empty());
++  ExpectCopy(false);
++}
++
++TEST_F(CanvasClipboardTest, CanvasTaintedAfterHitTestDoesNotCopy) {
++  LoadCanvas(true);
++  const HitTestLocation location(PhysicalOffset(10, 10));
++  HitTestResult result(HitTestRequest(HitTestRequest::kReadOnly), location);
++  ASSERT_TRUE(GetDocument().GetLayoutView()->HitTest(location, result));
++  ASSERT_EQ(&Canvas(), result.InnerNodeOrImageMapImage());
++  Canvas().SetOriginTainted();
++  ExpectCopy(false, &result);
++}
++
+ TEST_F(EditingUtilitiesTest, ComputePositionForNodeRemovalAfterChildren) {
+   SetBodyContent("<div id=a><p id=b><img id=c></p></div>");
+   const Position position = Position::LastPositionInNode(*GetElementById("c"));
+diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
+index 37f82bf9fd509dec922ec3b28a301d58e6ea55c2..e4ea8417e0620dbd731c72078c5acffa290e979d 100644
+--- a/third_party/blink/renderer/core/frame/web_frame_test.cc
++++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
+@@ -168,6 +168,7 @@
+ #include "third_party/blink/renderer/core/frame/web_remote_frame_impl.h"
+ #include "third_party/blink/renderer/core/fullscreen/fullscreen.h"
+ #include "third_party/blink/renderer/core/geometry/dom_rect.h"
++#include "third_party/blink/renderer/core/html/canvas/html_canvas_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_form_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_input_element.h"
+ #include "third_party/blink/renderer/core/html/html_body_element.h"
+@@ -11915,6 +11916,79 @@ TEST_F(WebFrameTest, CopyImageWithImageMap) {
+   helper.Reset();
+ }
+ 
++TEST_F(WebFrameTest, CopyAndSaveImageCanvas) {
++  TestLocalFrameHostForSaveImageFromDataURL frame_host;
++  frame_test_helpers::WebViewHelper helper;
++  frame_test_helpers::TestWebFrameClient client;
++  frame_host.Init(client.GetRemoteNavigationAssociatedInterfaces());
++  WebViewImpl* web_view = helper.Initialize(&client);
++  web_view->MainFrameViewWidget()->Resize(gfx::Size(400, 400));
++
++  WebLocalFrameImpl* web_frame = web_view->MainFrameImpl();
++  LocalFrame* local_frame = web_frame->GetFrame();
++  Document* document = local_frame->GetDocument();
++  ASSERT_TRUE(document);
++
++  document->body()->SetInnerHTMLWithoutTrustedTypes(
++      "<canvas id='canvas' width='50' height='50' "
++      "style='position:absolute; left:0; top:0; width:50px; height:50px'>"
++      "</canvas>");
++  UpdateAllLifecyclePhases(web_view);
++
++  auto* canvas =
++      To<HTMLCanvasElement>(document->getElementById(AtomicString("canvas")));
++  ASSERT_TRUE(canvas);
++  EXPECT_TRUE(canvas->OriginClean());
++
++  PageTestBase::MockClipboardHostProvider mock_clipboard_host_provider(
++      local_frame->GetBrowserInterfaceBroker());
++  SystemClipboard* system_clipboard = local_frame->GetSystemClipboard();
++  ASSERT_TRUE(system_clipboard);
++  EXPECT_TRUE(system_clipboard->ReadAvailableTypes().empty());
++
++  // Origin-clean canvas can be copied and saved.
++  web_frame->CopyImageAtForTesting(gfx::Point(25, 25));
++  RunPendingTasks();
++
++  Vector<String> types = system_clipboard->ReadAvailableTypes();
++  EXPECT_EQ(2u, types.size());
++  EXPECT_EQ("text/html", types[0]);
++  EXPECT_EQ("image/png", types[1]);
++  EXPECT_GT(system_clipboard->ReadPng(mojom::blink::ClipboardBuffer::kStandard)
++                .size(),
++            0u);
++
++  frame_host.Reset();
++  local_frame->SaveImageAt(gfx::Point(25, 25));
++  frame_host.FlushForTesting();
++  EXPECT_TRUE(frame_host.Result().starts_with("data:image/png;base64,"));
++
++  // Clear the clipboard and mark the canvas as not origin-clean.
++  system_clipboard->WritePlainText("");
++  system_clipboard->CommitWrite();
++  RunPendingTasks();
++  EXPECT_TRUE(system_clipboard->ReadAvailableTypes().empty());
++
++  canvas->SetOriginTainted();
++  ASSERT_FALSE(canvas->OriginClean());
++  EXPECT_TRUE(canvas->ImageSourceURL().IsNull());
++
++  // Non-origin-clean canvas must not be copied to the clipboard or saved.
++  web_frame->CopyImageAtForTesting(gfx::Point(25, 25));
++  RunPendingTasks();
++  EXPECT_TRUE(system_clipboard->ReadAvailableTypes().empty());
++  EXPECT_EQ(0u,
++            system_clipboard->ReadPng(mojom::blink::ClipboardBuffer::kStandard)
++                .size());
++
++  frame_host.Reset();
++  local_frame->SaveImageAt(gfx::Point(25, 25));
++  frame_host.FlushForTesting();
++  EXPECT_EQ(String(), frame_host.Result());
++
++  helper.Reset();
++}
++
+ TEST_F(WebFrameTest, LoadJavascriptURLInNewFrame) {
+   frame_test_helpers::WebViewHelper helper;
+   helper.Initialize();
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc b/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
+index 67be346c7bb7ffd5d8eed133933fa53d9421e3c5..c3c8c67315841a94166dd38fce0f61f54e4600d7 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
+@@ -1249,6 +1249,9 @@ UkmParameters HTMLCanvasElement::GetUkmParameters() {
+ }
+ 
+ const AtomicString HTMLCanvasElement::ImageSourceURL() const {
++  if (!OriginClean()) {
++    return AtomicString();
++  }
+   return AtomicString(ToDataURLInternal(
+       ImageEncoderUtils::kDefaultRequestedMimeType, 0, kFrontBuffer));
+ }
+diff --git a/third_party/blink/renderer/core/page/context_menu_controller.cc b/third_party/blink/renderer/core/page/context_menu_controller.cc
+index 9fe27d9e1aca07160b73d26795afef7588a64731..e3ec0e71cf11416ef75e3b9d21a1beaa4d66cc04 100644
+--- a/third_party/blink/renderer/core/page/context_menu_controller.cc
++++ b/third_party/blink/renderer/core/page/context_menu_controller.cc
+@@ -680,14 +680,13 @@ bool ContextMenuController::ShowContextMenu(
+     if (potential_image_node != nullptr &&
+         IsA<HTMLCanvasElement>(potential_image_node)) {
+       data.media_type = mojom::blink::ContextMenuDataMediaType::kCanvas;
++      const auto* canvas = To<HTMLCanvasElement>(potential_image_node);
++      data.has_image_contents = canvas->OriginClean();
+ #if BUILDFLAG(IS_LINUX)
+       // TODO(crbug.com/40902474): Support reading from the WebGPU front buffer
+       // on Linux and remove the below code, which results in "Copy Image" and
+       // "Save Image To" being grayed out in the context menu.
+-      data.has_image_contents =
+-          !To<HTMLCanvasElement>(potential_image_node)->IsWebGPU();
+-#else
+-      data.has_image_contents = true;
++      data.has_image_contents &= !canvas->IsWebGPU();
+ #endif
+     } else if (potential_image_node != nullptr &&
+                !HitTestResult::AbsoluteImageURL(potential_image_node)
+diff --git a/third_party/blink/renderer/core/page/context_menu_controller_test.cc b/third_party/blink/renderer/core/page/context_menu_controller_test.cc
+index 62d890f5c876dc4b10d77e90b6f58895d1e93037..5cbfadec73678fc16af5306fe026630bb763d85f 100644
+--- a/third_party/blink/renderer/core/page/context_menu_controller_test.cc
++++ b/third_party/blink/renderer/core/page/context_menu_controller_test.cc
+@@ -39,6 +39,7 @@
+ #include "third_party/blink/renderer/core/frame/web_frame_widget_impl.h"
+ #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"
+ #include "third_party/blink/renderer/core/geometry/dom_rect.h"
++#include "third_party/blink/renderer/core/html/canvas/html_canvas_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_input_element.h"
+ #include "third_party/blink/renderer/core/html/html_anchor_element.h"
+ #include "third_party/blink/renderer/core/html/html_area_element.h"
+@@ -1169,6 +1170,7 @@ TEST_F(ContextMenuControllerTest, ContextMenuImageHitTestStandardCanvas) {
+   ContextMenuData context_menu_data = GetWebFrameClient().GetContextMenuData();
+   EXPECT_EQ(mojom::blink::ContextMenuDataMediaType::kCanvas,
+             context_menu_data.media_type);
++  EXPECT_TRUE(context_menu_data.has_image_contents);
+ 
+   histograms.ExpectBucketCount(
+       "Blink.ContextMenu.ImageSelection.Outcome",
+@@ -1189,6 +1191,23 @@ TEST_F(ContextMenuControllerTest, ContextMenuImageHitTestStandardCanvas) {
+       0);
+ }
+ 
++TEST_F(ContextMenuControllerTest, TaintedCanvasHasNoCopyableImageContents) {
++  GetDocument()->documentElement()->SetInnerHTMLWithoutTrustedTypes(R"HTML(
++    <body style="margin:0">
++      <canvas id="target" width="100" height="100"></canvas>
++    </body>
++  )HTML");
++  auto* canvas = To<HTMLCanvasElement>(
++      GetDocument()->getElementById(AtomicString("target")));
++  canvas->SetOriginTainted();
++
++  ASSERT_TRUE(ShowContextMenuForElement(
++      canvas, ui::mojom::blink::MenuSourceType::kMouse));
++  const ContextMenuData& data = GetWebFrameClient().GetContextMenuData();
++  EXPECT_EQ(mojom::blink::ContextMenuDataMediaType::kCanvas, data.media_type);
++  EXPECT_FALSE(data.has_image_contents);
++}
++
+ // Test that  an image node will not be selected through an opaque div
+ // above the target image.
+ TEST_F(ContextMenuControllerTest, ContextMenuImageHitTestOpaqueNodeBlocking) {
+diff --git a/third_party/blink/renderer/core/testing/fake_local_frame_host.h b/third_party/blink/renderer/core/testing/fake_local_frame_host.h
+index 2e1d8d0895865c0a79ae75b43e31b0849eb0279a..5001dc1fe0d25e442f61683e75606e1ba30d280b 100644
+--- a/third_party/blink/renderer/core/testing/fake_local_frame_host.h
++++ b/third_party/blink/renderer/core/testing/fake_local_frame_host.h
+@@ -31,6 +31,7 @@ class FakeLocalFrameHost : public mojom::blink::LocalFrameHost {
+   FakeLocalFrameHost() = default;
+ 
+   void Init(blink::AssociatedInterfaceProvider* provider);
++  void FlushForTesting() { receiver_.FlushForTesting(); }
+   void EnterFullscreen(mojom::blink::FullscreenOptionsPtr options,
+                        EnterFullscreenCallback callback) override;
+   void ExitFullscreen() override;

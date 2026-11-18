@@ -1,0 +1,580 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Tue, 13 Oct 2026 14:28:38 -0700
+Subject: VT: Don't paint view transition content under SVG reference filters
+
+VTs can have pixels of cross-origin frames, file:// frames and plugins.
+SVG reference filters must not be applied to such content (see the
+PreventSvgFilterPaint deprecation and crbug.com/476646486), but that
+mitigation only covers the remote frame and plugin foreign layers, and
+in-process cross-origin frames. A reference filter on the view
+transition pseudo-elements, or on an ancestor of a subframe or scope
+with a view transition, was therefore still applied to
+DisplayItem::kForeignLayerViewTransitionContent.
+
+This patch records all three kForeignLayerViewTransitionContent foreign
+layers under the parent of the highest effect with a reference filter,
+
+Note that whether the content actually contains such pixels isn't
+tracked (e.g. the old snapshot of a cross-document transition is
+captured by the previous document). There's a TODO for that.
+
+A new ViewTransitionPreventSvgFilterPaint deprecation (and use counter)
+is reported when a filter is removed
+
+Bug: 568974861
+Change-Id: Ic188e4e24f5743d5183fb2dfcebc14e284b7a929
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8521561
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Reviewed-by: Ari Chivukula <arichiv@chromium.org>
+Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717831}
+
+Electron adaptation notes (44-x-y): the WebFeature use counter kViewTransitionPreventSvgFilterPaint keeps its upstream value (6043) and is appended after this branch's last entry (5980) in web_feature.mojom and tools/metrics/histograms/metadata/blink/enums.xml; the ViewTransitionPreventSvgFilterPaint runtime feature is inserted at its alphabetical position in runtime_enabled_features.json5 (the neighbouring upstream entries are not on this branch); embedded_content_painter.cc gains only the runtime_enabled_features.h include. All code hunks, the deprecation entry and the tests apply as upstream.
+
+diff --git a/third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom b/third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom
+index 3d6b4326cccafa491a4c03b0f498c15838655402..1fdac7034af55319e99831ae347a24ccbfe2d98c 100644
+--- a/third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom
++++ b/third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom
+@@ -5292,6 +5292,7 @@ enum WebFeature {
+   kV8HTMLImageElement_ReplacedByUserAgent_AttributeGetter = 5978,
+   kUAReplaceStartAddListener = 5979,
+   kUAReplaceEndAddListener = 5980,
++  kViewTransitionPreventSvgFilterPaint = 6043,
+ 
+   // Add new features immediately above this line. Don't change the existing
+   // numbers of any item, and don't reuse removed slots. Also don't add extra
+diff --git a/third_party/blink/renderer/core/frame/deprecation/deprecation.json5 b/third_party/blink/renderer/core/frame/deprecation/deprecation.json5
+index 6573a4ae03482da6c5355a0beebcddee6ceb490c..e11feece8abb02cab80d4e47c793357d85971145 100644
+--- a/third_party/blink/renderer/core/frame/deprecation/deprecation.json5
++++ b/third_party/blink/renderer/core/frame/deprecation/deprecation.json5
+@@ -667,6 +667,14 @@
+       ],
+       milestone: 96,
+     },
++    {
++      name: "ViewTransitionPreventSvgFilterPaint",
++      message: "SVG filters cannot be applied to view transition content, such as `::view-transition-old()` and `::view-transition-new()`, as it may contain cross-origin iframes or plugins.",
++      translation_note: "Warning displayed to developers when an SVG filter is applied to view transition content, which is disallowed because the content may contain cross-origin iframes or plugins. `::view-transition-old()` and `::view-transition-new()` are CSS pseudo-element names and should not be translated.",
++      web_features: [
++        "kViewTransitionPreventSvgFilterPaint",
++      ],
++    },
+     {
+       name: "WebBluetoothRemoteCharacteristicWriteValue",
+       message: "`BluetoothRemoteGATTCharacteristic.writeValue()` is deprecated. Use `writeValueWithResponse()` or `writeValueWithoutResponse()` instead.",
+diff --git a/third_party/blink/renderer/core/layout/layout_view_transition_content.cc b/third_party/blink/renderer/core/layout/layout_view_transition_content.cc
+index 0b116a8373bce1622af20fc59c9b605f57cc4513..1c8ae785c381b60fcf856038744f0b5ab31b5b0f 100644
+--- a/third_party/blink/renderer/core/layout/layout_view_transition_content.cc
++++ b/third_party/blink/renderer/core/layout/layout_view_transition_content.cc
+@@ -6,8 +6,10 @@
+ 
+ #include "third_party/blink/renderer/core/layout/geometry/physical_rect.h"
+ #include "third_party/blink/renderer/core/layout/layout_object_inlines.h"
++#include "third_party/blink/renderer/core/paint/embedded_content_painter.h"
+ #include "third_party/blink/renderer/core/paint/paint_info.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/foreign_layer_display_item.h"
++#include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
+ #include "ui/gfx/geometry/rect_conversions.h"
+ #include "ui/gfx/geometry/rect_f.h"
+ #include "ui/gfx/geometry/transform_util.h"
+@@ -86,9 +88,16 @@ void LayoutViewTransitionContent::PaintReplaced(
+         propagate_max_extent_rect_ ? captured_rect_ : gfx::RectF());
+   }
+ 
++  // The content may contain cross-origin frames or plugins, so it must not be
++  // painted under SVG reference filters, including filters applied to the view
++  // transition pseudo-elements.
++  PropertyTreeStateOrAlias properties =
++      context.GetPaintController().CurrentPaintChunkProperties();
++  properties.SetEffect(EmbeddedContentPainter::EffectForViewTransitionContent(
++      properties.Effect(), GetDocument()));
+   RecordForeignLayer(
+       context, *this, DisplayItem::kForeignLayerViewTransitionContent, layer_,
+-      gfx::Point(pixel_snapped_rect.x(), pixel_snapped_rect.y()));
++      gfx::Point(pixel_snapped_rect.x(), pixel_snapped_rect.y()), &properties);
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/paint/embedded_content_painter.cc b/third_party/blink/renderer/core/paint/embedded_content_painter.cc
+index 9b5cf12a07b47c35864be3ed8b3cbb483686890a..14cd2ddd470874ed1e4a5246ff14ee0105f25cb3 100644
+--- a/third_party/blink/renderer/core/paint/embedded_content_painter.cc
++++ b/third_party/blink/renderer/core/paint/embedded_content_painter.cc
+@@ -10,6 +10,7 @@
+ #include "base/metrics/field_trial_params.h"
+ #include "cc/layers/view_transition_content_layer.h"
+ #include "third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom-blink.h"
++#include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/frame/embedded_content_view.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/layout/layout_embedded_content.h"
+@@ -25,8 +26,11 @@
+ #include "third_party/blink/renderer/platform/geometry/physical_offset.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/display_item_cache_skipper.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/drawing_recorder.h"
++#include "third_party/blink/renderer/platform/graphics/paint/effect_paint_property_node.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/foreign_layer_display_item.h"
++#include "third_party/blink/renderer/platform/graphics/paint/paint_controller.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/scoped_paint_chunk_properties.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ 
+ namespace blink {
+ 
+@@ -97,9 +101,13 @@ void EmbeddedContentPainter::PaintReplaced(const PaintInfo& paint_info,
+     GraphicsContext& context = paint_info.context;
+     layer->SetBounds(embedded_content_view->FrameRect().size());
+     layer->SetIsDrawable(true);
++    PropertyTreeStateOrAlias properties =
++        context.GetPaintController().CurrentPaintChunkProperties();
++    properties.SetEffect(EffectForViewTransitionContent(
++        properties.Effect(), layout_embedded_content_.GetDocument()));
+     RecordForeignLayer(context, layout_embedded_content_,
+                        DisplayItem::kForeignLayerViewTransitionContent,
+-                       std::move(layer), paint_location);
++                       std::move(layer), paint_location, &properties);
+   }
+ }
+ 
+@@ -162,4 +170,23 @@ EmbeddedContentPainter::RemoveSvgFilterPaint(
+       layout_embedded_content, display_item_type};
+ }
+ 
++// static
++const EffectPaintPropertyNodeOrAlias&
++EmbeddedContentPainter::EffectForViewTransitionContent(
++    const EffectPaintPropertyNodeOrAlias& effect,
++    Document& document) {
++  if (!RuntimeEnabledFeatures::ViewTransitionPreventSvgFilterPaintEnabled()) {
++    return effect;
++  }
++  const EffectPaintPropertyNode* candidate_effect =
++      PaintPropertyTreeBuilder::GetFirstParentEffectWithoutReferenceFilter(
++          &effect);
++  if (!candidate_effect) {
++    return effect;
++  }
++  document.CountDeprecation(
++      mojom::blink::WebFeature::kViewTransitionPreventSvgFilterPaint);
++  return *candidate_effect;
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/paint/embedded_content_painter.h b/third_party/blink/renderer/core/paint/embedded_content_painter.h
+index e4063f3717bdab72904b5090c12efd43d1832fa6..4fd2f938ff6d5ac077844e83dacf9ac2b9d36fd8 100644
+--- a/third_party/blink/renderer/core/paint/embedded_content_painter.h
++++ b/third_party/blink/renderer/core/paint/embedded_content_painter.h
+@@ -10,6 +10,8 @@
+ 
+ namespace blink {
+ 
++class Document;
++class EffectPaintPropertyNodeOrAlias;
+ class LayoutEmbeddedContent;
+ class ScopedPaintChunkProperties;
+ struct PaintInfo;
+@@ -29,6 +31,27 @@ class EmbeddedContentPainter {
+   RemoveSvgFilterPaint(const LayoutEmbeddedContent& layout_embedded_content,
+                        const PaintInfo& paint_info);
+ 
++  // View transition content (`DisplayItem::kForeignLayerViewTransitionContent`
++  // snapshots and live content) is produced by the compositor and may contain
++  // the pixels of cross-origin frames and plugins, so, as with
++  // `RemoveSvgFilterPaint`, it must not be painted under an SVG reference
++  // filter. Whether the content actually contains such pixels isn't tracked
++  // (e.g. the old snapshot of a cross-document transition comes from the
++  // previous document), so this applies to all view transition content.
++  // Returns the effect to paint such content with instead of `effect`: the
++  // parent of the highest effect with a reference filter in the chain of
++  // `effect`, or `effect` itself if there is none. Reports the
++  // ViewTransitionPreventSvgFilterPaint deprecation to `document` if a filter
++  // is removed.
++  //
++  // TODO(crbug.com/568974861): Only do this for content that contains
++  // cross-origin iframes (or plugins), to reduce the compat impact. This needs
++  // to be tracked from capture time, since such frames can be removed before
++  // the content is painted.
++  [[nodiscard]] static const EffectPaintPropertyNodeOrAlias&
++  EffectForViewTransitionContent(const EffectPaintPropertyNodeOrAlias& effect,
++                                 Document& document);
++
+  private:
+   const LayoutEmbeddedContent& layout_embedded_content_;
+ };
+diff --git a/third_party/blink/renderer/core/paint/paint_layer_painter.cc b/third_party/blink/renderer/core/paint/paint_layer_painter.cc
+index 28b7948e39e8e7b9c6c3b60240a3ba06851394d8..b9b3749f86d11637d15e8b8db1064ee45c6e345e 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer_painter.cc
++++ b/third_party/blink/renderer/core/paint/paint_layer_painter.cc
+@@ -19,6 +19,7 @@
+ #include "third_party/blink/renderer/core/layout/layout_view.h"
+ #include "third_party/blink/renderer/core/paint/box_fragment_painter.h"
+ #include "third_party/blink/renderer/core/paint/clip_path_clipper.h"
++#include "third_party/blink/renderer/core/paint/embedded_content_painter.h"
+ #include "third_party/blink/renderer/core/paint/fragment_data_iterator.h"
+ #include "third_party/blink/renderer/core/paint/inline_box_fragment_painter.h"
+ #include "third_party/blink/renderer/core/paint/object_paint_properties.h"
+@@ -574,7 +575,10 @@ void PaintLayerPainter::PaintTransitionScopeSnapshotIfNeeded(
+   PropertyTreeStateOrAlias properties =
+       controller.CurrentPaintChunkProperties();
+   DCHECK(effect);
+-  properties.SetEffect(*effect);
++  // The snapshot may contain cross-origin frames or plugins, so it must not be
++  // painted under SVG reference filters on ancestors of the scope.
++  properties.SetEffect(EmbeddedContentPainter::EffectForViewTransitionContent(
++      *effect, object.GetDocument()));
+ 
+   RecordForeignLayer(context, paint_layer_,
+                      DisplayItem::kForeignLayerViewTransitionContent,
+diff --git a/third_party/blink/renderer/core/view_transition/view_transition_test.cc b/third_party/blink/renderer/core/view_transition/view_transition_test.cc
+index a310c3e502a0284909f6dd0a31207888c2489952..40b4506cc511ccd3ff7392afef778b664ac55961 100644
+--- a/third_party/blink/renderer/core/view_transition/view_transition_test.cc
++++ b/third_party/blink/renderer/core/view_transition/view_transition_test.cc
+@@ -5,6 +5,7 @@
+ #include "third_party/blink/renderer/core/view_transition/view_transition.h"
+ 
+ #include <memory>
++#include <optional>
+ 
+ #include "base/check_op.h"
+ #include "base/memory/scoped_refptr.h"
+@@ -47,8 +48,12 @@
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/bindings/script_state.h"
+ #include "third_party/blink/renderer/platform/graphics/compositing/paint_artifact_compositor.h"
++#include "third_party/blink/renderer/platform/graphics/paint/display_item.h"
++#include "third_party/blink/renderer/platform/graphics/paint/effect_paint_property_node.h"
++#include "third_party/blink/renderer/platform/graphics/paint/paint_artifact.h"
+ #include "third_party/blink/renderer/platform/testing/find_cc_layer.h"
+ #include "third_party/blink/renderer/platform/testing/paint_test_configurations.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+@@ -201,6 +206,32 @@ class ViewTransitionTest : public testing::Test,
+     }
+   }
+ 
++  // Returns whether the view transition content painted by `client` in the
++  // last paint is under an effect with an SVG reference filter, or nullopt if
++  // `client` didn't paint view transition content.
++  std::optional<bool> ViewTransitionContentHasReferenceFilter(
++      const DisplayItemClient& client) {
++    const PaintArtifact& artifact = GetLocalFrameView()->GetPaintArtifact();
++    for (const PaintChunk& chunk : artifact.GetPaintChunks()) {
++      for (const DisplayItem& item : artifact.GetDisplayItemList().ItemsInRange(
++               chunk.begin_index, chunk.end_index)) {
++        if (item.GetType() != DisplayItem::kForeignLayerViewTransitionContent ||
++            item.ClientId() != client.Id()) {
++          continue;
++        }
++        for (const EffectPaintPropertyNode* effect =
++                 &chunk.properties.Effect().Unalias();
++             effect; effect = effect->UnaliasedParent()) {
++          if (effect->HasReferenceFilter()) {
++            return true;
++          }
++        }
++        return false;
++      }
++    }
++    return std::nullopt;
++  }
++
+  protected:
+   test::TaskEnvironment task_environment;
+ 
+@@ -1814,4 +1845,102 @@ TEST_P(ViewTransitionTest, ClearPseudoElementsWithNestedStyleUpdate) {
+   EXPECT_FALSE(html->GetPseudoElement(kPseudoIdViewTransition));
+ }
+ 
++// View transition content may contain cross-origin frames, so SVG reference
++// filters must not apply to it. The ::view-transition-old/new() case is covered
++// by external/wpt/css/css-view-transitions/iframe-cross-origin-svg-filter
++// .tentative.sub.https.html. This tests the snapshot that the embedder paints
++// for a subframe with a view transition, under a filter on the <iframe>.
++TEST_P(ViewTransitionTest, SubframeSnapshotLayerWithoutSvgFilter) {
++  SetHtmlInnerHTML(R"HTML(
++    <svg width=0 height=0>
++      <filter id=blur><feGaussianBlur stdDeviation=5></feGaussianBlur></filter>
++    </svg>
++    <iframe id=frame style="filter: url(#blur)" srcdoc="<html></html>">
++    </iframe>
++  )HTML");
++  test::RunPendingTasks();
++  UpdateAllLifecyclePhasesForTest();
++
++  ScriptState* script_state = GetScriptState();
++  ScriptState::Scope scope(script_state);
++  auto& child_document =
++      *To<LocalFrame>(GetDocument().GetFrame()->Tree().FirstChild())
++           ->GetDocument();
++  ViewTransitionSupplement::startViewTransition(script_state, child_document,
++                                                ASSERT_NO_EXCEPTION);
++  auto* transition = ViewTransitionUtils::GetTransition(child_document);
++  ASSERT_TRUE(transition);
++  UpdateAllLifecyclePhasesForTest();
++  ASSERT_TRUE(transition->GetScopeSnapshotLayer());
++
++  Element* iframe = GetDocument().getElementById(AtomicString("frame"));
++  EXPECT_EQ(ViewTransitionContentHasReferenceFilter(*iframe->GetLayoutObject()),
++            false);
++}
++
++// Same as above, but for the snapshot of a scoped view transition, under a
++// filter on an ancestor of the scope. This also checks that the removal is
++// reported with its own use counter, rather than kPreventSvgFilterPaint.
++TEST_P(ViewTransitionTest, ScopeSnapshotLayerWithoutSvgFilter) {
++  SetHtmlInnerHTML(R"HTML(
++    <svg width=0 height=0>
++      <filter id=blur><feGaussianBlur stdDeviation=5></feGaussianBlur></filter>
++    </svg>
++    <div style="filter: url(#blur)">
++      <div id=scope style="width: 100px; height: 100px; contain: strict;
++                           position: relative; z-index: 0"></div>
++    </div>
++  )HTML");
++  EXPECT_FALSE(GetDocument().IsUseCounted(
++      WebFeature::kViewTransitionPreventSvgFilterPaint));
++
++  ScriptState* script_state = GetScriptState();
++  ScriptState::Scope scope(script_state);
++  Element* scope_element = GetDocument().getElementById(AtomicString("scope"));
++  ScopedViewTransition::startViewTransition(script_state, *scope_element,
++                                            ASSERT_NO_EXCEPTION);
++  auto* transition = ViewTransitionUtils::GetTransition(*scope_element);
++  ASSERT_TRUE(transition);
++  UpdateAllLifecyclePhasesForTest();
++  ASSERT_TRUE(transition->GetScopeSnapshotLayer());
++
++  EXPECT_EQ(
++      ViewTransitionContentHasReferenceFilter(
++          *To<LayoutBoxModelObject>(scope_element->GetLayoutObject())->Layer()),
++      false);
++  EXPECT_TRUE(GetDocument().IsUseCounted(
++      WebFeature::kViewTransitionPreventSvgFilterPaint));
++  EXPECT_FALSE(GetDocument().IsUseCounted(WebFeature::kPreventSvgFilterPaint));
++}
++
++TEST_P(ViewTransitionTest, ScopeSnapshotLayerWithoutSvgFilter_FeatureDisabled) {
++  ScopedViewTransitionPreventSvgFilterPaintForTest feature_disabled(false);
++  SetHtmlInnerHTML(R"HTML(
++    <svg width=0 height=0>
++      <filter id=blur><feGaussianBlur stdDeviation=5></feGaussianBlur></filter>
++    </svg>
++    <div style="filter: url(#blur)">
++      <div id=scope style="width: 100px; height: 100px; contain: strict;
++                           position: relative; z-index: 0"></div>
++    </div>
++  )HTML");
++
++  ScriptState* script_state = GetScriptState();
++  ScriptState::Scope scope(script_state);
++  Element* scope_element = GetDocument().getElementById(AtomicString("scope"));
++  ScopedViewTransition::startViewTransition(script_state, *scope_element,
++                                            ASSERT_NO_EXCEPTION);
++  auto* transition = ViewTransitionUtils::GetTransition(*scope_element);
++  ASSERT_TRUE(transition);
++  UpdateAllLifecyclePhasesForTest();
++  ASSERT_TRUE(transition->GetScopeSnapshotLayer());
++
++  EXPECT_EQ(
++      ViewTransitionContentHasReferenceFilter(
++          *To<LayoutBoxModelObject>(scope_element->GetLayoutObject())->Layer()),
++      true);
++  EXPECT_FALSE(GetDocument().IsUseCounted(
++      WebFeature::kViewTransitionPreventSvgFilterPaint));
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 3b56bc4d5dcaec5d14039a19c9a390755247e9d8..8f7a6b6ac5fe38e1c738c75e2aa286e7cbbfd282 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -6900,6 +6900,13 @@
+       name: "ViewTransitionLongCallbackTimeoutForTesting",
+       status: "test",
+     },
++    {
++      // Kill switch for https://crbug.com/568974861, which prevents painting
++      // view transition content (which may contain cross-origin frames) under
++      // SVG reference filters.
++      name: "ViewTransitionPreventSvgFilterPaint",
++      status: "stable",
++    },
+     {
+       name: "ViewTransitionUpdateLifecycleBeforeReady",
+       status: "stable",
+diff --git a/third_party/blink/web_tests/VirtualTestSuites b/third_party/blink/web_tests/VirtualTestSuites
+index 35c95642cef5760a024cd5a54569885ae80a1622..25c225dc0d8d2d4916773cd23641c7d56cceadb3 100644
+--- a/third_party/blink/web_tests/VirtualTestSuites
++++ b/third_party/blink/web_tests/VirtualTestSuites
+@@ -3498,6 +3498,7 @@
+       "fast/events/pointerevents/pinch",
+       "http/tests/devtools/isolated-code-cache",
+       "http/tests/devtools/tracing",
++      "http/tests/inspector-protocol/issues/deprecation-view-transition-prevent-svg-filter-paint.js",
+       "http/tests/inspector-protocol/paint-worklet",
+       "http/tests/worklet",
+       "inspector-protocol/css/css-get-keyframes-for-view-transitions.js",
+@@ -3535,6 +3536,7 @@
+       "external/wpt/requestidlecallback",
+       "external/wpt/scheduler/tentative/yield/yield-priority-idle-callbacks.html",
+       "http/tests/devtools/isolated-code-cache",
++      "http/tests/inspector-protocol/issues/deprecation-view-transition-prevent-svg-filter-paint.js",
+       "http/tests/inspector-protocol/paint-worklet",
+       "external/wpt/css/css-view-transitions",
+       "wpt_internal/html/script-execution",
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-view-transitions/iframe-cross-origin-svg-filter-ref.tentative.html b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/iframe-cross-origin-svg-filter-ref.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..821c6d45bde65a2096da96c88e985ef0b9b5e39a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/iframe-cross-origin-svg-filter-ref.tentative.html
+@@ -0,0 +1,16 @@
++<!DOCTYPE html>
++<title>View transitions: SVG filters on pseudo-elements are not applied to cross-origin frame content (ref)</title>
++<link rel="author" href="mailto:vmpstr@chromium.org">
++<style>
++html { background: lightblue; }
++body { margin: 0; }
++div {
++  position: absolute;
++  left: 20px;
++  top: 20px;
++  width: 20px;
++  height: 20px;
++  background: black;
++}
++</style>
++<div></div>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-view-transitions/iframe-cross-origin-svg-filter.tentative.sub.https.html b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/iframe-cross-origin-svg-filter.tentative.sub.https.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..165dbb70633843f4207d56ae6d432bef902953f2
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/iframe-cross-origin-svg-filter.tentative.sub.https.html
+@@ -0,0 +1,56 @@
++<!DOCTYPE html>
++<html class="reftest-wait">
++<title>View transitions: SVG filters on pseudo-elements are not applied to cross-origin frame content</title>
++<link rel="help" href="https://drafts.csswg.org/css-view-transitions-1/#sec">
++<link rel="author" href="mailto:vmpstr@chromium.org">
++<link rel="match" href="iframe-cross-origin-svg-filter-ref.tentative.html">
++<meta name="assert" content="SVG reference filters on ::view-transition-old() and ::view-transition-new() are not applied to the snapshot or the live content of a cross-origin frame.">
++<script src="/common/reftest-wait.js"></script>
++<script src="/common/rendering-utils.js"></script>
++<style>
++:root { view-transition-name: none; }
++body { margin: 0; }
++iframe {
++  position: absolute;
++  left: 20px;
++  top: 20px;
++  width: 100px;
++  height: 100px;
++  border: none;
++  view-transition-name: frame;
++}
++/* Keep the old snapshot and the new live content of the cross-origin frame on
++   screen, both with an SVG filter, for the duration of the test. The background
++   ensures that the screenshot is taken during the transition. */
++::view-transition { background: lightblue; }
++::view-transition-group(frame) { animation-duration: 300s; }
++::view-transition-old(frame),
++::view-transition-new(frame) {
++  animation: unset;
++  filter: url(#blur);
++}
++</style>
++<svg width="0" height="0" display="none">
++  <filter id="blur"><feGaussianBlur stdDeviation="5"/></filter>
++</svg>
++<script>
++failIfNot(document.startViewTransition, "Missing document.startViewTransition");
++
++const frameRendered = new Promise(resolve => {
++  addEventListener("message", e => {
++    if (e.data === "rendered")
++      resolve();
++  });
++});
++
++onload = async () => {
++  // Make sure that the cross-origin frame's content is in the old snapshot.
++  await frameRendered;
++  await waitForAtLeastOneFrame();
++  await document.startViewTransition().ready;
++  await waitForAtLeastOneFrame();
++  takeScreenshot();
++};
++</script>
++<iframe src="https://{{hosts[alt][]}}:{{ports[https][0]}}/css/css-view-transitions/support/iframe-cross-origin-svg-filter-child.html"></iframe>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-view-transitions/support/iframe-cross-origin-svg-filter-child.html b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/support/iframe-cross-origin-svg-filter-child.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e56c3098b592a62fbe1bcac1edb63ae3a5a07afe
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/support/iframe-cross-origin-svg-filter-child.html
+@@ -0,0 +1,18 @@
++<!DOCTYPE html>
++<script src="/common/rendering-utils.js"></script>
++<style>
++body { margin: 0; }
++div {
++  width: 20px;
++  height: 20px;
++  background: black;
++}
++</style>
++<div></div>
++<script>
++// Let the embedder know once this frame has rendered its content.
++onload = async () => {
++  await waitForAtLeastOneFrame();
++  parent.postMessage("rendered", "*");
++};
++</script>
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/issues/deprecation-view-transition-prevent-svg-filter-paint.js b/third_party/blink/web_tests/http/tests/inspector-protocol/issues/deprecation-view-transition-prevent-svg-filter-paint.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..942861aa337ca1424347aed51fb5af52fadc1ba4
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/issues/deprecation-view-transition-prevent-svg-filter-paint.js
+@@ -0,0 +1,20 @@
++(async function(/** @type {import('test_runner').TestRunner} */ testRunner) {
++  const {session, dp} = await testRunner.startHTML(
++      `
++      <style>
++        ::view-transition-group(root) { animation-duration: 300s; }
++        ::view-transition-new(root) { filter: url(#blur); }
++      </style>
++      <svg width=0 height=0>
++        <filter id=blur><feGaussianBlur stdDeviation=5></feGaussianBlur></filter>
++      </svg>`,
++      'Tests that a deprecation issue is reported when an SVG filter is applied to view transition content');
++  await dp.Audits.enable();
++  const promise = dp.Audits.onceIssueAdded(issue => issue.params.issue.code ==
++                                               'DeprecationIssue');
++  await session.evaluateAsync('document.startViewTransition().ready');
++  const result = await promise;
++  const issue = result.params.issue.details.deprecationIssueDetails;
++  testRunner.log(`Inspector issue type ${issue.type}`);
++  testRunner.completeTest();
++})
+diff --git a/third_party/blink/web_tests/virtual/threaded/http/tests/inspector-protocol/issues/deprecation-view-transition-prevent-svg-filter-paint-expected.txt b/third_party/blink/web_tests/virtual/threaded/http/tests/inspector-protocol/issues/deprecation-view-transition-prevent-svg-filter-paint-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..36919c2ed32bdf59d267b10463e1720e21ef9244
+--- /dev/null
++++ b/third_party/blink/web_tests/virtual/threaded/http/tests/inspector-protocol/issues/deprecation-view-transition-prevent-svg-filter-paint-expected.txt
+@@ -0,0 +1,3 @@
++Tests that a deprecation issue is reported when an SVG filter is applied to view transition content
++Inspector issue type ViewTransitionPreventSvgFilterPaint
++
+diff --git a/tools/metrics/histograms/metadata/blink/enums.xml b/tools/metrics/histograms/metadata/blink/enums.xml
+index 3f4c9b4a32a67271e5e371a7004b4deecaf6e1ba..5c67ad1173214d975612293ae48fdc933c2c126d 100644
+--- a/tools/metrics/histograms/metadata/blink/enums.xml
++++ b/tools/metrics/histograms/metadata/blink/enums.xml
+@@ -6729,6 +6729,7 @@ Called by update_use_counter_feature_enum.py.-->
+       label="V8HTMLImageElement_ReplacedByUserAgent_AttributeGetter"/>
+   <int value="5979" label="UAReplaceStartAddListener"/>
+   <int value="5980" label="UAReplaceEndAddListener"/>
++  <int value="6043" label="ViewTransitionPreventSvgFilterPaint"/>
+ </enum>
+ 
+ <!-- LINT.ThenChange(//third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom:WebFeature) -->

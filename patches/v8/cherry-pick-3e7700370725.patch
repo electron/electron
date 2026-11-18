@@ -1,0 +1,229 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Tue, 4 Aug 2026 13:31:24 +0200
+Subject: [regexp] Don't share named-capture groups objects via the results
+ cache
+
+SearchRegExpMultiple caches global-replace results for large
+internalized subjects. Both the copy stored into the cache and the copy
+handed back on a hit are shallow, so the per-match argument arrays - and
+the named-capture groups objects they hold - are shared by identity
+across every call that touches the entry. A replace callback receives
+that object and can retain and mutate it, and later calls then observe
+the mutation instead of the fresh object RegExpBuiltinExec is specified
+to produce.
+
+Copy the argument arrays and their groups objects on both sides of the
+cache. Copying on entry keeps the cached arrays unreachable from any
+callback, which is what lets the cache-hit path clone the groups objects
+rather than rebuild them property by property; rebuilding them measured
+~2x slower than cloning on a named-capture replace microbenchmark.
+Patterns without named captures are unaffected, and their cached entries
+hold only immutable values.
+
+Fixed: 514165662
+Change-Id: Ifa72a2b1cd64af517464566f500fc73f61820b10
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8194264
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Jakob Linke <jgruber@chromium.org>
+Auto-Submit: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109036}
+
+diff --git a/src/runtime/runtime-regexp.cc b/src/runtime/runtime-regexp.cc
+index 36382085238217f2580a3f62dfd8c2404c8260e4..0eb589bcf12e31d81f9156f1e78bc6da7e83ddd7 100644
+--- a/src/runtime/runtime-regexp.cc
++++ b/src/runtime/runtime-regexp.cc
+@@ -1267,6 +1267,49 @@ DirectHandle<JSObject> ConstructNamedCaptureGroupsObject(
+   return groups;
+ }
+ 
++// Returns a copy of {matches} that shares nothing mutable with it: the array
++// itself, and with named captures also the per-match argument arrays and the
++// groups objects they hold.
++//
++// Callers must use this on both sides of the results cache: a replace callback
++// can retain and mutate the groups object it is given, and the cache stores
++// entries by reference. Copying on entry keeps the cached arrays unreachable
++// from any callback, which is what lets the exit side be a plain clone.
++DirectHandle<FixedArray> CopyMatches(Isolate* isolate,
++                                     DirectHandle<FixedArray> matches,
++                                     bool has_named_captures,
++                                     int capture_count) {
++  DirectHandle<FixedArray> copy = isolate->factory()->CopyFixedArrayWithMap(
++      matches, isolate->factory()->fixed_array_map());
++  if (!has_named_captures) return copy;
++
++  const uint32_t length = copy->ulength().value();
++  for (uint32_t i = 0; i < length; i++) {
++    // Subject slices are encoded as smis; only matches carry captures.
++    if (!IsJSArray(copy->get(i))) continue;
++    DirectHandle<FixedArray> elements(
++        Cast<FixedArray>(Cast<JSArray>(copy->get(i))->elements()), isolate);
++    DirectHandle<FixedArray> new_elements =
++        isolate->factory()->CopyFixedArrayWithMap(
++            elements, isolate->factory()->fixed_array_map());
++    // The groups object is appended last, after match, captures, index and
++    // subject. GetArgcForReplaceCallable counts the match itself as a capture.
++    DCHECK_EQ(new_elements->ulength().value(),
++              GetArgcForReplaceCallable(capture_count + 1, true));
++    const uint32_t groups_index = new_elements->ulength().value() - 1;
++    DCHECK(IsJSObject(new_elements->get(groups_index)));
++    DirectHandle<JSObject> groups(
++        Cast<JSObject>(new_elements->get(groups_index)), isolate);
++    DirectHandle<JSObject> groups_copy =
++        isolate->factory()->CopyJSObject(groups);
++    new_elements->set(groups_index, *groups_copy);
++    DirectHandle<JSArray> new_match =
++        isolate->factory()->NewJSArrayWithElements(new_elements);
++    copy->set(i, *new_match);
++  }
++  return copy;
++}
++
+ // Only called from Runtime_RegExpExecMultiple so it doesn't need to maintain
+ // separate last match info.  See comment on that function.
+ template <bool has_capture>
+@@ -1296,6 +1339,10 @@ static Tagged<UnionOf<ExceptionHole, Null, FixedArray>> SearchRegExpMultiple(
+   int capture_count = regexp_data->capture_count();
+   int subject_length = subject->length();
+ 
++  // has_capture can only be true for IrRegExp.
++  DirectHandle<IrRegExpData> re_data;
++  if (has_capture) re_data = TrustedCast<IrRegExpData>(regexp_data);
++
+   static const int kMinLengthToCache = 0x1000;
+ 
+   if (subject_length > kMinLengthToCache) {
+@@ -1312,10 +1359,12 @@ static Tagged<UnionOf<ExceptionHole, Null, FixedArray>> SearchRegExpMultiple(
+       }
+       DirectHandle<FixedArray> cached_fixed_array(
+           Cast<FixedArray>(cached_answer), isolate);
+-      // The cache FixedArray is a COW-array and we need to return a copy.
+-      DirectHandle<FixedArray> copied_fixed_array =
+-          isolate->factory()->CopyFixedArrayWithMap(
+-              cached_fixed_array, isolate->factory()->fixed_array_map());
++      // The cache FixedArray is a COW-array and we need to return a copy. A
++      // cache hit implies an earlier run compiled the pattern, so the capture
++      // name map is populated.
++      DirectHandle<FixedArray> copied_fixed_array = CopyMatches(
++          isolate, cached_fixed_array,
++          has_capture && re_data->has_capture_name_map(), capture_count);
+       RegExp::SetLastMatchInfo(isolate, last_match_array, subject,
+                                capture_count, raw_last_match);
+       return *copied_fixed_array;
+@@ -1336,13 +1385,11 @@ static Tagged<UnionOf<ExceptionHole, Null, FixedArray>> SearchRegExpMultiple(
+   // Two smis before and after the match, for very long strings.
+   static const uint32_t kMaxBuilderEntriesPerRegExpMatch = 5;
+ 
+-  DirectHandle<IrRegExpData> re_data;
+-  bool has_named_captures = false;
+-  // has_capture can only be true for IrRegExp.
+-  if (has_capture) {
+-    re_data = TrustedCast<IrRegExpData>(regexp_data);
+-    has_named_captures = re_data->has_capture_name_map();
+-  }
++  // The capture name map is populated lazily, so this must stay below the
++  // GlobalExecRunner constructor, which is what compiles the pattern.
++  const bool has_named_captures =
++      has_capture && re_data->has_capture_name_map();
++
+   while (true) {
+     int32_t* current_match = runner.FetchNext();
+     if (current_match == nullptr) break;
+@@ -1368,11 +1415,13 @@ static Tagged<UnionOf<ExceptionHole, Null, FixedArray>> SearchRegExpMultiple(
+ 
+       if (has_capture) {
+         // Arguments array to replace function is match, captures, index and
+-        // subject, i.e., 3 + capture count in total. If the RegExp contains
+-        // named captures, they are also passed as the last argument.
+-
+-        const int argc =
+-            has_named_captures ? 4 + capture_count : 3 + capture_count;
++        // subject. If the RegExp contains named captures, they are also passed
++        // as the last argument. GetArgcForReplaceCallable counts the match
++        // itself as a capture, and cannot overflow here because kMaxCaptures
++        // is well below Code::kMaxArguments.
++        const uint32_t argc =
++            GetArgcForReplaceCallable(capture_count + 1, has_named_captures);
++        DCHECK_NE(argc, static_cast<uint32_t>(-1));
+ 
+         DirectHandle<FixedArray> elements =
+             isolate->factory()->NewFixedArray(argc);
+@@ -1436,10 +1485,11 @@ static Tagged<UnionOf<ExceptionHole, Null, FixedArray>> SearchRegExpMultiple(
+       DirectHandle<FixedArray> result_fixed_array =
+           FixedArray::RightTrimOrEmpty(isolate, builder.array(),
+                                        builder.length().value());
+-      // Cache the result and copy the FixedArray into a COW array.
+-      DirectHandle<FixedArray> copied_fixed_array =
+-          isolate->factory()->CopyFixedArrayWithMap(
+-              result_fixed_array, isolate->factory()->fixed_array_map());
++      // Cache the result and copy the FixedArray into a COW array. The copy
++      // must be deep, or the entry would share its groups objects with the
++      // array returned below.
++      DirectHandle<FixedArray> copied_fixed_array = CopyMatches(
++          isolate, result_fixed_array, has_named_captures, capture_count);
+       regexp::ResultsCache::Enter(
+           isolate, subject,
+           direct_handle(regexp->data(isolate)->wrapper(), isolate),
+diff --git a/test/mjsunit/regress/regress-crbug-514165662.js b/test/mjsunit/regress/regress-crbug-514165662.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8ac8b8473d74a1c29bd9a32aa164efe16ae65eea
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-514165662.js
+@@ -0,0 +1,56 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// The regexp results cache kicks in for internalized subjects above a length
++// threshold. Its entries must not hand the same groups object to more than one
++// replace callback.
++
++// Longer than kMinLengthToCache, and internalized: string literals are
++// internalized when their script is compiled, hence the eval.
++const kLong = eval('"' + 'xy'.repeat(0x900) + '"');
++const kShort = eval('"' + 'xy'.repeat(4) + '"');
++const kNotInternalized = ('xy'.repeat(0x900) + 'z').slice(0, -1);
++
++// Returns the last argument the first invocation of the callback received,
++// which is the groups object for patterns that have named captures.
++function firstLastArg(subject, re, mutate = false) {
++  let seen;
++  subject.replace(re, function(...args) {
++    if (seen === undefined) {
++      seen = args[args.length - 1];
++      if (mutate) {
++        seen.n = 'mutated';
++        seen.added = 'added';
++      }
++    }
++    return '';
++  });
++  return seen;
++}
++
++const kNamed = /(?<n>x)y/g;
++
++// Populates the cache, then mutates the groups object it handed out.
++const poisoned = firstLastArg(kLong, kNamed, true);
++
++const groups = firstLastArg(kLong, kNamed);
++assertNotSame(poisoned, groups);
++assertEquals('x', groups.n);
++assertFalse(Object.hasOwn(groups, 'added'));
++assertEquals(null, Object.getPrototypeOf(groups));
++
++// The copying is gated on the pattern having named captures, and only runs
++// where the cache applies at all. Each condition below skips it; the last
++// argument is then the subject string rather than a groups object.
++assertSame(kLong, firstLastArg(kLong, /xy/g));
++assertSame(kLong, firstLastArg(kLong, /(x)y/g));
++
++// Below the length threshold, and non-internalized: the cache is never
++// consulted, so each call builds its own groups object.
++for (const subject of [kShort, kNotInternalized]) {
++  const first = firstLastArg(subject, kNamed, true);
++  const second = firstLastArg(subject, kNamed);
++  assertNotSame(first, second);
++  assertEquals('x', second.n);
++}

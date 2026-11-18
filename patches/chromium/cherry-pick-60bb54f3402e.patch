@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Liberato <liberato@google.com>
+Date: Wed, 14 Oct 2026 15:12:28 -0700
+Subject: media: Add regression test for mov_read_trun buffer overflow
+
+Adds FFmpegDemuxerTest.TrunBufferOverflow_Crbug573128234 to verify that
+demuxing a fragmented MP4 whose trun sample count exceeds index entries
+does not trigger an out-of-bounds heap write in FFmpeg's mov_read_trun.
+
+Verification:
+- Repro (Before): Chrome Reprobot Linux -> heap-buffer-overflow WRITE 1188 at mov_read_trun (mov.c:6398)
+- Fix (After): out/Linux/media_unittests --gtest_filter="FFmpegDemuxerTest.TrunBufferOverflow_Crbug573128234" -> PASSED (6 ms)
+- Regression: out/Linux/media_unittests --gtest_filter="FFmpegDemuxerTest.*" -> 48 passed, 0 failures
+
+TAG=agy
+CONV=e4ca0eb6-b7b4-4564-b0dd-abba5d203042
+
+Bug: 573128234
+Change-Id: I7fc69cdd98332e380c2623be38370730754779aa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8573281
+Commit-Queue: Frank Liberato <liberato@google.com>
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Reviewed-by: Syed AbuTalib <lowkey@google.com>
+Cr-Commit-Position: refs/heads/main@{#1719058}
+
+diff --git a/media/filters/ffmpeg_demuxer_unittest.cc b/media/filters/ffmpeg_demuxer_unittest.cc
+index d92e7906a6bc1fb5fa946318d770baef38add606..fce87d02e13c85eff23191cf0e9dca4cfa2bad05 100644
+--- a/media/filters/ffmpeg_demuxer_unittest.cc
++++ b/media/filters/ffmpeg_demuxer_unittest.cc
+@@ -1280,6 +1280,15 @@ TEST_F(FFmpegDemuxerTest, MP4_ZeroStszEntry) {
+ }
+ #endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
+ 
++// Fragmented MP4 whose trun sample count exceeds index entries must not
++// overflow tts_data buffer. http://crbug.com/573128234
++TEST_F(FFmpegDemuxerTest, TrunBufferOverflow_Crbug573128234) {
++  CreateDemuxer("trun_overflow.mp4");
++  WaitableMessageLoopEvent event;
++  demuxer_->Initialize(&host_, event.GetPipelineStatusCB());
++  event.RunAndWaitForStatus(DEMUXER_ERROR_NO_SUPPORTED_STREAMS);
++}
++
+ class Mp3SeekFFmpegDemuxerTest
+     : public FFmpegDemuxerTest,
+       public testing::WithParamInterface<const char*> {};
+diff --git a/media/test/data/README.md b/media/test/data/README.md
+index 87a604e71ab4d070bc66b64c217b97157a8df249..be9d527f3b5b842e5554fa424547a748945ed6fc 100644
+--- a/media/test/data/README.md
++++ b/media/test/data/README.md
+@@ -2033,3 +2033,6 @@ Spherical video in fragmented MP4, generated with bento4 by the following comman
+ ```
+ mp4fragment spherical.mp4 spherical_frag.mp4
+ ```
++
++#### trun_overflow.mp4
++Fragmented MP4 whose trun sample count exceeds index entries, from https://crbug.com/573128234.
+diff --git a/media/test/data/trun_overflow.mp4 b/media/test/data/trun_overflow.mp4
+new file mode 100644
+index 0000000000000000000000000000000000000000..068cf18cdaedc8ecec813a8773a9922a27511dff
+GIT binary patch
+literal 2254
+zcmeHIJx{_w7`{Sva$s<1hy#OzlZgp~V@(WkaCLL3v;;zrlJ;!W$<d#{$l&PD;0O3K
+z7#$sbo@+~wld$N(z#Dqc`+4{B++8b#@CNF6I?56$L_-kew0j}wPowB+66K?y-G*I?
+zJC#Y2!-!=*3@dMe&80?12>fbUGvKytzs}sGxhS|*X)s3cUXAsdO(W5ot%zu+9kFcR
+zm;~xlhNA%3k)i#+KCYR1x8Nu`!!S;@h9OHHCzW2}T#hCK=(9{c#K3N*vWh2ma2mux
+zzs#*WYKRtn#Y)1<l*)`8)VnlKFqc`&`UW22F=8)33X{1eeEozD2y$HPkJH`4CFlAj
+zx=B44A<OoS5Y*3q;_|KJ^7Ri~whS)WCF~W4v`yY<Q;@Ub4dzzP%(JMAIqW$TH!_c&
+zKt)HT8Y@~rjXukIu;S%eUW@y9-|#+N;@lEFHPH8y6r1POQz`FagMK^*0KL$e3<E{O
+zk`~`@hR>>ZzYt?1M|Hik*w6#lE5&&?dI*I${6>It?4O<Cz?s$iS?${%cYuMO9HasI
+cI9CO-rRsi{=+5cXA4!*23(`VW^@Z#G0D?Q0YybcN
+
+literal 0
+HcmV?d00001
+
+diff --git a/media/test/media_bundle_data.filelist b/media/test/media_bundle_data.filelist
+index 45b33c8aa71a707717a2b380f70e2cdf68e77dfd..e30aba4114c4fe29d33a3c6b7871dacdba71738a 100644
+--- a/media/test/media_bundle_data.filelist
++++ b/media/test/media_bundle_data.filelist
+@@ -515,6 +515,7 @@ data/tiny-clip.mp4
+ data/tos-h264-opus.mp4
+ data/track-disabled.mp4
+ data/trailing-garbage.mp3
++data/trun_overflow.mp4
+ data/tulip2.webm
+ data/vorbis-extradata
+ data/vorbis-packet-0
+diff --git a/media/unit_tests_bundle_data.filelist b/media/unit_tests_bundle_data.filelist
+index 2566ff1826c26b0e88f71f90208d192796fd41b1..bd1a3ebe7a971898d5736bee422dbd15352020e9 100644
+--- a/media/unit_tests_bundle_data.filelist
++++ b/media/unit_tests_bundle_data.filelist
+@@ -527,6 +527,7 @@
+ //media/test/data/tos-h264-opus.mp4
+ //media/test/data/track-disabled.mp4
+ //media/test/data/trailing-garbage.mp3
++//media/test/data/trun_overflow.mp4
+ //media/test/data/tulip2.webm
+ //media/test/data/vorbis-extradata
+ //media/test/data/vorbis-packet-0

@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Saifuddin Hitawala <hitawala@chromium.org>
+Date: Fri, 30 Oct 2026 15:28:59 -0700
+Subject: [gl] Check gl reset status for 0 glGen texture ids
+
+Update glGenTextures to CHECK that the glGetGraphicsResetStatus
+does not have GL_NO_ERROR. This ensures that when glGenTextures fails
+and returns 0u, there is some error associated such as OOM, context
+lost, etc.
+
+Bug: 568891853
+Change-Id: I581a4fbace2b4d465131ca0666a9323f34334638
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8684465
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Saifuddin Hitawala <hitawala@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1731975}
+
+diff --git a/ui/gl/gl_gl_api_implementation.cc b/ui/gl/gl_gl_api_implementation.cc
+index d5eeeafba9ff5f36b6cf3e27ff7c6bf5128900fe..0a706adda32a51cdfe4aba46a7beec82391bdec5 100644
+--- a/ui/gl/gl_gl_api_implementation.cc
++++ b/ui/gl/gl_gl_api_implementation.cc
+@@ -263,8 +263,12 @@ const GLubyte* RealGLApi::glGetStringiFn(GLenum name, GLuint index) {
+ 
+ void RealGLApi::glGenTexturesFn(GLsizei n, GLuint* textures) {
+   GLApiBase::glGenTexturesFn(n, textures);
+-  if (GetGLImplementation() != kGLImplementationMockGL && n > 0) {
+-    CHECK_NE(UNSAFE_TODO(textures[0]), 0u);
++  if (GetGLImplementation() != kGLImplementationMockGL && n > 0 &&
++      UNSAFE_TODO(textures[0]) == 0u) {
++    // On texture generation failure (id = 0), check the reset status. This
++    // should not be GL_NO_ERROR.
++    CHECK(driver_->fn.glGetGraphicsResetStatusARBFn);
++    CHECK_NE(glGetGraphicsResetStatusARBFn(), /*GL_NO_ERROR*/ 0u);
+   }
+ }
+ 
