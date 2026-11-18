@@ -48,10 +48,10 @@ index a66f9c57c1dfbf2eeea90716a5a2e36acb92808f..52be68e9361181485162be8949d33d23
    if (!owner)
      return false;
 diff --git a/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc b/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
-index c45f45f78f6093f8fa5e6cbde817202dba3921e6..4e92b12c6d25763227a01c8b83be459ac0c86bf5 100644
+index 994fe7f435e3fade671dea6376fc37ecbe5135a6..058c7f993d3af5fe0deb3600ca514b5f7633f81e 100644
 --- a/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
 +++ b/third_party/blink/renderer/core/intersection_observer/intersection_observer_test.cc
-@@ -3263,6 +3263,97 @@ TEST_F(IntersectionObserverTest, DirtySlotAssignmentInThrottledFrame) {
+@@ -3191,6 +3191,97 @@ TEST_F(IntersectionObserverTest, DirtySlotAssignmentInThrottledFrame) {
    EXPECT_FALSE(observer_delegate->LastEntry()->isIntersecting());
  }
  
