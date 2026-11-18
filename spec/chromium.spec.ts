@@ -2228,6 +2228,102 @@ describe('chromium features', () => {
     });
   });
 
+  // Picks a directory for a webkitdirectory <input type=file> through the
+  // mock xdg-desktop-portal FileChooser that script/dbus_mock.py hosts on the
+  // fake session bus. A pick succeeds with the URIs queued through
+  // QueueResponse; with nothing queued the mock cancels it.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('webkitdirectory input (Linux portal)', { tags: ['serial'] }, () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+    let queueResponse: (uris: string[]) => Promise<void>;
+    let clearQueuedResponses: () => Promise<void>;
+
+    beforeAll(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+      queueResponse = promisify(mock.QueueResponse.bind(mock));
+      clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
+    });
+
+    afterAll(() => {
+      bus?.connection.end();
+    });
+
+    beforeEach(async () => {
+      await clearCalls();
+    });
+
+    afterEach(closeAllWindows);
+
+    // A call is [timestamp, methodName, [parent_window, title, options]];
+    // args and dict values are [signature, [value]] variant pairs.
+    const getLoggedOptions = (call: any) => {
+      const options: Record<string, any> = {};
+      for (const entry of call[2][2][1][0]) {
+        options[entry[0]] = entry[1][1][0];
+      }
+      return options;
+    };
+
+    it('lists the files in the picked directory', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-picker-'));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const picked = path.join(dir, 'picked-dir');
+      fs.mkdirSync(path.join(picked, 'nested'), { recursive: true });
+      fs.writeFileSync(path.join(picked, 'a.txt'), 'a');
+      fs.writeFileSync(path.join(picked, 'nested', 'b.txt'), 'b');
+      // Whatever the test leaves unanswered is dropped so it cannot answer
+      // a later pick.
+      defer(() => clearQueuedResponses());
+      await queueResponse([url.pathToFileURL(picked).href]);
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { session: session.fromPartition(`portal-picker-${Math.random()}`) }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      // Clicks a new webkitdirectory input with a user gesture and resolves
+      // with the relative path and text of each file it was given.
+      const files = await w.webContents.executeJavaScript(
+        `new Promise((resolve) => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.setAttribute('webkitdirectory', '');
+          input.onchange = async () => {
+            resolve(await Promise.all(Array.from(input.files, async (file) => ({
+              name: file.name,
+              relativePath: file.webkitRelativePath,
+              text: await file.text()
+            }))));
+          };
+          input.oncancel = () => resolve(null);
+          document.body.appendChild(input);
+          input.click();
+        })`,
+        true
+      );
+      expect(files.map((file: any) => file.relativePath).sort()).toEqual([
+        'picked-dir/a.txt',
+        'picked-dir/nested/b.txt'
+      ]);
+      expect(files.find((file: any) => file.name === 'b.txt')?.text).toBe('b');
+
+      const calls = (await getCalls()).filter((call) => call[1] === 'OpenFile');
+      expect(calls).toHaveLength(1);
+      expect(getLoggedOptions(calls[0]).directory).toBe(true);
+    });
+  });
+
   // Drives <input type=file> and the File System Access pickers against the
   // mock xdg-desktop-portal FileChooser that script/dbus_mock.py hosts on the
   // fake session bus. A pick succeeds with the URIs queued through
