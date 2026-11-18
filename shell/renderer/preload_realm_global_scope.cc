@@ -101,8 +101,11 @@ ResourceFetcher* PreloadRealmGlobalScope::Fetcher() {
   NOTREACHED();
 }
 
-void PreloadRealmGlobalScope::ExceptionThrown(ErrorEvent* error_event) {
-  initiator_execution_context_->ExceptionThrown(error_event);
+void PreloadRealmGlobalScope::ExceptionThrown(
+    ErrorEvent* error_event,
+    SanitizeScriptErrors sanitize_script_errors) {
+  initiator_execution_context_->ExceptionThrown(error_event,
+                                                sanitize_script_errors);
 }
 
 void PreloadRealmGlobalScope::AddInspectorIssue(AuditsIssue issue) {
