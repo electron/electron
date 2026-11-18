@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Sun, 18 Oct 2026 17:26:29 -0700
+Subject: [HiC] Fix IsInCanvasSubtree bookkeeping for slotted reinsertion
+
+When a slotted element is removed from the tree the IsInCanvasSubtree
+bit is cleared. If the element is then reinserted into the tree in a way
+that preserves its previous slotting, prior to this CL we would not flip
+the flag back to true.
+
+Fixed: 574640593
+Change-Id: Icfb7cc58955a392b22d1a3cac43bf6828cba4a0c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8603615
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1721557}
+
+Electron adaptation notes (45-x-y): html_canvas_element_test.cc: only the RemoveAndReinsertSlottedElementToSameHost test added by this change is carried; the 3-way merge had pulled in an unrelated upstream test as context.
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 8bc5fce4338b508d5697d4b4194902365bcd8696..c015f4aa5b0ac57047d701a2fd4c0d80b5610d34 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4260,12 +4260,17 @@ Node::InsertionNotificationRequest Element::InsertedInto(
+   RecomputeDirectionFromParent();
+ 
+   auto* parent = ParentOrShadowHostElement();
+-  if (parent && parent->IsCanvasOrInCanvasSubtree()) {
++  if (!IsPseudoElement() && IsChildOfShadowHost()) {
++    if (auto* slot = AssignedSlotWithoutRecalc();
++        slot && slot->OwnerShadowHost() == parent &&
++        slot->IsInCanvasSubtree()) {
++      SetIsInCanvasSubtree(true);
++    }
++  } else if (parent && parent->IsCanvasOrInCanvasSubtree()) {
+     const auto* slot = ToHTMLSlotElementIfSupportsAssignmentOrNull(*parent);
+     const bool is_inactive_fallback_content =
+         slot && !slot->AssignedNodesNoRecalc().empty();
+-    if (IsPseudoElement() ||
+-        (!IsChildOfShadowHost() && !is_inactive_fallback_content)) {
++    if (IsPseudoElement() || !is_inactive_fallback_content) {
+       SetIsInCanvasSubtree(true);
+     }
+   } else if (!parent && insertion_point.IsDocumentNode()) {
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+index 345f3423efc69fa15b577480c30ea306c791240a..022268eb150116881e2e290c2639514f8e4e2c17 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+@@ -1153,4 +1153,80 @@ TEST_P(HTMLCanvasElementTest, SlotAssignmentDuringSetIsInCanvasSubtree) {
+   EXPECT_FALSE(y->IsInCanvasSubtree());
+ }
+ 
++TEST_P(HTMLCanvasElementTest, RemoveAndReinsertSlottedElementToSameHost) {
++  GetDocument().body()->SetHTMLUnsafeWithoutTrustedTypes(R"HTML(
++    <div id="host1">
++      <template shadowrootmode="open">
++        <canvas content="drawable">
++          <slot></slot>
++        </canvas>
++      </template>
++      <div id="slotted1">
++        <div id="child1"></div>
++      </div>
++    </div>
++    <canvas content="drawable">
++      <div id="host2">
++        <template shadowrootmode="open">
++          <slot></slot>
++        </template>
++        <div id="slotted2">
++          <div id="child2"></div>
++        </div>
++      </div>
++    </canvas>
++  )HTML");
++  UpdateAllLifecyclePhasesForTest();
++
++  auto* host1 = GetDocument().getElementById(AtomicString("host1"));
++  auto* slotted1 = GetDocument().getElementById(AtomicString("slotted1"));
++  auto* child1 = GetDocument().getElementById(AtomicString("child1"));
++  auto* host2 = GetDocument().getElementById(AtomicString("host2"));
++  auto* slotted2 = GetDocument().getElementById(AtomicString("slotted2"));
++  auto* child2 = GetDocument().getElementById(AtomicString("child2"));
++
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++
++  // Remove and reinsert into the same shadow host without an intermediate
++  // slot assignment recalc, so both elements retain their previous slotting.
++  slotted1->remove();
++  EXPECT_FALSE(slotted1->IsInCanvasSubtree());
++  EXPECT_FALSE(child1->IsInCanvasSubtree());
++  host1->appendChild(slotted1);
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++
++  slotted2->remove();
++  EXPECT_FALSE(slotted2->IsInCanvasSubtree());
++  EXPECT_FALSE(child2->IsInCanvasSubtree());
++  host2->appendChild(slotted2);
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++
++  // Also test single-call re-insertion of an already-attached slotted child
++  // (`host->appendChild(slotted)`), which internally removes and re-inserts
++  // in the same task.
++  host1->appendChild(slotted1);
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++  host2->appendChild(slotted2);
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_TRUE(slotted1->IsInCanvasSubtree());
++  EXPECT_TRUE(child1->IsInCanvasSubtree());
++  EXPECT_TRUE(slotted2->IsInCanvasSubtree());
++  EXPECT_TRUE(child2->IsInCanvasSubtree());
++}
++
+ }  // namespace blink

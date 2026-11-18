@@ -1,0 +1,362 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tove Petersson <tovep@chromium.org>
+Date: Mon, 19 Oct 2026 05:18:05 -0700
+Subject: [mac] Reject overlapping Open() calls in NativeScreenCapturePickerMac
+
+NativeScreenCapturePickerMac is a browser-wide singleton. When Open()
+is invoked while a system picker interaction is already in progress,
+it previously overwrote the active callbacks and incremented the active
+source ID without notifying the earlier requester. If the user then
+selected a window or screen, the capture stream would be misdelivered
+to the second requester instead of the original tab.
+
+This CL ensures that Open() immediately rejects overlapping requests
+via error_callback if picker_callback_ is already active. In addition,
+closing the active picker session resets any pending callbacks so
+subsequent requests can be served.
+
+Bug: 518239793
+Change-Id: I2eca753d630d1552a9a92a9abb82a8edac445145
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8430557
+Reviewed-by: Johannes Kron <kron@chromium.org>
+Commit-Queue: Tove Petersson <tovep@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1721813}
+
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.h b/content/browser/media/capture/native_screen_capture_picker_mac.h
+index 03afc795b43807f262031fd3a2a25cba053a7919..659713ad3e13d2788f93bd35ff9f3e41063e2d1f 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac.h
++++ b/content/browser/media/capture/native_screen_capture_picker_mac.h
+@@ -88,6 +88,8 @@ class API_AVAILABLE(macos(14.0)) CONTENT_EXPORT NativeScreenCapturePickerMac
+       GetWindowOwnerPidCallback callback);
+ 
+  private:
++  friend class NativeScreenCapturePickerMacTest;
++
+   struct CaptureSession {
+     CaptureSession();
+     ~CaptureSession();
+@@ -144,9 +146,9 @@ class API_AVAILABLE(macos(14.0)) CONTENT_EXPORT NativeScreenCapturePickerMac
+ 
+   // On every new getDisplayMedia request, we increment
+   // `active_picker_source_id_` and assign `active_picker_type_` the type of the
+-  // request. Since while making a selection of the capture surface the rest of
+-  // the UI becomes non-interactive, it is ensured that the callbacks are called
+-  // for the right selection.
++  // request. Only one pending request is tracked at a time; Open() rejects new
++  // requests while a selection is in progress so the callbacks above always
++  // belong to the request that opened the system picker.
+   DesktopMediaID::Id active_picker_source_id_ = 0;
+   DesktopMediaID::Type active_picker_type_;
+ 
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac.mm b/content/browser/media/capture/native_screen_capture_picker_mac.mm
+index be2cffd63ce8e62125493b7bbb71d056e3dc57b6..dccb79683513dc5b338b1a40808dc04fdaa0746a 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac.mm
++++ b/content/browser/media/capture/native_screen_capture_picker_mac.mm
+@@ -416,6 +416,13 @@ void API_AVAILABLE(macos(14.0))
+   CHECK(type == DesktopMediaID::Type::TYPE_SCREEN ||
+         type == DesktopMediaID::Type::TYPE_WINDOW);
+   if (@available(macOS 14.0, *)) {
++    if (picker_callback_) {
++      // The system picker is already showing for another request; reject this
++      // one rather than displacing the in-flight selection.
++      std::move(error_callback).Run();
++      return;
++    }
++
+     active_picker_source_id_++;
+     active_picker_type_ = type;
+     LogSessionEvent(SCContentSharingPickerSessionEvent::kPickerOpened);
+@@ -563,6 +570,13 @@ void API_AVAILABLE(macos(14.0))
+     return;
+   }
+ 
++  if (!stream && !picker_callback_) {
++    VLOG(1) << "NSCPM::OnPickerObserverUpdated: "
++               "picker_callback_ is null for source id = "
++            << session_id;
++    return;
++  }
++
+   auto& session = GetOrCreateCaptureSession(session_id);
+   session.filter = filter;
+ 
+@@ -586,13 +600,6 @@ void API_AVAILABLE(macos(14.0))
+     return;
+   }
+ 
+-  if (!picker_callback_) {
+-    VLOG(1) << "NSCPM::OnPickerObserverUpdated: "
+-               "picker_callback_ is null for source id = "
+-            << session_id;
+-    return;
+-  }
+-
+   VLOG(1) << "NSCPM::OnPickerObserverUpdated: for source id = " << session_id;
+ 
+   if (!session.received_first_response) {
+@@ -629,6 +636,13 @@ void API_AVAILABLE(macos(14.0))
+     return;
+   }
+ 
++  if (!cancel_callback_) {
++    VLOG(1) << "NSCPM::OnPickerObserverCancelled: "
++               "cancel_callback_ is null for source id = "
++            << active_picker_source_id_;
++    return;
++  }
++
+   VLOG(1) << "NSCPM::OnPickerObserverCancelled: sourcce id = "
+           << active_picker_source_id_;
+   auto& session = GetOrCreateCaptureSession(active_picker_source_id_);
+@@ -638,9 +652,7 @@ void API_AVAILABLE(macos(14.0))
+   }
+   picker_callback_.Reset();
+   error_callback_.Reset();
+-  if (cancel_callback_) {
+-    std::move(cancel_callback_).Run();
+-  }
++  std::move(cancel_callback_).Run();
+   MaybeDeactivatePicker();
+ }
+ 
+@@ -649,6 +661,13 @@ void API_AVAILABLE(macos(14.0))
+   CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
+         base::NotFatalUntil::M160);
+ 
++  if (!error_callback_) {
++    VLOG(1) << "NSCPM::OnPickerObserverEncounteredError: "
++               "error_callback_ is null for source id = "
++            << active_picker_source_id_;
++    return;
++  }
++
+   VLOG(1) << "NSCPM::OnPickerObserverEncounteredError: source id = "
+           << active_picker_source_id_ << ", code = " << [error code]
+           << ", domain = " << [error domain]
+@@ -660,9 +679,7 @@ void API_AVAILABLE(macos(14.0))
+   }
+   picker_callback_.Reset();
+   cancel_callback_.Reset();
+-  if (error_callback_) {
+-    std::move(error_callback_).Run();
+-  }
++  std::move(error_callback_).Run();
+   MaybeDeactivatePicker();
+ }
+ 
+@@ -686,6 +703,11 @@ void API_AVAILABLE(macos(14.0))
+   CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
+         base::NotFatalUntil::M160);
+   if (@available(macOS 14.0, *)) {
++    if (device_id.id == active_picker_source_id_) {
++      picker_callback_.Reset();
++      cancel_callback_.Reset();
++      error_callback_.Reset();
++    }
+     ScheduleCleanup(device_id.id);
+     active_source_ids_.erase(device_id.id);
+     MaybeDeactivatePicker();
+diff --git a/content/browser/media/capture/native_screen_capture_picker_mac_unittest.mm b/content/browser/media/capture/native_screen_capture_picker_mac_unittest.mm
+index f074a77c28a1d14e9aa2ad75f0553b050de1695d..a39cb3cbb6e30086382203ecad4dd7e1b939598f 100644
+--- a/content/browser/media/capture/native_screen_capture_picker_mac_unittest.mm
++++ b/content/browser/media/capture/native_screen_capture_picker_mac_unittest.mm
+@@ -336,9 +336,9 @@ void TearDown() override {
+   // Triggers a picker observer update. If |window_id| is provided, the filter
+   // will include that specific window (macOS 15.2+). If |display_id| is
+   // provided, the filter will include that display (macOS 15.2+).
+-  void TriggerUpdate(
+-      std::optional<CGWindowID> window_id = std::nullopt,
+-      std::optional<CGDirectDisplayID> display_id = std::nullopt) {
++  void TriggerUpdate(std::optional<CGWindowID> window_id = std::nullopt,
++                     std::optional<CGDirectDisplayID> display_id = std::nullopt,
++                     SCStream* stream = nil) {
+     if (@available(macOS 14.0, *)) {
+       FakeSCContentFilter* filter = [[FakeSCContentFilter alloc] init];
+       if (window_id.has_value()) {
+@@ -355,7 +355,25 @@ void TriggerUpdate(
+       [g_fake_picker.observer
+           contentSharingPicker:(SCContentSharingPicker*)g_fake_picker
+            didUpdateWithFilter:(SCContentFilter*)filter
+-                     forStream:nil];
++                     forStream:stream];
++    }
++  }
++
++  SCStream* CreateAndRegisterFakeStream(DesktopMediaID::Id session_id) {
++    if (@available(macOS 14.0, *)) {
++      SCStream* fake_stream = (SCStream*)[[FakeSCStreamForPicker alloc] init];
++      NativeScreenCapturePickerMac::GetInstance()->UpdateStreamMap(session_id,
++                                                                   fake_stream);
++      return fake_stream;
++    }
++    return nil;
++  }
++
++  void TriggerCancel() {
++    if (@available(macOS 14.0, *)) {
++      [g_fake_picker.observer
++          contentSharingPicker:(SCContentSharingPicker*)g_fake_picker
++            didCancelForStream:nil];
+     }
+   }
+ 
+@@ -507,17 +525,109 @@ void VerifyApplicationAudioCaptureId(
+ 
+ TEST_F(NativeScreenCapturePickerMacTest, MultipleOpenCalls) {
+   if (@available(macOS 14.0, *)) {
++    EXPECT_EQ(OpenPickerAndSelect(DesktopMediaID::TYPE_SCREEN), 1);
++    EXPECT_EQ(OpenPickerAndSelect(DesktopMediaID::TYPE_WINDOW), 2);
++  }
++}
++
++TEST_F(NativeScreenCapturePickerMacTest,
++       SecondOpenIsRejectedWhilePickerIsShowing) {
++  if (@available(macOS 14.0, *)) {
++    std::optional<DesktopMediaID::Id> first_selected_id;
++    bool first_error_called = false;
+     picker_->Open(
+-        DesktopMediaID::TYPE_SCREEN,
++        DesktopMediaID::TYPE_WINDOW,
+         base::BindOnce([](DesktopMediaID::Id id) { EXPECT_EQ(id, 1); }),
+-        base::DoNothing(), base::DoNothing(), base::DoNothing(),
++        base::BindLambdaForTesting(
++            [&](Source source) { first_selected_id = source.id; }),
++        base::DoNothing(),
++        base::BindLambdaForTesting([&]() { first_error_called = true; }),
+         base::DoNothing());
+ 
++    // A second request arrives while the system picker is still showing for
++    // the first one.
++    bool second_created_called = false;
++    bool second_selected_called = false;
++    bool second_error_called = false;
+     picker_->Open(
+         DesktopMediaID::TYPE_WINDOW,
+-        base::BindOnce([](DesktopMediaID::Id id) { EXPECT_EQ(id, 2); }),
+-        base::DoNothing(), base::DoNothing(), base::DoNothing(),
++        base::BindLambdaForTesting(
++            [&](DesktopMediaID::Id id) { second_created_called = true; }),
++        base::BindLambdaForTesting(
++            [&](Source source) { second_selected_called = true; }),
++        base::DoNothing(),
++        base::BindLambdaForTesting([&]() { second_error_called = true; }),
++        base::DoNothing());
++    EXPECT_FALSE(second_created_called);
++    EXPECT_TRUE(second_error_called);
++
++    // The user makes a selection in the system picker. It must be delivered to
++    // the original request that opened the picker.
++    TriggerUpdate();
++    base::RunLoop fence_run_loop;
++    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE, fence_run_loop.QuitClosure());
++    fence_run_loop.Run();
++
++    ASSERT_TRUE(first_selected_id.has_value());
++    EXPECT_EQ(*first_selected_id, 1);
++    EXPECT_FALSE(first_error_called);
++    EXPECT_FALSE(second_selected_called);
++  }
++}
++
++TEST_F(NativeScreenCapturePickerMacTest, OpenAfterCancel) {
++  if (@available(macOS 14.0, *)) {
++    base::RunLoop cancel_run_loop;
++    picker_->Open(
++        DesktopMediaID::TYPE_WINDOW,
++        base::BindOnce([](DesktopMediaID::Id id) { EXPECT_EQ(id, 1); }),
++        base::DoNothing(), cancel_run_loop.QuitClosure(), base::DoNothing(),
+         base::DoNothing());
++    TriggerCancel();
++    cancel_run_loop.Run();
++
++    // After the first request is cancelled, a new request can be served.
++    EXPECT_EQ(OpenPickerAndSelect(DesktopMediaID::TYPE_WINDOW), 2);
++  }
++}
++
++TEST_F(NativeScreenCapturePickerMacTest, OpenAfterClose) {
++  if (@available(macOS 14.0, *)) {
++    DesktopMediaID::Id id1 = 0;
++    bool selected_called = false;
++    bool cancel_called = false;
++    bool error_called = false;
++    picker_->Open(
++        DesktopMediaID::TYPE_WINDOW,
++        base::BindLambdaForTesting([&](DesktopMediaID::Id id) { id1 = id; }),
++        base::BindLambdaForTesting(
++            [&](Source source) { selected_called = true; }),
++        base::BindLambdaForTesting([&]() { cancel_called = true; }),
++        base::BindLambdaForTesting([&]() { error_called = true; }),
++        base::DoNothing());
++    EXPECT_EQ(id1, 1);
++
++    // Closing the active session while the picker is still open clears the
++    // in-flight request.
++    picker_->Close(DesktopMediaID(DesktopMediaID::TYPE_WINDOW, id1));
++
++    // Fast-forward past the cleanup timer so the closed session is erased.
++    task_environment_.FastForwardBy(base::Seconds(60));
++
++    // Late observer callbacks for the closed session are ignored.
++    TriggerUpdate();
++    TriggerCancel();
++    base::RunLoop fence_run_loop;
++    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE, fence_run_loop.QuitClosure());
++    fence_run_loop.Run();
++    EXPECT_FALSE(selected_called);
++    EXPECT_FALSE(cancel_called);
++    EXPECT_FALSE(error_called);
++
++    // A subsequent request can now be served.
++    EXPECT_EQ(OpenPickerAndSelect(DesktopMediaID::TYPE_WINDOW), 2);
+   }
+ }
+ 
+@@ -543,12 +653,14 @@ void VerifyApplicationAudioCaptureId(
+     GetBundleMap()[kWindowA] = "com.example.AppA";
+     GetBundleMap()[kWindowB] = "com.example.AppB";
+ 
+-    OpenPickerAndSelect(DesktopMediaID::TYPE_WINDOW, kWindowA,
+-                        base::BindLambdaForTesting([&](DesktopMediaID::Id id) {
+-                          EXPECT_EQ(id, 1);
+-                          stop_audio_run_loop.Quit();
+-                        }));
+-    TriggerUpdate(kWindowB);
++    DesktopMediaID::Id session_id = OpenPickerAndSelect(
++        DesktopMediaID::TYPE_WINDOW, kWindowA,
++        base::BindLambdaForTesting([&](DesktopMediaID::Id id) {
++          EXPECT_EQ(id, 1);
++          stop_audio_run_loop.Quit();
++        }));
++    SCStream* fake_stream = CreateAndRegisterFakeStream(session_id);
++    TriggerUpdate(kWindowB, /*display_id=*/std::nullopt, fake_stream);
+ 
+     stop_audio_run_loop.Run();
+     EXPECT_TRUE(true);
+@@ -564,10 +676,11 @@ void VerifyApplicationAudioCaptureId(
+     GetBundleMap()[kWindowA] = "com.example.AppA";
+     GetBundleMap()[kWindowB] = "com.example.AppB";
+ 
+-    OpenPickerAndSelect(DesktopMediaID::TYPE_WINDOW, kWindowA,
+-                        base::BindLambdaForTesting([&](DesktopMediaID::Id id) {
+-                          stop_audio_called = true;
+-                        }));
++    DesktopMediaID::Id session_id = OpenPickerAndSelect(
++        DesktopMediaID::TYPE_WINDOW, kWindowA,
++        base::BindLambdaForTesting(
++            [&](DesktopMediaID::Id id) { stop_audio_called = true; }));
++    SCStream* fake_stream = CreateAndRegisterFakeStream(session_id);
+ 
+     // Update with both windows (A and B).
+     FakeSCContentFilter* filter = [[FakeSCContentFilter alloc] init];
+@@ -576,7 +689,7 @@ void VerifyApplicationAudioCaptureId(
+     [g_fake_picker.observer
+         contentSharingPicker:(SCContentSharingPicker*)g_fake_picker
+          didUpdateWithFilter:(SCContentFilter*)filter
+-                   forStream:nil];
++                   forStream:fake_stream];
+ 
+     base::RunLoop fence_run_loop;
+     base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(

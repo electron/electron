@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 22 Oct 2026 10:10:57 -0400
+Subject: Vulkan: Fix enabling ensureLoopForwardProgress
+
+In [1], the feature was accidentally enabled in the GLES backend instead
+of the Vulkan backend.
+
+[1]:chromium-review.googlesource.com/8593361
+
+Bug: chromium:569191970
+Bug: chromium:576126881
+Change-Id: Id7b2bbbf7e2df389584380722e86c0eb852d50d2
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8632213
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+diff --git a/src/compiler/translator/ir/src/output/spirv.rs b/src/compiler/translator/ir/src/output/spirv.rs
+index c44db332a86519fd9bb09db88d456f810d0481b3..7f077edc946b0f94ffb1bca2b8851d7fa87790b7 100644
+--- a/src/compiler/translator/ir/src/output/spirv.rs
++++ b/src/compiler/translator/ir/src/output/spirv.rs
+@@ -18,6 +18,14 @@ pub fn generate(ir: &mut IR, options: &compile::Options) {
+         transform::run!(monomorphize_unsupported_functions, ir, &transform_options);
+     }
+ 
++    if options.ensure_loop_forward_progress {
++        let transform_options = transform::ensure_loop_forward_progress::Options {
++            // SPIR-V does not support BuiltInOpCode::LoopForwardProgress
++            supports_loop_forward_progress_built_in: false,
++        };
++        transform::run!(ensure_loop_forward_progress, ir, &transform_options);
++    }
++
+     transform::run!(rewrite_struct_samplers, ir);
+     transform::run!(rewrite_array_of_array_of_opaque_uniforms, ir);
+ 
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 859c968a229c1209e749581eb8a3111036da58c7..4c5af0c9a0f903f0c8bb935a5916561005f268d7 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2851,9 +2851,6 @@ void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFea
+     ANGLE_FEATURE_CONDITION(features, noperspectiveInterpolationBrokenWithPassthroughShaders,
+                             isQualcomm);
+     ANGLE_FEATURE_CONDITION(features, setNeedInitOnInvalidation, true);
+-
+-    // PowerVR compiler may crash when encountering an infinite loop
+-    ANGLE_FEATURE_CONDITION(features, ensureLoopForwardProgress, isPowerVR);
+ }
+ 
+ void ReInitializeFeaturesAtGPUSwitch(const FunctionsGL *functions, angle::FeaturesGL *features)
+diff --git a/src/libANGLE/renderer/vulkan/vk_renderer.cpp b/src/libANGLE/renderer/vulkan/vk_renderer.cpp
+index 12dd70e17ca9b3d3b4d6ea935d44a257708ea727..a4e07018d33351c386af289e297832c5d7e6e406 100644
+--- a/src/libANGLE/renderer/vulkan/vk_renderer.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_renderer.cpp
+@@ -7385,9 +7385,10 @@ const ShPixelLocalStorageOptions &Renderer::getNativePixelLocalStorageOptions()
+ 
+ void Renderer::initializeFrontendFeatures(angle::FrontendFeatures *features) const
+ {
++    const bool isPowerVR = IsPowerVR(mPhysicalDeviceProperties.vendorID);
++    const bool isSamsung = IsSamsung(mPhysicalDeviceProperties.vendorID);
+     const bool isSwiftShader =
+         IsSwiftshader(mPhysicalDeviceProperties.vendorID, mPhysicalDeviceProperties.deviceID);
+-    const bool isSamsung = IsSamsung(mPhysicalDeviceProperties.vendorID);
+ 
+     // Hopefully-temporary work-around for a crash on SwiftShader.  An Android process is turning
+     // off GL error checking, and then asking ANGLE to write past the end of a buffer.
+@@ -7411,6 +7412,9 @@ void Renderer::initializeFrontendFeatures(angle::FrontendFeatures *features) con
+     // Enable the program binary blob compression for glGetProgramBinary and glGetProgramiv.  It
+     // will be decompressed when loading the program binary by glProgramBinary.
+     ANGLE_FEATURE_CONDITION(features, compressProgramBinaryBlob, isSamsung);
++
++    // PowerVR compiler may crash when encountering an infinite loop
++    ANGLE_FEATURE_CONDITION(features, ensureLoopForwardProgress, isPowerVR);
+ }
+ 
+ angle::Result Renderer::getLockedPipelineCacheDataIfNew(vk::ErrorContext *context,

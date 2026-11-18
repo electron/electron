@@ -1,0 +1,275 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 2 Nov 2026 16:29:04 -0800
+Subject: [Media] Fix UrlData::CanAcceptDataFrom CHECK failures
+
+Fix two cases where UrlData::CanAcceptDataFrom() returned true before
+UrlData::SetDataOrigin() and false immediately afterward, tripping the
+post-TryInsert() / post-RedirectTo() CHECK in
+ResourceMultiBufferDataProvider::DidReceiveResponse():
+
+1. A pre-response CrossOriginFail() sets is_cors_cross_origin_ = true
+   while data_origin_ remains unset. Check is_cors_cross_origin_
+   mismatch whenever data_origin_.has_value() || is_cors_cross_origin_
+   before returning early on !data_origin_. Also avoid synthesizing a
+   null KURL() in MergeFrom() when other->data_origin_ is unset.
+2. In CORS_UNSPECIFIED mode, compare *data_origin_ != origin directly
+   before calling SecurityOrigin::AreSameOrigin(), so identical URLs
+   whose origins serialize as fresh random opaque nonces (such as
+   revoked blob:null/... URLs in sandboxed iframes or data: URLs) always
+   match themselves.
+
+Bug: 579225207
+Change-Id: I076ed3712a904317d8e6eeefc8dfcf5280b9eddb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8684371
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1733464}
+
+Electron adaptation notes (45-x-y): Picked as a prerequisite of https://chromium-review.googlesource.com/c/chromium/src/+/8665152; applied cleanly.
+
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index c1e1920d64d19e33611b803b0d18f96fb016a6a0..0170384e9fe6ebd9531cf6c862bce5605eaf0e2f 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -912,4 +912,98 @@ TEST_F(ResourceMultiBufferDataProviderTest,
+   EXPECT_EQ(url_data_->length(), 1000000);
+ }
+ 
++// Regression test for crbug.com/579225207: if an earlier request on `UrlData`
++// fails pre-response via `CrossOriginFail()` (`is_cors_cross_origin() == true`
++// while `data_origin_` is unset), a subsequent non-opaque response must be
++// rejected cleanly in `DidReceiveResponse()` rather than tripping the
++// post-`TryInsert()` / post-`RedirectTo()` `CHECK`.
++TEST_F(ResourceMultiBufferDataProviderTest,
++       NonOpaqueResponseAfterCrossOriginFailFailsCleanly) {
++  base::test::ScopedFeatureList feature_list(
++      media::kDisallowMixedOpaqueMediaResponses);
++
++  Initialize(kHttpUrl, 0);
++  Start();
++
++  EXPECT_CALL(*this, RedirectCallback(scoped_refptr<UrlData>(nullptr)));
++  loader_->DidFail(WebURLError(net::ERR_BLOCKED_BY_ORB, url_));
++  EXPECT_TRUE(url_data_->is_cors_cross_origin());
++
++  // Start a second provider on the same `url_data_` (which still has no
++  // `data_origin_` set) and deliver a non-opaque response.
++  url_data_->OnRedirect(
++      blink::BindOnce(&ResourceMultiBufferDataProviderTest::RedirectCallback,
++                      Unretained(this)));
++  auto second_loader = std::make_unique<ResourceMultiBufferDataProvider>(
++      url_data_.get(), /*pos=*/0, /*is_client_audio_element=*/false,
++      task_environment_.GetMainThreadTaskRunner());
++  ResourceMultiBufferDataProvider* raw_second_loader = second_loader.get();
++  loader_ = nullptr;
++  url_data_->multibuffer()->AddProvider(std::move(second_loader));
++  loader_ = raw_second_loader;
++  Start();
++
++  EXPECT_CALL(*this, RedirectCallback(scoped_refptr<UrlData>(nullptr)));
++  WebURLResponse response(url_);
++  response.SetHttpStatusCode(kHttpPartialContent);
++  response.SetHttpHeaderField(WebString::FromUtf8("Content-Range"),
++                              WebString::FromUtf8("bytes 0-1023/1024"));
++  response.SetExpectedContentLength(1024);
++  response.SetType(network::mojom::FetchResponseType::kBasic);
++  loader_->DidReceiveResponse(response);
++
++  // Also verify the redirect path when `old_url_data` had `CrossOriginFail()`
++  // and an in-flight request redirects to a fresh destination `UrlData`.
++  url_data_->OnRedirect(
++      blink::BindOnce(&ResourceMultiBufferDataProviderTest::RedirectCallback,
++                      Unretained(this)));
++  auto redir_loader = std::make_unique<ResourceMultiBufferDataProvider>(
++      url_data_.get(), /*pos=*/0, /*is_client_audio_element=*/false,
++      task_environment_.GetMainThreadTaskRunner());
++  ResourceMultiBufferDataProvider* raw_redir_loader = redir_loader.get();
++  loader_ = nullptr;
++  url_data_->multibuffer()->AddProvider(std::move(redir_loader));
++  loader_ = raw_redir_loader;
++  Start();
++
++  WebURL redir_target{KURL(kHttpRedirect)};
++  WebURLResponse redir_response(url_);
++  redir_response.SetHttpStatusCode(302);
++  ASSERT_TRUE(loader_->WillFollowRedirect(redir_target, redir_response));
++
++  EXPECT_CALL(*this, RedirectCallback(scoped_refptr<UrlData>(nullptr)));
++  WebURLResponse target_response(redir_target);
++  target_response.SetHttpStatusCode(kHttpPartialContent);
++  target_response.SetHttpHeaderField(WebString::FromUtf8("Content-Range"),
++                                     WebString::FromUtf8("bytes 0-1023/1024"));
++  target_response.SetExpectedContentLength(1024);
++  target_response.SetType(network::mojom::FetchResponseType::kBasic);
++  loader_->DidReceiveResponse(target_response);
++}
++
++// Regression test for crbug.com/579225207: an opaque-origin `response_url`
++// (such as a `blob:null/...` URL inside a sandboxed iframe after
++// `URL.revokeObjectURL()` removes its `BlobURLNullOriginMap` entry while
++// `BackgroundURLLoader` is in flight) must not fail `CanAcceptDataFrom()`
++// against itself on the post-`TryInsert()` `CHECK`.
++TEST_F(ResourceMultiBufferDataProviderTest,
++       RevokedNullOriginBlobResponseDoesNotCrash) {
++  base::test::ScopedFeatureList disable_mixed_opaque;
++  disable_mixed_opaque.InitAndDisableFeature(
++      media::kDisallowMixedOpaqueMediaResponses);
++
++  constexpr char kRevokedNullBlobUrl[] =
++      "blob:null/12345678-1234-1234-1234-123456789abc";
++  Initialize(kRevokedNullBlobUrl, 0);
++  Start();
++
++  WebURLResponse response{WebURL(KURL(kRevokedNullBlobUrl))};
++  response.SetHttpStatusCode(kHttpOK);
++  response.SetExpectedContentLength(kDataSize);
++  response.SetType(network::mojom::FetchResponseType::kBasic);
++  loader_->DidReceiveResponse(response);
++  EXPECT_EQ(url_data_->length(), kDataSize);
++  StopWhenLoad();
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/media/url_index.cc b/third_party/blink/renderer/platform/media/url_index.cc
+index a4f0b8de3d1db44b686f7a7a1c10fe22e12cc32c..ad9a3c589789665d2e34c0ef8b8cbcdcaaa71368 100644
+--- a/third_party/blink/renderer/platform/media/url_index.cc
++++ b/third_party/blink/renderer/platform/media/url_index.cc
+@@ -117,6 +117,12 @@ bool UrlData::MergeFrom(const scoped_refptr<UrlData>& other) {
+   // resource, so when we merge the metadata, we can use the most
+   // optimistic values.
+   CHECK(security_origin_->IsSameOriginWith(other->security_origin_.get()));
++  // Do not merge when the other UrlData has an incompatible origin, or if the
++  // other UrlData is missing an origin while this UrlData has one already
++  // configured.
++  if (data_origin_.has_value() && !other->data_origin_.has_value()) {
++    return false;
++  }
+   const KURL other_origin = other->data_origin_.value_or(KURL());
+   if (!CanAcceptDataFrom(other_origin, other->is_cors_cross_origin_)) {
+     return false;
+@@ -128,7 +134,11 @@ bool UrlData::MergeFrom(const scoped_refptr<UrlData>& other) {
+       !other->HasCompatibleLength(length_)) {
+     return false;
+   }
+-  SetDataOrigin(other_origin, other->is_cors_cross_origin_);
++  if (other->data_origin_.has_value()) {
++    SetDataOrigin(*other->data_origin_, other->is_cors_cross_origin_);
++  } else {
++    set_is_cors_cross_origin(other->is_cors_cross_origin_);
++  }
+ 
+   valid_until_ = std::max(valid_until_, other->valid_until_);
+   // set_length() will not override the length if already known.
+@@ -221,25 +231,32 @@ void UrlData::Use() {
+ 
+ bool UrlData::CanAcceptDataFrom(const KURL& origin,
+                                 bool is_cors_cross_origin) const {
+-  if (!data_origin_) {
+-    return true;
++  // Mixing non-opaque and opaque responses on a resource that has already
++  // received a response or failed a cross-origin check is not allowed, as
++  // consumers may have already checked origin tainting based on the earlier
++  // state.
++  if (base::FeatureList::IsEnabled(media::kDisallowMixedOpaqueMediaResponses)) {
++    if (is_cors_cross_origin_ && !is_cors_cross_origin) {
++      return false;
++    }
++    if (data_origin_.has_value() && !is_cors_cross_origin_ &&
++        is_cors_cross_origin) {
++      return false;
++    }
+   }
+ 
+-  // Mixing non-opaque and opaque responses on a resource that has already
+-  // received a response is not allowed, as consumers may have already checked
+-  // origin tainting based on the earlier response.
+-  if (is_cors_cross_origin_ != is_cors_cross_origin &&
+-      base::FeatureList::IsEnabled(media::kDisallowMixedOpaqueMediaResponses)) {
+-    return false;
++  if (!data_origin_) {
++    return true;
+   }
+ 
+-  if (cors_mode_ == UrlData::CORS_UNSPECIFIED) {
+-    // If both origins are null return true, otherwise
+-    // SecurityOrigin::AreSameOrigin will create a unique nonce for each.
+-    if (!data_origin_->IsNull() || !origin.IsNull()) {
+-      if (!SecurityOrigin::AreSameOrigin(data_origin_.value(), origin)) {
+-        return false;
+-      }
++  if (cors_mode_ == UrlData::CORS_UNSPECIFIED && *data_origin_ != origin) {
++    // Compare URLs directly first so identical URLs whose origins serialize as
++    // unique opaque nonces (e.g. `KURL()`, `data:` URLs, or `blob:null/...`
++    // URLs after `URL.revokeObjectURL()`) always match themselves instead of
++    // minting distinct nonces in `SecurityOrigin::AreSameOrigin`.
++    if (data_origin_->IsNull() || origin.IsNull() ||
++        !SecurityOrigin::AreSameOrigin(*data_origin_, origin)) {
++      return false;
+     }
+   }
+ 
+diff --git a/third_party/blink/renderer/platform/media/url_index_unittest.cc b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+index 0de3b3a230622bc8112339ca0710c2269608bb72..57db43b042184efc2fafec617dbe464054622ac1 100644
+--- a/third_party/blink/renderer/platform/media/url_index_unittest.cc
++++ b/third_party/blink/renderer/platform/media/url_index_unittest.cc
+@@ -247,6 +247,57 @@ TEST_F(UrlIndexTest, CanAcceptDataFrom) {
+   EXPECT_TRUE(a->CanAcceptDataFrom(data_url, /*is_cors_cross_origin=*/false));
+   EXPECT_FALSE(a->CanAcceptDataFrom(url, /*is_cors_cross_origin=*/false));
+   EXPECT_FALSE(a->CanAcceptDataFrom(data_url, /*is_cors_cross_origin=*/true));
++
++  // A pre-response CrossOriginFail() latches `is_cors_cross_origin()` while
++  // `data_origin_` is still unset; `CanAcceptDataFrom()` must reject a
++  // subsequent non-opaque response before `SetDataOrigin()` is called.
++  scoped_refptr<UrlData> cross_origin_failed =
++      GetByUrl(url, UrlData::CORS_UNSPECIFIED);
++  cross_origin_failed->CrossOriginFail();
++  EXPECT_TRUE(cross_origin_failed->is_cors_cross_origin());
++  EXPECT_FALSE(cross_origin_failed->CanAcceptDataFrom(
++      url, /*is_cors_cross_origin=*/false));
++  EXPECT_TRUE(cross_origin_failed->CanAcceptDataFrom(
++      url, /*is_cors_cross_origin=*/true));
++
++  // Identical URLs with opaque origins (such as `blob:null/...` after
++  // `URL.revokeObjectURL()` or `data:` URLs) must remain compatible with
++  // themselves even when `kDisallowMixedOpaqueMediaResponses` is disabled.
++  {
++    base::test::ScopedFeatureList disable_mixed_opaque;
++    disable_mixed_opaque.InitAndDisableFeature(
++        media::kDisallowMixedOpaqueMediaResponses);
++    const KURL revoked_null_blob_url(
++        "blob:null/12345678-1234-1234-1234-123456789abc");
++    const KURL other_null_blob_url(
++        "blob:null/87654321-4321-4321-4321-cba987654321");
++    scoped_refptr<UrlData> blob_data =
++        GetByUrl(revoked_null_blob_url, UrlData::CORS_UNSPECIFIED);
++    blob_data->SetDataOrigin(revoked_null_blob_url,
++                             /*is_cors_cross_origin=*/false);
++    EXPECT_TRUE(blob_data->CanAcceptDataFrom(revoked_null_blob_url,
++                                             /*is_cors_cross_origin=*/false));
++    EXPECT_FALSE(blob_data->CanAcceptDataFrom(other_null_blob_url,
++                                              /*is_cors_cross_origin=*/false));
++    EXPECT_FALSE(blob_data->CanAcceptDataFrom(KURL(),
++                                              /*is_cors_cross_origin=*/false));
++  }
++
++  // Merging two entries via `TryInsert()` before either has a `data_origin_`
++  // must not falsely pin `data_origin_` to `KURL()`.
++  const KURL unpinned_url("http://unpinned.example/v.mp4");
++  scoped_refptr<UrlData> unpinned1 =
++      GetByUrl(unpinned_url, UrlData::CORS_UNSPECIFIED);
++  scoped_refptr<UrlData> unpinned2 =
++      GetByUrl(unpinned_url, UrlData::CORS_UNSPECIFIED);
++  unpinned1->Use();
++  unpinned1->set_range_supported();
++  EXPECT_EQ(unpinned1, url_index_->TryInsert(unpinned1));
++  unpinned2->Use();
++  unpinned2->set_range_supported();
++  EXPECT_EQ(unpinned1, url_index_->TryInsert(unpinned2));
++  EXPECT_TRUE(unpinned1->CanAcceptDataFrom(unpinned_url,
++                                           /*is_cors_cross_origin=*/false));
+ }
+ 
+ TEST_F(UrlIndexTest, DestructionWithOrphanedUrlData) {

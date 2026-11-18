@@ -1,0 +1,274 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andres Ricardo Perez <andresrperez@chromium.org>
+Date: Wed, 11 Nov 2026 20:26:54 -0800
+Subject: [M156] [canvas2d] Resolve context filter before obtaining PaintCanvas
+ and state
+
+Original change's description:
+> [canvas2d] Resolve context filter before obtaining PaintCanvas and state
+>
+> Canvas2DRecorderContext::Draw() and beginLayerImpl() currently resolve
+> an unresolved context filter via StateGetFilter() inside
+> ShouldUseCompositedDraw(), CompositedDraw(), and SaveLayerForState()
+> while holding a raw PaintCanvas pointer/reference and a
+> CanvasRenderingContext2DState reference.
+>
+> Because CanvasRenderingContext2DState::GetFilter() calls
+> Document::UpdateStyleAndLayout() when resolving a CSS url() filter, a
+> synchronous style and layout update can run scripts and resize or reset
+> the canvas, destroying the recorder and invalidating the active
+> PaintCanvas and CanvasRenderingContext2DState mid-draw.
+>
+> Resolve any unresolved context filter in Draw() and beginLayerImpl()
+> before calling GetOrCreatePaintCanvas() and GetState(), and only query
+> StateGetFilter() in CompositedDraw() and SaveLayerForState() when the
+> filter is already resolved.
+>
+> Bug: 568831763
+> Change-Id: I1d475c18e65b2658fb103f2de7d158f7fc435569
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8551394
+> Reviewed-by: Justin Novosad <junov@chromium.org>
+> Commit-Queue: Andres Ricardo Perez Rojas <andresrperez@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1720095}
+
+(cherry picked from commit 6eb62304a89c3eefdf8f9a0d338027411fd7989d)
+
+Bug: 584579626,568831763
+Change-Id: I1d475c18e65b2658fb103f2de7d158f7fc435569
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8793249
+Reviewed-by: Justin Novosad <junov@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Andres Ricardo Perez Rojas <andresrperez@chromium.org>
+Commit-Queue: Justin Novosad <junov@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#2172}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+index e014baae31c870f3fbd3d22fa1de0c2085aee587..ac508fe5b9570cb2a028cc1e33ae35f0d4efa030 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+@@ -1547,8 +1547,8 @@ V8UnionDOMMatrixOrUndefined::Ret BaseRenderingContext2D::DrawElementInternal(
+     return degenerate_return_value();
+   }
+ 
+-  // The filter needs to be resolved before calling Draw, because it
+-  // immediately checks IsFilterResolved() and uses a null canvas if not.
++  // Resolving a filter can synchronously update style and layout, which may
++  // resize the canvas. Resolve it before reading `Host()->Size()` below.
+   StateGetFilter();
+ 
+   // The ideal size is the source content size, represented in canvas grid
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
+index c68848fc8aea2e7e858e8dd45daa953ba80063c8..dc6157165b4dcb2091e8617770edb9271b53f901 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
+@@ -485,6 +485,13 @@ void Canvas2DRecorderContext::beginLayerImpl(ScriptState* script_state,
+     }
+   }
+ 
++  if (GetState().IsFilterUnresolved()) [[unlikely]] {
++    // Resolving a filter can synchronously execute script (via style and
++    // layout updates), which may reset the canvas recorder or state stack.
++    // Resolve the filter before acquiring `layer_canvas` and `state`.
++    StateGetFilter();
++  }
++
+   // Create the `PaintCanvas` AFTER parsing the filter. It's possible for
+   // filters to reset the canvas, using a custom object property getter for
+   // instance.
+@@ -592,7 +599,8 @@ Canvas2DRecorderContext::SaveLayerForState(
+ 
+   const int initial_save_count = canvas.getSaveCount();
+   bool needs_compositing = state.GlobalComposite() != SkBlendMode::kSrcOver;
+-  sk_sp<PaintFilter> context_filter = StateGetFilter();
++  sk_sp<PaintFilter> context_filter =
++      state.IsFilterResolved() ? StateGetFilter() : nullptr;
+ 
+   // The "copy" globalCompositeOperation replaces everything that was in the
+   // canvas. We therefore have to clear the canvas before proceeding. Since the
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
+index 739a7a7b843ef414ae71bc6f44af3b8e661b2890..1124f10a0ef8ee4453bbc9590d4d9ad2e01e017c 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
+@@ -540,8 +540,6 @@ class MODULES_EXPORT Canvas2DRecorderContext : public CanvasPath {
+ 
+   AffineTransform GetTransform() const override;
+ 
+-  bool StateHasFilter();
+-
+   // When the canvas is stroked or filled with a pattern, which is assumed to
+   // have a transparent background, the shadow needs to be applied with
+   // DropShadowPaintFilter for kNonOpaqueImageType
+@@ -565,7 +563,7 @@ class MODULES_EXPORT Canvas2DRecorderContext : public CanvasPath {
+     if (BlendModeRequiresCompositedDraw(state)) {
+       return true;
+     }
+-    if (StateHasFilter()) {
++    if (state.IsFilterResolved()) {
+       return true;
+     }
+     if (state.ShouldDrawShadows() &&
+@@ -579,7 +577,6 @@ class MODULES_EXPORT Canvas2DRecorderContext : public CanvasPath {
+                           SkBlendMode blend_mode,
+                           const gfx::RectF* bounds = nullptr);
+ 
+-  // `paint_canvas` is null if this function is called asynchronously.
+   template <OverdrawOp CurrentOverdrawOp,
+             typename DrawFunc,
+             typename DrawCoversClipBoundsFunc>
+@@ -797,13 +794,7 @@ void Canvas2DRecorderContext::DrawInternal(
+     CanvasRenderingContext2DState::ImageType image_type,
+     const SkIRect& clip_bounds,
+     CanvasPerformanceMonitor::DrawType draw_type) {
+-  if (!paint_canvas) [[unlikely]] {
+-    // This is the async draw case.
+-    paint_canvas = GetPaintCanvas();
+-    if (!paint_canvas) {
+-      return;
+-    }
+-  }
++  CHECK(paint_canvas);
+   const CanvasRenderingContext2DState& state = GetState();
+   SkBlendMode global_composite = state.GlobalComposite();
+   if (ShouldUseCompositedDraw(paint_type, image_type)) {
+@@ -858,22 +849,25 @@ void Canvas2DRecorderContext::Draw(
+     return;
+   }
+ 
++  if (GetState().IsFilterUnresolved()) [[unlikely]] {
++    // Resolving a filter can synchronously execute script (via style and
++    // layout updates), which may reset the canvas recorder or state stack.
++    // Resolve the filter before acquiring `paint_canvas` and `clip_bounds`.
++    StateGetFilter();
++    if (!IsTransformInvertible()) [[unlikely]] {
++      return;
++    }
++  }
++
+   SkIRect clip_bounds;
+   MemoryManagedPaintCanvas* paint_canvas = GetOrCreatePaintCanvas();
+   if (!paint_canvas || !paint_canvas->getDeviceClipBounds(&clip_bounds)) {
+     return;
+   }
+ 
+-  if (GetState().IsFilterUnresolved()) [[unlikely]] {
+-    // Resolving a filter requires allocating garbage-collected objects.
+-    DrawInternal<CurrentOverdrawOp, DrawFunc, DrawCoversClipBoundsFunc>(
+-        nullptr, draw_func, draw_covers_clip_bounds, bounds, paint_type,
+-        image_type, clip_bounds, draw_type);
+-  } else {
+-    DrawInternal<CurrentOverdrawOp, DrawFunc, DrawCoversClipBoundsFunc>(
+-        paint_canvas, draw_func, draw_covers_clip_bounds, bounds, paint_type,
+-        image_type, clip_bounds, draw_type);
+-  }
++  DrawInternal<CurrentOverdrawOp, DrawFunc, DrawCoversClipBoundsFunc>(
++      paint_canvas, draw_func, draw_covers_clip_bounds, bounds, paint_type,
++      image_type, clip_bounds, draw_type);
+ }
+ 
+ template <typename DrawFunc>
+@@ -896,8 +890,9 @@ void Canvas2DRecorderContext::CompositedDraw(
+   cc::RecordPaintCanvas::DisableFlushCheckScope disable_flush_check_scope(
+       static_cast<cc::RecordPaintCanvas*>(c));
+ 
+-  sk_sp<PaintFilter> canvas_filter = StateGetFilter();
+   const CanvasRenderingContext2DState& state = GetState();
++  sk_sp<PaintFilter> canvas_filter =
++      state.IsFilterResolved() ? StateGetFilter() : nullptr;
+   DCHECK(ShouldUseCompositedDraw(paint_type, image_type));
+   SkM44 ctm = c->getLocalToDevice();
+   c->setMatrix(SkM44());
+@@ -971,15 +966,6 @@ ALWAYS_INLINE bool Canvas2DRecorderContext::IsFullCanvasCompositeMode(
+          op == SkBlendMode::kDstIn || op == SkBlendMode::kDstATop;
+ }
+ 
+-ALWAYS_INLINE bool Canvas2DRecorderContext::StateHasFilter() {
+-  const CanvasRenderingContext2DState& state = GetState();
+-  if (state.IsFilterUnresolved()) [[unlikely]] {
+-    return !!StateGetFilter();
+-  }
+-  // The fast path avoids the virtual call overhead of StateGetFilter
+-  return state.IsFilterResolved();
+-}
+-
+ ALWAYS_INLINE bool Canvas2DRecorderContext::ComputeDirtyRect(
+     const gfx::RectF& local_rect,
+     const SkIRect& transformed_clip_bounds,
+diff --git a/third_party/blink/web_tests/fast/canvas/canvas-draw-filter-style-recalc-crash.html b/third_party/blink/web_tests/fast/canvas/canvas-draw-filter-style-recalc-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..c9eedc456a8d06f0044df56e49e3a879caad8c4f
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/canvas/canvas-draw-filter-style-recalc-crash.html
+@@ -0,0 +1,72 @@
++<!DOCTYPE html>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++<div id="outer1">
++  <object id="obj1" type="text/html" data="about:blank">
++    <svg><foreignObject><canvas></canvas></foreignObject></svg>
++  </object>
++</div>
++<div id="outer2">
++  <object id="obj2" type="text/html" data="about:blank">
++    <svg><foreignObject><canvas></canvas></foreignObject></svg>
++  </object>
++</div>
++<script>
++async_test((t) => {
++  const outer = document.getElementById('outer1');
++  const obj = document.getElementById('obj1');
++  const canvas = outer.querySelector('canvas');
++  const home = canvas.parentNode;
++  const ctx = canvas.getContext('2d');
++  const other = document.implementation.createHTMLDocument();
++
++  EventTarget.prototype.addEventListener.call(obj, 'load', t.step_func_done(() => {
++    ctx.filter = 'url(#none)';
++    obj.contentWindow.onpagehide = () => {
++      other.adoptNode(canvas);
++      canvas.width = 17;
++      home.append(canvas);
++    };
++
++    outer.style.display = 'none';
++    outer.offsetWidth;
++    getComputedStyle(canvas).color;
++    Element.prototype.setAttribute.call(obj, 'type', 'image/png');
++    Element.prototype.setAttribute.call(obj, 'data', 'data:image/png,x');
++    ctx.fillRect(0, 0, 10, 10);
++
++    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
++    assert_true(data.some((v) => v !== 0), 'Expected fillRect to draw pixels');
++  }));
++}, 'Canvas2D fillRect does not crash and draws pixels when filter style recalc resizes canvas');
++
++async_test((t) => {
++  const outer = document.getElementById('outer2');
++  const obj = document.getElementById('obj2');
++  const canvas = outer.querySelector('canvas');
++  const home = canvas.parentNode;
++  const ctx = canvas.getContext('2d');
++  const other = document.implementation.createHTMLDocument();
++
++  EventTarget.prototype.addEventListener.call(obj, 'load', t.step_func_done(() => {
++    ctx.filter = 'url(#none)';
++    obj.contentWindow.onpagehide = () => {
++      other.adoptNode(canvas);
++      canvas.width = 17;
++      home.append(canvas);
++    };
++
++    outer.style.display = 'none';
++    outer.offsetWidth;
++    getComputedStyle(canvas).color;
++    Element.prototype.setAttribute.call(obj, 'type', 'image/png');
++    Element.prototype.setAttribute.call(obj, 'data', 'data:image/png,x');
++    ctx.beginLayer();
++    ctx.fillRect(0, 0, 10, 10);
++    ctx.endLayer();
++
++    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
++    assert_true(data.some((v) => v !== 0), 'Expected layer to draw pixels');
++  }));
++}, 'Canvas2D beginLayer does not crash and draws pixels when filter style recalc resizes canvas');
++</script>
