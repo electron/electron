@@ -20,12 +20,15 @@
 # process. Run as `wrapper /bin/bash -c ...`, that is /bin/bash, which the
 # "Add TCC permissions on macOS" step grants every service the specs use.
 #
-# The check runs both ways, prints the TCC diagnostics (also on healthy hosts,
-# as a baseline), and then:
-#   - when access is granted under the wrapper, writes MACOS_TCC_DISCLAIM to
-#     $GITHUB_ENV so the spec run uses the wrapper too;
-#   - when it is granted only without the wrapper, warns and leaves the spec
-#     run as it was;
+# The check runs directly first and prints the TCC diagnostics (also on healthy
+# hosts, as a baseline). Then:
+#   - when access is granted directly, it stops there and leaves the spec run
+#     as it was. It does not try the wrapper: on healthy hosts access is
+#     denied under it, and the preflight under it makes tccd record a denied
+#     Accessibility row and show an Accessibility prompt;
+#   - when access is denied directly, it tries again under the wrapper, and
+#     when that is granted, writes MACOS_TCC_DISCLAIM to $GITHUB_ENV so the
+#     spec run uses the wrapper too;
 #   - when it is denied either way, fails, so the job stops before the specs
 #     and can be re-run on another host.
 
@@ -113,14 +116,16 @@ echo "Without the disclaim wrapper (responsible process: the runner agent):"
 direct_status=$?
 
 disclaimed_status=
-if clang -o "$disclaim" "$work_dir/tcc-disclaim.c"; then
-  echo "Under the disclaim wrapper (responsible process: /bin/bash):"
-  # Keep /bin/bash running as the checker's parent: `; exit $?` stops bash from
-  # exec'ing a lone command in place of itself.
-  "$disclaim" /bin/bash -c '"$@"; exit $?' bash "$checker"
-  disclaimed_status=$?
-else
-  echo "::warning::Could not build the TCC disclaim wrapper; the specs will run without it."
+if [ "$direct_status" -ne 0 ]; then
+  if clang -o "$disclaim" "$work_dir/tcc-disclaim.c"; then
+    echo "Under the disclaim wrapper (responsible process: /bin/bash):"
+    # Keep /bin/bash running as the checker's parent: `; exit $?` stops bash
+    # from exec'ing a lone command in place of itself.
+    "$disclaim" /bin/bash -c '"$@"; exit $?' bash "$checker"
+    disclaimed_status=$?
+  else
+    echo "::warning::Could not build the TCC disclaim wrapper; cannot retry under it."
+  fi
 fi
 
 system_db="/Library/Application Support/com.apple.TCC/TCC.db"
@@ -128,7 +133,7 @@ user_db="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
 services="'kTCCServiceScreenCapture','kTCCServicePostEvent','kTCCServiceAccessibility','kTCCServiceListenEvent'"
 hca=/opt/hca/hosted-compute-agent
 
-if [ "$direct_status" -eq 0 ] && [ "${disclaimed_status:-0}" -eq 0 ]; then
+if [ "$direct_status" -eq 0 ]; then
   echo "::group::TCC diagnostics (access granted; baseline for comparison)"
 else
   echo "::group::TCC diagnostics"
@@ -156,14 +161,14 @@ sudo log show --last 2m --info --style compact \
   --predicate 'subsystem == "com.apple.TCC" AND eventMessage CONTAINS "ATTRIBUTION"' 2>/dev/null | tail -n 40
 echo "::endgroup::"
 
-if [ "$disclaimed_status" = 0 ]; then
-  echo "MACOS_TCC_DISCLAIM=$disclaim" >> "${GITHUB_ENV:-/dev/null}"
-  echo "TCC access granted under the disclaim wrapper; the specs will run under it."
+if [ "$direct_status" -eq 0 ]; then
+  echo "TCC access granted; the specs will run as usual."
   exit 0
 fi
 
-if [ "$direct_status" -eq 0 ]; then
-  echo "::warning::TCC denies screen capture and/or synthetic input under the disclaim wrapper but grants them to the runner agent; the specs will run without the wrapper. See the TCC diagnostics group in the 'Check TCC access on macOS' step."
+if [ "$disclaimed_status" = 0 ]; then
+  echo "MACOS_TCC_DISCLAIM=$disclaim" >> "${GITHUB_ENV:-/dev/null}"
+  echo "TCC access denied directly but granted under the disclaim wrapper; the specs will run under it."
   exit 0
 fi
 
