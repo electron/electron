@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 387102abd88a010459ef3a5ba4880c5621a96fa3..1786553840067147b2fd7727afbae059e80ee148 100644
+index 606a0cd81b813055910b60a2f55421f0debadd75..f8664fca112f0180dd4c4a7a1e9fa7a7744be83e 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -12,8 +12,10 @@
@@ -32,10 +32,10 @@ index 387102abd88a010459ef3a5ba4880c5621a96fa3..1786553840067147b2fd7727afbae059
  using content::BrowserThread;
  
 +#if 0
- ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile,
+                                        bool record_affiliation_metrics) {
    CHECK_CURRENTLY_ON(content::BrowserThread::UI, base::NotFatalUntil::M161);
-   CHECK(profile, base::NotFatalUntil::M161);
-@@ -72,6 +75,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+@@ -73,6 +76,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile,
  
    proxy_config_service_->AddObserver(this);
  }
@@ -43,7 +43,7 @@ index 387102abd88a010459ef3a5ba4880c5621a96fa3..1786553840067147b2fd7727afbae059
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -179,8 +183,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -180,8 +184,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    CHECK_CURRENTLY_ON(content::BrowserThread::UI, base::NotFatalUntil::M161);
@@ -54,7 +54,7 @@ index 387102abd88a010459ef3a5ba4880c5621a96fa3..1786553840067147b2fd7727afbae059
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -196,7 +202,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -197,7 +203,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      return;
    }
  
@@ -65,10 +65,10 @@ index 387102abd88a010459ef3a5ba4880c5621a96fa3..1786553840067147b2fd7727afbae059
  }
  #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index 16c8ddcad9915df5ab8b5d31334b4eec19f5005f..cd4d949b3a39df65d93b412dfe66b766d413fbbb 100644
+index 225b47a43ff112b6e77e09c9a71e8a94d965a4bb..2371f3d24cfddbedd7f94a0a7e3a978cc6f9200f 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
-@@ -41,11 +41,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -41,12 +41,13 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  {
   public:
@@ -76,13 +76,14 @@ index 16c8ddcad9915df5ab8b5d31334b4eec19f5005f..cd4d949b3a39df65d93b412dfe66b766
    // Creates a ProxyConfigMonitor that gets proxy settings from |profile| and
    // watches for changes. The created ProxyConfigMonitor must be destroyed
    // before |profile|.
-   explicit ProxyConfigMonitor(Profile* profile);
+   explicit ProxyConfigMonitor(Profile* profile,
+                               bool record_affiliation_metrics = false);
 -
 +#endif
    // Creates a ProxyConfigMonitor that gets proxy settings from the
    // |local_state|, for use with NetworkContexts not
    // associated with a profile. Must be destroyed before |local_state|.
-@@ -101,7 +102,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -102,7 +103,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
    mojo::ReceiverSet<network::mojom::ProxyErrorClient> error_receiver_set_;

@@ -20,10 +20,10 @@ index 6d7d041f3ecd7a9a2fa16f2188462ee7f4282d19..db698a9a9adfd9bd2dfc8dd29932b3e4
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index f6c11e23c70488d8c008c9fcefb2d8bcd8a85834..d594036e94b5f2de83221551784470df65e42f2c 100644
+index 416ce7c32c7e87c93b0f908c9b00ab5fbc7abbd3..6cb406e74d84ebab4bad1ed77551e1f3292494aa 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -136,7 +136,8 @@ class CONTENT_EXPORT RenderFrameObserver {
+@@ -128,7 +128,8 @@ class CONTENT_EXPORT RenderFrameObserver {
                                        int32_t world_id) {}
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                               int32_t world_id) {}
@@ -34,10 +34,10 @@ index f6c11e23c70488d8c008c9fcefb2d8bcd8a85834..d594036e94b5f2de83221551784470df
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset(blink::mojom::ScrollType) {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 7b791c4e0182ee0fcec98001d52fa26c8813d34e..7b7344b4c2cd1714a8d2b0958a517e74a90a9f91 100644
+index b61596aae400c459112a53b6c48e170b6a289f48..0ff69c4bca65e6d6708e35089b940b04d3b101c9 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5007,10 +5007,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4866,10 +4866,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
    }
  }
  
@@ -52,10 +52,10 @@ index 7b791c4e0182ee0fcec98001d52fa26c8813d34e..7b7344b4c2cd1714a8d2b0958a517e74
  }
  
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 7273425ab00447544e44a8dbe34a259fe85399f4..09d764ce866e0f7c82cfa87906643b870e2a8066 100644
+index a1ea2a603a3aa8a0822c7cad5b285222f510c661..25ee20451a8b430264e4e341a47caa1a0556375d 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -622,7 +622,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -591,7 +591,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
@@ -167,10 +167,10 @@ index 0a3ea97d48c4d0d4c234dc88b321480a55df85c8..150ba24a544a88ab99d51b8a30af545a
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 604cc3b09972843ba999660f3189fafbde34758e..cd301f31379f4c20034d0bfe918e0767eb1408c6 100644
+index 7273deb15f7c4d8731b38ebebbc3aa7c08cc946e..745ae4447a2f94e90b68ea2e2911d83906673624 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -681,7 +681,8 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -605,7 +605,8 @@ class BLINK_EXPORT WebLocalFrameClient {
                                               int32_t world_id) {}
  
    // WebKit is about to release its reference to a v8 context for a frame.
@@ -200,10 +200,10 @@ index 27586bd03af05294eb977a72052f2334c3d1aa61..fdceecae58237c48777b800ca218b2ad
        ->ContextWillBeDestroyed(script_state_);
    if (next_status == Lifecycle::kV8MemoryIsForciblyPurged ||
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index c55d152b5608c2e1b1377a3a77f0a3a0fe484d05..d87558d97fe2cee1099b6fb99851d05797e9cd86 100644
+index c4c2f3823cd6605fe23885db7f0cc9ace61577c3..dc0aaccda8490582b11fd6d728fe87d4acb1cba3 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
-@@ -318,7 +318,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
+@@ -317,7 +317,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
                                        int32_t world_id) = 0;
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                               int32_t world_id) = 0;
@@ -214,7 +214,7 @@ index c55d152b5608c2e1b1377a3a77f0a3a0fe484d05..d87558d97fe2cee1099b6fb99851d057
  
    virtual void DidChangeScrollOffset(mojom::blink::ScrollType) {}
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index a2c7cb2e37b793976163db66017a17c6cd2c37cf..f306966c3e4381bf2d2db4a72f679d7aebe43368 100644
+index 76fb5d05f794744b0a6d28bfdc9135667dd78a41..4e838bc25c1a748a77103e744577f2ea1b8dd95b 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -310,10 +310,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
@@ -231,7 +231,7 @@ index a2c7cb2e37b793976163db66017a17c6cd2c37cf..f306966c3e4381bf2d2db4a72f679d7a
  }
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.h b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
-index 8a3868cdc379e0537c6df1bff850345851cdec7c..ef854553823ed89ad65f83534c2999a00fffc584 100644
+index 98735fadec5d0c10cb6ff2dbfc887253c169c43c..943c0585cbab2f25e136bcab3efc74049c18030d 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 @@ -80,7 +80,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
