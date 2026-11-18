@@ -221,21 +221,30 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' && inputs.is-coverage }}
       run: |
         echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt"' >> $GITHUB_ENV
+    - name: Set GN_EXTRA_ARGS for Windows Coverage
+      if: ${{ inputs.target-platform == 'win' && inputs.is-coverage }}
+      run: |
+        echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt"' >> $GITHUB_ENV
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools      
-    # With coverage_instrumentation_input_file set, Chromium's apple toolchain
-    # wraps every compile in clang_code_coverage_wrapper.py, so siso matches the
-    # clang-coverage/* rules instead of clang/*. build-tools' main.star only
-    # routes clang/* and clang-cl/* through the cross-clang wrapper, so remote
-    # coverage compiles fail with "fork/exec .../clang_remote_wrapper: no such
-    # file or directory".
+    # With coverage_instrumentation_input_file set, Chromium's apple and win
+    # toolchains wrap every compile in clang_code_coverage_wrapper.py, so siso
+    # matches the clang-coverage/* rules instead of clang/* or clang-cl/*.
+    # build-tools' main.star only routes clang/* and clang-cl/* through the
+    # cross-clang wrapper, so remote coverage compiles fail with "fork/exec
+    # .../clang_remote_wrapper: no such file or directory".
     # TODO: Remove once electron/build-tools includes this fix.
-    - name: Patch Build Tools for macOS Coverage
-      if: ${{ inputs.target-platform == 'macos' && inputs.is-coverage }}
+    - name: Patch Build Tools for macOS and Windows Coverage
+      if: ${{ (inputs.target-platform == 'macos' || inputs.target-platform == 'win') && inputs.is-coverage }}
       run: |
-        git -C "$HOME/.electron_build_tools" apply --verbose <<'EOF'
+        BUILD_TOOLS_DIR="$HOME/.electron_build_tools"
+        if [ "$TARGET_PLATFORM" = "win" ]; then
+          # install-build-tools: build-tools lives under USERPROFILE on Windows.
+          BUILD_TOOLS_DIR="$USERPROFILE/.electron_build_tools"
+        fi
+        git -C "$BUILD_TOOLS_DIR" apply --verbose <<'EOF'
         --- a/tools/main.star
         +++ b/tools/main.star
         @@ -10,6 +10,13 @@ load("@config//gn_logs.star", "gn_logs")
@@ -271,7 +280,7 @@ jobs:
 
              # Add additional Windows SDK headers needed by Electron. Use
         EOF
-        git -C "$HOME/.electron_build_tools" diff --stat
+        git -C "$BUILD_TOOLS_DIR" diff --stat
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -343,12 +352,28 @@ jobs:
     # Stage them inside third_party/llvm-build so move-artifacts.sh picks them
     # up into src_artifacts for the test and report jobs.
     - name: Download Coverage Tools
-      if: ${{ inputs.is-coverage }}
+      if: ${{ inputs.is-coverage && inputs.target-platform != 'win' }}
       run: |
         # --output-dir is required: the default location replaces the clang install.
         python3 src/tools/clang/scripts/update.py --package=coverage_tools --output-dir="$RUNNER_TEMP/coverage-tools"
         cp "$RUNNER_TEMP/coverage-tools/bin/llvm-profdata" "$RUNNER_TEMP/coverage-tools/bin/llvm-cov" \
           src/third_party/llvm-build/Release+Asserts/bin/
+    # move-artifacts.sh leaves third_party/llvm-build out of Windows artifacts,
+    # so the Windows llvm-profdata.exe/llvm-cov.exe ship to the report job in
+    # their own artifact.
+    - name: Download Coverage Tools (Windows)
+      if: ${{ inputs.is-coverage && inputs.target-platform == 'win' }}
+      run: |
+        python3 src/tools/clang/scripts/update.py --package=coverage_tools --output-dir="$RUNNER_TEMP/coverage-tools"
+        ls -l "$RUNNER_TEMP/coverage-tools/bin"
+    - name: Upload Coverage Tools (Windows)
+      if: ${{ inputs.is-coverage && inputs.target-platform == 'win' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
+      with:
+        name: coverage_tools_win_${{ inputs.target-arch }}
+        path: ${{ runner.temp }}/coverage-tools/bin
+        if-no-files-found: error
+        retention-days: 7
     # Instrument only Electron's own C++. The report is already restricted to
     # shell/ and chromium_src/, and instrumenting all of Chromium makes every
     # binary (v8_context_snapshot_generator included) large enough that dyld
