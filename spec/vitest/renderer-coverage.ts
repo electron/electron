@@ -19,7 +19,7 @@
 //
 // Everything here is a no-op unless startRendererCoverage() was called.
 
-import { app, webContents } from 'electron/main';
+import { app, BaseWindow, BrowserWindow, webContents } from 'electron/main';
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -204,6 +204,12 @@ export async function startRendererCoverage(dir: string) {
   socket = ws;
   await send('Target.setDiscoverTargets', { discover: true });
   await send('Target.setAutoAttach', autoAttach);
+
+  for (const prototype of new Set([BrowserWindow.prototype, BaseWindow.prototype])) {
+    takeBeforeClose(prototype, windowContents);
+  }
+  const { WebContents } = (process as any)._linkedBinding('electron_browser_web_contents');
+  takeBeforeClose(WebContents.prototype, (contents) => [contents]);
 }
 
 // Renderers and workers that start while coverage is suspended run without
@@ -223,25 +229,33 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | undefined>
   ]).finally(() => clearTimeout(timer));
 }
 
-// Writes the coverage the renderers have collected since the last take (V8
-// resets the counters on each take): of the renderer process of `contents`
-// and of the targets it attached (workers, out-of-process iframes), or of
-// everything when no `contents` is given. Call before closing a window, as
-// the coverage of a renderer is gone with it.
-export async function takeRendererCoverage(contents?: Electron.WebContents) {
-  if (!socket || !coverageDir) return;
-  if (contents?.isDestroyed()) return;
-  const pid = contents?.getOSProcessId();
-  if (pid === 0) return;
-  const owners = [...sessions.values()].filter((session) => {
+// The owning sessions to take coverage from: of the renderer processes of
+// `contents` and of the targets those attached (workers, out-of-process
+// iframes), or of every target when no `contents` is given. Only ones that
+// can answer, see above.
+function takeTargets(contents?: Electron.WebContents[]) {
+  let pids: Set<number> | undefined;
+  if (contents) {
+    pids = new Set(
+      contents
+        .filter((c) => !c.isDestroyed())
+        .map((c) => c.getOSProcessId())
+        .filter((pid) => pid !== 0)
+    );
+    if (pids.size === 0) return [];
+  }
+  return [...sessions.values()].filter((session) => {
     if (!session.owner) return false;
     const owning = owningContents(session);
-    if (!owning) return !contents;
+    if (!owning) return !pids;
     // Without a renderer (none yet, or it is gone) nothing would answer.
     if (owning.isDestroyed()) return false;
     const owningPid = owning.getOSProcessId();
-    return owningPid !== 0 && (!contents || owningPid === pid);
+    return owningPid !== 0 && (!pids || pids.has(owningPid));
   });
+}
+
+async function take(owners: Session[]) {
   await Promise.all(
     owners.map(async (session) => {
       const coverage = await withTimeout(
@@ -255,4 +269,68 @@ export async function takeRendererCoverage(contents?: Electron.WebContents) {
       await fs.promises.writeFile(file, JSON.stringify({ result }));
     })
   );
+}
+
+// Writes the coverage the renderers have collected since the last take (V8
+// resets the counters on each take): of the renderer processes of `contents`,
+// or of every renderer when none is given. Call before closing a window, as
+// the coverage of a renderer is gone with it.
+export async function takeRendererCoverage(contents?: Electron.WebContents | Electron.WebContents[]) {
+  if (!socket || !coverageDir) return;
+  await take(takeTargets(contents === undefined ? undefined : [contents].flat()));
+}
+
+// The WebContents that go away with these: they and the <webview> guests
+// they embed.
+function withGuests(contents: Electron.WebContents[]) {
+  const all = new Set(contents);
+  const others = webContents.getAllWebContents();
+  // A Set visits what is added while iterating it, so this finds guests of
+  // guests too.
+  for (const host of all) {
+    for (const other of others) {
+      if (!other.isDestroyed() && other.hostWebContents === host) all.add(other);
+    }
+  }
+  return [...all];
+}
+
+// A BrowserWindow takes its child windows down with it.
+function windowContents(window: Electron.BaseWindow): Electron.WebContents[] {
+  if (window.isDestroyed()) return [];
+  const own = window instanceof BrowserWindow && window.webContents ? [window.webContents] : [];
+  return [...own, ...window.getChildWindows().flatMap(windowContents)];
+}
+
+const destroying = new WeakSet<object>();
+
+// Specs close windows and WebContents in many ways besides closeWindow() and
+// cleanupWebContents() (spec/lib/window-helpers.ts), which take the coverage
+// of their renderers first: useRemoteContext(), defer(() => w.close()) and
+// hundreds of direct calls. So close() takes it too, and only then closes.
+// close() returns nothing and finishes asynchronously anyway (it runs
+// beforeunload and unload in the renderer first); what changes is that its
+// 'close' events come a renderer round trip later. Without a live renderer
+// to ask it closes at once.
+// destroy() cannot wait, it has to be done when it returns, so what specs
+// destroy() themselves keeps losing its renderer's coverage since its last
+// take. Over the whole suite that is next to nothing: also taking every
+// renderer's coverage after each test (before afterEach hooks) found no more.
+function takeBeforeClose(prototype: any, contentsOf: (self: any) => Electron.WebContents[]) {
+  const { close, destroy } = prototype;
+  if (Object.hasOwn(prototype, 'close')) {
+    prototype.close = function (this: any, ...args: unknown[]) {
+      const owners = this.isDestroyed() ? [] : takeTargets(withGuests(contentsOf(this)));
+      if (owners.length === 0) return close.apply(this, args);
+      take(owners).finally(() => {
+        if (!destroying.has(this) && !this.isDestroyed()) close.apply(this, args);
+      });
+    };
+  }
+  if (Object.hasOwn(prototype, 'destroy')) {
+    prototype.destroy = function (this: any, ...args: unknown[]) {
+      destroying.add(this);
+      return destroy.apply(this, args);
+    };
+  }
 }
