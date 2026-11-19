@@ -54,7 +54,7 @@ index 263d3033898c6027c821012fd5f48315f203fcf3..736871e022402b5f774b3a09176e0a36
                                  int world_id) override;
    void DidChangeScrollOffset(blink::mojom::ScrollType) override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 55cc943a007b5b69223694ea3e374a3aaac896d3..ad6185d20a1a7443b4030faa6eeefb433fb1fad3 100644
+index 4238ec6d9a2e37a895172f1468f23738e2b2859e..f294f332e98e27749a7f34c9ea124e8ad46558a8 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
 @@ -587,6 +587,9 @@ class BLINK_EXPORT WebLocalFrameClient {

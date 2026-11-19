@@ -176,10 +176,10 @@ index 4aaf15dfb50b6de9ef3356d35ae927f39dc2fb87..7de75eb27a34870c204b3151007ef7db
    ts_deps = [ "../puppeteer:bundle" ]
  }
 diff --git a/front_end/third_party/puppeteer/BUILD.gn b/front_end/third_party/puppeteer/BUILD.gn
-index d6297d156722f0980cbd4cb595cbd75aef2b766a..306e8cc4906468bf70eb4ccb62c25dbd4e7bada9 100644
+index 9db33b19aaa3fd7373f854c5e0c4c6efa00c2018..076fa822e64eb0dd4d137943a7bffdecec594189 100644
 --- a/front_end/third_party/puppeteer/BUILD.gn
 +++ b/front_end/third_party/puppeteer/BUILD.gn
-@@ -405,6 +405,22 @@ devtools_pre_built("puppeteer") {
+@@ -407,6 +407,22 @@ devtools_pre_built("puppeteer") {
    sources_are_release = false
  
    sources = filter_exclude(SOURCES, EXCLUDED_SOURCES)

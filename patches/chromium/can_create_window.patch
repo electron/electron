@@ -107,7 +107,7 @@ index 36aa0124cd238a44b0c1478531254f867583f198..e35dd3339bf69f6e5011762e5002255e
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 07b8e034f9044728e812beb356dca764720ab320..071ea5d03c958828437117a1287de04cbdc7de64 100644
+index 30a1fd01501ab3b7309dbcfeefe2ab59e10419cf..09464edec71013f92fba7a4378a41bb7edf03104 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -211,6 +211,7 @@ class TrustedURLLoaderHeaderClient;
@@ -118,7 +118,7 @@ index 07b8e034f9044728e812beb356dca764720ab320..071ea5d03c958828437117a1287de04c
  }  // namespace network
  
  namespace sandbox {
-@@ -1314,6 +1315,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1316,6 +1317,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
