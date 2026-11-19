@@ -162,7 +162,7 @@ index 17be7780f9c0a6c594406b5b90c123cc4113cf4c..26e5bd13dec81fd983ed9ff99ff4bfc2
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 35ce1e97a1260708d8e423c26d1e9a05d4c4a171..4bc00b5ebbbad99b6ed62c1d005dee5aeeff0088 100644
+index b46c56ac49219df7be1fd3b158539683c4a8147e..568bad687e00cfe6ad20a061fd55562cd83a7644 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -118,8 +118,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);

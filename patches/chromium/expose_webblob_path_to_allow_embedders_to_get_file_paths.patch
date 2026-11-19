@@ -6,19 +6,19 @@ Subject: expose WebBlob::Path to allow embedders to get file paths
 Used to replace the File.path augmentation Electron currently implements.  This is safer / more web-standard technique.
 
 diff --git a/third_party/blink/public/web/web_blob.h b/third_party/blink/public/web/web_blob.h
-index 573f81bad31ef369165b34c6de6f1705ee24b26e..04b30ccc3bb2f3ed5ba0d6a23c3156049ca4e03e 100644
+index 9d8b44628a8e7ffebaed2e21d005aa3c79007602..9a9da206b6c3a4c42bb8542b3a93d45042f03a5d 100644
 --- a/third_party/blink/public/web/web_blob.h
 +++ b/third_party/blink/public/web/web_blob.h
-@@ -70,6 +70,7 @@ class BLINK_EXPORT WebBlob {
+@@ -69,6 +69,7 @@ class BLINK_EXPORT WebBlob {
+   void Reset();
    void Assign(const WebBlob&);
-   WebString Uuid();
    CrossVariantMojoRemote<mojom::BlobInterfaceBase> CloneBlobRemote() const;
 +  std::string Path();
  
    bool IsNull() const { return private_.IsNull(); }
  
 diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
-index 5be4b870d17ffdc7292f9bd145992d714a3db5e0..43ed7e3b6b5d1b51dbc6f8a409d6556e5e953916 100644
+index 2010b2bc9bab2b7f4be09cf28f1ee3c192f28398..31c627ccc83fdae101fbd1710270e43c39cf01f7 100644
 --- a/third_party/blink/renderer/core/exported/web_blob.cc
 +++ b/third_party/blink/renderer/core/exported/web_blob.cc
 @@ -42,6 +42,7 @@
@@ -29,7 +29,7 @@ index 5be4b870d17ffdc7292f9bd145992d714a3db5e0..43ed7e3b6b5d1b51dbc6f8a409d6556e
  #include "third_party/blink/renderer/platform/blob/blob_data.h"
  #include "third_party/blink/renderer/platform/file_metadata.h"
  #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
-@@ -93,6 +94,14 @@ WebBlob::CloneBlobRemote() const {
+@@ -87,6 +88,14 @@ WebBlob::CloneBlobRemote() const {
    return private_->AsMojoBlob();
  }
  

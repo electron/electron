@@ -632,7 +632,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..149de0175c2ec0e41e3ba40caad7019c
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index db34eeac4b7353d77705403234bdd9b50c2c475e..940f6a04b84ec0044f4cdd29bcbdef3c155c668a 100644
+index 174ebd93d094a30789520c36f219577295ed0825..5d19f1e3090bd43df51010ef512033eba68c7eca 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -10,6 +10,7 @@
@@ -660,7 +660,7 @@ index db34eeac4b7353d77705403234bdd9b50c2c475e..940f6a04b84ec0044f4cdd29bcbdef3c
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669ace0ec6c6 100644
+index e309a32483dbd394f255e57d9221107d372d222d..e5dd9575237d59656358e2a632cc690697991e05 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -24,6 +24,7 @@
@@ -739,7 +739,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -296,6 +320,7 @@ - (BOOL)immersiveRevealLockRequiresKey {
+@@ -300,6 +324,7 @@ - (BOOL)ancestorsUpdateCursorWhileKey {
  // bubbles and the find bar, but these should not be movable.
  // Instead, let's push this up to the parent window which should be
  // the browser.
@@ -747,7 +747,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  - (void)_zoomToScreenEdge:(NSUInteger)edge {
    if (self.parentWindow) {
      [self.parentWindow _zoomToScreenEdge:edge];
-@@ -303,6 +328,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
+@@ -307,6 +332,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
      [super _zoomToScreenEdge:edge];
    }
  }
@@ -755,7 +755,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  
  // This override helps diagnose lifetime issues in crash stacktraces by
  // inserting a symbol on NativeWidgetMacNSWindow and should be kept even if it
-@@ -455,6 +481,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -473,6 +499,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -764,7 +764,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -466,6 +494,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -484,6 +512,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -773,7 +773,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  // Constrains the frame rect during an active window move loop so that the top
  // of the window does not exceed the menu bar / visible top of the display,
  // while allowing smooth unrestricted dragging across display boundaries without
-@@ -593,6 +623,8 @@ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+@@ -611,6 +641,8 @@ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
    return [super constrainFrameRect:frameRect toScreen:screen];
  }
  
@@ -782,7 +782,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  // AppKit's internal screen layout manager invokes
  // _setFrame:fromAdjustmentToScreen: and _setFrameAfterMove: asynchronously
  // during screen layout changes or display boundary transitions to adjust the
-@@ -633,6 +665,8 @@ - (void)_setFrameAfterMove:(NSRect)frameRect {
+@@ -651,6 +683,8 @@ - (void)_setFrameAfterMove:(NSRect)frameRect {
    }
  }
  
@@ -791,7 +791,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  - (NSWindow*)topmostVisibleChildModalWindow {
    if (!_bridge) {
      return nil;
-@@ -676,12 +710,14 @@ - (BOOL)_usesCustomDrawing {
+@@ -694,12 +728,14 @@ - (BOOL)_usesCustomDrawing {
  // if it were valid to set that style for windows, setting the window style
  // recalculates and re-caches a bunch of stuff, so a surgical override is the
  // cleanest approach.
@@ -806,7 +806,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -1013,9 +1049,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -1031,9 +1067,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -818,7 +818,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -1082,6 +1120,7 @@ - (void)reallySaveRestorableState {
+@@ -1100,6 +1138,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -826,7 +826,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -1094,6 +1133,7 @@ - (void)invalidateRestorableState {
+@@ -1112,6 +1151,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -834,7 +834,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -1272,6 +1312,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1290,6 +1330,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -842,7 +842,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -1289,6 +1330,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1307,6 +1348,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -851,7 +851,7 @@ index 95532e9a29b5235e0fc508a668eb27b5e5e52d44..351dc920e2e3b38b5ebdc02f9cd7669a
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index a03504fe505da971990de15abef2420c9f78ef4c..5e6d12662dc30c89890220b993ab32ebb1ef675a 100644
+index 9fbf2b6c1b5ea93da57d49ba31eda89f2d2a3319..19a9f92940f93228a8a09080cb880f31123808ff 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -44,6 +44,7 @@

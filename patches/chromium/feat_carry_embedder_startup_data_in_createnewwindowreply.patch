@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 0f44eaf16d202c6ae580000615e1881b83754cea..9406d3817d6631f7501f4326d46cb3991e2a3d53 100644
+index e5990f284d6b918d72f13edcc3f0a61488aa2439..9d31620854c5e6c150f3aafddb7e12f3d27ecb30 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11193,7 +11193,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11189,7 +11189,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -44,7 +44,7 @@ index 0f44eaf16d202c6ae580000615e1881b83754cea..9406d3817d6631f7501f4326d46cb399
    new_main_rfh->render_view_host()->RenderViewCreated(new_main_rfh);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index f4a92f1b786d046de7ac3f19a742b933df0e7445..7cb9e5d0e36e1b8a6e82b1bdc2649723f67f264e 100644
+index e05a9f3e0296575312740c1f6b69c3c8f90d19ca..e4e0843e22782d909afd23bfdb6b02d366500b47 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -13,6 +13,7 @@ import "content/public/common/window_container_type.mojom";
@@ -148,10 +148,10 @@ index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 6bee5d6ba2089802882c85d36ef659d165a8548a..b88ddbdcc994fbc090fbd275aada893c29a1435f 100644
+index 09508a0c97fec02cd6e845504aece4d64fb15d83..d679b258fe03772b9f7d4062774679530244d079 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7025,6 +7025,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7002,6 +7002,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  
