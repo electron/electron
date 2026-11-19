@@ -28,6 +28,11 @@ namespace electron {
 namespace api {
 class IpcMainEvent;
 }  // namespace api
+// Replies to GetProcessMemoryInfo() with a memory dump of |process|.
+void ReplyWithProcessMemoryInfo(
+    content::RenderProcessHost* process,
+    mojom::ElectronApiIPC::GetProcessMemoryInfoCallback callback);
+
 class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
                                   private content::WebContentsObserver {
  public:
@@ -60,6 +65,9 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
                    MessageSyncCallback callback) override;
   void MessageHost(const std::string& channel,
                    electron::SerializedValue arguments) override;
+  void GetProcessMemoryInfo(GetProcessMemoryInfoCallback callback) override;
+  void PreloadError(const std::string& preload_path,
+                    electron::SerializedValue error) override;
 
   base::WeakPtr<ElectronApiIPCHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

@@ -1136,6 +1136,38 @@ describe('dialog module', () => {
         expect(currentFolder).toSatisfy(path.isAbsolute);
         expect([app.getPath('downloads'), app.getPath('home')]).toContain(currentFolder);
       });
+
+      it('sends the properties as portal options', async () => {
+        let { canceled } = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+        expect(canceled).toBe(true);
+        expect(getLoggedOptions(await getSingleCall('OpenFile')).directory).toBe(true);
+
+        await clearCalls();
+        ({ canceled } = await dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] }));
+        expect(canceled).toBe(true);
+        expect(getLoggedOptions(await getSingleCall('OpenFile')).multiple).toBe(true);
+      });
+
+      it('sends the filters', async () => {
+        const { canceled } = await dialog.showOpenDialog({
+          filters: [{ name: 'Images', extensions: ['png', 'jpg'] }]
+        });
+        expect(canceled).toBe(true);
+
+        const options = getLoggedOptions(await getSingleCall('OpenFile'));
+        const filters = JSON.stringify(options.filters);
+        expect(filters).toContain('Images');
+        expect(filters).toContain('[pP][nN][gG]');
+      });
+
+      it('opens files by default', async () => {
+        const { canceled } = await dialog.showOpenDialog({});
+        expect(canceled).toBe(true);
+
+        const options = getLoggedOptions(await getSingleCall('OpenFile'));
+        expect(options.directory).not.toBe(true);
+        expect(options.multiple).not.toBe(true);
+      });
     });
   });
 

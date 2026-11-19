@@ -97,6 +97,13 @@ interface ElectronAutofillDriver {
   HideAutofillPopup();
 };
 
+// process.getProcessMemoryInfo(), in kilobytes.
+struct ProcessMemoryInfo {
+  uint64 resident_set_kb;
+  uint64 private_kb;
+  uint64 shared_kb;
+};
+
 interface ElectronApiIPC {
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process.
@@ -125,4 +132,12 @@ interface ElectronApiIPC {
   MessageHost(
     string channel,
     SerializedValue arguments);
+
+  // process.getProcessMemoryInfo() from a renderer: a memory dump of the
+  // calling process. |info| is null and |error| set on failure.
+  GetProcessMemoryInfo() => (ProcessMemoryInfo? info, string error);
+
+  // A preload script threw while loading; emitted as the WebContents'
+  // 'preload-error' event.
+  PreloadError(string preload_path, SerializedValue error);
 };

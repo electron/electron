@@ -117,36 +117,31 @@ void Require(const v8::FunctionCallbackInfo<v8::Value>& info) {
 // --- process
 // ------------------------------------------------------------------
 
-// ipcRendererInternal[method](...args) in the current context.
-v8::MaybeLocal<v8::Value> CallIpcRendererInternal(
+// The electron_renderer_ipc binding's |name| function in the current context.
+v8::MaybeLocal<v8::Value> CallIpcBinding(
     v8::Isolate* isolate,
-    const char* method,
+    const char* name,
     base::span<v8::Local<v8::Value>> args) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Value> exports = LoadBinding(isolate, "electron_renderer_ipc");
-  v8::Local<v8::Value> ipc, fn;
+  v8::Local<v8::Value> fn;
   if (exports.IsEmpty() || !exports->IsObject() ||
       !exports.As<v8::Object>()
-           ->Get(context, gin::StringToSymbol(isolate, "ipcRendererInternal"))
-           .ToLocal(&ipc) ||
-      !ipc->IsObject() ||
-      !ipc.As<v8::Object>()
-           ->Get(context, gin::StringToSymbol(isolate, method))
+           ->Get(context, gin::StringToSymbol(isolate, name))
            .ToLocal(&fn) ||
       !fn->IsFunction()) {
     return {};
   }
   return fn.As<v8::Function>()->Call(
-      context, ipc, static_cast<int>(args.size()), args.data());
+      context, exports, static_cast<int>(args.size()), args.data());
 }
 
 void GetProcessMemoryInfo(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  v8::Isolate* isolate = info.GetIsolate();
-  std::array<v8::Local<v8::Value>, 1> args{
-      gin::StringToV8(isolate, "BROWSER_GET_PROCESS_MEMORY_INFO")};
   v8::Local<v8::Value> result;
-  if (CallIpcRendererInternal(isolate, "invoke", args).ToLocal(&result))
+  if (CallIpcBinding(info.GetIsolate(), "getProcessMemoryInfo", {})
+          .ToLocal(&result)) {
     info.GetReturnValue().Set(result);
+  }
 }
 
 // --- running scripts ---------------------------------------------------------
@@ -180,10 +175,9 @@ void ReportPreloadError(v8::Local<v8::Context> context,
   ConsoleError(context, message);
   std::array<v8::Local<v8::Value>, 1> error_arg{error};
   ConsoleError(context, error_arg);
-  std::array<v8::Local<v8::Value>, 3> ipc_args{
-      gin::StringToV8(isolate, "BROWSER_PRELOAD_ERROR"),
+  std::array<v8::Local<v8::Value>, 2> ipc_args{
       gin::StringToV8(isolate, file_path), error};
-  std::ignore = CallIpcRendererInternal(isolate, "send", ipc_args);
+  std::ignore = CallIpcBinding(isolate, "reportPreloadError", ipc_args);
 }
 
 }  // namespace
