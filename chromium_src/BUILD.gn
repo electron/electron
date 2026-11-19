@@ -47,6 +47,7 @@ static_library("chrome") {
     "//chrome/browser/icon_loader.h",
     "//chrome/browser/icon_manager.cc",
     "//chrome/browser/icon_manager.h",
+    "//chrome/browser/media/webrtc/desktop_capture_devices_util.h",
     "//chrome/browser/media/webrtc/desktop_capturer_wrapper.cc",
     "//chrome/browser/media/webrtc/desktop_capturer_wrapper.h",
     "//chrome/browser/media/webrtc/desktop_media_list.cc",
