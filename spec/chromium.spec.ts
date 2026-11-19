@@ -5046,6 +5046,76 @@ describe('font fallback', () => {
   });
 });
 
+// Font strings go through Blink's CSS font shorthand parser
+// (CSSParser::ParseFont), which Chromium cherry-picks touch from time to time.
+// See https://github.com/electron/electron/issues/55616: leading whitespace was
+// rejected, so canvas text silently fell back to the default "10px sans-serif".
+// These checks are about parsing and relative metrics, not which system font
+// is installed, so they hold on every platform and CI image.
+describe('canvas font parsing', () => {
+  let w: BrowserWindow;
+  beforeAll(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadURL('about:blank');
+  });
+  afterAll(closeAllWindows);
+
+  const cases = [
+    ['24px monospace', '24px monospace'],
+    [' 24px monospace', '24px monospace'],
+    ['\t24px monospace', '24px monospace'],
+    ['  15px sans-serif  ', '15px sans-serif'],
+    ['bold 20PX   SERIF', 'bold 20px serif']
+  ];
+
+  it.each(cases)('CanvasRenderingContext2D.font accepts %j', async (input, expected) => {
+    const font = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      ctx.font = ${JSON.stringify(input)};
+      ctx.font;
+    }`);
+    expect(font).toBe(expected);
+  });
+
+  it.each(cases)('OffscreenCanvasRenderingContext2D.font accepts %j', async (input, expected) => {
+    const font = await w.webContents.executeJavaScript(`{
+      const ctx = new OffscreenCanvas(1, 1).getContext('2d');
+      ctx.font = ${JSON.stringify(input)};
+      ctx.font;
+    }`);
+    expect(font).toBe(expected);
+  });
+
+  it('OffscreenCanvas in a worker accepts a font with leading whitespace', async () => {
+    const font = await w.webContents.executeJavaScript(`new Promise((resolve) => {
+      const src = "const ctx = new OffscreenCanvas(1, 1).getContext('2d'); ctx.font = ' 24px monospace'; postMessage(ctx.font);";
+      const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+    })`);
+    expect(font).toBe('24px monospace');
+  });
+
+  it.each(cases)('document.fonts.check() accepts %j', async (input) => {
+    const result = await w.webContents.executeJavaScript(`{
+      let r;
+      try { r = document.fonts.check(${JSON.stringify(input)}); } catch (e) { r = e.name; }
+      r;
+    }`);
+    expect(result).toBe(true);
+  });
+
+  it('measures text with the size from a font with leading whitespace', async () => {
+    // What users actually saw: xterm.js glyphs drawn at 10px instead of 24px.
+    const widths = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      const measure = (font) => { ctx.font = '10px sans-serif'; ctx.font = font; return ctx.measureText('MMMMMMMMMM').width; };
+      ({ plain: measure('24px monospace'), spaced: measure(' 24px monospace'), fallback: measure('10px sans-serif') });
+    }`);
+    expect(widths.spaced).toBe(widths.plain);
+    expect(widths.spaced).toBeGreaterThan(widths.fallback);
+  });
+});
+
 describe('iframe using HTML fullscreen API while window is OS-fullscreened', { tags: ['serial'] }, () => {
   const fullscreenChildHtml = fs.promises.readFile(path.join(fixturesPath, 'pages', 'fullscreen-oopif.html'));
   let w: BrowserWindow;
