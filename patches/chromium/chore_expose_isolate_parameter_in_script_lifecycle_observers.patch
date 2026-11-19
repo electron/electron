@@ -259,10 +259,10 @@ index f09e8d96f451dba5f75609522b039d4c4c2c6eab..a9e4e6e9af6f2f47c5c9d4a7cfcf62de
  
    AssociatedInterfaceProvider* GetRemoteNavigationAssociatedInterfaces()
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index 51de9e5289de7d1f3b78227dade68ce2d7253241..bd25b1757e3cf82e1f6dd1613e528f367f607d62 100644
+index 88cb9628bf651cda00910016fa349d4a728f713c..ac1692df361c183c7e9e7338e0faf1c02e095b14 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -184,6 +184,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
+@@ -183,6 +183,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
    ScriptState::Scope scope(
        WorkerGlobalScope()->ScriptController()->GetScriptState());
    Client().WillEvaluateScript(

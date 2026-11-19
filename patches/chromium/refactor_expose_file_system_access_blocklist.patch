@@ -20,7 +20,7 @@ As of 159.0.8153.0, it also carries the legacy ~/.fontconfig and ~/.fonts
 rules on Linux added upstream in that version.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 7d3717f7b19f24e119455f16aff715aedc09090f..94f83051b1329fc8d89f23e9578b4504af2eefcd 100644
+index 5fd89b934075c704dd5ed0782b365b50ccc8830f..fc2e159283654b75db57621f89d54996bd852aba 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -45,7 +45,7 @@ index 7d3717f7b19f24e119455f16aff715aedc09090f..94f83051b1329fc8d89f23e9578b4504
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -474,6 +478,356 @@ class ChromeFileSystemAccessPermissionContext
+@@ -475,6 +479,356 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
