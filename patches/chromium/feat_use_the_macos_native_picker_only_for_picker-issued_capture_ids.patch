@@ -7,14 +7,17 @@ Electron opens Chromium's NativeScreenCapturePickerMac for
 session.setDisplayMediaRequestHandler's useSystemPicker option through
 content::desktop_capture::OpenNativeScreenCapturePicker.
 
-Upstream only creates the picker when kUseSCContentSharingPicker is on,
-and that feature also assumes every macOS desktop capture belongs to the
-picker: getSources() thumbnails switch to DelegatedSourceListCapturer, any
-id the picker did not issue fails with "missing authorized filter", and
-stopping any capture device closes the picker session with the same id.
-Electron apps still capture getSources() ids through getDisplayMedia() and
-the legacy chromeMediaSource: 'desktop' constraint, so the feature can't
-be turned on.
+Upstream only creates the picker when kUseSCContentSharingPicker is on
+and the OS is macOS 26.4 or later (earlier versions are excluded from
+Chrome's rollout because of OS-level replayd issues), while Electron has
+shipped useSystemPicker on macOS 15+ and applies its own version checks
+in electron_browser_context.cc. That feature also assumes every macOS
+desktop capture belongs to the picker: getSources() thumbnails switch to
+DelegatedSourceListCapturer, any id the picker did not issue fails with
+"missing authorized filter", and stopping any capture device closes the
+picker session with the same id. Electron apps still capture getSources()
+ids through getDisplayMedia() and the legacy chromeMediaSource: 'desktop'
+constraint, so Electron keeps the feature disabled in feature_list_mac.mm.
 
 Instead, always create the picker on macOS, and only hand ids tagged
 IdType::kNativePickerSession (serialized with a ":s" suffix) to it, both
@@ -24,14 +27,17 @@ its ids, so its behavior is unchanged; ids it did not issue now capture
 normally instead of failing, which would be the argument for upstreaming.
 
 diff --git a/content/browser/media/capture/native_screen_capture_picker.cc b/content/browser/media/capture/native_screen_capture_picker.cc
-index 7a6b17291f0f6686e9f266ae658e950c652c9444..8a80ce70859096a9764bf88206938fdfab61cb77 100644
+index da3cc312da9d888cc237b217c420fb52c5163bc6..c940d11970a9f7e1d8c178c9ac6f31f72fc941c0 100644
 --- a/content/browser/media/capture/native_screen_capture_picker.cc
 +++ b/content/browser/media/capture/native_screen_capture_picker.cc
-@@ -16,9 +16,6 @@ namespace content {
+@@ -18,12 +18,6 @@ namespace content {
  std::unique_ptr<NativeScreenCapturePicker>
  MaybeCreateNativeScreenCapturePicker() {
  #if BUILDFLAG(IS_MAC)
--  if (!base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
+-  // Keep OS version check in sync with ShouldUseSCContentSharingPicker() in
+-  // chrome/browser/media/webrtc/desktop_media_picker_utils.cc.
+-  if (base::mac::MacOSVersion() < 26'04'00 ||
+-      !base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
 -    return nullptr;
 -  }
    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
