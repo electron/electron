@@ -115,6 +115,7 @@ jobs:
       # the darwin_x64 leg of the same run.
       MACOS_SPEC_ALLOWLIST: ${{ inputs.target-platform == 'macos' && !inputs.full-macos-tests && (matrix.build-type == 'mas' && 'script/macos-mas-spec-allowlist.txt' || inputs.target-arch == 'x64' && 'script/macos-x64-spec-allowlist.txt') || '' }}
       COVERAGE_PROFILE_DIR: /tmp/electron-coverage
+      JS_COVERAGE_DIR: /tmp/electron-js-coverage
       # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
       DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
@@ -246,6 +247,11 @@ jobs:
         # under a lock); %c enables continuous mode so counters survive the
         # abnormal exits and sandboxed processes the suite produces.
         echo "LLVM_PROFILE_FILE=$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw" >> $GITHUB_ENV
+        # V8 coverage of lib/ (see spec/vitest/electron-pool.ts), written
+        # there by the same processes.
+        mkdir -p "$JS_COVERAGE_DIR/raw"
+        chmod -R 777 "$JS_COVERAGE_DIR"
+        echo "ELECTRON_SPEC_COVERAGE_DIR=$JS_COVERAGE_DIR/raw" >> $GITHUB_ENV
         echo "IS_COVERAGE=true" >> $GITHUB_ENV
     # Apps launched through LaunchServices (e.g. ShipIt's post-update relaunch
     # in the autoUpdater specs) get launchd's environment, not the job's.
@@ -638,6 +644,21 @@ jobs:
       with:
         name: coverage_profraw_${{ env.ARTIFACT_KEY }}
         path: ${{ env.COVERAGE_PROFILE_DIR }}
+        if-no-files-found: error
+        retention-days: 7
+    # The raw JS coverage is mostly Node.js' own modules and the specs; keep
+    # only the bundles' (see script/lib-coverage-report.mjs).
+    - name: Filter JS Coverage
+      if: ${{ inputs.is-coverage && !cancelled() }}
+      run: |
+        cd src/electron
+        node script/lib-coverage-report.mjs --input "$JS_COVERAGE_DIR/raw" --filter "$JS_COVERAGE_DIR/js2c"
+    - name: Upload JS Coverage
+      if: ${{ inputs.is-coverage && !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
+      with:
+        name: coverage_js_${{ env.ARTIFACT_KEY }}
+        path: ${{ env.JS_COVERAGE_DIR }}/js2c
         if-no-files-found: error
         retention-days: 7
     - name: Wait for active SSH sessions

@@ -2,7 +2,8 @@ name: Coverage
 
 # Builds Electron with Clang source-based code coverage (use_clang_coverage=true),
 # runs the full test suite against the instrumented binaries, and publishes an
-# llvm-cov HTML report for Electron's own C++.
+# llvm-cov HTML report for Electron's own C++, plus a V8 coverage report for
+# lib/ (electron_js_sourcemaps=true, script/lib-coverage-report.mjs).
 
 on:
   schedule:

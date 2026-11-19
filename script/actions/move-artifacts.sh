@@ -71,6 +71,12 @@ move_src_dirs_if_exist() {
     dirs+=('src/build/linux')
   fi
 
+  # The JS bundles and their source maps, when the build made them
+  # (electron_js_sourcemaps), for script/lib-coverage-report.mjs.
+  if compgen -G "src/out/Default/gen/internal/electron/js2c/*.map" > /dev/null; then
+    dirs+=('src/out/Default/gen/internal/electron/js2c')
+  fi
+
   # llvm-build is the host toolchain, for windows we need
   # a different toolchain so no point copying this one
   if [ "$BUILD_TYPE" != "win" ]; then
