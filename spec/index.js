@@ -1,5 +1,7 @@
 import { app, protocol } from 'electron';
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as v8 from 'node:v8';
 
 // This app is started by the vitest Electron pool (spec/vitest/electron-pool.ts),
@@ -39,6 +41,15 @@ if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
 // app is ready (see below).
 if (process.env.CI && process.platform === 'darwin' && process.arch === 'x64') {
   app.disableHardwareAcceleration();
+}
+
+// `--coverage` (script/spec-runner.js): renderers report their coverage over
+// this process's remote debugging port (see vitest/renderer-coverage.ts).
+const coverageDir = isVitestWorker ? process.env.ELECTRON_SPEC_COVERAGE_DIR : undefined;
+if (coverageDir) {
+  app.commandLine.appendSwitch('remote-debugging-port', '0');
+  // Left by an earlier run in this worker's profile, it would name a dead port.
+  fs.rmSync(path.join(app.getPath('sessionData'), 'DevToolsActivePort'), { force: true });
 }
 
 v8.setFlagsFromString('--expose_gc');
@@ -114,6 +125,10 @@ app
     const { isTestingBindingAvailable } = await import('./lib/spec-helpers.ts');
     if (process.env.ELECTRON_REQUIRE_TESTING_BINDINGS === '1' && !isTestingBindingAvailable()) {
       throw new Error('Testing build expected, but testing bindings are unavailable');
+    }
+    if (coverageDir) {
+      const { startRendererCoverage } = await import('./vitest/renderer-coverage.ts');
+      await startRendererCoverage(coverageDir);
     }
     workerStarted = true;
     await import('./vitest/worker.ts');

@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 
+import { ifit } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 describe('ipcRenderer module', () => {
@@ -184,7 +185,10 @@ describe('ipcRenderer module', () => {
   });
 
   describe('after context is released', () => {
-    it('throws an exception', async () => {
+    // With --coverage (script/spec-runner.js) every new renderer context waits
+    // for the coverage collector before it runs, which the synchronous
+    // window.open() below cannot.
+    ifit(!process.env.ELECTRON_SPEC_COVERAGE_DIR)('throws an exception', async () => {
       const error = await w.webContents.executeJavaScript(
         `(${() => {
           const child = window.open('', 'child', 'show=no,nodeIntegration=yes')! as any;

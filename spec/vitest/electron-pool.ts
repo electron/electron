@@ -118,6 +118,17 @@ class ElectronPoolWorker implements PoolWorker {
     // Whatever the CLI's environment says, the workers must be real browser
     // processes.
     delete env.ELECTRON_RUN_AS_NODE;
+    // script/spec-runner.js --coverage: V8 coverage of the browser and utility
+    // processes (the worker and anything a spec starts) by Node.js, with a
+    // preload that saves it from processes that end without Node.js' exit
+    // hooks. spec/index.js collects the renderers'.
+    const coverageDir = process.env.ELECTRON_SPEC_COVERAGE_DIR;
+    if (coverageDir) {
+      env.ELECTRON_SPEC_COVERAGE_DIR = coverageDir;
+      env.NODE_V8_COVERAGE = coverageDir;
+      const preload = `--require ${JSON.stringify(path.join(import.meta.dirname, 'coverage-flush.cjs'))}`;
+      env.NODE_OPTIONS = env.NODE_OPTIONS ? `${env.NODE_OPTIONS} ${preload}` : preload;
+    }
 
     // Chromium truncates its --log-file on startup, so workers cannot share
     // one; give each its own next to the requested path.
