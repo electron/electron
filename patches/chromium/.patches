@@ -300,3 +300,4 @@ cherry-pick-0de584d4aff0.patch
 cherry-pick-367ca4e72512.patch
 fix_allow_webcontentsimpl_centerselection_on_all_platforms.patch
 cherry-pick-24028b0e4b22.patch
+build_pass_the_repack_allowlist_relative_to_the_build_dir.patch
