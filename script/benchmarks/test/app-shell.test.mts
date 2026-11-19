@@ -7,7 +7,7 @@ import { after, describe, it } from 'node:test';
 import * as vm from 'node:vm';
 
 import { writeAppShellSite } from '../lib/app-shell.mts';
-import { pageConfigs, probeConfigs } from '../lib/configs.mts';
+import { pageConfigs } from '../lib/configs.mts';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'benchmarks-app-shell-test-'));
 after(() => fs.rmSync(tmp, { recursive: true, force: true }));
@@ -86,20 +86,32 @@ describe('writeAppShellSite', () => {
 });
 
 describe('pageConfigs', () => {
-  it('runs the app shell from file:// in suites of its own', () => {
-    const configs = pageConfigs({ baseUrl: 'http://127.0.0.1:1', fileRoot: '/tmp/files', appRoot: '/tmp/app' });
-    // The synthetic page's suites are unchanged, so an app shell failure
-    // can't fail their crossbench runs.
+  it('loads the app shell from file:// in the loading and trace suites', () => {
+    const configs = pageConfigs({ capabilities: { setSize: true }, fileRoot: '/tmp/files', appRoot: '/tmp/app' });
     assert.deepEqual(Object.keys(configs.loading.pages), ['first_load', 'reload']);
-    assert.deepEqual(Object.keys(configs.trace.pages), ['first_load']);
-    assert.deepEqual(Object.keys(configs.app_shell.pages), ['first_load', 'reload']);
-    assert.deepEqual(Object.keys(configs.app_shell_trace.pages), ['first_load']);
-    for (const story of [configs.app_shell.pages.first_load, configs.app_shell_trace.pages.first_load]) {
-      assert.equal(story[0].url, 'file:///tmp/app/index.html');
+    assert.deepEqual(Object.keys(configs.trace.pages), ['first_load', 'resize']);
+    for (const story of [...Object.values(configs.loading.pages), ...Object.values(configs.trace.pages)]) {
+      assert.deepEqual(story[0], { action: 'get', url: 'file:///tmp/app/index.html', ready_state: 'any' });
     }
-    assert.ok(configs.app_shell.pages.first_load.some((action) => action.action === 'meminfo'));
-    const probes = probeConfigs();
-    assert.deepEqual(probes.app_shell, probes.loading);
-    assert.deepEqual(probes.app_shell_trace, probes.trace);
+    assert.ok(configs.loading.pages.first_load.some((action) => action.action === 'meminfo'));
+  });
+
+  it('injects a resize driver that parses and uses the harness preload', () => {
+    const configs = pageConfigs({
+      capabilities: { setSize: true },
+      fileRoot: '/tmp/files',
+      appRoot: '/tmp/app',
+      resizeCount: 4
+    });
+    const inject = configs.trace.pages.resize.find((action) => action.action === 'js');
+    assert.ok(inject);
+    assert.match(inject.script, /cbHarness\.setSize/);
+    assert.match(inject.script, /i < 4;/);
+    assert.doesNotThrow(() => new vm.Script(inject.script));
+  });
+
+  it('leaves out resize without BrowserWindow.setSize()', () => {
+    const configs = pageConfigs({ fileRoot: '/tmp/files', appRoot: '/tmp/app' });
+    assert.deepEqual(Object.keys(configs.trace.pages), ['first_load']);
   });
 });

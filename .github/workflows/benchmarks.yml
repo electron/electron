@@ -30,8 +30,8 @@ on:
         required: false
       suites:
         type: string
-        description: 'Comma-separated suites: loading, trace, file_loading, app_shell, app_shell_trace, speedometer, jetstream'
-        default: 'loading,trace,file_loading,app_shell,app_shell_trace,speedometer,jetstream'
+        description: 'Comma-separated suites: loading, trace, file_loading, speedometer, jetstream'
+        default: 'loading,trace,file_loading,speedometer,jetstream'
         required: false
       upload-to-datadog:
         type: boolean
@@ -85,7 +85,7 @@ jobs:
       candidate: ${{ inputs.candidate || '' }}
       baseline: ${{ inputs.baseline || '' }}
       rounds: ${{ inputs.rounds || '10' }}
-      suites: ${{ inputs.suites || 'loading,trace,file_loading,app_shell,app_shell_trace,speedometer,jetstream' }}
+      suites: ${{ inputs.suites || 'loading,trace,file_loading,speedometer,jetstream' }}
       upload-to-datadog: ${{ github.event_name == 'schedule' || inputs.upload-to-datadog == true }}
       skip-stale-nightly: ${{ github.event_name == 'schedule' }}
     secrets:

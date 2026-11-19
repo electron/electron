@@ -30,8 +30,9 @@ const TARGETS: TargetInfo[] = [
 
 // Writes a results dir laid out like run.mts and crossbench leave it. Each
 // invocation gets a first_load story whose performance.entries FCP has
-// `values` (default: one value per repetition), loadEventEnd 10 ms later and
-// a meminfo dump per value, unless `values` is null.
+// `values` (default: one value per repetition), loadEventEnd 10 ms, app-ready
+// 100 ms and app-lcp 300 ms later, and a meminfo dump per value, unless
+// `values` is null.
 interface TestInvocation {
   round: number;
   target: string;
@@ -70,7 +71,9 @@ function writeResults(
       path.join(storyDir, 'performance.entries.json'),
       JSON.stringify({
         'paint/first-contentful-paint/startTime': { values: fcp },
-        'navigation/loadEventEnd': { values: fcp.map((value) => value + 10) }
+        'navigation/loadEventEnd': { values: fcp.map((value) => value + 10) },
+        'mark/app-ready/startTime': { values: fcp.map((value) => value + 100) },
+        'mark/app-lcp/startTime': { values: fcp.map((value) => value + 300) }
       })
     );
     fcp.forEach((_, repetition) => {
@@ -132,9 +135,9 @@ describe('collectSamples', () => {
 
 // Writes one trace-suite invocation: per repetition, the trace_processor
 // query results crossbench leaves in <story>/<rep>/0_default/trace_processor/.
-function writeTraceResults(name: string, runs: { pageLoad: object[]; resize?: object[] }[], suite = 'trace') {
+function writeTraceResults(name: string, runs: { pageLoad: object[]; resize?: object[] }[]) {
   const dir = path.join(tmp, name);
-  const relativeDir = path.join('rounds', '0', suite, 'candidate');
+  const relativeDir = path.join('rounds', '0', 'trace', 'candidate');
   const storiesDir = path.join(dir, relativeDir, 'chromium_candidate', 'stories');
   runs.forEach(({ pageLoad, resize }, repetition) => {
     const firstLoad = path.join(storiesDir, 'first_load', String(repetition), '0_default', 'trace_processor');
@@ -157,7 +160,7 @@ function writeTraceResults(name: string, runs: { pageLoad: object[]; resize?: ob
     rounds: 1,
     repeat: runs.length,
     targets: TARGETS,
-    invocations: [{ round: 0, suite, target: 'candidate', exitCode: 0, repetitions: 2, dir: relativeDir }]
+    invocations: [{ round: 0, suite: 'trace', target: 'candidate', exitCode: 0, repetitions: 2, dir: relativeDir }]
   };
   return { dir, metadata };
 }
@@ -177,18 +180,6 @@ describe('trace suite', () => {
     // Per repetition: median 25 and 70, p90 40 and 90.
     assert.deepEqual(samples['trace.resize.resize_median_ms'].candidate, [47.5]);
     assert.deepEqual(samples['trace.resize.resize_p90_ms'].candidate, [65]);
-  });
-
-  it('reads FCP and LCP for the app shell from its own suite', () => {
-    const { dir, metadata } = writeTraceResults(
-      'app-shell-trace',
-      [{ pageLoad: [{ fcp: 70, lcp: 390 }] }, { pageLoad: [{ fcp: 74, lcp: 410 }] }],
-      'app_shell_trace'
-    );
-    const { samples, rejected } = collectSamples(dir, metadata);
-    assert.deepEqual(rejected, []);
-    assert.deepEqual(samples['app_shell_trace.first_load.fcp'].candidate, [72]);
-    assert.deepEqual(samples['app_shell_trace.first_load.lcp'].candidate, [400]);
   });
 
   it('leaves out a measure when a repetition has no trace result', () => {
@@ -213,40 +204,28 @@ describe('trace suite', () => {
   });
 });
 
-describe('app shell suite', () => {
-  // One round with a loading invocation (the synthetic page's first_load)
-  // and an app_shell invocation (first_load and reload), each with two
-  // repetitions, for the candidate.
-  function writeAppShellResults(
-    name: string,
-    marks: Record<string, number[]>,
-    { appShellExitCode = 0 }: { appShellExitCode?: number } = {}
-  ) {
+describe('loading measures', () => {
+  // One loading invocation with first_load and reload, two repetitions each.
+  function writeLoadingResults(name: string, marks: Record<string, number[]>) {
     const dir = path.join(tmp, name);
-    const invocations: RunMetadata['invocations'] = [];
-    const suites: Record<string, string[]> = { loading: ['first_load'], app_shell: ['first_load', 'reload'] };
-    for (const [suite, stories] of Object.entries(suites)) {
-      const relativeDir = path.join('rounds', '0', suite, 'candidate');
-      const exitCode = suite === 'app_shell' ? appShellExitCode : 0;
-      invocations.push({ round: 0, suite, target: 'candidate', exitCode, repetitions: 2, dir: relativeDir });
-      for (const story of stories) {
-        const storyDir = path.join(dir, relativeDir, 'chromium_candidate', 'stories', story);
-        fs.mkdirSync(storyDir, { recursive: true });
-        const entries: Record<string, { values: number[] }> = {
-          'paint/first-contentful-paint/startTime': { values: [80, 90] },
-          'navigation/loadEventEnd': { values: [100, 110] }
-        };
-        for (const [mark, values] of Object.entries(marks)) entries[`mark/${mark}/startTime`] = { values };
-        fs.writeFileSync(path.join(storyDir, 'performance.entries.json'), JSON.stringify(entries));
-        if (story !== 'first_load') continue;
-        for (const repetition of [0, 1]) {
-          const meminfoDir = path.join(storyDir, String(repetition), '0_default', 'meminfo');
-          fs.mkdirSync(meminfoDir, { recursive: true });
-          fs.writeFileSync(
-            path.join(meminfoDir, 'loaded.json'),
-            JSON.stringify({ processes: [{ pid: 1, name: '/opt/electron/electron', pss_total: 1024 }] })
-          );
-        }
+    const relativeDir = path.join('rounds', '0', 'loading', 'candidate');
+    for (const story of ['first_load', 'reload']) {
+      const storyDir = path.join(dir, relativeDir, 'chromium_candidate', 'stories', story);
+      fs.mkdirSync(storyDir, { recursive: true });
+      const entries: Record<string, { values: number[] }> = {
+        'paint/first-contentful-paint/startTime': { values: [80, 90] },
+        'navigation/loadEventEnd': { values: [100, 110] }
+      };
+      for (const [mark, values] of Object.entries(marks)) entries[`mark/${mark}/startTime`] = { values };
+      fs.writeFileSync(path.join(storyDir, 'performance.entries.json'), JSON.stringify(entries));
+      if (story !== 'first_load') continue;
+      for (const repetition of [0, 1]) {
+        const meminfoDir = path.join(storyDir, String(repetition), '0_default', 'meminfo');
+        fs.mkdirSync(meminfoDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(meminfoDir, 'loaded.json'),
+          JSON.stringify({ processes: [{ pid: 1, name: '/opt/electron/electron', pss_total: 1024 }] })
+        );
       }
     }
     const metadata: RunMetadata = {
@@ -260,7 +239,7 @@ describe('app shell suite', () => {
       rounds: 1,
       repeat: 2,
       targets: TARGETS,
-      invocations
+      invocations: [{ round: 0, suite: 'loading', target: 'candidate', exitCode: 0, repetitions: 2, dir: relativeDir }]
     };
     return { dir, metadata };
   }
@@ -270,46 +249,31 @@ describe('app shell suite', () => {
       .filter((metric) => metric.startsWith(prefix))
       .map((metric) => metric.slice(prefix.length))
       .sort();
-  const memory = ['browser_pss_mib', 'gpu_pss_mib', 'renderer_pss_mib', 'total_pss_mib'];
 
-  it('reads the app-ready and LCP marks', () => {
-    const { dir, metadata } = writeAppShellResults('app-shell', {
+  it("reads the app shell's app-ready and LCP marks", () => {
+    const { dir, metadata } = writeLoadingResults('loading-marks', {
       'app-shell-rendered': [40, 50],
       'app-ready': [200, 220],
       'app-lcp': [300, 340]
     });
     const { samples, rejected } = collectSamples(dir, metadata);
     assert.deepEqual(rejected, []);
-    assert.deepEqual(measures(samples, 'loading.first_load.'), ['fcp', 'load_event_end', ...memory].sort());
+    const memory = ['browser_pss_mib', 'gpu_pss_mib', 'renderer_pss_mib', 'total_pss_mib'];
     assert.deepEqual(
-      measures(samples, 'app_shell.first_load.'),
+      measures(samples, 'loading.first_load.'),
       ['app_ready', 'fcp', 'lcp', 'load_event_end', ...memory].sort()
     );
-    assert.deepEqual(measures(samples, 'app_shell.reload.'), ['app_ready', 'fcp', 'lcp', 'load_event_end']);
-    assert.deepEqual(samples['app_shell.first_load.app_ready'].candidate, [210]);
-    assert.deepEqual(samples['app_shell.reload.lcp'].candidate, [320]);
+    assert.deepEqual(measures(samples, 'loading.reload.'), ['app_ready', 'fcp', 'lcp', 'load_event_end']);
+    assert.deepEqual(samples['loading.first_load.app_ready'].candidate, [210]);
+    assert.deepEqual(samples['loading.reload.lcp'].candidate, [320]);
   });
 
   it('reports a run that never marked app-ready', () => {
-    const { dir, metadata } = writeAppShellResults('app-shell-missing', { 'app-lcp': [300, 340] });
+    const { dir, metadata } = writeLoadingResults('loading-no-ready', { 'app-lcp': [300, 340] });
     const { samples, rejected } = collectSamples(dir, metadata);
-    assert.equal(samples['app_shell.first_load.app_ready'], undefined);
-    assert.deepEqual(samples['app_shell.first_load.lcp'].candidate, [320]);
-    assert.match(rejected[0].reason, /app_shell\.first_load\.app_ready \(no values\)/);
-  });
-
-  it("keeps the loading suite's results when the app shell fails", () => {
-    const { dir, metadata } = writeAppShellResults(
-      'app-shell-failed',
-      { 'app-ready': [200, 220], 'app-lcp': [300, 340] },
-      { appShellExitCode: 1 }
-    );
-    const { samples, rejected } = collectSamples(dir, metadata);
-    assert.deepEqual(measures(samples, 'loading.first_load.'), ['fcp', 'load_event_end', ...memory].sort());
-    assert.deepEqual(measures(samples, 'app_shell.'), []);
-    assert.deepEqual(rejected, [
-      { round: 0, suite: 'app_shell', target: 'candidate', reason: 'crossbench exited with 1' }
-    ]);
+    assert.equal(samples['loading.first_load.app_ready'], undefined);
+    assert.deepEqual(samples['loading.first_load.lcp'].candidate, [320]);
+    assert.match(rejected[0].reason, /loading\.first_load\.app_ready \(no values\)/);
   });
 });
 

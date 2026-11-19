@@ -61,24 +61,20 @@ export interface Comparison extends ComparisonDefinition {
 
 // Suites run through crossbench's `loading` benchmark with generated page
 // configs (see lib/configs.mts); each reports one value per repetition.
-const PAGE_SUITES = ['loading', 'trace', 'file_loading', 'app_shell', 'app_shell_trace'];
-
-// Page suites measured from a trace (see TRACE_QUERIES in lib/configs.mts).
-const TRACE_SUITES = ['trace', 'app_shell_trace'];
+const PAGE_SUITES = ['loading', 'trace', 'file_loading'];
 
 // Measures read from crossbench's performance.entries probe, which merges
-// every repetition of a story into <story>/performance.entries.json.
+// every repetition of a story into <story>/performance.entries.json. The app
+// shell page (lib/app-shell.mts) marks app-ready once its full first view is
+// in the DOM, and keeps its LCP as the app-lcp mark.
 const PERFORMANCE_ENTRIES: Record<string, Record<string, string>> = {
-  loading: { fcp: 'paint/first-contentful-paint/startTime', load_event_end: 'navigation/loadEventEnd' },
-  file_loading: { files_loaded_ms: 'mark/files-loaded/startTime' },
-  // The app shell page (lib/app-shell.mts) also marks when its full first
-  // view is in the DOM, and keeps its LCP as a mark.
-  app_shell: {
+  loading: {
     fcp: 'paint/first-contentful-paint/startTime',
     load_event_end: 'navigation/loadEventEnd',
     app_ready: 'mark/app-ready/startTime',
     lcp: 'mark/app-lcp/startTime'
-  }
+  },
+  file_loading: { files_loaded_ms: 'mark/files-loaded/startTime' }
 };
 
 const PRESS_RESULTS: Record<string, { file: string; keys: string[] }> = {
@@ -206,16 +202,14 @@ export function memoryMeasures(dump: any): Record<string, number> {
 }
 
 const MEMORY_MEASURES = ['total_pss_mib', 'browser_pss_mib', 'renderer_pss_mib', 'gpu_pss_mib'];
-// Suites whose first_load story ends with a meminfo dump.
-const MEMORY_SUITES = ['loading', 'app_shell'];
 
 // Measures each story of a page suite reports. A story that reports none of
 // them (for example after a Chromium roll renamed a trace event) is listed as
 // incomplete instead of disappearing from the results.
 function expectedMeasures(suite: string, story: string): string[] {
-  if (TRACE_SUITES.includes(suite)) return story === 'resize' ? ['resize_median_ms', 'resize_p90_ms'] : ['fcp', 'lcp'];
+  if (suite === 'trace') return story === 'resize' ? ['resize_median_ms', 'resize_p90_ms'] : ['fcp', 'lcp'];
   const measures = Object.keys(PERFORMANCE_ENTRIES[suite] ?? {});
-  return MEMORY_SUITES.includes(suite) && story === 'first_load' ? [...measures, ...MEMORY_MEASURES] : measures;
+  return suite === 'loading' && story === 'first_load' ? [...measures, ...MEMORY_MEASURES] : measures;
 }
 
 // Values per measure (one per repetition) for one story of a page suite.
@@ -236,7 +230,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
   }
 
   for (const runDir of runDirs(storyDir)) {
-    if (MEMORY_SUITES.includes(suite)) {
+    if (suite === 'loading') {
       // One dump per run, from the `meminfo` action at the end of the story.
       const meminfoDir = path.join(runDir, 'meminfo');
       const dumps = fs.existsSync(meminfoDir) ? fs.readdirSync(meminfoDir).filter((f) => f.endsWith('.json')) : [];
@@ -245,7 +239,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
           add(measure, value);
         }
       }
-    } else if (TRACE_SUITES.includes(suite)) {
+    } else if (suite === 'trace') {
       const tpDir = path.join(runDir, 'trace_processor');
       if (story === 'resize') {
         const rows: any[] = readJsonIfExists(path.join(tpDir, 'resize.json')) ?? [];
