@@ -58,10 +58,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 081e3081b0ede86d9551e164828c3d79a6a47de7..e1acbf85a2358b9aced23c8b5441382a6ab60b16 100644
+index f54eb174d3974d935c23ae46465f6219fa0e5543..55a6c82bb4b081250fc96d7e0815adeb564143f3 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1170,6 +1170,7 @@ component("base") {
+@@ -1173,6 +1173,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -979,7 +979,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 5f6df4f727cb8aa964c5f5c608bba01397633d7d..c9c70f055377bed3a8b5385aed70c7412103b68e 100644
+index 5b2d4c2531a37e0b99bc31dffb46e8d3ff94a0b0..2d5c9e1e8ab5e6eace41ee66bb6c9d6c400ab45b 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -40,6 +40,7 @@
@@ -990,7 +990,7 @@ index 5f6df4f727cb8aa964c5f5c608bba01397633d7d..c9c70f055377bed3a8b5385aed70c741
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2657,15 +2658,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2668,15 +2669,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1013,7 +1013,7 @@ index 5f6df4f727cb8aa964c5f5c608bba01397633d7d..c9c70f055377bed3a8b5385aed70c741
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4bacdcb7ec8f16639a89d6af3fc719ada8e4e54f..a0d1706e10bf1acbba6857585dfa70f23ec43056 100644
+index dfb3b59e7979e143b69cb658f9757d0feebc11a2..ee7d0b4b117111f07f6aeb403458e49c9329c295 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -394,6 +394,7 @@ source_set("browser") {
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f4930758c1a630c7c55bb6ad3862de11ea20ad75..79c3fe403eb52494396a22ac96e3bf81f8fd1b19 100644
+index 3f4926f9811bfa74504a078b3209d6852a7a069d..a2efa236ee4422659f05a5e239c1a5a951c746ad 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index f4930758c1a630c7c55bb6ad3862de11ea20ad75..79c3fe403eb52494396a22ac96e3bf81
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2065,6 +2068,7 @@ test("content_browsertests") {
+@@ -2066,6 +2069,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1256,7 +1256,7 @@ index f4930758c1a630c7c55bb6ad3862de11ea20ad75..79c3fe403eb52494396a22ac96e3bf81
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3473,6 +3477,7 @@ test("content_unittests") {
+@@ -3475,6 +3479,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2171,7 +2171,7 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 5704ddf8fef8c0d8443046074f7d9441b1812d7d..f67eb262581e6766ccf7d9eebda103061c103863 100644
+index be5ea05c295d6a5f3c950b3e93328d824da4b6cd..8c4efcae8a60bbbfff16b2f3cf1542eb1f331a64 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -369,6 +369,13 @@ component("base") {
@@ -2188,7 +2188,7 @@ index 5704ddf8fef8c0d8443046074f7d9441b1812d7d..f67eb262581e6766ccf7d9eebda10306
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -523,6 +530,12 @@ component("base") {
+@@ -524,6 +531,12 @@ component("base") {
      "//url",
    ]
  

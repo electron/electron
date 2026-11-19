@@ -136,10 +136,10 @@ index 3af870df8b7b8afc9edc1881bfaf07772656df86..520463a291fb58268f2c411b0325cc79
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/notifications/virtual_platform_notification_service.cc b/content/browser/notifications/virtual_platform_notification_service.cc
-index 9e00a2803d6082ef60dfc4865b099bbdaa10d4ba..1c1bb0d081efa5ef07b0d04757d8d40274a9cb10 100644
+index 0bea857355461012333dcd3bc35f1bab46c06dcb..232b74207cbcecd4d066260d276f266e7c5621f5 100644
 --- a/content/browser/notifications/virtual_platform_notification_service.cc
 +++ b/content/browser/notifications/virtual_platform_notification_service.cc
-@@ -170,6 +170,7 @@ void VirtualPlatformNotificationService::SimulateClose(
+@@ -244,6 +244,7 @@ void VirtualPlatformNotificationService::SimulateClose(
  }
  
  void VirtualPlatformNotificationService::DisplayNotification(
@@ -148,10 +148,10 @@ index 9e00a2803d6082ef60dfc4865b099bbdaa10d4ba..1c1bb0d081efa5ef07b0d04757d8d402
      const GURL& origin,
      const GURL& document_url,
 diff --git a/content/browser/notifications/virtual_platform_notification_service.h b/content/browser/notifications/virtual_platform_notification_service.h
-index 73485c92b9b77d2042b6544fdce90ea20581ab6d..ffb2b28c8fd10196984c8a0c97e8ba9f430bd0dc 100644
+index ff376678fd3f13d30c285022c1da2749cda729f0..7503445b52239bd9f66077175ac10b037dd843e8 100644
 --- a/content/browser/notifications/virtual_platform_notification_service.h
 +++ b/content/browser/notifications/virtual_platform_notification_service.h
-@@ -133,6 +133,7 @@ class CONTENT_EXPORT VirtualPlatformNotificationService
+@@ -156,6 +156,7 @@ class CONTENT_EXPORT VirtualPlatformNotificationService
  
    // PlatformNotificationService:
    void DisplayNotification(
@@ -160,10 +160,10 @@ index 73485c92b9b77d2042b6544fdce90ea20581ab6d..ffb2b28c8fd10196984c8a0c97e8ba9f
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 8a8db65a1f29a90377781951a1850442056d20ee..0766b284e68aa929b75f0c52fe03a89017fef12e 100644
+index 60ed51f8732337b4fe4cd4f1ca4a84e3b4e98e60..35cb5535eabda2fe84f57615858322ab637f4a92 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2570,7 +2570,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2575,7 +2575,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -172,7 +172,7 @@ index 8a8db65a1f29a90377781951a1850442056d20ee..0766b284e68aa929b75f0c52fe03a890
            creator_type, std::move(receiver));
        break;
      }
-@@ -2578,7 +2578,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2583,7 +2583,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
