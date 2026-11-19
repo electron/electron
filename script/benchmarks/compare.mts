@@ -93,6 +93,24 @@ const readJson = (file: string): any => JSON.parse(fs.readFileSync(file, 'utf8')
 // Values of `data[key].values`, as written by crossbench's metrics merger.
 const valuesOf = (entry: any): number[] => (Array.isArray(entry?.values) ? entry.values.filter(Number.isFinite) : []);
 
+// Reads a JSON result file, or undefined when there is none. crossbench may
+// have been killed while writing one in a run that failed, so when `failed`
+// is set a file that doesn't parse also reads as undefined (and is listed in
+// `unreadable`): its story ends up with no values instead of the whole
+// comparison aborting. A successful run's files must parse.
+function resultReader(failed: boolean, unreadable: string[]) {
+  return (file: string): any => {
+    if (!fs.existsSync(file)) return undefined;
+    try {
+      return readJson(file);
+    } catch (error) {
+      if (!failed) throw error;
+      unreadable.push(file);
+      return undefined;
+    }
+  };
+}
+
 // Returns { metrics: { metric: number }, incomplete: [description] } for one
 // crossbench invocation. A measure with fewer (or more) values than the
 // expected repetitions is dropped, so a run where some repetitions failed or
@@ -100,10 +118,17 @@ const valuesOf = (entry: any): number[] => (Array.isArray(entry?.values) ? entry
 function collectInvocation(
   resultDir: string,
   suite: string,
-  expectedCount: number | undefined
+  expectedCount: number | undefined,
+  failed = false
 ): { metrics: Record<string, number>; incomplete: string[] } {
   const metrics: Record<string, number> = {};
   const incomplete: string[] = [];
+  const unreadable: string[] = [];
+  const read = resultReader(failed, unreadable);
+  const result = () => {
+    for (const file of unreadable) incomplete.push(`${path.relative(resultDir, file)} (unreadable)`);
+    return { metrics, incomplete };
+  };
   const complete = (name: string, values: number[]) => {
     if (values.length === 0) return false;
     if (expectedCount === undefined || values.length === expectedCount) return true;
@@ -113,14 +138,12 @@ function collectInvocation(
   if (!fs.existsSync(resultDir)) return { metrics, incomplete };
 
   if (PRESS_RESULTS[suite]) {
-    const file = path.join(resultDir, PRESS_RESULTS[suite].file);
-    if (!fs.existsSync(file)) return { metrics, incomplete };
-    for (const browser of Object.values<any>(readJson(file))) {
+    for (const browser of Object.values<any>(read(path.join(resultDir, PRESS_RESULTS[suite].file)) ?? {})) {
       const key = PRESS_RESULTS[suite].keys.find((k) => valuesOf(browser.data?.[k]).length > 0);
       const values = key ? valuesOf(browser.data[key]) : [];
       if (complete(`${suite}.score`, values)) metrics[`${suite}.score`] = median(values);
     }
-    return { metrics, incomplete };
+    return result();
   }
 
   // Each invocation runs one browser, so there is one <browser>/stories dir.
@@ -131,13 +154,15 @@ function collectInvocation(
       const storyDir = path.join(storiesDir, story);
       if (!fs.statSync(storyDir).isDirectory()) continue;
       // A story crossbench reported errors for is left out even when every
-      // repetition has a value: the values may not mean what they should.
-      const errors = readJsonIfExists(path.join(storyDir, 'cb.errors.json'));
-      if (Array.isArray(errors) && errors.length > 0) {
+      // repetition has a value: the values may not mean what they should. An
+      // unreadable errors file counts as errors.
+      const errorsFile = path.join(storyDir, 'cb.errors.json');
+      const errors = read(errorsFile);
+      if ((Array.isArray(errors) && errors.length > 0) || (errors === undefined && fs.existsSync(errorsFile))) {
         incomplete.push(`${suite}.${story} (crossbench reported errors)`);
         continue;
       }
-      for (const [measure, values] of Object.entries(storyMeasures(suite, story, storyDir))) {
+      for (const [measure, values] of Object.entries(storyMeasures(suite, story, storyDir, read))) {
         const metric = `${suite}.${story}.${measure}`;
         if (values.length === 0) incomplete.push(`${metric} (no values)`);
         else if (complete(metric, values)) metrics[metric] = median(values);
@@ -157,13 +182,13 @@ function collectInvocation(
       }
     }
   }
-  return { metrics, incomplete };
+  return result();
 }
 
-// Stories of one page-suite invocation with at least one complete measure.
-// run.mts --best-effort stops running the stories that have none.
+// Stories of one failed page-suite invocation with at least one complete
+// measure. run.mts --best-effort stops running the stories that have none.
 export function storiesWithResults(resultDir: string, suite: string, expectedCount: number | undefined): Set<string> {
-  const { metrics } = collectInvocation(resultDir, suite, expectedCount);
+  const { metrics } = collectInvocation(resultDir, suite, expectedCount, true);
   return new Set(Object.keys(metrics).map((metric) => metric.split('.')[1]));
 }
 
@@ -185,7 +210,6 @@ function runDirs(storyDir: string): string[] {
   return dirs;
 }
 
-const readJsonIfExists = (file: string): any => (fs.existsSync(file) ? readJson(file) : undefined);
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
 // The nearest-rank percentile of a sorted list.
@@ -236,7 +260,12 @@ function expectedMeasures(suite: string, story: string): string[] {
 }
 
 // Values per measure (one per repetition) for one story of a page suite.
-function storyMeasures(suite: string, story: string, storyDir: string): Record<string, number[]> {
+function storyMeasures(
+  suite: string,
+  story: string,
+  storyDir: string,
+  read: (file: string) => any
+): Record<string, number[]> {
   const measures: Record<string, number[]> = Object.fromEntries(
     expectedMeasures(suite, story).map((measure) => [measure, []])
   );
@@ -246,7 +275,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
 
   const entries = PERFORMANCE_ENTRIES[suite];
   if (entries) {
-    const data = readJsonIfExists(path.join(storyDir, 'performance.entries.json'));
+    const data = read(path.join(storyDir, 'performance.entries.json'));
     for (const [measure, key] of Object.entries(entries)) {
       for (const value of valuesOf(data?.[key])) add(measure, value);
     }
@@ -258,14 +287,14 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
       const meminfoDir = path.join(runDir, 'meminfo');
       const dumps = fs.existsSync(meminfoDir) ? fs.readdirSync(meminfoDir).filter((f) => f.endsWith('.json')) : [];
       if (dumps.length === 1) {
-        for (const [measure, value] of Object.entries(memoryMeasures(readJson(path.join(meminfoDir, dumps[0]))))) {
+        for (const [measure, value] of Object.entries(memoryMeasures(read(path.join(meminfoDir, dumps[0]))))) {
           add(measure, value);
         }
       }
     } else if (suite === 'trace') {
       const tpDir = path.join(runDir, 'trace_processor');
       if (story === 'resize') {
-        const rows: any[] = readJsonIfExists(path.join(tpDir, 'resize.json')) ?? [];
+        const rows: any[] = read(path.join(tpDir, 'resize.json')) ?? [];
         const latencies = rows
           .map((row) => row.resize_ms)
           .filter(isNumber)
@@ -275,7 +304,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
           add('resize_p90_ms', percentile(latencies, 0.9));
         }
       } else {
-        const [row] = readJsonIfExists(path.join(tpDir, 'page_load.json')) ?? [];
+        const [row] = read(path.join(tpDir, 'page_load.json')) ?? [];
         add('fcp', row?.fcp);
         add('lcp', row?.lcp);
       }
@@ -309,7 +338,8 @@ export function collectSamples(resultsDir: string, metadata: RunMetadata): { sam
     const { metrics, incomplete } = collectInvocation(
       path.join(resultsDir, invocation.dir),
       suite,
-      expectedCountOf(invocation, metadata)
+      expectedCountOf(invocation, metadata),
+      failed
     );
     const reasons: string[] = [];
     if (failed) reasons.push(`crossbench exited with ${invocation.exitCode}, complete stories kept`);

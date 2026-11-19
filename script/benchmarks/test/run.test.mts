@@ -165,6 +165,17 @@ describe('failedStories', () => {
       return { round, suite: 'loading', target: 'candidate', exitCode: 3, repetitions: 3, dir };
     });
     assert.deepEqual(failedStories(outDir, 'loading', stories, invocations), ['reload']);
+    // A run killed while crossbench wrote a result file: the story has no
+    // results rather than the round loop throwing.
+    fs.writeFileSync(
+      path.join(outDir, invocations[0].dir, 'chromium_candidate', 'stories', 'first_load', 'performance.entries.json'),
+      '{"paint/first'
+    );
+    fs.writeFileSync(
+      path.join(outDir, invocations[1].dir, 'chromium_candidate', 'stories', 'first_load', 'cb.errors.json'),
+      '[{"type": "builtins.Timeo'
+    );
+    assert.deepEqual(failedStories(outDir, 'loading', stories, invocations), ['first_load', 'reload']);
   });
 
   it('returns nothing unless the candidate failed in both rounds', () => {

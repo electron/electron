@@ -315,6 +315,36 @@ describe('loading measures', () => {
     assert.deepEqual(samples['loading.first_load.lcp'].candidate, [320]);
     assert.match(rejected[0].reason, /loading\.first_load\.app_ready \(no values\)/);
   });
+
+  // crossbench killed while writing reload's results.
+  function truncateReload(dir: string) {
+    const storyDir = path.join(dir, 'rounds', '0', 'loading', 'candidate', 'chromium_candidate', 'stories', 'reload');
+    fs.writeFileSync(path.join(storyDir, 'performance.entries.json'), '{"paint/first-contentful-paint/sta');
+  }
+
+  it("treats a failed run's unreadable result file as no values", () => {
+    const { dir, metadata } = writeLoadingResults('loading-truncated', {
+      'app-ready': [200, 220],
+      'app-lcp': [300, 340]
+    });
+    truncateReload(dir);
+    metadata.bestEffort = true;
+    metadata.invocations[0].exitCode = 124;
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.deepEqual(samples['loading.first_load.app_ready'].candidate, [210]);
+    assert.deepEqual(measures(samples, 'loading.reload.'), []);
+    assert.match(rejected[0].reason, /performance\.entries\.json \(unreadable\)/);
+    assert.match(rejected[0].reason, /loading\.reload\.fcp \(no values\)/);
+  });
+
+  it("fails on a successful run's unreadable result file", () => {
+    const { dir, metadata } = writeLoadingResults('loading-truncated-ok', {
+      'app-ready': [200, 220],
+      'app-lcp': [300, 340]
+    });
+    truncateReload(dir);
+    assert.throws(() => collectSamples(dir, metadata), SyntaxError);
+  });
 });
 
 describe('memoryMeasures', () => {
