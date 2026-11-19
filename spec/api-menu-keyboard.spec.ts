@@ -23,8 +23,8 @@ try {
 
 const display = screen.getPrimaryDisplay();
 
-// Delay after key presses that don't open or close a menu. robotjs can drop
-// keystrokes that arrive too quickly for the nested menu message loop.
+// Pace key presses even after menu events, which fire before native menu
+// transitions finish. robotjs can drop keys sent too quickly to the menu loop.
 const KEY_DELAY = 350;
 
 // A key name or a [key, modifiers] tuple.
@@ -38,9 +38,12 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
   'menu bar keyboard sibling switching',
   { tags: ['serial'], retry: 0 },
   () => {
+    const navigationTrace: string[] = [];
+
     // Records the label of the last menu item activated via the keyboard
     let lastClicked: string | null = null;
     const record = (label: string) => {
+      navigationTrace.push(`activated ${label}`);
       lastClicked = label;
     };
 
@@ -107,10 +110,16 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
     const openMenus = new Set<Menu>();
 
     const trackOpenMenus = (menu: Menu) => {
-      for (const { submenu } of menu.items) {
+      for (const { id, label, submenu } of menu.items) {
         if (!submenu) continue;
-        submenu.on('menu-will-show', () => openMenus.add(submenu));
-        submenu.on('menu-will-close', () => openMenus.delete(submenu));
+        submenu.on('menu-will-show', () => {
+          navigationTrace.push(`${id || label}: menu-will-show`);
+          openMenus.add(submenu);
+        });
+        submenu.on('menu-will-close', () => {
+          navigationTrace.push(`${id || label}: menu-will-close`);
+          openMenus.delete(submenu);
+        });
         trackOpenMenus(submenu);
       }
     };
@@ -139,10 +148,13 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       w.focus();
       const bounds = w.getContentBounds();
       clickAt({ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 });
+      navigationTrace.push('waiting for window focus');
       await waitUntil(() => w.isFocused());
+      navigationTrace.push('window focused');
     };
 
     const tap = (key: Key) => {
+      navigationTrace.push(`press ${JSON.stringify(key)}`);
       if (Array.isArray(key)) {
         robot.keyTap(key[0], key[1]);
       } else {
@@ -150,8 +162,7 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       }
     };
 
-    // Presses keys that don't open or close a menu, pausing after each one so
-    // menu event handling can keep up.
+    // Pause after each key so native menu state can catch up with its events.
     const pressKeys = async (keys: Key[]) => {
       for (const key of keys) {
         tap(key);
@@ -159,13 +170,23 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       }
     };
 
-    // Presses a key and waits for the submenu with `id` to emit `event`, so that
-    // following keys go to whichever menu is open afterwards. Switching menus is
-    // asynchronous, so a fixed delay could let the next key reach the old menu.
+    // Require the expected event as well as inter-key pacing. Neither a delay
+    // alone nor a will-show/will-close event alone signals a finished transition.
     const pressKeyAndWait = async (key: Key, id: string, event: MenuEvent = 'menu-will-show') => {
-      const done = once(submenuById(id), event);
-      tap(key);
-      await done;
+      navigationTrace.push(`waiting for ${id}: ${event}`);
+      const done = once(submenuById(id), event, { signal: AbortSignal.timeout(10000) });
+      try {
+        await Promise.all([done, pressKeys([key])]);
+        navigationTrace.push(`completed ${id}: ${event}`);
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error(
+            `Timed out waiting for ${id}: ${event} after ${JSON.stringify(key)}\n${navigationTrace.join('\n')}`,
+            { cause: error }
+          );
+        }
+        throw error;
+      }
     };
 
     // Presses Escape until every open menu has closed, one menu at a time.
@@ -194,7 +215,11 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       await closeMenus();
     });
 
-    beforeEach(async () => {
+    beforeEach(async ({ onTestFailed }) => {
+      navigationTrace.length = 0;
+      onTestFailed(() => {
+        console.error(`Menu keyboard navigation trace:\n${navigationTrace.join('\n')}\nlastClicked: ${lastClicked}`);
+      });
       lastClicked = null;
       setMenu(buildMenu());
       // Re-establish foreground focus
@@ -417,8 +442,9 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       await pressKeyAndWait(['b', ['alt']], 'beta'); // open Beta (Beta Leaf selected)
       await pressKeys(['down']); // select Beta More (a submenu item)
       await pressKeyAndWait('right', 'beta-more'); // open the Beta More submenu (Beta More Item selected)
-      await pressKeyAndWait('left', 'beta-more', 'menu-will-close'); // close Beta More (NOT switch to Alpha)
+      // Closing this submenu leaves its parent selected, so Views emits no close event.
       await pressKeys([
+        'left', // close Beta More (NOT switch to Alpha)
         'up', // back to Beta Leaf
         'enter' // activate Beta Leaf
       ]);
