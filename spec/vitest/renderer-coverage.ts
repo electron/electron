@@ -11,6 +11,12 @@
 // session per renderer process owns coverage; another one takes over when it
 // detaches.
 //
+// Taking coverage sits on the path of every window a spec closes, so it only
+// asks the targets of that window's renderer, and only ones that can answer:
+// a command to a WebContents without a live renderer waits for one, and one
+// to a target that goes away is never answered (both would cost the whole
+// TAKE_TIMEOUT).
+//
 // Everything here is a no-op unless startRendererCoverage() was called.
 
 import { app, webContents } from 'electron/main';
@@ -29,6 +35,9 @@ interface Session {
   sessionId: string;
   targetId: string;
   owner: boolean;
+  // The session that auto-attached this one (a worker's page, an out-of-process
+  // iframe's parent), if any.
+  parent?: string;
   // Started while coverage was suspended, see suspendRendererCoverage().
   excluded: boolean;
   // Last known renderer process, see rendererPid().
@@ -58,7 +67,10 @@ let socket: WebSocket | undefined;
 let nextId = 1;
 let takes = 0;
 let suspended = false;
-const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
+const pending = new Map<
+  number,
+  { sessionId?: string; resolve: (result: any) => void; reject: (error: Error) => void }
+>();
 const sessions = new Map<string, Session>();
 
 export function devToolsActivePortFile() {
@@ -68,7 +80,7 @@ export function devToolsActivePortFile() {
 function send(method: string, params: object = {}, sessionId?: string): Promise<any> {
   if (!socket || socket.readyState !== WebSocket.OPEN) return Promise.reject(new Error('Not connected'));
   const id = nextId++;
-  const result = new Promise<any>((resolve, reject) => pending.set(id, { resolve, reject }));
+  const result = new Promise<any>((resolve, reject) => pending.set(id, { sessionId, resolve, reject }));
   socket.send(JSON.stringify({ id, method, params, sessionId }));
   return result;
 }
@@ -88,14 +100,30 @@ function rendererPid(session: Session) {
   return session.pid;
 }
 
+// The WebContents a target belongs to: its own, or that of the session that
+// attached it (e.g. the page of a dedicated worker). Undefined for targets
+// attached at the browser level that are not WebContents (shared workers).
+function owningContents(session: Session): Electron.WebContents | undefined {
+  let current: Session | undefined = session;
+  while (current) {
+    const contents = webContents.fromDevToolsTargetId(current.targetId);
+    if (contents) return contents;
+    current = current.parent ? sessions.get(current.parent) : undefined;
+  }
+  return undefined;
+}
+
 function startCoverage(session: Session) {
   session.owner = true;
   post('Profiler.enable', {}, session.sessionId);
   post('Profiler.startPreciseCoverage', { callCount: true, detailed: true }, session.sessionId);
 }
 
-function onAttached({ sessionId, targetInfo }: { sessionId: string; targetInfo: { type: string; targetId: string } }) {
-  const session: Session = { sessionId, targetId: targetInfo.targetId, owner: false, excluded: suspended };
+function onAttached(
+  { sessionId, targetInfo }: { sessionId: string; targetInfo: { type: string; targetId: string } },
+  parent?: string
+) {
+  const session: Session = { sessionId, targetId: targetInfo.targetId, owner: false, excluded: suspended, parent };
   if (!suspended && coverageTargetTypes.has(targetInfo.type)) {
     const pid = rendererPid(session);
     const hasOwner =
@@ -112,6 +140,12 @@ function onAttached({ sessionId, targetInfo }: { sessionId: string; targetInfo: 
 function onDetached({ sessionId }: { sessionId: string }) {
   const session = sessions.get(sessionId);
   sessions.delete(sessionId);
+  // Chromium drops the commands a detached session had not answered yet.
+  for (const [id, request] of pending) {
+    if (request.sessionId !== sessionId) continue;
+    pending.delete(id);
+    request.reject(new Error('Target detached'));
+  }
   if (!session?.owner) return;
   const pid = rendererPid(session);
   if (pid === undefined) return;
@@ -127,7 +161,8 @@ function onMessage(data: string) {
     if (message.error) request?.reject(new Error(message.error.message));
     else request?.resolve(message.result);
   } else if (message.method === 'Target.attachedToTarget') {
-    onAttached(message.params);
+    // Flattened sessions: the event comes from the session that attached it.
+    onAttached(message.params, message.sessionId);
   } else if (message.method === 'Target.detachedFromTarget') {
     onDetached(message.params);
   }
@@ -190,19 +225,23 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | undefined>
 
 // Writes the coverage the renderers have collected since the last take (V8
 // resets the counters on each take): of the renderer process of `contents`
-// and of every target not tied to a WebContents, or of everything when no
-// `contents` is given. Call before closing a window, as the coverage of a
-// renderer is gone with it.
+// and of the targets it attached (workers, out-of-process iframes), or of
+// everything when no `contents` is given. Call before closing a window, as
+// the coverage of a renderer is gone with it.
 export async function takeRendererCoverage(contents?: Electron.WebContents) {
   if (!socket || !coverageDir) return;
-  let owners = [...sessions.values()].filter((session) => session.owner);
-  if (contents && !contents.isDestroyed()) {
-    const pid = contents.getOSProcessId();
-    owners = owners.filter((session) => {
-      const sessionPid = rendererPid(session);
-      return sessionPid === undefined || sessionPid === pid;
-    });
-  }
+  if (contents?.isDestroyed()) return;
+  const pid = contents?.getOSProcessId();
+  if (pid === 0) return;
+  const owners = [...sessions.values()].filter((session) => {
+    if (!session.owner) return false;
+    const owning = owningContents(session);
+    if (!owning) return !contents;
+    // Without a renderer (none yet, or it is gone) nothing would answer.
+    if (owning.isDestroyed()) return false;
+    const owningPid = owning.getOSProcessId();
+    return owningPid !== 0 && (!contents || owningPid === pid);
+  });
   await Promise.all(
     owners.map(async (session) => {
       const coverage = await withTimeout(
