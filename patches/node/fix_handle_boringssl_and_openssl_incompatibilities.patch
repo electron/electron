@@ -39,7 +39,7 @@ index ea0747511a107c96befd2dae1d7bd56759dd95b6..ad056b5610bc8f0db2137402cecc07e1
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 71debb0805b62deba0b941fc7679b08a9c41d542..0b7ebcebadf11023e0cfad105f53518ff31e09e1 100644
+index fd56e8e93423126688678bdc80031a861f57f895..66009ad82bf0c74a2e2411e8e39802cc0a851c9a 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -175,7 +175,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -51,7 +51,7 @@ index 71debb0805b62deba0b941fc7679b08a9c41d542..0b7ebcebadf11023e0cfad105f53518f
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -2618,7 +2618,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2623,7 +2623,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
