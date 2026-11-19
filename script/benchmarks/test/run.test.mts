@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { pageConfigs } from '../lib/configs.mts';
 import { capLogs, failedStories, runCrossbench } from '../run.mts';
 
 import type { Invocation } from '../lib/types.mts';
@@ -135,6 +136,35 @@ describe('failedStories', () => {
     const outDir = path.join(tmp, 'failed-stories-none');
     const invocations = [invocation(outDir, 0, 3, []), invocation(outDir, 1, 124, [])];
     assert.deepEqual(failedStories(outDir, 'file_loading', STORIES, invocations), STORIES);
+  });
+
+  it("matches the loading suite's app shell stories", () => {
+    const outDir = path.join(tmp, 'failed-stories-loading');
+    const stories = Object.keys(pageConfigs({ fileRoot: '/tmp/files', appRoot: '/tmp/app' }).loading.pages);
+    assert.deepEqual(stories, ['first_load', 'reload']);
+    // first_load completes in both rounds; reload times out with one value.
+    const invocations = [0, 1].map((round): Invocation => {
+      const dir = path.join('rounds', String(round), 'loading', 'candidate');
+      for (const [story, count] of [
+        ['first_load', 3],
+        ['reload', 1]
+      ] as const) {
+        const storyDir = path.join(outDir, dir, 'chromium_candidate', 'stories', story);
+        fs.mkdirSync(storyDir, { recursive: true });
+        const values = [100, 110, 120].slice(0, count);
+        fs.writeFileSync(
+          path.join(storyDir, 'performance.entries.json'),
+          JSON.stringify({
+            'paint/first-contentful-paint/startTime': { values },
+            'navigation/loadEventEnd': { values },
+            'mark/app-ready/startTime': { values },
+            'mark/app-lcp/startTime': { values }
+          })
+        );
+      }
+      return { round, suite: 'loading', target: 'candidate', exitCode: 3, repetitions: 3, dir };
+    });
+    assert.deepEqual(failedStories(outDir, 'loading', stories, invocations), ['reload']);
   });
 
   it('returns nothing unless the candidate failed in both rounds', () => {

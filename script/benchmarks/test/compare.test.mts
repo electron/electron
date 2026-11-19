@@ -258,7 +258,13 @@ describe('loading measures', () => {
         fs.mkdirSync(meminfoDir, { recursive: true });
         fs.writeFileSync(
           path.join(meminfoDir, 'loaded.json'),
-          JSON.stringify({ processes: [{ pid: 1, name: '/opt/electron/electron', pss_total: 1024 }] })
+          JSON.stringify({
+            processes: [
+              { pid: 1, name: '/opt/electron/electron', pss_total: 1024 },
+              { pid: 2, name: '/opt/electron/electron --type=renderer', pss_total: 1024 },
+              { pid: 3, name: '/opt/electron/electron --type=gpu-process', pss_total: 1024 }
+            ]
+          })
         );
       }
     }
