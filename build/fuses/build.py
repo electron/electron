@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
+import argparse
 from collections import OrderedDict
 import json
 import os
-import sys
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -102,6 +102,20 @@ del fuse_defaults['_comment']
 if fuse_version >= pow(2, 8):
   raise Exception("Fuse version can not exceed one byte in size")
 
+parser = argparse.ArgumentParser()
+parser.add_argument('header_path')
+parser.add_argument('impl_path')
+# "<fuse>=<state>" overrides of the defaults in fuses.json5, set through the
+# electron_fuse_overrides GN arg. Release builds pass none.
+parser.add_argument('overrides', nargs='*', metavar='fuse=state')
+args = parser.parse_args()
+
+for override in args.overrides:
+  fuse, sep, fuse_state = override.partition('=')
+  if not sep or fuse not in fuse_defaults:
+    raise Exception(f"Invalid fuse override '{override}'")
+  fuse_defaults[fuse] = fuse_state
+
 fuses = fuse_defaults.keys()
 
 initial_config = ""
@@ -154,8 +168,8 @@ impl = impl.replace("{state_removed}", STATE_REMOVED)
 impl = impl.replace("{state_enabled_unpackaged}", STATE_ENABLED_UNPACKAGED)
 impl = impl.replace("{state_enabled_packaged}", STATE_ENABLED_PACKAGED)
 
-with open(sys.argv[1], 'w') as f:
+with open(args.header_path, 'w') as f:
   f.write(header)
 
-with open(sys.argv[2], 'w') as f:
+with open(args.impl_path, 'w') as f:
   f.write(impl)
