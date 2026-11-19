@@ -19,7 +19,7 @@ tools/grit/repack.gni passes repack_allowlist through
 rebase_path(..., root_build_dir); check that line on each Chromium roll.
 
 diff --git a/tools/grit/repack.gni b/tools/grit/repack.gni
-index e662274173837ab2c6946651a84985fdd858a6ea..f6ed7c2ff47efdb1667e90a038bd02e01b34ee85 100644
+index c52e0e5076f537820941dad0e9badaf3f8f23dd2..9712a25df3f222d58cdaf3eb04bff71b1df27d88 100644
 --- a/tools/grit/repack.gni
 +++ b/tools/grit/repack.gni
 @@ -77,7 +77,7 @@ template("repack") {
