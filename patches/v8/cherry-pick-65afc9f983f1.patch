@@ -27,10 +27,10 @@ Commit-Queue: Clemens Backes <clemensb@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#111162}
 
 diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
-index 94a6fd5caab2c812a26ea36c379c3690b468bdde..4c785ebdb791aa7e0e4a01f8a2f1eb61ce84673f 100644
+index bf0d88e5bf805a534c59104a601e2ef5cff88dc9..50b16b526d325ceed6de42f5b88f48e97db6d71a 100644
 --- a/src/compiler/access-info.cc
 +++ b/src/compiler/access-info.cc
-@@ -556,9 +556,11 @@ std::optional<ElementAccessInfo> AccessInfoFactory::ComputeElementAccessInfo(
+@@ -555,9 +555,11 @@ std::optional<ElementAccessInfo> AccessInfoFactory::ComputeElementAccessInfo(
          if (!maybe_handler->IsJSObject()) return {};
          JSObjectRef handler = maybe_handler.value().AsJSObject();
          MapRef handler_map = handler.map(broker());
@@ -45,7 +45,7 @@ index 94a6fd5caab2c812a26ea36c379c3690b468bdde..4c785ebdb791aa7e0e4a01f8a2f1eb61
          NameRef trap_name = access_mode == AccessMode::kLoad
                                  ? broker()->get_string()
                                  : broker()->set_string();
-@@ -567,7 +569,10 @@ std::optional<ElementAccessInfo> AccessInfoFactory::ComputeElementAccessInfo(
+@@ -566,7 +568,10 @@ std::optional<ElementAccessInfo> AccessInfoFactory::ComputeElementAccessInfo(
          if (!trap_info.IsFastDataConstant()) return {};
          Representation repr = trap_info.field_representation();
          if (!repr.IsHeapObject() && !repr.IsTagged()) return {};
@@ -57,7 +57,7 @@ index 94a6fd5caab2c812a26ea36c379c3690b468bdde..4c785ebdb791aa7e0e4a01f8a2f1eb61
              broker(), repr, trap_info.field_index(), dependencies());
          if (!trap.has_value()) return {};
          ObjectRef trap_value = trap.value();
-@@ -607,6 +612,14 @@ std::optional<ElementAccessInfo> AccessInfoFactory::ComputeElementAccessInfo(
+@@ -606,6 +611,14 @@ std::optional<ElementAccessInfo> AccessInfoFactory::ComputeElementAccessInfo(
          }
  
          // Finally: all good!

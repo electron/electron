@@ -889,10 +889,10 @@ index f60bb46ffccc750fa5685983b7c9ebbf97e7150e..75fd42b32621ca70f94ea224fe2404b9
                              mojom::ConsoleMessageLevel,
                              const String& message,
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 30563f7ddbc672fe65e50a09c4050c83261a9a48..5ba43054c34b1bc2a12b6e495614ac03d9675d1f 100644
+index 010b35232da18e25c8e86131312406bfa956a3f5..7f9a0944a65e56932cf0c78fb68749b96feb364f 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -5496,6 +5496,10 @@
+@@ -5503,6 +5503,10 @@
        name: "SanitizerAPI",
        status: "stable",
      },

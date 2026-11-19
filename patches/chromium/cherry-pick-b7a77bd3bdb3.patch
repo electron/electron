@@ -386,10 +386,10 @@ index 0af4f37d2933a5fef05e9a463f210deb6f83d790..dfd8acdd91c6ad8dff2f28d31f1deafc
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 5ba43054c34b1bc2a12b6e495614ac03d9675d1f..2f4e2674e18b2615ad83198c68bb9530c0c60fc9 100644
+index 7f9a0944a65e56932cf0c78fb68749b96feb364f..dc9e90210d0e727981fda590d8ca281c638b605e 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -6902,6 +6902,13 @@
+@@ -6913,6 +6913,13 @@
        name: "ViewTransitionLongCallbackTimeoutForTesting",
        status: "test",
      },

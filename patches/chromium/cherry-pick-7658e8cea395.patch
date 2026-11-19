@@ -18,7 +18,7 @@ Cr-Commit-Position: refs/heads/main@{#1721557}
 Electron adaptation notes (45-x-y): html_canvas_element_test.cc: only the RemoveAndReinsertSlottedElementToSameHost test added by this change is carried; the 3-way merge had pulled in an unrelated upstream test as context.
 
 diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
-index 8bc5fce4338b508d5697d4b4194902365bcd8696..c015f4aa5b0ac57047d701a2fd4c0d80b5610d34 100644
+index 6a085e19b60cf2eaf03a5db141340aec63fb4b87..ecd098a9d684446739bad197f7ce8983339b2a64 100644
 --- a/third_party/blink/renderer/core/dom/element.cc
 +++ b/third_party/blink/renderer/core/dom/element.cc
 @@ -4260,12 +4260,17 @@ Node::InsertionNotificationRequest Element::InsertedInto(

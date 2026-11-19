@@ -105,7 +105,7 @@ index c54c6ff6f6ec7dfb29d5b7d7dfd2c2782de48999..6a9b543f940abebb2e1cfaaefe9868d1
        SecurityOrigin::CreateUniqueOpaque();
    std::unique_ptr<UrlIndex> url_index_;
 diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
-index 1e99ab799647ab281243255d96ab49bf868730e2..1197012640a7dc12b9df074d20dfe6a49b01e4b1 100644
+index 820826c6c4e679808fab81c4e122533418146eaa..4e2941214e214995f61a4d25d18189dccf720236 100644
 --- a/third_party/blink/web_tests/TestExpectations
 +++ b/third_party/blink/web_tests/TestExpectations
 @@ -7952,6 +7952,10 @@ crbug.com/40336192 virtual/disable-css-line-clamp/external/wpt/css/css-text/whit
