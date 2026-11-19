@@ -487,7 +487,8 @@ describe('WebContentsView', () => {
 
       const leaveHtmlFullScreen = once(w, 'leave-html-full-screen');
       const leaveFullScreen = once(w, 'leave-full-screen');
-      w.once('leave-html-full-screen', () => {
+      // BaseWindow emits this at runtime, but it is only typed on BrowserWindow.
+      (w as NodeJS.EventEmitter).once('leave-html-full-screen', () => {
         w.contentView.removeChildView(sibling);
       });
       w.contentView.removeChildView(view);
