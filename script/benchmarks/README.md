@@ -21,8 +21,8 @@ dispatched by hand. This catches regressions between Electron versions.
 
 | Suite | Stories | Metrics |
 | --- | --- | --- |
-| `loading` | `first_load`, `reload` (warm process, same page) | FCP and `loadEventEnd` in ms; PSS in MiB after `first_load` (total, browser, renderer and GPU processes) |
-| `trace` | `first_load`, `resize`, traced | FCP and LCP in ms; resize latency median and p90 in ms |
+| `loading` | `first_load`, `reload` (warm process, same page) of the app shell (see [The app shell page](#the-app-shell-page)) | FCP, `loadEventEnd`, `app_ready` and LCP in ms; PSS in MiB after `first_load` (total, browser, renderer and GPU processes) |
+| `trace` | `first_load` and `resize` of the app shell, traced | FCP and LCP in ms; resize latency median and p90 in ms |
 | `file_loading` | 1,500 small classic scripts and ES modules, loaded through `file://`, `protocol.registerFileProtocol`, `protocol.handle` + `fs`, and `protocol.handle` + `net.fetch` | Navigation start to "all files evaluated" in ms, and the ratio of each custom protocol to `file://` |
 | `speedometer` | Speedometer 3.1 | Score |
 | `jetstream` | JetStream 2.2 | Score |
@@ -30,9 +30,11 @@ dispatched by hand. This catches regressions between Electron versions.
 Every measure comes from one of crossbench's probes:
 
 * `performance.entries` reads paint timing (FCP), navigation timing and
-  `performance.mark()` entries from the page after each story. The
-  file-loading pages mark `files-loaded` themselves once every file has run,
-  because only the page knows when that is.
+  `performance.mark()` entries from the page after each story. The app shell
+  marks `app-ready` and keeps its LCP as the `app-lcp` mark, since the probe
+  reads no LCP entries. The file-loading pages mark `files-loaded`
+  themselves once every file has run, because only the page knows when that
+  is.
 * `meminfo` reads `/proc/<pid>/smaps_rollup` for every browser process, through
   a `meminfo` action at the end of `first_load`, after the timing.
 * `tracing` records a Chrome-style startup trace (`--trace-startup`) with only
@@ -43,17 +45,65 @@ Every measure comes from one of crossbench's probes:
   `traced`, including FCP.
   * FCP and LCP: from the main frame's `navigationStart` to
     `firstContentfulPaint` and to the last `largestContentfulPaint::Candidate`.
-  * Resize: `BrowserWindow.setSize()` from the browser's
+  * Resize: once the app shell has loaded, a script the story injects steps
+    the window between 1280x800 and 900x600 (below the app's 960px layout
+    breakpoint) with `BrowserWindow.setSize()`, through the harness preload,
+    20 times. Each is timed from the browser's
     `Widget::OnNativeWidgetSizeChanged` to the presentation (the end of the
     `PipelineReporter`) of the first renderer frame whose main frame committed
-    after the page's `resize` event, 20 times per run. Frames are matched by
-    their commit because a `PipelineReporter` starts at its BeginFrame
-    timestamp, which can be earlier than the resize the frame shows.
+    after the page's `resize` event. Frames are matched by their commit
+    because a `PipelineReporter` starts at its BeginFrame timestamp, which can
+    be earlier than the resize the frame shows.
 
 Tracing slows the browser down, so the traced stories run in their own `trace`
 invocation and the `loading` and `file_loading` numbers are never traced. The
-`trace` suite's FCP is a cross-check of the untraced one and the only source of
-LCP, which `performance.entries` does not read.
+`trace` suite's FCP and LCP are a cross-check of the untraced ones. From
+Electron 35 on, Chromium coarsens paint timing exposed to pages to 4 ms, so
+the `loading` suite's FCP and LCP move in 4 ms steps there (marks such as
+`app-ready` don't); the traced values are not coarsened.
+
+### The app shell page
+
+The `loading` and `trace` suites load an app shell shaped like a typical
+Electron app's first window, from `file://` like a packaged app.
+[`lib/app-shell.mts`](lib/app-shell.mts) generates it into the work directory
+at the start of each run from a fixed seed, so every run loads the same bytes,
+and nothing comes from the network or third parties. It has an HTML shell
+with an empty root, three stylesheets (about 90 KiB, 1,100 rules), three
+deferred classic scripts (about 420 KiB: a small module loader, virtual DOM
+with a keyed diff, store and event delegation, then about 200 generated
+helper, schema, reducer, service and component modules and a message
+catalog) and a 270 KiB JSON file of 1,200 work items. It starts fetching the
+JSON, evaluates its modules (most at startup, some never, like code a first
+window doesn't need), renders the window chrome (title bar, sidebar with
+inline SVG icons, toolbar), waits for it to paint, then renders a summary,
+four feature panels and a 1,200-row list (about 25,000 elements) through the
+diff. It avoids anything newer than Chromium 94 (Electron 15).
+
+What the measures cover, all from navigation start:
+
+| Measure | Covers |
+| --- | --- |
+| `fcp` | Stylesheets and scripts loaded and evaluated, and the window chrome rendered and painted |
+| `load_event_end` | The `load` event, after the deferred scripts ran; the item data has not rendered yet |
+| `app_ready` | The `app-ready` mark: the JSON fetched and parsed, items validated, reducers run, and the full first view built in the DOM, but not yet styled, laid out or painted |
+| `lcp` | The last largest-contentful-paint candidate, the summary paragraph: `app_ready` plus style, layout and paint of the full view |
+
+The stories wait until the `app-lcp` mark is later than `app-ready`, so the
+mark holds the final LCP however slowly a version paints. The app renders
+its content only once the chrome's FCP has been reported: when the two
+renders were closer, Electron 15 and 38 (in testing) sometimes credited the
+content's LCP to the chrome's earlier frame.
+
+Until November 2026 these suites loaded a synthetic page instead: a heading
+and a gradient over HTTP, behind a synchronous 3,000,000-iteration
+`Math.sqrt` loop, so its FCP and `loadEventEnd` mostly timed renderer setup
+plus that loop, and a separate grid of 3,000 cells for `resize`. The app
+shell replaced both on purpose, under the same metric names, so the series
+break there: nightly `electron.perf.loading.*` and `electron.perf.trace.*`
+values (and their deltas) step at the date the change merged, and history
+runs from before it can't be mixed with newer ones. A full history backfill
+(see below) is needed after the change.
 
 The press benchmarks are served locally from the WebKit revisions pinned in
 [`script/pgo/serve-benchmarks.js`](../pgo/serve-benchmarks.js), so they match
@@ -78,8 +128,9 @@ the CPU governor, which the CI VMs don't expose.
   crossbench browser config per target and `targets.json`. Builds are for the
   host's platform and architecture.
 * [`run.mts`](run.mts) installs crossbench at the pinned revision
-  (`CROSSBENCH_REVISION`) into a virtualenv, serves the pages and press
-  benchmarks, generates the page configs, and runs the rounds. It records the
+  (`CROSSBENCH_REVISION`) into a virtualenv, generates the app shell page,
+  serves the press benchmarks, generates the page configs, and runs the
+  rounds. It records the
   CPU model, kernel, runner name and (on Azure) VM size in `metadata.json`.
   Each crossbench invocation runs in its own process group, and its whole
   process tree (chromedriver and the browser included) is killed when it
@@ -145,6 +196,11 @@ job per major (six at a time) on the same runner type and container as the
 nightly run. In each job the candidate is that major's release and the
 baseline is a fixed **anchor** version, run interleaved as usual.
 
+Runs dispatched before the app shell replaced the synthetic page (see
+[The app shell page](#the-app-shell-page)) measured a different page in
+`loading` and `trace`. Dispatch a full run (the default majors) after that
+change, and chart only its `history_run_id`, or later ones, for those suites.
+
 The jobs run on different hosts, so their raw values can't be compared with
 each other. Their ratios to the anchor can: each one is measured on a single
 host, and the anchor is the same in every job. Each job sends:
@@ -169,22 +225,26 @@ trigger the nightly monitors.
 | `majors` | `15-latest` | Ranges and lists, e.g. `30-45` or `22,28,33-latest`. `latest` is the newest major with a stable release; majors without one are left out. |
 | `anchor` | `45.3.0` | Any released version, or `latest-stable`. Keep the default so runs stay comparable. |
 | `rounds` | `5` | Interleaved rounds per job. |
-| `suites` | all five | Same as nightly. |
+| `suites` | all seven | Same as nightly. |
 | `upload-to-datadog` | `true` | Also saves the summaries to blob storage (see [Stored results](#stored-results)). Unlike nightly, because the data is the point of the run. Turn it off for a trial run. |
 
 Old versions are run with `run.mts --best-effort --timeout-minutes 15`:
 stories whose APIs a version lacks are skipped (see the harness capabilities
-above), a suite that fails for the candidate in both of the first two rounds
-is not run again, and a job only fails when nothing could be measured. Which
-suites were dropped is in each job's step summary and `metadata.json`
-(`skippedSuites`).
+above), the stories of a crossbench run that failed still count when every
+repetition produced results and crossbench reported no errors for them, a
+story the candidate produced no complete results for in either of the first
+two rounds is not run again (the whole suite when that is every story), and a
+job only fails when nothing could be measured. Which suites and stories were
+dropped is in each job's step summary and `metadata.json` (`skippedSuites`
+and `skippedStories`).
 
 Electron 15 is the oldest major the default range includes: the harness
 uses `node:` imports, which the Node.js in Electron 14 and older lacks. What
 older versions can run, from one round each on Ubuntu 24.04 under Xvfb:
 
 * `loading` ran on every major tried (15, 18, 20, 22, 25, 28, 30, 33 and
-  36), and `speedometer` and `jetstream` on every major they were tried on
+  36 with the old synthetic page; 15, 29, 45 and a 47 nightly with the app
+  shell), and `speedometer` and `jetstream` on every major they were tried on
   (15, 22, 25 and 30).
 * `file_loading`: `protocol.handle` arrived in Electron 25, so older majors
   only run the `file://` and `registerFileProtocol` stories, and their
@@ -193,9 +253,10 @@ older versions can run, from one round each on Ubuntu 24.04 under Xvfb:
   the events the queries need), and resize latency only from Electron 40
   (36 and older report none; 37 to 39 were not tried). Missing values are
   listed in the summary as incomplete.
-* Memory: on some versions (36 in testing) the GPU and renderer processes
-  keep the zygote's command line, so their PSS can't be told apart and reads
-  as 0. History runs leave out values that are not positive.
+* Memory: on Electron 35 to 41 the GPU and renderer processes keep the
+  zygote's command line, so their PSS can't be told apart. Their measures are
+  listed as incomplete and left out of the comparison, and total PSS is still
+  measured.
 
 A job takes about an hour: the nightly run takes about ten minutes a round on
 the 32-core runner, and old versions run the press benchmarks more slowly.

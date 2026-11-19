@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 05:31:52 +0000
+Subject: build: use siso's thin archive handler for llvm-ar without remote
+ link
+
+siso's lld_thin_archive handler writes a thin archive itself instead of
+running the archiver, but it is only used when remote linking is on. With
+local links every `llvm-ar -T -S` step runs as a local process, and siso
+first has to expand the step's inputs, which accumulate the objects of
+every archive it has order-only deps on (15k+ for some blink archives).
+In an Electron build that is ~1,850 local archive steps, and the blink
+archives form a ~30s serial llvm-ar chain on the critical path.
+
+Use the handler for llvm-ar regardless of remote link. It stays gated for
+lld-link /llvmlibthin, whose output has not been compared. Also make it
+match llvm-ar exactly:
+
+* ar.star: an empty archive is only the "!<thin>\n" magic, with no
+  string table member.
+* clang_all.star: skip empty tokens in the rsp file (from repeated or
+  trailing spaces) instead of adding the build dir as an input.
+
+With this, all 1,843 archives in an Electron Linux build are
+byte-identical to the ones llvm-ar writes; local actions went from 2,735
+to 892 and siso's own CPU time dropped by ~15%.
+
+This should be upstreamed. Drop this patch once upstream
+build/config/siso/clang_all.star uses the thin archive handler for
+llvm-ar without the remote-link gate and ar.star writes an empty thin
+archive as only the magic; check both on each Chromium roll.
+
+diff --git a/build/config/siso/ar.star b/build/config/siso/ar.star
+index 49dd4144e0de50ae4f437de2d1eede1b1e3fabdb..3908e027113a2b20563c44e782ed8784678f0587 100644
+--- a/build/config/siso/ar.star
++++ b/build/config/siso/ar.star
+@@ -39,6 +39,9 @@ def __padding(data):
+ def __ar_create(ctx, wd, ins):
+     """Creates a thin archive without a symbol table."""
+     data = ["!<thin>\n"]
++    if not ins:
++        # llvm-ar writes no string table for an empty archive.
++        return bytes("".join(data))
+     offset = {}
+     content_lines = []
+     content_len = 0
+diff --git a/build/config/siso/clang_all.star b/build/config/siso/clang_all.star
+index 83acbf183b7111befaf6b5a8764a3d0e6d14a30e..88dad6c5f277dc6314a04005864424f0b686bbe5 100644
+--- a/build/config/siso/clang_all.star
++++ b/build/config/siso/clang_all.star
+@@ -229,10 +229,16 @@ def __lld_link(ctx, cmd):
+     ctx.actions.fix(rspfile_content = "\n".join(new_lines))
+ 
+ def __thin_archive(ctx, cmd):
+-    # TODO: This handler can be used despite remote linking?
+-    if not (config.get(ctx, "remote-link") or config.get(ctx, "default-remote")):
+-        return
++    # Creating the archive here, instead of running the archiver, also
++    # helps without remote link: the step then doesn't need to expand
++    # its inputs (which accumulate the objects of the archives it has
++    # order-only deps on, 15k+ for some blink archives) nor write them
++    # to disk. It is byte-identical to `llvm-ar -T -S -r -c -D` output.
+     if "lld-link" in cmd.args[0]:
++        # TODO: check that llvm-lib output matches before using this
++        # without remote link.
++        if not (config.get(ctx, "remote-link") or config.get(ctx, "default-remote")):
++            return
+         if not "/llvmlibthin" in cmd.args:
+             print("not thin archive")
+             return
+@@ -248,7 +254,8 @@ def __thin_archive(ctx, cmd):
+     inputs = []
+     for line in rspfile_content.split("\n"):
+         for fname in line.split(" "):
+-            inputs.append(ctx.fs.canonpath(fname))
++            if fname:
++                inputs.append(ctx.fs.canonpath(fname))
+     data = ar.create(ctx, path.dir(cmd.outputs[0]), inputs)
+     ctx.actions.write(cmd.outputs[0], data)
+     ctx.actions.exit(exit_status = 0)

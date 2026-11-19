@@ -925,7 +925,7 @@ index 0000000000000000000000000000000000000000..e67f6ef0bb4d3a9cba58b1243391ea0f
 +  return true;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 343bfcf7652d7dbf8fc969a65df0fae67b371153..0e05081f217d3a479da94433593307616aa4a164 100644
+index cf1403688f2867007708db4bda12e10a02c6244a..a3654dc425bcbf3d02cc82593b1375d2d1239a59 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -268,488 +268,8 @@ void ShowFileSystemAccessDangerousFileDialogOnUIThread(
@@ -1759,7 +1759,7 @@ index 343bfcf7652d7dbf8fc969a65df0fae67b371153..0e05081f217d3a479da9443359330761
  
  #if BUILDFLAG(SAFE_BROWSING_AVAILABLE)
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 7d3717f7b19f24e119455f16aff715aedc09090f..8d4df6fe93be99b23ae82816e4a76d2cb6b0c658 100644
+index 5fd89b934075c704dd5ed0782b365b50ccc8830f..216022b8328ff0124f6039ada3ed78fcfd85cd17 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -246,6 +246,31 @@ class ChromeFileSystemAccessPermissionContext

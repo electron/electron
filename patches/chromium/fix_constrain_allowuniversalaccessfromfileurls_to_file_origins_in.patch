@@ -41,10 +41,10 @@ Upstream CL: https://chromium-review.googlesource.com/c/chromium/src/+/7795303
 Chromium bug: https://crbug.com/505299810
 
 diff --git a/third_party/blink/renderer/core/execution_context/window_agent_factory.cc b/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
-index f9eb661d844e6d3650e5d309c8c7251f94584360..6157c399f505ba75fde0a7e1245f902d19ee869b 100644
+index 3bbd16aeb8d0aa157a68d6237f213afb62c52445..dc2958d968bffea707a960c94c111d14a096ccb2 100644
 --- a/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
 +++ b/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
-@@ -22,19 +22,27 @@ WindowAgentFactory::WindowAgentFactory(
+@@ -24,19 +24,27 @@ WindowAgentFactory::WindowAgentFactory(
      AgentGroupScheduler& agent_group_scheduler)
      : agent_group_scheduler_(agent_group_scheduler) {}
  
