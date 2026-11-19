@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/check_op.h"
+#include "base/functional/bind.h"
 #include "ui/base/models/menu_model_delegate.h"
 
 namespace electron {
@@ -31,15 +32,40 @@ ElectronMenuModel::Badge& ElectronMenuModel::Badge::operator=(Badge&&) =
 ElectronMenuModel::Badge::~Badge() = default;
 #endif
 
+ElectronMenuModel::Item::Item() = default;
+
+ElectronMenuModel::Item::~Item() = default;
+
+base::CallbackListSubscription ElectronMenuModel::Item::AddStateChangedCallback(
+    base::RepeatingClosure callback) {
+  return state_changed_callbacks_.Add(std::move(callback));
+}
+
+void ElectronMenuModel::Item::NotifyStateChanged() {
+  state_changed_callbacks_.Notify();
+}
+
 ElectronMenuModel::ElectronMenuModel(Delegate* delegate)
     : delegate_(delegate) {}
 
 ElectronMenuModel::~ElectronMenuModel() = default;
 
+base::CallbackListSubscription ElectronMenuModel::AddItemStateChangedCallback(
+    base::RepeatingClosure callback) {
+  return item_state_changed_callbacks_.Add(std::move(callback));
+}
+
+void ElectronMenuModel::NotifyItemStateChanged() {
+  item_state_changed_callbacks_.Notify();
+}
+
 void ElectronMenuModel::InsertItemAt(size_t index, Item* item) {
   CHECK_LE(index, items_.size());
   items_.insert(items_.begin() + index,
-                ItemRef{item, item->GetType(), item->GetCommandId()});
+                ItemRef{item, item->GetType(), item->GetCommandId(),
+                        item->AddStateChangedCallback(base::BindRepeating(
+                            &ElectronMenuModel::NotifyItemStateChanged,
+                            base::Unretained(this)))});
 }
 
 std::optional<size_t> ElectronMenuModel::GetIndexOfCommandId(

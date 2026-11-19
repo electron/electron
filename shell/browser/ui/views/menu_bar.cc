@@ -62,8 +62,14 @@ MenuBar::~MenuBar() {
 }
 
 void MenuBar::SetMenu(ElectronMenuModel* model) {
+  menu_state_subscription_ = {};
   menu_model_ = model;
   RebuildChildren();
+  if (menu_model_) {
+    menu_state_subscription_ =
+        menu_model_->AddItemStateChangedCallback(base::BindRepeating(
+            &MenuBar::UpdateMenuItemStates, base::Unretained(this)));
+  }
 }
 
 void MenuBar::SetAcceleratorVisibility(bool visible) {
@@ -351,10 +357,6 @@ void MenuBar::RebuildChildren() {
         base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),
         menu_model_->GetLabelAt(i), background_color_);
     button->SetID(i);
-    button->SetEnabled(menu_model_->IsEnabledAt(i) &&
-                       menu_model_->GetTypeAt(i) !=
-                           ElectronMenuModel::TYPE_SEPARATOR);
-    button->SetVisible(menu_model_->IsVisibleAt(i));
     if (menu_model_->GetTypeAt(i) == ElectronMenuModel::TYPE_SEPARATOR) {
       button->SetFocusBehavior(FocusBehavior::NEVER);
       button->GetViewAccessibility().SetRole(
@@ -364,14 +366,25 @@ void MenuBar::RebuildChildren() {
     } else if (menu_model_->GetTypeAt(i) != ElectronMenuModel::TYPE_SUBMENU) {
       button->GetViewAccessibility().SetRole(ax::mojom::Role::kMenuItem);
       button->GetViewAccessibility().SetHasPopup(ax::mojom::HasPopup::kFalse);
-      if (button->GetEnabled()) {
-        button->GetViewAccessibility().SetDefaultActionVerb(
-            ax::mojom::DefaultActionVerb::kClick);
-      }
     }
     AddChildView(std::move(button));
   }
+  UpdateMenuItemStates();
   UpdateViewColors();
+}
+
+void MenuBar::UpdateMenuItemStates() {
+  for (views::View* child : children()) {
+    const int index = child->GetID();
+    child->SetEnabled(menu_model_->IsEnabledAt(index));
+    child->SetVisible(menu_model_->IsVisibleAt(index));
+    const auto type = menu_model_->GetTypeAt(index);
+    if (type != ElectronMenuModel::TYPE_SUBMENU &&
+        type != ElectronMenuModel::TYPE_SEPARATOR && child->GetEnabled()) {
+      child->GetViewAccessibility().SetDefaultActionVerb(
+          ax::mojom::DefaultActionVerb::kClick);
+    }
+  }
 }
 
 void MenuBar::UpdateViewColors() {

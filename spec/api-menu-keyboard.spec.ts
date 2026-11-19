@@ -308,6 +308,58 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       expect(lastClicked).toBe('gamma-item');
     });
 
+    for (const property of ['enabled', 'visible'] as const) {
+      for (const useMouse of [false, true]) {
+        it(`updates ${property} at runtime before opening a menu by ${useMouse ? 'mouse' : 'mnemonic'}`, async () => {
+          const menu = buildMenu();
+          const alpha = menu.getMenuItemById('alpha')!;
+          alpha[property] = false;
+          setMenu(menu);
+          alpha[property] = true;
+
+          if (useMouse) {
+            const opened = once(submenuById('alpha'), 'menu-will-show', { signal: AbortSignal.timeout(10000) });
+            const bounds = w.getContentBounds();
+            clickAt({ x: bounds.x + 20, y: bounds.y - 10 });
+            await opened;
+            await pressKeys(['down']);
+          } else {
+            await pressKeyAndWait(['a', ['alt']], 'alpha');
+          }
+          await pressKeys(['enter']);
+
+          await waitUntil(() => lastClicked !== null);
+          expect(lastClicked).toBe('alpha-item');
+        });
+      }
+
+      it(`skips an item whose ${property} becomes false after attaching the menu`, async () => {
+        currentMenu.getMenuItemById('alpha')![property] = false;
+        await pressKeys(['alt']);
+        await pressKeyAndWait('down', 'beta');
+        await pressKeys(['enter']);
+
+        await waitUntil(() => lastClicked !== null);
+        expect(lastClicked).toBe('beta-leaf');
+      });
+
+      it(`updates ${property} at runtime for an item shared by multiple menu models`, async () => {
+        const original = buildMenu();
+        const alpha = original.getMenuItemById('alpha')!;
+        alpha[property] = false;
+        const menu = new Menu();
+        menu.append(alpha);
+        menu.append(original.getMenuItemById('beta')!);
+        setMenu(menu);
+        alpha[property] = true;
+        await pressKeyAndWait(['a', ['alt']], 'alpha');
+        await pressKeys(['enter']);
+
+        await waitUntil(() => lastClicked !== null);
+        expect(lastClicked).toBe('alpha-item');
+      });
+    }
+
     for (const [mnemonic, direction, openId] of [
       ['a', 'right', 'alpha'],
       ['b', 'left', 'beta']

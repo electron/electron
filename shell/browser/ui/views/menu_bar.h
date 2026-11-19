@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_MENU_BAR_H_
 
+#include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/views/menu_delegate.h"
@@ -91,6 +92,7 @@ class MenuBar : public views::AccessiblePaneView,
   void ButtonPressed(size_t id, const ui::Event& event);
 
   void RebuildChildren();
+  void UpdateMenuItemStates();
   void UpdateViewColors();
   void RefreshColorCache(const ui::NativeTheme* theme);
   View* FindAccelChild(char16_t key);
@@ -104,6 +106,7 @@ class MenuBar : public views::AccessiblePaneView,
   raw_ptr<NativeWindow> window_;
   raw_ptr<RootView> root_view_;
   raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
+  base::CallbackListSubscription menu_state_subscription_;
   bool accelerator_installed_ = false;
   bool open_menu_on_navigation_ = false;
 };

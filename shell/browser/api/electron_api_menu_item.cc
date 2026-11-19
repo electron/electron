@@ -725,8 +725,28 @@ void MenuItem::FillInstanceTemplate(v8::Isolate* isolate,
   DefineProperty<TEXT_PROPERTY(tool_tip_)>(isolate, templ, "toolTip");
   DefineProperty<TEXT_PROPERTY(accessibility_label_)>(isolate, templ,
                                                       "accessibilityLabel");
-  DefineProperty<FLAG_PROPERTY(enabled_)>(isolate, templ, "enabled");
-  DefineProperty<FLAG_PROPERTY(visible_)>(isolate, templ, "visible");
+  DefineProperty<
+      [](MenuItem* self, v8::Isolate* isolate) -> v8::Local<v8::Value> {
+        return v8::Boolean::New(isolate, self->enabled_);
+      },
+      [](MenuItem* self, v8::Isolate* isolate, v8::Local<v8::Value> value) {
+        const bool enabled = value->BooleanValue(isolate);
+        if (self->enabled_ != enabled) {
+          self->enabled_ = enabled;
+          self->NotifyStateChanged();
+        }
+      }>(isolate, templ, "enabled");
+  DefineProperty<
+      [](MenuItem* self, v8::Isolate* isolate) -> v8::Local<v8::Value> {
+        return v8::Boolean::New(isolate, self->visible_);
+      },
+      [](MenuItem* self, v8::Isolate* isolate, v8::Local<v8::Value> value) {
+        const bool visible = value->BooleanValue(isolate);
+        if (self->visible_ != visible) {
+          self->visible_ = visible;
+          self->NotifyStateChanged();
+        }
+      }>(isolate, templ, "visible");
   DefineProperty<FLAG_PROPERTY(works_when_hidden_)>(
       isolate, templ, "acceleratorWorksWhenHidden");
   DefineProperty<FLAG_PROPERTY(register_accelerator_)>(isolate, templ,
