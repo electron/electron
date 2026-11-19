@@ -29,17 +29,35 @@ interface Session {
   sessionId: string;
   targetId: string;
   owner: boolean;
+  // Started while coverage was suspended, see suspendRendererCoverage().
+  excluded: boolean;
   // Last known renderer process, see rendererPid().
   pid?: number;
 }
 
-const autoAttach = { autoAttach: true, waitForDebuggerOnStart: true, flatten: true };
-const coverageTargetTypes = new Set(['page', 'iframe', 'webview', 'worker', 'shared_worker', 'service_worker']);
+// Service workers are left alone: Chromium keeps a service worker running
+// while any DevTools session is attached to it (no idle termination, and an
+// unregistered one is only stopped once DevTools detaches), which breaks the
+// specs of their lifecycle. A filter replaces Chromium's default one, which
+// leaves out the browser and tab targets.
+const autoAttach = {
+  autoAttach: true,
+  waitForDebuggerOnStart: true,
+  flatten: true,
+  filter: [
+    { type: 'browser', exclude: true },
+    { type: 'tab', exclude: true },
+    { type: 'service_worker', exclude: true },
+    {}
+  ]
+};
+const coverageTargetTypes = new Set(['page', 'iframe', 'webview', 'worker', 'shared_worker']);
 
 let coverageDir: string | undefined;
 let socket: WebSocket | undefined;
 let nextId = 1;
 let takes = 0;
+let suspended = false;
 const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
 const sessions = new Map<string, Session>();
 
@@ -77,8 +95,8 @@ function startCoverage(session: Session) {
 }
 
 function onAttached({ sessionId, targetInfo }: { sessionId: string; targetInfo: { type: string; targetId: string } }) {
-  const session: Session = { sessionId, targetId: targetInfo.targetId, owner: false };
-  if (coverageTargetTypes.has(targetInfo.type)) {
+  const session: Session = { sessionId, targetId: targetInfo.targetId, owner: false, excluded: suspended };
+  if (!suspended && coverageTargetTypes.has(targetInfo.type)) {
     const pid = rendererPid(session);
     const hasOwner =
       pid !== undefined && [...sessions.values()].some((other) => other.owner && rendererPid(other) === pid);
@@ -97,7 +115,7 @@ function onDetached({ sessionId }: { sessionId: string }) {
   if (!session?.owner) return;
   const pid = rendererPid(session);
   if (pid === undefined) return;
-  const heir = [...sessions.values()].find((other) => !other.owner && rendererPid(other) === pid);
+  const heir = [...sessions.values()].find((other) => !other.owner && !other.excluded && rendererPid(other) === pid);
   if (heir) startCoverage(heir);
 }
 
@@ -151,6 +169,13 @@ export async function startRendererCoverage(dir: string) {
   socket = ws;
   await send('Target.setDiscoverTargets', { discover: true });
   await send('Target.setAutoAttach', autoAttach);
+}
+
+// Renderers and workers that start while coverage is suspended run without
+// it, for specs of what V8 turns off under precise coverage: it neither
+// consumes code caches nor puts compiled code into the ones it produces.
+export function suspendRendererCoverage(suspend: boolean) {
+  suspended = suspend;
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | undefined> {
