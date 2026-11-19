@@ -262,6 +262,8 @@ static_library("chrome") {
       "//chrome/browser/icon_loader_mac.mm",
       "//chrome/browser/media/webrtc/delegated_source_list_capturer.cc",
       "//chrome/browser/media/webrtc/delegated_source_list_capturer.h",
+      "//chrome/browser/media/webrtc/desktop_media_picker_utils.cc",
+      "//chrome/browser/media/webrtc/desktop_media_picker_utils.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
