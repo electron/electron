@@ -150,6 +150,8 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
       clickAt({ x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 });
       navigationTrace.push('waiting for window focus');
       await waitUntil(() => w.isFocused());
+      w.webContents.focus();
+      await waitUntil(() => w.webContents.isFocused());
       navigationTrace.push('window focused');
     };
 
@@ -270,6 +272,40 @@ ifdescribe(process.platform !== 'darwin' && !isWayland && !!robot?.keyTap)(
 
       await waitUntil(() => lastClicked !== null);
       expect(lastClicked).toBe('alpha-item');
+    });
+
+    for (const throughCommand of [false, true]) {
+      it(`keeps focus on the switched submenu after Escape${throughCommand ? ' when navigating through a command' : ''}`, async () => {
+        if (throughCommand) setMenu(buildMenuWithCommands());
+        await pressKeys(['alt']);
+        await pressKeyAndWait('down', 'alpha');
+        if (throughCommand) {
+          await pressKeyAndWait('right', 'alpha', 'menu-will-close');
+        }
+        await pressKeyAndWait('right', 'beta');
+        await pressKeyAndWait('escape', 'beta', 'menu-will-close');
+
+        expect(lastClicked).toBeNull();
+        await pressKeyAndWait('enter', 'beta');
+        expect(lastClicked).toBeNull();
+        await pressKeys(['enter']);
+
+        await waitUntil(() => lastClicked !== null);
+        expect(lastClicked).toBe('beta-leaf');
+      });
+    }
+
+    it('continues arrow navigation from the switched submenu after Escape', async () => {
+      await pressKeys(['alt']);
+      await pressKeyAndWait('down', 'alpha');
+      await pressKeyAndWait('right', 'beta');
+      await pressKeyAndWait('escape', 'beta', 'menu-will-close');
+      await pressKeys(['right']);
+      await pressKeyAndWait('enter', 'gamma');
+      await pressKeys(['enter']);
+
+      await waitUntil(() => lastClicked !== null);
+      expect(lastClicked).toBe('gamma-item');
     });
 
     for (const [mnemonic, direction, openId] of [

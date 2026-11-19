@@ -152,6 +152,10 @@ bool MenuBar::GetSiblingMenuButtonByDirection(
 void MenuBar::SelectMenuButton(views::MenuButton* button, bool open_submenu) {
   if (open_submenu && menu_model_->GetTypeAt(button->GetID()) ==
                           ElectronMenuModel::TYPE_SUBMENU) {
+    if (pane_has_focus()) {
+      focus_manager()->SetFocusedViewWithReason(
+          button, views::FocusManager::FocusChangeReason::kFocusTraversal);
+    }
     button->Activate(nullptr);
     return;
   }
