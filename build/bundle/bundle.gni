@@ -1,5 +1,13 @@
 import("../npm.gni")
 
+declare_args() {
+  # Also write a source map next to each internal JavaScript bundle
+  # (<bundle>.js.map, mapping it back to lib/) for
+  # //electron/script/lib-coverage-report.mjs. The bundles themselves, and so
+  # the binary, are the same either way.
+  electron_js_sourcemaps = false
+}
+
 # Builds one of the internal JavaScript bundles described in
 # //electron/build/bundle/targets.mjs with rolldown.
 #
@@ -55,5 +63,9 @@ template("electron_bundle") {
     ]
 
     outputs = [ invoker.out_file ]
+    if (electron_js_sourcemaps) {
+      args += [ "--sourcemap" ]
+      outputs += [ "${invoker.out_file}.map" ]
+    }
   }
 }
