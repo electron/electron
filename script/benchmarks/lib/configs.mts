@@ -120,17 +120,21 @@ ORDER BY r.ts`
 //                        since only the page knows when all N files ran.
 //   meminfo              per-process PSS/RSS from /proc/<pid>/smaps_rollup,
 //                        taken by the `meminfo` action at the end of
-//                        loading/first_load and loading/app_shell_first_load
-//                        (one shell call, after the timing).
+//                        loading/first_load and app_shell/first_load (one
+//                        shell call, after the timing).
 //   tracing              Chrome-style startup tracing (--trace-startup) for
-//                        the `trace` suite, and trace_processor to run
-//                        TRACE_QUERIES on each trace. A perfetto system trace
-//                        (the `perfetto` probe) misses renderer events from
-//                        before the renderer connects to traced. The trace
-//                        suite runs separately from the timed suites, so the
+//                        the `trace` and `app_shell_trace` suites, and
+//                        trace_processor to run TRACE_QUERIES on each trace.
+//                        A perfetto system trace (the `perfetto` probe)
+//                        misses renderer events from before the renderer
+//                        connects to traced. The traced
+//                        suites run separately from the timed suites, so the
 //                        tracing overhead stays out of their numbers.
+// The app shell page has suites of its own (app_shell and app_shell_trace),
+// so a version that can't run it never costs the other series a round:
+// compare.mts drops every result of a crossbench run that failed.
 export function probeConfigs(): Record<string, { probes: Record<string, unknown> }> {
-  return {
+  const configs = {
     loading: { probes: { 'performance.entries': {}, meminfo: {} } },
     file_loading: { probes: { 'performance.entries': {} } },
     trace: {
@@ -142,6 +146,7 @@ export function probeConfigs(): Record<string, { probes: Record<string, unknown>
       }
     }
   };
+  return { ...configs, app_shell: configs.loading, app_shell_trace: configs.trace };
 }
 
 const pad = '// padding to make each file about 300 bytes\n'.repeat(6);
@@ -230,9 +235,11 @@ export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, appRoot, res
           "return performance.getEntriesByType('navigation')[0].type === 'reload' && document.readyState === 'complete' && performance.getEntriesByName('first-contentful-paint').length > 0"
       },
       { action: 'wait', duration: '500ms' }
-    ],
-    app_shell_first_load: [...appShellLoad, { action: 'meminfo', title: 'loaded' }],
-    app_shell_reload: [
+    ]
+  };
+  const appShell: Pages = {
+    first_load: [...appShellLoad, { action: 'meminfo', title: 'loaded' }],
+    reload: [
       ...appShellLoad,
       { action: 'js', script: 'location.reload();' },
       {
@@ -245,7 +252,7 @@ export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, appRoot, res
   };
 
   // Stories measured from a trace (TRACE_QUERIES), in their own invocation.
-  const trace: Pages = { first_load: firstLoad, app_shell_first_load: appShellLoad };
+  const trace: Pages = { first_load: firstLoad };
   if (capabilities.setSize) {
     trace.resize = [
       { action: 'get', url: `${baseUrl}/pages/resize.html`, ready_state: 'complete' },
@@ -282,5 +289,11 @@ export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, appRoot, res
     }
   }
 
-  return { loading: { pages: loading }, trace: { pages: trace }, file_loading: { pages: fileLoading } };
+  return {
+    loading: { pages: loading },
+    trace: { pages: trace },
+    file_loading: { pages: fileLoading },
+    app_shell: { pages: appShell },
+    app_shell_trace: { pages: { first_load: appShellLoad } }
+  };
 }

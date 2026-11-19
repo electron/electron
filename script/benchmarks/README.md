@@ -21,9 +21,11 @@ dispatched by hand. This catches regressions between Electron versions.
 
 | Suite | Stories | Metrics |
 | --- | --- | --- |
-| `loading` | `first_load`, `reload` (warm process, same page) on the synthetic page; `app_shell_first_load`, `app_shell_reload` on the app shell (see [Test pages](#test-pages)) | FCP and `loadEventEnd` in ms; for the app shell also `app_ready` and LCP in ms; PSS in MiB after both first loads (total, browser, renderer and GPU processes) |
-| `trace` | `first_load`, `app_shell_first_load`, `resize`, traced | FCP and LCP in ms; resize latency median and p90 in ms |
+| `loading` | `first_load`, `reload` (warm process, same page) on the synthetic page | FCP and `loadEventEnd` in ms; PSS in MiB after `first_load` (total, browser, renderer and GPU processes) |
+| `trace` | `first_load` on the synthetic page, `resize`, traced | FCP and LCP in ms; resize latency median and p90 in ms |
 | `file_loading` | 1,500 small classic scripts and ES modules, loaded through `file://`, `protocol.registerFileProtocol`, `protocol.handle` + `fs`, and `protocol.handle` + `net.fetch` | Navigation start to "all files evaluated" in ms, and the ratio of each custom protocol to `file://` |
+| `app_shell` | `first_load`, `reload` on the app shell (see [Test pages](#test-pages)) | FCP, `loadEventEnd`, `app_ready` and LCP in ms; PSS in MiB after `first_load` |
+| `app_shell_trace` | `first_load` on the app shell, traced | FCP and LCP in ms |
 | `speedometer` | Speedometer 3.1 | Score |
 | `jetstream` | JetStream 2.2 | Score |
 
@@ -36,8 +38,8 @@ Every measure comes from one of crossbench's probes:
   and keeps its LCP as the `app-lcp` mark, since the probe reads no LCP
   entries.
 * `meminfo` reads `/proc/<pid>/smaps_rollup` for every browser process, through
-  a `meminfo` action at the end of `first_load` and `app_shell_first_load`,
-  after the timing.
+  a `meminfo` action at the end of each `first_load` of `loading` and
+  `app_shell`, after the timing.
 * `tracing` records a Chrome-style startup trace (`--trace-startup`) with only
   the categories the metrics need (`TRACE_CATEGORIES` in
   [`lib/configs.mts`](lib/configs.mts)), and `trace_processor` runs
@@ -54,24 +56,26 @@ Every measure comes from one of crossbench's probes:
     timestamp, which can be earlier than the resize the frame shows.
 
 Tracing slows the browser down, so the traced stories run in their own `trace`
-invocation and the `loading` and `file_loading` numbers are never traced. The
-`trace` suite's FCP is a cross-check of the untraced one. Its LCP is the only
-LCP for the synthetic page and a cross-check of the app shell's `app-lcp` mark.
-From Electron 35 on, Chromium coarsens paint timing exposed to pages to 4 ms,
-so the `loading` suite's FCP and LCP move in 4 ms steps there (marks such as
-`app-ready` don't); the traced values are not coarsened.
+and `app_shell_trace` invocations and the other page suites are never traced.
+The traced FCP is a cross-check of the untraced one. The `trace` suite's LCP
+is the only LCP for the synthetic page, and `app_shell_trace`'s a cross-check
+of the app shell's `app-lcp` mark. From Electron 35 on, Chromium coarsens
+paint timing exposed to pages to 4 ms, so the untraced FCP and LCP move in
+4 ms steps there (marks such as `app-ready` don't); the traced values are not
+coarsened.
 
 ### Test pages
 
-The `loading` and `trace` suites load two pages:
+Two pages are timed for loading:
 
-* The **synthetic page**, [`pages/index.html`](pages/index.html) (`first_load`
-  and `reload`), served over HTTP by the local benchmark server. It runs a
+* The **synthetic page**, [`pages/index.html`](pages/index.html) (the
+  `loading` and `trace` suites), served over HTTP by the local benchmark
+  server. It runs a
   synchronous 3,000,000-iteration `Math.sqrt` loop before its first paint, so
   its FCP and `loadEventEnd` mostly measure renderer setup plus that loop.
   It is kept unchanged so the existing nightly and history series stay
   continuous.
-* The **app shell** (`app_shell_first_load` and `app_shell_reload`), shaped
+* The **app shell** (the `app_shell` and `app_shell_trace` suites), shaped
   like a typical Electron app's first window and loaded from `file://` like a
   packaged app. [`lib/app-shell.mts`](lib/app-shell.mts) generates it into
   the work directory at the start of each run from a fixed seed, so every run
@@ -97,17 +101,19 @@ What the app shell's measures cover, all from navigation start:
 | `app_ready` | The `app-ready` mark: the JSON fetched and parsed, items validated, reducers run, and the full first view built in the DOM, but not yet styled, laid out or painted |
 | `lcp` | The last largest-contentful-paint candidate, the summary paragraph: `app_ready` plus style, layout and paint of the full view |
 
-They are reported as `loading.app_shell_first_load.<measure>` (plus the PSS
-measures), `loading.app_shell_reload.<measure>` and
-`trace.app_shell_first_load.fcp` and `.lcp`, and reach Datadog the same way as
-every other metric: `electron.perf.<metric>` and `electron.perf.delta.<metric>`
+They are reported as `app_shell.first_load.<measure>` (plus the PSS measures),
+`app_shell.reload.<measure>` and `app_shell_trace.first_load.fcp` and `.lcp`,
+and reach Datadog the same way as every other metric: `electron.perf.<metric>` and `electron.perf.delta.<metric>`
 from nightly runs, `electron.perf.history.<metric>` and
 `electron.perf.history.ratio.<metric>` from history runs. The stories wait
 until the `app-lcp` mark is later than `app-ready`, so the mark holds the
 final LCP however slowly a version paints. The app renders its content only
 once the chrome's FCP has been reported: when the two renders were closer,
 Electron 15 and 38 (in testing) sometimes credited the content's LCP to the
-chrome's earlier frame.
+chrome's earlier frame. The app shell has suites of its own so that a version
+that can't run it (crossbench fails the whole invocation when a story times
+out, and `compare.mts` then drops all of its results) never costs the
+synthetic page's series a round.
 
 The press benchmarks are served locally from the WebKit revisions pinned in
 [`script/pgo/serve-benchmarks.js`](../pgo/serve-benchmarks.js), so they match
@@ -223,7 +229,7 @@ trigger the nightly monitors.
 | `majors` | `15-latest` | Ranges and lists, e.g. `30-45` or `22,28,33-latest`. `latest` is the newest major with a stable release; majors without one are left out. |
 | `anchor` | `45.3.0` | Any released version, or `latest-stable`. Keep the default so runs stay comparable. |
 | `rounds` | `5` | Interleaved rounds per job. |
-| `suites` | all five | Same as nightly. |
+| `suites` | all seven | Same as nightly. |
 | `upload-to-datadog` | `true` | Also saves the summaries to blob storage (see [Stored results](#stored-results)). Unlike nightly, because the data is the point of the run. Turn it off for a trial run. |
 
 Old versions are run with `run.mts --best-effort --timeout-minutes 15`:

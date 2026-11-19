@@ -7,7 +7,7 @@ import { after, describe, it } from 'node:test';
 import * as vm from 'node:vm';
 
 import { writeAppShellSite } from '../lib/app-shell.mts';
-import { pageConfigs } from '../lib/configs.mts';
+import { pageConfigs, probeConfigs } from '../lib/configs.mts';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'benchmarks-app-shell-test-'));
 after(() => fs.rmSync(tmp, { recursive: true, force: true }));
@@ -86,18 +86,20 @@ describe('writeAppShellSite', () => {
 });
 
 describe('pageConfigs', () => {
-  it('loads the app shell from file:// in the loading and trace suites', () => {
+  it('runs the app shell from file:// in suites of its own', () => {
     const configs = pageConfigs({ baseUrl: 'http://127.0.0.1:1', fileRoot: '/tmp/files', appRoot: '/tmp/app' });
-    assert.deepEqual(Object.keys(configs.loading.pages), [
-      'first_load',
-      'reload',
-      'app_shell_first_load',
-      'app_shell_reload'
-    ]);
-    assert.deepEqual(Object.keys(configs.trace.pages), ['first_load', 'app_shell_first_load']);
-    for (const story of [configs.loading.pages.app_shell_first_load, configs.trace.pages.app_shell_first_load]) {
+    // The synthetic page's suites are unchanged, so an app shell failure
+    // can't fail their crossbench runs.
+    assert.deepEqual(Object.keys(configs.loading.pages), ['first_load', 'reload']);
+    assert.deepEqual(Object.keys(configs.trace.pages), ['first_load']);
+    assert.deepEqual(Object.keys(configs.app_shell.pages), ['first_load', 'reload']);
+    assert.deepEqual(Object.keys(configs.app_shell_trace.pages), ['first_load']);
+    for (const story of [configs.app_shell.pages.first_load, configs.app_shell_trace.pages.first_load]) {
       assert.equal(story[0].url, 'file:///tmp/app/index.html');
     }
-    assert.ok(configs.loading.pages.app_shell_first_load.some((action) => action.action === 'meminfo'));
+    assert.ok(configs.app_shell.pages.first_load.some((action) => action.action === 'meminfo'));
+    const probes = probeConfigs();
+    assert.deepEqual(probes.app_shell, probes.loading);
+    assert.deepEqual(probes.app_shell_trace, probes.trace);
   });
 });

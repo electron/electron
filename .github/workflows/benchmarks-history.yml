@@ -43,8 +43,8 @@ on:
         required: false
       suites:
         type: string
-        description: 'Comma-separated suites: loading, trace, file_loading, speedometer, jetstream'
-        default: 'loading,trace,file_loading,speedometer,jetstream'
+        description: 'Comma-separated suites: loading, trace, file_loading, app_shell, app_shell_trace, speedometer, jetstream'
+        default: 'loading,trace,file_loading,app_shell,app_shell_trace,speedometer,jetstream'
         required: false
       upload-to-datadog:
         type: boolean

@@ -1,6 +1,6 @@
-// Generates the "app shell" page for the loading and trace suites: a
-// self-contained, deterministic stand-in for a typical Electron app's first
-// window, loaded through file:// like a packaged app.
+// Generates the "app shell" page for the app_shell and app_shell_trace
+// suites: a self-contained, deterministic stand-in for a typical Electron
+// app's first window, loaded through file:// like a packaged app.
 //
 //   index.html             an empty #app root, three stylesheets, three
 //                          deferred scripts and an inline LCP recorder

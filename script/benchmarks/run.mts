@@ -35,10 +35,10 @@ const SERVE_BENCHMARKS = path.resolve(import.meta.dirname, '../pgo/serve-benchma
 export const CROSSBENCH_REPO = 'https://chromium.googlesource.com/crossbench';
 export const CROSSBENCH_REVISION = '18eb2497c6ab1d130e40512187a03a5c0cc79255';
 
-export const SUITES = ['loading', 'trace', 'file_loading', 'speedometer', 'jetstream'];
+export const SUITES = ['loading', 'trace', 'file_loading', 'app_shell', 'app_shell_trace', 'speedometer', 'jetstream'];
 
 // Suites driven by generated page configs and crossbench's `loading` benchmark.
-const PAGE_SUITES = ['loading', 'trace', 'file_loading'];
+const PAGE_SUITES = ['loading', 'trace', 'file_loading', 'app_shell', 'app_shell_trace'];
 
 // Press benchmarks are served from the same pinned WebKit checkouts PGO uses.
 // MotionMark is left out: the revision PGO pins no longer exposes the
@@ -321,7 +321,7 @@ async function main() {
       out: { type: 'string' },
       rounds: { type: 'string', default: '10' },
       repeat: { type: 'string', default: '3' },
-      suites: { type: 'string', default: 'loading,trace,file_loading,speedometer' },
+      suites: { type: 'string', default: 'loading,trace,file_loading,app_shell,app_shell_trace,speedometer' },
       'file-count': { type: 'string', default: '1500' },
       'work-dir': { type: 'string', default: path.join(os.tmpdir(), 'electron-benchmarks') },
       python: { type: 'string', default: 'python3' },

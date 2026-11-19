@@ -61,26 +61,25 @@ export interface Comparison extends ComparisonDefinition {
 
 // Suites run through crossbench's `loading` benchmark with generated page
 // configs (see lib/configs.mts); each reports one value per repetition.
-const PAGE_SUITES = ['loading', 'trace', 'file_loading'];
+const PAGE_SUITES = ['loading', 'trace', 'file_loading', 'app_shell', 'app_shell_trace'];
+
+// Page suites measured from a trace (see TRACE_QUERIES in lib/configs.mts).
+const TRACE_SUITES = ['trace', 'app_shell_trace'];
 
 // Measures read from crossbench's performance.entries probe, which merges
 // every repetition of a story into <story>/performance.entries.json.
 const PERFORMANCE_ENTRIES: Record<string, Record<string, string>> = {
   loading: { fcp: 'paint/first-contentful-paint/startTime', load_event_end: 'navigation/loadEventEnd' },
-  file_loading: { files_loaded_ms: 'mark/files-loaded/startTime' }
+  file_loading: { files_loaded_ms: 'mark/files-loaded/startTime' },
+  // The app shell page (lib/app-shell.mts) also marks when its full first
+  // view is in the DOM, and keeps its LCP as a mark.
+  app_shell: {
+    fcp: 'paint/first-contentful-paint/startTime',
+    load_event_end: 'navigation/loadEventEnd',
+    app_ready: 'mark/app-ready/startTime',
+    lcp: 'mark/app-lcp/startTime'
+  }
 };
-
-// The app shell page (lib/app-shell.mts) also marks when its first full view
-// is in the DOM, and keeps its LCP as a mark.
-const APP_SHELL_ENTRIES: Record<string, string> = {
-  app_ready: 'mark/app-ready/startTime',
-  lcp: 'mark/app-lcp/startTime'
-};
-
-function performanceEntries(suite: string, story: string): Record<string, string> | undefined {
-  const entries = PERFORMANCE_ENTRIES[suite];
-  return entries && story.startsWith('app_shell_') ? { ...entries, ...APP_SHELL_ENTRIES } : entries;
-}
 
 const PRESS_RESULTS: Record<string, { file: string; keys: string[] }> = {
   speedometer: { file: 'speedometer_3.1.json', keys: ['Score'] },
@@ -207,14 +206,16 @@ export function memoryMeasures(dump: any): Record<string, number> {
 }
 
 const MEMORY_MEASURES = ['total_pss_mib', 'browser_pss_mib', 'renderer_pss_mib', 'gpu_pss_mib'];
+// Suites whose first_load story ends with a meminfo dump.
+const MEMORY_SUITES = ['loading', 'app_shell'];
 
 // Measures each story of a page suite reports. A story that reports none of
 // them (for example after a Chromium roll renamed a trace event) is listed as
 // incomplete instead of disappearing from the results.
 function expectedMeasures(suite: string, story: string): string[] {
-  if (suite === 'trace') return story === 'resize' ? ['resize_median_ms', 'resize_p90_ms'] : ['fcp', 'lcp'];
-  const measures = Object.keys(performanceEntries(suite, story) ?? {});
-  return suite === 'loading' && story.endsWith('first_load') ? [...measures, ...MEMORY_MEASURES] : measures;
+  if (TRACE_SUITES.includes(suite)) return story === 'resize' ? ['resize_median_ms', 'resize_p90_ms'] : ['fcp', 'lcp'];
+  const measures = Object.keys(PERFORMANCE_ENTRIES[suite] ?? {});
+  return MEMORY_SUITES.includes(suite) && story === 'first_load' ? [...measures, ...MEMORY_MEASURES] : measures;
 }
 
 // Values per measure (one per repetition) for one story of a page suite.
@@ -226,7 +227,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
     if (isNumber(value) && measures[measure]) measures[measure].push(value);
   };
 
-  const entries = performanceEntries(suite, story);
+  const entries = PERFORMANCE_ENTRIES[suite];
   if (entries) {
     const data = readJsonIfExists(path.join(storyDir, 'performance.entries.json'));
     for (const [measure, key] of Object.entries(entries)) {
@@ -235,7 +236,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
   }
 
   for (const runDir of runDirs(storyDir)) {
-    if (suite === 'loading') {
+    if (MEMORY_SUITES.includes(suite)) {
       // One dump per run, from the `meminfo` action at the end of the story.
       const meminfoDir = path.join(runDir, 'meminfo');
       const dumps = fs.existsSync(meminfoDir) ? fs.readdirSync(meminfoDir).filter((f) => f.endsWith('.json')) : [];
@@ -244,7 +245,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
           add(measure, value);
         }
       }
-    } else if (suite === 'trace') {
+    } else if (TRACE_SUITES.includes(suite)) {
       const tpDir = path.join(runDir, 'trace_processor');
       if (story === 'resize') {
         const rows: any[] = readJsonIfExists(path.join(tpDir, 'resize.json')) ?? [];
