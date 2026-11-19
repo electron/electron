@@ -24,6 +24,7 @@
     "lint-staged": "^17.3.0",
     "markdownlint-cli2": "^0.18.0",
     "minimist": "^1.2.8",
+    "monocart-coverage-reports": "^3.2.1",
     "node-gyp": "^12.3.0",
     "oxfmt": "^0.42.0",
     "oxlint": "^1.80.0",
