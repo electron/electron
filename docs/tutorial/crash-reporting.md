@@ -17,7 +17,9 @@ Electron uses [Crashpad](https://chromium.googlesource.com/crashpad/crashpad/+/r
 the same crash reporting system as Chromium. When you call `crashReporter.start()` in the
 main process:
 
-1. Electron starts a separate crash handler process.
+1. Electron starts a separate crash handler process. It exits together with the main
+   process, so a process that outlives the app (a detached child, for example) is no longer
+   monitored.
 2. Child processes created after `start()` is called (renderers, the GPU process, utility
    processes and Node.js child processes) are monitored automatically.
 3. When a monitored process crashes, the handler writes a minidump: a snapshot of the
