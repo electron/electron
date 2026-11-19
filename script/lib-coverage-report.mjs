@@ -15,25 +15,15 @@
 // instead copies the raw coverage to <dir> with everything but the bundles
 // dropped, which is most of it (Node.js' own built-ins, the specs).
 //
-// How the bundles' coverage becomes lib/'s:
-// - Every coverage file (one per process, more where coverage was taken more
-//   than once, which resets the counts) gives each offset in a bundle the
-//   count of the innermost range around it; V8 leaves out ranges whose count
-//   is their parent's, and has only the function's own range for functions
-//   compiled before coverage started (best-effort coverage), so all of such a
-//   function gets its count. The counts are summed over the files.
-// - A line of lib/ counts when some code in a bundle maps to it, so comments,
-//   type-only lines and closing brackets don't; its count is the highest of
-//   that code's. Each line is a statement in the report.
-// - The functions are the ones V8 reports, less the bundles' own wrappers.
-//   Functions inside code that was never compiled (including bundles that
-//   never ran) are not reported, so they are not counted either.
-// - There is no branch data (the report shows 0/0): which branches V8 reports
-//   depends on the counts.
+// The conversion is Vitest's (@vitest/coverage-v8): ast-v8-to-istanbul maps
+// each coverage file's V8 ranges for a bundle onto the bundle's syntax tree
+// (from rolldown's parser) and through its source map to lib/, and the
+// results are merged with istanbul-lib-coverage.
 
 import * as fs from 'node:fs';
-import { createRequire, SourceMap } from 'node:module';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 const require = createRequire(import.meta.url);
@@ -84,30 +74,45 @@ if (args.filter) {
 }
 
 // Only the report needs these, so --filter runs without node_modules.
+const { default: astV8ToIstanbul } = await import('ast-v8-to-istanbul');
 const { default: libCoverage } = await import('istanbul-lib-coverage');
 const { default: libReport } = await import('istanbul-lib-report');
 const { default: reports } = await import('istanbul-reports');
+const { parseAst } = await import('rolldown/parseAst');
 
 const genDir = path.resolve(args['gen-dir'] ?? path.join(outDir(), 'gen'));
 const bundleDir = path.join(genDir, 'internal', 'electron', 'js2c');
 const outputDir = path.resolve(args.output ?? path.join(outDir(), 'lib-coverage', 'report'));
 
-const isLibSource = (source) => source.startsWith('lib/') && source.endsWith('.ts');
-
-// The first index in the sorted array for which below() is false.
-function partition(array, below) {
-  let low = 0;
-  let high = array.length;
-  while (low < high) {
-    const middle = (low + high) >>> 1;
-    if (below(array[middle])) low = middle + 1;
-    else high = middle;
+// Each bundle's coverage, one functions list per coverage file that has it.
+const bundleCoverage = new Map();
+let files = 0;
+for (const [, result] of readCoverage()) {
+  if (result.length === 0) continue;
+  for (const { url, functions } of result) {
+    if (!bundleCoverage.has(url)) bundleCoverage.set(url, []);
+    bundleCoverage.get(url).push(functions);
   }
-  return low;
+  files++;
+}
+if (files === 0) {
+  throw new Error(`No coverage of the bundles in ${inputDir}`);
 }
 
-// The bundles as the coverage saw them, with the maps back to lib/.
-const bundles = new Map();
+// Like @vitest/coverage-v8 does for Vite's, leaves out the statements
+// rolldown adds that map to lib/: the init_*() calls that run an imported
+// module where the import was, and the __decorate() (decorators) and __name()
+// (keepNames) calls. The rest of what it adds (its runtime helpers, the module
+// wrappers, export getters and import bindings) and the wrappers bundle.mjs
+// puts around the bundle map to nothing, so the conversion leaves them out by
+// itself.
+const ignoreNode = (node, type) =>
+  type === 'statement' &&
+  node.type === 'ExpressionStatement' &&
+  node.expression.type === 'CallExpression' &&
+  /^(init_|__decorate$|__name$)/.test(node.expression.callee.name);
+
+const coverageMap = libCoverage.createCoverageMap({});
 const sourcesContent = new Map();
 for (const name of fs.readdirSync(bundleDir)) {
   if (!name.endsWith('.js')) continue;
@@ -115,196 +120,36 @@ for (const name of fs.readdirSync(bundleDir)) {
   if (!fs.existsSync(`${file}.map`)) {
     throw new Error(`${file}.map is missing; build with electron_js_sourcemaps = true`);
   }
+  // The bundle is compiled as is (as a function body, without a wrapper), so
+  // V8's offsets are offsets in this file.
   const code = fs.readFileSync(file, 'utf8');
-  const sourceMap = new SourceMap(JSON.parse(fs.readFileSync(`${file}.map`, 'utf8')));
-  const { sources, sourcesContent: contents = [] } = sourceMap.payload;
-  sources.forEach((source, index) => {
-    if (contents[index] != null) sourcesContent.set(source, contents[index]);
-  });
+  const sourceMap = JSON.parse(fs.readFileSync(`${file}.map`, 'utf8'));
+  sourceMap.sources.forEach((source, index) => sourcesContent.set(source, sourceMap.sourcesContent?.[index]));
 
-  const lineStarts = [0];
-  for (let index = code.indexOf('\n'); index !== -1; index = code.indexOf('\n', index + 1)) {
-    lineStarts.push(index + 1);
-  }
-  // Every mapping in the bundle, in order. SourceMap has no way to list them,
-  // but findEntry() at each position finds the one it falls in.
-  const mappings = [];
-  for (let line = 0; line < lineStarts.length; line++) {
-    const length = (lineStarts[line + 1] ?? code.length + 1) - 1 - lineStarts[line];
-    for (let column = 0; column < length; column++) {
-      const entry = sourceMap.findEntry(line, column);
-      if (entry.generatedLine !== line || entry.generatedColumn !== column || !entry.originalSource) continue;
-      // A closing bracket is not code that runs (and V8 counts a function's
-      // last brace with the function, after an early return too).
-      if ('})]'.includes(code[lineStarts[line] + column])) continue;
-      mappings.push({
-        offset: lineStarts[line] + column,
-        lineStart: lineStarts[line],
-        source: entry.originalSource,
-        line: entry.originalLine + 1,
-        column: entry.originalColumn
-      });
-    }
-  }
-
-  // The calls that define the getters for a module's exports, which map to
-  // the exported names.
-  const exportGetters = [];
-  for (let index = code.indexOf('__exportAll({'); index !== -1; index = code.indexOf('__exportAll({', index + 1)) {
-    exportGetters.push([index, code.indexOf('});', index)]);
-  }
-
-  bundles.set(`${JS2C_PREFIX}${path.basename(name, '.js')}`, {
-    code,
-    mappings,
-    exportGetters,
-    // Summed over the coverage files, per UTF-16 offset as V8 counts.
-    counts: new Float64Array(code.length),
-    scratch: new Float64Array(code.length),
-    // `${startOffset}:${endOffset}` -> { functionName, startOffset, endOffset, count }
-    functions: new Map()
-  });
-}
-
-function addCoverage({ url, functions }) {
-  const bundle = bundles.get(url);
-  if (!bundle) throw new Error(`No bundle in ${bundleDir} for ${url}`);
-
-  // The ranges nest, so painting them outermost first leaves each offset with
-  // its innermost range's count.
-  const ranges = functions
-    .flatMap((fn) => fn.ranges)
-    .sort((a, b) => a.startOffset - b.startOffset || b.endOffset - a.endOffset);
-  const { counts, scratch } = bundle;
-  scratch.fill(0);
-  for (const { startOffset, endOffset, count } of ranges) {
-    scratch.fill(count, startOffset, endOffset);
-  }
-  for (let offset = 0; offset < counts.length; offset++) {
-    counts[offset] += scratch[offset];
-  }
-
-  for (const {
-    functionName,
-    ranges: [{ startOffset, endOffset, count }]
-  } of functions) {
-    const key = `${startOffset}:${endOffset}`;
-    const fn = bundle.functions.get(key);
-    if (fn) {
-      fn.count += count;
-    } else {
-      bundle.functions.set(key, { functionName, startOffset, endOffset, count });
-    }
-  }
-}
-
-let files = 0;
-for (const [, result] of readCoverage()) {
-  if (result.length === 0) continue;
-  result.forEach(addCoverage);
-  files++;
-}
-if (files === 0) {
-  throw new Error(`No coverage of the bundles in ${inputDir}`);
-}
-
-// lib/ file -> its lines (line -> count) and functions (`line:column` -> ...).
-// A bundle that never ran still counts, as uncovered.
-const libFiles = new Map();
-const libFile = (source) => {
-  if (!libFiles.has(source)) libFiles.set(source, { lines: new Map(), functions: new Map() });
-  return libFiles.get(source);
-};
-
-for (const bundle of bundles.values()) {
-  const { code, counts, mappings, exportGetters } = bundle;
-  const countAt = (offset) => counts[offset] ?? 0;
-
-  // A source line can be several mappings in one bundle (take the highest
-  // count) and appear in several bundles (add them up).
-  const bundleLines = new Map();
-  for (const { offset, source, line, column } of mappings) {
-    if (!isLibSource(source)) continue;
-    const key = `${source}:${line}`;
-    const known = bundleLines.get(key);
-    if (known) {
-      known.count = Math.max(known.count, countAt(offset));
-      known.column = Math.min(known.column, column);
-    } else {
-      bundleLines.set(key, { source, line, column, count: countAt(offset) });
-    }
-  }
-  for (const { source, line, column, count } of bundleLines.values()) {
-    const { lines } = libFile(source);
-    const known = lines.get(line);
-    lines.set(line, {
-      count: (known?.count ?? 0) + count,
-      column: Math.min(known?.column ?? column, column)
+  const url = `${JS2C_PREFIX}${path.basename(name, '.js')}`;
+  const coverages = bundleCoverage.get(url) ?? [];
+  bundleCoverage.delete(url);
+  // A bundle that never ran still counts, as uncovered.
+  if (coverages.length === 0) coverages.push([]);
+  for (const functions of coverages) {
+    const data = await astV8ToIstanbul({
+      code,
+      sourceMap,
+      // The conversion changes the tree, so each needs its own.
+      ast: parseAst(code),
+      // The map names its sources relative to the repository (lib/...).
+      coverage: { url: pathToFileURL(path.join(ELECTRON_DIR, name)).href, functions },
+      ignoreNode
     });
-  }
-
-  for (const { functionName, startOffset, endOffset, count } of bundle.functions.values()) {
-    // The bundle's own function, around everything, and the ones V8 makes up
-    // (<instance_members_initializer> for class fields).
-    if ((startOffset === 0 && endOffset >= code.length - 1) || functionName.startsWith('<')) continue;
-    // Where the function starts, unless that is code the bundler added (the
-    // wrappers it puts around each module), which has no mapping of its own
-    // on that line.
-    const start = mappings[partition(mappings, (mapping) => mapping.offset <= startOffset) - 1];
-    const lineStart = code.lastIndexOf('\n', startOffset - 1) + 1;
-    if (!start || start.lineStart !== lineStart || !isLibSource(start.source)) continue;
-    // Nor the getters it defines for a module's exports.
-    if (exportGetters.some(([from, to]) => from <= startOffset && startOffset < to)) continue;
-    const last = mappings[partition(mappings, (mapping) => mapping.offset < endOffset) - 1];
-    const end = last?.source === start.source && last.line >= start.line ? last : start;
-
-    const key = `${start.line}:${start.column}`;
-    const { functions } = libFile(start.source);
-    const known = functions.get(key);
-    if (known) {
-      known.count += count;
-    } else {
-      functions.set(key, { name: functionName, start, end, count });
+    for (const [filePath, fileCoverage] of Object.entries(data)) {
+      const source = path.relative(ELECTRON_DIR, filePath).replaceAll(path.sep, '/');
+      if (!source.startsWith('lib/') || !source.endsWith('.ts')) continue;
+      coverageMap.merge({ [source]: { ...fileCoverage, path: source } });
     }
   }
 }
-
-// As istanbul's file coverage: a statement per line, the functions, no
-// branches.
-const lineLength = (source, line) => sourcesContent.get(source)?.split('\n')[line - 1]?.length ?? 0;
-const coverageMap = libCoverage.createCoverageMap({});
-for (const [source, { lines, functions }] of [...libFiles].sort(([a], [b]) => a.localeCompare(b))) {
-  const data = { path: source, statementMap: {}, s: {}, fnMap: {}, f: {}, branchMap: {}, b: {} };
-  [...lines]
-    .sort(([a], [b]) => a - b)
-    .forEach(([line, { count, column }], index) => {
-      data.statementMap[index] = {
-        start: { line, column },
-        end: { line, column: Math.max(column + 1, lineLength(source, line)) }
-      };
-      data.s[index] = count;
-    });
-  const names = new Map();
-  [...functions.values()]
-    .sort((a, b) => a.start.line - b.start.line || a.start.column - b.start.column)
-    .forEach(({ name, start, end, count }, index) => {
-      // lcov tells functions apart by name.
-      const base = name || '(anonymous)';
-      const seen = names.get(base) ?? 0;
-      names.set(base, seen + 1);
-      const decl = {
-        start: { line: start.line, column: start.column },
-        end: { line: start.line, column: Math.max(start.column + 1, lineLength(source, start.line)) }
-      };
-      data.fnMap[index] = {
-        name: seen ? `${base}_${seen}` : base,
-        decl,
-        loc: { start: decl.start, end: { line: end.line, column: end.column } },
-        line: start.line
-      };
-      data.f[index] = count;
-    });
-  coverageMap.addFileCoverage(data);
+if (bundleCoverage.size > 0) {
+  throw new Error(`No bundle in ${bundleDir} for ${[...bundleCoverage.keys()].join(', ')}`);
 }
 
 const context = libReport.createContext({
