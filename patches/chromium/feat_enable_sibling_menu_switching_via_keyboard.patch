@@ -11,10 +11,10 @@ bars rather than WinUI: Right switches from any depth when the selected item has
 submenu, and Left switches whenever there is no nested submenu to close.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 8a320379bd2e3d336cc98c1442f9be14342e13ab..02e48ab47a60449a8b00aed2f56f6d05d484d3ee 100644
+index e0aac21b32ed7ddbf1c1e0fad6d89a364acab4e3..0cb144d166e5db648fed615b6141a9863eb22109 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -2422,9 +2422,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -2407,9 +2407,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -26,7 +26,7 @@ index 8a320379bd2e3d336cc98c1442f9be14342e13ab..02e48ab47a60449a8b00aed2f56f6d05
        }
        break;
  
-@@ -2433,9 +2433,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -2418,9 +2418,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -38,7 +38,7 @@ index 8a320379bd2e3d336cc98c1442f9be14342e13ab..02e48ab47a60449a8b00aed2f56f6d05
        }
        break;
  
-@@ -3935,6 +3935,49 @@ void MenuController::CloseSubmenu() {
+@@ -3946,6 +3946,49 @@ void MenuController::CloseSubmenu() {
    SetSelection(item_to_select, SELECTION_UPDATE_IMMEDIATELY);
  }
  
@@ -89,10 +89,10 @@ index 8a320379bd2e3d336cc98c1442f9be14342e13ab..02e48ab47a60449a8b00aed2f56f6d05
      MenuItemView* parent,
      char16_t key,
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index c7c1e94ad05bc5da99122725bca6ab5df4c07481..94f81b464aeb33678fb421ebae42f0c5a40a00c2 100644
+index 74bcb8fdd8182b607ae2759d2bb2814e0166f43d..7cf5925c7372f87b442e5d45c1c71d01de0f4669 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
-@@ -670,6 +670,15 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
+@@ -677,6 +677,15 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
    // If possible, closes the submenu.
    void CloseSubmenu();
  
@@ -109,10 +109,10 @@ index c7c1e94ad05bc5da99122725bca6ab5df4c07481..94f81b464aeb33678fb421ebae42f0c5
    // Triggered by keyboard events, e.g., APPS key, Shift+F10.
    void ShowContextMenu();
 diff --git a/ui/views/controls/menu/menu_delegate.cc b/ui/views/controls/menu/menu_delegate.cc
-index cd966c471368c1ce69fe6714ac0bb334095d0f54..6c20ccb1693afc25a24546f262b65f4684bf5334 100644
+index dffbf16823c57980ce6af0c64f9315abc3b5181f..c82bc8ba40566a822628cc4bd3d8d484d5e0d6eb 100644
 --- a/ui/views/controls/menu/menu_delegate.cc
 +++ b/ui/views/controls/menu/menu_delegate.cc
-@@ -150,6 +150,10 @@ MenuItemView* MenuDelegate::GetSiblingMenu(MenuItemView* menu,
+@@ -154,6 +154,10 @@ MenuItemView* MenuDelegate::GetSiblingMenu(MenuItemView* menu,
    return nullptr;
  }
  
@@ -124,10 +124,10 @@ index cd966c471368c1ce69fe6714ac0bb334095d0f54..6c20ccb1693afc25a24546f262b65f46
    // NOTE: this needs to be large enough to accommodate the wrench menu with
    // big fonts.
 diff --git a/ui/views/controls/menu/menu_delegate.h b/ui/views/controls/menu/menu_delegate.h
-index 79feb1421a4c90f67f805537b26aff5cf7f7a7d0..80a271bf506fb42ee8bde1a59524037e38c19305 100644
+index 0ba76195469d1c0ed3ca7e70b23d51ca29e694f4..8355a7ff42296d6a00c64f34031271f5f99156a1 100644
 --- a/ui/views/controls/menu/menu_delegate.h
 +++ b/ui/views/controls/menu/menu_delegate.h
-@@ -206,6 +206,13 @@ class VIEWS_EXPORT MenuDelegate {
+@@ -207,6 +207,13 @@ class VIEWS_EXPORT MenuDelegate {
                                         bool* has_mnemonics,
                                         MenuButton** button);
  
