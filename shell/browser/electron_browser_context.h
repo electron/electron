@@ -140,8 +140,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
       override;
   content::StorageNotificationService* GetStorageNotificationService() override;
-  content::ReduceAcceptLanguageControllerDelegate*
-  GetReduceAcceptLanguageControllerDelegate() override;
   content::FileSystemAccessPermissionContext*
   GetFileSystemAccessPermissionContext() override;
 
@@ -163,7 +161,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   bool ChooseDisplayMediaDevice(const content::MediaStreamRequest& request,
                                 content::MediaResponseCallback callback);
-  void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler);
+  void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler,
+                                     bool use_system_picker);
 
   ~ElectronBrowserContext() override;
 
@@ -244,6 +243,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
   DisplayMediaRequestHandler display_media_request_handler_;
+  bool use_system_picker_ = false;
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;

@@ -1,0 +1,186 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christian Aurich Zanettini Martins <christian.aurichzm@gmail.com>
+Date: Tue, 20 Oct 2026 10:05:21 -0300
+Subject: test: cover DOMStorage reads from V8 interrupts
+
+Read both stores over a remote session while the main thread runs
+JavaScript, so that the messages are dispatched from a V8 API
+interrupt: stores the application never touched, both stores in memory
+with sessionStorage created first, and a malformed localStorage file.
+The script counts calls to the storage getters and to an
+Error.prototype.code setter, so the test fails if a read calls into
+JavaScript even when V8 does not enforce it.
+
+Backported from https://github.com/nodejs/node/pull/66740
+(upstream commit 5dca62fd674c2fa5eb5e93404dd7e8f130988e7b).
+
+Signed-off-by: Christian Aurich Zanettini Martins <christian.aurichzm@gmail.com>
+
+diff --git a/test/parallel/test-inspector-dom-storage-interrupt.js b/test/parallel/test-inspector-dom-storage-interrupt.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc426beddee6032200064d04f8c759143aa2ad5e
+--- /dev/null
++++ b/test/parallel/test-inspector-dom-storage-interrupt.js
+@@ -0,0 +1,138 @@
++'use strict';
++const common = require('../common');
++common.skipIfSQLiteMissing();
++common.skipIfInspectorDisabled();
++
++const assert = require('assert');
++const { spawnSync } = require('child_process');
++const { join } = require('path');
++const { DatabaseSync } = require('node:sqlite');
++const { NodeInstance } = require('../common/inspector-helper.js');
++const tmpdir = require('../common/tmpdir');
++tmpdir.refresh();
++
++// While JavaScript runs, a message from a remote frontend is dispatched from a
++// V8 API interrupt, where JavaScript must not run. Reading a store has to work
++// from there, whether or not the application has touched it yet. The script
++// counts calls to the storage getters and to a setter that a JavaScript error
++// created by Node.js would hit, and reports the count once the reads are done.
++async function getItemsWhileBusy(localStorageFile, prelude, storageIds) {
++  const script = `
++  globalThis.jsCalls = 0;
++  for (const name of ['localStorage', 'sessionStorage']) {
++    const desc = Object.getOwnPropertyDescriptor(globalThis, name);
++    Object.defineProperty(globalThis, name, {
++      ...desc,
++      get() { globalThis.jsCalls++; return desc.get.call(this); },
++    });
++  }
++  Object.defineProperty(Error.prototype, 'code', {
++    set() { globalThis.jsCalls++; }, configurable: true,
++  });
++  ${prelude}
++  globalThis.jsCalls = 0;
++  console.log('Ready');
++  const deadline = Date.now() + ${common.platformTimeout(10000)};
++  while (!globalThis.done && Date.now() < deadline);
++  `;
++  const child = new NodeInstance([
++    '--inspect-brk=0',
++    '--experimental-storage-inspection',
++    `--localstorage-file=${localStorageFile}`,
++  ], script);
++  const session = await child.connectInspectorSession();
++  await session.send({ method: 'NodeRuntime.enable' });
++  await session.waitForNotification('NodeRuntime.waitingForDebugger');
++  await session.send([
++    { 'method': 'Runtime.enable' },
++    { 'method': 'Debugger.enable' },
++  ]);
++  await session.send({ method: 'Runtime.runIfWaitingForDebugger' });
++  await session.send({ method: 'NodeRuntime.disable' });
++  await session.waitForNotification('Debugger.paused', 'Break on start');
++  await session.send({ 'method': 'Debugger.resume' });
++  await session.waitForConsoleOutput('log', ['Ready']);
++  // Enabled late, so items set by the prelude have to be read from the stores.
++  await session.send({ method: 'DOMStorage.enable' });
++
++  const { storageKey } = await session.send({ method: 'Storage.getStorageKey' });
++  const results = [];
++  for (const isLocalStorage of storageIds) {
++    results.push(await session.send({
++      method: 'DOMStorage.getDOMStorageItems',
++      params: { storageId: { isLocalStorage, securityOrigin: '', storageKey } },
++    }).catch((err) => err));
++  }
++
++  const { result } = await session.send({
++    method: 'Runtime.evaluate',
++    params: { expression: 'globalThis.done = true; globalThis.jsCalls' },
++  });
++  assert.strictEqual(result.value, 0);
++  await session.waitForDisconnect();
++  assert.strictEqual((await child.expectShutdown()).exitCode, 0);
++  return results;
++}
++
++// Node's own tables are created with IF NOT EXISTS, so a file that already
++// holds tables of those names is adopted as-is, wrong types included.
++function malformedLocalStorage(name) {
++  const file = join(tmpdir.path, name);
++  const db = new DatabaseSync(file);
++  db.exec(`
++    CREATE TABLE nodejs_webstorage(
++      key BLOB NOT NULL, value BLOB NOT NULL, PRIMARY KEY(key)
++    );
++    CREATE TABLE nodejs_webstorage_state(
++      max_size INTEGER NOT NULL DEFAULT 10485760,
++      total_size INTEGER NOT NULL,
++      schema_version INTEGER NOT NULL DEFAULT 1,
++      single_row_ INTEGER NOT NULL DEFAULT 1 CHECK(single_row_ = 1),
++      PRIMARY KEY(single_row_)
++    );
++    INSERT INTO nodejs_webstorage_state (total_size, schema_version)
++      VALUES (0, 'one');
++  `);
++  db.close();
++  return file;
++}
++
++async function runTest() {
++  // Stores the application never touched, with localStorage written by an
++  // earlier run.
++  const file = join(tmpdir.path, 'storage.db');
++  const { status } = spawnSync(process.execPath, [
++    `--localstorage-file=${file}`,
++    '-e', 'localStorage.setItem("l", "local")',
++  ]);
++  assert.strictEqual(status, 0);
++  const [local, session] = await getItemsWhileBusy(file, '', [true, false]);
++  assert.deepStrictEqual(local.entries, [['l', 'local']]);
++  assert.deepStrictEqual(session.entries, []);
++
++  // Both stores in memory and never touched.
++  const untouched = await getItemsWhileBusy(':memory:', '', [true, false]);
++  assert.deepStrictEqual(untouched.map((r) => r.entries), [[], []]);
++
++  // Both stores in memory, sessionStorage created first.
++  const [memLocal, memSession] = await getItemsWhileBusy(':memory:', `
++    sessionStorage.setItem('s', 'session');
++    localStorage.setItem('l', 'local');
++  `, [true, false]);
++  assert.deepStrictEqual(memLocal.entries, [['l', 'local']]);
++  assert.deepStrictEqual(memSession.entries, [['s', 'session']]);
++
++  // A file that cannot be opened is reported without creating a JavaScript
++  // error.
++  for (const [name, touch] of [['untouched.db', ''],
++                               ['touched.db', 'globalThis.localStorage;']]) {
++    const [err] = await getItemsWhileBusy(
++      malformedLocalStorage(name), touch, [true]);
++    assert.strictEqual(
++      err.message,
++      'Could not read DOM storage items: Uncaught Error: localStorage ' +
++      'database is malformed: expected schema_version to be an integer');
++  }
++}
++
++runTest().then(common.mustCall());
+diff --git a/test/parallel/test-inspector-dom-storage-malformed.js b/test/parallel/test-inspector-dom-storage-malformed.js
+index d9ac2bbfd0beac887133711314be24255b0a2814..6b1facd344bdd59ddbda3344a2846f002974023f 100644
+--- a/test/parallel/test-inspector-dom-storage-malformed.js
++++ b/test/parallel/test-inspector-dom-storage-malformed.js
+@@ -83,16 +83,14 @@ async function getDOMStorageItems(localStorageFile) {
+     { message: 'Could not read DOM storage items: the backing file is malformed' },
+   );
+ 
+-  // A wrong-typed schema_version makes Storage::Open() throw, which has to be
+-  // caught rather than left pending on an isolate with no JavaScript running.
+-  // Its message reaches the frontend.
++  // A wrong-typed schema_version keeps the store from opening, and the reason
++  // reaches the frontend.
+   await assert.rejects(
+     getDOMStorageItems(
+       malformedLocalStorage(
+         'bad-schema-version.db', 'one', Buffer.from('hello', 'utf16le'))),
+     {
+-      // The reason comes off the v8::Message, hence the "Uncaught" prefix;
+-      // converting the exception itself would run user JavaScript.
++      // Formatted like a v8::Message, hence the "Uncaught Error" prefix.
+       message: 'Could not read DOM storage items: Uncaught Error: ' +
+         'localStorage database is malformed: expected schema_version to be ' +
+         'an integer',

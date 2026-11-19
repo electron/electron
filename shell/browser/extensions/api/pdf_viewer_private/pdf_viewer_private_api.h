@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_API_PDF_VIEWER_PRIVATE_PDF_VIEWER_PRIVATE_API_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_API_PDF_VIEWER_PRIVATE_PDF_VIEWER_PRIVATE_API_H_
 
-#include "chrome/common/extensions/api/pdf_viewer_private.h"
+#include "electron/shell/common/extensions/api/pdf_viewer_private.h"
 #include "extensions/browser/extension_function.h"
 #include "pdf/buildflags.h"
 

@@ -12,7 +12,7 @@ This patch can be removed when an asynchronous spellcheck API
 option is added to Electron.
 
 diff --git a/components/spellcheck/browser/windows_spell_checker.cc b/components/spellcheck/browser/windows_spell_checker.cc
-index 319029fc962eb73f0dcf8604ccd342b0e381496e..eff60d66c3762722e56743abba60e1aafa19b774 100644
+index bcda6a48cdd7c157b7d295b44fa9b4a4534ab78e..5957347f8f1f6cf8205039bf374f0d2764c4c285 100644
 --- a/components/spellcheck/browser/windows_spell_checker.cc
 +++ b/components/spellcheck/browser/windows_spell_checker.cc
 @@ -241,6 +241,11 @@ std::vector<SpellCheckResult> BackgroundHelper::RequestTextCheckForAllLanguages(

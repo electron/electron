@@ -3,17 +3,21 @@ import {
   BrowserWindow,
   WebContentsView,
   app,
+  clipboard,
   Menu,
   MenuItem,
+  session,
   type MenuItemConstructorOptions
 } from 'electron/main';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFailed } from 'vitest';
 
 import { once } from 'node:events';
 
-import { ifit, ifdescribe } from './lib/spec-helpers.ts';
+import { ifit, ifdescribe, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows, cleanupWebContents } from './lib/window-helpers.ts';
+
+const features = process._linkedBinding('electron_common_features');
 
 const roleList: Record<string, { label: string; accelerator?: string }> = Menu._roleDefaults();
 
@@ -332,6 +336,135 @@ describe('MenuItems', () => {
       menu._activate(menu.items[0].commandId);
       expect(win.isMinimized()).toBe(true);
     });
+
+    // On macOS these roles are handled natively by the first responder rather
+    // than by the role's built-in action.
+    ifdescribe(process.platform !== 'darwin')('edit roles', { tags: ['serial'] }, () => {
+      type EditorState = { value: string; start: number; end: number };
+      let w: BrowserWindow;
+
+      beforeEach(async () => {
+        w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+        w.webContents.focus();
+        // Focuses a textarea holding "Hello World" with "Hello " selected
+        await w.webContents.executeJavaScript(`{
+          const textarea = document.createElement('textarea');
+          textarea.value = 'Hello World';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.setSelectionRange(0, 6);
+        }`);
+      });
+
+      const getState = (): Promise<EditorState> =>
+        w.webContents.executeJavaScript(
+          '({ value: document.activeElement.value, start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd })'
+        );
+
+      // Editing commands reach the renderer asynchronously, so poll for them
+      const expectState = async (expected: Partial<EditorState>) => {
+        let actual = await getState();
+        const matches = () =>
+          Object.entries(expected).every(([key, value]) => actual[key as keyof EditorState] === value);
+        await waitUntil(
+          async () => {
+            actual = await getState();
+            return matches();
+          },
+          { rate: 50, timeout: 2000 }
+        ).catch(() => {
+          // Fall through so the assertion below reports the state we got
+        });
+        expect(actual).toMatchObject(expected);
+      };
+
+      const runRole = (role: MenuItemConstructorOptions['role']) => {
+        expect(executeByRole(role, w, w.webContents), `${role} handled by role`).toBe(true);
+      };
+
+      it('selectAll selects the whole value', async () => {
+        runRole('selectAll');
+        await expectState({ start: 0, end: 11 });
+      });
+
+      it('delete removes the selection, undo restores it and redo removes it again', async () => {
+        runRole('delete');
+        await expectState({ value: 'World' });
+        runRole('undo');
+        await expectState({ value: 'Hello World' });
+        runRole('redo');
+        await expectState({ value: 'World' });
+      });
+
+      it('cut removes the selection and paste puts it back', async () => {
+        runRole('cut');
+        await expectState({ value: 'World', start: 0, end: 0 });
+        runRole('paste');
+        await expectState({ value: 'Hello World', start: 6, end: 6 });
+      });
+
+      it('copy keeps the selection and pasteAndMatchStyle inserts a copy of it', async () => {
+        await clipboard.clear();
+        runRole('copy');
+        await waitUntil(async () => (await clipboard.readText()) === 'Hello ');
+        await expectState({ value: 'Hello World', start: 0, end: 6 });
+        await w.webContents.executeJavaScript('document.activeElement.setSelectionRange(11, 11)');
+        runRole('pasteAndMatchStyle');
+        await expectState({ value: 'Hello WorldHello ' });
+      });
+    });
+
+    ifit(process.platform !== 'darwin')('close closes the window', async () => {
+      const w = new BrowserWindow({ show: false });
+      const closed = once(w, 'closed');
+      expect(executeByRole('close', w, w.webContents)).toBe(true);
+      await closed;
+      expect(w.isDestroyed()).toBe(true);
+    });
+
+    it('zoomIn, zoomOut and resetZoom change the zoom level', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      expect(w.webContents.getZoomLevel()).toBe(0);
+
+      expect(executeByRole('zoomIn', w, w.webContents)).toBe(true);
+      expect(w.webContents.getZoomLevel()).toBe(0.5);
+      expect(executeByRole('zoomOut', w, w.webContents)).toBe(true);
+      expect(executeByRole('zoomOut', w, w.webContents)).toBe(true);
+      expect(w.webContents.getZoomLevel()).toBe(-0.5);
+      expect(executeByRole('resetZoom', w, w.webContents)).toBe(true);
+      expect(w.webContents.getZoomLevel()).toBe(0);
+    });
+
+    ifit(features.isBuiltinSpellCheckerEnabled())('toggleSpellChecker toggles the spellchecker', async () => {
+      const ses = session.fromPartition(`menu-role-spellchecker-${Math.random()}`);
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL('about:blank');
+      expect(ses.isSpellCheckerEnabled()).toBe(true);
+
+      expect(executeByRole('toggleSpellChecker', w, w.webContents)).toBe(true);
+      expect(ses.isSpellCheckerEnabled()).toBe(false);
+      expect(executeByRole('toggleSpellChecker', w, w.webContents)).toBe(true);
+      expect(ses.isSpellCheckerEnabled()).toBe(true);
+    });
+
+    ifdescribe(process.platform !== 'darwin')('togglefullscreen', { tags: ['serial'] }, () => {
+      it('enters and leaves fullscreen', async () => {
+        const w = new BrowserWindow();
+        await w.loadURL('about:blank');
+
+        const enterFullScreen = once(w, 'enter-full-screen');
+        expect(executeByRole('togglefullscreen', w, w.webContents)).toBe(true);
+        await enterFullScreen;
+        expect(w.isFullScreen()).toBe(true);
+
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        expect(executeByRole('togglefullscreen', w, w.webContents)).toBe(true);
+        await leaveFullScreen;
+        expect(w.isFullScreen()).toBe(false);
+      });
+    });
   });
 
   describe('MenuItem command id', () => {
@@ -610,10 +743,12 @@ describe('MenuItems', () => {
       await wcv.webContents.loadURL(htmlUrl);
       await changeTitle(wcv);
 
+      // Listen for both before triggering the reload so neither can be missed.
       const didStartLoading = once(wcv.webContents, 'did-start-loading');
+      const didFinishLoad = once(wcv.webContents, 'did-finish-load');
       expect(executeByRole(role, w, wcv.webContents)).toBe(true);
       await didStartLoading;
-      await once(wcv.webContents, 'did-finish-load');
+      await didFinishLoad;
 
       // If the page was reloaded, the title should have been reset.
       expect(wcv.webContents.getTitle()).toBe(title);
@@ -624,17 +759,35 @@ describe('MenuItems', () => {
       const wcv = new WebContentsView();
       w.contentView.addChildView(wcv);
 
+      // Report which wait stalled if the test times out.
+      let step = 'loading the page';
+      onTestFailed(() => {
+        console.error(`${role} role on DevTools webContents stalled while ${step}`);
+      });
+
       await wcv.webContents.loadURL(htmlUrl);
       await changeTitle(wcv);
 
+      // The role routes to the inspected page whatever the dock state, so open
+      // detached and inactive: docking into a hidden, unsized view or taking
+      // focus would only depend on the last-used dock state and the runner.
+      step = 'waiting for devtools-opened';
       const opened = once(wcv.webContents, 'devtools-opened');
-      wcv.webContents.openDevTools();
+      wcv.webContents.openDevTools({ mode: 'detach', activate: false });
       await opened;
 
+      const devToolsWebContents = wcv.webContents.devToolsWebContents;
+      expect(devToolsWebContents).not.toBeNull();
+
+      // Listen for both before triggering the reload so neither can be missed.
       const didStartLoading = once(wcv.webContents, 'did-start-loading');
-      expect(executeByRole(role, w, wcv.webContents.devToolsWebContents!)).toBe(true);
+      const didFinishLoad = once(wcv.webContents, 'did-finish-load');
+      expect(executeByRole(role, w, devToolsWebContents!)).toBe(true);
+      step = 'waiting for did-start-loading';
       await didStartLoading;
-      await once(wcv.webContents, 'did-finish-load');
+      step = 'waiting for did-finish-load';
+      await didFinishLoad;
+      step = 'checking the title';
 
       // If the page was reloaded, the title should have been reset.
       expect(wcv.webContents.getTitle()).toBe(title);

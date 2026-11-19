@@ -45,7 +45,7 @@ jobs:
       contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root
+      options: --user root --umask 0022
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas

@@ -82,6 +82,53 @@ Note that `level` on the `Event` is a string with possible values of `info`,
 
 The `console-message` event on `<webview>` is unchanged.
 
+### Behavior Changed: `useSystemPicker` follows `displaySurface`
+
+On macOS 15+, `session.setDisplayMediaRequestHandler(handler, { useSystemPicker: true })`
+now opens the same system picker Chrome uses:
+
+* The picker offers what the page asks for: windows for
+  `getDisplayMedia({ video: { displaySurface: 'window' } })`, screens for
+  `'monitor'`, and windows, applications and screens otherwise (screens only
+  on macOS 15.0 and 15.1). Previously it always offered everything.
+* When the page also asks for audio, the stream now includes system audio,
+  unless the page opts out. Previously the stream was video only. See
+  [`ses.setDisplayMediaRequestHandler`](api/session.md#sessetdisplaymediarequesthandlerhandler-opts).
+* The video track reports the picked kind: a screen now reports
+  `displaySurface: 'monitor'` instead of `'window'`. Its `deviceId` also
+  changes format.
+
+### Removed: `top-level-storage-access` permission
+
+Chromium has removed the `top-level-storage-access` permission type, so it is
+no longer a possible `permission` value in
+[`ses.setPermissionRequestHandler(handler)`](api/session.md#sessetpermissionrequesthandlerhandler)
+or [`ses.setPermissionCheckHandler(handler)`](api/session.md#sessetpermissioncheckhandlerhandler).
+Web content lost the ability to trigger this permission in Electron 46 when
+`document.requestStorageAccessFor` was removed.
+
+### Deprecated: `preconnect` event on `session`
+
+The `preconnect` event on `Session` is deprecated. Use the
+[`preconnect` event on `WebFrameMain`](api/web-frame-main.md#event-preconnect)
+instead, since preconnection hints belong to the frame that requested them.
+The session event continues to forward hints from live frames with a
+deprecation warning. Hints from frames that have already been destroyed are
+no longer emitted.
+
+```js
+// Deprecated
+win.webContents.session.on('preconnect', (event, url, allowCredentials, frame) => {})
+
+// Replace with:
+win.webContents.mainFrame.on('preconnect', (event, url, allowCredentials) => {})
+
+// To observe newly created frames, including subframes:
+win.webContents.on('frame-created', (event, { frame }) => {
+  frame?.on('preconnect', (event, url, allowCredentials) => {})
+})
+```
+
 ## Breaking API Changes (46.0)
 
 ### Removed: `--experimental-transform-types` command-line switch

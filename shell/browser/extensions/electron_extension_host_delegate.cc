@@ -121,7 +121,7 @@ void ElectronExtensionHostDelegate::CreateTab(
     std::unique_ptr<content::WebContents> web_contents,
     const GURL& target_url,
     const ExtensionId& extension_id,
-    WindowOpenDisposition disposition,
+    ui::mojom::WindowOpenDisposition disposition,
     const blink::mojom::WindowFeatures& window_features,
     bool user_gesture) {
   // TODO(jamescook): Should app_shell support opening popup windows?

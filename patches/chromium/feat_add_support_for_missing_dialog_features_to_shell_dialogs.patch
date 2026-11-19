@@ -17,10 +17,10 @@ It also:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index 5719d15fecfc45290129774958eb6435dfe6d685..335e99eade0d9a65c1e82ee2778181cd45deb814 100644
+index b6ab4626977cc22555da05c4574f62de12442b47..8111ab53c1214e21a3c1be76eaff837c8e179be8 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
-@@ -496,8 +496,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
+@@ -509,8 +509,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
      case SELECT_EXISTING_FOLDER:
        dialog = CreateSelectFolderDialog(type, title_string, default_path,
                                          owning_window);
@@ -35,7 +35,7 @@ index 5719d15fecfc45290129774958eb6435dfe6d685..335e99eade0d9a65c1e82ee2778181cd
        break;
      case SELECT_OPEN_FILE:
        dialog = CreateFileOpenDialog(title_string, default_path, owning_window);
-@@ -648,9 +652,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+@@ -662,9 +666,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      const std::string& title,
      const base::FilePath& default_path,
      gfx::NativeWindow parent) {
@@ -48,7 +48,7 @@ index 5719d15fecfc45290129774958eb6435dfe6d685..335e99eade0d9a65c1e82ee2778181cd
    SetGtkTransientForAura(dialog, parent, platform_);
    AddFilters(GTK_FILE_CHOOSER(dialog));
  
-@@ -681,11 +687,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -695,11 +701,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
              ? l10n_util::GetStringUTF8(IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE)
              : l10n_util::GetStringUTF8(IDS_SELECT_FOLDER_DIALOG_TITLE);
    }
@@ -69,16 +69,16 @@ index 5719d15fecfc45290129774958eb6435dfe6d685..335e99eade0d9a65c1e82ee2778181cd
  
    GtkWidget* dialog = GtkFileChooserDialogNew(
        title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-@@ -707,7 +717,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -721,7 +731,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
    gtk_file_filter_add_mime_type(only_folders, "inode/directory");
    gtk_file_filter_add_mime_type(only_folders, "text/directory");
-   gtk_file_chooser_add_filter(chooser, only_folders);
+   gtk_file_chooser_set_filter(chooser, only_folders);
 -  gtk_file_chooser_set_select_multiple(chooser, FALSE);
 +  gtk_file_chooser_set_select_multiple(chooser, allow_multiple_selection());
    return dialog;
  }
  
-@@ -744,10 +754,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -758,10 +768,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    std::string title_string =
        !title.empty() ? title
                       : l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE);
@@ -92,7 +92,7 @@ index 5719d15fecfc45290129774958eb6435dfe6d685..335e99eade0d9a65c1e82ee2778181cd
        GTK_RESPONSE_ACCEPT);
    SetGtkTransientForAura(dialog, parent, platform_);
  
-@@ -773,8 +784,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -787,8 +798,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
    // Overwrite confirmation is always enabled in GTK4.
    if (!GtkCheckVersion(4)) {
@@ -103,7 +103,7 @@ index 5719d15fecfc45290129774958eb6435dfe6d685..335e99eade0d9a65c1e82ee2778181cd
    }
    return dialog;
  }
-@@ -849,6 +860,18 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
+@@ -863,6 +874,18 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
  void SelectFileDialogLinuxGtk::OnSelectMultiFileDialogResponse(
      GtkWidget* dialog,
      int response_id) {
@@ -122,7 +122,7 @@ index 5719d15fecfc45290129774958eb6435dfe6d685..335e99eade0d9a65c1e82ee2778181cd
    if (IsCancelResponse(response_id)) {
      FileNotSelected(dialog);
      return;
-@@ -859,9 +882,11 @@ void SelectFileDialogLinuxGtk::OnSelectMultiFileDialogResponse(
+@@ -873,9 +896,11 @@ void SelectFileDialogLinuxGtk::OnSelectMultiFileDialogResponse(
    }
  
    auto filenames = GtkFileChooserGetFilenames(dialog);
@@ -137,10 +137,10 @@ index 5719d15fecfc45290129774958eb6435dfe6d685..335e99eade0d9a65c1e82ee2778181cd
      FileNotSelected(dialog);
      return;
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.h b/ui/gtk/select_file_dialog_linux_gtk.h
-index a8f17e0ff0420725f331e63ca19f2d3818df70cb..42962e1d3eb8e9c0d35a87c4f303d102b9811328 100644
+index ce945880728288c24a06841b91c533bea6d43371..cddd3c543d8c0c03f916e6571cd491b7f5352d86 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.h
 +++ b/ui/gtk/select_file_dialog_linux_gtk.h
-@@ -142,6 +142,12 @@ class COMPONENT_EXPORT(GTK) SelectFileDialogLinuxGtk
+@@ -144,6 +144,12 @@ class COMPONENT_EXPORT(GTK) SelectFileDialogLinuxGtk
                                gint response_id,
                                bool allow_folder);
  
@@ -153,7 +153,7 @@ index a8f17e0ff0420725f331e63ca19f2d3818df70cb..42962e1d3eb8e9c0d35a87c4f303d102
    // Common function for CreateFileOpenDialog and CreateMultiFileOpenDialog.
    GtkWidget* CreateFileOpenHelper(const std::string& title,
                                    const base::FilePath& default_path,
-@@ -156,6 +162,9 @@ class COMPONENT_EXPORT(GTK) SelectFileDialogLinuxGtk
+@@ -158,6 +164,9 @@ class COMPONENT_EXPORT(GTK) SelectFileDialogLinuxGtk
    // Callback for when the user responds to a Open Multiple Files dialog.
    void OnSelectMultiFileDialogResponse(GtkWidget* dialog, int response_id);
  
@@ -164,10 +164,10 @@ index a8f17e0ff0420725f331e63ca19f2d3818df70cb..42962e1d3eb8e9c0d35a87c4f303d102
    void OnFileChooserDestroy(GtkWidget* dialog);
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index 12a514b89c20b5ab5a20a17aa557da187c243a8a..278c397f78492574a751e512fb0de17a2b47a5c8 100644
+index 20968e38845712590a59ecbd57cd50be67e199bb..b64065a8bf419fb4f4d7512509532b6fe6f6efc1 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
-@@ -224,6 +224,20 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
+@@ -201,6 +201,20 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
                    const GURL* caller = nullptr);
    bool HasMultipleFileTypeChoices();
  

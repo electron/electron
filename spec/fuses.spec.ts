@@ -28,7 +28,7 @@ async function runWithInspect(args: string[], env: NodeJS.ProcessEnv = {}) {
   return { code, inspectorStarted: output.includes('Debugger listening on ws://') };
 }
 
-ifdescribe(isTestingBindingAvailable())('fuses', () => {
+ifdescribe(isTestingBindingAvailable())('fuses', { retry: 0 }, () => {
   it('can be enabled by command-line argument during testing', async () => {
     const child0 = spawn(process.execPath, ['-v'], { env: { NODE_OPTIONS: '-e 0' } });
     const [code0] = await once(child0, 'exit');

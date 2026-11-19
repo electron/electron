@@ -16,6 +16,18 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 
 There are a few ways that you can set up testing using WebDriver.
 
+:::caution Command-line argument parsing
+ChromeDriver adds its own command-line arguments when it launches Electron, such as
+`--enable-automation` and `--remote-debugging-port=0`. It can also add a positional startup
+URL such as `data:,`. These appear in `process.argv` alongside your application's arguments
+and can cause strict argument parsers, such as `yargs.strict()`, to reject the launch.
+
+Inspect `process.argv` with the driver version and configuration used by your tests.
+In your test startup code, explicitly recognize or filter only the known driver-added
+arguments while keeping validation of your application's arguments. The added arguments
+can vary with the driver version and configuration.
+:::
+
 ### With WebdriverIO
 
 [WebdriverIO](https://webdriver.io/) (WDIO) is a test automation framework that provides a

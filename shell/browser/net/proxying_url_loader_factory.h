@@ -111,6 +111,8 @@ class ProxyingURLLoaderFactory
 
     void OnLoaderCreated(
         mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver);
+    void OnLoaderFailedWithRemoteEndpoint(
+        const net::IPEndPoint& remote_endpoint);
 
     // network::mojom::TrustedHeaderClient:
     void OnBeforeSendHeaders(const GURL& request_url,
@@ -163,6 +165,7 @@ class ProxyingURLLoaderFactory
     mojo::ScopedDataPipeConsumerHandle current_body_;
     scoped_refptr<net::HttpResponseHeaders> override_headers_;
     GURL redirect_url_;
+    int redirect_count_ = 0;
 
     const bool for_cors_preflight_ = false;
 
@@ -245,6 +248,9 @@ class ProxyingURLLoaderFactory
       const network::ResourceRequest& request,
       mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
       override;
+  void OnLoaderFailedWithRemoteEndpoint(
+      int32_t request_id,
+      const net::IPEndPoint& remote_endpoint) override;
 
   bool IsForServiceWorkerScript() const;
 

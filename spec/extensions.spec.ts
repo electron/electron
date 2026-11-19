@@ -24,13 +24,13 @@ import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
-import { defer, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { expectWarningMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
 const fixtures = path.join(import.meta.dirname, 'fixtures');
 
-describe('chrome extensions', () => {
+describe('chrome extensions', { retry: 0 }, () => {
   const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
 
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
@@ -103,6 +103,56 @@ describe('chrome extensions', () => {
     expect(all.map((info: any) => info.id)).toContain(extension.id);
     const info = await w.webContents.executeJavaScript(`chrome.management.get('${extension.id}')`);
     expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
+  });
+
+  // On Linux, using this API scans mounted devices. A device with no identifying
+  // udev properties, as seen on CI, fails DCHECK(!unique_id.empty()) in
+  // storage_monitor::StorageInfo::MakeDeviceId().
+  ifdescribe(process.platform !== 'linux')('chrome.system.storage', () => {
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-system-storage')
+      );
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${extension.url}page.html`);
+    });
+
+    afterEach(() => {
+      w.destroy();
+    });
+
+    it('lists storage units', async () => {
+      const units = await w.webContents.executeJavaScript('chrome.system.storage.getInfo()');
+      expect(Array.isArray(units)).toBe(true);
+      for (const unit of units) {
+        expect(unit).toEqual(
+          expect.objectContaining({
+            id: expect.any(String),
+            name: expect.any(String),
+            type: expect.any(String),
+            capacity: expect.any(Number)
+          })
+        );
+      }
+    });
+
+    it('reports an unknown device when ejecting', async () => {
+      const result = await w.webContents.executeJavaScript("chrome.system.storage.ejectDevice('unknown-device')");
+      expect(result).toBe('no_such_device');
+    });
+
+    it('accepts device attach and detach listeners', async () => {
+      // The browser starts watching for devices when the first listener is added.
+      const units = await w.webContents.executeJavaScript(`
+        chrome.system.storage.onAttached.addListener(() => {});
+        chrome.system.storage.onDetached.addListener(() => {});
+        chrome.system.storage.getInfo();
+      `);
+      expect(Array.isArray(units)).toBe(true);
+    });
   });
 
   describe('Chrome Web Store origin', () => {
@@ -871,6 +921,22 @@ describe('chrome extensions', () => {
       expect(receivedMessage).toEqual({ some: 'message' });
     });
 
+    it('exposes the extension dynamicId as chrome.runtime.dynamicId in the background page', async () => {
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'lazy-background-page')
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`chrome-extension://${extension.id}/page-runtime-get-background.html`);
+      await w.webContents.executeJavaScript('window.completionPromise');
+      const backgroundDynamicId = await w.webContents.executeJavaScript(
+        'new Promise((resolve) => chrome.runtime.getBackgroundPage((bg) => resolve(bg.chrome.runtime.dynamicId)))'
+      );
+      expect(extension.dynamicId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(extension.dynamicId).not.toBe(extension.id);
+      expect(backgroundDynamicId).toBe(extension.dynamicId);
+    });
+
     it('has session in background page', async () => {
       const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
@@ -928,7 +994,7 @@ describe('chrome extensions', () => {
     // TODO(jkleinsc) fix this flaky test on WOA
     ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads a devtools extension', async () => {
       const customSession = session.fromPartition(`persist:${randomUUID()}`);
-      customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
+      await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
       const winningMessage = once(ipcMain, 'winning');
       const w = new BrowserWindow({
         show: true,
@@ -2134,12 +2200,12 @@ describe('chrome extensions', () => {
       const args = [path.join(fixtures, 'extensions', name, 'main.js'), `--user-data-dir=${userDataDir}`];
       if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const appProcess = spawn(process.execPath, args);
-      const exited = once(appProcess, 'exit');
+      const closed = once(appProcess, 'close');
       defer(async () => {
         // A hung app would keep its profile open into the retry.
-        if (appProcess.exitCode === null && appProcess.signalCode === null) {
+        if (appProcess.pid && appProcess.exitCode === null && appProcess.signalCode === null) {
           appProcess.kill();
-          await exited;
+          await closed;
         }
         await fs.rm(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
       });
@@ -2148,7 +2214,15 @@ describe('chrome extensions', () => {
       appProcess.stdout.on('data', (data) => {
         output += data;
       });
-      await once(appProcess.stdout, 'end');
+      let stderr = '';
+      appProcess.stderr.on('data', (data) => {
+        stderr += data;
+      });
+      const [code, signal] = await closed;
+      expect({ code, signal }, `Fixture ${name} failed.\nstdout:\n${output}\nstderr:\n${stderr}`).toEqual({
+        code: 0,
+        signal: null
+      });
 
       return output.trim();
     }

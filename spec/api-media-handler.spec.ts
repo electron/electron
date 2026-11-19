@@ -2,6 +2,7 @@ import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { once } from 'node:events';
 import * as http from 'node:http';
 
 import { captureWithTabSourceId } from './lib/media-helpers.ts';
@@ -108,6 +109,35 @@ describe('setDisplayMediaRequestHandler', () => {
     }
   );
 
+  for (const [constraint, expected] of [
+    ['{ displaySurface: "monitor" }', 'monitor'],
+    ['{ displaySurface: "window" }', 'window'],
+    ['{ displaySurface: "browser" }', 'browser'],
+    ['true', 'none']
+  ] as const) {
+    it(`reports preferredDisplaySurface '${expected}' for video: ${constraint}`, async () => {
+      const ses = session.fromPartition('' + Math.random());
+      let preferredDisplaySurface: string | undefined;
+      ses.setDisplayMediaRequestHandler((request, callback) => {
+        preferredDisplaySurface = request.preferredDisplaySurface;
+        callback({ video: w.webContents.mainFrame });
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      const { ok, message } = await w.webContents.executeJavaScript(
+        `
+        navigator.mediaDevices.getDisplayMedia({
+          video: ${constraint},
+          audio: false,
+        }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+      `,
+        true
+      );
+      expect(ok, message).toBe(true);
+      expect(preferredDisplaySurface).toBe(expected);
+    });
+  }
+
   it('does not crash when using a bogus ID', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
@@ -131,6 +161,62 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(requestHandlerCalled).toBe(true);
     expect(ok).toBe(false);
     expect(message).toBe('Could not start video source');
+  });
+
+  ifit(process.platform === 'darwin')('rejects a system picker session id returned from the handler', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let callbackError: Error | undefined;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      try {
+        callback({ video: { id: 'screen:1:0:s', name: 'forged' } });
+      } catch (e) {
+        callbackError = e as Error;
+      }
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok } = await w.webContents.executeJavaScript(
+      `
+      navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+        .then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `,
+      true
+    );
+    expect(ok).toBe(false);
+    expect(callbackError?.message).toBe('video.id is not a valid source id');
+  });
+
+  ifit(
+    process.platform === 'darwin' &&
+      process._linkedBinding('electron_browser_desktop_capturer').isDisplayMediaSystemPickerAvailable()
+  )('frees the system picker when the requesting renderer crashes', async () => {
+    const testing = process._linkedBinding('electron_common_testing');
+    testing.setSystemPickerStubForTesting(true);
+    try {
+      const ses = session.fromPartition('' + Math.random());
+      ses.setDisplayMediaRequestHandler(() => {}, { useSystemPicker: true });
+      const pick = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(
+          'navigator.mediaDevices.getDisplayMedia({ video: true }).then(() => "ok", e => e.name)',
+          true
+        );
+      const a = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await a.loadURL(serverUrl);
+      pick(a).catch(() => {});
+      await waitUntil(() => testing.getSystemPickerStubOpenCount() === 1);
+
+      const gone = once(a.webContents, 'render-process-gone');
+      a.webContents.forcefullyCrashRenderer();
+      await gone;
+
+      const b = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await b.loadURL(serverUrl);
+      pick(b).catch(() => {});
+      // B reaches the picker instead of being turned away with AbortError.
+      await waitUntil(() => testing.getSystemPickerStubOpenCount() === 2);
+    } finally {
+      testing.setSystemPickerStubForTesting(false);
+    }
   });
 
   it('successfully returns a capture handle', async () => {
@@ -539,6 +625,25 @@ describe('setDisplayMediaRequestHandler', () => {
     `);
     expect(ok, message).toBe(true);
   });
+
+  ifit(process.platform === 'darwin')(
+    'rejects a system picker session id in the legacy desktop capture constraint',
+    async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(serverUrl);
+      const { ok } = await w.webContents.executeJavaScript(`
+      new Promise((resolve) => navigator.getUserMedia({
+        video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: 'screen:1:0:s'
+          }
+        },
+      }, x => resolve({ok: x instanceof MediaStream}), e => resolve({ok: false, message: e.message})))
+    `);
+      expect(ok).toBe(false);
+    }
+  );
 
   it('works when calling getUserMedia without a media request handler', async () => {
     const w = new BrowserWindow({ show: false });

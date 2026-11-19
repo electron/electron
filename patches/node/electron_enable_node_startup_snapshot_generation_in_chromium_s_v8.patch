@@ -62,7 +62,7 @@ eliminating the Node bootstrap recompile.
   config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
-index 6220b9339265051156aaa6ff77a735c8e49c85e1..2266de3a399e4cdafb93cd930ec6128e6634c639 100644
+index 40e4594447de59ba987fa86ba1472811cce353e1..a1308da6a90e4084be1938322c7993c63c98dcd9 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -31,6 +31,13 @@ declare_args() {
@@ -291,7 +291,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 1fad56169f5c813dd6f6216b6a1278e5415a5972..619253a1ee26e289215022c6152229500952cfdc 100644
+index 1fad56169f5c813dd6f6216b6a1278e5415a5972..0a8455bdd06a6d4d53d19bf49687772a87cc5340 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -42,7 +42,22 @@ template("node_gn_build") {
@@ -397,7 +397,7 @@ index 1fad56169f5c813dd6f6216b6a1278e5415a5972..619253a1ee26e289215022c615222950
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -335,26 +369,135 @@ template("node_gn_build") {
+@@ -335,26 +369,144 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -444,6 +444,15 @@ index 1fad56169f5c813dd6f6216b6a1278e5415a5972..619253a1ee26e289215022c615222950
 +          # rejected on its flags hash (see NodeBindings::ParseNodeCliFlags).
 +          # Node options go before the positional output path.
 +          "--no-js-source-phase-imports",
++
++          # --predictable (set by node for snapshot builds) does not cover
++          # V8's minor GC task, which scavenges at a timing-dependent point
++          # and so changes the order objects are promoted to read-only space,
++          # making the snapshot differ between runs on a busy machine. A young
++          # generation big enough that building the snapshot never scavenges
++          # avoids that. Semi-space sizes are left out of V8's flags hash.
++          "--min-semi-space-size=32",
++          "--max-semi-space-size=32",
 +          rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),
 +
 +          # Electron's V8 has external startup data, so node_mksnapshot must
