@@ -58,7 +58,7 @@ class InspectableWebContents
   content::WebContents* GetDevToolsWebContents() const;
   // The built-in DevTools frontend, or null when none is open or an app
   // frontend was assigned by SetDevToolsWebContents().
-  content::WebContents* managed_devtools_web_contents() const {
+  [[nodiscard]] content::WebContents* managed_devtools_web_contents() const {
     return managed_devtools_web_contents_.get();
   }
 
