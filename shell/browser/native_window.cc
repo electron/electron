@@ -8,7 +8,6 @@
 #include <cmath>
 #include <list>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/containers/adapters.h"
@@ -1232,15 +1231,11 @@ void NativeWindowRelay::CreateForWebContents(
     content::WebContents* web_contents,
     base::WeakPtr<NativeWindow> window) {
   DCHECK(web_contents);
-  // A WebContentsView can move to another window, so point an existing relay
-  // at the new window rather than keeping the first one.
-  if (auto* relay = FromWebContents(web_contents)) {
-    relay->native_window_ = std::move(window);
-    return;
+  if (!web_contents->GetUserData(UserDataKey())) {
+    web_contents->SetUserData(
+        UserDataKey(),
+        base::WrapUnique(new NativeWindowRelay(web_contents, window)));
   }
-  web_contents->SetUserData(
-      UserDataKey(),
-      base::WrapUnique(new NativeWindowRelay(web_contents, std::move(window))));
 }
 
 NativeWindowRelay::NativeWindowRelay(content::WebContents* web_contents,
