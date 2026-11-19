@@ -637,8 +637,10 @@ class NativeWindow : public views::WidgetDelegate {
 class NativeWindowRelay
     : public content::WebContentsUserData<NativeWindowRelay> {
  public:
-  static void CreateForWebContents(content::WebContents*,
-                                   base::WeakPtr<NativeWindow>);
+  // Creates the relay of |web_contents|, or points its existing relay at
+  // |window|.
+  static void CreateForWebContents(content::WebContents* web_contents,
+                                   base::WeakPtr<NativeWindow> window);
 
   ~NativeWindowRelay() override;
 
