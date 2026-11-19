@@ -355,6 +355,120 @@ describe('WebContentsView', () => {
     }
   });
 
+  describe('when removed from its window', () => {
+    const attachWebview = async (w: BrowserWindow) => {
+      const view = new WebContentsView({ webPreferences: { webviewTag: true } });
+      w.contentView.addChildView(view);
+      const attached = once(view.webContents, 'did-attach-webview') as Promise<[any, Electron.WebContents]>;
+      await view.webContents.loadURL('data:text/html,<webview src="about:blank"></webview>');
+      const [, guest] = await attached;
+      expect(BrowserWindow.fromWebContents(view.webContents)).toBe(w);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(w);
+      return { view, guest };
+    };
+
+    it('no longer has the window as its owner', async () => {
+      const w = new BrowserWindow({ show: false });
+      const { view, guest } = await attachWebview(w);
+      w.contentView.removeChildView(view);
+      expect(view.webContents.getOwnerBrowserWindow()).toBe(null);
+      expect(BrowserWindow.fromWebContents(view.webContents)).toBe(null);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(null);
+    });
+
+    it('no longer has the window as its owner when its parent view is removed', async () => {
+      const w = new BrowserWindow({ show: false });
+      const parent = new View();
+      w.contentView.addChildView(parent);
+      const view = new WebContentsView();
+      parent.addChildView(view);
+      expect(BrowserWindow.fromWebContents(view.webContents)).toBe(w);
+      w.contentView.removeChildView(parent);
+      expect(BrowserWindow.fromWebContents(view.webContents)).toBe(null);
+    });
+
+    it('takes a window as its owner again when re-added', async () => {
+      const wA = new BrowserWindow({ show: false });
+      const wB = new BrowserWindow({ show: false });
+      const { view, guest } = await attachWebview(wA);
+
+      wA.contentView.removeChildView(view);
+      wB.contentView.addChildView(view);
+      expect(BrowserWindow.fromWebContents(view.webContents)).toBe(wB);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wB);
+
+      wB.contentView.removeChildView(view);
+      wA.contentView.addChildView(view);
+      expect(BrowserWindow.fromWebContents(view.webContents)).toBe(wA);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wA);
+    });
+
+    it('does not fullscreen the old window', { tags: ['serial'] }, async () => {
+      const w = new BaseWindow();
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      await view.webContents.loadURL('data:text/html,<div id="div">This is a simple div.</div>');
+      w.contentView.removeChildView(view);
+
+      let entered = false;
+      view.webContents.once('enter-html-full-screen', () => {
+        entered = true;
+      });
+      w.once('enter-full-screen', () => {
+        entered = true;
+      });
+      // The request is not granted, so there is nothing to wait for; give it
+      // ample time to reach the window if it were going to.
+      view.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true).catch(() => {});
+      await setTimeoutAsync(1000);
+      expect(entered).toBe(false);
+      expect(w.isFullScreen()).toBe(false);
+    });
+
+    it('leaves HTML fullscreen', { tags: ['serial'] }, async () => {
+      const w = new BaseWindow();
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      await view.webContents.loadURL('data:text/html,<div id="div">This is a simple div.</div>');
+
+      const enterHtmlFullScreen = once(view.webContents, 'enter-html-full-screen');
+      const enterFullScreen = once(w, 'enter-full-screen');
+      await view.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await enterHtmlFullScreen;
+      await enterFullScreen;
+
+      const leaveHtmlFullScreen = once(view.webContents, 'leave-html-full-screen');
+      const leaveFullScreen = once(w, 'leave-full-screen');
+      w.contentView.removeChildView(view);
+      await leaveHtmlFullScreen;
+      await leaveFullScreen;
+      expect(w.isFullScreen()).toBe(false);
+      await waitUntil(() => view.webContents.executeJavaScript('document.fullscreenElement === null'));
+    });
+
+    for (const mode of ['bottom', 'detach'] as const) {
+      it(`does not crash when the window closes with a <webview> guest and DevTools (mode: ${mode})`, async () => {
+        const w = new BrowserWindow({ show: false });
+        const { view, guest } = await attachWebview(w);
+        const opened = once(view.webContents, 'devtools-opened');
+        view.webContents.openDevTools({ mode, activate: false });
+        await opened;
+
+        const closed = once(w, 'closed');
+        w.close();
+        await closed;
+        // The native window is destroyed in a task after 'closed'.
+        await setTimeoutAsync(100);
+
+        expect(view.webContents.isDestroyed()).toBe(false);
+        expect(guest.isDestroyed()).toBe(false);
+        expect(BrowserWindow.fromWebContents(view.webContents)).toBe(null);
+        expect(BrowserWindow.fromWebContents(guest)).toBe(null);
+        expect(await view.webContents.executeJavaScript('1 + 1')).toBe(2);
+      });
+    }
+  });
+
   describe('visibilityState', { tags: ['serial'] }, () => {
     // These pages are only 'visible' while nothing covers their window. On the
     // Windows CI hosts another process's console window can sit above a newly

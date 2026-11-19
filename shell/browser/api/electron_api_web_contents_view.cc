@@ -348,8 +348,8 @@ void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
   if (!web_contents)
     return;
 
-  // We don't need to call SetOwnerWindow(nullptr) in OnViewRemovedFromWidget
-  // because that's handled in the WebContents dtor called prior.
+  // OnViewRemovedFromWidget() clears this again, so a view that moves to
+  // another window gets that window here.
   web_contents->SetOwnerWindow(native_window);
   RegisterDraggableRegionProvider(native_window);
   StopObservingWindow();
@@ -364,8 +364,35 @@ void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
 void WebContentsViewHost::OnViewRemovedFromWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
 
+  // Null when the window is being destroyed: its weak pointers are invalidated
+  // before its widget tears down the view tree, and the owner the webContents
+  // holds reads null by then as well.
+  NativeWindow* old_window = observed_window_.get();
   StopObservingWindow();
   UnregisterDraggableRegionProvider();
+
+  // The page is no longer shown in |old_window|, so dialogs, HTML fullscreen
+  // and focus must stop going to it. Leave the owner alone when it is not
+  // |old_window|, such as when another WebContentsView has adopted the
+  // webContents since.
+  WebContents* web_contents = GetLiveWebContents();
+  if (!old_window || !web_contents || !GetOwnedInspectableView() ||
+      web_contents->owner_window() != old_window) {
+    return;
+  }
+
+  // Exiting HTML fullscreen restores |old_window|, which needs the owner, so
+  // do it before clearing that. The view has left the window, so resizing the
+  // window won't resize the page; have it told directly instead.
+  if (web_contents->web_contents()->IsFullscreen()) {
+    web_contents->web_contents()->ExitFullscreen(/*will_cause_resize=*/false);
+    // Exiting can spin a nested run loop and emits events to JavaScript.
+    web_contents = GetLiveWebContents();
+    if (!web_contents || web_contents->owner_window() != old_window)
+      return;
+  }
+
+  web_contents->SetOwnerWindow(nullptr);
 }
 
 // Our bounds changed, by a move or a resize, and on a resize the
