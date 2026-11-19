@@ -89,7 +89,7 @@ index e35dd3339bf69f6e5011762e5002255e1505d432..75dda0c4bbe6a65ecf3e44b2f4d91f80
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 970ea84014c271315f77e1829e26eb55bb93bf04..4a12faa7ffa1604bacfdc4ed0decd45861f54791 100644
+index 5d250f2dba9adae0f6fce29b5a863003f756ea52..0122811906e1976ea6d28a7885cae1fad8dca048 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -61,6 +61,7 @@
@@ -100,7 +100,7 @@ index 970ea84014c271315f77e1829e26eb55bb93bf04..4a12faa7ffa1604bacfdc4ed0decd458
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1326,6 +1327,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1328,6 +1329,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
