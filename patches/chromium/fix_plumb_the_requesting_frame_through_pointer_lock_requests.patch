@@ -185,7 +185,7 @@ index 071e3d24e8b4f16a85465f054f2def8cd7d7f468..cff33315f06294761360338deb391c0a
        bool unadjusted_movement,
        input::InputRouterImpl::RequestMouseLockCallback response) override;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d07198066fca7e77f835e09ee0c06494daacf743..c5cb7939d67bf9189643773d3e24f937aaec8b14 100644
+index 2510f7092c1946626fec9dbc223006fa743430be..ec074f4dc531d0934042bcbcb7d746a64034feb9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5554,6 +5554,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
@@ -306,10 +306,10 @@ index 32fd54fb77d35b7f1366cfeec96a1c5a507de878..3b7114546138e49d01562750c0fd5de6
            pending_remote<blink.mojom.PointerLockContext>? context);
  };
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-index 0ee9f9c989da421b37ec3a79599c8feef0efaf17..057b7015a71b975075124cc705def91eb1cc97a2 100644
+index b8a4c14ee6fd7f99f90b7acc1ce047d0dea67ac0..b7587c08989d1be8f42fa362fd687e08b67a0759 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-@@ -3908,6 +3908,7 @@ void WebFrameWidgetImpl::CancelComposition() {
+@@ -3912,6 +3912,7 @@ void WebFrameWidgetImpl::CancelComposition() {
  }
  
  void WebFrameWidgetImpl::RequestMouseLock(
@@ -317,7 +317,7 @@ index 0ee9f9c989da421b37ec3a79599c8feef0efaf17..057b7015a71b975075124cc705def91e
      bool has_transient_user_activation,
      bool request_unadjusted_movement,
      mojom::blink::WidgetInputHandlerHost::RequestMouseLockCallback callback) {
-@@ -3921,7 +3922,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
+@@ -3925,7 +3926,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
    // callback. It does share the same signature as the mojo definition
    // for simplicity.
    if (host) {

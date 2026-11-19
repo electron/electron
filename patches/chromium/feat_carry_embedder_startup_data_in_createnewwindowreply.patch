@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 9a5de14358c08b1b74033e3356d577d505c828d4..a70daa424950eaa7c56e956efa3f9e34f634d5a3 100644
+index 0f44eaf16d202c6ae580000615e1881b83754cea..9406d3817d6631f7501f4326d46cb3991e2a3d53 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11192,7 +11192,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11193,7 +11193,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -71,10 +71,10 @@ index 75a5bd27dbb19e00db7b40d5ce68f13a2cbd0636..efaa85b0415263e5a4cb7d89b73800ac
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index da85027723f23506828bf1a0f59776ebd6eb8434..bf9b922b854f85b5909fa13ae902cebe3cf5c9e9 100644
+index 5bf6cb05d79596faa7f7ee61b602bc92e9d26bfe..2a741acfe600db92c5ffc48778ad9e543006eed7 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -859,6 +859,13 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -852,6 +852,13 @@ bool ContentBrowserClient::CanCreateWindow(
    return true;
  }
  
@@ -89,7 +89,7 @@ index da85027723f23506828bf1a0f59776ebd6eb8434..bf9b922b854f85b5909fa13ae902cebe
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 0e6d22166ad2664115e00d093290b2626d9fd8a7..0bec391ef74bdb4336316ab619f360ef9ae207ff 100644
+index 04718d15706d64f2934076324a74abb2dd8fe146..a74fb8a2cdbfd28931b7e7b59d84f8614e8156a4 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -62,6 +62,7 @@
@@ -100,7 +100,7 @@ index 0e6d22166ad2664115e00d093290b2626d9fd8a7..0bec391ef74bdb4336316ab619f360ef
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1336,6 +1337,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1328,6 +1329,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
