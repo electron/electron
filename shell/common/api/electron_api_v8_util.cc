@@ -11,6 +11,7 @@
 #include "base/location.h"
 #include "base/process/process.h"
 #include "base/run_loop.h"
+#include "base/task/bind_post_task.h"
 #include "base/task/sequenced_task_runner.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -83,8 +84,8 @@ void TakeHeapSnapshot(v8::Isolate* isolate) {
 // synchronous request unsuitable for asserting that an unreferenced C++ object
 // is reclaimed. With { execution: 'async' } the collection instead runs from a
 // fresh non-nestable task, where the stack holds no heap pointers and is not
-// scanned, and the returned promise resolves once it has finished. This mirrors
-// `gc({ type: 'major', execution: 'async' })` from --expose-gc.
+// scanned. This mirrors `gc({ type: 'major', execution: 'async' })` from
+// --expose-gc.
 v8::Local<v8::Value> RequestGarbageCollectionForTesting(gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
   std::string execution;
@@ -99,16 +100,22 @@ v8::Local<v8::Value> RequestGarbageCollectionForTesting(gin::Arguments* args) {
 
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+  // Wrapper destructors queue their NativePeer during cppgc sweeping via
+  // PostNonNestableTask(ReleaseAndDeleteQueuedPeers). Bind the reply to the
+  // current sequence so promise.Resolve() is posted after the GC task (and any
+  // peer teardown tasks it queued) rather than running before them.
   base::SequencedTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE,
       base::BindOnce(
-          [](v8::Isolate* isolate, gin_helper::Promise<void> promise) {
+          [](v8::Isolate* isolate) {
             isolate->RequestGarbageCollectionForTesting(
                 v8::Isolate::GarbageCollectionType::kFullGarbageCollection,
                 v8::StackState::kNoHeapPointers);
-            promise.Resolve();
           },
-          base::Unretained(isolate), std::move(promise)));
+          base::Unretained(isolate))
+          .Then(base::BindPostTaskToCurrentDefault(
+              base::BindOnce(&gin_helper::Promise<void>::ResolvePromise,
+                             std::move(promise)))));
   return handle;
 }
 

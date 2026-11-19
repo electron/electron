@@ -1,0 +1,317 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tarun Lalwani <tarunlalwani@gmail.com>
+Date: Wed, 11 Nov 2026 00:00:00 +0000
+Subject: fix: guard DevTools Fetch resume and body collection
+
+Temporary patch. Drop it when Electron rolls a Chromium that contains
+https://chromium-review.googlesource.com/c/chromium/src/+/8084482.
+
+Fetch interception at the Response stage had two crashes:
+
+1. A failed request with a body could be continued, and the
+   InterceptionJob destroyed, re-entrantly during the synchronous
+   RequestBodyCollector::Collect() in NotifyClient(). The completions are
+   now bound with a WeakPtr and NotifyClient() returns if the job is gone.
+
+2. Fetch.getResponseBody followed by continueResponse could resume
+   client_receiver_ after upstream OnComplete() had reset it, a null
+   dereference in MultiplexRouter.
+
+The fix tracks upstream completion explicitly in completion_status_
+instead of inferring it from client_receiver_.is_bound(). The client is
+resumed only while completion has not arrived, and a buffered response is
+sent once body EOF, upstream completion and DevTools continuation have all
+happened, in any order. The new invariant CHECKs are NotFatalUntil::M162.
+
+diff --git a/content/browser/devtools/devtools_url_loader_interceptor.cc b/content/browser/devtools/devtools_url_loader_interceptor.cc
+index baaf473771c32e7214f3cac61cd19fdf91fcd368..3d633fe61035c959880f8e0397c0f1907c4cfe76 100644
+--- a/content/browser/devtools/devtools_url_loader_interceptor.cc
++++ b/content/browser/devtools/devtools_url_loader_interceptor.cc
+@@ -208,7 +208,8 @@ class BodyReader : public mojo::DataPipeDrainer::Client {
+   void AddCallback(std::unique_ptr<GetResponseBodyCallback> callback) {
+     if (data_complete_) {
+       CHECK(callbacks_.empty(), base::NotFatalUntil::M159);
+-      callback->sendSuccess(encoded_body_, true);
++      scoped_refptr<base::RefCountedString> encoded_body = encoded_body_;
++      callback->sendSuccess(encoded_body->as_string(), true);
+       return;
+     }
+     callbacks_.push_back(std::move(callback));
+@@ -239,7 +240,7 @@ class BodyReader : public mojo::DataPipeDrainer::Client {
+   std::vector<std::unique_ptr<GetResponseBodyCallback>> callbacks_;
+   base::OnceClosure download_complete_callback_;
+   scoped_refptr<base::RefCountedString> body_;
+-  std::string encoded_body_;
++  scoped_refptr<base::RefCountedString> encoded_body_;
+   bool data_complete_ = false;
+ };
+ 
+@@ -257,11 +258,17 @@ void BodyReader::OnDataComplete() {
+   data_complete_ = true;
+   body_pipe_drainer_.reset();
+   // TODO(caseq): only encode if necessary.
+-  encoded_body_ = base::Base64Encode(*body_);
+-  for (auto& cb : callbacks_)
+-    cb->sendSuccess(encoded_body_, true);
+-  callbacks_.clear();
+-  std::move(download_complete_callback_).Run();
++  encoded_body_ =
++      base::MakeRefCounted<base::RefCountedString>(base::Base64Encode(*body_));
++
++  // A callback may destroy the job and this reader. Keep dispatch state local.
++  scoped_refptr<base::RefCountedString> encoded_body = encoded_body_;
++  auto callbacks = std::move(callbacks_);
++  auto download_complete_callback = std::move(download_complete_callback_);
++  for (auto& cb : callbacks) {
++    cb->sendSuccess(encoded_body->as_string(), true);
++  }
++  std::move(download_complete_callback).Run();
+ }
+ 
+ struct ResponseMetadata {
+@@ -275,7 +282,6 @@ struct ResponseMetadata {
+   std::optional<mojo_base::BigBuffer> cached_metadata;
+   size_t encoded_length = 0;
+   size_t transfer_size = 0;
+-  network::URLLoaderCompletionStatus status;
+ };
+ 
+ void RemoveUnsafeRequestHeadersOnRedirect(net::HttpRequestHeaders& headers) {
+@@ -498,6 +504,8 @@ class InterceptionJob : public network::mojom::URLLoaderClient,
+       std::unique_ptr<InterceptedRequestInfo> request_info);
+ 
+   void ResponseBodyComplete();
++  void MaybeSendBufferedResponse();
++  void ResumeClientIfLoading();
+ 
+   bool ShouldBypassForResponse() const {
+     if (state_ == State::kResponseTaken)
+@@ -612,6 +620,8 @@ class InterceptionJob : public network::mojom::URLLoaderClient,
+ 
+   std::unique_ptr<BodyReader> body_reader_;
+   std::unique_ptr<ResponseMetadata> response_metadata_;
++  // Set only once completion is received or a replacement response is ready.
++  std::optional<network::URLLoaderCompletionStatus> completion_status_;
+   std::vector<net::SourceStreamType> client_side_content_decoding_types_;
+   mojo::ScopedDataPipeConsumerHandle body_;
+ 
+@@ -1296,9 +1306,10 @@ void InterceptionJob::GetResponseBody(
+   }
+   bool body_reader_created = !body_reader_;
+   if (!body_reader_) {
+-    body_reader_ = std::make_unique<BodyReader>(base::BindOnce(
+-        &InterceptionJob::ResponseBodyComplete, base::Unretained(this)));
+-    client_receiver_.Resume();
++    body_reader_ = std::make_unique<BodyReader>(
++        base::BindOnce(&InterceptionJob::ResponseBodyComplete,
++                       weak_ptr_factory_.GetWeakPtr()));
++    ResumeClientIfLoading();
+   }
+   body_reader_->AddCallback(std::move(callback));
+   // Needs to happen after |AddCallback| to avoid a DCHECK.
+@@ -1319,7 +1330,7 @@ void InterceptionJob::TakeResponseBodyPipe(
+   CHECK(!!response_metadata_, base::NotFatalUntil::M159);
+   state_ = State::kResponseTaken;
+   pending_response_body_pipe_callback_ = std::move(callback);
+-  client_receiver_.Resume();
++  ResumeClientIfLoading();
+   if (body_)
+     StartLoadingResponseBody(std::move(body_));
+ }
+@@ -1445,11 +1456,9 @@ Response InterceptionJob::InnerContinueRequest(
+   }
+ 
+   if (body_reader_) {
+-    if (body_reader_->data_complete())
+-      SendResponse(body_reader_->body(), 0);
++    MaybeSendBufferedResponse();
+ 
+-    // There are read callbacks pending, so let the reader do its job and come
+-    // back when it's done.
++    // Body EOF and upstream completion can arrive in either order.
+     return Response::Success();
+   }
+ 
+@@ -1459,8 +1468,8 @@ Response InterceptionJob::InnerContinueRequest(
+           "Unable to continue request as is after body is taken");
+     }
+     // TODO(caseq): report error if other modifications are present.
+-    if (response_metadata_->status.error_code) {
+-      CompleteRequest(response_metadata_->status);
++    if (completion_status_ && completion_status_->error_code != net::OK) {
++      CompleteRequest(*completion_status_);
+       return Response::Success();
+     }
+     CHECK_EQ(State::kResponseReceived, state_, base::NotFatalUntil::M159);
+@@ -1469,7 +1478,11 @@ Response InterceptionJob::InnerContinueRequest(
+                                std::move(body_),
+                                std::move(response_metadata_->cached_metadata));
+     response_metadata_.reset();
+-    client_receiver_.Resume();
++    if (completion_status_) {
++      CompleteRequest(*completion_status_);
++      return Response::Success();
++    }
++    ResumeClientIfLoading();
+     return Response::Success();
+   }
+ 
+@@ -1638,11 +1651,12 @@ Response InterceptionJob::ProcessResponseOverride(
+ 
+   response_metadata_->transfer_size = body_size;
+ 
+-  response_metadata_->status.completion_time = base::TimeTicks::Now();
+-  response_metadata_->status.encoded_data_length =
++  completion_status_.emplace();
++  completion_status_->completion_time = base::TimeTicks::Now();
++  completion_status_->encoded_data_length =
+       base::ByteSize(headers_size) + base::ByteSize(body_size);
+-  response_metadata_->status.encoded_body_length = base::ByteSize(body_size);
+-  response_metadata_->status.decoded_body_length = base::ByteSize(body_size);
++  completion_status_->encoded_body_length = base::ByteSize(body_size);
++  completion_status_->decoded_body_length = base::ByteSize(body_size);
+ 
+   base::OnceClosure continue_after_cookies_set;
+   std::string location;
+@@ -1757,6 +1771,7 @@ void InterceptionJob::ProcessRedirectByClient(const GURL& redirect_url) {
+ 
+ void InterceptionJob::SendResponse(scoped_refptr<base::RefCountedMemory> body,
+                                    size_t offset) {
++  CHECK(completion_status_, base::NotFatalUntil::M162);
+   base::span<const uint8_t> bytes_to_write;
+   if (body) {
+     bytes_to_write = base::as_byte_span(*body).subspan(offset);
+@@ -1786,21 +1801,33 @@ void InterceptionJob::SendResponse(scoped_refptr<base::RefCountedMemory> body,
+ 
+   if (response_metadata_->transfer_size)
+     client_->OnTransferSizeUpdated(response_metadata_->transfer_size);
+-  CompleteRequest(response_metadata_->status);
++  CompleteRequest(*completion_status_);
+ }
+ 
+ void InterceptionJob::ResponseBodyComplete() {
+-  if (waiting_for_resolution_ != ResolutionState::kNone) {
++  MaybeSendBufferedResponse();
++}
++
++void InterceptionJob::MaybeSendBufferedResponse() {
++  if (!body_reader_ || !body_reader_->data_complete() || !completion_status_ ||
++      waiting_for_resolution_ != ResolutionState::kNone) {
+     return;
+   }
+-  // We're here only if client has already told us to proceed with unmodified
+-  // response.
+   SendResponse(body_reader_->body(), 0);
+ }
+ 
++void InterceptionJob::ResumeClientIfLoading() {
++  if (completion_status_) {
++    return;
++  }
++  CHECK(client_receiver_.is_bound(), base::NotFatalUntil::M162);
++  client_receiver_.Resume();
++}
++
+ void InterceptionJob::StartRequest() {
+   CHECK_EQ(State::kNotStarted, state_, base::NotFatalUntil::M159);
+   CHECK(!response_metadata_, base::NotFatalUntil::M159);
++  completion_status_.reset();
+ 
+   state_ = State::kRequestSent;
+ 
+@@ -1823,6 +1850,7 @@ void InterceptionJob::StartRequest() {
+ }
+ 
+ void InterceptionJob::CancelRequest() {
++  completion_status_.reset();
+   if (state_ == State::kNotStarted)
+     return;
+   client_receiver_.reset();
+@@ -1891,8 +1919,8 @@ void InterceptionJob::FetchCookies(base::OnceClosure callback) {
+ 
+   cookie_manager_->GetCookieList(
+       request.url, options, net::CookiePartitionKeyCollection(),
+-      base::BindOnce(&InterceptionJob::OnGotCookies, base::Unretained(this),
+-                     std::move(callback)));
++      base::BindOnce(&InterceptionJob::OnGotCookies,
++                     weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
+ }
+ 
+ void InterceptionJob::NotifyClient(
+@@ -1917,19 +1945,31 @@ void InterceptionJob::NotifyClient(
+       (have_cookies == want_cookies ? 0 : 1) +
+       (have_request_bodies == want_request_bodies ? 0 : 1);
+ 
+-  base::RepeatingClosure closure = BarrierClosure(
+-      pending_callback_count,
+-      base::BindOnce(&InterceptionJob::CompleteNotifyingClient,
+-                     base::Unretained(this), std::move(request_info)));
++  if (pending_callback_count == 0) {
++    CompleteNotifyingClient(std::move(request_info));
++    return;
++  }
++
++  const auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  base::RepeatingClosure closure =
++      BarrierClosure(pending_callback_count,
++                     base::BindOnce(&InterceptionJob::CompleteNotifyingClient,
++                                    weak_this, std::move(request_info)));
+   if (have_cookies != want_cookies) {
+     FetchCookies(closure);
+   }
+   if (have_request_bodies != want_request_bodies) {
+     CHECK(!request_body_collector_);
+-    request_body_collector_ = RequestBodyCollector::Collect(
++    auto collector = RequestBodyCollector::Collect(
+         *request.request_body,
+-        base::BindOnce(&InterceptionJob::OnGotRequestBodies,
+-                       base::Unretained(this), closure));
++        base::BindOnce(&InterceptionJob::OnGotRequestBodies, weak_this,
++                       closure));
++    // Collect can notify synchronously, allowing continuation to delete the
++    // job.
++    if (!collector || !weak_this) {
++      return;
++    }
++    request_body_collector_ = std::move(collector);
+   }
+ }
+ 
+@@ -2169,6 +2209,8 @@ void InterceptionJob::StartLoadingResponseBody(
+ 
+ void InterceptionJob::OnComplete(
+     const network::URLLoaderCompletionStatus& status) {
++  CHECK(!completion_status_, base::NotFatalUntil::M162);
++  completion_status_ = status;
+   // No need to listen to the channel any more, so just reset it, so if the pipe
+   // is closed by the other end, |shutdown| isn't run.
+   client_receiver_.reset();
+@@ -2183,21 +2225,20 @@ void InterceptionJob::OnComplete(
+       return;
+     }
+     response_metadata_ = std::make_unique<ResponseMetadata>();
+-    response_metadata_->status = status;
+     auto request_info = BuildRequestInfo(nullptr);
+     request_info->response_error_code = status.error_code;
+     NotifyClient(std::move(request_info));
+     return;
+   }
+-  // Since we're not forwarding OnComplete right now, make sure
+-  // we're in the proper state. The completion is due upon client response.
++  // Keep completion until DevTools resolves the interception. A buffered
++  // response also needs body EOF before it can be forwarded.
+   DCHECK(state_ == State::kResponseReceived || state_ == State::kResponseTaken)
+       << "Unexpected state " << static_cast<int>(state_);
+-  // TODO(crbug.com/560017318): CHECK-exclusion: Convert to a CHECK once we are
+-  // confident it won't be triggered.
+-  DCHECK_NE(ResolutionState::kNone, waiting_for_resolution_);
+-
+-  response_metadata_->status = status;
++  // Continuing before body EOF is handled by MaybeSendBufferedResponse().
++  // TODO(crbug.com/560017318): Consider making this remaining invariant a
++  // CHECK.
++  DCHECK(waiting_for_resolution_ != ResolutionState::kNone || body_reader_);
++  MaybeSendBufferedResponse();
+ }
+ 
+ void InterceptionJob::OnLoaderCreated(

@@ -498,6 +498,7 @@ bool UtilityAILanguageModel::IsLanguageModelClass(v8::Isolate* isolate,
 void UtilityAILanguageModel::Prompt(
     std::vector<blink::mojom::AILanguageModelPromptPtr> prompts,
     on_device_model::mojom::ResponseConstraintPtr constraint,
+    std::optional<blink::mojom::AILanguageModelThinkingEffort> thinking_effort,
     mojo::PendingRemote<blink::mojom::ModelStreamingResponder>
         pending_responder) {
   if (is_destroyed_) {
@@ -505,6 +506,18 @@ void UtilityAILanguageModel::Prompt(
         std::move(pending_responder));
     responder->OnError(
         blink::mojom::ModelStreamingResponseStatus::kErrorSessionDestroyed,
+        /*quota_error_info=*/nullptr);
+    return;
+  }
+
+  // Thinking mode is not supported yet; reject prompts that request it, as
+  // upstream's EchoAILanguageModel does.
+  if (thinking_effort.has_value() &&
+      *thinking_effort != blink::mojom::AILanguageModelThinkingEffort::kNone) {
+    mojo::Remote<blink::mojom::ModelStreamingResponder> responder(
+        std::move(pending_responder));
+    responder->OnError(
+        blink::mojom::ModelStreamingResponseStatus::kErrorInvalidRequest,
         /*quota_error_info=*/nullptr);
     return;
   }

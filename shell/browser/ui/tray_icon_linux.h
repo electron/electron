@@ -36,11 +36,19 @@ class TrayIconLinux : public TrayIcon, public ui::StatusIconLinux::Delegate {
   const std::u16string& GetToolTip() const override;
   ui::MenuModel* GetMenuModel() const override;
   void OnImplInitializationFailed() override;
+  void OnImplInitializationDelayed() override;
+  void OnImplInitialized() override;
 
  private:
   enum class StatusIconType {
+    // The D-Bus icon is active.
     kDbus,
+    // The D-Bus icon is waiting for a StatusNotifierWatcher. The GTK icon is
+    // shown as a fallback until the D-Bus icon initializes.
+    kDbusDelayed,
+    // The D-Bus icon failed, and the GTK icon is active.
     kGtk,
+    // No icon is available.
     kNone,
   };
 

@@ -605,6 +605,9 @@ Converter<std::optional<blink::mojom::FormControlType>>::ToV8(
       case blink::mojom::FormControlType::kOutput:
         str = "output";
         break;
+      case blink::mojom::FormControlType::kRangeGroup:
+        str = "range-group";
+        break;
       case blink::mojom::FormControlType::kSelectMultiple:
         str = "select-multiple";
         break;

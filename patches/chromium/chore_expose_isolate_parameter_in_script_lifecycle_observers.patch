@@ -20,10 +20,10 @@ index 6d7d041f3ecd7a9a2fa16f2188462ee7f4282d19..db698a9a9adfd9bd2dfc8dd29932b3e4
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 3d16660fab7263ce43ee8606e063bbaa5eba7cf1..303b1372a6fe183e33fe94b5156fc9c6602c33a9 100644
+index 416ce7c32c7e87c93b0f908c9b00ab5fbc7abbd3..6cb406e74d84ebab4bad1ed77551e1f3292494aa 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -140,7 +140,8 @@ class CONTENT_EXPORT RenderFrameObserver {
+@@ -128,7 +128,8 @@ class CONTENT_EXPORT RenderFrameObserver {
                                        int32_t world_id) {}
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                               int32_t world_id) {}
@@ -34,10 +34,10 @@ index 3d16660fab7263ce43ee8606e063bbaa5eba7cf1..303b1372a6fe183e33fe94b5156fc9c6
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset(blink::mojom::ScrollType) {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 317cf4f910293350860e29177edaf182144247b6..17fcd8e0457979f17de5213344c92de1846ee07d 100644
+index b61596aae400c459112a53b6c48e170b6a289f48..0ff69c4bca65e6d6708e35089b940b04d3b101c9 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5019,10 +5019,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4866,10 +4866,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
    }
  }
  
@@ -52,10 +52,10 @@ index 317cf4f910293350860e29177edaf182144247b6..17fcd8e0457979f17de5213344c92de1
  }
  
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index fe00d9d4b4dda999bdc72e64fabad7c3f3304c44..6cd438dc0e5fc502dae620a8a02512e6bd33a25e 100644
+index a1ea2a603a3aa8a0822c7cad5b285222f510c661..25ee20451a8b430264e4e341a47caa1a0556375d 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -623,7 +623,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -591,7 +591,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
@@ -66,7 +66,7 @@ index fe00d9d4b4dda999bdc72e64fabad7c3f3304c44..6cd438dc0e5fc502dae620a8a02512e6
    void DidChangeScrollOffset(blink::mojom::ScrollType) override;
    blink::WebMediaStreamDeviceObserver* MediaStreamDeviceObserver() override;
 diff --git a/content/renderer/service_worker/service_worker_context_client.cc b/content/renderer/service_worker/service_worker_context_client.cc
-index d65f227d8715ad89236910ded5fee3209d0d6558..2f82efc2d130e350fe6edd289202fb31ece3645f 100644
+index 9a742175be65950b5ee6747c1c4158919bc8104e..8c03067d79c3a44322c6d53678e17c2946b586a5 100644
 --- a/content/renderer/service_worker/service_worker_context_client.cc
 +++ b/content/renderer/service_worker/service_worker_context_client.cc
 @@ -321,6 +321,7 @@ void ServiceWorkerContextClient::WorkerContextStarted(
@@ -89,10 +89,10 @@ index d65f227d8715ad89236910ded5fee3209d0d6558..2f82efc2d130e350fe6edd289202fb31
  
  void ServiceWorkerContextClient::DidEvaluateScript(bool success) {
 diff --git a/content/renderer/service_worker/service_worker_context_client.h b/content/renderer/service_worker/service_worker_context_client.h
-index c698d80d5c1efdd5e715fc3b40a9d47fc1a44f8d..b3def35a3fb42a73c6f88e897ff0948841850648 100644
+index 829e4d40843e06c4fa0eaad3ac0783210fe7864d..278d1a0dbcc0936acfc5f2342185c1beb25b1c86 100644
 --- a/content/renderer/service_worker/service_worker_context_client.h
 +++ b/content/renderer/service_worker/service_worker_context_client.h
-@@ -163,7 +163,8 @@ class ServiceWorkerContextClient
+@@ -164,7 +164,8 @@ class CONTENT_EXPORT ServiceWorkerContextClient
    void WorkerContextStarted(
        blink::WebServiceWorkerContextProxy* proxy,
        scoped_refptr<base::SequencedTaskRunner> worker_task_runner) override;
@@ -103,7 +103,7 @@ index c698d80d5c1efdd5e715fc3b40a9d47fc1a44f8d..b3def35a3fb42a73c6f88e897ff09488
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index 5bb4f1d64c72f5fdecebf8600db7ddf2adfcfe52..2e1537846bf640ab567e56b54a7de0a4a75866fb 100644
+index 27280d7b62572a383e13874eee1533e33f10ece4..4ab2eb26c9e8f52922b8cbc6fa57fb728f5fd8e4 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
 @@ -527,6 +527,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
@@ -167,10 +167,10 @@ index 0a3ea97d48c4d0d4c234dc88b321480a55df85c8..150ba24a544a88ab99d51b8a30af545a
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index bbdf3a7f39ba155b3ebb7b9ab79facf312301614..f2c672ed59b1cd69e4a503674b9e3073aafe5f76 100644
+index 7273deb15f7c4d8731b38ebebbc3aa7c08cc946e..745ae4447a2f94e90b68ea2e2911d83906673624 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -685,7 +685,8 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -605,7 +605,8 @@ class BLINK_EXPORT WebLocalFrameClient {
                                               int32_t world_id) {}
  
    // WebKit is about to release its reference to a v8 context for a frame.
@@ -200,10 +200,10 @@ index 27586bd03af05294eb977a72052f2334c3d1aa61..fdceecae58237c48777b800ca218b2ad
        ->ContextWillBeDestroyed(script_state_);
    if (next_status == Lifecycle::kV8MemoryIsForciblyPurged ||
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index c55d152b5608c2e1b1377a3a77f0a3a0fe484d05..d87558d97fe2cee1099b6fb99851d05797e9cd86 100644
+index c4c2f3823cd6605fe23885db7f0cc9ace61577c3..dc0aaccda8490582b11fd6d728fe87d4acb1cba3 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
-@@ -318,7 +318,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
+@@ -317,7 +317,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
                                        int32_t world_id) = 0;
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                               int32_t world_id) = 0;
@@ -214,7 +214,7 @@ index c55d152b5608c2e1b1377a3a77f0a3a0fe484d05..d87558d97fe2cee1099b6fb99851d057
  
    virtual void DidChangeScrollOffset(mojom::blink::ScrollType) {}
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index a2c7cb2e37b793976163db66017a17c6cd2c37cf..f306966c3e4381bf2d2db4a72f679d7aebe43368 100644
+index 76fb5d05f794744b0a6d28bfdc9135667dd78a41..4e838bc25c1a748a77103e744577f2ea1b8dd95b 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -310,10 +310,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
@@ -231,7 +231,7 @@ index a2c7cb2e37b793976163db66017a17c6cd2c37cf..f306966c3e4381bf2d2db4a72f679d7a
  }
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.h b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
-index 8a3868cdc379e0537c6df1bff850345851cdec7c..ef854553823ed89ad65f83534c2999a00fffc584 100644
+index 98735fadec5d0c10cb6ff2dbfc887253c169c43c..943c0585cbab2f25e136bcab3efc74049c18030d 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 @@ -80,7 +80,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
@@ -245,10 +245,10 @@ index 8a3868cdc379e0537c6df1bff850345851cdec7c..ef854553823ed89ad65f83534c2999a0
  
    bool HasWebView() const override;
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 399cbb958ef8e3fb3c6509a751aa1780276363b9..4703677ec608422e3ed52f8d477fdd6c95b270de 100644
+index f09e8d96f451dba5f75609522b039d4c4c2c6eab..a9e4e6e9af6f2f47c5c9d4a7cfcf62deeefa42bc 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -430,7 +430,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -428,7 +428,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}
@@ -259,10 +259,10 @@ index 399cbb958ef8e3fb3c6509a751aa1780276363b9..4703677ec608422e3ed52f8d477fdd6c
  
    AssociatedInterfaceProvider* GetRemoteNavigationAssociatedInterfaces()
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index 51de9e5289de7d1f3b78227dade68ce2d7253241..bd25b1757e3cf82e1f6dd1613e528f367f607d62 100644
+index 88cb9628bf651cda00910016fa349d4a728f713c..ac1692df361c183c7e9e7338e0faf1c02e095b14 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -184,6 +184,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
+@@ -183,6 +183,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
    ScriptState::Scope scope(
        WorkerGlobalScope()->ScriptController()->GetScriptState());
    Client().WillEvaluateScript(

@@ -7,7 +7,16 @@ import * as path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { collectSamples, compareTargets, datadogSeries, findProblems, memoryMeasures } from '../compare.mts';
+import {
+  collectSamples,
+  compareTargets,
+  datadogSeries,
+  findProblems,
+  historySeries,
+  markdownSummary,
+  memoryMeasures,
+  type Samples
+} from '../compare.mts';
 
 import type { RunMetadata, TargetInfo } from '../lib/types.mts';
 
@@ -22,8 +31,9 @@ const TARGETS: TargetInfo[] = [
 
 // Writes a results dir laid out like run.mts and crossbench leave it. Each
 // invocation gets a first_load story whose performance.entries FCP has
-// `values` (default: one value per repetition), loadEventEnd 10 ms later and
-// a meminfo dump per value, unless `values` is null.
+// `values` (default: one value per repetition), loadEventEnd 10 ms, app-ready
+// 100 ms and app-lcp 300 ms later, and a meminfo dump per value, unless
+// `values` is null.
 interface TestInvocation {
   round: number;
   target: string;
@@ -34,7 +44,7 @@ interface TestInvocation {
 function writeResults(
   name: string,
   invocations: TestInvocation[],
-  { repeat = 3, targets = TARGETS }: { repeat?: number; targets?: TargetInfo[] } = {}
+  { repeat = 3, targets = TARGETS, bestEffort }: { repeat?: number; targets?: TargetInfo[]; bestEffort?: boolean } = {}
 ) {
   const dir = path.join(tmp, name);
   fs.mkdirSync(dir, { recursive: true });
@@ -48,6 +58,7 @@ function writeResults(
     crossbenchRevision: '0123456789abcdef',
     rounds: 1 + Math.max(...invocations.map((i) => i.round)),
     repeat,
+    bestEffort,
     targets,
     invocations: []
   };
@@ -62,7 +73,9 @@ function writeResults(
       path.join(storyDir, 'performance.entries.json'),
       JSON.stringify({
         'paint/first-contentful-paint/startTime': { values: fcp },
-        'navigation/loadEventEnd': { values: fcp.map((value) => value + 10) }
+        'navigation/loadEventEnd': { values: fcp.map((value) => value + 10) },
+        'mark/app-ready/startTime': { values: fcp.map((value) => value + 100) },
+        'mark/app-lcp/startTime': { values: fcp.map((value) => value + 300) }
       })
     );
     fcp.forEach((_, repetition) => {
@@ -70,7 +83,13 @@ function writeResults(
       fs.mkdirSync(meminfoDir, { recursive: true });
       fs.writeFileSync(
         path.join(meminfoDir, 'loaded.json'),
-        JSON.stringify({ processes: [{ pid: 1, name: '/opt/electron/electron', pss_total: 1024 }] })
+        JSON.stringify({
+          processes: [
+            { pid: 1, name: '/opt/electron/electron', pss_total: 1024 },
+            { pid: 2, name: '/opt/electron/electron --type=renderer', pss_total: 1024 },
+            { pid: 3, name: '/opt/electron/electron --type=gpu-process', pss_total: 1024 }
+          ]
+        })
       );
     });
   }
@@ -108,6 +127,32 @@ describe('collectSamples', () => {
     assert.deepEqual(rejected, [
       { round: 1, suite: 'loading', target: 'candidate', reason: 'crossbench exited with 1' }
     ]);
+  });
+
+  it('keeps the complete stories of a failed invocation in a --best-effort run', () => {
+    const { dir, metadata } = writeResults(
+      'failed-best-effort',
+      [
+        ...everyTarget(0),
+        ...everyTarget(1, { candidate: { exitCode: 3, values: [200, 201, 202] } }),
+        ...everyTarget(2, { candidate: { exitCode: 3, values: [300, 301] } }),
+        ...everyTarget(3, { candidate: { exitCode: 124, values: null } })
+      ],
+      { bestEffort: true }
+    );
+    const { samples, rejected } = collectSamples(dir, metadata);
+    // Round 3's two values don't count, and round 4 produced nothing: no zeros.
+    assert.deepEqual(samples['loading.first_load.fcp'].candidate, [101, 201]);
+    assert.deepEqual(samples['loading.first_load.fcp'].baseline, [101, 102, 103, 104]);
+    assert.deepEqual(
+      rejected.map((r) => [r.round, r.reason.split(';')[0]]),
+      [
+        [1, 'crossbench exited with 3, complete stories kept'],
+        [2, 'crossbench exited with 3, complete stories kept'],
+        [3, 'crossbench exited with 124, complete stories kept']
+      ]
+    );
+    assert.match(rejected[1].reason, /loading\.first_load\.fcp \(2\/3 values\)/);
   });
 
   it('leaves out measures with missing repetitions', () => {
@@ -193,7 +238,162 @@ describe('trace suite', () => {
   });
 });
 
+describe('loading measures', () => {
+  // One loading invocation with first_load and reload, two repetitions each.
+  function writeLoadingResults(name: string, marks: Record<string, number[]>) {
+    const dir = path.join(tmp, name);
+    const relativeDir = path.join('rounds', '0', 'loading', 'candidate');
+    for (const story of ['first_load', 'reload']) {
+      const storyDir = path.join(dir, relativeDir, 'chromium_candidate', 'stories', story);
+      fs.mkdirSync(storyDir, { recursive: true });
+      const entries: Record<string, { values: number[] }> = {
+        'paint/first-contentful-paint/startTime': { values: [80, 90] },
+        'navigation/loadEventEnd': { values: [100, 110] }
+      };
+      for (const [mark, values] of Object.entries(marks)) entries[`mark/${mark}/startTime`] = { values };
+      fs.writeFileSync(path.join(storyDir, 'performance.entries.json'), JSON.stringify(entries));
+      if (story !== 'first_load') continue;
+      for (const repetition of [0, 1]) {
+        const meminfoDir = path.join(storyDir, String(repetition), '0_default', 'meminfo');
+        fs.mkdirSync(meminfoDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(meminfoDir, 'loaded.json'),
+          JSON.stringify({
+            processes: [
+              { pid: 1, name: '/opt/electron/electron', pss_total: 1024 },
+              { pid: 2, name: '/opt/electron/electron --type=renderer', pss_total: 1024 },
+              { pid: 3, name: '/opt/electron/electron --type=gpu-process', pss_total: 1024 }
+            ]
+          })
+        );
+      }
+    }
+    const metadata: RunMetadata = {
+      startedAt: '2026-10-29T00:00:00.000Z',
+      platform: 'linux',
+      arch: 'x64',
+      cpuModel: 'test cpu',
+      cpuCount: 4,
+      runnerName: 'test',
+      crossbenchRevision: '0123456789abcdef',
+      rounds: 1,
+      repeat: 2,
+      targets: TARGETS,
+      invocations: [{ round: 0, suite: 'loading', target: 'candidate', exitCode: 0, repetitions: 2, dir: relativeDir }]
+    };
+    return { dir, metadata };
+  }
+
+  const measures = (samples: Samples, prefix: string) =>
+    Object.keys(samples)
+      .filter((metric) => metric.startsWith(prefix))
+      .map((metric) => metric.slice(prefix.length))
+      .sort();
+
+  it("reads the app shell's app-ready and LCP marks", () => {
+    const { dir, metadata } = writeLoadingResults('loading-marks', {
+      'app-shell-rendered': [40, 50],
+      'app-ready': [200, 220],
+      'app-lcp': [300, 340]
+    });
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.deepEqual(rejected, []);
+    const memory = ['browser_pss_mib', 'gpu_pss_mib', 'renderer_pss_mib', 'total_pss_mib'];
+    assert.deepEqual(
+      measures(samples, 'loading.first_load.'),
+      ['app_ready', 'fcp', 'lcp', 'load_event_end', ...memory].sort()
+    );
+    assert.deepEqual(measures(samples, 'loading.reload.'), ['app_ready', 'fcp', 'lcp', 'load_event_end']);
+    assert.deepEqual(samples['loading.first_load.app_ready'].candidate, [210]);
+    assert.deepEqual(samples['loading.reload.lcp'].candidate, [320]);
+  });
+
+  it('reports a run that never marked app-ready', () => {
+    const { dir, metadata } = writeLoadingResults('loading-no-ready', { 'app-lcp': [300, 340] });
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.equal(samples['loading.first_load.app_ready'], undefined);
+    assert.deepEqual(samples['loading.first_load.lcp'].candidate, [320]);
+    assert.match(rejected[0].reason, /loading\.first_load\.app_ready \(no values\)/);
+  });
+
+  // crossbench killed while writing reload's results.
+  function truncateReload(dir: string) {
+    const storyDir = path.join(dir, 'rounds', '0', 'loading', 'candidate', 'chromium_candidate', 'stories', 'reload');
+    fs.writeFileSync(path.join(storyDir, 'performance.entries.json'), '{"paint/first-contentful-paint/sta');
+  }
+
+  it("treats a failed run's unreadable result file as no values", () => {
+    const { dir, metadata } = writeLoadingResults('loading-truncated', {
+      'app-ready': [200, 220],
+      'app-lcp': [300, 340]
+    });
+    truncateReload(dir);
+    metadata.bestEffort = true;
+    metadata.invocations[0].exitCode = 124;
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.deepEqual(samples['loading.first_load.app_ready'].candidate, [210]);
+    assert.deepEqual(measures(samples, 'loading.reload.'), []);
+    assert.match(rejected[0].reason, /performance\.entries\.json \(unreadable\)/);
+    assert.match(rejected[0].reason, /loading\.reload\.fcp \(no values\)/);
+  });
+
+  it("fails on a successful run's unreadable result file", () => {
+    const { dir, metadata } = writeLoadingResults('loading-truncated-ok', {
+      'app-ready': [200, 220],
+      'app-lcp': [300, 340]
+    });
+    truncateReload(dir);
+    assert.throws(() => collectSamples(dir, metadata), SyntaxError);
+  });
+});
+
 describe('memoryMeasures', () => {
+  it('leaves out process types it cannot attribute instead of reporting 0', () => {
+    // Electron 35 to 41: zygote children keep the zygote's command line.
+    const app = '/opt/electron/electron';
+    const measures = memoryMeasures({
+      processes: [
+        { pid: 1, name: `${app} --app=/harness`, pss_total: 2048 },
+        { pid: 2, name: `${app} --type=zygote --no-zygote-sandbox`, pss_total: 1024 },
+        { pid: 3, name: `${app} --type=zygote`, pss_total: 1024 }
+      ]
+    });
+    assert.deepEqual(measures, { total_pss_mib: 4, browser_pss_mib: 2 });
+  });
+
+  it('lists an unattributed process type as incomplete and leaves it out of the comparison', () => {
+    const { dir, metadata } = writeResults('zygote', everyTarget(0));
+    const storyDir = path.join(
+      dir,
+      'rounds',
+      '0',
+      'loading',
+      'candidate',
+      'chromium_candidate',
+      'stories',
+      'first_load'
+    );
+    for (const repetition of ['0', '1', '2']) {
+      fs.writeFileSync(
+        path.join(storyDir, repetition, '0_default', 'meminfo', 'loaded.json'),
+        JSON.stringify({ processes: [{ pid: 1, name: '/opt/electron/electron --type=zygote', pss_total: 1024 }] })
+      );
+    }
+    const { samples, rejected } = collectSamples(dir, metadata);
+    assert.equal(samples['loading.first_load.gpu_pss_mib'].candidate, undefined);
+    assert.match(rejected[0].reason, /loading\.first_load\.gpu_pss_mib \(no values\)/);
+    const [comparison] = compareTargets(samples, metadata.targets, { alpha: 0.05, minChange: 0.1 });
+    assert.ok(!comparison.metrics.some((m) => m.metric === 'loading.first_load.gpu_pss_mib'));
+    assert.deepEqual(
+      comparison.unmatched?.filter((u) => u.metric.endsWith('pss_mib')),
+      [
+        { metric: 'loading.first_load.browser_pss_mib', target: 'baseline' },
+        { metric: 'loading.first_load.gpu_pss_mib', target: 'baseline' },
+        { metric: 'loading.first_load.renderer_pss_mib', target: 'baseline' }
+      ]
+    );
+  });
+
   it('sums PSS per process type and ignores the meminfo shell', () => {
     const app = '/opt/electron/electron';
     const measures = memoryMeasures({
@@ -253,6 +453,165 @@ describe('datadogSeries', () => {
   });
 });
 
+// Five rounds per target: FCP 20% slower and the Speedometer score 20%
+// higher on the candidate (a regression and an improvement), load time
+// unchanged.
+const SAMPLES: Samples = {
+  'loading.first_load.fcp': { baseline: [100, 101, 102, 103, 104], candidate: [120, 121, 122, 123, 124] },
+  'loading.first_load.load_event_end': { baseline: [50, 52, 51, 53, 50], candidate: [51, 50, 53, 52, 51] },
+  'speedometer.score': { baseline: [20, 20.2, 20.1, 20.3, 20.4], candidate: [24, 24.2, 24.1, 24.3, 24.4] }
+};
+
+const METADATA: RunMetadata = {
+  startedAt: '2026-10-29T00:00:00.000Z',
+  platform: 'linux',
+  arch: 'x64',
+  cpuModel: 'Test CPU @ 2.10GHz',
+  cpuCount: 4,
+  runnerName: 'test',
+  crossbenchRevision: '0123456789abcdef',
+  rounds: 5,
+  repeat: 3,
+  targets: TARGETS,
+  invocations: []
+};
+
+const valueOf = (series: ReturnType<typeof datadogSeries>, metric: string, metricTag: string) => {
+  const matching = series.filter((s) => s.metric === metric && s.tags.includes(metricTag));
+  assert.equal(matching.length, 1, `expected one ${metric} series tagged ${metricTag}`);
+  return matching[0];
+};
+
+describe('markdownSummary', () => {
+  it('lists skipped suites and stories and metrics measured for one target only', () => {
+    const comparisons = compareTargets(
+      { ...SAMPLES, 'file_loading.file_module.files_loaded_ms': { baseline: [1, 2, 3] } },
+      TARGETS,
+      { alpha: 0.05, minChange: 0.1 }
+    );
+    const summary = markdownSummary({
+      metadata: {
+        ...METADATA,
+        skippedSuites: ['jetstream'],
+        skippedStories: ['file_loading/file_module', 'file_loading/register_file_protocol_module']
+      },
+      comparisons,
+      rejected: [],
+      alpha: 0.05,
+      minChange: 0.1
+    });
+    assert.match(summary, /Skipped suites \(the candidate failed them in the first two rounds\): jetstream\n/);
+    assert.match(
+      summary,
+      /Skipped stories \(no complete results from the candidate in the first two rounds\): file_loading\/file_module, file_loading\/register_file_protocol_module\n/
+    );
+    assert.match(
+      summary,
+      /Not compared, measured for one target only: file_loading\.file_module\.files_loaded_ms \(baseline only\)\n/
+    );
+    assert.doesNotMatch(summary, /\| file_loading\.file_module/);
+  });
+});
+
+describe('regression and improvement gauges', () => {
+  const comparisons = compareTargets(SAMPLES, TARGETS, { alpha: 0.05, minChange: 0.1 });
+  const series = datadogSeries({ metadata: METADATA, samples: SAMPLES, comparisons });
+
+  it('reports 1 for the flagged verdict and 0 otherwise, for every metric', () => {
+    const expected: Record<string, [number, number]> = {
+      'loading.first_load.fcp': [1, 0],
+      'loading.first_load.load_event_end': [0, 0],
+      'speedometer.score': [0, 1]
+    };
+    for (const [metric, [regression, improvement]] of Object.entries(expected)) {
+      assert.equal(valueOf(series, 'electron.perf.regression', `metric:${metric}`).points[0].value, regression);
+      assert.equal(valueOf(series, 'electron.perf.improvement', `metric:${metric}`).points[0].value, improvement);
+    }
+  });
+
+  it('follows the comparison verdict', () => {
+    for (const m of comparisons[0].metrics) {
+      const regression = valueOf(series, 'electron.perf.regression', `metric:${m.metric}`).points[0].value;
+      assert.equal(regression === 1, m.verdict === 'regression', m.metric);
+    }
+  });
+
+  it('reports nothing flagged when the change is below --min-change', () => {
+    const lenient = compareTargets(SAMPLES, TARGETS, { alpha: 0.05, minChange: 0.5 });
+    const flags = datadogSeries({ metadata: METADATA, samples: SAMPLES, comparisons: lenient }).filter((s) =>
+      ['electron.perf.regression', 'electron.perf.improvement'].includes(s.metric)
+    );
+    assert.equal(flags.length, 6);
+    assert.ok(flags.every((s) => s.points[0].value === 0));
+  });
+
+  it('is tagged with low-cardinality tags only', () => {
+    const { tags } = valueOf(series, 'electron.perf.regression', 'metric:loading.first_load.fcp');
+    assert.deepEqual(tags, [
+      'platform:linux',
+      'arch:x64',
+      'metric:loading.first_load.fcp',
+      'benchmark:loading',
+      'comparison:vs_baseline',
+      'electron_version:47.0.0',
+      'baseline_version:46.0.0'
+    ]);
+  });
+
+  it('leaves the existing series unchanged', () => {
+    const delta = valueOf(series, 'electron.perf.delta.loading.first_load.fcp', 'comparison:vs_baseline');
+    assert.ok(delta.tags.includes('verdict:regression'));
+    assert.equal(series.filter((s) => s.metric === 'electron.perf.loading.first_load.fcp').length, 2);
+  });
+});
+
+describe('historySeries', () => {
+  const targets: TargetInfo[] = [
+    { id: 'candidate', electronVersion: '30.5.1', chromiumVersion: '124.0.6367.243' },
+    { id: 'baseline', electronVersion: '45.2.3', chromiumVersion: '156.0.8078.80' }
+  ];
+  const metadata = { ...METADATA, targets };
+  const samples: Samples = {
+    ...SAMPLES,
+    'loading.first_load.gpu_pss_mib': { baseline: [90, 90, 90, 90, 90], candidate: [0, 0, 0, 0, 0] }
+  };
+  const comparisons = compareTargets(samples, targets, { alpha: 0.05, minChange: 0.1 });
+  const series = historySeries({ metadata, comparisons, historyRunId: '123' });
+
+  it('sends the candidate median and its ratio to the anchor', () => {
+    const raw = valueOf(series, 'electron.perf.history.loading.first_load.fcp', 'electron_major:30');
+    assert.equal(raw.points[0].value, 122);
+    const ratio = valueOf(series, 'electron.perf.history.ratio.loading.first_load.fcp', 'electron_major:30');
+    assert.equal(ratio.points[0].value, 122 / 102);
+    const score = valueOf(series, 'electron.perf.history.ratio.speedometer.score', 'electron_major:30');
+    assert.equal(score.points[0].value, 24.2 / 20.2);
+  });
+
+  it('tags each point with the versions and the run', () => {
+    const { tags } = valueOf(series, 'electron.perf.history.ratio.loading.first_load.fcp', 'electron_major:30');
+    assert.deepEqual(tags, [
+      'platform:linux',
+      'arch:x64',
+      'cpu_model:test_cpu_2.10ghz',
+      'electron_major:30',
+      'electron_version:30.5.1',
+      'chromium_version:124.0.6367.243',
+      'anchor_version:45.2.3',
+      'history_run_id:123',
+      'benchmark:loading'
+    ]);
+  });
+
+  it('leaves out values that are not positive', () => {
+    assert.ok(!series.some((s) => s.metric.endsWith('gpu_pss_mib')));
+  });
+
+  it('sends no regression gauges or nightly series', () => {
+    assert.ok(series.length > 0);
+    assert.ok(series.every((s) => s.metric.startsWith('electron.perf.history.')));
+  });
+});
+
 describe('compare.mts', () => {
   it('exits with 0 for complete results', () => {
     const { dir } = writeResults('cli-ok', [...everyTarget(0), ...everyTarget(1)]);
@@ -271,5 +630,25 @@ describe('compare.mts', () => {
     // The diagnostics are still written.
     assert.ok(fs.existsSync(path.join(dir, 'comparison.json')));
     assert.ok(fs.existsSync(path.join(dir, 'summary.md')));
+  });
+
+  it('sends only history series with --history', () => {
+    const { dir } = writeResults('cli-history', [...everyTarget(0), ...everyTarget(1)]);
+    const result = spawnSync(
+      process.execPath,
+      [COMPARE, '--results', dir, '--dry-run', '--history', '--history-run-id', '42'],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, GITHUB_STEP_SUMMARY: '', GITHUB_ACTIONS: '' }
+      }
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const { series } = JSON.parse(result.stdout.slice(result.stdout.indexOf('{\n  "series"')));
+    assert.ok(series.length > 0);
+    for (const s of series) {
+      assert.match(s.metric, /^electron\.perf\.history\./);
+      assert.ok(s.tags.includes('history_run_id:42'));
+      assert.ok(s.tags.includes('electron_major:47'));
+    }
   });
 });

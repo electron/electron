@@ -21,7 +21,7 @@ const buildDir =
     : path.dirname(process.execPath);
 const builder = path.join(buildDir, 'gen', 'electron', 'v8-code-cache', 'wasm-module-builder.js');
 
-describe('V8 patch code cache compatibility', () => {
+describe('V8 patch code cache compatibility', { retry: 0 }, () => {
   it('exposes a nonempty V8 version with a 16-hex Electron patch fingerprint', () => {
     expect(process.versions.v8).toBeTypeOf('string');
     expect(process.versions.v8).not.toBe('');

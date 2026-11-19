@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Fri, 6 Nov 2026 14:39:59 -0600
+Subject: test: accept GMT+00:00 as Europe/Dublin's winter time zone name
+
+Chromium's ICU moved to tzdb 2026f, whose metazone data maps
+Europe/Dublin only to the Irish metazone from 1971 on. English has no
+standard-time name for that metazone, so in winter the long time zone
+name falls back to "GMT+00:00" instead of "Greenwich Mean Time". The
+test still checks that the TZ change takes effect: the previous zone
+(America/Los_Angeles) and UTC never format this way.
+
+tzdb 2026c had the same mapping and 2026e restored the GMT one. Remove
+this patch once Chromium's ICU maps Europe/Dublin to GMT again.
+
+Refs: https://chromium-review.googlesource.com/c/chromium/deps/icu/+/8701116
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/test/parallel/test-datetime-change-notify.js b/test/parallel/test-datetime-change-notify.js
+index 01843511907077857be22c9bc7e7f8568fc677d1..65aa1b08907f76e921afaad78ac1e5a59a86379f 100644
+--- a/test/parallel/test-datetime-change-notify.js
++++ b/test/parallel/test-datetime-change-notify.js
+@@ -26,7 +26,8 @@ const cases = [
+   },
+   {
+     timeZone: 'Europe/Dublin',
+-    expected: /Irish Standard Time|Greenwich Mean Time/,
++    // Chromium's ICU (tzdb 2026f) has no English winter name for Dublin.
++    expected: /Irish Standard Time|Greenwich Mean Time|GMT\+00:00/,
+   },
+ ];
+ 

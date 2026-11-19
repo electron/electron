@@ -148,7 +148,14 @@ export function fetchWithSession(
 
   // Writable.toWeb() has a measurable per-call cost, so only call it when there is a body.
   if (req.body) {
-    req.body.pipeTo(Writable.toWeb(r as unknown as Writable)).then(() => r.end());
+    req.body
+      .pipeTo(Writable.toWeb(r as unknown as Writable))
+      .then(() => r.end())
+      .catch((err) => {
+        locallyAborted = true;
+        r.abort();
+        p.reject(err);
+      });
   } else {
     r.end();
   }

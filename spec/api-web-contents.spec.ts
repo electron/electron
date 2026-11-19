@@ -1,5 +1,7 @@
 import {
   BrowserWindow,
+  ClipboardItem,
+  clipboard,
   ipcMain,
   webContents,
   session,
@@ -14,6 +16,7 @@ import {
 import * as dbus from 'dbus-native';
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -25,10 +28,11 @@ import { promisify } from 'node:util';
 import * as vm from 'node:vm';
 
 import { captureWithTabSourceId } from './lib/media-helpers.ts';
-import { containsText, readPDF, readPDFs } from './lib/pdf-helpers.ts';
+import { containsText, readPDF } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
+  focusWebContents,
   waitUntil,
   listen,
   ifit,
@@ -43,7 +47,7 @@ import type { AddressInfo } from 'node:net';
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
-describe('webContents module', () => {
+describe('webContents module', { retry: 0 }, () => {
   describe('getAllWebContents() API', () => {
     afterEach(closeAllWindows);
     it('returns an array of web contents', async () => {
@@ -1494,6 +1498,34 @@ describe('webContents module', () => {
       return await w.webContents.executeJavaScript('({ width: window.innerWidth, height: window.innerHeight })');
     }
 
+    // Classify the dock side by which viewport axis shrank vs a devtools-closed
+    // baseline. Scale-independent because it compares the same page to itself.
+    function classifyDock(baseline: { width: number; height: number }, open: { width: number; height: number }) {
+      const widthShrank = open.width < baseline.width - 50;
+      const heightShrank = open.height < baseline.height - 50;
+      if (widthShrank && !heightShrank) return 'right'; // docked left/right
+      if (heightShrank && !widthShrank) return 'bottom'; // docked bottom
+      if (!widthShrank && !heightShrank) return 'none'; // detached / undocked
+      return 'both';
+    }
+
+    // Leaves 'bottom' as the last-used dock state and returns the devtools-closed
+    // viewport, measured before anything was opened. Measuring it again after
+    // 'devtools-closed' could race the resize the page only learns about later.
+    async function primeLastUsedDockState(w: BrowserWindow) {
+      const baseline = await getViewportSize(w);
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'bottom', activate: false });
+      await opened;
+      await waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom');
+      const closed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await closed;
+      // Otherwise a later check for 'bottom' could pass on the size left behind here.
+      await waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'none');
+      return baseline;
+    }
+
     it('can show window with activation', async () => {
       const w = new BrowserWindow({ show: false });
       const focused = once(w, 'focus');
@@ -1667,6 +1699,348 @@ describe('webContents module', () => {
 
       expect(w.webContents.isDevToolsOpened()).toBe(false);
     });
+
+    it('allows docking when openDevTools() is called from web-contents-created', async () => {
+      // Opened at WebContents creation time, while owner_window() is still null.
+      // Asserting docking eligibility rather than the docked side: a mode-less
+      // open restores the last-used dock state, which may well be 'undocked'.
+      const w = await openDevToolsWhileCreating({}, (contents) => contents.openDevTools());
+      expect(await devToolsCanDock(w.webContents)).toBe(true);
+    });
+
+    it('docks bottom (last-used) when openDevTools() is called from dom-ready', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      w.show();
+      const baseline = await primeLastUsedDockState(w); // last-used = 'bottom'
+
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.once('dom-ready', () => w.webContents.openDevTools());
+      await w.loadURL('about:blank'); // reload triggers a fresh dom-ready
+      await opened;
+
+      await waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom');
+    });
+
+    it('docks bottom (last-used) when openDevTools() is called with an empty mode string', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      w.show();
+      const baseline = await primeLastUsedDockState(w); // last-used = 'bottom'
+
+      const opened = once(w.webContents, 'devtools-opened');
+      // @ts-expect-error — '' is not part of the mode type; testing runtime behavior
+      w.webContents.openDevTools({ mode: '' });
+      await opened;
+
+      await waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom');
+    });
+
+    it('falls back to the right dock when given an invalid mode', async () => {
+      // Keep the dock state this test leaves behind out of the default session,
+      // which later tests keep using. It only isolates in that direction: an
+      // in-memory partition starts from the default session's saved
+      // Preferences, so it is not guaranteed a clean dock state of its own.
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-dock-state' } });
+      await w.loadURL('about:blank');
+
+      // Prime the persisted dock state with the wrong answer: an invalid mode must
+      // resolve to "right" outright, not fall back to whatever was last used.
+      w.webContents.openDevTools({ mode: 'left', activate: false });
+      await once(w.webContents, 'devtools-opened');
+      await getDevToolsPreferences(w);
+      w.webContents.closeDevTools();
+      await waitUntil(() => !w.webContents.isDevToolsOpened());
+
+      const opened = once(w.webContents, 'devtools-opened');
+      // @ts-expect-error — 'koala' is not a valid mode; resolved to "right" at runtime
+      w.webContents.openDevTools({ mode: 'koala', activate: false });
+      await opened;
+
+      // Read the dock side Electron resolved and handed to the frontend, which
+      // docks to it on load. The inspected page cannot answer this: 'left' and
+      // 'right' shrink the same axis by the same amount, and window.screenX
+      // reports the root window's position, not the page's offset inside it.
+      // Quotes are stripped the same way the browser side does it.
+      const readDockState = async () => (await getDevToolsPreferences(w)).currentDockState?.replaceAll('"', '');
+      await waitUntil(async () => (await readDockState()) !== 'left');
+
+      expect(await readDockState()).toBe('right');
+    });
+
+    // Electron loads the DevTools frontend with can_dock=true only when it decided the
+    // contents may dock at all; a 'detach' open loads it with can_dock empty. Reading
+    // that back needs no layout to settle, and it is independent of which side was
+    // last used — 'undocked' still counts as dockable.
+    async function devToolsCanDock(contents: Electron.WebContents) {
+      // isDevToolsOpened() can already be true while devToolsWebContents is still
+      // null, and the frontend URL lands a moment later again — wait for both.
+      await waitUntil(() => !!contents.devToolsWebContents?.getURL());
+      return new URL(contents.devToolsWebContents!.getURL()).searchParams.get('can_dock') === 'true';
+    }
+
+    // `offscreen: true` overwrites the contents type, so an offscreen window does
+    // not report kBrowserWindow. These cover both call sites to make sure the dock
+    // decision comes from the window association and not from the type.
+    it('allows docking on an offscreen window when openDevTools() is called from web-contents-created', async () => {
+      const w = await openDevToolsWhileCreating(
+        { width: 800, height: 600, webPreferences: { offscreen: true } },
+        (contents) => contents.openDevTools()
+      );
+      expect(await devToolsCanDock(w.webContents)).toBe(true);
+    });
+
+    it('allows docking on an offscreen window when openDevTools() is called from dom-ready', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600, webPreferences: { offscreen: true } });
+      await w.loadURL('about:blank');
+
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.once('dom-ready', () => w.webContents.openDevTools());
+      await w.loadURL('about:blank'); // reload triggers a fresh dom-ready
+      await opened;
+
+      expect(await devToolsCanDock(w.webContents)).toBe(true);
+    });
+
+    // closeAllWindows() won't reach contents that belong to no window, and an
+    // attempt that times out never gets to the end of its body. Close their
+    // DevTools and destroy them after the test either way, so that one stalled
+    // attempt does not leave them alive for the retry and the rest of the file.
+    function destroyAfterTest(contents: Electron.WebContents) {
+      defer(async () => {
+        if (contents.isDestroyed()) return;
+        contents.closeDevTools();
+        const destroyed = once(contents, 'destroyed');
+        contents.destroy();
+        await destroyed;
+      });
+    }
+
+    it('detaches when the contents belong to no window', async () => {
+      // A WebContentsView only gets an owner window once it is added to one, so
+      // an unattached one has none, permanently — docked DevTools would be
+      // embedded in a view that is in no widget, and nobody would see them.
+      const view = new WebContentsView();
+      destroyAfterTest(view.webContents);
+      await view.webContents.loadURL('about:blank');
+
+      const opened = once(view.webContents, 'devtools-opened');
+      // Without activation, so focus plays no part in the detached window.
+      // @ts-expect-error — mode is left out on purpose: the default must resolve to detach
+      view.webContents.openDevTools({ activate: false });
+      await opened;
+
+      expect(await devToolsCanDock(view.webContents)).toBe(false);
+    });
+
+    it('does not let a reused webPreferences object mark other contents as owned by a window', async () => {
+      // BrowserWindow marks the contents it creates through the webPreferences
+      // object it is handed, which is the caller's own. The mark must stay with
+      // the window's contents and not ride along into the next one built from it.
+      const webPreferences = {};
+      const w = new BrowserWindow({ show: false, webPreferences });
+      const view = new WebContentsView({ webPreferences });
+      destroyAfterTest(view.webContents);
+      await view.webContents.loadURL('about:blank');
+
+      const viewOpened = once(view.webContents, 'devtools-opened');
+      // @ts-expect-error — mode is left out on purpose: the default must resolve to detach
+      view.webContents.openDevTools({ activate: false });
+      // A leaked mark would leave this waiting for an owner that never comes.
+      await viewOpened;
+      expect(await devToolsCanDock(view.webContents)).toBe(false);
+
+      const windowOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools();
+      await windowOpened;
+      expect(await devToolsCanDock(w.webContents)).toBe(true);
+    });
+
+    // The dock side Electron resolved for the open DevTools. Whenever DevTools may
+    // dock, GetPreferences() hands the frontend that resolved side as
+    // currentDockState, JSON-encoded like every DevTools setting.
+    async function devToolsDockState(w: BrowserWindow) {
+      return (await getDevToolsPreferences(w)).currentDockState?.replaceAll('"', '');
+    }
+
+    // Opens a window whose contents get openDevTools() calls from
+    // 'web-contents-created', i.e. before the window owns them, and resolves once
+    // its DevTools have opened.
+    //
+    // Tests that check the dock side pass an explicit mode. A mode-less open
+    // resolves to the last-used dock state, and that cannot be isolated per test:
+    // in-memory partitions all load and save the default session's Preferences
+    // file, so a dock state left behind by an earlier test would leak in.
+    async function openDevToolsWhileCreating(
+      options: Electron.BrowserWindowConstructorOptions,
+      onCreated: (contents: Electron.WebContents) => void
+    ) {
+      let opened: Promise<unknown> | undefined;
+      const onWebContentsCreated = (_e: Electron.Event, contents: Electron.WebContents) => {
+        opened = once(contents, 'devtools-opened');
+        onCreated(contents);
+      };
+      app.once('web-contents-created', onWebContentsCreated);
+      // The event is app-wide: a listener left over from a failed attempt would
+      // otherwise fire on the next window, including the retry's.
+      defer(() => {
+        app.removeListener('web-contents-created', onWebContentsCreated);
+      });
+      const w = new BrowserWindow({ show: false, ...options });
+      // 'web-contents-created' is emitted synchronously while the window is built.
+      expect(opened).toBeDefined();
+      await opened;
+      return w;
+    }
+
+    describe('with Window Controls Overlay', () => {
+      // 'right' is where the overlay's window controls sit, so DevTools have to
+      // be moved off it. Asked for explicitly: see openDevToolsWhileCreating().
+      const overlayOptions = { titleBarStyle: 'hidden', titleBarOverlay: true } as const;
+
+      ifit(process.platform === 'win32' || process.platform === 'linux')(
+        'undocks when openDevTools() is called from web-contents-created',
+        async () => {
+          const w = await openDevToolsWhileCreating(overlayOptions, (contents) =>
+            contents.openDevTools({ mode: 'right' })
+          );
+          expect(await devToolsDockState(w)).toBe('undocked');
+        }
+      );
+
+      ifit(process.platform === 'win32' || process.platform === 'linux')(
+        'undocks when openDevTools() is called from dom-ready',
+        async () => {
+          const w = new BrowserWindow({ show: false, ...overlayOptions });
+          await w.loadURL('about:blank');
+
+          const opened = once(w.webContents, 'devtools-opened');
+          w.webContents.once('dom-ready', () => w.webContents.openDevTools({ mode: 'right' }));
+          await w.loadURL('about:blank'); // reload triggers a fresh dom-ready
+          await opened;
+
+          expect(await devToolsDockState(w)).toBe('undocked');
+        }
+      );
+    });
+
+    it('cancels a deferred open when closeDevTools() is called before the window owns its contents', async () => {
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'left' });
+        contents.closeDevTools();
+        // Had the first request survived the close, it would have won over this one.
+        contents.openDevTools({ mode: 'bottom' });
+      });
+      expect(await devToolsDockState(w)).toBe('bottom');
+    });
+
+    it('keeps the dock mode of the first openDevTools() made before the window owns its contents', async () => {
+      // Once DevTools are open a second openDevTools() does not re-dock them, so
+      // the deferred path keeps the first dock mode too.
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'bottom' });
+        contents.openDevTools({ mode: 'left' });
+      });
+      expect(await devToolsDockState(w)).toBe('bottom');
+    });
+
+    it('applies the title of a later openDevTools() made before the window owns its contents', async () => {
+      // A second openDevTools() on open DevTools still sets its title, so a
+      // later request merges its title into the pending one.
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'detach' });
+        contents.openDevTools({ mode: 'detach', title: 'Second' });
+      });
+      expect(w.webContents.getDevToolsTitle()).toBe('Second');
+    });
+
+    it('keeps a title set after openDevTools() before the window owns its contents', async () => {
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'detach' });
+        // Applied while the open is pending; replaying the open must not
+        // overwrite it with the title the request was made with.
+        contents.setDevToolsTitle('Custom title');
+      });
+      expect(w.webContents.getDevToolsTitle()).toBe('Custom title');
+    });
+
+    it('opens with the pending request options when inspectElement() follows openDevTools()', async () => {
+      // inspectElement() must not open DevTools its own way while a request is
+      // pending; it inspects once that request has run, with its options.
+      const w = await openDevToolsWhileCreating({}, (contents) => {
+        contents.openDevTools({ mode: 'bottom', activate: false });
+        contents.inspectElement(0, 0);
+      });
+      expect(await devToolsCanDock(w.webContents)).toBe(true);
+      expect(await devToolsDockState(w)).toBe('bottom');
+    });
+
+    describe('for a window opened by the page', () => {
+      // A window.open() child is created, and announced through
+      // 'web-contents-created', before the '-add-new-contents' handlers give it a
+      // window. Opens one from `w`, calls `onCreated` at that point, and resolves
+      // with the child once its DevTools have opened.
+      async function openChild(w: BrowserWindow, onCreated: (contents: Electron.WebContents) => void) {
+        let child: Electron.WebContents | undefined;
+        let opened: Promise<unknown> | undefined;
+        const onWebContentsCreated = (_e: Electron.Event, contents: Electron.WebContents) => {
+          child = contents;
+          opened = once(contents, 'devtools-opened');
+          onCreated(contents);
+        };
+        app.once('web-contents-created', onWebContentsCreated);
+        // See openDevToolsWhileCreating().
+        defer(() => {
+          app.removeListener('web-contents-created', onWebContentsCreated);
+        });
+        await w.webContents.executeJavaScript('void window.open("about:blank")', true);
+        await waitUntil(() => opened !== undefined);
+        await opened;
+        return child!;
+      }
+
+      it('allows docking when openDevTools() is called from web-contents-created', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { show: false } }));
+        await w.loadURL('about:blank');
+
+        const child = await openChild(w, (contents) => contents.openDevTools());
+        expect(await devToolsCanDock(child)).toBe(true);
+      });
+
+      ifit(process.platform === 'win32' || process.platform === 'linux')(
+        'undocks with Window Controls Overlay when openDevTools() is called from web-contents-created',
+        async () => {
+          const w = new BrowserWindow({ show: false });
+          w.webContents.setWindowOpenHandler(() => ({
+            action: 'allow',
+            overrideBrowserWindowOptions: { show: false, titleBarStyle: 'hidden', titleBarOverlay: true }
+          }));
+          await w.loadURL('about:blank');
+
+          // Explicitly 'right', where the window controls sit; see
+          // openDevToolsWhileCreating() for why not the default.
+          const child = await openChild(w, (contents) => contents.openDevTools({ mode: 'right' }));
+          expect(await devToolsDockState(BrowserWindow.fromWebContents(child)!)).toBe('undocked');
+        }
+      );
+
+      it('opens DevTools detached when the child is never given a window', async () => {
+        // A createWindow handler may keep the contents out of any window. The
+        // deferred request must then run without an owner, not wait for one.
+        const w = new BrowserWindow({ show: false });
+        let guest: Electron.WebContents | undefined;
+        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', createWindow: () => guest! }));
+        await w.loadURL('about:blank');
+
+        const child = await openChild(w, (contents) => {
+          guest = contents;
+          destroyAfterTest(contents);
+          contents.openDevTools();
+        });
+        expect(await devToolsCanDock(child)).toBe(false);
+      });
+    });
   });
 
   describe('setDevToolsTitle() API', () => {
@@ -1680,6 +2054,76 @@ describe('webContents module', () => {
       w.webContents.setDevToolsTitle('newTitle');
       expect(w.webContents.getDevToolsTitle()).toBe('newTitle');
     });
+  });
+
+  // toggleDevTools() opens DevTools in the last saved dock state. DevTools
+  // preferences, including that state, live in the session's Preferences file,
+  // and an in-memory partition reads the default session's file, so it can
+  // inherit an "undocked" state saved by an earlier test. A new persisted
+  // partition gets a Preferences file of its own, so the DevTools always start
+  // docked into the hidden window instead of opening a window that could take
+  // focus from other spec files running at the same time.
+  const freshDevToolsPartition = (name: string) => `persist:${name}-${randomUUID()}`;
+
+  describe('toggleDevTools() API', () => {
+    afterEach(closeAllWindows);
+
+    it('opens DevTools when they are closed', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-toggle') }
+      });
+      await w.loadURL('about:blank');
+      expect(w.webContents.isDevToolsOpened()).toBe(false);
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.toggleDevTools();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
+    });
+
+    it('closes DevTools when they are open', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-toggle') }
+      });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'right', activate: false });
+      await devtoolsOpened;
+      const devtoolsClosed = once(w.webContents, 'devtools-closed');
+      w.webContents.toggleDevTools();
+      await devtoolsClosed;
+      expect(w.webContents.isDevToolsOpened()).toBe(false);
+    });
+  });
+
+  describe('isDevToolsFocused() API', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    it('returns false when DevTools are closed', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      expect(w.webContents.isDevToolsFocused()).toBe(false);
+    });
+
+    for (const mode of ['detach', 'bottom'] as const) {
+      it(`returns true once ${mode} DevTools take focus and false after they close`, async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+        const shown = once(w, 'show');
+        w.show();
+        await shown;
+        const devtoolsOpened = once(w.webContents, 'devtools-opened');
+        const devtoolsFocused = once(w.webContents, 'devtools-focused');
+        w.webContents.openDevTools({ mode, activate: true });
+        await Promise.all([devtoolsOpened, devtoolsFocused]);
+        expect(w.webContents.isDevToolsFocused()).toBe(true);
+        const devtoolsClosed = once(w.webContents, 'devtools-closed');
+        w.webContents.closeDevTools();
+        await devtoolsClosed;
+        expect(w.webContents.isDevToolsFocused()).toBe(false);
+      });
+    }
   });
 
   describe('DevTools showItemInFolder embedder message', () => {
@@ -1886,6 +2330,346 @@ describe('webContents module', () => {
     });
   });
 
+  // Sends the DevTools frontend's embedder messages straight from the
+  // frontend, the way DevTools itself does, and checks what Electron does
+  // with them.
+  describe('DevTools embedder messages', () => {
+    afterEach(closeAllWindows);
+
+    // Request and stream ids well above the ones the frontend hands out, so
+    // its own indexing, searches and streams can't be mistaken for ours.
+    let nextId = 1_000_000;
+
+    // Opens DevTools for a new window and records the calls the embedder
+    // makes back into the frontend, then passes them on as usual.
+    async function openDevTools(partition?: string) {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition } });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      const devtools = w.webContents.devToolsWebContents!;
+      await waitUntil(() => devtools.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+      await devtools.executeJavaScript(`
+        window.embedderCalls = [];
+        for (const name of ['fileSystemAdded', 'fileSystemRemoved', 'indexingDone', 'searchCompleted']) {
+          const original = DevToolsAPI[name];
+          DevToolsAPI[name] = function (...args) {
+            window.embedderCalls.push([name, ...args]);
+            return original.apply(this, args);
+          };
+        }
+        true;
+      `);
+      return { w, devtools };
+    }
+
+    // Builds the source of a call to a DevTools frontend function. The
+    // arguments are passed as JSON, followed by any trailing arguments given
+    // as code, such as a callback.
+    const frontendCall = (fn: string, args: unknown[], ...trailingCode: string[]) =>
+      `${fn}(${[...args.map((arg) => JSON.stringify(arg)), ...trailingCode].join(', ')})`;
+
+    // Calls an InspectorFrontendHost method from the frontend.
+    const callHost = (devtools: WebContents, method: string, ...args: unknown[]) =>
+      devtools.executeJavaScript(frontendCall(`InspectorFrontendHost.${method}`, args));
+
+    // Calls an InspectorFrontendHost method that takes a trailing callback
+    // and resolves with what the embedder sent back.
+    const callWithReply = (devtools: WebContents, method: string, ...args: unknown[]) =>
+      devtools.executeJavaScript(
+        `new Promise((resolve) => ${frontendCall(`InspectorFrontendHost.${method}`, args, 'resolve')})`
+      );
+
+    // Waits for the embedder to call the recorded frontend function `name`
+    // with `firstArg`, and returns the arguments of that call.
+    const waitForEmbedderCall = async (devtools: WebContents, name: string, firstArg: unknown) => {
+      let call: unknown[] | undefined;
+      await waitUntil(async () => {
+        const calls: unknown[][] = await devtools.executeJavaScript('window.embedderCalls');
+        call = calls.find(([callName, arg]) => callName === name && arg === firstArg);
+        return call !== undefined;
+      });
+      return call!.slice(1) as any[];
+    };
+
+    describe('loadNetworkResource', () => {
+      let server: http.Server;
+      let serverUrl: string;
+
+      beforeAll(async () => {
+        server = http.createServer((req, res) => {
+          if (req.url === '/resource') {
+            res.writeHead(200, { 'Content-Type': 'text/plain', 'X-DevTools-Test': 'yes' });
+            res.end(`hello ${req.headers['x-requested-by']}`);
+          } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('not found');
+          }
+        });
+        serverUrl = (await listen(server)).url;
+      });
+
+      afterAll(() => {
+        server.close();
+      });
+
+      // Loads a resource the way DevTools loads source maps, collecting the
+      // chunks the embedder streams into the frontend for it.
+      const loadNetworkResource = (devtools: WebContents, resourceUrl: string, headers = '') => {
+        const streamId = nextId++;
+        return devtools.executeJavaScript(`new Promise((resolve) => {
+          const chunks = [];
+          const streamWrite = DevToolsAPI.streamWrite;
+          DevToolsAPI.streamWrite = function (id, chunk, encoded) {
+            if (id !== ${JSON.stringify(streamId)}) return streamWrite.apply(this, arguments);
+            chunks.push(encoded ? atob(chunk) : chunk);
+          };
+          ${frontendCall(
+            'InspectorFrontendHost.loadNetworkResource',
+            [resourceUrl, headers, streamId],
+            `(response) => {
+              DevToolsAPI.streamWrite = streamWrite;
+              resolve({ response, body: chunks.join('') });
+            }`
+          )};
+        })`);
+      };
+
+      it('streams an http resource with the request headers DevTools passed', async () => {
+        const { devtools } = await openDevTools();
+        const { response, body } = await loadNetworkResource(
+          devtools,
+          `${serverUrl}/resource`,
+          'X-Requested-By: devtools'
+        );
+        expect(response.statusCode).toBe(200);
+        // Like Chrome, the embedder reports response headers under the names
+        // the server sent rather than lowercasing them.
+        expect(response.headers['X-DevTools-Test']).toBe('yes');
+        expect(body).toBe('hello devtools');
+      });
+
+      it('reports the status of an http error response', async () => {
+        const { devtools } = await openDevTools();
+        const { response } = await loadNetworkResource(devtools, `${serverUrl}/missing`);
+        expect(response.statusCode).toBe(404);
+      });
+
+      it('reports 404 for an invalid URL without making a request', async () => {
+        const { devtools } = await openDevTools();
+        const { response, body } = await loadNetworkResource(devtools, 'not a url');
+        expect(response).toEqual({ statusCode: 404 });
+        expect(body).toBe('');
+      });
+
+      it('streams a file: URL', async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-load-'));
+        defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+        const file = path.join(dir, 'source.js.map');
+        fs.writeFileSync(file, '{"version":3}');
+
+        const { devtools } = await openDevTools();
+        const { response, body } = await loadNetworkResource(devtools, url.pathToFileURL(file).href);
+        expect(response.statusCode).toBe(200);
+        expect(body).toBe('{"version":3}');
+      });
+
+      it('streams a URL served by a protocol handler on the session', async () => {
+        const partition = `devtools-load-${randomUUID()}`;
+        const { protocol } = session.fromPartition(partition);
+        protocol.handle(
+          'devtools-embedder-test',
+          (request) => new Response(`handled ${request.url}`, { headers: { 'X-DevTools-Test': 'protocol' } })
+        );
+        defer(() => protocol.unhandle('devtools-embedder-test'));
+
+        const { devtools } = await openDevTools(partition);
+        const { response, body } = await loadNetworkResource(devtools, 'devtools-embedder-test://resource/a');
+        expect(response.statusCode).toBe(200);
+        expect(response.headers['x-devtools-test']).toBe('protocol');
+        expect(body).toBe('handled devtools-embedder-test://resource/a');
+      });
+    });
+
+    describe('openInNewTab', () => {
+      it('emits devtools-open-url on the inspected webContents instead of opening anything', async () => {
+        const { w, devtools } = await openDevTools();
+        const windowCount = BrowserWindow.getAllWindows().length;
+        const opened = once(w.webContents, 'devtools-open-url');
+        await callHost(devtools, 'openInNewTab', 'https://example.com/from-devtools');
+        const [, openedUrl] = await opened;
+        expect(openedUrl).toBe('https://example.com/from-devtools');
+        expect(BrowserWindow.getAllWindows()).toHaveLength(windowCount);
+      });
+
+      it('emits devtools-search-query for openSearchResultsInNewTab', async () => {
+        const { w, devtools } = await openDevTools();
+        const searched = once(w.webContents, 'devtools-search-query');
+        await callHost(devtools, 'openSearchResultsInNewTab', 'electron devtools');
+        const [, query] = await searched;
+        expect(query).toBe('electron devtools');
+      });
+    });
+
+    describe('preferences', () => {
+      // DevTools preferences live in the session, so each test gets its own.
+      const freshPartition = () => freshDevToolsPartition('devtools-prefs');
+
+      it('sets, reads and removes a preference', async () => {
+        const { devtools } = await openDevTools(freshPartition());
+
+        await callHost(devtools, 'setPreference', 'embedder-test', 'one');
+        expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBe('one');
+        expect(await callWithReply(devtools, 'getPreferences')).toHaveProperty('embedder-test', 'one');
+
+        await callHost(devtools, 'setPreference', 'embedder-test', 'two');
+        expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBe('two');
+
+        await callHost(devtools, 'removePreference', 'embedder-test');
+        expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBeUndefined();
+        expect(await callWithReply(devtools, 'getPreferences')).not.toHaveProperty('embedder-test');
+      });
+
+      it('clears every stored preference', async () => {
+        const { devtools } = await openDevTools(freshPartition());
+
+        await callHost(devtools, 'setPreference', 'embedder-test-a', 'a');
+        await callHost(devtools, 'setPreference', 'embedder-test-b', 'b');
+        expect(await callWithReply(devtools, 'getPreferences')).toMatchObject({
+          'embedder-test-a': 'a',
+          'embedder-test-b': 'b'
+        });
+
+        await callHost(devtools, 'clearPreferences');
+        const prefs = await callWithReply(devtools, 'getPreferences');
+        expect(prefs).not.toHaveProperty('embedder-test-a');
+        expect(prefs).not.toHaveProperty('embedder-test-b');
+      });
+
+      it('keeps preferences for later DevTools windows in the same session only', async () => {
+        const partition = freshPartition();
+        const first = await openDevTools(partition);
+        await callHost(first.devtools, 'setPreference', 'embedder-test', 'kept');
+        // Make sure the write has landed before DevTools goes away.
+        expect(await callWithReply(first.devtools, 'getPreference', 'embedder-test')).toBe('kept');
+        const closed = once(first.w.webContents, 'devtools-closed');
+        first.w.webContents.closeDevTools();
+        await closed;
+
+        const second = await openDevTools(partition);
+        expect(await callWithReply(second.devtools, 'getPreference', 'embedder-test')).toBe('kept');
+
+        const other = await openDevTools(freshPartition());
+        expect(await callWithReply(other.devtools, 'getPreference', 'embedder-test')).toBeUndefined();
+      });
+    });
+
+    describe('searchInPath', () => {
+      const makeWorkspace = () => {
+        // The indexer reports real paths, so resolve symlinks such as /var
+        // on macOS up front.
+        const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-search-')));
+        defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+        fs.writeFileSync(path.join(dir, 'match.js'), 'const value = "devtoolsEmbedderNeedle";\n');
+        fs.writeFileSync(path.join(dir, 'other.js'), 'const value = "something else";\n');
+        return dir;
+      };
+
+      // Asks the embedder to index `dir` and waits until it reports that
+      // indexing is done.
+      const indexPath = async (devtools: WebContents, dir: string) => {
+        const requestId = nextId++;
+        await callHost(devtools, 'indexPath', requestId, dir, '[]');
+        await waitForEmbedderCall(devtools, 'indexingDone', requestId);
+      };
+
+      const searchInPath = async (devtools: WebContents, dir: string, query: string) => {
+        const requestId = nextId++;
+        await callHost(devtools, 'searchInPath', requestId, dir, query);
+        const [, searchedPath, files] = await waitForEmbedderCall(devtools, 'searchCompleted', requestId);
+        expect(searchedPath).toBe(dir);
+        return files;
+      };
+
+      it('finds matching files in an indexed workspace until it is removed', async () => {
+        const dir = makeWorkspace();
+        const { w, devtools } = await openDevTools();
+
+        w.webContents.addWorkSpace(dir);
+        const [error, fileSystem] = await waitForEmbedderCall(devtools, 'fileSystemAdded', '');
+        expect(error).toBe('');
+        expect(fileSystem.fileSystemPath).toBe(dir);
+
+        await indexPath(devtools, dir);
+
+        expect(await searchInPath(devtools, dir, 'devtoolsEmbedderNeedle')).toEqual([path.join(dir, 'match.js')]);
+        expect(await searchInPath(devtools, dir, 'notInAnyFileAtAll')).toEqual([]);
+
+        w.webContents.removeWorkSpace(dir);
+        await waitForEmbedderCall(devtools, 'fileSystemRemoved', dir);
+        expect(await searchInPath(devtools, dir, 'devtoolsEmbedderNeedle')).toEqual([]);
+      });
+
+      it('returns no results for a folder that was never added as a workspace', async () => {
+        const dir = makeWorkspace();
+        const { devtools } = await openDevTools();
+
+        // Indexing a folder that isn't a workspace finishes straight away
+        // without reading it.
+        await indexPath(devtools, dir);
+
+        expect(await searchInPath(devtools, dir, 'devtoolsEmbedderNeedle')).toEqual([]);
+      });
+    });
+
+    describe('reattach', () => {
+      // Sends a protocol message over the frontend's own connection and
+      // resolves with the response, keeping it from the frontend.
+      const sendProtocolMessage = (devtools: WebContents, method: string, params: object = {}) => {
+        const message = { id: nextId++, method, params };
+        return devtools.executeJavaScript(`new Promise((resolve) => {
+          const dispatchMessage = DevToolsAPI.dispatchMessage;
+          DevToolsAPI.dispatchMessage = function (raw) {
+            const response = JSON.parse(raw);
+            if (response.id !== ${JSON.stringify(message.id)}) return dispatchMessage.apply(this, arguments);
+            DevToolsAPI.dispatchMessage = dispatchMessage;
+            resolve(response);
+          };
+          ${frontendCall('DevToolsAPI.sendMessageToEmbedder', ['dispatchProtocolMessage', [JSON.stringify(message)], null])};
+        })`);
+      };
+
+      const isPrintMedia = (w: BrowserWindow) => w.webContents.executeJavaScript('matchMedia("print").matches');
+
+      it('gives the frontend a fresh session on the inspected page', async () => {
+        const { w, devtools } = await openDevTools();
+        let closed = false;
+        w.webContents.once('devtools-closed', () => {
+          closed = true;
+        });
+
+        // Emulation overrides belong to the session that set them.
+        const emulated = await sendProtocolMessage(devtools, 'Emulation.setEmulatedMedia', { media: 'print' });
+        expect(emulated.error).toBeUndefined();
+        await waitUntil(() => isPrintMedia(w));
+
+        await callWithReply(devtools, 'reattach');
+
+        // The old session is gone, and its override with it.
+        await waitUntil(async () => !(await isPrintMedia(w)));
+        // The new session is attached to the same page.
+        const evaluated = await sendProtocolMessage(devtools, 'Runtime.evaluate', {
+          expression: 'location.href',
+          returnByValue: true
+        });
+        expect(evaluated.result.result.value).toBe('about:blank');
+        expect(w.webContents.isDevToolsOpened()).toBe(true);
+        expect(closed).toBe(false);
+      });
+    });
+  });
+
   describe('DevTools native integration', () => {
     afterEach(closeAllWindows);
 
@@ -2014,6 +2798,72 @@ describe('webContents module', () => {
         expect(roundTripped).toBe(true);
         expect(emittedContextMenu).toBe(false);
       });
+    });
+  });
+
+  describe('inspectSharedWorker() and inspectServiceWorker()', () => {
+    afterEach(closeAllWindows);
+
+    let server: http.Server;
+    let serverUrl: string;
+
+    beforeAll(async () => {
+      server = http.createServer((req, res) => {
+        if (req.url === '/shared-worker.js') {
+          res.writeHead(200, { 'Content-Type': 'text/javascript' });
+          res.end("self.onconnect = (e) => { e.ports[0].postMessage('connected'); };");
+        } else if (req.url === '/service-worker.js') {
+          res.writeHead(200, { 'Content-Type': 'text/javascript' });
+          res.end("self.addEventListener('install', () => self.skipWaiting());");
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end('<!doctype html><title>workers</title>');
+        }
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    afterAll(() => {
+      server.close();
+    });
+
+    // Worker DevTools open in the last saved dock state too, so give each test
+    // a fresh persisted partition for the same reason as toggleDevTools() above.
+    async function loadWorkerPage() {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-inspect-workers') }
+      });
+      await w.loadURL(`${serverUrl}/`);
+      return w;
+    }
+
+    it('inspectSharedWorker() opens DevTools for a running shared worker', async () => {
+      const w = await loadWorkerPage();
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const worker = new SharedWorker('/shared-worker.js');
+        worker.port.onmessage = (e) => resolve(e.data);
+        worker.port.start();
+      })`);
+      const workerUrl = `${serverUrl}/shared-worker.js`;
+      await waitUntil(() => w.webContents.getAllSharedWorkers().some((worker) => worker.url === workerUrl));
+
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.inspectSharedWorker();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
+    });
+
+    it('inspectServiceWorker() opens DevTools for a running service worker', async () => {
+      const w = await loadWorkerPage();
+      await w.webContents.executeJavaScript(
+        "navigator.serviceWorker.register('/service-worker.js').then(() => navigator.serviceWorker.ready).then(() => true)"
+      );
+
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.inspectServiceWorker();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
     });
   });
 
@@ -2389,6 +3239,279 @@ describe('webContents module', () => {
     });
   });
 
+  describe('editing commands', { tags: ['serial'] }, () => {
+    type EditorState = { value: string; start: number; end: number };
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      w.webContents.focus();
+    });
+
+    afterEach(closeAllWindows);
+
+    const getState = (): Promise<EditorState> =>
+      w.webContents.executeJavaScript(
+        '({ value: document.activeElement.value, start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd })'
+      );
+
+    // Focuses a textarea holding `value` and selects [start, end)
+    const setUp = async (value: string, start: number, end: number) => {
+      await w.webContents.executeJavaScript(`{
+        const textarea = document.createElement('textarea');
+        textarea.value = ${JSON.stringify(value)};
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.setSelectionRange(${start}, ${end});
+      }`);
+      expect(await getState()).toEqual({ value, start, end });
+    };
+
+    // Editing commands reach the renderer asynchronously, so poll for them
+    const expectState = async (expected: Partial<EditorState>) => {
+      let actual = await getState();
+      const matches = () =>
+        Object.entries(expected).every(([key, value]) => actual[key as keyof EditorState] === value);
+      await waitUntil(
+        async () => {
+          actual = await getState();
+          return matches();
+        },
+        { rate: 50, timeout: 2000 }
+      ).catch(() => {
+        // Fall through so the assertion below reports the state we got
+      });
+      expect(actual).toMatchObject(expected);
+    };
+
+    it('selectAll() selects the whole value', async () => {
+      await setUp('Hello World', 3, 3);
+      w.webContents.selectAll();
+      await expectState({ start: 0, end: 11 });
+    });
+
+    it('unselect() collapses the selection', async () => {
+      await setUp('Hello World', 0, 5);
+      w.webContents.unselect();
+      await expectState({ value: 'Hello World', start: 5, end: 5 });
+    });
+
+    it('delete() removes the selection', async () => {
+      await setUp('Hello World', 5, 11);
+      w.webContents.delete();
+      await expectState({ value: 'Hello', start: 5, end: 5 });
+    });
+
+    it('undo() and redo() revert and reapply an edit', async () => {
+      await setUp('Hello World', 0, 6);
+      w.webContents.delete();
+      await expectState({ value: 'World' });
+      w.webContents.undo();
+      await expectState({ value: 'Hello World' });
+      w.webContents.redo();
+      await expectState({ value: 'World' });
+    });
+
+    it('cut() removes the selection and paste() puts it back', async () => {
+      await setUp('Hello World', 0, 6);
+      w.webContents.cut();
+      await expectState({ value: 'World', start: 0, end: 0 });
+      w.webContents.paste();
+      await expectState({ value: 'Hello World', start: 6, end: 6 });
+    });
+
+    it('copy() keeps the selection and paste() inserts a copy of it', async () => {
+      await clipboard.clear();
+      await setUp('Hello World', 0, 5);
+      w.webContents.copy();
+      await waitUntil(async () => (await clipboard.readText()) === 'Hello');
+      await expectState({ value: 'Hello World', start: 0, end: 5 });
+      await w.webContents.executeJavaScript('document.activeElement.setSelectionRange(11, 11)');
+      w.webContents.paste();
+      await expectState({ value: 'Hello WorldHello' });
+    });
+
+    it('pasteAndMatchStyle() drops the formatting that paste() keeps', async () => {
+      await clipboard.write([new ClipboardItem({ 'text/plain': 'bold', 'text/html': '<b>bold</b>' })]);
+      // Pastes into an empty, focused contenteditable and returns its markup
+      const pasteInto = async (paste: () => void) => {
+        await w.webContents.executeJavaScript(`{
+          document.body.textContent = '';
+          const editor = document.createElement('div');
+          editor.contentEditable = 'true';
+          document.body.appendChild(editor);
+          editor.focus();
+        }`);
+        const getHTML = (): Promise<string> => w.webContents.executeJavaScript('document.activeElement.innerHTML');
+        paste();
+        await waitUntil(async () => (await getHTML()) !== '').catch(() => {});
+        return getHTML();
+      };
+
+      expect(await pasteInto(() => w.webContents.paste())).toBe('<b>bold</b>');
+      expect(await pasteInto(() => w.webContents.pasteAndMatchStyle())).toBe('bold');
+    });
+
+    it('replace() replaces the selection', async () => {
+      await setUp('Hello World', 6, 11);
+      w.webContents.replace('There');
+      await expectState({ value: 'Hello There' });
+    });
+
+    it('replace() replaces the word around the caret when nothing is selected', async () => {
+      await setUp('Hello World', 8, 8);
+      w.webContents.replace('There');
+      await expectState({ value: 'Hello There' });
+    });
+
+    describe('scrolling', () => {
+      const getScrollY = (): Promise<number> => w.webContents.executeJavaScript('window.scrollY');
+
+      beforeEach(async () => {
+        // Document scrolls are animated, and animations only advance in a visible window
+        w.destroy();
+        w = new BrowserWindow({ show: true });
+        await w.loadURL('about:blank');
+        w.webContents.focus();
+        await w.webContents.executeJavaScript(`{
+          document.body.style.margin = '0';
+          document.body.style.height = '10000px';
+          window.focus();
+        }`);
+        expect(await getScrollY()).toBe(0);
+      });
+
+      it('scrollToBottom() and scrollToTop() scroll the document', async () => {
+        const maxScrollY = await w.webContents.executeJavaScript(
+          'document.scrollingElement.scrollHeight - window.innerHeight'
+        );
+        expect(maxScrollY).toBeGreaterThan(0);
+
+        // The scroll is animated, so wait for it to land
+        const scrollAndWait = async (scroll: () => void, expected: number) => {
+          scroll();
+          await waitUntil(async () => (await getScrollY()) === expected).catch(() => {});
+          return getScrollY();
+        };
+
+        expect(await scrollAndWait(() => w.webContents.scrollToBottom(), maxScrollY)).toBe(maxScrollY);
+        // A scroll issued in the frame the previous animation lands in can be dropped
+        await w.webContents.executeJavaScript(
+          'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
+        );
+        expect(await scrollAndWait(() => w.webContents.scrollToTop(), 0)).toBe(0);
+      });
+    });
+  });
+
+  describe('device emulation', () => {
+    afterEach(closeAllWindows);
+
+    it('enableDeviceEmulation() and disableDeviceEmulation() change what the page sees', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      const getMetrics = () =>
+        w.webContents.executeJavaScript(
+          '({ screenWidth: screen.width, screenHeight: screen.height, innerWidth: window.innerWidth, innerHeight: window.innerHeight, devicePixelRatio: window.devicePixelRatio })'
+        );
+      const original = await getMetrics();
+      expect(original.screenWidth).not.toBe(400);
+      expect(original.devicePixelRatio).not.toBe(3);
+
+      w.webContents.enableDeviceEmulation({
+        screenPosition: 'mobile',
+        screenSize: { width: 400, height: 700 },
+        viewPosition: { x: 0, y: 0 },
+        viewSize: { width: 320, height: 480 },
+        deviceScaleFactor: 3,
+        scale: 1
+      });
+      let metrics = await getMetrics();
+      await waitUntil(async () => {
+        metrics = await getMetrics();
+        return metrics.screenWidth === 400 && metrics.devicePixelRatio === 3;
+      }).catch(() => {});
+      expect(metrics).toMatchObject({ screenWidth: 400, screenHeight: 700, devicePixelRatio: 3 });
+      // A mobile page lays out at its own width, keeping the emulated view's aspect ratio
+      expect(metrics.innerWidth).not.toBe(original.innerWidth);
+      expect(metrics.innerWidth / metrics.innerHeight).toBeCloseTo(320 / 480);
+
+      w.webContents.disableDeviceEmulation();
+      await waitUntil(async () => {
+        metrics = await getMetrics();
+        return metrics.screenWidth === original.screenWidth;
+      }).catch(() => {});
+      expect(metrics).toEqual(original);
+    });
+  });
+
+  describe('setImageAnimationPolicy()', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    // A 1x1 GIF that loops forever between a red and a green frame every 100ms
+    const gif = Buffer.from(
+      // Header and a 1x1 screen with a two entry color table: red, green
+      `${Buffer.from('GIF89a').toString('hex')}01000100800000ff000000ff00` +
+        // Loop forever
+        `21ff0b${Buffer.from('NETSCAPE2.0').toString('hex')}0301000000` +
+        // Each frame: a 100ms delay, a 1x1 image descriptor and the LZW data for
+        // a single pixel of color 0 (red), then of color 1 (green)
+        '21f904000a0000002c0000000001000100000202440100' +
+        '21f904000a0000002c00000000010001000002024c0100' +
+        '3b',
+      'hex'
+    );
+    const html = `<body style="margin: 0"><img src="data:image/gif;base64,${gif.toString('base64')}" style="width: 100px; height: 100px; image-rendering: pixelated"></body>`;
+
+    // Returns the color currently painted in the middle of the image: 'red' or
+    // 'green' only for a pixel that is clearly that color, and 'other' for
+    // anything else, such as the white of a page with nothing painted yet.
+    // toBitmap() is BGRA on most platforms but RGBA on some, so the red check
+    // accepts either the first or the third channel and requires the other to
+    // be low; green is the second channel either way.
+    const sampleColor = async (w: BrowserWindow) => {
+      const image = await w.webContents.capturePage({ x: 50, y: 50, width: 1, height: 1 });
+      const [first, green, third] = image.toBitmap();
+      const high = (channel: number) => channel > 192;
+      const low = (channel: number) => channel < 64;
+      if (high(green) && low(first) && low(third)) return 'green';
+      if (low(green) && ((high(first) && low(third)) || (low(first) && high(third)))) return 'red';
+      return 'other';
+    };
+
+    const loadAnimation = async (w: BrowserWindow) => {
+      await w.loadURL(`data:text/html,${encodeURIComponent(html)}`);
+      await w.webContents.executeJavaScript('document.querySelector("img").decode()');
+    };
+
+    it('animates images by default', async () => {
+      const w = new BrowserWindow({ show: true, width: 200, height: 200 });
+      await loadAnimation(w);
+      const seen = new Set<string>();
+      await waitUntil(async () => {
+        seen.add(await sampleColor(w));
+        return seen.has('red') && seen.has('green');
+      }).catch(() => {});
+      expect([...seen]).toEqual(expect.arrayContaining(['red', 'green']));
+    });
+
+    it('stops images from animating when set to "noAnimation"', async () => {
+      const w = new BrowserWindow({ show: true, width: 200, height: 200 });
+      w.webContents.setImageAnimationPolicy('noAnimation');
+      await loadAnimation(w);
+      // Wait for the first (red) frame to be painted so the samples below are
+      // of the image, then fail only if it ever moves on to the green frame.
+      await waitUntil(async () => (await sampleColor(w)) === 'red');
+      const seen = new Set<string>();
+      for (let i = 0; i < 10; i++) {
+        seen.add(await sampleColor(w));
+        await setTimeout(100);
+      }
+      expect([...seen]).not.toContain('green');
+    });
+  });
+
   describe('insertCSS', () => {
     afterEach(closeAllWindows);
     it('supports inserting CSS', async () => {
@@ -2602,6 +3725,61 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: true, webPreferences: { disableWakeLocks: true } });
       await w.loadFile(blankPage);
       assert(!(await w.webContents.executeJavaScript(wakeLockCode)));
+    });
+  });
+
+  describe('centerSelection()', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    it('scrolls the selection to the middle of the viewport', async () => {
+      // Shown so the page can take focus and its selection is the active one
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await focusWebContents(w.webContents);
+      const getScrollY = (): Promise<number> => w.webContents.executeJavaScript('window.scrollY');
+
+      // Selects a line of text far below the fold
+      await w.webContents.executeJavaScript(`{
+        document.body.style.margin = '0';
+        document.body.style.height = '10000px';
+        const target = document.createElement('p');
+        target.textContent = 'Center me';
+        target.style.position = 'absolute';
+        target.style.top = '6000px';
+        target.style.margin = '0';
+        document.body.appendChild(target);
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }`);
+      expect(await getScrollY()).toBe(0);
+      const getSelectionRect = (): Promise<{ top: number; height: number; innerHeight: number }> =>
+        w.webContents.executeJavaScript(`(() => {
+          const { top, height } = window.getSelection().getRangeAt(0).getBoundingClientRect();
+          return { top, height, innerHeight: window.innerHeight };
+        })()`);
+      const before = await getSelectionRect();
+      expect(before.height).toBeGreaterThan(0);
+      expect(before.top).toBeGreaterThan(before.innerHeight);
+
+      // How far the middle of the selection is from the middle of the viewport
+      const getOffCenter = async () => {
+        const { top, height, innerHeight } = await getSelectionRect();
+        return Math.abs(top + height / 2 - innerHeight / 2);
+      };
+
+      // centerSelection() reaches the renderer asynchronously. The scroll it
+      // makes (RevealSelection -> ScrollRectToVisible) is instant, since the
+      // page does not use CSS smooth scrolling, so wait for the centered
+      // position itself rather than for the first change in scroll offset.
+      w.webContents.centerSelection();
+      await waitUntil(async () => (await getOffCenter()) < 10).catch(async () => {
+        expect(await getOffCenter(), 'distance of the selection from the middle of the viewport').toBeLessThan(10);
+      });
+
+      expect(await getOffCenter()).toBeLessThan(10);
     });
   });
 
@@ -4737,11 +5915,7 @@ describe('webContents module', () => {
 
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
-  describe('destroy()', { retry: 3 }, () => {
-    // These tests are flaky on Windows CI and we don't know why, but their
-    // purpose is to make sure Electron does not crash so it is fine to retry
-    // them a few times.
-
+  describe('destroy()', () => {
     let server: http.Server;
     let serverUrl: string;
 
@@ -5475,7 +6649,10 @@ describe('webContents module', () => {
 
     type PageSizeString = Exclude<Required<Electron.PrintToPDFOptions>['pageSize'], Electron.Size>;
 
-    it('with custom page sizes', async () => {
+    describe('with custom page sizes', () => {
+      // One print and parse per test: printing and parsing all eleven sizes in
+      // a single test left too little headroom in the per-test timeout on slow
+      // Windows and macOS x64 CI hosts.
       const paperFormats: Record<PageSizeString, ElectronInternal.PageSize> = {
         Letter: { width: 8.5, height: 11 },
         Legal: { width: 8.5, height: 14 },
@@ -5490,25 +6667,15 @@ describe('webContents module', () => {
         A6: { width: 4.13, height: 5.83 }
       };
 
-      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      for (const [format, size] of Object.entries(paperFormats) as [PageSizeString, ElectronInternal.PageSize][]) {
+        it(format, async () => {
+          await w.loadFile(path.join(fixturesPath, 'api', 'print-to-pdf-small.html'));
+          const pdfInfo = await readPDF(await w.webContents.printToPDF({ pageSize: format }));
 
-      const formats = Object.keys(paperFormats) as PageSizeString[];
-      const pdfs = [];
-      for (const format of formats) {
-        pdfs.push(await w.webContents.printToPDF({ pageSize: format }));
-      }
-
-      const pdfInfos = await readPDFs(pdfs);
-
-      const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
-
-      for (const [i, format] of formats.entries()) {
-        // page.view is [top, left, width, height].
-        const width = pdfInfos[i].view[2] / 72;
-        const height = pdfInfos[i].view[3] / 72;
-
-        expect(approxEq(width, paperFormats[format].width)).toBe(true);
-        expect(approxEq(height, paperFormats[format].height)).toBe(true);
+          // page.view is [top, left, width, height], in points.
+          expect(Math.abs(pdfInfo.view[2] / 72 - size.width)).toBeLessThanOrEqual(0.01);
+          expect(Math.abs(pdfInfo.view[3] / 72 - size.height)).toBeLessThanOrEqual(0.01);
+        });
       }
     });
 
@@ -5968,13 +7135,14 @@ describe('webContents module', () => {
         }
       });
 
-      const draggablePage = path.join(fixturesPath, 'pages', 'draggable-page.html');
-      await mainView.webContents.loadFile(draggablePage);
-
       w.contentView.addChildView(mainView);
 
       const { width, height } = w.getContentBounds();
       mainView.setBounds({ x: 0, y: 0, width, height });
+
+      // Attach and size the view before loading so input isn't sent to a 0x0 widget.
+      const draggablePage = path.join(fixturesPath, 'pages', 'draggable-page.html');
+      await mainView.webContents.loadFile(draggablePage);
 
       const promise = once(mainView.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
 

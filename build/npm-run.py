@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
 import os
+import shutil
 import subprocess
 import sys
 
 SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
 cmd = "npm"
 if sys.platform == "win32":
-    cmd += ".cmd"
+    # Prefer npm.cmd, fall back to npm.exe if it is not on PATH.
+    cmd = shutil.which("npm.cmd") or shutil.which("npm.exe") or "npm.cmd"
 args = [cmd, "run",
     "--prefix",
     SOURCE_ROOT
