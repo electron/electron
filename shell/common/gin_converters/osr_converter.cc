@@ -51,12 +51,12 @@ std::string OsrWidgetTypeToString(content::WidgetType type) {
 
 struct OffscreenReleaseHolderMonitor {
   explicit OffscreenReleaseHolderMonitor(
-      electron::OffscreenReleaserHolder* holder)
-      : holder_(holder) {
-    CHECK(holder);
+      scoped_refptr<electron::OffscreenReleaserHolder> holder)
+      : holder_(std::move(holder)) {
+    CHECK(holder_);
   }
 
-  void ReleaseTexture() { holder_.ClearAndDelete(); }
+  void ReleaseTexture() { holder_.reset(); }
 
   [[nodiscard]] bool IsTextureReleased() const { return holder_ == nullptr; }
 
@@ -69,7 +69,7 @@ struct OffscreenReleaseHolderMonitor {
   void ResetPersistent() const { persistent_->Reset(); }
 
  private:
-  raw_ptr<electron::OffscreenReleaserHolder> holder_;
+  scoped_refptr<electron::OffscreenReleaserHolder> holder_;
   std::unique_ptr<v8::Persistent<v8::Value>> persistent_;
 };
 
