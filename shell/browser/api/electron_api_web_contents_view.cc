@@ -186,6 +186,7 @@ class WebContentsViewHost final : public View::Host,
   void RemoveFromParent();
   void StopObservingWindow();
   void UnregisterDraggableRegionProvider();
+  void ExitFullscreenAndClearOwner(base::WeakPtr<NativeWindow> old_window);
   void OnContentsBoundsChanging();
   bool HasLivePage();
   void ScheduleWindowControlsOverlayUpdate();
@@ -381,15 +382,40 @@ void WebContentsViewHost::OnViewRemovedFromWidget(views::View* observed_view) {
     return;
   }
 
+  if (!web_contents->web_contents()->IsFullscreen()) {
+    web_contents->SetOwnerWindow(nullptr);
+    return;
+  }
+
   // Exiting HTML fullscreen restores |old_window|, which needs the owner, so
-  // do it before clearing that. The view has left the window, so resizing the
-  // window won't resize the page; have it told directly instead.
+  // do it before clearing that. It emits events to JavaScript, which must not
+  // run while views is still removing the view and iterating the tree.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&WebContentsViewHost::ExitFullscreenAndClearOwner,
+                     weak_factory_.GetWeakPtr(), old_window->GetWeakPtr()));
+}
+
+void WebContentsViewHost::ExitFullscreenAndClearOwner(
+    base::WeakPtr<NativeWindow> old_window) {
+  // Do nothing if the view has been added to a window again since, or the
+  // webContents has another owner.
+  WebContents* web_contents = GetLiveWebContents();
+  if (!old_window || !web_contents || !GetOwnedInspectableView() ||
+      view()->GetWidget() || web_contents->owner_window() != old_window.get()) {
+    return;
+  }
+
+  // The view has left the window, so resizing the window won't resize the
+  // page; have it told directly instead.
   if (web_contents->web_contents()->IsFullscreen()) {
     web_contents->web_contents()->ExitFullscreen(/*will_cause_resize=*/false);
     // Exiting can spin a nested run loop and emits events to JavaScript.
     web_contents = GetLiveWebContents();
-    if (!web_contents || web_contents->owner_window() != old_window)
+    if (!web_contents || !old_window ||
+        web_contents->owner_window() != old_window.get()) {
       return;
+    }
   }
 
   web_contents->SetOwnerWindow(nullptr);
