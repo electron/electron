@@ -5040,6 +5040,137 @@ describe('font fallback', () => {
   });
 });
 
+// Font strings go through Blink's CSS font shorthand parser
+// (CSSParser::ParseFont), which Chromium cherry-picks touch from time to time.
+// See https://github.com/electron/electron/issues/55616: leading whitespace was
+// rejected, so canvas text silently fell back to the default "10px sans-serif".
+// These checks are about parsing and relative metrics, not which system font
+// is installed, so they hold on every platform and CI image.
+describe('canvas font parsing', () => {
+  let w: BrowserWindow;
+  beforeAll(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadURL('about:blank');
+  });
+  afterAll(closeAllWindows);
+
+  const cases = [
+    ['24px monospace', '24px monospace'],
+    [' 24px monospace', '24px monospace'],
+    ['\t24px monospace', '24px monospace'],
+    ['  15px sans-serif  ', '15px sans-serif'],
+    ['bold 20PX   SERIF', 'bold 20px serif']
+  ];
+
+  it.each(cases)('CanvasRenderingContext2D.font accepts %j', async (input, expected) => {
+    const font = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      ctx.font = ${JSON.stringify(input)};
+      ctx.font;
+    }`);
+    expect(font).toBe(expected);
+  });
+
+  it.each(cases)('OffscreenCanvasRenderingContext2D.font accepts %j', async (input, expected) => {
+    const font = await w.webContents.executeJavaScript(`{
+      const ctx = new OffscreenCanvas(1, 1).getContext('2d');
+      ctx.font = ${JSON.stringify(input)};
+      ctx.font;
+    }`);
+    expect(font).toBe(expected);
+  });
+
+  it('OffscreenCanvas in a worker accepts a font with leading whitespace', async () => {
+    const font = await w.webContents.executeJavaScript(`new Promise((resolve) => {
+      const src = "const ctx = new OffscreenCanvas(1, 1).getContext('2d'); ctx.font = ' 24px monospace'; postMessage(ctx.font);";
+      const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+    })`);
+    expect(font).toBe('24px monospace');
+  });
+
+  it.each(cases)('document.fonts.check() accepts %j', async (input) => {
+    const result = await w.webContents.executeJavaScript(`{
+      let r;
+      try { r = document.fonts.check(${JSON.stringify(input)}); } catch (e) { r = e.name; }
+      r;
+    }`);
+    expect(result).toBe(true);
+  });
+
+  it('measures text with the size from a font with leading whitespace', async () => {
+    // What users actually saw: xterm.js glyphs drawn at 10px instead of 24px.
+    const widths = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      const measure = (font) => { ctx.font = '10px sans-serif'; ctx.font = font; return ctx.measureText('MMMMMMMMMM').width; };
+      ({ plain: measure('24px monospace'), spaced: measure(' 24px monospace'), fallback: measure('10px sans-serif') });
+    }`);
+    expect(widths.spaced).toBe(widths.plain);
+    expect(widths.spaced).toBeGreaterThan(widths.fallback);
+  });
+});
+
+// Ahem (spec/fixtures/fonts/Ahem.ttf, from web-platform-tests) draws nearly
+// every glyph as a 1em square with a 1em advance, an 0.8em ascent and an 0.2em
+// descent, so these metrics are exact on every platform whatever fonts the
+// system has installed.
+describe('web font metrics (Ahem)', () => {
+  let w: BrowserWindow;
+  beforeAll(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadFile(path.join(fixturesPath, 'fonts', 'ahem.html'));
+    await w.webContents.executeJavaScript("document.fonts.load('20px AhemTest')");
+  });
+  afterAll(closeAllWindows);
+
+  it('loads the @font-face', async () => {
+    const result = await w.webContents.executeJavaScript(`({
+      faces: [...document.fonts].map((f) => [f.family, f.status]),
+      check: document.fonts.check('20px AhemTest')
+    })`);
+    expect(result.faces).toEqual([['AhemTest', 'loaded']]);
+    expect(result.check).toBe(true);
+  });
+
+  it('lays out DOM text with exact Ahem metrics', async () => {
+    const rects = await w.webContents.executeJavaScript(`
+      Object.fromEntries(['s20', 's37', 'fallback'].map((id) => {
+        const { width, height } = document.getElementById(id).getBoundingClientRect();
+        return [id, { width, height }];
+      }))
+    `);
+    expect(rects.s20).toEqual({ width: 80, height: 20 });
+    expect(rects.s37).toEqual({ width: 185, height: 37 });
+    // Same text and size in the system monospace font must not match, or the
+    // assertions above would not prove the web font was used.
+    expect(rects.fallback.width).not.toBe(80);
+  });
+
+  it('measures canvas text with exact Ahem metrics', async () => {
+    const metrics = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      const measure = (font, text) => {
+        ctx.font = font;
+        const m = ctx.measureText(text);
+        return { width: m.width, ascent: m.fontBoundingBoxAscent, descent: m.fontBoundingBoxDescent };
+      };
+      ({
+        s20: measure('20px AhemTest', 'XXXX'),
+        s37: measure('37px AhemTest', 'XpX X'),
+        spaced: measure(' 20px AhemTest', 'XXXX'),
+        fallback: measure('20px monospace', 'XXXX')
+      });
+    }`);
+    // Canvas widths are summed in single precision (e.g. 79.99993896484375).
+    expect(metrics.s20.width).toBeCloseTo(80, 2);
+    expect(metrics.s20.ascent).toBe(16);
+    expect(metrics.s20.descent).toBe(4);
+    expect(metrics.s37.width).toBeCloseTo(185, 2);
+    expect(metrics.spaced).toEqual(metrics.s20);
+    expect(metrics.fallback.width).not.toBe(80);
+  });
+});
+
 describe('iframe using HTML fullscreen API while window is OS-fullscreened', { tags: ['serial'] }, () => {
   const fullscreenChildHtml = fs.promises.readFile(path.join(fixturesPath, 'pages', 'fullscreen-oopif.html'));
   let w: BrowserWindow;
