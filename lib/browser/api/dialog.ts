@@ -223,7 +223,7 @@ const messageBox = (sync: boolean, window: BaseWindow | null, options?: MessageB
     id = getNextId();
     // Close the message box when signal is aborted.
     if (signal.aborted) {
-      return Promise.resolve({ cancelId, checkboxChecked });
+      return Promise.resolve({ response: cancelId, checkboxChecked });
     }
     signal.addEventListener('abort', () => dialogBinding._closeMessageBox(id));
   }
