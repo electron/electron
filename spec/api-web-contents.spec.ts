@@ -14,6 +14,7 @@ import {
 import * as dbus from 'dbus-native';
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -1838,6 +1839,11 @@ describe('webContents module', { retry: 0 }, () => {
       expect(await saveFileCalls()).toHaveLength(2);
     });
   });
+
+  // DevTools preferences live in the session's Preferences file, and an
+  // in-memory partition reads the default session's file. A new persisted
+  // partition gets a Preferences file of its own.
+  const freshDevToolsPartition = (name: string) => `persist:${name}-${randomUUID()}`;
 
   // Sends the DevTools frontend's embedder messages straight from the
   // frontend, the way DevTools itself does, and checks what Electron does
