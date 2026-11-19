@@ -537,6 +537,19 @@ describe('BrowserView module', () => {
       await destroyed;
       w.removeBrowserView(view);
     });
+
+    it('leaves undocked DevTools owned by the window', async () => {
+      view = new BrowserView();
+      w.addBrowserView(view);
+      await view.webContents.loadURL('about:blank');
+      const opened = once(view.webContents, 'devtools-opened');
+      view.webContents.openDevTools({ mode: 'detach', activate: false });
+      await opened;
+      const devtools = view.webContents.devToolsWebContents!;
+      expect(BrowserWindow.fromWebContents(devtools)).toBe(w);
+      w.removeBrowserView(view);
+      expect(BrowserWindow.fromWebContents(devtools)).toBe(w);
+    });
   });
 
   describe('BrowserWindow.getBrowserViews()', () => {
