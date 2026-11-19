@@ -14,7 +14,9 @@ Rebase it against root_build_dir like the other arguments. Actions run
 with the build dir as their working directory, so pak_util.py opens the
 same file.
 
-This should be upstreamed.
+This should be upstreamed. Drop this patch once upstream
+tools/grit/repack.gni passes repack_allowlist through
+rebase_path(..., root_build_dir); check that line on each Chromium roll.
 
 diff --git a/tools/grit/repack.gni b/tools/grit/repack.gni
 index e662274173837ab2c6946651a84985fdd858a6ea..f6ed7c2ff47efdb1667e90a038bd02e01b34ee85 100644
