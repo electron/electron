@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 05:34:25 +0000
+Subject: build: pass the repack allowlist relative to the build dir
+
+repack() passes --allowlist through rebase_path() without a base
+directory, which gives a system-absolute path, so the command line of
+every repack step with an allowlist embeds the absolute path of the
+checkout and output directory. That makes the step impossible to run on
+a remote worker, whose checkout lives elsewhere, and puts the local path
+into its cache key, so no two checkouts ever share a cache hit for it.
+
+Rebase it against root_build_dir like the other arguments. Actions run
+with the build dir as their working directory, so pak_util.py opens the
+same file.
+
+This should be upstreamed. Drop this patch once upstream
+tools/grit/repack.gni passes repack_allowlist through
+rebase_path(..., root_build_dir); check that line on each Chromium roll.
+
+diff --git a/tools/grit/repack.gni b/tools/grit/repack.gni
+index fff9c32e154cf76096878cf574b84b8d301a68df..b27e4d8e1c4979bbbe2f90c80a5577b8036f2aa6 100644
+--- a/tools/grit/repack.gni
++++ b/tools/grit/repack.gni
+@@ -76,7 +76,7 @@ template("repack") {
+     args = [ "repack" ]
+     if (defined(invoker.repack_allowlist)) {
+       inputs += [ invoker.repack_allowlist ]
+-      _rebased_allowlist = rebase_path(invoker.repack_allowlist)
++      _rebased_allowlist = rebase_path(invoker.repack_allowlist, root_build_dir)
+       args += [ "--allowlist=$_rebased_allowlist" ]
+       args += [ "--suppress-removed-key-output" ]
+     }
