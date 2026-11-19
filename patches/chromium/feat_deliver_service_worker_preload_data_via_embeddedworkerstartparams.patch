@@ -33,10 +33,10 @@ index 8a3e12a048975346d03ac6d6eb0536c3d2c45bb8..c71d11cb04f2320a50d26cae5b75d48f
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index bf9b922b854f85b5909fa13ae902cebe3cf5c9e9..5402a3da761ed08073c766811a5f7eff9687ce9f 100644
+index 2a741acfe600db92c5ffc48778ad9e543006eed7..427dc6ce9fc598f0483cd9a139a4ebc1ad4cb2d5 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -866,6 +866,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -859,6 +859,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,10 +51,10 @@ index bf9b922b854f85b5909fa13ae902cebe3cf5c9e9..5402a3da761ed08073c766811a5f7eff
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 0bec391ef74bdb4336316ab619f360ef9ae207ff..4ab85b119ca59fdd94c667b4bfe27543152df8e6 100644
+index a74fb8a2cdbfd28931b7e7b59d84f8614e8156a4..1a6380a83aaf5dfbcbf776675283d25624b10b3c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1348,6 +1348,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1340,6 +1340,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  
@@ -256,10 +256,10 @@ index e43859ccd78ec553ccdab98b0fee6a4de5f6d453..d861170b314feb30902574c1972df047
        std::make_unique<ServiceWorkerGlobalScopeProxy>(
            *this, *worker_context_client_, initiator_thread_task_runner),
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index bd25b1757e3cf82e1f6dd1613e528f367f607d62..0bd9933b7dac12a666dd4066ab4dc5fe958703ed 100644
+index ac1692df361c183c7e9e7338e0faf1c02e095b14..aeb41db1f19c42382022d9e8b3f862177473d0f2 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -329,6 +329,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
+@@ -328,6 +328,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
    return WorkerGlobalScope()->HasUsbEventHandlers();
  }
  

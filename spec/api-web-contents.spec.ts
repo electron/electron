@@ -1,5 +1,7 @@
 import {
   BrowserWindow,
+  ClipboardItem,
+  clipboard,
   ipcMain,
   webContents,
   session,
@@ -14,6 +16,7 @@ import {
 import * as dbus from 'dbus-native';
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -29,6 +32,7 @@ import { containsText, readPDF } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
+  focusWebContents,
   waitUntil,
   listen,
   ifit,
@@ -2052,6 +2056,76 @@ describe('webContents module', { retry: 0 }, () => {
     });
   });
 
+  // toggleDevTools() opens DevTools in the last saved dock state. DevTools
+  // preferences, including that state, live in the session's Preferences file,
+  // and an in-memory partition reads the default session's file, so it can
+  // inherit an "undocked" state saved by an earlier test. A new persisted
+  // partition gets a Preferences file of its own, so the DevTools always start
+  // docked into the hidden window instead of opening a window that could take
+  // focus from other spec files running at the same time.
+  const freshDevToolsPartition = (name: string) => `persist:${name}-${randomUUID()}`;
+
+  describe('toggleDevTools() API', () => {
+    afterEach(closeAllWindows);
+
+    it('opens DevTools when they are closed', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-toggle') }
+      });
+      await w.loadURL('about:blank');
+      expect(w.webContents.isDevToolsOpened()).toBe(false);
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.toggleDevTools();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
+    });
+
+    it('closes DevTools when they are open', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-toggle') }
+      });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'right', activate: false });
+      await devtoolsOpened;
+      const devtoolsClosed = once(w.webContents, 'devtools-closed');
+      w.webContents.toggleDevTools();
+      await devtoolsClosed;
+      expect(w.webContents.isDevToolsOpened()).toBe(false);
+    });
+  });
+
+  describe('isDevToolsFocused() API', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    it('returns false when DevTools are closed', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      expect(w.webContents.isDevToolsFocused()).toBe(false);
+    });
+
+    for (const mode of ['detach', 'bottom'] as const) {
+      it(`returns true once ${mode} DevTools take focus and false after they close`, async () => {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+        const shown = once(w, 'show');
+        w.show();
+        await shown;
+        const devtoolsOpened = once(w.webContents, 'devtools-opened');
+        const devtoolsFocused = once(w.webContents, 'devtools-focused');
+        w.webContents.openDevTools({ mode, activate: true });
+        await Promise.all([devtoolsOpened, devtoolsFocused]);
+        expect(w.webContents.isDevToolsFocused()).toBe(true);
+        const devtoolsClosed = once(w.webContents, 'devtools-closed');
+        w.webContents.closeDevTools();
+        await devtoolsClosed;
+        expect(w.webContents.isDevToolsFocused()).toBe(false);
+      });
+    }
+  });
+
   describe('DevTools showItemInFolder embedder message', () => {
     afterEach(closeAllWindows);
 
@@ -2256,6 +2330,346 @@ describe('webContents module', { retry: 0 }, () => {
     });
   });
 
+  // Sends the DevTools frontend's embedder messages straight from the
+  // frontend, the way DevTools itself does, and checks what Electron does
+  // with them.
+  describe('DevTools embedder messages', () => {
+    afterEach(closeAllWindows);
+
+    // Request and stream ids well above the ones the frontend hands out, so
+    // its own indexing, searches and streams can't be mistaken for ours.
+    let nextId = 1_000_000;
+
+    // Opens DevTools for a new window and records the calls the embedder
+    // makes back into the frontend, then passes them on as usual.
+    async function openDevTools(partition?: string) {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition } });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      const devtools = w.webContents.devToolsWebContents!;
+      await waitUntil(() => devtools.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+      await devtools.executeJavaScript(`
+        window.embedderCalls = [];
+        for (const name of ['fileSystemAdded', 'fileSystemRemoved', 'indexingDone', 'searchCompleted']) {
+          const original = DevToolsAPI[name];
+          DevToolsAPI[name] = function (...args) {
+            window.embedderCalls.push([name, ...args]);
+            return original.apply(this, args);
+          };
+        }
+        true;
+      `);
+      return { w, devtools };
+    }
+
+    // Builds the source of a call to a DevTools frontend function. The
+    // arguments are passed as JSON, followed by any trailing arguments given
+    // as code, such as a callback.
+    const frontendCall = (fn: string, args: unknown[], ...trailingCode: string[]) =>
+      `${fn}(${[...args.map((arg) => JSON.stringify(arg)), ...trailingCode].join(', ')})`;
+
+    // Calls an InspectorFrontendHost method from the frontend.
+    const callHost = (devtools: WebContents, method: string, ...args: unknown[]) =>
+      devtools.executeJavaScript(frontendCall(`InspectorFrontendHost.${method}`, args));
+
+    // Calls an InspectorFrontendHost method that takes a trailing callback
+    // and resolves with what the embedder sent back.
+    const callWithReply = (devtools: WebContents, method: string, ...args: unknown[]) =>
+      devtools.executeJavaScript(
+        `new Promise((resolve) => ${frontendCall(`InspectorFrontendHost.${method}`, args, 'resolve')})`
+      );
+
+    // Waits for the embedder to call the recorded frontend function `name`
+    // with `firstArg`, and returns the arguments of that call.
+    const waitForEmbedderCall = async (devtools: WebContents, name: string, firstArg: unknown) => {
+      let call: unknown[] | undefined;
+      await waitUntil(async () => {
+        const calls: unknown[][] = await devtools.executeJavaScript('window.embedderCalls');
+        call = calls.find(([callName, arg]) => callName === name && arg === firstArg);
+        return call !== undefined;
+      });
+      return call!.slice(1) as any[];
+    };
+
+    describe('loadNetworkResource', () => {
+      let server: http.Server;
+      let serverUrl: string;
+
+      beforeAll(async () => {
+        server = http.createServer((req, res) => {
+          if (req.url === '/resource') {
+            res.writeHead(200, { 'Content-Type': 'text/plain', 'X-DevTools-Test': 'yes' });
+            res.end(`hello ${req.headers['x-requested-by']}`);
+          } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end('not found');
+          }
+        });
+        serverUrl = (await listen(server)).url;
+      });
+
+      afterAll(() => {
+        server.close();
+      });
+
+      // Loads a resource the way DevTools loads source maps, collecting the
+      // chunks the embedder streams into the frontend for it.
+      const loadNetworkResource = (devtools: WebContents, resourceUrl: string, headers = '') => {
+        const streamId = nextId++;
+        return devtools.executeJavaScript(`new Promise((resolve) => {
+          const chunks = [];
+          const streamWrite = DevToolsAPI.streamWrite;
+          DevToolsAPI.streamWrite = function (id, chunk, encoded) {
+            if (id !== ${JSON.stringify(streamId)}) return streamWrite.apply(this, arguments);
+            chunks.push(encoded ? atob(chunk) : chunk);
+          };
+          ${frontendCall(
+            'InspectorFrontendHost.loadNetworkResource',
+            [resourceUrl, headers, streamId],
+            `(response) => {
+              DevToolsAPI.streamWrite = streamWrite;
+              resolve({ response, body: chunks.join('') });
+            }`
+          )};
+        })`);
+      };
+
+      it('streams an http resource with the request headers DevTools passed', async () => {
+        const { devtools } = await openDevTools();
+        const { response, body } = await loadNetworkResource(
+          devtools,
+          `${serverUrl}/resource`,
+          'X-Requested-By: devtools'
+        );
+        expect(response.statusCode).toBe(200);
+        // Like Chrome, the embedder reports response headers under the names
+        // the server sent rather than lowercasing them.
+        expect(response.headers['X-DevTools-Test']).toBe('yes');
+        expect(body).toBe('hello devtools');
+      });
+
+      it('reports the status of an http error response', async () => {
+        const { devtools } = await openDevTools();
+        const { response } = await loadNetworkResource(devtools, `${serverUrl}/missing`);
+        expect(response.statusCode).toBe(404);
+      });
+
+      it('reports 404 for an invalid URL without making a request', async () => {
+        const { devtools } = await openDevTools();
+        const { response, body } = await loadNetworkResource(devtools, 'not a url');
+        expect(response).toEqual({ statusCode: 404 });
+        expect(body).toBe('');
+      });
+
+      it('streams a file: URL', async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-load-'));
+        defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+        const file = path.join(dir, 'source.js.map');
+        fs.writeFileSync(file, '{"version":3}');
+
+        const { devtools } = await openDevTools();
+        const { response, body } = await loadNetworkResource(devtools, url.pathToFileURL(file).href);
+        expect(response.statusCode).toBe(200);
+        expect(body).toBe('{"version":3}');
+      });
+
+      it('streams a URL served by a protocol handler on the session', async () => {
+        const partition = `devtools-load-${randomUUID()}`;
+        const { protocol } = session.fromPartition(partition);
+        protocol.handle(
+          'devtools-embedder-test',
+          (request) => new Response(`handled ${request.url}`, { headers: { 'X-DevTools-Test': 'protocol' } })
+        );
+        defer(() => protocol.unhandle('devtools-embedder-test'));
+
+        const { devtools } = await openDevTools(partition);
+        const { response, body } = await loadNetworkResource(devtools, 'devtools-embedder-test://resource/a');
+        expect(response.statusCode).toBe(200);
+        expect(response.headers['x-devtools-test']).toBe('protocol');
+        expect(body).toBe('handled devtools-embedder-test://resource/a');
+      });
+    });
+
+    describe('openInNewTab', () => {
+      it('emits devtools-open-url on the inspected webContents instead of opening anything', async () => {
+        const { w, devtools } = await openDevTools();
+        const windowCount = BrowserWindow.getAllWindows().length;
+        const opened = once(w.webContents, 'devtools-open-url');
+        await callHost(devtools, 'openInNewTab', 'https://example.com/from-devtools');
+        const [, openedUrl] = await opened;
+        expect(openedUrl).toBe('https://example.com/from-devtools');
+        expect(BrowserWindow.getAllWindows()).toHaveLength(windowCount);
+      });
+
+      it('emits devtools-search-query for openSearchResultsInNewTab', async () => {
+        const { w, devtools } = await openDevTools();
+        const searched = once(w.webContents, 'devtools-search-query');
+        await callHost(devtools, 'openSearchResultsInNewTab', 'electron devtools');
+        const [, query] = await searched;
+        expect(query).toBe('electron devtools');
+      });
+    });
+
+    describe('preferences', () => {
+      // DevTools preferences live in the session, so each test gets its own.
+      const freshPartition = () => freshDevToolsPartition('devtools-prefs');
+
+      it('sets, reads and removes a preference', async () => {
+        const { devtools } = await openDevTools(freshPartition());
+
+        await callHost(devtools, 'setPreference', 'embedder-test', 'one');
+        expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBe('one');
+        expect(await callWithReply(devtools, 'getPreferences')).toHaveProperty('embedder-test', 'one');
+
+        await callHost(devtools, 'setPreference', 'embedder-test', 'two');
+        expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBe('two');
+
+        await callHost(devtools, 'removePreference', 'embedder-test');
+        expect(await callWithReply(devtools, 'getPreference', 'embedder-test')).toBeUndefined();
+        expect(await callWithReply(devtools, 'getPreferences')).not.toHaveProperty('embedder-test');
+      });
+
+      it('clears every stored preference', async () => {
+        const { devtools } = await openDevTools(freshPartition());
+
+        await callHost(devtools, 'setPreference', 'embedder-test-a', 'a');
+        await callHost(devtools, 'setPreference', 'embedder-test-b', 'b');
+        expect(await callWithReply(devtools, 'getPreferences')).toMatchObject({
+          'embedder-test-a': 'a',
+          'embedder-test-b': 'b'
+        });
+
+        await callHost(devtools, 'clearPreferences');
+        const prefs = await callWithReply(devtools, 'getPreferences');
+        expect(prefs).not.toHaveProperty('embedder-test-a');
+        expect(prefs).not.toHaveProperty('embedder-test-b');
+      });
+
+      it('keeps preferences for later DevTools windows in the same session only', async () => {
+        const partition = freshPartition();
+        const first = await openDevTools(partition);
+        await callHost(first.devtools, 'setPreference', 'embedder-test', 'kept');
+        // Make sure the write has landed before DevTools goes away.
+        expect(await callWithReply(first.devtools, 'getPreference', 'embedder-test')).toBe('kept');
+        const closed = once(first.w.webContents, 'devtools-closed');
+        first.w.webContents.closeDevTools();
+        await closed;
+
+        const second = await openDevTools(partition);
+        expect(await callWithReply(second.devtools, 'getPreference', 'embedder-test')).toBe('kept');
+
+        const other = await openDevTools(freshPartition());
+        expect(await callWithReply(other.devtools, 'getPreference', 'embedder-test')).toBeUndefined();
+      });
+    });
+
+    describe('searchInPath', () => {
+      const makeWorkspace = () => {
+        // The indexer reports real paths, so resolve symlinks such as /var
+        // on macOS up front.
+        const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-search-')));
+        defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+        fs.writeFileSync(path.join(dir, 'match.js'), 'const value = "devtoolsEmbedderNeedle";\n');
+        fs.writeFileSync(path.join(dir, 'other.js'), 'const value = "something else";\n');
+        return dir;
+      };
+
+      // Asks the embedder to index `dir` and waits until it reports that
+      // indexing is done.
+      const indexPath = async (devtools: WebContents, dir: string) => {
+        const requestId = nextId++;
+        await callHost(devtools, 'indexPath', requestId, dir, '[]');
+        await waitForEmbedderCall(devtools, 'indexingDone', requestId);
+      };
+
+      const searchInPath = async (devtools: WebContents, dir: string, query: string) => {
+        const requestId = nextId++;
+        await callHost(devtools, 'searchInPath', requestId, dir, query);
+        const [, searchedPath, files] = await waitForEmbedderCall(devtools, 'searchCompleted', requestId);
+        expect(searchedPath).toBe(dir);
+        return files;
+      };
+
+      it('finds matching files in an indexed workspace until it is removed', async () => {
+        const dir = makeWorkspace();
+        const { w, devtools } = await openDevTools();
+
+        w.webContents.addWorkSpace(dir);
+        const [error, fileSystem] = await waitForEmbedderCall(devtools, 'fileSystemAdded', '');
+        expect(error).toBe('');
+        expect(fileSystem.fileSystemPath).toBe(dir);
+
+        await indexPath(devtools, dir);
+
+        expect(await searchInPath(devtools, dir, 'devtoolsEmbedderNeedle')).toEqual([path.join(dir, 'match.js')]);
+        expect(await searchInPath(devtools, dir, 'notInAnyFileAtAll')).toEqual([]);
+
+        w.webContents.removeWorkSpace(dir);
+        await waitForEmbedderCall(devtools, 'fileSystemRemoved', dir);
+        expect(await searchInPath(devtools, dir, 'devtoolsEmbedderNeedle')).toEqual([]);
+      });
+
+      it('returns no results for a folder that was never added as a workspace', async () => {
+        const dir = makeWorkspace();
+        const { devtools } = await openDevTools();
+
+        // Indexing a folder that isn't a workspace finishes straight away
+        // without reading it.
+        await indexPath(devtools, dir);
+
+        expect(await searchInPath(devtools, dir, 'devtoolsEmbedderNeedle')).toEqual([]);
+      });
+    });
+
+    describe('reattach', () => {
+      // Sends a protocol message over the frontend's own connection and
+      // resolves with the response, keeping it from the frontend.
+      const sendProtocolMessage = (devtools: WebContents, method: string, params: object = {}) => {
+        const message = { id: nextId++, method, params };
+        return devtools.executeJavaScript(`new Promise((resolve) => {
+          const dispatchMessage = DevToolsAPI.dispatchMessage;
+          DevToolsAPI.dispatchMessage = function (raw) {
+            const response = JSON.parse(raw);
+            if (response.id !== ${JSON.stringify(message.id)}) return dispatchMessage.apply(this, arguments);
+            DevToolsAPI.dispatchMessage = dispatchMessage;
+            resolve(response);
+          };
+          ${frontendCall('DevToolsAPI.sendMessageToEmbedder', ['dispatchProtocolMessage', [JSON.stringify(message)], null])};
+        })`);
+      };
+
+      const isPrintMedia = (w: BrowserWindow) => w.webContents.executeJavaScript('matchMedia("print").matches');
+
+      it('gives the frontend a fresh session on the inspected page', async () => {
+        const { w, devtools } = await openDevTools();
+        let closed = false;
+        w.webContents.once('devtools-closed', () => {
+          closed = true;
+        });
+
+        // Emulation overrides belong to the session that set them.
+        const emulated = await sendProtocolMessage(devtools, 'Emulation.setEmulatedMedia', { media: 'print' });
+        expect(emulated.error).toBeUndefined();
+        await waitUntil(() => isPrintMedia(w));
+
+        await callWithReply(devtools, 'reattach');
+
+        // The old session is gone, and its override with it.
+        await waitUntil(async () => !(await isPrintMedia(w)));
+        // The new session is attached to the same page.
+        const evaluated = await sendProtocolMessage(devtools, 'Runtime.evaluate', {
+          expression: 'location.href',
+          returnByValue: true
+        });
+        expect(evaluated.result.result.value).toBe('about:blank');
+        expect(w.webContents.isDevToolsOpened()).toBe(true);
+        expect(closed).toBe(false);
+      });
+    });
+  });
+
   describe('DevTools native integration', () => {
     afterEach(closeAllWindows);
 
@@ -2384,6 +2798,72 @@ describe('webContents module', { retry: 0 }, () => {
         expect(roundTripped).toBe(true);
         expect(emittedContextMenu).toBe(false);
       });
+    });
+  });
+
+  describe('inspectSharedWorker() and inspectServiceWorker()', () => {
+    afterEach(closeAllWindows);
+
+    let server: http.Server;
+    let serverUrl: string;
+
+    beforeAll(async () => {
+      server = http.createServer((req, res) => {
+        if (req.url === '/shared-worker.js') {
+          res.writeHead(200, { 'Content-Type': 'text/javascript' });
+          res.end("self.onconnect = (e) => { e.ports[0].postMessage('connected'); };");
+        } else if (req.url === '/service-worker.js') {
+          res.writeHead(200, { 'Content-Type': 'text/javascript' });
+          res.end("self.addEventListener('install', () => self.skipWaiting());");
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end('<!doctype html><title>workers</title>');
+        }
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    afterAll(() => {
+      server.close();
+    });
+
+    // Worker DevTools open in the last saved dock state too, so give each test
+    // a fresh persisted partition for the same reason as toggleDevTools() above.
+    async function loadWorkerPage() {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { partition: freshDevToolsPartition('devtools-inspect-workers') }
+      });
+      await w.loadURL(`${serverUrl}/`);
+      return w;
+    }
+
+    it('inspectSharedWorker() opens DevTools for a running shared worker', async () => {
+      const w = await loadWorkerPage();
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const worker = new SharedWorker('/shared-worker.js');
+        worker.port.onmessage = (e) => resolve(e.data);
+        worker.port.start();
+      })`);
+      const workerUrl = `${serverUrl}/shared-worker.js`;
+      await waitUntil(() => w.webContents.getAllSharedWorkers().some((worker) => worker.url === workerUrl));
+
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.inspectSharedWorker();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
+    });
+
+    it('inspectServiceWorker() opens DevTools for a running service worker', async () => {
+      const w = await loadWorkerPage();
+      await w.webContents.executeJavaScript(
+        "navigator.serviceWorker.register('/service-worker.js').then(() => navigator.serviceWorker.ready).then(() => true)"
+      );
+
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.inspectServiceWorker();
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).toBe(true);
     });
   });
 
@@ -2759,6 +3239,279 @@ describe('webContents module', { retry: 0 }, () => {
     });
   });
 
+  describe('editing commands', { tags: ['serial'] }, () => {
+    type EditorState = { value: string; start: number; end: number };
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      w.webContents.focus();
+    });
+
+    afterEach(closeAllWindows);
+
+    const getState = (): Promise<EditorState> =>
+      w.webContents.executeJavaScript(
+        '({ value: document.activeElement.value, start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd })'
+      );
+
+    // Focuses a textarea holding `value` and selects [start, end)
+    const setUp = async (value: string, start: number, end: number) => {
+      await w.webContents.executeJavaScript(`{
+        const textarea = document.createElement('textarea');
+        textarea.value = ${JSON.stringify(value)};
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.setSelectionRange(${start}, ${end});
+      }`);
+      expect(await getState()).toEqual({ value, start, end });
+    };
+
+    // Editing commands reach the renderer asynchronously, so poll for them
+    const expectState = async (expected: Partial<EditorState>) => {
+      let actual = await getState();
+      const matches = () =>
+        Object.entries(expected).every(([key, value]) => actual[key as keyof EditorState] === value);
+      await waitUntil(
+        async () => {
+          actual = await getState();
+          return matches();
+        },
+        { rate: 50, timeout: 2000 }
+      ).catch(() => {
+        // Fall through so the assertion below reports the state we got
+      });
+      expect(actual).toMatchObject(expected);
+    };
+
+    it('selectAll() selects the whole value', async () => {
+      await setUp('Hello World', 3, 3);
+      w.webContents.selectAll();
+      await expectState({ start: 0, end: 11 });
+    });
+
+    it('unselect() collapses the selection', async () => {
+      await setUp('Hello World', 0, 5);
+      w.webContents.unselect();
+      await expectState({ value: 'Hello World', start: 5, end: 5 });
+    });
+
+    it('delete() removes the selection', async () => {
+      await setUp('Hello World', 5, 11);
+      w.webContents.delete();
+      await expectState({ value: 'Hello', start: 5, end: 5 });
+    });
+
+    it('undo() and redo() revert and reapply an edit', async () => {
+      await setUp('Hello World', 0, 6);
+      w.webContents.delete();
+      await expectState({ value: 'World' });
+      w.webContents.undo();
+      await expectState({ value: 'Hello World' });
+      w.webContents.redo();
+      await expectState({ value: 'World' });
+    });
+
+    it('cut() removes the selection and paste() puts it back', async () => {
+      await setUp('Hello World', 0, 6);
+      w.webContents.cut();
+      await expectState({ value: 'World', start: 0, end: 0 });
+      w.webContents.paste();
+      await expectState({ value: 'Hello World', start: 6, end: 6 });
+    });
+
+    it('copy() keeps the selection and paste() inserts a copy of it', async () => {
+      await clipboard.clear();
+      await setUp('Hello World', 0, 5);
+      w.webContents.copy();
+      await waitUntil(async () => (await clipboard.readText()) === 'Hello');
+      await expectState({ value: 'Hello World', start: 0, end: 5 });
+      await w.webContents.executeJavaScript('document.activeElement.setSelectionRange(11, 11)');
+      w.webContents.paste();
+      await expectState({ value: 'Hello WorldHello' });
+    });
+
+    it('pasteAndMatchStyle() drops the formatting that paste() keeps', async () => {
+      await clipboard.write([new ClipboardItem({ 'text/plain': 'bold', 'text/html': '<b>bold</b>' })]);
+      // Pastes into an empty, focused contenteditable and returns its markup
+      const pasteInto = async (paste: () => void) => {
+        await w.webContents.executeJavaScript(`{
+          document.body.textContent = '';
+          const editor = document.createElement('div');
+          editor.contentEditable = 'true';
+          document.body.appendChild(editor);
+          editor.focus();
+        }`);
+        const getHTML = (): Promise<string> => w.webContents.executeJavaScript('document.activeElement.innerHTML');
+        paste();
+        await waitUntil(async () => (await getHTML()) !== '').catch(() => {});
+        return getHTML();
+      };
+
+      expect(await pasteInto(() => w.webContents.paste())).toBe('<b>bold</b>');
+      expect(await pasteInto(() => w.webContents.pasteAndMatchStyle())).toBe('bold');
+    });
+
+    it('replace() replaces the selection', async () => {
+      await setUp('Hello World', 6, 11);
+      w.webContents.replace('There');
+      await expectState({ value: 'Hello There' });
+    });
+
+    it('replace() replaces the word around the caret when nothing is selected', async () => {
+      await setUp('Hello World', 8, 8);
+      w.webContents.replace('There');
+      await expectState({ value: 'Hello There' });
+    });
+
+    describe('scrolling', () => {
+      const getScrollY = (): Promise<number> => w.webContents.executeJavaScript('window.scrollY');
+
+      beforeEach(async () => {
+        // Document scrolls are animated, and animations only advance in a visible window
+        w.destroy();
+        w = new BrowserWindow({ show: true });
+        await w.loadURL('about:blank');
+        w.webContents.focus();
+        await w.webContents.executeJavaScript(`{
+          document.body.style.margin = '0';
+          document.body.style.height = '10000px';
+          window.focus();
+        }`);
+        expect(await getScrollY()).toBe(0);
+      });
+
+      it('scrollToBottom() and scrollToTop() scroll the document', async () => {
+        const maxScrollY = await w.webContents.executeJavaScript(
+          'document.scrollingElement.scrollHeight - window.innerHeight'
+        );
+        expect(maxScrollY).toBeGreaterThan(0);
+
+        // The scroll is animated, so wait for it to land
+        const scrollAndWait = async (scroll: () => void, expected: number) => {
+          scroll();
+          await waitUntil(async () => (await getScrollY()) === expected).catch(() => {});
+          return getScrollY();
+        };
+
+        expect(await scrollAndWait(() => w.webContents.scrollToBottom(), maxScrollY)).toBe(maxScrollY);
+        // A scroll issued in the frame the previous animation lands in can be dropped
+        await w.webContents.executeJavaScript(
+          'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
+        );
+        expect(await scrollAndWait(() => w.webContents.scrollToTop(), 0)).toBe(0);
+      });
+    });
+  });
+
+  describe('device emulation', () => {
+    afterEach(closeAllWindows);
+
+    it('enableDeviceEmulation() and disableDeviceEmulation() change what the page sees', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      const getMetrics = () =>
+        w.webContents.executeJavaScript(
+          '({ screenWidth: screen.width, screenHeight: screen.height, innerWidth: window.innerWidth, innerHeight: window.innerHeight, devicePixelRatio: window.devicePixelRatio })'
+        );
+      const original = await getMetrics();
+      expect(original.screenWidth).not.toBe(400);
+      expect(original.devicePixelRatio).not.toBe(3);
+
+      w.webContents.enableDeviceEmulation({
+        screenPosition: 'mobile',
+        screenSize: { width: 400, height: 700 },
+        viewPosition: { x: 0, y: 0 },
+        viewSize: { width: 320, height: 480 },
+        deviceScaleFactor: 3,
+        scale: 1
+      });
+      let metrics = await getMetrics();
+      await waitUntil(async () => {
+        metrics = await getMetrics();
+        return metrics.screenWidth === 400 && metrics.devicePixelRatio === 3;
+      }).catch(() => {});
+      expect(metrics).toMatchObject({ screenWidth: 400, screenHeight: 700, devicePixelRatio: 3 });
+      // A mobile page lays out at its own width, keeping the emulated view's aspect ratio
+      expect(metrics.innerWidth).not.toBe(original.innerWidth);
+      expect(metrics.innerWidth / metrics.innerHeight).toBeCloseTo(320 / 480);
+
+      w.webContents.disableDeviceEmulation();
+      await waitUntil(async () => {
+        metrics = await getMetrics();
+        return metrics.screenWidth === original.screenWidth;
+      }).catch(() => {});
+      expect(metrics).toEqual(original);
+    });
+  });
+
+  describe('setImageAnimationPolicy()', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    // A 1x1 GIF that loops forever between a red and a green frame every 100ms
+    const gif = Buffer.from(
+      // Header and a 1x1 screen with a two entry color table: red, green
+      `${Buffer.from('GIF89a').toString('hex')}01000100800000ff000000ff00` +
+        // Loop forever
+        `21ff0b${Buffer.from('NETSCAPE2.0').toString('hex')}0301000000` +
+        // Each frame: a 100ms delay, a 1x1 image descriptor and the LZW data for
+        // a single pixel of color 0 (red), then of color 1 (green)
+        '21f904000a0000002c0000000001000100000202440100' +
+        '21f904000a0000002c00000000010001000002024c0100' +
+        '3b',
+      'hex'
+    );
+    const html = `<body style="margin: 0"><img src="data:image/gif;base64,${gif.toString('base64')}" style="width: 100px; height: 100px; image-rendering: pixelated"></body>`;
+
+    // Returns the color currently painted in the middle of the image: 'red' or
+    // 'green' only for a pixel that is clearly that color, and 'other' for
+    // anything else, such as the white of a page with nothing painted yet.
+    // toBitmap() is BGRA on most platforms but RGBA on some, so the red check
+    // accepts either the first or the third channel and requires the other to
+    // be low; green is the second channel either way.
+    const sampleColor = async (w: BrowserWindow) => {
+      const image = await w.webContents.capturePage({ x: 50, y: 50, width: 1, height: 1 });
+      const [first, green, third] = image.toBitmap();
+      const high = (channel: number) => channel > 192;
+      const low = (channel: number) => channel < 64;
+      if (high(green) && low(first) && low(third)) return 'green';
+      if (low(green) && ((high(first) && low(third)) || (low(first) && high(third)))) return 'red';
+      return 'other';
+    };
+
+    const loadAnimation = async (w: BrowserWindow) => {
+      await w.loadURL(`data:text/html,${encodeURIComponent(html)}`);
+      await w.webContents.executeJavaScript('document.querySelector("img").decode()');
+    };
+
+    it('animates images by default', async () => {
+      const w = new BrowserWindow({ show: true, width: 200, height: 200 });
+      await loadAnimation(w);
+      const seen = new Set<string>();
+      await waitUntil(async () => {
+        seen.add(await sampleColor(w));
+        return seen.has('red') && seen.has('green');
+      }).catch(() => {});
+      expect([...seen]).toEqual(expect.arrayContaining(['red', 'green']));
+    });
+
+    it('stops images from animating when set to "noAnimation"', async () => {
+      const w = new BrowserWindow({ show: true, width: 200, height: 200 });
+      w.webContents.setImageAnimationPolicy('noAnimation');
+      await loadAnimation(w);
+      // Wait for the first (red) frame to be painted so the samples below are
+      // of the image, then fail only if it ever moves on to the green frame.
+      await waitUntil(async () => (await sampleColor(w)) === 'red');
+      const seen = new Set<string>();
+      for (let i = 0; i < 10; i++) {
+        seen.add(await sampleColor(w));
+        await setTimeout(100);
+      }
+      expect([...seen]).not.toContain('green');
+    });
+  });
+
   describe('insertCSS', () => {
     afterEach(closeAllWindows);
     it('supports inserting CSS', async () => {
@@ -2972,6 +3725,61 @@ describe('webContents module', { retry: 0 }, () => {
       const w = new BrowserWindow({ show: true, webPreferences: { disableWakeLocks: true } });
       await w.loadFile(blankPage);
       assert(!(await w.webContents.executeJavaScript(wakeLockCode)));
+    });
+  });
+
+  describe('centerSelection()', { tags: ['serial'] }, () => {
+    afterEach(closeAllWindows);
+
+    it('scrolls the selection to the middle of the viewport', async () => {
+      // Shown so the page can take focus and its selection is the active one
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await focusWebContents(w.webContents);
+      const getScrollY = (): Promise<number> => w.webContents.executeJavaScript('window.scrollY');
+
+      // Selects a line of text far below the fold
+      await w.webContents.executeJavaScript(`{
+        document.body.style.margin = '0';
+        document.body.style.height = '10000px';
+        const target = document.createElement('p');
+        target.textContent = 'Center me';
+        target.style.position = 'absolute';
+        target.style.top = '6000px';
+        target.style.margin = '0';
+        document.body.appendChild(target);
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }`);
+      expect(await getScrollY()).toBe(0);
+      const getSelectionRect = (): Promise<{ top: number; height: number; innerHeight: number }> =>
+        w.webContents.executeJavaScript(`(() => {
+          const { top, height } = window.getSelection().getRangeAt(0).getBoundingClientRect();
+          return { top, height, innerHeight: window.innerHeight };
+        })()`);
+      const before = await getSelectionRect();
+      expect(before.height).toBeGreaterThan(0);
+      expect(before.top).toBeGreaterThan(before.innerHeight);
+
+      // How far the middle of the selection is from the middle of the viewport
+      const getOffCenter = async () => {
+        const { top, height, innerHeight } = await getSelectionRect();
+        return Math.abs(top + height / 2 - innerHeight / 2);
+      };
+
+      // centerSelection() reaches the renderer asynchronously. The scroll it
+      // makes (RevealSelection -> ScrollRectToVisible) is instant, since the
+      // page does not use CSS smooth scrolling, so wait for the centered
+      // position itself rather than for the first change in scroll offset.
+      w.webContents.centerSelection();
+      await waitUntil(async () => (await getOffCenter()) < 10).catch(async () => {
+        expect(await getOffCenter(), 'distance of the selection from the middle of the viewport').toBeLessThan(10);
+      });
+
+      expect(await getOffCenter()).toBeLessThan(10);
     });
   });
 

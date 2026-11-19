@@ -176,38 +176,87 @@ export function writeFileLoadingSite(root: string, count: number) {
   );
 }
 
-// Page configs for one target. `capabilities` comes from the harness app's --cb-capabilities output.
-const hasPainted = "return performance.getEntriesByName('first-contentful-paint').length > 0";
-
 // One crossbench page action, e.g. { action: 'get', url, ready_state }.
 type Action = Record<string, string>;
 type Pages = Record<string, Action[]>;
 
 interface PageConfigOptions {
+  // From the harness app's --cb-capabilities output.
   capabilities?: Capabilities;
-  baseUrl: string;
   fileRoot: string;
+  // Where writeAppShellSite (lib/app-shell.mts) wrote the app shell page.
+  appRoot: string;
   resizeCount?: number;
 }
 
-export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, resizeCount = 20 }: PageConfigOptions) {
+// The app shell marks app-ready once its full first view is in the DOM, and
+// keeps its latest LCP candidate as the app-lcp mark. The content's LCP always
+// comes after app-ready (the window chrome before it is smaller), so waiting
+// for both means the mark holds the final LCP, however slowly the version
+// under test paints.
+const appShellDone = `
+if (location.protocol !== 'file:' || document.readyState !== 'complete') return false;
+const ready = performance.getEntriesByName('app-ready')[0];
+const lcp = performance.getEntriesByName('app-lcp')[0];
+return !!ready && !!lcp && lcp.startTime > ready.startTime;`;
+
+// Injected into the app shell by the resize story. It steps the window
+// between two sizes with BrowserWindow.setSize() through the harness preload
+// (window.cbHarness). The latency itself is measured from the trace (see
+// TRACE_QUERIES): from the browser's Widget::OnNativeWidgetSizeChanged to the
+// presentation of the first renderer frame that commits after the page sees
+// the new size, which the cb-resized mark records. The cb-resize-start and
+// cb-resize-end marks bracket the resizes so the window's initial sizing is
+// left out. Each step waits for the resize event, two frames and a short idle
+// period, so the next resize never overlaps the previous one's frame. The
+// smaller size is below the app's 960px breakpoint, so every step also
+// changes its layout.
+function resizeScript(count: number) {
+  return `(async () => {
+  if (!window.cbHarness) {
+    window.__cbResizeDone = true;
+    return;
+  }
+  const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  performance.mark('cb-resize-start');
+  for (let i = 0; i < ${count}; i++) {
+    const [width, height] = i % 2 ? [1280, 800] : [900, 600];
+    const resized = new Promise((resolve) =>
+      addEventListener('resize', () => {
+        performance.mark('cb-resized');
+        resolve();
+      }, { once: true })
+    );
+    await window.cbHarness.setSize(width, height);
+    await resized;
+    await nextFrame();
+    await nextFrame();
+    await sleep(100);
+  }
+  performance.mark('cb-resize-end');
+  window.__cbResizeDone = true;
+})();`;
+}
+
+// Page configs for one target. The loading and trace suites load the app
+// shell (lib/app-shell.mts) from file://, like a packaged app.
+export function pageConfigs({ capabilities = {}, fileRoot, appRoot, resizeCount = 20 }: PageConfigOptions) {
   const firstLoad: Action[] = [
-    { action: 'get', url: `${baseUrl}/pages/index.html`, ready_state: 'complete' },
-    { action: 'wait_for_condition', timeout: '20s', condition: hasPainted },
-    { action: 'wait', duration: '1s' }
+    { action: 'get', url: `file://${appRoot}/index.html`, ready_state: 'any' },
+    { action: 'wait_for_condition', timeout: '30s', condition: appShellDone.trim() },
+    { action: 'wait', duration: '500ms' }
   ];
   const loading: Pages = {
     // Memory is sampled once the page has painted and settled.
     first_load: [...firstLoad, { action: 'meminfo', title: 'loaded' }],
     reload: [
-      { action: 'get', url: `${baseUrl}/pages/index.html`, ready_state: 'complete' },
-      { action: 'wait', duration: '1s' },
+      ...firstLoad,
       { action: 'js', script: 'location.reload();' },
       {
         action: 'wait_for_condition',
-        timeout: '20s',
-        condition:
-          "return performance.getEntriesByType('navigation')[0].type === 'reload' && document.readyState === 'complete' && performance.getEntriesByName('first-contentful-paint').length > 0"
+        timeout: '30s',
+        condition: `if (performance.getEntriesByType('navigation')[0].type !== 'reload') return false;${appShellDone}`
       },
       { action: 'wait', duration: '500ms' }
     ]
@@ -217,10 +266,9 @@ export function pageConfigs({ capabilities = {}, baseUrl, fileRoot, resizeCount 
   const trace: Pages = { first_load: firstLoad };
   if (capabilities.setSize) {
     trace.resize = [
-      { action: 'get', url: `${baseUrl}/pages/resize.html`, ready_state: 'complete' },
-      { action: 'wait', duration: '500ms' },
-      { action: 'js', script: `window.cbRunResize(${resizeCount});` },
-      { action: 'wait_for_condition', timeout: '60s', condition: 'return window.__cbResizeDone === true' }
+      ...firstLoad,
+      { action: 'js', script: resizeScript(resizeCount) },
+      { action: 'wait_for_condition', timeout: '90s', condition: 'return window.__cbResizeDone === true' }
     ];
   }
 

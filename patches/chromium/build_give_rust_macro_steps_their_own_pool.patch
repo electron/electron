@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 05:31:40 +0000
+Subject: build: give rust_macro steps their own pool
+
+Proc-macro crates are rustc compiles that produce a shared library, and
+the rust_macro tool puts them in build_toolchain_link_pool, whose depth is
+concurrent_links (2 by default on Linux). A build has about 20 of them at
+5-12s each, all ready early, so for the first ~100s of a build they hold
+both link pool slots while the links of host tools on the critical path
+(brotli, flatc, torque, mksnapshot, ...) queue for 17-75s.
+
+Give rust_macro its own pool of the same depth, so proc-macro builds no
+longer block those links. In local measurements this took the number of
+links that waited more than 5s for the pool from 22 to 0-1, and the
+longest wait from 58s to 3-7s.
+
+This should be upstreamed. Drop this patch once upstream
+build/toolchain/gcc_toolchain.gni no longer puts the rust_macro tool in
+link_pool; check that line on each Chromium roll.
+
+diff --git a/build/toolchain/BUILD.gn b/build/toolchain/BUILD.gn
+index 6f3bc67d1fa38724f7c475a1160c1e9c7814a53a..8fa1b59b0e5ae693028943e83b31b2fd35fca20f 100644
+--- a/build/toolchain/BUILD.gn
++++ b/build/toolchain/BUILD.gn
+@@ -19,6 +19,13 @@ if (current_toolchain == default_toolchain) {
+     depth = concurrent_links
+   }
+ 
++  # Proc-macro crates are rustc compiles that produce a shared library.
++  # Give them their own pool, so they don't hold link_pool slots needed
++  # by the links of host tools that are on the critical path.
++  pool("rust_macro_pool") {
++    depth = concurrent_links
++  }
++
+   pool("action_pool") {
+     depth = action_pool_depth
+   }
+diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
+index 4bae70a3aa1d31d96ce0d7f5ed95cc3105e87bb9..a2dd285514b6610c4bd614e7d97e6ce789a0b91b 100644
+--- a/build/toolchain/gcc_toolchain.gni
++++ b/build/toolchain/gcc_toolchain.gni
+@@ -857,7 +857,7 @@ template("single_gcc_toolchain") {
+         dllname = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+         depfile = "$dllname.d"
+         rspfile = rustc_rsp_path
+-        pool = "//build/toolchain:link_pool($default_toolchain)"
++        pool = "//build/toolchain:rust_macro_pool($default_toolchain)"
+ 
+         default_output_extension = default_shlib_extension
+         output_prefix = "lib"
