@@ -219,6 +219,27 @@ describe('dialog module', () => {
       const result = await p;
       expect(result.response).toBe(1);
     });
+
+    it('resolves with the default cancel response when the signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const w = new BrowserWindow();
+      const result = await dialog.showMessageBox(w, { signal: controller.signal, message: 'i am message' });
+      expect(result).toEqual({ response: 0, checkboxChecked: false });
+    });
+
+    it('resolves with cancelId when the signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+      const w = new BrowserWindow();
+      const result = await dialog.showMessageBox(w, {
+        signal: controller.signal,
+        message: 'i am message',
+        buttons: ['OK', 'Cancel'],
+        cancelId: 1
+      });
+      expect(result).toEqual({ response: 1, checkboxChecked: false });
+    });
   });
 
   describe('showErrorBox', () => {
