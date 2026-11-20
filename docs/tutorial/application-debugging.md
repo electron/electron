@@ -23,6 +23,9 @@ Google offers [excellent documentation for their developer tools][devtools].
 We recommend that you make yourself familiar with them - they are usually one
 of the most powerful utilities in any Electron Developer's tool belt.
 
+For the specifics of debugging a renderer's preload script, see
+[Debugging Preload Scripts](./debugging-preload-scripts.md).
+
 ## Main Process
 
 Debugging the main process is a bit trickier, since you cannot open
