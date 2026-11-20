@@ -280,6 +280,35 @@ describe('WebContentsView', () => {
     expect(v.children).toEqual([wcv]);
   });
 
+  describe('when moved to another window', () => {
+    const moveAndAttachWebview = async (destroyFirstWindow: boolean) => {
+      const wA = new BrowserWindow({ show: false });
+      const wB = new BrowserWindow({ show: false });
+      const view = new WebContentsView({ webPreferences: { webviewTag: true } });
+      wA.contentView.addChildView(view);
+      wB.contentView.addChildView(view);
+      if (destroyFirstWindow) {
+        const closed = once(wA, 'closed');
+        wA.destroy();
+        await closed;
+      }
+      const attached = once(view.webContents, 'did-attach-webview') as Promise<[any, Electron.WebContents]>;
+      await view.webContents.loadURL('data:text/html,<webview src="about:blank"></webview>');
+      const [, guest] = await attached;
+      return { wB, guest };
+    };
+
+    it('gives a <webview> guest the new window as its owner', async () => {
+      const { wB, guest } = await moveAndAttachWebview(false);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wB);
+    });
+
+    it('gives a <webview> guest the new window as its owner after the old one is destroyed', async () => {
+      const { wB, guest } = await moveAndAttachWebview(true);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wB);
+    });
+  });
+
   describe('visibilityState', { tags: ['serial'] }, () => {
     // These pages are only 'visible' while nothing covers their window. On the
     // Windows CI hosts another process's console window can sit above a newly
