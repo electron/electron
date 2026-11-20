@@ -97,6 +97,18 @@ move_src_dirs_if_exist() {
     fi      
   done
 
+  # Coverage builds stage llvm-profdata/llvm-cov in llvm-build for the report
+  # job; ship just those on Windows.
+  if [ "$BUILD_TYPE" == "win" ]; then
+    for file in src/third_party/llvm-build/Release+Asserts/bin/llvm-profdata.exe \
+      src/third_party/llvm-build/Release+Asserts/bin/llvm-cov.exe; do
+      if [ -f "$file" ]; then
+        mkdir -p "src_artifacts/$(dirname "$file")"
+        cp "$file" "src_artifacts/$file"
+      fi
+    done
+  fi
+
   tar -C src_artifacts -cf src_artifacts.tar .
 
   echo Storing src_artifacts.tar

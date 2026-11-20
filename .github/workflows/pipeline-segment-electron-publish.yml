@@ -236,6 +236,10 @@ jobs:
         if: ${{ inputs.target-platform == 'macos' && inputs.is-coverage }}
         run: |
           echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt"' >> $GITHUB_ENV
+      - name: Set GN_EXTRA_ARGS for Windows Coverage
+        if: ${{ inputs.target-platform == 'win' && inputs.is-coverage }}
+        run: |
+          echo 'GN_EXTRA_ARGS=use_clang_coverage=true coverage_instrumentation_input_file="//out/Default/coverage_instrumentation_input.txt"' >> $GITHUB_ENV
       - name: Set Chromium Git Cookie
         uses: ./src/electron/.github/actions/set-chromium-cookie
       - name: Install Build Tools
@@ -310,13 +314,20 @@ jobs:
       # llvm-profdata/llvm-cov ship in a separate clang package that the src
       # cache does not carry (gclient's checkout_clang_coverage_tools is off).
       # Stage them inside third_party/llvm-build so move-artifacts.sh picks them
-      # up into src_artifacts for the test and report jobs.
+      # up into src_artifacts for the test and report jobs (on Windows it skips
+      # llvm-build but picks up these two).
       - name: Download Coverage Tools
         if: ${{ inputs.is-coverage }}
         run: |
           # --output-dir is required: the default location replaces the clang install.
           python3 src/tools/clang/scripts/update.py --package=coverage_tools --output-dir="$RUNNER_TEMP/coverage-tools"
-          cp "$RUNNER_TEMP/coverage-tools/bin/llvm-profdata" "$RUNNER_TEMP/coverage-tools/bin/llvm-cov" \
+          LLVM_PROFDATA=llvm-profdata
+          LLVM_COV=llvm-cov
+          if [ "$TARGET_PLATFORM" = "win" ]; then
+            LLVM_PROFDATA=llvm-profdata.exe
+            LLVM_COV=llvm-cov.exe
+          fi
+          cp "$RUNNER_TEMP/coverage-tools/bin/$LLVM_PROFDATA" "$RUNNER_TEMP/coverage-tools/bin/$LLVM_COV" \
             src/third_party/llvm-build/Release+Asserts/bin/
       # Instrument only Electron's own C++. The report is already restricted to
       # shell/ and chromium_src/, and instrumenting all of Chromium makes every

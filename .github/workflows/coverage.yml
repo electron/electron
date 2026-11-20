@@ -23,6 +23,7 @@ on:
           - all
           - linux
           - macos
+          - windows
 
 defaults:
   run:
@@ -41,6 +42,7 @@ jobs:
       # The inputs context is empty for scheduled runs; fall back to 'all'.
       linux: ${{ inputs.platform == '' || inputs.platform == 'linux' || inputs.platform == 'all' }}
       macos: ${{ inputs.platform == '' || inputs.platform == 'macos' || inputs.platform == 'all' }}
+      windows: ${{ inputs.platform == '' || inputs.platform == 'windows' || inputs.platform == 'all' }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -112,6 +114,39 @@ jobs:
         generate-sas-token: 'true'
         target-platform: macos
 
+  checkout-windows:
+    needs: setup
+    if: ${{ needs.setup.outputs.windows == 'true' }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root --device /dev/fuse --cap-add SYS_ADMIN --umask 0022
+      volumes:
+        - /mnt/win-cache:/mnt/win-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+      TARGET_OS: 'win'
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        generate-sas-token: 'true'
+        target-platform: win
+
   build-siso-linux:
     needs: setup
     if: ${{ needs.setup.outputs.linux == 'true' }}
@@ -129,6 +164,15 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
     with:
       host: darwin-arm64
+
+  build-siso-windows:
+    needs: setup
+    if: ${{ needs.setup.outputs.windows == 'true' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    with:
+      host: windows-amd64
 
   build-linux-x64:
     needs: [checkout-linux, build-siso-linux]
@@ -168,6 +212,33 @@ jobs:
       target-platform: macos
       target-arch: arm64
       target-variant: darwin
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      generate-chromedriver: false
+      upload-to-storage: '0'
+      is-coverage: true
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
+
+  build-windows-x64:
+    needs: [checkout-windows, build-siso-windows]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    with:
+      build-runs-on: garm-windows-x64-32core
+      target-platform: win
+      target-arch: x64
       is-release: false
       gn-build-type: testing
       generate-symbols: false
@@ -231,6 +302,28 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
       SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
 
+  test-windows-x64:
+    needs: build-windows-x64
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    with:
+      target-platform: win
+      target-arch: x64
+      test-runs-on: windows-latest
+      is-coverage: true
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+
   # Report on whatever counters the suite produced, even when tests failed -
   # a red suite still yields a usable coverage picture.
   report-linux-x64:
@@ -255,3 +348,14 @@ jobs:
       target-platform: macos
       target-arch: arm64
       report-runs-on: macos-15
+
+  report-windows-x64:
+    needs: test-windows-x64
+    if: ${{ !cancelled() && needs.test-windows-x64.result != 'skipped' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-electron-coverage-report.yml
+    with:
+      target-platform: win
+      target-arch: x64
+      report-runs-on: windows-latest
