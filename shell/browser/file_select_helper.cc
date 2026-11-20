@@ -412,8 +412,13 @@ void FileSelectHelper::RunFileChooserOnUIThread(
 
   auto* web_contents = electron::api::WebContents::From(
       content::WebContents::FromRenderFrameHost(render_frame_host_));
-  if (!web_contents || !web_contents->owner_window())
+  if (!web_contents) {
+    RunFileChooserEnd();
     return;
+  }
+  // A page with no window, such as one in a WebContentsView that has been
+  // removed from its window, gets a dialog with no parent.
+  electron::NativeWindow* owner_window = web_contents->owner_window();
 
   // Never consider the current scope as hung. The hang watching deadline (if
   // any) is not valid since the user can take unbounded time to choose the
@@ -426,7 +431,8 @@ void FileSelectHelper::RunFileChooserOnUIThread(
           ? 1
           : 0,  // 1-based index of default extension to show.
       base::FilePath::StringType(),
-      web_contents->owner_window()->GetNativeWindow(), nullptr);
+      owner_window ? owner_window->GetNativeWindow() : gfx::NativeWindow(),
+      nullptr);
 
   select_file_types_.reset();
 }

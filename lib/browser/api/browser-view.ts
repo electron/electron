@@ -77,7 +77,9 @@ export default class BrowserView {
   set ownerWindow(w: BrowserWindow | null) {
     this.#removeResizeListener();
 
-    if (this.webContents && !this.webContents.isDestroyed()) {
+    // Removing the view from its window clears the owner natively, after the
+    // page has left any HTML fullscreen it holds there, which needs the owner.
+    if (w && this.webContents && !this.webContents.isDestroyed()) {
       this.webContents._setOwnerWindow(w);
     }
 

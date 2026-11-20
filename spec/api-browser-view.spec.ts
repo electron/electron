@@ -550,6 +550,29 @@ describe('BrowserView module', () => {
       w.removeBrowserView(view);
       expect(BrowserWindow.fromWebContents(devtools)).toBe(w);
     });
+
+    it('leaves HTML fullscreen', { tags: ['serial'] }, async () => {
+      w.show();
+      view = new BrowserView();
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 0, width: 400, height: 400 });
+      await view.webContents.loadURL('data:text/html,<div id="div">This is a simple div.</div>');
+      const enteredHtmlFullScreen = once(view.webContents, 'enter-html-full-screen');
+      const enteredFullScreen = once(w, 'enter-full-screen');
+      await view.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await enteredHtmlFullScreen;
+      await enteredFullScreen;
+
+      const leaveHtmlFullScreen = once(view.webContents, 'leave-html-full-screen');
+      const leaveFullScreen = once(w, 'leave-full-screen');
+      w.removeBrowserView(view);
+      expect(view.ownerWindow).toBe(null);
+      await leaveHtmlFullScreen;
+      await leaveFullScreen;
+      expect(w.isFullScreen()).toBe(false);
+      await waitUntil(() => view.webContents.executeJavaScript('document.fullscreenElement === null'));
+      expect(view.webContents.getOwnerBrowserWindow()).toBe(null);
+    });
   });
 
   describe('BrowserWindow.getBrowserViews()', () => {

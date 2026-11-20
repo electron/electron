@@ -66,6 +66,8 @@ void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
 }
 
 void OffScreenWebContentsView::OnWindowResize() {
+  if (native_window_)
+    last_window_size_ = native_window_->GetSize();
   // In offscreen mode call RenderWidgetHostView's SetSize explicitly
   if (auto* view = GetView())
     view->SetSize(GetSize());
@@ -79,7 +81,10 @@ void OffScreenWebContentsView::OnWindowClosed() {
 }
 
 gfx::Size OffScreenWebContentsView::GetSize() const {
-  return native_window_ ? native_window_->GetSize() : gfx::Size();
+  // Without a window, such as after a WebContentsView is removed from its
+  // window, keep the last window's size rather than resizing the page to
+  // nothing, including for a view created after the renderer restarts.
+  return native_window_ ? native_window_->GetSize() : last_window_size_;
 }
 
 #if !BUILDFLAG(IS_MAC)
