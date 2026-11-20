@@ -22,6 +22,7 @@
 #include <crt_externs.h>
 #include <limits.h>
 #include <mach-o/dyld.h>
+#include <malloc/malloc.h>
 
 #include "sandbox/mac/seatbelt_exec.h"
 #endif
@@ -95,6 +96,12 @@ class Initializer {
       if (!seatbelt.server->InitializeSandbox()) {
         FatalError("Failed to initialize sandbox");
       }
+      // Compiling the sandbox policy allocates and frees large temporary
+      // buffers. PartitionAlloc is not installed yet, so they come from the
+      // system zone, which keeps the freed pages resident. Return them to the
+      // OS. nullptr covers every zone: the default zone here is
+      // EarlyMallocZoneRegistration()'s delegating zone, which ignores this.
+      malloc_zone_pressure_relief(nullptr, 0);
     }
   }
 #endif
