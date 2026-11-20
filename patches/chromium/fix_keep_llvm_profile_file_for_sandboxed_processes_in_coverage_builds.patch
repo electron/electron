@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 20 Nov 2026 05:43:03 +0000
+Subject: fix: keep LLVM_PROFILE_FILE for sandboxed processes in coverage
+ builds
+
+Electron's Windows coverage CI (use_clang_coverage=true) gets no counters
+from sandboxed renderers. Chromium passes every child a
+child_pool-N.profraw handle and the child calls
+__llvm_profile_set_file_object() on it, but that only records counters
+as they happen in continuous mode, which the profile runtime enables
+from the %c in LLVM_PROFILE_FILE. Sandboxed renderers launch with a
+filtered environment that drops LLVM_PROFILE_FILE, so they fall back to
+writing at exit. That never happens: renderers end via TerminateProcess,
+and base::WriteClangProfilingProfile() skips the dump in coverage
+builds.
+
+Keep LLVM_PROFILE_FILE in the filtered environment in coverage builds
+only, so non-coverage builds are unchanged. This is narrower than
+skipping the filter altogether, as sanitizer builds do.
+
+This should be upstreamed.
+
+diff --git a/sandbox/win/src/broker_services.cc b/sandbox/win/src/broker_services.cc
+index 64f1384a5c26d21ae999c6977b198472ca0d7047..4b75f0fdf4c5a69fbbefed2bf5f2012efdd4927a 100644
+--- a/sandbox/win/src/broker_services.cc
++++ b/sandbox/win/src/broker_services.cc
+@@ -11,6 +11,7 @@
+ #include <utility>
+ 
+ #include "base/check_op.h"
++#include "base/clang_profiling_buildflags.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/notreached.h"
+ #include "base/task/thread_pool.h"
+@@ -323,13 +324,19 @@ std::wstring CreateFilteredEnvironment() {
+   //    operation and tests.
+   //  * "LOCALAPPDATA": Needed for App Container processes.
+   //  * "CHROME_CRASHPAD_PIPE_NAME": Needed for crashpad.
++  //  * "LLVM_PROFILE_FILE": Coverage builds only. Its %c (continuous mode) is
++  //    what lets sandboxed processes record their counters.
+   static constexpr std::wstring_view to_keep[] = {L"Path",
+                                                   L"SystemDrive",
+                                                   L"SystemRoot",
+                                                   L"TEMP",
+                                                   L"TMP",
+                                                   L"LOCALAPPDATA",
+-                                                  L"CHROME_CRASHPAD_PIPE_NAME"};
++                                                  L"CHROME_CRASHPAD_PIPE_NAME",
++#if BUILDFLAG(USE_CLANG_COVERAGE)
++                                                  L"LLVM_PROFILE_FILE",
++#endif
++  };
+ 
+   std::wstring new_env = FilterEnvironment(old_environment, to_keep);
+   ::FreeEnvironmentStringsW(old_environment);
