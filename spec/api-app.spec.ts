@@ -16,7 +16,16 @@ import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
-import { defer, ifdescribe, ifit, isWayland, listen, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
+import {
+  defer,
+  getSpecTimeout,
+  ifdescribe,
+  ifit,
+  isWayland,
+  listen,
+  spawnAndWait,
+  waitUntil
+} from './lib/spec-helpers.ts';
 import { runInUtilityProcess } from './lib/utility-process-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 import {
@@ -2178,7 +2187,7 @@ describe('app module', () => {
     const run = async (env: NodeJS.ProcessEnv) => {
       // Starting Electron is slow on sanitizer builds, so stay within the
       // per-test timeout (raised there) rather than a fixed short poll.
-      const timeout = (Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000) - 5_000;
+      const timeout = getSpecTimeout() - 5_000;
       const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [fixture], { env, timeout });
       const match = /GDK_BACKEND in child: (.*)/.exec(stdout);
       expect(match, `exited with ${code}/${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`).not.toBeNull();
