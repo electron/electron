@@ -56,6 +56,10 @@ void MenuDelegate::ExecuteCommand(int id) {
 }
 
 void MenuDelegate::ExecuteCommand(int id, int mouse_event_flags) {
+  // This menu is being replaced by a sibling, so don't run its command.
+  if (button_to_select_)
+    return;
+
   observers_.Notify(&Observer::OnBeforeExecuteCommand);
   adapter_->ExecuteCommand(id, mouse_event_flags);
 }
@@ -104,9 +108,12 @@ void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
 void MenuDelegate::OnMenuClosed(views::MenuItemView* menu) {
   observers_.Notify(&Observer::OnMenuClosed);
 
-  // Only switch to new menu when current menu is closed.
-  if (button_to_open_)
-    button_to_open_->Activate(nullptr);
+  // Only select the pending menu-bar item after the current menu closes.
+  if (button_to_select_) {
+    menu_bar_->SelectMenuButton(
+        static_cast<views::MenuButton*>(button_to_select_.view()),
+        /*open_submenu=*/true);
+  }
   delete this;
 }
 
@@ -127,15 +134,7 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
   ElectronMenuModel* model;
   if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
       button->GetID() != id_) {
-    bool switch_in_progress = !!button_to_open_;
-    // Always update target to open.
-    button_to_open_ = button;
-    // Switching menu asynchronously to avoid crash.
-    if (!switch_in_progress) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, base::BindOnce(&MenuDelegate::CancelSelf,
-                                    weak_factory_.GetWeakPtr()));
-    }
+    ScheduleSwitchToButton(button);
   }
 
   return nullptr;
@@ -144,6 +143,31 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
 void MenuDelegate::CancelSelf() {
   if (menu_runner_)
     menu_runner_->Cancel();
+}
+
+bool MenuDelegate::SwitchToSiblingMenu(const bool next) {
+  // Step from the pending target so repeated presses keep moving.
+  const int from_id =
+      button_to_select_ ? button_to_select_.view()->GetID() : id_;
+  views::MenuButton* button = nullptr;
+  if (!menu_bar_->GetSiblingMenuButtonByDirection(from_id, next, &button)) {
+    return false;
+  }
+
+  ScheduleSwitchToButton(button);
+  return true;
+}
+
+void MenuDelegate::ScheduleSwitchToButton(views::MenuButton* const button) {
+  bool switch_in_progress = !!button_to_select_;
+  // Always update the target menu-bar item.
+  button_to_select_.SetView(button);
+  // Defer menu cancellation to avoid re-entrant switching.
+  if (!switch_in_progress) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(&MenuDelegate::CancelSelf, weak_factory_.GetWeakPtr()));
+  }
 }
 
 }  // namespace electron
