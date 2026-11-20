@@ -322,22 +322,13 @@ jobs:
           python3 src/tools/clang/scripts/update.py --package=coverage_tools --output-dir="$RUNNER_TEMP/coverage-tools"
           cp "$RUNNER_TEMP/coverage-tools/bin/llvm-profdata" "$RUNNER_TEMP/coverage-tools/bin/llvm-cov" \
             src/third_party/llvm-build/Release+Asserts/bin/
-      # move-artifacts.sh leaves third_party/llvm-build out of Windows artifacts,
-      # so the Windows llvm-profdata.exe/llvm-cov.exe ship to the report job in
-      # their own artifact.
+      # move-artifacts.sh skips llvm-build on Windows but picks up these two.
       - name: Download Coverage Tools (Windows)
         if: ${{ inputs.is-coverage && inputs.target-platform == 'win' }}
         run: |
           python3 src/tools/clang/scripts/update.py --package=coverage_tools --output-dir="$RUNNER_TEMP/coverage-tools"
-          ls -l "$RUNNER_TEMP/coverage-tools/bin"
-      - name: Upload Coverage Tools (Windows)
-        if: ${{ inputs.is-coverage && inputs.target-platform == 'win' }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 #v7.0.2
-        with:
-          name: coverage_tools_win_${{ inputs.target-arch }}
-          path: ${{ runner.temp }}/coverage-tools/bin
-          if-no-files-found: error
-          retention-days: 7
+          cp "$RUNNER_TEMP/coverage-tools/bin/llvm-profdata.exe" "$RUNNER_TEMP/coverage-tools/bin/llvm-cov.exe" \
+            src/third_party/llvm-build/Release+Asserts/bin/
       # Instrument only Electron's own C++. The report is already restricted to
       # shell/ and chromium_src/, and instrumenting all of Chromium makes every
       # binary (v8_context_snapshot_generator included) large enough that dyld

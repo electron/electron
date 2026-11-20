@@ -55,25 +55,17 @@ jobs:
         path: src/electron
         persist-credentials: false
     # dist.zip holds the instrumented binaries; src_artifacts.tar carries the
-    # llvm-profdata/llvm-cov the build job staged into third_party/llvm-build,
-    # except on Windows, where they come in their own artifact.
+    # llvm-profdata/llvm-cov the build job staged into third_party/llvm-build.
     - name: Download Generated Artifacts
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ env.ARTIFACT_KEY }}
     - name: Download Src Artifacts
-      if: ${{ inputs.target-platform != 'win' }}
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ env.ARTIFACT_KEY }}
-    - name: Download Coverage Tools (Windows)
-      if: ${{ inputs.target-platform == 'win' }}
-      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-      with:
-        name: coverage_tools_${{ env.ARTIFACT_KEY }}
-        path: ./coverage-tools
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist (win)
@@ -101,14 +93,13 @@ jobs:
           # llvm-cov.exe is a native Windows binary: hand it Windows paths
           # (pwd -W) rather than MSYS ones.
           ROOT=$(pwd -W)
-          LLVM_BIN="$ROOT/coverage-tools"
           EXE=.exe
         else
           ROOT=$PWD
-          LLVM_BIN="$ROOT/src/third_party/llvm-build/Release+Asserts/bin"
           EXE=
-          chmod +x "$LLVM_BIN/llvm-profdata" "$LLVM_BIN/llvm-cov"
         fi
+        LLVM_BIN="$ROOT/src/third_party/llvm-build/Release+Asserts/bin"
+        chmod +x "$LLVM_BIN/llvm-profdata$EXE" "$LLVM_BIN/llvm-cov$EXE"
 
         # --failure-mode=all tolerates profiles truncated by processes the
         # suite kills, as long as at least one input is readable.
