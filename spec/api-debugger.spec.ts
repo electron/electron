@@ -141,6 +141,43 @@ describe('debugger module', () => {
       w.webContents.debugger.detach();
     });
 
+    it('resolves when the reply is nested just below the JSON depth limit', async () => {
+      w.webContents.loadURL('about:blank');
+      w.webContents.debugger.attach();
+
+      // The reply envelope adds a few levels around the value, so 190 nested
+      // arrays land below the 200 level hard limit of base::JSONReader.
+      const expression = '(() => { let v = 0; for (let i = 0; i < 190; i++) v = [v]; return v })()';
+      const res = await w.webContents.debugger.sendCommand('Runtime.evaluate', {
+        expression,
+        returnByValue: true
+      });
+
+      let value = res.result.value;
+      while (Array.isArray(value)) value = value[0];
+      expect(value).toBe(0);
+
+      w.webContents.debugger.detach();
+    });
+
+    it('rejects when the reply is nested deeper than the JSON depth limit', async () => {
+      w.webContents.loadURL('about:blank');
+      w.webContents.debugger.attach();
+
+      // One array level per loop iteration puts the reply past the 200 level
+      // hard limit of base::JSONReader. Such replies used to be dropped,
+      // leaving the sendCommand promise unsettled forever.
+      const expression = '(() => { let v = 0; for (let i = 0; i < 250; i++) v = [v]; return v })()';
+      await expect(
+        w.webContents.debugger.sendCommand('Runtime.evaluate', {
+          expression,
+          returnByValue: true
+        })
+      ).rejects.toThrow('Failed to parse the protocol message');
+
+      w.webContents.debugger.detach();
+    });
+
     it('returns response when devtools is opened', async () => {
       w.webContents.loadURL('about:blank');
       w.webContents.debugger.attach();
