@@ -276,6 +276,14 @@ jobs:
         icacls $dir
         "COVERAGE_PROFILE_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         "LLVM_PROFILE_FILE=$dir\electron.%4m%c.profraw" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        # V8 coverage of lib/ (see spec/vitest/electron-pool.ts), labeled Low
+        # the same way in case a sandboxed process writes there.
+        $jsDir = Join-Path $env:RUNNER_TEMP 'electron-js-coverage'
+        New-Item -ItemType Directory -Force -Path (Join-Path $jsDir 'raw') | Out-Null
+        icacls $jsDir /setintegritylevel '(OI)(CI)low'
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        "JS_COVERAGE_DIR=$jsDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "ELECTRON_SPEC_COVERAGE_DIR=$jsDir\raw" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         "IS_COVERAGE=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
     # Safe to parallelize: each step writes a disjoint location (src/electron
     # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*,
