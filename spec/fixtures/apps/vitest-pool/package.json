@@ -1,0 +1,5 @@
+{
+  "name": "electron-test-vitest-pool",
+  "type": "module",
+  "main": "index.js"
+}
