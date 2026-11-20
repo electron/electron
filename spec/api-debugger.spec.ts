@@ -1,4 +1,4 @@
-import { BrowserWindow, WebContentsView } from 'electron/main';
+import { BaseWindow, BrowserWindow, WebContentsView } from 'electron/main';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -534,7 +534,12 @@ describe('debugger module', () => {
       await view.webContents.loadURL('about:blank');
       view.webContents.debugger.attach();
 
+      // While it is in no window, no window shows it.
       w.contentView.removeChildView(view);
+      await expect(view.webContents.debugger.sendCommand('Browser.getWindowForTarget')).rejects.toThrow(
+        'Browser window not found'
+      );
+
       other.contentView.addChildView(view);
       const { windowId } = await view.webContents.debugger.sendCommand('Browser.getWindowForTarget');
       expect(windowId).toBe(other.id);
@@ -546,6 +551,70 @@ describe('debugger module', () => {
       const { windowId: windowIdAfterClose } =
         await view.webContents.debugger.sendCommand('Browser.getWindowForTarget');
       expect(windowIdAfterClose).toBe(other.id);
+
+      // Nor once it is removed and not added back.
+      other.contentView.removeChildView(view);
+      await expect(view.webContents.debugger.sendCommand('Browser.getWindowForTarget')).rejects.toThrow(
+        'Browser window not found'
+      );
+    });
+
+    it('getWindowForTarget returns the BaseWindow that hosts a WebContentsView', async () => {
+      const base = new BaseWindow({ show: false, width: 400, height: 400 });
+      const view = new WebContentsView();
+      defer(() => view.webContents.close());
+      base.contentView.addChildView(view);
+      await view.webContents.loadURL('about:blank');
+      view.webContents.debugger.attach();
+      const { windowId } = await view.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(base.id);
+    });
+
+    it('getWindowForTarget returns the window of a window.open() child', async () => {
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { show: false }
+      }));
+      const created = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+      await w.webContents.executeJavaScript("window.open('about:blank'); null");
+      const [child] = await created;
+      child.webContents.debugger.attach();
+      const { windowId } = await child.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(child.id);
+    });
+
+    it('getWindowForTarget returns the window that embeds a <webview>', async () => {
+      const embedder = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+      const attached = once(embedder.webContents, 'did-attach-webview') as Promise<[unknown, Electron.WebContents]>;
+      await embedder.loadURL('data:text/html,<webview src="about:blank"></webview>');
+      const [, guest] = await attached;
+      guest.debugger.attach();
+      const { windowId } = await guest.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(embedder.id);
+    });
+
+    // An offscreen webContents' native view is not inside the window.
+    it('getWindowForTarget returns the window of an offscreen BrowserWindow', async () => {
+      const osr = new BrowserWindow({ show: false, webPreferences: { offscreen: true } });
+      await osr.loadURL('about:blank');
+      osr.webContents.debugger.attach();
+      const { windowId } = await osr.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(osr.id);
+    });
+
+    it('getWindowForTarget follows an offscreen WebContentsView', async () => {
+      const view = new WebContentsView({ webPreferences: { offscreen: true } });
+      defer(() => view.webContents.close());
+      w.contentView.addChildView(view);
+      await view.webContents.loadURL('about:blank');
+      view.webContents.debugger.attach();
+      const { windowId } = await view.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(w.id);
+
+      w.contentView.removeChildView(view);
+      await expect(view.webContents.debugger.sendCommand('Browser.getWindowForTarget')).rejects.toThrow(
+        'Browser window not found'
+      );
     });
 
     const openDevTools = async (mode: Electron.OpenDevToolsOptions['mode']) => {

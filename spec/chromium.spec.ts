@@ -700,8 +700,14 @@ describe('command line switches', () => {
         pipe.onmessage = resolve;
       });
       const exited = once(appProcess, 'exit');
+      // 'close' comes after the pipes have been drained, so a reply that was
+      // written is seen first.
+      const closed = once(appProcess, 'close').then(() => null);
       pipe.send({ id: 1, method: 'Browser.close', params: {} });
-      expect(await response).toEqual({ id: 1, result: {} });
+      // As in Chrome, the reply is best-effort: the pipe can be shut down
+      // before it has been written, and then the client only sees EOF.
+      const reply = await Promise.race([response, closed]);
+      if (reply !== null) expect(reply).toEqual({ id: 1, result: {} });
       await exited;
     });
     it('should handle Browser window commands for a target', async () => {

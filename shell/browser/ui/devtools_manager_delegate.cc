@@ -29,10 +29,12 @@
 #include "net/base/net_errors.h"
 #include "net/socket/stream_socket.h"
 #include "net/socket/tcp_server_socket.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/electron_paths.h"
 #include "third_party/inspector_protocol/crdtp/chromium/protocol_traits.h"
@@ -129,15 +131,35 @@ base::DictValue GetWindowBoundsDict(const NativeWindow* window) {
 
 // Returns the window that shows |web_contents|.
 NativeWindow* GetHostWindow(content::WebContents* web_contents) {
-  // Like Chrome, which only looks for tabs, a built-in DevTools frontend has
-  // no browser window, whether docked or undocked. A frontend set with
-  // setDevToolsWebContents() is the app's own contents and has its own relay.
+  // A <webview> is shown wherever its embedder is.
+  web_contents = web_contents->GetOutermostWebContents();
+  // A built-in DevTools frontend has no window of its own. Docked, it is part
+  // of the inspected contents' view; undocked, it is shown in a widget of its
+  // own that is not a NativeWindow. (In Chrome, undocked DevTools is a tab of
+  // a TYPE_DEVTOOLS Browser and so does have a window.) A frontend set with
+  // setDevToolsWebContents() is the app's own contents and resolves like any
+  // other.
   if (InspectableWebContents::FromDevToolsWebContents(web_contents))
     return nullptr;
   // Set for a window's own contents, its WebContentsViews and <webview>s, and
   // kept up to date when a WebContentsView moves to another window.
   auto* relay = NativeWindowRelay::FromWebContents(web_contents);
-  return relay ? relay->GetNativeWindow() : nullptr;
+  NativeWindow* window = relay ? relay->GetNativeWindow() : nullptr;
+  if (!window)
+    return nullptr;
+  // The relay still names the window after a WebContentsView has been removed
+  // from it, so check that the contents' view is still inside the window's
+  // widget. This checks the views tree rather than the contents' native view,
+  // which with offscreen rendering is never inside the widget on macOS and is
+  // the owner window's own native view elsewhere.
+  auto* api_web_contents = api::WebContents::From(web_contents);
+  InspectableWebContents* inspectable_web_contents =
+      api_web_contents ? api_web_contents->inspectable_web_contents() : nullptr;
+  InspectableWebContentsView* view =
+      inspectable_web_contents ? inspectable_web_contents->GetView() : nullptr;
+  if (!view || view->GetWidget() != window->widget())
+    return nullptr;
+  return window;
 }
 
 crdtp::DispatchResponse GetWindowForTarget(
@@ -367,7 +389,10 @@ void DevToolsManagerDelegate::HandleCommand(
         FROM_HERE, base::BindOnce([]() { Browser::Get()->Quit(); }));
     return;
   }
-  // Like Chrome, only expose window management to trusted clients.
+  // Kept for parity with Chrome, which only exposes window management to
+  // trusted clients. IsTrusted() defaults to true and no Electron client
+  // overrides it, so today any debugger client, webContents.debugger
+  // included, can move or resize any window.
   if (channel->GetClient()->IsTrusted()) {
     if (CommandHandler handler =
             GetWindowCommandHandler(dispatchable.Method())) {
