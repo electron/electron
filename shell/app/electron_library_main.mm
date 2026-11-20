@@ -8,6 +8,10 @@
 #include "shell/app/electron_library_main.h"
 
 #include <dlfcn.h>
+#include <stdlib.h>
+#include <sysexits.h>
+
+#include <iostream>
 
 #include "base/apple/bundle_locations.h"
 #include "base/apple/scoped_nsautorelease_pool.h"
@@ -19,6 +23,7 @@
 #include "base/files/file_util.h"
 #include "base/i18n/icu_util.h"
 #include "base/notreached.h"
+#include "base/strings/cstring_view.h"
 #include "content/public/app/content_main.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
@@ -28,6 +33,7 @@
 #include "shell/app_shim/app_shim_main_delegate.h"
 #include "shell/common/app_shim_constants.h"
 #include "shell/common/electron_command_line.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/uv_includes.h"
 
@@ -65,7 +71,31 @@ base::FilePath HostBundlePathFromLoadedFramework() {
 }
 #endif  // !IS_MAS_BUILD()
 
+[[nodiscard]] bool IsEnvSet(const base::cstring_view name) {
+  const char* const indicator = getenv(name.c_str());
+  return indicator && *indicator;
+}
+
 }  // namespace
+
+int ElectronExecutableMain(int argc, char* argv[], int is_helper) {
+  if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
+    return ElectronInitializeICUandStartNode(argc, argv);
+  }
+
+  // Helper apps only ever host child processes, which are always launched with
+  // --type. Started bare (for example by child_process.fork() while the
+  // runAsNode fuse is disabled) a helper would otherwise boot a second browser
+  // process out of the helper bundle, whose own children then fail to launch.
+  if (is_helper && !HasProcessTypeSwitch(argc, argv)) {
+    std::cerr << "This is a helper executable and cannot be launched directly; "
+                 "it requires a --type argument from the browser process."
+              << std::endl;
+    return EX_USAGE;
+  }
+
+  return ElectronMain(argc, argv);
+}
 
 int ElectronMain(int argc, char* argv[]) {
   if (!HasProcessTypeSwitch(argc, argv))
