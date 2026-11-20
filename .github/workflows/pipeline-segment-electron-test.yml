@@ -388,6 +388,9 @@ jobs:
         cd src/out/Default
         Expand-Archive -Force dist.zip -DestinationPath ./
         if (Test-Path xcache.zip) { Expand-Archive -Force xcache.zip -DestinationPath ./ }
+    - name: Strip coverage mapping from electron.exe (win)
+      if: ${{ inputs.is-coverage && inputs.target-platform == 'win' }}
+      run: node src/electron/script/actions/strip-coverage-mapping-win.mjs src/out/Default/electron.exe
     - name: Unzip Dist (unix)
       if: ${{ inputs.target-platform != 'win' }}
       run: |
