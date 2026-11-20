@@ -424,6 +424,45 @@ describe('WebContentsView', () => {
       expect(await getPageSize()).toEqual(attachedPageSize);
     });
 
+    it('keeps the size of an offscreen page across a renderer restart', async () => {
+      const w = new BaseWindow({ show: false, width: 100, height: 100 });
+      const view = new WebContentsView({ webPreferences: { offscreen: true, backgroundThrottling: false } });
+      defer(() => view.webContents.destroy());
+      w.contentView.addChildView(view);
+      const paint = once(view.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
+      await view.webContents.loadURL('data:text/html,<body style="background: red"></body>');
+      const [, , attachedImage] = await paint;
+      const attachedSize = attachedImage.getSize();
+      expect(attachedSize.width).toBeGreaterThan(0);
+      expect(attachedSize.height).toBeGreaterThan(0);
+      const getPageSize = () => view.webContents.executeJavaScript('[innerWidth, innerHeight]');
+      const attachedPageSize = await getPageSize();
+
+      w.contentView.removeChildView(view);
+      const gone = once(view.webContents, 'render-process-gone');
+      view.webContents.forcefullyCrashRenderer();
+      await gone;
+      const loaded = once(view.webContents, 'did-finish-load');
+      view.webContents.reload();
+      await loaded;
+      expect(await getPageSize()).toEqual(attachedPageSize);
+      // The first frame after a renderer restart can be empty, so wait for one
+      // with content.
+      const detachedImage = await new Promise<Electron.NativeImage>((resolve) => {
+        const onPaint = (_event: any, _dirty: Electron.Rectangle, image: Electron.NativeImage) => {
+          if (image.isEmpty()) {
+            view.webContents.invalidate();
+            return;
+          }
+          view.webContents.off('paint', onPaint);
+          resolve(image);
+        };
+        view.webContents.on('paint', onPaint);
+        view.webContents.invalidate();
+      });
+      expect(detachedImage.getSize()).toEqual(attachedSize);
+    });
+
     it('does not fullscreen the old window', { tags: ['serial'] }, async () => {
       const w = new BaseWindow();
       const view = new WebContentsView();
