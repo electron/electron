@@ -695,8 +695,10 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
     size.SetToMin(max_size);
 
   NSRect cocoa_bounds = NSMakeRect(bounds.x(), 0, size.width(), size.height());
-  // Flip coordinates based on the primary screen.
-  NSScreen* screen = [[NSScreen screens] firstObject];
+  // Flip coordinates based on the window's screen (not necessarily the primary
+  // screen). This fixes coordinate conversion bugs when the window is on a
+  // secondary display.
+  NSScreen* screen = [window_ screen] ?: [[NSScreen screens] firstObject];
   cocoa_bounds.origin.y = NSHeight([screen frame]) - size.height() - bounds.y();
 
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
@@ -707,7 +709,7 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
 gfx::Rect NativeWindowMac::GetBounds() const {
   NSRect frame = [window_ frame];
   gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-  NSScreen* screen = [[NSScreen screens] firstObject];
+  NSScreen* screen = [window_ screen] ?: [[NSScreen screens] firstObject];
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
 }
@@ -722,7 +724,7 @@ gfx::Rect NativeWindowMac::GetNormalBounds() const {
   }
   NSRect frame = original_frame_;
   gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-  NSScreen* screen = [[NSScreen screens] firstObject];
+  NSScreen* screen = [window_ screen] ?: [[NSScreen screens] firstObject];
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
   // Works on OS_WIN !
