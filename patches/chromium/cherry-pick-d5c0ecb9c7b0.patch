@@ -18,10 +18,10 @@ Commit-Queue: Adam Rice <ricea@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1707308}
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 84295839dd741111822230f6905d4995db7b56ba..7c0be3c96c448032c433c7e71655c9267c5b7861 100644
+index 76bc26d6314fefc360b7aa96878caf617b9f5429..b46c4f597379aa251fa94516dcf4060f5e1f5615 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -14876,6 +14876,10 @@ void RenderFrameHostImpl::CreateWebSocketConnector(
+@@ -14872,6 +14872,10 @@ void RenderFrameHostImpl::CreateWebSocketConnector(
      mojo::ReportBadMessage("WebSockets are not allowed in MHTML documents.");
      return;
    }

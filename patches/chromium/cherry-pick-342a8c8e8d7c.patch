@@ -13,7 +13,7 @@ Cr-Commit-Position: refs/heads/main@{#1718306}
 Electron adaptation notes (45-x-y): element.cc conflicted only on the signature line, since the branch's Element::DidChangeIsInCanvasSubtree() takes no CanvasSubtreePropagation argument (added upstream later); the fix's IsLink() style-recalc block is inserted at the top of the branch's function unchanged. html_canvas_element_test.cc conflicted because the earlier Electron backport of 8564744 appended RemoveAndReinsertSlottedElementToSameHost at the same spot; both tests are kept, the new SlotReassignmentInvalidatesVisitedLinkStyle test after it.
 
 diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
-index 509ad5092fc24ebbbb8db229d4ea6ea457d38c4a..bc6671cabbba1becfb2915f7865ea181da712ab4 100644
+index a6cdf72ea1a806de1a54beafe8ab82aff023db40..722b49b92bd993b665aba01cde458ce27f46a68b 100644
 --- a/third_party/blink/renderer/core/dom/element.cc
 +++ b/third_party/blink/renderer/core/dom/element.cc
 @@ -4540,6 +4540,11 @@ bool Element::IsCanvasOrInCanvasSubtree() const {

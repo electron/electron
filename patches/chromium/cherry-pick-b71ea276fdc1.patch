@@ -84,7 +84,7 @@ index c50e857d6f4bfbea0061bbaf4525af43d4c5d97a..d55bc8cd0f1813a3362bbbc4e258d34e
    Initialize(kHttpUrl, 100);
    Start();
 diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
-index 81db34216de6bfeda8bd8097d1e6d73d4e097fef..1e99ab799647ab281243255d96ab49bf868730e2 100644
+index 2bac32eefbc4e330a5608195d8e5579ff7d75a8d..820826c6c4e679808fab81c4e122533418146eaa 100644
 --- a/third_party/blink/web_tests/TestExpectations
 +++ b/third_party/blink/web_tests/TestExpectations
 @@ -6438,9 +6438,6 @@ crbug.com/1396185 accessibility/reach-and-scroll-overflow-div-without-mouse.html

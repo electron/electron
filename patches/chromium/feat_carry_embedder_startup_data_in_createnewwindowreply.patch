@@ -26,7 +26,7 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index cb051c03caa11211db170791aaf65e877057fc46..84295839dd741111822230f6905d4995db7b56ba 100644
+index 1a3cd345006ed567a5fbcd020394311464d3559d..76bc26d6314fefc360b7aa96878caf617b9f5429 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -10850,7 +10850,12 @@ void RenderFrameHostImpl::CreateNewWindow(

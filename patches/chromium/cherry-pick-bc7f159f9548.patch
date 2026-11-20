@@ -574,10 +574,10 @@ index bbdb6abf7b0ab4a66e097dd431fa140abb574ef2..835183192a385d210a4d9f20106f49f2
  }
  
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index d420997c217ccf3b478dbc42b556210f0b846589..30563f7ddbc672fe65e50a09c4050c83261a9a48 100644
+index 4b12cad329fffbfebfb298a510a1e727f18644e0..010b35232da18e25c8e86131312406bfa956a3f5 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -6117,6 +6117,20 @@
+@@ -6124,6 +6124,20 @@
        name: "StaleImageNaturalSizeDuringRevalidation",
        status: "stable",
      },

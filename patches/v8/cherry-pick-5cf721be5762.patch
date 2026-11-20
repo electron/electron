@@ -511,10 +511,10 @@ index ec33f43b1284393db3c0c430e181c3c248e7792b..75e9a56a929f0bdff1a63787dca16fd3
    // writes into this box rather than HeapNumber assignment.
    void CheckDescriptorConsidersNumbersMutable(TNode<Word32T> handler_word,
 diff --git a/src/ic/ic.cc b/src/ic/ic.cc
-index f6e7d6422a2732b2fb142b0c8c3a136592482fc9..d009f8b88968b5d733789bb793444ac1753f6ddb 100644
+index e95ff8d19b27a14392c42a381a683b9920162ea7..45c701aa7219871ae2795ebb8b160e3d870ea866 100644
 --- a/src/ic/ic.cc
 +++ b/src/ic/ic.cc
-@@ -2706,16 +2706,9 @@ MaybeObjectHandle StoreIC::ComputeHandler(LookupIterator* lookup) {
+@@ -2716,16 +2716,9 @@ MaybeObjectHandle StoreIC::ComputeHandler(LookupIterator* lookup) {
            return MaybeObjectHandle(StoreHandler::StoreSharedStructField(
                isolate(), descriptor, index, lookup->representation()));
          }
@@ -533,7 +533,7 @@ index f6e7d6422a2732b2fb142b0c8c3a136592482fc9..d009f8b88968b5d733789bb793444ac1
        }
  
        // -------------- Constant properties --------------
-@@ -3518,10 +3511,9 @@ RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
+@@ -3528,10 +3521,9 @@ RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
  
    FeedbackSlot vector_slot = FeedbackVector::ToSlot(slot);
  
@@ -547,7 +547,7 @@ index f6e7d6422a2732b2fb142b0c8c3a136592482fc9..d009f8b88968b5d733789bb793444ac1
    FeedbackSlotKind kind = FeedbackSlotKind::kSetNamedStrict;
    Handle<FeedbackVector> vector = Handle<FeedbackVector>();
    if (!IsUndefined(*maybe_vector)) {
-@@ -3537,6 +3529,9 @@ RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
+@@ -3547,6 +3539,9 @@ RUNTIME_FUNCTION(Runtime_StoreIC_Miss) {
    RETURN_RESULT_OR_FAILURE(isolate, ic.Store(receiver, key, value));
  }
  
@@ -557,7 +557,7 @@ index f6e7d6422a2732b2fb142b0c8c3a136592482fc9..d009f8b88968b5d733789bb793444ac1
  RUNTIME_FUNCTION(Runtime_DefineNamedOwnIC_Miss) {
    HandleScope scope(isolate);
    DCHECK_EQ(5, args.length());
-@@ -3569,6 +3564,7 @@ RUNTIME_FUNCTION(Runtime_DefineNamedOwnIC_Miss) {
+@@ -3579,6 +3574,7 @@ RUNTIME_FUNCTION(Runtime_DefineNamedOwnIC_Miss) {
    RETURN_RESULT_OR_FAILURE(isolate, ic.Store(receiver, key, value));
  }
  

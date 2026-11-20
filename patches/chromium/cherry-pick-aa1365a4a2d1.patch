@@ -20,7 +20,7 @@ Cr-Commit-Position: refs/heads/main@{#1717573}
 Electron adaptation notes (45-x-y): html_canvas_element_test.cc: the new SlotAssignmentDuringSetIsInCanvasSubtree test was appended by hand next to tests added by earlier Electron backports at the same location; element.cc merged cleanly.
 
 diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
-index 4384656d2d63b5ba1363c864fac31b1ca24c1899..8bc5fce4338b508d5697d4b4194902365bcd8696 100644
+index 42f83455771118d7bcca15ef21191764ca561cbc..6a085e19b60cf2eaf03a5db141340aec63fb4b87 100644
 --- a/third_party/blink/renderer/core/dom/element.cc
 +++ b/third_party/blink/renderer/core/dom/element.cc
 @@ -4444,7 +4444,8 @@ void Element::VerifySubtreeIsInCanvas(bool value) {

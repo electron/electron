@@ -343,7 +343,7 @@ index 497a2733b2e670e403393c9280d980972aad9312..0e1de500d2082a17c1bdb369e348b5a6
  // background timeout timer is fired.
  void PrerenderBrowserTest::TestCancelPrerendersWhenTimeout(
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 7c0be3c96c448032c433c7e71655c9267c5b7861..5b88779475cfa0204e66a531f5ad2891782c7718 100644
+index b46c4f597379aa251fa94516dcf4060f5e1f5615..37fc83dc1431a117cc9e2aa98b04a8e4ad70b8e8 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -2625,6 +2625,15 @@ RenderFrameHostImpl::RenderFrameHostImpl(
@@ -418,7 +418,7 @@ index 7c0be3c96c448032c433c7e71655c9267c5b7861..5b88779475cfa0204e66a531f5ad2891
  }
  
  void RenderFrameHostImpl::BindAssociatedInterfaceProviderReceiver(
-@@ -13957,13 +13969,7 @@ void RenderFrameHostImpl::CreateBrokerHolder() {
+@@ -13953,13 +13965,7 @@ void RenderFrameHostImpl::CreateBrokerHolder() {
    CHECK(!broker_holder_);
  
    broker_holder_.emplace(this);
@@ -433,7 +433,7 @@ index 7c0be3c96c448032c433c7e71655c9267c5b7861..5b88779475cfa0204e66a531f5ad2891
      broker_holder_->broker().ApplyMojoBinderPolicies(
          mojo_binder_policy_applier_.get());
    }
-@@ -17709,15 +17715,8 @@ void RenderFrameHostImpl::DidCommitNavigation(
+@@ -17705,15 +17711,8 @@ void RenderFrameHostImpl::DidCommitNavigation(
    }
  
    if (interface_params) {
@@ -451,7 +451,7 @@ index 7c0be3c96c448032c433c7e71655c9267c5b7861..5b88779475cfa0204e66a531f5ad2891
      }
      BindBrowserInterfaceBrokerReceiver(
          std::move(interface_params->browser_interface_broker_receiver));
-@@ -17731,8 +17730,9 @@ void RenderFrameHostImpl::DidCommitNavigation(
+@@ -17727,8 +17726,9 @@ void RenderFrameHostImpl::DidCommitNavigation(
      // hence possibly from a different security origin, will no longer be
      // dispatched.
      if (!frame_tree_node_->is_on_initial_empty_document()) {
