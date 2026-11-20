@@ -219,20 +219,26 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       return w;
     };
 
-    // The first moves after showing a window, or after its web contents were
-    // replaced, do not always arrive (seen on windows-11-arm), so nudge the
-    // cursor in the MARGIN until one reaches |page|, then leave it in the
-    // MARGIN with the page's event log cleared.
-    const warmUp = async (page: Page) => {
+    // Nudges the cursor around |point| (window client coordinates) until
+    // |condition| holds: the first moves after showing a window, or after its
+    // web contents were replaced, do not always arrive (seen on
+    // windows-11-arm).
+    const nudgeUntil = async (point: Electron.Point, condition: () => Promise<boolean>) => {
       let offset = 0;
       await waitUntil(
         async () => {
           offset = offset === 0 ? 2 : 0;
-          await moveTo(inWindow({ x: MARGIN.x + offset, y: MARGIN.y + offset }));
-          return (await count(page, 'mousemove')) > 0;
+          await moveTo(inWindow({ x: point.x + offset, y: point.y + offset }));
+          return condition();
         },
         { rate: 100 }
       );
+    };
+
+    // Nudges the cursor in the MARGIN until a move reaches |page|, then leaves
+    // it in the MARGIN with the page's event log cleared.
+    const warmUp = async (page: Page) => {
+      await nudgeUntil(MARGIN, async () => (await count(page, 'mousemove')) > 0);
       await moveInWindow(page, MARGIN);
       await clearEvents(page);
     };
@@ -370,21 +376,6 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       // Waits until nothing more arrives, so that "exactly one" counts also
       // catch a late duplicate.
       const settle = () => setTimeout(300);
-
-      // Nudges the cursor around |point| (window client coordinates) until
-      // |condition| holds: the first moves after showing a window do not
-      // always arrive.
-      const nudgeUntil = async (point: Electron.Point, condition: () => Promise<boolean>) => {
-        let offset = 0;
-        await waitUntil(
-          async () => {
-            offset = offset === 0 ? 2 : 0;
-            await moveTo(inWindow({ x: point.x + offset, y: point.y + offset }));
-            return condition();
-          },
-          { rate: 100 }
-        );
-      };
 
       // Shows a window below the one under test to catch the clicks that go
       // through it, so that they never land on the desktop. Not focusable, so
