@@ -3809,8 +3809,14 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
 
   if (owner_window) {
     native_lifecycle_->owner_window_ = owner_window->GetWeakPtr();
-    NativeWindowRelay::CreateForWebContents(web_contents,
-                                            owner_window->GetWeakPtr());
+    // A WebContentsView can move to another window, so point an existing relay
+    // at the new window rather than keeping the first one.
+    if (auto* relay = NativeWindowRelay::FromWebContents(web_contents)) {
+      relay->SetNativeWindow(owner_window->GetWeakPtr());
+    } else {
+      NativeWindowRelay::CreateForWebContents(web_contents,
+                                              owner_window->GetWeakPtr());
+    }
     native_lifecycle_->background_throttling_registration_ =
         owner_window->RegisterBackgroundThrottlingSource(
             native_lifecycle_.get());
@@ -3821,6 +3827,31 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
   auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetNativeWindow(owner_window);
+
+  // Attached <webview> guests and the built-in DevTools frontend took their
+  // window from this WebContents, so they follow it to its new one. An
+  // undocked frontend stays open after this view is detached, so it keeps its
+  // owner when there is no new window. An app frontend from
+  // setDevToolsWebContents() may live in its own window, so it is left alone.
+  // Collect the guests first so a re-entrant attach or detach can't
+  // invalidate the WebViewManager iteration.
+  std::vector<base::WeakPtr<content::WebContents>> guests;
+  if (auto* manager = WebViewManager::GetWebViewManager(web_contents)) {
+    manager->ForEachGuest(web_contents, [&](content::WebContents* guest) {
+      guests.push_back(guest->GetWeakPtr());
+      return false;
+    });
+  }
+  for (const auto& guest : guests) {
+    if (auto* api_guest = WebContents::From(guest.get()))
+      api_guest->SetOwnerWindow(owner_window);
+  }
+  if (auto* iwc = inspectable_web_contents(); iwc && owner_window) {
+    if (auto* devtools = iwc->managed_devtools_web_contents()) {
+      if (auto* api_devtools = WebContents::From(devtools))
+        api_devtools->SetOwnerWindow(devtools, owner_window);
+    }
+  }
 
   // Replay an openDevTools() that was waiting for this owner.
   if (owner_window)
