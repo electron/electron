@@ -15,6 +15,7 @@
 
 #include "base/task/single_thread_task_runner.h"
 #include "components/prefs/scoped_user_pref_update.h"
+#include "electron/mas.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
@@ -343,6 +344,14 @@ void BaseWindow::OnWindowEnterFullScreen() {
 void BaseWindow::OnWindowLeaveFullScreen() {
   window_->DebouncedSaveWindowState();
   Emit("leave-full-screen");
+}
+
+void BaseWindow::UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) {
+  const bool overlaid = window_->IsTitleBarOverlayOverlaid();
+  if (last_window_controls_overlay_ == std::pair(bounding_rect, overlaid))
+    return;
+  last_window_controls_overlay_.emplace(bounding_rect, overlaid);
+  Emit("window-controls-overlay-changed", bounding_rect, overlaid);
 }
 
 void BaseWindow::OnWindowSwipe(const std::string& direction) {
@@ -933,14 +942,6 @@ v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
 }
 #endif
 
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                                    gin::Arguments* args) {
-  static_cast<NativeWindowViews*>(window_.get())
-      ->SetTitleBarOverlay(options, args);
-}
-#endif
-
 // static
 void BaseWindow::ClearPersistedState(const std::string& window_name) {
   if (window_name.empty()) {
@@ -974,7 +975,8 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
     return nullptr;
   }
   if (!IsAppShimValid(options, &error_message) ||
-      !IsParentValid(options, &error_message)) {
+      !IsParentValid(options, &error_message) ||
+      !IsFullscreenTitlebarValid(options, &error_message)) {
     args->ThrowTypeError(error_message);
     return nullptr;
   }
@@ -1042,6 +1044,49 @@ bool BaseWindow::IsParentValid(const gin_helper::Dictionary& options,
     *error_message = "A window in an app shim can't be a parent window";
     return false;
   }
+  return true;
+}
+
+// static
+bool BaseWindow::IsFullscreenTitlebarValid(
+    const gin_helper::Dictionary& options,
+    std::string* error_message) {
+#if BUILDFLAG(IS_MAC)
+  gin_helper::Dictionary overlay;
+  v8::Local<v8::Value> value;
+  if (!options.Get(options::ktitleBarOverlay, &overlay) ||
+      !overlay.Get(options::kFullscreen, &value) || value->IsUndefined()) {
+    return true;
+  }
+  std::string mode;
+  if (!gin::ConvertFromV8(options.isolate(), value, &mode) ||
+      (mode != "revealNativeTitlebar" && mode != "revealTrafficLights")) {
+    *error_message =
+        "titleBarOverlay.fullscreen must be 'revealNativeTitlebar' or "
+        "'revealTrafficLights'";
+    return false;
+  }
+#if IS_MAS_BUILD()
+  *error_message =
+      "titleBarOverlay.fullscreen is only available in non-MAS macOS builds";
+  return false;
+#else
+  std::string style;
+  if (!options.Get(options::kTitleBarStyle, &style) ||
+      (style != "hidden" && style != "hiddenInset")) {
+    *error_message =
+        "titleBarOverlay.fullscreen requires titleBarStyle 'hidden' or "
+        "'hiddenInset'";
+    return false;
+  }
+  v8::Local<v8::Value> shim;
+  if (options.Get(options::kAppShim, &shim) && !shim->IsNullOrUndefined()) {
+    *error_message =
+        "titleBarOverlay.fullscreen is not supported in app shim windows";
+    return false;
+  }
+#endif
+#endif
   return true;
 }
 
@@ -1262,9 +1307,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod<&BaseWindow::SetThumbnailToolTip>("setThumbnailToolTip")
       .SetMethod<&BaseWindow::SetAppDetails>("setAppDetails")
 #endif
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-      .SetMethod<&BaseWindow::SetTitleBarOverlay>("setTitleBarOverlay")
-#endif
+      .SetMethod<&NativeWindow::SetTitleBarOverlay>("setTitleBarOverlay")
       .SetProperty<&BaseWindow::GetID>("id");
 }
 

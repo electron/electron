@@ -43,6 +43,10 @@ enum class ResizeEdge;
 class Size;
 }  // namespace gfx
 
+namespace gin {
+class Arguments;
+}
+
 namespace gin_helper {
 class Dictionary;
 class PersistentDictionary;
@@ -246,6 +250,9 @@ class NativeWindow : public views::WidgetDelegate {
 
   virtual void SetBackgroundMaterial(const std::string& type);
 
+  virtual void SetTitleBarOverlay(const gin_helper::Dictionary& options,
+                                  gin::Arguments* args);
+
   // Traffic Light API
 #if BUILDFLAG(IS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;
@@ -302,6 +309,7 @@ class NativeWindow : public views::WidgetDelegate {
   }
 
   virtual std::optional<gfx::Rect> GetWindowControlsOverlayRect();
+  virtual bool IsTitleBarOverlayOverlaid() const;
   virtual void SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect);
 
   // Methods called by the WebContents.
