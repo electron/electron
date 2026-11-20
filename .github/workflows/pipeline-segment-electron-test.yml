@@ -236,7 +236,7 @@ jobs:
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_UBSAN=true" >> $GITHUB_ENV
     - name: Load coverage specific environment variables
-      if: ${{ inputs.is-coverage == true }}
+      if: ${{ inputs.is-coverage == true && inputs.target-platform != 'win' }}
       run: |
         # World-writable because Linux tests run as builduser via runuser, and
         # every Electron child process inherits LLVM_PROFILE_FILE and writes here.
@@ -247,6 +247,30 @@ jobs:
         # abnormal exits and sandboxed processes the suite produces.
         echo "LLVM_PROFILE_FILE=$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw" >> $GITHUB_ENV
         echo "IS_COVERAGE=true" >> $GITHUB_ENV
+    # Apps launched through LaunchServices (e.g. ShipIt's post-update relaunch
+    # in the autoUpdater specs) get launchd's environment, not the job's.
+    - name: Set coverage profile path for LaunchServices launches on macOS
+      if: ${{ inputs.is-coverage == true && inputs.target-platform == 'macos' }}
+      run: |
+        launchctl setenv LLVM_PROFILE_FILE "$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw"
+        launchctl getenv LLVM_PROFILE_FILE
+    # Sandboxed renderer and GPU processes run at Low integrity on Windows and
+    # cannot write to a normal (Medium) directory, so label the profile
+    # directory Low and have the files created in it inherit that label.
+    # Same %4m%c pattern as above; continuous mode maps the profile at process
+    # startup, before the sandbox lowers the token.
+    - name: Load coverage specific environment variables (Windows)
+      if: ${{ inputs.is-coverage == true && inputs.target-platform == 'win' }}
+      shell: pwsh
+      run: |
+        $dir = Join-Path $env:RUNNER_TEMP 'electron-coverage'
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        icacls $dir /setintegritylevel '(OI)(CI)low'
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        icacls $dir
+        "COVERAGE_PROFILE_DIR=$dir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "LLVM_PROFILE_FILE=$dir\electron.%4m%c.profraw" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        "IS_COVERAGE=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
     # Safe to parallelize: each step writes a disjoint location (src/electron
     # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*,
     # system CUPS state) and none reads another's output; the env/PATH changes
@@ -364,6 +388,9 @@ jobs:
         cd src/out/Default
         Expand-Archive -Force dist.zip -DestinationPath ./
         if (Test-Path xcache.zip) { Expand-Archive -Force xcache.zip -DestinationPath ./ }
+    - name: Strip coverage mapping from electron.exe (win)
+      if: ${{ inputs.is-coverage && inputs.target-platform == 'win' }}
+      run: node src/electron/script/actions/strip-coverage-mapping-win.mjs src/out/Default/electron.exe
     - name: Unzip Dist (unix)
       if: ${{ inputs.target-platform != 'win' }}
       run: |
