@@ -9,19 +9,20 @@ import { setTimeout } from 'node:timers/promises';
 import { defer, ifdescribe } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
+import type { TestContext } from 'vitest';
+
 const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
 // Tests only run properly on macOS arm64 for now
 const skip = process.platform !== 'darwin' || process.arch !== 'arm64';
-const TEST_TIMEOUT_MS = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
 const STEP_TIMEOUT_MS = 20_000;
 const TEST_TIMEOUT_MARGIN_MS = 2_000;
 
 // Each wait gets a labeled deadline that always expires before the test's own timeout, so a
 // stall fails with the step that stalled, and how long the earlier steps took, instead of a
 // bare test timeout.
-const createStepper = () => {
-  const testDeadline = Date.now() + TEST_TIMEOUT_MS - TEST_TIMEOUT_MARGIN_MS;
+const createStepper = (testTimeoutMs: number) => {
+  const testDeadline = Date.now() + testTimeoutMs - TEST_TIMEOUT_MARGIN_MS;
   const completed: string[] = [];
   return async <T>(description: string, promise: Promise<T>): Promise<T> => {
     const start = Date.now();
@@ -96,8 +97,8 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
     });
   };
 
-  const runSharedTextureTest = async (api: 'subtle' | 'managed', iframe = false) => {
-    const step = createStepper();
+  const runSharedTextureTest = async (ctx: TestContext, api: 'subtle' | 'managed', iframe = false) => {
+    const step = createStepper(ctx.task.timeout);
     const win = new BrowserWindow({
       width: 256,
       height: 256,
@@ -199,9 +200,10 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
   };
 
   describe('import shared texture produced by osr', () => {
-    it('successfully imported and rendered with subtle api', () => runSharedTextureTest('subtle'));
+    it('successfully imported and rendered with subtle api', (ctx) => runSharedTextureTest(ctx, 'subtle'));
 
-    it('successfully imported and rendered with managed api, without iframe', () => runSharedTextureTest('managed'));
+    it('successfully imported and rendered with managed api, without iframe', (ctx) =>
+      runSharedTextureTest(ctx, 'managed'));
 
     it('keeps subtle methods usable after the imported object is garbage collected', async () => {
       const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -232,6 +234,7 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
       }
     });
 
-    it('successfully imported and rendered with managed api, with iframe', () => runSharedTextureTest('managed', true));
+    it('successfully imported and rendered with managed api, with iframe', (ctx) =>
+      runSharedTextureTest(ctx, 'managed', true));
   });
 });
