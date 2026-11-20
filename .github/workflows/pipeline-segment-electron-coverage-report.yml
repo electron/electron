@@ -130,10 +130,17 @@ jobs:
         # own C++.
         sources=("$ROOT/src/electron/shell" "$ROOT/src/electron/chromium_src")
 
+        case "$TARGET_PLATFORM" in
+          linux) PLATFORM_NAME=Linux ;;
+          macos) PLATFORM_NAME=macOS ;;
+          win) PLATFORM_NAME=Windows ;;
+          *) PLATFORM_NAME=$TARGET_PLATFORM ;;
+        esac
+
         "$LLVM_COV" show \
           -format=html \
           -output-dir=coverage-report \
-          -project-title="Electron ($TARGET_PLATFORM $TARGET_ARCH)" \
+          -project-title="Electron ($PLATFORM_NAME $TARGET_ARCH)" \
           -instr-profile=coverage.profdata \
           -compilation-dir="$ROOT/src/out/Default" \
           "${objects[@]}" \
