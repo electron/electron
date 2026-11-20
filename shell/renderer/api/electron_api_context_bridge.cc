@@ -252,29 +252,25 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
         proxied_promise->GetHandle();
 
     v8::Global<v8::Context> global_then_source_context(isolate, source_context);
-    v8::Global<v8::Context> global_then_destination_context(
-        isolate, destination_context);
     global_then_source_context.SetWeak();
-    global_then_destination_context.SetWeak();
     auto then_cb = base::BindOnce(
         [](std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>>
                proxied_promise,
            v8::Isolate* isolate, v8::Global<v8::Context> global_source_context,
-           v8::Global<v8::Context> global_destination_context,
            v8::Local<v8::Value> result) {
-          if (global_source_context.IsEmpty() ||
-              global_destination_context.IsEmpty())
+          v8::Local<v8::Context> destination_context =
+              proxied_promise->GetContext();
+          if (global_source_context.IsEmpty() || destination_context.IsEmpty())
             return;
           v8::MaybeLocal<v8::Value> val;
           {
             v8::TryCatch try_catch(isolate);
             v8::Local<v8::Context> source_context =
                 global_source_context.Get(isolate);
-            val =
-                PassValueToOtherContext(isolate, source_context,
-                                        global_destination_context.Get(isolate),
-                                        result, source_context->Global(), false,
-                                        BridgeErrorTarget::kDestination);
+            val = PassValueToOtherContext(isolate, source_context,
+                                          destination_context, result,
+                                          source_context->Global(), false,
+                                          BridgeErrorTarget::kDestination);
             if (try_catch.HasCaught()) {
               if (try_catch.Message().IsEmpty()) {
                 proxied_promise->RejectWithErrorMessage(
@@ -294,34 +290,29 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
           if (!val.IsEmpty())
             proxied_promise->Resolve(val.ToLocalChecked());
         },
-        proxied_promise, isolate, std::move(global_then_source_context),
-        std::move(global_then_destination_context));
+        proxied_promise, isolate, std::move(global_then_source_context));
 
     v8::Global<v8::Context> global_catch_source_context(isolate,
                                                         source_context);
-    v8::Global<v8::Context> global_catch_destination_context(
-        isolate, destination_context);
     global_catch_source_context.SetWeak();
-    global_catch_destination_context.SetWeak();
     auto catch_cb = base::BindOnce(
         [](std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>>
                proxied_promise,
            v8::Isolate* isolate, v8::Global<v8::Context> global_source_context,
-           v8::Global<v8::Context> global_destination_context,
            v8::Local<v8::Value> result) {
-          if (global_source_context.IsEmpty() ||
-              global_destination_context.IsEmpty())
+          v8::Local<v8::Context> destination_context =
+              proxied_promise->GetContext();
+          if (global_source_context.IsEmpty() || destination_context.IsEmpty())
             return;
           v8::MaybeLocal<v8::Value> val;
           {
             v8::TryCatch try_catch(isolate);
             v8::Local<v8::Context> source_context =
                 global_source_context.Get(isolate);
-            val =
-                PassValueToOtherContext(isolate, source_context,
-                                        global_destination_context.Get(isolate),
-                                        result, source_context->Global(), false,
-                                        BridgeErrorTarget::kDestination);
+            val = PassValueToOtherContext(isolate, source_context,
+                                          destination_context, result,
+                                          source_context->Global(), false,
+                                          BridgeErrorTarget::kDestination);
             if (try_catch.HasCaught()) {
               if (try_catch.Message().IsEmpty()) {
                 proxied_promise->RejectWithErrorMessage(
@@ -340,8 +331,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
           if (!val.IsEmpty())
             proxied_promise->Reject(val.ToLocalChecked());
         },
-        proxied_promise, isolate, std::move(global_catch_source_context),
-        std::move(global_catch_destination_context));
+        proxied_promise, isolate, std::move(global_catch_source_context));
 
     std::ignore = source_promise->Then(
         source_context,
