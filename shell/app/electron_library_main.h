@@ -8,8 +8,16 @@
 #include "build/build_config.h"
 #include "electron/mas.h"
 
+// Also included from the C entry point, shell/app/electron_main_mac.c.
 #if BUILDFLAG(IS_MAC)
+#ifdef __cplusplus
 extern "C" {
+#endif
+// The entry point of the main and helper executables. Handles run-as-node and,
+// when `is_helper` is nonzero, refuses to start without a --type argument,
+// then calls ElectronMain().
+__attribute__((visibility("default"))) int
+ElectronExecutableMain(int argc, char* argv[], int is_helper);
 __attribute__((visibility("default"))) int ElectronMain(int argc, char* argv[]);
 __attribute__((visibility("default"))) int ElectronInitializeICUandStartNode(
     int argc,
@@ -22,7 +30,9 @@ __attribute__((visibility("default"))) int ElectronInitializeICUandStartNode(
 __attribute__((visibility("default"))) int ElectronAppShimMain(int argc,
                                                                char* argv[]);
 #endif
-}
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 #endif
 
 #endif  // ELECTRON_SHELL_APP_ELECTRON_LIBRARY_MAIN_H_

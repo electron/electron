@@ -51,6 +51,21 @@ now opens the same system picker Chrome uses:
   `displaySurface: 'monitor'` instead of `'window'`. Its `deviceId` also
   changes format.
 
+### Behavior Changed: macOS executables link `libelectron_aperitif.dylib`
+
+On macOS, the main and helper executables now link a new library,
+`Electron Framework.framework/Libraries/libelectron_aperitif.dylib`, which
+engages the sandbox in helper processes before Electron Framework or any system
+library other than libSystem runs code. The helper executables are now small
+plain C programs, and the run-as-node handling they used to contain moved into
+Electron Framework.
+
+Apps that sign or notarize Electron with their own scripts must sign this
+library along with the rest of the framework; if it is unsigned, the app fails
+to launch under the hardened runtime. Apps that patched or replaced the helper
+executables, or that check them by size or hash, need to account for the new
+binaries.
+
 ### Removed: `top-level-storage-access` permission
 
 Chromium has removed the `top-level-storage-access` permission type, so it is
