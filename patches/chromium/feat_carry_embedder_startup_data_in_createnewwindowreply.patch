@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f5212c27749291a0417f17224700ec415dc12aee..9ee3998333142f0d7d786e5518dd015400b4d074 100644
+index 0f44eaf16d202c6ae580000615e1881b83754cea..9406d3817d6631f7501f4326d46cb3991e2a3d53 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11246,7 +11246,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11193,7 +11193,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -44,7 +44,7 @@ index f5212c27749291a0417f17224700ec415dc12aee..9ee3998333142f0d7d786e5518dd0154
    new_main_rfh->render_view_host()->RenderViewCreated(new_main_rfh);
  
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 6334636936118cc801e977be7a69e77044b5ddbc..08c46c9d1321c1b5bf3124f6f1fb4a731ecbfc54 100644
+index 75a5bd27dbb19e00db7b40d5ce68f13a2cbd0636..efaa85b0415263e5a4cb7d89b73800ac41a84a73 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -13,6 +13,7 @@ import "content/public/common/window_container_type.mojom";
@@ -55,7 +55,7 @@ index 6334636936118cc801e977be7a69e77044b5ddbc..08c46c9d1321c1b5bf3124f6f1fb4a73
  import "mojo/public/mojom/base/unguessable_token.mojom";
  import "skia/public/mojom/skcolor.mojom";
  import "services/network/public/mojom/content_security_policy.mojom";
-@@ -705,6 +706,14 @@ struct CreateNewWindowReply {
+@@ -700,6 +701,14 @@ struct CreateNewWindowReply {
    // Initial window geometry.
    gfx.mojom.Rect? widget_screen_rect;
    gfx.mojom.Rect? window_screen_rect;
@@ -71,7 +71,7 @@ index 6334636936118cc801e977be7a69e77044b5ddbc..08c46c9d1321c1b5bf3124f6f1fb4a73
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index ca8145d900d9f22c5d0b43464a1f92064a2190a4..3437d210a49e82a570e3c829ecab5706d056600d 100644
+index 5bf6cb05d79596faa7f7ee61b602bc92e9d26bfe..2a741acfe600db92c5ffc48778ad9e543006eed7 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -852,6 +852,13 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -89,7 +89,7 @@ index ca8145d900d9f22c5d0b43464a1f92064a2190a4..3437d210a49e82a570e3c829ecab5706
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 701deb93ef87bfc5aa426b8136a0595e19e6ca78..75e4aca5ef5556a8577b74f89cf1ac83fcee341c 100644
+index 04718d15706d64f2934076324a74abb2dd8fe146..a74fb8a2cdbfd28931b7e7b59d84f8614e8156a4 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -62,6 +62,7 @@
@@ -100,7 +100,7 @@ index 701deb93ef87bfc5aa426b8136a0595e19e6ca78..75e4aca5ef5556a8577b74f89cf1ac83
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1321,6 +1322,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1328,6 +1329,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
@@ -148,10 +148,10 @@ index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 17fcd8e0457979f17de5213344c92de1846ee07d..30a6a998297bf475fe100ec4ba406ec6e5fde7aa 100644
+index 0ff69c4bca65e6d6708e35089b940b04d3b101c9..54f05f8597cbfad91615afc743eb23e85ffaea53 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7218,6 +7218,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7047,6 +7047,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  

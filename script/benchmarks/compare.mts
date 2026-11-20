@@ -10,10 +10,20 @@
 // set and --dry-run is not passed:
 //   electron.perf.<metric>        median per target
 //   electron.perf.delta.<metric>  relative change in percent per comparison
+//   electron.perf.regression      1 when a metric is flagged as a regression
+//                                 in a comparison, else 0
+//   electron.perf.improvement     1 when it is flagged as an improvement
+//
+// With --history (one job of the Benchmarks History workflow, where the
+// candidate is one Electron major's latest release and the baseline the
+// anchor version), it sends only:
+//   electron.perf.history.<metric>        the candidate's median
+//   electron.perf.history.ratio.<metric>  candidate median / anchor median
 //
 // Usage:
 //   node script/benchmarks/compare.mts --results <dir> [--min-change 0.1]
 //     [--alpha 0.05] [--dry-run] [--fail-on-regression]
+//     [--history [--history-run-id <id>]]
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,6 +57,8 @@ export interface MetricComparison extends SampleComparison {
 
 export interface Comparison extends ComparisonDefinition {
   metrics: MetricComparison[];
+  // Metrics only one of the two targets has results for, and which one.
+  unmatched?: { metric: string; target: string }[];
 }
 
 // Suites run through crossbench's `loading` benchmark with generated page
@@ -54,9 +66,16 @@ export interface Comparison extends ComparisonDefinition {
 const PAGE_SUITES = ['loading', 'trace', 'file_loading'];
 
 // Measures read from crossbench's performance.entries probe, which merges
-// every repetition of a story into <story>/performance.entries.json.
+// every repetition of a story into <story>/performance.entries.json. The app
+// shell page (lib/app-shell.mts) marks app-ready once its full first view is
+// in the DOM, and keeps its LCP as the app-lcp mark.
 const PERFORMANCE_ENTRIES: Record<string, Record<string, string>> = {
-  loading: { fcp: 'paint/first-contentful-paint/startTime', load_event_end: 'navigation/loadEventEnd' },
+  loading: {
+    fcp: 'paint/first-contentful-paint/startTime',
+    load_event_end: 'navigation/loadEventEnd',
+    app_ready: 'mark/app-ready/startTime',
+    lcp: 'mark/app-lcp/startTime'
+  },
   file_loading: { files_loaded_ms: 'mark/files-loaded/startTime' }
 };
 
@@ -74,6 +93,24 @@ const readJson = (file: string): any => JSON.parse(fs.readFileSync(file, 'utf8')
 // Values of `data[key].values`, as written by crossbench's metrics merger.
 const valuesOf = (entry: any): number[] => (Array.isArray(entry?.values) ? entry.values.filter(Number.isFinite) : []);
 
+// Reads a JSON result file, or undefined when there is none. crossbench may
+// have been killed while writing one in a run that failed, so when `failed`
+// is set a file that doesn't parse also reads as undefined (and is listed in
+// `unreadable`): its story ends up with no values instead of the whole
+// comparison aborting. A successful run's files must parse.
+function resultReader(failed: boolean, unreadable: string[]) {
+  return (file: string): any => {
+    if (!fs.existsSync(file)) return undefined;
+    try {
+      return readJson(file);
+    } catch (error) {
+      if (!failed) throw error;
+      unreadable.push(file);
+      return undefined;
+    }
+  };
+}
+
 // Returns { metrics: { metric: number }, incomplete: [description] } for one
 // crossbench invocation. A measure with fewer (or more) values than the
 // expected repetitions is dropped, so a run where some repetitions failed or
@@ -81,10 +118,17 @@ const valuesOf = (entry: any): number[] => (Array.isArray(entry?.values) ? entry
 function collectInvocation(
   resultDir: string,
   suite: string,
-  expectedCount: number | undefined
+  expectedCount: number | undefined,
+  failed = false
 ): { metrics: Record<string, number>; incomplete: string[] } {
   const metrics: Record<string, number> = {};
   const incomplete: string[] = [];
+  const unreadable: string[] = [];
+  const read = resultReader(failed, unreadable);
+  const result = () => {
+    for (const file of unreadable) incomplete.push(`${path.relative(resultDir, file)} (unreadable)`);
+    return { metrics, incomplete };
+  };
   const complete = (name: string, values: number[]) => {
     if (values.length === 0) return false;
     if (expectedCount === undefined || values.length === expectedCount) return true;
@@ -94,14 +138,12 @@ function collectInvocation(
   if (!fs.existsSync(resultDir)) return { metrics, incomplete };
 
   if (PRESS_RESULTS[suite]) {
-    const file = path.join(resultDir, PRESS_RESULTS[suite].file);
-    if (!fs.existsSync(file)) return { metrics, incomplete };
-    for (const browser of Object.values<any>(readJson(file))) {
+    for (const browser of Object.values<any>(read(path.join(resultDir, PRESS_RESULTS[suite].file)) ?? {})) {
       const key = PRESS_RESULTS[suite].keys.find((k) => valuesOf(browser.data?.[k]).length > 0);
       const values = key ? valuesOf(browser.data[key]) : [];
       if (complete(`${suite}.score`, values)) metrics[`${suite}.score`] = median(values);
     }
-    return { metrics, incomplete };
+    return result();
   }
 
   // Each invocation runs one browser, so there is one <browser>/stories dir.
@@ -111,7 +153,16 @@ function collectInvocation(
     for (const story of fs.readdirSync(storiesDir)) {
       const storyDir = path.join(storiesDir, story);
       if (!fs.statSync(storyDir).isDirectory()) continue;
-      for (const [measure, values] of Object.entries(storyMeasures(suite, story, storyDir))) {
+      // A story crossbench reported errors for is left out even when every
+      // repetition has a value: the values may not mean what they should. An
+      // unreadable errors file counts as errors.
+      const errorsFile = path.join(storyDir, 'cb.errors.json');
+      const errors = read(errorsFile);
+      if ((Array.isArray(errors) && errors.length > 0) || (errors === undefined && fs.existsSync(errorsFile))) {
+        incomplete.push(`${suite}.${story} (crossbench reported errors)`);
+        continue;
+      }
+      for (const [measure, values] of Object.entries(storyMeasures(suite, story, storyDir, read))) {
         const metric = `${suite}.${story}.${measure}`;
         if (values.length === 0) incomplete.push(`${metric} (no values)`);
         else if (complete(metric, values)) metrics[metric] = median(values);
@@ -131,7 +182,14 @@ function collectInvocation(
       }
     }
   }
-  return { metrics, incomplete };
+  return result();
+}
+
+// Stories of one failed page-suite invocation with at least one complete
+// measure. run.mts --best-effort stops running the stories that have none.
+export function storiesWithResults(resultDir: string, suite: string, expectedCount: number | undefined): Set<string> {
+  const { metrics } = collectInvocation(resultDir, suite, expectedCount, true);
+  return new Set(Object.keys(metrics).map((metric) => metric.split('.')[1]));
 }
 
 // The run directories of one story, one per repetition, in order:
@@ -152,7 +210,6 @@ function runDirs(storyDir: string): string[] {
   return dirs;
 }
 
-const readJsonIfExists = (file: string): any => (fs.existsSync(file) ? readJson(file) : undefined);
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
 // The nearest-rank percentile of a sorted list.
@@ -170,7 +227,10 @@ function processType(cmdline: string): string | undefined {
 }
 
 // PSS in MiB per process type from one meminfo dump (smaps_rollup values
-// are in kB).
+// are in kB). A type with no PSS is left out, not reported as 0: on some
+// versions (Electron 35 to 41) the GPU and renderer processes keep the
+// zygote's command line, so they can't be attributed, and a 0 would read as
+// a 100% improvement. The missing measure is listed as incomplete.
 export function memoryMeasures(dump: any): Record<string, number> {
   const kb: Record<string, number> = { total: 0, browser: 0, renderer: 0, gpu: 0 };
   for (const process of dump?.processes ?? []) {
@@ -181,7 +241,11 @@ export function memoryMeasures(dump: any): Record<string, number> {
     else if (type === 'renderer') kb.renderer += process.pss_total;
     else if (type === 'gpu-process') kb.gpu += process.pss_total;
   }
-  return Object.fromEntries(Object.entries(kb).map(([type, value]) => [`${type}_pss_mib`, value / 1024]));
+  return Object.fromEntries(
+    Object.entries(kb)
+      .filter(([, value]) => value > 0)
+      .map(([type, value]) => [`${type}_pss_mib`, value / 1024])
+  );
 }
 
 const MEMORY_MEASURES = ['total_pss_mib', 'browser_pss_mib', 'renderer_pss_mib', 'gpu_pss_mib'];
@@ -196,7 +260,12 @@ function expectedMeasures(suite: string, story: string): string[] {
 }
 
 // Values per measure (one per repetition) for one story of a page suite.
-function storyMeasures(suite: string, story: string, storyDir: string): Record<string, number[]> {
+function storyMeasures(
+  suite: string,
+  story: string,
+  storyDir: string,
+  read: (file: string) => any
+): Record<string, number[]> {
   const measures: Record<string, number[]> = Object.fromEntries(
     expectedMeasures(suite, story).map((measure) => [measure, []])
   );
@@ -206,7 +275,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
 
   const entries = PERFORMANCE_ENTRIES[suite];
   if (entries) {
-    const data = readJsonIfExists(path.join(storyDir, 'performance.entries.json'));
+    const data = read(path.join(storyDir, 'performance.entries.json'));
     for (const [measure, key] of Object.entries(entries)) {
       for (const value of valuesOf(data?.[key])) add(measure, value);
     }
@@ -218,14 +287,14 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
       const meminfoDir = path.join(runDir, 'meminfo');
       const dumps = fs.existsSync(meminfoDir) ? fs.readdirSync(meminfoDir).filter((f) => f.endsWith('.json')) : [];
       if (dumps.length === 1) {
-        for (const [measure, value] of Object.entries(memoryMeasures(readJson(path.join(meminfoDir, dumps[0]))))) {
+        for (const [measure, value] of Object.entries(memoryMeasures(read(path.join(meminfoDir, dumps[0]))))) {
           add(measure, value);
         }
       }
     } else if (suite === 'trace') {
       const tpDir = path.join(runDir, 'trace_processor');
       if (story === 'resize') {
-        const rows: any[] = readJsonIfExists(path.join(tpDir, 'resize.json')) ?? [];
+        const rows: any[] = read(path.join(tpDir, 'resize.json')) ?? [];
         const latencies = rows
           .map((row) => row.resize_ms)
           .filter(isNumber)
@@ -235,7 +304,7 @@ function storyMeasures(suite: string, story: string, storyDir: string): Record<s
           add('resize_p90_ms', percentile(latencies, 0.9));
         }
       } else {
-        const [row] = readJsonIfExists(path.join(tpDir, 'page_load.json')) ?? [];
+        const [row] = read(path.join(tpDir, 'page_load.json')) ?? [];
         add('fcp', row?.fcp);
         add('lcp', row?.lcp);
       }
@@ -253,23 +322,29 @@ function expectedCountOf(invocation: Invocation, metadata: RunMetadata): number 
 }
 
 // samples[metric][targetId] = one value per round. Only invocations that
-// exited with 0 contribute, and only measures with every repetition present.
-// rejected lists what was left out and why.
+// exited with 0 contribute (in a --best-effort run, failed ones too, so the
+// stories that did complete are kept), and only measures with every
+// repetition present. rejected lists what was left out and why.
 export function collectSamples(resultsDir: string, metadata: RunMetadata): { samples: Samples; rejected: Rejected[] } {
   const samples: Samples = {};
   const rejected: Rejected[] = [];
   for (const invocation of metadata.invocations) {
     const { round, suite, target } = invocation;
-    if (invocation.exitCode !== 0) {
+    const failed = invocation.exitCode !== 0;
+    if (failed && !metadata.bestEffort) {
       rejected.push({ round, suite, target, reason: `crossbench exited with ${invocation.exitCode}` });
       continue;
     }
     const { metrics, incomplete } = collectInvocation(
       path.join(resultsDir, invocation.dir),
       suite,
-      expectedCountOf(invocation, metadata)
+      expectedCountOf(invocation, metadata),
+      failed
     );
-    if (incomplete.length) rejected.push({ round, suite, target, reason: `incomplete: ${incomplete.join(', ')}` });
+    const reasons: string[] = [];
+    if (failed) reasons.push(`crossbench exited with ${invocation.exitCode}, complete stories kept`);
+    if (incomplete.length) reasons.push(`incomplete: ${incomplete.join(', ')}`);
+    if (reasons.length) rejected.push({ round, suite, target, reason: reasons.join('; ') });
     for (const [metric, value] of Object.entries(metrics)) {
       samples[metric] ??= {};
       (samples[metric][target] ??= []).push(value);
@@ -305,6 +380,13 @@ export function compareTargets(
   const ids = new Set(targets.map((target) => target.id));
   return COMPARISONS.filter((c) => ids.has(c.reference) && ids.has(c.candidate)).map((comparison) => ({
     ...comparison,
+    unmatched: Object.keys(samples)
+      .sort()
+      .flatMap((metric) => {
+        const [reference, candidate] = [samples[metric][comparison.reference], samples[metric][comparison.candidate]];
+        if (!reference === !candidate) return [];
+        return [{ metric, target: reference ? comparison.reference : comparison.candidate }];
+      }),
     metrics: Object.keys(samples)
       .sort()
       .filter((metric) => samples[metric][comparison.reference] && samples[metric][comparison.candidate])
@@ -346,17 +428,46 @@ interface SummaryOptions {
   problems?: string[];
   alpha: number;
   minChange: number;
+  history?: boolean;
 }
 
-export function markdownSummary({ metadata, comparisons, rejected, problems = [], alpha, minChange }: SummaryOptions) {
+export function markdownSummary({
+  metadata,
+  comparisons,
+  rejected,
+  problems = [],
+  alpha,
+  minChange,
+  history = false
+}: SummaryOptions) {
   const targets = Object.fromEntries(metadata.targets.map((target) => [target.id, target]));
   const lines = [
-    '## Electron benchmarks',
+    history
+      ? `## Electron benchmarks history: Electron ${majorOf(targets.candidate?.electronVersion ?? '?')}`
+      : '## Electron benchmarks',
     '',
     `${metadata.rounds} interleaved rounds on ${metadata.cpuModel} (${metadata.cpuCount} CPUs, ${metadata.runnerName}${metadata.vmSize ? `, ${metadata.vmSize}` : ''}), crossbench ${metadata.crossbenchRevision.slice(0, 12)}.`,
     `Flagged when Welch's t-test and Mann-Whitney U both give p < ${alpha} and the medians differ by at least ${(minChange * 100).toFixed(0)}%. Thresholds are not calibrated yet.`,
     ''
   ];
+  if (history) {
+    lines.push(
+      'History run: the reference is the anchor version. Compare majors by their ratio to the anchor, not by raw values, which come from different hosts.',
+      ''
+    );
+  }
+  if (metadata.skippedSuites?.length) {
+    lines.push(
+      `:warning: Skipped suites (the candidate failed them in the first two rounds): ${metadata.skippedSuites.join(', ')}`,
+      ''
+    );
+  }
+  if (metadata.skippedStories?.length) {
+    lines.push(
+      `:warning: Skipped stories (no complete results from the candidate in the first two rounds): ${metadata.skippedStories.join(', ')}`,
+      ''
+    );
+  }
   for (const problem of problems) lines.push(`:x: ${problem}`, '');
   if (rejected.length) {
     lines.push(
@@ -369,7 +480,15 @@ export function markdownSummary({ metadata, comparisons, rejected, problems = []
       `### ${comparison.title}`,
       '',
       `Reference: ${describeTarget(targets[comparison.reference])}<br>Candidate: ${describeTarget(targets[comparison.candidate])}`,
-      '',
+      ''
+    );
+    if (comparison.unmatched?.length) {
+      lines.push(
+        `:warning: Not compared, measured for one target only: ${comparison.unmatched.map((u) => `${u.metric} (${u.target} only)`).join(', ')}`,
+        ''
+      );
+    }
+    lines.push(
       '| Metric | Reference | Candidate | Change | p (Welch) | p (MWU) | n | Verdict |',
       '| --- | --: | --: | --: | --: | --: | --: | --- |'
     );
@@ -451,6 +570,83 @@ export function datadogSeries(
       });
     }
   }
+
+  // One 0/1 gauge per metric and comparison for each verdict, so a monitor
+  // can alert on `max:electron.perf.regression{*} by {metric,comparison}`.
+  // Every evaluated metric reports, flagged or not, so the monitor sees the
+  // flag clear on the next run. The tags are kept to low-cardinality values.
+  for (const comparison of comparisons) {
+    const candidate = targets[comparison.candidate];
+    const reference = targets[comparison.reference];
+    for (const m of comparison.metrics) {
+      for (const verdict of ['regression', 'improvement'] as const) {
+        series.push({
+          metric: `electron.perf.${verdict}`,
+          type: 3, // GAUGE
+          points: [{ timestamp, value: m.verdict === verdict ? 1 : 0 }],
+          tags: [
+            tag('platform', metadata.platform),
+            tag('arch', metadata.arch),
+            tag('metric', m.metric),
+            tag('benchmark', m.metric.split('.')[0]),
+            tag('comparison', comparison.name),
+            tag('electron_version', candidate.electronVersion),
+            tag('baseline_version', reference.electronVersion)
+          ]
+        });
+      }
+    }
+  }
+  return series;
+}
+
+const majorOf = (version: string) => version.split('.')[0];
+
+// Series for one job of a version-ladder (history) run: the candidate is the
+// latest release of one Electron major and the baseline is the anchor, run
+// interleaved on the same runner. Raw values from different jobs ran on
+// different hosts and are not comparable; the ratio to the anchor, measured
+// in the same job, is. Values that are not positive (for example a PSS that
+// could not be attributed to a process type) are left out, since their ratio
+// means nothing.
+export function historySeries(
+  { metadata, comparisons, historyRunId }: { metadata: RunMetadata; comparisons: Comparison[]; historyRunId: string },
+  now = Date.now()
+): Series[] {
+  const timestamp = Math.round(now / 1000);
+  const targets = Object.fromEntries(metadata.targets.map((target) => [target.id, target]));
+  const series: Series[] = [];
+  for (const comparison of comparisons) {
+    const candidate = targets[comparison.candidate];
+    const anchor = targets[comparison.reference];
+    const tags = [
+      tag('platform', metadata.platform),
+      tag('arch', metadata.arch),
+      tag('cpu_model', metadata.cpuModel),
+      tag('electron_major', majorOf(candidate.electronVersion)),
+      tag('electron_version', candidate.electronVersion),
+      tag('chromium_version', candidate.chromiumVersion),
+      tag('anchor_version', anchor.electronVersion),
+      tag('history_run_id', historyRunId)
+    ];
+    for (const m of comparison.metrics) {
+      if (!(m.candidateMedian > 0 && Number.isFinite(m.candidateMedian))) continue;
+      const metricTags = [...tags, tag('benchmark', m.metric.split('.')[0])];
+      series.push({
+        metric: `electron.perf.history.${m.metric}`,
+        type: 3, // GAUGE
+        points: [{ timestamp, value: m.candidateMedian }],
+        tags: metricTags
+      });
+      if (!(m.referenceMedian > 0 && Number.isFinite(m.referenceMedian))) continue;
+      series.push({
+        metric: `electron.perf.history.ratio.${m.metric}`,
+        type: 3, // GAUGE
+        points: [{ timestamp, value: m.candidateMedian / m.referenceMedian }],
+        tags: metricTags
+      });
+    }
+  }
   return series;
 }
 
@@ -474,7 +670,9 @@ async function main() {
       'min-change': { type: 'string', default: '0.1' },
       alpha: { type: 'string', default: '0.05' },
       'dry-run': { type: 'boolean', default: false },
-      'fail-on-regression': { type: 'boolean', default: false }
+      'fail-on-regression': { type: 'boolean', default: false },
+      history: { type: 'boolean', default: false },
+      'history-run-id': { type: 'string', default: process.env.GITHUB_RUN_ID ?? 'local' }
     }
   });
   if (!args.results) throw new Error('--results is required');
@@ -494,7 +692,15 @@ async function main() {
     JSON.stringify({ alpha, minChange, metadata, samples, comparisons, rejected, problems }, null, 2)
   );
 
-  const summary = markdownSummary({ metadata, comparisons, rejected, problems, alpha, minChange });
+  const summary = markdownSummary({
+    metadata,
+    comparisons,
+    rejected,
+    problems,
+    alpha,
+    minChange,
+    history: args.history
+  });
   fs.writeFileSync(path.join(resultsDir, 'summary.md'), summary);
   if (process.env.GITHUB_STEP_SUMMARY) {
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
@@ -502,7 +708,9 @@ async function main() {
     console.log(summary);
   }
 
-  const series = datadogSeries({ metadata, samples, comparisons });
+  const series = args.history
+    ? historySeries({ metadata, comparisons, historyRunId: args['history-run-id'] })
+    : datadogSeries({ metadata, samples, comparisons });
   if (args['dry-run']) {
     console.log(`[compare] dry run: would upload ${series.length} series to Datadog`);
     console.log(JSON.stringify({ series }, null, 2));

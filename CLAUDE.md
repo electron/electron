@@ -274,6 +274,10 @@ npm run lint:clang-format # C++ formatting
 npm run lint:api-history  # Validate API history YAML blocks in docs
 ```
 
+### API Best Practices
+
+When adding or updating public APIs, be sure to follow the guidance in `docs/development/api-best-practices.md`.
+
 ## Key Files
 
 | File | Purpose |

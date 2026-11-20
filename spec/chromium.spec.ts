@@ -14,6 +14,7 @@ import {
   type MessageBoxOptions
 } from 'electron/main';
 
+import * as dbus from 'dbus-native';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket, WebSocketServer } from 'ws';
 
@@ -26,6 +27,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import { promisify } from 'node:util';
 
 import { emittedUntil } from './lib/events-helpers.ts';
 import { withTempDirectory } from './lib/fs-helpers.ts';
@@ -2229,6 +2231,374 @@ describe('chromium features', () => {
       otherTop.close();
       await setTimeout(6000);
       expect(await query()).toBe('prompt');
+    });
+  });
+
+  // Picks a directory for a webkitdirectory <input type=file> through the
+  // mock xdg-desktop-portal FileChooser that script/dbus_mock.py hosts on the
+  // fake session bus. A pick succeeds with the URIs queued through
+  // QueueResponse; with nothing queued the mock cancels it.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('webkitdirectory input (Linux portal)', { tags: ['serial'] }, () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+    let queueResponse: (uris: string[]) => Promise<void>;
+    let clearQueuedResponses: () => Promise<void>;
+
+    beforeAll(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+      queueResponse = promisify(mock.QueueResponse.bind(mock));
+      clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
+    });
+
+    afterAll(() => {
+      bus?.connection.end();
+    });
+
+    beforeEach(async () => {
+      await clearCalls();
+    });
+
+    afterEach(closeAllWindows);
+
+    // A call is [timestamp, methodName, [parent_window, title, options]];
+    // args and dict values are [signature, [value]] variant pairs.
+    const getLoggedOptions = (call: any) => {
+      const options: Record<string, any> = {};
+      for (const entry of call[2][2][1][0]) {
+        options[entry[0]] = entry[1][1][0];
+      }
+      return options;
+    };
+
+    it('lists the files in the picked directory', async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-picker-'));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const picked = path.join(dir, 'picked-dir');
+      fs.mkdirSync(path.join(picked, 'nested'), { recursive: true });
+      fs.writeFileSync(path.join(picked, 'a.txt'), 'a');
+      fs.writeFileSync(path.join(picked, 'nested', 'b.txt'), 'b');
+      // Whatever the test leaves unanswered is dropped so it cannot answer
+      // a later pick.
+      defer(() => clearQueuedResponses());
+      await queueResponse([url.pathToFileURL(picked).href]);
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { session: session.fromPartition(`portal-picker-${Math.random()}`) }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      // Clicks a new webkitdirectory input with a user gesture and resolves
+      // with the relative path and text of each file it was given.
+      const files = await w.webContents.executeJavaScript(
+        `new Promise((resolve) => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.setAttribute('webkitdirectory', '');
+          input.onchange = async () => {
+            resolve(await Promise.all(Array.from(input.files, async (file) => ({
+              name: file.name,
+              relativePath: file.webkitRelativePath,
+              text: await file.text()
+            }))));
+          };
+          input.oncancel = () => resolve(null);
+          document.body.appendChild(input);
+          input.click();
+        })`,
+        true
+      );
+      expect(files.map((file: any) => file.relativePath).sort()).toEqual([
+        'picked-dir/a.txt',
+        'picked-dir/nested/b.txt'
+      ]);
+      expect(files.find((file: any) => file.name === 'b.txt')?.text).toBe('b');
+
+      const calls = (await getCalls()).filter((call) => call[1] === 'OpenFile');
+      expect(calls).toHaveLength(1);
+      expect(getLoggedOptions(calls[0]).directory).toBe(true);
+    });
+  });
+
+  // Drives <input type=file> and the File System Access pickers against the
+  // mock xdg-desktop-portal FileChooser that script/dbus_mock.py hosts on the
+  // fake session bus. A pick succeeds with the URIs queued through
+  // QueueResponse; with nothing queued the mock cancels it.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('file pickers (Linux portal)', { tags: ['serial'] }, () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+    let queueResponse: (uris: string[]) => Promise<void>;
+    let clearQueuedResponses: () => Promise<void>;
+
+    beforeAll(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+      queueResponse = promisify(mock.QueueResponse.bind(mock));
+      clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
+    });
+
+    afterAll(() => {
+      bus?.connection.end();
+    });
+
+    beforeEach(async () => {
+      await clearCalls();
+    });
+
+    afterEach(closeAllWindows);
+
+    // Makes the next portal request succeed with these paths. Whatever a
+    // test leaves unanswered is dropped so it cannot answer the next test.
+    const queuePick = async (...paths: string[]) => {
+      defer(() => clearQueuedResponses());
+      await queueResponse(paths.map((p) => url.pathToFileURL(p).href));
+    };
+
+    const makeTempDir = () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portal-picker-'));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      return dir;
+    };
+
+    // A call is [timestamp, methodName, [parent_window, title, options]];
+    // args and dict values are [signature, [value]] variant pairs.
+    const getLoggedOptions = (call: any) => {
+      const options: Record<string, any> = {};
+      for (const entry of call[2][2][1][0]) {
+        options[entry[0]] = entry[1][1][0];
+      }
+      return options;
+    };
+
+    // current_folder is an 'ay' (null-terminated byte array).
+    const getCurrentFolder = (options: Record<string, any>) => {
+      const bytes = Buffer.from(options.current_folder);
+      const nul = bytes.indexOf(0);
+      return path.resolve(bytes.toString('utf8', 0, nul === -1 ? bytes.length : nul));
+    };
+
+    const getPortalCalls = async (method: string) => (await getCalls()).filter((call) => call[1] === method);
+
+    const loadPage = async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { session: session.fromPartition(`portal-picker-${Math.random()}`) }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      return w;
+    };
+
+    describe('<input type=file>', () => {
+      // Clicks a new file input with a user gesture and resolves with the
+      // name, relative path and text of each file it was given, or null if
+      // the pick was cancelled.
+      const pickWithInput = (w: BrowserWindow, attributes: Record<string, string> = {}) =>
+        w.webContents.executeJavaScript(
+          `new Promise((resolve) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            for (const [name, value] of Object.entries(${JSON.stringify(attributes)})) {
+              input.setAttribute(name, value);
+            }
+            input.onchange = async () => {
+              resolve(await Promise.all(Array.from(input.files, async (file) => ({
+                name: file.name,
+                relativePath: file.webkitRelativePath,
+                text: await file.text()
+              }))));
+            };
+            input.oncancel = () => resolve(null);
+            document.body.appendChild(input);
+            input.click();
+          })`,
+          true
+        );
+
+      it('reads the file picked through the portal', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'picked.txt');
+        fs.writeFileSync(file, 'picked through the portal');
+        await queuePick(file);
+
+        const w = await loadPage();
+        expect(await pickWithInput(w)).toEqual([
+          { name: 'picked.txt', relativePath: '', text: 'picked through the portal' }
+        ]);
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        const options = getLoggedOptions(calls[0]);
+        expect(options.multiple).toBeFalsy();
+        expect(options.directory).toBeFalsy();
+      });
+
+      it('resolves to no files when the pick is cancelled', async () => {
+        const w = await loadPage();
+        expect(await pickWithInput(w)).toBeNull();
+        expect(await getPortalCalls('OpenFile')).toHaveLength(1);
+      });
+
+      it('reads every file picked for a multiple input', async () => {
+        const dir = makeTempDir();
+        const first = path.join(dir, 'first.txt');
+        const second = path.join(dir, 'second.txt');
+        fs.writeFileSync(first, 'one');
+        fs.writeFileSync(second, 'two');
+        await queuePick(first, second);
+
+        const w = await loadPage();
+        const files = await pickWithInput(w, { multiple: '' });
+        expect(files).toHaveLength(2);
+        expect(files).toEqual(
+          expect.arrayContaining([
+            { name: 'first.txt', relativePath: '', text: 'one' },
+            { name: 'second.txt', relativePath: '', text: 'two' }
+          ])
+        );
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        expect(getLoggedOptions(calls[0]).multiple).toBe(true);
+      });
+
+      it('sends the accept types as portal filters', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'notes.txt');
+        fs.writeFileSync(file, 'filtered');
+        await queuePick(file);
+
+        const w = await loadPage();
+        expect(await pickWithInput(w, { accept: '.txt,image/png' })).toEqual([
+          { name: 'notes.txt', relativePath: '', text: 'filtered' }
+        ]);
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        // Filters are a(sa(us)): a name and its (type, glob) patterns, where
+        // type 0 is a glob. Chromium adds an "All Files" filter after them.
+        const options = getLoggedOptions(calls[0]);
+        const customFilter = [
+          'Custom Files',
+          [
+            [0, '*.[pP][nN][gG]'],
+            [0, '*.[tT][xX][tT]']
+          ]
+        ];
+        expect(options.filters).toEqual([customFilter, ['All Files', [[0, '*.*']]]]);
+        expect(options.current_filter).toEqual(customFilter);
+      });
+    });
+
+    describe('File System Access pickers', () => {
+      it('showOpenFilePicker() returns a handle to the picked file', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'open.txt');
+        fs.writeFileSync(file, 'opened through the portal');
+        await queuePick(file);
+
+        const w = await loadPage();
+        const result = await w.webContents.executeJavaScript(
+          `showOpenFilePicker({ id: 'notes', startIn: 'documents' }).then(async ([handle]) => {
+            const file = await handle.getFile();
+            return { kind: handle.kind, name: handle.name, text: await file.text() };
+          })`,
+          true
+        );
+        expect(result).toEqual({ kind: 'file', name: 'open.txt', text: 'opened through the portal' });
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        // startIn falls back to the home directory when the well-known
+        // directory does not exist.
+        expect([app.getPath('documents'), app.getPath('home')]).toContain(getCurrentFolder(getLoggedOptions(calls[0])));
+      });
+
+      it('showOpenFilePicker() starts in the directory last picked for the same id', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'first.txt');
+        fs.writeFileSync(file, 'first');
+
+        const w = await loadPage();
+        const pick = () =>
+          w.webContents.executeJavaScript(
+            `showOpenFilePicker({ id: 'notes' }).then(([handle]) => handle.name, (error) => error.name)`,
+            true
+          );
+        await queuePick(file);
+        expect(await pick()).toBe('first.txt');
+        expect(await pick()).toBe('AbortError');
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(2);
+        expect(getCurrentFolder(getLoggedOptions(calls[1]))).toBe(dir);
+      });
+
+      it('showSaveFilePicker() returns a handle that writes to the picked file', async () => {
+        const dir = makeTempDir();
+        const file = path.join(dir, 'saved.txt');
+        await queuePick(file);
+
+        const w = await loadPage();
+        const name = await w.webContents.executeJavaScript(
+          `showSaveFilePicker({ suggestedName: 'suggested.txt' }).then(async (handle) => {
+            const writable = await handle.createWritable();
+            await writable.write('written through the portal');
+            await writable.close();
+            return handle.name;
+          })`,
+          true
+        );
+        expect(name).toBe('saved.txt');
+        expect(fs.readFileSync(file, 'utf8')).toBe('written through the portal');
+
+        const calls = await getPortalCalls('SaveFile');
+        expect(calls).toHaveLength(1);
+        expect(getLoggedOptions(calls[0]).current_name).toBe('suggested.txt');
+      });
+
+      it('showDirectoryPicker() returns a handle to the picked directory', async () => {
+        const dir = makeTempDir();
+        const picked = path.join(dir, 'picked-dir');
+        fs.mkdirSync(picked);
+        fs.writeFileSync(path.join(picked, 'a.txt'), 'a');
+        fs.writeFileSync(path.join(picked, 'b.txt'), 'b');
+        await queuePick(picked);
+
+        const w = await loadPage();
+        const result = await w.webContents.executeJavaScript(
+          `showDirectoryPicker().then(async (handle) => {
+            const names = [];
+            for await (const name of handle.keys()) names.push(name);
+            return { kind: handle.kind, name: handle.name, entries: names.sort() };
+          })`,
+          true
+        );
+        expect(result).toEqual({ kind: 'directory', name: 'picked-dir', entries: ['a.txt', 'b.txt'] });
+
+        const calls = await getPortalCalls('OpenFile');
+        expect(calls).toHaveLength(1);
+        expect(getLoggedOptions(calls[0]).directory).toBe(true);
+      });
     });
   });
 
@@ -4706,6 +5076,137 @@ describe('font fallback', () => {
     } else if (process.platform === 'darwin') {
       expect(fonts[0].familyName).toBe('Hiragino Kaku Gothic ProN');
     }
+  });
+});
+
+// Font strings go through Blink's CSS font shorthand parser
+// (CSSParser::ParseFont), which Chromium cherry-picks touch from time to time.
+// See https://github.com/electron/electron/issues/55616: leading whitespace was
+// rejected, so canvas text silently fell back to the default "10px sans-serif".
+// These checks are about parsing and relative metrics, not which system font
+// is installed, so they hold on every platform and CI image.
+describe('canvas font parsing', () => {
+  let w: BrowserWindow;
+  beforeAll(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadURL('about:blank');
+  });
+  afterAll(closeAllWindows);
+
+  const cases = [
+    ['24px monospace', '24px monospace'],
+    [' 24px monospace', '24px monospace'],
+    ['\t24px monospace', '24px monospace'],
+    ['  15px sans-serif  ', '15px sans-serif'],
+    ['bold 20PX   SERIF', 'bold 20px serif']
+  ];
+
+  it.each(cases)('CanvasRenderingContext2D.font accepts %j', async (input, expected) => {
+    const font = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      ctx.font = ${JSON.stringify(input)};
+      ctx.font;
+    }`);
+    expect(font).toBe(expected);
+  });
+
+  it.each(cases)('OffscreenCanvasRenderingContext2D.font accepts %j', async (input, expected) => {
+    const font = await w.webContents.executeJavaScript(`{
+      const ctx = new OffscreenCanvas(1, 1).getContext('2d');
+      ctx.font = ${JSON.stringify(input)};
+      ctx.font;
+    }`);
+    expect(font).toBe(expected);
+  });
+
+  it('OffscreenCanvas in a worker accepts a font with leading whitespace', async () => {
+    const font = await w.webContents.executeJavaScript(`new Promise((resolve) => {
+      const src = "const ctx = new OffscreenCanvas(1, 1).getContext('2d'); ctx.font = ' 24px monospace'; postMessage(ctx.font);";
+      const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+    })`);
+    expect(font).toBe('24px monospace');
+  });
+
+  it.each(cases)('document.fonts.check() accepts %j', async (input) => {
+    const result = await w.webContents.executeJavaScript(`{
+      let r;
+      try { r = document.fonts.check(${JSON.stringify(input)}); } catch (e) { r = e.name; }
+      r;
+    }`);
+    expect(result).toBe(true);
+  });
+
+  it('measures text with the size from a font with leading whitespace', async () => {
+    // What users actually saw: xterm.js glyphs drawn at 10px instead of 24px.
+    const widths = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      const measure = (font) => { ctx.font = '10px sans-serif'; ctx.font = font; return ctx.measureText('MMMMMMMMMM').width; };
+      ({ plain: measure('24px monospace'), spaced: measure(' 24px monospace'), fallback: measure('10px sans-serif') });
+    }`);
+    expect(widths.spaced).toBe(widths.plain);
+    expect(widths.spaced).toBeGreaterThan(widths.fallback);
+  });
+});
+
+// Ahem (spec/fixtures/fonts/Ahem.ttf, from web-platform-tests) draws nearly
+// every glyph as a 1em square with a 1em advance, an 0.8em ascent and an 0.2em
+// descent, so these metrics are exact on every platform whatever fonts the
+// system has installed.
+describe('web font metrics (Ahem)', () => {
+  let w: BrowserWindow;
+  beforeAll(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadFile(path.join(fixturesPath, 'fonts', 'ahem.html'));
+    await w.webContents.executeJavaScript("document.fonts.load('20px AhemTest')");
+  });
+  afterAll(closeAllWindows);
+
+  it('loads the @font-face', async () => {
+    const result = await w.webContents.executeJavaScript(`({
+      faces: [...document.fonts].map((f) => [f.family, f.status]),
+      check: document.fonts.check('20px AhemTest')
+    })`);
+    expect(result.faces).toEqual([['AhemTest', 'loaded']]);
+    expect(result.check).toBe(true);
+  });
+
+  it('lays out DOM text with exact Ahem metrics', async () => {
+    const rects = await w.webContents.executeJavaScript(`
+      Object.fromEntries(['s20', 's37', 'fallback'].map((id) => {
+        const { width, height } = document.getElementById(id).getBoundingClientRect();
+        return [id, { width, height }];
+      }))
+    `);
+    expect(rects.s20).toEqual({ width: 80, height: 20 });
+    expect(rects.s37).toEqual({ width: 185, height: 37 });
+    // Same text and size in the system monospace font must not match, or the
+    // assertions above would not prove the web font was used.
+    expect(rects.fallback.width).not.toBe(80);
+  });
+
+  it('measures canvas text with exact Ahem metrics', async () => {
+    const metrics = await w.webContents.executeJavaScript(`{
+      const ctx = document.createElement('canvas').getContext('2d');
+      const measure = (font, text) => {
+        ctx.font = font;
+        const m = ctx.measureText(text);
+        return { width: m.width, ascent: m.fontBoundingBoxAscent, descent: m.fontBoundingBoxDescent };
+      };
+      ({
+        s20: measure('20px AhemTest', 'XXXX'),
+        s37: measure('37px AhemTest', 'XpX X'),
+        spaced: measure(' 20px AhemTest', 'XXXX'),
+        fallback: measure('20px monospace', 'XXXX')
+      });
+    }`);
+    // Canvas widths are summed in single precision (e.g. 79.99993896484375).
+    expect(metrics.s20.width).toBeCloseTo(80, 2);
+    expect(metrics.s20.ascent).toBe(16);
+    expect(metrics.s20.descent).toBe(4);
+    expect(metrics.s37.width).toBeCloseTo(185, 2);
+    expect(metrics.spaced).toEqual(metrics.s20);
+    expect(metrics.fallback.width).not.toBe(80);
   });
 });
 

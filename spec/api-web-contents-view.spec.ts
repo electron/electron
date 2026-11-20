@@ -280,6 +280,81 @@ describe('WebContentsView', () => {
     expect(v.children).toEqual([wcv]);
   });
 
+  describe('when moved to another window', () => {
+    const moveAndAttachWebview = async (destroyFirstWindow: boolean) => {
+      const wA = new BrowserWindow({ show: false });
+      const wB = new BrowserWindow({ show: false });
+      const view = new WebContentsView({ webPreferences: { webviewTag: true } });
+      wA.contentView.addChildView(view);
+      wB.contentView.addChildView(view);
+      if (destroyFirstWindow) {
+        const closed = once(wA, 'closed');
+        wA.destroy();
+        await closed;
+      }
+      const attached = once(view.webContents, 'did-attach-webview') as Promise<[any, Electron.WebContents]>;
+      await view.webContents.loadURL('data:text/html,<webview src="about:blank"></webview>');
+      const [, guest] = await attached;
+      return { wB, guest };
+    };
+
+    it('gives a <webview> guest the new window as its owner', async () => {
+      const { wB, guest } = await moveAndAttachWebview(false);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wB);
+    });
+
+    it('gives a <webview> guest the new window as its owner after the old one is destroyed', async () => {
+      const { wB, guest } = await moveAndAttachWebview(true);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wB);
+    });
+
+    const attachWebviewAndMove = async (destroyFirstWindow: boolean) => {
+      const wA = new BrowserWindow({ show: false });
+      const wB = new BrowserWindow({ show: false });
+      const view = new WebContentsView({ webPreferences: { webviewTag: true } });
+      wA.contentView.addChildView(view);
+      const attached = once(view.webContents, 'did-attach-webview') as Promise<[any, Electron.WebContents]>;
+      await view.webContents.loadURL('data:text/html,<webview src="about:blank"></webview>');
+      const [, guest] = await attached;
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wA);
+      wB.contentView.addChildView(view);
+      if (destroyFirstWindow) {
+        const closed = once(wA, 'closed');
+        wA.destroy();
+        await closed;
+      }
+      return { wB, guest };
+    };
+
+    it('moves an attached <webview> guest to the new window', async () => {
+      const { wB, guest } = await attachWebviewAndMove(false);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wB);
+    });
+
+    it('moves an attached <webview> guest to the new window after the old one is destroyed', async () => {
+      const { wB, guest } = await attachWebviewAndMove(true);
+      expect(guest.isDestroyed()).toBe(false);
+      expect(BrowserWindow.fromWebContents(guest)).toBe(wB);
+    });
+
+    for (const mode of ['bottom', 'detach'] as const) {
+      it(`moves open DevTools (mode: ${mode}) to the new window`, async () => {
+        const wA = new BrowserWindow({ show: false });
+        const wB = new BrowserWindow({ show: false });
+        const view = new WebContentsView();
+        wA.contentView.addChildView(view);
+        await view.webContents.loadURL('about:blank');
+        const opened = once(view.webContents, 'devtools-opened');
+        view.webContents.openDevTools({ mode, activate: false });
+        await opened;
+        const devtools = view.webContents.devToolsWebContents!;
+        expect(BrowserWindow.fromWebContents(devtools)).toBe(wA);
+        wB.contentView.addChildView(view);
+        expect(BrowserWindow.fromWebContents(devtools)).toBe(wB);
+      });
+    }
+  });
+
   describe('visibilityState', { tags: ['serial'] }, () => {
     // These pages are only 'visible' while nothing covers their window. On the
     // Windows CI hosts another process's console window can sit above a newly

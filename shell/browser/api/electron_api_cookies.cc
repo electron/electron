@@ -237,7 +237,10 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
             "The cookie was set with an invalid Path attribute."},
            {Reason::EXCLUDE_AMBIGUOUS_SERIALIZATION,
             "Cookie was rejected in parsing due to having an ambiguous "
-            "serialization."}});
+            "serialization."},
+           {Reason::EXCLUDE_INVALID_HOST,
+            "Cookie was accessed from or set by a URL with an invalid host "
+            "name."}});
   static_assert(
       Reasons.size() ==
           net::CookieInclusionStatus::ExclusionReasonBitset::kValueCount,

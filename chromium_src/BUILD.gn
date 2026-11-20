@@ -377,6 +377,7 @@ static_library("chrome") {
       ]
       deps += [
         "//chrome/browser/resources/pdf:resources",
+        "//components/guest_view/common:mojom",
         "//components/pdf/browser",
         "//components/pdf/renderer",
         "//components/zoom",
@@ -467,6 +468,7 @@ source_set("chrome_spellchecker") {
 
     deps += [
       "//base:base_static",
+      "//chrome/app/resources:locale_settings",
       "//components/language/core/browser",
       "//components/spellcheck:buildflags",
       "//components/sync",

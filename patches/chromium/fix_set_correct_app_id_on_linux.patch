@@ -7,12 +7,12 @@ Sets the Electron app's actual XDG app ID and DBus path instead of org.chromium.
 This avoids conflicts with portals, e.g. the global shortcut portal.
 
 diff --git a/base/version_info/nix/version_extra_utils.cc b/base/version_info/nix/version_extra_utils.cc
-index e48fbf29760fb0b6d759a82132a6693db4d09929..f6b658d01e0ddf31e8dc66b0922444ad16747ad0 100644
+index bbdbe3a74ca688aa2273cf2094adae5f68721d87..4391c02f68e52f5dd73f3cd2d5b0ccf32619f2a4 100644
 --- a/base/version_info/nix/version_extra_utils.cc
 +++ b/base/version_info/nix/version_extra_utils.cc
-@@ -10,8 +10,29 @@
- #include "base/containers/fixed_flat_map.h"
+@@ -11,8 +11,29 @@
  #include "base/environment.h"
+ #include "base/notreached.h"
  #include "base/strings/strcat.h"
 +#include "base/strings/string_util.h"
  #include "build/branding_buildflags.h"
@@ -40,7 +40,7 @@ index e48fbf29760fb0b6d759a82132a6693db4d09929..f6b658d01e0ddf31e8dc66b0922444ad
  namespace version_info::nix {
  
  version_info::Channel GetChannel(base::Environment& env) {
-@@ -36,6 +57,10 @@ bool IsExtendedStable(base::Environment& env) {
+@@ -37,6 +58,10 @@ bool IsExtendedStable(base::Environment& env) {
  }
  
  std::string GetAppName(base::Environment& env) {
@@ -51,7 +51,7 @@ index e48fbf29760fb0b6d759a82132a6693db4d09929..f6b658d01e0ddf31e8dc66b0922444ad
  #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
    static constexpr std::string_view kAppName = "com.google.Chrome";
  #else
-@@ -61,6 +86,16 @@ std::string GetAppName(base::Environment& env) {
+@@ -62,6 +87,16 @@ std::string GetAppName(base::Environment& env) {
  }
  
  std::string GetSessionNamePrefix(base::Environment& env) {

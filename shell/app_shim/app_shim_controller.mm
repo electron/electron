@@ -533,6 +533,11 @@ void AppShimController::SetWindowVibrancy(uint64_t window_id,
             state:static_cast<NSVisualEffectState>(state)];
 }
 
+void AppShimController::SetWindowHasShadow(uint64_t window_id,
+                                           bool has_shadow) {
+  [WindowForId(window_id).GetNativeNSWindow() setHasShadow:has_shadow];
+}
+
 void AppShimController::PerformWindowTabAction(uint64_t window_id,
                                                mojom::AppShimTabAction action) {
   [[ElectronAppShimWindow forWindowId:window_id] performTabAction:action];

@@ -30,7 +30,7 @@ import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-h
 
 const fixtures = path.join(import.meta.dirname, 'fixtures');
 
-describe('chrome extensions', () => {
+describe('chrome extensions', { retry: 0 }, () => {
   const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
 
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
@@ -994,7 +994,7 @@ describe('chrome extensions', () => {
     // TODO(jkleinsc) fix this flaky test on WOA
     ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads a devtools extension', async () => {
       const customSession = session.fromPartition(`persist:${randomUUID()}`);
-      customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
+      await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
       const winningMessage = once(ipcMain, 'winning');
       const w = new BrowserWindow({
         show: true,
@@ -2200,12 +2200,12 @@ describe('chrome extensions', () => {
       const args = [path.join(fixtures, 'extensions', name, 'main.js'), `--user-data-dir=${userDataDir}`];
       if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const appProcess = spawn(process.execPath, args);
-      const exited = once(appProcess, 'exit');
+      const closed = once(appProcess, 'close');
       defer(async () => {
         // A hung app would keep its profile open into the retry.
-        if (appProcess.exitCode === null && appProcess.signalCode === null) {
+        if (appProcess.pid && appProcess.exitCode === null && appProcess.signalCode === null) {
           appProcess.kill();
-          await exited;
+          await closed;
         }
         await fs.rm(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
       });
@@ -2214,7 +2214,15 @@ describe('chrome extensions', () => {
       appProcess.stdout.on('data', (data) => {
         output += data;
       });
-      await once(appProcess.stdout, 'end');
+      let stderr = '';
+      appProcess.stderr.on('data', (data) => {
+        stderr += data;
+      });
+      const [code, signal] = await closed;
+      expect({ code, signal }, `Fixture ${name} failed.\nstdout:\n${output}\nstderr:\n${stderr}`).toEqual({
+        code: 0,
+        signal: null
+      });
 
       return output.trim();
     }

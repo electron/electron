@@ -234,10 +234,13 @@ app.on('window-all-closed', function () {
 })
 ```
 
-#### Event: 'preconnect'
+#### Event: 'preconnect' _Deprecated_
 
 <!--
 ```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/55573
+    breaking-changes-header: deprecated-preconnect-event-on-session
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added the trailing `frame` argument."
@@ -256,6 +259,10 @@ Returns:
 
 Emitted when a render process requests preconnection to a URL, generally due to
 a [resource hint](https://w3c.github.io/resource-hints/).
+
+**Deprecated:** Use the [`preconnect` event on `WebFrameMain`](web-frame-main.md#event-preconnect)
+instead. Preconnection hints belong to the requesting frame, and are no longer
+emitted after that frame has been destroyed.
 
 #### Event: 'spellcheck-dictionary-initialized'
 
@@ -1210,6 +1217,8 @@ changes:
   - pr-url: https://github.com/electron/electron/pull/51243
     description: "`useSystemPicker` follows `displaySurface`, and can include system audio"
     breaking-changes-header: behavior-changed-usesystempicker-follows-displaysurface
+  - pr-url: https://github.com/electron/electron/pull/51235
+    description: "Added `preferredDisplaySurface` to the handler's `request`."
 ```
 -->
 
@@ -1221,6 +1230,7 @@ changes:
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
+    * `preferredDisplaySurface` string - The [`displaySurface`](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/displaySurface) the page asked for in `getDisplayMedia()`. Can be `monitor`, `window`, `browser` or `none`. `none` means the page did not ask for one. If the page asks for several display surfaces, this contains only the first one.
   * `callback` Function
     * `streams` Object | null - Pass `null` to deny the request, which rejects
       the `getDisplayMedia()` promise with an `AbortError`.

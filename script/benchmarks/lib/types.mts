@@ -59,6 +59,15 @@ export interface RunMetadata {
   repeat: number;
   suites?: string[];
   fileCount?: number;
+  // run.mts --best-effort: compare.mts keeps the complete stories of a
+  // failed invocation.
+  bestEffort?: boolean;
+  // Suites run.mts --best-effort stopped running after the candidate failed
+  // them in the first two rounds.
+  skippedSuites?: string[];
+  // Stories (<suite>/<story>) it stopped running because the candidate
+  // produced no complete results for them in the first two rounds.
+  skippedStories?: string[];
   targets: TargetInfo[];
   invocations: Invocation[];
 }

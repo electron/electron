@@ -10,7 +10,7 @@ import { performance } from 'node:perf_hooks';
 import { setTimeout } from 'node:timers/promises';
 import * as vm from 'node:vm';
 
-import { ifdescribe } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
 // Test jobs do not include Chromium's source tree, so define the subset of the
 // Perfetto schema these tests read. Field numbers match
@@ -386,7 +386,9 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
   });
 
   describe('captured events', () => {
-    it('include native heap profiler stack samples', { timeout: 60000 }, async () => {
+    // ASan replaces the allocator, so neither the allocator shim nor
+    // PartitionAlloc's observer hooks report allocations to the heap profiler.
+    ifit(!process.env.IS_ASAN)('include native heap profiler stack samples', { timeout: 60000 }, async () => {
       await app.whenReady();
 
       // getTraceBufferUsage() going non-zero only means *some* data has been

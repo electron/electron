@@ -743,6 +743,8 @@ SkColor NativeWindowMacRemote::GetBackgroundColor() const {
 
 void NativeWindowMacRemote::SetHasShadow(bool has_shadow) {
   has_shadow_ = has_shadow;
+  if (auto* shim = GetAppShim())
+    shim->SetWindowHasShadow(GetRemoteWindowId(), has_shadow);
 }
 
 bool NativeWindowMacRemote::HasShadow() const {

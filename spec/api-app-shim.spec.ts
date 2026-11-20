@@ -163,7 +163,7 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     expect(w.isVisible()).toBe(false);
   });
 
-  it('honors focusable for a window in a shim', async () => {
+  it('honors focusable for a window in a shim', { tags: ['serial'] }, async () => {
     const shim = await launchShim();
     const w = new BrowserWindow({ appShim: shim, focusable: false });
     await once(w, 'show');

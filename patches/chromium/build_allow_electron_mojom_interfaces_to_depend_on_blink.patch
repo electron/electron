@@ -10,10 +10,10 @@ Needed for:
 2) //electron/shell/common:web_contents_utility
 
 diff --git a/content/public/common/BUILD.gn b/content/public/common/BUILD.gn
-index 5a468ca5bc7901e4bc385117dea83f715b6496c8..12d5270f0c1643afd630176b93c2b97386325c73 100644
+index 107fa4f21c4db4993e4ae206f7538a9973023b9c..872735828016feb517684a74ae57e64d12b5148e 100644
 --- a/content/public/common/BUILD.gn
 +++ b/content/public/common/BUILD.gn
-@@ -367,6 +367,8 @@ mojom("interfaces") {
+@@ -368,6 +368,8 @@ mojom("interfaces") {
      "//content/common/*",
      "//extensions/common:mojom",
      "//extensions/common:mojom_blink",

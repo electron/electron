@@ -348,7 +348,7 @@ index 7e60fda45f824974b3403a376d8aa9b35b0a1f84..27221b14dc9a6b8346207e5ebb9ff727
      if (!kill_unresponsive || !KillProcessByLockPath(true))
        return PROFILE_IN_USE;
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 83f8698e402e06e87767b975d0fe0da2b8b4a024..c3bdee1d24380285b6b1bb21d9201ceb37b64ed4 100644
+index fa4ddf1146eb8ae044c9411a3b3156a476521349..52eaf9a305046989aa0f98cc860245d379bc2ade 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -9,6 +9,7 @@
@@ -374,7 +374,7 @@ index 83f8698e402e06e87767b975d0fe0da2b8b4a024..c3bdee1d24380285b6b1bb21d9201ceb
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -136,6 +139,25 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -138,6 +141,25 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -400,7 +400,7 @@ index 83f8698e402e06e87767b975d0fe0da2b8b4a024..c3bdee1d24380285b6b1bb21d9201ceb
      return true;
    }
    return false;
-@@ -157,13 +179,14 @@ bool ProcessLaunchNotification(
+@@ -159,13 +181,14 @@ bool ProcessLaunchNotification(
  
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
@@ -418,7 +418,7 @@ index 83f8698e402e06e87767b975d0fe0da2b8b4a024..c3bdee1d24380285b6b1bb21d9201ceb
    return true;
  }
  
-@@ -339,9 +362,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -341,9 +364,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -430,7 +430,7 @@ index 83f8698e402e06e87767b975d0fe0da2b8b4a024..c3bdee1d24380285b6b1bb21d9201ceb
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -365,7 +390,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -367,7 +392,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
