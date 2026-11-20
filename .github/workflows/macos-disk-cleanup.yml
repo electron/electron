@@ -30,13 +30,6 @@ jobs:
           sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
           sudo dscacheutil -flushcache
           sudo killall -HUP mDNSResponder
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: |
-            .github/actions/free-space-macos
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
 
       - name: Get Disk Space Before Cleanup
         id: disk-before
@@ -48,7 +41,7 @@ jobs:
           echo "free_kb=$FREE_SPACE_BEFORE" >> $GITHUB_OUTPUT
 
       - name: Free Space on macOS
-        uses: ./.github/actions/free-space-macos
+        uses: $/.github/actions/free-space-macos
 
       - name: Get Disk Space After Cleanup
         id: disk-after
