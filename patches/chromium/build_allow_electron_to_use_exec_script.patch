@@ -6,7 +6,7 @@ Subject: build: allow electron to use exec_script
 This is similar to the //build usecase so we're OK adding ourselves here.
 
 diff --git a/.gn b/.gn
-index d8e367dbdfd63d4bc4d4e02a8f1ecdbfafa6fcd4..3920ee63f48344474dbffe78dfc20812b0c1c622 100644
+index d8e367dbdfd63d4bc4d4e02a8f1ecdbfafa6fcd4..368f57dac9b7a962195beea6f7be8d353c4151dc 100644
 --- a/.gn
 +++ b/.gn
 @@ -487,6 +487,31 @@ exec_script_allowlist =
@@ -15,7 +15,7 @@ index d8e367dbdfd63d4bc4d4e02a8f1ecdbfafa6fcd4..3920ee63f48344474dbffe78dfc20812
        "//third_party/dawn/third_party/meson/meson_target.gni",
 +
 +      "//electron/BUILD.gn",
-+      "//electron/build/args/all.gn",
++      "//electron/build/v8_embedder.gni",
 +      "//third_party/electron_node/deps/ada/unofficial.gni",
 +      "//third_party/electron_node/deps/base64/BUILD.gn",
 +      "//third_party/electron_node/deps/base64/unofficial.gni",

@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Thu, 19 Nov 2026 23:24:37 -0600
+Subject: build: resolve default v8_embedder_string for Electron
+
+Derive Electron's -electron.<fingerprint> v8_embedder_string after GN
+applies args.gn overrides rather than eagerly inside
+//electron/build/args/all.gn. Because GN evaluates imported args files
+in isolated scopes before subsequent args.gn assignments, computing the
+fingerprint in all.gn ran v8-patch-fingerprint.py unconditionally even
+when a packager overrode v8_embedder_string in args.gn, forcing
+non-Git source trees to rely on an environment variable that GN does
+not persist across ninja-triggered regenerations.
+
+Resolving the default here when v8_embedder_string is empty preserves
+v8_embedder_string in args.gn as a persistent override that bypasses
+script execution, while keeping automatic fingerprint derivation for
+normal Electron builds. This patch is Electron-specific and stays as
+long as Electron derives v8_embedder_string from its V8 patch series.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+diff --git a/BUILD.gn b/BUILD.gn
+index da0e39f0b7bc3ad7df13c101348764c3541fde44..bf331a2278d8c9e87a6bab183fc6be238586f9f4 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -633,6 +633,10 @@ if (v8_enable_object_print == "") {
+ if (v8_always_enable_maglev_graph_labeller == "") {
+   v8_always_enable_maglev_graph_labeller = v8_enable_debugging_features
+ }
++if (is_electron_build && v8_embedder_string == "") {
++  import("//electron/build/v8_embedder.gni")
++  v8_embedder_string = electron_v8_embedder_string
++}
+ if (v8_enable_trace_maps == "") {
+   v8_enable_trace_maps = v8_enable_debugging_features
+ }

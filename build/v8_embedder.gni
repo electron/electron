@@ -1,0 +1,20 @@
+# Copyright (c) 2026 Microsoft Corporation.
+# Use of this source code is governed by the MIT license that can be
+# found in the LICENSE file.
+
+# Resolve Electron's V8 embedder string when v8_embedder_string is not set in
+# args.gn. Prefer setting v8_embedder_string in args.gn so GN persists it across
+# automatic build.ninja regenerations; ELECTRON_V8_EMBEDDER_STRING remains
+# supported as an environment fallback.
+_v8_embedder_override = getenv("ELECTRON_V8_EMBEDDER_STRING")
+if (_v8_embedder_override != "") {
+  electron_v8_embedder_string = _v8_embedder_override
+} else {
+  _v8_fingerprint_script = "//electron/script/v8-patch-fingerprint.py"
+  _v8_fingerprint_inputs =
+      exec_script(_v8_fingerprint_script, [ "--inputs" ], "json")
+  electron_v8_embedder_string = exec_script(_v8_fingerprint_script,
+                                            [],
+                                            "trim string",
+                                            _v8_fingerprint_inputs)
+}
