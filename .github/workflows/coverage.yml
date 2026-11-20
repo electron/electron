@@ -42,8 +42,7 @@ jobs:
       # The inputs context is empty for scheduled runs; fall back to 'all'.
       linux: ${{ inputs.platform == '' || inputs.platform == 'linux' || inputs.platform == 'all' }}
       macos: ${{ inputs.platform == '' || inputs.platform == 'macos' || inputs.platform == 'all' }}
-      # Windows is not part of the scheduled run yet; dispatch it explicitly.
-      windows: ${{ inputs.platform == 'windows' || inputs.platform == 'all' }}
+      windows: ${{ inputs.platform == '' || inputs.platform == 'windows' || inputs.platform == 'all' }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
