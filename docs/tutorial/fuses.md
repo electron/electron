@@ -25,7 +25,7 @@ on Windows).
 
 ### `runAsNode`
 
-**Default:** Enabled
+**Default:** Disabled (enabled before Electron 47)
 
 **@electron/fuses:** `FuseV1Options.RunAsNode`
 
@@ -37,7 +37,7 @@ standalone Node.js process (e.g. a SQLite server process).
 
 ### `cookieEncryption`
 
-**Default:** Disabled
+**Default:** Enabled (disabled before Electron 47)
 
 **@electron/fuses:** `FuseV1Options.EnableCookieEncryption`
 
@@ -46,7 +46,7 @@ cryptography keys. By default, the SQLite database that Chromium uses to store c
 values in plaintext. If you wish to ensure your app's cookies are encrypted in the same way Chromium
 does, then you should enable this fuse. Please note it is a one-way transition—if you enable this
 fuse, existing unencrypted cookies will be encrypted-on-write, but subsequently disabling the fuse
-later will make your cookie store corrupt and useless. Most apps can safely enable this fuse.
+later will make your cookie store corrupt and useless. Most apps should leave this fuse enabled.
 
 > [!IMPORTANT]
 > On macOS, this fuse relies on the same OS-level access to the Keychain as
@@ -55,7 +55,7 @@ later will make your cookie store corrupt and useless. Most apps can safely enab
 
 ### `nodeOptions`
 
-**Default:** Enabled
+**Default:** Disabled (enabled before Electron 47)
 
 **@electron/fuses:** `FuseV1Options.EnableNodeOptionsEnvironmentVariable`
 
@@ -63,17 +63,21 @@ The `nodeOptions` fuse toggles whether the [`NODE_OPTIONS`](https://nodejs.org/a
 and [`NODE_EXTRA_CA_CERTS`](https://github.com/nodejs/node/blob/main/doc/api/cli.md#node_extra_ca_certsfile)
 environment variables are respected. The `NODE_OPTIONS` environment variable can be used to pass all
 kinds of custom options to the Node.js runtime and isn't typically used by apps in production.
-Most apps can safely disable this fuse.
+Most apps should leave this fuse disabled.
 
 ### `nodeCliInspect`
 
-**Default:** Enabled
+**Default:** Enabled when not packaged, disabled when packaged (enabled before Electron 47)
 
 **@electron/fuses:** `FuseV1Options.EnableNodeCliInspectArguments`
 
 The `nodeCliInspect` fuse toggles whether the `--inspect`, `--inspect-brk`, etc. flags are respected
 or not. When disabled, it also ensures that `SIGUSR1` signal does not initialize the main process
-inspector. Most apps can safely disable this fuse.
+inspector.
+
+By default this fuse is enabled while the app is not packaged, so you can debug your app when
+running it with the `electron` executable, and disabled when [`app.isPackaged`](../api/app.md#appispackaged-readonly)
+is `true`. Most apps can safely disable this fuse entirely.
 
 ### `embeddedAsarIntegrityValidation`
 
@@ -192,7 +196,7 @@ flipFuses(
   // Fuses to flip
   {
     version: FuseVersion.V1,
-    [FuseV1Options.RunAsNode]: false
+    [FuseV1Options.GrantFileProtocolExtraPrivileges]: false
   }
 )
 ```
@@ -233,8 +237,11 @@ Somewhere in the Electron binary, there will be a sequence of bytes that look li
 * `fuse_wire` is a sequence of N bytes, each byte represents a single fuse and its state.
   * "0" (0x30) indicates the fuse is disabled
   * "1" (0x31) indicates the fuse is enabled
-  * "r" (0x72) indicates the fuse has been removed and changing the byte to either 1 or 0 will have no effect.
+  * "d" (0x64) indicates the fuse is enabled when the app is not packaged and disabled when it is packaged
+    (see [`app.isPackaged`](../api/app.md#appispackaged-readonly))
+  * "p" (0x70) indicates the fuse is disabled when the app is not packaged and enabled when it is packaged
+  * "r" (0x72) indicates the fuse has been removed and changing the byte to any other value will have no effect.
 
-To flip a fuse, you find its position in the fuse wire and change it to "0" or "1" depending on the state you'd like.
+To flip a fuse, you find its position in the fuse wire and change it to "0", "1", "d" or "p" depending on the state you'd like.
 
 You can view the current schema [here](../../build/fuses/fuses.json5).

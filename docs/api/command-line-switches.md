@@ -375,6 +375,10 @@ V8 inspector integration allows tools such as Chrome DevTools and IDEs to debug 
 
 See the [Debugging the Main Process][debugging-main-process] guide for more details.
 
+If the [`nodeCliInspect` fuse](../tutorial/fuses.md#nodecliinspect) is disabled, this flag and the
+other `--inspect` flags are ignored. Since Electron 47 the fuse is disabled by default when the app
+is packaged.
+
 Aliased to `--debug[=[host:]port`.
 
 ### `--inspect-publish-uid=stderr,http`
