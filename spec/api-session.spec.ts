@@ -10,6 +10,7 @@ import {
 } from 'electron/main';
 
 import auth from 'basic-auth';
+import * as dbus from 'dbus-native';
 import send from 'send';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -19,10 +20,21 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import { createRequire } from 'node:module';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 
-import { defer, ifit, isTestingBindingAvailable, listen, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
+import {
+  defer,
+  ifdescribe,
+  ifit,
+  isTestingBindingAvailable,
+  listen,
+  spawnAndWait,
+  waitUntil
+} from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -1877,6 +1889,92 @@ describe('session module', () => {
         await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({ fixtures, url, port })})`);
         const [state, item] = await done;
         assertDownload(state, item);
+      });
+    });
+
+    // With no save path set in 'will-download', the download asks for one
+    // through the mock xdg-desktop-portal FileChooser that script/dbus_mock.py
+    // hosts on the fake session bus. The mock answers with the path queued
+    // through QueueResponse, or cancels when nothing is queued.
+    ifdescribe(
+      process.platform === 'linux' &&
+        process.arch !== 'ia32' &&
+        !process.arch.startsWith('arm') &&
+        !!process.env.DBUS_SESSION_BUS_ADDRESS
+    )('save dialog (Linux portal)', { tags: ['serial'] }, () => {
+      let bus: any;
+      let getCalls: () => Promise<any[]>;
+      let clearCalls: () => Promise<void>;
+      let queueResponse: (uris: string[]) => Promise<void>;
+      let clearQueuedResponses: () => Promise<void>;
+
+      beforeAll(async () => {
+        bus = dbus.sessionBus();
+        const service = bus.getService('org.freedesktop.portal.Desktop');
+        const getInterface = promisify(service.getInterface.bind(service));
+        const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+        getCalls = promisify(mock.GetCalls.bind(mock));
+        clearCalls = promisify(mock.ClearCalls.bind(mock));
+        queueResponse = promisify(mock.QueueResponse.bind(mock));
+        clearQueuedResponses = promisify(mock.ClearQueuedResponses.bind(mock));
+      });
+
+      afterAll(() => {
+        bus?.connection.end();
+      });
+
+      beforeEach(async () => {
+        await clearCalls();
+      });
+
+      // A call is [timestamp, methodName, [parent_window, title, options]];
+      // args and dict values are [signature, [value]] variant pairs.
+      const getSaveFileCall = async () => {
+        const calls = (await getCalls()).filter((call) => call[1] === 'SaveFile');
+        expect(calls).toHaveLength(1);
+        const options: Record<string, any> = {};
+        for (const entry of calls[0][2][2][1][0]) {
+          options[entry[0]] = entry[1][1][0];
+        }
+        return { title: calls[0][2][1][1][0], options };
+      };
+
+      const download = async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { session: session.fromPartition(`download-portal-${Math.random()}`) }
+        });
+        const willDownload = once(w.webContents.session, 'will-download');
+        w.webContents.downloadURL(`${url}:${port}/`);
+        const [, item] = await willDownload;
+        const [, state] = await once(item, 'done');
+        return { item, state };
+      };
+
+      it('saves to the path picked in the save dialog', async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'download-portal-'));
+        defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+        const target = path.join(dir, 'picked.pdf');
+        defer(() => clearQueuedResponses());
+        await queueResponse([pathToFileURL(target).href]);
+
+        const { item, state } = await download();
+        expect(state).toBe('completed');
+        expect(item.savePath).toBe(target);
+        expect(fs.statSync(target).size).toBe(mockPDF.length);
+
+        const { title, options } = await getSaveFileCall();
+        expect(title).toBe(`${url}:${port}/`);
+        expect(options.current_name).toBe('mock.pdf');
+      });
+
+      it('is cancelled when the save dialog is cancelled', async () => {
+        const { item, state } = await download();
+        expect(state).toBe('cancelled');
+        expect(item.savePath).toBe('');
+
+        const { options } = await getSaveFileCall();
+        expect(options.current_name).toBe('mock.pdf');
       });
     });
   });
