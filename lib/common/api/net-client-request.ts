@@ -338,6 +338,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
   _urlLoaderOptions: NodeJS.CreateURLLoaderOptions & {
     headers: Record<string, { name: string; value: string | string[] }>;
   };
+  private readonly _keepLoaderForResponseRelay: boolean;
   _redirectPolicy: RedirectPolicy;
   _followRedirectCb?: () => void;
   _uploadProgress?: { active: boolean; started: boolean; current: number; total: number };
@@ -361,6 +362,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     }
     this._urlLoaderOptions = urlLoaderOptions;
     this._redirectPolicy = redirectPolicy;
+    this._keepLoaderForResponseRelay = urlLoaderOptions.allowNonHttpProtocols;
   }
 
   get chunkedEncoding() {
@@ -425,8 +427,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     if (!this._body) {
       this._body = new SlurpStream();
       this._body.on('finish', () => {
-        this._urlLoaderOptions.body = (this._body as SlurpStream).data();
-        this._startRequest();
+        this._startRequest((this._body as SlurpStream).data());
       });
     }
     // TODO: is this the right way to forward to another stream?
@@ -444,7 +445,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     }
   }
 
-  _startRequest() {
+  _startRequest(body = this._urlLoaderOptions.body) {
     this._started = true;
     const stringifyValues = (obj: Record<string, { name: string; value: string | string[] }>) => {
       const ret: Record<string, string> = {};
@@ -458,7 +459,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     this._urlLoaderOptions.hasUserActivation = this.getHeader('sec-fetch-user') === '?1';
     this._urlLoaderOptions.mode = this.getHeader('sec-fetch-mode') || '';
     this._urlLoaderOptions.destination = this.getHeader('sec-fetch-dest') || '';
-    const opts = { ...this._urlLoaderOptions, extraHeaders: stringifyValues(this._urlLoaderOptions.headers) };
+    const opts = { ...this._urlLoaderOptions, body, extraHeaders: stringifyValues(this._urlLoaderOptions.headers) };
     this._urlLoader = createURLLoader(opts);
     this._urlLoader.on('response-started', (event, finalUrl, responseHead) => {
       const response = (this._response = new IncomingMessage(responseHead));
@@ -468,6 +469,8 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
       this._response!._storeInternalData(Buffer.from(data), resume);
     });
     this._urlLoader.on('complete', () => {
+      // protocol.handle can take ownership of a fetch response after it completes.
+      if (!this._keepLoaderForResponseRelay) this._urlLoader = undefined;
       if (this._response) {
         this._response._storeInternalData(null, null);
       }
@@ -558,10 +561,9 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     }
 
     this.destroy(err);
-    if (this._urlLoader) {
-      this._urlLoader.cancel();
-      if (this._response) this._response.destroy(err);
-    }
+    this._urlLoader?.cancel();
+    this._urlLoader = undefined;
+    this._response?.destroy(err);
   }
 
   getUploadProgress(): UploadProgress {
