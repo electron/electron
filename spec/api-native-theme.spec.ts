@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe } from './lib/spec-helpers.ts';
+import { ifdescribe, startRemoteControlApp } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('nativeTheme module', () => {
@@ -116,6 +116,25 @@ describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseHighContrastColors', () => {
     it('returns a boolean', () => {
       expect(nativeTheme.shouldUseHighContrastColors).toBeTypeOf('boolean');
+    });
+
+    it('is reflected in the prefers-contrast CSS media query', async () => {
+      // --force-high-contrast makes the native theme report a preference for
+      // more contrast on every platform, regardless of the OS setting.
+      const rc = await startRemoteControlApp(['--force-high-contrast']);
+      const result = await rc.remotely(async () => {
+        const { BrowserWindow, nativeTheme } = require('electron/main');
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+        const prefersMoreContrast = await w.webContents.executeJavaScript(
+          'matchMedia("(prefers-contrast: more)").matches'
+        );
+        return {
+          shouldUseHighContrastColors: nativeTheme.shouldUseHighContrastColors,
+          prefersMoreContrast
+        };
+      });
+      expect(result).toEqual({ shouldUseHighContrastColors: true, prefersMoreContrast: true });
     });
   });
 
