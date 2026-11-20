@@ -5,10 +5,13 @@
 // <out>/metadata.json; compare.mts turns them into a comparison.
 //
 // --best-effort is for runs against old Electron versions (the Benchmarks
-// History workflow): a suite that fails for the candidate in the first two
-// rounds is not run again, since an old version that can't run it would fail
-// (or time out) every round, and the run only fails when no invocation
-// succeeded. Without it, any failed invocation fails the run.
+// History workflow): when the candidate fails a suite in the first two
+// rounds, the stories that produced no complete results in either round are
+// not run again (the whole suite when no story did), since an old version
+// that can't run a story would fail (or time out) on it every round.
+// compare.mts keeps the complete stories of a failed invocation, and the run
+// only fails when no invocation succeeded. Without it, any failed invocation
+// fails the run.
 //
 // Usage (under Xvfb on Linux):
 //   node script/benchmarks/run.mts --targets <dir>/targets.json --out <dir>
@@ -21,6 +24,8 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
+import { storiesWithResults } from './compare.mts';
+import { writeAppShellSite } from './lib/app-shell.mts';
 import { pageConfigs, probeConfigs, writeFileLoadingSite } from './lib/configs.mts';
 
 import type { Capabilities, Invocation, RunMetadata, Target, TargetsFile } from './lib/types.mts';
@@ -82,7 +87,7 @@ async function startServer(wwwDir: string, port: number): Promise<ChildProcess> 
   while (Date.now() < deadline) {
     if (server.exitCode !== null) throw new Error(`serve-benchmarks.js exited with ${server.exitCode}`);
     try {
-      const response = await fetch(`http://127.0.0.1:${port}/pages/index.html`);
+      const response = await fetch(`http://127.0.0.1:${port}/__pgo/data?bytes=1`);
       if (response.ok) return server;
     } catch {
       // Not listening yet.
@@ -312,6 +317,28 @@ export function capLogs(dir: string, { maxBytes = 32 * 2 ** 20, keepBytes = 2 **
   }
 }
 
+// For --best-effort: the stories of `suite` (as configured for the
+// candidate) that the candidate produced no complete results for in either
+// of the first two rounds, or undefined unless its crossbench run failed in
+// both. A story missing from a failed run's results is taken as failed.
+export function failedStories(
+  outDir: string,
+  suite: string,
+  stories: string[],
+  invocations: Invocation[]
+): string[] | undefined {
+  const runs = [0, 1].map((round) =>
+    invocations.find((i) => i.round === round && i.suite === suite && i.target === 'candidate')
+  );
+  if (!runs.every((run) => run !== undefined && run.exitCode !== 0)) return undefined;
+  const passed = new Set(
+    runs.flatMap((run) => [...storiesWithResults(path.join(outDir, run!.dir), suite, run!.repetitions)])
+  );
+  return stories.filter((story) => !passed.has(story));
+}
+
+type PageSuiteConfigs = Record<string, { pages: Record<string, unknown[]> }>;
+
 async function main() {
   killActiveChildrenOnSignals();
   const { values: args } = parseArgs({
@@ -352,9 +379,11 @@ async function main() {
   const cb = ensureCrossbench(workDir, args.python);
 
   const wwwDir = path.join(workDir, 'www');
-  fs.cpSync(path.join(import.meta.dirname, 'pages'), path.join(wwwDir, 'pages'), { recursive: true });
   const fileRoot = path.join(workDir, 'file-loading');
   writeFileLoadingSite(fileRoot, fileCount);
+  const appRoot = path.join(workDir, 'app-shell');
+  const appBytes = Object.values(writeAppShellSite(appRoot)).reduce((sum, size) => sum + size, 0);
+  console.log(`[run] app shell: ${Math.round(appBytes / 1024)} KiB`);
   const server = await startServer(wwwDir, port);
   const baseUrl = `http://127.0.0.1:${port}`;
 
@@ -367,10 +396,12 @@ async function main() {
   }
   const capabilities = new Map<string, Capabilities>();
   const pageConfigPaths = new Map<string, Record<string, string>>();
+  const pageConfigsByTarget = new Map<string, PageSuiteConfigs>();
   for (const target of targets) {
     const targetCapabilities = probeCapabilities(target, harnessApp, workDir);
     capabilities.set(target.id, targetCapabilities);
-    const configs = pageConfigs({ capabilities: targetCapabilities, baseUrl, fileRoot });
+    const configs: PageSuiteConfigs = pageConfigs({ capabilities: targetCapabilities, fileRoot, appRoot });
+    pageConfigsByTarget.set(target.id, configs);
     const paths: Record<string, string> = {};
     for (const [suite, config] of Object.entries(configs)) {
       if (Object.keys(config.pages).length === 0) continue;
@@ -388,6 +419,7 @@ async function main() {
     repeat,
     suites,
     fileCount,
+    bestEffort: args['best-effort'],
     targets: targets.map(({ id, electronVersion, chromiumVersion }) => ({
       id,
       electronVersion,
@@ -407,6 +439,7 @@ async function main() {
   );
 
   const skippedSuites = new Set<string>();
+  const skippedStories: string[] = [];
   try {
     for (let round = 0; round < rounds; round++) {
       // Rotate the target order every round so no target always runs first.
@@ -469,25 +502,36 @@ async function main() {
           });
           writeMetadata();
         }
-        // In --best-effort mode a suite the candidate (the old version) failed
+        // In --best-effort mode a story the candidate (the old version) failed
         // in both of the first two rounds is most likely one it can't run (a
         // missing API, or a chromedriver crossbench can't drive), so stop
         // spending rounds on it. One failure can be a flake. The comparison
         // needs both targets, so it stops for both. A baseline failure is not
-        // taken as an incompatibility.
+        // taken as an incompatibility. Stories that did produce results keep
+        // running, and the whole suite stops only when none did (the press
+        // benchmarks have a single result).
         if (args['best-effort'] && round === 1 && rounds > 2) {
-          const candidateFailed = (r: number) =>
-            metadata.invocations.some(
-              (invocation) =>
-                invocation.round === r &&
-                invocation.suite === suite &&
-                invocation.target === 'candidate' &&
-                invocation.exitCode !== 0
-            );
-          if (candidateFailed(0) && candidateFailed(1)) {
+          const stories = Object.keys(pageConfigsByTarget.get('candidate')?.[suite]?.pages ?? {});
+          const failed = failedStories(outDir, suite, stories, metadata.invocations);
+          if (failed && (!PAGE_SUITES.includes(suite) || failed.length === stories.length)) {
             console.warn(`[run] ${suite} failed for the candidate in rounds 1 and 2; skipping it from now on`);
             skippedSuites.add(suite);
             metadata.skippedSuites = [...skippedSuites];
+            writeMetadata();
+          } else if (failed?.length) {
+            console.warn(
+              `[run] ${suite}: no results from the candidate in rounds 1 and 2 for ${failed.join(', ')}; skipping those stories from now on`
+            );
+            for (const target of targets) {
+              const config = pageConfigsByTarget.get(target.id)?.[suite];
+              const paths = pageConfigPaths.get(target.id);
+              if (!config || !paths?.[suite]) continue;
+              for (const story of failed) delete config.pages[story];
+              if (Object.keys(config.pages).length === 0) delete paths[suite];
+              else fs.writeFileSync(paths[suite], JSON.stringify(config, null, 2));
+            }
+            skippedStories.push(...failed.map((story) => `${suite}/${story}`));
+            metadata.skippedStories = [...skippedStories];
             writeMetadata();
           }
         }
