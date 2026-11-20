@@ -20,7 +20,7 @@ const fail = styleText('red', '✗');
 const warn = styleText('yellow', '⚠');
 
 const args = minimist(process.argv, {
-  boolean: ['skipYarnInstall'],
+  boolean: ['skipYarnInstall', 'coverage'],
   string: ['runners', 'target', 'electronVersion'],
   unknown: (arg) => unknownFlags.push(arg)
 });
@@ -124,6 +124,22 @@ async function main() {
   // a per-process PrintCore snapshot captured at startup.
   const teardownPrinter = await setupVirtualPrinter();
   process.on('exit', teardownPrinter);
+
+  if (args.coverage) {
+    // V8 coverage of lib/ (spec/vitest/electron-pool.ts), for
+    // script/lib-coverage-report.mjs.
+    if (args.electronVersion) {
+      console.log(`${fail} --coverage needs a local build with electron_js_sourcemaps = true`);
+      process.exit(1);
+    }
+    const coverageDir = path.resolve(BASE, 'out', utils.getOutDir(), 'lib-coverage', 'raw');
+    fs.rmSync(coverageDir, { recursive: true, force: true });
+    fs.mkdirSync(coverageDir, { recursive: true });
+    process.env.ELECTRON_SPEC_COVERAGE_DIR = coverageDir;
+    process.on('exit', () => {
+      console.log(`Coverage written to ${coverageDir}; render it with node script/lib-coverage-report.mjs`);
+    });
+  }
 
   await runElectronTests();
 }

@@ -9,6 +9,10 @@
 // writing anything; script/gen-filenames.mts uses it to keep filenames.auto.gni
 // in sync.
 //
+// --sourcemap also writes a source map next to the bundle (<bundle>.map) that
+// maps it back to lib/, for script/lib-coverage-report.mjs. The bundle itself
+// is unchanged: it carries no sourceMappingURL comment.
+//
 // Type checking is not done here; see typecheck.mjs.
 
 import { rolldown } from 'rolldown';
@@ -30,6 +34,7 @@ const { values: args } = parseArgs({
     'output-filename': { type: 'string' },
     buildflags: { type: 'string' },
     mode: { type: 'string', default: 'development' },
+    sourcemap: { type: 'boolean', default: false },
     'print-graph': { type: 'boolean', default: false }
   },
   strict: true
@@ -206,9 +211,7 @@ const minify =
       }
     : false;
 
-const {
-  output: [chunk, ...rest]
-} = await bundle.generate({
+const { output } = await bundle.generate({
   // The bundles are compiled as function bodies (see util::CompileBundle), the
   // Node.js ones with a `require` parameter that external imports are left as
   // calls to. Nothing provides `module` or `exports`.
@@ -220,9 +223,18 @@ const {
   keepNames: true,
   minify,
   // Added below, outside the wrappers.
-  strict: false
+  strict: false,
+  // 'hidden' leaves the code exactly as without a map (no sourceMappingURL).
+  sourcemap: args.sourcemap ? 'hidden' : false,
+  // Name the sources relative to the repository (lib/...), whatever the
+  // output directory.
+  sourcemapPathTransform: (source, sourcemapPath) =>
+    path.relative(electronRoot, path.resolve(path.dirname(sourcemapPath), source)).replaceAll(path.sep, '/')
 });
 await bundle.close();
+
+// With --sourcemap the map also comes back as an asset; chunk.map has it.
+const [chunk, ...rest] = output.filter((file) => !(file.type === 'asset' && file.fileName.endsWith('.map')));
 
 if (rest.length) {
   throw new Error(`Expected a single output chunk, got ${1 + rest.length}`);
@@ -246,8 +258,11 @@ if (printGraph) {
 ${chunk.code}
 })();
 `;
+  // Where chunk.code starts in the final bundle, for the source map.
+  let wrapperLines = 1;
 
   if (target.wrapInitWithProfilingTimeout) {
+    wrapperLines += 1;
     code = `function ___electron_init__() {
 ${code}
 };
@@ -260,6 +275,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
   }
 
   if (target.wrapInitWithTryCatch) {
+    wrapperLines += 1;
     code = `try {
 ${code}
 } catch (err) {
@@ -270,12 +286,24 @@ ${code}
   }
 
   code = `'use strict';\n${code}`;
+  wrapperLines += 1;
 
   // Leave an unchanged bundle's mtime alone so that ninja (GN actions are
   // restat) does not regenerate and recompile electron_natives.cc for it.
+  const writeIfChanged = (file, contents) => {
+    if (!fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== contents) {
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, contents);
+    }
+  };
   const outputFile = path.resolve(args['output-path'], outputFilename);
-  if (!fs.existsSync(outputFile) || fs.readFileSync(outputFile, 'utf8') !== code) {
-    fs.mkdirSync(args['output-path'], { recursive: true });
-    fs.writeFileSync(outputFile, code);
+  writeIfChanged(outputFile, code);
+
+  if (args.sourcemap) {
+    const map = chunk.map;
+    // Shift the mappings down past the wrapper lines added above.
+    map.mappings = ';'.repeat(wrapperLines) + map.mappings;
+    map.file = outputFilename;
+    writeIfChanged(`${outputFile}.map`, map.toString());
   }
 }

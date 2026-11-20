@@ -4,6 +4,11 @@ import { expect } from 'vitest';
 
 import { once } from 'node:events';
 
+import { takeRendererCoverage } from '../vitest/renderer-coverage.ts';
+
+// script/spec-runner.js --coverage: a renderer's coverage goes with it.
+const collectRendererCoverage = !!process.env.ELECTRON_SPEC_COVERAGE_DIR;
+
 // BrowserWindows that have emitted 'enter-full-screen' but not yet
 // 'leave-full-screen'.
 const inFullScreen = new WeakSet<BaseWindow>();
@@ -37,6 +42,15 @@ async function leaveFullScreen(window: BaseWindow) {
 async function ensureWindowIsClosed(window: BaseWindow | null) {
   if (window && !window.isDestroyed()) {
     await leaveFullScreen(window);
+    if (
+      collectRendererCoverage &&
+      window instanceof BrowserWindow &&
+      window.webContents &&
+      !window.webContents.isDestroyed()
+    ) {
+      await takeRendererCoverage(window.webContents);
+      if (window.isDestroyed()) return;
+    }
     if (window instanceof BrowserWindow && window.webContents && !window.webContents.isDestroyed()) {
       // If a window isn't destroyed already, and it has non-destroyed WebContents,
       // then calling destroy() won't immediately destroy it, as it may have
@@ -99,6 +113,10 @@ export async function cleanupWebContents() {
     // Destroying one webContents can take others in the list down with it
     // (e.g. its guests or devtools), and calling destroy() on those throws.
     if (contents.isDestroyed()) continue;
+    if (collectRendererCoverage) {
+      await takeRendererCoverage(contents);
+      if (contents.isDestroyed()) continue;
+    }
     const isDestroyed = once(contents, 'destroyed');
     contents.destroy();
     await isDestroyed;

@@ -56,6 +56,7 @@ import {
   spawnAndWait
 } from './lib/spec-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
+import { suspendRendererCoverage } from './vitest/renderer-coverage.ts';
 
 import type { AddressInfo } from 'node:net';
 
@@ -4865,6 +4866,11 @@ describe('BrowserWindow module', () => {
       // cross-test in-memory contamination.
       const fixture = path.join(fixtures, 'module', 'preload-code-cache.js');
       const cacheDir = path.join(app.getPath('sessionData'), 'Code Cache', 'electron-preload');
+
+      // V8 neither consumes nor fills code caches under the precise coverage
+      // that --coverage (script/spec-runner.js) turns on in renderers.
+      beforeAll(() => suspendRendererCoverage(true));
+      afterAll(() => suspendRendererCoverage(false));
 
       let preload: string;
       let cacheFile: string;

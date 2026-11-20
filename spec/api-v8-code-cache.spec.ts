@@ -20,6 +20,10 @@ const buildDir =
     ? path.resolve(path.dirname(process.execPath), '../../..')
     : path.dirname(process.execPath);
 const builder = path.join(buildDir, 'gen', 'electron', 'v8-code-cache', 'wasm-module-builder.js');
+// V8 neither consumes nor fills code caches under the precise coverage that
+// NODE_V8_COVERAGE (script/spec-runner.js --coverage) turns on. Node.js adds
+// it to a child's environment unless that has its own (undefined) entry.
+const env = { ...process.env, NODE_V8_COVERAGE: undefined };
 
 describe('V8 patch code cache compatibility', { retry: 0 }, () => {
   it('exposes a nonempty V8 version with a 16-hex Electron patch fingerprint', () => {
@@ -30,7 +34,7 @@ describe('V8 patch code cache compatibility', { retry: 0 }, () => {
 
   ifdescribe(isTestingBindingAvailable())('serialized caches', () => {
     it('rejects JavaScript caches from a different patch fingerprint and falls back to source', async () => {
-      const { remotely } = await startRemoteControlApp();
+      const { remotely } = await startRemoteControlApp([], { env });
       const result: CacheResult = await remotely((file: string) => require(file).javascript(), fixture);
       expect(result).toEqual({
         matchingAccepted: true,
@@ -45,7 +49,9 @@ describe('V8 patch code cache compatibility', { retry: 0 }, () => {
     ifit(fs.existsSync(builder))(
       'rejects serialized WebAssembly from a different patch fingerprint and falls back safely',
       async () => {
-        const { remotely } = await startRemoteControlApp(['--js-flags=--no-liftoff --no-wasm-lazy-compilation']);
+        const { remotely } = await startRemoteControlApp(['--js-flags=--no-liftoff --no-wasm-lazy-compilation'], {
+          env
+        });
         const result: CacheResult = await remotely(
           (file: string, helper: string) => require(file).webassembly(helper),
           fixture,
