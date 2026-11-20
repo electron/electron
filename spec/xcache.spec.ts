@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import * as v8 from 'node:v8';
 import * as vm from 'node:vm';
 
 import { ifdescribe } from './lib/spec-helpers.ts';
@@ -28,6 +29,15 @@ ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', ()
   let tmp: string;
   beforeAll(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-xcache-'));
+    // V8 neither consumes nor rejects code caches under the precise coverage
+    // that NODE_V8_COVERAGE (script/spec-runner.js --coverage) turns on in this
+    // process, so cachedDataRejected would read false whatever the cache. Save
+    // the coverage so far and end it for the rest of this file's worker (whose
+    // Node.js then logs at exit that it has no precise coverage left to take).
+    if (process.env.NODE_V8_COVERAGE) {
+      v8.takeCoverage();
+      v8.stopCoverage();
+    }
   });
   afterAll(() => {
     fs.rmSync(tmp, { recursive: true, force: true });
