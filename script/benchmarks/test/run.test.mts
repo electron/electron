@@ -6,7 +6,10 @@ import * as path from 'node:path';
 import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { capLogs, runCrossbench } from '../run.mts';
+import { pageConfigs } from '../lib/configs.mts';
+import { capLogs, failedStories, runCrossbench } from '../run.mts';
+
+import type { Invocation } from '../lib/types.mts';
 
 const FIXTURE = fileURLToPath(new URL('fixtures/spawn-descendant.mts', import.meta.url));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'benchmarks-run-test-'));
@@ -73,5 +76,111 @@ describe('capLogs', () => {
     assert.ok(!cut.includes('bb'));
     assert.equal(fs.statSync(small).size, 500);
     assert.equal(fs.statSync(data).size, 2000);
+  });
+});
+
+describe('failedStories', () => {
+  const STORIES = ['file_classic', 'file_module', 'register_file_protocol_classic'];
+
+  // One file_loading invocation of the candidate in `round` that exited with
+  // `exitCode`, with three files-loaded values for each story in `complete`
+  // and one value for each story in `partial`.
+  function invocation(
+    outDir: string,
+    round: number,
+    exitCode: number,
+    complete: string[],
+    partial: string[] = []
+  ): Invocation {
+    const dir = path.join('rounds', String(round), 'file_loading', 'candidate');
+    for (const [stories, values] of [
+      [complete, [10, 11, 12]],
+      [partial, [10]]
+    ] as const) {
+      for (const story of stories) {
+        const storyDir = path.join(outDir, dir, 'chromium_candidate', 'stories', story);
+        fs.mkdirSync(storyDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(storyDir, 'performance.entries.json'),
+          JSON.stringify({ 'mark/files-loaded/startTime': { values } })
+        );
+      }
+    }
+    return { round, suite: 'file_loading', target: 'candidate', exitCode, repetitions: 3, dir };
+  }
+
+  it('returns the stories without complete results in either of the first two rounds', () => {
+    const outDir = path.join(tmp, 'failed-stories');
+    const invocations = [
+      invocation(outDir, 0, 3, ['file_classic'], ['file_module']),
+      // A baseline failure does not count.
+      { round: 1, suite: 'file_loading', target: 'baseline', exitCode: 3, repetitions: 3, dir: 'missing' },
+      invocation(outDir, 1, 3, ['register_file_protocol_classic'], ['file_module'])
+    ];
+    assert.deepEqual(failedStories(outDir, 'file_loading', STORIES, invocations), ['file_module']);
+  });
+
+  it('counts a story crossbench reported errors for as failed', () => {
+    const outDir = path.join(tmp, 'failed-stories-errors');
+    const invocations = [invocation(outDir, 0, 3, STORIES), invocation(outDir, 1, 3, STORIES)];
+    for (const run of invocations) {
+      fs.writeFileSync(
+        path.join(outDir, run.dir, 'chromium_candidate', 'stories', 'file_module', 'cb.errors.json'),
+        JSON.stringify([{ type: 'builtins.TimeoutError', title: 'Waited for 0:01:00.1' }])
+      );
+    }
+    assert.deepEqual(failedStories(outDir, 'file_loading', STORIES, invocations), ['file_module']);
+  });
+
+  it('returns every story when no story produced results', () => {
+    const outDir = path.join(tmp, 'failed-stories-none');
+    const invocations = [invocation(outDir, 0, 3, []), invocation(outDir, 1, 124, [])];
+    assert.deepEqual(failedStories(outDir, 'file_loading', STORIES, invocations), STORIES);
+  });
+
+  it("matches the loading suite's app shell stories", () => {
+    const outDir = path.join(tmp, 'failed-stories-loading');
+    const stories = Object.keys(pageConfigs({ fileRoot: '/tmp/files', appRoot: '/tmp/app' }).loading.pages);
+    assert.deepEqual(stories, ['first_load', 'reload']);
+    // first_load completes in both rounds; reload times out with one value.
+    const invocations = [0, 1].map((round): Invocation => {
+      const dir = path.join('rounds', String(round), 'loading', 'candidate');
+      for (const [story, count] of [
+        ['first_load', 3],
+        ['reload', 1]
+      ] as const) {
+        const storyDir = path.join(outDir, dir, 'chromium_candidate', 'stories', story);
+        fs.mkdirSync(storyDir, { recursive: true });
+        const values = [100, 110, 120].slice(0, count);
+        fs.writeFileSync(
+          path.join(storyDir, 'performance.entries.json'),
+          JSON.stringify({
+            'paint/first-contentful-paint/startTime': { values },
+            'navigation/loadEventEnd': { values },
+            'mark/app-ready/startTime': { values },
+            'mark/app-lcp/startTime': { values }
+          })
+        );
+      }
+      return { round, suite: 'loading', target: 'candidate', exitCode: 3, repetitions: 3, dir };
+    });
+    assert.deepEqual(failedStories(outDir, 'loading', stories, invocations), ['reload']);
+    // A run killed while crossbench wrote a result file: the story has no
+    // results rather than the round loop throwing.
+    fs.writeFileSync(
+      path.join(outDir, invocations[0].dir, 'chromium_candidate', 'stories', 'first_load', 'performance.entries.json'),
+      '{"paint/first'
+    );
+    fs.writeFileSync(
+      path.join(outDir, invocations[1].dir, 'chromium_candidate', 'stories', 'first_load', 'cb.errors.json'),
+      '[{"type": "builtins.Timeo'
+    );
+    assert.deepEqual(failedStories(outDir, 'loading', stories, invocations), ['first_load', 'reload']);
+  });
+
+  it('returns nothing unless the candidate failed in both rounds', () => {
+    const outDir = path.join(tmp, 'failed-stories-flake');
+    const invocations = [invocation(outDir, 0, 3, []), invocation(outDir, 1, 0, STORIES)];
+    assert.equal(failedStories(outDir, 'file_loading', STORIES, invocations), undefined);
   });
 });

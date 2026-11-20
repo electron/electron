@@ -20,6 +20,8 @@
 //    so the test still fails with all of them.
 //  - spec/disabled-tests.json switches a test off by its full title without
 //    touching the spec file (used to unblock a roll while a fix is pending).
+//  - The worker's config is handed to spec/lib/spec-helpers.ts, so that
+//    getSpecTimeout() reads the configured testTimeout instead of repeating it.
 
 import { TestRunner } from 'vitest';
 
@@ -27,9 +29,17 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 
-import { runCleanupFunctions } from '../lib/spec-helpers.ts';
+import { runCleanupFunctions, setSpecConfig } from '../lib/spec-helpers.ts';
 
-import type { RunnerTask, RunnerTestCase, RunnerTestFile, RunnerTestSuite, TestContext, TestTryOptions } from 'vitest';
+import type {
+  RunnerTask,
+  RunnerTestCase,
+  RunnerTestFile,
+  RunnerTestSuite,
+  SerializedConfig,
+  TestContext,
+  TestTryOptions
+} from 'vitest';
 
 const disabledTests = new Set<string>(
   JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'disabled-tests.json'), 'utf8'))
@@ -68,6 +78,13 @@ function collectingErrors(hook: (context: TestContext, suite: Readonly<RunnerTes
 }
 
 export default class ElectronSpecRunner extends TestRunner {
+  constructor(config: SerializedConfig) {
+    super(config);
+    // For getSpecTimeout(), which the specs and their helpers use to pass
+    // the timeout on to the apps they start.
+    setSpecConfig(this.config);
+  }
+
   async onBeforeRunSuite(suite: RunnerTestSuite) {
     if (!prepared.has(suite)) {
       prepared.add(suite);

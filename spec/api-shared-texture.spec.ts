@@ -9,23 +9,38 @@ import { setTimeout } from 'node:timers/promises';
 import { defer, ifdescribe } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
+import type { TestContext } from 'vitest';
+
 const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
 // Tests only run properly on macOS arm64 for now
 const skip = process.platform !== 'darwin' || process.arch !== 'arm64';
-// Each wait gets its own deadline, shorter than the test timeout, so a stall
-// fails with the step that stalled instead of a bare test timeout.
 const STEP_TIMEOUT_MS = 20_000;
+const TEST_TIMEOUT_MARGIN_MS = 2_000;
 
-const step = <T>(description: string, promise: Promise<T>): Promise<T> => {
-  let timer: ReturnType<typeof globalThis.setTimeout> | undefined;
-  const deadline = new Promise<never>((_resolve, reject) => {
-    timer = globalThis.setTimeout(
-      () => reject(new Error(`Timed out after ${STEP_TIMEOUT_MS}ms waiting for ${description}`)),
-      STEP_TIMEOUT_MS
-    );
-  });
-  return Promise.race([promise, deadline]).finally(() => globalThis.clearTimeout(timer));
+// Each wait gets a labeled deadline that always expires before the test's own timeout, so a
+// stall fails with the step that stalled, and how long the earlier steps took, instead of a
+// bare test timeout.
+const createStepper = (testTimeoutMs: number) => {
+  const testDeadline = Date.now() + testTimeoutMs - TEST_TIMEOUT_MARGIN_MS;
+  const completed: string[] = [];
+  return async <T>(description: string, promise: Promise<T>): Promise<T> => {
+    const start = Date.now();
+    const timeoutMs = Math.max(0, Math.min(STEP_TIMEOUT_MS, testDeadline - start));
+    let timer: ReturnType<typeof globalThis.setTimeout> | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = globalThis.setTimeout(() => {
+        const earlier = completed.length > 0 ? ` (earlier steps: ${completed.join(', ')})` : '';
+        reject(new Error(`Timed out after ${Date.now() - start}ms waiting for ${description}${earlier}`));
+      }, timeoutMs);
+    });
+    try {
+      return await Promise.race([promise, deadline]);
+    } finally {
+      globalThis.clearTimeout(timer);
+      completed.push(`${description}: ${Date.now() - start}ms`);
+    }
+  };
 };
 
 ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
@@ -51,6 +66,12 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
     });
     osr.webContents.stopPainting();
     await osr.loadFile(osrPath);
+    // The load event can fire before the decoded image reaches a compositor frame, and
+    // startPainting() captures whatever frame is current, so wait for the image to be presented.
+    await osr.webContents.executeJavaScript(`(async () => {
+      await document.querySelector('img').decode();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    })()`);
 
     return new Promise<Electron.OffscreenSharedTexture>((resolve, reject) => {
       let captured = false;
@@ -76,7 +97,8 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
     });
   };
 
-  const runSharedTextureTest = async (api: 'subtle' | 'managed', iframe = false) => {
+  const runSharedTextureTest = async (ctx: TestContext, api: 'subtle' | 'managed', iframe = false) => {
+    const step = createStepper(ctx.task.timeout);
     const win = new BrowserWindow({
       width: 256,
       height: 256,
@@ -96,7 +118,10 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
     });
 
     const verifyCapture = async (targetFrame: Electron.WebFrameMain) => {
-      const captured = await win.webContents.capturePage({ x: 16, y: 16, width: 128, height: 128 });
+      const captured = await step(
+        'capturePage() of the receiving window',
+        win.webContents.capturePage({ x: 16, y: 16, width: 128, height: 128 })
+      );
       const verified = once(ipcMain, 'verify-captured-image-done');
       targetFrame.send('verify-captured-image', {
         captured: captured.toDataURL(),
@@ -175,9 +200,10 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
   };
 
   describe('import shared texture produced by osr', () => {
-    it('successfully imported and rendered with subtle api', () => runSharedTextureTest('subtle'));
+    it('successfully imported and rendered with subtle api', (ctx) => runSharedTextureTest(ctx, 'subtle'));
 
-    it('successfully imported and rendered with managed api, without iframe', () => runSharedTextureTest('managed'));
+    it('successfully imported and rendered with managed api, without iframe', (ctx) =>
+      runSharedTextureTest(ctx, 'managed'));
 
     it('keeps subtle methods usable after the imported object is garbage collected', async () => {
       const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -208,6 +234,7 @@ ifdescribe(!skip)('sharedTexture module', { retry: 0 }, () => {
       }
     });
 
-    it('successfully imported and rendered with managed api, with iframe', () => runSharedTextureTest('managed', true));
+    it('successfully imported and rendered with managed api, with iframe', (ctx) =>
+      runSharedTextureTest(ctx, 'managed', true));
   });
 });
