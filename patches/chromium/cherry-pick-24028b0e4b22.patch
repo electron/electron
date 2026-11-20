@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 18 Nov 2026 17:52:29 +0000
+Subject: [WebAudio] Skip internal kCancelValues events in InsertEvent check
+
+When adjacent SetValueCurve events are scheduled out of order, a
+subsequent cancelAndHoldAtTime call can insert an internal
+kCancelValues event whose timestamp falls within an existing curve
+span, hitting NOTREACHED() in EventToString().
+
+Changes:
+- Exempt internal kSetValueCurveEnd and kCancelValues events from the
+  non-curve overlap check in AudioParamHandler::InsertEvent.
+- Add a unit test covering out-of-order adjacent curves with
+  cancelAndHoldAtTime.
+
+Fixed: 575660416
+Test: blink_unittests --gtest_filter=*AudioParam*
+Change-Id: If41e168ffb748da6150397ef075ec844f2d2ae91
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8702337
+Commit-Queue: Hongchan Choi <hongchan@google.com>
+Reviewed-by: Michael Wilson <mjwilson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1735828}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_param_handler.cc b/third_party/blink/renderer/modules/webaudio/audio_param_handler.cc
+index d104f0b8f17b5e758b205e31a2bef9afc016b19b..076e506c80058d89ef56c4529bc4a5ccc302e88c 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_param_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_param_handler.cc
+@@ -972,7 +972,8 @@ bool AudioParamHandler::InsertEvent(std::unique_ptr<ParamEvent> event,
+         break;
+       }
+     }
+-  } else {
++  } else if (event->GetType() != ParamEvent::Type::kSetValueCurveEnd &&
++             event->GetType() != ParamEvent::Type::kCancelValues) {
+     // Not a `SetValueCurve` new event. Make sure this new event doesn't overlap
+     // any existing `SetValueCurve` event.
+     for (int i = ub; i >= 0; i--) {
+@@ -984,8 +985,7 @@ bool AudioParamHandler::InsertEvent(std::unique_ptr<ParamEvent> event,
+       }
+       if (test_type == ParamEvent::Type::kSetValueCurve) {
+         double end_time = events_[i]->Time() + events_[i]->Duration();
+-        if (event->GetType() != ParamEvent::Type::kSetValueCurveEnd &&
+-            event->Time() >= events_[i]->Time() && event->Time() < end_time) {
++        if (event->Time() >= events_[i]->Time() && event->Time() < end_time) {
+           exception_state.ThrowDOMException(
+               DOMExceptionCode::kNotSupportedError,
+               StrCat({EventToString(*event), " overlaps ",
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_param_handler_test.cc b/third_party/blink/renderer/modules/webaudio/audio_param_handler_test.cc
+index 92f7a26f0419cb9895910d73fbdb4d5213cdead6..8b57b139771bc065943565ef1c1e0b3906dea5ef 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_param_handler_test.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_param_handler_test.cc
+@@ -186,4 +186,26 @@ TEST(AudioParamHandlerTest, SetValueCurveWithPastStartTime) {
+   }
+ }
+ 
++TEST(AudioParamHandlerTest, CancelAndHoldAtTimeWithOutOfOrderAdjacentCurves) {
++  test::TaskEnvironment task_environment;
++  auto page = std::make_unique<DummyPageHolder>();
++  DummyExceptionStateForTesting exception_state;
++  OfflineAudioContext* context = OfflineAudioContext::Create(
++      page->GetFrame().DomWindow(), 1, 128, 8000, exception_state);
++  ASSERT_FALSE(exception_state.HadException());
++  OscillatorNode* osc = context->createOscillator(exception_state);
++  ASSERT_FALSE(exception_state.HadException());
++
++  // Out-of-order adjacent curves place the earlier curve's end marker after
++  // the later curve's start; cancelling a follow-up ramp must not crash.
++  const Vector<float> curve = {1.0f, 2.0f};
++  osc->frequency()
++      ->setValueCurveAtTime(curve, 0.006, 0.008, exception_state)
++      ->setValueCurveAtTime(curve, 0.002, 0.004, exception_state)
++      ->cancelAndHoldAtTime(0.010, exception_state)
++      ->linearRampToValueAtTime(5.0f, 0.015, exception_state)
++      ->cancelAndHoldAtTime(0.010, exception_state);
++  EXPECT_FALSE(exception_state.HadException());
++}
++
+ }  // namespace blink
