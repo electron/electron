@@ -2595,24 +2595,37 @@ describe('protocol module', () => {
       expect(await contents.executeJavaScript('document.documentElement.textContent')).toBe('ab');
     });
 
-    it('can receive file postData from loadURL', async () => {
-      protocol.handle('test-scheme', (req) => new Response(req.body));
-      defer(() => {
-        protocol.unhandle('test-scheme');
-      });
-      await contents.loadURL('test-scheme://foo/', {
-        postData: [
-          {
-            type: 'file',
-            filePath: path.join(fixturesPath, 'hello.txt'),
-            length: 'hello world\n'.length,
-            offset: 0,
-            modificationTime: 0
-          }
-        ]
-      });
-      expect(await contents.executeJavaScript('document.documentElement.textContent')).toBe('hello world\n');
-    });
+    it.each([
+      { offset: 0, length: 12, expected: 'hello world\n' },
+      { offset: 0, length: 5, expected: 'hello' },
+      { offset: 2, length: 4, expected: 'llo ' },
+      { offset: 0, length: 0, expected: '' },
+      { offset: 2, length: 0, expected: '' },
+      { offset: 6, length: -1, expected: 'world\n' },
+      { offset: 11, length: 1, expected: '\n' }
+    ])(
+      'can receive file postData with offset $offset and length $length from loadURL',
+      async ({ offset, length, expected }) => {
+        protocol.handle('test-scheme', (req) => new Response(req.body));
+        defer(() => {
+          protocol.unhandle('test-scheme');
+        });
+        await contents.loadURL('test-scheme://foo/', {
+          postData: [
+            { type: 'rawData', bytes: Buffer.from('[') },
+            {
+              type: 'file',
+              filePath: path.join(fixturesPath, 'hello.txt'),
+              length,
+              offset,
+              modificationTime: 0
+            },
+            { type: 'rawData', bytes: Buffer.from(']') }
+          ]
+        });
+        expect(await contents.executeJavaScript('document.documentElement.textContent')).toBe(`[${expected}]`);
+      }
+    );
 
     it('can receive file postData from a form', async () => {
       protocol.handle('test-scheme', (req) => new Response(req.body));
