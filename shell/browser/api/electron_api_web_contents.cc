@@ -3809,8 +3809,14 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
 
   if (owner_window) {
     native_lifecycle_->owner_window_ = owner_window->GetWeakPtr();
-    NativeWindowRelay::CreateForWebContents(web_contents,
-                                            owner_window->GetWeakPtr());
+    // A WebContentsView can move to another window, so point an existing relay
+    // at the new window rather than keeping the first one.
+    if (auto* relay = NativeWindowRelay::FromWebContents(web_contents)) {
+      relay->SetNativeWindow(owner_window->GetWeakPtr());
+    } else {
+      NativeWindowRelay::CreateForWebContents(web_contents,
+                                              owner_window->GetWeakPtr());
+    }
     native_lifecycle_->background_throttling_registration_ =
         owner_window->RegisterBackgroundThrottlingSource(
             native_lifecycle_.get());
