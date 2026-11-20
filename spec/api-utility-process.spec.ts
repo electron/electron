@@ -18,6 +18,7 @@ import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
 import {
   defer,
   deferKillUtilityProcess,
+  getSpecTimeout,
   ifit,
   isTestingBindingAvailable,
   listen,
@@ -1049,7 +1050,7 @@ describe('utilityProcess module', { retry: 0 }, () => {
     // Growing the heap to the limit and writing the snapshot is slow, so give
     // this test at least 60s. Sanitizer builds raise every test's timeout
     // (ELECTRON_SPEC_TIMEOUT, 180s) and are slower still, so never go below that.
-    const heapTimeout = Math.max(60_000, Number(process.env.ELECTRON_SPEC_TIMEOUT) || 0);
+    const heapTimeout = Math.max(60_000, getSpecTimeout());
     it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout: heapTimeout }, async () => {
       const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
       defer(() => fs.rm(tmpDir, { recursive: true, force: true }));
