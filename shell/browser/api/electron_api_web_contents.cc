@@ -3829,10 +3829,12 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
     osr_wcv->SetNativeWindow(owner_window);
 
   // Attached <webview> guests and the built-in DevTools frontend took their
-  // window from this WebContents, so they follow it to its new one. An app
-  // frontend from setDevToolsWebContents() may live in its own window, so it
-  // is left alone. Collect the guests first so a re-entrant attach or detach
-  // can't invalidate the WebViewManager iteration.
+  // window from this WebContents, so they follow it to its new one. An
+  // undocked frontend stays open after this view is detached, so it keeps its
+  // owner when there is no new window. An app frontend from
+  // setDevToolsWebContents() may live in its own window, so it is left alone.
+  // Collect the guests first so a re-entrant attach or detach can't
+  // invalidate the WebViewManager iteration.
   std::vector<base::WeakPtr<content::WebContents>> guests;
   if (auto* manager = WebViewManager::GetWebViewManager(web_contents)) {
     manager->ForEachGuest(web_contents, [&](content::WebContents* guest) {
@@ -3844,7 +3846,7 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
     if (auto* api_guest = WebContents::From(guest.get()))
       api_guest->SetOwnerWindow(owner_window);
   }
-  if (auto* iwc = inspectable_web_contents()) {
+  if (auto* iwc = inspectable_web_contents(); iwc && owner_window) {
     if (auto* devtools = iwc->managed_devtools_web_contents()) {
       if (auto* api_devtools = WebContents::From(devtools))
         api_devtools->SetOwnerWindow(devtools, owner_window);
