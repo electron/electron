@@ -36,8 +36,6 @@ Cr-Commit-Position: refs/heads/main@{#1721579}
 
 Electron adaptation notes (45-x-y): execution_context.cc/.h conflicted with the branch's [M156] 'Avoid re-entry when draining pending error events' (is_draining_pending_exceptions_ guard, which this CL predates). Resolved to the same text as upstream main after both changes: pending_exceptions_ becomes HeapVector<std::pair<Member<ErrorEvent>, SanitizeScriptErrors>>, ExceptionThrown() receives the per-event SanitizeScriptErrors, and the branch's base::AutoReset draining guard, std::move() of the pending list and CHECK(pending_exceptions_.empty()) are kept. All other files applied cleanly.
 
-Electron's PreloadRealmGlobalScope (feat_add_preloadrealmglobalscope.patch) also overrides ExceptionThrown(); its override takes the new SanitizeScriptErrors argument and forwards it to the initiator context.
-
 diff --git a/third_party/blink/renderer/core/events/error_event.cc b/third_party/blink/renderer/core/events/error_event.cc
 index 2bfe1f7a897a9dd5ef6224f5173fafa8b4d67aa1..8568477ab5d6e5d99857e679a68813421b844784 100644
 --- a/third_party/blink/renderer/core/events/error_event.cc
@@ -114,7 +112,7 @@ index 3ba564e7ea4764b81adf04997920c3382aa505b2..59ed41c4e63f7c8c6c916b7ed789d6b1
  
    DCHECK(!in_dispatch_error_event_);
 diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
-index ebf9bdc0a80d9e9788034822c627ba4bb92fdc41..b54dfde34f60402ff3682db68f195fb949c0da3b 100644
+index a624d48a3a286e64d055f271f0202db7c0a2d190..c24d57f25273ccfede068c8752abff47ac955384 100644
 --- a/third_party/blink/renderer/core/execution_context/execution_context.h
 +++ b/third_party/blink/renderer/core/execution_context/execution_context.h
 @@ -29,6 +29,7 @@
@@ -125,7 +123,7 @@ index ebf9bdc0a80d9e9788034822c627ba4bb92fdc41..b54dfde34f60402ff3682db68f195fb9
  
  #include "base/memory/raw_ptr.h"
  #include "base/notreached.h"
-@@ -242,7 +243,7 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+@@ -243,7 +244,7 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
  
    void DispatchErrorEvent(ErrorEvent*, SanitizeScriptErrors);
  
@@ -134,7 +132,7 @@ index ebf9bdc0a80d9e9788034822c627ba4bb92fdc41..b54dfde34f60402ff3682db68f195fb9
  
    PublicURLManager& GetPublicURLManager();
  
-@@ -543,7 +544,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+@@ -544,7 +545,8 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
  
    bool in_dispatch_error_event_;
    bool is_draining_pending_exceptions_ = false;
@@ -172,42 +170,11 @@ index ee2c080f61b630a0b80efbe54b0ede3df7c4d657..4820243a66c9048418c3aadba3f88d39
    void AddInspectorIssue(AuditsIssue) final;
    EventTarget* ErrorEventTarget() final { return this; }
    KURL OutgoingReferrerUrl() const final;
-diff --git a/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.cc b/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.cc
-index e3b90794a557b640e1d1c28a894c2e01ead2e6e6..51a32a4a8d16c7286cd6d1c288397d6b93fc1454 100644
---- a/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.cc
-+++ b/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.cc
-@@ -92,8 +92,11 @@ ResourceFetcher* PreloadRealmGlobalScope::Fetcher() {
-   NOTREACHED();
- }
- 
--void PreloadRealmGlobalScope::ExceptionThrown(ErrorEvent* error_event) {
--  initiator_execution_context_->ExceptionThrown(error_event);
-+void PreloadRealmGlobalScope::ExceptionThrown(
-+    ErrorEvent* error_event,
-+    SanitizeScriptErrors sanitize_script_errors) {
-+  initiator_execution_context_->ExceptionThrown(error_event,
-+                                                sanitize_script_errors);
- }
- 
- void PreloadRealmGlobalScope::AddInspectorIssue(AuditsIssue issue) {
-diff --git a/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h b/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h
-index 39bb7175c4134be9cc76487b09b0ccb966c3e7a0..bf9e03bc429bb453393ef036c1fb90a892de5193 100644
---- a/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h
-+++ b/third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h
-@@ -58,7 +58,7 @@ class CORE_EXPORT PreloadRealmGlobalScope final : public ScriptWrappable,
-   String UserAgent() const override;
-   HttpsState GetHttpsState() const override;
-   ResourceFetcher* Fetcher() override;
--  void ExceptionThrown(ErrorEvent* error_event) override;
-+  void ExceptionThrown(ErrorEvent* error_event, SanitizeScriptErrors) override;
-   void AddInspectorIssue(AuditsIssue issue) override;
-   EventTarget* ErrorEventTarget() override;
-   FrameOrWorkerScheduler* GetScheduler() override;
 diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
-index ca89a52843b3c2b16cb7fcaafe6f8ac21de11422..7b77d51ca3ca41a187021a13c213bbd723e997da 100644
+index 8cfd4b8fa95a7333b6616a1313147e5b173c6866..06620d26be43508a0c2e3e163ec0f049edf946b8 100644
 --- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
 +++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
-@@ -96,7 +96,9 @@ ResourceFetcher* ShadowRealmGlobalScope::Fetcher() {
+@@ -97,7 +97,9 @@ ResourceFetcher* ShadowRealmGlobalScope::Fetcher() {
    NOTREACHED();
  }
  
@@ -219,10 +186,10 @@ index ca89a52843b3c2b16cb7fcaafe6f8ac21de11422..7b77d51ca3ca41a187021a13c213bbd7
  }
  
 diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
-index 91c698dd0965d0c945d24ccc7512cf07247cd897..956049a3e86cba9bfd1ee15a92a49f13d105ee30 100644
+index 3143fa3c45749104e16bf96016d43efeeef6a04f..fabf4706ad2eedd4a0d00562b842276443840903 100644
 --- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
 +++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h
-@@ -53,7 +53,7 @@ class CORE_EXPORT ShadowRealmGlobalScope final : public EventTarget,
+@@ -54,7 +54,7 @@ class CORE_EXPORT ShadowRealmGlobalScope final : public EventTarget,
    String UserAgent() const override;
    HttpsState GetHttpsState() const override;
    ResourceFetcher* Fetcher() override;
