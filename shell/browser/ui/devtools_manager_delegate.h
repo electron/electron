@@ -6,7 +6,9 @@
 #define ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_MANAGER_DELEGATE_H_
 
 #include <string>
+#include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
 namespace content {
@@ -31,6 +33,8 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   void HandleCommand(content::DevToolsAgentHostClientChannel* channel,
                      base::span<const uint8_t> message,
                      NotHandledCallback callback) override;
+  void ClientDetached(
+      content::DevToolsAgentHostClientChannel* channel) override;
   scoped_refptr<content::DevToolsAgentHost> CreateNewTarget(
       const GURL& url,
       TargetType target_type,
@@ -39,6 +43,14 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   bool HasBundledFrontendResources() override;
   bool ShouldUseBundledFrontendResources() override;
   content::BrowserContext* GetDefaultBrowserContext() override;
+
+ private:
+  // The channels of the window commands being handled, innermost last. A
+  // handler can emit window events synchronously, and a listener can detach
+  // the client, which deletes its channel. ClientDetached() clears the
+  // channel's entries so that no response is sent to it.
+  std::vector<raw_ptr<content::DevToolsAgentHostClientChannel>>
+      dispatching_channels_;
 };
 
 }  // namespace electron

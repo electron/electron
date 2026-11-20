@@ -21,6 +21,7 @@
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/supports_user_data.h"
 #include "base/timer/timer.h"
 #include "base/uuid.h"
 #include "base/values.h"
@@ -108,6 +109,21 @@ constexpr std::string_view kFrontendHostId = "id";
 constexpr std::string_view kFrontendHostMethod = "method";
 constexpr std::string_view kFrontendHostParams = "params";
 constexpr std::string_view kTitleFormat = "Developer Tools - %s";
+
+// Links a managed DevTools frontend to the InspectableWebContents that owns it.
+const void* const kInspectableWebContentsKey = &kInspectableWebContentsKey;
+
+class InspectableWebContentsLink : public base::SupportsUserData::Data {
+ public:
+  explicit InspectableWebContentsLink(InspectableWebContents* owner)
+      : owner_(owner) {}
+
+  InspectableWebContents* owner() const { return owner_; }
+
+ private:
+  // The owner holds the frontend, so it outlives this link.
+  raw_ptr<InspectableWebContents> owner_;
+};
 
 // Mirrors IsLocalDevToolsFrontendURL() in
 // chrome/browser/devtools/devtools_ui_bindings.cc: only the bundled, custom
@@ -351,6 +367,14 @@ class InspectableWebContents::NetworkResourceLoader
 };
 
 // static
+InspectableWebContents* InspectableWebContents::FromDevToolsWebContents(
+    content::WebContents* devtools_web_contents) {
+  auto* link = static_cast<InspectableWebContentsLink*>(
+      devtools_web_contents->GetUserData(kInspectableWebContentsKey));
+  return link ? link->owner() : nullptr;
+}
+
+// static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
                                    RectToDictionary(gfx::Rect{0, 0, 800, 600}));
@@ -515,6 +539,9 @@ void InspectableWebContents::ShowDevTools(bool activate) {
     managed_devtools_web_contents_ = content::WebContents::Create(
         content::WebContents::CreateParams(web_contents_->GetBrowserContext()));
     managed_devtools_web_contents_->SetDelegate(this);
+    managed_devtools_web_contents_->SetUserData(
+        kInspectableWebContentsKey,
+        std::make_unique<InspectableWebContentsLink>(this));
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::HandleScope scope(isolate);
     api::WebContents::FromOrCreate(isolate,
