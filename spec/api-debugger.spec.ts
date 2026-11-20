@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron/main';
+import { BrowserWindow, WebContentsView } from 'electron/main';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -8,7 +8,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { emittedUntil } from './lib/events-helpers.ts';
-import { listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('debugger module', () => {
@@ -433,5 +433,275 @@ describe('debugger module', () => {
         });
         w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
       }));
+  });
+
+  describe('Browser window commands', () => {
+    const toCdpBounds = ({ x, y, width, height }: Electron.Rectangle) => ({ left: x, top: y, width, height });
+
+    const expectBoundsClose = (actual: Electron.Rectangle, expected: Electron.Rectangle) => {
+      // Allow for rounding when the display's scale factor is fractional.
+      for (const key of ['x', 'y', 'width', 'height'] as const) {
+        expect(Math.abs(actual[key] - expected[key]), key).toBeLessThanOrEqual(1);
+      }
+    };
+
+    const getWindowState = async () => {
+      const { bounds } = await w.webContents.debugger.sendCommand('Browser.getWindowBounds', { windowId: w.id });
+      return bounds.windowState;
+    };
+
+    const setWindowBounds = (bounds: Record<string, unknown>) =>
+      w.webContents.debugger.sendCommand('Browser.setWindowBounds', { windowId: w.id, bounds });
+
+    beforeEach(async () => {
+      await w.loadURL('about:blank');
+      w.webContents.debugger.attach();
+    });
+
+    it('getWindowForTarget returns the window of the attached target', async () => {
+      const { windowId, bounds } = await w.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(w.id);
+      expect(bounds).toEqual({ ...toCdpBounds(w.getBounds()), windowState: 'normal' });
+    });
+
+    it('getWindowForTarget accepts a targetId', async () => {
+      const { targetInfo } = await w.webContents.debugger.sendCommand('Target.getTargetInfo');
+      const { windowId } = await w.webContents.debugger.sendCommand('Browser.getWindowForTarget', {
+        targetId: targetInfo.targetId
+      });
+      expect(windowId).toBe(w.id);
+    });
+
+    it('getWindowForTarget rejects an unknown targetId', async () => {
+      const promise = w.webContents.debugger.sendCommand('Browser.getWindowForTarget', { targetId: 'unknown' });
+      await expect(promise).rejects.toThrow('No target with given id');
+    });
+
+    it('getWindowBounds returns the bounds of a window', async () => {
+      const { bounds } = await w.webContents.debugger.sendCommand('Browser.getWindowBounds', { windowId: w.id });
+      expect(bounds).toEqual({ ...toCdpBounds(w.getBounds()), windowState: 'normal' });
+    });
+
+    it('getWindowBounds rejects an unknown windowId', async () => {
+      const promise = w.webContents.debugger.sendCommand('Browser.getWindowBounds', { windowId: -1 });
+      await expect(promise).rejects.toThrow('Browser window not found');
+    });
+
+    it('setWindowBounds sets the window bounds', async () => {
+      await setWindowBounds({ left: 100, top: 120, width: 300, height: 350 });
+      expectBoundsClose(w.getBounds(), { x: 100, y: 120, width: 300, height: 350 });
+    });
+
+    it('setWindowBounds keeps the bounds that are not given', async () => {
+      const original = w.getBounds();
+      await setWindowBounds({ width: original.width + 20 });
+      expectBoundsClose(w.getBounds(), { ...original, width: original.width + 20 });
+    });
+
+    it('setWindowBounds rejects a window state combined with bounds', async () => {
+      await expect(setWindowBounds({ width: 300, windowState: 'maximized' })).rejects.toThrow(
+        "The 'minimized', 'maximized' and 'fullscreen' states cannot be combined"
+      );
+    });
+
+    it('setWindowBounds rejects an invalid window state', async () => {
+      await expect(setWindowBounds({ windowState: 'tiled' })).rejects.toThrow('Invalid window state: tiled');
+    });
+
+    it('setWindowBounds rejects an unknown windowId', async () => {
+      const promise = w.webContents.debugger.sendCommand('Browser.setWindowBounds', {
+        windowId: -1,
+        bounds: { width: 300 }
+      });
+      await expect(promise).rejects.toThrow('Browser window not found');
+    });
+
+    it('getWindowForTarget returns the window that hosts a WebContentsView', async () => {
+      const view = new WebContentsView();
+      defer(() => view.webContents.close());
+      w.contentView.addChildView(view);
+      await view.webContents.loadURL('about:blank');
+      view.webContents.debugger.attach();
+      const { windowId } = await view.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(w.id);
+    });
+
+    it('getWindowForTarget follows a WebContentsView that moves to another window', async () => {
+      const other = new BrowserWindow({ show: false, width: 400, height: 400 });
+      const view = new WebContentsView();
+      defer(() => view.webContents.close());
+      w.contentView.addChildView(view);
+      await view.webContents.loadURL('about:blank');
+      view.webContents.debugger.attach();
+
+      w.contentView.removeChildView(view);
+      other.contentView.addChildView(view);
+      const { windowId } = await view.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(other.id);
+
+      // Closing the window the view came from does not affect it.
+      const closed = once(w, 'closed');
+      w.close();
+      await closed;
+      const { windowId: windowIdAfterClose } =
+        await view.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowIdAfterClose).toBe(other.id);
+    });
+
+    const openDevTools = async (mode: Electron.OpenDevToolsOptions['mode']) => {
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode, activate: false });
+      await opened;
+      const frontend = w.webContents.devToolsWebContents!;
+      frontend.debugger.attach();
+      return frontend;
+    };
+
+    // Like Chrome, where a DevTools frontend is never a tab.
+    it('getWindowForTarget does not find a window for docked DevTools', async () => {
+      const frontend = await openDevTools('right');
+      await expect(frontend.debugger.sendCommand('Browser.getWindowForTarget')).rejects.toThrow(
+        'Browser window not found'
+      );
+    });
+
+    it('getWindowForTarget does not find a window for undocked DevTools', async () => {
+      const frontend = await openDevTools('undocked');
+      await expect(frontend.debugger.sendCommand('Browser.getWindowForTarget')).rejects.toThrow(
+        'Browser window not found'
+      );
+    });
+
+    it('getWindowForTarget returns the own window of a custom DevTools frontend', async () => {
+      const devtools = new BrowserWindow({ show: false });
+      const domReady = once(devtools.webContents, 'dom-ready');
+      w.webContents.setDevToolsWebContents(devtools.webContents);
+      w.webContents.openDevTools();
+      await domReady;
+      devtools.webContents.debugger.attach();
+      const { windowId } = await devtools.webContents.debugger.sendCommand('Browser.getWindowForTarget');
+      expect(windowId).toBe(devtools.id);
+    });
+
+    const showWindow = async () => {
+      const shown = once(w, 'show');
+      w.show();
+      await shown;
+    };
+
+    // Like the BrowserWindow specs, the maximize, minimize and fullscreen
+    // transitions are skipped on Linux, where those events are unreliable in
+    // CI.
+    ifit(process.platform !== 'linux')('setWindowBounds maximizes and restores the window', async () => {
+      await showWindow();
+      const maximize = once(w, 'maximize');
+      await setWindowBounds({ windowState: 'maximized' });
+      await maximize;
+      expect(await getWindowState()).toBe('maximized');
+
+      // Going back to normal from maximized has to unmaximize the window.
+      const unmaximize = once(w, 'unmaximize');
+      await setWindowBounds({ windowState: 'normal' });
+      await unmaximize;
+      expect(w.isMaximized()).toBe(false);
+      expect(await getWindowState()).toBe('normal');
+    });
+
+    ifit(process.platform !== 'linux')('setWindowBounds minimizes and restores the window', async () => {
+      await showWindow();
+      const normalBounds = w.getBounds();
+      const minimize = once(w, 'minimize');
+      await setWindowBounds({ windowState: 'minimized' });
+      await minimize;
+
+      // Like Chrome, a minimized window reports its restored bounds.
+      const { bounds } = await w.webContents.debugger.sendCommand('Browser.getWindowBounds', { windowId: w.id });
+      expect(bounds.windowState).toBe('minimized');
+      expectBoundsClose({ x: bounds.left, y: bounds.top, width: bounds.width, height: bounds.height }, normalBounds);
+
+      await expect(setWindowBounds({ windowState: 'fullscreen' })).rejects.toThrow(
+        'To make minimized window fullscreen, restore it to normal state first.'
+      );
+      await expect(setWindowBounds({ windowState: 'maximized' })).rejects.toThrow(
+        'To maximize a minimized or fullscreen window, restore it to normal state first.'
+      );
+
+      const restore = once(w, 'restore');
+      await setWindowBounds({ windowState: 'normal' });
+      await restore;
+      expect(w.isMinimized()).toBe(false);
+      expect(await getWindowState()).toBe('normal');
+    });
+
+    ifit(process.platform !== 'linux')(
+      'setWindowBounds enters and leaves fullscreen',
+      { tags: ['serial'] },
+      async () => {
+        await showWindow();
+        const enterFullScreen = once(w, 'enter-full-screen');
+        await setWindowBounds({ windowState: 'fullscreen' });
+        await enterFullScreen;
+        expect(await getWindowState()).toBe('fullscreen');
+
+        await expect(setWindowBounds({ windowState: 'maximized' })).rejects.toThrow(
+          'To maximize a minimized or fullscreen window, restore it to normal state first.'
+        );
+        await expect(setWindowBounds({ windowState: 'minimized' })).rejects.toThrow(
+          'To minimize a fullscreen window, restore it to normal state first.'
+        );
+
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        await setWindowBounds({ windowState: 'normal' });
+        await leaveFullScreen;
+        expect(w.isFullScreen()).toBe(false);
+        expect(await getWindowState()).toBe('normal');
+      }
+    );
+
+    it('setWindowBounds rejects fullscreen for a window that is not fullscreenable', async () => {
+      w.fullScreenable = false;
+      await expect(setWindowBounds({ windowState: 'fullscreen' })).rejects.toThrow('Window is not fullscreenable');
+      expect(w.isFullScreen()).toBe(false);
+      expect(await getWindowState()).toBe('normal');
+    });
+
+    // A window event can be emitted while the command is still being handled,
+    // and its listener can detach the client that sent the command.
+    const expectDetachDuringCommand = async (event: string, bounds: Record<string, unknown>) => {
+      const detached = new Promise<void>((resolve) => {
+        w.once(event as any, () => {
+          w.webContents.debugger.detach();
+          resolve();
+        });
+      });
+      const outcome = setWindowBounds(bounds).then(
+        () => 'replied',
+        (error: Error) => error.message
+      );
+      await detached;
+      // The reply is dropped when the listener ran first; either way, the
+      // command settles without crashing.
+      expect(['replied', 'target closed while handling command']).toContain(await outcome);
+      expect(w.webContents.debugger.isAttached()).toBe(false);
+
+      w.webContents.debugger.attach();
+      const { bounds: current } = await w.webContents.debugger.sendCommand('Browser.getWindowBounds', {
+        windowId: w.id
+      });
+      expect(current.windowState).toBeDefined();
+    };
+
+    it('setWindowBounds does not crash when a resize listener detaches the debugger', async () => {
+      await expectDetachDuringCommand('resize', { width: w.getBounds().width + 20 });
+    });
+
+    // The maximize event is emitted synchronously on Windows and macOS.
+    ifit(process.platform === 'win32' || process.platform === 'darwin')(
+      'setWindowBounds does not crash when a maximize listener detaches the debugger',
+      async () => {
+        await showWindow();
+        await expectDetachDuringCommand('maximize', { windowState: 'maximized' });
+      }
+    );
   });
 });
