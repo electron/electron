@@ -78,7 +78,9 @@ the Node.js source tree.
 
 #### Extra steps to run the unit test:
 
-1. Visual Studio 2019 must be installed.
+1. Install the prerequisites listed in [Build Instructions (Windows)](build-instructions-windows.md).
+   The test runners default to Visual Studio 2022. To use Visual Studio 2026,
+   set `$env:npm_config_msvs_version = '2026'` before running them.
 2. Node headers have to be compiled for your configuration.
 
    ```powershell
