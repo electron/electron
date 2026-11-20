@@ -133,6 +133,7 @@ jobs:
         "$LLVM_COV" show \
           -format=html \
           -output-dir=coverage-report \
+          -project-title="Electron ($TARGET_PLATFORM $TARGET_ARCH)" \
           -instr-profile=coverage.profdata \
           -compilation-dir="$ROOT/src/out/Default" \
           "${objects[@]}" \
