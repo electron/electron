@@ -2830,6 +2830,57 @@ describe('BrowserWindow module', () => {
         expect(w.isMenuBarAutoHide(), 'autoHideMenuBar').toBe(false);
       });
     });
+
+    describe('for menu bar toggle', () => {
+      it('does not toggle menu bar visibility when Alt is pressed and released with another modifier', async () => {
+        const w = new BrowserWindow({
+          show: true,
+          autoHideMenuBar: true
+        });
+
+        w.setMenuBarVisibility(false);
+
+        await w.loadURL(
+          'data:text/html,<script>window.lastKey = ""; window.addEventListener("keydown", e => window.lastKey = "down:" + e.key); window.addEventListener("keyup", e => window.lastKey = "up:" + e.key);</script>'
+        );
+        expect(w.isMenuBarVisible(), 'menu bar should initially be hidden').toBe(false);
+
+        const sendKey = async (
+          type: 'rawKeyDown' | 'keyUp',
+          keyCode: string,
+          expectedDomKey: string,
+          modifiers: ('shift' | 'alt')[]
+        ) => {
+          w.webContents.sendInputEvent({ type, keyCode, modifiers });
+          const prefix = type === 'rawKeyDown' ? 'down:' : 'up:';
+          await expect
+            .poll(() => w.webContents.executeJavaScript('window.lastKey'), { timeout: 5000 })
+            .toBe(`${prefix}${expectedDomKey}`);
+        };
+
+        // Multi-modifier sequence: Shift↓ + Alt↓ → Alt↑ + Shift↑
+        await sendKey('rawKeyDown', 'Shift', 'Shift', ['shift']);
+        await sendKey('rawKeyDown', 'Alt', 'Alt', ['shift', 'alt']);
+        await sendKey('keyUp', 'Alt', 'Alt', ['shift']);
+        await sendKey('keyUp', 'Shift', 'Shift', []);
+
+        // Wait one more renderer-to-browser round-trip so UnhandledKeyboardEvent -> RootView::HandleKeyEvent
+        // is guaranteed to have run in the browser process before asserting it stayed false.
+        await w.webContents.executeJavaScript('new Promise(r => setTimeout(r, 0))');
+        expect(w.isMenuBarVisible(), 'menu bar should remain hidden after Shift+Alt').toBe(false);
+
+        // Verify standalone Alt press-and-release toggles the menu bar
+        await sendKey('rawKeyDown', 'Alt', 'Alt', ['alt']);
+        await sendKey('keyUp', 'Alt', 'Alt', []);
+
+        await expect
+          .poll(() => w.isMenuBarVisible(), {
+            message: 'menu bar should become visible after single Alt',
+            timeout: 5000
+          })
+          .toBe(true);
+      });
+    });
   });
 
   describe('BrowserWindow.capturePage(rect)', () => {
