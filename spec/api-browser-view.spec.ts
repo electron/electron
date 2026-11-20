@@ -364,6 +364,63 @@ describe('BrowserView module', () => {
       w.setBrowserView(view);
       w.setBrowserView(view);
     });
+
+    it('removes all existing BrowserViews when replacing multiple attached views', () => {
+      const view1 = new BrowserView();
+      const view2 = new BrowserView();
+      const view3 = new BrowserView();
+      defer(() => view1.webContents.destroy());
+      defer(() => view2.webContents.destroy());
+      defer(() => view3.webContents.destroy());
+
+      w.addBrowserView(view1);
+      w.addBrowserView(view2);
+      expect(w.getBrowserViews()).toEqual([view1, view2]);
+
+      w.setBrowserView(view3);
+      expect(w.getBrowserViews()).toEqual([view3]);
+      expect(w.getBrowserView()).toBe(view3);
+      expect(view1.ownerWindow).toBeNull();
+      expect(view2.ownerWindow).toBeNull();
+      expect(view3.ownerWindow).toBe(w);
+      expect(w.contentView.children).toEqual([view3.webContentsView]);
+    });
+
+    it('removes all existing BrowserViews when called with null', () => {
+      const view1 = new BrowserView();
+      const view2 = new BrowserView();
+      defer(() => view1.webContents.destroy());
+      defer(() => view2.webContents.destroy());
+
+      w.addBrowserView(view1);
+      w.addBrowserView(view2);
+      expect(w.getBrowserViews()).toEqual([view1, view2]);
+
+      w.setBrowserView(null);
+      expect(w.getBrowserViews()).toEqual([]);
+      expect(w.getBrowserView()).toBeNull();
+      expect(view1.ownerWindow).toBeNull();
+      expect(view2.ownerWindow).toBeNull();
+      expect(w.contentView.children).toEqual([]);
+    });
+
+    it('handles setting a view that is already attached among multiple views', () => {
+      const view1 = new BrowserView();
+      const view2 = new BrowserView();
+      defer(() => view1.webContents.destroy());
+      defer(() => view2.webContents.destroy());
+
+      w.addBrowserView(view1);
+      w.addBrowserView(view2);
+      expect(w.getBrowserViews()).toEqual([view1, view2]);
+
+      w.setBrowserView(view2);
+      expect(w.getBrowserViews()).toEqual([view2]);
+      expect(w.getBrowserView()).toBe(view2);
+      expect(view1.ownerWindow).toBeNull();
+      expect(view2.ownerWindow).toBe(w);
+      expect(w.contentView.children).toEqual([view2.webContentsView]);
+    });
   });
 
   describe('BrowserWindow.getBrowserView()', () => {
