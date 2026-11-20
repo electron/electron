@@ -803,6 +803,76 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('crashpad handler lifetime', () => {
+    function findCrashpadHandlers(crashDumpsDir: string): number[] {
+      const { stdout } = childProcess.spawnSync('ps', ['-axo', 'pid=,args='], { encoding: 'utf8' });
+      return (stdout || '')
+        .split('\n')
+        .filter((line) => line.includes('chrome_crashpad_handler'))
+        .filter((line) => line.includes(`--database=${crashDumpsDir}`))
+        .map((line) => parseInt(line, 10));
+    }
+
+    it('exits with the main process even if a detached child process is still running', async () => {
+      const { port } = await startServer();
+      const crashDumpsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-crash-dumps-'));
+      defer(() => fs.rmSync(crashDumpsDir, { recursive: true, force: true }));
+
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash');
+      const appProcess = childProcess.spawn(
+        process.execPath,
+        [
+          appPath,
+          '--crash-type=detached-child',
+          `--crash-reporter-url=http://127.0.0.1:${port}`,
+          `--crash-dumps-dir=${crashDumpsDir}`
+        ],
+        { stdio: ['pipe', 'pipe', 'inherit'] }
+      );
+      defer(() => {
+        if (appProcess.exitCode === null && appProcess.signalCode === null) appProcess.kill('SIGKILL');
+      });
+      appProcess.stdin.on('error', () => {});
+      const exited = new Promise<void>((resolve) => appProcess.once('exit', () => resolve()));
+
+      let stdout = '';
+      appProcess.stdout.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      const pidLine = await repeatedly(async () => {
+        await setTimeout(50);
+        return /detached-child-pid:(\d+)/.exec(stdout);
+      });
+      const detachedChildPid = parseInt(pidLine?.[1] ?? '', 10);
+      defer(() => {
+        try {
+          process.kill(detachedChildPid, 'SIGKILL');
+        } catch {}
+      });
+      expect(detachedChildPid).toBeGreaterThan(0);
+
+      const handlersWhileRunning = await repeatedly(
+        async () => {
+          await setTimeout(100);
+          return findCrashpadHandlers(crashDumpsDir);
+        },
+        { until: (pids) => pids.length > 0 }
+      );
+      expect(handlersWhileRunning.length).toBeGreaterThan(0);
+
+      appProcess.stdin.end();
+      await exited;
+      const handlersAfterExit = await repeatedly(
+        async () => {
+          await setTimeout(100);
+          return findCrashpadHandlers(crashDumpsDir);
+        },
+        { until: (pids) => pids.length === 0 }
+      );
+      expect(handlersAfterExit).toHaveLength(0);
+    });
+  });
+
   describe('when not started', () => {
     it('does not prevent process from crashing', async () => {
       const appPath = path.join(import.meta.dirname, 'fixtures', 'api', 'cookie-app');

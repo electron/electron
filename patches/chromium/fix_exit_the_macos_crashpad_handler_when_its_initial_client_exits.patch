@@ -1,0 +1,408 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Elian Barci <eli.barci@gmail.com>
+Date: Wed, 18 Nov 2026 19:30:00 -0300
+Subject: fix: exit the macOS crashpad handler when its initial client exits
+
+On macOS the Crashpad handler only exits once the last send right to its
+exception port has been deallocated (MACH_NOTIFY_NO_SENDERS). Task
+exception ports are inherited by every descendant of the process that
+called StartHandler(), and neither base::LaunchProcess nor libuv's
+uv_spawn reset them, so any long-lived grandchild of an Electron app (an
+integrated-terminal shell, a language server, a daemon started with
+nohup) holds a send right and keeps the handler alive indefinitely after
+the app has quit. The orphaned handler is reparented to launchd and
+lingers for days.
+
+When the app runs from a Gatekeeper App Translocation volume (an app
+launched from ~/Downloads, for example), macOS force-unmounts that
+read-only volume as soon as the app exits. The orphaned handler then has
+no backing store left for its own executable, cannot run even its exit
+path, and spins at 100% CPU per thread until it is killed with SIGKILL.
+This has been reported against several Electron apps, for example
+https://github.com/microsoft/vscode/issues/346969 and
+https://github.com/electron/electron/issues/36003.
+
+The Linux and Windows handlers already exit along with their initial
+client (when the client socket closes, or when the client process handle
+is signaled). Give the macOS handler the same lifetime: the client passes
+--initial-client-pid=<getpid()> when it spawns the handler, and the
+handler watches that process with kqueue(EVFILT_PROC, NOTE_EXIT) and
+stops its exception server when it exits. Handler restarts and
+--monitor-self go through the same code path and are covered as well;
+--mach-service (launchd) handlers are unaffected.
+
+Behavior change: processes that inherited the exception port and outlive
+the initial client (renderers or utility processes still shutting down,
+detached Node.js children) are no longer served by the handler and fall
+back to the system's default crash handling, as on Linux and Windows. A
+child crash message queued at the very instant the client exits races
+the synthesized no-senders notification and may be left unhandled,
+exactly as with the existing launchd SIGTERM Stop() path.
+
+This should be upstreamed to Crashpad; see
+third_party/crashpad/README.chromium for the procedure.
+
+diff --git a/third_party/crashpad/crashpad/client/crashpad_client.h b/third_party/crashpad/crashpad/client/crashpad_client.h
+index 0fc660687d29ff4767a010ab127fc9b827685208..e85320bea7ed7a358ace231cbc0bcb1a1fbf372a 100644
+--- a/third_party/crashpad/crashpad/client/crashpad_client.h
++++ b/third_party/crashpad/crashpad/client/crashpad_client.h
+@@ -76,9 +76,9 @@ class CrashpadClient {
+   //! Crashpad handler started here will remain the handler for any child
+   //! processes created after StartHandler() is called. These child processes do
+   //! not need to call StartHandler() or be aware of Crashpad in any way. The
+-  //! Crashpad handler will receive crashes from child processes that have
+-  //! inherited it as their exception handler even after the process that called
+-  //! StartHandler() exits.
++  //! Crashpad handler exits when the process that called StartHandler() exits,
++  //! so child processes that outlive it fall back to the system’s default crash
++  //! handling, as they do on Linux and Windows.
+   //!
+   //! On Windows, if \a asynchronous_start is `true`, this function will not
+   //! directly call `CreateProcess()`, making it suitable for use in a
+diff --git a/third_party/crashpad/crashpad/client/crashpad_client_mac.cc b/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
+index a0f782b5d04883998c9d50a2712525b9dc9e1d6a..c4e197220556b50c3c65b815f2100b12022aea30 100644
+--- a/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
++++ b/third_party/crashpad/crashpad/client/crashpad_client_mac.cc
+@@ -19,6 +19,7 @@
+ #include <mach/mach.h>
+ #include <pthread.h>
+ #include <stdint.h>
++#include <unistd.h>
+ 
+ #include <memory>
+ #include <set>
+@@ -342,13 +343,13 @@ class HandlerStarter final : public NotifyServer::DefaultInterface {
+     base::ScopedFD server_write_fd = child_port_handshake.ServerWriteFD();
+ 
+     // Use handler as argv[0], followed by arguments directed by this method’s
+-    // parameters and a --handshake-fd argument. |arguments| are added first so
+-    // that if it erroneously contains an argument such as --url, the actual
+-    // |url| argument passed to this method will supersede it. In normal
+-    // command-line processing, the last parameter wins in the case of a
+-    // conflict.
++    // parameters, a --handshake-fd argument, and an --initial-client-pid
++    // argument. |arguments| are added first so that if it erroneously contains
++    // an argument such as --url, the actual |url| argument passed to this
++    // method will supersede it. In normal command-line processing, the last
++    // parameter wins in the case of a conflict.
+     std::vector<std::string> argv(1, handler.value());
+-    argv.reserve(1 + arguments.size() + 2 + annotations.size() + 1);
++    argv.reserve(1 + arguments.size() + 2 + annotations.size() + 2);
+     for (const std::string& argument : arguments) {
+       argv.push_back(argument);
+     }
+@@ -370,6 +371,14 @@ class HandlerStarter final : public NotifyServer::DefaultInterface {
+     }
+     argv.push_back(FormatArgumentInt("handshake-fd", server_write_fd.get()));
+ 
++    // Tie the handler’s lifetime to this process. Task exception ports are
++    // inherited by every descendant of this process, so the handler’s
++    // no-senders notification would otherwise be held off indefinitely by any
++    // long-lived grandchild, leaving an orphaned handler behind after this
++    // process exits. The Linux and Windows handlers already exit along with
++    // their initial client.
++    argv.push_back(FormatArgumentInt("initial-client-pid", getpid()));
++
+     std::set<int> spawn_preserve_fds = preserve_file_handles;
+     spawn_preserve_fds.insert(server_write_fd.get());
+ 
+diff --git a/third_party/crashpad/crashpad/handler/handler_main.cc b/third_party/crashpad/crashpad/handler/handler_main.cc
+index 09f676a4fe165b0db0b6d26ae3605cea85ae386c..c0dee13aa4fd9b197df9e25caf31934e74332db9 100644
+--- a/third_party/crashpad/crashpad/handler/handler_main.cc
++++ b/third_party/crashpad/crashpad/handler/handler_main.cc
+@@ -142,6 +142,8 @@ void Usage(const base::FilePath& me) {
+         // BUILDFLAG(IS_CHROMEOS)
+ #if BUILDFLAG(IS_APPLE)
+       // clang-format off
++"      --initial-client-pid=PID\n"
++"                              exit when the process with PID exits\n"
+ "      --mach-service=SERVICE  register SERVICE with the bootstrap server\n"
+   // clang-format on
+ #endif  // BUILDFLAG(IS_APPLE)
+@@ -229,6 +231,7 @@ struct Options {
+ #if BUILDFLAG(IS_APPLE)
+   std::string mach_service;
+   int handshake_fd;
++  pid_t initial_client_pid;
+   bool reset_own_crash_exception_port_to_system_default;
+ #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
+   VMAddress exception_information_address;
+@@ -601,6 +604,7 @@ int HandlerMain(int argc,
+ #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) ||
+         // BUILDFLAG(IS_CHROMEOS)
+ #if BUILDFLAG(IS_APPLE)
++    kOptionInitialClientPID,
+     kOptionMachService,
+ #endif  // BUILDFLAG(IS_APPLE)
+     kOptionMetrics,
+@@ -660,6 +664,7 @@ int HandlerMain(int argc,
+ #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_LINUX) ||
+         // BUILDFLAG(IS_CHROMEOS)
+ #if BUILDFLAG(IS_APPLE)
++    {"initial-client-pid", required_argument, nullptr, kOptionInitialClientPID},
+     {"mach-service", required_argument, nullptr, kOptionMachService},
+ #endif  // BUILDFLAG(IS_APPLE)
+     {"metrics-dir", required_argument, nullptr, kOptionMetrics},
+@@ -775,6 +780,15 @@ int HandlerMain(int argc,
+         }
+         break;
+       }
++      case kOptionInitialClientPID: {
++        if (!StringToNumber(optarg, &options.initial_client_pid) ||
++            options.initial_client_pid <= 0) {
++          ToolSupport::UsageHint(me,
++                                 "--initial-client-pid requires a process ID");
++          return ExitFailure();
++        }
++        break;
++      }
+       case kOptionMachService: {
+         options.mach_service = optarg;
+         break;
+@@ -933,6 +947,11 @@ int HandlerMain(int argc,
+         me, "--handshake-fd and --mach-service are incompatible");
+     return ExitFailure();
+   }
++  if (options.initial_client_pid > 0 && !options.mach_service.empty()) {
++    ToolSupport::UsageHint(
++        me, "--initial-client-pid and --mach-service are incompatible");
++    return ExitFailure();
++  }
+ #elif BUILDFLAG(IS_WIN)
+   if (!options.initial_client_data.IsValid() && options.pipe_name.empty()) {
+     ToolSupport::UsageHint(me,
+@@ -1140,7 +1159,9 @@ int HandlerMain(int argc,
+   }
+ 
+   ExceptionHandlerServer exception_handler_server(
+-      std::move(receive_right), !options.mach_service.empty());
++      std::move(receive_right),
++      !options.mach_service.empty(),
++      options.initial_client_pid);
+   base::AutoReset<ExceptionHandlerServer*> reset_g_exception_handler_server(
+       &g_exception_handler_server, &exception_handler_server);
+ 
+diff --git a/third_party/crashpad/crashpad/handler/mac/exception_handler_server.cc b/third_party/crashpad/crashpad/handler/mac/exception_handler_server.cc
+index 5c1814c8c9e01cd6a0cfe55544b7e3e1ba84b035..a209a0e93ff474f02eec3fd4a9e2f6f0f63a8030 100644
+--- a/third_party/crashpad/crashpad/handler/mac/exception_handler_server.cc
++++ b/third_party/crashpad/crashpad/handler/mac/exception_handler_server.cc
+@@ -14,16 +14,23 @@
+ 
+ #include "handler/mac/exception_handler_server.h"
+ 
++#include <errno.h>
++#include <sys/event.h>
++#include <sys/types.h>
++
+ #include <utility>
+ 
+ #include "base/apple/mach_logging.h"
+ #include "base/check.h"
++#include "base/files/scoped_file.h"
+ #include "base/logging.h"
++#include "base/posix/eintr_wrapper.h"
+ #include "util/mach/composite_mach_message_server.h"
+ #include "util/mach/mach_extensions.h"
+ #include "util/mach/mach_message.h"
+ #include "util/mach/mach_message_server.h"
+ #include "util/mach/notify_server.h"
++#include "util/thread/thread.h"
+ 
+ namespace crashpad {
+ 
+@@ -190,14 +197,123 @@ class ExceptionHandlerServerRun : public UniversalMachExcServer::Interface,
+   bool launchd_;
+ };
+ 
++//! \brief Stops an ExceptionHandlerServer when its initial client exits.
++//!
++//! The server normally stops once the last send right to its exception port
++//! has been deallocated, but task exception ports are inherited by every
++//! descendant of the client, so a long-lived grandchild (such as a shell or a
++//! daemon spawned by the client) keeps the handler alive long after the client
++//! itself has exited. This monitor watches the client with `kqueue()` and calls
++//! ExceptionHandlerServer::Stop() when it exits, matching the behavior of the
++//! Linux and Windows handlers, which exit along with their initial client.
++class InitialClientExitMonitor : public Thread {
++ public:
++  InitialClientExitMonitor(ExceptionHandlerServer* server, pid_t pid)
++      : Thread(), server_(server), pid_(pid), kqueue_(), started_(false) {}
++
++  InitialClientExitMonitor(const InitialClientExitMonitor&) = delete;
++  InitialClientExitMonitor& operator=(const InitialClientExitMonitor&) = delete;
++
++  ~InitialClientExitMonitor() { DCHECK(!started_); }
++
++  //! \brief Begins monitoring the initial client.
++  //!
++  //! If the client has already exited, the server is stopped right away and no
++  //! thread is started. If monitoring can’t be set up, a message is logged and
++  //! the server keeps its default lifetime.
++  void StartMonitoring() {
++    kqueue_.reset(kqueue());
++    if (!kqueue_.is_valid()) {
++      PLOG(WARNING) << "kqueue";
++      return;
++    }
++
++    // Registering with an empty event list reports failures through the return
++    // value and errno instead of through EV_ERROR entries.
++    struct kevent changes[2];
++    EV_SET(&changes[0],
++           static_cast<uintptr_t>(pid_),
++           EVFILT_PROC,
++           EV_ADD | EV_ONESHOT,
++           NOTE_EXIT,
++           0,
++           nullptr);
++    EV_SET(&changes[1],
++           kShutdownIdent,
++           EVFILT_USER,
++           EV_ADD | EV_CLEAR,
++           0,
++           0,
++           nullptr);
++    if (kevent(kqueue_.get(), changes, 2, nullptr, 0, nullptr) != 0) {
++      if (errno == ESRCH) {
++        LOG(INFO) << "initial client " << pid_ << " has already exited";
++        server_->Stop();
++      } else {
++        PLOG(WARNING) << "kevent";
++      }
++      kqueue_.reset();
++      return;
++    }
++
++    Start();
++    started_ = true;
++  }
++
++  //! \brief Stops monitoring and joins the monitor thread if it was started.
++  void StopMonitoring() {
++    if (!started_) {
++      return;
++    }
++
++    struct kevent change;
++    EV_SET(&change, kShutdownIdent, EVFILT_USER, 0, NOTE_TRIGGER, 0, nullptr);
++    PCHECK(kevent(kqueue_.get(), &change, 1, nullptr, 0, nullptr) == 0)
++        << "kevent";
++
++    Join();
++    started_ = false;
++  }
++
++ private:
++  static constexpr uintptr_t kShutdownIdent = 1;
++
++  // Thread:
++
++  void ThreadMain() override {
++    struct kevent event;
++    int rv =
++        HANDLE_EINTR(kevent(kqueue_.get(), nullptr, 0, &event, 1, nullptr));
++    if (rv < 0) {
++      PLOG(ERROR) << "kevent";
++      return;
++    }
++    if (rv != 1) {
++      LOG(ERROR) << "kevent: unexpected result " << rv;
++      return;
++    }
++
++    if (event.filter == EVFILT_PROC && (event.fflags & NOTE_EXIT)) {
++      server_->Stop();
++    }
++  }
++
++  ExceptionHandlerServer* server_;  // weak
++  pid_t pid_;
++  base::ScopedFD kqueue_;
++  bool started_;
++};
++
+ }  // namespace
+ 
+ ExceptionHandlerServer::ExceptionHandlerServer(
+     base::apple::ScopedMachReceiveRight receive_port,
+-    bool launchd)
++    bool launchd,
++    pid_t initial_client_pid)
+     : receive_port_(std::move(receive_port)),
+       notify_port_(NewMachPort(MACH_PORT_RIGHT_RECEIVE)),
+-      launchd_(launchd) {
++      launchd_(launchd),
++      initial_client_pid_(initial_client_pid) {
+   CHECK(receive_port_.is_valid());
+   CHECK(notify_port_.is_valid());
+ }
+@@ -207,9 +323,19 @@ ExceptionHandlerServer::~ExceptionHandlerServer() {
+ 
+ void ExceptionHandlerServer::Run(
+     UniversalMachExcServer::Interface* exception_interface) {
++  // When run from launchd, the lifetime is governed by SIGTERM instead. See
++  // launchd.plist(5).
++  InitialClientExitMonitor initial_client_exit_monitor(this,
++                                                       initial_client_pid_);
++  if (!launchd_ && initial_client_pid_ > 0) {
++    initial_client_exit_monitor.StartMonitoring();
++  }
++
+   ExceptionHandlerServerRun run(
+       receive_port_.get(), notify_port_.get(), launchd_, exception_interface);
+   run.Run();
++
++  initial_client_exit_monitor.StopMonitoring();
+ }
+ 
+ void ExceptionHandlerServer::Stop() {
+diff --git a/third_party/crashpad/crashpad/handler/mac/exception_handler_server.h b/third_party/crashpad/crashpad/handler/mac/exception_handler_server.h
+index 6d63a290da4f4950cc79ee073a9d6062b7fb4e3c..aa3a3f1c5972a4719ba0478af24b9e2481dad969 100644
+--- a/third_party/crashpad/crashpad/handler/mac/exception_handler_server.h
++++ b/third_party/crashpad/crashpad/handler/mac/exception_handler_server.h
+@@ -16,6 +16,7 @@
+ #define CRASHPAD_HANDLER_MAC_EXCEPTION_HANDLER_SERVER_H_
+ 
+ #include <mach/mach.h>
++#include <sys/types.h>
+ 
+ #include "base/apple/scoped_mach_port.h"
+ #include "util/mach/exc_server_variants.h"
+@@ -33,9 +34,17 @@ class ExceptionHandlerServer {
+   //! \param[in] launchd If `true`, the exception handler is being run from
+   //!     launchd. \a receive_port is not monitored for no-senders
+   //!     notifications, and instead, Stop() must be called to provide a “quit”
+-  //!     signal.
++  //!     signal. \a initial_client_pid is ignored.
++  //! \param[in] initial_client_pid The process ID of the client that started
++  //!     the handler, or `0`. If nonzero, Run() returns when that process
++  //!     exits, even if other processes still hold send rights to
++  //!     \a receive_port. Task exception ports are inherited by every
++  //!     descendant of the client, so without this, a long-lived grandchild of
++  //!     the client (such as a shell or a daemon it spawned) would keep the
++  //!     handler alive indefinitely after the client has exited.
+   ExceptionHandlerServer(base::apple::ScopedMachReceiveRight receive_port,
+-                         bool launchd);
++                         bool launchd,
++                         pid_t initial_client_pid = 0);
+ 
+   ExceptionHandlerServer(const ExceptionHandlerServer&) = delete;
+   ExceptionHandlerServer& operator=(const ExceptionHandlerServer&) = delete;
+@@ -49,7 +58,8 @@ class ExceptionHandlerServer {
+   //! This method monitors the receive port for exception messages and, if
+   //! not being run by launchd, no-senders notifications. It continues running
+   //! until it has no more clients, indicated by the receipt of a no-senders
+-  //! notification, or until Stop() is called. When not being run by launchd, it
++  //! notification, until the initial client exits if one was provided at
++  //! construction, or until Stop() is called. When not being run by launchd, it
+   //! is important to assure that a send right exists in a client (or has been
+   //! queued by `mach_msg()` to be sent to a client) prior to calling this
+   //! method, or it will detect that it is sender-less and return immediately.
+@@ -76,6 +86,7 @@ class ExceptionHandlerServer {
+   base::apple::ScopedMachReceiveRight receive_port_;
+   base::apple::ScopedMachReceiveRight notify_port_;
+   bool launchd_;
++  pid_t initial_client_pid_;
+ };
+ 
+ }  // namespace crashpad

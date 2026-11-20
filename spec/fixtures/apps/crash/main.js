@@ -11,6 +11,11 @@ const setUploadToServer = app.commandLine.getSwitchValue('set-upload-to-server')
 const setExtraParameters = app.commandLine.hasSwitch('set-extra-parameters-in-renderer');
 const addGlobalParam = app.commandLine.getSwitchValue('add-global-param')?.split(':');
 
+const crashDumpsDir = app.commandLine.getSwitchValue('crash-dumps-dir');
+if (crashDumpsDir) {
+  app.setPath('crashDumps', crashDumpsDir);
+}
+
 crashReporter.start({
   productName: 'Zombies',
   companyName: 'Umbrella Corporation',
@@ -155,6 +160,12 @@ app.whenReady().then(() => {
       }
       process.exit(exitcode);
     });
+  } else if (crashType === 'detached-child') {
+    const child = childProcess.spawn('/bin/sleep', ['120'], { detached: true, stdio: 'ignore' });
+    child.unref();
+    console.log(`detached-child-pid:${child.pid}`);
+    process.stdin.once('end', () => app.exit(0));
+    process.stdin.resume();
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);
     process.exit(1);
