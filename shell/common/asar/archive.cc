@@ -4,12 +4,14 @@
 
 #include "shell/common/asar/archive.h"
 
+#include <array>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 #include "base/check.h"
+#include "base/containers/heap_array.h"
 #include "base/containers/span.h"
 #include "base/files/file.h"
 #include "base/files/file_util.h"
@@ -227,19 +229,17 @@ bool Archive::Init() {
     return false;
   }
 
-  std::vector<uint8_t> buf;
-
-  buf.resize(8);
+  std::array<uint8_t, 8> size_pickle;
   {
     electron::ScopedAllowBlockingForElectron allow_blocking;
-    if (!file_.ReadAtCurrentPosAndCheck(buf)) {
+    if (!file_.ReadAtCurrentPosAndCheck(size_pickle)) {
       PLOG(ERROR) << "Failed to read header size from " << path_.value();
       return false;
     }
   }
 
   uint32_t size;
-  if (!base::PickleIterator(base::Pickle::WithData(buf)).ReadUInt32(&size)) {
+  if (!base::PickleIterator::WithData(size_pickle).ReadUInt32(&size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
   }
@@ -249,24 +249,25 @@ bool Archive::Init() {
     electron::ScopedAllowBlockingForElectron allow_blocking;
     file_length = file_.GetLength();
   }
-  if (file_length < 0 || static_cast<uint64_t>(file_length) < buf.size() ||
-      size > static_cast<uint64_t>(file_length) - buf.size()) {
+  if (file_length < 0 ||
+      static_cast<uint64_t>(file_length) < size_pickle.size() ||
+      size > static_cast<uint64_t>(file_length) - size_pickle.size()) {
     LOG(ERROR) << "Header size exceeds archive size in " << path_.value();
     return false;
   }
   file_size_ = static_cast<uint64_t>(file_length);
 
-  buf.resize(size);
+  auto header_pickle = base::HeapArray<uint8_t>::Uninit(size);
   {
     electron::ScopedAllowBlockingForElectron allow_blocking;
-    if (!file_.ReadAtCurrentPosAndCheck(buf)) {
+    if (!file_.ReadAtCurrentPosAndCheck(header_pickle)) {
       PLOG(ERROR) << "Failed to read header from " << path_.value();
       return false;
     }
   }
 
-  std::string header;
-  if (!base::PickleIterator(base::Pickle::WithData(buf)).ReadString(&header)) {
+  std::string_view header;
+  if (!base::PickleIterator::WithData(header_pickle).ReadStringPiece(&header)) {
     LOG(ERROR) << "Failed to parse header from " << path_.value();
     return false;
   }
