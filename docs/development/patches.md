@@ -98,8 +98,9 @@ If `git-import-patches -3` encounters a merge conflict that it can't resolve aut
 ### V8 serialized bytecode compatibility
 
 V8 includes its embedder string in the version hash used to validate JavaScript
-code caches and serialized WebAssembly modules. Electron's common GN arguments
-automatically set `v8_embedder_string` to `-electron.<fingerprint>`. No release time bump is required.
+code caches and serialized WebAssembly modules. Electron builds automatically
+default `v8_embedder_string` to `-electron.<fingerprint>`. No release time bump
+is required.
 
 The fingerprint identifies the net committed source changes between the patched
 V8 `HEAD` produced by sync and the revision pinned by Chromium's `DEPS`. It
@@ -128,8 +129,10 @@ Git input handling. Changes to the algorithm or metadata schema invalidate
 existing source caches automatically.
 
 Packagers building source trees without V8 Git metadata or CI fingerprint
-metadata can explicitly set `ELECTRON_V8_EMBEDDER_STRING` before GN generation
-to supply their own compatibility identity. This bypasses automatic fingerprint
-generation and validation; the packager must change the identity whenever V8
-cache compatibility changes. GN does not track environment variable changes,
-so changing or removing this override requires rerunning `gn gen` explicitly.
+metadata can set `v8_embedder_string` in `args.gn` to supply their own
+compatibility identity, which GN persists across automatic `build.ninja`
+regenerations. Setting `ELECTRON_V8_EMBEDDER_STRING` in the environment when
+`v8_embedder_string` is unset remains supported as a fallback, though GN does
+not track environment variable changes across regenerations. Either override
+bypasses automatic fingerprint generation and validation; the packager must
+change the identity whenever V8 cache compatibility changes.
