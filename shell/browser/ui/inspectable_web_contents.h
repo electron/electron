@@ -56,6 +56,11 @@ class InspectableWebContents
   InspectableWebContentsView* GetView() const;
   content::WebContents* GetWebContents() const;
   content::WebContents* GetDevToolsWebContents() const;
+  // The built-in DevTools frontend, or null when none is open or an app
+  // frontend was assigned by SetDevToolsWebContents().
+  [[nodiscard]] content::WebContents* managed_devtools_web_contents() const {
+    return managed_devtools_web_contents_.get();
+  }
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
   [[nodiscard]] bool is_guest() const { return is_guest_; }
