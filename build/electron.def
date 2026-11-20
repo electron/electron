@@ -4,3 +4,40 @@
 ; which is one of the executable names that node-gyp recognizes.
 ; See https://github.com/nodejs/node-gyp/commit/52ceec3a6d15de3a8f385f43dbe5ecf5456ad07a
 NAME node.exe
+
+; Exports provided by the EXE's static dependencies.
+EXPORTS
+  Cr_z_adler32
+  Cr_z_adler32_combine
+  Cr_z_adler32_combine64
+  Cr_z_adler32_z
+  Cr_z_crc32
+  Cr_z_crc32_combine
+  Cr_z_crc32_combine64
+  Cr_z_crc32_combine_gen
+  Cr_z_crc32_combine_gen64
+  Cr_z_crc32_combine_op
+  Cr_z_crc32_z
+  Cr_z_deflate
+  Cr_z_deflateBound
+  Cr_z_deflateBound_z
+  Cr_z_deflateCopy
+  Cr_z_deflateEnd
+  Cr_z_deflateGetDictionary
+  Cr_z_deflateInit2_
+  Cr_z_deflateInit_
+  Cr_z_deflateParams
+  Cr_z_deflatePending
+  Cr_z_deflatePrime
+  Cr_z_deflateReset
+  Cr_z_deflateResetKeep
+  Cr_z_deflateSetDictionary
+  Cr_z_deflateSetHeader
+  Cr_z_deflateTune
+  Cr_z_deflateUsed
+  Cr_z_get_crc_table
+  Cr_z_zError
+  Cr_z_zlibCompileFlags
+  Cr_z_zlibVersion
+  GetHandleVerifier
+  IsSandboxedProcess

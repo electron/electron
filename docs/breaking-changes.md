@@ -107,6 +107,11 @@ initialization remains enabled when `NUL` is available.
 Remove this switch from application launch arguments. No replacement is needed
 for the Windows `NUL` device workaround.
 
+### Behavior Changed: Windows distributions include a runtime DLL
+
+Windows distributions now include `electron_runtime.dll` alongside the EXE. Custom
+packaging, signing, and update workflows must include this file.
+
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 
 `child.kill()` used to send `SIGTERM` and then `SIGKILL` two seconds later if the

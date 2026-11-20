@@ -1,0 +1,213 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+import { spawnSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+
+import { copyApp } from './lib/fs-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
+
+function readDirectExports(file: string): Set<string> {
+  const lines = fs
+    .readFileSync(file, 'utf8')
+    .split(/\r?\n/)
+    .map((line) => line.split(';')[0].trim())
+    .filter(Boolean);
+  // The build generator validates the DEF syntax before linking.
+  const start = lines.indexOf('EXPORTS');
+  expect(start).toBeGreaterThanOrEqual(0);
+  const exports = new Set(lines.slice(start + 1));
+  expect(exports.size).toBeGreaterThan(0);
+  return exports;
+}
+
+// Inspect the linked images, including the forwarder RVA rather than only the
+// names in the generated DEF file.
+function readPeExports(file: string): Map<string, string | null> {
+  const data = fs.readFileSync(file);
+  expect(data.toString('ascii', 0, 2)).toBe('MZ');
+  const pe = data.readUInt32LE(0x3c);
+  expect(data.toString('ascii', pe, pe + 4)).toBe('PE\0\0');
+  const sectionCount = data.readUInt16LE(pe + 6);
+  const optionalSize = data.readUInt16LE(pe + 20);
+  const optional = pe + 24;
+  const magic = data.readUInt16LE(optional);
+  expect([0x10b, 0x20b]).toContain(magic);
+  const directories = optional + (magic === 0x10b ? 96 : 112);
+  const exportRva = data.readUInt32LE(directories);
+  const exportSize = data.readUInt32LE(directories + 4);
+  expect(exportRva).toBeGreaterThan(0);
+
+  const offsetFor = (rva: number): number => {
+    for (let i = 0; i < sectionCount; i++) {
+      const section = optional + optionalSize + i * 40;
+      const start = data.readUInt32LE(section + 12);
+      const size = data.readUInt32LE(section + 16);
+      if (rva >= start && rva - start < size) {
+        const offset = data.readUInt32LE(section + 20) + rva - start;
+        expect(offset).toBeLessThan(data.length);
+        return offset;
+      }
+    }
+    throw new Error(`Unmapped export RVA ${rva} in ${file}`);
+  };
+  const stringAt = (rva: number): string => {
+    const start = offsetFor(rva);
+    const end = data.indexOf(0, start);
+    expect(end).toBeGreaterThanOrEqual(start);
+    return data.toString('ascii', start, end);
+  };
+
+  const directory = offsetFor(exportRva);
+  const functions = offsetFor(data.readUInt32LE(directory + 28));
+  const names = offsetFor(data.readUInt32LE(directory + 32));
+  const ordinals = offsetFor(data.readUInt32LE(directory + 36));
+  const exports = new Map<string, string | null>();
+  for (let i = 0; i < data.readUInt32LE(directory + 24); i++) {
+    const name = stringAt(data.readUInt32LE(names + i * 4));
+    const ordinal = data.readUInt16LE(ordinals + i * 2);
+    expect(ordinal).toBeLessThan(data.readUInt32LE(directory + 20));
+    const target = data.readUInt32LE(functions + ordinal * 4);
+    expect(target, name).not.toBe(0);
+    exports.set(name, target >= exportRva && target - exportRva < exportSize ? stringAt(target) : null);
+  }
+  return exports;
+}
+
+ifdescribe(process.platform === 'win32')('Windows runtime DLL', { timeout: 120000 }, () => {
+  it('preserves named runtime exports with explicit direct-export exceptions', () => {
+    const runtimeExports = readPeExports(path.join(path.dirname(process.execPath), 'electron_runtime.dll'));
+    const executableExports = readPeExports(process.execPath);
+    // These must use the EXE's static dependencies, not the DLL's separate state.
+    const requiredDirectExports = readDirectExports(path.join(import.meta.dirname, '..', 'build', 'electron.def'));
+    for (const prefix of ['node_', 'napi_', 'uv_']) {
+      const names = (exports: Map<string, string | null>) =>
+        [...exports.keys()].filter((name) => name.startsWith(prefix)).sort();
+      expect(names(runtimeExports).length, prefix).toBeGreaterThan(0);
+      expect(names(executableExports), prefix).toEqual(names(runtimeExports));
+    }
+    for (const name of requiredDirectExports) {
+      expect(executableExports.get(name), name).toBe(null);
+    }
+    for (const name of runtimeExports.keys()) {
+      if (!requiredDirectExports.has(name)) {
+        expect(executableExports.get(name), name).toBe(`electron_runtime.${name}`);
+      }
+    }
+  });
+
+  describe('copied application', () => {
+    let tempDir: string;
+    let executable: string;
+
+    beforeAll(async () => {
+      tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-runtime-'));
+      executable = await copyApp(tempDir);
+    }, 120000);
+
+    afterAll(() => {
+      if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5 });
+    }, 120000);
+
+    it('treats a process type as a script argument in RunAsNode mode', () => {
+      const script = path.join(tempDir, 'script.cjs');
+      fs.writeFileSync(script, 'console.log(JSON.stringify(process.argv.slice(2)))');
+      const result = spawnSync(executable, [script, '--type=utility'], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_OPTIONS: '' },
+        encoding: 'utf8',
+        timeout: 30000
+      });
+      expect(result.error).toBe(undefined);
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual(['--type=utility']);
+    });
+
+    it('prints the version after loading the runtime', () => {
+      const env = { ...process.env };
+      delete env.ELECTRON_RUN_AS_NODE;
+      delete env.ELECTRON_ENABLE_LOGGING;
+      delete env.ELECTRON_LOG_FILE;
+      env.NODE_OPTIONS = '';
+      const result = spawnSync(executable, ['--version'], {
+        env,
+        encoding: 'utf8',
+        timeout: 30000
+      });
+      expect(result.error).toBe(undefined);
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout.trim()).toBe(`v${process.versions.electron}`);
+    });
+
+    it('defaults the module path to the EXE and keeps path overrides independent', () => {
+      const script = path.join(tempDir, 'module-path.cjs');
+      fs.writeFileSync(
+        script,
+        `const { app } = require('electron');
+        const exe = app.getPath('exe');
+        app.setPath('exe', exe + '.override');
+        const moduleDefault = app.getPath('module');
+        app.setPath('module', exe + '.module');
+        console.log(JSON.stringify([exe, moduleDefault, app.getPath('exe'), app.getPath('module')]));
+        app.exit(0);`
+      );
+      const env: NodeJS.ProcessEnv = { ...process.env, NODE_OPTIONS: '' };
+      delete env.ELECTRON_RUN_AS_NODE;
+      const result = spawnSync(executable, [script], { env, encoding: 'utf8', timeout: 30000 });
+      expect(result.error).toBe(undefined);
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual([
+        executable,
+        executable,
+        executable + '.override',
+        executable + '.module'
+      ]);
+    });
+
+    it('reports a missing runtime DLL', () => {
+      const directory = path.join(tempDir, 'missing-runtime');
+      fs.mkdirSync(directory);
+      const missingExecutable = path.join(directory, 'electron.exe');
+      fs.copyFileSync(executable, missingExecutable);
+      const result = spawnSync(missingExecutable, ['-v'], { encoding: 'utf8', timeout: 30000 });
+      expect(result.error).toBe(undefined);
+      expect(result.status).toBe(126); // ERROR_MOD_NOT_FOUND
+      expect(result.stderr).toContain('Unable to load Electron runtime');
+      expect(result.stderr).toContain('electron_runtime.dll');
+    });
+
+    it('reports a missing runtime entry point', () => {
+      const directory = path.join(tempDir, 'missing-entry-point');
+      fs.mkdirSync(directory);
+      const missingEntryExecutable = path.join(directory, 'electron.exe');
+      fs.copyFileSync(executable, missingEntryExecutable);
+      // Use a valid system DLL that does not export ElectronMain.
+      fs.copyFileSync(
+        path.join(process.env.SystemRoot!, 'System32', 'version.dll'),
+        path.join(directory, 'electron_runtime.dll')
+      );
+      const result = spawnSync(missingEntryExecutable, ['-v'], { encoding: 'utf8', timeout: 30000 });
+      expect(result.error).toBe(undefined);
+      expect(result.status).toBe(127); // ERROR_PROC_NOT_FOUND
+      expect(result.stderr).toContain('Unable to find Electron runtime entry point');
+    });
+
+    it('rejects a runtime DLL from a different Electron version', () => {
+      const data = fs.readFileSync(executable);
+      const version = Buffer.from(`${process.versions.electron}\0`);
+      const offset = data.indexOf(version);
+      expect(offset).toBeGreaterThanOrEqual(0);
+      expect(data.indexOf(version, offset + 1)).toBe(-1);
+
+      // Change the launcher's embedded version without changing its length.
+      data[offset] = data[offset] === 0x31 ? 0x32 : 0x31;
+      const mismatchedExecutable = path.join(tempDir, 'mismatched.exe');
+      fs.writeFileSync(mismatchedExecutable, data);
+
+      const result = spawnSync(mismatchedExecutable, ['--version'], { encoding: 'utf8', timeout: 30000 });
+      expect(result.error).toBe(undefined);
+      expect(result.status).toBe(1306); // ERROR_REVISION_MISMATCH
+      expect(result.stderr).toContain('Electron executable and runtime DLL versions do not match');
+    });
+  });
+});

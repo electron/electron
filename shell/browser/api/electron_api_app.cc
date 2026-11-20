@@ -424,7 +424,11 @@ int GetPathConstant(std::string_view name) {
       {"exe", base::FILE_EXE},
       {"home", base::DIR_HOME},
       {"logs", DIR_APP_LOGS},
+#if BUILDFLAG(IS_WIN)
+      {"module", electron::FILE_APP_MODULE},
+#else
       {"module", base::FILE_MODULE},
+#endif
       {"music", chrome::DIR_USER_MUSIC},
       {"pictures", chrome::DIR_USER_PICTURES},
 #if BUILDFLAG(IS_WIN)
