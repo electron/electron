@@ -142,6 +142,10 @@ app.whenReady().then(() => {
     const scriptPath = path.join(__dirname, 'fork.js');
     const child = childProcess.fork(scriptPath, { silent: true });
     child.on('exit', () => process.exit(0));
+  } else if (crashType === 'node-wasm-trap') {
+    const crashPath = path.join(__dirname, 'node-wasm-trap.js');
+    const child = childProcess.fork(crashPath, { silent: true });
+    child.on('exit', () => process.exit(0));
   } else if (crashType === 'node-extra-args') {
     let exitcode = -1;
     const crashPath = path.join(__dirname, 'node-extra-args.js');
