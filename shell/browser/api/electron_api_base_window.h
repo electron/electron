@@ -157,6 +157,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsAlwaysOnTop() const;
   void SetPosition(int x, int y, gin::Arguments* args);
   std::array<int, 2U> GetPosition() const;
+  std::optional<gfx::Point> GetCursorPoint() const;
   void SetTitle(const std::string& title);
   void SetTitleFromPage(const std::string& title);
   bool SetTitleFromPageIfNotSetFromApi(const std::string& title);
